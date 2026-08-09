@@ -1,0 +1,172 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -173,5 +173,11 @@ ge::graphStatus IFATiling::PreProcess()
+                 "vector_core_count(%u) must be in [1, %u]",
+                 requestedVectorCores, aivNum_), return ge::GRAPH_FAILED);
++        const uint32_t requiredQueryHeadCores = batchSize_ * numHeads_;
++        OP_CHECK_IF(requestedVectorCores < requiredQueryHeadCores,
++            OP_LOGE(ifaContext_->opName,
++                "vector_core_count(%u) must be at least B * num_heads (%u); "
++                "the all-vector pipeline supports one GQA query-head work item per AIV core",
++                requestedVectorCores, requiredQueryHeadCores), return ge::GRAPH_FAILED);
+         aivNum_ = requestedVectorCores;
+         OP_LOGI(ifaContext_->opName, "GQA AIV vector core cap: %u.", aivNum_);
+     }
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+@@ -1043,48 +1043,49 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeScaleValue(LocalTensor<T> &lseM
+                                                            LocalTensor<T> &lseExpUb, LocalTensor<T> &lseLocal)
+ {
+-    Duplicate(lseMaxUb, -FLOAT_MAX, gSize * FP32_ONE_BLOCK_SIZE);
+-    Duplicate(lseSumUb, FLOAT_ZERO, gSize * FP32_ONE_BLOCK_SIZE);
++    Duplicate(lseMaxUb, -FLOAT_MAX, FP32_ONE_BLOCK_SIZE);
++    Duplicate(lseSumUb, FLOAT_ZERO, FP32_ONE_BLOCK_SIZE);
+     PipeBarrier<PIPE_V>();
+     for (uint32_t i = 0; i < actualCombineLoopSize; ++i) {
+-        Max(lseMaxUb, lseMaxUb, lseLocal[i * gSize * FP32_ONE_BLOCK_SIZE], gSize * FP32_ONE_BLOCK_SIZE);
++        Max(lseMaxUb, lseMaxUb, lseLocal[i * FP32_ONE_BLOCK_SIZE], FP32_ONE_BLOCK_SIZE);
+         PipeBarrier<PIPE_V>();
+     }
+     for (uint32_t i = 0; i < actualCombineLoopSize; ++i) {
+-        Sub(lseExpUb[i * gSize * FP32_ONE_BLOCK_SIZE], lseLocal[i * gSize * FP32_ONE_BLOCK_SIZE], lseMaxUb,
+-            gSize * FP32_ONE_BLOCK_SIZE);
++        Sub(lseExpUb[i * FP32_ONE_BLOCK_SIZE], lseLocal[i * FP32_ONE_BLOCK_SIZE], lseMaxUb,
++            FP32_ONE_BLOCK_SIZE);
+         PipeBarrier<PIPE_V>();
+     }
+-    Exp(lseExpUb, lseExpUb, actualCombineLoopSize * gSize * FP32_ONE_BLOCK_SIZE);
++    Exp(lseExpUb, lseExpUb, actualCombineLoopSize * FP32_ONE_BLOCK_SIZE);
+     PipeBarrier<PIPE_V>();
+     for (uint32_t i = 0; i < actualCombineLoopSize; ++i) {
+-        Add(lseSumUb, lseSumUb, lseExpUb[i * gSize * FP32_ONE_BLOCK_SIZE], gSize * FP32_ONE_BLOCK_SIZE);
++        Add(lseSumUb, lseSumUb, lseExpUb[i * FP32_ONE_BLOCK_SIZE], FP32_ONE_BLOCK_SIZE);
+         PipeBarrier<PIPE_V>();
+     }
+-    Log(lseSumUb, lseSumUb, gSize * FP32_ONE_BLOCK_SIZE);
++    Log(lseSumUb, lseSumUb, FP32_ONE_BLOCK_SIZE);
+     PipeBarrier<PIPE_V>();
+-    Add(lseSumUb, lseSumUb, lseMaxUb, gSize * FP32_ONE_BLOCK_SIZE);
++    Add(lseSumUb, lseSumUb, lseMaxUb, FP32_ONE_BLOCK_SIZE);
+     PipeBarrier<PIPE_V>();
+     if (softmaxLseFlag) {
+ #if (__CCE_AICORE__ > 200)
+         LocalTensor<float> softmaxlseUb = outputQue1.template AllocTensor<float>();
+-        DataCopy(softmaxlseUb, lseSumUb, gSize * FP32_ONE_BLOCK_SIZE);
++        DataCopy(softmaxlseUb, lseSumUb, FP32_ONE_BLOCK_SIZE);
+         outputQue1.EnQue(softmaxlseUb);
+         outputQue1.DeQue<float>();
+ 
+         DataCopyExtParams intriParams1;
+         intriParams1.blockLen = sizeof(float);
+-        intriParams1.blockCount = gSize;
++        intriParams1.blockCount = 1U;
+         intriParams1.srcStride = 0;
+         intriParams1.dstStride = 0;
+-        DataCopyPad(softmaxLseGm[bIdx * kvHeadNum * gSize + n2Idx * gSize], softmaxlseUb, intriParams1);
++        uint64_t qHeadIndex = bIdx * qHeadNum + n2Idx * gSize + gIdx;
++        DataCopyPad(softmaxLseGm[qHeadIndex], softmaxlseUb, intriParams1);
+         outputQue1.FreeTensor(softmaxlseUb);
+ #endif
+     }
+     for (uint32_t i = 0; i < actualCombineLoopSize; ++i) {
+-        Sub(lseExpUb[i * gSize * FP32_ONE_BLOCK_SIZE], lseLocal[i * gSize * FP32_ONE_BLOCK_SIZE], lseSumUb,
+-            gSize * FP32_ONE_BLOCK_SIZE);
++        Sub(lseExpUb[i * FP32_ONE_BLOCK_SIZE], lseLocal[i * FP32_ONE_BLOCK_SIZE], lseSumUb,
++            FP32_ONE_BLOCK_SIZE);
+         PipeBarrier<PIPE_V>();
+     }
+-    Exp(lseExpUb, lseExpUb, actualCombineLoopSize * gSize * FP32_ONE_BLOCK_SIZE);
++    Exp(lseExpUb, lseExpUb, actualCombineLoopSize * FP32_ONE_BLOCK_SIZE);
+     PipeBarrier<PIPE_V>();
+ }
+@@ -1148,10 +1149,14 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::FlashDecodeComp
+ {
+-    bIdx = tmpBlockIdx / kvHeadNum;
+-    n2Idx = tmpBlockIdx % kvHeadNum;
+-    attenOutOffset = bIdx * kvHeadNum * gSize * headDim + n2Idx * gSize * headDim;
+-    if (batchSize * kvHeadNum <= tmpBlockIdx ) {
++    uint32_t qHeadWorkIdx = tmpBlockIdx;
++    if (batchSize * qHeadNum <= qHeadWorkIdx) {
+         return;
+     }
++    bIdx = qHeadWorkIdx / qHeadNum;
++    uint32_t qHeadInBatch = qHeadWorkIdx % qHeadNum;
++    n2Idx = qHeadInBatch / gSize;
++    gIdx = qHeadInBatch % gSize;
++    uint64_t qHeadIndex = bIdx * qHeadNum + qHeadInBatch;
++    attenOutOffset = qHeadIndex * headDim;
+ 
+     if (actualDims == 1) {
+         curActualSeqLen = actualSeqLengthsGm.GetValue(0);
+@@ -1164,8 +1169,8 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::FlashDecodeComp
+     } else {
+         curActualSeqLen = actualSeqLengthsGm.GetValue(bIdx);
+     }
+-    combineLseOffset = (bIdx * kvHeadNum * splitKVNum + n2Idx * splitKVNum) * gSize * FP32_ONE_BLOCK_SIZE;
+-    combineAccumOutOffset = (bIdx * kvHeadNum * splitKVNum + n2Idx * splitKVNum) * headDim * gSize;
++    combineLseOffset = qHeadIndex * splitKVNum * FP32_ONE_BLOCK_SIZE;
++    combineAccumOutOffset = qHeadIndex * splitKVNum * headDim;
+     actualCombineLoopSize = (curActualSeqLen + sInnerLoopSize - 1) / sInnerLoopSize;
+     CombineSplitKVRes();
+ }
+@@ -1180,16 +1185,17 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::SoftmaxLseCopyO
+     // 非GQA走全V,gSize为1
+     LocalTensor<T> lseUb = outputQue1.AllocTensor<T>();
+-    Log(lseUb, softmaxSumUb, gSize * BLOCK_ELEMENT_NUM);
++    Log(lseUb, softmaxSumUb, BLOCK_ELEMENT_NUM);
+     PipeBarrier<PIPE_V>();
+-    Add(lseUb, lseUb, softmaxMaxUb, gSize * BLOCK_ELEMENT_NUM);
++    Add(lseUb, lseUb, softmaxMaxUb, BLOCK_ELEMENT_NUM);
+     outputQue1.EnQue(lseUb);
+     outputQue1.DeQue<T>();
+     DataCopyExtParams intriParams1;
+     intriParams1.blockLen = sizeof(float);
+-    intriParams1.blockCount = gSize;
++    intriParams1.blockCount = 1U;
+     intriParams1.srcStride = 0;
+     intriParams1.dstStride = 0;
+-    DataCopyPad(softmaxLseGm[bIdx * kvHeadNum * gSize + n2Idx * gSize], lseUb, intriParams1);
++    uint64_t qHeadIndex = bIdx * qHeadNum + n2Idx * gSize + gIdx;
++    DataCopyPad(softmaxLseGm[qHeadIndex], lseUb, intriParams1);
+     outputQue1.FreeTensor(lseUb);
+ #endif
+ }
+@@ -1200,13 +1206,13 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeLogSumExpAndCopyToGm(LocalTenso
+ {
+     // 非GQA走全V,gSize为1
+     LocalTensor<T> lseUb = outputQue1.AllocTensor<T>();
+-    Log(lseUb, softmaxSumUb, gSize * BLOCK_ELEMENT_NUM);
++    Log(lseUb, softmaxSumUb, BLOCK_ELEMENT_NUM);
+     PipeBarrier<PIPE_V>();
+-    Add(lseUb, lseUb, softmaxMaxUb, gSize * BLOCK_ELEMENT_NUM);
++    Add(lseUb, lseUb, softmaxMaxUb, BLOCK_ELEMENT_NUM);
+     outputQue1.EnQue(lseUb);
+     outputQue1.DeQue<T>();
+-    DataCopy(logSumExpGm[bIdx * kvHeadNum * splitKVNum * gSize * BLOCK_ELEMENT_NUM +
+-                         n2Idx * splitKVNum * gSize * BLOCK_ELEMENT_NUM + s2Idx * gSize * BLOCK_ELEMENT_NUM],
+-             lseUb, gSize * BLOCK_ELEMENT_NUM);
++    uint64_t qHeadIndex = bIdx * qHeadNum + n2Idx * gSize + gIdx;
++    DataCopy(logSumExpGm[(qHeadIndex * splitKVNum + s2Idx) * BLOCK_ELEMENT_NUM],
++             lseUb, BLOCK_ELEMENT_NUM);
+     outputQue1.FreeTensor(lseUb);
+ }
+@@ -1610,7 +1616,7 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::Bmm2FDDataCopyOut(LocalTensor<T> &atte
+         dataCopyParams.blockLen = actualColumnCount / BLOCK_ELEMENT_NUM;
+         dataCopyParams.srcStride = (columnCount - actualColumnCount) / (BYTE_BLOCK / sizeof(T));
+         dataCopyParams.dstStride = 0;
+-        DataCopy(accumOutGm[tensorACoreOffset * splitKVNum + s2Idx * gSize * actualColumnCount +
++        DataCopy(accumOutGm[tensorACoreOffset * splitKVNum + s2Idx * actualColumnCount +
+                             startRow * actualColumnCount],
+                  attenOutUb, dataCopyParams);
+     } else {
+@@ -1620,7 +1626,7 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::Bmm2FDDataCopyOut(LocalTensor<T> &atte
+         dataCopyParams.blockLen = actualColumnCount * sizeof(T);
+         dataCopyParams.srcStride = (columnCount - actualColumnCount) / (BYTE_BLOCK / sizeof(T));
+         dataCopyParams.dstStride = 0;
+-        DataCopyPad(accumOutGm[tensorACoreOffset * splitKVNum + s2Idx * gSize * actualColumnCount +
++        DataCopyPad(accumOutGm[tensorACoreOffset * splitKVNum + s2Idx * actualColumnCount +
+                                startRow * actualColumnCount],
+                     attenOutUb, dataCopyParams);
+ #endif
