@@ -18,10 +18,6 @@ def ruled_table(rows: int, *, width: int = 640, row_height: int = 28) -> Image.I
     for row in range(rows + 1):
         y = min(image.height - 1, row * row_height)
         draw.line((0, y, width - 1, y), fill="black", width=2)
-    for row in range(rows):
-        y = row * row_height + 9
-        draw.rectangle((20, y, 95, y + 7), fill="black")
-        draw.rectangle((220, y, 300, y + 7), fill="black")
     return image
 
 

@@ -810,10 +810,12 @@ def adaptive_max_snapped_proposal(
     Candidate boundaries are the union of ruled, whitespace, hybrid, and
     row-edge evidence.  Nearby candidates are clustered before every retained
     interior boundary passes through the reviewed snap routine.  Boundaries
-    that still cross ink after snapping are removed.  Only then do we cap the
-    result, using existing safe boundaries rather than inventing uniform cuts.
-    If safety filtering leaves fewer than ``minimum_rows`` bands, a snapped
-    uniform fallback supplies the requested minimum.
+    that still cross ink after snapping are removed.  The maximum detector row
+    count sets the target U, capped by ``max_rows``.  When safe boundaries are
+    insufficient to reach that target, a target-U uniform proposal supplies
+    the missing density and every one of its cuts is snapped.  This deliberate
+    maximum-row bias lets dense tables reach U32 even when they have no clean
+    full-width separator gaps.
     """
 
     if max_rows < 1:
@@ -830,6 +832,10 @@ def adaptive_max_snapped_proposal(
         name: max(1, len(proposals[name].boundaries) - 1)
         for name in candidate_sources
     }
+    target_rows = max(
+        minimum_rows,
+        min(max_rows, max(source_rows.values(), default=minimum_rows)),
+    )
     character_heights = [
         float(proposals[name].diagnostics["character_height"])
         for name in candidate_sources
@@ -882,12 +888,22 @@ def adaptive_max_snapped_proposal(
         boundaries=tuple(safe_boundaries),
         diagnostics={},
     )
-    if len(safe.boundaries) - 1 > max_rows:
-        bounded = group_natural_rows(safe, rows=max_rows)
+    safe_rows = len(safe.boundaries) - 1
+    if safe_rows > target_rows:
+        bounded = group_natural_rows(safe, rows=target_rows)
         cap_mode = "grouped_at_existing_safe_snapped_boundaries"
+        supplemental_snap = None
+    elif safe_rows < target_rows:
+        supplemental_snap = snap_uniform_boundaries(
+            image,
+            uniform_split(image.height, rows=target_rows),
+        )
+        bounded = supplemental_snap
+        cap_mode = "detector_max_uniform_then_snapped"
     else:
         bounded = safe
         cap_mode = "all_safe_snapped_boundaries"
+        supplemental_snap = None
 
     if len(bounded.boundaries) - 1 < minimum_rows:
         fallback = snap_uniform_boundaries(
@@ -914,6 +930,7 @@ def adaptive_max_snapped_proposal(
         "typical_character_height_px": typical_character_height,
         "max_rows": max_rows,
         "minimum_rows": minimum_rows,
+        "target_rows": target_rows,
         "pre_snap_mode": pre_snap_mode,
         "cap_mode": cap_mode,
         "rows_before_snap": len(union.boundaries) - 1,
@@ -930,6 +947,21 @@ def adaptive_max_snapped_proposal(
             "ink_crossings_after", 0
         ),
         "snap_boundary_details": details,
+        "supplemental_snap_ink_crossings_before": (
+            supplemental_snap.diagnostics.get("ink_crossings_before", 0)
+            if supplemental_snap is not None
+            else 0
+        ),
+        "supplemental_snap_ink_crossings_after": (
+            supplemental_snap.diagnostics.get("ink_crossings_after", 0)
+            if supplemental_snap is not None
+            else 0
+        ),
+        "supplemental_snap_boundary_details": (
+            supplemental_snap.diagnostics.get("boundary_details", [])
+            if supplemental_snap is not None
+            else []
+        ),
         "minimum_fallback_used": fallback_used,
         "minimum_fallback_boundary_details": fallback_details,
     }
