@@ -65,7 +65,7 @@ def register_decode_token_embedding_converter() -> None:
         meta_outputs: Any = None,
     ) -> Any:
         del meta_outputs
-        return ge_op(
+        result = ge_op(
             op_type=GE_OP_NAME,
             inputs={
                 "x": weight,
@@ -74,6 +74,14 @@ def register_decode_token_embedding_converter() -> None:
             },
             outputs=["y"],
         )
+        # GatherV3 is present in the 910B OPP but absent from this TorchAir
+        # release's generated AscendIR APIs.  The low-level builder therefore
+        # cannot populate its output descriptor.  This op is deliberately
+        # specialized to the Paddle B1/S1/H1024 decode contract.
+        result.desc.dtype = weight.desc.dtype
+        result.desc.layout = "ND"
+        result.desc.shape.dim.extend([1, 1, 1024])
+        return result
 
     _CONVERTER_REGISTERED = True
 
