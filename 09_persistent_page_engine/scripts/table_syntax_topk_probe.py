@@ -116,6 +116,9 @@ def token_piece(tokenizer: Any, token_id: int) -> str:
     if hasattr(tokenizer, "convert_ids_to_tokens"):
         value = tokenizer.convert_ids_to_tokens(int(token_id))
         return str(value)
+    if hasattr(tokenizer, "id_to_token"):
+        value = tokenizer.id_to_token(int(token_id))
+        return str(value)
     return token_text(tokenizer, token_id)
 
 
@@ -128,7 +131,8 @@ def token_payload(tokenizer: Any, token_id: int) -> dict[str, Any]:
 
 
 def encode_one(tokenizer: Any, text: str) -> int:
-    token_ids = tokenizer.encode(text, add_special_tokens=False)
+    encoded = tokenizer.encode(text, add_special_tokens=False)
+    token_ids = encoded.ids if hasattr(encoded, "ids") else encoded
     if len(token_ids) != 1:
         raise ValueError(f"expected one token for {text!r}, got {token_ids}")
     return int(token_ids[0])
