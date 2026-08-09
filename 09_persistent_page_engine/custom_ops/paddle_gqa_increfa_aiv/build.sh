@@ -57,8 +57,10 @@ OVERLAY_SHA="$(find "$OVERLAY_ROOT" "$CUSTOM_ROOT/patches" -type f -print0 \
 BUILD_SOURCE_PARENT="$PROJECT_ROOT/.runtime_cache/paddle_gqa_increfa_aiv/sources"
 BUILD_SOURCE_ROOT="${PADDLE_GQA_BUILD_SOURCE_ROOT:-$BUILD_SOURCE_PARENT/source_${EXPECTED_SOURCE_COMMIT:0:16}}"
 SOURCE_MANIFEST="$BUILD_SOURCE_ROOT/.paddle_gqa_increfa_aiv_source_manifest.sha256"
+OVERLAY_MANIFEST="$BUILD_SOURCE_ROOT/.paddle_gqa_increfa_aiv_overlay_sha"
 mkdir -p "$BUILD_SOURCE_PARENT" "$RUN_ROOT"
 
+SOURCE_PREPARED=false
 if [[ ! -e "$BUILD_SOURCE_ROOT/.git" ]]; then
     git -C "$SOURCE_ROOT" worktree add --detach "$BUILD_SOURCE_ROOT" "$EXPECTED_SOURCE_COMMIT"
     git -C "$BUILD_SOURCE_ROOT" mv "$UPSTREAM_OP_REL" "$CUSTOM_OP_REL"
@@ -76,26 +78,30 @@ else
         exit 2
     fi
     sha256sum -c "$SOURCE_MANIFEST"
+    if [[ ! -s "$OVERLAY_MANIFEST" ]] || [[ "$(<"$OVERLAY_MANIFEST")" != "$OVERLAY_SHA" ]]; then
+        echo "ERROR: cached separate-op source was prepared from a different overlay; use a fresh PADDLE_GQA_BUILD_SOURCE_ROOT" >&2
+        exit 2
+    fi
+    SOURCE_PREPARED=true
 fi
 
 OP_ROOT="$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
-cp -p "$OVERLAY_ROOT/CMakeLists.txt" "$OP_ROOT/CMakeLists.txt"
-cp -p "$OVERLAY_ROOT/op_host/CMakeLists.txt" "$OP_ROOT/op_host/CMakeLists.txt"
-mkdir -p "$OP_ROOT/op_host/op_api"
-cp -p "$OVERLAY_ROOT/op_host/op_api/"* "$OP_ROOT/op_host/op_api/"
-cp -p "$OVERLAY_ROOT/op_host/"*.cpp "$OP_ROOT/op_host/"
-cp -p "$OVERLAY_ROOT/op_kernel/"*.cpp "$OP_ROOT/op_kernel/"
-for patch_path in "${PATCH_PATHS[@]}"; do
-    if git -C "$BUILD_SOURCE_ROOT" apply --unidiff-zero --reverse --check "$patch_path" 2>/dev/null; then
-        continue
-    fi
-    git -C "$BUILD_SOURCE_ROOT" apply --unidiff-zero --check "$patch_path"
-    git -C "$BUILD_SOURCE_ROOT" apply --unidiff-zero "$patch_path"
-done
-find "$OP_ROOT/CMakeLists.txt" "$OP_ROOT/op_host" "$OP_ROOT/op_kernel" -type f \
-    ! -path '*/op_api_upstream_disabled/*' ! -name '*.upstream_disabled' -print0 \
-    | sort -z | xargs -0 sha256sum > "$SOURCE_MANIFEST"
-printf '%s\n' "$OVERLAY_SHA" > "$BUILD_SOURCE_ROOT/.paddle_gqa_increfa_aiv_overlay_sha"
+if [[ "$SOURCE_PREPARED" == false ]]; then
+    cp -p "$OVERLAY_ROOT/CMakeLists.txt" "$OP_ROOT/CMakeLists.txt"
+    cp -p "$OVERLAY_ROOT/op_host/CMakeLists.txt" "$OP_ROOT/op_host/CMakeLists.txt"
+    mkdir -p "$OP_ROOT/op_host/op_api"
+    cp -p "$OVERLAY_ROOT/op_host/op_api/"* "$OP_ROOT/op_host/op_api/"
+    cp -p "$OVERLAY_ROOT/op_host/"*.cpp "$OP_ROOT/op_host/"
+    cp -p "$OVERLAY_ROOT/op_kernel/"*.cpp "$OP_ROOT/op_kernel/"
+    for patch_path in "${PATCH_PATHS[@]}"; do
+        git -C "$BUILD_SOURCE_ROOT" apply --unidiff-zero --check "$patch_path"
+        git -C "$BUILD_SOURCE_ROOT" apply --unidiff-zero "$patch_path"
+    done
+    find "$OP_ROOT/CMakeLists.txt" "$OP_ROOT/op_host" "$OP_ROOT/op_kernel" -type f \
+        ! -path '*/op_api_upstream_disabled/*' ! -name '*.upstream_disabled' -print0 \
+        | sort -z | xargs -0 sha256sum > "$SOURCE_MANIFEST"
+    printf '%s\n' "$OVERLAY_SHA" > "$OVERLAY_MANIFEST"
+fi
 
 cd "$BUILD_SOURCE_ROOT"
 PYTHONPATH="$PYTHON_SITE" PATH="$PROJECT_ROOT/.runtime_cache/increfa_bin:$PATH" \
