@@ -29,6 +29,10 @@ from .decode_linear_matmul_v3 import (
     decode_linear_matmul_v3,
     register_decode_linear_matmul_v3_converter,
 )
+from .decode_qkv_split import (
+    decode_qkv_split,
+    register_decode_qkv_split_converter,
+)
 from .config import PaddleOCRTextConfig
 from .gqa_increfa_aiv import (
     gqa_incre_flash_attention_aiv,
@@ -74,6 +78,7 @@ class DecodeOptimizationConfig:
     super_kernel_scope: bool = False
     ascendc_token_embedding: bool = False
     ascendc_linear: bool = False
+    ascendc_qkv_split: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -132,6 +137,7 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         super_kernel_scope=True,
         ascendc_token_embedding=True,
         ascendc_linear=True,
+        ascendc_qkv_split=True,
     ),
     "combined_apply_pse_sentinel": DecodeOptimizationConfig(
         name="combined_apply_pse_sentinel",
@@ -689,6 +695,8 @@ def _project_decode_qkv(
         attention.decode_qkv_proj,
         hidden_states,
     )
+    if optimization.ascendc_qkv_split:
+        return decode_qkv_split(qkv)
     q_size = int(attention.num_heads * attention.head_dim)
     kv_size = int(attention.num_key_value_heads * attention.head_dim)
     query_states, key_states, value_states = qkv.split(
@@ -1649,6 +1657,7 @@ def decode_source_hash() -> str:
         "gqa_increfa_aiv.py",
         "decode_token_embedding.py",
         "decode_linear_matmul_v3.py",
+        "decode_qkv_split.py",
     ):
         path = here / name
         digest.update(name.encode("utf-8"))
@@ -1754,6 +1763,7 @@ def compile_text_decode_stage(
             "super_kernel_scope": optimization.super_kernel_scope,
             "ascendc_token_embedding": optimization.ascendc_token_embedding,
             "ascendc_linear": optimization.ascendc_linear,
+            "ascendc_qkv_split": optimization.ascendc_qkv_split,
         },
     }
     if backend_name == "raw_eager":
@@ -1771,6 +1781,8 @@ def compile_text_decode_stage(
             register_decode_token_embedding_converter()
         if optimization.ascendc_linear:
             register_decode_linear_matmul_v3_converter()
+        if optimization.ascendc_qkv_split:
+            register_decode_qkv_split_converter()
         shape_cache_dir = torchair_cache_dir_for_shape(
             cache_root,
             batch_size=batch_size,
