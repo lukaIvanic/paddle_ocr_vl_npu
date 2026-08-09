@@ -15,12 +15,14 @@ ENTRY_REL="attention/incre_flash_attention/op_kernel/incre_flash_attention_arch3
 EXPECTED_ENTRY_SHA256="20cb2397d84cf5d5386ebc09b6aa79eacfd3f32d956309c1b4e7f3e2690ef63b"
 HOST_TILER_REL="attention/incre_flash_attention/op_host/incre_flash_attention_tiling.cpp"
 EXPECTED_HOST_TILER_SHA256="c84dbe37632ed428c080918ce4ca124d43640fbcfd05e69c212b9453f2b46a74"
-TILING_KEY="11000000000100000"
+MHA_AIV_TILING_KEY="11000000000100000"
+GQA_MIXED_TILING_KEY="10000000000100000"
+TILING_KEYS="$MHA_AIV_TILING_KEY,$GQA_MIXED_TILING_KEY"
 AIV_LAUNCH_BLOCKS="${AIV_LAUNCH_BLOCKS:-auto}"
 if [[ "$AIV_LAUNCH_BLOCKS" == "auto" ]]; then
-    VENDOR_NAME="paddle_increfa_aiv_only"
+    VENDOR_NAME="paddle_increfa_mha_aiv_gqa_mixed"
 elif [[ "$AIV_LAUNCH_BLOCKS" == "1" ]]; then
-    VENDOR_NAME="paddle_increfa_aiv_only_1core"
+    VENDOR_NAME="paddle_increfa_mha_aiv_gqa_mixed_1core"
 else
     echo "ERROR: AIV_LAUNCH_BLOCKS must be auto or 1" >&2
     exit 2
@@ -93,7 +95,7 @@ bash build.sh \
     --soc=ascend910b \
     --vendor_name="$VENDOR_NAME" \
     --ops=incre_flash_attention \
-    --ops-compile-options "--tiling_key=$TILING_KEY" \
+    --ops-compile-options "--tiling_key=$TILING_KEYS" \
     -j8 -O3 2>&1 | tee "$RUN_ROOT/build.log"
 
 KERNEL_JSON="$SOURCE_ROOT/build/binary/ascend910b/bin/incre_flash_attention/IncreFlashAttention_7b761bdde53e2d667f3cdc458400fc8e.json"
@@ -110,11 +112,11 @@ sha256sum "$ENTRY_PATH" "$HOST_TILER_PATH" "$KERNEL_JSON" "$KERNEL_OBJECT" "$PAC
 
 KERNEL_SYMBOLS="$(readelf -Ws "$KERNEL_OBJECT")"
 if ! grep -q '_mix_aiv$' <<<"$KERNEL_SYMBOLS"; then
-    echo "ERROR: fixed-key ELF does not contain the MIX_AIV vector function" >&2
+    echo "ERROR: multi-key ELF does not contain the MHA MIX_AIV function" >&2
     exit 3
 fi
-if grep -q '_mix_aic$' <<<"$KERNEL_SYMBOLS"; then
-    echo "ERROR: fixed-key ELF unexpectedly contains a cube function" >&2
+if ! grep -q '_mix_aic$' <<<"$KERNEL_SYMBOLS"; then
+    echo "ERROR: multi-key ELF does not retain the GQA MIX_AIC function" >&2
     exit 3
 fi
 
@@ -125,41 +127,52 @@ import sys
 path = sys.argv[1]
 metadata = json.load(open(path, encoding="utf-8"))
 kernels = metadata.get("kernelList", [])
-if len(kernels) != 1:
-    raise SystemExit(f"expected one fixed-key kernel, got {len(kernels)}")
-kernel = kernels[0]
-kernel_name = kernel.get("kernelName", "")
-tiling_key = kernel.get("tilingKey")
-if tiling_key is None and kernel_name.rsplit("_", 1)[-1].isdigit():
-    tiling_key = int(kernel_name.rsplit("_", 1)[-1])
+by_key = {}
+for kernel in kernels:
+    kernel_name = kernel.get("kernelName", "")
+    tiling_key = kernel.get("tilingKey")
+    if tiling_key is None and kernel_name.rsplit("_", 1)[-1].isdigit():
+        tiling_key = int(kernel_name.rsplit("_", 1)[-1])
+    by_key[int(tiling_key)] = kernel
+
+mha_key = 11000000000100000
+gqa_key = 10000000000100000
+if set(by_key) != {mha_key, gqa_key}:
+    raise SystemExit(f"expected MHA and GQA tiling keys, got {sorted(by_key)}")
+
 summary = {
     "coreType": metadata.get("coreType"),
     "core_type": metadata.get("core_type"),
     "intercoreSync": metadata.get("intercoreSync"),
     "magic": metadata.get("magic"),
-    "tilingKey": tiling_key,
-    "kernelType": kernel.get("kernelType"),
-    "crossCoreSync": kernel.get("crossCoreSync"),
-    "taskRation": kernel.get("taskRation", metadata.get("taskRation")),
+    "taskRation": metadata.get("taskRation"),
+    "kernels": {
+        str(key): {
+            "kernelType": kernel.get("kernelType"),
+            "crossCoreSync": kernel.get("crossCoreSync"),
+            "taskRation": kernel.get("taskRation", metadata.get("taskRation")),
+        }
+        for key, kernel in sorted(by_key.items())
+    },
 }
-print("AIV_ONLY_KERNEL_METADATA=" + json.dumps(summary, sort_keys=True))
-if tiling_key != 11000000000100000:
-    raise SystemExit("unexpected tiling key")
+print("SPLIT_TASK_KERNEL_METADATA=" + json.dumps(summary, sort_keys=True))
 if metadata.get("coreType") not in ("MIX", "MIX_AIV"):
-    raise SystemExit("compiler metadata does not describe a MIX_AIV launch")
+    raise SystemExit("compiler metadata does not describe a MIX launch")
 if metadata.get("magic") != "RT_DEV_BINARY_MAGIC_ELF":
-    raise SystemExit("MIX_AIV kernel binary has unexpected ELF magic")
-# CANN 9.0 emits the legacy per-kernel label MIX_AIC here even though the ELF
-# contains only the mix_aiv function. The 0:1 ratio and ELF symbol gate are the
-# decisive zero-cube checks.
-if kernel.get("kernelType") not in (None, "", "MIX_AIV", "MIX_AIC"):
-    raise SystemExit("per-kernel metadata has an unknown MIX label")
+    raise SystemExit("multi-key kernel binary has unexpected ELF magic")
 if metadata.get("intercoreSync") != 1:
-    raise SystemExit("MIX_AIV hard-sync runtime contract is missing")
-if kernel.get("crossCoreSync") not in (None, 1):
-    raise SystemExit("MIX_AIV kernel has an unexpected cross-core sync value")
-if kernel.get("taskRation", metadata.get("taskRation")) != "0:1":
-    raise SystemExit("MIX_AIV package does not have a zero-cube 0:1 task ratio")
+    raise SystemExit("multi-key hard-sync runtime contract is missing")
+
+mha = by_key[mha_key]
+gqa = by_key[gqa_key]
+if mha.get("taskRation", metadata.get("taskRation")) != "0:1":
+    raise SystemExit("MHA all-vector key does not have a zero-cube 0:1 ratio")
+if gqa.get("taskRation", metadata.get("taskRation")) != "1:2":
+    raise SystemExit("GQA C1V2 key does not retain the mixed 1:2 ratio")
+if mha.get("crossCoreSync") not in (None, 1):
+    raise SystemExit("MHA MIX_AIV key has an unexpected cross-core sync value")
+if gqa.get("crossCoreSync") not in (None, 1):
+    raise SystemExit("GQA MIX key has an unexpected cross-core sync value")
 PY
 
 restore_source
