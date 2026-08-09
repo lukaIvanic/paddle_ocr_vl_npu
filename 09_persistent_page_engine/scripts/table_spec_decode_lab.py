@@ -68,6 +68,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=1)
     parser.add_argument("--all-tables", action="store_true")
     parser.add_argument("--draft-length", type=int, default=16)
+    parser.add_argument(
+        "--wrapper-rescue",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Once per table, allow the actual draft cell-opening token when "
+            "the previous aligned cell matches and that token is in live top-k."
+        ),
+    )
+    parser.add_argument("--wrapper-rescue-top-k", type=int, default=3)
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--max-new-tokens", type=int, default=4096)
     parser.add_argument(
@@ -274,6 +284,8 @@ def main() -> None:
         recognizer,
         draft_length=args.draft_length,
         cache_root=args.decode_cache_dir.resolve(),
+        wrapper_rescue=args.wrapper_rescue,
+        wrapper_rescue_top_k=args.wrapper_rescue_top_k,
     )
     setup_s = time.perf_counter() - setup_started
     print(
@@ -411,6 +423,8 @@ def main() -> None:
             "cache_length": args.cache_length,
             "max_new_tokens": args.max_new_tokens,
             "compare_baseline": args.compare_baseline,
+            "wrapper_rescue": args.wrapper_rescue,
+            "wrapper_rescue_top_k": args.wrapper_rescue_top_k,
             "verifier_cache_was_warm": cache_hit,
             "targets": str(args.targets),
             "drafts": str(args.drafts),
