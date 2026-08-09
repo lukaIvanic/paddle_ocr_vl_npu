@@ -81,7 +81,7 @@ def register_decode_token_embedding_converter() -> None:
         result.desc.dtype = weight.desc.dtype
         result.desc.layout = "ND"
         result.desc.shape.dim.extend([1, 1, 1024])
-        return result
+        return ge_module.Reshape(result, [1, 1, 1024])
 
     _CONVERTER_REGISTERED = True
 
