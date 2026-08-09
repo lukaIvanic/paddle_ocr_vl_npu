@@ -40,6 +40,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cache-root", type=Path, required=True)
+    parser.add_argument(
+        "--lanes",
+        choices=("both", "stock", "custom"),
+        default="both",
+        help="Compile both parity lanes or isolate one graph/operator identity.",
+    )
     parser.add_argument("--kv-lengths", type=parse_lengths, default=(128, 512, 2048))
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--blocks", type=int, default=7)
@@ -189,8 +195,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             "pytorch": PYTORCH_OP_NAME,
             "ge": GE_OP_NAME,
             "stock_reference": "torch_npu.npu_incre_flash_attention",
+            "backend": "torchair.inference.cache_compile",
+            "torchair_used": True,
             "same_name_override": False,
         },
+        "lanes": args.lanes,
         "contract": {
             "batch_size": 1,
             "query_heads": QUERY_HEADS,
@@ -237,64 +246,72 @@ def main(argv: Sequence[str] | None = None) -> int:
             mask = torch.zeros((1, 1, 1, kv_length), dtype=torch.bool, device=device)
             inputs = (query, key, value, mask)
 
-            stock_cache = args.cache_root / f"stock_kv{kv_length}"
-            custom_cache = args.cache_root / f"paddle_mha_aiv_kv{kv_length}"
-            stock = compile_step(StockIncreFa(), cache_dir=stock_cache)
-            custom = compile_step(PaddleMhaAiv(), cache_dir=custom_cache)
-
-            compile_started = time.perf_counter()
-            stock_output = stock(*inputs)
-            torch.npu.synchronize()
-            stock_first_call_s = time.perf_counter() - compile_started
-            compile_started = time.perf_counter()
-            custom_output = custom(*inputs)
-            torch.npu.synchronize()
-            custom_first_call_s = time.perf_counter() - compile_started
-
-            stock_output, stock_timing = time_step(
-                stock,
-                inputs,
-                warmup=args.warmup,
-                blocks=args.blocks,
-                repeats_per_block=args.repeats_per_block,
+            case: dict[str, Any] = {
+                "kv_length": kv_length,
+                "cache_dir": {},
+                "first_call_s": {},
+                "timing": {},
+                "output_sha256": {},
+                "parity": None,
+            }
+            outputs: dict[str, torch.Tensor] = {}
+            lane_modules = (
+                (("stock", StockIncreFa()), ("custom", PaddleMhaAiv()))
+                if args.lanes == "both"
+                else (
+                    (
+                        args.lanes,
+                        StockIncreFa() if args.lanes == "stock" else PaddleMhaAiv(),
+                    ),
+                )
             )
-            custom_output, custom_timing = time_step(
-                custom,
-                inputs,
-                warmup=args.warmup,
-                blocks=args.blocks,
-                repeats_per_block=args.repeats_per_block,
-            )
-            stock_cpu = stock_output.float().cpu().contiguous()
-            custom_cpu = custom_output.float().cpu().contiguous()
-            difference = (stock_cpu - custom_cpu).abs()
-            result["cases"].append(
-                {
-                    "kv_length": kv_length,
-                    "stock_cache_dir": str(stock_cache),
-                    "custom_cache_dir": str(custom_cache),
-                    "first_call_s": {
-                        "stock": stock_first_call_s,
-                        "custom": custom_first_call_s,
-                    },
-                    "parity": {
-                        "exact": bool(torch.equal(stock_cpu, custom_cpu)),
-                        "allclose_atol_0_rtol_0": bool(
-                            torch.allclose(stock_cpu, custom_cpu, atol=0.0, rtol=0.0)
-                        ),
-                        "max_abs": float(difference.max()),
-                        "mean_abs": float(difference.mean()),
-                        "stock_sha256": tensor_sha256(stock_cpu),
-                        "custom_sha256": tensor_sha256(custom_cpu),
-                    },
-                    "timing": {"stock": stock_timing, "custom": custom_timing},
+            for lane_name, lane_module in lane_modules:
+                cache_dir = args.cache_root / f"{lane_name}_kv{kv_length}"
+                step = compile_step(lane_module, cache_dir=cache_dir)
+                case["cache_dir"][lane_name] = str(cache_dir)
+
+                compile_started = time.perf_counter()
+                output = step(*inputs)
+                torch.npu.synchronize()
+                case["first_call_s"][lane_name] = (
+                    time.perf_counter() - compile_started
+                )
+                output, timing = time_step(
+                    step,
+                    inputs,
+                    warmup=args.warmup,
+                    blocks=args.blocks,
+                    repeats_per_block=args.repeats_per_block,
+                )
+                output_cpu = output.float().cpu().contiguous()
+                outputs[lane_name] = output_cpu
+                case["timing"][lane_name] = timing
+                case["output_sha256"][lane_name] = tensor_sha256(output_cpu)
+
+            if args.lanes == "both":
+                stock_cpu = outputs["stock"]
+                custom_cpu = outputs["custom"]
+                difference = (stock_cpu - custom_cpu).abs()
+                case["parity"] = {
+                    "exact": bool(torch.equal(stock_cpu, custom_cpu)),
+                    "allclose_atol_0_rtol_0": bool(
+                        torch.allclose(stock_cpu, custom_cpu, atol=0.0, rtol=0.0)
+                    ),
+                    "max_abs": float(difference.max()),
+                    "mean_abs": float(difference.mean()),
+                    "stock_sha256": case["output_sha256"]["stock"],
+                    "custom_sha256": case["output_sha256"]["custom"],
                 }
-            )
+            result["cases"].append(case)
 
-    result["all_exact"] = all(case["parity"]["exact"] for case in result["cases"])
+    result["all_exact"] = (
+        all(case["parity"]["exact"] for case in result["cases"])
+        if args.lanes == "both"
+        else None
+    )
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2), flush=True)
-    if not result["all_exact"]:
+    if args.lanes == "both" and not result["all_exact"]:
         raise SystemExit("separate operator did not match stock exactly")
     return 0
 
