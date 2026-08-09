@@ -1,7 +1,7 @@
 diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
 --- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
 +++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
-@@ -2348,0 +2349,15 @@
+@@ -2348,0 +2349,14 @@
 +    // Experimental B1 GQA three-way split-K control.  The production
 +    // SplitBNS heuristic keeps at least 512 S2 tokens per partition, so a
 +    // 48-core request at KV1024 otherwise falls back to the same two-way,
@@ -16,7 +16,7 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_
 +        return SplitBNS();
 +    }
 +
-@@ -2619,2 +2634,5 @@ ge::graphStatus IFATiling::SplitBNS()
+@@ -2619,2 +2633,5 @@ ge::graphStatus IFATiling::SplitBNS()
 -    while (((maxActualseq_ / kvSplitPart_) < 512U) && (kvSplitPart_ > 1U)) { // 512, 经验值
 +    // The isolated split-k48 control permits three roughly 341-token
 +    // partitions at KV1024.  The production and split-k32 packages retain
