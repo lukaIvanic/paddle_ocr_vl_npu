@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "kind": "gqa_split_k32_lower_kv_and_bottleneck_summary",
+  "date": "2026-08-09",
+  "device": "Ascend910B2",
+  "packages": {
+    "c16": "paddle_gqa_increfa_aiv_transformer/gqa_flashdecode_v11_guardfix",
+    "c32": "paddle_gqa_split_k32_increfa_aiv_transformer/20260809T185123Z"
+  },
+  "lower_kv_pipe_profiles": [
+    {"kv": 128, "valid_kv": 97, "requested_blocks": 32, "actual_blocks": 16, "task_us": 15.56, "aiv_us": 13.973, "vector_us": 2.309333, "scalar_us": 6.152, "mte2_us": 1.709},
+    {"kv": 256, "valid_kv": 193, "requested_blocks": 32, "actual_blocks": 16, "task_us": 17.413333, "aiv_us": 15.797, "vector_us": 3.64, "scalar_us": 7.281, "mte2_us": 2.35},
+    {"kv": 512, "valid_kv": 385, "requested_blocks": 32, "actual_blocks": 16, "task_us": 19.38, "aiv_us": 17.641, "vector_us": 6.253, "scalar_us": 7.529, "mte2_us": 3.236},
+    {"kv": 768, "valid_kv": 577, "requested_blocks": 32, "actual_blocks": 16, "task_us": 22.54, "aiv_us": 20.726667, "vector_us": 8.949, "scalar_us": 8.338, "mte2_us": 4.344667}
+  ],
+  "matched_real_graph_kv1024": {
+    "physical_npu": 6,
+    "steps": 3,
+    "attention_calls_per_lane": 54,
+    "c16": {"actual_blocks": 16, "task_us": 16.211111, "aiv_us": 14.854722, "vector_us": 11.249352, "scalar_us": 4.652907, "mte2_us": 5.305074, "mte3_us": 0.124037},
+    "c32": {"actual_blocks": 32, "task_us": 13.38, "aiv_us": 12.203889, "vector_us": 6.033815, "scalar_us": 4.872648, "mte2_us": 3.24713, "mte3_us": 0.381241},
+    "task_reduction_percent": 17.464758,
+    "vector_reduction_percent": 46.363885,
+    "attention_time_saved_us_per_18_layer_step": 50.96
+  },
+  "lower_kv_real_b1": [
+    {"kv": 128, "requested_blocks": 32, "actual_blocks": 16, "mean_ms": 1.30393344, "tok_s": 766.910311},
+    {"kv": 256, "requested_blocks": 32, "actual_blocks": 16, "mean_ms": 1.285335311, "tok_s": 778.007102},
+    {"kv": 512, "requested_blocks": 32, "actual_blocks": 16, "mean_ms": 1.296378707, "tok_s": 771.379532},
+    {"kv": 512, "requested_blocks": 16, "actual_blocks": 16, "mean_ms": 1.2789785, "tok_s": 781.873972},
+    {"kv": 768, "requested_blocks": 32, "actual_blocks": 16, "mean_ms": 1.319116701, "tok_s": 758.083041},
+    {"kv": 768, "requested_blocks": 16, "actual_blocks": 16, "mean_ms": 1.328843799, "tok_s": 752.533895}
+  ],
+  "conclusion": "Below KV1024 the safe tiler emits 16 blocks. At KV1024 the 32-block path reduces vector work, but split-K workspace, global synchronization, and partial-result combination are now the limiting work."
+}

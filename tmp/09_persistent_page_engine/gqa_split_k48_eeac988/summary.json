@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "gqa_split_k48_control_summary",
+  "date": "2026-08-09",
+  "device": "Ascend910B2",
+  "package": "paddle_gqa_split_k48_increfa_aiv_transformer/20260809T2135K48",
+  "unsafe_kv1024": {
+    "requested_blocks": 48,
+    "partition_tokens": [342, 341, 341],
+    "result": "device task did not complete",
+    "runtime_timeout_minutes": 3
+  },
+  "safe_kv1536": {
+    "requested_blocks": 48,
+    "actual_blocks": 48,
+    "partition_tokens": [512, 512, 512],
+    "aic_time_us": 0,
+    "cube_utilization_percent": 0,
+    "stock_custom_max_abs": 0.0001220703125,
+    "cpu_reference_max_abs": 0.00006267428398132324
+  },
+  "matched_direct_kv1536": {
+    "c32_torchair_us": 243.929882,
+    "c48_torchair_us": 251.924259,
+    "c48_slowdown_percent": 3.277326,
+    "c32_pipe": {"task_us": 24.793333, "vector_us": 8.902, "scalar_us": 8.392333, "mte2_us": 5.289333},
+    "c48_pipe": {"task_us": 33.68, "vector_us": 6.168333, "scalar_us": 9.780667, "mte2_us": 9.353333}
+  },
+  "real_b1_kv1536_abba": {
+    "physical_npu": 6,
+    "c32_mean_ms": 1.248773998,
+    "c48_mean_ms": 1.247732652,
+    "c32_mean_tok_s": 801.121261,
+    "c48_mean_tok_s": 801.832413,
+    "throughput_difference_percent": 0.08877,
+    "interpretation": "tie within process cadence variation"
+  },
+  "conclusion": "48 blocks are unsafe at KV1024, valid but slower at the operator boundary at KV1536, and neutral in the real B1 decoder."
+}

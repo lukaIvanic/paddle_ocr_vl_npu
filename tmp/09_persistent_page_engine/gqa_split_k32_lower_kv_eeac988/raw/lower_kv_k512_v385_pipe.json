@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "kind": "separate_paddle_gqa_increfa_aiv_comparison",
+  "operator_identity": {
+    "pytorch_graph": "paddleocr_vl::gqa_incre_flash_attention_aiv",
+    "ge": "PaddleGqaIncreFlashAttentionAiv",
+    "stock_reference": "torch_npu.npu_incre_flash_attention",
+    "same_name_override": false,
+    "pytorch_eager": "paddleocr_vl_npu::paddle_gqa_incre_flash_attention_aiv_eager",
+    "aclnn": "aclnnPaddleGqaIncreFlashAttentionAiv",
+    "extension_so": "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/custom_ops/paddle_gqa_increfa_aiv/pytorch_extension/paddle_gqa_increfa_aiv_eager/_C.cpython-312-aarch64-linux-gnu.so",
+    "dispatch_table": "PrivateUse1: registered at /workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/custom_ops/paddle_gqa_increfa_aiv/pytorch_extension/csrc/paddle_gqa_increfa_aiv_eager.cpp:97 [kernel]\nMeta: registered at /workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/custom_ops/paddle_gqa_increfa_aiv/pytorch_extension/csrc/paddle_gqa_increfa_aiv_eager.cpp:103 [kernel]\nSparsePrivateUse1: registered at ../torch_npu/csrc/aten/VariableFallbackKernel.cpp:270 [backend fallback]\nBackendSelect: fallthrough registered at /pytorch/aten/src/ATen/core/BackendSelectFallbackKernel.cpp:3 [backend fallback]\nPython: registered at /pytorch/aten/src/ATen/core/PythonFallbackKernel.cpp:198 [backend fallback]\nFuncTorchDynamicLayerBackMode: registered at /pytorch/aten/src/ATen/functorch/DynamicLayer.cpp:477 [backend fallback]\nFunctionalize: registered at /pytorch/aten/src/ATen/FunctionalizeFallbackKernel.cpp:384 [backend fallback]\nNamed: registered at /pytorch/aten/src/ATen/core/NamedRegistrations.cpp:5 [backend fallback]\nConjugate: registered at /pytorch/aten/src/ATen/ConjugateFallback.cpp:17 [backend fallback]\nNegative: registered at /pytorch/aten/src/ATen/native/NegateFallback.cpp:18 [backend fallback]\nZeroTensor: registered at /pytorch/aten/src/ATen/ZeroTensorFallback.cpp:115 [backend fallback]\nADInplaceOrView: fallthrough registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:103 [backend fallback]\nAutogradOther: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:62 [backend fallback]\nAutogradCPU: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:66 [backend fallback]\nAutogradCUDA: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:74 [backend fallback]\nAutogradXLA: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:86 [backend fallback]\nAutogradMPS: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:94 [backend fallback]\nAutogradXPU: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:70 [backend fallback]\nAutogradHPU: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:107 [backend fallback]\nAutogradLazy: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:90 [backend fallback]\nAutogradMTIA: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:78 [backend fallback]\nAutogradMAIA: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:82 [backend fallback]\nAutogradPrivateUse1: registered at ../torch_npu/csrc/aten/VariableFallbackKernel.cpp:233 [backend fallback]\nAutogradMeta: registered at /pytorch/aten/src/ATen/core/VariableFallbackKernel.cpp:98 [backend fallback]\nTracer: registered at /pytorch/torch/csrc/autograd/TraceTypeManual.cpp:296 [backend fallback]\nAutocastCPU: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:324 [backend fallback]\nAutocastMTIA: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:468 [backend fallback]\nAutocastMAIA: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:506 [backend fallback]\nAutocastXPU: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:544 [backend fallback]\nAutocastMPS: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:209 [backend fallback]\nAutocastCUDA: fallthrough registered at /pytorch/aten/src/ATen/autocast_mode.cpp:165 [backend fallback]\nAutocastPrivateUse1: fallthrough registered at ../torch_npu/csrc/aten/AutoCastOps.cpp:20 [backend fallback]\nFuncTorchBatched: registered at /pytorch/aten/src/ATen/functorch/LegacyBatchingRegistrations.cpp:727 [backend fallback]\nBatchedNestedTensor: registered at /pytorch/aten/src/ATen/functorch/LegacyBatchingRegistrations.cpp:754 [backend fallback]\nFuncTorchVmapMode: fallthrough registered at /pytorch/aten/src/ATen/functorch/VmapModeRegistrations.cpp:22 [backend fallback]\nBatched: registered at /pytorch/aten/src/ATen/LegacyBatchingRegistrations.cpp:1072 [backend fallback]\nVmapMode: fallthrough registered at /pytorch/aten/src/ATen/VmapModeRegistrations.cpp:32 [backend fallback]\nFuncTorchGradWrapper: registered at /pytorch/aten/src/ATen/functorch/TensorWrapper.cpp:210 [backend fallback]\nPythonTLSSnapshot: registered at /pytorch/aten/src/ATen/core/PythonFallbackKernel.cpp:206 [backend fallback]\nFuncTorchDynamicLayerFrontMode: registered at /pytorch/aten/src/ATen/functorch/DynamicLayer.cpp:473 [backend fallback]\nPreDispatch: registered at /pytorch/aten/src/ATen/core/PythonFallbackKernel.cpp:210 [backend fallback]\nPythonDispatcher: registered at /pytorch/aten/src/ATen/core/PythonFallbackKernel.cpp:202 [backend fallback]\n"
+  },
+  "backend": "eager",
+  "experiment_variant": "split_k32_control",
+  "contract": {
+    "batch_size": 1,
+    "query_heads": 16,
+    "key_value_heads": 2,
+    "head_dim": 128,
+    "kv_length": 512,
+    "vector_core_count": 32,
+    "valid_kv_length": 385,
+    "dtype": "fp16",
+    "layout": "BNSD",
+    "masked": true,
+    "actual_seq_lengths": null,
+    "inner_precise": 1,
+    "scale_value": 0.08838834764831843
+  },
+  "environment": {
+    "hostname": "liteserver-c001-4",
+    "ascend_rt_visible_devices": "4",
+    "ascend_custom_opp_path": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/paddle_gqa_split_k32_increfa_aiv/builds/20260809T185123Z/installed/vendors/paddle_gqa_split_k32_increfa_aiv_transformer:",
+    "device_name": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0"
+  },
+  "first_call_s": {
+    "custom": 0.5354844410903752,
+    "stock": 0.007245352957397699
+  },
+  "timing": {
+    "custom": {
+      "warmup_calls": 5,
+      "blocks": 1,
+      "repeats_per_block": 10,
+      "npu_event_us_per_call": [
+        183.93399715423584
+      ],
+      "host_wall_us_per_call": [
+        282.4068069458008
+      ],
+      "npu_event_us_per_call_summary": {
+        "mean": 183.93399715423584,
+        "median": 183.93399715423584,
+        "minimum": 183.93399715423584,
+        "maximum": 183.93399715423584,
+        "p90": 183.93399715423584
+      },
+      "host_wall_us_per_call_summary": {
+        "mean": 282.4068069458008,
+        "median": 282.4068069458008,
+        "minimum": 282.4068069458008,
+        "maximum": 282.4068069458008,
+        "p90": 282.4068069458008
+      }
+    },
+    "stock": {
+      "warmup_calls": 5,
+      "blocks": 1,
+      "repeats_per_block": 10,
+      "npu_event_us_per_call": [
+        62.89399862289429
+      ],
+      "host_wall_us_per_call": [
+        77.90930103510618
+      ],
+      "npu_event_us_per_call_summary": {
+        "mean": 62.89399862289429,
+        "median": 62.89399862289429,
+        "minimum": 62.89399862289429,
+        "maximum": 62.89399862289429,
+        "p90": 62.89399862289429
+      },
+      "host_wall_us_per_call_summary": {
+        "mean": 77.90930103510618,
+        "median": 77.90930103510618,
+        "minimum": 77.90930103510618,
+        "maximum": 77.90930103510618,
+        "p90": 77.90930103510618
+      }
+    }
+  },
+  "profile": {
+    "path": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/paddle_gqa_split_k32_increfa_aiv/profiles/lower_kv_k512_v385_pipe",
+    "metric": "pipe",
+    "custom_calls": 3,
+    "profiled_lane": "custom_only",
+    "timing_interpretation": "profile_overhead_excluded_from_clean_timing"
+  },
+  "output_sha256": {
+    "custom": "58dfdf8d03d36c6b94cef0526ca968e7666c9136e53a040c4a2a6779aec030fb",
+    "stock": "bf59cb8538a23ceea317b3bb3c62dfffce19ce26b9c41860c9c5c11c5ccf249c"
+  },
+  "parity": {
+    "exact": false,
+    "allclose_atol_0_rtol_0": false,
+    "allclose_fp16_tolerance": true,
+    "fp16_tolerance": {
+      "atol": 0.0005,
+      "rtol": 0.005
+    },
+    "max_abs": 1.52587890625e-05,
+    "mean_abs": 1.210719347000122e-08,
+    "per_query_head_max_abs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.52587890625e-05,
+      0.0
+    ],
+    "per_query_head_mean_abs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.9371509552001953e-07,
+      0.0
+    ],
+    "per_query_head_custom_absmax": [
+      0.212646484375,
+      0.2213134765625,
+      0.25732421875,
+      0.2325439453125,
+      0.1893310546875,
+      0.150634765625,
+      0.2021484375,
+      0.2061767578125,
+      0.250244140625,
+      0.2344970703125,
+      0.2391357421875,
+      0.190673828125,
+      0.2276611328125,
+      0.2109375,
+      0.1905517578125,
+      0.251220703125
+    ],
+    "custom_head_best_stock_head": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "custom_head_best_stock_mean_abs": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.9371509552001953e-07,
+      0.0
+    ],
+    "custom_zero_fraction": 0.0,
+    "stock_sample": [
+      0.01800537109375,
+      -0.041168212890625,
+      0.0213165283203125,
+      0.13525390625,
+      0.041168212890625,
+      0.1278076171875,
+      -0.039886474609375,
+      -0.0386962890625,
+      0.11285400390625,
+      -0.0310516357421875,
+      -0.0158233642578125,
+      0.030029296875,
+      -0.08251953125,
+      -0.050384521484375,
+      0.047271728515625,
+      -0.030059814453125
+    ],
+    "custom_sample": [
+      0.01800537109375,
+      -0.041168212890625,
+      0.0213165283203125,
+      0.13525390625,
+      0.041168212890625,
+      0.1278076171875,
+      -0.039886474609375,
+      -0.0386962890625,
+      0.11285400390625,
+      -0.0310516357421875,
+      -0.0158233642578125,
+      0.030029296875,
+      -0.08251953125,
+      -0.050384521484375,
+      0.047271728515625,
+      -0.030059814453125
+    ]
+  },
+  "independent_fp32_reference": {
+    "implementation": "cpu_fp32_matmul_softmax_matmul_with_gqa_repeat",
+    "tolerance": {
+      "atol": 0.002,
+      "rtol": 0.01
+    },
+    "stock_allclose": true,
+    "custom_allclose": true,
+    "stock_max_abs": 0.0001316666603088379,
+    "stock_mean_abs": 1.694526508799754e-05,
+    "custom_max_abs": 0.0001316666603088379,
+    "custom_mean_abs": 1.6948524717008695e-05,
+    "reference_sample": [
+      0.01801026426255703,
+      -0.04117002710700035,
+      0.021314438432455063,
+      0.1352100521326065,
+      0.041137341409921646,
+      0.12779174745082855,
+      -0.03984134644269943,
+      -0.0386766716837883,
+      0.11285421997308731,
+      -0.031079284846782684,
+      -0.015858793631196022,
+      0.03001278080046177,
+      -0.08252781629562378,
+      -0.050402507185935974,
+      0.04726981744170189,
+      -0.030080724507570267
+    ]
+  },
+  "required_checks_passed": true
+}

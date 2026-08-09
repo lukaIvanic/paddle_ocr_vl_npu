@@ -317,6 +317,73 @@ same-device sequences.
 
 Retained evidence: [forced 32-core split-K experiment](../../../tmp/09_persistent_page_engine/gqa_split_k32_8a1041f/README.md).
 
+## Lower-KV boundary and the current 32-core bottleneck
+
+The 32-core request does not produce 32 blocks below physical KV1024. The
+upstream split heuristic retains at least 512 KV tokens per partition, so the
+profile reported 16 actual blocks at KV128, KV256, KV512, and KV768. Requesting
+32 at those lengths is a safe fallback, not an optimization.
+
+| Physical KV | Requested | Actual blocks | Task | Vector | Scalar | MTE2 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 128 | 32 | 16 | 15.56 us | 2.31 us | 6.15 us | 1.71 us |
+| 256 | 32 | 16 | 17.41 us | 3.64 us | 7.28 us | 2.35 us |
+| 512 | 32 | 16 | 19.38 us | 6.25 us | 7.53 us | 3.24 us |
+| 768 | 32 | 16 | 22.54 us | 8.95 us | 8.34 us | 4.34 us |
+| 1024 | 32 | 32 | 22.63 us | 6.18 us | 8.56 us | 4.19 us |
+
+The matched real compiled decoder gives the production-shaped answer. Three
+steps produced 54 attention tasks per lane on physical NPU6:
+
+| KV1024 lane | Blocks | Task | AIV total | Vector | Scalar | MTE2 | MTE3 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Current | 16 | 16.21 us | 14.85 us | 11.25 us | 4.65 us | 5.31 us | 0.12 us |
+| Split-K | 32 | 13.38 us | 12.20 us | 6.03 us | 4.87 us | 3.25 us | 0.38 us |
+
+The task falls by 17.46%, while active vector time falls by 46.36%. Across 18
+layers the attention tasks save about 50.96 us per decoder step. Only about
+half of the vector-pipe saving reaches task duration because the split path
+adds a GM workspace round trip, a global `SyncAll`, and a stable-softmax/output
+combine. After every block writes one partial output and log-sum-exp state,
+all 32 blocks synchronize. Blocks 16-31 then return, while blocks 0-15 load the
+two partials, compute max/subtract/exp/add/log weights with pipeline barriers,
+scale and sum the D128 outputs, cast, and write the final output.
+
+The vector profiler field is active vector-pipe issue time, not wall time.
+Scalar/control instructions, MTE transfers, data dependencies, pipeline
+barriers, core imbalance at `SyncAll`, final reduction, and task scheduling
+remain in the 13.38 us task.
+
+The lower-KV B1 runs agree with the topology proof. Requested-32 versus c16
+measured 771.4 versus 781.9 tok/s at KV512, but 758.1 versus 752.5 tok/s at
+KV768. The opposite small differences are process cadence noise; both lanes
+launched 16 blocks.
+
+Retained evidence: [lower-KV and bottleneck experiment](../../../tmp/09_persistent_page_engine/gqa_split_k32_lower_kv_eeac988/README.md).
+
+## Forced 48-core split-K control
+
+A separate package forced three sequence partitions. At KV1024, the resulting
+342/341/341-token partitions did not complete and the runtime reported a
+three-minute synchronization timeout. This confirms that lowering the
+upstream 512-token partition floor is unsafe for the recovered kernel.
+
+At KV1536, three exact 512-token partitions completed correctly. The profile
+proved 48 actual blocks, AIV-only execution, and zero cube utilization. It was
+still slower than 32 blocks:
+
+| KV1536 lane | Blocks | Task | Vector | Scalar | MTE2 | TorchAir boundary |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Split-K32 | 32 | 24.79 us | 8.90 us | 8.39 us | 5.29 us | 243.93 us |
+| Split-K48 | 48 | 33.68 us | 6.17 us | 9.78 us | 9.35 us | 251.92 us |
+
+The third split reduces vector time by 30.7%, but task time grows by 35.8%.
+The real B1/KV1536 ABBA means were 801.12 tok/s for 32 blocks and 801.83 tok/s
+for 48, a 0.09% tie within process cadence variation. The graph wrapper and
+probe reject 48 cores below KV1536 to prevent the known-stalling topology.
+
+Retained evidence: [forced 48-core split-K experiment](../../../tmp/09_persistent_page_engine/gqa_split_k48_eeac988/README.md).
+
 ## AIV-only proof
 
 The package reports two `MIX` kernels with `taskRation: "0:1"` and no
@@ -354,9 +421,11 @@ metadata together.
 - The forced 32-block control improves the real B1 mean in one same-device
   sequence, but its direct task is now limited by scalar work and split-K
   synchronization/reduction rather than vector arithmetic.
-- The next useful experiments are repeated 16/32 same-device sequences and a
-  reduction-focused profile. External `npu_prefetch` can warm L2, but cannot
-  replace the kernel's per-core GM-to-UB double buffering.
+- Below KV1024, the safe 32-core request falls back to 16 actual blocks.
+- The 48-core control is rejected below KV1536 and did not improve KV1536.
+- The next useful experiment is a separately named pairwise synchronization
+  and reduction control. External `npu_prefetch` can warm L2, but cannot
+  replace the kernel's per-core GM-to-UB double buffering or global reduction.
 
 See [the repository custom-operator handbook](../ASCEND_CUSTOM_OPERATOR_HANDBOOK.md)
 for the full build, eager, TorchAir, profiling, and evidence workflow.

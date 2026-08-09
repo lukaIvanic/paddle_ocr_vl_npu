@@ -15,6 +15,7 @@ INPUT_LAYOUT = "BNSD"
 EXPECTED_QUERY_HEADS = 16
 EXPECTED_KV_HEADS = 2
 EXPECTED_HEAD_DIM = 128
+MIN_KV_LENGTH_FOR_48_CORES = 1536
 
 
 @torch.library.custom_op(PYTORCH_OP_NAME, mutates_args=())
@@ -154,6 +155,15 @@ def gqa_incre_flash_attention_aiv(
         raise ValueError(
             "vector_core_count must be in [16, 48]; this kernel assigns one "
             "AIV work item to each GQA query head"
+        )
+    if (
+        vector_core_count == 48
+        and int(key.shape[2]) < MIN_KV_LENGTH_FOR_48_CORES
+    ):
+        raise ValueError(
+            "vector_core_count=48 requires KV length >= "
+            f"{MIN_KV_LENGTH_FOR_48_CORES}; the existing three-way split-K "
+            "kernel stalls when a partition is shorter than 512 tokens"
         )
     return _gqa_incre_flash_attention_aiv(
         query, key, value, atten_mask, num_heads, num_key_value_heads,

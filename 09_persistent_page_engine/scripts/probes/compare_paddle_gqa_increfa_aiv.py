@@ -19,6 +19,7 @@ import torch
 from paddleocr_vl.model.compile_utils import import_torchair
 from paddleocr_vl.model.gqa_increfa_aiv import (
     GE_OP_NAME,
+    MIN_KV_LENGTH_FOR_48_CORES,
     PYTORCH_OP_NAME,
     gqa_incre_flash_attention_aiv,
     register_gqa_increfa_aiv_converter,
@@ -134,6 +135,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     if args.experimental_split_k48_control and args.vector_core_count != 48:
         parser.error(
             "--experimental-split-k48-control requires --vector-core-count 48"
+        )
+    if (
+        args.experimental_split_k48_control
+        and args.kv_length < MIN_KV_LENGTH_FOR_48_CORES
+    ):
+        parser.error(
+            "--experimental-split-k48-control requires --kv-length >= "
+            f"{MIN_KV_LENGTH_FOR_48_CORES}; shorter three-way partitions "
+            "stall the existing split-K kernel"
         )
     if args.warmup < 0 or args.blocks <= 0 or args.repeats_per_block <= 0:
         parser.error("invalid timing counts")

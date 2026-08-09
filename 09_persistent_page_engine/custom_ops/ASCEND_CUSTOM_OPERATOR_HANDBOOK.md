@@ -1156,7 +1156,74 @@ is the partial-softmax/output combine and its `SyncAll`, followed by repeated
 same-device 16/32 sequences. Do not expect an external L2 prefetch call to
 remove a UB-local reduction or synchronization limit.
 
-## 22. Repository references
+## 22. Treat a pipeline counter as active work, not task latency
+
+The forced 32-block GQA control is the clearest example. In a matched physical
+NPU6 real-decoder profile, three steps produced 54 attention tasks per lane:
+
+| KV1024 lane | Blocks | Task | AIV total | Vector | Scalar | MTE2 | MTE3 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Current | 16 | 16.21 us | 14.85 us | 11.25 us | 4.65 us | 5.31 us | 0.12 us |
+| Split-K | 32 | 13.38 us | 12.20 us | 6.03 us | 4.87 us | 3.25 us | 0.38 us |
+
+The vector field falls by 46.36%, but task duration falls by 17.46%. Pipeline
+counters overlap and describe active issue time on one pipeline. They do not
+include every dependency or wait, and they must not be added to estimate task
+duration.
+
+Read the source around the measured path. The all-vector split-K kernel does
+all of the following after its main vector math:
+
+1. writes partial output and log-sum-exp state to GM workspace;
+2. executes a global `SyncAll()` across every launched block;
+3. returns the non-reducer blocks only after that barrier;
+4. loads every partial on the reducer blocks;
+5. recomputes stable log-sum-exp weights with max, subtract, exponential, add,
+   and logarithm operations separated by vector barriers;
+6. scales and reduces the D128 partial outputs, casts, and copies the result.
+
+This is why “vector is 6 us” does not mean “the kernel should take 6 us.” The
+13.38 us task also includes scalar/control work, MTE transfers, pipeline
+dependencies, global synchronization and imbalance, the reduction, and about
+1.18 us between reported AIV time and task completion.
+
+Use an equal-work control when possible. One 16-block KV512 task and one
+32-block KV1024 task each give every worker 512 KV tokens. The bounded direct
+profiles measured 19.38 us and 22.63 us respectively. Their vector lanes were
+nearly identical at 6.25 and 6.18 us; the extra 3.25 us is the cost of more
+blocks plus split workspace/synchronization/combine in that direct context.
+Inside the hot compiled graph, better scheduling/cache context lets the
+32-block task beat the 16-block KV1024 task, but the combine still consumes
+about half of the potential vector saving.
+
+For the next control, prefer a separately named pairwise producer/reducer
+package. On supported A2 products, Huawei documents `IBSet`/`IBWait` for a core
+to signal and wait on a specific inter-core dependency. That may avoid waiting
+for all 32 blocks when each query head only depends on its paired producer.
+Treat it as a hypothesis until correctness, deadlock safety, actual topology,
+and task timing are measured.
+
+Retained evidence: [lower-KV and bottleneck experiment](../../tmp/09_persistent_page_engine/gqa_split_k32_lower_kv_eeac988/README.md).
+
+## 23. Do not force sub-minimum split-K partitions
+
+The host tiler's partition floor is a safety contract, not only a performance
+heuristic. The 48-block control lowered the floor and forced three KV1024
+partitions of about 342/341/341 tokens. Its first device task did not complete;
+the runtime reported a three-minute synchronization timeout.
+
+The same package completed correctly at KV1536, where every partition was 512
+tokens, and the profiler proved 48 AIV blocks with zero AIC execution. It was
+still a loss: direct task time increased from 24.79 us at 32 blocks to 33.68 us
+at 48 blocks, while the real B1 ABBA throughput changed by only +0.09%.
+
+Fail closed after such a result. The graph wrapper and direct probe now reject
+48 cores below KV1536. Do not leave a convenient command that can relaunch a
+known-stalling topology.
+
+Retained evidence: [forced 48-core experiment](../../tmp/09_persistent_page_engine/gqa_split_k48_eeac988/README.md).
+
+## 24. Repository references
 
 - [Current separate MHA AIV operator](paddle_mha_increfa_aiv/README.md)
 - [Reproducible package builder](paddle_mha_increfa_aiv/build.sh)
@@ -1173,8 +1240,10 @@ remove a UB-local reduction or synchronization limit.
 - [Two-AIV-block GQA experiment](../../tmp/09_persistent_page_engine/gqa_grouped_two_block_994dc8f/README.md)
 - [Four-AIV-block GQA experiment](../../tmp/09_persistent_page_engine/gqa_grouped_four_block_ca152b5/README.md)
 - [Forced 32-AIV-block split-K experiment](../../tmp/09_persistent_page_engine/gqa_split_k32_8a1041f/README.md)
+- [Lower-KV and split-K bottleneck experiment](../../tmp/09_persistent_page_engine/gqa_split_k32_lower_kv_eeac988/README.md)
+- [Forced 48-AIV-block split-K experiment](../../tmp/09_persistent_page_engine/gqa_split_k48_eeac988/README.md)
 
-## 23. Official references
+## 25. Official references
 
 Verified while writing this handbook on 2026-08-09. Recheck them when changing
 CANN or torch-npu versions.
@@ -1184,6 +1253,7 @@ CANN or torch-npu versions.
 - [Huawei IncreFlashAttention design](https://gitee.com/ascend/cann-ops-adv/blob/master/docs/common/IFA%E7%AE%97%E5%AD%90%E8%AE%BE%E8%AE%A1%E4%BB%8B%E7%BB%8D.md)
 - [AscendC kernel task types](https://www.hiascend.com/document/detail/en/canncommercial/850/API/ascendcopapi/atlasascendc_api_07_0218.html)
 - [AscendC `SyncAll`](https://www.hiascend.com/document/detail/en/canncommercial/800/apiref/ascendcopapi/atlasascendc_api_07_0204.html)
+- [AscendC `IBSet`](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/900/API/ascendcopapi/atlasascendc_api_07_0202.html)
 - [AscendC `CalcTschBlockDim`](https://www.hiascend.com/document/detail/en/canncommercial/800/apiref/ascendcopapi/atlasascendc_api_07_1033.html)
 - [AscendC `InitBuffer` and double buffering](https://www.hiascend.com/document/detail/en/canncommercial/850/API/ascendcopapi/atlasascendc_api_07_0110.html)
 - [AscendC `TQue` buffer limits](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/900/API/ascendcopapi/atlasascendc_api_07_0137.html)
