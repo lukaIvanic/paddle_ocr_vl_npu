@@ -6,6 +6,16 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_
 -        gOuter_ = nNumOfQInOneGroup_;
 +        groupSplitSize_ = nNumOfQInOneGroup_;
 +        gOuter_ = 1U;
+@@ -2367,6 +2367,3 @@ ge::graphStatus IFATiling::SplitUnbalanced() {
+-    if (IsFlashDecode(coreNum_, perfMode_)) {
+-        OP_LOGI(ifaContext_->opName, "Enable flashdecode.");
+-        splitKVFlag_ = true;
+-        kvSplit_++;
+-        return SplitBNS();
+-    }
++    // Experimental two-core control: keep one unsplit work item per KV group.
++    // FlashDecode would split each query head again and defeat this topology.
++    splitKVFlag_ = false;
 diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
 --- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
 +++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
