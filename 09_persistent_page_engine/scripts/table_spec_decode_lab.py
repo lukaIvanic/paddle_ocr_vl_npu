@@ -348,9 +348,11 @@ def main() -> None:
                 "table_row_ocr_e2e",
                 0.0,
             )
+            or 0.0
         )
         saved_baseline_wall_s = float(
             (target.get("timing_s") or {}).get("table_row_ocr_e2e", 0.0)
+            or 0.0
         )
         target_spec_wall_s = prefill_wall_s + spec_result.wall_s
         composed_pipeline_wall_s = draft_generation_wall_s + target_spec_wall_s
