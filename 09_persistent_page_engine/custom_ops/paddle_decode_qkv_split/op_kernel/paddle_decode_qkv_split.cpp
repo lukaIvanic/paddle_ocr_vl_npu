@@ -61,6 +61,7 @@ extern "C" __global__ __aicore__ void paddle_decode_qkv_split(
     GM_ADDR tiling)
 {
     KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_AIV_ONLY);
+    REGISTER_TILING_DEFAULT(PaddleDecodeQkvSplitTilingData);
     TPipe pipe;
     PaddleDecodeQkvSplitKernel kernel;
     kernel.Init(qkv, query, key, value, &pipe);
