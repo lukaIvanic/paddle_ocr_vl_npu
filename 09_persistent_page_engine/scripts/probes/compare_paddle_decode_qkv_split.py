@@ -99,6 +99,10 @@ def main() -> int:
             "shape": list(actual.shape),
             "exact": exact,
             "max_abs": float((actual_cpu - expected_cpu).abs().max().item()),
+            "actual_abs_max": float(actual_cpu.abs().max().item()),
+            "actual_nonzero_count": int(torch.count_nonzero(actual_cpu).item()),
+            "actual_first_8": actual_cpu.flatten()[:8].tolist(),
+            "expected_first_8": expected_cpu.flatten()[:8].tolist(),
         }
         all_exact = all_exact and exact
 
