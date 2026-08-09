@@ -21,60 +21,83 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
 }
 
 namespace ge {
-static ge::graphStatus InferShape(gert::InferShapeContext* context)
+static ge::graphStatus SetOutputShape(
+    gert::InferShapeContext* context,
+    int64_t heads)
 {
-    gert::Shape* query = context->GetOutputShape(0);
-    gert::Shape* key = context->GetOutputShape(1);
-    gert::Shape* value = context->GetOutputShape(2);
-    if (query == nullptr || key == nullptr || value == nullptr) {
+    gert::Shape* output = context->GetOutputShape(0);
+    if (output == nullptr) {
         return GRAPH_FAILED;
     }
-    query->SetDimNum(4);
-    query->SetDim(0, 1);
-    query->SetDim(1, 16);
-    query->SetDim(2, 1);
-    query->SetDim(3, 128);
-    key->SetDimNum(4);
-    key->SetDim(0, 1);
-    key->SetDim(1, 2);
-    key->SetDim(2, 1);
-    key->SetDim(3, 128);
-    value->SetDimNum(4);
-    value->SetDim(0, 1);
-    value->SetDim(1, 2);
-    value->SetDim(2, 1);
-    value->SetDim(3, 128);
+    output->SetDimNum(4);
+    output->SetDim(0, 1);
+    output->SetDim(1, heads);
+    output->SetDim(2, 1);
+    output->SetDim(3, 128);
     return GRAPH_SUCCESS;
+}
+
+static ge::graphStatus InferQueryShape(gert::InferShapeContext* context)
+{
+    return SetOutputShape(context, 16);
+}
+
+static ge::graphStatus InferKvShape(gert::InferShapeContext* context)
+{
+    return SetOutputShape(context, 2);
 }
 
 static ge::graphStatus InferDataType(gert::InferDataTypeContext* context)
 {
-    const auto inputType = context->GetInputDataType(0);
-    context->SetOutputDataType(0, inputType);
-    context->SetOutputDataType(1, inputType);
-    context->SetOutputDataType(2, inputType);
+    context->SetOutputDataType(0, context->GetInputDataType(0));
     return GRAPH_SUCCESS;
 }
 }
 
 namespace ops {
-class PaddleDecodeQkvSplitV2 : public OpDef {
+class PaddleDecodeQuerySliceV1 : public OpDef {
 public:
-    explicit PaddleDecodeQkvSplitV2(const char* name) : OpDef(name)
+    explicit PaddleDecodeQuerySliceV1(const char* name) : OpDef(name)
     {
         this->Input("qkv").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
         this->Output("query").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Output("key").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Output("value").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->SetInferShape(ge::InferShape).SetInferDataType(ge::InferDataType);
+        this->SetInferShape(ge::InferQueryShape).SetInferDataType(ge::InferDataType);
         this->AICore().SetTiling(optiling::TilingFunc);
         this->AICore().AddConfig("ascend910b");
     }
 };
 
-OP_ADD(PaddleDecodeQkvSplitV2);
+class PaddleDecodeKeySliceV1 : public OpDef {
+public:
+    explicit PaddleDecodeKeySliceV1(const char* name) : OpDef(name)
+    {
+        this->Input("qkv").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
+        this->Output("key").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
+        this->SetInferShape(ge::InferKvShape).SetInferDataType(ge::InferDataType);
+        this->AICore().SetTiling(optiling::TilingFunc);
+        this->AICore().AddConfig("ascend910b");
+    }
+};
+
+class PaddleDecodeValueSliceV1 : public OpDef {
+public:
+    explicit PaddleDecodeValueSliceV1(const char* name) : OpDef(name)
+    {
+        this->Input("qkv").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
+        this->Output("value").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
+        this->SetInferShape(ge::InferKvShape).SetInferDataType(ge::InferDataType);
+        this->AICore().SetTiling(optiling::TilingFunc);
+        this->AICore().AddConfig("ascend910b");
+    }
+};
+
+OP_ADD(PaddleDecodeQuerySliceV1);
+OP_ADD(PaddleDecodeKeySliceV1);
+OP_ADD(PaddleDecodeValueSliceV1);
 }
