@@ -77,6 +77,8 @@ at::Tensor paddle_mha_incre_flash_attention_aiv_eager(
     at::TensorList value_tensors = value;
     const c10::optional<at::Tensor> no_tensor = c10::nullopt;
     const c10::OptionalArrayRef<c10::SymInt> no_sequence_lengths = c10::nullopt;
+    int64_t num_key_value_heads = 0;
+    int64_t block_size = 0;
     char input_layout[kLayoutCapacity] = {};
     std::strncpy(input_layout, "BNSD", kLayoutCapacity - 1);
 
@@ -100,8 +102,8 @@ at::Tensor paddle_mha_incre_flash_attention_aiv_eager(
         num_heads,
         scale_value,
         input_layout,
-        0,
-        0,
+        num_key_value_heads,
+        block_size,
         inner_precise,
         output);
     return output;
