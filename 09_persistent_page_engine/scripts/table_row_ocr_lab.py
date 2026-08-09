@@ -401,7 +401,11 @@ def prepare_strategy_inputs(
     elif row_strategies:
         proposals = {proposal.name: proposal for proposal in analyze(row_image)}
         if "adaptive_cutfit_32_header_snapped" in row_strategies:
-            adaptive = adaptive_cutfit_snapped_proposal(row_image, max_rows=32)
+            adaptive = adaptive_cutfit_snapped_proposal(
+                row_image,
+                max_rows=32,
+                detector_proposals=proposals,
+            )
             proposals["adaptive_cutfit_32_header_snapped"] = SplitProposal(
                 name="adaptive_cutfit_32_header_snapped",
                 boundaries=adaptive.boundaries,

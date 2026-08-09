@@ -1059,14 +1059,17 @@ def adaptive_cutfit_snapped_proposal(
     image: Image.Image,
     *,
     max_rows: int = 32,
+    detector_proposals: dict[str, SplitProposal] | None = None,
 ) -> SplitProposal:
     """Search U1..U32 and select the best safe header-aware cut layout.
 
-    Every U is evaluated explicitly.  The search considers both existing safe
-    detector boundaries and header-weighted uniform layouts passed through the
-    reviewed snap routine.  A candidate is infeasible if a cut still crosses
-    ink, a band is too short for the measured character scale, or the first
-    band cuts before the estimated header plus one character-height of context.
+    Every U is considered explicitly.  Values above the image-derived context
+    cap are rejected without spending time on a cut layout.  Feasible values
+    first try existing safe detector boundaries; the reviewed snap routine is
+    used only when that pool cannot form a valid complete layout.  A candidate
+    is infeasible if a cut still crosses ink, a band is too short for the
+    measured character scale, or the first band cuts before the estimated
+    header plus one character-height of context.
 
     Row count is capped by a context budget: the first band reserves about two
     detected visual rows and every later band reserves about three.  This keeps
@@ -1075,7 +1078,11 @@ def adaptive_cutfit_snapped_proposal(
     """
 
     max_rows = max(1, min(int(max_rows), image.height))
-    proposals = {proposal.name: proposal for proposal in analyze(image)}
+    proposals = (
+        detector_proposals
+        if detector_proposals is not None
+        else {proposal.name: proposal for proposal in analyze(image)}
+    )
     selected = proposals["selected"]
     candidate_sources = ("ruled", "whitespace", "row_edge", "hybrid")
     source_rows = {
@@ -1145,6 +1152,14 @@ def adaptive_cutfit_snapped_proposal(
     feasible: list[tuple[float, SplitProposal, dict[str, object]]] = []
 
     for rows in range(1, max_rows + 1):
+        if rows > context_cap:
+            trials.append({
+                "rows": rows,
+                "context_ok": False,
+                "feasible": False,
+                "rejection": "context_cap",
+            })
+            continue
         if rows == 1:
             weights = (1.0,)
         else:
@@ -1158,40 +1173,60 @@ def adaptive_cutfit_snapped_proposal(
             weights = (
                 round(max(1.50, min(3.0, required_weight)), 3),
             )
-        candidates: list[tuple[SplitProposal, float, str]] = []
+        scored_candidates: list[
+            tuple[float, SplitProposal, dict[str, object]]
+        ] = []
         for first_weight in weights:
             nominal = _header_weighted_uniform_split(
                 image.height,
                 rows,
                 first_band_weight=first_weight,
             )
-            snapped = _snap_boundaries_from_ink(
-                ink_mask,
-                nominal,
-                feature_cache=feature_cache,
-            )
-            candidates.append((snapped, first_weight, "header_uniform_snapped"))
             grouped = _group_near_targets(
                 safe_union,
                 nominal.boundaries,
                 name=f"safe_union_u{rows}_w{first_weight:.3f}",
             )
             if grouped is not None:
-                candidates.append((grouped, first_weight, "safe_union_grouped"))
-
-        scored_candidates: list[tuple[float, SplitProposal, dict[str, object]]] = []
-        for candidate, first_weight, source_mode in candidates:
-            metrics = _cutfit_candidate_metrics(
-                candidate,
-                ink_mask,
-                feature_cache,
-                character_height=character_height,
-                first_band_weight=first_weight,
-                header_guard_y=header_guard_y,
-            )
-            metrics["source_mode"] = source_mode
-            metrics["first_band_weight"] = first_weight
-            scored_candidates.append((float(metrics["fit_cost"]), candidate, metrics))
+                grouped_metrics = _cutfit_candidate_metrics(
+                    grouped,
+                    ink_mask,
+                    feature_cache,
+                    character_height=character_height,
+                    first_band_weight=first_weight,
+                    header_guard_y=header_guard_y,
+                )
+                grouped_metrics["source_mode"] = "safe_union_grouped"
+                grouped_metrics["first_band_weight"] = first_weight
+                scored_candidates.append(
+                    (float(grouped_metrics["fit_cost"]), grouped, grouped_metrics)
+                )
+                grouped_is_valid = (
+                    int(grouped_metrics["crossings"]) == 0
+                    and int(grouped_metrics["short_bands"]) == 0
+                    and bool(grouped_metrics["header_ok"])
+                )
+            else:
+                grouped_is_valid = False
+            if not grouped_is_valid:
+                snapped = _snap_boundaries_from_ink(
+                    ink_mask,
+                    nominal,
+                    feature_cache=feature_cache,
+                )
+                snapped_metrics = _cutfit_candidate_metrics(
+                    snapped,
+                    ink_mask,
+                    feature_cache,
+                    character_height=character_height,
+                    first_band_weight=first_weight,
+                    header_guard_y=header_guard_y,
+                )
+                snapped_metrics["source_mode"] = "header_uniform_snapped"
+                snapped_metrics["first_band_weight"] = first_weight
+                scored_candidates.append(
+                    (float(snapped_metrics["fit_cost"]), snapped, snapped_metrics)
+                )
         best_cost, best_candidate, best_metrics = min(
             scored_candidates,
             key=lambda item: (
@@ -1199,10 +1234,8 @@ def adaptive_cutfit_snapped_proposal(
                 item[2]["source_mode"] != "safe_union_grouped",
             ),
         )
-        context_ok = rows <= context_cap
         candidate_feasible = (
-            context_ok
-            and int(best_metrics["crossings"]) == 0
+            int(best_metrics["crossings"]) == 0
             and int(best_metrics["short_bands"]) == 0
             and bool(best_metrics["header_ok"])
         )
@@ -1210,7 +1243,7 @@ def adaptive_cutfit_snapped_proposal(
         selection_score = best_cost + max(0.0, parallel_gap)
         trial = {
             "rows": rows,
-            "context_ok": context_ok,
+            "context_ok": True,
             "feasible": candidate_feasible,
             "selection_score": selection_score,
             **best_metrics,
