@@ -46,6 +46,16 @@ DEFAULT_CASES = (
 )
 
 
+def tokenizer_token_id(tokenizer: Any, token: str) -> int:
+    if hasattr(tokenizer, "token_to_id"):
+        value = tokenizer.token_to_id(token)
+    else:
+        value = tokenizer.convert_tokens_to_ids(token)
+    if value is None:
+        raise ValueError(f"tokenizer does not contain {token!r}")
+    return int(value)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--targets", type=Path, default=DEFAULT_TARGETS)
@@ -326,12 +336,10 @@ def main() -> None:
     recognizer = build_recognizer(args)
     eos_token_id = int(recognizer.model.config.eos_token_id)
     cell_tokens = {
-        int(recognizer.tokenizer.convert_tokens_to_ids(token))
+        tokenizer_token_id(recognizer.tokenizer, token)
         for token in ("<fcel>", "<ecel>", "<lcel>", "<ucel>", "<xcel>")
     }
-    newline_token = int(
-        recognizer.tokenizer.convert_tokens_to_ids("<nl>")
-    )
+    newline_token = tokenizer_token_id(recognizer.tokenizer, "<nl>")
     results = []
     for case_index, case in enumerate(cases, start=1):
         request_id = str(case["request_id"])
