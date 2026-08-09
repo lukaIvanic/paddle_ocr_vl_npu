@@ -13,6 +13,7 @@ import torch
 from ..model.text_spec_verify import TextSpecVerifyRuntime
 from ..model.token_selection import (
     TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
     TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
     TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
     select_token_ids,
@@ -518,6 +519,7 @@ class TableSpeculativeDecodeRuntime:
             raise ValueError("table speculative decode currently requires B1")
         if recognizer.token_selection not in (
             TOKEN_SELECTION_GREEDY,
+            TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
             TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
             TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
         ):
@@ -629,16 +631,21 @@ class TableSpeculativeDecodeRuntime:
             rope_deltas,
             *flat_cache,
         )
+        policy_mask = torch.tensor(
+            [
+                self.recognizer.token_selection
+                == TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY
+                or int(current_token) in self.recognizer.table_cell_token_ids
+            ],
+            device=logits.device,
+            dtype=torch.bool,
+        )
         sampled = select_token_ids(
             logits[:, -1, :].float(),
             mode=self.recognizer.token_selection,
             preferred_token_id=self.recognizer.math_open_token_id,
             alternate_preferred_token_id=self.recognizer.math_slash_token_id,
-            policy_mask=torch.tensor(
-                [int(current_token) in self.recognizer.table_cell_token_ids],
-                device=logits.device,
-                dtype=torch.bool,
-            ),
+            policy_mask=policy_mask,
             legacy_policy_mask=torch.ones(
                 (1,), device=logits.device, dtype=torch.bool
             ),

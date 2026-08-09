@@ -39,7 +39,11 @@ from .text_decode import (
     prepare_decode_optimization_modules,
     resolve_decode_optimization,
 )
-from .token_selection import TOKEN_SELECTION_GREEDY, select_token_ids
+from .token_selection import (
+    TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
+    select_token_ids,
+)
 from utils.timing import synchronize
 
 if TYPE_CHECKING:
@@ -362,12 +366,17 @@ class TextSpecVerifyStage(nn.Module):
         cell_start_mask = torch.zeros_like(input_ids, dtype=torch.bool)
         for token_id in self.cell_start_token_ids:
             cell_start_mask |= input_ids == int(token_id)
+        policy_mask = (
+            torch.ones_like(input_ids, dtype=torch.bool)
+            if self.token_selection == TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY
+            else cell_start_mask
+        )
         return select_token_ids(
             logits,
             mode=self.token_selection,
             preferred_token_id=self.preferred_token_id,
             alternate_preferred_token_id=self.alternate_preferred_token_id,
-            policy_mask=cell_start_mask,
+            policy_mask=policy_mask,
             legacy_policy_mask=torch.ones_like(input_ids, dtype=torch.bool),
         )
 

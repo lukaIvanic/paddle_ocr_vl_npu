@@ -92,8 +92,8 @@ def parse_args() -> argparse.Namespace:
         default="greedy",
         help=(
             "Experimental live-logit token-ID selection. "
-            "Non-greedy modes are currently generation-only and are rejected "
-            "by speculative verification."
+            "Speculative verification supports only policies explicitly "
+            "accepted by TableSpeculativeDecodeRuntime."
         ),
     )
     parser.add_argument("--min-pixels", type=int, default=28224)
