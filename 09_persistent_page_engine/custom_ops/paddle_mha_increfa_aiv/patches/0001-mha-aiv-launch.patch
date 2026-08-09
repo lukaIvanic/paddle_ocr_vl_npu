@@ -1,0 +1,28 @@
+diff --git a/attention/paddle_mha_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h b/attention/paddle_mha_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
+--- a/attention/paddle_mha_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
++++ b/attention/paddle_mha_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
+@@ -223,5 +223,7 @@ inline __aicore__ void incre_flash_attention_FIAS_arch32(
+ #if (__CCE_AICORE__ > 200)
+     KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_MIX_AIC_1_2);
+ #endif
+-
++    KERNEL_TASK_TYPE(QF16_KVF16_OUTF16_ANTIPERCHANNEL_FLASHDECODING_VALL_TILING,
++                     KERNEL_TYPE_MIX_AIV_1_0);
++
+ #if (ORIG_DTYPE_QUERY == DT_FLOAT16) && (ORIG_DTYPE_ATTENTION_OUT == DT_FLOAT16) && (ORIG_DTYPE_KEY == DT_FLOAT16)
+diff --git a/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -3493,7 +3493,10 @@ ge::graphStatus IFATiling::CalcNumBlocks()
+             }
+         }
+     }
+-    ifaContext_->numBlocks = ascendcPlatform.CalcTschBlockDim(aivNum, aicNum, aivNum); // 暂时与当前代码一致
+-    OP_LOGI(ifaContext_->opName, "IFA block dim: %u aiv Num: %u aic Num: %u.", ifaContext_->numBlocks, aivNum, aicNum);
++    // The separate MHA operator compiles BMM_ALL_BY_VEC with no cube task.
++    // CalcTschBlockDim therefore receives zero AIC cores for that mode.
++    const uint32_t launchAicNum = (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) ? 0U : aicNum;
++    ifaContext_->numBlocks = ascendcPlatform.CalcTschBlockDim(aivNum, launchAicNum, aivNum);
++    OP_LOGI(ifaContext_->opName, "IFA block dim: %u aiv Num: %u launch aic Num: %u.", ifaContext_->numBlocks, aivNum, launchAicNum);
+     return ge::GRAPH_SUCCESS;
+ }
