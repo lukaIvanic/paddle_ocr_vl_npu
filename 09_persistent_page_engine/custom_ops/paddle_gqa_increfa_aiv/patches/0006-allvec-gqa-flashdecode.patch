@@ -16,6 +16,9 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_
 diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
 --- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
 +++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+@@ -567,1 +567,1 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::UpdateInnerLoopCond()
+-        if (tmpBlockIdx >= batchSize * kvHeadNum * splitKVNum) {
++        if (tmpBlockIdx >= batchSize * qHeadNum * splitKVNum) {
 @@ -1043,48 +1043,49 @@ IncreFlashAttentionAttenAllVecNew<IFAT>::ComputeScaleValue(LocalTensor<T> &lseM
                                                             LocalTensor<T> &lseExpUb, LocalTensor<T> &lseLocal)
  {
