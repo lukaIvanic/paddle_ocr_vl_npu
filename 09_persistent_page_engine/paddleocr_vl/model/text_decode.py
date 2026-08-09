@@ -21,6 +21,10 @@ from .compile_utils import (
     torch_npu_version_label,
     torchair_version_label,
 )
+from .decode_token_embedding import (
+    decode_token_embedding,
+    register_decode_token_embedding_converter,
+)
 from .config import PaddleOCRTextConfig
 from .gqa_increfa_aiv import (
     gqa_incre_flash_attention_aiv,
@@ -64,6 +68,7 @@ class DecodeOptimizationConfig:
     vector_add_rms_norm: bool = False
     gqa_aiv_vector_core_count: int = 0
     super_kernel_scope: bool = False
+    ascendc_token_embedding: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -120,6 +125,7 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rotary="npu_apply",
         add_rms_norm=True,
         super_kernel_scope=True,
+        ascendc_token_embedding=True,
     ),
     "combined_apply_pse_sentinel": DecodeOptimizationConfig(
         name="combined_apply_pse_sentinel",
@@ -1536,7 +1542,14 @@ class TextDecodeStage(torch.nn.Module):
     ) -> torch.Tensor:
         key_caches = flat_cache_tensors[: self.num_layers]
         value_caches = flat_cache_tensors[self.num_layers :]
-        inputs_embeds = self.model.model.embed_tokens(input_ids)
+        inputs_embeds = (
+            decode_token_embedding(
+                self.model.model.embed_tokens.weight,
+                input_ids,
+            )
+            if self.optimization.ascendc_token_embedding
+            else self.model.model.embed_tokens(input_ids)
+        )
         hidden_states = run_text_decode_transformer(
             self.model.model,
             inputs_embeds=inputs_embeds,
@@ -1604,7 +1617,12 @@ def decode_source_hash() -> str:
     digest = hashlib.sha1()
     # Decode owns its graph, while the shared text layer methods it calls are
     # defined by the prefill stage.
-    for name in ("text_prefill.py", "text_decode.py", "gqa_increfa_aiv.py"):
+    for name in (
+        "text_prefill.py",
+        "text_decode.py",
+        "gqa_increfa_aiv.py",
+        "decode_token_embedding.py",
+    ):
         path = here / name
         digest.update(name.encode("utf-8"))
         digest.update(short_file_hash(path).encode("utf-8"))
@@ -1707,6 +1725,7 @@ def compile_text_decode_stage(
                 optimization.gqa_aiv_vector_core_count
             ),
             "super_kernel_scope": optimization.super_kernel_scope,
+            "ascendc_token_embedding": optimization.ascendc_token_embedding,
         },
     }
     if backend_name == "raw_eager":
@@ -1720,6 +1739,8 @@ def compile_text_decode_stage(
         torchair, CompilerConfig = import_torchair()
         if optimization.attention == "gqa_aiv":
             register_gqa_increfa_aiv_converter()
+        if optimization.ascendc_token_embedding:
+            register_decode_token_embedding_converter()
         shape_cache_dir = torchair_cache_dir_for_shape(
             cache_root,
             batch_size=batch_size,
