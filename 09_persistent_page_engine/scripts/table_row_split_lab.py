@@ -539,12 +539,7 @@ def _snap_boundary_feature(ink_mask: np.ndarray, y: int) -> dict[str, float | st
     }
 
 
-def snap_uniform_boundaries(
-    image: Image.Image,
-    proposal: SplitProposal,
-) -> SplitProposal:
-    """Move uniform cuts to nearby rules or low-ink separator rows."""
-
+def _otsu_ink_mask(image: Image.Image) -> np.ndarray:
     gray = np.asarray(image.convert("L"))
     _threshold, binary = cv2.threshold(
         gray,
@@ -552,7 +547,26 @@ def snap_uniform_boundaries(
         255,
         cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU,
     )
-    ink_mask = binary > 0
+    return binary > 0
+
+
+def _snap_boundaries_from_ink(
+    ink_mask: np.ndarray,
+    proposal: SplitProposal,
+    *,
+    feature_cache: dict[int, dict[str, float | str]] | None = None,
+) -> SplitProposal:
+    """Move cuts using one reusable ink mask and boundary-feature cache."""
+
+    if feature_cache is None:
+        feature_cache = {}
+
+    def feature(y: int) -> dict[str, float | str]:
+        y = int(y)
+        if y not in feature_cache:
+            feature_cache[y] = _snap_boundary_feature(ink_mask, y)
+        return feature_cache[y]
+
     height, _width = ink_mask.shape
     nominal_band_height = height / max(1, len(proposal.boundaries) - 1)
     radius = max(3, min(18, int(round(nominal_band_height * 0.25))))
@@ -565,20 +579,22 @@ def snap_uniform_boundaries(
         upper = min(height - 3, old_boundary + radius)
         candidates = []
         for y in range(lower, upper + 1):
-            feature = _snap_boundary_feature(ink_mask, y)
+            candidate_feature = feature(y)
             normalized_move = abs(y - old_boundary) / max(radius, 1)
             base_score = (
-                -1.0 - float(feature["maximum_row_coverage"])
-                if feature["kind"] == "horizontal_rule"
-                else float(feature["dark_fraction"])
+                -1.0 - float(candidate_feature["maximum_row_coverage"])
+                if candidate_feature["kind"] == "horizontal_rule"
+                else float(candidate_feature["dark_fraction"])
             )
             score = base_score + 0.012 * normalized_move * normalized_move
-            candidates.append((score, abs(y - old_boundary), y, feature))
+            candidates.append(
+                (score, abs(y - old_boundary), y, candidate_feature)
+            )
 
-        old_feature = _snap_boundary_feature(ink_mask, old_boundary)
+        old_feature = feature(old_boundary)
         if not candidates:
             new_boundary = max(snapped[-1] + 1, min(height - 1, old_boundary))
-            new_feature = _snap_boundary_feature(ink_mask, new_boundary)
+            new_feature = feature(new_boundary)
         else:
             best = min(candidates, key=lambda item: (item[0], item[1]))
             old_base_score = (
@@ -626,6 +642,15 @@ def snap_uniform_boundaries(
         "boundary_details": details,
     }
     return SplitProposal(f"{proposal.name}_snapped", tuple(snapped), diagnostics)
+
+
+def snap_uniform_boundaries(
+    image: Image.Image,
+    proposal: SplitProposal,
+) -> SplitProposal:
+    """Move uniform cuts to nearby rules or low-ink separator rows."""
+
+    return _snap_boundaries_from_ink(_otsu_ink_mask(image), proposal)
 
 
 def select_split(
@@ -791,6 +816,435 @@ def uniform_eight_proposals(image: Image.Image) -> tuple[SplitProposal, SplitPro
     """Compatibility wrapper for the established eight-band strategy."""
 
     return uniform_proposals(image, rows=8)
+
+
+def _header_weighted_uniform_split(
+    height: int,
+    rows: int,
+    *,
+    first_band_weight: float,
+) -> SplitProposal:
+    """Create U bands while reserving extra vertical budget for the header."""
+
+    rows = max(1, min(int(rows), int(height)))
+    if rows == 1:
+        boundaries = (0, int(height))
+    else:
+        first_band_weight = max(1.0, float(first_band_weight))
+        total_weight = first_band_weight + rows - 1
+        cumulative = [0.0, first_band_weight]
+        cumulative.extend(
+            first_band_weight + index for index in range(1, rows)
+        )
+        raw = [round(value * height / total_weight) for value in cumulative]
+        boundaries_list = [0]
+        for index, value in enumerate(raw[1:-1], start=1):
+            remaining = rows - index
+            lower = boundaries_list[-1] + 1
+            upper = height - remaining
+            boundaries_list.append(max(lower, min(upper, int(value))))
+        boundaries_list.append(int(height))
+        boundaries = tuple(boundaries_list)
+    return SplitProposal(
+        name=f"header_weighted_u{rows}_w{first_band_weight:.3f}",
+        boundaries=boundaries,
+        diagnostics={
+            "requested_rows": rows,
+            "first_band_weight": float(first_band_weight),
+        },
+    )
+
+
+def _group_near_targets(
+    proposal: SplitProposal,
+    targets: tuple[int, ...],
+    *,
+    name: str,
+) -> SplitProposal | None:
+    """Select existing safe boundaries nearest a complete target layout."""
+
+    interior = list(int(value) for value in proposal.boundaries[1:-1])
+    target_interior = list(int(value) for value in targets[1:-1])
+    if len(interior) < len(target_interior):
+        return None
+    selected: list[int] = []
+    lower_index = 0
+    for target_index, target in enumerate(target_interior):
+        remaining = len(target_interior) - target_index - 1
+        upper_index = len(interior) - remaining - 1
+        chosen_index = min(
+            range(lower_index, upper_index + 1),
+            key=lambda index: (abs(interior[index] - target), index),
+        )
+        selected.append(interior[chosen_index])
+        lower_index = chosen_index + 1
+    return SplitProposal(
+        name=name,
+        boundaries=(proposal.boundaries[0], *selected, proposal.boundaries[-1]),
+        diagnostics={
+            "source": proposal.name,
+            "target_boundaries": list(targets),
+        },
+    )
+
+
+def _safe_detector_union(
+    image: Image.Image,
+    proposals: dict[str, SplitProposal],
+    ink_mask: np.ndarray,
+    feature_cache: dict[int, dict[str, float | str]],
+    *,
+    character_height: float,
+) -> tuple[SplitProposal, dict[str, int | float | list[int]]]:
+    """Build one snapped, ink-safe boundary pool from every row detector."""
+
+    candidate_sources = ("ruled", "whitespace", "row_edge", "hybrid")
+    cluster_distance = max(2, round(character_height * 0.55))
+    raw_candidates = sorted(
+        (int(boundary), name)
+        for name in candidate_sources
+        for boundary in proposals[name].boundaries[1:-1]
+    )
+    clusters: list[list[tuple[int, str]]] = []
+    for candidate in raw_candidates:
+        if clusters and candidate[0] - clusters[-1][-1][0] <= cluster_distance:
+            clusters[-1].append(candidate)
+        else:
+            clusters.append([candidate])
+    clustered = [
+        round(float(np.median([value for value, _source in cluster])))
+        for cluster in clusters
+    ]
+    union = SplitProposal(
+        name="adaptive_cutfit_candidate_union",
+        boundaries=(0, *clustered, image.height),
+        diagnostics={},
+    )
+    snapped = _snap_boundaries_from_ink(
+        ink_mask,
+        union,
+        feature_cache=feature_cache,
+    )
+    details = list(snapped.diagnostics.get("boundary_details", []))
+    safe_boundaries = [0]
+    removed: list[int] = []
+    for boundary, detail in zip(snapped.boundaries[1:-1], details):
+        if detail.get("new_kind") == "ink_crossing":
+            removed.append(int(boundary))
+        else:
+            safe_boundaries.append(int(boundary))
+    safe_boundaries.append(image.height)
+    safe_boundaries = list(dict.fromkeys(safe_boundaries))
+    return (
+        SplitProposal(
+            name="adaptive_cutfit_safe_union",
+            boundaries=tuple(safe_boundaries),
+            diagnostics={},
+        ),
+        {
+            "raw_candidates": len(raw_candidates),
+            "clustered_candidates": len(clustered),
+            "cluster_distance_px": cluster_distance,
+            "safe_rows": len(safe_boundaries) - 1,
+            "removed_ink_crossing_count": len(removed),
+            "removed_ink_crossing_y": removed,
+        },
+    )
+
+
+def _cutfit_candidate_metrics(
+    proposal: SplitProposal,
+    ink_mask: np.ndarray,
+    feature_cache: dict[int, dict[str, float | str]],
+    *,
+    character_height: float,
+    first_band_weight: float,
+    header_guard_y: int,
+) -> dict[str, float | int | bool | str | list[int]]:
+    """Score one complete U proposal without OCR text or ground truth."""
+
+    def feature(y: int) -> dict[str, float | str]:
+        y = int(y)
+        if y not in feature_cache:
+            feature_cache[y] = _snap_boundary_feature(ink_mask, y)
+        return feature_cache[y]
+
+    rows = len(proposal.boundaries) - 1
+    boundary_features = [
+        feature(boundary) for boundary in proposal.boundaries[1:-1]
+    ]
+    crossings = sum(item["kind"] == "ink_crossing" for item in boundary_features)
+    rules = sum(item["kind"] == "horizontal_rule" for item in boundary_features)
+    gaps = sum(item["kind"] == "blank_gap" for item in boundary_features)
+    band_heights = [
+        int(right - left)
+        for left, right in zip(proposal.boundaries, proposal.boundaries[1:])
+    ]
+    minimum_band_px = max(8, round(character_height * 2.20))
+    short_bands = sum(height < minimum_band_px for height in band_heights)
+    header_ok = rows == 1 or int(proposal.boundaries[1]) >= int(header_guard_y)
+
+    weights = np.asarray(
+        [first_band_weight, *([1.0] * max(0, rows - 1))],
+        dtype=np.float64,
+    )
+    expected = weights / max(float(weights.sum()), 1.0) * proposal.boundaries[-1]
+    spacing_error = float(
+        np.mean(
+            np.abs(np.asarray(band_heights, dtype=np.float64) - expected)
+            / np.maximum(expected, 1.0)
+        )
+    )
+    safe_dark_costs = [
+        0.0
+        if item["kind"] == "horizontal_rule"
+        else min(1.0, float(item["dark_fraction"]) / 0.012)
+        for item in boundary_features
+        if item["kind"] != "ink_crossing"
+    ]
+    mean_safe_dark_cost = (
+        float(np.mean(safe_dark_costs)) if safe_dark_costs else 0.0
+    )
+    snap_details = list(proposal.diagnostics.get("boundary_details", []))
+    mean_normalized_snap_move = (
+        float(
+            np.mean(
+                [
+                    abs(float(item["delta_px"]))
+                    / max(1.0, float(item["search_radius_px"]))
+                    for item in snap_details
+                ]
+            )
+        )
+        if snap_details
+        else 0.0
+    )
+    fit_cost = (
+        100.0 * crossings
+        + 20.0 * short_bands
+        + (30.0 if not header_ok else 0.0)
+        + 0.65 * spacing_error
+        + 0.08 * mean_safe_dark_cost
+        + 0.04 * mean_normalized_snap_move
+    )
+    return {
+        "rows": rows,
+        "source": proposal.name,
+        "crossings": crossings,
+        "rules": rules,
+        "blank_gaps": gaps,
+        "short_bands": short_bands,
+        "minimum_band_px": minimum_band_px,
+        "minimum_observed_band_px": min(band_heights),
+        "first_band_px": band_heights[0],
+        "header_ok": header_ok,
+        "spacing_error": spacing_error,
+        "mean_safe_dark_cost": mean_safe_dark_cost,
+        "mean_normalized_snap_move": mean_normalized_snap_move,
+        "fit_cost": fit_cost,
+        "boundaries": list(proposal.boundaries),
+    }
+
+
+def adaptive_cutfit_snapped_proposal(
+    image: Image.Image,
+    *,
+    max_rows: int = 32,
+) -> SplitProposal:
+    """Search U1..U32 and select the best safe header-aware cut layout.
+
+    Every U is evaluated explicitly.  The search considers both existing safe
+    detector boundaries and header-weighted uniform layouts passed through the
+    reviewed snap routine.  A candidate is infeasible if a cut still crosses
+    ink, a band is too short for the measured character scale, or the first
+    band cuts before the estimated header plus one character-height of context.
+
+    Row count is capped by a context budget: the first band reserves about two
+    detected visual rows and every later band reserves about three.  This keeps
+    the search from turning a visually safe separator after every logical row
+    into a structurally context-starved OCR request.
+    """
+
+    max_rows = max(1, min(int(max_rows), image.height))
+    proposals = {proposal.name: proposal for proposal in analyze(image)}
+    selected = proposals["selected"]
+    candidate_sources = ("ruled", "whitespace", "row_edge", "hybrid")
+    source_rows = {
+        name: max(1, len(proposals[name].boundaries) - 1)
+        for name in candidate_sources
+    }
+    source_rows["selected"] = max(1, len(selected.boundaries) - 1)
+    character_heights = [
+        float(proposals[name].diagnostics["character_height"])
+        for name in candidate_sources
+        if "character_height" in proposals[name].diagnostics
+    ]
+    character_height = (
+        float(np.median(character_heights)) if character_heights else 4.0
+    )
+
+    selection_reason = str(selected.diagnostics.get("selection_reason", ""))
+    selected_weight = 3 if selection_reason in {
+        "consistent_explicit_rules",
+        "colored_or_filled_rows",
+        "edge_whitespace_agreement",
+    } else 2
+    row_votes = (
+        [source_rows["selected"]] * selected_weight
+        + [source_rows["hybrid"]] * 2
+        + [source_rows["whitespace"]] * 2
+        + [source_rows["ruled"]]
+        + [source_rows["row_edge"]]
+    )
+    robust_rows = int(np.median(row_votes))
+    visual_rows = max(robust_rows, round(0.55 * source_rows["row_edge"]))
+    header_context_rows = 2
+    body_context_rows = 3
+    context_cap = (
+        1
+        if visual_rows <= header_context_rows
+        else 1 + (visual_rows - header_context_rows) // body_context_rows
+    )
+    context_cap = max(1, min(max_rows, int(context_cap)))
+
+    selected_header_end = (
+        int(selected.boundaries[1]) if len(selected.boundaries) > 2 else 0
+    )
+    header_extra_px = max(4, round(character_height * 1.10))
+    header_guard_y = (
+        0
+        if context_cap == 1
+        else min(
+            round(image.height * 0.38),
+            max(
+                round(character_height * 2.50),
+                selected_header_end + header_extra_px,
+            ),
+        )
+    )
+
+    ink_mask = _otsu_ink_mask(image)
+    feature_cache: dict[int, dict[str, float | str]] = {}
+    safe_union, union_diagnostics = _safe_detector_union(
+        image,
+        proposals,
+        ink_mask,
+        feature_cache,
+        character_height=character_height,
+    )
+    trials: list[dict[str, object]] = []
+    feasible: list[tuple[float, SplitProposal, dict[str, object]]] = []
+
+    for rows in range(1, max_rows + 1):
+        if rows == 1:
+            weights = (1.0,)
+        else:
+            required_weight = (
+                header_guard_y * (rows - 1)
+                / max(1.0, image.height - header_guard_y)
+            )
+            weights = tuple(sorted({
+                1.25,
+                1.50,
+                1.75,
+                2.00,
+                round(max(1.0, min(3.0, required_weight)), 3),
+            }))
+        candidates: list[tuple[SplitProposal, float, str]] = []
+        for first_weight in weights:
+            nominal = _header_weighted_uniform_split(
+                image.height,
+                rows,
+                first_band_weight=first_weight,
+            )
+            snapped = _snap_boundaries_from_ink(
+                ink_mask,
+                nominal,
+                feature_cache=feature_cache,
+            )
+            candidates.append((snapped, first_weight, "header_uniform_snapped"))
+            grouped = _group_near_targets(
+                safe_union,
+                nominal.boundaries,
+                name=f"safe_union_u{rows}_w{first_weight:.3f}",
+            )
+            if grouped is not None:
+                candidates.append((grouped, first_weight, "safe_union_grouped"))
+
+        scored_candidates: list[tuple[float, SplitProposal, dict[str, object]]] = []
+        for candidate, first_weight, source_mode in candidates:
+            metrics = _cutfit_candidate_metrics(
+                candidate,
+                ink_mask,
+                feature_cache,
+                character_height=character_height,
+                first_band_weight=first_weight,
+                header_guard_y=header_guard_y,
+            )
+            metrics["source_mode"] = source_mode
+            metrics["first_band_weight"] = first_weight
+            scored_candidates.append((float(metrics["fit_cost"]), candidate, metrics))
+        best_cost, best_candidate, best_metrics = min(
+            scored_candidates,
+            key=lambda item: (
+                item[0],
+                item[2]["source_mode"] != "safe_union_grouped",
+            ),
+        )
+        context_ok = rows <= context_cap
+        candidate_feasible = (
+            context_ok
+            and int(best_metrics["crossings"]) == 0
+            and int(best_metrics["short_bands"]) == 0
+            and bool(best_metrics["header_ok"])
+        )
+        parallel_gap = (context_cap - rows) / max(1, context_cap - 1)
+        selection_score = best_cost + max(0.0, parallel_gap)
+        trial = {
+            "rows": rows,
+            "context_ok": context_ok,
+            "feasible": candidate_feasible,
+            "selection_score": selection_score,
+            **best_metrics,
+        }
+        trials.append(trial)
+        if candidate_feasible:
+            feasible.append((selection_score, best_candidate, trial))
+
+    selection_score, chosen, chosen_trial = min(
+        feasible,
+        key=lambda item: (item[0], -int(item[2]["rows"])),
+    )
+    diagnostics = {
+        "algorithm": "u1_u32_header_aware_cutfit_search",
+        "selected_source": selected.diagnostics.get("selected_source"),
+        "selection_reason": selection_reason,
+        "detector_rows": source_rows,
+        "robust_rows": robust_rows,
+        "visual_rows": visual_rows,
+        "header_context_rows": header_context_rows,
+        "body_context_rows": body_context_rows,
+        "context_cap": context_cap,
+        "character_height_px": character_height,
+        "selected_header_end_y": selected_header_end,
+        "header_extra_px": header_extra_px,
+        "header_guard_y": header_guard_y,
+        "selected_rows": int(chosen_trial["rows"]),
+        "selected_fit_cost": float(chosen_trial["fit_cost"]),
+        "selected_selection_score": float(selection_score),
+        "selected_source_mode": chosen_trial["source_mode"],
+        "selected_first_band_weight": chosen_trial["first_band_weight"],
+        "selected_first_band_px": chosen_trial["first_band_px"],
+        "selected_minimum_band_px": chosen_trial["minimum_observed_band_px"],
+        "selected_crossings": chosen_trial["crossings"],
+        "safe_union": union_diagnostics,
+        "u_trials": trials,
+    }
+    return SplitProposal(
+        name=f"adaptive_cutfit_{max_rows}_header_snapped",
+        boundaries=tuple(int(value) for value in chosen.boundaries),
+        diagnostics=diagnostics,
+    )
 
 
 def adaptive_max_snapped_proposal(

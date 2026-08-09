@@ -34,6 +34,7 @@ from paddleocr_vl.serving.types import RecognitionRequest
 from pipeline.layout_output import normalize_recognition_text
 from table_row_split_lab import (
     SplitProposal,
+    adaptive_cutfit_snapped_proposal,
     adaptive_max_snapped_proposal,
     analyze,
     load_crop,
@@ -63,6 +64,7 @@ SUPPORTED_STRATEGIES = DEFAULT_STRATEGIES + (
     "uniform_8_snapped",
     "uniform_16",
     "uniform_16_snapped",
+    "adaptive_cutfit_32_header_snapped",
     "adaptive_max_32_snapped",
     "whole",
 )
@@ -398,6 +400,13 @@ def prepare_strategy_inputs(
             )
     elif row_strategies:
         proposals = {proposal.name: proposal for proposal in analyze(row_image)}
+        if "adaptive_cutfit_32_header_snapped" in row_strategies:
+            adaptive = adaptive_cutfit_snapped_proposal(row_image, max_rows=32)
+            proposals["adaptive_cutfit_32_header_snapped"] = SplitProposal(
+                name="adaptive_cutfit_32_header_snapped",
+                boundaries=adaptive.boundaries,
+                diagnostics=adaptive.diagnostics,
+            )
         if "adaptive_max_32_snapped" in row_strategies:
             adaptive = adaptive_max_snapped_proposal(row_image, max_rows=32)
             proposals["adaptive_max_32_snapped"] = SplitProposal(
