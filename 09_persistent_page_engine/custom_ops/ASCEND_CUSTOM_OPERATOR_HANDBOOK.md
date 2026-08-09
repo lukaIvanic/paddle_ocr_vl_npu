@@ -1307,3 +1307,83 @@ CANN or torch-npu versions.
 - [AscendC `TQue` buffer limits](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/900/API/ascendcopapi/atlasascendc_api_07_0137.html)
 - [AscendC `msobjdump`](https://www.hiascend.com/document/detail/en/canncommercial/850/opdevg/Ascendcopdevg/atlas_ascendc_10_0103.html)
 - [Open `ops-transformer` IncreFlashAttention V4 API](https://gitcode.com/cann/ops-transformer/blob/master/attention/incre_flash_attention/docs/aclnnIncreFlashAttentionV4.md)
+
+## 27. Start a full B1 decoder mega-kernel from the measured graph
+
+The next optimization target is one complete PaddleOCR-VL text-decoder token
+step. Freeze its contract before changing the implementation:
+
+- B1 and one query token;
+- hidden size 1024, intermediate size 3072, 18 decoder layers;
+- 16 query heads, 2 KV heads, and head dimension 128;
+- FP16 activations and weights, with linear weights retained in FRACTAL_NZ;
+- static KV capacity 1024 for the first performance target;
+- token embedding, all decoder layers, in-place KV updates, final RMSNorm, and
+  the 103424-entry LM head inside the model boundary;
+- greedy token selection in the measured serving boundary.
+
+The retained connected-kernel profile on physical Ascend 910B2 measured
+1.2381 ms per device step, or 807.7 token steps/s. MatMul used 764.21 us across
+91 calls and IncreFlashAttention used 322.94 us across 18 calls in the
+profiled run. Together they accounted for 77.6% of profiled device work. Host
+contribution was only 9.4 us. Therefore, a mega-kernel must preserve Cube
+MatMul and FRACTAL_NZ. Reimplementing the decoder as an all-vector kernel is not
+a viable path.
+
+Retained evidence: [full B1 decoder profile](../../tmp/09_persistent_page_engine/text_decode_lab/full_head_b1_profile_910b_8a04e95/full_head_b1_profile_report.md).
+
+Use two implementation controls:
+
+1. **TorchAir SuperKernel binary fusion.** Mark the exact full-decoder scope,
+   require `strict-scope-check=abort`, and prove one scheduled task with
+   profiling. This is the shortest production-shaped route because it keeps
+   the already-tuned MatMul, normalization, rotary, scatter, and attention
+   subkernels while removing graph task launches and operator-header gaps.
+2. **Source-level mixed AIC/AIV kernel.** Keep this as the fallback for an
+   operator that cannot participate in binary fusion or for an internal GM
+   boundary that still dominates. AscendC supports at most four registered
+   MatMul objects in one program. A full source decoder must therefore reuse a
+   MatMul object with new static tiling, or fuse at a coarser layer/FFN level;
+   it cannot register one object for every linear projection.
+
+The first strict SuperKernel probes established a useful failure ladder:
+
+- `Range` was the first unsupported TBE/TIK node. Hoisting the fixed
+  `[0, cache_length)` KV positions into persistent stage state removed it from
+  the token graph.
+- `GatherV2` was next. It is the one-token vocabulary embedding lookup.
+  CANN 9.0 includes an AscendC `GatherV3` source and a 910B config entry, but
+  the installed TorchAir/GE operator store exposes neither a generated
+  AscendIR wrapper nor a usable FP16 kernel registration. The graph therefore
+  gives the lookup an explicit PyTorch identity and lowers it to the independent
+  B1/S1/H1024 `PaddleDecodeTokenEmbedding` AscendC operator.
+
+These failures are compatibility inventory, not reasons to relax the scope.
+Do not change strict checking to `bypass`: that can make a run appear successful
+while silently leaving several tasks outside the requested mega-kernel.
+
+The installed CANN 9.0 SuperKernel compiler also explains the prefetch model.
+Its defaults enable early-start v2 and per-function code preloading. The
+compiler chooses a mixed AIC/AIV launch from the maximum resource demand of its
+subkernels. `feed-sync-all=1` supplies balanced synchronization when a subkernel
+uses `SyncAll` with fewer blocks than the enclosing SuperKernel. Validate this
+safe mode first. Only then compare synchronization, stream-fusion, and preload
+controls with numerical parity and same-device latency distributions.
+
+The acceptance gate is stronger than a successful compile:
+
+1. strict scope compilation succeeds;
+2. multi-step cache mutation and logits match the connected-kernel reference;
+3. real greedy generation matches;
+4. the profiler shows one full-decoder scheduled task and the expected mixed
+   AIC/AIV work;
+5. clean B1/KV1024 TorchAir throughput is not below the 700--800 token/s
+   connected-kernel target;
+6. the result survives reverse-order, same-device comparisons.
+
+Relevant official references:
+
+- [AscendC SuperKernel development](https://www.hiascend.com/document/detail/en/canncommercial/850/opdevg/Ascendcopdevg/atlas_ascendc_10_00029.html)
+- [TorchAir in-graph SuperKernel scope and strict checking](https://www.hiascend.com/document/detail/zh/Pytorch/730/modthirdparty/torchairuseguide/torchair_00050.html)
+- [AscendC `SetNextTaskStart`](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/900/API/ascendcopapi/atlasascendc_api_07_00087.html)
+- [AscendC `REGIST_MATMUL_OBJ`](https://www.hiascend.com/document/detail/en/canncommercial/800/apiref/ascendcopapi/atlasascendc_api_07_0628.html)

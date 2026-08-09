@@ -1,0 +1,27 @@
+[
+  {
+    "op": "PaddleDecodeTokenEmbedding",
+    "input_desc": [
+      {
+        "name": "weight",
+        "param_type": "required",
+        "format": ["ND"],
+        "type": ["fp16"]
+      },
+      {
+        "name": "input_ids",
+        "param_type": "required",
+        "format": ["ND"],
+        "type": ["int64"]
+      }
+    ],
+    "output_desc": [
+      {
+        "name": "embedding",
+        "param_type": "required",
+        "format": ["ND"],
+        "type": ["fp16"]
+      }
+    ]
+  }
+]

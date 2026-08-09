@@ -1,4 +1,4 @@
-"""One-token embedding lookup backed by the installed AscendC GatherV3 op."""
+"""One-token embedding lookup backed by an independent AscendC operator."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from .compile_utils import import_torchair
 
 
-GE_OP_NAME = "GatherV3"
+GE_OP_NAME = "PaddleDecodeTokenEmbedding"
 PYTORCH_OP_NAME = "paddleocr_vl::decode_token_embedding"
 
 
@@ -20,7 +20,7 @@ def _decode_token_embedding(
     weight: torch.Tensor,
     input_ids: torch.Tensor,
 ) -> torch.Tensor:
-    """Eager reference; TorchAir lowers this identity to AscendC GatherV3."""
+    """Eager reference; TorchAir lowers this identity to the custom GE op."""
     return F.embedding(input_ids, weight)
 
 
@@ -40,7 +40,7 @@ _CONVERTER_REGISTERED = False
 
 
 def register_decode_token_embedding_converter() -> None:
-    """Lower the graph identity to CANN's installed AscendC GatherV3."""
+    """Lower the graph identity to the independent AscendC embedding op."""
     global _CONVERTER_REGISTERED
     if _CONVERTER_REGISTERED:
         return
@@ -50,15 +50,8 @@ def register_decode_token_embedding_converter() -> None:
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
     )
     ge_module = importlib.import_module(f"{torchair.__name__}.ge")
-    ge_apis = importlib.import_module(
-        f"{torchair.__name__}._ge_concrete_graph.ge_apis"
-    )
     register_converter = converter_module.register_fx_node_ge_converter
-    ge_const = ge_module.Const
-    compat_ir = importlib.import_module(
-        f"{torchair.__name__}._ge_concrete_graph.compat_ir"
-    )
-    ge_op = compat_ir.ge_op
+    ge_custom_op = ge_module.custom_op
     op = torch.ops.paddleocr_vl.decode_token_embedding.default
 
     @register_converter(op)
@@ -68,23 +61,14 @@ def register_decode_token_embedding_converter() -> None:
         meta_outputs: Any = None,
     ) -> Any:
         del meta_outputs
-        result = ge_op(
-            op_type=GE_OP_NAME,
+        return ge_custom_op(
+            GE_OP_NAME,
             inputs={
-                "x": weight,
-                "indices": input_ids,
-                "axis": ge_const([0]),
+                "weight": weight,
+                "input_ids": input_ids,
             },
-            outputs=["y"],
+            outputs=["embedding"],
         )
-        # GatherV3 is present in the 910B OPP but absent from this TorchAir
-        # release's generated AscendIR APIs.  The low-level builder therefore
-        # cannot populate its output descriptor.  This op is deliberately
-        # specialized to the Paddle B1/S1/H1024 decode contract.
-        result.desc.dtype = weight.desc.dtype
-        result.desc.layout = "ND"
-        result.desc.shape.dim.extend([1, 1, 1024])
-        return ge_apis.Reshape(result, [1, 1, 1024])
 
     _CONVERTER_REGISTERED = True
 
