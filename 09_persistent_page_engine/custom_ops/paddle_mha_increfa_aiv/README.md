@@ -40,15 +40,17 @@ explicit MHA cache-expansion experiment.
 ## Source provenance
 
 The build uses the recovered official `ops-transformer` v9.0.0 source at commit
-`afe72144f9f2ac8441929035795db88a111b30c5`. It creates a fingerprinted,
-detached build worktree under `.runtime_cache/`, renames the upstream source
+`afe72144f9f2ac8441929035795db88a111b30c5`. It creates a detached build
+worktree under `.runtime_cache/`, renames the upstream source
 directory to the new operator, disables the stock registration surfaces in
-that build source, overlays the distinct host/kernel entries, and compiles one
-tiling key.
+that build source, renames every tiling-data registration into the new operator
+namespace, overlays the distinct host/kernel entries, and compiles one tiling
+key.
 
-The recovered source checkout remains unchanged. The fingerprinted build tree
-and its CMake output persist so an identical rebuild is incremental instead of
-recompiling from scratch.
+The recovered source checkout remains unchanged. The active build worktree and
+its CMake output persist across overlay revisions. New tracked patches apply
+incrementally, so a source fix does not rebuild downloaded third-party
+dependencies from scratch.
 
 The reused all-vector implementation still needs AIV-to-AIV `SyncAll()`. The
 kernel therefore uses CANN's hard-sync `MIX_AIV_1_0` envelope. Package gates

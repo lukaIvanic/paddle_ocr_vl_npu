@@ -7,7 +7,10 @@ set -euo pipefail
 PROJECT_ROOT="$(git rev-parse --show-toplevel)"
 CUSTOM_ROOT="$PROJECT_ROOT/09_persistent_page_engine/custom_ops/paddle_mha_increfa_aiv"
 OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay"
-PATCH_PATH="$CUSTOM_ROOT/patches/0001-mha-aiv-launch.patch"
+PATCH_PATHS=(
+    "$CUSTOM_ROOT/patches/0001-mha-aiv-launch.patch"
+    "$CUSTOM_ROOT/patches/0002-separate-tiling-data-registration.patch"
+)
 SOURCE_ROOT="${INCREFA_SOURCE_ROOT:-$PROJECT_ROOT/.runtime_cache/increfa_aiv_source}"
 EXPECTED_SOURCE_COMMIT="afe72144f9f2ac8441929035795db88a111b30c5"
 UPSTREAM_OP_REL="attention/incre_flash_attention"
@@ -47,14 +50,20 @@ if [[ "$(sha256sum "$SOURCE_ROOT/$HOST_TILER_REL" | awk '{print $1}')" != "$EXPE
     exit 2
 fi
 
-OVERLAY_SHA="$({
-    find "$OVERLAY_ROOT" -type f -print0
-    printf '%s\0' "$PATCH_PATH"
-} | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
+OVERLAY_SHA="$(find "$OVERLAY_ROOT" "$CUSTOM_ROOT/patches" -type f -print0 \
+    | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
 BUILD_SOURCE_PARENT="$PROJECT_ROOT/.runtime_cache/paddle_mha_increfa_aiv/sources"
-BUILD_SOURCE_ROOT="$BUILD_SOURCE_PARENT/source_${OVERLAY_SHA:0:16}"
+ACTIVE_SOURCE_FILE="$BUILD_SOURCE_PARENT/active_source_path"
+if [[ -n "${PADDLE_MHA_BUILD_SOURCE_ROOT:-}" ]]; then
+    BUILD_SOURCE_ROOT="$PADDLE_MHA_BUILD_SOURCE_ROOT"
+elif [[ -s "$ACTIVE_SOURCE_FILE" ]]; then
+    BUILD_SOURCE_ROOT="$(<"$ACTIVE_SOURCE_FILE")"
+else
+    BUILD_SOURCE_ROOT="$BUILD_SOURCE_PARENT/source_${EXPECTED_SOURCE_COMMIT:0:16}"
+fi
 SOURCE_MANIFEST="$BUILD_SOURCE_ROOT/.paddle_mha_increfa_aiv_source_manifest.sha256"
 mkdir -p "$BUILD_SOURCE_PARENT" "$RUN_ROOT"
+printf '%s\n' "$BUILD_SOURCE_ROOT" > "$ACTIVE_SOURCE_FILE"
 
 if [[ ! -e "$BUILD_SOURCE_ROOT/.git" ]]; then
     git -C "$SOURCE_ROOT" worktree add --detach \
@@ -76,23 +85,6 @@ if [[ ! -e "$BUILD_SOURCE_ROOT/.git" ]]; then
     mv "$OP_ROOT/op_kernel/incre_flash_attention_apt.cpp" \
         "$OP_ROOT/op_kernel/incre_flash_attention_apt.cpp.upstream_disabled"
 
-    cp -p "$OVERLAY_ROOT/CMakeLists.txt" "$OP_ROOT/CMakeLists.txt"
-    cp -p "$OVERLAY_ROOT/op_host/CMakeLists.txt" "$OP_ROOT/op_host/CMakeLists.txt"
-    cp -p "$OVERLAY_ROOT/op_host/"*.cpp "$OP_ROOT/op_host/"
-    cp -p "$OVERLAY_ROOT/op_kernel/"*.cpp "$OP_ROOT/op_kernel/"
-    git -C "$BUILD_SOURCE_ROOT" apply --check "$PATCH_PATH"
-    git -C "$BUILD_SOURCE_ROOT" apply "$PATCH_PATH"
-
-    {
-        find \
-            "$OP_ROOT/CMakeLists.txt" \
-            "$OP_ROOT/op_host" \
-            "$OP_ROOT/op_kernel" \
-            -type f \
-            ! -path '*/op_api_upstream_disabled/*' \
-            ! -name '*.upstream_disabled' \
-            -print0
-    } | sort -z | xargs -0 sha256sum > "$SOURCE_MANIFEST"
 else
     if [[ ! -s "$SOURCE_MANIFEST" ]]; then
         echo "ERROR: cached separate-op source lacks its source manifest" >&2
@@ -100,6 +92,30 @@ else
     fi
     sha256sum -c "$SOURCE_MANIFEST"
 fi
+
+OP_ROOT="$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
+cp -p "$OVERLAY_ROOT/CMakeLists.txt" "$OP_ROOT/CMakeLists.txt"
+cp -p "$OVERLAY_ROOT/op_host/CMakeLists.txt" "$OP_ROOT/op_host/CMakeLists.txt"
+cp -p "$OVERLAY_ROOT/op_host/"*.cpp "$OP_ROOT/op_host/"
+cp -p "$OVERLAY_ROOT/op_kernel/"*.cpp "$OP_ROOT/op_kernel/"
+for patch_path in "${PATCH_PATHS[@]}"; do
+    if git -C "$BUILD_SOURCE_ROOT" apply --unidiff-zero --reverse --check "$patch_path" 2>/dev/null; then
+        continue
+    fi
+    git -C "$BUILD_SOURCE_ROOT" apply --unidiff-zero --check "$patch_path"
+    git -C "$BUILD_SOURCE_ROOT" apply --unidiff-zero "$patch_path"
+done
+{
+    find \
+        "$OP_ROOT/CMakeLists.txt" \
+        "$OP_ROOT/op_host" \
+        "$OP_ROOT/op_kernel" \
+        -type f \
+        ! -path '*/op_api_upstream_disabled/*' \
+        ! -name '*.upstream_disabled' \
+        -print0
+} | sort -z | xargs -0 sha256sum > "$SOURCE_MANIFEST"
+printf '%s\n' "$OVERLAY_SHA" > "$BUILD_SOURCE_ROOT/.paddle_mha_increfa_aiv_overlay_sha"
 
 cd "$BUILD_SOURCE_ROOT"
 PYTHONPATH="$PYTHON_SITE" \
