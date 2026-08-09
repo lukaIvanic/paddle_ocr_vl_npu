@@ -59,6 +59,19 @@ From the project checkout:
 bash 09_persistent_page_engine/custom_ops/increfa_aiv_only/build_aiv_only_package.sh
 ```
 
+To isolate multi-core launch behavior, build a separate one-AIV diagnostic
+package:
+
+```sh
+AIV_LAUNCH_BLOCKS=1 \
+RUN_ID=aiv_only_one_core_<commit> \
+bash 09_persistent_page_engine/custom_ops/increfa_aiv_only/build_aiv_only_package.sh
+```
+
+This applies `0002-diagnostic-one-aiv-launch.patch` after the AIV-only patch and
+uses vendor name `paddle_increfa_aiv_only_1core`. It is a fault-isolation build,
+not a throughput candidate.
+
 The runner sources `npu-setup`, preserves any existing source-tree build
 directory, applies the tracked patch temporarily, builds one fixed-key package,
 copies the package and metadata under `.runtime_cache/`, and restores the

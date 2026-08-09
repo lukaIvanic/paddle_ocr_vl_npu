@@ -9,13 +9,22 @@ set -euo pipefail
 PROJECT_ROOT="$(git rev-parse --show-toplevel)"
 SOURCE_ROOT="${INCREFA_SOURCE_ROOT:-$PROJECT_ROOT/.runtime_cache/increfa_aiv_source}"
 PATCH_PATH="$PROJECT_ROOT/09_persistent_page_engine/custom_ops/increfa_aiv_only/patches/0001-fp16-mha-flashdecode-aiv-only.patch"
+ONE_CORE_PATCH_PATH="$PROJECT_ROOT/09_persistent_page_engine/custom_ops/increfa_aiv_only/patches/0002-diagnostic-one-aiv-launch.patch"
 EXPECTED_SOURCE_COMMIT="afe72144f9f2ac8441929035795db88a111b30c5"
 ENTRY_REL="attention/incre_flash_attention/op_kernel/incre_flash_attention_arch32.h"
 EXPECTED_ENTRY_SHA256="20cb2397d84cf5d5386ebc09b6aa79eacfd3f32d956309c1b4e7f3e2690ef63b"
 HOST_TILER_REL="attention/incre_flash_attention/op_host/incre_flash_attention_tiling.cpp"
 EXPECTED_HOST_TILER_SHA256="c84dbe37632ed428c080918ce4ca124d43640fbcfd05e69c212b9453f2b46a74"
 TILING_KEY="11000000000100000"
-VENDOR_NAME="paddle_increfa_aiv_only"
+AIV_LAUNCH_BLOCKS="${AIV_LAUNCH_BLOCKS:-auto}"
+if [[ "$AIV_LAUNCH_BLOCKS" == "auto" ]]; then
+    VENDOR_NAME="paddle_increfa_aiv_only"
+elif [[ "$AIV_LAUNCH_BLOCKS" == "1" ]]; then
+    VENDOR_NAME="paddle_increfa_aiv_only_1core"
+else
+    echo "ERROR: AIV_LAUNCH_BLOCKS must be auto or 1" >&2
+    exit 2
+fi
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 RUN_ROOT="$PROJECT_ROOT/.runtime_cache/increfa_aiv_only_builds/$RUN_ID"
 PRESERVE_ROOT="$PROJECT_ROOT/.runtime_cache/increfa_build_preserved/$RUN_ID"
@@ -24,8 +33,13 @@ PYTHON_SITE="/usr/local/python3.12.13/lib/python3.12/site-packages"
 ENTRY_PATH="$SOURCE_ROOT/$ENTRY_REL"
 HOST_TILER_PATH="$SOURCE_ROOT/$HOST_TILER_REL"
 PATCH_APPLIED=0
+ONE_CORE_PATCH_APPLIED=0
 
 restore_source() {
+    if [[ "$ONE_CORE_PATCH_APPLIED" == "1" ]]; then
+        git -C "$SOURCE_ROOT" apply -R "$ONE_CORE_PATCH_PATH"
+        ONE_CORE_PATCH_APPLIED=0
+    fi
     if [[ "$PATCH_APPLIED" == "1" ]]; then
         git -C "$SOURCE_ROOT" apply -R "$PATCH_PATH"
         PATCH_APPLIED=0
@@ -65,6 +79,11 @@ done
 
 git -C "$SOURCE_ROOT" apply "$PATCH_PATH"
 PATCH_APPLIED=1
+if [[ "$AIV_LAUNCH_BLOCKS" == "1" ]]; then
+    git -C "$SOURCE_ROOT" apply --check "$ONE_CORE_PATCH_PATH"
+    git -C "$SOURCE_ROOT" apply "$ONE_CORE_PATCH_PATH"
+    ONE_CORE_PATCH_APPLIED=1
+fi
 
 cd "$SOURCE_ROOT"
 PYTHONPATH="$PYTHON_SITE" \
