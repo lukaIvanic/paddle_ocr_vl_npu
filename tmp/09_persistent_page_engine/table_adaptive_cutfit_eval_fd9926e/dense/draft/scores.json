@@ -1,0 +1,1141 @@
+{
+  "table_count": 143,
+  "table_page_count": 125,
+  "sample_TEDS": 0.8045372145613342,
+  "sample_TEDS_structure_only": 0.8593636502320664,
+  "page_TEDS": 0.7983829154109651,
+  "page_TEDS_structure_only": 0.8503534779061678,
+  "teds_timeout_s": 120.0,
+  "teds_timeout_count": 0,
+  "teds_error_count": 0,
+  "per_page_TEDS": {
+    "page-f9583127-1277-4424-be9d-35430e0aedd6.png": 0.953968253968254,
+    "page-d0b2bb59-ce8e-4a1c-9ba1-a805606a477f.png": 0.6937453717119031,
+    "page-c7792da7-4167-4f5c-a7ca-ec0f8833f83b.png": 0.6863606151916443,
+    "page-3c690b07-30d7-4e77-bf20-012f0080fb1d.png": 0.41985298624602585,
+    "page-31fb2a53-5b32-40f6-9db1-52b357f3201f.png": 0.9160431283276111,
+    "page-91b20bf2-3ad5-41f4-b739-4cc4b18ab1eb.png": 0.3343872508268734,
+    "page-b527edec-3363-4d38-a390-2f3a307f2392.png": 0.891659350307287,
+    "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png": 0.6051231523412995,
+    "page-d5a3ea83-5427-4f90-a157-7b39b784b26e.png": 0.8437001594896332,
+    "page-472c26e2-6bc2-4c05-9889-05132c87a8a9.png": 0.7371576745931883,
+    "page-d5e0cd38-ac0f-422c-b6d5-c8f001720491.png": 0.9849639680873524,
+    "page-d29fe4d2-832a-4ad6-ac80-dc01cf8b0e16.png": 0.4975635034454221,
+    "page-74961b9a-ef4c-42d8-a95f-406e6b84cf63.png": 0.6810586744673023,
+    "page-8792f466-c570-468c-86dc-402a510e9bb7.png": 0.4705778072616166,
+    "page-6c29d065-b8f0-4bb0-b7c3-779f9cbab09a.png": 0.4870335493891963,
+    "page-bf3685a0-f0ea-46a7-bb99-1526da8f8077.png": 0.9631855747558227,
+    "page-e7681b54-2c4a-40a2-9abe-caebba01cefb.png": 0.8829081632653061,
+    "page-2abc2a95-d39a-48db-9b6d-f40410412694.png": 0.8099684781816683,
+    "page-2deb83b3-abe2-442c-a544-0b6a8db464f1.png": 0.721779297606358,
+    "page-232d386f-6c9d-4b50-9463-89dedce995e5.png": 0.7858355471452232,
+    "page-1955f827-fb35-4806-b3a4-463d9e0d6cc8.png": 0.49003778502569617,
+    "page-dbed9c07-e155-4ba1-92f9-a2962dc9a8f9.png": 0.4407504384221893,
+    "page-69c15957-4d6d-485c-a244-04a1a8d29d37.png": 0.7993602508602509,
+    "page-1cecd66d-3563-422a-a204-999bba0bb528.png": 0.27932916906503136,
+    "page-25cb2b2a-e44a-4043-90e1-3f7058d8b99e.png": 0.8299004026276754,
+    "page-50ffe5d2-cd27-449a-a813-d4a8c44b12ea.png": 0.7727284439655857,
+    "page-be2ebf31-5f24-4d3e-97f0-4a8df7e773b4.png": 0.8864329268292683,
+    "page-8d707810-de48-43ba-81a7-b976918e7be2.png": 0.6806571663892154,
+    "page-035cb436-c01e-41db-b40e-8977678777eb.png": 0.5924570491237158,
+    "page-49746735-505c-442d-b3f6-c55b1bf9e48b.png": 0.8007178384550301,
+    "page-9390721f-e06c-47ea-8b21-0f27c72df7b7.png": 0.935947940947941,
+    "page-5d58cdf7-6d00-4ea5-97b2-358cbc0cab21.png": 0.25658712798423,
+    "page-3ce15378-6ffd-4f3c-9473-8b897451c770.png": 0.927370568858013,
+    "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png": 0.8642694561672036,
+    "page-c7771a62-5b6b-48f0-b591-6b657d26e125.png": 0.3577709341807558,
+    "page-5cb4b2fe-c14d-450e-9b97-4b6e7c99493b.png": 0.26862182327885376,
+    "page-eff3dc3a-8d44-4c68-9c3a-55df4aaf1e36.png": 0.8907979148367424,
+    "page-9f6bc620-1983-4503-bb0f-f9c7949ccb77.png": 0.9892578125,
+    "page-213e6a57-ba81-4afb-8184-2e1cf2a7664d.png": 0.13948610862202393,
+    "page-14a6b411-9097-4eec-86da-92075868d243.png": 0.463569637909261,
+    "page-0cbdcfa9-3248-4e54-8704-2bc73e6d29e7.png": 0.6144465290806754,
+    "page-458ab820-615f-42fe-af33-3a8fb15ad691.png": 0.9896201978814997,
+    "page-b23ec9d4-e4aa-458f-8e65-c2c7f8e9dd46.png": 0.9650414937759336,
+    "page-68e347d8-6f34-431b-a2a2-549b3634dabc.png": 0.7327685048378326,
+    "page-f8c08102-a96d-4533-b3a1-dac6020513b5.png": 0.6616464479367705,
+    "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png": 0.9131422487516581,
+    "page-f3e750d8-8201-4a22-9419-9776798b7a32.png": 0.9174423316574658,
+    "page-ab4f331b-e8f3-41fb-ba6b-8da5ade54983.png": 0.6262999643756223,
+    "page-92062914-ea02-4640-8f54-24623dba4388.png": 0.9560449758708947,
+    "page-35ecd651-17dd-43e6-8a6f-8f55d6796d96.png": 0.9373850040516707,
+    "page-f5b824d0-be81-48a9-aae6-3060d11a6503.png": 0.9585692450824029,
+    "yanbaopptmerge_6b6ed54523980841c1a28a656d0295ec638cf50c991c16cafec715237c83919f.pdf_31.jpg": 1.0,
+    "yanbaopptmerge_yanbaoPPT_1020.jpg": 0.6838385982061703,
+    "yanbaor2_afad9eb86f2a04271428aa988aec7d1949713bb5a5ce5c0cf26f320650b7966a.pdf_14.jpg": 0.2779237827040508,
+    "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg": 0.9078510429557951,
+    "docstructbench_llm-raw-scihub-o.O-ijc.22994.pdf_3.jpg": 0.8473576043382447,
+    "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.03.134.pdf_6.jpg": 0.8717992807687376,
+    "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.05.085.pdf_4.jpg": 0.861319362455726,
+    "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg": 0.995061612364244,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-60403612.pdf_179.jpg": 0.9363782051282051,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-60482015.pdf_56.jpg": 1.0,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-61510621.pdf_161.jpg": 0.9892113807527577,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-61520779.pdf_76.jpg": 0.6938185427156356,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-61521384.pdf_750.jpg": 0.8211920197289968,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-61521429.pdf_358.jpg": 1.0,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-61523162.pdf_276.jpg": 0.9443956043956044,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-63677793.pdf_332.jpg": 0.7685680751173709,
+    "yanbaor2_yanbaoPPT_569.jpg": 0.7851313924896899,
+    "docstructbench_enbook-zlib-o.O-17761417.pdf_894.jpg": 0.41695218966226577,
+    "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg": 0.8246661840411841,
+    "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_8.jpg": 0.8361185714188719,
+    "docstructbench_llm-raw-scihub-o.O-j.1444-2906.2002.00466.x.pdf_4.jpg": 0.48854938282508376,
+    "docstructbench_llm-raw-scihub-o.O-j.eswa.2008.01.070.pdf_5.jpg": 0.9934595260080025,
+    "docstructbench_llm-raw-scihub-o.O-s00128-007-9171-1.pdf_3.jpg": 0.923487070114636,
+    "docstructbench_llm-raw-scihub-o.O-s003950050126.pdf_6.jpg": 0.9768204436717826,
+    "docstructbench_llm-raw-scihub-o.O-s0167-8655%2800%2900107-0.pdf_6.jpg": 0.9938762626262627,
+    "docstructbench_llm-raw-scihub-o.O-s10555-005-1578-8.pdf_5.jpg": 0.9029725436805083,
+    "docstructbench_llm-raw-scihub-o.O-s10653-010-9369-8.pdf_11.jpg": 0.9912941709453338,
+    "jiaocaineedrop_ced6f3c05e1dfefa8455fa60aacdd2d76ffd79489b631c2dbde22a74e927544b.pdf_84.jpg": 0.24907308403070827,
+    "jiaocaineedrop_jiaocai_needrop_en_2399.jpg": 0.6141640451289057,
+    "newspaper_01f020903d7bc4b3fc69f500f41eb77e_1.jpg": 0.9655172413793104,
+    "eastmoney_0022ae8eddb0de117978289e16ba7fe995dddd3f64aca9e147bb07c848c84aa6.pdf_8.jpg": 0.9862522355837864,
+    "eastmoney_2dea7cdb5a3e018ffec3c80eb4435de524f2a14bd32735b78f563adc355272ab.pdf_6.jpg": 0.9657827202737382,
+    "eastmoney_5c22c7d248262382ae63af18e9ef65bd26ffdf78c2f3af32137e0b4f92a0ba92.pdf_4.jpg": 0.9973976608187135,
+    "eastmoney_5f75d8df19ab34c706ae823d8ed54f845b6a693e31c0fae19b16cdd94c32a636.pdf_2.jpg": 0.9079457364341086,
+    "eastmoney_6be3f3cd9e5361946ee49252f12dd57fe7c73df330116d6998e2198ec79a05c9.pdf_2.jpg": 0.5970647731613938,
+    "eastmoney_6e1cdb75430fe7d7a7757754d163d1a4a8a1c2a3fca38b74a8a2e8df009f2ce0.pdf_2.jpg": 1.0,
+    "eastmoney_7f55aa1223310144165074707803522240cf20120b15f5d78fdf61eb4dcefba3.pdf_2.jpg": 0.9159166666666667,
+    "eastmoney_8b3e01e3cd92a034f45945887a5170602774a8480effda5bd791451578a93b7d.pdf_5.jpg": 0.9567901234567902,
+    "eastmoney_8e0ecdad6ea6edd7014a328fa79e4b69230c1b4f82cc031dd247c3c1c39744cf.pdf_11.jpg": 0.955470737913486,
+    "eastmoney_c1c12db90c6ecfae16a8eafa49caecfbc0e5f5654140320fe127f7c09bde96c9.pdf_1.jpg": 0.9558580946032643,
+    "eastmoney_c2abc680754ea4676c752cb3bda24323046ece560f8b23ce66b705887c9bcf9b.pdf_16.jpg": 0.9990476190476191,
+    "eastmoney_d08a4020e49029cf68b5dbf69e5ecaa40e969f918819c62579e5f4b1a357422f.pdf_3.jpg": 0.9573791348600509,
+    "eastmoney_d201644f6fbc869ea857c5d9f8ec38adc54250a94b77d826280b0d1c25d13a13.pdf_4.jpg": 0.9420138888888889,
+    "eastmoney_ea3eda50a04cf431d7412a567497c91e8cc52f72b4c5ccb554776c5c57b13e29.pdf_4.jpg": 0.9994588744588745,
+    "eastmoney_ea59610b9b1a8f0df46f7a89da1116cbf256c772e1148f26017991e28c8bca21.pdf_18.jpg": 0.9416665105795825,
+    "yanbaopptmerge_0dd24976bcc395ad595cf73b411d627e14c19ba0299bb3fa0d8108993d079545.pdf_8.jpg": 0.9710982658959537,
+    "yanbaopptmerge_2b8553b00244437fa3e502aa2d3d319ed74459a1e264a4fdd9ecc14ce46609d5.pdf_2.jpg": 0.5976911429398699,
+    "yanbaopptmerge_2f4902871606698497c53ccb18d3fec2f83d05047d883cd65bbce26bfb27bcd2.pdf_1.jpg": 0.9747474747474747,
+    "yanbaopptmerge_3f514841b9bba3e68710fde7af9562d36a424736a356ece18bb5eea86b43ada5.pdf_15.jpg": 0.9452054794520548,
+    "yanbaopptmerge_46f23989f000d2a83058955c99cdcc1220d6649f16db4f5719d356aa5ced01bc.pdf_7.jpg": 0.9876378137461881,
+    "yanbaopptmerge_7c6e8be0695a66c716176c95257a76e940f7d08d8227b37e9ee47142eca6b448.pdf_5.jpg": 0.9553452720119386,
+    "yanbaopptmerge_903cf6cd7820b5463e95c5aaab9f16134f9853cd7963567497337527e73b9bcc.pdf_7.jpg": 0.9614721596926347,
+    "yanbaopptmerge_baa6d02928efcac46ccf7dfd3859de565cfb0bea918ae0ec0eed50944a7c20b4.pdf_11.jpg": 0.9720652686366751,
+    "yanbaopptmerge_c894b375daca22d041c8a35946295d0a73d6589ad7c3d1d39d8664a2666372bf.pdf_10.jpg": 0.9993027210884353,
+    "yanbaopptmerge_e3b48594d5a2a6dc86b51244737f24867a0c1781e9f0e4fb52d96bbc6f9d95c7.pdf_3.jpg": 0.9343160792598995,
+    "scihub_AEM.01420-09.pdf_3.jpg": 0.6201514446172993,
+    "scihub_bloodadvances.2019030924.pdf_3.jpg": 0.8447619047619048,
+    "scihub_j.jallcom.2003.09.015.pdf_1.jpg": 0.9217587973581925,
+    "scihub_jai.12343.pdf_3.jpg": 0.9925862068965517,
+    "scihub_jb%2Fmvh022.pdf_1.jpg": 0.9310524758816979,
+    "scihub_jgh.13044.pdf_2.jpg": 0.9324988716585355,
+    "scihub_jneurosci.16-15-04625.1996.pdf_2.jpg": 0.710091791249686,
+    "scihub_mol.66.4.921.pdf_1.jpg": 0.8446231513584455,
+    "scihub_s00784-003-0233-4.pdf_1.jpg": 0.999545721767944,
+    "docstructbench_llm-raw-scihub-o.O-s001280000131.pdf_5.jpg": 0.3009007700370604,
+    "yanbaor2_0aa9545ccbc482a37e3b55c96897f0f24cee08bb80c7addfb0c219814af44a3b.pdf_27.jpg": 0.9045417650531287,
+    "yanbaor2_1492d25d79af850815ea449254ea62418c3c7fd582792b5191e1879671ba1219.pdf_88.jpg": 1.0,
+    "scihub_j.1528-1167.2008.01552.x.pdf_3.jpg": 0.8467489468997718,
+    "scihub_journal.pone.0166577.pdf_5.jpg": 0.9711429981749969,
+    "scihub_s00381-021-05138-3.pdf_3.jpg": 0.7068810767601549,
+    "scihub_s12237-014-9873-7.pdf_4.jpg": 0.6991044649204996,
+    "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png": 0.7976295371905424,
+    "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png": 0.8433219599452144,
+    "magazine_TheEconomist.2024.02.24_page_076.png": 0.6874686220067929
+  },
+  "per_table": [
+    {
+      "request_id": "page_000010_table_box_id_1",
+      "page_name": "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+      "TEDS": 0.953968253968254,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000178_table_box_id_1",
+      "page_name": "page-d0b2bb59-ce8e-4a1c-9ba1-a805606a477f.png",
+      "TEDS": 0.6937453717119031,
+      "TEDS_structure_only": 0.9827586206896551,
+      "error": null
+    },
+    {
+      "request_id": "page_000199_table_box_id_0",
+      "page_name": "page-c7792da7-4167-4f5c-a7ca-ec0f8833f83b.png",
+      "TEDS": 0.6863606151916443,
+      "TEDS_structure_only": 0.782608695652174,
+      "error": null
+    },
+    {
+      "request_id": "page_000203_table_box_id_3",
+      "page_name": "page-3c690b07-30d7-4e77-bf20-012f0080fb1d.png",
+      "TEDS": 0.41985298624602585,
+      "TEDS_structure_only": 0.4444444444444444,
+      "error": null
+    },
+    {
+      "request_id": "page_000207_table_box_id_1",
+      "page_name": "page-31fb2a53-5b32-40f6-9db1-52b357f3201f.png",
+      "TEDS": 0.9160431283276111,
+      "TEDS_structure_only": 0.935064935064935,
+      "error": null
+    },
+    {
+      "request_id": "page_000212_table_box_id_1",
+      "page_name": "page-91b20bf2-3ad5-41f4-b739-4cc4b18ab1eb.png",
+      "TEDS": 0.3343872508268734,
+      "TEDS_structure_only": 0.48,
+      "error": null
+    },
+    {
+      "request_id": "page_000214_table_box_id_6",
+      "page_name": "page-b527edec-3363-4d38-a390-2f3a307f2392.png",
+      "TEDS": 0.891659350307287,
+      "TEDS_structure_only": 0.9029850746268657,
+      "error": null
+    },
+    {
+      "request_id": "page_000216_table_box_id_0",
+      "page_name": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png",
+      "TEDS": 0.6051231523412995,
+      "TEDS_structure_only": 0.6864988558352403,
+      "error": null
+    },
+    {
+      "request_id": "page_000223_table_box_id_2",
+      "page_name": "page-d5a3ea83-5427-4f90-a157-7b39b784b26e.png",
+      "TEDS": 0.8437001594896332,
+      "TEDS_structure_only": 0.8461538461538461,
+      "error": null
+    },
+    {
+      "request_id": "page_000227_table_box_id_1",
+      "page_name": "page-472c26e2-6bc2-4c05-9889-05132c87a8a9.png",
+      "TEDS": 0.7371576745931883,
+      "TEDS_structure_only": 0.7961165048543689,
+      "error": null
+    },
+    {
+      "request_id": "page_000230_table_box_id_7",
+      "page_name": "page-d5e0cd38-ac0f-422c-b6d5-c8f001720491.png",
+      "TEDS": 0.9849639680873524,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000231_table_box_id_2",
+      "page_name": "page-d29fe4d2-832a-4ad6-ac80-dc01cf8b0e16.png",
+      "TEDS": 0.4975635034454221,
+      "TEDS_structure_only": 0.7272727272727273,
+      "error": null
+    },
+    {
+      "request_id": "page_000233_table_box_id_2",
+      "page_name": "page-74961b9a-ef4c-42d8-a95f-406e6b84cf63.png",
+      "TEDS": 0.6810586744673023,
+      "TEDS_structure_only": 0.7209302325581395,
+      "error": null
+    },
+    {
+      "request_id": "page_000234_table_box_id_5",
+      "page_name": "page-8792f466-c570-468c-86dc-402a510e9bb7.png",
+      "TEDS": 0.4705778072616166,
+      "TEDS_structure_only": 0.5333333333333333,
+      "error": null
+    },
+    {
+      "request_id": "page_000237_table_box_id_3",
+      "page_name": "page-6c29d065-b8f0-4bb0-b7c3-779f9cbab09a.png",
+      "TEDS": 0.4870335493891963,
+      "TEDS_structure_only": 0.576271186440678,
+      "error": null
+    },
+    {
+      "request_id": "page_000242_table_box_id_3",
+      "page_name": "page-bf3685a0-f0ea-46a7-bb99-1526da8f8077.png",
+      "TEDS": 0.9631855747558227,
+      "TEDS_structure_only": 0.9669421487603306,
+      "error": null
+    },
+    {
+      "request_id": "page_000249_table_box-gjm9bkso",
+      "page_name": "page-e7681b54-2c4a-40a2-9abe-caebba01cefb.png",
+      "TEDS": 0.8829081632653061,
+      "TEDS_structure_only": 0.9017857142857143,
+      "error": null
+    },
+    {
+      "request_id": "page_000250_table_box_id_4",
+      "page_name": "page-2abc2a95-d39a-48db-9b6d-f40410412694.png",
+      "TEDS": 0.7900598889862693,
+      "TEDS_structure_only": 0.8220858895705522,
+      "error": null
+    },
+    {
+      "request_id": "page_000250_table_box-stnne6dt",
+      "page_name": "page-2abc2a95-d39a-48db-9b6d-f40410412694.png",
+      "TEDS": 0.8298770673770673,
+      "TEDS_structure_only": 0.8671328671328671,
+      "error": null
+    },
+    {
+      "request_id": "page_000255_table_box_id_2",
+      "page_name": "page-2deb83b3-abe2-442c-a544-0b6a8db464f1.png",
+      "TEDS": 0.721779297606358,
+      "TEDS_structure_only": 0.9206349206349207,
+      "error": null
+    },
+    {
+      "request_id": "page_000259_table_box_id_1",
+      "page_name": "page-232d386f-6c9d-4b50-9463-89dedce995e5.png",
+      "TEDS": 0.7858355471452232,
+      "TEDS_structure_only": 0.8888888888888888,
+      "error": null
+    },
+    {
+      "request_id": "page_000261_table_box_id_3",
+      "page_name": "page-1955f827-fb35-4806-b3a4-463d9e0d6cc8.png",
+      "TEDS": 0.49003778502569617,
+      "TEDS_structure_only": 0.5828220858895705,
+      "error": null
+    },
+    {
+      "request_id": "page_000263_table_box_id_7",
+      "page_name": "page-dbed9c07-e155-4ba1-92f9-a2962dc9a8f9.png",
+      "TEDS": 0.4407504384221893,
+      "TEDS_structure_only": 0.72,
+      "error": null
+    },
+    {
+      "request_id": "page_000264_table_box_id_5",
+      "page_name": "page-69c15957-4d6d-485c-a244-04a1a8d29d37.png",
+      "TEDS": 0.7993602508602509,
+      "TEDS_structure_only": 0.8433333333333333,
+      "error": null
+    },
+    {
+      "request_id": "page_000267_table_box_id_1",
+      "page_name": "page-1cecd66d-3563-422a-a204-999bba0bb528.png",
+      "TEDS": 0.27932916906503136,
+      "TEDS_structure_only": 0.3875968992248062,
+      "error": null
+    },
+    {
+      "request_id": "page_000268_table_box_id_2",
+      "page_name": "page-25cb2b2a-e44a-4043-90e1-3f7058d8b99e.png",
+      "TEDS": 0.8299004026276754,
+      "TEDS_structure_only": 0.8391608391608392,
+      "error": null
+    },
+    {
+      "request_id": "page_000270_table_box_id_0",
+      "page_name": "page-50ffe5d2-cd27-449a-a813-d4a8c44b12ea.png",
+      "TEDS": 0.7727284439655857,
+      "TEDS_structure_only": 0.8121827411167513,
+      "error": null
+    },
+    {
+      "request_id": "page_000271_table_box_id_1",
+      "page_name": "page-be2ebf31-5f24-4d3e-97f0-4a8df7e773b4.png",
+      "TEDS": 0.8864329268292683,
+      "TEDS_structure_only": 0.975609756097561,
+      "error": null
+    },
+    {
+      "request_id": "page_000272_table_box_id_1",
+      "page_name": "page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+      "TEDS": 0.6806571663892154,
+      "TEDS_structure_only": 0.7392638036809815,
+      "error": null
+    },
+    {
+      "request_id": "page_000273_table_box_id_1",
+      "page_name": "page-035cb436-c01e-41db-b40e-8977678777eb.png",
+      "TEDS": 0.5924570491237158,
+      "TEDS_structure_only": 0.6507936507936508,
+      "error": null
+    },
+    {
+      "request_id": "page_000274_table_box_id_0",
+      "page_name": "page-49746735-505c-442d-b3f6-c55b1bf9e48b.png",
+      "TEDS": 0.8007178384550301,
+      "TEDS_structure_only": 0.842741935483871,
+      "error": null
+    },
+    {
+      "request_id": "page_000275_table_box_id_1",
+      "page_name": "page-9390721f-e06c-47ea-8b21-0f27c72df7b7.png",
+      "TEDS": 0.935947940947941,
+      "TEDS_structure_only": 0.9477272727272728,
+      "error": null
+    },
+    {
+      "request_id": "page_000276_table_box_id_5",
+      "page_name": "page-5d58cdf7-6d00-4ea5-97b2-358cbc0cab21.png",
+      "TEDS": 0.25658712798423,
+      "TEDS_structure_only": 0.37356321839080464,
+      "error": null
+    },
+    {
+      "request_id": "page_000277_table_box_id_1",
+      "page_name": "page-3ce15378-6ffd-4f3c-9473-8b897451c770.png",
+      "TEDS": 0.927370568858013,
+      "TEDS_structure_only": 0.9843342036553525,
+      "error": null
+    },
+    {
+      "request_id": "page_000278_table_box_id_1",
+      "page_name": "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png",
+      "TEDS": 0.8642694561672036,
+      "TEDS_structure_only": 0.9715909090909091,
+      "error": null
+    },
+    {
+      "request_id": "page_000279_table_box_id_0",
+      "page_name": "page-c7771a62-5b6b-48f0-b591-6b657d26e125.png",
+      "TEDS": 0.3810081539997372,
+      "TEDS_structure_only": 0.653061224489796,
+      "error": null
+    },
+    {
+      "request_id": "page_000279_table_box-fy04hrwa",
+      "page_name": "page-c7771a62-5b6b-48f0-b591-6b657d26e125.png",
+      "TEDS": 0.33453371436177437,
+      "TEDS_structure_only": 0.6107142857142858,
+      "error": null
+    },
+    {
+      "request_id": "page_000280_table_box_id_1",
+      "page_name": "page-5cb4b2fe-c14d-450e-9b97-4b6e7c99493b.png",
+      "TEDS": 0.26862182327885376,
+      "TEDS_structure_only": 0.44194756554307113,
+      "error": null
+    },
+    {
+      "request_id": "page_000281_table_box_id_1",
+      "page_name": "page-eff3dc3a-8d44-4c68-9c3a-55df4aaf1e36.png",
+      "TEDS": 0.8907979148367424,
+      "TEDS_structure_only": 0.9178082191780822,
+      "error": null
+    },
+    {
+      "request_id": "page_000282_table_box_id_1",
+      "page_name": "page-9f6bc620-1983-4503-bb0f-f9c7949ccb77.png",
+      "TEDS": 0.9892578125,
+      "TEDS_structure_only": 0.9947916666666666,
+      "error": null
+    },
+    {
+      "request_id": "page_000283_table_box_id_1",
+      "page_name": "page-213e6a57-ba81-4afb-8184-2e1cf2a7664d.png",
+      "TEDS": 0.13948610862202393,
+      "TEDS_structure_only": 0.1664596273291925,
+      "error": null
+    },
+    {
+      "request_id": "page_000284_table_box_id_0",
+      "page_name": "page-14a6b411-9097-4eec-86da-92075868d243.png",
+      "TEDS": 0.463569637909261,
+      "TEDS_structure_only": 0.4811320754716981,
+      "error": null
+    },
+    {
+      "request_id": "page_000285_table_box_id_1",
+      "page_name": "page-0cbdcfa9-3248-4e54-8704-2bc73e6d29e7.png",
+      "TEDS": 0.6144465290806754,
+      "TEDS_structure_only": 0.6172607879924953,
+      "error": null
+    },
+    {
+      "request_id": "page_000286_table_box_id_1",
+      "page_name": "page-458ab820-615f-42fe-af33-3a8fb15ad691.png",
+      "TEDS": 0.9896201978814997,
+      "TEDS_structure_only": 0.9960238568588469,
+      "error": null
+    },
+    {
+      "request_id": "page_000287_table_box_id_8",
+      "page_name": "page-b23ec9d4-e4aa-458f-8e65-c2c7f8e9dd46.png",
+      "TEDS": 0.9650414937759336,
+      "TEDS_structure_only": 0.979253112033195,
+      "error": null
+    },
+    {
+      "request_id": "page_000288_table_box_id_1",
+      "page_name": "page-68e347d8-6f34-431b-a2a2-549b3634dabc.png",
+      "TEDS": 0.7327685048378326,
+      "TEDS_structure_only": 0.9357142857142857,
+      "error": null
+    },
+    {
+      "request_id": "page_000289_table_box_id_4",
+      "page_name": "page-f8c08102-a96d-4533-b3a1-dac6020513b5.png",
+      "TEDS": 0.6616464479367705,
+      "TEDS_structure_only": 0.6630824372759856,
+      "error": null
+    },
+    {
+      "request_id": "page_000290_table_box_id_1",
+      "page_name": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png",
+      "TEDS": 0.9131422487516581,
+      "TEDS_structure_only": 0.9419795221843004,
+      "error": null
+    },
+    {
+      "request_id": "page_000291_table_box_id_0",
+      "page_name": "page-f3e750d8-8201-4a22-9419-9776798b7a32.png",
+      "TEDS": 0.9174423316574658,
+      "TEDS_structure_only": 0.9559014267185474,
+      "error": null
+    },
+    {
+      "request_id": "page_000292_table_box_id_1",
+      "page_name": "page-ab4f331b-e8f3-41fb-ba6b-8da5ade54983.png",
+      "TEDS": 0.6905705655705656,
+      "TEDS_structure_only": 0.8841698841698842,
+      "error": null
+    },
+    {
+      "request_id": "page_000292_table_box_id_2",
+      "page_name": "page-ab4f331b-e8f3-41fb-ba6b-8da5ade54983.png",
+      "TEDS": 0.562029363180679,
+      "TEDS_structure_only": 0.756578947368421,
+      "error": null
+    },
+    {
+      "request_id": "page_000293_table_box_id_1",
+      "page_name": "page-92062914-ea02-4640-8f54-24623dba4388.png",
+      "TEDS": 0.9560449758708947,
+      "TEDS_structure_only": 0.9671179883945842,
+      "error": null
+    },
+    {
+      "request_id": "page_000294_table_box_id_1",
+      "page_name": "page-35ecd651-17dd-43e6-8a6f-8f55d6796d96.png",
+      "TEDS": 0.9373850040516707,
+      "TEDS_structure_only": 0.9459459459459459,
+      "error": null
+    },
+    {
+      "request_id": "page_000295_table_box_id_1",
+      "page_name": "page-f5b824d0-be81-48a9-aae6-3060d11a6503.png",
+      "TEDS": 0.9585692450824029,
+      "TEDS_structure_only": 0.9644736842105264,
+      "error": null
+    },
+    {
+      "request_id": "page_000299_table_box_id_5",
+      "page_name": "yanbaopptmerge_6b6ed54523980841c1a28a656d0295ec638cf50c991c16cafec715237c83919f.pdf_31.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000307_table_2",
+      "page_name": "yanbaopptmerge_yanbaoPPT_1020.jpg",
+      "TEDS": 0.6838385982061703,
+      "TEDS_structure_only": 0.6842105263157895,
+      "error": null
+    },
+    {
+      "request_id": "page_000425_table_3",
+      "page_name": "yanbaor2_afad9eb86f2a04271428aa988aec7d1949713bb5a5ce5c0cf26f320650b7966a.pdf_14.jpg",
+      "TEDS": 0.2779237827040508,
+      "TEDS_structure_only": 0.34782608695652173,
+      "error": null
+    },
+    {
+      "request_id": "page_000446_table_3",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+      "TEDS": 0.9078510429557951,
+      "TEDS_structure_only": 0.9288025889967637,
+      "error": null
+    },
+    {
+      "request_id": "page_000451_table_7",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-ijc.22994.pdf_3.jpg",
+      "TEDS": 0.8467651195499297,
+      "TEDS_structure_only": 0.8544303797468354,
+      "error": null
+    },
+    {
+      "request_id": "page_000451_table_10",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-ijc.22994.pdf_3.jpg",
+      "TEDS": 0.8479500891265597,
+      "TEDS_structure_only": 0.8609625668449198,
+      "error": null
+    },
+    {
+      "request_id": "page_000466_table_0",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.03.134.pdf_6.jpg",
+      "TEDS": 0.8717992807687376,
+      "TEDS_structure_only": 0.8858024691358025,
+      "error": null
+    },
+    {
+      "request_id": "page_000467_table_17",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.05.085.pdf_4.jpg",
+      "TEDS": 0.861319362455726,
+      "TEDS_structure_only": 0.9886363636363636,
+      "error": null
+    },
+    {
+      "request_id": "page_000496_table_4",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg",
+      "TEDS": 0.995061612364244,
+      "TEDS_structure_only": 0.9975,
+      "error": null
+    },
+    {
+      "request_id": "page_000500_table_5",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-60403612.pdf_179.jpg",
+      "TEDS": 0.9363782051282051,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000501_table_6",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-60482015.pdf_56.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000505_table_1",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61510621.pdf_161.jpg",
+      "TEDS": 0.9892113807527577,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000509_table_0",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61520779.pdf_76.jpg",
+      "TEDS": 0.6938185427156356,
+      "TEDS_structure_only": 0.7142857142857143,
+      "error": null
+    },
+    {
+      "request_id": "page_000511_table_1",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61521384.pdf_750.jpg",
+      "TEDS": 0.8211920197289968,
+      "TEDS_structure_only": 0.8396946564885497,
+      "error": null
+    },
+    {
+      "request_id": "page_000512_table_0",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61521429.pdf_358.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000516_table_0",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61523162.pdf_276.jpg",
+      "TEDS": 0.9443956043956044,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000524_table_0",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-63677793.pdf_332.jpg",
+      "TEDS": 0.7685680751173709,
+      "TEDS_structure_only": 0.7777777777777778,
+      "error": null
+    },
+    {
+      "request_id": "page_000592_table_3",
+      "page_name": "yanbaor2_yanbaoPPT_569.jpg",
+      "TEDS": 0.7851313924896899,
+      "TEDS_structure_only": 0.7958115183246073,
+      "error": null
+    },
+    {
+      "request_id": "page_000623_table_7",
+      "page_name": "docstructbench_enbook-zlib-o.O-17761417.pdf_894.jpg",
+      "TEDS": 0.41695218966226577,
+      "TEDS_structure_only": 0.5408163265306123,
+      "error": null
+    },
+    {
+      "request_id": "page_000626_table_box_id_1",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg",
+      "TEDS": 0.8713601994851995,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000626_table_box_id_4",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg",
+      "TEDS": 0.83244851994852,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000626_table_box_id_7",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg",
+      "TEDS": 0.7701898326898327,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000630_table_2",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_8.jpg",
+      "TEDS": 0.8361185714188719,
+      "TEDS_structure_only": 0.8757396449704142,
+      "error": null
+    },
+    {
+      "request_id": "page_000631_table_0",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-j.1444-2906.2002.00466.x.pdf_4.jpg",
+      "TEDS": 0.48854938282508376,
+      "TEDS_structure_only": 0.6074766355140186,
+      "error": null
+    },
+    {
+      "request_id": "page_000632_table_0",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-j.eswa.2008.01.070.pdf_5.jpg",
+      "TEDS": 0.9934595260080025,
+      "TEDS_structure_only": 0.9944598337950139,
+      "error": null
+    },
+    {
+      "request_id": "page_000633_table_5",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s00128-007-9171-1.pdf_3.jpg",
+      "TEDS": 0.923487070114636,
+      "TEDS_structure_only": 0.9237536656891495,
+      "error": null
+    },
+    {
+      "request_id": "page_000637_table_6",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s003950050126.pdf_6.jpg",
+      "TEDS": 0.9768204436717826,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000639_table_4",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s0167-8655%2800%2900107-0.pdf_6.jpg",
+      "TEDS": 0.9940656565656566,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000639_table_11",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s0167-8655%2800%2900107-0.pdf_6.jpg",
+      "TEDS": 0.9936868686868687,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_000642_table_8",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s10555-005-1578-8.pdf_5.jpg",
+      "TEDS": 0.9029725436805083,
+      "TEDS_structure_only": 0.9070796460176991,
+      "error": null
+    },
+    {
+      "request_id": "page_000643_table_4",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s10653-010-9369-8.pdf_11.jpg",
+      "TEDS": 0.9912941709453338,
+      "TEDS_structure_only": 0.9966777408637874,
+      "error": null
+    },
+    {
+      "request_id": "page_000676_table_2",
+      "page_name": "jiaocaineedrop_ced6f3c05e1dfefa8455fa60aacdd2d76ffd79489b631c2dbde22a74e927544b.pdf_84.jpg",
+      "TEDS": 0.24907308403070827,
+      "TEDS_structure_only": 0.36764705882352944,
+      "error": null
+    },
+    {
+      "request_id": "page_000766_table_2",
+      "page_name": "jiaocaineedrop_jiaocai_needrop_en_2399.jpg",
+      "TEDS": 0.6141640451289057,
+      "TEDS_structure_only": 0.639344262295082,
+      "error": null
+    },
+    {
+      "request_id": "page_001011_table_30",
+      "page_name": "newspaper_01f020903d7bc4b3fc69f500f41eb77e_1.jpg",
+      "TEDS": 0.9655172413793104,
+      "TEDS_structure_only": 0.9655172413793104,
+      "error": null
+    },
+    {
+      "request_id": "page_001121_table_10",
+      "page_name": "eastmoney_0022ae8eddb0de117978289e16ba7fe995dddd3f64aca9e147bb07c848c84aa6.pdf_8.jpg",
+      "TEDS": 0.9862522355837864,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001125_table_9",
+      "page_name": "eastmoney_2dea7cdb5a3e018ffec3c80eb4435de524f2a14bd32735b78f563adc355272ab.pdf_6.jpg",
+      "TEDS": 0.9657827202737382,
+      "TEDS_structure_only": 0.9700598802395209,
+      "error": null
+    },
+    {
+      "request_id": "page_001128_table_2",
+      "page_name": "eastmoney_5c22c7d248262382ae63af18e9ef65bd26ffdf78c2f3af32137e0b4f92a0ba92.pdf_4.jpg",
+      "TEDS": 0.9973976608187135,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001129_table_8",
+      "page_name": "eastmoney_5f75d8df19ab34c706ae823d8ed54f845b6a693e31c0fae19b16cdd94c32a636.pdf_2.jpg",
+      "TEDS": 0.9079457364341086,
+      "TEDS_structure_only": 0.9127906976744186,
+      "error": null
+    },
+    {
+      "request_id": "page_001133_table_3",
+      "page_name": "eastmoney_6be3f3cd9e5361946ee49252f12dd57fe7c73df330116d6998e2198ec79a05c9.pdf_2.jpg",
+      "TEDS": 0.5970647731613938,
+      "TEDS_structure_only": 0.6363636363636364,
+      "error": null
+    },
+    {
+      "request_id": "page_001134_table_1",
+      "page_name": "eastmoney_6e1cdb75430fe7d7a7757754d163d1a4a8a1c2a3fca38b74a8a2e8df009f2ce0.pdf_2.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001134_table_10",
+      "page_name": "eastmoney_6e1cdb75430fe7d7a7757754d163d1a4a8a1c2a3fca38b74a8a2e8df009f2ce0.pdf_2.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001134_table_9",
+      "page_name": "eastmoney_6e1cdb75430fe7d7a7757754d163d1a4a8a1c2a3fca38b74a8a2e8df009f2ce0.pdf_2.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001137_table_9",
+      "page_name": "eastmoney_7f55aa1223310144165074707803522240cf20120b15f5d78fdf61eb4dcefba3.pdf_2.jpg",
+      "TEDS": 0.9333333333333333,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001137_table_10",
+      "page_name": "eastmoney_7f55aa1223310144165074707803522240cf20120b15f5d78fdf61eb4dcefba3.pdf_2.jpg",
+      "TEDS": 0.8985,
+      "TEDS_structure_only": 0.9,
+      "error": null
+    },
+    {
+      "request_id": "page_001138_table_1",
+      "page_name": "eastmoney_8b3e01e3cd92a034f45945887a5170602774a8480effda5bd791451578a93b7d.pdf_5.jpg",
+      "TEDS": 0.9567901234567902,
+      "TEDS_structure_only": 0.9567901234567902,
+      "error": null
+    },
+    {
+      "request_id": "page_001139_table_5",
+      "page_name": "eastmoney_8e0ecdad6ea6edd7014a328fa79e4b69230c1b4f82cc031dd247c3c1c39744cf.pdf_11.jpg",
+      "TEDS": 0.955470737913486,
+      "TEDS_structure_only": 0.9618320610687023,
+      "error": null
+    },
+    {
+      "request_id": "page_001147_table_5",
+      "page_name": "eastmoney_c1c12db90c6ecfae16a8eafa49caecfbc0e5f5654140320fe127f7c09bde96c9.pdf_1.jpg",
+      "TEDS": 0.9092855137563167,
+      "TEDS_structure_only": 0.9781021897810219,
+      "error": null
+    },
+    {
+      "request_id": "page_001147_table_9",
+      "page_name": "eastmoney_c1c12db90c6ecfae16a8eafa49caecfbc0e5f5654140320fe127f7c09bde96c9.pdf_1.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001147_table_10",
+      "page_name": "eastmoney_c1c12db90c6ecfae16a8eafa49caecfbc0e5f5654140320fe127f7c09bde96c9.pdf_1.jpg",
+      "TEDS": 0.9582887700534759,
+      "TEDS_structure_only": 0.9588235294117647,
+      "error": null
+    },
+    {
+      "request_id": "page_001148_table_3",
+      "page_name": "eastmoney_c2abc680754ea4676c752cb3bda24323046ece560f8b23ce66b705887c9bcf9b.pdf_16.jpg",
+      "TEDS": 0.9990476190476191,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001152_table_0",
+      "page_name": "eastmoney_d08a4020e49029cf68b5dbf69e5ecaa40e969f918819c62579e5f4b1a357422f.pdf_3.jpg",
+      "TEDS": 0.9573791348600509,
+      "TEDS_structure_only": 0.9618320610687023,
+      "error": null
+    },
+    {
+      "request_id": "page_001153_table_0",
+      "page_name": "eastmoney_d201644f6fbc869ea857c5d9f8ec38adc54250a94b77d826280b0d1c25d13a13.pdf_4.jpg",
+      "TEDS": 0.9420138888888889,
+      "TEDS_structure_only": 0.95,
+      "error": null
+    },
+    {
+      "request_id": "page_001163_table_0",
+      "page_name": "eastmoney_ea3eda50a04cf431d7412a567497c91e8cc52f72b4c5ccb554776c5c57b13e29.pdf_4.jpg",
+      "TEDS": 0.9994588744588745,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001164_table_2",
+      "page_name": "eastmoney_ea59610b9b1a8f0df46f7a89da1116cbf256c772e1148f26017991e28c8bca21.pdf_18.jpg",
+      "TEDS": 0.9536121673003802,
+      "TEDS_structure_only": 0.9543726235741445,
+      "error": null
+    },
+    {
+      "request_id": "page_001164_table_9",
+      "page_name": "eastmoney_ea59610b9b1a8f0df46f7a89da1116cbf256c772e1148f26017991e28c8bca21.pdf_18.jpg",
+      "TEDS": 0.9297208538587849,
+      "TEDS_structure_only": 0.9310344827586207,
+      "error": null
+    },
+    {
+      "request_id": "page_001173_table_6",
+      "page_name": "yanbaopptmerge_0dd24976bcc395ad595cf73b411d627e14c19ba0299bb3fa0d8108993d079545.pdf_8.jpg",
+      "TEDS": 0.9710982658959537,
+      "TEDS_structure_only": 0.9710982658959537,
+      "error": null
+    },
+    {
+      "request_id": "page_001176_table_4",
+      "page_name": "yanbaopptmerge_2b8553b00244437fa3e502aa2d3d319ed74459a1e264a4fdd9ecc14ce46609d5.pdf_2.jpg",
+      "TEDS": 0.5976911429398699,
+      "TEDS_structure_only": 0.6730769230769231,
+      "error": null
+    },
+    {
+      "request_id": "page_001178_table_0",
+      "page_name": "yanbaopptmerge_2f4902871606698497c53ccb18d3fec2f83d05047d883cd65bbce26bfb27bcd2.pdf_1.jpg",
+      "TEDS": 0.9747474747474747,
+      "TEDS_structure_only": 0.9747474747474747,
+      "error": null
+    },
+    {
+      "request_id": "page_001179_table_6",
+      "page_name": "yanbaopptmerge_3f514841b9bba3e68710fde7af9562d36a424736a356ece18bb5eea86b43ada5.pdf_15.jpg",
+      "TEDS": 0.9452054794520548,
+      "TEDS_structure_only": 0.9452054794520548,
+      "error": null
+    },
+    {
+      "request_id": "page_001181_table_6",
+      "page_name": "yanbaopptmerge_46f23989f000d2a83058955c99cdcc1220d6649f16db4f5719d356aa5ced01bc.pdf_7.jpg",
+      "TEDS": 0.9876378137461881,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001187_table_0",
+      "page_name": "yanbaopptmerge_7c6e8be0695a66c716176c95257a76e940f7d08d8227b37e9ee47142eca6b448.pdf_5.jpg",
+      "TEDS": 0.9553452720119386,
+      "TEDS_structure_only": 0.9682539682539683,
+      "error": null
+    },
+    {
+      "request_id": "page_001188_table_2",
+      "page_name": "yanbaopptmerge_903cf6cd7820b5463e95c5aaab9f16134f9853cd7963567497337527e73b9bcc.pdf_7.jpg",
+      "TEDS": 0.9614721596926347,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001192_table_2",
+      "page_name": "yanbaopptmerge_baa6d02928efcac46ccf7dfd3859de565cfb0bea918ae0ec0eed50944a7c20b4.pdf_11.jpg",
+      "TEDS": 0.9720652686366751,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001195_table_7",
+      "page_name": "yanbaopptmerge_c894b375daca22d041c8a35946295d0a73d6589ad7c3d1d39d8664a2666372bf.pdf_10.jpg",
+      "TEDS": 0.9993027210884353,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001197_table_3",
+      "page_name": "yanbaopptmerge_e3b48594d5a2a6dc86b51244737f24867a0c1781e9f0e4fb52d96bbc6f9d95c7.pdf_3.jpg",
+      "TEDS": 0.9063670411985019,
+      "TEDS_structure_only": 0.9063670411985019,
+      "error": null
+    },
+    {
+      "request_id": "page_001197_table_4",
+      "page_name": "yanbaopptmerge_e3b48594d5a2a6dc86b51244737f24867a0c1781e9f0e4fb52d96bbc6f9d95c7.pdf_3.jpg",
+      "TEDS": 0.9965811965811966,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001197_table_5",
+      "page_name": "yanbaopptmerge_e3b48594d5a2a6dc86b51244737f24867a0c1781e9f0e4fb52d96bbc6f9d95c7.pdf_3.jpg",
+      "TEDS": 0.9,
+      "TEDS_structure_only": 0.9,
+      "error": null
+    },
+    {
+      "request_id": "page_001200_table_2",
+      "page_name": "scihub_AEM.01420-09.pdf_3.jpg",
+      "TEDS": 0.6201514446172993,
+      "TEDS_structure_only": 0.743801652892562,
+      "error": null
+    },
+    {
+      "request_id": "page_001202_table_3",
+      "page_name": "scihub_bloodadvances.2019030924.pdf_3.jpg",
+      "TEDS": 0.8447619047619048,
+      "TEDS_structure_only": 0.94,
+      "error": null
+    },
+    {
+      "request_id": "page_001215_table_5",
+      "page_name": "scihub_j.jallcom.2003.09.015.pdf_1.jpg",
+      "TEDS": 0.9217587973581925,
+      "TEDS_structure_only": 0.9418604651162791,
+      "error": null
+    },
+    {
+      "request_id": "page_001219_table_box_id_1",
+      "page_name": "scihub_jai.12343.pdf_3.jpg",
+      "TEDS": 0.9925862068965517,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001220_table_8",
+      "page_name": "scihub_jb%2Fmvh022.pdf_1.jpg",
+      "TEDS": 0.9310524758816979,
+      "TEDS_structure_only": 0.967741935483871,
+      "error": null
+    },
+    {
+      "request_id": "page_001222_table_2",
+      "page_name": "scihub_jgh.13044.pdf_2.jpg",
+      "TEDS": 0.9324988716585355,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001223_table_9",
+      "page_name": "scihub_jneurosci.16-15-04625.1996.pdf_2.jpg",
+      "TEDS": 0.710091791249686,
+      "TEDS_structure_only": 0.744,
+      "error": null
+    },
+    {
+      "request_id": "page_001227_table_10",
+      "page_name": "scihub_mol.66.4.921.pdf_1.jpg",
+      "TEDS": 0.8446231513584455,
+      "TEDS_structure_only": 0.89,
+      "error": null
+    },
+    {
+      "request_id": "page_001231_table_5",
+      "page_name": "scihub_s00784-003-0233-4.pdf_1.jpg",
+      "TEDS": 0.999545721767944,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001270_table_box_id_1",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s001280000131.pdf_5.jpg",
+      "TEDS": 0.3009007700370604,
+      "TEDS_structure_only": 0.56,
+      "error": null
+    },
+    {
+      "request_id": "page_001271_table_4",
+      "page_name": "yanbaor2_0aa9545ccbc482a37e3b55c96897f0f24cee08bb80c7addfb0c219814af44a3b.pdf_27.jpg",
+      "TEDS": 0.9045417650531287,
+      "TEDS_structure_only": 0.9261363636363636,
+      "error": null
+    },
+    {
+      "request_id": "page_001272_table_1",
+      "page_name": "yanbaor2_1492d25d79af850815ea449254ea62418c3c7fd582792b5191e1879671ba1219.pdf_88.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "page_001273_table_8",
+      "page_name": "scihub_j.1528-1167.2008.01552.x.pdf_3.jpg",
+      "TEDS": 0.8467489468997718,
+      "TEDS_structure_only": 0.9247311827956989,
+      "error": null
+    },
+    {
+      "request_id": "page_001274_table_4",
+      "page_name": "scihub_journal.pone.0166577.pdf_5.jpg",
+      "TEDS": 0.9711429981749969,
+      "TEDS_structure_only": 0.9748858447488584,
+      "error": null
+    },
+    {
+      "request_id": "page_001275_table_3",
+      "page_name": "scihub_s00381-021-05138-3.pdf_3.jpg",
+      "TEDS": 0.7068810767601549,
+      "TEDS_structure_only": 0.7878787878787878,
+      "error": null
+    },
+    {
+      "request_id": "page_001276_table_2",
+      "page_name": "scihub_s12237-014-9873-7.pdf_4.jpg",
+      "TEDS": 0.6991044649204996,
+      "TEDS_structure_only": 0.8195488721804511,
+      "error": null
+    },
+    {
+      "request_id": "page_001367_table_3",
+      "page_name": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+      "TEDS": 0.8155086424813828,
+      "TEDS_structure_only": 0.8562091503267975,
+      "error": null
+    },
+    {
+      "request_id": "page_001367_table_60",
+      "page_name": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+      "TEDS": 0.7797504318997021,
+      "TEDS_structure_only": 0.8640226628895185,
+      "error": null
+    },
+    {
+      "request_id": "page_001375_table_1",
+      "page_name": "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+      "TEDS": 0.9382555879494655,
+      "TEDS_structure_only": 0.9673469387755103,
+      "error": null
+    },
+    {
+      "request_id": "page_001375_table_4",
+      "page_name": "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+      "TEDS": 0.7483883319409634,
+      "TEDS_structure_only": 0.9385964912280702,
+      "error": null
+    },
+    {
+      "request_id": "page_001595_table_box_id_1",
+      "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+      "TEDS": 0.43135751676634937,
+      "TEDS_structure_only": 0.8434504792332268,
+      "error": null
+    },
+    {
+      "request_id": "page_001595_table_box_id_5",
+      "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+      "TEDS": 0.9435797272472366,
+      "TEDS_structure_only": 0.967741935483871,
+      "error": null
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "status": "complete",
+  "cohort_tables": 143,
+  "cohort_pages": 125,
+  "selector_commits": {
+    "adaptive_cutfit_32_header_snapped": "fd9926e",
+    "adaptive_cutfit_dense_32_header_snapped": "fd8644f"
+  },
+  "dense_selector": {
+    "u_distribution_nearest_rank": {
+      "min": 1,
+      "p50": 9,
+      "p75": 14,
+      "p90": 19,
+      "p95": 20,
+      "p99": 26,
+      "max": 26,
+      "mean": 10.552447552447552
+    },
+    "selected_crossing_tables": 0,
+    "selected_crossings": 0,
+    "draft_page_teds": 0.7983829154109651,
+    "final_page_teds": 0.941803435444275,
+    "draft_acceptance": 0.48497956827737293,
+    "target_calls": 23272,
+    "target_call_reduction": 7.354374355448607,
+    "exact_saved_native_ids": 141,
+    "aggregate_speedup": 1.110025499603187,
+    "faster_tables": 82,
+    "composed_timing_s_nearest_rank": {
+      "mean": 1.827444555000174,
+      "p50": 1.4531384867150337,
+      "p75": 2.058709428878501,
+      "p90": 3.347254419932142,
+      "p95": 3.9261985891498625,
+      "p99": 4.756768895778805,
+      "max": 6.746662084013224
+    }
+  },
+  "decision": "keep fixed U8 as default; retain dense header-aware adaptive cutfit as research lane"
+}
