@@ -2,8 +2,8 @@
  * Direct-eager PyTorch bridge for the separately packaged Paddle MHA AIV op.
  *
  * The aclnn enqueue pattern follows Ascend/op-plugin's official
- * npu_incre_flash_attention adapter.  This bridge intentionally calls the
- * separately generated aclnnInnerPaddleMhaIncreFlashAttentionAiv symbol.
+ * npu_incre_flash_attention adapter.  This bridge calls the separately
+ * packaged public aclnnPaddleMhaIncreFlashAttentionAiv API.
  */
 
 #include <cstring>
@@ -82,7 +82,7 @@ at::Tensor paddle_mha_incre_flash_attention_aiv_eager(
     std::strncpy(input_layout, "BNSD", kLayoutCapacity - 1);
 
     EXEC_NPU_CMD_EXT(
-        aclnnInnerPaddleMhaIncreFlashAttentionAiv,
+        aclnnPaddleMhaIncreFlashAttentionAiv,
         query,
         key_tensors,
         value_tensors,

@@ -10,7 +10,7 @@ import torch
 PYTORCH_OP_NAME = (
     "paddleocr_vl_npu::paddle_mha_incre_flash_attention_aiv_eager"
 )
-ACLNN_OP_NAME = "aclnnInnerPaddleMhaIncreFlashAttentionAiv"
+ACLNN_OP_NAME = "aclnnPaddleMhaIncreFlashAttentionAiv"
 
 
 def _load_extension() -> Path:

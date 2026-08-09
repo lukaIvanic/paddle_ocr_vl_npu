@@ -203,13 +203,24 @@ sha256sum "$KERNEL_JSON" "$KERNEL_OBJECT" "$PACKAGE_PATH" \
 INSTALL_ROOT="$RUN_ROOT/installed"
 "$PACKAGE_PATH" --quiet --install-path="$INSTALL_ROOT"
 SET_ENV_PATH="$INSTALL_ROOT/vendors/$INSTALLED_VENDOR_NAME/bin/set_env.bash"
-if [[ ! -s "$SET_ENV_PATH" ]]; then
-    echo "ERROR: installed package did not produce $SET_ENV_PATH" >&2
+OP_API_LIB="$INSTALL_ROOT/vendors/$INSTALLED_VENDOR_NAME/op_api/lib/libcust_opapi.so"
+if [[ ! -s "$SET_ENV_PATH" || ! -s "$OP_API_LIB" ]]; then
+    echo "ERROR: installed package is missing its environment or op-api library" >&2
     exit 4
 fi
+OP_API_SYMBOLS="$(nm -D "$OP_API_LIB")"
+for symbol in \
+    aclnnPaddleMhaIncreFlashAttentionAivGetWorkspaceSize \
+    aclnnPaddleMhaIncreFlashAttentionAiv; do
+    if ! grep -q " T $symbol$" <<<"$OP_API_SYMBOLS"; then
+        echo "ERROR: installed op-api library does not export $symbol" >&2
+        exit 4
+    fi
+done
 
 echo "PADDLE_MHA_INCREFA_AIV_BUILD_ROOT=$RUN_ROOT"
 echo "PADDLE_MHA_INCREFA_AIV_BUILD_SOURCE=$BUILD_SOURCE_ROOT"
 echo "PADDLE_MHA_INCREFA_AIV_PACKAGE=$RUN_ROOT/$(basename "$PACKAGE_PATH")"
 echo "PADDLE_MHA_INCREFA_AIV_SET_ENV=$SET_ENV_PATH"
+echo "PADDLE_MHA_INCREFA_AIV_OP_API=$OP_API_LIB"
 echo "STOCK_INCRE_FLASH_ATTENTION_SOURCE_UNCHANGED=true"

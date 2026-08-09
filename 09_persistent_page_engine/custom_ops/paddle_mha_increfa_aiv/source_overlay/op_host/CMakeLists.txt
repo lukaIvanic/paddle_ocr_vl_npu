@@ -8,6 +8,7 @@ if(BUILD_OPEN_PROJECT)
         "Dependencies for PaddleMhaIncreFlashAttentionAiv"
     )
     target_sources(op_host_aclnnInner PRIVATE
+        aclnn_paddle_mha_incre_flash_attention_aiv.cpp
         paddle_mha_incre_flash_attention_aiv_def.cpp
     )
 endif()

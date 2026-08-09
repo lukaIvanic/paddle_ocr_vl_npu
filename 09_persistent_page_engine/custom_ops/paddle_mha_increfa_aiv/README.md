@@ -9,7 +9,7 @@ The identity is explicit at every layer:
 PyTorch/TorchAir: paddleocr_vl::mha_incre_flash_attention_aiv
 PyTorch eager:    paddleocr_vl_npu::paddle_mha_incre_flash_attention_aiv_eager
 GE/CANN:          PaddleMhaIncreFlashAttentionAiv
-aclnn eager:      aclnnInnerPaddleMhaIncreFlashAttentionAiv
+aclnn eager:      aclnnPaddleMhaIncreFlashAttentionAiv
 kernel:           paddle_mha_incre_flash_attention_aiv
 vendor:           paddle_mha_increfa_aiv
 ```
@@ -21,11 +21,10 @@ TorchAir compilation, its converter emits only
 `IncreFlashAttention`; there is no same-name package selection or fallback.
 
 The separate C++ extension is the direct-eager lane. It registers a distinct
-`PrivateUse1` implementation and enqueues the package-generated
-`aclnnInnerPaddleMhaIncreFlashAttentionAiv` API. It has no TorchAir converter
-and no Python stock-op fallback. The internal aclnn name is package-generated;
-a public narrow aclnn wrapper remains a packaging improvement, not a condition
-for measuring direct eager execution.
+`PrivateUse1` implementation and enqueues the package's public
+`aclnnPaddleMhaIncreFlashAttentionAiv` API. That wrapper forwards to the
+package-generated inner API while retaining a stable, independent public name.
+The extension has no TorchAir converter and no Python stock-op fallback.
 
 ## Deliberately narrow contract
 
