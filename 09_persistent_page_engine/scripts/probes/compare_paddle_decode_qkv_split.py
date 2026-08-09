@@ -89,6 +89,7 @@ def main() -> int:
 
     comparisons = {}
     all_exact = True
+    output_layouts = {}
     for name, actual, expected in zip(
         ("query", "key", "value"), output, reference, strict=True
     ):
@@ -104,7 +105,43 @@ def main() -> int:
             "actual_first_8": actual_cpu.flatten()[:8].tolist(),
             "expected_first_8": expected_cpu.flatten()[:8].tolist(),
         }
+        output_layouts[name] = {
+            "data_ptr": int(actual.data_ptr()),
+            "storage_nbytes": int(actual.untyped_storage().nbytes()),
+            "storage_offset": int(actual.storage_offset()),
+            "stride": list(actual.stride()),
+            "npu_format": int(torch_npu.get_npu_format(actual)),
+        }
         all_exact = all_exact and exact
+
+    actual_query = output[0].float().cpu().flatten()
+    expected_query = reference[0].float().cpu().flatten()
+    expected_key = reference[1].float().cpu().flatten()
+    region_diagnostics = {
+        "query_prefix_256_equals_expected_key": bool(
+            torch.equal(actual_query[:256], expected_key)
+        ),
+        "query_prefix_256_equals_expected_query": bool(
+            torch.equal(actual_query[:256], expected_query[:256])
+        ),
+        "query_tail_1792_equals_expected_query": bool(
+            torch.equal(actual_query[256:], expected_query[256:])
+        ),
+        "pointer_deltas_bytes": {
+            "key_minus_query": (
+                output_layouts["key"]["data_ptr"]
+                - output_layouts["query"]["data_ptr"]
+            ),
+            "value_minus_query": (
+                output_layouts["value"]["data_ptr"]
+                - output_layouts["query"]["data_ptr"]
+            ),
+            "value_minus_key": (
+                output_layouts["value"]["data_ptr"]
+                - output_layouts["key"]["data_ptr"]
+            ),
+        },
+    }
 
     result = {
         "kind": "paddle_decode_qkv_split_torchair_probe",
@@ -121,7 +158,12 @@ def main() -> int:
             "torch": torch.__version__,
             "torch_npu": torch_npu.__version__,
         },
-        "correctness": {"all_exact": all_exact, "outputs": comparisons},
+        "correctness": {
+            "all_exact": all_exact,
+            "outputs": comparisons,
+            "output_layouts": output_layouts,
+            "region_diagnostics": region_diagnostics,
+        },
         "timing": {"first_call_s": first_call_s},
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
