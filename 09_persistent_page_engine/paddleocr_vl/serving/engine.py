@@ -1016,8 +1016,10 @@ class ContinuousRecognizer:
             )
         return finalized[0]
 
-    @staticmethod
-    def _ready_from_prefilled(state: PrefilledRecognition) -> ReadyDecodeRequest:
+    def _ready_from_prefilled(
+        self,
+        state: PrefilledRecognition,
+    ) -> ReadyDecodeRequest:
         cache, rope_deltas, cache_position, first_token_tensor, cache_release = (
             state.take_device_state()
         )
@@ -1032,7 +1034,7 @@ class ContinuousRecognizer:
             prompt_length=state.input_tokens,
             token_selection_policy_active=(
                 self.token_selection != TOKEN_SELECTION_GREEDY
-                and ContinuousRecognizer._is_table_prompt(state.prompt)
+                and self._is_table_prompt(state.prompt)
             ),
             cache_release=cache_release,
         )
