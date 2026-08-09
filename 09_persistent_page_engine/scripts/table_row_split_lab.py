@@ -982,7 +982,14 @@ def _cutfit_candidate_metrics(
     ]
     minimum_band_px = max(8, round(character_height * 2.20))
     short_bands = sum(height < minimum_band_px for height in band_heights)
-    header_ok = rows == 1 or int(proposal.boundaries[1]) >= int(header_guard_y)
+    body_median_px = (
+        float(np.median(band_heights[1:])) if rows > 1 else float(band_heights[0])
+    )
+    header_to_body_ratio = band_heights[0] / max(body_median_px, 1.0)
+    header_ok = rows == 1 or (
+        int(proposal.boundaries[1]) >= int(header_guard_y)
+        and header_to_body_ratio >= 1.15
+    )
 
     weights = np.asarray(
         [first_band_weight, *([1.0] * max(0, rows - 1))],
@@ -1037,6 +1044,8 @@ def _cutfit_candidate_metrics(
         "minimum_band_px": minimum_band_px,
         "minimum_observed_band_px": min(band_heights),
         "first_band_px": band_heights[0],
+        "body_median_px": body_median_px,
+        "header_to_body_ratio": header_to_body_ratio,
         "header_ok": header_ok,
         "spacing_error": spacing_error,
         "mean_safe_dark_cost": mean_safe_dark_cost,
