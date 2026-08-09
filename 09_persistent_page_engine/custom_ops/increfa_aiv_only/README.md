@@ -36,7 +36,9 @@ The task-type extractor does not reliably resolve a preprocessor-conditioned
 `KERNEL_TASK_TYPE_DEFAULT`: an earlier guarded attempt compiled successfully but
 still emitted `MIX_AIC` metadata. The fixed-key build uses an unconditional
 default and rejects any ratio other than zero-cube `0:1` before reporting
-success.
+success. CANN 9.0 still writes the legacy per-kernel JSON label `MIX_AIC` for
+this package. The runner therefore also checks the ELF symbol table: it must
+contain only the `_mix_aiv` function and no `_mix_aic` cube function.
 
 ## Important boundaries
 

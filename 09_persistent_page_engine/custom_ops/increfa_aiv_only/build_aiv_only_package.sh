@@ -97,15 +97,26 @@ bash build.sh \
     -j8 -O3 2>&1 | tee "$RUN_ROOT/build.log"
 
 KERNEL_JSON="$SOURCE_ROOT/build/binary/ascend910b/bin/incre_flash_attention/IncreFlashAttention_7b761bdde53e2d667f3cdc458400fc8e.json"
+KERNEL_OBJECT="$SOURCE_ROOT/build/binary/ascend910b/bin/incre_flash_attention/IncreFlashAttention_7b761bdde53e2d667f3cdc458400fc8e.o"
 PACKAGE_PATH="$SOURCE_ROOT/build_out/cann-ops-transformer-${VENDOR_NAME}_linux-aarch64.run"
-if [[ ! -s "$KERNEL_JSON" || ! -s "$PACKAGE_PATH" ]]; then
+if [[ ! -s "$KERNEL_JSON" || ! -s "$KERNEL_OBJECT" || ! -s "$PACKAGE_PATH" ]]; then
     echo "ERROR: expected fixed-key metadata or package was not produced" >&2
     exit 3
 fi
 
 cp -p "$KERNEL_JSON" "$RUN_ROOT/kernel_metadata.json"
 cp -p "$PACKAGE_PATH" "$RUN_ROOT/"
-sha256sum "$ENTRY_PATH" "$HOST_TILER_PATH" "$KERNEL_JSON" "$PACKAGE_PATH" | tee "$RUN_ROOT/sha256.txt"
+sha256sum "$ENTRY_PATH" "$HOST_TILER_PATH" "$KERNEL_JSON" "$KERNEL_OBJECT" "$PACKAGE_PATH" | tee "$RUN_ROOT/sha256.txt"
+
+KERNEL_SYMBOLS="$(readelf -Ws "$KERNEL_OBJECT")"
+if ! grep -q '_mix_aiv$' <<<"$KERNEL_SYMBOLS"; then
+    echo "ERROR: fixed-key ELF does not contain the MIX_AIV vector function" >&2
+    exit 3
+fi
+if grep -q '_mix_aic$' <<<"$KERNEL_SYMBOLS"; then
+    echo "ERROR: fixed-key ELF unexpectedly contains a cube function" >&2
+    exit 3
+fi
 
 "$PYTHON_BIN" - "$KERNEL_JSON" <<'PY'
 import json
@@ -138,8 +149,11 @@ if metadata.get("coreType") not in ("MIX", "MIX_AIV"):
     raise SystemExit("compiler metadata does not describe a MIX_AIV launch")
 if metadata.get("magic") != "RT_DEV_BINARY_MAGIC_ELF":
     raise SystemExit("MIX_AIV kernel binary has unexpected ELF magic")
-if kernel.get("kernelType") not in (None, "", "MIX_AIV"):
-    raise SystemExit("per-kernel metadata is not vector-only MIX_AIV")
+# CANN 9.0 emits the legacy per-kernel label MIX_AIC here even though the ELF
+# contains only the mix_aiv function. The 0:1 ratio and ELF symbol gate are the
+# decisive zero-cube checks.
+if kernel.get("kernelType") not in (None, "", "MIX_AIV", "MIX_AIC"):
+    raise SystemExit("per-kernel metadata has an unknown MIX label")
 if metadata.get("intercoreSync") != 1:
     raise SystemExit("MIX_AIV hard-sync runtime contract is missing")
 if kernel.get("crossCoreSync") not in (None, 1):
