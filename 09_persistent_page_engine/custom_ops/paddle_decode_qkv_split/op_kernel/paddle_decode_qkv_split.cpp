@@ -25,21 +25,23 @@ public:
             reinterpret_cast<__gm__ half*>(key), kKeyValueElements);
         valueGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ half*>(value), kKeyValueElements);
-        pipe->InitBuffer(copyBuffer, kTotalElements * sizeof(half));
+        pipe->InitBuffer(queryBuffer, kQueryElements * sizeof(half));
+        pipe->InitBuffer(keyBuffer, kKeyValueElements * sizeof(half));
+        pipe->InitBuffer(valueBuffer, kKeyValueElements * sizeof(half));
     }
 
     __aicore__ inline void Process()
     {
-        LocalTensor<half> local = copyBuffer.Get<half>();
-        LocalTensor<half> queryLocal = copyBuffer.GetWithOffset<half>(
-            kQueryElements, 0);
-        LocalTensor<half> keyLocal = copyBuffer.GetWithOffset<half>(
-            kKeyValueElements, kQueryElements * sizeof(half));
-        LocalTensor<half> valueLocal = copyBuffer.GetWithOffset<half>(
-            kKeyValueElements,
-            (kQueryElements + kKeyValueElements) * sizeof(half));
+        LocalTensor<half> queryLocal = queryBuffer.Get<half>();
+        LocalTensor<half> keyLocal = keyBuffer.Get<half>();
+        LocalTensor<half> valueLocal = valueBuffer.Get<half>();
 
-        DataCopy(local, qkvGm, kTotalElements);
+        DataCopy(queryLocal, qkvGm, kQueryElements);
+        DataCopy(keyLocal, qkvGm[kQueryElements], kKeyValueElements);
+        DataCopy(
+            valueLocal,
+            qkvGm[kQueryElements + kKeyValueElements],
+            kKeyValueElements);
         const event_t inputReady = static_cast<event_t>(
             GetTPipePtr()->FetchEventID(HardEvent::MTE2_MTE3));
         SetFlag<HardEvent::MTE2_MTE3>(inputReady);
@@ -61,7 +63,9 @@ private:
     GlobalTensor<half> queryGm;
     GlobalTensor<half> keyGm;
     GlobalTensor<half> valueGm;
-    TBuf<TPosition::VECCALC> copyBuffer;
+    TBuf<TPosition::VECCALC> queryBuffer;
+    TBuf<TPosition::VECCALC> keyBuffer;
+    TBuf<TPosition::VECCALC> valueBuffer;
 };
 }
 
