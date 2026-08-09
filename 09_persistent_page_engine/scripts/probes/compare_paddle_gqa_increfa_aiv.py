@@ -28,6 +28,10 @@ QUERY_HEADS = 16
 KV_HEADS = 2
 HEAD_DIM = 128
 SCALE_VALUE = 1.0 / math.sqrt(HEAD_DIM)
+FP16_ATOL = 5e-4
+FP16_RTOL = 5e-3
+REFERENCE_ATOL = 2e-3
+REFERENCE_RTOL = 1e-2
 EXPERIMENT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_EXTENSION_ROOT = EXPERIMENT_ROOT / "custom_ops/paddle_gqa_increfa_aiv/pytorch_extension"
 
@@ -39,6 +43,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--cache-root", type=Path)
     parser.add_argument("--extension-root", type=Path, default=DEFAULT_EXTENSION_ROOT)
     parser.add_argument("--kv-length", type=int, required=True)
+    parser.add_argument("--valid-kv-length", type=int)
     parser.add_argument("--vector-core-count", type=int, required=True)
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--blocks", type=int, default=7)
@@ -47,8 +52,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.kv_length <= 0:
         parser.error("--kv-length must be positive")
-    if not 1 <= args.vector_core_count <= 48:
-        parser.error("--vector-core-count must be in [1, 48]")
+    if (
+        args.valid_kv_length is not None
+        and not 1 <= args.valid_kv_length <= args.kv_length
+    ):
+        parser.error("--valid-kv-length must be in [1, --kv-length]")
+    if not QUERY_HEADS <= args.vector_core_count <= 48:
+        parser.error("--vector-core-count must be in [16, 48]")
     if args.warmup < 0 or args.blocks <= 0 or args.repeats_per_block <= 0:
         parser.error("invalid timing counts")
     if args.backend == "torchair" and args.cache_root is None:
@@ -74,6 +84,26 @@ def timing_summary(values: Sequence[float]) -> dict[str, float]:
 
 def tensor_sha256(tensor: torch.Tensor) -> str:
     return hashlib.sha256(tensor.contiguous().numpy().tobytes()).hexdigest()
+
+
+def fp32_reference(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    v: torch.Tensor,
+    mask: torch.Tensor,
+) -> torch.Tensor:
+    """Independent CPU FP32 BNSD GQA reference for the probe contract."""
+    group_size = QUERY_HEADS // KV_HEADS
+    q_fp32 = q.float().cpu()
+    k_fp32 = k.float().cpu().repeat_interleave(group_size, dim=1)
+    v_fp32 = v.float().cpu().repeat_interleave(group_size, dim=1)
+    mask_cpu = mask.cpu().expand(
+        q_fp32.shape[0], QUERY_HEADS, q_fp32.shape[2], k_fp32.shape[2]
+    )
+    scores = torch.matmul(q_fp32, k_fp32.transpose(-2, -1)) * SCALE_VALUE
+    scores = scores.masked_fill(mask_cpu, torch.finfo(torch.float32).min)
+    probabilities = torch.softmax(scores, dim=-1)
+    return torch.matmul(probabilities, v_fp32).contiguous()
 
 
 def time_step(
@@ -191,6 +221,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     k = torch.randn((1, KV_HEADS, args.kv_length, HEAD_DIM), generator=generator, dtype=torch.float16).to(device)
     v = torch.randn((1, KV_HEADS, args.kv_length, HEAD_DIM), generator=generator, dtype=torch.float16).to(device)
     mask = torch.zeros((1, 1, 1, args.kv_length), dtype=torch.bool, device=device)
+    if args.valid_kv_length is not None:
+        mask[..., args.valid_kv_length:] = True
     inputs = (q, k, v, mask)
 
     first_call_s: dict[str, float] = {}
@@ -211,8 +243,29 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             outputs[name] = output.float().cpu().contiguous()
 
+    reference = fp32_reference(q, k, v, mask)
     difference = (outputs["stock"] - outputs["custom"]).abs()
+    stock_reference_difference = (outputs["stock"] - reference).abs()
+    custom_reference_difference = (outputs["custom"] - reference).abs()
     exact = bool(torch.equal(outputs["stock"], outputs["custom"]))
+    fp16_close = bool(
+        torch.allclose(
+            outputs["stock"], outputs["custom"], atol=FP16_ATOL, rtol=FP16_RTOL
+        )
+    )
+    stock_reference_close = bool(
+        torch.allclose(
+            outputs["stock"], reference, atol=REFERENCE_ATOL, rtol=REFERENCE_RTOL
+        )
+    )
+    custom_reference_close = bool(
+        torch.allclose(
+            outputs["custom"], reference, atol=REFERENCE_ATOL, rtol=REFERENCE_RTOL
+        )
+    )
+    required_checks_passed = (
+        fp16_close and stock_reference_close and custom_reference_close
+    )
     per_head_max_abs = difference.amax(dim=(0, 2, 3)).tolist()
     per_head_mean_abs = difference.mean(dim=(0, 2, 3)).tolist()
     per_head_custom_absmax = outputs["custom"].abs().amax(dim=(0, 2, 3)).tolist()
@@ -236,6 +289,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "batch_size": 1, "query_heads": QUERY_HEADS,
             "key_value_heads": KV_HEADS, "head_dim": HEAD_DIM,
             "kv_length": args.kv_length, "vector_core_count": args.vector_core_count,
+            "valid_kv_length": args.valid_kv_length,
             "dtype": "fp16", "layout": "BNSD", "masked": True,
             "actual_seq_lengths": None, "inner_precise": 1,
             "scale_value": SCALE_VALUE,
@@ -254,6 +308,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         "parity": {
             "exact": exact,
             "allclose_atol_0_rtol_0": bool(torch.allclose(outputs["stock"], outputs["custom"], atol=0, rtol=0)),
+            "allclose_fp16_tolerance": fp16_close,
+            "fp16_tolerance": {"atol": FP16_ATOL, "rtol": FP16_RTOL},
             "max_abs": float(difference.max()),
             "mean_abs": float(difference.mean()),
             "per_query_head_max_abs": [float(value) for value in per_head_max_abs],
@@ -265,12 +321,24 @@ def main(argv: Sequence[str] | None = None) -> int:
             "stock_sample": outputs["stock"].reshape(-1)[:16].tolist(),
             "custom_sample": outputs["custom"].reshape(-1)[:16].tolist(),
         },
+        "independent_fp32_reference": {
+            "implementation": "cpu_fp32_matmul_softmax_matmul_with_gqa_repeat",
+            "tolerance": {"atol": REFERENCE_ATOL, "rtol": REFERENCE_RTOL},
+            "stock_allclose": stock_reference_close,
+            "custom_allclose": custom_reference_close,
+            "stock_max_abs": float(stock_reference_difference.max()),
+            "stock_mean_abs": float(stock_reference_difference.mean()),
+            "custom_max_abs": float(custom_reference_difference.max()),
+            "custom_mean_abs": float(custom_reference_difference.mean()),
+            "reference_sample": reference.reshape(-1)[:16].tolist(),
+        },
+        "required_checks_passed": required_checks_passed,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2), flush=True)
-    if not exact:
-        raise SystemExit("GQA AIV output did not match stock exactly")
+    if not required_checks_passed:
+        raise SystemExit("GQA AIV output failed FP16 or independent-reference parity")
     return 0
 
 

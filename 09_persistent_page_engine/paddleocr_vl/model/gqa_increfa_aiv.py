@@ -150,8 +150,11 @@ def gqa_incre_flash_attention_aiv(
         raise ValueError("Paddle GQA IncreFA AIV requires a rank-4 bool mask")
     if inner_precise != 1:
         raise ValueError("Paddle GQA IncreFA AIV fixes inner_precise=1")
-    if vector_core_count < 1 or vector_core_count > 48:
-        raise ValueError("vector_core_count must be in [1, 48]")
+    if vector_core_count < EXPECTED_QUERY_HEADS or vector_core_count > 48:
+        raise ValueError(
+            "vector_core_count must be in [16, 48]; this kernel assigns one "
+            "AIV work item to each GQA query head"
+        )
     return _gqa_incre_flash_attention_aiv(
         query, key, value, atten_mask, num_heads, num_key_value_heads,
         scale_value, inner_precise, vector_core_count
