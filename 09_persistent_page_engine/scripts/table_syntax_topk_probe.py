@@ -196,6 +196,110 @@ def first_difference(left: list[int], right: list[int]) -> int | None:
     return None if len(left) == len(right) else min(len(left), len(right))
 
 
+def common_prefix_length(left: tuple[int, ...], right: list[int]) -> int:
+    matched = 0
+    for left_token, right_token in zip(left, right):
+        if int(left_token) != int(right_token):
+            break
+        matched += 1
+    return matched
+
+
+def speculative_rejection_events(
+    target: list[int],
+    draft: dict[str, Any],
+    tokenizer: Any,
+    *,
+    eos_token_id: int,
+    input_tokens: int,
+    cache_length: int,
+    draft_length: int,
+    max_new_tokens: int,
+) -> tuple[dict[int, dict[str, Any]], dict[str, int]]:
+    """Replay the real block commit sequence using only saved target/draft IDs."""
+
+    matcher = TableDraftMatcher(
+        draft,
+        tokenizer,
+        eos_token_id=eos_token_id,
+        block_size=draft_length,
+    )
+    target_index = 1
+    cache_position = int(input_tokens)
+    matcher.start(int(target[0]))
+    rejections: dict[int, dict[str, Any]] = {}
+    counters: Counter[str] = Counter()
+    limit = min(len(target), int(max_new_tokens))
+
+    while target_index < limit:
+        proposal = matcher.propose(target[:target_index])
+        can_verify = (
+            proposal is not None
+            and bool(proposal.tokens)
+            and cache_position + int(draft_length) + 1 <= int(cache_length)
+        )
+        counters["target_calls"] += 1
+        if not can_verify:
+            counters["fallback_calls"] += 1
+            emitted = [int(target[target_index])]
+            matcher.commit(
+                None,
+                accepted_draft_tokens=0,
+                emitted_tokens=emitted,
+            )
+            target_index += 1
+            cache_position += 1
+            continue
+
+        assert proposal is not None
+        counters["speculative_calls"] += 1
+        accepted = common_prefix_length(
+            proposal.tokens,
+            target[target_index:],
+        )
+        counters["accepted_draft_tokens"] += accepted
+        rejected = (
+            accepted < len(proposal.tokens)
+            and target_index + accepted < limit
+        )
+        if rejected:
+            counters["rejected_speculative_calls"] += 1
+            rejection_index = target_index + accepted
+            draft_token = int(proposal.tokens[accepted])
+            draft_tail = [int(token) for token in proposal.tokens[accepted : accepted + 2]]
+            if rejection_index in rejections:
+                raise AssertionError(
+                    f"duplicate rejection at target index {rejection_index}"
+                )
+            rejections[rejection_index] = {
+                "call_target_index": target_index,
+                "proposal_start": int(proposal.start),
+                "proposal_anchor_tokens": int(proposal.anchor_tokens),
+                "accepted_before_rejection": accepted,
+                "draft_token": draft_token,
+                "draft_tail": draft_tail,
+            }
+        else:
+            counters["fully_accepted_speculative_calls"] += 1
+
+        emitted = [int(token) for token in proposal.tokens[:accepted]]
+        next_index = target_index + accepted
+        if next_index >= limit:
+            break
+        emitted.append(int(target[next_index]))
+        matcher.commit(
+            proposal,
+            accepted_draft_tokens=accepted,
+            emitted_tokens=emitted,
+        )
+        step = accepted + 1
+        target_index += step
+        cache_position += step
+
+    counters["rejection_events"] = len(rejections)
+    return rejections, dict(counters)
+
+
 def summarize_events(events: list[dict[str, Any]]) -> dict[str, Any]:
     disagreements = [event for event in events if event["draft_disagrees"]]
     syntax_disagreements = [
@@ -249,16 +353,19 @@ def probe_table(
         _first_token_tensor,
         cache_release,
     ) = prefilled.take_device_state()
-    matcher = TableDraftMatcher(
+    prefix = [int(reference[0])]
+    live_tokens = [int(prefilled.first_token)]
+    position = int(cache_position.detach().cpu().item())
+    rejection_events, spec_simulation = speculative_rejection_events(
+        reference,
         draft,
         recognizer.tokenizer,
         eos_token_id=int(recognizer.model.config.eos_token_id),
-        block_size=args.draft_length,
+        input_tokens=int(prefilled.input_tokens),
+        cache_length=args.cache_length,
+        draft_length=args.draft_length,
+        max_new_tokens=args.max_new_tokens,
     )
-    prefix = [int(reference[0])]
-    matcher.start(prefix[0])
-    live_tokens = [int(prefilled.first_token)]
-    position = int(cache_position.detach().cpu().item())
     flat_cache = cache.flat_tensors()
     device_input = torch.empty((1, 1), device=recognizer.device, dtype=torch.int64)
     events: list[dict[str, Any]] = []
@@ -266,10 +373,10 @@ def probe_table(
 
     try:
         for target_index in range(1, min(len(reference), args.max_new_tokens)):
-            proposal = matcher.propose(prefix)
+            rejection = rejection_events.get(target_index)
             draft_token = (
-                int(proposal.tokens[0])
-                if proposal is not None and proposal.tokens
+                int(rejection["draft_token"])
+                if rejection is not None
                 else None
             )
             target_token = int(reference[target_index])
@@ -284,14 +391,14 @@ def probe_table(
             vector = logits[0, -1, :].float()
             live_token = int(torch.argmax(vector).detach().cpu().item())
             live_tokens.append(live_token)
-            draft_disagrees = draft_token is not None and draft_token != target_token
+            draft_disagrees = rejection is not None
             target_local_ids = [
                 *prefix[-1:],
                 *reference[target_index : target_index + 2],
             ]
             draft_local_ids = [
                 *prefix[-1:],
-                *(proposal.tokens[:2] if proposal is not None else ()),
+                *((rejection or {}).get("draft_tail") or ()),
             ]
             syntax_kinds = syntax_kinds_from_actual_ids(
                 recognizer.tokenizer,
@@ -301,7 +408,7 @@ def probe_table(
                 draft_token=draft_token,
             )
             syntax_related = bool(syntax_kinds)
-            capture = draft_disagrees or syntax_related or live_token != target_token
+            capture = draft_disagrees or live_token != target_token
             if capture:
                 topk = topk_payload(
                     vector,
@@ -321,9 +428,25 @@ def probe_table(
                             prefix[-24:],
                             skip_special_tokens=False,
                         ),
-                        "proposal_start": proposal.start if proposal is not None else None,
+                        "call_target_index": (
+                            rejection["call_target_index"]
+                            if rejection is not None
+                            else None
+                        ),
+                        "accepted_before_rejection": (
+                            rejection["accepted_before_rejection"]
+                            if rejection is not None
+                            else None
+                        ),
+                        "proposal_start": (
+                            rejection["proposal_start"]
+                            if rejection is not None
+                            else None
+                        ),
                         "proposal_anchor_tokens": (
-                            proposal.anchor_tokens if proposal is not None else None
+                            rejection["proposal_anchor_tokens"]
+                            if rejection is not None
+                            else None
                         ),
                         "draft_disagrees": draft_disagrees,
                         "syntax_related": syntax_related,
@@ -357,12 +480,6 @@ def probe_table(
                     }
                 )
 
-            accepted = int(draft_token == target_token) if draft_token is not None else 0
-            matcher.commit(
-                proposal,
-                accepted_draft_tokens=accepted,
-                emitted_tokens=(target_token,),
-            )
             prefix.append(target_token)
             position += 1
             if target_token == int(recognizer.model.config.eos_token_id):
@@ -390,6 +507,7 @@ def probe_table(
             live_tokens,
             reference[: len(live_tokens)],
         ),
+        "speculative_call_simulation": spec_simulation,
         "summary": summarize_events(events),
         "events": events,
     }
@@ -446,8 +564,8 @@ def main() -> None:
             "cache_length": args.cache_length,
             "max_new_tokens": args.max_new_tokens,
             "mode": (
-                "teacher-forced saved B1 history; U2 next-token candidate from "
-                "TableDraftMatcher; ordinary B1 decode logits"
+                "teacher-forced saved B1 history; real block-commit rejection "
+                "sequence replayed from saved B1/U2 IDs; ordinary B1 decode logits"
             ),
             "recognizer": recognizer.configuration(),
             "syntax_classification": (
