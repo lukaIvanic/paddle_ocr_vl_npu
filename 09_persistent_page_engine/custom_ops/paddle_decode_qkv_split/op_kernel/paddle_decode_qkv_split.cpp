@@ -25,41 +25,40 @@ public:
             reinterpret_cast<__gm__ half*>(key), kKeyValueElements);
         valueGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ half*>(value), kKeyValueElements);
-        pipe->InitBuffer(copyQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(copyBuffer, kQueryElements * sizeof(half));
     }
 
     __aicore__ inline void Process()
     {
-        {
-            LocalTensor<half> local = copyQueue.AllocTensor<half>();
-            DataCopy(local, qkvGm, kQueryElements);
-            copyQueue.EnQue(local);
-            local = copyQueue.DeQue<half>();
-            DataCopy(queryGm, local, kQueryElements);
-            PipeBarrier<PIPE_MTE3>();
-            copyQueue.FreeTensor(local);
-        }
-        {
-            LocalTensor<half> local = copyQueue.AllocTensor<half>();
-            DataCopy(local, qkvGm[kQueryElements], kKeyValueElements);
-            copyQueue.EnQue(local);
-            local = copyQueue.DeQue<half>();
-            DataCopy(keyGm, local, kKeyValueElements);
-            PipeBarrier<PIPE_MTE3>();
-            copyQueue.FreeTensor(local);
-        }
-        {
-            LocalTensor<half> local = copyQueue.AllocTensor<half>();
-            DataCopy(
-                local,
-                qkvGm[kQueryElements + kKeyValueElements],
-                kKeyValueElements);
-            copyQueue.EnQue(local);
-            local = copyQueue.DeQue<half>();
-            DataCopy(valueGm, local, kKeyValueElements);
-            PipeBarrier<PIPE_MTE3>();
-            copyQueue.FreeTensor(local);
-        }
+        LocalTensor<half> local = copyBuffer.Get<half>();
+        const event_t inputReady = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE2_MTE3));
+        const event_t outputStored = static_cast<event_t>(
+            GetTPipePtr()->FetchEventID(HardEvent::MTE3_MTE2));
+
+        DataCopy(local, qkvGm, kQueryElements);
+        SetFlag<HardEvent::MTE2_MTE3>(inputReady);
+        WaitFlag<HardEvent::MTE2_MTE3>(inputReady);
+        DataCopy(queryGm, local, kQueryElements);
+        SetFlag<HardEvent::MTE3_MTE2>(outputStored);
+        WaitFlag<HardEvent::MTE3_MTE2>(outputStored);
+
+        DataCopy(local, qkvGm[kQueryElements], kKeyValueElements);
+        SetFlag<HardEvent::MTE2_MTE3>(inputReady);
+        WaitFlag<HardEvent::MTE2_MTE3>(inputReady);
+        DataCopy(keyGm, local, kKeyValueElements);
+        SetFlag<HardEvent::MTE3_MTE2>(outputStored);
+        WaitFlag<HardEvent::MTE3_MTE2>(outputStored);
+
+        DataCopy(
+            local,
+            qkvGm[kQueryElements + kKeyValueElements],
+            kKeyValueElements);
+        SetFlag<HardEvent::MTE2_MTE3>(inputReady);
+        WaitFlag<HardEvent::MTE2_MTE3>(inputReady);
+        DataCopy(valueGm, local, kKeyValueElements);
+        SetFlag<HardEvent::MTE3_MTE2>(outputStored);
+        WaitFlag<HardEvent::MTE3_MTE2>(outputStored);
     }
 
 private:
@@ -67,7 +66,7 @@ private:
     GlobalTensor<half> queryGm;
     GlobalTensor<half> keyGm;
     GlobalTensor<half> valueGm;
-    TQue<QuePosition::VECIN, 1> copyQueue;
+    TBuf<TPosition::VECCALC> copyBuffer;
 };
 }
 
