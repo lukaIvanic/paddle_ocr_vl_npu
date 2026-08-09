@@ -27,10 +27,28 @@ HIDDEN_SIZE = 1024
 
 
 class CustomEmbedding(torch.nn.Module):
-    def forward(
+    def __init__(self, strict_scope: bool) -> None:
+        super().__init__()
+        self.scope = None
+        if strict_scope:
+            scope_module = __import__("torchair.scope", fromlist=["super_kernel"])
+            self.scope = scope_module.super_kernel
+
+    def _forward_impl(
         self, weight: torch.Tensor, input_ids: torch.Tensor
     ) -> torch.Tensor:
         return decode_token_embedding(weight, input_ids)
+
+    def forward(
+        self, weight: torch.Tensor, input_ids: torch.Tensor
+    ) -> torch.Tensor:
+        if self.scope is None:
+            return self._forward_impl(weight, input_ids)
+        with self.scope(
+            "paddle_decode_token_embedding_probe",
+            "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort",
+        ):
+            return self._forward_impl(weight, input_ids)
 
 
 def parse_args() -> argparse.Namespace:
@@ -40,6 +58,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--repeats", type=int, default=200)
     parser.add_argument("--token-id", type=int, default=1024)
+    parser.add_argument("--strict-scope", action="store_true")
     args = parser.parse_args()
     if not 0 <= args.token_id < VOCAB_SIZE:
         parser.error(f"--token-id must be in [0, {VOCAB_SIZE})")
@@ -68,7 +87,7 @@ def main() -> int:
     torchair, CompilerConfig = import_torchair()
     args.cache_dir.mkdir(parents=True, exist_ok=True)
     step = torchair.inference.cache_compile(
-        CustomEmbedding().forward,
+        CustomEmbedding(args.strict_scope).forward,
         config=CompilerConfig(),
         dynamic=False,
         cache_dir=str(args.cache_dir),
@@ -106,6 +125,7 @@ def main() -> int:
             "output_shape": list(output.shape),
             "dtype": str(weight.dtype),
             "token_id": args.token_id,
+            "strict_scope": args.strict_scope,
         },
         "environment": {
             "device": torch.npu.get_device_name(0),
