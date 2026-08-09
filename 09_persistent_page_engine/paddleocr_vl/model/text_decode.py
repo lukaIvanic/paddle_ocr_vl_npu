@@ -21,6 +21,10 @@ from .compile_utils import (
     torchair_version_label,
 )
 from .config import PaddleOCRTextConfig
+from .gqa_increfa_aiv import (
+    gqa_incre_flash_attention_aiv,
+    register_gqa_increfa_aiv_converter,
+)
 from utils.timing import synchronize
 
 if TYPE_CHECKING:
@@ -57,6 +61,7 @@ class DecodeOptimizationConfig:
     stage_aware_weight_prefetch: bool = False
     post_scatter_kv_prefetch: bool = False
     vector_add_rms_norm: bool = False
+    gqa_aiv_vector_core_count: int = 0
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -131,6 +136,36 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rotary="npu_apply",
         add_rms_norm=True,
         attention="mha_repeat",
+    ),
+    "combined_apply_gqa_aiv_b1_c16": DecodeOptimizationConfig(
+        name="combined_apply_gqa_aiv_b1_c16",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        attention="gqa_aiv",
+        gqa_aiv_vector_core_count=16,
+    ),
+    "combined_apply_gqa_aiv_b1_c32": DecodeOptimizationConfig(
+        name="combined_apply_gqa_aiv_b1_c32",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        attention="gqa_aiv",
+        gqa_aiv_vector_core_count=32,
+    ),
+    "combined_apply_gqa_aiv_b1_c48": DecodeOptimizationConfig(
+        name="combined_apply_gqa_aiv_b1_c48",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        attention="gqa_aiv",
+        gqa_aiv_vector_core_count=48,
     ),
     "combined_apply_mha_cache": DecodeOptimizationConfig(
         name="combined_apply_mha_cache",
@@ -1031,26 +1066,45 @@ def _decode_attention(
         if int(key_cache.shape[1]) != int(attention.num_heads):
             raise ValueError("mha_cache received a non-expanded decode arena")
         num_key_value_heads = 0
-    elif optimization.attention != "gqa":
+    elif optimization.attention not in ("gqa", "gqa_aiv"):
         raise ValueError(
             f"unsupported decode attention implementation: "
             f"{optimization.attention!r}"
         )
 
-    attention_output = torch_npu.npu_incre_flash_attention(
-        query_states.contiguous(),
-        key_for_attention.contiguous(),
-        value_for_attention.contiguous(),
-        pse_shift=pse_shift,
-        atten_mask=(
-            None if attention_mask is None else attention_mask.contiguous()
-        ),
-        actual_seq_lengths=actual_seq_lengths,
-        num_heads=int(attention.num_heads),
-        num_key_value_heads=num_key_value_heads,
-        input_layout="BNSD",
-        scale_value=float(attention.scaling),
-    )
+    if optimization.attention == "gqa_aiv":
+        if pse_shift is not None or actual_seq_lengths is not None:
+            raise ValueError(
+                "gqa_aiv requires masked IncreFA with no PSE or actual lengths"
+            )
+        if attention_mask is None:
+            raise ValueError("gqa_aiv requires the static bool attention mask")
+        attention_output = gqa_incre_flash_attention_aiv(
+            query_states.contiguous(),
+            key_for_attention.contiguous(),
+            value_for_attention.contiguous(),
+            attention_mask.contiguous(),
+            num_heads=int(attention.num_heads),
+            num_key_value_heads=num_key_value_heads,
+            scale_value=float(attention.scaling),
+            inner_precise=1,
+            vector_core_count=optimization.gqa_aiv_vector_core_count,
+        )
+    else:
+        attention_output = torch_npu.npu_incre_flash_attention(
+            query_states.contiguous(),
+            key_for_attention.contiguous(),
+            value_for_attention.contiguous(),
+            pse_shift=pse_shift,
+            atten_mask=(
+                None if attention_mask is None else attention_mask.contiguous()
+            ),
+            actual_seq_lengths=actual_seq_lengths,
+            num_heads=int(attention.num_heads),
+            num_key_value_heads=num_key_value_heads,
+            input_layout="BNSD",
+            scale_value=float(attention.scaling),
+        )
     attention_output = (
         attention_output.transpose(1, 2)
         .contiguous()
@@ -1428,8 +1482,15 @@ class TextDecodeStage(torch.nn.Module):
         return _linear_tokenwise(self.model.lm_head, hidden_states[:, -1:, :])
 
 
-def decode_attention_label(device: torch.device) -> str:
-    return DECODE_ATTENTION if device.type == "npu" else "manual"
+def decode_attention_label(
+    device: torch.device,
+    optimization: DecodeOptimizationConfig | None = None,
+) -> str:
+    if device.type != "npu":
+        return "manual"
+    if optimization is not None and optimization.attention == "gqa_aiv":
+        return "paddle_gqa_increfa_aiv"
+    return DECODE_ATTENTION
 
 
 def decode_cache_update_label(device: torch.device) -> str:
@@ -1441,7 +1502,7 @@ def decode_source_hash() -> str:
     digest = hashlib.sha1()
     # Decode owns its graph, while the shared text layer methods it calls are
     # defined by the prefill stage.
-    for name in ("text_prefill.py", "text_decode.py"):
+    for name in ("text_prefill.py", "text_decode.py", "gqa_increfa_aiv.py"):
         path = here / name
         digest.update(name.encode("utf-8"))
         digest.update(short_file_hash(path).encode("utf-8"))
@@ -1499,12 +1560,17 @@ def compile_text_decode_stage(
     optimization: str | DecodeOptimizationConfig = "baseline",
 ) -> tuple[Any, dict[str, Any]]:
     optimization = resolve_decode_optimization(optimization)
+    if optimization.attention == "gqa_aiv":
+        if backend_name != "torchair":
+            raise ValueError("gqa_aiv is an independent TorchAir-only operator")
+        if batch_size != 1:
+            raise ValueError("gqa_aiv currently supports only batch_size=1")
     common_metadata = {
         "backend": backend_name,
         "enabled": backend_name != "raw_eager",
         "boundary": "token_embedding_text_transformer_lm_head_static_step",
         "linear_weight_format": linear_weight_format,
-        "decode_attention": decode_attention_label(device),
+        "decode_attention": decode_attention_label(device, optimization),
         "decode_cache_update": decode_cache_update_label(device),
         "decode_optimization": optimization.name,
         "decode_optimization_config": {
@@ -1525,6 +1591,9 @@ def compile_text_decode_stage(
                 optimization.post_scatter_kv_prefetch
             ),
             "vector_add_rms_norm": optimization.vector_add_rms_norm,
+            "gqa_aiv_vector_core_count": (
+                optimization.gqa_aiv_vector_core_count
+            ),
         },
     }
     if backend_name == "raw_eager":
@@ -1536,6 +1605,8 @@ def compile_text_decode_stage(
         if optimization.vector_add_rms_norm:
             _register_vector_add_rms_norm_converter()
         torchair, CompilerConfig = import_torchair()
+        if optimization.attention == "gqa_aiv":
+            register_gqa_increfa_aiv_converter()
         shape_cache_dir = torchair_cache_dir_for_shape(
             cache_root,
             batch_size=batch_size,
@@ -1573,7 +1644,9 @@ def compile_text_decode_stage(
                 "torchair": torchair_version_label(device),
                 "decode_source_hash": decode_source_hash(),
                 "linear_weight_format": linear_weight_format,
-                "decode_attention": decode_attention_label(device),
+                "decode_attention": decode_attention_label(
+                    device, optimization
+                ),
                 "decode_cache_update": decode_cache_update_label(device),
                 "execution_mode": TORCHAIR_EXECUTION_MODE,
                 "decode_optimization": optimization.name,
