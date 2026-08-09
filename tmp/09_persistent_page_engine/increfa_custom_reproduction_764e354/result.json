@@ -1,0 +1,1226 @@
+{
+  "schema_version": 1,
+  "kind": "custom_increfa_reproduction_aggregate",
+  "aggregation_policy": "median of each process block medians; all processes retained",
+  "stock_processes": [
+    ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json",
+    ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json",
+    ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json",
+    ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json"
+  ],
+  "custom_processes": [
+    ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json",
+    ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json",
+    ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json",
+    ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json"
+  ],
+  "process_count_per_implementation": 4,
+  "configuration_match": true,
+  "configuration": {
+    "batch_size": 1,
+    "query_heads": 16,
+    "key_value_heads": 16,
+    "op_num_key_value_heads": 0,
+    "head_dim": 128,
+    "input_layout": "BNSD",
+    "dtype": "fp16",
+    "masked": true,
+    "actual_seq_lengths": null,
+    "inner_precise": 1,
+    "scale_value": 0.08838834764831843,
+    "kv_lengths": [
+      128,
+      512,
+      2048
+    ],
+    "seed": 20260809,
+    "device_index": 0
+  },
+  "atol": 0.0,
+  "rtol": 0.0,
+  "all_cases_allclose": true,
+  "all_cases_exact": true,
+  "output_checks": [
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json",
+      "label": "stock_long_a",
+      "kv_length": 128
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 0.9999999999999999,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json",
+      "label": "stock_long_a",
+      "kv_length": 512
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0000000000000002,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json",
+      "label": "stock_long_a",
+      "kv_length": 2048
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json",
+      "label": "stock_long_b",
+      "kv_length": 128
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 0.9999999999999999,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json",
+      "label": "stock_long_b",
+      "kv_length": 512
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0000000000000002,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json",
+      "label": "stock_long_b",
+      "kv_length": 2048
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json",
+      "label": "stock_long_c",
+      "kv_length": 128
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 0.9999999999999999,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json",
+      "label": "stock_long_c",
+      "kv_length": 512
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0000000000000002,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json",
+      "label": "stock_long_c",
+      "kv_length": 2048
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json",
+      "label": "stock_long_d",
+      "kv_length": 128
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 0.9999999999999999,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json",
+      "label": "stock_long_d",
+      "kv_length": 512
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0000000000000002,
+      "implementation": "stock",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json",
+      "label": "stock_long_d",
+      "kv_length": 2048
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json",
+      "label": "custom_long_a",
+      "kv_length": 128
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 0.9999999999999999,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json",
+      "label": "custom_long_a",
+      "kv_length": 512
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0000000000000002,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json",
+      "label": "custom_long_a",
+      "kv_length": 2048
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json",
+      "label": "custom_long_b",
+      "kv_length": 128
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 0.9999999999999999,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json",
+      "label": "custom_long_b",
+      "kv_length": 512
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0000000000000002,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json",
+      "label": "custom_long_b",
+      "kv_length": 2048
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json",
+      "label": "custom_long_c",
+      "kv_length": 128
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 0.9999999999999999,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json",
+      "label": "custom_long_c",
+      "kv_length": 512
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0000000000000002,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json",
+      "label": "custom_long_c",
+      "kv_length": 2048
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json",
+      "label": "custom_long_d",
+      "kv_length": 128
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 0.9999999999999999,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json",
+      "label": "custom_long_d",
+      "kv_length": 512
+    },
+    {
+      "element_count": 2048,
+      "exact_count": 2048,
+      "allclose": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "relative_l2": 0.0,
+      "cosine_similarity": 1.0000000000000002,
+      "implementation": "custom",
+      "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json",
+      "label": "custom_long_d",
+      "kv_length": 2048
+    }
+  ],
+  "cases": [
+    {
+      "kv_length": 128,
+      "timing": {
+        "npu_event_us_per_call": {
+          "stock": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json",
+                "label": "stock_long_a",
+                "block_summary": {
+                  "mean": 47.26824696858724,
+                  "median": 47.290931701660156,
+                  "minimum": 47.05522155761719,
+                  "maximum": 47.492469787597656,
+                  "p90": 47.492469787597656
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json",
+                "label": "stock_long_b",
+                "block_summary": {
+                  "mean": 50.79567845662435,
+                  "median": 50.93122100830078,
+                  "minimum": 49.503849029541016,
+                  "maximum": 51.09164047241211,
+                  "p90": 51.09164047241211
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json",
+                "label": "stock_long_c",
+                "block_summary": {
+                  "mean": 51.52043660481771,
+                  "median": 51.38570022583008,
+                  "minimum": 51.07855987548828,
+                  "maximum": 52.38554000854492,
+                  "p90": 52.38554000854492
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json",
+                "label": "stock_long_d",
+                "block_summary": {
+                  "mean": 48.95593685574002,
+                  "median": 48.92802047729492,
+                  "minimum": 48.824790954589844,
+                  "maximum": 49.19955825805664,
+                  "p90": 49.19955825805664
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              47.290931701660156,
+              50.93122100830078,
+              51.38570022583008,
+              48.92802047729492
+            ],
+            "process_means_us_per_call": [
+              47.26824696858724,
+              50.79567845662435,
+              51.52043660481771,
+              48.95593685574002
+            ],
+            "median_of_process_medians_us_per_call": 49.92962074279785,
+            "median_of_process_means_us_per_call": 49.87580765618219,
+            "all_blocks_summary_us_per_call": {
+              "mean": 49.63507472144233,
+              "median": 49.35170364379883,
+              "minimum": 47.05522155761719,
+              "maximum": 52.38554000854492,
+              "p90": 51.50667190551758
+            }
+          },
+          "custom": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json",
+                "label": "custom_long_a",
+                "block_summary": {
+                  "mean": 52.11506483289931,
+                  "median": 52.093849182128906,
+                  "minimum": 51.65214157104492,
+                  "maximum": 52.60218048095703,
+                  "p90": 52.60218048095703
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json",
+                "label": "custom_long_b",
+                "block_summary": {
+                  "mean": 51.51339128282335,
+                  "median": 51.47513961791992,
+                  "minimum": 51.08702850341797,
+                  "maximum": 51.967010498046875,
+                  "p90": 51.967010498046875
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json",
+                "label": "custom_long_c",
+                "block_summary": {
+                  "mean": 48.95456398857964,
+                  "median": 48.981300354003906,
+                  "minimum": 48.42259979248047,
+                  "maximum": 49.91680908203125,
+                  "p90": 49.91680908203125
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json",
+                "label": "custom_long_d",
+                "block_summary": {
+                  "mean": 48.41192330254449,
+                  "median": 48.33639907836914,
+                  "minimum": 48.120121002197266,
+                  "maximum": 48.926780700683594,
+                  "p90": 48.926780700683594
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              52.093849182128906,
+              51.47513961791992,
+              48.981300354003906,
+              48.33639907836914
+            ],
+            "process_means_us_per_call": [
+              52.11506483289931,
+              51.51339128282335,
+              48.95456398857964,
+              48.41192330254449
+            ],
+            "median_of_process_medians_us_per_call": 50.228219985961914,
+            "median_of_process_means_us_per_call": 50.23397763570149,
+            "all_blocks_summary_us_per_call": {
+              "mean": 50.2487358517117,
+              "median": 50.50191879272461,
+              "minimum": 48.120121002197266,
+              "maximum": 52.60218048095703,
+              "p90": 52.18259048461914
+            }
+          },
+          "custom_over_stock_latency_ratio": 1.005980402789403,
+          "stock_over_custom_speed_ratio": 0.9940551498092602
+        },
+        "host_wall_us_per_call": {
+          "stock": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json",
+                "label": "stock_long_a",
+                "block_summary": {
+                  "mean": 47.381566397638785,
+                  "median": 47.36326006241143,
+                  "minimum": 47.12659097276628,
+                  "maximum": 47.92950942646712,
+                  "p90": 47.92950942646712
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json",
+                "label": "stock_long_b",
+                "block_summary": {
+                  "mean": 50.9376302232138,
+                  "median": 51.02910753339529,
+                  "minimum": 50.02451001200825,
+                  "maximum": 51.165259443223476,
+                  "p90": 51.165259443223476
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json",
+                "label": "stock_long_c",
+                "block_summary": {
+                  "mean": 51.63568311319169,
+                  "median": 51.4583894982934,
+                  "minimum": 51.14337452687323,
+                  "maximum": 52.85873298998922,
+                  "p90": 52.85873298998922
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json",
+                "label": "stock_long_d",
+                "block_summary": {
+                  "mean": 49.066254403442144,
+                  "median": 48.997797537595034,
+                  "minimum": 48.89081546571106,
+                  "maximum": 49.56959199625999,
+                  "p90": 49.56959199625999
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              47.36326006241143,
+              51.02910753339529,
+              51.4583894982934,
+              48.997797537595034
+            ],
+            "process_means_us_per_call": [
+              47.381566397638785,
+              50.9376302232138,
+              51.63568311319169,
+              49.066254403442144
+            ],
+            "median_of_process_medians_us_per_call": 50.01345253549516,
+            "median_of_process_means_us_per_call": 50.00194231332797,
+            "all_blocks_summary_us_per_call": {
+              "mean": 49.75528353437161,
+              "median": 49.79705100413412,
+              "minimum": 47.12659097276628,
+              "maximum": 52.85873298998922,
+              "p90": 51.572836469858885
+            }
+          },
+          "custom": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json",
+                "label": "custom_long_a",
+                "block_summary": {
+                  "mean": 52.22693042984853,
+                  "median": 52.158096455968916,
+                  "minimum": 51.71359400264919,
+                  "maximum": 52.961969980970025,
+                  "p90": 52.961969980970025
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json",
+                "label": "custom_long_b",
+                "block_summary": {
+                  "mean": 51.6293758733405,
+                  "median": 51.54374602716416,
+                  "minimum": 51.154124550521374,
+                  "maximum": 52.4540365440771,
+                  "p90": 52.4540365440771
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json",
+                "label": "custom_long_c",
+                "block_summary": {
+                  "mean": 49.07630627147026,
+                  "median": 49.0619339980185,
+                  "minimum": 48.49754401948303,
+                  "maximum": 49.996754503808916,
+                  "p90": 49.996754503808916
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json",
+                "label": "custom_long_d",
+                "block_summary": {
+                  "mean": 48.52738970011059,
+                  "median": 48.399977502413094,
+                  "minimum": 48.187208944000304,
+                  "maximum": 49.42339996341616,
+                  "p90": 49.42339996341616
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              52.158096455968916,
+              51.54374602716416,
+              49.0619339980185,
+              48.399977502413094
+            ],
+            "process_means_us_per_call": [
+              52.22693042984853,
+              51.6293758733405,
+              49.07630627147026,
+              48.52738970011059
+            ],
+            "median_of_process_medians_us_per_call": 50.30284001259133,
+            "median_of_process_means_us_per_call": 50.35284107240538,
+            "all_blocks_summary_us_per_call": {
+              "mean": 50.365000568692466,
+              "median": 50.575439527165145,
+              "minimum": 48.187208944000304,
+              "maximum": 52.961969980970025,
+              "p90": 52.425006055273116
+            }
+          },
+          "custom_over_stock_latency_ratio": 1.005786192762653,
+          "stock_over_custom_speed_ratio": 0.9942470946566092
+        }
+      }
+    },
+    {
+      "kv_length": 512,
+      "timing": {
+        "npu_event_us_per_call": {
+          "stock": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json",
+                "label": "stock_long_a",
+                "block_summary": {
+                  "mean": 49.39340676201714,
+                  "median": 47.24721908569336,
+                  "minimum": 47.01961135864258,
+                  "maximum": 58.66773986816406,
+                  "p90": 58.66773986816406
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json",
+                "label": "stock_long_b",
+                "block_summary": {
+                  "mean": 51.50792100694444,
+                  "median": 51.52069091796875,
+                  "minimum": 51.40658187866211,
+                  "maximum": 51.603050231933594,
+                  "p90": 51.603050231933594
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json",
+                "label": "stock_long_c",
+                "block_summary": {
+                  "mean": 51.73928027682834,
+                  "median": 51.79985046386719,
+                  "minimum": 51.50621032714844,
+                  "maximum": 52.02621078491211,
+                  "p90": 52.02621078491211
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json",
+                "label": "stock_long_d",
+                "block_summary": {
+                  "mean": 50.13186518351237,
+                  "median": 49.63684844970703,
+                  "minimum": 49.38433074951172,
+                  "maximum": 52.98421859741211,
+                  "p90": 52.98421859741211
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              47.24721908569336,
+              51.52069091796875,
+              51.79985046386719,
+              49.63684844970703
+            ],
+            "process_means_us_per_call": [
+              49.39340676201714,
+              51.50792100694444,
+              51.73928027682834,
+              50.13186518351237
+            ],
+            "median_of_process_medians_us_per_call": 50.57876968383789,
+            "median_of_process_means_us_per_call": 50.81989309522841,
+            "all_blocks_summary_us_per_call": {
+              "mean": 50.69311830732558,
+              "median": 51.46785354614258,
+              "minimum": 47.01961135864258,
+              "maximum": 58.66773986816406,
+              "p90": 52.02621078491211
+            }
+          },
+          "custom": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json",
+                "label": "custom_long_a",
+                "block_summary": {
+                  "mean": 63.95116763644748,
+                  "median": 63.89527893066406,
+                  "minimum": 63.44636917114258,
+                  "maximum": 64.37724304199219,
+                  "p90": 64.37724304199219
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json",
+                "label": "custom_long_b",
+                "block_summary": {
+                  "mean": 51.970038943820526,
+                  "median": 51.811378479003906,
+                  "minimum": 51.65724182128906,
+                  "maximum": 52.76988983154297,
+                  "p90": 52.76988983154297
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json",
+                "label": "custom_long_c",
+                "block_summary": {
+                  "mean": 49.24249691433377,
+                  "median": 49.14141082763672,
+                  "minimum": 49.000091552734375,
+                  "maximum": 49.69742965698242,
+                  "p90": 49.69742965698242
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json",
+                "label": "custom_long_d",
+                "block_summary": {
+                  "mean": 48.796908908420136,
+                  "median": 48.81793975830078,
+                  "minimum": 48.528079986572266,
+                  "maximum": 48.98439025878906,
+                  "p90": 48.98439025878906
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              63.89527893066406,
+              51.811378479003906,
+              49.14141082763672,
+              48.81793975830078
+            ],
+            "process_means_us_per_call": [
+              63.95116763644748,
+              51.970038943820526,
+              49.24249691433377,
+              48.796908908420136
+            ],
+            "median_of_process_medians_us_per_call": 50.47639465332031,
+            "median_of_process_means_us_per_call": 50.60626792907715,
+            "all_blocks_summary_us_per_call": {
+              "mean": 53.49015310075548,
+              "median": 50.67733573913574,
+              "minimum": 48.528079986572266,
+              "maximum": 64.37724304199219,
+              "p90": 64.10516357421875
+            }
+          },
+          "custom_over_stock_latency_ratio": 0.9979759288104967,
+          "stock_over_custom_speed_ratio": 1.0020281763628465
+        },
+        "host_wall_us_per_call": {
+          "stock": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json",
+                "label": "stock_long_a",
+                "block_summary": {
+                  "mean": 49.46635584605651,
+                  "median": 47.31276456732303,
+                  "minimum": 47.09319560788572,
+                  "maximum": 58.74594347551465,
+                  "p90": 58.74594347551465
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json",
+                "label": "stock_long_b",
+                "block_summary": {
+                  "mean": 51.59739362231145,
+                  "median": 51.593072013929486,
+                  "minimum": 51.49694997817278,
+                  "maximum": 51.69992859009653,
+                  "p90": 51.69992859009653
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json",
+                "label": "stock_long_c",
+                "block_summary": {
+                  "mean": 51.80979443765763,
+                  "median": 51.863146596588194,
+                  "minimum": 51.57507152762264,
+                  "maximum": 52.10400593932718,
+                  "p90": 52.10400593932718
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json",
+                "label": "stock_long_d",
+                "block_summary": {
+                  "mean": 50.20605722287049,
+                  "median": 49.7064950177446,
+                  "minimum": 49.4506754912436,
+                  "maximum": 53.05341200437397,
+                  "p90": 53.05341200437397
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              47.31276456732303,
+              51.593072013929486,
+              51.863146596588194,
+              49.7064950177446
+            ],
+            "process_means_us_per_call": [
+              49.46635584605651,
+              51.59739362231145,
+              51.80979443765763,
+              50.20605722287049
+            ],
+            "median_of_process_medians_us_per_call": 50.64978351583704,
+            "median_of_process_means_us_per_call": 50.90172542259097,
+            "all_blocks_summary_us_per_call": {
+              "mean": 50.76990028222402,
+              "median": 51.55535880476236,
+              "minimum": 47.09319560788572,
+              "maximum": 58.74594347551465,
+              "p90": 52.10400593932718
+            }
+          },
+          "custom": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json",
+                "label": "custom_long_a",
+                "block_summary": {
+                  "mean": 64.03712500145451,
+                  "median": 63.98447253741324,
+                  "minimum": 63.522094511426985,
+                  "maximum": 64.46519552264363,
+                  "p90": 64.46519552264363
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json",
+                "label": "custom_long_b",
+                "block_summary": {
+                  "mean": 52.04533574740506,
+                  "median": 51.88486201222986,
+                  "minimum": 51.725044031627476,
+                  "maximum": 52.84706852398813,
+                  "p90": 52.84706852398813
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json",
+                "label": "custom_long_c",
+                "block_summary": {
+                  "mean": 49.31739655633768,
+                  "median": 49.21740654390305,
+                  "minimum": 49.06710400246084,
+                  "maximum": 49.772741040214896,
+                  "p90": 49.772741040214896
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json",
+                "label": "custom_long_d",
+                "block_summary": {
+                  "mean": 48.86487897278534,
+                  "median": 48.88441599905491,
+                  "minimum": 48.60085598193109,
+                  "maximum": 49.05428399797529,
+                  "p90": 49.05428399797529
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              63.98447253741324,
+              51.88486201222986,
+              49.21740654390305,
+              48.88441599905491
+            ],
+            "process_means_us_per_call": [
+              64.03712500145451,
+              52.04533574740506,
+              49.31739655633768,
+              48.86487897278534
+            ],
+            "median_of_process_medians_us_per_call": 50.551134278066456,
+            "median_of_process_means_us_per_call": 50.68136615187137,
+            "all_blocks_summary_us_per_call": {
+              "mean": 53.56618406949565,
+              "median": 50.748892535921186,
+              "minimum": 48.60085598193109,
+              "maximum": 64.46519552264363,
+              "p90": 64.19874599669129
+            }
+          },
+          "custom_over_stock_latency_ratio": 0.9980523265664157,
+          "stock_over_custom_speed_ratio": 1.0019514742681725
+        }
+      }
+    },
+    {
+      "kv_length": 2048,
+      "timing": {
+        "npu_event_us_per_call": {
+          "stock": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json",
+                "label": "stock_long_a",
+                "block_summary": {
+                  "mean": 53.189758724636505,
+                  "median": 49.38301086425781,
+                  "minimum": 48.7924690246582,
+                  "maximum": 58.989620208740234,
+                  "p90": 58.989620208740234
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json",
+                "label": "stock_long_b",
+                "block_summary": {
+                  "mean": 51.647769927978516,
+                  "median": 51.69266128540039,
+                  "minimum": 51.44681167602539,
+                  "maximum": 51.97433090209961,
+                  "p90": 51.97433090209961
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json",
+                "label": "stock_long_c",
+                "block_summary": {
+                  "mean": 51.94311184353299,
+                  "median": 51.972389221191406,
+                  "minimum": 51.66571044921875,
+                  "maximum": 52.27272033691406,
+                  "p90": 52.27272033691406
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json",
+                "label": "stock_long_d",
+                "block_summary": {
+                  "mean": 49.74215571085612,
+                  "median": 49.750308990478516,
+                  "minimum": 49.42375946044922,
+                  "maximum": 50.23466873168945,
+                  "p90": 50.23466873168945
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              49.38301086425781,
+              51.69266128540039,
+              51.972389221191406,
+              49.750308990478516
+            ],
+            "process_means_us_per_call": [
+              53.189758724636505,
+              51.647769927978516,
+              51.94311184353299,
+              49.74215571085612
+            ],
+            "median_of_process_medians_us_per_call": 50.72148513793945,
+            "median_of_process_means_us_per_call": 51.79544088575575,
+            "all_blocks_summary_us_per_call": {
+              "mean": 51.63069905175103,
+              "median": 51.61773109436035,
+              "minimum": 48.7924690246582,
+              "maximum": 58.989620208740234,
+              "p90": 57.15098190307617
+            }
+          },
+          "custom": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json",
+                "label": "custom_long_a",
+                "block_summary": {
+                  "mean": 62.76499811808268,
+                  "median": 63.876548767089844,
+                  "minimum": 53.764801025390625,
+                  "maximum": 64.53724670410156,
+                  "p90": 64.53724670410156
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json",
+                "label": "custom_long_b",
+                "block_summary": {
+                  "mean": 52.568054623074005,
+                  "median": 52.08517074584961,
+                  "minimum": 52.010250091552734,
+                  "maximum": 56.28879165649414,
+                  "p90": 56.28879165649414
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json",
+                "label": "custom_long_c",
+                "block_summary": {
+                  "mean": 49.14418750339084,
+                  "median": 49.15229034423828,
+                  "minimum": 48.879188537597656,
+                  "maximum": 49.413639068603516,
+                  "p90": 49.413639068603516
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json",
+                "label": "custom_long_d",
+                "block_summary": {
+                  "mean": 49.38895924886068,
+                  "median": 49.374271392822266,
+                  "minimum": 49.132118225097656,
+                  "maximum": 49.79553985595703,
+                  "p90": 49.79553985595703
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              63.876548767089844,
+              52.08517074584961,
+              49.15229034423828,
+              49.374271392822266
+            ],
+            "process_means_us_per_call": [
+              62.76499811808268,
+              52.568054623074005,
+              49.14418750339084,
+              49.38895924886068
+            ],
+            "median_of_process_medians_us_per_call": 50.72972106933594,
+            "median_of_process_means_us_per_call": 50.978506935967346,
+            "all_blocks_summary_us_per_call": {
+              "mean": 53.46654987335205,
+              "median": 50.90289497375488,
+              "minimum": 48.879188537597656,
+              "maximum": 64.53724670410156,
+              "p90": 63.88084030151367
+            }
+          },
+          "custom_over_stock_latency_ratio": 1.0001623755963391,
+          "stock_over_custom_speed_ratio": 0.9998376507652146
+        },
+        "host_wall_us_per_call": {
+          "stock": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json",
+                "label": "stock_long_a",
+                "block_summary": {
+                  "mean": 53.26703589202629,
+                  "median": 49.45494595449418,
+                  "minimum": 48.863735515624285,
+                  "maximum": 59.07333898358047,
+                  "p90": 59.07333898358047
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json",
+                "label": "stock_long_b",
+                "block_summary": {
+                  "mean": 51.74312154607227,
+                  "median": 51.780484966002405,
+                  "minimum": 51.54600099194795,
+                  "maximum": 52.09329049102962,
+                  "p90": 52.09329049102962
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json",
+                "label": "stock_long_c",
+                "block_summary": {
+                  "mean": 52.01525578740984,
+                  "median": 52.04271455295384,
+                  "minimum": 51.731294486671686,
+                  "maximum": 52.34634946100414,
+                  "p90": 52.34634946100414
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json",
+                "label": "stock_long_d",
+                "block_summary": {
+                  "mean": 49.8146788449958,
+                  "median": 49.818892031908035,
+                  "minimum": 49.48784154839814,
+                  "maximum": 50.30500504653901,
+                  "p90": 50.30500504653901
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              49.45494595449418,
+              51.780484966002405,
+              52.04271455295384,
+              49.818892031908035
+            ],
+            "process_means_us_per_call": [
+              53.26703589202629,
+              51.74312154607227,
+              52.01525578740984,
+              49.8146788449958
+            ],
+            "median_of_process_medians_us_per_call": 50.79968849895522,
+            "median_of_process_means_us_per_call": 51.87918866674106,
+            "all_blocks_summary_us_per_call": {
+              "mean": 51.71002301762605,
+              "median": 51.69786122860387,
+              "minimum": 48.863735515624285,
+              "maximum": 59.07333898358047,
+              "p90": 57.224642601795495
+            }
+          },
+          "custom": {
+            "processes": [
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json",
+                "label": "custom_long_a",
+                "block_summary": {
+                  "mean": 62.846938225751124,
+                  "median": 63.96980246063322,
+                  "minimum": 53.83366497699171,
+                  "maximum": 64.61722799576819,
+                  "p90": 64.61722799576819
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json",
+                "label": "custom_long_b",
+                "block_summary": {
+                  "mean": 52.64193850517687,
+                  "median": 52.15849599335343,
+                  "minimum": 52.077175001613796,
+                  "maximum": 56.36651301756501,
+                  "p90": 56.36651301756501
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json",
+                "label": "custom_long_c",
+                "block_summary": {
+                  "mean": 49.2149970959872,
+                  "median": 49.214856582693756,
+                  "minimum": 48.94750192761421,
+                  "maximum": 49.4795209961012,
+                  "p90": 49.4795209961012
+                }
+              },
+              {
+                "path": ".runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json",
+                "label": "custom_long_d",
+                "block_summary": {
+                  "mean": 49.46003621444106,
+                  "median": 49.444405478425324,
+                  "minimum": 49.20053610112518,
+                  "maximum": 49.85987744294107,
+                  "p90": 49.85987744294107
+                }
+              }
+            ],
+            "process_medians_us_per_call": [
+              63.96980246063322,
+              52.15849599335343,
+              49.214856582693756,
+              49.444405478425324
+            ],
+            "process_means_us_per_call": [
+              62.846938225751124,
+              52.64193850517687,
+              49.2149970959872,
+              49.46003621444106
+            ],
+            "median_of_process_medians_us_per_call": 50.801450735889375,
+            "median_of_process_means_us_per_call": 51.050987359808964,
+            "all_blocks_summary_us_per_call": {
+              "mean": 53.54097751033906,
+              "median": 50.96852622227743,
+              "minimum": 48.94750192761421,
+              "maximum": 64.61722799576819,
+              "p90": 63.97425755858421
+            }
+          },
+          "custom_over_stock_latency_ratio": 1.0000346899161436,
+          "stock_over_custom_speed_ratio": 0.9999653112872048
+        }
+      }
+    }
+  ]
+}

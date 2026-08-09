@@ -1,0 +1,22 @@
+CUSTOM_INCREFA_REPRODUCTION_AGGREGATE
+profiled=false
+chip=Ascend910B2
+physical_npu=6
+processes_per_implementation=4
+warmup_calls_per_kv_per_process=5000
+timing_blocks_per_kv_per_process=9
+calls_per_timing_block=2000
+aggregation=median_of_process_block_medians_all_processes_retained
+configuration_match=true
+all_cases_allclose=true
+all_cases_exact=true
+
+KV128 npu_event_stock_us=49.929621 npu_event_custom_us=50.228220 custom_over_stock=1.005980 host_wall_stock_us=50.013453 host_wall_custom_us=50.302840 host_custom_over_stock=1.005786
+KV512 npu_event_stock_us=50.578770 npu_event_custom_us=50.476395 custom_over_stock=0.997976 host_wall_stock_us=50.649784 host_wall_custom_us=50.551134 host_custom_over_stock=0.998052
+KV2048 npu_event_stock_us=50.721485 npu_event_custom_us=50.729721 custom_over_stock=1.000162 host_wall_stock_us=50.799688 host_wall_custom_us=50.801451 host_custom_over_stock=1.000035
+
+variance_disclosure=custom_a process medians were 63.895279 us at KV512 and 63.876549 us at KV2048; this process is retained in result.json
+telemetry_range_power_w=101.6..102.7
+telemetry_range_temperature_c=48..50
+result=result.json
+exit_code=0

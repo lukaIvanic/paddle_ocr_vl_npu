@@ -1,0 +1,5 @@
+selection_test=custom_package_copy_with_only_selected_kernel_object_temporarily_missing
+exit_code=1
+cann_error_code=161002
+error=Failed to stat file: $REPO/.runtime_cache/increfa_mixed_opp_missing_kernel_20260809/vendors/paddle_increfa_mixed_transformer/op_impl/ai_core/tbe/kernel/ascend910b/incre_flash_attention/IncreFlashAttention_7b761bdde53e2d667f3cdc458400fc8e.o
+interpretation=runtime selected the custom package path and did not fall back to the stock built-in object

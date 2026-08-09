@@ -1,0 +1,36 @@
+Validation lane: Blue-zone Ascend 910B2 container
+Project checkout: $REPO
+Project commit for final aggregate: 764e35429b93e26bd3760afb4e8c4a982dc773a0
+Operator source commit: afe72144f9f2ac8441929035795db88a111b30c5
+Physical device selected by npu-setup: NPU 6 (logical npu:0)
+
+Fixed-key package build:
+
+source npu-setup
+cd "$REPO"/.runtime_cache/increfa_aiv_source
+PYTHONPATH=/usr/local/python3.12.13/lib/python3.12/site-packages PATH="$REPO"/.runtime_cache/increfa_bin:$PATH bash build.sh --pkg --soc=ascend910b --vendor_name=paddle_increfa_mixed --ops=incre_flash_attention --ops-compile-options "--tiling_key=11000000000100000" -j8 -O3
+
+Every timed run used a fresh Python process after `source npu-setup` and this
+common command shape:
+
+/usr/local/python3.12.13/bin/python3 09_persistent_page_engine/scripts/probes/compare_custom_increfa.py run --label LABEL --output OUTPUT --warmup 5000 --blocks 9 --repeats-per-block 2000
+
+For stock processes, ASCEND_CUSTOM_OPP_PATH was unset. For custom processes,
+the fresh shell first ran:
+
+source "$REPO"/.runtime_cache/increfa_mixed_opp_20260809/vendors/paddle_increfa_mixed_transformer/bin/set_env.bash
+
+Process order and substitutions:
+
+1. stock_long_a  -> .runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json
+2. custom_long_a -> .runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json
+3. stock_long_b  -> .runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json
+4. custom_long_b -> .runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json
+5. custom_long_c -> .runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json
+6. stock_long_c  -> .runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json
+7. custom_long_d -> .runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json
+8. stock_long_d  -> .runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json
+
+Final CPU-only aggregation command after pulling commit 764e354:
+
+/usr/local/python3.12.13/bin/python3 09_persistent_page_engine/scripts/probes/compare_custom_increfa.py aggregate --stock .runtime_cache/increfa_reproduction_20260809/long_abab/stock_a.json --stock .runtime_cache/increfa_reproduction_20260809/long_abab/stock_b.json --stock .runtime_cache/increfa_reproduction_20260809/long_baba/stock_c.json --stock .runtime_cache/increfa_reproduction_20260809/long_baba/stock_d.json --custom .runtime_cache/increfa_reproduction_20260809/long_abab/custom_a.json --custom .runtime_cache/increfa_reproduction_20260809/long_abab/custom_b.json --custom .runtime_cache/increfa_reproduction_20260809/long_baba/custom_c.json --custom .runtime_cache/increfa_reproduction_20260809/long_baba/custom_d.json --output .runtime_cache/increfa_reproduction_20260809/long_aggregate.json
