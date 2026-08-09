@@ -10,15 +10,15 @@ import torch
 from .compile_utils import import_torchair
 
 
-GE_QUERY_OP_NAME = "PaddleDecodeQuerySliceV2"
-GE_KEY_OP_NAME = "PaddleDecodeKeySliceV2"
-GE_VALUE_OP_NAME = "PaddleDecodeValueSliceV2"
+GE_QUERY_OP_NAME = "PaddleDecodeQuerySliceV3"
+GE_KEY_OP_NAME = "PaddleDecodeKeySliceV3"
+GE_VALUE_OP_NAME = "PaddleDecodeValueSliceV3"
 GE_OP_NAME = ",".join(
     (GE_QUERY_OP_NAME, GE_KEY_OP_NAME, GE_VALUE_OP_NAME)
 )
-PYTORCH_QUERY_OP_NAME = "paddleocr_vl::decode_query_slice_v2"
-PYTORCH_KEY_OP_NAME = "paddleocr_vl::decode_key_slice_v2"
-PYTORCH_VALUE_OP_NAME = "paddleocr_vl::decode_value_slice_v2"
+PYTORCH_QUERY_OP_NAME = "paddleocr_vl::decode_query_slice_v3"
+PYTORCH_KEY_OP_NAME = "paddleocr_vl::decode_key_slice_v3"
+PYTORCH_VALUE_OP_NAME = "paddleocr_vl::decode_value_slice_v3"
 PYTORCH_OP_NAME = ",".join(
     (PYTORCH_QUERY_OP_NAME, PYTORCH_KEY_OP_NAME, PYTORCH_VALUE_OP_NAME)
 )
@@ -78,7 +78,7 @@ def register_decode_qkv_split_converter() -> None:
     register_converter = converter_module.register_fx_node_ge_converter
     ge_custom_op = ge_module.custom_op
 
-    @register_converter(torch.ops.paddleocr_vl.decode_query_slice_v2.default)
+    @register_converter(torch.ops.paddleocr_vl.decode_query_slice_v3.default)
     def _convert_query(qkv: Any, meta_outputs: Any = None) -> Any:
         del meta_outputs
         return ge_custom_op(
@@ -87,7 +87,7 @@ def register_decode_qkv_split_converter() -> None:
             outputs=["query"],
         )
 
-    @register_converter(torch.ops.paddleocr_vl.decode_key_slice_v2.default)
+    @register_converter(torch.ops.paddleocr_vl.decode_key_slice_v3.default)
     def _convert_key(qkv: Any, meta_outputs: Any = None) -> Any:
         del meta_outputs
         return ge_custom_op(
@@ -96,7 +96,7 @@ def register_decode_qkv_split_converter() -> None:
             outputs=["key"],
         )
 
-    @register_converter(torch.ops.paddleocr_vl.decode_value_slice_v2.default)
+    @register_converter(torch.ops.paddleocr_vl.decode_value_slice_v3.default)
     def _convert_value(qkv: Any, meta_outputs: Any = None) -> Any:
         del meta_outputs
         return ge_custom_op(

@@ -1,6 +1,6 @@
 [
   {
-    "op": "PaddleDecodeQuerySliceV2",
+    "op": "PaddleDecodeQuerySliceV3",
     "input_desc": [
       {"name": "qkv", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
     ],
@@ -9,7 +9,7 @@
     ]
   },
   {
-    "op": "PaddleDecodeKeySliceV2",
+    "op": "PaddleDecodeKeySliceV3",
     "input_desc": [
       {"name": "qkv", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
     ],
@@ -18,7 +18,7 @@
     ]
   },
   {
-    "op": "PaddleDecodeValueSliceV2",
+    "op": "PaddleDecodeValueSliceV3",
     "input_desc": [
       {"name": "qkv", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
     ],

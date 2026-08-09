@@ -42,7 +42,7 @@ private:
 };
 }
 
-extern "C" __global__ __aicore__ void paddle_decode_value_slice_v2(
+extern "C" __global__ __aicore__ void paddle_decode_value_slice_v3(
     GM_ADDR qkv,
     GM_ADDR output,
     GM_ADDR workspace,
@@ -50,6 +50,11 @@ extern "C" __global__ __aicore__ void paddle_decode_value_slice_v2(
 {
     KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_AIV_ONLY);
     REGISTER_TILING_DEFAULT(PaddleDecodeQkvSplitTilingData);
+    GET_TILING_DATA(tilingData, tiling);
+    if (GetBlockIdx() != 0 || tilingData.queryElements != 2048 ||
+        tilingData.keyValueElements != kElements) {
+        return;
+    }
     TPipe pipe;
     PaddleDecodeValueSliceKernel kernel;
     kernel.Init(qkv, output, &pipe);

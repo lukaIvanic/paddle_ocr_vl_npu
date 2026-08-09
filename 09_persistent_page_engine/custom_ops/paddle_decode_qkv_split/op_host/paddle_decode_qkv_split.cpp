@@ -55,9 +55,9 @@ static ge::graphStatus InferDataType(gert::InferDataTypeContext* context)
 }
 
 namespace ops {
-class PaddleDecodeQuerySliceV2 : public OpDef {
+class PaddleDecodeQuerySliceV3 : public OpDef {
 public:
-    explicit PaddleDecodeQuerySliceV2(const char* name) : OpDef(name)
+    explicit PaddleDecodeQuerySliceV3(const char* name) : OpDef(name)
     {
         this->Input("qkv").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
@@ -69,9 +69,9 @@ public:
     }
 };
 
-class PaddleDecodeKeySliceV2 : public OpDef {
+class PaddleDecodeKeySliceV3 : public OpDef {
 public:
-    explicit PaddleDecodeKeySliceV2(const char* name) : OpDef(name)
+    explicit PaddleDecodeKeySliceV3(const char* name) : OpDef(name)
     {
         this->Input("qkv").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
@@ -83,9 +83,9 @@ public:
     }
 };
 
-class PaddleDecodeValueSliceV2 : public OpDef {
+class PaddleDecodeValueSliceV3 : public OpDef {
 public:
-    explicit PaddleDecodeValueSliceV2(const char* name) : OpDef(name)
+    explicit PaddleDecodeValueSliceV3(const char* name) : OpDef(name)
     {
         this->Input("qkv").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
@@ -97,7 +97,7 @@ public:
     }
 };
 
-OP_ADD(PaddleDecodeQuerySliceV2);
-OP_ADD(PaddleDecodeKeySliceV2);
-OP_ADD(PaddleDecodeValueSliceV2);
+OP_ADD(PaddleDecodeQuerySliceV3);
+OP_ADD(PaddleDecodeKeySliceV3);
+OP_ADD(PaddleDecodeValueSliceV3);
 }

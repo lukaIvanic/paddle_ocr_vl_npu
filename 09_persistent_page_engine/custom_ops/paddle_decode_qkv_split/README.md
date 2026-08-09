@@ -1,4 +1,4 @@
-# Paddle B1 decode QKV slices V2
+# Paddle B1 decode QKV slices V3
 
 This package replaces the TBE/TIK `SplitV` plus packed-QKV layout chain with
 three independent single-output AIV-only AscendC operators. Each accepts the
@@ -12,6 +12,12 @@ them. V1 incorrectly reused one `VECIN` queue for both directions; its final
 UB-to-HBM transfer could still be active when the next fused task reused the
 same UB address, which corrupted the first 256 query elements.
 
+V3 also loads and validates every registered tiling field in the device entry.
+V2 was exact outside a SuperKernel, but each single-component strict-fusion
+probe faulted with an out-of-range MTE address. Making the tiling pointer a
+live, checked ABI input follows the already strict-fusion-safe token-embedding
+kernel pattern.
+
 Build and install on Ascend 910B after `source npu-setup`, then source the
-generated `vendors/paddle_decode_qkv_slices_v2/bin/set_env.bash` before TorchAir
+generated `vendors/paddle_decode_qkv_slices_v3/bin/set_env.bash` before TorchAir
 initializes GE.
