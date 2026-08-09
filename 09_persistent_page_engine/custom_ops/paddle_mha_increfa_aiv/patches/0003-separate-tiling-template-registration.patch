@@ -1,0 +1,15 @@
+diff --git a/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -4198 +4198 @@
+-REGISTER_TILING_TEMPLATE_FIA(IncreFlashAttention, IFATiling, std::vector<int32_t>({(int32_t)NpuArch::DAV_2201, (int32_t)NpuArch::DAV_2002}), 90);
++REGISTER_TILING_TEMPLATE_FIA(PaddleMhaIncreFlashAttentionAiv, IFATiling, std::vector<int32_t>({(int32_t)NpuArch::DAV_2201, (int32_t)NpuArch::DAV_2002}), 90);
+diff --git a/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_v2.cpp b/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_v2.cpp
+--- a/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_v2.cpp
++++ b/attention/paddle_mha_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_v2.cpp
+@@ -4380 +4380 @@
+-IMPL_OP_OPTILING(IncreFlashAttentionNew)
++IMPL_OP_OPTILING(PaddleMhaIncreFlashAttentionAivNew)
+@@ -4475 +4475 @@
+-REGISTER_TILING_TEMPLATE_FIA(IncreFlashAttention, IFATilingV2, std::vector<int32_t>({(int32_t)NpuArch::DAV_3510}), 90);
++REGISTER_TILING_TEMPLATE_FIA(PaddleMhaIncreFlashAttentionAiv, IFATilingV2, std::vector<int32_t>({(int32_t)NpuArch::DAV_3510}), 90);

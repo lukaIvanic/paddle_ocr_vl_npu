@@ -43,14 +43,15 @@ The build uses the recovered official `ops-transformer` v9.0.0 source at commit
 `afe72144f9f2ac8441929035795db88a111b30c5`. It creates a detached build
 worktree under `.runtime_cache/`, renames the upstream source
 directory to the new operator, disables the stock registration surfaces in
-that build source, renames every tiling-data registration into the new operator
-namespace, overlays the distinct host/kernel entries, and compiles one tiling
-key.
+that build source, renames the tiling-data and tiling-template registry keys
+into the new operator namespace, overlays the distinct host/kernel entries,
+and compiles one tiling key.
 
-The recovered source checkout remains unchanged. The active build worktree and
-its CMake output persist across overlay revisions. New tracked patches apply
-incrementally, so a source fix does not rebuild downloaded third-party
-dependencies from scratch.
+The recovered source checkout remains unchanged. The active build worktree
+persists across overlay revisions, and new tracked patches apply incrementally.
+The upstream package wrapper recreates its CMake output and recompiles bundled
+host tools such as Protobuf. Treat that multi-minute package construction as a
+build-stage cost, never as TorchAir first-call or steady operator latency.
 
 The reused all-vector implementation still needs AIV-to-AIV `SyncAll()`. The
 kernel therefore uses CANN's hard-sync `MIX_AIV_1_0` envelope. Package gates
@@ -71,7 +72,7 @@ run the comparison through PyTorch/TorchAir:
 
 ```sh
 source <PADDLE_MHA_INCREFA_AIV_SET_ENV>
-PYTHONPATH=09_persistent_page_engine \
+PYTHONPATH=09_persistent_page_engine:$PYTHONPATH \
 /usr/local/python3.12.13/bin/python3 \
   09_persistent_page_engine/scripts/probes/compare_paddle_mha_increfa_aiv.py \
   --output .runtime_cache/paddle_mha_increfa_aiv/compare.json \

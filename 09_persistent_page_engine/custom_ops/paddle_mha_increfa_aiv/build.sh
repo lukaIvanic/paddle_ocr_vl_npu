@@ -10,6 +10,7 @@ OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay"
 PATCH_PATHS=(
     "$CUSTOM_ROOT/patches/0001-mha-aiv-launch.patch"
     "$CUSTOM_ROOT/patches/0002-separate-tiling-data-registration.patch"
+    "$CUSTOM_ROOT/patches/0003-separate-tiling-template-registration.patch"
 )
 SOURCE_ROOT="${INCREFA_SOURCE_ROOT:-$PROJECT_ROOT/.runtime_cache/increfa_aiv_source}"
 EXPECTED_SOURCE_COMMIT="afe72144f9f2ac8441929035795db88a111b30c5"
