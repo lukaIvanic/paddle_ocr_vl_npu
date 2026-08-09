@@ -117,9 +117,13 @@ def main() -> int:
     actual_query = output[0].float().cpu().flatten()
     expected_query = reference[0].float().cpu().flatten()
     expected_key = reference[1].float().cpu().flatten()
+    expected_value = reference[2].float().cpu().flatten()
     region_diagnostics = {
         "query_prefix_256_equals_expected_key": bool(
             torch.equal(actual_query[:256], expected_key)
+        ),
+        "query_prefix_256_equals_expected_value": bool(
+            torch.equal(actual_query[:256], expected_value)
         ),
         "query_prefix_256_equals_expected_query": bool(
             torch.equal(actual_query[:256], expected_query[:256])

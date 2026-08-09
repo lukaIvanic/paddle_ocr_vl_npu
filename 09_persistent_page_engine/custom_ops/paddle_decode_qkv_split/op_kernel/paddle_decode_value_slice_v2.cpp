@@ -14,27 +14,35 @@ public:
         __gm__ half* input = reinterpret_cast<__gm__ half*>(qkv);
         inputGm.SetGlobalBuffer(input + kInputOffset, kElements);
         outputGm.SetGlobalBuffer(reinterpret_cast<__gm__ half*>(output), kElements);
-        pipe->InitBuffer(copyQueue, 1, kElements * sizeof(half));
+        pipe->InitBuffer(inputQueue, 1, kElements * sizeof(half));
+        pipe->InitBuffer(outputQueue, 1, kElements * sizeof(half));
     }
 
     __aicore__ inline void Process()
     {
-        LocalTensor<half> local = copyQueue.AllocTensor<half>();
-        DataCopy(local, inputGm, kElements);
-        copyQueue.EnQue(local);
-        local = copyQueue.DeQue<half>();
-        DataCopy(outputGm, local, kElements);
-        copyQueue.FreeTensor(local);
+        LocalTensor<half> inputLocal = inputQueue.AllocTensor<half>();
+        DataCopy(inputLocal, inputGm, kElements);
+        inputQueue.EnQue(inputLocal);
+        inputLocal = inputQueue.DeQue<half>();
+
+        LocalTensor<half> outputLocal = outputQueue.AllocTensor<half>();
+        DataCopy(outputLocal, inputLocal, kElements);
+        inputQueue.FreeTensor(inputLocal);
+        outputQueue.EnQue(outputLocal);
+        outputLocal = outputQueue.DeQue<half>();
+        DataCopy(outputGm, outputLocal, kElements);
+        outputQueue.FreeTensor(outputLocal);
     }
 
 private:
     GlobalTensor<half> inputGm;
     GlobalTensor<half> outputGm;
-    TQue<QuePosition::VECIN, 1> copyQueue;
+    TQue<QuePosition::VECIN, 1> inputQueue;
+    TQue<QuePosition::VECOUT, 1> outputQueue;
 };
 }
 
-extern "C" __global__ __aicore__ void paddle_decode_value_slice_v1(
+extern "C" __global__ __aicore__ void paddle_decode_value_slice_v2(
     GM_ADDR qkv,
     GM_ADDR output,
     GM_ADDR workspace,
