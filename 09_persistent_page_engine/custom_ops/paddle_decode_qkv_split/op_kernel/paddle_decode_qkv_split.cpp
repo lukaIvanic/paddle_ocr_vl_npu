@@ -25,34 +25,25 @@ public:
             reinterpret_cast<__gm__ half*>(key), kKeyValueElements);
         valueGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ half*>(value), kKeyValueElements);
-        pipe->InitBuffer(copyQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(copyQueue, 1, kTotalElements * sizeof(half));
     }
 
     __aicore__ inline void Process()
     {
-        CopySegment(queryGm, qkvGm, kQueryElements);
-        CopySegment(
-            keyGm, qkvGm[kQueryElements], kKeyValueElements);
-        CopySegment(
-            valueGm,
-            qkvGm[kQueryElements + kKeyValueElements],
-            kKeyValueElements);
-    }
-
-private:
-    __aicore__ inline void CopySegment(
-        GlobalTensor<half> destination,
-        GlobalTensor<half> source,
-        uint32_t elements)
-    {
         LocalTensor<half> local = copyQueue.AllocTensor<half>();
-        DataCopy(local, source, elements);
+        DataCopy(local, qkvGm, kTotalElements);
         copyQueue.EnQue(local);
         local = copyQueue.DeQue<half>();
-        DataCopy(destination, local, elements);
+        DataCopy(queryGm, local, kQueryElements);
+        DataCopy(keyGm, local[kQueryElements], kKeyValueElements);
+        DataCopy(
+            valueGm,
+            local[kQueryElements + kKeyValueElements],
+            kKeyValueElements);
         copyQueue.FreeTensor(local);
     }
 
+private:
     GlobalTensor<half> qkvGm;
     GlobalTensor<half> queryGm;
     GlobalTensor<half> keyGm;
