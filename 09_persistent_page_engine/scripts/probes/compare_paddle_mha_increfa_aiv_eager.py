@@ -9,6 +9,7 @@ import json
 import math
 import os
 from pathlib import Path
+import shutil
 import statistics
 import sys
 import time
@@ -49,10 +50,35 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--blocks", type=int, default=7)
     parser.add_argument("--repeats-per-block", type=int, default=200)
+    parser.add_argument(
+        "--profile-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Optionally capture one torch_npu profile per KV length. Profiling "
+            "requires an isolated --lanes stock or --lanes custom process."
+        ),
+    )
+    parser.add_argument("--profile-iters", type=int, default=5)
+    parser.add_argument(
+        "--profile-metric",
+        choices=("pipe", "memory", "l2", "memory_access"),
+        default="pipe",
+    )
     parser.add_argument("--seed", type=int, default=20260809)
     args = parser.parse_args(argv)
-    if args.warmup < 0 or args.blocks <= 0 or args.repeats_per_block <= 0:
-        parser.error("warmup must be nonnegative; blocks and repeats must be positive")
+    if (
+        args.warmup < 0
+        or args.blocks <= 0
+        or args.repeats_per_block <= 0
+        or args.profile_iters <= 0
+    ):
+        parser.error(
+            "warmup must be nonnegative; blocks, repeats, and profile-iters "
+            "must be positive"
+        )
+    if args.profile_dir is not None and args.lanes == "both":
+        parser.error("--profile-dir requires isolated --lanes stock or custom")
     return args
 
 
@@ -114,6 +140,82 @@ def time_step(
         "host_wall_us_per_call": host_us,
         "npu_event_us_per_call_summary": timing_summary(event_us),
         "host_wall_us_per_call_summary": timing_summary(host_us),
+    }
+
+
+def profiler_config(metric: str) -> Any:
+    import torch_npu.profiler as npu_prof
+
+    metrics = {
+        "pipe": npu_prof.AiCMetrics.PipeUtilization,
+        "memory": npu_prof.AiCMetrics.Memory,
+        "l2": npu_prof.AiCMetrics.L2Cache,
+        "memory_access": npu_prof.AiCMetrics.MemoryAccess,
+    }
+    return npu_prof._ExperimentalConfig(
+        profiler_level=npu_prof.ProfilerLevel.Level1,
+        aic_metrics=metrics[metric],
+        l2_cache=metric == "l2",
+        export_type=npu_prof.ExportType.Text,
+        data_simplification=False,
+    )
+
+
+def profile_step(
+    step: Callable[..., torch.Tensor],
+    inputs: tuple[torch.Tensor, ...],
+    *,
+    lane: str,
+    kv_length: int,
+    profile_dir: Path,
+    metric: str,
+    warmup: int,
+    profile_iters: int,
+) -> dict[str, Any]:
+    import torch_npu.profiler as npu_prof
+
+    case_dir = profile_dir / f"{lane}_kv{kv_length}_{metric}"
+    shutil.rmtree(case_dir, ignore_errors=True)
+    case_dir.mkdir(parents=True, exist_ok=True)
+    for _ in range(warmup):
+        step(*inputs)
+    torch.npu.synchronize()
+
+    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+    wall_started = time.perf_counter()
+    with npu_prof.profile(
+        activities=[
+            npu_prof.ProfilerActivity.CPU,
+            npu_prof.ProfilerActivity.NPU,
+        ],
+        schedule=schedule,
+        experimental_config=profiler_config(metric),
+        on_trace_ready=npu_prof.tensorboard_trace_handler(
+            str(case_dir),
+            analyse_flag=True,
+        ),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=True,
+        with_modules=False,
+        with_flops=False,
+    ) as profiler:
+        with torch.profiler.record_function(
+            f"paddleocr_vl.mha_increfa_eager.{lane}.kv{kv_length}"
+        ):
+            for _ in range(profile_iters):
+                step(*inputs)
+        torch.npu.synchronize()
+        profiler.step()
+    torch.npu.synchronize()
+    return {
+        "profile_dir": str(case_dir),
+        "metric": metric,
+        "profiler_level": "Level1",
+        "warmup_calls_outside_profiler": warmup,
+        "captured_calls": profile_iters,
+        "profile_wall_s": time.perf_counter() - wall_started,
+        "profile_wall_is_throughput_measurement": False,
     }
 
 
@@ -243,6 +345,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "kv_length": kv_length,
                 "first_call_s": {},
                 "timing": {},
+                "profile": {},
                 "output_sha256": {},
                 "parity": None,
             }
@@ -268,6 +371,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 outputs[lane_name] = output_cpu
                 case["timing"][lane_name] = timing
                 case["output_sha256"][lane_name] = tensor_sha256(output_cpu)
+                if args.profile_dir is not None:
+                    case["profile"][lane_name] = profile_step(
+                        lane_step,
+                        inputs,
+                        lane=lane_name,
+                        kv_length=kv_length,
+                        profile_dir=args.profile_dir.expanduser().resolve(),
+                        metric=args.profile_metric,
+                        warmup=args.warmup,
+                        profile_iters=args.profile_iters,
+                    )
 
             if args.lanes == "both":
                 stock_cpu = outputs["stock"]
