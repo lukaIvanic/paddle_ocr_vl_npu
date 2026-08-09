@@ -25,48 +25,67 @@ public:
             reinterpret_cast<__gm__ half*>(key), kKeyValueElements);
         valueGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ half*>(value), kKeyValueElements);
-        pipe->InitBuffer(inputQueue, 1, kQueryElements * sizeof(half));
-        pipe->InitBuffer(outputQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(queryInputQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(queryOutputQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(keyInputQueue, 1, kKeyValueElements * sizeof(half));
+        pipe->InitBuffer(keyOutputQueue, 1, kKeyValueElements * sizeof(half));
+        pipe->InitBuffer(valueInputQueue, 1, kKeyValueElements * sizeof(half));
+        pipe->InitBuffer(valueOutputQueue, 1, kKeyValueElements * sizeof(half));
     }
 
     __aicore__ inline void Process()
     {
-        CopySegment(qkvGm, queryGm, kQueryElements);
-        CopySegment(
-            qkvGm[kQueryElements], keyGm, kKeyValueElements);
-        CopySegment(
+        LocalTensor<half> queryInput = queryInputQueue.AllocTensor<half>();
+        LocalTensor<half> keyInput = keyInputQueue.AllocTensor<half>();
+        LocalTensor<half> valueInput = valueInputQueue.AllocTensor<half>();
+        DataCopy(queryInput, qkvGm, kQueryElements);
+        DataCopy(keyInput, qkvGm[kQueryElements], kKeyValueElements);
+        DataCopy(
+            valueInput,
             qkvGm[kQueryElements + kKeyValueElements],
-            valueGm,
             kKeyValueElements);
+        queryInputQueue.EnQue(queryInput);
+        keyInputQueue.EnQue(keyInput);
+        valueInputQueue.EnQue(valueInput);
+
+        queryInput = queryInputQueue.DeQue<half>();
+        keyInput = keyInputQueue.DeQue<half>();
+        valueInput = valueInputQueue.DeQue<half>();
+        LocalTensor<half> queryOutput = queryOutputQueue.AllocTensor<half>();
+        LocalTensor<half> keyOutput = keyOutputQueue.AllocTensor<half>();
+        LocalTensor<half> valueOutput = valueOutputQueue.AllocTensor<half>();
+        Adds(queryOutput, queryInput, static_cast<half>(0.0f), kQueryElements);
+        Adds(keyOutput, keyInput, static_cast<half>(0.0f), kKeyValueElements);
+        Adds(valueOutput, valueInput, static_cast<half>(0.0f), kKeyValueElements);
+        queryOutputQueue.EnQue(queryOutput);
+        keyOutputQueue.EnQue(keyOutput);
+        valueOutputQueue.EnQue(valueOutput);
+        queryInputQueue.FreeTensor(queryInput);
+        keyInputQueue.FreeTensor(keyInput);
+        valueInputQueue.FreeTensor(valueInput);
+
+        queryOutput = queryOutputQueue.DeQue<half>();
+        keyOutput = keyOutputQueue.DeQue<half>();
+        valueOutput = valueOutputQueue.DeQue<half>();
+        DataCopy(queryGm, queryOutput, kQueryElements);
+        DataCopy(keyGm, keyOutput, kKeyValueElements);
+        DataCopy(valueGm, valueOutput, kKeyValueElements);
+        queryOutputQueue.FreeTensor(queryOutput);
+        keyOutputQueue.FreeTensor(keyOutput);
+        valueOutputQueue.FreeTensor(valueOutput);
     }
 
 private:
-    __aicore__ inline void CopySegment(
-        const GlobalTensor<half>& source,
-        const GlobalTensor<half>& destination,
-        uint32_t elements)
-    {
-        LocalTensor<half> input = inputQueue.AllocTensor<half>();
-        DataCopy(input, source, elements);
-        inputQueue.EnQue(input);
-        input = inputQueue.DeQue<half>();
-
-        LocalTensor<half> output = outputQueue.AllocTensor<half>();
-        Adds(output, input, static_cast<half>(0.0f), elements);
-        outputQueue.EnQue(output);
-        inputQueue.FreeTensor(input);
-
-        output = outputQueue.DeQue<half>();
-        DataCopy(destination, output, elements);
-        outputQueue.FreeTensor(output);
-    }
-
     GlobalTensor<half> qkvGm;
     GlobalTensor<half> queryGm;
     GlobalTensor<half> keyGm;
     GlobalTensor<half> valueGm;
-    TQue<QuePosition::VECIN, 1> inputQueue;
-    TQue<QuePosition::VECOUT, 1> outputQueue;
+    TQue<QuePosition::VECIN, 1> queryInputQueue;
+    TQue<QuePosition::VECOUT, 1> queryOutputQueue;
+    TQue<QuePosition::VECIN, 1> keyInputQueue;
+    TQue<QuePosition::VECOUT, 1> keyOutputQueue;
+    TQue<QuePosition::VECIN, 1> valueInputQueue;
+    TQue<QuePosition::VECOUT, 1> valueOutputQueue;
 };
 }
 
