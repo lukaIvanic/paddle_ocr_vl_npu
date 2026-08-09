@@ -66,6 +66,7 @@ def main() -> int:
 
     if not torch.npu.is_available():
         raise RuntimeError("an Ascend NPU is required")
+    torch.npu.config.allow_internal_format = True
     torch.npu.set_compile_mode(jit_compile=False)
     register_decode_linear_matmul_v3_converter()
 
