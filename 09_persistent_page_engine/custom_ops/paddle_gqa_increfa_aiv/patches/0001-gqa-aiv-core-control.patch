@@ -1,0 +1,76 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
+@@ -223,5 +223,9 @@ inline __aicore__ void incre_flash_attention_FIAS_arch32(
+ #if (__CCE_AICORE__ > 200)
+     KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_MIX_AIC_1_2);
+ #endif
+-
++    KERNEL_TASK_TYPE(QF16_KVF16_OUTF16_ANTIPERCHANNEL_VALL_TILING,
++                     KERNEL_TYPE_MIX_AIV_1_0);
++    KERNEL_TASK_TYPE(QF16_KVF16_OUTF16_ANTIPERCHANNEL_FLASHDECODING_VALL_TILING,
++                     KERNEL_TYPE_MIX_AIV_1_0);
++
+ #if (ORIG_DTYPE_QUERY == DT_FLOAT16) && (ORIG_DTYPE_ATTENTION_OUT == DT_FLOAT16) && (ORIG_DTYPE_KEY == DT_FLOAT16)
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_base.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_base.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_base.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_base.h
+@@ -108,3 +108,4 @@ constexpr uint32_t KV_NUM_HEADS_ATTR_INDEX = 3;
+ constexpr uint32_t BLOCK_SIZE_ATTR_INDEX = 4;
+ constexpr uint32_t INNER_PRECISE_ATTR_INDEX = 5;
++constexpr uint32_t VECTOR_CORE_COUNT_ATTR_INDEX = 6;
+ constexpr uint32_t FP32_BYTES = 4;
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_context.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_context.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_context.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_context.h
+@@ -83,3 +83,4 @@ struct IncreFlashAttentionContext {
+     const uint32_t *blockSize = nullptr;
+     const uint32_t *innerPrecise = nullptr;
++    const uint32_t *vectorCoreCount = nullptr;
+     const int64_t *antiquantMode = nullptr;
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -164,3 +164,14 @@ ge::graphStatus IFATiling::PreProcess()
+ 
+     SetupPerfMode();
++    if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) {
++        OP_CHECK_IF(ifaContext_->vectorCoreCount == nullptr,
++            OP_LOGE(ifaContext_->opName, "vector_core_count is null"), return ge::GRAPH_FAILED);
++        const uint32_t requestedVectorCores = *ifaContext_->vectorCoreCount;
++        OP_CHECK_IF(requestedVectorCores == 0U || requestedVectorCores > aivNum_,
++            OP_LOGE(ifaContext_->opName,
++                "vector_core_count(%u) must be in [1, %u]",
++                requestedVectorCores, aivNum_), return ge::GRAPH_FAILED);
++        aivNum_ = requestedVectorCores;
++        OP_LOGI(ifaContext_->opName, "GQA AIV vector core cap: %u.", aivNum_);
++    }
+     IsFdBalanceCase();
+@@ -3493,5 +3504,13 @@ ge::graphStatus IFATiling::CalcNumBlocks()
+             }
+         }
+     }
+-    ifaContext_->numBlocks = ascendcPlatform.CalcTschBlockDim(aivNum, aicNum, aivNum); // 暂时与当前代码一致
+-    OP_LOGI(ifaContext_->opName, "IFA block dim: %u aiv Num: %u aic Num: %u.", ifaContext_->numBlocks, aivNum, aicNum);
++    if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) {
++        const uint32_t launchAivNum = usedCoreNum_;
++        ifaContext_->numBlocks = ascendcPlatform.CalcTschBlockDim(launchAivNum, 0U, launchAivNum);
++        OP_LOGI(ifaContext_->opName,
++            "GQA AIV block dim: %u launch aiv Num: %u launch aic Num: 0.",
++            ifaContext_->numBlocks, launchAivNum);
++    } else {
++        ifaContext_->numBlocks = ascendcPlatform.CalcTschBlockDim(aivNum, aicNum, aivNum);
++    }
+     return ge::GRAPH_SUCCESS;
+@@ -3669,3 +3688,4 @@ ge::graphStatus IFATiling::ConvertContext(gert::TilingContext &context, IncreFlashAttentionContext &ifaContext)
+     ifaContext.blockSize = attrs->GetAttrPointer<uint32_t>(BLOCK_SIZE_ATTR_INDEX);
+     ifaContext.innerPrecise = attrs->GetAttrPointer<uint32_t>(INNER_PRECISE_ATTR_INDEX);
++    ifaContext.vectorCoreCount = attrs->GetAttrPointer<uint32_t>(VECTOR_CORE_COUNT_ATTR_INDEX);
+ 
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_check.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_check.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_check.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling_check.cpp
+@@ -1250,3 +1250,0 @@ bool IFATiling::EnableAllVec() const
+-    if (nNumOfQInOneGroup_ > 1U) {
+-        return false;
+-    }
