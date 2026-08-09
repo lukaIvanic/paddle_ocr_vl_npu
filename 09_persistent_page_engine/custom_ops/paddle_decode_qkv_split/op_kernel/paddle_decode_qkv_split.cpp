@@ -17,8 +17,13 @@ public:
         GM_ADDR value,
         TPipe* pipe)
     {
-        qkvGm.SetGlobalBuffer(
-            reinterpret_cast<__gm__ half*>(qkv), kTotalElements);
+        __gm__ half* qkvBase = reinterpret_cast<__gm__ half*>(qkv);
+        querySourceGm.SetGlobalBuffer(qkvBase, kQueryElements);
+        keySourceGm.SetGlobalBuffer(
+            qkvBase + kQueryElements, kKeyValueElements);
+        valueSourceGm.SetGlobalBuffer(
+            qkvBase + kQueryElements + kKeyValueElements,
+            kKeyValueElements);
         queryGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ half*>(query), kQueryElements);
         keyGm.SetGlobalBuffer(
@@ -38,12 +43,9 @@ public:
         LocalTensor<half> queryInput = queryInputQueue.AllocTensor<half>();
         LocalTensor<half> keyInput = keyInputQueue.AllocTensor<half>();
         LocalTensor<half> valueInput = valueInputQueue.AllocTensor<half>();
-        DataCopy(queryInput, qkvGm, kQueryElements);
-        DataCopy(keyInput, qkvGm[kQueryElements], kKeyValueElements);
-        DataCopy(
-            valueInput,
-            qkvGm[kQueryElements + kKeyValueElements],
-            kKeyValueElements);
+        DataCopy(queryInput, querySourceGm, kQueryElements);
+        DataCopy(keyInput, keySourceGm, kKeyValueElements);
+        DataCopy(valueInput, valueSourceGm, kKeyValueElements);
         queryInputQueue.EnQue(queryInput);
         keyInputQueue.EnQue(keyInput);
         valueInputQueue.EnQue(valueInput);
@@ -76,7 +78,9 @@ public:
     }
 
 private:
-    GlobalTensor<half> qkvGm;
+    GlobalTensor<half> querySourceGm;
+    GlobalTensor<half> keySourceGm;
+    GlobalTensor<half> valueSourceGm;
     GlobalTensor<half> queryGm;
     GlobalTensor<half> keyGm;
     GlobalTensor<half> valueGm;
