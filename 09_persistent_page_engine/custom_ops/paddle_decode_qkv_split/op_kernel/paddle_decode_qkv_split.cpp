@@ -31,6 +31,13 @@ public:
     __aicore__ inline void Process()
     {
         LocalTensor<half> local = copyBuffer.Get<half>();
+        LocalTensor<half> queryLocal = copyBuffer.GetWithOffset<half>(
+            kQueryElements, 0);
+        LocalTensor<half> keyLocal = copyBuffer.GetWithOffset<half>(
+            kKeyValueElements, kQueryElements * sizeof(half));
+        LocalTensor<half> valueLocal = copyBuffer.GetWithOffset<half>(
+            kKeyValueElements,
+            (kQueryElements + kKeyValueElements) * sizeof(half));
 
         DataCopy(local, qkvGm, kTotalElements);
         const event_t inputReady = static_cast<event_t>(
@@ -38,14 +45,11 @@ public:
         SetFlag<HardEvent::MTE2_MTE3>(inputReady);
         WaitFlag<HardEvent::MTE2_MTE3>(inputReady);
 
-        DataCopy(queryGm, local, kQueryElements);
+        DataCopy(queryGm, queryLocal, kQueryElements);
         PipeBarrier<PIPE_MTE3>();
-        DataCopy(keyGm, local[kQueryElements], kKeyValueElements);
+        DataCopy(keyGm, keyLocal, kKeyValueElements);
         PipeBarrier<PIPE_MTE3>();
-        DataCopy(
-            valueGm,
-            local[kQueryElements + kKeyValueElements],
-            kKeyValueElements);
+        DataCopy(valueGm, valueLocal, kKeyValueElements);
         const event_t outputStored = static_cast<event_t>(
             GetTPipePtr()->FetchEventID(HardEvent::MTE3_MTE2));
         SetFlag<HardEvent::MTE3_MTE2>(outputStored);
