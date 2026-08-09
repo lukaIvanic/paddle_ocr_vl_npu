@@ -50,7 +50,6 @@ def register_decode_token_embedding_converter() -> None:
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
     )
     ge_module = importlib.import_module(f"{torchair.__name__}.ge")
-    ge_attr = importlib.import_module(f"{torchair.__name__}.ge.attr")
     register_converter = converter_module.register_fx_node_ge_converter
     ge_const = ge_module.Const
     compat_ir = importlib.import_module(
@@ -72,10 +71,6 @@ def register_decode_token_embedding_converter() -> None:
                 "x": weight,
                 "indices": input_ids,
                 "axis": ge_const([0]),
-            },
-            attrs={
-                "batch_dims": ge_attr.Int(0),
-                "negative_index_support": ge_attr.Bool(False),
             },
             outputs=["y"],
         )
