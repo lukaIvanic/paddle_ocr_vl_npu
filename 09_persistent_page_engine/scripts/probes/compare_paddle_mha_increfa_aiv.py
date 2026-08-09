@@ -46,7 +46,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="both",
         help="Compile both parity lanes or isolate one graph/operator identity.",
     )
-    parser.add_argument("--kv-lengths", type=parse_lengths, default=(128, 512, 2048))
+    parser.add_argument(
+        "--kv-lengths",
+        type=parse_lengths,
+        default=(128,),
+        help="One KV length; launch a fresh process for every static shape.",
+    )
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--blocks", type=int, default=7)
     parser.add_argument("--repeats-per-block", type=int, default=200)
@@ -54,6 +59,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.warmup < 0 or args.blocks <= 0 or args.repeats_per_block <= 0:
         parser.error("warmup must be nonnegative; blocks and repeats must be positive")
+    if len(args.kv_lengths) != 1:
+        parser.error(
+            "TorchAir isolation requires exactly one KV length per process; "
+            "launch separate processes for a shape matrix"
+        )
     return args
 
 

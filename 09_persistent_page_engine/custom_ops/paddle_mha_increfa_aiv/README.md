@@ -1,5 +1,8 @@
 # Separate Paddle MHA IncreFA AIV operator
 
+For the reusable development, validation, profiling, and integration workflow,
+read the [Ascend custom operator handbook](../ASCEND_CUSTOM_OPERATOR_HANDBOOK.md).
+
 This is a separately named Ascend operator. It does not override or replace
 CANN's `IncreFlashAttention` registration.
 
@@ -113,14 +116,19 @@ source <PADDLE_MHA_INCREFA_AIV_SET_ENV>
 PYTHONPATH=09_persistent_page_engine:$PYTHONPATH \
 /usr/local/python3.12.13/bin/python3 \
   09_persistent_page_engine/scripts/probes/compare_paddle_mha_increfa_aiv.py \
+  --lanes both \
+  --kv-lengths 128 \
   --output .runtime_cache/paddle_mha_increfa_aiv/compare.json \
   --cache-root .runtime_cache/paddle_mha_increfa_aiv/torchair_compare
 ```
 
-The TorchAir probe compiles stock and custom operators under different graph-cache
-directories in the same process, compares full outputs at KV128/KV512/KV2048,
-and reports non-profiled repeated timing. First-call compile/cache-load time is
-recorded separately from steady operator timing.
+The TorchAir probe compiles stock and custom operators under different graph
+cache directories, compares full outputs, and reports non-profiled repeated
+timing. It requires exactly one KV length per process. Launch a fresh process
+and use a distinct shape cache for KV512 and KV2048. This prevents the
+multi-shape `cache_compile` recompilation warnings observed during development.
+First-call compile/cache-load time is recorded separately from steady operator
+timing.
 
 After parity, inspect the custom `.om`/kernel metadata and run the B1 real
 forward lane. Do not treat a package build or isolated exact match as an E2E

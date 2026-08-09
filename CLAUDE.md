@@ -110,6 +110,15 @@ a different chip with different operator constraints than 910B — do not carry 
 - Call a smoke test a smoke test. Recognizer-only runs are not proof of full
   page-parser quality or throughput.
 
+## Custom Ascend operators
+
+Read the
+[Ascend custom operator handbook](09_persistent_page_engine/custom_ops/ASCEND_CUSTOM_OPERATOR_HANDBOOK.md)
+before creating or changing a custom CANN/AscendC operator. It defines the
+independent-identity model, eager-first validation ladder, AIV launch and
+synchronization gates, TorchAir cache discipline, real-forward adoption gate,
+and evidence format derived from the IncreFA work.
+
 ## Running things
 
 Current 09 entrypoints:
