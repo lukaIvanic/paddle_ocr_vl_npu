@@ -45,6 +45,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--kv-length", type=int, required=True)
     parser.add_argument("--valid-kv-length", type=int)
     parser.add_argument("--vector-core-count", type=int, required=True)
+    parser.add_argument(
+        "--experimental-grouped-serial-control",
+        action="store_true",
+        help=(
+            "Allow the separately packaged two-core grouped-serial research "
+            "variant. Eager-only; this does not change the production graph op."
+        ),
+    )
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--blocks", type=int, default=7)
     parser.add_argument("--repeats-per-block", type=int, default=200)
@@ -57,7 +65,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         and not 1 <= args.valid_kv_length <= args.kv_length
     ):
         parser.error("--valid-kv-length must be in [1, --kv-length]")
-    if not QUERY_HEADS <= args.vector_core_count <= 48:
+    if args.experimental_grouped_serial_control:
+        if args.backend != "eager" or args.vector_core_count != KV_HEADS:
+            parser.error(
+                "--experimental-grouped-serial-control requires --backend eager "
+                "and --vector-core-count 2"
+            )
+    elif not QUERY_HEADS <= args.vector_core_count <= 48:
         parser.error("--vector-core-count must be in [16, 48]")
     if args.warmup < 0 or args.blocks <= 0 or args.repeats_per_block <= 0:
         parser.error("invalid timing counts")
@@ -285,6 +299,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             **eager_identity,
         },
         "backend": args.backend,
+        "experiment_variant": (
+            "grouped_serial_control"
+            if args.experimental_grouped_serial_control
+            else "production"
+        ),
         "contract": {
             "batch_size": 1, "query_heads": QUERY_HEADS,
             "key_value_heads": KV_HEADS, "head_dim": HEAD_DIM,

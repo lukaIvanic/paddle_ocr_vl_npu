@@ -15,6 +15,7 @@ PATCH_PATHS=(
     "$CUSTOM_ROOT/patches/0005-allvec-gqa-query-heads.patch"
     "$CUSTOM_ROOT/patches/0006-allvec-gqa-flashdecode.patch"
 )
+EXPERIMENT_VARIANT="${PADDLE_GQA_EXPERIMENT_VARIANT:-production}"
 SOURCE_ROOT="${INCREFA_SOURCE_ROOT:-$PROJECT_ROOT/.runtime_cache/increfa_aiv_source}"
 EXPECTED_SOURCE_COMMIT="afe72144f9f2ac8441929035795db88a111b30c5"
 UPSTREAM_OP_REL="attention/incre_flash_attention"
@@ -27,9 +28,23 @@ HOST_TILER_REL="$UPSTREAM_OP_REL/op_host/incre_flash_attention_tiling.cpp"
 EXPECTED_HOST_TILER_SHA256="c84dbe37632ed428c080918ce4ca124d43640fbcfd05e69c212b9453f2b46a74"
 GQA_AIV_TILING_KEYS="11000000000000000,11000000000100000"
 VENDOR_NAME="paddle_gqa_increfa_aiv"
+CACHE_NAMESPACE="paddle_gqa_increfa_aiv"
+case "$EXPERIMENT_VARIANT" in
+    production)
+        ;;
+    grouped_serial_control)
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0007-grouped-serial-control.patch")
+        VENDOR_NAME="paddle_gqa_grouped_serial_increfa_aiv"
+        CACHE_NAMESPACE="paddle_gqa_grouped_serial_increfa_aiv"
+        ;;
+    *)
+        echo "ERROR: unsupported PADDLE_GQA_EXPERIMENT_VARIANT=$EXPERIMENT_VARIANT" >&2
+        exit 2
+        ;;
+esac
 INSTALLED_VENDOR_NAME="${VENDOR_NAME}_transformer"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
-RUN_ROOT="$PROJECT_ROOT/.runtime_cache/paddle_gqa_increfa_aiv/builds/$RUN_ID"
+RUN_ROOT="$PROJECT_ROOT/.runtime_cache/$CACHE_NAMESPACE/builds/$RUN_ID"
 PYTHON_BIN="/usr/local/python3.12.13/bin/python3"
 PYTHON_SITE="/usr/local/python3.12.13/lib/python3.12/site-packages"
 
@@ -54,9 +69,11 @@ if [[ "$(sha256sum "$SOURCE_ROOT/$HOST_TILER_REL" | awk '{print $1}')" != "$EXPE
     exit 2
 fi
 
-OVERLAY_SHA="$(find "$OVERLAY_ROOT" "$CUSTOM_ROOT/patches" -type f -print0 \
-    | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
-BUILD_SOURCE_PARENT="$PROJECT_ROOT/.runtime_cache/paddle_gqa_increfa_aiv/sources"
+OVERLAY_SHA="$(
+    { find "$OVERLAY_ROOT" -type f -print0; printf '%s\0' "${PATCH_PATHS[@]}"; } \
+        | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}'
+)"
+BUILD_SOURCE_PARENT="$PROJECT_ROOT/.runtime_cache/$CACHE_NAMESPACE/sources"
 BUILD_SOURCE_ROOT="${PADDLE_GQA_BUILD_SOURCE_ROOT:-$BUILD_SOURCE_PARENT/source_${EXPECTED_SOURCE_COMMIT:0:16}}"
 SOURCE_MANIFEST="$BUILD_SOURCE_ROOT/.paddle_gqa_increfa_aiv_source_manifest.sha256"
 OVERLAY_MANIFEST="$BUILD_SOURCE_ROOT/.paddle_gqa_increfa_aiv_overlay_sha"
@@ -191,4 +208,5 @@ echo "PADDLE_GQA_INCREFA_AIV_BUILD_SOURCE=$BUILD_SOURCE_ROOT"
 echo "PADDLE_GQA_INCREFA_AIV_PACKAGE=$RUN_ROOT/$(basename "$PACKAGE_PATH")"
 echo "PADDLE_GQA_INCREFA_AIV_SET_ENV=$SET_ENV_PATH"
 echo "PADDLE_GQA_INCREFA_AIV_OP_API=$OP_API_LIB"
+echo "PADDLE_GQA_INCREFA_AIV_EXPERIMENT_VARIANT=$EXPERIMENT_VARIANT"
 echo "STOCK_INCRE_FLASH_ATTENTION_SOURCE_UNCHANGED=true"

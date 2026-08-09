@@ -1,0 +1,68 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -2345,2 +2345,2 @@ ge::graphStatus IFATiling::SplitUnbalanced() {
+-        groupSplitSize_ = 1U;
+-        gOuter_ = nNumOfQInOneGroup_;
++        groupSplitSize_ = nNumOfQInOneGroup_;
++        gOuter_ = 1U;
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+@@ -545,5 +545,4 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::GetBN2id(const u
+-        qHeadWorkIdx = beforeBlockSplitBn2Nums + bn2Indx;
+-        bIdx = qHeadWorkIdx / qHeadNum;
+-        uint32_t qHeadInBatch = qHeadWorkIdx % qHeadNum;
+-        n2Idx = qHeadInBatch / gSize;
+-        gIdx = qHeadInBatch % gSize;
++        uint32_t kvGroupWorkIdx = beforeBlockSplitBn2Nums + bn2Indx;
++        bIdx = kvGroupWorkIdx / kvHeadNum;
++        n2Idx = kvGroupWorkIdx % kvHeadNum;
++        gIdx = 0U;
+@@ -1857,9 +1856,14 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Process()
+-            // 计算BN2方向的offset
+-            CalculateBN2Offset();
+-            CalculateBN2Params();
+-            // 根据当前块实际长度, 重配flashattention循环条件
+-            UpdateInnerLoopCond();
+-            PipeBarrier<PIPE_V>();
+-            if (isCurActSeqLenIsZero) {
+-                continue;
+-            }
++            // Experimental control: one AIV core owns one KV group and runs
++            // its eight query heads serially.  This proves the parallelism
++            // cost before implementing the more invasive shared-KV UB tile.
++            for (uint32_t groupedGIdx = 0; groupedGIdx < gSize; groupedGIdx++) {
++                gIdx = groupedGIdx;
++                // 计算BN2方向的offset
++                CalculateBN2Offset();
++                CalculateBN2Params();
++                // 根据当前块实际长度, 重配flashattention循环条件
++                UpdateInnerLoopCond();
++                PipeBarrier<PIPE_V>();
++                if (isCurActSeqLenIsZero) {
++                    continue;
++                }
+@@ -1867,4 +1871,4 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Process()
+-            // softmax不区分首次
+-            Duplicate(softmaxMaxUb, SOFTMAX_MIN_NUM, BUFFER_SIZE_BYTE_32B / sizeof(T));
+-            Duplicate(softmaxSumUb, FLOAT_ZERO, BUFFER_SIZE_BYTE_32B / sizeof(T));
+-            Duplicate(bmm2ResUb, FLOAT_ZERO, headDimAlign);
++                // softmax不区分首次
++                Duplicate(softmaxMaxUb, SOFTMAX_MIN_NUM, BUFFER_SIZE_BYTE_32B / sizeof(T));
++                Duplicate(softmaxSumUb, FLOAT_ZERO, BUFFER_SIZE_BYTE_32B / sizeof(T));
++                Duplicate(bmm2ResUb, FLOAT_ZERO, headDimAlign);
+@@ -1872 +1876 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Process()
+-            QueryPreProcess();
++                QueryPreProcess();
+@@ -1874,3 +1878,3 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Process()
+-            for (uint32_t sInnerLoopIdx = 0; sInnerLoopIdx < sInnerLoopTimes; sInnerLoopIdx++) {
+-                // 计算s2方向的offset
+-                CalcSInnerOffsetAndParams(sInnerLoopIdx);
++                for (uint32_t sInnerLoopIdx = 0; sInnerLoopIdx < sInnerLoopTimes; sInnerLoopIdx++) {
++                    // 计算s2方向的offset
++                    CalcSInnerOffsetAndParams(sInnerLoopIdx);
+@@ -1878 +1882,2 @@ __aicore__ inline void IncreFlashAttentionAttenAllVecNew<IFAT>::Process()
+-                SInnerLoopFunc(sInnerLoopIdx);
++                    SInnerLoopFunc(sInnerLoopIdx);
++                }
