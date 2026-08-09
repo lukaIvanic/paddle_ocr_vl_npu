@@ -62,6 +62,7 @@ class DecodeOptimizationConfig:
     post_scatter_kv_prefetch: bool = False
     vector_add_rms_norm: bool = False
     gqa_aiv_vector_core_count: int = 0
+    super_kernel_scope: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -109,6 +110,15 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rms_norm="npu",
         rotary="npu_apply",
         add_rms_norm=True,
+    ),
+    "combined_apply_superkernel_b1": DecodeOptimizationConfig(
+        name="combined_apply_superkernel_b1",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        super_kernel_scope=True,
     ),
     "combined_apply_pse_sentinel": DecodeOptimizationConfig(
         name="combined_apply_pse_sentinel",
@@ -1488,7 +1498,7 @@ class TextDecodeStage(torch.nn.Module):
         self.num_layers = int(model.config.text_config.num_hidden_layers)
         self.optimization = resolve_decode_optimization(optimization)
 
-    def forward(
+    def _forward_impl(
         self,
         input_ids: torch.Tensor,
         cache_position: torch.Tensor,
@@ -1510,6 +1520,33 @@ class TextDecodeStage(torch.nn.Module):
             optimization=self.optimization,
         )
         return _linear_tokenwise(self.model.lm_head, hidden_states[:, -1:, :])
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        cache_position: torch.Tensor,
+        rope_deltas: torch.Tensor,
+        *flat_cache_tensors: torch.Tensor,
+    ) -> torch.Tensor:
+        if not self.optimization.super_kernel_scope:
+            return self._forward_impl(
+                input_ids,
+                cache_position,
+                rope_deltas,
+                *flat_cache_tensors,
+            )
+
+        torchair, _CompilerConfig = import_torchair()
+        with torchair.scope.super_kernel(
+            "paddle_decoder_b1_megakernel",
+            "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort",
+        ):
+            return self._forward_impl(
+                input_ids,
+                cache_position,
+                rope_deltas,
+                *flat_cache_tensors,
+            )
 
 
 def decode_attention_label(
@@ -1595,6 +1632,16 @@ def compile_text_decode_stage(
             raise ValueError("gqa_aiv is an independent TorchAir-only operator")
         if batch_size != 1:
             raise ValueError("gqa_aiv currently supports only batch_size=1")
+    if optimization.super_kernel_scope:
+        if backend_name != "torchair":
+            raise ValueError(
+                "the Paddle decoder SuperKernel is a TorchAir-only path"
+            )
+        if batch_size != 1:
+            raise ValueError(
+                "the Paddle decoder SuperKernel currently supports only "
+                "batch_size=1"
+            )
     common_metadata = {
         "backend": backend_name,
         "enabled": backend_name != "raw_eager",
@@ -1624,6 +1671,7 @@ def compile_text_decode_stage(
             "gqa_aiv_vector_core_count": (
                 optimization.gqa_aiv_vector_core_count
             ),
+            "super_kernel_scope": optimization.super_kernel_scope,
         },
     }
     if backend_name == "raw_eager":
