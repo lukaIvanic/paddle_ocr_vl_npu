@@ -46,22 +46,7 @@ DEFAULT_REQUEST_IDS = (
     "page_000106_table_box_id_2",
 )
 
-SYNTAX_TEXTS = (
-    r"\(",
-    r" \(",
-    r"\)",
-    r"\[",
-    r" \[",
-    r"\]",
-    "$",
-    " $",
-    "$$",
-    " $$",
-    " ",
-    "  ",
-    "\\",
-    " \\",
-)
+DELIMITER_MARKERS = (r"\(", r"\)", r"\[", r"\]", "$$", "$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -130,40 +115,50 @@ def token_payload(tokenizer: Any, token_id: int) -> dict[str, Any]:
     }
 
 
-def encode_one(tokenizer: Any, text: str) -> int:
-    encoded = tokenizer.encode(text, add_special_tokens=False)
-    token_ids = encoded.ids if hasattr(encoded, "ids") else encoded
-    if len(token_ids) != 1:
-        raise ValueError(f"expected one token for {text!r}, got {token_ids}")
-    return int(token_ids[0])
+def actual_id_text(tokenizer: Any, token_ids: list[int] | tuple[int, ...]) -> str:
+    """Decode an existing ID sequence without tokenizing any generated text."""
 
-
-def syntax_tokens(tokenizer: Any) -> dict[int, list[str]]:
-    result: dict[int, list[str]] = {}
-    for text in SYNTAX_TEXTS:
-        token_id = encode_one(tokenizer, text)
-        result.setdefault(token_id, []).append(text)
-    return result
-
-
-def is_syntax_token(
-    tokenizer: Any,
-    token_id: int | None,
-    selected: dict[int, list[str]],
-) -> bool:
-    if token_id is None:
-        return False
-    if int(token_id) in selected:
-        return True
-    decoded = token_text(tokenizer, int(token_id))
-    return (
-        "\\(" in decoded
-        or "\\)" in decoded
-        or "\\[" in decoded
-        or "\\]" in decoded
-        or "$" in decoded
-        or decoded != decoded.strip()
+    return tokenizer.decode(
+        [int(token_id) for token_id in token_ids],
+        skip_special_tokens=False,
     )
+
+
+def syntax_kinds_from_actual_ids(
+    tokenizer: Any,
+    *,
+    target_ids: list[int],
+    draft_ids: list[int],
+    target_token: int,
+    draft_token: int | None,
+) -> list[str]:
+    """Classify only actual saved/proposed IDs, including boundary-spanning syntax."""
+
+    kinds = []
+    target_local = actual_id_text(tokenizer, target_ids)
+    draft_local = actual_id_text(tokenizer, draft_ids)
+    if any(
+        marker in target_local or marker in draft_local
+        for marker in DELIMITER_MARKERS
+    ):
+        kinds.append("delimiter")
+    if draft_token is not None:
+        target_decoded = token_text(tokenizer, target_token)
+        draft_decoded = token_text(tokenizer, draft_token)
+        target_piece = token_piece(tokenizer, target_token)
+        draft_piece = token_piece(tokenizer, draft_token)
+        target_has_space = (
+            target_decoded != target_decoded.strip() or "▁" in target_piece
+        )
+        draft_has_space = (
+            draft_decoded != draft_decoded.strip() or "▁" in draft_piece
+        )
+        if target_has_space != draft_has_space or (
+            target_decoded.strip() == draft_decoded.strip()
+            and target_decoded != draft_decoded
+        ):
+            kinds.append("whitespace")
+    return kinds
 
 
 def topk_payload(
@@ -242,7 +237,6 @@ def probe_table(
     target: dict[str, Any],
     draft: dict[str, Any],
     args: argparse.Namespace,
-    selected_syntax_tokens: dict[int, list[str]],
 ) -> dict[str, Any]:
     request_id = str(target["request_id"])
     reference = target_tokens(target)
@@ -291,15 +285,22 @@ def probe_table(
             live_token = int(torch.argmax(vector).detach().cpu().item())
             live_tokens.append(live_token)
             draft_disagrees = draft_token is not None and draft_token != target_token
-            syntax_related = is_syntax_token(
+            target_local_ids = [
+                *prefix[-1:],
+                *reference[target_index : target_index + 2],
+            ]
+            draft_local_ids = [
+                *prefix[-1:],
+                *(proposal.tokens[:2] if proposal is not None else ()),
+            ]
+            syntax_kinds = syntax_kinds_from_actual_ids(
                 recognizer.tokenizer,
-                target_token,
-                selected_syntax_tokens,
-            ) or is_syntax_token(
-                recognizer.tokenizer,
-                draft_token,
-                selected_syntax_tokens,
+                target_ids=target_local_ids,
+                draft_ids=draft_local_ids,
+                target_token=target_token,
+                draft_token=draft_token,
             )
+            syntax_related = bool(syntax_kinds)
             capture = draft_disagrees or syntax_related or live_token != target_token
             if capture:
                 topk = topk_payload(
@@ -326,6 +327,9 @@ def probe_table(
                         ),
                         "draft_disagrees": draft_disagrees,
                         "syntax_related": syntax_related,
+                        "syntax_kinds": syntax_kinds,
+                        "target_local_ids": target_local_ids,
+                        "draft_local_ids": draft_local_ids,
                         "live_matches_saved_target": live_token == target_token,
                         "target_token": token_payload(
                             recognizer.tokenizer,
@@ -408,7 +412,6 @@ def main() -> None:
         )
 
     recognizer = build_recognizer(args)
-    selected = syntax_tokens(recognizer.tokenizer)
     tables = []
     for table_index, request_id in enumerate(request_ids, start=1):
         print(
@@ -421,7 +424,6 @@ def main() -> None:
             targets[request_id],
             drafts[request_id],
             args,
-            selected,
         )
         tables.append(table)
         print(
@@ -448,10 +450,10 @@ def main() -> None:
                 "TableDraftMatcher; ordinary B1 decode logits"
             ),
             "recognizer": recognizer.configuration(),
-            "syntax_tokens": [
-                {**token_payload(recognizer.tokenizer, token_id), "forms": forms}
-                for token_id, forms in sorted(selected.items())
-            ],
+            "syntax_classification": (
+                "actual saved/proposed token IDs only; local adjacent-ID decode "
+                "detects delimiter sequences that cross token boundaries"
+            ),
         },
         "summary": summarize_events(all_events),
         "tables": tables,
