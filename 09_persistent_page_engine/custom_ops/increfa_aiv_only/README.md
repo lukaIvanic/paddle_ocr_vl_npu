@@ -24,21 +24,22 @@ taskRation=1:2
 crossCoreSync=1
 ```
 
-The patch changes the two default task-type declarations to
-`KERNEL_TYPE_MIX_AIV_1_0` while the build is restricted to the single selected
-tiling key. CANN maps this mode to the vector code channel and a `0:1` runtime
-ratio, so no cube task launches. It also retains the hard-sync runtime contract
-required by `SyncAll()`. The host tiler tells `CalcTschBlockDim` that the
-all-vector mode uses zero AIC cores. The generated package contains no other key
-whose task type could be affected.
+The patch assigns `KERNEL_TYPE_MIX_AIV_1_0` only to the selected VALL tiling key
+with `KERNEL_TASK_TYPE(key, type)`. It leaves the entry default at upstream
+`KERNEL_TYPE_MIX_AIC_1_2`. CANN maps the selected-key override to the vector
+code channel and a `0:1` runtime ratio, so no cube task launches for that key.
+It also retains the hard-sync runtime contract required by `SyncAll()`. The host
+tiler tells `CalcTschBlockDim` that the all-vector mode uses zero AIC cores.
 
-The task-type extractor does not reliably resolve a preprocessor-conditioned
-`KERNEL_TASK_TYPE_DEFAULT`: an earlier guarded attempt compiled successfully but
-still emitted `MIX_AIC` metadata. The fixed-key build uses an unconditional
-default and rejects any ratio other than zero-cube `0:1` before reporting
-success. CANN 9.0 still writes the legacy per-kernel JSON label `MIX_AIC` for
-this package. The runner therefore also checks the ELF symbol table: it must
-contain only the `_mix_aiv` function and no `_mix_aic` cube function.
+The per-key scope is a correctness requirement, not only package hygiene.
+TorchAir can use the custom source to compile other IncreFA keys into a graph.
+An earlier unconditional default caused the production GQA kernel to inherit
+`taskRation=0:1`; that kernel still uses cube work and trapped at runtime. The
+fixed-key build rejects any ratio other than zero-cube `0:1` for the selected
+MHA key before reporting success. CANN 9.0 still writes the legacy per-kernel
+JSON label `MIX_AIC` for this package. The runner therefore also checks the ELF
+symbol table: it must contain only the `_mix_aiv` function and no `_mix_aic`
+cube function.
 
 ## Important boundaries
 
@@ -58,6 +59,10 @@ contain only the `_mix_aiv` function and no `_mix_aic` cube function.
 - The patch is tied to upstream source commit
   `afe72144f9f2ac8441929035795db88a111b30c5` and the pristine entry-file
   SHA-256 recorded by the runner. It stops rather than patching drifted source.
+- Upstream `EnableAllVec()` rejects grouped-query attention when the query/KV
+  head-group size exceeds one. The recovered v9.0.0 source, v9.0.1, and the
+  official 9.1 branch all preserve that boundary. This package must therefore
+  keep the mixed default for GQA; it is not a GQA AIV-only implementation.
 - Build only tiling key `11000000000100000`. This package is not a general
   replacement for other IncreFA dtype, layout, GQA, paged-cache, or cube paths.
 
