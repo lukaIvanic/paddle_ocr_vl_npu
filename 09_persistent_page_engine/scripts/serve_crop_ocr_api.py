@@ -57,6 +57,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dtype", default="fp16")
     parser.add_argument("--decode-backend", default="torchair")
     parser.add_argument("--decode-optimization", default="combined_apply_pse_sentinel")
+    parser.add_argument(
+        "--token-selection",
+        default="greedy",
+        help="Direct-logit token selection policy; validated in the NPU worker.",
+    )
     parser.add_argument("--decode-batch-size", type=int, default=64)
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--max-new-tokens", type=int, default=4096)
@@ -91,6 +96,7 @@ def _worker_main(
             dtype=config["dtype"],
             decode_backend=config["decode_backend"],
             decode_optimization=config["decode_optimization"],
+            token_selection=config["token_selection"],
             batch_size=config["decode_batch_size"],
             cache_length=config["cache_length"],
             max_new_tokens=config["max_new_tokens"],
@@ -399,6 +405,7 @@ def main() -> None:
         "dtype": args.dtype,
         "decode_backend": args.decode_backend,
         "decode_optimization": args.decode_optimization,
+        "token_selection": args.token_selection,
         "decode_batch_size": args.decode_batch_size,
         "cache_length": args.cache_length,
         "max_new_tokens": args.max_new_tokens,

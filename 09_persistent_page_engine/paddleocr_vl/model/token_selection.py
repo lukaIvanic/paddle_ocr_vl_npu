@@ -6,6 +6,7 @@ import torch
 
 
 TOKEN_SELECTION_GREEDY = "greedy"
+TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY = "suppress_math_open_greedy"
 TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED = (
     "prefer_math_open_top2_non_nested"
 )
@@ -23,6 +24,7 @@ TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED = (
 )
 TOKEN_SELECTION_CHOICES = (
     TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
     TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
@@ -58,8 +60,33 @@ def select_token_ids(
         raise ValueError(f"{mode} requires preferred_token_id")
     if int(scores.shape[-1]) < 2:
         raise ValueError("top-2 token selection requires a vocabulary of at least 2")
+    if not 0 <= int(preferred_token_id) < int(scores.shape[-1]):
+        raise ValueError(
+            f"preferred_token_id {preferred_token_id} is outside vocabulary "
+            f"size {scores.shape[-1]}"
+        )
 
     greedy = torch.argmax(scores, dim=-1)
+    if mode == TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY:
+        top2 = torch.topk(scores, k=2, dim=-1).indices
+        replacement = torch.where(
+            top2[..., 0] == int(preferred_token_id),
+            top2[..., 1],
+            top2[..., 0],
+        )
+        selected = torch.where(
+            greedy == int(preferred_token_id),
+            replacement,
+            greedy,
+        )
+        if policy_mask is not None:
+            selected = torch.where(
+                policy_mask.to(device=selected.device, dtype=torch.bool),
+                selected,
+                greedy,
+            )
+        return selected
+
     preferred = torch.full_like(greedy, int(preferred_token_id))
     if mode == TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP:
         probabilities = torch.softmax(scores, dim=-1)

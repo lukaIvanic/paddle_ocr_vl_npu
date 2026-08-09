@@ -12,6 +12,7 @@ IMAGES_DIR="${IMAGES_DIR:-/workspace/datasets/OmniDocBench/images}"
 EVALUATOR_ROOT="${EVALUATOR_ROOT:-/workspace/repos/OmniDocBench_eval}"
 TEDS_WORKERS="${TEDS_WORKERS:-12}"
 TEDS_TIMEOUT_S="${TEDS_TIMEOUT_S:-120}"
+TOKEN_SELECTION="${TOKEN_SELECTION:-greedy}"
 OFFSET="${OFFSET:-0}"
 LIMIT_PAGES="${LIMIT_PAGES:-}"
 
@@ -29,6 +30,7 @@ cd "$REPO_ROOT"
   --max-new-tokens 4096 \
   --decode-backend torchair \
   --decode-optimization combined_apply_pse_sentinel \
+  --token-selection "$TOKEN_SELECTION" \
   --min-pixels 28224 \
   --max-pixels 802816 \
   >"$SERVER_LOG" 2>&1 &
