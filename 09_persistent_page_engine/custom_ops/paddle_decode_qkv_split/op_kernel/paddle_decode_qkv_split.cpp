@@ -35,11 +35,14 @@ public:
         copyQueue.EnQue(local);
         local = copyQueue.DeQue<half>();
         DataCopy(queryGm, local, kQueryElements);
+        PipeBarrier<PIPE_MTE3>();
         DataCopy(keyGm, local[kQueryElements], kKeyValueElements);
+        PipeBarrier<PIPE_MTE3>();
         DataCopy(
             valueGm,
             local[kQueryElements + kKeyValueElements],
             kKeyValueElements);
+        PipeBarrier<PIPE_MTE3>();
         copyQueue.FreeTensor(local);
     }
 
