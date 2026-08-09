@@ -807,14 +807,13 @@ def adaptive_max_snapped_proposal(
     therefore produce U3, U13, U27, and so on.  The recognizer's fixed active
     decode batch is independent from this request count.
 
-    The image-only ``selected`` proposal chooses ruled, whitespace, or row-edge
-    evidence according to the established detector contract.  We retain all of
-    those natural bands up to ``max_rows``.  When there are more, grouping uses
-    only existing natural boundaries.  Every retained interior boundary then
-    passes through the reviewed snap routine.  Boundaries that still cross ink
-    after snapping are removed, unless doing so would leave fewer than
-    ``minimum_rows`` bands; in that case a snapped uniform fallback supplies the
-    requested minimum.
+    Candidate boundaries are the union of ruled, whitespace, hybrid, and
+    row-edge evidence.  Nearby candidates are clustered before every retained
+    interior boundary passes through the reviewed snap routine.  Boundaries
+    that still cross ink after snapping are removed.  Only then do we cap the
+    result, using existing safe boundaries rather than inventing uniform cuts.
+    If safety filtering leaves fewer than ``minimum_rows`` bands, a snapped
+    uniform fallback supplies the requested minimum.
     """
 
     if max_rows < 1:
@@ -826,19 +825,47 @@ def adaptive_max_snapped_proposal(
 
     proposals = {proposal.name: proposal for proposal in analyze(image)}
     selected = proposals["selected"]
-    detected_rows = max(1, len(selected.boundaries) - 1)
-    if detected_rows > max_rows:
-        bounded = group_natural_rows(selected, rows=max_rows)
-        cap_mode = "grouped_at_existing_natural_boundaries"
+    candidate_sources = ("ruled", "whitespace", "row_edge", "hybrid")
+    source_rows = {
+        name: max(1, len(proposals[name].boundaries) - 1)
+        for name in candidate_sources
+    }
+    character_heights = [
+        float(proposals[name].diagnostics["character_height"])
+        for name in candidate_sources
+        if "character_height" in proposals[name].diagnostics
+    ]
+    typical_character_height = (
+        float(np.median(character_heights)) if character_heights else 4.0
+    )
+    cluster_distance = max(2, round(typical_character_height * 0.55))
+    raw_candidates = sorted(
+        (int(boundary), name)
+        for name in candidate_sources
+        for boundary in proposals[name].boundaries[1:-1]
+    )
+    clusters: list[list[tuple[int, str]]] = []
+    for candidate in raw_candidates:
+        if clusters and candidate[0] - clusters[-1][-1][0] <= cluster_distance:
+            clusters[-1].append(candidate)
+        else:
+            clusters.append([candidate])
+    clustered_candidates = [
+        round(float(np.median([value for value, _source in cluster])))
+        for cluster in clusters
+    ]
+    union = SplitProposal(
+        name="adaptive_candidate_union",
+        boundaries=(0, *clustered_candidates, image.height),
+        diagnostics={"source_rows": source_rows},
+    )
+    if len(union.boundaries) - 1 < minimum_rows:
+        union = uniform_split(image.height, rows=minimum_rows)
+        pre_snap_mode = "snapped_uniform_minimum_fallback"
     else:
-        bounded = selected
-        cap_mode = "all_selected_natural_boundaries"
+        pre_snap_mode = "union_all_detector_boundaries"
 
-    if len(bounded.boundaries) - 1 < minimum_rows:
-        bounded = uniform_split(image.height, rows=minimum_rows)
-        cap_mode = "snapped_uniform_minimum_fallback"
-
-    snapped = snap_uniform_boundaries(image, bounded)
+    snapped = snap_uniform_boundaries(image, union)
     details = list(snapped.diagnostics.get("boundary_details", []))
     safe_boundaries = [0]
     removed_ink_crossings: list[int] = []
@@ -849,7 +876,20 @@ def adaptive_max_snapped_proposal(
         safe_boundaries.append(int(boundary))
     safe_boundaries.append(image.height)
 
-    if len(safe_boundaries) - 1 < minimum_rows:
+    safe_boundaries = list(dict.fromkeys(safe_boundaries))
+    safe = SplitProposal(
+        name="adaptive_safe_snapped",
+        boundaries=tuple(safe_boundaries),
+        diagnostics={},
+    )
+    if len(safe.boundaries) - 1 > max_rows:
+        bounded = group_natural_rows(safe, rows=max_rows)
+        cap_mode = "grouped_at_existing_safe_snapped_boundaries"
+    else:
+        bounded = safe
+        cap_mode = "all_safe_snapped_boundaries"
+
+    if len(bounded.boundaries) - 1 < minimum_rows:
         fallback = snap_uniform_boundaries(
             image,
             uniform_split(image.height, rows=minimum_rows),
@@ -858,7 +898,7 @@ def adaptive_max_snapped_proposal(
         fallback_details = fallback.diagnostics.get("boundary_details", [])
         fallback_used = True
     else:
-        final_boundaries = tuple(safe_boundaries)
+        final_boundaries = bounded.boundaries
         fallback_details = []
         fallback_used = False
 
@@ -866,11 +906,17 @@ def adaptive_max_snapped_proposal(
         "source": selected.name,
         "selected_source": selected.diagnostics.get("selected_source"),
         "selection_reason": selected.diagnostics.get("selection_reason"),
-        "detected_natural_rows": detected_rows,
+        "selected_detected_rows": max(1, len(selected.boundaries) - 1),
+        "detector_rows": source_rows,
+        "raw_candidate_boundaries": len(raw_candidates),
+        "clustered_candidate_boundaries": len(clustered_candidates),
+        "candidate_cluster_distance_px": cluster_distance,
+        "typical_character_height_px": typical_character_height,
         "max_rows": max_rows,
         "minimum_rows": minimum_rows,
+        "pre_snap_mode": pre_snap_mode,
         "cap_mode": cap_mode,
-        "rows_before_snap": len(bounded.boundaries) - 1,
+        "rows_before_snap": len(union.boundaries) - 1,
         "rows_after_snap_safety": len(final_boundaries) - 1,
         "removed_ink_crossing_count": len(removed_ink_crossings),
         "removed_ink_crossing_y": removed_ink_crossings,

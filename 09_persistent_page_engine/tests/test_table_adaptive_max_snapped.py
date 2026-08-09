@@ -30,7 +30,7 @@ def test_adaptive_uses_non_power_of_two_natural_row_count() -> None:
 
     assert len(proposal.boundaries) - 1 == 13
     assert proposal.name == "adaptive_max_32_snapped"
-    assert proposal.diagnostics["cap_mode"] == "all_selected_natural_boundaries"
+    assert proposal.diagnostics["cap_mode"] == "all_safe_snapped_boundaries"
     assert proposal.diagnostics["snap_ink_crossings_after"] == 0
 
 
@@ -38,9 +38,8 @@ def test_adaptive_caps_at_32_using_existing_safe_boundaries() -> None:
     proposal = adaptive_max_snapped_proposal(ruled_table(45), max_rows=32)
 
     assert len(proposal.boundaries) - 1 == 32
-    assert proposal.diagnostics["detected_natural_rows"] == 45
     assert proposal.diagnostics["cap_mode"] == (
-        "grouped_at_existing_natural_boundaries"
+        "grouped_at_existing_safe_snapped_boundaries"
     )
 
 
