@@ -50,7 +50,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help=(
             "Allow the separately packaged two-core grouped-serial research "
-            "variant. Eager-only; this does not change the production graph op."
+            "variant. Eager-only; the supported 16-core resource attribute is "
+            "retained while grouped tiling launches two AIV blocks. This does "
+            "not change the production graph op."
         ),
     )
     parser.add_argument("--warmup", type=int, default=20)
@@ -66,10 +68,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     ):
         parser.error("--valid-kv-length must be in [1, --kv-length]")
     if args.experimental_grouped_serial_control:
-        if args.backend != "eager" or args.vector_core_count != KV_HEADS:
+        if args.backend != "eager" or args.vector_core_count != QUERY_HEADS:
             parser.error(
                 "--experimental-grouped-serial-control requires --backend eager "
-                "and --vector-core-count 2"
+                "and --vector-core-count 16; grouped tiling, not this resource "
+                "attribute, reduces the launched AIV blocks to 2"
             )
     elif not QUERY_HEADS <= args.vector_core_count <= 48:
         parser.error("--vector-core-count must be in [16, 48]")
