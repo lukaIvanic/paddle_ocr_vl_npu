@@ -55,7 +55,8 @@ public:
             .DynamicShapeSupportFlag(true)
             .NeedCheckSupportFlag(false)
             .PrecisionReduceFlag(false)
-            .ExtendCfgInfo("opFile.value", "paddle_gqa_incre_flash_attention_aiv");
+            .ExtendCfgInfo("opFile.value", "paddle_gqa_incre_flash_attention_aiv")
+            .ExtendCfgInfo("jitCompile.flag", "static_false,dynamic_false");
         this->AICore().AddConfig("ascend910b", config);
     }
 };
