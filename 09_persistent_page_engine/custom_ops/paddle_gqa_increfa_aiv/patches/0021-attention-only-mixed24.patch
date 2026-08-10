@@ -11,7 +11,7 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flas
 diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
 --- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
 +++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
-@@ -3505,4 +3505,8 @@ ge::graphStatus IFATiling::CalcNumBlocks()
+@@ -3505,3 +3505,7 @@ ge::graphStatus IFATiling::CalcNumBlocks()
      if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) {
 -        const uint32_t launchAivNum = usedCoreNum_;
 -        ifaContext_->numBlocks = ascendcPlatform.CalcTschBlockDim(launchAivNum, 0U, launchAivNum);
