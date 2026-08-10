@@ -27,7 +27,11 @@ from benchmark_prefix_cache_throughput import (
     synchronize,
     timed_call,
 )
-from local_modeling_qwen3_reranker import build_left_padded_causal_bool_mask_chunk
+from local_modeling_qwen3_reranker import (
+    PREFILL_OPTIMIZATION_PRESETS,
+    build_310p_square_promptfa_mask,
+    build_left_padded_causal_bool_mask_chunk,
+)
 from run_local_qwen3_reranker import LocalQwen3RerankerRunner
 from transformers_rerank import DEFAULT_TASK
 
@@ -46,6 +50,15 @@ def parse_args() -> argparse.Namespace:
         "--compile-cache-dir",
         type=Path,
         default=Path(".runtime_cache/13_qwen3_reranker/prefix_throughput"),
+    )
+    parser.add_argument(
+        "--compile-source-key",
+        help="Reuse a known-compatible graph source key after profiler-only changes.",
+    )
+    parser.add_argument(
+        "--prefill-optimization",
+        choices=tuple(PREFILL_OPTIMIZATION_PRESETS),
+        default="combined",
     )
     parser.add_argument(
         "--profile-dir",
@@ -176,24 +189,36 @@ def main() -> None:
         query_start=PREFIX_BLOCK,
         query_end=full_length,
     )
+    optimization = model.set_prefill_optimization(args.prefill_optimization)
+    prepared_keys, prepared_values = model.prepare_prefix_caches(
+        prefix_key_caches,
+        prefix_value_caches,
+    )
+    compiled_mask = (
+        build_310p_square_promptfa_mask(continuation_mask)
+        if optimization.prebuilt_square_mask
+        else continuation_mask
+    )
     flat_caches = tuple(
         cache.expand(args.batch_size, -1, -1, -1).contiguous()
-        for cache in prefix_key_caches
+        for cache in prepared_keys
     ) + tuple(
         cache.expand(args.batch_size, -1, -1, -1).contiguous()
-        for cache in prefix_value_caches
+        for cache in prepared_values
     )
 
     set_attention_impl(model, "prompt_flash_attention")
     stage = PrefixLastHiddenStage(model).eval()
+    source_key = args.compile_source_key or source_hash()
     cache_dir = args.compile_cache_dir / (
-        f"prefix_promptfa_b{args.batch_size}_q{full_length}_kv{full_length}_"
-        f"realq{args.continuation_length}_fp16_src{source_hash()}"
+        f"prefix_promptfa_{optimization.name}_b{args.batch_size}_"
+        f"q{full_length}_kv{full_length}_realq{args.continuation_length}_"
+        f"fp16_src{source_key}"
     )
     compiled, compile_wrapper_s, cache_was_warm = compile_stage(
         stage,
         entrypoint_name=(
-            f"reranker_prefix_promptfa_b{args.batch_size}_"
+            f"reranker_prefix_promptfa_{optimization.name}_b{args.batch_size}_"
             f"realq{args.continuation_length}_s{full_length}"
         ),
         cache_dir=cache_dir,
@@ -202,7 +227,7 @@ def main() -> None:
     fn = lambda: compiled(
         continuation_ids,
         continuation_position_ids,
-        continuation_mask,
+        compiled_mask,
         *flat_caches,
     )
 
@@ -264,6 +289,9 @@ def main() -> None:
             "compile_cache_dir": str(cache_dir),
             "cache_was_warm": cache_was_warm,
             "source_hash": source_hash(),
+            "compile_source_key": source_key,
+            "compile_source_key_override": args.compile_source_key,
+            "prefill_optimization": optimization.name,
         },
         "setup": {
             "prefix_build_s": prefix_build_s,
