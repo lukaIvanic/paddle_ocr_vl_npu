@@ -446,7 +446,10 @@ def _worker_main(
 
             crop_margin = openocr_crop_margin
             tokenize_figure_of_table = openocr_tokenize_figure_of_table
-            from modeling_optimized_unirec import UniRecImageProcessor
+            from modeling_optimized_unirec import (
+                LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN,
+                UniRecImageProcessor,
+            )
 
             recognition_processor = UniRecImageProcessor()
         else:
@@ -497,6 +500,25 @@ def _worker_main(
                 )
                 result["started_at"] = started
                 recognition_prepare_started = time.perf_counter()
+                rejected_crops = 0
+                if LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN > 0:
+                    kept_crops = []
+                    kept_block_ids = []
+                    for crop, block_id in zip(
+                        result["crops"], result["vlm_block_ids"]
+                    ):
+                        height, width = crop["image_rgb"].shape[:2]
+                        tokens = recognition_processor.estimate_encoder_token_count_for_image_size(
+                            width, height
+                        )
+                        if tokens > LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN:
+                            rejected_crops += 1
+                            continue
+                        kept_crops.append(crop)
+                        kept_block_ids.append(block_id)
+                    result["crops"] = kept_crops
+                    result["vlm_block_ids"] = kept_block_ids
+                result["cross_capacity_rejected_crops"] = rejected_crops
                 for crop in result["crops"]:
                     inputs = recognition_processor(Image.fromarray(crop["image_rgb"]))
                     crop["processed_pixel_values"] = np.ascontiguousarray(

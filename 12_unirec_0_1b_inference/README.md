@@ -259,11 +259,11 @@ prefill with decode.
 
 Set `UNIREC_STATIC_CACHE_LEN` to select the static self-KV capacity. Set
 `UNIREC_STATIC_CROSS_CACHE_LEN` to select a smaller fixed cross-KV capacity.
-When the latter is nonzero, the image processor preserves the normal crop size
-when it fits and proportionally downsizes only crops whose encoder sequence
-would exceed the requested capacity. The cross cache is then padded to the
-exact requested length. This is a throughput/quality tradeoff, not an exact
-parity lane, because overflowing crops receive fewer vision tokens.
+When the latter is nonzero, crops whose normal encoder sequence exceeds that
+capacity are omitted instead of resized or truncated. The remaining crops keep
+their exact normal preprocessing, and the cross cache is padded to the exact
+requested length. This is a throughput-only experiment because omitted crops
+reduce page quality.
 
 ## Layout detector lab
 

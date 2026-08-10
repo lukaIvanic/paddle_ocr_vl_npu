@@ -1565,7 +1565,6 @@ class UniRecImageProcessor:
         do_rescale: bool = True,
         do_normalize: bool = True,
         resample: int = Image.BICUBIC,
-        max_encoder_tokens: int | None = None,
     ) -> None:
         self.max_side = max_side or [64 * 15, 64 * 22]
         self.divided_factor = divided_factor or [64, 64]
@@ -1576,14 +1575,6 @@ class UniRecImageProcessor:
         self.do_rescale = do_rescale
         self.do_normalize = do_normalize
         self.resample = resample
-        self.max_encoder_tokens = (
-            LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN
-            if max_encoder_tokens is None
-            and LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN > 0
-            else max_encoder_tokens
-        )
-        if self.max_encoder_tokens is not None and self.max_encoder_tokens < 1:
-            raise ValueError("max_encoder_tokens must be >= 1")
 
     def _calculate_target_size(self, original_width: int, original_height: int) -> tuple[int, int]:
         max_width, max_height = self.max_side
@@ -1600,59 +1591,6 @@ class UniRecImageProcessor:
         div_w, div_h = self.divided_factor
         final_width = max(int(new_width // div_w * div_w), 64)
         final_height = max(int(new_height // div_h * div_h), 64)
-        if self.max_encoder_tokens is not None:
-            token_count = self.estimate_encoder_token_count_from_processed_size(
-                processed_width=final_width,
-                processed_height=final_height,
-            )
-            if token_count > self.max_encoder_tokens:
-                scale = (self.max_encoder_tokens / token_count) ** 0.5
-                bounded_width = max(
-                    int(final_width * scale) // div_w * div_w,
-                    div_w,
-                )
-                bounded_height = max(
-                    int(final_height * scale) // div_h * div_h,
-                    div_h,
-                )
-                original_aspect = final_width / final_height
-                while True:
-                    candidates = []
-                    for candidate_width, candidate_height in (
-                        (bounded_width + div_w, bounded_height),
-                        (bounded_width, bounded_height + div_h),
-                    ):
-                        if (
-                            candidate_width > final_width
-                            or candidate_height > final_height
-                        ):
-                            continue
-                        candidate_tokens = (
-                            self.estimate_encoder_token_count_from_processed_size(
-                                processed_width=candidate_width,
-                                processed_height=candidate_height,
-                            )
-                        )
-                        if candidate_tokens > self.max_encoder_tokens:
-                            continue
-                        aspect_error = abs(
-                            np.log(
-                                (candidate_width / candidate_height)
-                                / original_aspect
-                            )
-                        )
-                        candidates.append(
-                            (
-                                aspect_error,
-                                -candidate_tokens,
-                                candidate_width,
-                                candidate_height,
-                            )
-                        )
-                    if not candidates:
-                        break
-                    _, _, bounded_width, bounded_height = min(candidates)
-                final_width, final_height = bounded_width, bounded_height
         return final_width, final_height
 
     def get_processed_size(self, original_width: int, original_height: int) -> tuple[int, int]:
