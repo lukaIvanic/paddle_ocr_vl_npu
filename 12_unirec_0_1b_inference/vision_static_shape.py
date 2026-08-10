@@ -396,28 +396,36 @@ class PerShapeCompiledPrefixUniRecVisionRuntime(UniRecVisionAtlasRuntime):
         if passes < 1:
             raise ValueError("static prefix warmup passes must be positive")
         device = torch.device(self.runner.device)
-        report: dict[str, Any] = {}
+        report: dict[str, Any] = {
+            f"{width}x{height}": {
+                "pass_wall_s": [],
+                "cache_dir": str(self.prefix_cache_dirs[(width, height)]),
+            }
+            for width, height in self.shapes
+        }
+        inputs: dict[tuple[int, int], torch.Tensor] = {}
         for width, height in self.shapes:
             # Production preprocessing creates the device input before the
             # compiled call enters inference mode. Preserve that dispatch-key
             # contract so a cache warmed here loads in the page worker.
             with torch.inference_mode(False):
-                pixel_values = torch.zeros(
+                inputs[(width, height)] = torch.zeros(
                     (1, 3, height, width),
                     dtype=self.runner.dtype,
                     device=device,
                 )
-            with torch.inference_mode():
-                times = []
-                for _ in range(passes):
+        # Sweep the complete registry once per pass. The second pass therefore
+        # revisits each graph after every other shape has run.
+        for _ in range(passes):
+            for width, height in self.shapes:
+                pixel_values = inputs[(width, height)]
+                with torch.inference_mode():
                     started = time.perf_counter()
                     self.compiled_prefixes[(width, height)](pixel_values)
                     synchronize_device(self.runner.device)
-                    times.append(time.perf_counter() - started)
-                report[f"{width}x{height}"] = {
-                    "pass_wall_s": times,
-                    "cache_dir": str(self.prefix_cache_dirs[(width, height)]),
-                }
+                    report[f"{width}x{height}"]["pass_wall_s"].append(
+                        time.perf_counter() - started
+                    )
         return report
 
     def summary(self) -> dict[str, Any]:
