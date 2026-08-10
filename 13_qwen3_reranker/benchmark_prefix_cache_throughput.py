@@ -81,6 +81,12 @@ def parse_args() -> argparse.Namespace:
         default="native",
     )
     parser.add_argument(
+        "--ffn-weight-mode",
+        choices=("dense", "gate_up_w8a8"),
+        default="dense",
+        help="Use dense FFNs or shared-activation W8A8 gate/up projections.",
+    )
+    parser.add_argument(
         "--enable-internal-format",
         action="store_true",
         help="Enable torch-npu internal tensor formats before the first NPU allocation.",
@@ -101,6 +107,7 @@ def source_hash() -> str:
     for name in (
         "benchmark_prefix_cache_throughput.py",
         "local_modeling_qwen3_reranker.py",
+        "local_reranker_w8a8.py",
     ):
         digest.update((root / name).read_bytes())
     return digest.hexdigest()[:12]
@@ -462,7 +469,7 @@ def main() -> None:
         batch_size=maximum_batch,
         compile_forward=False,
         attention_impl="prompt_flash_attention",
-        ffn_weight_mode="dense",
+        ffn_weight_mode=args.ffn_weight_mode,
     )
     model = runner.model
     tokenizer = runner.tokenizer
@@ -474,8 +481,18 @@ def main() -> None:
     synchronize(device)
     weight_format["setup_s"] = time.perf_counter() - weight_format_started
     print("LINEAR_WEIGHT_FORMAT " + json.dumps(weight_format, sort_keys=True), flush=True)
+    quant_weight_format = None
+    if args.ffn_weight_mode != "dense":
+        from local_reranker_w8a8 import prepare_w8a8_weight_format
+
+        quant_weight_format = prepare_w8a8_weight_format(
+            model,
+            requested=args.linear_weight_format,
+        )
+        synchronize(device)
+        print("W8A8_WEIGHT_FORMAT " + json.dumps(quant_weight_format, sort_keys=True), flush=True)
     weight_cache_key = (
-        f"weights{weight_format['effective_mode']}_"
+        f"ffn{args.ffn_weight_mode}_weights{weight_format['effective_mode']}_"
         f"internal{int(internal_format_enabled)}"
     )
     prefix_input_ids, prefix_attention_mask, prefix_valid_tokens = make_prefix_inputs(
@@ -483,6 +500,29 @@ def main() -> None:
         task=args.task,
         device=device,
     )
+    if args.ffn_weight_mode != "dense":
+        calibration_length = max(all_lengths)
+        calibration_ids, calibration_attention = make_continuation_inputs(
+            tokenizer,
+            batch_size=maximum_batch,
+            continuation_length=calibration_length,
+            device=device,
+        )
+        calibration_full_ids = torch.cat(
+            (prefix_input_ids.expand(maximum_batch, -1), calibration_ids), dim=1
+        ).contiguous()
+        calibration_full_attention = torch.cat(
+            (prefix_attention_mask.expand(maximum_batch, -1), calibration_attention), dim=1
+        )
+        calibration_started = time.perf_counter()
+        runner.calibrate_ffn_input_scales(calibration_full_ids, calibration_full_attention)
+        synchronize(device)
+        print(
+            "W8A8_CALIBRATION "
+            f"batch={maximum_batch} sequence={PREFIX_BLOCK + calibration_length} "
+            f"wall_s={time.perf_counter() - calibration_started:.6f}",
+            flush=True,
+        )
     prefix_build_s, prefix_key_caches, prefix_value_caches = build_prefix_cache(
         model,
         prefix_input_ids,
@@ -792,6 +832,8 @@ def main() -> None:
             "prefill_optimizations": list(args.prefill_optimizations),
             "internal_format_enabled": internal_format_enabled,
             "linear_weight_format": weight_format,
+            "ffn_weight_mode": args.ffn_weight_mode,
+            "quant_weight_format": quant_weight_format,
         },
         "metric_definitions": {
             "served_input_tok_s": "valid prefix plus continuation tokens served per median call second",

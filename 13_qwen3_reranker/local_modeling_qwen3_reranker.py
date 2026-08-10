@@ -1193,25 +1193,29 @@ class LocalQwen3RerankerForCausalLM(nn.Module):
 def reranker_transformer_linears(
     model: LocalQwen3RerankerForCausalLM,
 ) -> tuple[tuple[str, nn.Linear], ...]:
-    """Return the seven timed transformer projections in every decoder layer."""
-    modules: list[tuple[str, nn.Linear]] = []
-    for layer_index, layer in enumerate(model.layers):
-        modules.extend(
-            (
-                (f"layers.{layer_index}.self_attn.q_proj", layer.self_attn.q_proj),
-                (f"layers.{layer_index}.self_attn.k_proj", layer.self_attn.k_proj),
-                (f"layers.{layer_index}.self_attn.v_proj", layer.self_attn.v_proj),
-                (f"layers.{layer_index}.self_attn.o_proj", layer.self_attn.o_proj),
-                (f"layers.{layer_index}.mlp.gate_proj", layer.mlp.gate_proj),
-                (f"layers.{layer_index}.mlp.up_proj", layer.mlp.up_proj),
-                (f"layers.{layer_index}.mlp.down_proj", layer.mlp.down_proj),
-            )
-        )
-    expected = len(model.layers) * 7
-    if len(modules) != expected:
-        raise RuntimeError(
-            f"expected {expected} reranker transformer Linear modules, found {len(modules)}"
-        )
+    """Return the remaining dense transformer projections.
+
+    Quantized wrappers replace some projections with non-Linear modules, so
+    discover the dense remainder instead of assuming seven Linears per layer.
+    """
+    projection_names = {
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj",
+    }
+    modules = [
+        (name, module)
+        for name, module in model.named_modules()
+        if name.startswith("layers.")
+        and name.rsplit(".", 1)[-1] in projection_names
+        and isinstance(module, nn.Linear)
+    ]
+    if not modules:
+        raise RuntimeError("no dense reranker transformer Linear modules found")
     return tuple(modules)
 
 

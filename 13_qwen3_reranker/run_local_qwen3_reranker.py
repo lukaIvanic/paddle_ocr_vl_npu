@@ -24,7 +24,11 @@ from transformers_rerank import DEFAULT_TASK, PREFIX, SUFFIX, build_inputs, form
 def _source_hash() -> str:
     digest = hashlib.sha256()
     root = Path(__file__).resolve().parent
-    for name in ("run_local_qwen3_reranker.py", "local_modeling_qwen3_reranker.py"):
+    for name in (
+        "run_local_qwen3_reranker.py",
+        "local_modeling_qwen3_reranker.py",
+        "local_reranker_w8a8.py",
+    ):
         digest.update((root / name).read_bytes())
     return digest.hexdigest()[:12]
 
@@ -86,7 +90,7 @@ class LocalQwen3RerankerRunner:
             raise ValueError(f"Unsupported attention_impl={self.attention_impl!r}")
         if self.attention_impl == "prompt_flash_attention" and self.dtype is not torch.float16:
             raise ValueError("prompt_flash_attention requires float16")
-        if self.ffn_weight_mode not in {"dense", "w8a8", "all_w8a8"}:
+        if self.ffn_weight_mode not in {"dense", "gate_up_w8a8", "w8a8", "all_w8a8"}:
             raise ValueError(f"Unsupported ffn_weight_mode={self.ffn_weight_mode!r}")
         if self.ffn_weight_mode != "dense" and self.dtype is not torch.float16:
             raise ValueError("W8A8 modes require float16")
@@ -101,8 +105,8 @@ class LocalQwen3RerankerRunner:
                 raise ValueError("prefix caching currently requires --compile-forward")
             if self.attention_impl != "prompt_flash_attention":
                 raise ValueError("prefix caching requires prompt_flash_attention")
-            if self.ffn_weight_mode != "dense":
-                raise ValueError("prefix caching currently supports dense weights only")
+            if self.ffn_weight_mode not in {"dense", "gate_up_w8a8"}:
+                raise ValueError("prefix caching supports dense or gate_up_w8a8 weights")
             if self.prefill_chunk_size != 128:
                 raise ValueError("the initial static prefix-cache shape requires --prefill-chunk-size 128")
         if self.prefill_chunk_size:
@@ -202,7 +206,11 @@ class LocalQwen3RerankerRunner:
             missing = []
         if missing or unexpected:
             raise RuntimeError(f"state_dict mismatch: missing={missing}, unexpected={unexpected}")
-        if self.ffn_weight_mode == "w8a8":
+        if self.ffn_weight_mode == "gate_up_w8a8":
+            from local_reranker_w8a8 import quantize_reranker_gate_up_inplace
+
+            quantize_reranker_gate_up_inplace(model, out_dtype=self.dtype)
+        elif self.ffn_weight_mode == "w8a8":
             from local_reranker_w8a8 import quantize_reranker_ffn_inplace
 
             quantize_reranker_ffn_inplace(model, out_dtype=self.dtype)
@@ -211,6 +219,10 @@ class LocalQwen3RerankerRunner:
 
             quantize_reranker_all_linears_inplace(model, out_dtype=self.dtype)
         model.to(device=self.device, dtype=self.dtype)
+        if self.ffn_weight_mode != "dense":
+            from local_reranker_w8a8 import restore_w8a8_scale_dtypes
+
+            restore_w8a8_scale_dtypes(model)
         model.eval()
         return model
 
@@ -542,7 +554,11 @@ def parse_args() -> argparse.Namespace:
         help="Compiled prefix-cache suffix optimization preset.",
     )
     parser.add_argument("--attention-impl", choices=("eager", "prompt_flash_attention"), default="eager")
-    parser.add_argument("--ffn-weight-mode", choices=("dense", "w8a8", "all_w8a8"), default="dense")
+    parser.add_argument(
+        "--ffn-weight-mode",
+        choices=("dense", "gate_up_w8a8", "w8a8", "all_w8a8"),
+        default="dense",
+    )
     parser.add_argument(
         "--prefill-chunk-size",
         type=int,

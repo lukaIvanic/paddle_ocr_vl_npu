@@ -3,13 +3,13 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from local_modeling_qwen3_reranker import LocalQwen3RerankerMLP
+from local_modeling_qwen3_reranker import FRACTAL_NZ, LocalQwen3RerankerMLP, linear_tokenwise
 
 
 def quantize_per_output_channel(weight: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     weight_fp32 = weight.detach().to(torch.float32)
     scale = weight_fp32.abs().amax(dim=-1).clamp_min(1e-6) / 127.0
-    weight_q = torch.round(weight_fp32 / scale.unsqueeze(-1)).clamp(-128, 127).to(torch.int8)
+    weight_q = torch.round(weight_fp32 / scale.unsqueeze(-1)).clamp(-127, 127).to(torch.int8)
     return weight_q.contiguous(), scale.to(torch.float16)
 
 
@@ -23,12 +23,11 @@ class W8A8Linear(nn.Module):
         self.out_dtype = out_dtype
         self.register_buffer("weight_q", torch.empty(out_features, in_features, dtype=torch.int8))
         self.register_buffer("weight_scale", torch.ones(out_features, dtype=torch.float16))
-        self.register_buffer("input_offset", torch.zeros(1, dtype=torch.int32))
         self.register_buffer("static_input_scale", torch.ones(1, dtype=torch.float32))
         self.register_buffer("static_packed_deq_scale", torch.empty(out_features, dtype=torch.int64))
-        self.register_buffer("quant_bias", torch.zeros(out_features, dtype=torch.int32))
         self.use_static_input_scale = False
         self.use_static_packed_deq_scale = False
+        self.weight_is_matmul_ready = False
         self.collect_input_scale_stats = False
         self._observed_input_scale = 0.0
 
@@ -74,11 +73,10 @@ class W8A8Linear(nn.Module):
         if self.collect_input_scale_stats:
             self._observed_input_scale = max(self._observed_input_scale, float(input_scale.detach().cpu().item()))
 
-        scales = input_scale.reshape(1).expand(x_fp16.shape[0]).to(torch.float32)
         x_q = torch_npu.npu_quantize(
             x_fp16,
-            scales=scales,
-            zero_points=self.input_offset.expand(x_fp16.shape[0]),
+            scales=input_scale.reshape(1).to(torch.float32),
+            zero_points=None,
             dtype=torch.qint8,
             axis=0,
             div_mode=True,
@@ -94,11 +92,12 @@ class W8A8Linear(nn.Module):
         else:
             deq_scale = self.weight_scale.to(torch.float32) * input_scale.to(torch.float32)
             deq_scale = torch_npu.npu_trans_quant_param(deq_scale, None)
+        weight = self.weight_q if self.weight_is_matmul_ready else self.weight_q.transpose(0, 1)
         return torch_npu.npu_quant_matmul(
             x_q,
-            self.weight_q.transpose(0, 1),
+            weight,
             scale=deq_scale,
-            bias=self.quant_bias,
+            bias=None,
             output_dtype=self.out_dtype,
         )
 
@@ -134,11 +133,10 @@ class W8A8GateUp(nn.Module):
                 self.gate_proj._observed_input_scale,
                 float(input_scale.detach().cpu().item()),
             )
-        scales = input_scale.reshape(1).expand(x_fp16.shape[0]).to(torch.float32)
         x_q = torch_npu.npu_quantize(
             x_fp16,
-            scales=scales,
-            zero_points=self.gate_proj.input_offset.expand(x_fp16.shape[0]),
+            scales=input_scale.reshape(1).to(torch.float32),
+            zero_points=None,
             dtype=torch.qint8,
             axis=0,
             div_mode=True,
@@ -159,6 +157,28 @@ class W8A8MLP(nn.Module):
 
         gate, up = self.gate_up(hidden_states)
         return self.down_proj(F.silu(gate) * up)
+
+
+class W8A8GateUpOnlyMLP(nn.Module):
+    """Quantize the two wide FFN projections and keep the down projection FP16."""
+
+    def __init__(self, dense_mlp: LocalQwen3RerankerMLP, *, out_dtype: torch.dtype):
+        super().__init__()
+        self.gate_up = W8A8GateUp(dense_mlp.gate_proj, dense_mlp.up_proj, out_dtype=out_dtype)
+        self.down_proj = dense_mlp.down_proj
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        import torch.nn.functional as F
+
+        gate, up = self.gate_up(hidden_states)
+        return linear_tokenwise(self.down_proj, F.silu(gate) * up)
+
+
+def quantize_reranker_gate_up_inplace(module: nn.Module, *, out_dtype: torch.dtype) -> None:
+    for parent in module.modules():
+        for name, child in list(parent.named_children()):
+            if isinstance(child, LocalQwen3RerankerMLP):
+                setattr(parent, name, W8A8GateUpOnlyMLP(child, out_dtype=out_dtype))
 
 
 def quantize_reranker_ffn_inplace(module: nn.Module, *, out_dtype: torch.dtype) -> None:
@@ -197,6 +217,58 @@ def iter_w8a8_gate_up(module: nn.Module):
     for child in module.modules():
         if isinstance(child, W8A8GateUp):
             yield child
+
+
+def restore_w8a8_scale_dtypes(module: nn.Module) -> None:
+    """Keep quantizer scales FP32 after the surrounding model is cast to FP16."""
+    for linear in iter_w8a8_linears(module):
+        linear.static_input_scale = linear.static_input_scale.to(torch.float32)
+
+
+def prepare_w8a8_weight_format(module: nn.Module, *, requested: str) -> dict[str, object]:
+    """Prepare INT8 weights once in the logical [K, N] layout used by QuantMatmul.
+
+    Atlas 310P and training-series devices require a different ordering of the
+    format cast and logical transpose. Both branches preserve the public
+    QuantMatmul [M, K] x [K, N] contract.
+    """
+    if requested not in {"native", "fractal_nz"}:
+        raise ValueError(f"unsupported W8A8 weight format {requested!r}")
+    linears = list(iter_w8a8_linears(module))
+    if any(linear.weight_q.device.type != "npu" for linear in linears):
+        raise RuntimeError("W8A8 weight preparation requires NPU-resident weights")
+
+    import torch_npu
+
+    device_name = torch.npu.get_device_name(linears[0].weight_q.device) if linears else ""
+    is_310p = "310P" in device_name.upper()
+    before = [int(torch_npu.get_npu_format(linear.weight_q)) for linear in linears]
+    for linear in linears:
+        if linear.weight_is_matmul_ready:
+            continue
+        if requested == "fractal_nz":
+            if is_310p:
+                prepared = torch_npu.npu_format_cast(linear.weight_q, FRACTAL_NZ).transpose(0, 1)
+            else:
+                prepared = torch_npu.npu_format_cast(
+                    linear.weight_q.transpose(0, 1).contiguous(),
+                    FRACTAL_NZ,
+                )
+        else:
+            prepared = linear.weight_q.transpose(0, 1).contiguous()
+        linear.weight_q = prepared
+        linear.weight_is_matmul_ready = True
+    after = [int(torch_npu.get_npu_format(linear.weight_q)) for linear in linears]
+    return {
+        "requested": requested,
+        "effective_mode": requested,
+        "device_name": device_name,
+        "device_layout_branch": "310p_format_then_transpose" if is_310p else "a2_transpose_then_format",
+        "quant_linear_count": len(linears),
+        "before_format_histogram": {str(code): before.count(code) for code in sorted(set(before))},
+        "after_format_histogram": {str(code): after.count(code) for code in sorted(set(after))},
+        "all_matmul_ready": all(linear.weight_is_matmul_ready for linear in linears),
+    }
 
 
 def calibrate_w8a8_input_scales(model: nn.Module, forward_fn) -> None:
