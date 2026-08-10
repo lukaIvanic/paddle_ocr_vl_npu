@@ -61,6 +61,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--strict-scope", action="store_true")
+    parser.add_argument("--direct-eager-extension", action="store_true")
     return parser.parse_args()
 
 
@@ -91,20 +92,27 @@ def main() -> int:
     expected_values = [state.cpu().clone() for state in value_states]
     positions = [128, 129]
 
-    torchair, CompilerConfig = import_torchair()
-    args.cache_dir.mkdir(parents=True, exist_ok=True)
-    compiler_config = CompilerConfig()
-    graph_dump_dir = args.cache_dir / "graph_dump"
-    graph_dump_dir.mkdir(parents=True, exist_ok=True)
-    compiler_config.debug.graph_dump.type = "pbtxt"
-    compiler_config.debug.graph_dump.path = str(graph_dump_dir)
-    step = torchair.inference.cache_compile(
-        DecodeKvScatterQuery(args.strict_scope).forward,
-        config=compiler_config,
-        dynamic=False,
-        cache_dir=str(args.cache_dir),
-        ge_cache=True,
-    )
+    if args.direct_eager_extension:
+        if args.strict_scope:
+            raise ValueError("direct eager extension does not use a SuperKernel scope")
+        import paddle_decode_kv_scatter_query_eager  # noqa: F401
+
+        step = torch.ops.paddleocr_vl_npu.paddle_decode_kv_scatter_query_eager
+    else:
+        torchair, CompilerConfig = import_torchair()
+        args.cache_dir.mkdir(parents=True, exist_ok=True)
+        compiler_config = CompilerConfig()
+        graph_dump_dir = args.cache_dir / "graph_dump"
+        graph_dump_dir.mkdir(parents=True, exist_ok=True)
+        compiler_config.debug.graph_dump.type = "pbtxt"
+        compiler_config.debug.graph_dump.path = str(graph_dump_dir)
+        step = torchair.inference.cache_compile(
+            DecodeKvScatterQuery(args.strict_scope).forward,
+            config=compiler_config,
+            dynamic=False,
+            cache_dir=str(args.cache_dir),
+            ge_cache=True,
+        )
     timings = []
     ordered_outputs = []
     ordered_aliases = []
@@ -203,6 +211,7 @@ def main() -> int:
             "state_shape": list(key_states[0].shape),
             "positions": positions,
             "strict_scope": args.strict_scope,
+            "direct_eager_extension": args.direct_eager_extension,
             "block_dim": 1,
             "core_type": "AIV_ONLY",
         },
