@@ -141,6 +141,24 @@ def main() -> None:
     batch_sizes = sorted({int(value) for value in args.batch_sizes.split(",")})
     if not batch_sizes or batch_sizes[0] < 1:
         raise ValueError("batch sizes must be positive")
+    requested_graphs = len(shapes) * len(batch_sizes)
+    required_specializations = requested_graphs + 8
+    torch._dynamo.config.cache_size_limit = max(
+        int(torch._dynamo.config.cache_size_limit),
+        required_specializations,
+    )
+    torch._dynamo.config.recompile_limit = max(
+        int(torch._dynamo.config.recompile_limit),
+        required_specializations,
+    )
+    torch._dynamo.config.accumulated_cache_size_limit = max(
+        int(torch._dynamo.config.accumulated_cache_size_limit),
+        required_specializations * 4,
+    )
+    torch._dynamo.config.accumulated_recompile_limit = max(
+        int(torch._dynamo.config.accumulated_recompile_limit),
+        required_specializations * 4,
+    )
 
     sys.path.insert(0, str(args.openocr_root.expanduser().resolve()))
     from tools.utils.opendoc_onnx_utils.utils import (  # noqa: PLC0415
