@@ -43,9 +43,10 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertIn("KERNEL_TYPE_MIX_AIC_1_1", kernel)
-        self.assertEqual(kernel.count("SyncAll<true>();"), 2)
+        self.assertEqual(kernel.count("SyncAll<true>();"), 1)
+        self.assertIn("cacheOffset < segmentStart", kernel)
         self.assertIn("kernel.CopyCaches(GetBlockIdx());", kernel)
-        self.assertIn("kernel.PrepareToken();", kernel)
+        self.assertIn("kernel.PrepareToken(GetBlockIdx());", kernel)
         self.assertIn("copyInputQueue", kernel)
         self.assertIn("copyOutputQueue", kernel)
         self.assertIn("Adds(output, input", kernel)

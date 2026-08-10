@@ -78,7 +78,7 @@ public:
         CopySegment(valueCacheGm, valueCacheOutGm, start, count);
     }
 
-    __aicore__ inline void PrepareToken()
+    __aicore__ inline void PrepareToken(uint32_t blockIndex)
     {
         DataCacheCleanAndInvalid<
             int64_t, CacheLine::SINGLE_CACHE_LINE, DcciDst::CACHELINE_OUT>(
@@ -88,35 +88,47 @@ public:
             return;
         }
 
-        LocalTensor<uint32_t> maskWords =
-            maskQueue.AllocTensor<uint32_t>();
-        Duplicate<uint32_t>(maskWords, kFourTrueBytes, kMaskWords);
-        const uint32_t prefixBytes = static_cast<uint32_t>(position + 1);
-        const uint32_t fullZeroWords = prefixBytes / sizeof(uint32_t);
-        const uint32_t remainingZeroBytes = prefixBytes % sizeof(uint32_t);
-        if (fullZeroWords > 0) {
-            Duplicate<uint32_t>(maskWords, 0, fullZeroWords);
-        }
-        PipeBarrier<PIPE_V>();
-        if (remainingZeroBytes > 0) {
-            maskWords.SetValue(
-                fullZeroWords,
-                kFourTrueBytes << (remainingZeroBytes * 8));
-        }
-        maskQueue.EnQue(maskWords);
-        maskWords = maskQueue.DeQue<uint32_t>();
-        DataCopy(
-            attentionMaskGm,
-            maskWords.ReinterpretCast<uint8_t>(),
-            kCacheLength);
-        maskQueue.FreeTensor(maskWords);
+        if (blockIndex == 0) {
+            LocalTensor<uint32_t> maskWords =
+                maskQueue.AllocTensor<uint32_t>();
+            Duplicate<uint32_t>(maskWords, kFourTrueBytes, kMaskWords);
+            const uint32_t prefixBytes = static_cast<uint32_t>(position + 1);
+            const uint32_t fullZeroWords = prefixBytes / sizeof(uint32_t);
+            const uint32_t remainingZeroBytes =
+                prefixBytes % sizeof(uint32_t);
+            if (fullZeroWords > 0) {
+                Duplicate<uint32_t>(maskWords, 0, fullZeroWords);
+            }
+            PipeBarrier<PIPE_V>();
+            if (remainingZeroBytes > 0) {
+                maskWords.SetValue(
+                    fullZeroWords,
+                    kFourTrueBytes << (remainingZeroBytes * 8));
+            }
+            maskQueue.EnQue(maskWords);
+            maskWords = maskQueue.DeQue<uint32_t>();
+            DataCopy(
+                attentionMaskGm,
+                maskWords.ReinterpretCast<uint8_t>(),
+                kCacheLength);
+            maskQueue.FreeTensor(maskWords);
 
-        CopyToken(queryGm, orderedQueryGm, 0, 0, kQueryElements);
+            CopyToken(queryGm, orderedQueryGm, 0, 0, kQueryElements);
+        }
+
+        const uint32_t segmentStart = blockIndex * kCopyElementsPerCore;
+        const uint32_t segmentEnd =
+            (segmentStart + kCopyElementsPerCore < kCacheElements)
+                ? segmentStart + kCopyElementsPerCore
+                : kCacheElements;
         for (uint32_t head = 0; head < kKvHeads; ++head) {
             const uint32_t stateOffset = head * kHeadDim;
             const uint32_t cacheOffset =
                 (head * kCacheLength + static_cast<uint32_t>(position)) *
                 kHeadDim;
+            if (cacheOffset < segmentStart || cacheOffset >= segmentEnd) {
+                continue;
+            }
             CopyToken(
                 keyStateGm,
                 keyCacheOutGm,
@@ -221,11 +233,7 @@ paddle_decode_kv_prepare_functional_mixed24(
         query, keyCache, valueCache, cachePosition, keyState, valueState,
         orderedQuery, attentionMask, keyCacheOut, valueCacheOut, &pipe);
     kernel.CopyCaches(GetBlockIdx());
-    PipeBarrier<PIPE_ALL>();
-    SyncAll<true>();
-    if (GetBlockIdx() == 0) {
-        kernel.PrepareToken();
-    }
+    kernel.PrepareToken(GetBlockIdx());
     PipeBarrier<PIPE_ALL>();
     SyncAll<true>();
     pipe.Destroy();
