@@ -13,6 +13,7 @@ import torch
 from ..model.text_spec_verify import TextSpecVerifyRuntime
 from ..model.token_selection import (
     TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
     TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
     TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
     TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
@@ -520,6 +521,7 @@ class TableSpeculativeDecodeRuntime:
         if recognizer.token_selection not in (
             TOKEN_SELECTION_GREEDY,
             TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
+            TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
             TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
             TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
         ):
@@ -633,8 +635,10 @@ class TableSpeculativeDecodeRuntime:
         )
         policy_mask = torch.tensor(
             [
-                self.recognizer.token_selection
-                == TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY
+                self.recognizer.token_selection in (
+                    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
+                    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
+                )
                 or int(current_token) in self.recognizer.table_cell_token_ids
             ],
             device=logits.device,

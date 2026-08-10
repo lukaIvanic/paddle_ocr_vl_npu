@@ -7,6 +7,9 @@ import torch
 
 TOKEN_SELECTION_GREEDY = "greedy"
 TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY = "suppress_math_open_greedy"
+TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY = (
+    "suppress_math_open_and_slash_greedy"
+)
 TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED = (
     "prefer_math_open_top2_non_nested"
 )
@@ -25,6 +28,7 @@ TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED = (
 TOKEN_SELECTION_CHOICES = (
     TOKEN_SELECTION_GREEDY,
     TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
+    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
     TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
@@ -76,6 +80,31 @@ def select_token_ids(
         )
         selected = torch.where(
             greedy == int(preferred_token_id),
+            replacement,
+            greedy,
+        )
+        if policy_mask is not None:
+            selected = torch.where(
+                policy_mask.to(device=selected.device, dtype=torch.bool),
+                selected,
+                greedy,
+            )
+        return selected
+    if mode == TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY:
+        if alternate_preferred_token_id is None:
+            raise ValueError(f"{mode} requires alternate_preferred_token_id")
+        alternate = int(alternate_preferred_token_id)
+        if not 0 <= alternate < int(scores.shape[-1]):
+            raise ValueError(
+                f"alternate_preferred_token_id {alternate} is outside vocabulary "
+                f"size {scores.shape[-1]}"
+            )
+        suppressed_scores = scores.clone()
+        suppressed_scores[..., int(preferred_token_id)] = -torch.inf
+        suppressed_scores[..., alternate] = -torch.inf
+        replacement = torch.argmax(suppressed_scores, dim=-1)
+        selected = torch.where(
+            (greedy == int(preferred_token_id)) | (greedy == alternate),
             replacement,
             greedy,
         )

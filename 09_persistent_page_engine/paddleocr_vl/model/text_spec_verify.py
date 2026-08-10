@@ -41,6 +41,7 @@ from .text_decode import (
 )
 from .token_selection import (
     TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
     TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
     select_token_ids,
 )
@@ -368,7 +369,10 @@ class TextSpecVerifyStage(nn.Module):
             cell_start_mask |= input_ids == int(token_id)
         policy_mask = (
             torch.ones_like(input_ids, dtype=torch.bool)
-            if self.token_selection == TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY
+            if self.token_selection in (
+                TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
+                TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
+            )
             else cell_start_mask
         )
         return select_token_ids(

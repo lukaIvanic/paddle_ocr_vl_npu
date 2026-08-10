@@ -56,6 +56,39 @@ class TokenSelectionTest(unittest.TestCase):
         )
         self.assertEqual(selected.tolist(), [2, 1])
 
+    def test_suppressed_math_open_and_slash_uses_best_third_token(self) -> None:
+        logits = torch.tensor([[1.0, 5.0, 4.0, 3.0]])
+        selected = select_token_ids(
+            logits,
+            mode="suppress_math_open_and_slash_greedy",
+            preferred_token_id=1,
+            alternate_preferred_token_id=2,
+            policy_mask=torch.tensor([True]),
+        )
+        self.assertEqual(selected.tolist(), [3])
+
+    def test_suppressed_math_open_and_slash_replaces_slash_argmax(self) -> None:
+        logits = torch.tensor([[1.0, 4.0, 5.0, 3.0]])
+        selected = select_token_ids(
+            logits,
+            mode="suppress_math_open_and_slash_greedy",
+            preferred_token_id=1,
+            alternate_preferred_token_id=2,
+            policy_mask=torch.tensor([True]),
+        )
+        self.assertEqual(selected.tolist(), [3])
+
+    def test_dual_suppression_policy_mask_preserves_non_table_row(self) -> None:
+        logits = torch.tensor([[1.0, 5.0, 4.0, 3.0]])
+        selected = select_token_ids(
+            logits,
+            mode="suppress_math_open_and_slash_greedy",
+            preferred_token_id=1,
+            alternate_preferred_token_id=2,
+            policy_mask=torch.tensor([False]),
+        )
+        self.assertEqual(selected.tolist(), [1])
+
     def test_preferred_rank_one_is_selected(self) -> None:
         logits = torch.tensor([[1.0, 5.0, 4.0]])
         selected = select_token_ids(

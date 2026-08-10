@@ -38,6 +38,7 @@ from ..model.text_decode import (
 from ..model.token_selection import (
     TOKEN_SELECTION_CHOICES,
     TOKEN_SELECTION_GREEDY,
+    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
     TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
     TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE,
@@ -2545,6 +2546,7 @@ class ContinuousRecognizer:
                         )
                         if self.token_selection in (
                             TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
+                            TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
                             TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
                             TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
                         )
@@ -2668,6 +2670,7 @@ class ContinuousRecognizer:
                     ).unsqueeze(-1)
                     if self.token_selection in (
                         TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
+                        TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
                         TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
                         TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
                     )
@@ -3184,6 +3187,9 @@ class ContinuousRecognizer:
                     TOKEN_SELECTION_GREEDY: "ordinary_argmax",
                     TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY: (
                         "table_prompt_argmax_except_math_open_token_id"
+                    ),
+                    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY: (
+                        "table_prompt_argmax_except_math_open_and_backslash_token_ids"
                     ),
                     TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED: (
                         "prefer_rank2_math_open_only_outside_open_math_region"
