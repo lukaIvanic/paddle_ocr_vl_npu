@@ -39,9 +39,12 @@ public:
             reinterpret_cast<__gm__ half*>(valueState), kStateElements);
         orderedQueryGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ half*>(orderedQuery), kQueryElements);
-        pipe->InitBuffer(queryQueue, 1, kQueryElements * sizeof(half));
-        pipe->InitBuffer(keyQueue, 1, kStateElements * sizeof(half));
-        pipe->InitBuffer(valueQueue, 1, kStateElements * sizeof(half));
+        pipe->InitBuffer(queryInputQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(keyInputQueue, 1, kStateElements * sizeof(half));
+        pipe->InitBuffer(valueInputQueue, 1, kStateElements * sizeof(half));
+        pipe->InitBuffer(queryOutputQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(keyOutputQueue, 1, kStateElements * sizeof(half));
+        pipe->InitBuffer(valueOutputQueue, 1, kStateElements * sizeof(half));
     }
 
     __aicore__ inline void Process()
@@ -54,30 +57,46 @@ public:
             return;
         }
 
-        LocalTensor<half> queryLocal = queryQueue.AllocTensor<half>();
-        LocalTensor<half> keyLocal = keyQueue.AllocTensor<half>();
-        LocalTensor<half> valueLocal = valueQueue.AllocTensor<half>();
-        DataCopy(queryLocal, queryGm, kQueryElements);
-        DataCopy(keyLocal, keyStateGm, kStateElements);
-        DataCopy(valueLocal, valueStateGm, kStateElements);
-        queryQueue.EnQue(queryLocal);
-        keyQueue.EnQue(keyLocal);
-        valueQueue.EnQue(valueLocal);
+        LocalTensor<half> queryInput = queryInputQueue.AllocTensor<half>();
+        LocalTensor<half> keyInput = keyInputQueue.AllocTensor<half>();
+        LocalTensor<half> valueInput = valueInputQueue.AllocTensor<half>();
+        DataCopy(queryInput, queryGm, kQueryElements);
+        DataCopy(keyInput, keyStateGm, kStateElements);
+        DataCopy(valueInput, valueStateGm, kStateElements);
+        queryInputQueue.EnQue(queryInput);
+        keyInputQueue.EnQue(keyInput);
+        valueInputQueue.EnQue(valueInput);
 
-        queryLocal = queryQueue.DeQue<half>();
-        keyLocal = keyQueue.DeQue<half>();
-        valueLocal = valueQueue.DeQue<half>();
-        DataCopy(orderedQueryGm, queryLocal, kQueryElements);
+        queryInput = queryInputQueue.DeQue<half>();
+        keyInput = keyInputQueue.DeQue<half>();
+        valueInput = valueInputQueue.DeQue<half>();
+        LocalTensor<half> queryOutput = queryOutputQueue.AllocTensor<half>();
+        LocalTensor<half> keyOutput = keyOutputQueue.AllocTensor<half>();
+        LocalTensor<half> valueOutput = valueOutputQueue.AllocTensor<half>();
+        Adds(queryOutput, queryInput, static_cast<half>(0.0f), kQueryElements);
+        Adds(keyOutput, keyInput, static_cast<half>(0.0f), kStateElements);
+        Adds(valueOutput, valueInput, static_cast<half>(0.0f), kStateElements);
+        queryOutputQueue.EnQue(queryOutput);
+        keyOutputQueue.EnQue(keyOutput);
+        valueOutputQueue.EnQue(valueOutput);
+        queryInputQueue.FreeTensor(queryInput);
+        keyInputQueue.FreeTensor(keyInput);
+        valueInputQueue.FreeTensor(valueInput);
+
+        queryOutput = queryOutputQueue.DeQue<half>();
+        keyOutput = keyOutputQueue.DeQue<half>();
+        valueOutput = valueOutputQueue.DeQue<half>();
+        DataCopy(orderedQueryGm, queryOutput, kQueryElements);
         for (uint32_t head = 0; head < kKvHeads; ++head) {
             const uint32_t stateOffset = head * kHeadDim;
             const uint32_t cacheOffset =
                 (head * kCacheLength + static_cast<uint32_t>(position)) * kHeadDim;
-            DataCopy(keyCacheGm[cacheOffset], keyLocal[stateOffset], kHeadDim);
-            DataCopy(valueCacheGm[cacheOffset], valueLocal[stateOffset], kHeadDim);
+            DataCopy(keyCacheGm[cacheOffset], keyOutput[stateOffset], kHeadDim);
+            DataCopy(valueCacheGm[cacheOffset], valueOutput[stateOffset], kHeadDim);
         }
-        queryQueue.FreeTensor(queryLocal);
-        keyQueue.FreeTensor(keyLocal);
-        valueQueue.FreeTensor(valueLocal);
+        queryOutputQueue.FreeTensor(queryOutput);
+        keyOutputQueue.FreeTensor(keyOutput);
+        valueOutputQueue.FreeTensor(valueOutput);
     }
 
 private:
@@ -88,9 +107,12 @@ private:
     GlobalTensor<half> keyStateGm;
     GlobalTensor<half> valueStateGm;
     GlobalTensor<half> orderedQueryGm;
-    TQue<QuePosition::VECIN, 1> queryQueue;
-    TQue<QuePosition::VECIN, 1> keyQueue;
-    TQue<QuePosition::VECIN, 1> valueQueue;
+    TQue<QuePosition::VECIN, 1> queryInputQueue;
+    TQue<QuePosition::VECIN, 1> keyInputQueue;
+    TQue<QuePosition::VECIN, 1> valueInputQueue;
+    TQue<QuePosition::VECOUT, 1> queryOutputQueue;
+    TQue<QuePosition::VECOUT, 1> keyOutputQueue;
+    TQue<QuePosition::VECOUT, 1> valueOutputQueue;
 };
 }
 
