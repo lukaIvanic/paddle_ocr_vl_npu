@@ -21,6 +21,10 @@ from paddleocr_vl.model.decode_gqa_attention_aiv import (
     decode_gqa_attention_aiv,
     register_decode_gqa_attention_aiv_converter,
 )
+from paddleocr_vl.model.decode_gqa_attention_mixed24 import (
+    decode_gqa_attention_mixed24,
+    register_decode_gqa_attention_mixed24_converter,
+)
 
 
 class DecodeKvScatterQuery(torch.nn.Module):
@@ -28,11 +32,13 @@ class DecodeKvScatterQuery(torch.nn.Module):
         self,
         strict_scope: bool,
         include_gqa: bool,
+        gqa_variant: str,
         gqa_vector_core_count: int,
         super_kernel_options: str,
     ) -> None:
         super().__init__()
         self.include_gqa = include_gqa
+        self.gqa_variant = gqa_variant
         self.gqa_vector_core_count = gqa_vector_core_count
         self.super_kernel_options = super_kernel_options
         self.scope = None
@@ -60,7 +66,12 @@ class DecodeKvScatterQuery(torch.nn.Module):
         )
         if not self.include_gqa:
             return ordered_query, attention_mask
-        attention_output = decode_gqa_attention_aiv(
+        attention_fn = (
+            decode_gqa_attention_mixed24
+            if self.gqa_variant == "mixed24"
+            else decode_gqa_attention_aiv
+        )
+        attention_output = attention_fn(
             ordered_query,
             key_cache,
             value_cache,
@@ -116,6 +127,11 @@ def parse_args() -> argparse.Namespace:
         default=16,
     )
     parser.add_argument(
+        "--gqa-variant",
+        choices=("attention_aiv", "mixed24"),
+        default="attention_aiv",
+    )
+    parser.add_argument(
         "--super-kernel-options",
         default=(
             "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
@@ -135,7 +151,10 @@ def main() -> int:
     torch.npu.set_compile_mode(jit_compile=False)
     register_decode_kv_scatter_query_converter()
     if args.include_gqa:
-        register_decode_gqa_attention_aiv_converter()
+        if args.gqa_variant == "mixed24":
+            register_decode_gqa_attention_mixed24_converter()
+        else:
+            register_decode_gqa_attention_aiv_converter()
 
     generator = torch.Generator(device="cpu")
     generator.manual_seed(20260810)
@@ -175,6 +194,7 @@ def main() -> int:
             DecodeKvScatterQuery(
                 args.strict_scope,
                 args.include_gqa,
+                args.gqa_variant,
                 args.gqa_vector_core_count,
                 args.super_kernel_options,
             ).forward,
@@ -343,6 +363,7 @@ def main() -> int:
             "strict_scope": args.strict_scope,
             "direct_eager_extension": args.direct_eager_extension,
             "include_gqa": args.include_gqa,
+            "gqa_variant": args.gqa_variant if args.include_gqa else None,
             "super_kernel_options": args.super_kernel_options,
             "gqa_vector_core_count": (
                 args.gqa_vector_core_count if args.include_gqa else None
