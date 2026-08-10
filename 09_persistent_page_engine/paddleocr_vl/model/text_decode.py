@@ -53,6 +53,10 @@ from .decode_gqa_increfa_aiv import (
     decode_gqa_incre_flash_attention_aiv,
     register_decode_gqa_increfa_aiv_converter,
 )
+from .decode_gqa_attention_aiv import (
+    decode_gqa_attention_aiv,
+    register_decode_gqa_attention_aiv_converter,
+)
 from .decode_swiglu import (
     decode_swiglu,
     register_decode_swiglu_converter,
@@ -112,6 +116,7 @@ class DecodeOptimizationConfig:
     ascendc_kv_scatter: bool = False
     ascendc_kv_scatter_query: bool = False
     ascendc_decode_gqa: bool = False
+    ascendc_decode_gqa_attention: bool = False
     ascendc_swiglu: bool = False
 
 
@@ -510,6 +515,7 @@ DECODE_OPTIMIZATION_PRESETS.update(
             _PADDLE_DECODER_MEGAKERNEL_B1,
             name="paddle_decoder_megakernel_b1_nonsplit_gqa",
             gqa_aiv_vector_core_count=16,
+            ascendc_decode_gqa_attention=True,
             super_kernel_options=(
                 "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
                 "preload-code=per-func:early-start=1:split-mode=4"
@@ -1389,7 +1395,12 @@ def _decode_attention(
             )
         if attention_mask is None:
             raise ValueError("gqa_aiv requires the static bool attention mask")
-        attention_output = gqa_incre_flash_attention_aiv(
+        attention_fn = (
+            decode_gqa_attention_aiv
+            if optimization.ascendc_decode_gqa_attention
+            else gqa_incre_flash_attention_aiv
+        )
+        attention_output = attention_fn(
             query_states.contiguous(),
             key_for_attention.contiguous(),
             value_for_attention.contiguous(),
@@ -1902,6 +1913,8 @@ def decode_attention_label(
     if optimization is not None and optimization.attention == "gqa_aiv":
         if optimization.ascendc_decode_gqa:
             return "paddle_decode_gqa_increfa_aiv"
+        if optimization.ascendc_decode_gqa_attention:
+            return "paddle_decode_gqa_attention_aiv"
         return "paddle_gqa_increfa_aiv"
     return DECODE_ATTENTION
 
@@ -1939,6 +1952,7 @@ def decode_source_hash() -> str:
         "decode_linear_matmul_v3.py",
         "decode_qkv_split.py",
         "decode_kv_scatter_query.py",
+        "decode_gqa_attention_aiv.py",
         "decode_swiglu.py",
         "decode_position_add.py",
         "decode_rope_lookup.py",
@@ -2066,6 +2080,9 @@ def compile_text_decode_stage(
                 optimization.ascendc_kv_scatter_query
             ),
             "ascendc_decode_gqa": optimization.ascendc_decode_gqa,
+            "ascendc_decode_gqa_attention": (
+                optimization.ascendc_decode_gqa_attention
+            ),
             "ascendc_swiglu": optimization.ascendc_swiglu,
         },
     }
@@ -2081,10 +2098,13 @@ def compile_text_decode_stage(
         if (
             optimization.attention == "gqa_aiv"
             and not optimization.ascendc_decode_gqa
+            and not optimization.ascendc_decode_gqa_attention
         ):
             register_gqa_increfa_aiv_converter()
         if optimization.ascendc_decode_gqa:
             register_decode_gqa_increfa_aiv_converter()
+        if optimization.ascendc_decode_gqa_attention:
+            register_decode_gqa_attention_aiv_converter()
         if optimization.ascendc_token_embedding:
             register_decode_token_embedding_converter()
         if optimization.ascendc_linear:

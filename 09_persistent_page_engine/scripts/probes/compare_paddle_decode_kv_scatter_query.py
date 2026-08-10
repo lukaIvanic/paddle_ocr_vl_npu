@@ -17,9 +17,9 @@ from paddleocr_vl.model.decode_kv_scatter_query import (
     decode_kv_scatter_query,
     register_decode_kv_scatter_query_converter,
 )
-from paddleocr_vl.model.gqa_increfa_aiv import (
-    gqa_incre_flash_attention_aiv,
-    register_gqa_increfa_aiv_converter,
+from paddleocr_vl.model.decode_gqa_attention_aiv import (
+    decode_gqa_attention_aiv,
+    register_decode_gqa_attention_aiv_converter,
 )
 
 
@@ -60,7 +60,7 @@ class DecodeKvScatterQuery(torch.nn.Module):
         )
         if not self.include_gqa:
             return ordered_query, attention_mask
-        attention_output = gqa_incre_flash_attention_aiv(
+        attention_output = decode_gqa_attention_aiv(
             ordered_query,
             key_cache,
             value_cache,
@@ -112,7 +112,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--gqa-vector-core-count",
         type=int,
-        choices=(16, 32),
+        choices=(16,),
         default=16,
     )
     parser.add_argument(
@@ -135,7 +135,7 @@ def main() -> int:
     torch.npu.set_compile_mode(jit_compile=False)
     register_decode_kv_scatter_query_converter()
     if args.include_gqa:
-        register_gqa_increfa_aiv_converter()
+        register_decode_gqa_attention_aiv_converter()
 
     generator = torch.Generator(device="cpu")
     generator.manual_seed(20260810)

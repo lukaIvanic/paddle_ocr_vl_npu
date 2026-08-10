@@ -65,6 +65,17 @@ case "$EXPERIMENT_VARIANT" in
         OP_API_SYMBOL_PREFIX="PaddleDecodeGqaIncreFlashAttentionAiv"
         FUSED_DECODE=true
         ;;
+    decode_attention_only)
+        VENDOR_NAME="paddle_decode_gqa_attention_aiv"
+        CACHE_NAMESPACE="paddle_decode_gqa_attention_aiv"
+        OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode_attention"
+        CUSTOM_OP_SNAKE="paddle_decode_gqa_attention_aiv"
+        CUSTOM_OP_GE="PaddleDecodeGqaAttentionAiv"
+        CUSTOM_OP_REL="attention/$CUSTOM_OP_SNAKE"
+        PREPARED_OP_REL="attention/paddle_gqa_incre_flash_attention_aiv"
+        OP_API_SYMBOL_PREFIX="PaddleDecodeGqaAttentionAiv"
+        FUSED_DECODE=true
+        ;;
     split_k32_pairwise_sync_control)
         PATCH_PATHS+=(
             "$CUSTOM_ROOT/patches/0009-force-split-k32-control.patch"
@@ -179,8 +190,8 @@ if [[ "$SOURCE_PREPARED" == false ]]; then
     if [[ "$FUSED_DECODE" == true ]]; then
         while IFS= read -r -d '' source_path; do
             sed -i \
-                -e 's/PaddleGqaIncreFlashAttentionAiv/PaddleDecodeGqaIncreFlashAttentionAiv/g' \
-                -e 's/paddle_gqa_incre_flash_attention_aiv/paddle_decode_gqa_incre_flash_attention_aiv/g' \
+                -e "s/PaddleGqaIncreFlashAttentionAiv/$CUSTOM_OP_GE/g" \
+                -e "s/paddle_gqa_incre_flash_attention_aiv/$CUSTOM_OP_SNAKE/g" \
                 "$source_path"
         done < <(find "$OP_ROOT" -type f \
             ! -path '*/op_api_upstream_disabled/*' ! -name '*.upstream_disabled' -print0)

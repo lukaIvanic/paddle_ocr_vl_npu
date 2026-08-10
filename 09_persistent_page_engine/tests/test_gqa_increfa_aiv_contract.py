@@ -30,6 +30,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertTrue(optimization.super_kernel_scope)
         self.assertTrue(optimization.ascendc_kv_scatter_query)
         self.assertFalse(optimization.ascendc_decode_gqa)
+        self.assertTrue(optimization.ascendc_decode_gqa_attention)
         self.assertEqual(optimization.gqa_aiv_vector_core_count, 16)
         self.assertIn(
             "strict-scope-check=abort",
