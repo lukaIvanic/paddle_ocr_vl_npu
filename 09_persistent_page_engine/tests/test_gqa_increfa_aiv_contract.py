@@ -22,6 +22,20 @@ from paddleocr_vl.model import text_decode
 
 
 class GqaIncrefaAivContractTest(unittest.TestCase):
+    def test_nonsplit_megakernel_uses_separate_prep_and_16_aiv_blocks(self) -> None:
+        optimization = text_decode.resolve_decode_optimization(
+            "paddle_decoder_megakernel_b1_nonsplit_gqa"
+        )
+
+        self.assertTrue(optimization.super_kernel_scope)
+        self.assertTrue(optimization.ascendc_kv_scatter_query)
+        self.assertFalse(optimization.ascendc_decode_gqa)
+        self.assertEqual(optimization.gqa_aiv_vector_core_count, 16)
+        self.assertIn(
+            "strict-scope-check=abort",
+            optimization.super_kernel_options,
+        )
+
     def test_rejects_unsafe_48_core_short_partition(self) -> None:
         kv_length = MIN_KV_LENGTH_FOR_48_CORES - 1
         query = torch.empty((1, 16, 1, 128), dtype=torch.float16)

@@ -506,6 +506,15 @@ DECODE_OPTIMIZATION_PRESETS.update(
                 "preload-code=none:early-start=0:split-mode=1"
             ),
         ),
+        "paddle_decoder_megakernel_b1_nonsplit_gqa": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1,
+            name="paddle_decoder_megakernel_b1_nonsplit_gqa",
+            gqa_aiv_vector_core_count=16,
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=per-func:early-start=1:split-mode=4"
+            ),
+        ),
     }
 )
 
@@ -1906,7 +1915,7 @@ def decode_cache_update_label(
         and optimization is not None
         and optimization.ascendc_kv_scatter_query
     ):
-        return "paddle_decode_kv_scatter_query_v3"
+        return "paddle_decode_kv_scatter_query_v4"
     if (
         device.type == "npu"
         and optimization is not None

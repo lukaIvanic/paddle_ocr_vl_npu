@@ -22,8 +22,8 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     constexpr int64_t positionShape[] = {1};
     constexpr int64_t stateShape[] = {1, 2, 1, 128};
     if (!HasShape(context->GetInputShape(0), queryShape, 4) ||
-        !HasShape(context->GetInputShape(1), cacheShape, 4) ||
-        !HasShape(context->GetInputShape(2), cacheShape, 4) ||
+        !HasShape(context->GetDynamicInputShape(1, 0), cacheShape, 4) ||
+        !HasShape(context->GetDynamicInputShape(2, 0), cacheShape, 4) ||
         !HasShape(context->GetInputShape(3), positionShape, 1) ||
         !HasShape(context->GetInputShape(4), stateShape, 4) ||
         !HasShape(context->GetInputShape(5), stateShape, 4)) {
@@ -43,8 +43,8 @@ namespace ge {
 static ge::graphStatus InferShape(gert::InferShapeContext* context)
 {
     if (context == nullptr || context->GetInputShape(0) == nullptr ||
-        context->GetInputShape(1) == nullptr || context->GetInputShape(2) == nullptr ||
         context->GetOutputShape(0) == nullptr || context->GetOutputShape(1) == nullptr ||
+        context->GetInputShape(6) == nullptr || context->GetInputShape(7) == nullptr ||
         context->GetOutputShape(2) == nullptr || context->GetOutputShape(3) == nullptr) {
         return GRAPH_FAILED;
     }
@@ -55,8 +55,8 @@ static ge::graphStatus InferShape(gert::InferShapeContext* context)
     attentionMask->SetDim(1, 1);
     attentionMask->SetDim(2, 1);
     attentionMask->SetDim(3, 1024);
-    *context->GetOutputShape(2) = *context->GetInputShape(1);
-    *context->GetOutputShape(3) = *context->GetInputShape(2);
+    *context->GetOutputShape(2) = *context->GetInputShape(6);
+    *context->GetOutputShape(3) = *context->GetInputShape(7);
     return GRAPH_SUCCESS;
 }
 
@@ -64,22 +64,22 @@ static ge::graphStatus InferDataType(gert::InferDataTypeContext* context)
 {
     context->SetOutputDataType(0, context->GetInputDataType(0));
     context->SetOutputDataType(1, ge::DT_BOOL);
-    context->SetOutputDataType(2, context->GetInputDataType(1));
-    context->SetOutputDataType(3, context->GetInputDataType(2));
+    context->SetOutputDataType(2, context->GetInputDataType(6));
+    context->SetOutputDataType(3, context->GetInputDataType(7));
     return GRAPH_SUCCESS;
 }
 }
 
 namespace ops {
-class PaddleDecodeKvScatterQueryV3 : public OpDef {
+class PaddleDecodeKvScatterQueryV4 : public OpDef {
 public:
-    explicit PaddleDecodeKvScatterQueryV3(const char* name) : OpDef(name)
+    explicit PaddleDecodeKvScatterQueryV4(const char* name) : OpDef(name)
     {
         this->Input("query").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
-        this->Input("key_cache").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+        this->Input("key").ParamType(DYNAMIC).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
-        this->Input("value_cache").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+        this->Input("value").ParamType(DYNAMIC).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
         this->Input("cache_position").ParamType(REQUIRED).DataType({ge::DT_INT64})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
@@ -87,13 +87,17 @@ public:
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
         this->Input("value_state").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
+        this->Input("key_cache_ref").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
+        this->Input("value_cache_ref").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
         this->Output("ordered_query").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
         this->Output("attention_mask").ParamType(REQUIRED).DataType({ge::DT_BOOL})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Output("key_cache").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+        this->Output("key_cache_ref").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Output("value_cache").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+        this->Output("value_cache_ref").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
         this->SetInferShape(ge::InferShape).SetInferDataType(ge::InferDataType);
         this->AICore().SetTiling(optiling::TilingFunc);
@@ -101,5 +105,5 @@ public:
     }
 };
 
-OP_ADD(PaddleDecodeKvScatterQueryV3);
+OP_ADD(PaddleDecodeKvScatterQueryV4);
 }

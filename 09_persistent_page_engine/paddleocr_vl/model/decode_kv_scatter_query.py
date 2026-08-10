@@ -10,8 +10,8 @@ import torch
 from .compile_utils import import_torchair
 
 
-PYTORCH_OP_NAME = "paddleocr_vl::decode_kv_scatter_query_v3"
-GE_OP_NAME = "PaddleDecodeKvScatterQueryV3"
+PYTORCH_OP_NAME = "paddleocr_vl::decode_kv_scatter_query_v4"
+GE_OP_NAME = "PaddleDecodeKvScatterQueryV4"
 
 
 @torch.library.custom_op(
@@ -70,7 +70,7 @@ _REF_PASS_PATCHED = False
 
 
 def _patch_torchair_ref_mapping(torchair: Any) -> None:
-    """Teach this installed TorchAir release the V3 reference-output ABI."""
+    """Teach this installed TorchAir release the V4 reference-output ABI."""
     global _REF_PASS_PATCHED
     if _REF_PASS_PATCHED:
         return
@@ -82,8 +82,10 @@ def _patch_torchair_ref_mapping(torchair: Any) -> None:
     def _get_output_to_input_ref_idx(op: Any) -> dict[int, int]:
         mapping = dict(original(op))
         if op.type == GE_OP_NAME:
-            mapping[2] = 1
-            mapping[3] = 2
+            # Compact GE inputs are query, dynamic-key[0], dynamic-value[0],
+            # position, key-state, value-state, key-ref, and value-ref.
+            mapping[2] = 6
+            mapping[3] = 7
         return mapping
 
     graph_pass._get_output_to_input_ref_idx = _get_output_to_input_ref_idx
@@ -104,7 +106,7 @@ def register_decode_kv_scatter_query_converter() -> None:
     register_converter = converter_module.register_fx_node_ge_converter
     ge_custom_op = ge_module.custom_op
 
-    @register_converter(torch.ops.paddleocr_vl.decode_kv_scatter_query_v3.default)
+    @register_converter(torch.ops.paddleocr_vl.decode_kv_scatter_query_v4.default)
     def _convert_decode_kv_scatter_query(
         query: Any,
         key_cache: Any,
@@ -119,17 +121,19 @@ def register_decode_kv_scatter_query_converter() -> None:
             GE_OP_NAME,
             inputs={
                 "query": query,
-                "key_cache": key_cache,
-                "value_cache": value_cache,
+                "key": [key_cache],
+                "value": [value_cache],
                 "cache_position": cache_position,
                 "key_state": key_state,
                 "value_state": value_state,
+                "key_cache_ref": key_cache,
+                "value_cache_ref": value_cache,
             },
             outputs=[
                 "ordered_query",
                 "attention_mask",
-                "key_cache",
-                "value_cache",
+                "key_cache_ref",
+                "value_cache_ref",
             ],
         )
         # The PyTorch schema returns the query and mask. TorchAir's mutable-op

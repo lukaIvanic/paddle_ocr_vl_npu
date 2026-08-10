@@ -151,13 +151,15 @@ private:
 };
 }
 
-extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v3(
+extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v4(
     GM_ADDR query,
-    GM_ADDR keyCache,
-    GM_ADDR valueCache,
+    GM_ADDR key,
+    GM_ADDR value,
     GM_ADDR cachePosition,
     GM_ADDR keyState,
     GM_ADDR valueState,
+    GM_ADDR keyCacheRef,
+    GM_ADDR valueCacheRef,
     GM_ADDR orderedQuery,
     GM_ADDR attentionMask,
     GM_ADDR keyCacheOut,
@@ -168,6 +170,8 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v3(
     KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_AIV_ONLY);
     REGISTER_TILING_DEFAULT(PaddleDecodeKvScatterQueryTilingData);
     GET_TILING_DATA(tilingData, tiling);
+    (void)key;
+    (void)value;
     (void)keyCacheOut;
     (void)valueCacheOut;
     (void)workspace;
@@ -179,7 +183,7 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v3(
     TPipe pipe;
     PaddleDecodeKvScatterQueryKernel kernel;
     kernel.Init(
-        query, keyCache, valueCache, cachePosition, keyState, valueState,
+        query, keyCacheRef, valueCacheRef, cachePosition, keyState, valueState,
         orderedQuery, attentionMask, &pipe);
     kernel.Process();
     pipe.Destroy();

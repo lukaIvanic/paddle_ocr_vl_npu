@@ -12,7 +12,7 @@
         "ENABLE_BINARY_PACKAGE": {"type": "BOOL", "value": "True"},
         "ASCEND_COMPUTE_UNIT": {"type": "STRING", "value": "ascend910b"},
         "ENABLE_TEST": {"type": "BOOL", "value": "False"},
-        "vendor_name": {"type": "STRING", "value": "paddle_decode_kv_scatter_query"},
+        "vendor_name": {"type": "STRING", "value": "paddle_decode_kv_scatter_query_v4"},
         "ASCEND_CANN_PACKAGE_PATH": {"type": "PATH", "value": "/usr/local/Ascend/cann-9.0.0"},
         "ASCEND_PYTHON_EXECUTABLE": {"type": "STRING", "value": "python3"},
         "CMAKE_INSTALL_PREFIX": {"type": "PATH", "value": "${sourceDir}/build_out"},
