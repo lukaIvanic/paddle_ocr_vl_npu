@@ -59,9 +59,9 @@ Known implementation surfaces:
 
 ## Experiment Ladder
 
-Each numbered directory is a rung, kept as the evidence for how the current
-design was reached. **09 is the active one**; 01–08 are historical and are not
-maintained against current behavior.
+Each numbered directory is a rung, kept as evidence for how the current design
+was reached. **09 is the active PaddleOCR-VL engine**; 01–08 are historical and
+10–13 are self-contained sibling model/runtime investigations.
 
 - `01_transformers_recognition_baseline/`: minimal Transformers recognizer smoke.
 - `02_local_eager_recognition/`: the recognizer reimplemented in local PyTorch
@@ -79,6 +79,12 @@ maintained against current behavior.
   Has its own `README.md`; read it before interpreting its throughput or parity.
 - `09_persistent_page_engine/`: **active.** The persistent page engine. Has its
   own `README.md`, which is authoritative over anything said here.
+- `10_qwen3_8b_inference/`: custom dense Qwen3-8B inference on Ascend NPU.
+- `11_mineru_2_5_pro_inference/`: custom MinerU2.5-Pro inference and official
+  comparison lanes.
+- `12_unirec_0_1b_inference/`: custom UniRec-0.1B inference and OpenDoc lanes.
+- `13_qwen3_reranker/`: custom Qwen3-Reranker-8B scoring, fixed-shape compiled
+  forward benchmarks, PromptFA, and W8A8 experiments.
 
 Supporting artifacts:
 
