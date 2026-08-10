@@ -96,8 +96,8 @@ def register_decode_gqa_attention_aiv_converter() -> None:
             GE_OP_NAME,
             inputs={
                 "query": query,
-                "key": [key],
-                "value": [value],
+                "key": key,
+                "value": value,
                 "atten_mask": atten_mask,
             },
             attrs={

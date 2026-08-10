@@ -66,6 +66,7 @@ case "$EXPERIMENT_VARIANT" in
         FUSED_DECODE=true
         ;;
     decode_attention_only)
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-required-single-kv-attention.patch")
         VENDOR_NAME="paddle_decode_gqa_attention_aiv"
         CACHE_NAMESPACE="paddle_decode_gqa_attention_aiv"
         OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode_attention"
