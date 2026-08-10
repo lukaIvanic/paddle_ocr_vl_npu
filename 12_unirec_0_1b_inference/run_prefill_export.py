@@ -66,6 +66,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--vision-prefix-shapes-manifest",
+        type=Path,
+        help=(
+            "Compile and dispatch the stages-0/1 vision prefix by every "
+            "processed shape in a JSON shape list or prior crop JSONL."
+        ),
+    )
+    parser.add_argument(
         "--no-chart-recognition",
         dest="use_chart_recognition",
         action="store_false",
@@ -136,6 +144,11 @@ def main() -> None:
     output_dir = args.output_dir.expanduser().resolve()
     layout_cache_dir = args.layout_cache_dir.expanduser().resolve()
     recognition_cache_dir = args.recognition_cache_dir.expanduser().resolve()
+    vision_prefix_shapes_manifest = (
+        args.vision_prefix_shapes_manifest.expanduser().resolve()
+        if args.vision_prefix_shapes_manifest is not None
+        else None
+    )
 
     sys.path.insert(0, str(openocr_root))
     from tools.utils.utility import get_image_file_list
@@ -172,6 +185,7 @@ def main() -> None:
         recognition_model_path=model_path,
         recognition_dtype=args.dtype,
         recognition_cache_dir=recognition_cache_dir,
+        recognition_prefix_shapes_manifest=vision_prefix_shapes_manifest,
         empty_cache_after_page=args.worker_empty_cache_after_page,
         profile_prefill_device_stages=args.profile_prefill_device_stages,
     )
@@ -180,12 +194,14 @@ def main() -> None:
     writer = CrossKvArtifactWriter(output_dir)
     try:
         if args.warmup_pages:
-            warmup_payloads, warmup_summary = pool.map(
+            for payload in pool.iter_map(
                 image_paths[: args.warmup_pages],
                 label="prefill_export_warmup",
-            )
-            for payload in warmup_payloads:
+            ):
                 _discard_payload(payload)
+            warmup_summary = pool.last_stream_summary
+            if warmup_summary is None:
+                raise RuntimeError("producer warmup stream has no timing summary")
         measured_started = time.perf_counter()
         for payload in pool.iter_map(image_paths, label="prefill_export_measured"):
             writer.add_page(payload)
@@ -206,6 +222,11 @@ def main() -> None:
                 "dtype": args.dtype,
                 "cross_cache_length": args.cross_cache_length,
                 "layout_execution": args.layout_execution,
+                "vision_prefix_shapes_manifest": (
+                    str(vision_prefix_shapes_manifest)
+                    if vision_prefix_shapes_manifest is not None
+                    else None
+                ),
                 "use_chart_recognition": args.use_chart_recognition,
                 "profile_prefill_device_stages": (
                     args.profile_prefill_device_stages

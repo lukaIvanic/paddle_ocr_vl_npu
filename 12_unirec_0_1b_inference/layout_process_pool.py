@@ -416,6 +416,7 @@ def _worker_main(
     recognition_model_path: str | None,
     recognition_dtype: str,
     recognition_cache_dir: str | None,
+    recognition_prefix_shapes_manifest: str | None,
     empty_cache_after_page: bool,
     profile_prefill_device_stages: bool,
     task_queue: Any,
@@ -480,7 +481,20 @@ def _worker_main(
                 recognition_runner._static_cross_cache_len_by_processor_max_side[
                     processor_shape
                 ] = static_cross_cache_len
-            vision_atlas_runtime = UniRecVisionAtlasRuntime(recognition_runner)
+            if recognition_prefix_shapes_manifest is None:
+                vision_atlas_runtime = UniRecVisionAtlasRuntime(recognition_runner)
+            else:
+                from vision_static_shape import (
+                    PerShapeCompiledPrefixUniRecVisionRuntime,
+                    load_static_vision_shapes,
+                )
+
+                vision_atlas_runtime = PerShapeCompiledPrefixUniRecVisionRuntime(
+                    recognition_runner,
+                    shapes=load_static_vision_shapes(
+                        Path(recognition_prefix_shapes_manifest)
+                    ),
+                )
         else:
             recognition_runner = None
             vision_atlas_runtime = None
@@ -633,6 +647,7 @@ class DynamicLayoutProcessPool:
         recognition_model_path: Path | None = None,
         recognition_dtype: str = "float16",
         recognition_cache_dir: Path | None = None,
+        recognition_prefix_shapes_manifest: Path | None = None,
         empty_cache_after_page: bool = False,
         profile_prefill_device_stages: bool = False,
         timeout_s: float = 1800.0,
@@ -670,6 +685,11 @@ class DynamicLayoutProcessPool:
                     (
                         str(recognition_cache_dir)
                         if recognition_cache_dir is not None
+                        else None
+                    ),
+                    (
+                        str(recognition_prefix_shapes_manifest)
+                        if recognition_prefix_shapes_manifest is not None
                         else None
                     ),
                     empty_cache_after_page,
