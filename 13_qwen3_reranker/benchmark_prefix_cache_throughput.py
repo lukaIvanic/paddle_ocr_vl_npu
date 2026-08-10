@@ -96,7 +96,7 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         choices=tuple(PREFILL_OPTIMIZATION_PRESETS),
         default=["baseline"],
-        help="Compiled prefix-suffix implementation presets to compare.",
+        help="Compiled full- and prefix-prefill implementation presets to compare.",
     )
     return parser.parse_args()
 
@@ -608,50 +608,64 @@ def main() -> None:
 
         if "full_promptfa_compiled" in args.lanes:
             set_attention_impl(model, "prompt_flash_attention")
-            cache_dir = args.compile_cache_dir / (
-                f"full_promptfa_b{batch_size}_s{full_length}_{weight_cache_key}_"
-                f"fp16_src{source_key}"
-            )
-            compiled, wrapper_s, cache_was_warm = compile_stage(
-                full_stage,
-                entrypoint_name=(
-                    f"reranker_full_promptfa_b{batch_size}_s{full_length}_"
-                    f"{weight_cache_key}"
-                ),
-                cache_dir=cache_dir,
-                device=device,
-            )
-            summary, output = benchmark_lane(
-                lane="full_promptfa_compiled",
-                fn=lambda: compiled(full_input_ids, full_position_ids, full_bool_mask),
-                device=device,
-                warmups=args.warmups,
-                repeats=args.repeats,
-                batch_size=batch_size,
-                served_tokens=served_tokens,
-                executed_tokens=batch_size * full_length,
-                attention_query_tokens=attention_query_tokens,
-                compile_wrapper_s=wrapper_s,
-                cache_dir=cache_dir,
-                cache_was_warm=cache_was_warm,
-            )
-            lane_outputs["full_promptfa_compiled"] = output
-            summary.update(
-                batch_size=batch_size,
-                continuation_length=continuation_length,
-                full_physical_length=full_length,
-                linear_weight_format=weight_format["effective_mode"],
-            )
-            attach_output_signature(
-                summary,
-                output,
-                model=model,
-                false_token_id=runner.false_token_id,
-                true_token_id=runner.true_token_id,
-            )
-            results.append(summary)
-            print_result(summary)
-            del compiled
+            for optimization_name in args.prefill_optimizations:
+                optimization = model.set_prefill_optimization(optimization_name)
+                compiled_mask = (
+                    build_310p_square_promptfa_mask(full_bool_mask)
+                    if optimization.prebuilt_square_mask
+                    else full_bool_mask
+                )
+                cache_dir = args.compile_cache_dir / (
+                    f"full_promptfa_{optimization.name}_b{batch_size}_"
+                    f"s{full_length}_{weight_cache_key}_fp16_src{source_key}"
+                )
+                compiled, wrapper_s, cache_was_warm = compile_stage(
+                    full_stage,
+                    entrypoint_name=(
+                        f"reranker_full_promptfa_{optimization.name}_"
+                        f"b{batch_size}_s{full_length}_{weight_cache_key}"
+                    ),
+                    cache_dir=cache_dir,
+                    device=device,
+                )
+                summary, output = benchmark_lane(
+                    lane="full_promptfa_compiled",
+                    fn=lambda: compiled(
+                        full_input_ids,
+                        full_position_ids,
+                        compiled_mask,
+                    ),
+                    device=device,
+                    warmups=args.warmups,
+                    repeats=args.repeats,
+                    batch_size=batch_size,
+                    served_tokens=served_tokens,
+                    executed_tokens=batch_size * full_length,
+                    attention_query_tokens=attention_query_tokens,
+                    compile_wrapper_s=wrapper_s,
+                    cache_dir=cache_dir,
+                    cache_was_warm=cache_was_warm,
+                )
+                output_key = f"full_promptfa_compiled:{optimization.name}"
+                lane_outputs[output_key] = output
+                summary.update(
+                    batch_size=batch_size,
+                    continuation_length=continuation_length,
+                    full_physical_length=full_length,
+                    prefill_optimization=optimization.name,
+                    linear_weight_format=weight_format["effective_mode"],
+                )
+                attach_output_signature(
+                    summary,
+                    output,
+                    model=model,
+                    false_token_id=runner.false_token_id,
+                    true_token_id=runner.true_token_id,
+                )
+                results.append(summary)
+                print_result(summary)
+                del compiled
+            model.set_prefill_optimization("baseline")
 
         if "prefix_promptfa_compiled" in args.lanes:
             set_attention_impl(model, "prompt_flash_attention")
