@@ -337,6 +337,11 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("decode_packed_qkv_rope_mixed24)", build_script)
         self.assertIn("PADDLE_GQA_PREFLIGHT_ONLY", build_script)
         self.assertIn("PREFLIGHT_SUMMARY", build_script)
+        self.assertIn('if [[ "$BUILD_SOURCE_ROOT" != /* ]]', build_script)
+        self.assertEqual(
+            (overlay / "CMakeLists.txt").read_text(encoding="utf-8").strip(),
+            "add_subdirectory(op_host)",
+        )
         self.assertIn("source_overlay_decode_packed_qkv_rope", build_script)
         self.assertIn("0020-packed-qkv-rope-mixed24.patch", build_script)
         self.assertIn('Input("query").ParamType(REQUIRED)', op_def)
