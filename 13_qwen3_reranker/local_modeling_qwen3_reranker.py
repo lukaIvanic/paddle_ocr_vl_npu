@@ -116,6 +116,13 @@ def repeat_kv(hidden_states: torch.Tensor, repeats: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_kv_heads * repeats, sequence_length, head_dim)
 
 
+def linear_tokenwise(linear: nn.Linear, hidden_states: torch.Tensor) -> torch.Tensor:
+    """Apply Linear through the 2-D token matrix expected by GE."""
+    leading_shape = hidden_states.shape[:-1]
+    output = linear(hidden_states.reshape(-1, hidden_states.shape[-1]))
+    return output.reshape(*leading_shape, output.shape[-1])
+
+
 def prompt_flash_attention_bnsd_310p_compatible(
     query_states: torch.Tensor,
     key_states: torch.Tensor,
@@ -224,7 +231,9 @@ class LocalQwen3RerankerMLP(nn.Module):
         self.down_proj = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        return self.down_proj(F.silu(self.gate_proj(hidden_states)) * self.up_proj(hidden_states))
+        gate = linear_tokenwise(self.gate_proj, hidden_states)
+        up = linear_tokenwise(self.up_proj, hidden_states)
+        return linear_tokenwise(self.down_proj, F.silu(gate) * up)
 
 
 class LocalQwen3RerankerAttention(nn.Module):
@@ -254,9 +263,15 @@ class LocalQwen3RerankerAttention(nn.Module):
         attention_mask: torch.Tensor,
     ) -> torch.Tensor:
         batch, sequence_length, _hidden = hidden_states.shape
-        query_states = self.q_proj(hidden_states).view(batch, sequence_length, self.num_heads, self.head_dim)
-        key_states = self.k_proj(hidden_states).view(batch, sequence_length, self.num_key_value_heads, self.head_dim)
-        value_states = self.v_proj(hidden_states).view(batch, sequence_length, self.num_key_value_heads, self.head_dim)
+        query_states = linear_tokenwise(self.q_proj, hidden_states).view(
+            batch, sequence_length, self.num_heads, self.head_dim
+        )
+        key_states = linear_tokenwise(self.k_proj, hidden_states).view(
+            batch, sequence_length, self.num_key_value_heads, self.head_dim
+        )
+        value_states = linear_tokenwise(self.v_proj, hidden_states).view(
+            batch, sequence_length, self.num_key_value_heads, self.head_dim
+        )
 
         query_states = self.q_norm(query_states).transpose(1, 2)
         key_states = self.k_norm(key_states).transpose(1, 2)
@@ -270,7 +285,7 @@ class LocalQwen3RerankerAttention(nn.Module):
         probs = torch.softmax(scores, dim=-1, dtype=torch.float32).to(query_states.dtype)
         attn_output = torch.matmul(probs, value_states)
         attn_output = attn_output.transpose(1, 2).reshape(batch, sequence_length, self.num_heads * self.head_dim)
-        return self.o_proj(attn_output)
+        return linear_tokenwise(self.o_proj, attn_output)
 
     def forward_prompt_flash_attention(
         self,
@@ -282,9 +297,15 @@ class LocalQwen3RerankerAttention(nn.Module):
         if hidden_states.device.type != "npu":
             raise RuntimeError("prompt_flash_attention requires NPU tensors")
         batch, sequence_length, _hidden = hidden_states.shape
-        query_states = self.q_proj(hidden_states).view(batch, sequence_length, self.num_heads, self.head_dim)
-        key_states = self.k_proj(hidden_states).view(batch, sequence_length, self.num_key_value_heads, self.head_dim)
-        value_states = self.v_proj(hidden_states).view(batch, sequence_length, self.num_key_value_heads, self.head_dim)
+        query_states = linear_tokenwise(self.q_proj, hidden_states).view(
+            batch, sequence_length, self.num_heads, self.head_dim
+        )
+        key_states = linear_tokenwise(self.k_proj, hidden_states).view(
+            batch, sequence_length, self.num_key_value_heads, self.head_dim
+        )
+        value_states = linear_tokenwise(self.v_proj, hidden_states).view(
+            batch, sequence_length, self.num_key_value_heads, self.head_dim
+        )
 
         query_states = self.q_norm(query_states).transpose(1, 2)
         key_states = self.k_norm(key_states).transpose(1, 2)
@@ -303,7 +324,7 @@ class LocalQwen3RerankerAttention(nn.Module):
             scale=float(self.scaling),
         )
         attn_output = attn_output.transpose(1, 2).reshape(batch, sequence_length, self.num_heads * self.head_dim)
-        return self.o_proj(attn_output)
+        return linear_tokenwise(self.o_proj, attn_output)
 
     def forward(
         self,

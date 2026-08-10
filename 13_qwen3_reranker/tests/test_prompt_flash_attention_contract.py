@@ -16,11 +16,21 @@ from local_modeling_qwen3_reranker import (  # noqa: E402
     LocalQwen3RerankerConfig,
     LocalQwen3RerankerRotaryEmbedding,
     PROMPT_FA_FULL_ATTENTION_TOKENS,
+    linear_tokenwise,
     prompt_flash_attention_bnsd_310p_compatible,
 )
 
 
 class PromptFlashAttentionContractTest(unittest.TestCase):
+    def test_tokenwise_linear_matches_rank3_linear(self) -> None:
+        torch.manual_seed(0)
+        linear = torch.nn.Linear(8, 12, bias=False)
+        hidden_states = torch.randn(2, 3, 8)
+        torch.testing.assert_close(
+            linear_tokenwise(linear, hidden_states),
+            linear(hidden_states),
+        )
+
     def test_rotary_embedding_uses_compile_safe_outer_product(self) -> None:
         config = LocalQwen3RerankerConfig(
             vocab_size=8,
