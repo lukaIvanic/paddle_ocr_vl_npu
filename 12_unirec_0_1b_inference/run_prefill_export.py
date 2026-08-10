@@ -73,6 +73,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.set_defaults(use_chart_recognition=True)
     parser.add_argument("--worker-empty-cache-after-page", action="store_true")
+    parser.add_argument(
+        "--profile-prefill-device-stages",
+        action="store_true",
+        help=(
+            "Record low-overhead NPU event timings for vision and cross-KV "
+            "prefill stages. Events synchronize once per packed prefill group."
+        ),
+    )
     args = parser.parse_args()
     if args.offset < 0 or args.limit < 1:
         parser.error("--offset must be non-negative and --limit positive")
@@ -165,6 +173,7 @@ def main() -> None:
         recognition_dtype=args.dtype,
         recognition_cache_dir=recognition_cache_dir,
         empty_cache_after_page=args.worker_empty_cache_after_page,
+        profile_prefill_device_stages=args.profile_prefill_device_stages,
     )
     setup_s = pool.setup_wall_s
     warmup_summary = None
@@ -198,6 +207,9 @@ def main() -> None:
                 "cross_cache_length": args.cross_cache_length,
                 "layout_execution": args.layout_execution,
                 "use_chart_recognition": args.use_chart_recognition,
+                "profile_prefill_device_stages": (
+                    args.profile_prefill_device_stages
+                ),
                 "setup_s": setup_s,
                 "warmup": warmup_summary,
                 "producer_stream_wall_s": stream_wall_s,

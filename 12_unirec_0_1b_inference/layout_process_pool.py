@@ -307,6 +307,7 @@ def _prefill_worker_page(
     *,
     runner: Any,
     vision_atlas_runtime: Any,
+    profile_device_stages: bool = False,
 ) -> dict[str, float]:
     """Run page-local recognition prefill and retain only real cross K/V."""
     from text_packed_prefill import PACKED_TEXT_PREFILL_BUCKET
@@ -339,7 +340,7 @@ def _prefill_worker_page(
         if use_packed_graph:
             items = vision_atlas_runtime.prefill_prepared_packed_for_cohort(
                 prepared,
-                profile_device_stages=False,
+                profile_device_stages=profile_device_stages,
                 decode_ready=False,
             )
             pack_count += 1
@@ -347,7 +348,7 @@ def _prefill_worker_page(
             items = [
                 runner.prefill_prepared_for_cohort(
                     prepared[0],
-                    profile_device_stages=False,
+                    profile_device_stages=profile_device_stages,
                     text_prefill_mode="eager",
                     decode_ready=False,
                 )
@@ -416,6 +417,7 @@ def _worker_main(
     recognition_dtype: str,
     recognition_cache_dir: str | None,
     empty_cache_after_page: bool,
+    profile_prefill_device_stages: bool,
     task_queue: Any,
     result_queue: Any,
 ) -> None:
@@ -550,6 +552,7 @@ def _worker_main(
                         result,
                         runner=recognition_runner,
                         vision_atlas_runtime=vision_atlas_runtime,
+                        profile_device_stages=profile_prefill_device_stages,
                     )
                     result["frontend_timing_s"].update(
                         {
@@ -631,6 +634,7 @@ class DynamicLayoutProcessPool:
         recognition_dtype: str = "float16",
         recognition_cache_dir: Path | None = None,
         empty_cache_after_page: bool = False,
+        profile_prefill_device_stages: bool = False,
         timeout_s: float = 1800.0,
     ) -> None:
         if worker_count < 1:
@@ -669,6 +673,7 @@ class DynamicLayoutProcessPool:
                         else None
                     ),
                     empty_cache_after_page,
+                    profile_prefill_device_stages,
                     self.task_queue,
                     self.result_queue,
                 ),
