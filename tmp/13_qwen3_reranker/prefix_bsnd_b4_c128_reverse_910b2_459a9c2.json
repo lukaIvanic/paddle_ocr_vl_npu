@@ -1,0 +1,132 @@
+{
+  "environment": {
+    "host": "liteserver-c001-4",
+    "device": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "git_commit": "459a9c2b00074d9efa4c154b3d9c17dd2c6fb53d"
+  },
+  "configuration": {
+    "model_dir": "/workspace/models/Qwen3-Reranker-0.6B",
+    "batch_sizes": [
+      4
+    ],
+    "continuation_lengths": [
+      128
+    ],
+    "batch_sweep_continuation": 128,
+    "length_sweep_batch": 4,
+    "matrix": "axes",
+    "lanes": [
+      "prefix_promptfa_compiled"
+    ],
+    "warmups": 5,
+    "repeats": 100,
+    "prefix_block": 128,
+    "prefix_valid_tokens": 60,
+    "prefix_build_s": 0.22267210390418768,
+    "source_hash": "167a52a5c20f",
+    "compile_source_key_override": "167a52a5c20f",
+    "prefill_optimizations": [
+      "combined_bsnd",
+      "combined",
+      "baseline"
+    ]
+  },
+  "metric_definitions": {
+    "served_input_tok_s": "valid prefix plus continuation tokens served per median call second",
+    "executed_model_tok_s": "token rows executing decoder QKV and MLP per median call second",
+    "physical_attention_q_tok_s": "physical attention Q rows, including square-padding dummies, per median call second"
+  },
+  "results": [
+    {
+      "runs": 100,
+      "mean_s": 0.01017126411665231,
+      "median_s": 0.010118226986378431,
+      "min_s": 0.010062380926683545,
+      "p90_s": 0.010267252195626497,
+      "max_s": 0.012151257134974003,
+      "pairs_s": 395.32617773696546,
+      "served_input_tok_s": 74321.3214145495,
+      "executed_model_tok_s": 50601.75075033158,
+      "physical_attention_q_tok_s": 101203.50150066316,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 4.829998998902738,
+      "additional_warmup_s": [
+        0.010923736030235887,
+        0.01035091606900096,
+        0.010410887189209461,
+        0.010403817053884268
+      ],
+      "compile_wrapper_s": 0.0006907419301569462,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f/prefix_promptfa_combined_bsnd_b4_q256_kv256_realq128_fp16_src167a52a5c20f",
+      "cache_was_warm": true,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "combined_bsnd",
+      "max_abs_hidden_vs_prefix_baseline": 0.0625,
+      "max_abs_yes_no_logits_vs_prefix_baseline": 0.015625,
+      "max_abs_yes_score_vs_prefix_baseline": 0.0007680915296077728,
+      "same_yes_no_choice_vs_prefix_baseline": true
+    },
+    {
+      "runs": 100,
+      "mean_s": 0.0103867944679223,
+      "median_s": 0.01037349656689912,
+      "min_s": 0.01032259501516819,
+      "p90_s": 0.010428606020286679,
+      "max_s": 0.011375654023140669,
+      "pairs_s": 385.5980453845846,
+      "served_input_tok_s": 72492.43253230191,
+      "executed_model_tok_s": 49356.54980922683,
+      "physical_attention_q_tok_s": 98713.09961845366,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 0.5759687488898635,
+      "additional_warmup_s": [
+        0.010884594870731235,
+        0.010402287123724818,
+        0.010409506969153881,
+        0.010353676043450832
+      ],
+      "compile_wrapper_s": 0.0006664718966931105,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f/prefix_promptfa_combined_b4_q256_kv256_realq128_fp16_src167a52a5c20f",
+      "cache_was_warm": true,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "combined",
+      "max_abs_hidden_vs_prefix_baseline": 0.0625,
+      "max_abs_yes_no_logits_vs_prefix_baseline": 0.015625,
+      "max_abs_yes_score_vs_prefix_baseline": 0.0007680915296077728,
+      "same_yes_no_choice_vs_prefix_baseline": true
+    },
+    {
+      "runs": 100,
+      "mean_s": 0.015837086744140833,
+      "median_s": 0.015810649027116597,
+      "min_s": 0.015773887978866696,
+      "p90_s": 0.015869472920894623,
+      "max_s": 0.017049459973350167,
+      "pairs_s": 252.99404174614608,
+      "served_input_tok_s": 47562.879848275465,
+      "executed_model_tok_s": 32383.2373435067,
+      "physical_attention_q_tok_s": 64766.4746870134,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 0.9634552849456668,
+      "additional_warmup_s": [
+        0.016139854909852147,
+        0.015935461036860943,
+        0.015820418018847704,
+        0.015809568809345365
+      ],
+      "compile_wrapper_s": 0.0003676260821521282,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f/prefix_promptfa_baseline_b4_q256_kv256_realq128_fp16_src167a52a5c20f",
+      "cache_was_warm": true,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "baseline"
+    }
+  ]
+}

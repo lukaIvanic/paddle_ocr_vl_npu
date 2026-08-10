@@ -308,6 +308,64 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             "paddle_decode_gqa_increfa_mixed24",
         )
 
+    def test_packed_qkv_rope_operator_removes_the_split_pipe_boundary(self) -> None:
+        operator_root = (
+            EXPERIMENT_ROOT / "custom_ops" / "paddle_gqa_increfa_aiv"
+        )
+        overlay = operator_root / "source_overlay_decode_packed_qkv_rope"
+        kernel = (
+            overlay
+            / "op_kernel"
+            / "paddle_decode_gqa_incre_flash_attention_aiv.cpp"
+        ).read_text(encoding="utf-8")
+        op_def = (
+            overlay
+            / "op_host"
+            / "paddle_decode_gqa_incre_flash_attention_aiv_def.cpp"
+        ).read_text(encoding="utf-8")
+        build_script = (operator_root / "build.sh").read_text(encoding="utf-8")
+        geometry_patch = (
+            operator_root / "patches" / "0020-packed-qkv-rope-mixed24.patch"
+        ).read_text(encoding="utf-8")
+        converter = (
+            EXPERIMENT_ROOT
+            / "paddleocr_vl"
+            / "model"
+            / "decode_packed_qkv_rope_gqa_mixed24.py"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("decode_packed_qkv_rope_mixed24)", build_script)
+        self.assertIn("source_overlay_decode_packed_qkv_rope", build_script)
+        self.assertIn("0020-packed-qkv-rope-mixed24.patch", build_script)
+        self.assertIn('Input("query").ParamType(REQUIRED)', op_def)
+        self.assertIn('Input("factor_lut").ParamType(REQUIRED)', op_def)
+        self.assertIn('Input("rope_delta").ParamType(REQUIRED)', op_def)
+        self.assertNotIn('Input("key_state")', op_def)
+        self.assertNotIn('Input("value_state")', op_def)
+        self.assertIn("qkvGm[kQueryElements]", kernel)
+        self.assertIn("RotateHalf(", kernel)
+        self.assertIn("SyncAll<true>();", kernel)
+        self.assertNotIn("SyncAll<false>", kernel)
+        self.assertIn("incre_flash_attention_FIAS_arch32", kernel)
+        self.assertIn("kPackedQueryShape", geometry_patch)
+        self.assertIn("launchAivNum = 24U", geometry_patch)
+        self.assertIn('mapping[4] = 0', converter)
+        self.assertIn('"query": qkv', converter)
+
+        optimization = text_decode.resolve_decode_optimization(
+            "paddle_decoder_megakernel_b1_packed_qkv_rope_gqa_mixed24"
+        )
+        self.assertTrue(optimization.super_kernel_scope)
+        self.assertTrue(optimization.ascendc_packed_qkv_rope_gqa_mixed24)
+        self.assertFalse(optimization.ascendc_qkv_split)
+        self.assertFalse(optimization.ascendc_rope_lookup)
+        self.assertEqual(
+            text_decode.decode_attention_label(
+                SimpleNamespace(type="npu"), optimization
+            ),
+            "paddle_decode_packed_qkv_rope_gqa_mixed24",
+        )
+
     def test_rejects_unsafe_48_core_short_partition(self) -> None:
         kv_length = MIN_KV_LENGTH_FOR_48_CORES - 1
         query = torch.empty((1, 16, 1, 128), dtype=torch.float16)
