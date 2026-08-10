@@ -49,6 +49,10 @@ from .decode_kv_scatter_query import (
     decode_kv_scatter_query,
     register_decode_kv_scatter_query_converter,
 )
+from .decode_swiglu import (
+    decode_swiglu,
+    register_decode_swiglu_converter,
+)
 from .config import PaddleOCRTextConfig
 from .gqa_increfa_aiv import (
     gqa_incre_flash_attention_aiv,
@@ -99,6 +103,7 @@ class DecodeOptimizationConfig:
     ascendc_rope_lookup: bool = False
     ascendc_kv_scatter: bool = False
     ascendc_kv_scatter_query: bool = False
+    ascendc_swiglu: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -178,6 +183,7 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         ascendc_qkv_split=True,
         ascendc_rope_lookup=True,
         ascendc_kv_scatter_query=True,
+        ascendc_swiglu=True,
     ),
     "combined_apply_pse_sentinel": DecodeOptimizationConfig(
         name="combined_apply_pse_sentinel",
@@ -987,7 +993,11 @@ def _decode_mlp(
     if optimization.ascendc_linear and not optimization.packed_mlp:
         gate = _linear_tokenwise(mlp.gate_proj, hidden_states)
         up = _linear_tokenwise(mlp.up_proj, hidden_states)
-        activated = torch.nn.functional.silu(gate) * up
+        activated = (
+            decode_swiglu(gate, up)
+            if optimization.ascendc_swiglu
+            else torch.nn.functional.silu(gate) * up
+        )
         output = _linear_tokenwise(mlp.down_proj, activated)
     elif not optimization.packed_mlp:
         output = mlp(hidden_states)
@@ -1755,6 +1765,7 @@ def decode_source_hash() -> str:
         "decode_linear_matmul_v3.py",
         "decode_qkv_split.py",
         "decode_kv_scatter_query.py",
+        "decode_swiglu.py",
         "decode_position_add.py",
         "decode_rope_lookup.py",
         "decode_kv_scatter.py",
@@ -1879,6 +1890,7 @@ def compile_text_decode_stage(
             "ascendc_kv_scatter_query": (
                 optimization.ascendc_kv_scatter_query
             ),
+            "ascendc_swiglu": optimization.ascendc_swiglu,
         },
     }
     if backend_name == "raw_eager":
@@ -1906,6 +1918,8 @@ def compile_text_decode_stage(
             register_decode_kv_scatter_converter()
         if optimization.ascendc_kv_scatter_query:
             register_decode_kv_scatter_query_converter()
+        if optimization.ascendc_swiglu:
+            register_decode_swiglu_converter()
         shape_cache_dir = torchair_cache_dir_for_shape(
             cache_root,
             batch_size=batch_size,

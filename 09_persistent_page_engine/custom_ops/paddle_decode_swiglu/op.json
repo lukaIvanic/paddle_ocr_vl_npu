@@ -1,0 +1,12 @@
+[
+  {
+    "op": "PaddleDecodeSwiGluV1",
+    "input_desc": [
+      {"name": "gate", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "up", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
+    ],
+    "output_desc": [
+      {"name": "output", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
+    ]
+  }
+]
