@@ -22,6 +22,8 @@ from local_modeling_mineru import (
     DECODE_ATTENTION_CHOICES,
     DECODE_ATTENTION_INCREFA,
     DECODE_ATTENTION_MANUAL,
+    DECODE_OPTIMIZATION_CHOICES,
+    DECODE_OPTIMIZATION_CURRENT,
     DECODE_ROTARY_IMPL_CHOICES,
     DECODE_ROTARY_IMPL_MANUAL,
     DECODE_WEIGHT_FORMAT_CHOICES,
@@ -75,6 +77,15 @@ def parse_args() -> argparse.Namespace:
         "--decode-rotary-impl",
         choices=DECODE_ROTARY_IMPL_CHOICES,
         default=DECODE_ROTARY_IMPL_MANUAL,
+    )
+    parser.add_argument(
+        "--decode-optimization",
+        choices=DECODE_OPTIMIZATION_CHOICES,
+        default=DECODE_OPTIMIZATION_CURRENT,
+        help=(
+            "Static-decode graph optimization preset. Paddle transfer presets "
+            "retain the current model math while hoisting mask/RoPE work."
+        ),
     )
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
@@ -242,7 +253,8 @@ def main() -> None:
         progress("lane_begin", attention=attention)
         attention_meta = configure_decode_attention_impl(model, attention)
         flat_decode = model.make_flat_static_decode_module(
-            cache_length=args.cache_length
+            cache_length=args.cache_length,
+            decode_optimization=args.decode_optimization,
         ).eval()
         compile_started = time.perf_counter()
         fn, compile_meta = compile_static_decode(
@@ -254,6 +266,7 @@ def main() -> None:
             decode_weight_format=str(weight_format["effective_mode"]),
             decode_rotary_impl=str(rotary["effective_mode"]),
             decode_attention_impl=attention,
+            decode_optimization=args.decode_optimization,
         )
         compile_wrapper_s = time.perf_counter() - compile_started
 
@@ -379,6 +392,7 @@ def main() -> None:
             "batch_size": int(args.batch_size),
             "cache_length": int(args.cache_length),
             "initial_cache_position": int(args.profile_position),
+            "decode_optimization": str(args.decode_optimization),
         },
         "model_load_s": float(model_load_s),
         "packed_projections": packed_projections,

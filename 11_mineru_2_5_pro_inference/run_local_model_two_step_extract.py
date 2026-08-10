@@ -282,10 +282,17 @@ def torchair_cache_dir_for_shape(
     decode_weight_format: str,
     decode_rotary_impl: str = "manual",
     decode_attention_impl: str = "manual",
+    decode_optimization: str = "current",
 ) -> Path:
+    optimization_suffix = (
+        ""
+        if str(decode_optimization) == "current"
+        else f"_opt_{str(decode_optimization)}"
+    )
     shape_key = (
         f"mineru_{str(decode_attention_impl)}_attention_{str(decode_weight_format)}"
         f"_rotary_{str(decode_rotary_impl)}"
+        f"{optimization_suffix}"
         f"_bs{int(batch_size)}_cache{int(cache_length)}"
     )
     return cache_root.expanduser().resolve() / shape_key
@@ -301,6 +308,7 @@ def compile_static_decode(
     decode_weight_format: str,
     decode_rotary_impl: str = "manual",
     decode_attention_impl: str = "manual",
+    decode_optimization: str = "current",
 ) -> tuple[Callable[..., Any], dict[str, Any]]:
     import torch
 
@@ -315,6 +323,7 @@ def compile_static_decode(
             decode_weight_format=decode_weight_format,
             decode_rotary_impl=decode_rotary_impl,
             decode_attention_impl=decode_attention_impl,
+            decode_optimization=decode_optimization,
         )
         shape_cache_dir.mkdir(parents=True, exist_ok=True)
         compiled_decode = torchair.inference.cache_compile(
@@ -337,6 +346,7 @@ def compile_static_decode(
             "decode_attention": str(decode_attention_impl),
             "decode_weight_format": str(decode_weight_format),
             "decode_rotary_impl": str(decode_rotary_impl),
+            "decode_optimization": str(decode_optimization),
         }
 
     compiled_decode = torch.compile(flat_decode, fullgraph=True, dynamic=False)
@@ -350,6 +360,7 @@ def compile_static_decode(
         "decode_attention": str(decode_attention_impl),
         "decode_weight_format": str(decode_weight_format),
         "decode_rotary_impl": str(decode_rotary_impl),
+        "decode_optimization": str(decode_optimization),
     }
 
 

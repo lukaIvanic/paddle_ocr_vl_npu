@@ -446,6 +446,20 @@ Use `parse_npu_profile.py` on each emitted `profile_*` directory for ranked
 kernel and operator summaries. Profile wall time includes profiler overhead;
 only the separate warmed `measure` section is a throughput measurement.
 
+The lab also retains two explicit Paddle-decode transfer presets:
+
+- `paddle_mask` builds the boolean future mask once per decode step from a
+  persistent KV-position vector. It avoids converting the same additive mask
+  to boolean again in every decoder layer.
+- `paddle_mask_rope_lut` adds a persistent FP16 cosine/sine lookup table for
+  the scalar autoregressive decode position. During decode, all three MRoPE
+  axes are identical, so selecting one precomputed factor row represents the
+  same decode function as constructing and recombining three equal axes.
+
+Both are lab-only until compiled token parity and repeated B32/B64 throughput
+measurements pass. Select them with `--decode-optimization`; `current` retains
+the existing production graph and cache identity.
+
 ## Current validation status
 
 This commit transfers the previously developed implementation but does not

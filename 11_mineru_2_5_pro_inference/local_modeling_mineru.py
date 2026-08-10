@@ -34,6 +34,15 @@ DECODE_ROTARY_IMPL_CHOICES = (
 DECODE_ATTENTION_MANUAL = "manual"
 DECODE_ATTENTION_INCREFA = "increfa"
 DECODE_ATTENTION_CHOICES = (DECODE_ATTENTION_MANUAL, DECODE_ATTENTION_INCREFA)
+
+DECODE_OPTIMIZATION_CURRENT = "current"
+DECODE_OPTIMIZATION_PADDLE_MASK = "paddle_mask"
+DECODE_OPTIMIZATION_PADDLE_MASK_ROPE_LUT = "paddle_mask_rope_lut"
+DECODE_OPTIMIZATION_CHOICES = (
+    DECODE_OPTIMIZATION_CURRENT,
+    DECODE_OPTIMIZATION_PADDLE_MASK,
+    DECODE_OPTIMIZATION_PADDLE_MASK_ROPE_LUT,
+)
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 VISION_PROMPT_FA_FULL_ATTENTION_TOKENS = (1 << 31) - 1
 
@@ -179,9 +188,14 @@ def build_static_decode_mask(
     inputs_embeds: torch.Tensor,
     cache_position: torch.Tensor,
     cache_length: int,
+    *,
+    kv_positions: torch.Tensor | None = None,
 ) -> torch.Tensor:
     cache_position = cache_position.reshape(-1).to(device=inputs_embeds.device, dtype=torch.int64)
-    kv_positions = torch.arange(int(cache_length), device=inputs_embeds.device, dtype=torch.int64)
+    if kv_positions is None:
+        kv_positions = torch.arange(
+            int(cache_length), device=inputs_embeds.device, dtype=torch.int64
+        )
     allowed = kv_positions.unsqueeze(0) <= cache_position.unsqueeze(1)
     allowed = allowed.view(inputs_embeds.shape[0], 1, 1, int(cache_length))
     mask = torch.zeros(
@@ -190,6 +204,23 @@ def build_static_decode_mask(
         dtype=inputs_embeds.dtype,
     )
     return mask.masked_fill(~allowed, torch.finfo(inputs_embeds.dtype).min)
+
+
+def build_static_decode_bool_mask(
+    cache_position: torch.Tensor,
+    cache_length: int,
+    *,
+    kv_positions: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Build Paddle-style IncreFA future masking once per decode step."""
+    cache_position = cache_position.reshape(-1).to(dtype=torch.int64)
+    if kv_positions is None:
+        kv_positions = torch.arange(
+            int(cache_length), device=cache_position.device, dtype=torch.int64
+        )
+    return (
+        kv_positions.unsqueeze(0) > cache_position.unsqueeze(1)
+    ).view(cache_position.shape[0], 1, 1, int(cache_length))
 
 
 def update_prefill_kv_cache_(
@@ -758,7 +789,11 @@ class MinerUAttention(nn.Module):
 
             bool_mask = None
             if attention_mask is not None:
-                bool_mask = (attention_mask < 0).to(torch.bool).contiguous()
+                bool_mask = (
+                    attention_mask.contiguous()
+                    if attention_mask.dtype == torch.bool
+                    else (attention_mask < 0).to(torch.bool).contiguous()
+                )
             attn_output = torch_npu.npu_incre_flash_attention(
                 query_states.contiguous(),
                 key_states.contiguous(),
@@ -789,7 +824,14 @@ class MinerUAttention(nn.Module):
             batch, heads, query_length, key_length
         ) * self.scaling
         if attention_mask is not None:
-            scores = scores + attention_mask[:, :, :, :key_length]
+            selected_mask = attention_mask[:, :, :, :key_length]
+            if selected_mask.dtype == torch.bool:
+                scores = scores.masked_fill(
+                    selected_mask,
+                    torch.finfo(scores.dtype).min,
+                )
+            else:
+                scores = scores + selected_mask
         probs = F.softmax(scores, dim=-1, dtype=torch.float32).to(query_states.dtype)
         flat_probs = probs.reshape(batch * heads, query_length, key_length)
         flat_value = value_for_attn.reshape(batch * heads, key_length, head_dim)
@@ -1013,6 +1055,9 @@ class MinerUTextModel(nn.Module):
         value_caches: tuple[torch.Tensor, ...],
         cache_length: int,
         attention_mask: torch.Tensor | None = None,
+        static_kv_positions: torch.Tensor | None = None,
+        decode_rope_factor_lut: torch.Tensor | None = None,
+        paddle_bool_mask: bool = False,
     ) -> torch.Tensor:
         batch_size, seq_length, _hidden = inputs_embeds.shape
         if seq_length != 1:
@@ -1023,13 +1068,40 @@ class MinerUTextModel(nn.Module):
         if cache_position.numel() != batch_size:
             raise ValueError(f"cache_position must be scalar or batch-shaped, got {tuple(cache_position.shape)}")
         if attention_mask is None:
-            attention_mask = build_static_decode_mask(inputs_embeds, cache_position, cache_length)
-        position_ids = cache_position.view(batch_size, 1) + rope_deltas.to(device=inputs_embeds.device, dtype=torch.int64)
-        position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
-        position_embeddings = prepare_multimodal_rotary_factors(
-            *self.rotary_emb(inputs_embeds, position_ids),
-            self.layers[0].self_attn.mrope_section,
+            attention_mask = (
+                build_static_decode_bool_mask(
+                    cache_position,
+                    cache_length,
+                    kv_positions=static_kv_positions,
+                )
+                if paddle_bool_mask
+                else build_static_decode_mask(
+                    inputs_embeds,
+                    cache_position,
+                    cache_length,
+                    kv_positions=static_kv_positions,
+                )
+            )
+        decode_position = cache_position.view(batch_size, 1) + rope_deltas.to(
+            device=inputs_embeds.device, dtype=torch.int64
         )
+        if decode_rope_factor_lut is None:
+            position_ids = decode_position.unsqueeze(0).expand(3, -1, -1)
+            position_embeddings = prepare_multimodal_rotary_factors(
+                *self.rotary_emb(inputs_embeds, position_ids),
+                self.layers[0].self_attn.mrope_section,
+            )
+        else:
+            selected_factors = torch.index_select(
+                decode_rope_factor_lut,
+                1,
+                decode_position.reshape(-1),
+            )
+            cos, sin = selected_factors.unbind(dim=0)
+            position_embeddings = (
+                cos.unsqueeze(1).unsqueeze(1),
+                sin.unsqueeze(1).unsqueeze(1),
+            )
         hidden_states = inputs_embeds
         residual: torch.Tensor | None = None
         for layer_idx, layer in enumerate(self.layers):
@@ -1886,18 +1958,75 @@ class LocalMinerU2_5ForConditionalGeneration(nn.Module):
             cache_position.add_(1)
         return torch.cat(generated, dim=1)
 
-    def make_flat_static_decode_module(self, *, cache_length: int) -> "MinerUFlatStaticDecodeModule":
-        return MinerUFlatStaticDecodeModule(self, cache_length=cache_length)
+    def make_flat_static_decode_module(
+        self,
+        *,
+        cache_length: int,
+        decode_optimization: str = DECODE_OPTIMIZATION_CURRENT,
+    ) -> "MinerUFlatStaticDecodeModule":
+        return MinerUFlatStaticDecodeModule(
+            self,
+            cache_length=cache_length,
+            decode_optimization=decode_optimization,
+        )
 
 
 class MinerUFlatStaticDecodeModule(nn.Module):
-    def __init__(self, model: LocalMinerU2_5ForConditionalGeneration, *, cache_length: int):
+    def __init__(
+        self,
+        model: LocalMinerU2_5ForConditionalGeneration,
+        *,
+        cache_length: int,
+        decode_optimization: str = DECODE_OPTIMIZATION_CURRENT,
+    ):
         super().__init__()
         self.model = model
         self.num_layers = int(model.config.text_config.num_hidden_layers)
         if self.num_layers != 24:
             raise ValueError(f"MinerU2.5-Pro static decode expects 24 decoder layers, got {self.num_layers}")
         self.cache_length = int(cache_length)
+        self.decode_optimization = str(decode_optimization)
+        if self.decode_optimization not in DECODE_OPTIMIZATION_CHOICES:
+            raise ValueError(
+                f"unsupported decode optimization {self.decode_optimization!r}; "
+                f"expected one of {DECODE_OPTIMIZATION_CHOICES}"
+            )
+        parameter = next(model.parameters())
+        use_paddle_mask = self.decode_optimization in {
+            DECODE_OPTIMIZATION_PADDLE_MASK,
+            DECODE_OPTIMIZATION_PADDLE_MASK_ROPE_LUT,
+        }
+        self.register_buffer(
+            "_static_kv_positions",
+            (
+                torch.arange(
+                    self.cache_length,
+                    device=parameter.device,
+                    dtype=torch.int64,
+                )
+                if use_paddle_mask
+                else None
+            ),
+            persistent=False,
+        )
+        rope_factor_lut = None
+        if self.decode_optimization == DECODE_OPTIMIZATION_PADDLE_MASK_ROPE_LUT:
+            rotary_emb = model.model.rotary_emb
+            positions = torch.arange(
+                self.cache_length,
+                device=rotary_emb.inv_freq.device,
+                dtype=torch.float32,
+            )
+            freqs = positions.reshape(-1, 1) * rotary_emb.inv_freq.reshape(1, -1).float()
+            emb = torch.cat((freqs, freqs), dim=-1)
+            rope_factor_lut = torch.stack((emb.cos(), emb.sin()), dim=0).to(
+                dtype=parameter.dtype
+            ).contiguous()
+        self.register_buffer(
+            "_decode_rope_factor_lut",
+            rope_factor_lut,
+            persistent=False,
+        )
 
     def forward(
         self,
@@ -2014,6 +2143,13 @@ class MinerUFlatStaticDecodeModule(nn.Module):
             value_caches=value_caches,
             cache_length=self.cache_length,
             attention_mask=None,
+            static_kv_positions=self._static_kv_positions,
+            decode_rope_factor_lut=self._decode_rope_factor_lut,
+            paddle_bool_mask=self.decode_optimization
+            in {
+                DECODE_OPTIMIZATION_PADDLE_MASK,
+                DECODE_OPTIMIZATION_PADDLE_MASK_ROPE_LUT,
+            },
         )
         lm_head_weight = self.model.decode_lm_head_weight
         if lm_head_weight is None:
