@@ -352,6 +352,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("qkvGm[kQueryElements]", kernel)
         self.assertIn("RotateHalf(", kernel)
         self.assertIn("SyncAll<true>();", kernel)
+        self.assertGreaterEqual(kernel.count("PipeBarrier<PIPE_V>();"), 7)
         self.assertNotIn("SyncAll<false>", kernel)
         self.assertIn("incre_flash_attention_FIAS_arch32", kernel)
         self.assertIn("kPackedQueryShape", geometry_patch)

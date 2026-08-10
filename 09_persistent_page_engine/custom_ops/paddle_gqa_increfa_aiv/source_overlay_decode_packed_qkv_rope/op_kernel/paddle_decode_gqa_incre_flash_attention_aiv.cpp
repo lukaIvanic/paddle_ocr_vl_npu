@@ -178,19 +178,25 @@ private:
                 input[offset + kHalfHeadDim],
                 static_cast<half>(0.0f),
                 kHalfHeadDim);
+            PipeBarrier<PIPE_V>();
             Muls(
                 scratch,
                 scratch,
                 static_cast<half>(-1.0f),
                 kHalfHeadDim);
+            PipeBarrier<PIPE_V>();
             Adds(
                 scratch[kHalfHeadDim],
                 input[offset],
                 static_cast<half>(0.0f),
                 kHalfHeadDim);
+            PipeBarrier<PIPE_V>();
             Mul(output[offset], input[offset], cosine, kHeadDim);
+            PipeBarrier<PIPE_V>();
             Mul(scratch, scratch, sine, kHeadDim);
+            PipeBarrier<PIPE_V>();
             Add(output[offset], output[offset], scratch, kHeadDim);
+            PipeBarrier<PIPE_V>();
         }
     }
 
