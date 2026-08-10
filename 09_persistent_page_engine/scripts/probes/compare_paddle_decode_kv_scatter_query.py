@@ -93,9 +93,14 @@ def main() -> int:
 
     torchair, CompilerConfig = import_torchair()
     args.cache_dir.mkdir(parents=True, exist_ok=True)
+    compiler_config = CompilerConfig()
+    graph_dump_dir = args.cache_dir / "graph_dump"
+    graph_dump_dir.mkdir(parents=True, exist_ok=True)
+    compiler_config.debug.graph_dump.type = "pbtxt"
+    compiler_config.debug.graph_dump.path = str(graph_dump_dir)
     step = torchair.inference.cache_compile(
         DecodeKvScatterQuery(args.strict_scope).forward,
-        config=CompilerConfig(),
+        config=compiler_config,
         dynamic=False,
         cache_dir=str(args.cache_dir),
         ge_cache=True,

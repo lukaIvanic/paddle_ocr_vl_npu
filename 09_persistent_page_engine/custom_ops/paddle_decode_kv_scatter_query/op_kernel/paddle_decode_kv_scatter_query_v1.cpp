@@ -67,9 +67,6 @@ public:
         queryInputQueue.FreeTensor(queryInput);
         queryOutput = queryOutputQueue.DeQue<half>();
         DataCopy(orderedQueryGm, queryOutput, kQueryElements);
-        event_t queryStored = static_cast<event_t>(
-            GetTPipePtr()->FetchEventID(HardEvent::MTE3_V));
-        SetFlag<HardEvent::MTE3_V>(queryStored);
         queryOutputQueue.FreeTensor(queryOutput);
 
         LocalTensor<half> keyInput = keyInputQueue.AllocTensor<half>();
@@ -77,7 +74,6 @@ public:
         keyInputQueue.EnQue(keyInput);
         keyInput = keyInputQueue.DeQue<half>();
         LocalTensor<half> keyOutput = keyOutputQueue.AllocTensor<half>();
-        WaitFlag<HardEvent::MTE3_V>(queryStored);
         Adds(keyOutput, keyInput, static_cast<half>(0.0f), kStateElements);
         keyOutputQueue.EnQue(keyOutput);
         keyInputQueue.FreeTensor(keyInput);
@@ -88,9 +84,6 @@ public:
                 (head * kCacheLength + static_cast<uint32_t>(position)) * kHeadDim;
             DataCopy(keyCacheGm[cacheOffset], keyOutput[stateOffset], kHeadDim);
         }
-        event_t keyStored = static_cast<event_t>(
-            GetTPipePtr()->FetchEventID(HardEvent::MTE3_V));
-        SetFlag<HardEvent::MTE3_V>(keyStored);
         keyOutputQueue.FreeTensor(keyOutput);
 
         LocalTensor<half> valueInput = valueInputQueue.AllocTensor<half>();
@@ -98,7 +91,6 @@ public:
         valueInputQueue.EnQue(valueInput);
         valueInput = valueInputQueue.DeQue<half>();
         LocalTensor<half> valueOutput = valueOutputQueue.AllocTensor<half>();
-        WaitFlag<HardEvent::MTE3_V>(keyStored);
         Adds(valueOutput, valueInput, static_cast<half>(0.0f), kStateElements);
         valueOutputQueue.EnQue(valueOutput);
         valueInputQueue.FreeTensor(valueInput);
