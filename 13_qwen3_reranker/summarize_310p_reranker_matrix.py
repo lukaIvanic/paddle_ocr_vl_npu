@@ -27,6 +27,13 @@ def load_rows(output_root: Path) -> list[dict]:
     rows = []
     for result_path in output_root.glob("*_*/b*/result.json"):
         phase_key = result_path.parents[1].name
+        if phase_key.endswith("_full_total"):
+            phase_key = phase_key.removesuffix("_full_total")
+            path_kind = "full_total"
+            expected_lane = "full_promptfa_compiled"
+        else:
+            path_kind = "prefix"
+            expected_lane = "prefix_promptfa_compiled"
         try:
             model, mode = phase_key.split("_", maxsplit=1)
         except ValueError:
@@ -37,15 +44,19 @@ def load_rows(output_root: Path) -> list[dict]:
         environment = payload["environment"]
         configuration = payload["configuration"]
         for result in payload["results"]:
-            if result["lane"] != "prefix_promptfa_compiled":
+            if result["lane"] != expected_lane:
                 continue
             rows.append(
                 {
                     "model": model,
                     "mode": mode,
+                    "path": path_kind,
                     "batch_size": result["batch_size"],
                     "continuation_length": result["continuation_length"],
                     "full_physical_length": result["full_physical_length"],
+                    "requested_sequence_length": result.get(
+                        "requested_sequence_length"
+                    ),
                     "median_ms": result["median_s"] * 1000.0,
                     "pairs_s": result["pairs_s"],
                     "served_input_tok_s": result["served_input_tok_s"],
@@ -77,6 +88,7 @@ def load_rows(output_root: Path) -> list[dict]:
 def comparisons(rows: list[dict]) -> list[dict]:
     indexed = {
         (
+            row["path"],
             row["model"],
             row["mode"],
             row["batch_size"],
@@ -86,15 +98,18 @@ def comparisons(rows: list[dict]) -> list[dict]:
     }
     values = []
     for key, dense in indexed.items():
-        model, mode, batch_size, continuation_length = key
+        path_kind, model, mode, batch_size, continuation_length = key
         if mode != "dense":
             continue
-        quantized = indexed.get((model, "w8a8", batch_size, continuation_length))
+        quantized = indexed.get(
+            (path_kind, model, "w8a8", batch_size, continuation_length)
+        )
         if quantized is None:
             continue
         values.append(
             {
                 "model": model,
+                "path": path_kind,
                 "batch_size": batch_size,
                 "continuation_length": continuation_length,
                 "dense_median_ms": dense["median_ms"],
