@@ -121,6 +121,12 @@ def main() -> int:
 
     checks = []
     all_exact = True
+    state_candidates = {
+        "key_0": key_states[0].cpu(),
+        "key_1": key_states[1].cpu(),
+        "value_0": value_states[0].cpu(),
+        "value_1": value_states[1].cpu(),
+    }
     for index, position in enumerate(positions):
         query_expected = query.cpu()
         key_actual = key_cache[:, :, position : position + 1, :].cpu()
@@ -152,6 +158,18 @@ def main() -> int:
                 "value_max_abs": float(
                     (value_actual.float() - value_expected.float()).abs().max()
                 ),
+                "key_candidate_max_abs": {
+                    name: float(
+                        (key_actual.float() - candidate.float()).abs().max()
+                    )
+                    for name, candidate in state_candidates.items()
+                },
+                "value_candidate_max_abs": {
+                    name: float(
+                        (value_actual.float() - candidate.float()).abs().max()
+                    )
+                    for name, candidate in state_candidates.items()
+                },
             }
         )
     result = {
