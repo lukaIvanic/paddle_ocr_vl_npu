@@ -899,7 +899,12 @@ class ContinuousRecognizer:
         # those not-yet-yielded members cannot exhaust the arena.
         self.private_cache_staging_headroom = self.text_pack_max_members
         self.prefill_host_tokens = torch.empty(
-            (self.cpu_preprocess_max_pending + 1,),
+            (
+                max(
+                    self.cpu_preprocess_max_pending + 1,
+                    self.text_pack_max_members,
+                ),
+            ),
             dtype=torch.int64,
             pin_memory=True,
         )
