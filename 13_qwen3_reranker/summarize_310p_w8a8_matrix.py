@@ -43,28 +43,50 @@ def main() -> None:
                 "w8a8_result_present": quant is not None,
             }
             continue
-        dense_result = dense["results"][0]
-        quant_result = quant["results"][0]
-        summary["models"][model_key] = {
-            "complete": True,
-            "device": quant["environment"]["device"],
-            "batch_size": quant_result["batch_size"],
-            "continuation_length": quant_result["continuation_length"],
-            "dense_median_ms": dense_result["median_s"] * 1000.0,
-            "w8a8_median_ms": quant_result["median_s"] * 1000.0,
-            "speedup": dense_result["median_s"] / quant_result["median_s"],
-            "dense_executed_tok_s": dense_result["executed_model_tok_s"],
-            "w8a8_executed_tok_s": quant_result["executed_model_tok_s"],
-            "executed_tok_s_gain_pct": (
-                quant_result["executed_model_tok_s"] / dense_result["executed_model_tok_s"] - 1.0
+        def result_key(result: dict) -> tuple[int, int, str]:
+            return (
+                int(result["batch_size"]),
+                int(result["continuation_length"]),
+                str(result.get("prefill_optimization", "")),
             )
-            * 100.0,
-            "same_yes_no_choices": dense_result["yes_no_choices"] == quant_result["yes_no_choices"],
-            "dense_yes_scores": dense_result["yes_scores"],
-            "w8a8_yes_scores": quant_result["yes_scores"],
+
+        dense_results = {result_key(result): result for result in dense["results"]}
+        quant_results = {result_key(result): result for result in quant["results"]}
+        common_keys = sorted(set(dense_results) & set(quant_results))
+        shapes = []
+        for key in common_keys:
+            dense_result = dense_results[key]
+            quant_result = quant_results[key]
+            shapes.append(
+                {
+                    "batch_size": quant_result["batch_size"],
+                    "continuation_length": quant_result["continuation_length"],
+                    "full_physical_length": quant_result["full_physical_length"],
+                    "dense_median_ms": dense_result["median_s"] * 1000.0,
+                    "w8a8_median_ms": quant_result["median_s"] * 1000.0,
+                    "speedup": dense_result["median_s"] / quant_result["median_s"],
+                    "dense_executed_tok_s": dense_result["executed_model_tok_s"],
+                    "w8a8_executed_tok_s": quant_result["executed_model_tok_s"],
+                    "executed_tok_s_gain_pct": (
+                        quant_result["executed_model_tok_s"] / dense_result["executed_model_tok_s"] - 1.0
+                    )
+                    * 100.0,
+                    "same_yes_no_choices": dense_result["yes_no_choices"]
+                    == quant_result["yes_no_choices"],
+                    "dense_yes_scores": dense_result["yes_scores"],
+                    "w8a8_yes_scores": quant_result["yes_scores"],
+                    "dense_cache_was_warm": dense_result["cache_was_warm"],
+                    "w8a8_cache_was_warm": quant_result["cache_was_warm"],
+                }
+            )
+        summary["models"][model_key] = {
+            "complete": bool(shapes) and len(dense_results) == len(quant_results) == len(shapes),
+            "device": quant["environment"]["device"],
+            "dense_result_count": len(dense_results),
+            "w8a8_result_count": len(quant_results),
+            "paired_result_count": len(shapes),
+            "shapes": shapes,
             "weight_quantization_s": quant["configuration"].get("weight_quantization_s"),
-            "dense_cache_was_warm": dense_result["cache_was_warm"],
-            "w8a8_cache_was_warm": quant_result["cache_was_warm"],
         }
 
     output_path = args.run_root / "summary.json"

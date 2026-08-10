@@ -11,6 +11,8 @@ BATCH_06B="${BATCH_06B:-16}"
 BATCH_4B="${BATCH_4B:-4}"
 WARMUPS="${WARMUPS:-3}"
 REPEATS="${REPEATS:-20}"
+CONTINUATION_LENGTHS="${CONTINUATION_LENGTHS:-128,384}"
+PHASES="${PHASES:-all}"
 COMMIT="$(git rev-parse --short=12 HEAD)"
 RUN_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 OUTPUT_ROOT="${OUTPUT_ROOT:-$REPO/tmp/13_qwen3_reranker/310p_w8a8_${COMMIT}_${RUN_STAMP}}"
@@ -26,6 +28,11 @@ fi
 
 mkdir -p "$OUTPUT_ROOT"
 overall_status=0
+
+should_run() {
+  local phase="$1"
+  [[ "$PHASES" == "all" || ",$PHASES," == *",$phase,"* ]]
+}
 
 run_phase() {
   local phase="$1"
@@ -54,21 +61,27 @@ run_phase() {
   fi
 }
 
-run_phase environment "$PYTHON_BIN" -c \
-  'import json,sys,torch,torch_npu; torch.npu.set_compile_mode(jit_compile=False); d=torch.device(sys.argv[1]); torch.npu.set_device(d); x=torch.arange(8,dtype=torch.float16,device=d); print(json.dumps({"torch":torch.__version__,"torch_npu":torch_npu.__version__,"device":torch.npu.get_device_name(d),"device_count":torch.npu.device_count(),"smoke":(x+1).cpu().tolist(),"ops":{n:callable(getattr(torch_npu,n,None)) for n in ("npu_quantize","npu_quant_matmul","npu_trans_quant_param","npu_format_cast")}},sort_keys=True))' \
-  "$DEVICE"
+if should_run environment; then
+  run_phase environment "$PYTHON_BIN" -c \
+    'import json,sys,torch,torch_npu; torch.npu.set_compile_mode(jit_compile=False); d=torch.device(sys.argv[1]); torch.npu.set_device(d); x=torch.arange(8,dtype=torch.float16,device=d); print(json.dumps({"torch":torch.__version__,"torch_npu":torch_npu.__version__,"device":torch.npu.get_device_name(d),"device_count":torch.npu.device_count(),"smoke":(x+1).cpu().tolist(),"ops":{n:callable(getattr(torch_npu,n,None)) for n in ("npu_quantize","npu_quant_matmul","npu_trans_quant_param","npu_format_cast")}},sort_keys=True))' \
+    "$DEVICE"
+fi
 
-run_phase op_06b "$PYTHON_BIN" "$REPO/13_qwen3_reranker/probe_310p_w8a8_ops.py" \
-  --model-dir "$MODEL_06B_DIR" --device "$DEVICE" --tokens 512 \
-  --warmups "$WARMUPS" --repeats "$REPEATS" \
-  --compile-cache-dir "$OUTPUT_ROOT/cache/op_06b" \
-  --json-out "$OUTPUT_ROOT/op_06b/result.json"
+if should_run op_06b; then
+  run_phase op_06b "$PYTHON_BIN" "$REPO/13_qwen3_reranker/probe_310p_w8a8_ops.py" \
+    --model-dir "$MODEL_06B_DIR" --device "$DEVICE" --tokens 512 \
+    --warmups "$WARMUPS" --repeats "$REPEATS" \
+    --compile-cache-dir "$OUTPUT_ROOT/cache/op_06b" \
+    --json-out "$OUTPUT_ROOT/op_06b/result.json"
+fi
 
-run_phase op_4b "$PYTHON_BIN" "$REPO/13_qwen3_reranker/probe_310p_w8a8_ops.py" \
-  --model-dir "$MODEL_4B_DIR" --device "$DEVICE" --tokens 512 \
-  --warmups "$WARMUPS" --repeats "$REPEATS" \
-  --compile-cache-dir "$OUTPUT_ROOT/cache/op_4b" \
-  --json-out "$OUTPUT_ROOT/op_4b/result.json"
+if should_run op_4b; then
+  run_phase op_4b "$PYTHON_BIN" "$REPO/13_qwen3_reranker/probe_310p_w8a8_ops.py" \
+    --model-dir "$MODEL_4B_DIR" --device "$DEVICE" --tokens 512 \
+    --warmups "$WARMUPS" --repeats "$REPEATS" \
+    --compile-cache-dir "$OUTPUT_ROOT/cache/op_4b" \
+    --json-out "$OUTPUT_ROOT/op_4b/result.json"
+fi
 
 run_model_benchmark() {
   local model_key="$1"
@@ -76,13 +89,16 @@ run_model_benchmark() {
   local batch_size="$3"
   local weight_mode="$4"
   local phase="model_${model_key}_${weight_mode}"
+  if ! should_run "$phase"; then
+    return
+  fi
   local ffn_mode="dense"
   if [[ "$weight_mode" == "w8a8" ]]; then
     ffn_mode="gate_up_w8a8"
   fi
   run_phase "$phase" "$PYTHON_BIN" "$REPO/13_qwen3_reranker/benchmark_prefix_cache_throughput.py" \
     --model-dir "$model_dir" --device "$DEVICE" \
-    --batch-sizes "$batch_size" --continuation-lengths 128 \
+    --batch-sizes "$batch_size" --continuation-lengths "$CONTINUATION_LENGTHS" \
     --batch-sweep-continuation 128 --length-sweep-batch "$batch_size" --matrix axes \
     --lanes prefix_promptfa_compiled --warmups "$WARMUPS" --repeats "$REPEATS" \
     --compile-cache-dir "$OUTPUT_ROOT/cache/${model_key}_${weight_mode}" \
@@ -96,8 +112,10 @@ run_model_benchmark 06b "$MODEL_06B_DIR" "$BATCH_06B" w8a8
 run_model_benchmark 4b "$MODEL_4B_DIR" "$BATCH_4B" dense
 run_model_benchmark 4b "$MODEL_4B_DIR" "$BATCH_4B" w8a8
 
-run_phase summary "$PYTHON_BIN" "$REPO/13_qwen3_reranker/summarize_310p_w8a8_matrix.py" \
-  --run-root "$OUTPUT_ROOT"
+if should_run summary; then
+  run_phase summary "$PYTHON_BIN" "$REPO/13_qwen3_reranker/summarize_310p_w8a8_matrix.py" \
+    --run-root "$OUTPUT_ROOT"
+fi
 
 echo "OUTPUT_ROOT $OUTPUT_ROOT"
 exit "$overall_status"

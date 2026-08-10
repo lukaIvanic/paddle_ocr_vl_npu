@@ -67,33 +67,112 @@ Before running, verify that both model directories contain `config.json`, the
 tokenizer files, and all checkpoint shards. If either model is absent, stop and
 report the missing model and the locations checked.
 
-## One-command matrix
+## Required phased execution
+
+Do not run the whole matrix silently. Use one stable output root, run exactly
+one phase, report its progress, and wait for acknowledgment before starting the
+next phase.
+
+Initialize the shared settings once:
 
 ```bash
-bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh 2>&1 | tee /tmp/310p_w8a8_driver.log
+export OUTPUT_ROOT="$REPO/tmp/13_qwen3_reranker/310p_w8a8_phased_$(git rev-parse --short=12 HEAD)"
+export CONTINUATION_LENGTHS=128,384
 ```
+
+### Phase 1: environment
+
+```bash
+PHASES=environment bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh
+```
+
+Report the environment JSON and `PHASE_END`. Then stop and wait.
+
+### Phase 2: 0.6B isolated operator
+
+```bash
+PHASES=op_06b bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh
+```
+
+Report `W8A8_OP_PROBE` and `PHASE_END`. Then stop and wait.
+
+### Phase 3: 4B isolated operator
+
+```bash
+PHASES=op_4b bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh
+```
+
+Report `W8A8_OP_PROBE` and `PHASE_END`. Then stop and wait.
+
+### Phase 4: 0.6B dense model
+
+```bash
+PHASES=model_06b_dense bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh
+```
+
+Report both `.THROUGHPUT` lines, `MODEL_LOAD`, and `PHASE_END`. Then stop and
+wait.
+
+### Phase 5: 0.6B W8A8 model
+
+```bash
+PHASES=model_06b_w8a8 bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh
+```
+
+Report both `.THROUGHPUT` lines, `MODEL_LOAD`, `W8A8_CALIBRATION`, and
+`PHASE_END`. Then stop and wait.
+
+### Phase 6: 4B dense model
+
+```bash
+PHASES=model_4b_dense bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh
+```
+
+Report both `.THROUGHPUT` lines, `MODEL_LOAD`, and `PHASE_END`. Then stop and
+wait.
+
+### Phase 7: 4B W8A8 model
+
+```bash
+PHASES=model_4b_w8a8 bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh
+```
+
+Report both `.THROUGHPUT` lines, `MODEL_LOAD`, `W8A8_CALIBRATION`, and
+`PHASE_END`. Then stop and wait.
+
+### Phase 8: summary
+
+Run this only after all previous phases were acknowledged:
+
+```bash
+PHASES=summary bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh
+```
+
+Report the full `W8A8_310P_MATRIX_SUMMARY`, `SUMMARY_JSON`, and `OUTPUT_ROOT`.
 
 Defaults are chosen to expose useful 310P potential without a broad sweep:
 
 - isolated operator probes: `M=512` at each model's real `K` and `N`;
-- 0.6B model: batch 16, continuation 128;
-- 4B model: batch 4, continuation 128;
+- 0.6B model: batch 16, continuations 128 and 384;
+- 4B model: batch 4, continuations 128 and 384;
 - prefix: physical 128-token cached block;
-- continuation attention: real Q128, square-padded physical Q/KV256;
+- continuation attention: real Q128/Q384, square-padded physical Q/KV256 or
+  Q/KV512;
 - PromptFA preset: `combined_bsnd`;
 - dense and INT8 weights: one-time FRACTAL_NZ preparation;
 - three warmup calls and twenty measured calls per graph.
 
-The script continues after a failed phase so one unsupported shape does not
-hide the other results. It returns nonzero if any phase failed.
+Each model phase keeps one loaded model while it measures both sequence lengths,
+which avoids one redundant model load. Each invocation returns nonzero if its
+selected phase failed.
 
 If and only if the 4B B4 model phase fails with a clear NPU out-of-memory error,
 rerun the matrix once with:
 
 ```bash
-BATCH_4B=1 \
+BATCH_4B=1 PHASES=model_4b_dense,model_4b_w8a8 \
 OUTPUT_ROOT="$REPO/tmp/13_qwen3_reranker/310p_w8a8_4b_b1_fallback_$(git rev-parse --short=12 HEAD)" \
-bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh 2>&1 | tee /tmp/310p_w8a8_4b_b1_driver.log
+bash 13_qwen3_reranker/run_310p_w8a8_matrix.sh
 ```
 
 Do not use the B1 fallback for an operator-contract, compiler, or unsupported
@@ -105,7 +184,8 @@ Paste these items without paraphrasing away failures:
 
 1. `git rev-parse HEAD`, hostname, Python path, Torch version, torch-npu version,
    device name, and `ASCEND_RT_VISIBLE_DEVICES`.
-2. Every `PHASE_END ... exit_code=...` line.
+2. The current `PHASE_END ... exit_code=...` line after each phase, before
+   proceeding.
 3. Both complete `W8A8_OP_PROBE` lines, or the first causal traceback for each
    failed probe.
 4. Every `.THROUGHPUT` line from the four model phases.
