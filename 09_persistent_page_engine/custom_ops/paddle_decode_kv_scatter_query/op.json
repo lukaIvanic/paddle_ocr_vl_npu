@@ -1,0 +1,16 @@
+[
+  {
+    "op": "PaddleDecodeKvScatterQueryV1",
+    "input_desc": [
+      {"name": "query", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "key_cache", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "value_cache", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "cache_position", "param_type": "required", "format": ["ND"], "type": ["int64"]},
+      {"name": "key_state", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "value_state", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
+    ],
+    "output_desc": [
+      {"name": "ordered_query", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
+    ]
+  }
+]

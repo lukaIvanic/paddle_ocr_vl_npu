@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""Validate the independent B1 K/V-scatter ordering operator through TorchAir."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+import time
+
+import torch
+
+from paddleocr_vl.model.compile_utils import import_torchair
+from paddleocr_vl.model.decode_kv_scatter_query import (
+    decode_kv_scatter_query,
+    register_decode_kv_scatter_query_converter,
+)
+
+
+class DecodeKvScatterQuery(torch.nn.Module):
+    def __init__(self, strict_scope: bool) -> None:
+        super().__init__()
+        self.scope = None
+        if strict_scope:
+            self.scope = __import__(
+                "torchair.scope", fromlist=["super_kernel"]
+            ).super_kernel
+
+    def _forward_impl(
+        self,
+        query: torch.Tensor,
+        key_cache: torch.Tensor,
+        value_cache: torch.Tensor,
+        cache_position: torch.Tensor,
+        key_state: torch.Tensor,
+        value_state: torch.Tensor,
+    ) -> torch.Tensor:
+        return decode_kv_scatter_query(
+            query,
+            key_cache,
+            value_cache,
+            cache_position,
+            key_state,
+            value_state,
+        )
+
+    def forward(self, *args: torch.Tensor) -> torch.Tensor:
+        if self.scope is None:
+            return self._forward_impl(*args)
+        with self.scope(
+            "paddle_decode_kv_scatter_query_probe",
+            "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+            "preload-code=none:early-start=0:split-mode=1",
+        ):
+            return self._forward_impl(*args)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cache-dir", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--strict-scope", action="store_true")
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    import torch_npu
+
+    if not torch.npu.is_available():
+        raise RuntimeError("an Ascend NPU is required")
+    torch.npu.set_compile_mode(jit_compile=False)
+    register_decode_kv_scatter_query_converter()
+
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(20260810)
+    query = torch.randn(
+        (1, 16, 1, 128), generator=generator, dtype=torch.float16
+    ).to("npu:0")
+    key_cache = torch.zeros(
+        (1, 2, 1024, 128), dtype=torch.float16, device="npu:0"
+    )
+    value_cache = torch.zeros_like(key_cache)
+    key_states = [
+        torch.randn((1, 2, 1, 128), generator=generator, dtype=torch.float16).to("npu:0")
+        for _ in range(2)
+    ]
+    value_states = [torch.randn_like(state) for state in key_states]
+    positions = [128, 129]
+
+    torchair, CompilerConfig = import_torchair()
+    args.cache_dir.mkdir(parents=True, exist_ok=True)
+    step = torchair.inference.cache_compile(
+        DecodeKvScatterQuery(args.strict_scope).forward,
+        config=CompilerConfig(),
+        dynamic=False,
+        cache_dir=str(args.cache_dir),
+        ge_cache=True,
+    )
+    timings = []
+    ordered_outputs = []
+    for position, key_state, value_state in zip(
+        positions, key_states, value_states, strict=True
+    ):
+        position_tensor = torch.tensor(
+            [position], dtype=torch.int64, device="npu:0"
+        )
+        started = time.perf_counter()
+        ordered = step(
+            query,
+            key_cache,
+            value_cache,
+            position_tensor,
+            key_state,
+            value_state,
+        )
+        torch.npu.synchronize()
+        timings.append(time.perf_counter() - started)
+        ordered_outputs.append(ordered)
+
+    checks = []
+    all_exact = True
+    for index, position in enumerate(positions):
+        query_exact = bool(torch.equal(ordered_outputs[index].cpu(), query.cpu()))
+        key_exact = bool(
+            torch.equal(
+                key_cache[:, :, position : position + 1, :].cpu(),
+                key_states[index].cpu(),
+            )
+        )
+        value_exact = bool(
+            torch.equal(
+                value_cache[:, :, position : position + 1, :].cpu(),
+                value_states[index].cpu(),
+            )
+        )
+        all_exact = all_exact and query_exact and key_exact and value_exact
+        checks.append(
+            {
+                "position": position,
+                "query_exact": query_exact,
+                "key_exact": key_exact,
+                "value_exact": value_exact,
+            }
+        )
+    result = {
+        "kind": "paddle_decode_kv_scatter_query_torchair_probe",
+        "operator": {
+            "pytorch": "paddleocr_vl::decode_kv_scatter_query_v1",
+            "ge": "PaddleDecodeKvScatterQueryV1",
+            "kernel": "paddle_decode_kv_scatter_query_v1",
+        },
+        "contract": {
+            "query_shape": list(query.shape),
+            "cache_shape": list(key_cache.shape),
+            "state_shape": list(key_states[0].shape),
+            "positions": positions,
+            "strict_scope": args.strict_scope,
+            "block_dim": 1,
+            "core_type": "AIV_ONLY",
+        },
+        "environment": {
+            "device": torch.npu.get_device_name(0),
+            "visible_device": os.environ.get("ASCEND_RT_VISIBLE_DEVICES"),
+            "torch": torch.__version__,
+            "torch_npu": torch_npu.__version__,
+        },
+        "correctness": {
+            "all_exact": all_exact,
+            "steps": checks,
+            "key_nonzero_count": int(torch.count_nonzero(key_cache).cpu()),
+            "value_nonzero_count": int(torch.count_nonzero(value_cache).cpu()),
+        },
+        "timing": {"call_s": timings},
+    }
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps(result, indent=2))
+    if not all_exact:
+        raise RuntimeError("PaddleDecodeKvScatterQueryV1 failed exact parity")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
