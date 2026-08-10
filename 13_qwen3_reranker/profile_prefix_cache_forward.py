@@ -81,6 +81,7 @@ def run_profile(
     context_started = time.perf_counter()
     with npu_prof.profile(
         activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
+        schedule=npu_prof.schedule(wait=0, warmup=0, active=iterations, repeat=1),
         on_trace_ready=npu_prof.tensorboard_trace_handler(
             str(profile_dir),
             analyse_flag=True,
