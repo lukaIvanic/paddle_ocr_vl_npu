@@ -12,9 +12,5 @@ ge::graphStatus TilingPrepareForPaddleDecodeGqaAttentionAiv(
 IMPL_OP_OPTILING(PaddleDecodeGqaAttentionAiv)
     .Tiling(TilingIncreFlashAttention)
     .TilingParse<IncreFlashAttentionCompileInfo>(
-        TilingPrepareForPaddleDecodeGqaAttentionAiv)
-    .TilingInputsDataDependency(
-        {5},
-        {gert::TilingPlacement::TILING_ON_HOST,
-         gert::TilingPlacement::TILING_ON_AICPU});
+        TilingPrepareForPaddleDecodeGqaAttentionAiv);
 } // namespace optiling

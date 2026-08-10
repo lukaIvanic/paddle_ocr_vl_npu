@@ -17,26 +17,6 @@ public:
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
         this->Input("atten_mask").ParamType(REQUIRED).DataType({ge::DT_BOOL})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
-        this->Input("actual_seq_lengths").ParamType(OPTIONAL).ValueDepend(OPTIONAL)
-            .DataType({ge::DT_INT64}).Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Input("dequant_scale1").ParamType(OPTIONAL).DataType({ge::DT_UINT64})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Input("quant_scale1").ParamType(OPTIONAL).DataType({ge::DT_FLOAT})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Input("dequant_scale2").ParamType(OPTIONAL).DataType({ge::DT_UINT64})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Input("quant_scale2").ParamType(OPTIONAL).DataType({ge::DT_FLOAT})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Input("quant_offset2").ParamType(OPTIONAL).DataType({ge::DT_FLOAT})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Input("antiquant_scale").ParamType(OPTIONAL).DataType({ge::DT_FLOAT16})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Input("antiquant_offset").ParamType(OPTIONAL).DataType({ge::DT_FLOAT16})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Input("block_table").ParamType(OPTIONAL).DataType({ge::DT_INT32})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Input("kv_padding_size").ParamType(OPTIONAL).DataType({ge::DT_INT64})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
 
         this->Output("attention_out").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
