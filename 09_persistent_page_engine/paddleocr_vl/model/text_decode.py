@@ -593,12 +593,14 @@ DECODE_OPTIMIZATION_PRESETS.update(
             # Keep the one custom subfunction that has already passed strict
             # SuperKernel validation.  GatherV2 and the TBE
             # Add/Cast/Cos/Sin scalar-RoPE path cannot enter strict scope, so
-            # retain only the small AscendC embedding and lookup prologue.
-            # Keep ordinary QKV views and SwiGLU; their custom variants remain
-            # optional optimizations rather than correctness dependencies.
+            # retain the small AscendC embedding and lookup prologue.  SplitV
+            # is also a non-fusible TBE kernel, so use the independent QKV
+            # split with its explicit producer barrier.  Keep ordinary SwiGLU;
+            # its custom variant remains optional unless strict scope rejects
+            # the stock decomposition too.
             rotary_factors="lookup",
             ascendc_token_embedding=True,
-            ascendc_qkv_split=False,
+            ascendc_qkv_split=True,
             ascendc_rope_lookup=True,
             ascendc_position_add=False,
             ascendc_swiglu=False,

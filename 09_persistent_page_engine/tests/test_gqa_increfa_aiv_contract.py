@@ -438,7 +438,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertTrue(simple.ascendc_decode_gqa_mixed24)
         self.assertEqual(simple.rotary_factors, "lookup")
         self.assertTrue(simple.ascendc_token_embedding)
-        self.assertFalse(simple.ascendc_qkv_split)
+        self.assertTrue(simple.ascendc_qkv_split)
         self.assertTrue(simple.ascendc_rope_lookup)
         self.assertFalse(simple.ascendc_position_add)
         self.assertFalse(simple.ascendc_swiglu)
