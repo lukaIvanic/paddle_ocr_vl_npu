@@ -79,3 +79,58 @@ def test_page_recognition_metrics_preserve_crop_tokens_and_stage_totals() -> Non
     assert metrics["crop_details"][0]["source_crop_size"] == [128, 32]
     assert metrics["crop_details"][0]["model_crop_size"] == [64, 16]
     assert metrics["rates"]["useful_vision_tok_per_device_s"] == 5600.0
+
+
+def test_page_recognition_metrics_survive_released_crop_requests() -> None:
+    request = RecognitionRequest(
+        request_id="crop-0",
+        crop=Image.new("RGB", (64, 16)),
+        prompt="OCR:",
+        source_crop_size=(128, 32),
+    )
+    prepared = PreparedLayoutPage(
+        ordinal=0,
+        image_path=Path("page.png"),
+        image_size=(1280, 1920),
+        blocks=[{"label": "text"}],
+        requests=[request],
+        request_block_indices=[0],
+        figure_token_maps={},
+        dropped_figure_paths=set(),
+        document_images=[],
+        timing_s={},
+        statistics={},
+    )
+    result = RecognitionResult(
+        request_id="crop-0",
+        decode_schedule_id="schedule",
+        decode_slot_index=0,
+        decode_slot_epoch=1,
+        prompt="OCR:",
+        crop_size=(64, 16),
+        text="hello",
+        token_ids=[1],
+        stop_reason="eos",
+        input_tokens=40,
+        projected_image_tokens=28,
+        generated_tokens_including_eos=1,
+        decode_tokens_after_prefill_including_eos=0,
+        decode_calls_executed=0,
+        timing_s={},
+        device_stage_s={},
+        rates={},
+    )
+    page = _PageState(
+        submission=PageSubmission("page", Path("page.png"), 0.0),
+        prepared=prepared,
+        remaining=0,
+        recognition={0: "hello"},
+        recognition_results={0: result},
+        source_crop_sizes={0: (128, 32)},
+    )
+    prepared.requests.clear()
+    prepared.request_block_indices.clear()
+
+    metrics = _recognition_metrics(page)
+
+    assert metrics["crop_details"][0]["source_crop_size"] == [128, 32]

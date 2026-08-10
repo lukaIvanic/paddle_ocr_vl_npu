@@ -60,6 +60,9 @@ class _PageState:
     remaining: int
     recognition: dict[int, str] = field(default_factory=dict)
     recognition_results: dict[int, RecognitionResult] = field(default_factory=dict)
+    source_crop_sizes: dict[int, tuple[int, int] | None] = field(
+        default_factory=dict
+    )
 
 
 def _recognition_metrics(page: _PageState) -> dict[str, Any]:
@@ -80,16 +83,18 @@ def _recognition_metrics(page: _PageState) -> dict[str, Any]:
         "generated_including_eos": 0,
         "decode_after_prefill_including_eos": 0,
     }
-    request_by_block = dict(
-        zip(
-            page.prepared.request_block_indices,
-            page.prepared.requests,
-        )
-    )
+    source_crop_sizes = dict(page.source_crop_sizes)
+    if not source_crop_sizes:
+        source_crop_sizes = {
+            block_index: request.source_crop_size
+            for block_index, request in zip(
+                page.prepared.request_block_indices,
+                page.prepared.requests,
+            )
+        }
     crops: list[dict[str, Any]] = []
     decode_calls: list[int] = []
     for block_index, result in sorted(page.recognition_results.items()):
-        request = request_by_block[block_index]
         block = page.prepared.blocks[block_index]
         for stage, seconds in result.device_stage_s.items():
             device_stage_s[stage] += float(seconds)
@@ -131,8 +136,8 @@ def _recognition_metrics(page: _PageState) -> dict[str, Any]:
                 "request_id": result.request_id,
                 "prompt": result.prompt,
                 "source_crop_size": (
-                    list(request.source_crop_size)
-                    if request.source_crop_size is not None
+                    list(source_crop_sizes[block_index])
+                    if source_crop_sizes.get(block_index) is not None
                     else None
                 ),
                 "model_crop_size": list(result.crop_size),
@@ -425,6 +430,14 @@ class _UnifiedPageReadySource:
             submission=submission,
             prepared=prepared,
             remaining=len(prepared.requests),
+            source_crop_sizes={
+                block_index: request.source_crop_size
+                for request, block_index in zip(
+                    prepared.requests,
+                    prepared.request_block_indices,
+                    strict=True,
+                )
+            },
         )
         if state.remaining == 0:
             self._emit_completed_page(state)
