@@ -117,31 +117,41 @@ def main() -> int:
         )
         torch.npu.synchronize()
         timings.append(time.perf_counter() - started)
-        ordered_outputs.append(ordered)
+        ordered_outputs.append(ordered.cpu().clone())
 
     checks = []
     all_exact = True
     for index, position in enumerate(positions):
-        query_exact = bool(torch.equal(ordered_outputs[index].cpu(), query.cpu()))
+        query_expected = query.cpu()
+        key_actual = key_cache[:, :, position : position + 1, :].cpu()
+        key_expected = key_states[index].cpu()
+        value_actual = value_cache[:, :, position : position + 1, :].cpu()
+        value_expected = value_states[index].cpu()
+        query_exact = bool(torch.equal(ordered_outputs[index], query_expected))
         key_exact = bool(
-            torch.equal(
-                key_cache[:, :, position : position + 1, :].cpu(),
-                key_states[index].cpu(),
-            )
+            torch.equal(key_actual, key_expected)
         )
         value_exact = bool(
-            torch.equal(
-                value_cache[:, :, position : position + 1, :].cpu(),
-                value_states[index].cpu(),
-            )
+            torch.equal(value_actual, value_expected)
         )
         all_exact = all_exact and query_exact and key_exact and value_exact
         checks.append(
             {
                 "position": position,
                 "query_exact": query_exact,
+                "query_max_abs": float(
+                    (ordered_outputs[index].float() - query_expected.float())
+                    .abs()
+                    .max()
+                ),
                 "key_exact": key_exact,
+                "key_max_abs": float(
+                    (key_actual.float() - key_expected.float()).abs().max()
+                ),
                 "value_exact": value_exact,
+                "value_max_abs": float(
+                    (value_actual.float() - value_expected.float()).abs().max()
+                ),
             }
         )
     result = {
