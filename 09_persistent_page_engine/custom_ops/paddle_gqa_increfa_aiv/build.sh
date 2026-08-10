@@ -225,6 +225,8 @@ if [[ "$SOURCE_PREPARED" == false ]]; then
     if [[ "$FUSED_DECODE" == true ]]; then
         while IFS= read -r -d '' source_path; do
             sed -i \
+                -e "s/PaddleDecodeGqaIncreFlashAttentionAiv/$CUSTOM_OP_GE/g" \
+                -e "s/paddle_decode_gqa_incre_flash_attention_aiv/$CUSTOM_OP_SNAKE/g" \
                 -e "s/PaddleGqaIncreFlashAttentionAiv/$CUSTOM_OP_GE/g" \
                 -e "s/paddle_gqa_incre_flash_attention_aiv/$CUSTOM_OP_SNAKE/g" \
                 "$source_path"
