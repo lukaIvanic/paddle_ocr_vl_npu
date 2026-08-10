@@ -37,6 +37,10 @@ from .decode_position_add import (
     decode_position_add,
     register_decode_position_add_converter,
 )
+from .decode_rope_lookup import (
+    decode_rope_lookup,
+    register_decode_rope_lookup_converter,
+)
 from .config import PaddleOCRTextConfig
 from .gqa_increfa_aiv import (
     gqa_incre_flash_attention_aiv,
@@ -84,6 +88,7 @@ class DecodeOptimizationConfig:
     ascendc_linear: bool = False
     ascendc_qkv_split: bool = False
     ascendc_position_add: bool = False
+    ascendc_rope_lookup: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -138,12 +143,13 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         packed_qkv=True,
         rms_norm="npu",
         rotary="npu_apply",
+        rotary_factors="lookup",
         add_rms_norm=True,
         super_kernel_scope=True,
         ascendc_token_embedding=True,
         ascendc_linear=True,
         ascendc_qkv_split=True,
-        ascendc_position_add=True,
+        ascendc_rope_lookup=True,
     ),
     "combined_apply_pse_sentinel": DecodeOptimizationConfig(
         name="combined_apply_pse_sentinel",
@@ -1289,40 +1295,53 @@ def run_text_decode_transformer(
     rope_deltas_i64 = rope_deltas.to(
         device=inputs_embeds.device, dtype=torch.int64
     )
-    decode_position = (
-        decode_position_add(cache_position_2d, rope_deltas_i64)
-        if optimization.ascendc_position_add
-        else cache_position_2d + rope_deltas_i64
-    )
-    if optimization.rotary_factors == "mrope":
-        position_ids = decode_position.unsqueeze(0).expand(3, -1, -1)
-        position_embeddings = text_model.rotary_emb(inputs_embeds, position_ids)
-        prepared_factors = (
-            _prepare_multimodal_rotary_factors(
-                position_embeddings,
-                text_model.layers[0].self_attn.mrope_section,
-            )
-            if optimization.hoist_mrope
-            else None
-        )
-    elif optimization.rotary_factors == "scalar":
-        prepared_factors = _prepare_scalar_rotary_factors(
-            text_model.rotary_emb,
-            inputs_embeds,
-            decode_position,
-        )
-        position_embeddings = prepared_factors
-    elif optimization.rotary_factors == "lookup":
-        prepared_factors = _lookup_scalar_rotary_factors(
-            text_model.rotary_emb,
-            decode_position,
+    if (
+        optimization.rotary_factors == "lookup"
+        and optimization.ascendc_rope_lookup
+    ):
+        prepared_factors = decode_rope_lookup(
+            text_model.rotary_emb.decode_rope_factor_lut,
+            cache_position_2d,
+            rope_deltas_i64,
         )
         position_embeddings = prepared_factors
     else:
-        raise ValueError(
-            "unsupported decode rotary-factor mode: "
-            f"{optimization.rotary_factors!r}"
+        decode_position = (
+            decode_position_add(cache_position_2d, rope_deltas_i64)
+            if optimization.ascendc_position_add
+            else cache_position_2d + rope_deltas_i64
         )
+        if optimization.rotary_factors == "mrope":
+            position_ids = decode_position.unsqueeze(0).expand(3, -1, -1)
+            position_embeddings = text_model.rotary_emb(
+                inputs_embeds, position_ids
+            )
+            prepared_factors = (
+                _prepare_multimodal_rotary_factors(
+                    position_embeddings,
+                    text_model.layers[0].self_attn.mrope_section,
+                )
+                if optimization.hoist_mrope
+                else None
+            )
+        elif optimization.rotary_factors == "scalar":
+            prepared_factors = _prepare_scalar_rotary_factors(
+                text_model.rotary_emb,
+                inputs_embeds,
+                decode_position,
+            )
+            position_embeddings = prepared_factors
+        elif optimization.rotary_factors == "lookup":
+            prepared_factors = _lookup_scalar_rotary_factors(
+                text_model.rotary_emb,
+                decode_position,
+            )
+            position_embeddings = prepared_factors
+        else:
+            raise ValueError(
+                "unsupported decode rotary-factor mode: "
+                f"{optimization.rotary_factors!r}"
+            )
     hidden_states = inputs_embeds
     if optimization.name == "baseline":
         for layer_idx, layer in enumerate(text_model.layers):
@@ -1672,6 +1691,7 @@ def decode_source_hash() -> str:
         "decode_linear_matmul_v3.py",
         "decode_qkv_split.py",
         "decode_position_add.py",
+        "decode_rope_lookup.py",
     ):
         path = here / name
         digest.update(name.encode("utf-8"))
@@ -1745,6 +1765,15 @@ def compile_text_decode_stage(
                 "the Paddle decoder SuperKernel currently supports only "
                 "batch_size=1"
             )
+        if optimization.ascendc_rope_lookup and cache_length != 1024:
+            raise ValueError(
+                "the specialized Paddle decoder RoPE lookup requires "
+                "cache_length=1024"
+            )
+        if optimization.ascendc_rope_lookup and dtype != torch.float16:
+            raise ValueError(
+                "the specialized Paddle decoder RoPE lookup requires FP16"
+            )
     common_metadata = {
         "backend": backend_name,
         "enabled": backend_name != "raw_eager",
@@ -1779,6 +1808,7 @@ def compile_text_decode_stage(
             "ascendc_linear": optimization.ascendc_linear,
             "ascendc_qkv_split": optimization.ascendc_qkv_split,
             "ascendc_position_add": optimization.ascendc_position_add,
+            "ascendc_rope_lookup": optimization.ascendc_rope_lookup,
         },
     }
     if backend_name == "raw_eager":
@@ -1800,6 +1830,8 @@ def compile_text_decode_stage(
             register_decode_qkv_split_converter()
         if optimization.ascendc_position_add:
             register_decode_position_add_converter()
+        if optimization.ascendc_rope_lookup:
+            register_decode_rope_lookup_converter()
         shape_cache_dir = torchair_cache_dir_for_shape(
             cache_root,
             batch_size=batch_size,

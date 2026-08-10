@@ -1,0 +1,14 @@
+[
+  {
+    "op": "PaddleDecodeRopeLookupV1",
+    "input_desc": [
+      {"name": "factor_lut", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "cache_position", "param_type": "required", "format": ["ND"], "type": ["int64"]},
+      {"name": "rope_delta", "param_type": "required", "format": ["ND"], "type": ["int64"]}
+    ],
+    "output_desc": [
+      {"name": "cos", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "sin", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
+    ]
+  }
+]
