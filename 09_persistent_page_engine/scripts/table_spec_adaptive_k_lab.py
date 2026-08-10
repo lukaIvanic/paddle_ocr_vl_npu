@@ -80,6 +80,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--text-buckets", default=fixed_lab.DEFAULT_TEXT_BUCKETS)
     parser.add_argument("--allow-compile", action="store_true")
     parser.add_argument(
+        "--cell-boundary-math-open-draft-trust",
+        action="store_true",
+        help=(
+            "At a verified cell boundary with a sufficiently long exact match, "
+            "follow one draft token when either greedy next token is exact \\("
+        ),
+    )
+    parser.add_argument(
+        "--cell-boundary-min-match",
+        type=int,
+        default=5,
+        help="Require current exact draft/target match length to be greater than this.",
+    )
+    parser.add_argument(
         "--decode-cache-dir",
         type=Path,
         default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair",
@@ -141,6 +155,35 @@ def next_k(
     return k_values[max(0, index - 1)]
 
 
+def cell_boundary_math_open_draft_token(
+    token_ids: list[int],
+    proposal: Any,
+    *,
+    accepted_before_rejection: int,
+    base_next_token: int,
+    cell_token_ids: set[int],
+    math_open_token_id: int,
+    minimum_match: int,
+) -> int | None:
+    """Select one draft token for a narrow cell-opening style disagreement."""
+
+    accepted = int(accepted_before_rejection)
+    if accepted < 0 or accepted >= len(proposal.tokens):
+        return None
+    previous_token = (
+        int(proposal.tokens[accepted - 1]) if accepted else int(token_ids[-1])
+    )
+    if previous_token not in cell_token_ids:
+        return None
+    exact_match = int(proposal.anchor_tokens) + accepted
+    if exact_match <= int(minimum_match):
+        return None
+    draft_next_token = int(proposal.tokens[accepted])
+    if int(math_open_token_id) not in (int(base_next_token), draft_next_token):
+        return None
+    return draft_next_token
+
+
 @dataclass
 class AdaptiveKTableSpecDecodeResult(TableSpecDecodeResult):
     adaptive_k: dict[str, Any] = field(default_factory=dict)
@@ -156,6 +199,8 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
         k_values: tuple[int, ...],
         initial_k: int,
         cache_roots: dict[int, Path],
+        cell_boundary_math_open_draft_trust: bool = False,
+        cell_boundary_min_match: int = 5,
     ) -> None:
         if initial_k not in k_values:
             raise ValueError("initial-k must be one of k-values")
@@ -164,6 +209,12 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
         self.initial_k = int(initial_k)
         self.cache_length = int(recognizer.cache_length)
         self.eos_token_id = int(recognizer.model.config.eos_token_id)
+        self.cell_boundary_math_open_draft_trust = bool(
+            cell_boundary_math_open_draft_trust
+        )
+        self.cell_boundary_min_match = int(cell_boundary_min_match)
+        if self.cell_boundary_min_match < 0:
+            raise ValueError("cell-boundary-min-match must be non-negative")
         self.runtimes = {
             value: TableSpeculativeDecodeRuntime(
                 recognizer,
@@ -207,6 +258,7 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
         flat_cache = cache.flat_tensors()
         trace: list[dict[str, Any]] = []
         transition_counts: Counter[str] = Counter()
+        cell_boundary_events: list[dict[str, Any]] = []
         per_k = {
             value: {
                 "calls": 0,
@@ -289,6 +341,20 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
                     if draft_token != target_token:
                         break
                     accepted_here += 1
+                forced_draft_token = None
+                if (
+                    self.cell_boundary_math_open_draft_trust
+                    and accepted_here < len(proposal_tokens)
+                ):
+                    forced_draft_token = cell_boundary_math_open_draft_token(
+                        token_ids,
+                        proposal,
+                        accepted_before_rejection=accepted_here,
+                        base_next_token=int(targets[accepted_here]),
+                        cell_token_ids=set(matcher.cell_tokens),
+                        math_open_token_id=int(self.recognizer.math_open_token_id),
+                        minimum_match=self.cell_boundary_min_match,
+                    )
                 fully_accepted = accepted_here == len(proposal_tokens)
                 accepted += accepted_here
                 if fully_accepted:
@@ -320,6 +386,29 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
                     }
                 )
                 policy_k = updated_k
+
+                if forced_draft_token is not None:
+                    cell_boundary_events.append(
+                        {
+                            "position": position + accepted_here,
+                            "proposal_start": int(proposal.start),
+                            "accepted_before_override": accepted_here,
+                            "matching_prefix_tokens": (
+                                int(proposal.anchor_tokens) + accepted_here
+                            ),
+                            "base_next_token": int(targets[accepted_here]),
+                            "draft_next_token": int(forced_draft_token),
+                        }
+                    )
+                    emitted = list(proposal_tokens[: accepted_here + 1])
+                    matcher.commit(
+                        proposal,
+                        accepted_draft_tokens=accepted_here + 1,
+                        emitted_tokens=emitted,
+                    )
+                    append_tokens(emitted)
+                    position += accepted_here + 1
+                    continue
 
                 emitted = list(proposal_tokens[:accepted_here])
                 emitted.append(int(targets[accepted_here]))
@@ -367,6 +456,12 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
                 "per_k": {str(key): value for key, value in per_k.items()},
                 "transitions": dict(sorted(transition_counts.items())),
                 "trace": trace,
+                "cell_boundary_math_open_draft_trust": {
+                    "enabled": self.cell_boundary_math_open_draft_trust,
+                    "minimum_match_exclusive": self.cell_boundary_min_match,
+                    "forced_tokens": len(cell_boundary_events),
+                    "events": cell_boundary_events,
+                },
             },
         )
 
@@ -434,6 +529,10 @@ def main() -> None:
         k_values=k_values,
         initial_k=args.initial_k,
         cache_roots=cache_roots,
+        cell_boundary_math_open_draft_trust=(
+            args.cell_boundary_math_open_draft_trust
+        ),
+        cell_boundary_min_match=args.cell_boundary_min_match,
     )
     setup_s = time.perf_counter() - setup_started
     print(
