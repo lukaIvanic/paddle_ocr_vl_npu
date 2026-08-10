@@ -28,6 +28,7 @@ class LocalQwen3RerankerRunner:
         compile_forward: bool = False,
         attention_impl: str = "eager",
         ffn_weight_mode: str = "dense",
+        prefill_chunk_size: int = 0,
     ):
         self.model_dir = Path(model_dir)
         self.device = device
@@ -37,6 +38,7 @@ class LocalQwen3RerankerRunner:
         self.compile_forward = compile_forward
         self.attention_impl = attention_impl
         self.ffn_weight_mode = ffn_weight_mode
+        self.prefill_chunk_size = int(prefill_chunk_size)
         if self.attention_impl not in {"eager", "prompt_flash_attention"}:
             raise ValueError(f"Unsupported attention_impl={self.attention_impl!r}")
         if self.attention_impl == "prompt_flash_attention" and self.dtype is not torch.float16:
@@ -45,6 +47,15 @@ class LocalQwen3RerankerRunner:
             raise ValueError(f"Unsupported ffn_weight_mode={self.ffn_weight_mode!r}")
         if self.ffn_weight_mode != "dense" and self.dtype is not torch.float16:
             raise ValueError("W8A8 modes require float16")
+        if self.prefill_chunk_size:
+            if self.attention_impl != "prompt_flash_attention":
+                raise ValueError("chunked prefill requires --attention-impl prompt_flash_attention")
+            if self.prefill_chunk_size % 128 != 0:
+                raise ValueError("310P-compatible prefill chunk size must be a multiple of 128")
+            if self.max_length % self.prefill_chunk_size != 0:
+                raise ValueError("--max-length must be divisible by --prefill-chunk-size")
+            if self.compile_forward:
+                raise ValueError("chunked prefill compilation is not implemented yet")
         from transformers import AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir, padding_side="left")
@@ -119,7 +130,16 @@ class LocalQwen3RerankerRunner:
 
     def logits_ids(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         if not self.compile_forward:
-            return self.model(input_ids, attention_mask)
+            hidden_states = (
+                self.model.forward_hidden_states_chunked(
+                    input_ids,
+                    attention_mask,
+                    chunk_size=self.prefill_chunk_size,
+                )
+                if self.prefill_chunk_size
+                else self.model.forward_hidden_states(input_ids, attention_mask)
+            )
+            return self.model.lm_head(hidden_states[:, -1])
         position_ids, additive_mask = self.prepared_forward_inputs(attention_mask)
         return self.model.forward_prepared(input_ids, position_ids, additive_mask)
 
@@ -140,7 +160,15 @@ class LocalQwen3RerankerRunner:
                     yes_no_weight,
                 )
             else:
-                hidden_states = self.model.forward_hidden_states(input_ids, attention_mask)
+                hidden_states = (
+                    self.model.forward_hidden_states_chunked(
+                        input_ids,
+                        attention_mask,
+                        chunk_size=self.prefill_chunk_size,
+                    )
+                    if self.prefill_chunk_size
+                    else self.model.forward_hidden_states(input_ids, attention_mask)
+                )
                 yes_no_logits = torch.nn.functional.linear(hidden_states[:, -1], yes_no_weight)
             return torch.softmax(yes_no_logits, dim=-1)[:, 1]
 
@@ -177,6 +205,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--compile-forward", action="store_true")
     parser.add_argument("--attention-impl", choices=("eager", "prompt_flash_attention"), default="eager")
     parser.add_argument("--ffn-weight-mode", choices=("dense", "w8a8", "all_w8a8"), default="dense")
+    parser.add_argument(
+        "--prefill-chunk-size",
+        type=int,
+        default=0,
+        help="Sequential PromptFA prefill chunk size; 0 disables chunking, 310P-safe values are multiples of 128",
+    )
     return parser.parse_args()
 
 
@@ -202,6 +236,7 @@ def main() -> None:
         compile_forward=args.compile_forward,
         attention_impl=args.attention_impl,
         ffn_weight_mode=args.ffn_weight_mode,
+        prefill_chunk_size=args.prefill_chunk_size,
     )
     inputs = runner.encode_pairs(args.query, args.documents, args.task)
     runner.calibrate_ffn_input_scales(inputs["input_ids"], inputs["attention_mask"])

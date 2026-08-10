@@ -223,6 +223,35 @@ def build_left_padded_causal_bool_mask(attention_mask: torch.Tensor) -> torch.Te
     return ~allowed
 
 
+def build_left_padded_causal_bool_mask_chunk(
+    attention_mask: torch.Tensor,
+    *,
+    query_start: int,
+    query_end: int,
+) -> torch.Tensor:
+    """Build one [B,1,Q,K] causal block without materializing an S-by-S mask."""
+    batch, sequence_length = attention_mask.shape
+    if not 0 <= int(query_start) < int(query_end) <= int(sequence_length):
+        raise ValueError("chunk query bounds must be inside the padded sequence")
+    device = attention_mask.device
+    query_positions = torch.arange(
+        int(query_start), int(query_end), device=device, dtype=torch.int64
+    ).view(1, 1, -1, 1)
+    key_positions = torch.arange(int(query_end), device=device, dtype=torch.int64).view(
+        1, 1, 1, -1
+    )
+    causal = query_positions >= key_positions
+    key_valid = attention_mask[:, : int(query_end)].to(dtype=torch.bool).view(
+        batch, 1, 1, int(query_end)
+    )
+    query_is_pad = ~attention_mask[:, int(query_start) : int(query_end)].to(
+        dtype=torch.bool
+    ).view(batch, 1, int(query_end) - int(query_start), 1)
+    self_only_for_pad_rows = query_positions == key_positions
+    allowed = (causal & key_valid) | (query_is_pad & self_only_for_pad_rows)
+    return ~allowed
+
+
 class LocalQwen3RerankerMLP(nn.Module):
     def __init__(self, config: LocalQwen3RerankerConfig):
         super().__init__()
@@ -255,13 +284,12 @@ class LocalQwen3RerankerAttention(nn.Module):
         self.q_norm = LocalQwen3RerankerRMSNorm(config.head_dim, config.rms_norm_eps)
         self.k_norm = LocalQwen3RerankerRMSNorm(config.head_dim, config.rms_norm_eps)
 
-    def forward_eager(
+    def project_qkv(
         self,
         hidden_states: torch.Tensor,
         cos: torch.Tensor,
         sin: torch.Tensor,
-        attention_mask: torch.Tensor,
-    ) -> torch.Tensor:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch, sequence_length, _hidden = hidden_states.shape
         query_states = linear_tokenwise(self.q_proj, hidden_states).view(
             batch, sequence_length, self.num_heads, self.head_dim
@@ -272,11 +300,21 @@ class LocalQwen3RerankerAttention(nn.Module):
         value_states = linear_tokenwise(self.v_proj, hidden_states).view(
             batch, sequence_length, self.num_key_value_heads, self.head_dim
         )
-
         query_states = self.q_norm(query_states).transpose(1, 2)
         key_states = self.k_norm(key_states).transpose(1, 2)
         value_states = value_states.transpose(1, 2)
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+        return query_states.contiguous(), key_states.contiguous(), value_states.contiguous()
+
+    def forward_eager(
+        self,
+        hidden_states: torch.Tensor,
+        cos: torch.Tensor,
+        sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        batch, sequence_length, _hidden = hidden_states.shape
+        query_states, key_states, value_states = self.project_qkv(hidden_states, cos, sin)
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
@@ -297,23 +335,7 @@ class LocalQwen3RerankerAttention(nn.Module):
         if hidden_states.device.type != "npu":
             raise RuntimeError("prompt_flash_attention requires NPU tensors")
         batch, sequence_length, _hidden = hidden_states.shape
-        query_states = linear_tokenwise(self.q_proj, hidden_states).view(
-            batch, sequence_length, self.num_heads, self.head_dim
-        )
-        key_states = linear_tokenwise(self.k_proj, hidden_states).view(
-            batch, sequence_length, self.num_key_value_heads, self.head_dim
-        )
-        value_states = linear_tokenwise(self.v_proj, hidden_states).view(
-            batch, sequence_length, self.num_key_value_heads, self.head_dim
-        )
-
-        query_states = self.q_norm(query_states).transpose(1, 2)
-        key_states = self.k_norm(key_states).transpose(1, 2)
-        value_states = value_states.transpose(1, 2)
-        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
-        query_states = query_states.contiguous()
-        key_states = key_states.contiguous()
-        value_states = value_states.contiguous()
+        query_states, key_states, value_states = self.project_qkv(hidden_states, cos, sin)
 
         attn_output = prompt_flash_attention_bnsd_310p_compatible(
             query_states,
@@ -325,6 +347,47 @@ class LocalQwen3RerankerAttention(nn.Module):
         )
         attn_output = attn_output.transpose(1, 2).reshape(batch, sequence_length, self.num_heads * self.head_dim)
         return linear_tokenwise(self.o_proj, attn_output)
+
+    def forward_prompt_flash_attention_chunk(
+        self,
+        hidden_states: torch.Tensor,
+        cos: torch.Tensor,
+        sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+        past_key_states: torch.Tensor | None,
+        past_value_states: torch.Tensor | None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        if hidden_states.device.type != "npu":
+            raise RuntimeError("prompt_flash_attention requires NPU tensors")
+        batch, query_length, _hidden = hidden_states.shape
+        query_states, current_key_states, current_value_states = self.project_qkv(
+            hidden_states, cos, sin
+        )
+        if (past_key_states is None) != (past_value_states is None):
+            raise ValueError("past key and value states must both be present or absent")
+        if past_key_states is None:
+            key_states = current_key_states
+            value_states = current_value_states
+        else:
+            key_states = torch.cat((past_key_states, current_key_states), dim=2).contiguous()
+            value_states = torch.cat((past_value_states, current_value_states), dim=2).contiguous()
+
+        attn_output = prompt_flash_attention_bnsd_310p_compatible(
+            query_states,
+            key_states,
+            value_states,
+            attention_mask=attention_mask,
+            num_heads=int(self.num_heads),
+            scale=float(self.scaling),
+        )
+        attn_output = attn_output.transpose(1, 2).reshape(
+            batch, query_length, self.num_heads * self.head_dim
+        )
+        return (
+            linear_tokenwise(self.o_proj, attn_output),
+            key_states,
+            value_states,
+        )
 
     def forward(
         self,
@@ -361,6 +424,29 @@ class LocalQwen3RerankerDecoderLayer(nn.Module):
         )
         hidden_states = hidden_states + self.mlp(self.post_attention_layernorm(hidden_states))
         return hidden_states
+
+    def forward_prompt_flash_attention_chunk(
+        self,
+        hidden_states: torch.Tensor,
+        cos: torch.Tensor,
+        sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+        past_key_states: torch.Tensor | None,
+        past_value_states: torch.Tensor | None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        attention_output, updated_key_states, updated_value_states = (
+            self.self_attn.forward_prompt_flash_attention_chunk(
+                self.input_layernorm(hidden_states),
+                cos,
+                sin,
+                attention_mask,
+                past_key_states,
+                past_value_states,
+            )
+        )
+        hidden_states = hidden_states + attention_output
+        hidden_states = hidden_states + self.mlp(self.post_attention_layernorm(hidden_states))
+        return hidden_states, updated_key_states, updated_value_states
 
 
 class LocalQwen3RerankerForCausalLM(nn.Module):
@@ -423,6 +509,62 @@ class LocalQwen3RerankerForCausalLM(nn.Module):
             else build_left_padded_causal_mask(attention_mask, self.embed_tokens.weight.dtype)
         )
         return self.forward_hidden_states_prepared(input_ids, position_ids, layer_attention_mask)
+
+    def forward_hidden_states_chunked(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        *,
+        chunk_size: int,
+    ) -> torch.Tensor:
+        """Run sequential PromptFA prefill blocks and return the final block states."""
+        if self.attention_impl != "prompt_flash_attention":
+            raise ValueError("chunked prefill requires prompt_flash_attention")
+        sequence_length = int(input_ids.shape[1])
+        chunk_size = int(chunk_size)
+        if chunk_size <= 0 or chunk_size % 128 != 0:
+            raise ValueError("310P-compatible chunk_size must be a positive multiple of 128")
+        if sequence_length % chunk_size != 0:
+            raise ValueError("padded sequence length must be divisible by chunk_size")
+
+        position_ids = attention_mask.to(dtype=torch.long).cumsum(dim=-1) - 1
+        position_ids = position_ids.clamp(min=0)
+        embedded_inputs = self.embed_tokens(input_ids)
+        cos, sin = self.rotary_emb(
+            position_ids,
+            dtype=embedded_inputs.dtype,
+            device=embedded_inputs.device,
+        )
+        key_caches: list[torch.Tensor | None] = [None] * len(self.layers)
+        value_caches: list[torch.Tensor | None] = [None] * len(self.layers)
+        final_hidden_states: torch.Tensor | None = None
+
+        for query_start in range(0, sequence_length, chunk_size):
+            query_end = query_start + chunk_size
+            hidden_states = embedded_inputs[:, query_start:query_end]
+            chunk_mask = build_left_padded_causal_bool_mask_chunk(
+                attention_mask,
+                query_start=query_start,
+                query_end=query_end,
+            )
+            for layer_index, layer in enumerate(self.layers):
+                hidden_states, updated_key_states, updated_value_states = (
+                    layer.forward_prompt_flash_attention_chunk(
+                        hidden_states,
+                        cos[:, query_start:query_end],
+                        sin[:, query_start:query_end],
+                        chunk_mask,
+                        key_caches[layer_index],
+                        value_caches[layer_index],
+                    )
+                )
+                key_caches[layer_index] = updated_key_states
+                value_caches[layer_index] = updated_value_states
+            final_hidden_states = self.norm(hidden_states)
+
+        if final_hidden_states is None:
+            raise RuntimeError("chunked prefill produced no chunks")
+        return final_hidden_states
 
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         hidden_states = self.forward_hidden_states(input_ids, attention_mask)

@@ -16,12 +16,31 @@ from local_modeling_qwen3_reranker import (  # noqa: E402
     LocalQwen3RerankerConfig,
     LocalQwen3RerankerRotaryEmbedding,
     PROMPT_FA_FULL_ATTENTION_TOKENS,
+    build_left_padded_causal_bool_mask,
+    build_left_padded_causal_bool_mask_chunk,
     linear_tokenwise,
     prompt_flash_attention_bnsd_310p_compatible,
 )
 
 
 class PromptFlashAttentionContractTest(unittest.TestCase):
+    def test_chunk_mask_matches_full_mask_slice(self) -> None:
+        attention_mask = torch.tensor(
+            [[0, 0, 1, 1, 1, 1], [0, 1, 1, 1, 1, 1]],
+            dtype=torch.long,
+        )
+        full_mask = build_left_padded_causal_bool_mask(attention_mask)
+        for query_start, query_end in ((0, 2), (2, 4), (4, 6)):
+            chunk_mask = build_left_padded_causal_bool_mask_chunk(
+                attention_mask,
+                query_start=query_start,
+                query_end=query_end,
+            )
+            torch.testing.assert_close(
+                chunk_mask,
+                full_mask[:, :, query_start:query_end, :query_end],
+            )
+
     def test_tokenwise_linear_matches_rank3_linear(self) -> None:
         torch.manual_seed(0)
         linear = torch.nn.Linear(8, 12, bias=False)

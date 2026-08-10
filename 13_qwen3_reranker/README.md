@@ -200,6 +200,30 @@ python3 13_qwen3_reranker/benchmark_vllm_shape_qwen3_reranker.py \
 generated pairs. This benchmark is offline, so it does not measure HTTP or
 server scheduler overhead.
 
+## Chunked PromptFA Prefill
+
+The eager custom runtime can process a fixed padded sequence as sequential
+PromptFA blocks while retaining native per-layer KV states. For the 310P-safe
+contract, both the chunk size and padded sequence length must be aligned to 128
+tokens:
+
+```bash
+python3 13_qwen3_reranker/run_local_qwen3_reranker.py \
+  --model-dir "$MODEL_DIR" \
+  --max-length 256 \
+  --batch-size 2 \
+  --dtype float16 \
+  --device npu:0 \
+  --attention-impl prompt_flash_attention \
+  --ffn-weight-mode dense \
+  --prefill-chunk-size 128
+```
+
+Each block uses a bool `[B,1,Q,K]` causal/padding mask and omits
+`actual_seq_lengths` and `actual_seq_lengths_kv`. GQA KV states stay compact in
+the per-layer cache and are expanded only at the PromptFA boundary. Compiled
+chunked prefill is intentionally rejected until it has its own validation.
+
 ## Weight Modes
 
 - `dense`: all model weights stay FP16.
