@@ -1151,10 +1151,15 @@ def _decode_attention(
             inner_precise=1,
             vector_core_count=32,
         )
+        batch_size = query_states.shape[0]
         attention_output = (
             attention_output.transpose(1, 2)
             .contiguous()
-            .reshape(batch, 1, attention.num_heads * attention.head_dim)
+            .reshape(
+                batch_size,
+                1,
+                attention.num_heads * attention.head_dim,
+            )
         )
         return _linear_tokenwise(attention.o_proj, attention_output)
     if optimization.attention == "mha_cache":
