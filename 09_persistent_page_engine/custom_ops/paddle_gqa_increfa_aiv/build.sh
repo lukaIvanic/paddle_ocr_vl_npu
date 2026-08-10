@@ -69,6 +69,7 @@ case "$EXPERIMENT_VARIANT" in
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0015-decoder-fixed-no-optional-inputs.patch")
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0016-decoder-soft-sync-workspace.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0017-decoder-reuse-attention-tpipe.patch")
         VENDOR_NAME="paddle_decode_kv_gqa_aiv"
         CACHE_NAMESPACE="paddle_decode_kv_gqa_aiv"
         OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode_fused_plain"

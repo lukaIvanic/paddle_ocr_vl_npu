@@ -107,11 +107,13 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         sync_call = kernel.index(
             "SyncAll(syncGlobal, syncLocal, kAivCoreCount)"
         )
-        destroy_call = kernel.index("syncPipe.Destroy();")
+        reset_call = kernel.index("fusedPipe.Reset();")
         self.assertIn(
             "PipeBarrier<PIPE_ALL>();",
-            kernel[sync_call:destroy_call],
+            kernel[sync_call:reset_call],
         )
+        self.assertNotIn("syncPipe.Destroy();", kernel)
+        self.assertIn("&fusedPipe);", kernel)
         self.assertIn("GetUserWorkspace(workspace)", kernel)
         self.assertIn("workspace + kSyncWorkspaceBytes", kernel)
         self.assertIn("FetchEventID(HardEvent::V_MTE3)", kernel)
@@ -127,6 +129,11 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("+    ifaContext.blockTable.tensor = nullptr;", fixed_abi_patch)
         self.assertIn("+    ifaContext.kvPaddingSize.desc = nullptr;", fixed_abi_patch)
         self.assertIn("0016-decoder-soft-sync-workspace.patch", build_script)
+        self.assertIn("0017-decoder-reuse-attention-tpipe.patch", build_script)
+        tpipe_reuse_patch = (
+            operator_root / "patches" / "0017-decoder-reuse-attention-tpipe.patch"
+        ).read_text(encoding="utf-8")
+        self.assertIn("+    TPipe &tPipe = *externalPipe;", tpipe_reuse_patch)
         sync_workspace_patch = (
             operator_root / "patches" / "0016-decoder-soft-sync-workspace.patch"
         ).read_text(encoding="utf-8")

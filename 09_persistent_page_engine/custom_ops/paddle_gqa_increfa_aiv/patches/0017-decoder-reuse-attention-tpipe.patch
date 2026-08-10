@@ -1,0 +1,9 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
+@@ -214 +214 @@ inline __aicore__ void incre_flash_attention_FIAS_arch32(
+-    __gm__ uint8_t *workspace, __gm__ uint8_t *tiling)
++    __gm__ uint8_t *workspace, __gm__ uint8_t *tiling, TPipe *externalPipe)
+@@ -217 +217 @@ inline __aicore__ void incre_flash_attention_FIAS_arch32(
+-    TPipe tPipe;
++    TPipe &tPipe = *externalPipe;

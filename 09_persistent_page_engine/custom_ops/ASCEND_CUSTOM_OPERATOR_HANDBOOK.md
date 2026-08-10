@@ -1374,10 +1374,13 @@ while silently leaving several tasks outside the requested mega-kernel.
 The installed CANN 9.0 SuperKernel compiler also explains the prefetch model.
 Its defaults enable early-start v2 and per-function code preloading. The
 compiler chooses a mixed AIC/AIV launch from the maximum resource demand of its
-subkernels. `feed-sync-all=1` supplies balanced synchronization when a subkernel
-uses `SyncAll` with fewer blocks than the enclosing SuperKernel. Validate this
-safe mode first. Only then compare synchronization, stream-fusion, and preload
-controls with numerical parity and same-device latency distributions.
+subkernels. `feed-sync-all=1` is the compiler's automatic mechanism for a
+subkernel whose `SyncAll` participant count differs from the enclosing launch,
+but it is not proven safe for this decoder. The generated wrapper faulted in
+both split-mode controls before the custom attention body. The current decoder
+therefore uses `feed-sync-all=0` and an explicit fixed-16 software barrier
+inside the fused cache-update/attention subkernel. Re-test automatic feeding
+only as a separately named compiler control.
 
 The acceptance gate is stronger than a successful compile:
 
@@ -1410,3 +1413,94 @@ export PYTHONPATH="$PWD/09_persistent_page_engine:${PYTHONPATH}"
 Replacing `PYTHONPATH` with only the repo directory makes GE's custom-TBE
 store fail during initialization with `ModuleNotFoundError: No module named
 'tbe'`.
+
+## 28. Debug the composed SuperKernel, not only each custom operator
+
+The first complete strict decoder graph reached one binary-fused SuperKernel:
+202 scheduled subkernels, 188 flattened inputs, 38 outputs, 18 decoder layers,
+and the full 103424-entry LM head. This is the intended mega-kernel shape. It
+retains Cube MatMulV3 and vector subkernels instead of rewriting the model as
+one all-vector program.
+
+The independent components passed progressively stronger boundaries on
+physical Ascend 910B2:
+
+- fused cache update, mask update, and 16-AIV GQA matched stock IncreFA with
+  0.0 maximum absolute attention error at positions 128 and 129;
+- K, V, and mask mutation were bit-exact on both consecutive calls;
+- the same fused operator followed by a FRACTAL_NZ MatMulV3 inside one strict
+  `early-start=1` scope was also bit-exact, including the projection output.
+
+The complete 202-subkernel graph still produced an AIV UB-out-of-bounds fault.
+Do not attribute such a fault from the outer task name or `tslot` alone. The
+runtime reports a device PC relative to the SuperKernel entry. Add that delta
+to the entry symbol's object address and inspect sorted symbols in the dumped
+`te_superkernel_*_host.o`. This mapped two differently linked failures to the
+same custom fused-GQA function offset, `+0x600`, even though one outer report
+showed `tslot=3` and another showed `tslot=7`.
+
+That exact mapping exposed a composition-specific lifecycle problem. The fused
+entry constructed one `TPipe` for cache/mask preparation and software sync,
+destroyed it, and then entered the stock attention dispatcher, which
+constructed another `TPipe`. Installed CANN 9.0 source shows two relevant
+rules:
+
+1. only one global `TPipe` can be active at a time;
+2. SuperKernel compilation suppresses the final `PIPE_ALL` barrier normally
+   emitted by `TPipe::Destroy()`.
+
+An extra barrier before `Destroy()` did not fix the full decoder. The next
+structural implementation uses one `TPipe` object for the entire fused
+subkernel, executes an explicit all-pipe barrier after software `SyncAll`, calls
+the supported `TPipe::Reset()` to release phase-one UB/event resources, and
+passes the same object into the unchanged stock all-vector attention
+implementation. Validate it again in this order: isolated fused op, fused
+op-to-MatMul boundary, conservative full decoder, default full decoder,
+multi-step correctness, and only then performance.
+
+Retained remote evidence for the pre-reset build:
+
+- `.runtime_cache/paddle_decode_kv_gqa_aiv/validation/tpipe_2f9c6f1_strict_npu6/result.json`
+- `.runtime_cache/paddle_decode_kv_gqa_aiv/validation/gqa_matmul_boundary_tpipe_2f9c6f1_early1_npu6/result.json`
+- `tmp/09_persistent_page_engine/text_decode_lab/megakernel_fused_gqa_tpipe_2f9c6f1_early0_npu6/run.log`
+
+### Device and compile preflight
+
+A device fault can poison later work on one physical NPU while `npu-smi` still
+prints `Health=OK`. Before loading an experimental full SuperKernel, run
+repeated full B1 cache-shape CPU-to-NPU transfers, an NPU vector operation, and
+an exact NPU-to-CPU comparison. Quarantine that physical device after a runtime
+fault; do not trust a tiny allocation or the health column as a recovery test.
+
+CANN helper processes invoke the literal command `python3`. On this container,
+`/usr/bin/python3` is Python 3.10 without the required package set, while the
+operator build uses Python 3.12 and NumPy 1.26. A repo-runtime-cache shim avoids
+the misleading helper traceback without changing the system interpreter:
+
+```sh
+mkdir -p .runtime_cache/python312_path/bin
+ln -s /usr/local/python3.12.13/bin/python3 \
+  .runtime_cache/python312_path/bin/python3
+export PATH="$PWD/.runtime_cache/python312_path/bin:$PATH"
+```
+
+Do not expose Python 3.12 site-packages to `/usr/bin/python3`; the NumPy ABI is
+incompatible. Also distinguish the approximately ten-second AscendC device
+compile from the current wrapper's multi-minute rebuild of protobuf, Abseil,
+and host plugins.
+
+### SSH workflow on the blue-zone gateway
+
+OpenSSH ControlMaster sockets closed immediately on the current gateway with
+`Connection closed by UNKNOWN port 65535`. Use the reliable direct form and
+amortize its roughly seven-second handshake by running one retained remote job
+per experiment, then polling its log and `rc.txt`:
+
+```sh
+ssh -S none -o ControlMaster=no -o ConnectTimeout=20 \
+  blue_zone_npu_container '<one bounded experiment>'
+```
+
+Do not launch `npu-setup` concurrently: each invocation selects a currently
+free device, so parallel setup can collide before either process allocates NPU
+memory.

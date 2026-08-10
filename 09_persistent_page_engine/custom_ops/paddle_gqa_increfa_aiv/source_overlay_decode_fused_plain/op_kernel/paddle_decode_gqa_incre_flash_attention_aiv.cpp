@@ -154,7 +154,11 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
     (void)valueOut;
     (void)maskOut;
 
-    TPipe syncPipe;
+    // Keep one TPipe object alive for the whole fused subkernel. CANN's
+    // SuperKernel build suppresses the implicit final PIPE_ALL barrier in
+    // TPipe::Destroy(), and constructing a second TPipe after Destroy can
+    // leave the stock attention buffers bound to stale UB/event state.
+    TPipe fusedPipe;
     if (GetBlockIdx() == 0) {
         PaddleDecodeAttentionPrep prep;
         prep.Init(
@@ -164,7 +168,7 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
             cachePosition,
             keyState,
             valueState,
-            &syncPipe);
+            &fusedPipe);
         prep.Process();
     }
 
@@ -179,22 +183,22 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
         reinterpret_cast<__gm__ int32_t *>(userWorkspace),
         kSyncWorkspaceElements);
     TBuf<TPosition::VECCALC> syncBuffer;
-    syncPipe.InitBuffer(syncBuffer, kSyncWorkspaceBytes);
+    fusedPipe.InitBuffer(syncBuffer, kSyncWorkspaceBytes);
     LocalTensor<int32_t> syncLocal = syncBuffer.Get<int32_t>();
     Duplicate<int32_t>(syncLocal, 0, kSyncWorkspaceElements);
     event_t eventIdVToMte3 = static_cast<event_t>(
-        syncPipe.FetchEventID(HardEvent::V_MTE3));
+        fusedPipe.FetchEventID(HardEvent::V_MTE3));
     SetFlag<HardEvent::V_MTE3>(eventIdVToMte3);
     WaitFlag<HardEvent::V_MTE3>(eventIdVToMte3);
     DataCopy(syncGlobal, syncLocal, kSyncWorkspaceElements);
     PipeBarrier<PIPE_ALL>();
     SyncAll(syncGlobal, syncLocal, kAivCoreCount);
     // SuperKernel compilation disables the final PIPE_ALL barrier normally
-    // inserted by TPipe::Destroy().  The stock attention dispatcher below
-    // initializes another TPipe, so complete this pipe's work explicitly
-    // before releasing and reusing its UB/event resources.
+    // inserted by TPipe::Destroy(). Complete every prep/sync pipeline first,
+    // then use the public Reset API to release the first phase's UB buffers
+    // and events without constructing a second global TPipe object.
     PipeBarrier<PIPE_ALL>();
-    syncPipe.Destroy();
+    fusedPipe.Reset();
 
     // The tiler reserves the prefix above in addition to the stock workspace.
     // Shift the raw pointer so the unchanged dispatcher derives the original
@@ -232,5 +236,6 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
         attentionOut,
         nullptr,
         attentionWorkspace,
-        tiling);
+        tiling,
+        &fusedPipe);
 }
