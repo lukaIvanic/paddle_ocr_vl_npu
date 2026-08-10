@@ -383,6 +383,54 @@ python3 13_qwen3_reranker/benchmark_prefix_cache_throughput.py \
   --json-out tmp/13_qwen3_reranker/prefix_fractal_nz_310p.json
 ```
 
+### Qwen3-Reranker-4B on 910B2
+
+The same local runtime and compiled prefix-cache graph work without model code
+changes for `Qwen/Qwen3-Reranker-4B`. The downloaded checkpoint is 7.6 GiB and
+uses 36 layers, hidden size 2560, intermediate size 9728, 32 query heads, and 8
+KV heads. A basic eager PromptFA smoke scored the relevant Beijing document at
+0.9980 and the unrelated document at `1.14e-5`.
+
+The representative compiled test used B4, real Q128, physical Q/KV256, FP16,
+`combined_bsnd`, and internal formats on one Ascend 910B2. The native graph
+compiled successfully on its first 71.9-second call. Its fresh-process disk
+cache was then reused successfully; each native or FRACTAL_NZ graph directory
+occupies about 17 MiB. The NZ graph was built second, so its 37.9-second first
+call benefits from shared compiler/operator state and is not a comparable cold
+compile measurement.
+
+The order-reversed warm comparison was:
+
+| Weight format | Median | Pairs/s | Executed tok/s | Served tok/s |
+|---|---:|---:|---:|---:|
+| Native | 30.636 ms | 130.57 | 16,712 | 24,546 |
+| FRACTAL_NZ | 28.104 ms | 142.33 | 18,218 | 26,758 |
+
+FRACTAL_NZ reduced latency by 8.26% and increased executed-token throughput by
+9.01%. The earlier forward-order comparison showed the same direction, with NZ
+6.95% lower latency. All 252 transformer weights reported format 29. The maximum
+yes/no-logit difference was 0.015625, the yes-score difference was 0.0004019,
+and every binary choice matched.
+
+The independent warm profiles explain the gain:
+
+| Profile component | Native | FRACTAL_NZ |
+|---|---:|---:|
+| Clean median | 30.167 ms | 27.863 ms |
+| Traced device time | 29.923 ms | 27.737 ms |
+| 252 MatMuls | 19.562 ms | 17.353 ms |
+| 36 PromptFA calls | 3.695 ms | 3.856 ms |
+| Total kernels | 730 | 730 |
+
+Native MatMul occupied 65.4% of device time, while PromptFA occupied 12.35%.
+The FFN gate/up/down projections alone used about 14.0 ms, or 46.8% of device
+time. NZ saved 2.21 ms in MatMul and 2.19 ms in the total traced forward, so the
+end-to-end improvement comes almost entirely from the larger linear weights.
+This establishes the B4/Q128 910B2 point only; other batches and lengths still
+need their own static graphs and measurements. Compact evidence is retained in
+`tmp/13_qwen3_reranker/prefix_4b_b4_c128_*_910b2.json` and
+`tmp/13_qwen3_reranker/profile_prefix_4b_b4_c128_*_910b2/`.
+
 Run the same controlled matrix on 310P before making `combined` the deployment
 default:
 

@@ -1220,7 +1220,7 @@ def prepare_reranker_linear_weight_format(
     *,
     requested: str,
 ) -> dict[str, object]:
-    """Precast the 196 timed transformer Linear weights to FRACTAL_NZ.
+    """Precast the timed transformer Linear weights to FRACTAL_NZ.
 
     The checkpoint ties ``lm_head`` to ``embed_tokens``. Keep that shared table
     in ND for embedding lookup and for the tiny yes/no projection outside the

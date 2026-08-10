@@ -1,0 +1,138 @@
+{
+  "environment": {
+    "host": "liteserver-c001-4",
+    "device": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "git_commit": "68c56a74324daf36acf52c5b43c1287db63f2884"
+  },
+  "configuration": {
+    "model_dir": "/workspace/models/Qwen3-Reranker-4B",
+    "batch_sizes": [
+      4
+    ],
+    "continuation_lengths": [
+      128
+    ],
+    "batch_sweep_continuation": 128,
+    "length_sweep_batch": 4,
+    "matrix": "axes",
+    "lanes": [
+      "prefix_promptfa_compiled"
+    ],
+    "warmups": 5,
+    "repeats": 50,
+    "prefix_block": 128,
+    "prefix_valid_tokens": 60,
+    "prefix_build_s": 0.21474188892170787,
+    "source_hash": "374c218e7141",
+    "compile_source_key_override": null,
+    "prefill_optimizations": [
+      "combined_bsnd"
+    ],
+    "internal_format_enabled": true,
+    "linear_weight_format": {
+      "requested": "fractal_nz",
+      "effective_mode": "fractal_nz",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "linear_weight_count": 252,
+      "converted_count": 252,
+      "converted_modules_sample": [
+        "layers.0.self_attn.q_proj",
+        "layers.0.self_attn.k_proj",
+        "layers.0.self_attn.v_proj",
+        "layers.0.self_attn.o_proj",
+        "layers.0.mlp.gate_proj",
+        "layers.0.mlp.up_proj",
+        "layers.0.mlp.down_proj",
+        "layers.1.self_attn.q_proj",
+        "layers.1.self_attn.k_proj",
+        "layers.1.self_attn.v_proj",
+        "layers.1.self_attn.o_proj",
+        "layers.1.mlp.gate_proj",
+        "layers.1.mlp.up_proj",
+        "layers.1.mlp.down_proj",
+        "layers.2.self_attn.q_proj",
+        "layers.2.self_attn.k_proj"
+      ],
+      "before_format_histogram": {
+        "2": 252
+      },
+      "after_format_histogram": {
+        "29": 252
+      },
+      "all_after_are_nz": true,
+      "excluded_shared_weight": {
+        "name": "embed_tokens.weight/lm_head.weight",
+        "reason": "embedding lookup and yes/no projection stay outside the compiled prefill graph"
+      },
+      "setup_s": 6.010762586956844
+    }
+  },
+  "metric_definitions": {
+    "served_input_tok_s": "valid prefix plus continuation tokens served per median call second",
+    "executed_model_tok_s": "token rows executing decoder QKV and MLP per median call second",
+    "physical_attention_q_tok_s": "physical attention Q rows, including square-padding dummies, per median call second"
+  },
+  "results": [
+    {
+      "runs": 50,
+      "mean_s": 0.02811960639897734,
+      "median_s": 0.028123327996581793,
+      "min_s": 0.02798977610655129,
+      "p90_s": 0.028196645877324046,
+      "max_s": 0.028282119892537594,
+      "pairs_s": 142.2306776952633,
+      "served_input_tok_s": 26739.3674067095,
+      "executed_model_tok_s": 18205.526744993702,
+      "physical_attention_q_tok_s": 36411.053489987404,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 37.92611126997508,
+      "additional_warmup_s": [
+        0.028806449845433235,
+        0.028081656899303198,
+        0.028100827941671014,
+        0.028010675916448236
+      ],
+      "compile_wrapper_s": 0.0007879640907049179,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_4b_910b2/prefix_promptfa_combined_bsnd_b4_q256_kv256_realq128_weightsfractal_nz_internal1_fp16_src374c218e7141",
+      "cache_was_warm": false,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "combined_bsnd",
+      "linear_weight_format": "fractal_nz",
+      "yes_no_logits": [
+        [
+          15.703125,
+          12.8515625
+        ],
+        [
+          15.703125,
+          12.8515625
+        ],
+        [
+          15.703125,
+          12.8515625
+        ],
+        [
+          15.703125,
+          12.8515625
+        ]
+      ],
+      "yes_scores": [
+        0.05460060387849808,
+        0.05460060387849808,
+        0.05460060387849808,
+        0.05460060387849808
+      ],
+      "yes_no_choices": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

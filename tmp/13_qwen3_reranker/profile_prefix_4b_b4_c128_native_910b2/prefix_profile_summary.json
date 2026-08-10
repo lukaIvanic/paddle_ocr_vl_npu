@@ -1,0 +1,899 @@
+{
+  "environment": {
+    "host": "liteserver-c001-4",
+    "device": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "git_commit": "50f14c3a7bd008c50d0c538a79e0e5df0caf0d4d"
+  },
+  "configuration": {
+    "model_dir": "/workspace/models/Qwen3-Reranker-4B",
+    "batch_size": 4,
+    "continuation_length": 128,
+    "full_physical_length": 256,
+    "prefix_block": 128,
+    "prefix_valid_tokens": 60,
+    "warmups": 5,
+    "repeats": 30,
+    "profile_iters": 3,
+    "compile_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_4b_910b2/prefix_promptfa_combined_bsnd_b4_q256_kv256_realq128_weightsnative_internal1_fp16_src374c218e7141",
+    "cache_was_warm": true,
+    "source_hash": "374c218e7141",
+    "compile_source_key": "374c218e7141",
+    "compile_source_key_override": "374c218e7141",
+    "prefill_optimization": "combined_bsnd",
+    "internal_format_enabled": true,
+    "linear_weight_format": {
+      "requested": "native",
+      "effective_mode": "native",
+      "target_format": "unchanged",
+      "target_format_code": null,
+      "linear_weight_count": 252,
+      "converted_count": 0,
+      "converted_modules_sample": [],
+      "before_format_histogram": {
+        "2": 252
+      },
+      "after_format_histogram": {
+        "2": 252
+      },
+      "all_after_are_nz": false,
+      "excluded_shared_weight": {
+        "name": "embed_tokens.weight/lm_head.weight",
+        "reason": "embedding lookup and yes/no projection stay outside the compiled prefill graph"
+      },
+      "setup_s": 0.007468997035175562
+    }
+  },
+  "setup": {
+    "prefix_build_s": 0.2463712370954454,
+    "compile_wrapper_s": 0.0007436929736286402,
+    "first_call_s": 4.832265076925978,
+    "warmup_seconds": [
+      0.03068265109322965,
+      0.03004102106206119,
+      0.03006944083608687,
+      0.030008839908987284,
+      0.0300067700445652
+    ]
+  },
+  "unprofiled": {
+    "seconds": [
+      0.02999184001237154,
+      0.030055070063099265,
+      0.03014875203371048,
+      0.03003998100757599,
+      0.030009950045496225,
+      0.030052300076931715,
+      0.030051831156015396,
+      0.030012500006705523,
+      0.030054609989747405,
+      0.030096742091700435,
+      0.03001594007946551,
+      0.030033360002562404,
+      0.030181252863258123,
+      0.030483978101983666,
+      0.0303888360504061,
+      0.030335045885294676,
+      0.030434246873483062,
+      0.030253903940320015,
+      0.030222933972254395,
+      0.030292013892903924,
+      0.030279905069619417,
+      0.03034942620433867,
+      0.030717861838638783,
+      0.033622591057792306,
+      0.030355656053870916,
+      0.030389406019821763,
+      0.03022801410406828,
+      0.0301276920363307,
+      0.03014292288571596,
+      0.030152243096381426
+    ],
+    "median_s": 0.030166747979819775,
+    "served_input_tok_s": 24928.10960276709,
+    "executed_model_tok_s": 16972.32994230951
+  },
+  "profiled": {
+    "synchronized_seconds": [
+      0.031073638005182147,
+      0.03121993108652532,
+      0.030473237857222557
+    ],
+    "median_s": 0.031073638005182147,
+    "overhead_vs_unprofiled": 1.0300625717418743,
+    "profile_context_wall_s": 6.078352985903621
+  },
+  "profile": {
+    "profile_root": "/workspace/repos/paddle_ocr_vl_npu/tmp/13_qwen3_reranker/profile_prefix_4b_b4_c128_native_910b2/liteserver-c001-4_3032422_20260810145441286_ascend_pt",
+    "top_op_types": [
+      {
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "count": 756,
+        "total_time_us": 58687.3,
+        "avg_time_us": 77.628,
+        "ratio_percent": 65.377
+      },
+      {
+        "op_type": "PromptFlashAttention",
+        "core_type": "MIX_AIC",
+        "count": 108,
+        "total_time_us": 11084.76,
+        "avg_time_us": 102.636,
+        "ratio_percent": 12.348
+      },
+      {
+        "op_type": "RmsNorm",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 219,
+        "total_time_us": 4661.18,
+        "avg_time_us": 21.283,
+        "ratio_percent": 5.192
+      },
+      {
+        "op_type": "ConcatV2D",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 327,
+        "total_time_us": 4004.56,
+        "avg_time_us": 12.246,
+        "ratio_percent": 4.461
+      },
+      {
+        "op_type": "InplaceAddRmsNorm",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 216,
+        "total_time_us": 3449.52,
+        "avg_time_us": 15.97,
+        "ratio_percent": 3.843
+      },
+      {
+        "op_type": "AutomaticBufferFusionOp",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 108,
+        "total_time_us": 2383.24,
+        "avg_time_us": 22.067,
+        "ratio_percent": 2.655
+      },
+      {
+        "op_type": "BroadcastTo",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 216,
+        "total_time_us": 1894.16,
+        "avg_time_us": 8.769,
+        "ratio_percent": 2.11
+      },
+      {
+        "op_type": "StridedSliceD",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 108,
+        "total_time_us": 1775.38,
+        "avg_time_us": 16.438,
+        "ratio_percent": 1.978
+      },
+      {
+        "op_type": "ApplyRotaryPosEmb",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 108,
+        "total_time_us": 1601.9,
+        "avg_time_us": 14.832,
+        "ratio_percent": 1.784
+      },
+      {
+        "op_type": "GatherV2",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 6,
+        "total_time_us": 96.04,
+        "avg_time_us": 16.006,
+        "ratio_percent": 0.107
+      },
+      {
+        "op_type": "Cast",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 12,
+        "total_time_us": 69.7,
+        "avg_time_us": 5.808,
+        "ratio_percent": 0.078
+      },
+      {
+        "op_type": "Cos",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 3,
+        "total_time_us": 30.32,
+        "avg_time_us": 10.106,
+        "ratio_percent": 0.034
+      },
+      {
+        "op_type": "Sin",
+        "core_type": "AI_VECTOR_CORE",
+        "count": 3,
+        "total_time_us": 29.68,
+        "avg_time_us": 9.893,
+        "ratio_percent": 0.033
+      }
+    ],
+    "top_kernels": [
+      {
+        "name": "MatMul_34",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 413.06,
+        "count": 3,
+        "avg_time_us": 137.68666666666667
+      },
+      {
+        "name": "MatMul_104",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 412.84000000000003,
+        "count": 3,
+        "avg_time_us": 137.61333333333334
+      },
+      {
+        "name": "MatMul_139",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 411.76,
+        "count": 3,
+        "avg_time_us": 137.25333333333333
+      },
+      {
+        "name": "MatMul_69",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 410.93999999999994,
+        "count": 3,
+        "avg_time_us": 136.98
+      },
+      {
+        "name": "MatMul_76",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 410.24,
+        "count": 3,
+        "avg_time_us": 136.74666666666667
+      },
+      {
+        "name": "MatMul_118",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 410.0400000000001,
+        "count": 3,
+        "avg_time_us": 136.68000000000004
+      },
+      {
+        "name": "MatMul_209",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 409.94,
+        "count": 3,
+        "avg_time_us": 136.64666666666668
+      },
+      {
+        "name": "MatMul_111",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 409.91999999999996,
+        "count": 3,
+        "avg_time_us": 136.64
+      },
+      {
+        "name": "MatMul_202",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 409.19999999999993,
+        "count": 3,
+        "avg_time_us": 136.39999999999998
+      },
+      {
+        "name": "MatMul_160",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 408.82,
+        "count": 3,
+        "avg_time_us": 136.27333333333334
+      },
+      {
+        "name": "MatMul_62",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 408.70000000000005,
+        "count": 3,
+        "avg_time_us": 136.23333333333335
+      },
+      {
+        "name": "MatMul_55",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 408.65999999999997,
+        "count": 3,
+        "avg_time_us": 136.22
+      },
+      {
+        "name": "MatMul_174",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 408.48,
+        "count": 3,
+        "avg_time_us": 136.16
+      },
+      {
+        "name": "MatMul_132",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 408.38,
+        "count": 3,
+        "avg_time_us": 136.12666666666667
+      },
+      {
+        "name": "MatMul_167",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 408.36,
+        "count": 3,
+        "avg_time_us": 136.12
+      },
+      {
+        "name": "MatMul_223",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 407.88,
+        "count": 3,
+        "avg_time_us": 135.96
+      },
+      {
+        "name": "MatMul_230",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 407.08000000000004,
+        "count": 3,
+        "avg_time_us": 135.69333333333336
+      },
+      {
+        "name": "MatMul_27",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 406.36,
+        "count": 3,
+        "avg_time_us": 135.45333333333335
+      },
+      {
+        "name": "MatMul_188",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 406.29999999999995,
+        "count": 3,
+        "avg_time_us": 135.4333333333333
+      },
+      {
+        "name": "MatMul_90",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 405.73999999999995,
+        "count": 3,
+        "avg_time_us": 135.24666666666664
+      },
+      {
+        "name": "MatMul_41",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 404.76,
+        "count": 3,
+        "avg_time_us": 134.92
+      },
+      {
+        "name": "MatMul_83",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 404.4599999999999,
+        "count": 3,
+        "avg_time_us": 134.81999999999996
+      },
+      {
+        "name": "MatMul_153",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 403.2,
+        "count": 3,
+        "avg_time_us": 134.4
+      },
+      {
+        "name": "MatMul_216",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 402.86,
+        "count": 3,
+        "avg_time_us": 134.28666666666666
+      },
+      {
+        "name": "MatMul_181",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 402.28,
+        "count": 3,
+        "avg_time_us": 134.09333333333333
+      },
+      {
+        "name": "MatMul_125",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 402.2199999999999,
+        "count": 3,
+        "avg_time_us": 134.0733333333333
+      },
+      {
+        "name": "MatMul_48",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 400.1,
+        "count": 3,
+        "avg_time_us": 133.36666666666667
+      },
+      {
+        "name": "MatMul_6",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 399.76,
+        "count": 3,
+        "avg_time_us": 133.25333333333333
+      },
+      {
+        "name": "MatMul_251",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 398.46,
+        "count": 3,
+        "avg_time_us": 132.82
+      },
+      {
+        "name": "MatMul_146",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 398.24,
+        "count": 3,
+        "avg_time_us": 132.74666666666667
+      },
+      {
+        "name": "MatMul_13",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 397.62,
+        "count": 3,
+        "avg_time_us": 132.54
+      },
+      {
+        "name": "MatMul_195",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 397.6,
+        "count": 3,
+        "avg_time_us": 132.53333333333333
+      },
+      {
+        "name": "MatMul_97",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 397.22,
+        "count": 3,
+        "avg_time_us": 132.40666666666667
+      },
+      {
+        "name": "MatMul_244",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 397.19999999999993,
+        "count": 3,
+        "avg_time_us": 132.39999999999998
+      },
+      {
+        "name": "MatMul_102",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 395.26,
+        "count": 3,
+        "avg_time_us": 131.75333333333333
+      },
+      {
+        "name": "MatMul_53",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 394.52000000000004,
+        "count": 3,
+        "avg_time_us": 131.5066666666667
+      },
+      {
+        "name": "MatMul_20",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 390.76,
+        "count": 3,
+        "avg_time_us": 130.25333333333333
+      },
+      {
+        "name": "MatMul_237",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,9728;2560,9728\"",
+        "output_shapes": "\"512,2560\"",
+        "module_guess": "mlp.down",
+        "total_time_us": 388.28,
+        "count": 3,
+        "avg_time_us": 129.42666666666665
+      },
+      {
+        "name": "MatMul_172",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 388.26,
+        "count": 3,
+        "avg_time_us": 129.42
+      },
+      {
+        "name": "MatMul_158",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 387.82,
+        "count": 3,
+        "avg_time_us": 129.27333333333334
+      },
+      {
+        "name": "MatMul_235",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 386.78,
+        "count": 3,
+        "avg_time_us": 128.92666666666665
+      },
+      {
+        "name": "MatMul_123",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 385.58000000000004,
+        "count": 3,
+        "avg_time_us": 128.52666666666667
+      },
+      {
+        "name": "MatMul_165",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 385.26,
+        "count": 3,
+        "avg_time_us": 128.42
+      },
+      {
+        "name": "MatMul_228",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 384.9,
+        "count": 3,
+        "avg_time_us": 128.29999999999998
+      },
+      {
+        "name": "MatMul_200",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 384.86,
+        "count": 3,
+        "avg_time_us": 128.28666666666666
+      },
+      {
+        "name": "MatMul_144",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 384.78000000000003,
+        "count": 3,
+        "avg_time_us": 128.26000000000002
+      },
+      {
+        "name": "MatMul_81",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 384.65999999999997,
+        "count": 3,
+        "avg_time_us": 128.22
+      },
+      {
+        "name": "MatMul_32",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 384.55999999999995,
+        "count": 3,
+        "avg_time_us": 128.18666666666664
+      },
+      {
+        "name": "MatMul_60",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 384.44,
+        "count": 3,
+        "avg_time_us": 128.14666666666668
+      },
+      {
+        "name": "MatMul_109",
+        "op_type": "MatMul",
+        "core_type": "AI_CORE",
+        "input_shapes": "\"512,2560;9728,2560\"",
+        "output_shapes": "\"512,9728\"",
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 384.43999999999994,
+        "count": 3,
+        "avg_time_us": 128.14666666666665
+      }
+    ],
+    "core_type_summary": [
+      {
+        "core_type": "AI_CORE",
+        "total_time_us": 58687.29999999997,
+        "count": 756
+      },
+      {
+        "core_type": "AI_VECTOR_CORE",
+        "total_time_us": 19995.680000000044,
+        "count": 1326
+      },
+      {
+        "core_type": "MIX_AIC",
+        "total_time_us": 11084.76,
+        "count": 108
+      }
+    ],
+    "module_summary": [
+      {
+        "module_guess": "mlp.gate_or_up",
+        "total_time_us": 27476.039999999994,
+        "count": 216
+      },
+      {
+        "module_guess": "other",
+        "total_time_us": 25588.72000000005,
+        "count": 660
+      },
+      {
+        "module_guess": "mlp.down",
+        "total_time_us": 14567.719999999998,
+        "count": 108
+      },
+      {
+        "module_guess": "attn.q_proj",
+        "total_time_us": 6515.119999999999,
+        "count": 108
+      },
+      {
+        "module_guess": "concat",
+        "total_time_us": 4004.5599999999986,
+        "count": 327
+      },
+      {
+        "module_guess": "attn.kv_proj",
+        "total_time_us": 3751.0600000000013,
+        "count": 216
+      },
+      {
+        "module_guess": "elementwise",
+        "total_time_us": 3449.5200000000023,
+        "count": 216
+      },
+      {
+        "module_guess": "elementwise_fusion",
+        "total_time_us": 2383.2399999999984,
+        "count": 108
+      },
+      {
+        "module_guess": "cast",
+        "total_time_us": 1963.86,
+        "count": 228
+      },
+      {
+        "module_guess": "embed",
+        "total_time_us": 67.9,
+        "count": 3
+      }
+    ],
+    "top_operators": [
+      {
+        "name": "qwen3_reranker.prefix_cached_compiled_forward",
+        "module_guess": "other",
+        "total_time_us": 0.0,
+        "count": 3
+      },
+      {
+        "name": "cache_compiler inference",
+        "module_guess": "other",
+        "total_time_us": 0.0,
+        "count": 3
+      },
+      {
+        "name": "TorchNpuGraphBase::Run",
+        "module_guess": "other",
+        "total_time_us": 0.0,
+        "count": 3
+      },
+      {
+        "name": "AssembleInputs",
+        "module_guess": "other",
+        "total_time_us": 0.0,
+        "count": 3
+      },
+      {
+        "name": "AssembleOutputs",
+        "module_guess": "other",
+        "total_time_us": 0.0,
+        "count": 3
+      },
+      {
+        "name": "ExecuteGraph",
+        "module_guess": "other",
+        "total_time_us": 0.0,
+        "count": 3
+      },
+      {
+        "name": "RefreshAtTensorFromGeTensor",
+        "module_guess": "other",
+        "total_time_us": 0.0,
+        "count": 3
+      },
+      {
+        "name": "aten::empty",
+        "module_guess": "other",
+        "total_time_us": 0.0,
+        "count": 3
+      },
+      {
+        "name": "empty_tensor",
+        "module_guess": "other",
+        "total_time_us": 0.0,
+        "count": 3
+      },
+      {
+        "name": "aten::set_",
+        "module_guess": "other",
+        "total_time_us": 0.0,
+        "count": 3
+      }
+    ]
+  }
+}
