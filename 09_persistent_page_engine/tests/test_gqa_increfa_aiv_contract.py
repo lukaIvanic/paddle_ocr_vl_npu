@@ -102,6 +102,12 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertNotIn('Input("key_cache_ref")', op_def)
         self.assertIn("PADDLE_DECODE_GQA_PLAIN_KV", kernel)
         self.assertIn("if (GetBlockIdx() == 0)", kernel)
+        idle_guard = "if (GetBlockIdx() >= kAivCoreCount)"
+        self.assertIn(idle_guard, kernel)
+        self.assertLess(
+            kernel.index(idle_guard),
+            kernel.index("TPipe fusedPipe;"),
+        )
         self.assertNotIn("SyncAll();", kernel)
         self.assertIn("SyncAll(syncGlobal, syncLocal, kAivCoreCount)", kernel)
         sync_call = kernel.index(

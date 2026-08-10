@@ -154,6 +154,17 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
     (void)valueOut;
     (void)maskOut;
 
+    // Binary fusion launches every subfunction with the enclosing
+    // SuperKernel's blockDim. The full Paddle decoder uses blockDim=24, while
+    // this specialized attention tiling has exactly 16 AIV workers. Never let
+    // an enclosing idle worker allocate UB, enter the 16-participant software
+    // barrier, or execute attention with a block index outside its tiling.
+    // Returning here exits this subfunction; the generated SuperKernel wrapper
+    // still performs its normal inter-operator handoff.
+    if (GetBlockIdx() >= kAivCoreCount) {
+        return;
+    }
+
     // Keep one TPipe object alive for the whole fused subkernel. CANN's
     // SuperKernel build suppresses the implicit final PIPE_ALL barrier in
     // TPipe::Destroy(), and constructing a second TPipe after Destroy can

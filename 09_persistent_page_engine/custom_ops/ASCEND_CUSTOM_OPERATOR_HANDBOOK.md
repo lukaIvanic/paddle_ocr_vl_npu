@@ -1481,6 +1481,33 @@ isolate the attention ABI. A one-layer real-model strict scope is the second
 control: success at one layer and failure only after repetition points away
 from the attention math and toward flattened argument/tiling composition.
 
+The one-layer control failed before a sync-only package was necessary. Its
+runtime error log reported `blockDim=24`, while the fused GQA tiling and
+software barrier use exactly 16 AIV workers. The failing PC mapped to `+0x600`
+inside the split-specific GQA function, exactly as in the 18-layer decoder.
+The earlier isolated and GQA-to-MatMul controls did not expose this mismatch
+because their enclosing scopes used no more than the attention worker count.
+
+This is a critical SuperKernel rule: every fused subfunction sees the enclosing
+launch geometry. A custom subfunction specialized for fewer workers must reject
+idle `GetBlockIdx()` values before it creates a `TPipe`, allocates UB, calls a
+fixed-participant `SyncAll`, or indexes tiling data. Returning from the
+subfunction still returns control to the generated SuperKernel wrapper and its
+inter-operator handoff. The fused GQA therefore guards
+`GetBlockIdx() >= 16` before all local state. Huawei's `SyncAll` contract also
+states that `usedCores` cannot exceed the operator's logical launch dimension;
+mixed AIC/AIV launches can expose a larger AIV index range than an AIV-only
+launch.
+
+Retained one-layer evidence:
+
+- `tmp/09_persistent_page_engine/text_decode_lab/megakernel_fused_gqa_onepipe_20bc8e0_depth1_ed099ad_npu1/run.log`
+- `/root/ascend/log/debug/plog/plog-2703216_20260810095829892.log`
+- `extra-info/data-dump/0/te_superkernel_2d66804868f483fa2d4dbd7c8bd50ec1a577c4e1e145e199f61343a433f99c1a_host.o`
+
+The test ran on physical Ascend 910B2 NPU 1 after eight exact full-cache-shape
+preflight iterations. Quarantine NPU 1 after the resulting device fault.
+
 Retained remote evidence for the pre-reset build:
 
 - `.runtime_cache/paddle_decode_kv_gqa_aiv/validation/tpipe_2f9c6f1_strict_npu6/result.json`
