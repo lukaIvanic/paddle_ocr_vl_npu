@@ -192,6 +192,18 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             "paddle_decode_gqa_attention_mixed24",
         )
 
+        split1 = text_decode.resolve_decode_optimization(
+            "paddle_decoder_superkernel_b1_simple_gqa_mixed24_split1"
+        )
+        self.assertTrue(split1.super_kernel_scope)
+        self.assertTrue(split1.ascendc_token_embedding)
+        self.assertTrue(split1.ascendc_qkv_split)
+        self.assertTrue(split1.ascendc_rope_lookup)
+        self.assertTrue(split1.ascendc_swiglu)
+        self.assertTrue(split1.ascendc_decode_gqa_mixed24)
+        self.assertIn("preload-code=none", split1.super_kernel_options)
+        self.assertIn("split-mode=1", split1.super_kernel_options)
+
     def test_fused_decode_overlay_has_compact_balanced_plain_kv_abi(self) -> None:
         operator_root = (
             EXPERIMENT_ROOT

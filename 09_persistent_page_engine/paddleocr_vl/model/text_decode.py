@@ -611,6 +611,25 @@ DECODE_OPTIMIZATION_PRESETS.update(
                 "preload-code=per-func:early-start=0:split-mode=4"
             ),
         ),
+        "paddle_decoder_superkernel_b1_simple_gqa_mixed24_split1": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
+            name="paddle_decoder_superkernel_b1_simple_gqa_mixed24_split1",
+            rotary_factors="lookup",
+            ascendc_token_embedding=True,
+            ascendc_qkv_split=True,
+            ascendc_rope_lookup=True,
+            ascendc_position_add=False,
+            ascendc_swiglu=True,
+            ascendc_decode_gqa=False,
+            ascendc_decode_gqa_mixed24=True,
+            # Remove optional SuperKernel code splitting and preloading while
+            # diagnosing the composed GQA ABI. This changes compiler layout,
+            # not decoder math or operator identities.
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=none:early-start=0:split-mode=1"
+            ),
+        ),
         "paddle_decoder_megakernel_b1_packed_qkv_rope_gqa_mixed24": replace(
             _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
             name="paddle_decoder_megakernel_b1_packed_qkv_rope_gqa_mixed24",
