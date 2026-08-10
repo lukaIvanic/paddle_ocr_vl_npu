@@ -83,6 +83,15 @@ if should_run op_4b; then
     --json-out "$OUTPUT_ROOT/op_4b/result.json"
 fi
 
+if should_run op_4b_doc_layout; then
+  run_phase op_4b_doc_layout "$PYTHON_BIN" "$REPO/13_qwen3_reranker/probe_310p_w8a8_ops.py" \
+    --model-dir "$MODEL_4B_DIR" --device "$DEVICE" --tokens 512 \
+    --warmups "$WARMUPS" --repeats "$REPEATS" \
+    --weight-format fractal_nz_inference_doc \
+    --compile-cache-dir "$OUTPUT_ROOT/cache/op_4b_doc_layout" \
+    --json-out "$OUTPUT_ROOT/op_4b_doc_layout/result.json"
+fi
+
 run_model_benchmark() {
   local model_key="$1"
   local model_dir="$2"

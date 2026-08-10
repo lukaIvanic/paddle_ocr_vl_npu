@@ -40,6 +40,37 @@ class QuantGateUp(nn.Module):
         return self.gate_up(hidden_states)
 
 
+class QuantizeOnly(nn.Module):
+    def __init__(self, input_scale: torch.Tensor):
+        super().__init__()
+        self.register_buffer("input_scale", input_scale.reshape(1).to(torch.float32))
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        import torch_npu
+
+        return torch_npu.npu_quantize(
+            hidden_states,
+            scales=self.input_scale,
+            zero_points=None,
+            dtype=torch.qint8,
+            axis=0,
+            div_mode=True,
+        )
+
+
+class PrequantizedGateUp(nn.Module):
+    def __init__(self, gate_up: W8A8GateUp):
+        super().__init__()
+        self.gate_up = gate_up
+
+    def forward(self, hidden_states_q: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        input_scale = self.gate_up.gate_proj.static_input_scale.reshape(())
+        return (
+            self.gate_up.gate_proj.quant_matmul_from_quantized(hidden_states_q, input_scale),
+            self.gate_up.up_proj.quant_matmul_from_quantized(hidden_states_q, input_scale),
+        )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-dir", type=Path, required=True)
@@ -49,6 +80,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--compile-cache-dir", type=Path, required=True)
     parser.add_argument("--json-out", type=Path, required=True)
+    parser.add_argument(
+        "--weight-format",
+        choices=("native", "fractal_nz", "fractal_nz_inference_doc"),
+        default="fractal_nz",
+    )
     return parser.parse_args()
 
 
@@ -121,7 +157,7 @@ def main() -> None:
     restore_w8a8_scale_dtypes(quant)
     for linear in (dense.gate, dense.up):
         linear.weight.data = torch_npu.npu_format_cast(linear.weight.data, FRACTAL_NZ)
-    quant_format = prepare_w8a8_weight_format(quant, requested="fractal_nz")
+    quant_format = prepare_w8a8_weight_format(quant, requested=args.weight_format)
 
     hidden_states = torch.randn(
         args.tokens,
@@ -132,6 +168,10 @@ def main() -> None:
     input_scale = hidden_states.abs().amax().to(torch.float32).reshape(1) / 127.0
     quant.gate_up.gate_proj.set_static_input_scale(input_scale)
     quant.gate_up.up_proj.set_static_input_scale(input_scale)
+    quantize_only = QuantizeOnly(input_scale).to(device=device).eval()
+    prequantized_gate_up = PrequantizedGateUp(quant.gate_up).to(device=device).eval()
+    with torch.inference_mode():
+        hidden_states_q = quantize_only(hidden_states)
     synchronize()
 
     args.compile_cache_dir.mkdir(parents=True, exist_ok=True)
@@ -153,6 +193,22 @@ def main() -> None:
         ge_cache=True,
         fullgraph=True,
     )
+    quantize_compiled = cache_compile(
+        quantize_only.forward,
+        config=compiler_config,
+        dynamic=False,
+        cache_dir=str(args.compile_cache_dir / "quantize_only"),
+        ge_cache=True,
+        fullgraph=True,
+    )
+    prequantized_compiled = cache_compile(
+        prequantized_gate_up.forward,
+        config=compiler_config,
+        dynamic=False,
+        cache_dir=str(args.compile_cache_dir / "prequantized_gate_up"),
+        ge_cache=True,
+        fullgraph=True,
+    )
 
     dense_timing, dense_output = benchmark(
         lambda: dense_compiled(hidden_states),
@@ -161,6 +217,16 @@ def main() -> None:
     )
     quant_timing, quant_output = benchmark(
         lambda: quant_compiled(hidden_states),
+        warmups=args.warmups,
+        repeats=args.repeats,
+    )
+    quantize_timing, _quantized_output = benchmark(
+        lambda: quantize_compiled(hidden_states),
+        warmups=args.warmups,
+        repeats=args.repeats,
+    )
+    prequantized_timing, prequantized_output = benchmark(
+        lambda: prequantized_compiled(hidden_states_q),
         warmups=args.warmups,
         repeats=args.repeats,
     )
@@ -182,12 +248,23 @@ def main() -> None:
         "quant_weight_format": quant_format,
         "dense": dense_timing,
         "w8a8": quant_timing,
+        "quantize_only": quantize_timing,
+        "prequantized_gate_up": prequantized_timing,
+        "estimated_quantize_plus_prequantized_s": (
+            quantize_timing["median_s"] + prequantized_timing["median_s"]
+        ),
         "speedup": dense_timing["median_s"] / quant_timing["median_s"],
         "output_diff": {
             "gate_max_abs": float(gate_diff.max().cpu()),
             "gate_mean_abs": float(gate_diff.mean().cpu()),
             "up_max_abs": float(up_diff.max().cpu()),
             "up_mean_abs": float(up_diff.mean().cpu()),
+            "prequantized_gate_max_abs": float(
+                (prequantized_output[0].float() - quant_output[0].float()).abs().max().cpu()
+            ),
+            "prequantized_up_max_abs": float(
+                (prequantized_output[1].float() - quant_output[1].float()).abs().max().cpu()
+            ),
         },
     }
     args.json_out.parent.mkdir(parents=True, exist_ok=True)

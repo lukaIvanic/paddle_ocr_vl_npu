@@ -226,13 +226,13 @@ def restore_w8a8_scale_dtypes(module: nn.Module) -> None:
 
 
 def prepare_w8a8_weight_format(module: nn.Module, *, requested: str) -> dict[str, object]:
-    """Prepare INT8 weights once in the logical [K, N] layout used by QuantMatmul.
+    """Prepare INT8 weights once for the product-specific QuantMatmul contract.
 
     Atlas 310P and training-series devices require a different ordering of the
     format cast and logical transpose. Both branches preserve the public
     QuantMatmul [M, K] x [K, N] contract.
     """
-    if requested not in {"native", "fractal_nz"}:
+    if requested not in {"native", "fractal_nz", "fractal_nz_inference_doc"}:
         raise ValueError(f"unsupported W8A8 weight format {requested!r}")
     linears = list(iter_w8a8_linears(module))
     if any(linear.weight_q.device.type != "npu" for linear in linears):
@@ -246,7 +246,17 @@ def prepare_w8a8_weight_format(module: nn.Module, *, requested: str) -> dict[str
     for linear in linears:
         if linear.weight_is_matmul_ready:
             continue
-        if requested == "fractal_nz":
+        if requested == "fractal_nz_inference_doc":
+            if not is_310p:
+                raise ValueError("fractal_nz_inference_doc is only for Atlas inference products")
+            # The Atlas inference-product QuantMatmul contract consumes the
+            # [N,K] transposed weight after it has been converted to NZ. Do
+            # not transpose the formatted tensor back to a [K,N] view.
+            prepared = torch_npu.npu_format_cast(
+                linear.weight_q.contiguous(),
+                FRACTAL_NZ,
+            )
+        elif requested == "fractal_nz":
             if is_310p:
                 prepared = torch_npu.npu_format_cast(linear.weight_q, FRACTAL_NZ).transpose(0, 1)
             else:
@@ -263,10 +273,26 @@ def prepare_w8a8_weight_format(module: nn.Module, *, requested: str) -> dict[str
         "requested": requested,
         "effective_mode": requested,
         "device_name": device_name,
-        "device_layout_branch": "310p_format_then_transpose" if is_310p else "a2_transpose_then_format",
+        "device_layout_branch": (
+            "native_logical_k_n"
+            if requested == "native"
+            else "310p_documented_transposed_weight_then_format"
+            if requested == "fractal_nz_inference_doc"
+            else "310p_format_then_transpose"
+            if is_310p
+            else "a2_logical_k_n_then_format"
+        ),
         "quant_linear_count": len(linears),
         "before_format_histogram": {str(code): before.count(code) for code in sorted(set(before))},
         "after_format_histogram": {str(code): after.count(code) for code in sorted(set(after))},
+        "prepared_weight_metadata": [
+            {
+                "shape": list(linear.weight_q.shape),
+                "stride": list(linear.weight_q.stride()),
+                "contiguous": bool(linear.weight_q.is_contiguous()),
+            }
+            for linear in linears
+        ],
         "all_matmul_ready": all(linear.weight_is_matmul_ready for linear in linears),
     }
 
