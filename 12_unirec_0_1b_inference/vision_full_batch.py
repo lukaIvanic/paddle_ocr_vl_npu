@@ -187,7 +187,10 @@ class _MaskedFullVisionEncoder(nn.Module):
             if stage.downsample is not None:
                 x = stage.downsample(x)[0]
                 x = self._tokens_to_chw(x, stage_masks[stage_index + 1])
-        tokens = x.flatten(2).transpose(1, 2)
+        # The stock stage-3 path returns a contiguous BTC tensor. Preserve
+        # that contract explicitly: GE otherwise sees the transposed view's
+        # token stride and can infer T, rather than C, as the linear K axis.
+        tokens = x.flatten(2).transpose(1, 2).contiguous()
         tokens = self.projection(tokens)
         return tokens * mask32.flatten(2).transpose(1, 2)
 
