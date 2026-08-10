@@ -31,22 +31,20 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             / "op_kernel"
             / "paddle_decode_kv_scatter_query_v4.cpp"
         ).read_text(encoding="utf-8")
+        mixed_kernel = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_decode_kv_scatter_query"
+            / "op_kernel"
+            / "paddle_decode_kv_scatter_query_mixed24.cpp"
+        ).read_text(encoding="utf-8")
 
-        v4_start = kernel.index(
-            'void paddle_decode_kv_scatter_query_v4('
-        )
-        mixed_start = kernel.index(
-            'void paddle_decode_kv_scatter_query_mixed24('
-        )
-        v4_kernel = kernel[v4_start:mixed_start]
-        mixed_kernel = kernel[mixed_start:]
-
-        self.assertIn("GetBlockIdx() == 0", v4_kernel)
+        self.assertIn("GetBlockIdx() == 0", kernel)
         self.assertIn(
             "kernel.Process();\n        PipeBarrier<PIPE_ALL>();",
-            v4_kernel,
+            kernel,
         )
-        self.assertNotIn("SyncAll<true>();", v4_kernel)
+        self.assertNotIn("SyncAll<true>();", kernel)
         self.assertIn("KERNEL_TYPE_MIX_AIC_1_1", mixed_kernel)
         self.assertIn("if (g_coreType == AIC)", mixed_kernel)
         self.assertIn("GetBlockIdx() == 0", mixed_kernel)
