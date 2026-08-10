@@ -234,6 +234,16 @@ def main() -> int:
         )
         rope_diagnostics = None
         if actual_qkv is not None:
+            actual_query = actual_qkv[..., :2048].view(1, 16, 1, 128)
+            expected_cosine_term = query_raw.view(1, 16, 1, 128) * cosine
+            expected_rotated = torch.cat(
+                (
+                    -query_raw.view(1, 16, 1, 128)[..., 64:],
+                    query_raw.view(1, 16, 1, 128)[..., :64],
+                ),
+                dim=-1,
+            )
+            expected_sine_term = expected_rotated * sine
             candidate_diffs: dict[str, float] = {}
             for candidate_position in (0, 7, position, position + 7):
                 candidate_cosine = factor_lut[0, candidate_position].view(1, 1, 1, 128)
@@ -259,8 +269,17 @@ def main() -> int:
                 "key_row_vs_unrotated_max_abs": float(
                     (actual_key_row.float() - key_raw.view(1, 2, 1, 128).float()).abs().max().item()
                 ),
+                "query_vs_cosine_term_max_abs": float(
+                    (actual_query.float() - expected_cosine_term.float()).abs().max().item()
+                ),
+                "query_vs_sine_term_max_abs": float(
+                    (actual_query.float() - expected_sine_term.float()).abs().max().item()
+                ),
                 "qkv_candidate_position_max_abs": candidate_diffs,
                 "actual_qkv_prefix": actual_qkv.flatten()[:8].float().cpu().tolist(),
+                "actual_key_prefix": actual_key_row.flatten()[:8].float().cpu().tolist(),
+                "cosine_term_prefix": expected_cosine_term.flatten()[:8].float().cpu().tolist(),
+                "sine_term_prefix": expected_sine_term.flatten()[:8].float().cpu().tolist(),
                 "unrotated_qkv_prefix": base_qkv.flatten()[:8].float().cpu().tolist(),
                 "expected_qkv_prefix": expected_qkv.flatten()[:8].float().cpu().tolist(),
             }
