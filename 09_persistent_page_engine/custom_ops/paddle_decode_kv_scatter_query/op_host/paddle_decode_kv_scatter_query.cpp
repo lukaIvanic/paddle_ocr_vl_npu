@@ -45,28 +45,35 @@ static ge::graphStatus InferShape(gert::InferShapeContext* context)
     if (context == nullptr || context->GetInputShape(0) == nullptr ||
         context->GetInputShape(1) == nullptr || context->GetInputShape(2) == nullptr ||
         context->GetOutputShape(0) == nullptr || context->GetOutputShape(1) == nullptr ||
-        context->GetOutputShape(2) == nullptr) {
+        context->GetOutputShape(2) == nullptr || context->GetOutputShape(3) == nullptr) {
         return GRAPH_FAILED;
     }
     *context->GetOutputShape(0) = *context->GetInputShape(0);
-    *context->GetOutputShape(1) = *context->GetInputShape(1);
-    *context->GetOutputShape(2) = *context->GetInputShape(2);
+    auto* attentionMask = context->GetOutputShape(1);
+    attentionMask->SetDimNum(4);
+    attentionMask->SetDim(0, 1);
+    attentionMask->SetDim(1, 1);
+    attentionMask->SetDim(2, 1);
+    attentionMask->SetDim(3, 1024);
+    *context->GetOutputShape(2) = *context->GetInputShape(1);
+    *context->GetOutputShape(3) = *context->GetInputShape(2);
     return GRAPH_SUCCESS;
 }
 
 static ge::graphStatus InferDataType(gert::InferDataTypeContext* context)
 {
     context->SetOutputDataType(0, context->GetInputDataType(0));
-    context->SetOutputDataType(1, context->GetInputDataType(1));
-    context->SetOutputDataType(2, context->GetInputDataType(2));
+    context->SetOutputDataType(1, ge::DT_BOOL);
+    context->SetOutputDataType(2, context->GetInputDataType(1));
+    context->SetOutputDataType(3, context->GetInputDataType(2));
     return GRAPH_SUCCESS;
 }
 }
 
 namespace ops {
-class PaddleDecodeKvScatterQueryV2 : public OpDef {
+class PaddleDecodeKvScatterQueryV3 : public OpDef {
 public:
-    explicit PaddleDecodeKvScatterQueryV2(const char* name) : OpDef(name)
+    explicit PaddleDecodeKvScatterQueryV3(const char* name) : OpDef(name)
     {
         this->Input("query").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
@@ -82,6 +89,8 @@ public:
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
         this->Output("ordered_query").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
+        this->Output("attention_mask").ParamType(REQUIRED).DataType({ge::DT_BOOL})
+            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
         this->Output("key_cache").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
         this->Output("value_cache").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
@@ -92,5 +101,5 @@ public:
     }
 };
 
-OP_ADD(PaddleDecodeKvScatterQueryV2);
+OP_ADD(PaddleDecodeKvScatterQueryV3);
 }

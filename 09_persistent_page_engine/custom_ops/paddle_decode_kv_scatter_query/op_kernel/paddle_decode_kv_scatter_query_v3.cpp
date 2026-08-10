@@ -21,6 +21,7 @@ public:
         GM_ADDR keyState,
         GM_ADDR valueState,
         GM_ADDR orderedQuery,
+        GM_ADDR attentionMask,
         TPipe* pipe)
     {
         queryGm.SetGlobalBuffer(
@@ -39,12 +40,15 @@ public:
             reinterpret_cast<__gm__ half*>(valueState), kStateElements);
         orderedQueryGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ half*>(orderedQuery), kQueryElements);
+        attentionMaskGm.SetGlobalBuffer(
+            reinterpret_cast<__gm__ uint8_t*>(attentionMask), kCacheLength);
         pipe->InitBuffer(queryInputQueue, 1, kQueryElements * sizeof(half));
         pipe->InitBuffer(keyInputQueue, 1, kStateElements * sizeof(half));
         pipe->InitBuffer(valueInputQueue, 1, kStateElements * sizeof(half));
         pipe->InitBuffer(queryOutputQueue, 1, kQueryElements * sizeof(half));
         pipe->InitBuffer(keyOutputQueue, 1, kStateElements * sizeof(half));
         pipe->InitBuffer(valueOutputQueue, 1, kStateElements * sizeof(half));
+        pipe->InitBuffer(maskOutputQueue, 1, kCacheLength * sizeof(uint8_t));
     }
 
     __aicore__ inline void Process()
@@ -56,6 +60,16 @@ public:
         if (position < 0 || position >= static_cast<int64_t>(kCacheLength)) {
             return;
         }
+
+        LocalTensor<uint8_t> attentionMask =
+            maskOutputQueue.AllocTensor<uint8_t>();
+        Duplicate<uint8_t>(attentionMask, 1, kCacheLength);
+        Duplicate<uint8_t>(
+            attentionMask, 0, static_cast<uint32_t>(position + 1));
+        maskOutputQueue.EnQue(attentionMask);
+        attentionMask = maskOutputQueue.DeQue<uint8_t>();
+        DataCopy(attentionMaskGm, attentionMask, kCacheLength);
+        maskOutputQueue.FreeTensor(attentionMask);
 
         LocalTensor<half> queryInput = queryInputQueue.AllocTensor<half>();
         DataCopy(queryInput, queryGm, kQueryElements);
@@ -112,16 +126,18 @@ private:
     GlobalTensor<half> keyStateGm;
     GlobalTensor<half> valueStateGm;
     GlobalTensor<half> orderedQueryGm;
+    GlobalTensor<uint8_t> attentionMaskGm;
     TQue<QuePosition::VECIN, 1> queryInputQueue;
     TQue<QuePosition::VECIN, 1> keyInputQueue;
     TQue<QuePosition::VECIN, 1> valueInputQueue;
     TQue<QuePosition::VECOUT, 1> queryOutputQueue;
     TQue<QuePosition::VECOUT, 1> keyOutputQueue;
     TQue<QuePosition::VECOUT, 1> valueOutputQueue;
+    TQue<QuePosition::VECOUT, 1> maskOutputQueue;
 };
 }
 
-extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v2(
+extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v3(
     GM_ADDR query,
     GM_ADDR keyCache,
     GM_ADDR valueCache,
@@ -129,6 +145,7 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v2(
     GM_ADDR keyState,
     GM_ADDR valueState,
     GM_ADDR orderedQuery,
+    GM_ADDR attentionMask,
     GM_ADDR keyCacheOut,
     GM_ADDR valueCacheOut,
     GM_ADDR workspace,
@@ -149,7 +166,7 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v2(
     PaddleDecodeKvScatterQueryKernel kernel;
     kernel.Init(
         query, keyCache, valueCache, cachePosition, keyState, valueState,
-        orderedQuery, &pipe);
+        orderedQuery, attentionMask, &pipe);
     kernel.Process();
     pipe.Destroy();
 }

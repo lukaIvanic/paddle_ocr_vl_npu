@@ -1070,7 +1070,7 @@ def _decode_attention(
             .contiguous()
         )
     if optimization.ascendc_kv_scatter_query:
-        query_states = decode_kv_scatter_query(
+        query_states, attention_mask = decode_kv_scatter_query(
             query_states,
             key_cache,
             value_cache,
@@ -1733,7 +1733,7 @@ def decode_cache_update_label(
         and optimization is not None
         and optimization.ascendc_kv_scatter_query
     ):
-        return "paddle_decode_kv_scatter_query_v2"
+        return "paddle_decode_kv_scatter_query_v3"
     return DECODE_CACHE_UPDATE if device.type == "npu" else "per_row_copy"
 
 

@@ -131,6 +131,7 @@ def main() -> int:
         )
     timings = []
     ordered_outputs = []
+    mask_outputs = []
     ordered_aliases = []
     for position, key_state, value_state in zip(
         positions, key_states, value_states, strict=True
@@ -139,14 +140,17 @@ def main() -> int:
             [position], dtype=torch.int64, device="npu:0"
         )
         started = time.perf_counter()
-        ordered = step(
-            query,
-            key_cache,
-            value_cache,
-            position_tensor,
-            key_state,
-            value_state,
+        result = step(
+            query, key_cache, value_cache, position_tensor, key_state, value_state
         )
+        if args.direct_eager_extension:
+            ordered = result
+            mask = (
+                torch.arange(1024, device="npu:0", dtype=torch.int64)
+                > position_tensor[0]
+            ).view(1, 1, 1, 1024)
+        else:
+            ordered, mask = result
         torch.npu.synchronize()
         timings.append(time.perf_counter() - started)
         ordered_aliases.append(
@@ -159,6 +163,7 @@ def main() -> int:
             }
         )
         ordered_outputs.append(ordered.cpu().clone())
+        mask_outputs.append(mask.cpu().clone())
 
     checks = []
     all_exact = True
@@ -175,13 +180,19 @@ def main() -> int:
         value_actual = value_cache[:, :, position : position + 1, :].cpu()
         value_expected = expected_values[index]
         query_exact = bool(torch.equal(ordered_outputs[index], query_expected))
+        mask_expected = (
+            torch.arange(1024, dtype=torch.int64) > position
+        ).view(1, 1, 1, 1024)
+        mask_exact = bool(torch.equal(mask_outputs[index], mask_expected))
         key_exact = bool(
             torch.equal(key_actual, key_expected)
         )
         value_exact = bool(
             torch.equal(value_actual, value_expected)
         )
-        all_exact = all_exact and query_exact and key_exact and value_exact
+        all_exact = (
+            all_exact and query_exact and mask_exact and key_exact and value_exact
+        )
         checks.append(
             {
                 "position": position,
@@ -192,6 +203,8 @@ def main() -> int:
                     .abs()
                     .max()
                 ),
+                "mask_exact": mask_exact,
+                "masked_count": int(torch.count_nonzero(mask_outputs[index])),
                 "key_exact": key_exact,
                 "key_max_abs": float(
                     (key_actual.float() - key_expected.float()).abs().max()
@@ -217,9 +230,9 @@ def main() -> int:
     result = {
         "kind": "paddle_decode_kv_scatter_query_torchair_probe",
         "operator": {
-            "pytorch": "paddleocr_vl::decode_kv_scatter_query_v2",
-            "ge": "PaddleDecodeKvScatterQueryV2",
-            "kernel": "paddle_decode_kv_scatter_query_v2",
+            "pytorch": "paddleocr_vl::decode_kv_scatter_query_v3",
+            "ge": "PaddleDecodeKvScatterQueryV3",
+            "kernel": "paddle_decode_kv_scatter_query_v3",
         },
         "contract": {
             "query_shape": list(query.shape),
@@ -257,7 +270,7 @@ def main() -> int:
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2))
     if not all_exact:
-        raise RuntimeError("PaddleDecodeKvScatterQueryV2 failed exact parity")
+        raise RuntimeError("PaddleDecodeKvScatterQueryV3 failed exact parity")
     return 0
 
 

@@ -10,8 +10,8 @@ import torch
 from .compile_utils import import_torchair
 
 
-PYTORCH_OP_NAME = "paddleocr_vl::decode_kv_scatter_query_v2"
-GE_OP_NAME = "PaddleDecodeKvScatterQueryV2"
+PYTORCH_OP_NAME = "paddleocr_vl::decode_kv_scatter_query_v3"
+GE_OP_NAME = "PaddleDecodeKvScatterQueryV3"
 
 
 @torch.library.custom_op(
@@ -25,7 +25,7 @@ def _decode_kv_scatter_query(
     cache_position: torch.Tensor,
     key_state: torch.Tensor,
     value_state: torch.Tensor,
-) -> torch.Tensor:
+) -> tuple[torch.Tensor, torch.Tensor]:
     # This eager implementation is also the correctness reference. TorchAir
     # auto-functionalizes the two mutable arguments and lowers the call to the
     # independent AscendC reference operator below.
@@ -34,7 +34,15 @@ def _decode_kv_scatter_query(
     positions = cache_position.reshape(-1).contiguous()
     torch_npu.scatter_update_(key_cache, positions, key_state, 2)
     torch_npu.scatter_update_(value_cache, positions, value_state, 2)
-    return query.clone()
+    kv_positions = torch.arange(
+        1024,
+        device=cache_position.device,
+        dtype=torch.int64,
+    )
+    attention_mask = (
+        kv_positions > cache_position.reshape(-1)[0]
+    ).view(1, 1, 1, 1024)
+    return query.clone(), attention_mask
 
 
 @_decode_kv_scatter_query.register_fake
@@ -45,9 +53,16 @@ def _decode_kv_scatter_query_fake(
     cache_position: torch.Tensor,
     key_state: torch.Tensor,
     value_state: torch.Tensor,
-) -> torch.Tensor:
+) -> tuple[torch.Tensor, torch.Tensor]:
     del key_cache, value_cache, cache_position, key_state, value_state
-    return torch.empty_like(query)
+    return (
+        torch.empty_like(query),
+        torch.empty(
+            (1, 1, 1, 1024),
+            dtype=torch.bool,
+            device=query.device,
+        ),
+    )
 
 
 _CONVERTER_REGISTERED = False
@@ -55,7 +70,7 @@ _REF_PASS_PATCHED = False
 
 
 def _patch_torchair_ref_mapping(torchair: Any) -> None:
-    """Teach this installed TorchAir release the V2 reference-output ABI."""
+    """Teach this installed TorchAir release the V3 reference-output ABI."""
     global _REF_PASS_PATCHED
     if _REF_PASS_PATCHED:
         return
@@ -67,8 +82,8 @@ def _patch_torchair_ref_mapping(torchair: Any) -> None:
     def _get_output_to_input_ref_idx(op: Any) -> dict[int, int]:
         mapping = dict(original(op))
         if op.type == GE_OP_NAME:
-            mapping[1] = 1
-            mapping[2] = 2
+            mapping[2] = 1
+            mapping[3] = 2
         return mapping
 
     graph_pass._get_output_to_input_ref_idx = _get_output_to_input_ref_idx
@@ -89,7 +104,7 @@ def register_decode_kv_scatter_query_converter() -> None:
     register_converter = converter_module.register_fx_node_ge_converter
     ge_custom_op = ge_module.custom_op
 
-    @register_converter(torch.ops.paddleocr_vl.decode_kv_scatter_query_v2.default)
+    @register_converter(torch.ops.paddleocr_vl.decode_kv_scatter_query_v3.default)
     def _convert_decode_kv_scatter_query(
         query: Any,
         key_cache: Any,
@@ -110,11 +125,17 @@ def register_decode_kv_scatter_query_converter() -> None:
                 "key_state": key_state,
                 "value_state": value_state,
             },
-            outputs=["ordered_query", "key_cache", "value_cache"],
+            outputs=[
+                "ordered_query",
+                "attention_mask",
+                "key_cache",
+                "value_cache",
+            ],
         )
-        # The PyTorch schema returns only the query. TorchAir's mutable-op
-        # functionalization discovers the two cache ref outputs by their names.
-        return outputs[0]
+        # The PyTorch schema returns the query and mask. TorchAir's mutable-op
+        # functionalization discovers the two trailing cache ref outputs by
+        # their names.
+        return outputs[0], outputs[1]
 
     _CONVERTER_REGISTERED = True
 
@@ -126,8 +147,8 @@ def decode_kv_scatter_query(
     cache_position: torch.Tensor,
     key_state: torch.Tensor,
     value_state: torch.Tensor,
-) -> torch.Tensor:
-    """Write BNSD K/V state and return the query ordering dependency."""
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Write BNSD K/V state and return ordered query plus future mask."""
     if query.shape != (1, 16, 1, 128):
         raise ValueError("specialized KV scatter query requires Q[1,16,1,128]")
     if key_cache.shape != (1, 2, 1024, 128):
