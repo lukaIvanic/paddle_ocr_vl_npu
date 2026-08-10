@@ -340,6 +340,7 @@ def _prefill_worker_page(
             items = vision_atlas_runtime.prefill_prepared_packed_for_cohort(
                 prepared,
                 profile_device_stages=False,
+                decode_ready=False,
             )
             pack_count += 1
         else:
@@ -348,6 +349,7 @@ def _prefill_worker_page(
                     prepared[0],
                     profile_device_stages=False,
                     text_prefill_mode="eager",
+                    decode_ready=False,
                 )
             ]
             fallback_count += 1

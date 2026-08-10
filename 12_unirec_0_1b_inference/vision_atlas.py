@@ -421,12 +421,21 @@ class UniRecVisionAtlasRuntime:
         prepared: list[tuple[dict[str, torch.Tensor], dict[str, Any]]],
         *,
         profile_device_stages: bool = False,
+        decode_ready: bool = True,
     ) -> list[UniRecPrefilledItem]:
-        """Run the vision atlas from already prepared device inputs."""
+        """Run the vision atlas from already prepared device inputs.
+
+        ``decode_ready=False`` retains real-length cross K/V only.  This is the
+        producer/export boundary: it avoids allocating the empty static self-KV
+        arena and avoids padding cross K/V before the worker copies it to CPU.
+        """
         if not prepared:
             raise ValueError("cannot prefill an empty UniRec vision atlas group")
         text_runtime = self.runner._get_compiled_packed_text_prefill_runtime()
-        cross_cache_len = self.runner._get_static_cross_cache_len()
+        cross_cache_len = (
+            self.runner._get_static_cross_cache_len() if decode_ready else None
+        )
+        self_cache_len = LOCAL_UNIREC_STATIC_CACHE_LEN if decode_ready else 0
         timeline = (
             PrefillDeviceTimeline(torch.device(self.runner.device))
             if profile_device_stages
@@ -494,7 +503,7 @@ class UniRecVisionAtlasRuntime:
                                 cross_key_cache=packed_output.cross_key_cache[member],
                                 cross_value_cache=packed_output.cross_value_cache[member],
                                 cross_attention_mask=decode_mask,
-                                cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
+                                cache_len=self_cache_len,
                                 cross_cache_len=cross_cache_len,
                             )
                         ),

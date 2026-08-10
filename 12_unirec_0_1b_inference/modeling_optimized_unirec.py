@@ -2264,11 +2264,19 @@ class OptimizedUniRecRunner:
         *,
         profile_device_stages: bool = False,
         text_prefill_mode: str = "eager",
+        decode_ready: bool = True,
     ) -> UniRecPrefilledItem:
-        """Build B1 encoder cross-KV from an already prepared device input."""
+        """Build B1 encoder cross-KV from an already prepared device input.
+
+        ``decode_ready=False`` returns real-length cross K/V without allocating
+        an empty static self-KV arena or padding cross K/V for decode.
+        """
         inputs, prep = prepared
         pixel_values = inputs["pixel_values"]
-        cross_cache_len = self._get_static_cross_cache_len()
+        cross_cache_len = (
+            self._get_static_cross_cache_len() if decode_ready else None
+        )
+        self_cache_len = LOCAL_UNIREC_STATIC_CACHE_LEN if decode_ready else 0
         if text_prefill_mode not in {"eager", "compiled_s512"}:
             raise ValueError(f"Unsupported UniRec text prefill mode: {text_prefill_mode}")
         text_prefill_runtime = (
@@ -2341,7 +2349,7 @@ class OptimizedUniRecRunner:
                         cross_key_cache=cross_key_cache,
                         cross_value_cache=cross_value_cache,
                         cross_attention_mask=decode_cross_attention_mask,
-                        cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
+                        cache_len=self_cache_len,
                         cross_cache_len=cross_cache_len,
                     ),
                 )
