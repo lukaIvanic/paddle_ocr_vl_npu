@@ -109,23 +109,40 @@ def main() -> None:
         crop_margin=crop_margin,
         tokenize_figure_of_table=tokenize_figure_of_table,
     )
-    runner = OptimizedUniRecRunner(
+    eager_runner = OptimizedUniRecRunner(
         model_path=args.model_path.expanduser().resolve(),
         device="npu:0",
         dtype="float16",
         compile_cache_dir=args.cache_dir.expanduser().resolve(),
     )
-    eager_runtime = UniRecVisionAtlasRuntime(runner)
+    compiled_runner = OptimizedUniRecRunner(
+        model_path=args.model_path.expanduser().resolve(),
+        device="npu:0",
+        dtype="float16",
+        compile_cache_dir=args.cache_dir.expanduser().resolve(),
+    )
+    eager_runtime = UniRecVisionAtlasRuntime(eager_runner)
 
-    prepared: dict[str, tuple[dict[str, torch.Tensor], dict[str, Any]]] = {}
+    eager_prepared: dict[
+        str,
+        tuple[dict[str, torch.Tensor], dict[str, Any]],
+    ] = {}
+    compiled_prepared: dict[
+        str,
+        tuple[dict[str, torch.Tensor], dict[str, Any]],
+    ] = {}
     rows_by_shape: dict[tuple[int, int], list[dict[str, Any]]] = {}
     for row in selected_rows:
         request_id = str(row["request_id"])
-        prepared[request_id] = runner.prepare_pil_image(
+        eager_prepared[request_id] = eager_runner.prepare_pil_image(
             images[request_id],
             image_source=request_id,
         )
-        actual_size = prepared[request_id][1]["processed_image_size"]
+        compiled_prepared[request_id] = compiled_runner.prepare_pil_image(
+            images[request_id],
+            image_source=request_id,
+        )
+        actual_size = eager_prepared[request_id][1]["processed_image_size"]
         expected_size = row["prefill"]["prep"]["processed_image_size"]
         if actual_size != expected_size:
             raise RuntimeError(
@@ -139,12 +156,12 @@ def main() -> None:
     with torch.inference_mode():
         for (width, height), rows in rows_by_shape.items():
             compiled_runtime = StaticShapeUniRecVisionRuntime(
-                runner,
+                compiled_runner,
                 input_width=width,
                 input_height=height,
             )
             first_request_id = str(rows[0]["request_id"])
-            first_pixels = prepared[first_request_id][0]["pixel_values"]
+            first_pixels = compiled_prepared[first_request_id][0]["pixel_values"]
 
             # The first call includes graph compilation or cache loading and is
             # deliberately excluded from steady-state timings.
@@ -156,9 +173,10 @@ def main() -> None:
             correctness = []
             for row in rows:
                 request_id = str(row["request_id"])
-                pixels = prepared[request_id][0]["pixel_values"]
-                eager_output = eager_runtime._run_prefix(pixels)[0]
-                compiled_output = compiled_runtime._run_prefix(pixels)[0]
+                eager_pixels = eager_prepared[request_id][0]["pixel_values"]
+                compiled_pixels = compiled_prepared[request_id][0]["pixel_values"]
+                eager_output = eager_runtime._run_prefix(eager_pixels)[0]
+                compiled_output = compiled_runtime._run_prefix(compiled_pixels)[0]
                 synchronize_device("npu:0")
                 difference = (eager_output - compiled_output).abs()
                 correctness.append(
@@ -180,9 +198,13 @@ def main() -> None:
             del compiled_first
             for _ in range(args.warmup):
                 for row in rows:
-                    pixels = prepared[str(row["request_id"])][0]["pixel_values"]
-                    eager_runtime._run_prefix(pixels)
-                    compiled_runtime._run_prefix(pixels)
+                    request_id = str(row["request_id"])
+                    eager_runtime._run_prefix(
+                        eager_prepared[request_id][0]["pixel_values"]
+                    )
+                    compiled_runtime._run_prefix(
+                        compiled_prepared[request_id][0]["pixel_values"]
+                    )
             synchronize_device("npu:0")
 
             per_crop = []
@@ -190,13 +212,20 @@ def main() -> None:
             all_compiled_ms: list[float] = []
             for row in rows:
                 request_id = str(row["request_id"])
-                pixels = prepared[request_id][0]["pixel_values"]
+                eager_pixels = eager_prepared[request_id][0]["pixel_values"]
+                compiled_pixels = compiled_prepared[request_id][0]["pixel_values"]
                 eager_ms: list[float] = []
                 compiled_ms: list[float] = []
                 for repeat in range(args.repeats):
                     lanes = (
-                        ("eager", lambda: eager_runtime._run_prefix(pixels)[0]),
-                        ("compiled", lambda: compiled_runtime._run_prefix(pixels)[0]),
+                        (
+                            "eager",
+                            lambda: eager_runtime._run_prefix(eager_pixels)[0],
+                        ),
+                        (
+                            "compiled",
+                            lambda: compiled_runtime._run_prefix(compiled_pixels)[0],
+                        ),
                     )
                     if repeat % 2:
                         lanes = tuple(reversed(lanes))
