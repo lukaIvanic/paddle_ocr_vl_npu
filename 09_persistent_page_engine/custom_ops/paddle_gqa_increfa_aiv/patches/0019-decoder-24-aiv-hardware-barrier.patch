@@ -1,7 +1,7 @@
 diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
 --- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
 +++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
-@@ -3505,4 +3505,8 @@ ge::graphStatus IFATiling::CalcNumBlocks()
+@@ -3505,4 +3505,7 @@ ge::graphStatus IFATiling::CalcNumBlocks()
      if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) {
 -        const uint32_t launchAivNum = usedCoreNum_;
 +        // The complete Paddle decoder SuperKernel is Cube-first and launches
@@ -10,7 +10,7 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_
 +        constexpr uint32_t launchAivNum = 24U;
          const uint32_t launchAicNum = launchAivNum;
          ifaContext_->numBlocks = ascendcPlatform.CalcTschBlockDim(launchAivNum, launchAicNum, launchAivNum);
-@@ -3509,3 +3513,3 @@ ge::graphStatus IFATiling::CalcNumBlocks()
+@@ -3509,3 +3512,3 @@ ge::graphStatus IFATiling::CalcNumBlocks()
          OP_LOGI(ifaContext_->opName,
 -            "GQA AIV block dim: %u launch aiv Num: %u launch aic Num: 0.",
 -            ifaContext_->numBlocks, launchAivNum);
