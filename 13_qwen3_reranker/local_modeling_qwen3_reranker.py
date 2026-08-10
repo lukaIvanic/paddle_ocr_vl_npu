@@ -566,6 +566,69 @@ class LocalQwen3RerankerForCausalLM(nn.Module):
             raise RuntimeError("chunked prefill produced no chunks")
         return final_hidden_states
 
+    def _forward_chunk_prepared(
+        self,
+        input_ids: torch.Tensor,
+        position_ids: torch.Tensor,
+        chunk_mask: torch.Tensor,
+        key_caches: tuple[torch.Tensor, ...] | None,
+        value_caches: tuple[torch.Tensor, ...] | None,
+    ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
+        hidden_states = self.embed_tokens(input_ids)
+        cos, sin = self.rotary_emb(
+            position_ids,
+            dtype=hidden_states.dtype,
+            device=hidden_states.device,
+        )
+        updated_key_caches: list[torch.Tensor] = []
+        updated_value_caches: list[torch.Tensor] = []
+        for layer_index, layer in enumerate(self.layers):
+            past_key_states = None if key_caches is None else key_caches[layer_index]
+            past_value_states = None if value_caches is None else value_caches[layer_index]
+            hidden_states, updated_key_states, updated_value_states = (
+                layer.forward_prompt_flash_attention_chunk(
+                    hidden_states,
+                    cos,
+                    sin,
+                    chunk_mask,
+                    past_key_states,
+                    past_value_states,
+                )
+            )
+            updated_key_caches.append(updated_key_states)
+            updated_value_caches.append(updated_value_states)
+        return self.norm(hidden_states), tuple(updated_key_caches), tuple(updated_value_caches)
+
+    def forward_first_chunk_prepared(
+        self,
+        input_ids: torch.Tensor,
+        position_ids: torch.Tensor,
+        chunk_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
+        return self._forward_chunk_prepared(
+            input_ids,
+            position_ids,
+            chunk_mask,
+            None,
+            None,
+        )
+
+    def forward_next_chunk_prepared(
+        self,
+        input_ids: torch.Tensor,
+        position_ids: torch.Tensor,
+        chunk_mask: torch.Tensor,
+        key_caches: tuple[torch.Tensor, ...],
+        value_caches: tuple[torch.Tensor, ...],
+    ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
+        return self._forward_chunk_prepared(
+            input_ids,
+            position_ids,
+            chunk_mask,
+            key_caches,
+            value_caches,
+        )
+
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         hidden_states = self.forward_hidden_states(input_ids, attention_mask)
         return self.lm_head(hidden_states[:, -1])

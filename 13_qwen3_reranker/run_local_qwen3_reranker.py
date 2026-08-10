@@ -11,6 +11,7 @@ from local_modeling_qwen3_reranker import (
     LocalQwen3RerankerConfig,
     LocalQwen3RerankerForCausalLM,
     build_left_padded_causal_bool_mask,
+    build_left_padded_causal_bool_mask_chunk,
     build_left_padded_causal_mask,
 )
 from transformers_rerank import DEFAULT_TASK, build_inputs, format_instruction
@@ -39,7 +40,8 @@ class LocalQwen3RerankerRunner:
         self.attention_impl = attention_impl
         self.ffn_weight_mode = ffn_weight_mode
         self.prefill_chunk_size = int(prefill_chunk_size)
-        self.compiled_chunked_hidden_states = None
+        self.compiled_first_chunk = None
+        self.compiled_next_chunk = None
         if self.attention_impl not in {"eager", "prompt_flash_attention"}:
             raise ValueError(f"Unsupported attention_impl={self.attention_impl!r}")
         if self.attention_impl == "prompt_flash_attention" and self.dtype is not torch.float16:
@@ -68,8 +70,14 @@ class LocalQwen3RerankerRunner:
 
             backend = torchair.get_npu_backend(compiler_config=CompilerConfig())
             if self.prefill_chunk_size:
-                self.compiled_chunked_hidden_states = torch.compile(
-                    self.model.forward_hidden_states_chunked,
+                self.compiled_first_chunk = torch.compile(
+                    self.model.forward_first_chunk_prepared,
+                    backend=backend,
+                    dynamic=False,
+                    fullgraph=True,
+                )
+                self.compiled_next_chunk = torch.compile(
+                    self.model.forward_next_chunk_prepared,
                     backend=backend,
                     dynamic=False,
                     fullgraph=True,
@@ -136,12 +144,8 @@ class LocalQwen3RerankerRunner:
         return position_ids, layer_attention_mask
 
     def logits_ids(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
-        if self.compiled_chunked_hidden_states is not None:
-            hidden_states = self.compiled_chunked_hidden_states(
-                input_ids,
-                attention_mask,
-                chunk_size=self.prefill_chunk_size,
-            )
+        if self.compiled_first_chunk is not None:
+            hidden_states = self.forward_hidden_states_chunked_compiled(input_ids, attention_mask)
             return self.model.lm_head(hidden_states[:, -1])
         if not self.compile_forward:
             hidden_states = (
@@ -165,12 +169,8 @@ class LocalQwen3RerankerRunner:
                 dtype=torch.long,
             )
             yes_no_weight = self.model.lm_head.weight[yes_no_ids]
-            if self.compiled_chunked_hidden_states is not None:
-                hidden_states = self.compiled_chunked_hidden_states(
-                    input_ids,
-                    attention_mask,
-                    chunk_size=self.prefill_chunk_size,
-                )
+            if self.compiled_first_chunk is not None:
+                hidden_states = self.forward_hidden_states_chunked_compiled(input_ids, attention_mask)
                 yes_no_logits = torch.nn.functional.linear(hidden_states[:, -1], yes_no_weight)
             elif self.compile_forward:
                 position_ids, additive_mask = self.prepared_forward_inputs(attention_mask)
@@ -192,6 +192,46 @@ class LocalQwen3RerankerRunner:
                 )
                 yes_no_logits = torch.nn.functional.linear(hidden_states[:, -1], yes_no_weight)
             return torch.softmax(yes_no_logits, dim=-1)[:, 1]
+
+    def forward_hidden_states_chunked_compiled(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        if self.compiled_first_chunk is None or self.compiled_next_chunk is None:
+            raise RuntimeError("compiled chunk-step graphs are not initialized")
+        position_ids = attention_mask.to(dtype=torch.long).cumsum(dim=-1) - 1
+        position_ids = position_ids.clamp(min=0)
+        sequence_length = int(input_ids.shape[1])
+        key_caches = None
+        value_caches = None
+        hidden_states = None
+        for query_start in range(0, sequence_length, self.prefill_chunk_size):
+            query_end = query_start + self.prefill_chunk_size
+            chunk_mask = build_left_padded_causal_bool_mask_chunk(
+                attention_mask,
+                query_start=query_start,
+                query_end=query_end,
+            )
+            chunk_input_ids = input_ids[:, query_start:query_end].contiguous()
+            chunk_position_ids = position_ids[:, query_start:query_end].contiguous()
+            if key_caches is None:
+                hidden_states, key_caches, value_caches = self.compiled_first_chunk(
+                    chunk_input_ids,
+                    chunk_position_ids,
+                    chunk_mask,
+                )
+            else:
+                hidden_states, key_caches, value_caches = self.compiled_next_chunk(
+                    chunk_input_ids,
+                    chunk_position_ids,
+                    chunk_mask,
+                    key_caches,
+                    value_caches,
+                )
+        if hidden_states is None:
+            raise RuntimeError("compiled chunked prefill produced no chunks")
+        return hidden_states
 
     def calibrate_ffn_input_scales(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> None:
         if self.ffn_weight_mode == "dense":

@@ -222,8 +222,9 @@ python3 13_qwen3_reranker/run_local_qwen3_reranker.py \
 Each block uses a bool `[B,1,Q,K]` causal/padding mask and omits
 `actual_seq_lengths` and `actual_seq_lengths_kv`. GQA KV states stay compact in
 the per-layer cache and are expanded only at the PromptFA boundary. Add
-`--compile-forward` to compile the fixed chunk schedule as one static TorchAir
-prefill graph; the yes/no projection remains outside that graph.
+`--compile-forward` to compile each fixed-shape chunk step with TorchAir. The
+host sequences the compiled steps while KV tensors remain on NPU; the yes/no
+projection remains outside the compiled prefill graphs.
 
 ## Weight Modes
 
