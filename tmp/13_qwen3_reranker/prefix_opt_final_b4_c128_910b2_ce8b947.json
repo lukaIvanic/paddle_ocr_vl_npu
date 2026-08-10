@@ -1,0 +1,156 @@
+{
+  "environment": {
+    "host": "liteserver-c001-4",
+    "device": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "git_commit": "ce8b9470eb8fb1a0e561b99e5b4e2fffb129ec11"
+  },
+  "configuration": {
+    "model_dir": "/workspace/models/Qwen3-Reranker-0.6B",
+    "batch_sizes": [
+      4
+    ],
+    "continuation_lengths": [
+      128
+    ],
+    "batch_sweep_continuation": 128,
+    "length_sweep_batch": 4,
+    "matrix": "axes",
+    "lanes": [
+      "prefix_promptfa_compiled"
+    ],
+    "warmups": 3,
+    "repeats": 50,
+    "prefix_block": 128,
+    "prefix_valid_tokens": 60,
+    "prefix_build_s": 0.2321380351204425,
+    "source_hash": "167a52a5c20f",
+    "compile_source_key_override": "167a52a5c20f",
+    "prefill_optimizations": [
+      "baseline",
+      "native_rms_rotary",
+      "native_rms_rotary_mask",
+      "combined"
+    ]
+  },
+  "metric_definitions": {
+    "served_input_tok_s": "valid prefix plus continuation tokens served per median call second",
+    "executed_model_tok_s": "token rows executing decoder QKV and MLP per median call second",
+    "physical_attention_q_tok_s": "physical attention Q rows, including square-padding dummies, per median call second"
+  },
+  "results": [
+    {
+      "runs": 50,
+      "mean_s": 0.014872592869214713,
+      "median_s": 0.014863207004964352,
+      "min_s": 0.01479516108520329,
+      "p90_s": 0.014915693132206797,
+      "max_s": 0.015044954838231206,
+      "pairs_s": 269.1209238130095,
+      "served_input_tok_s": 50594.73367684578,
+      "executed_model_tok_s": 34447.478248065214,
+      "physical_attention_q_tok_s": 68894.95649613043,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 5.240208250936121,
+      "additional_warmup_s": [
+        0.015235748840495944,
+        0.014879693044349551
+      ],
+      "compile_wrapper_s": 0.0007315331604331732,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f/prefix_promptfa_baseline_b4_q256_kv256_realq128_fp16_src167a52a5c20f",
+      "cache_was_warm": true,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "baseline"
+    },
+    {
+      "runs": 50,
+      "mean_s": 0.010722574857063592,
+      "median_s": 0.010720327496528625,
+      "min_s": 0.010669880779460073,
+      "p90_s": 0.010745154949836433,
+      "max_s": 0.010875284904614091,
+      "pairs_s": 373.12292943431527,
+      "served_input_tok_s": 70147.11073365127,
+      "executed_model_tok_s": 47759.734967592354,
+      "physical_attention_q_tok_s": 95519.46993518471,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 0.642260205000639,
+      "additional_warmup_s": [
+        0.01105481805279851,
+        0.010725931962952018
+      ],
+      "compile_wrapper_s": 0.0006552520208060741,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f/prefix_promptfa_native_rms_rotary_b4_q256_kv256_realq128_fp16_src167a52a5c20f",
+      "cache_was_warm": true,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "native_rms_rotary",
+      "max_abs_hidden_vs_prefix_baseline": 0.0625,
+      "max_abs_yes_no_logits_vs_prefix_baseline": 0.015625,
+      "max_abs_yes_score_vs_prefix_baseline": 0.0007680915296077728,
+      "same_yes_no_choice_vs_prefix_baseline": true
+    },
+    {
+      "runs": 50,
+      "mean_s": 0.01034165951423347,
+      "median_s": 0.010308690019883215,
+      "min_s": 0.010239244904369116,
+      "p90_s": 0.010343217011541127,
+      "max_s": 0.012037464883178473,
+      "pairs_s": 388.02214367537215,
+      "served_input_tok_s": 72948.16301096996,
+      "executed_model_tok_s": 49666.834390447635,
+      "physical_attention_q_tok_s": 99333.66878089527,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 0.545524621149525,
+      "additional_warmup_s": [
+        0.01064561097882688,
+        0.010283574927598238
+      ],
+      "compile_wrapper_s": 0.000398796983063221,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f/prefix_promptfa_native_rms_rotary_mask_b4_q256_kv256_realq128_fp16_src167a52a5c20f",
+      "cache_was_warm": true,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "native_rms_rotary_mask",
+      "max_abs_hidden_vs_prefix_baseline": 0.0625,
+      "max_abs_yes_no_logits_vs_prefix_baseline": 0.015625,
+      "max_abs_yes_score_vs_prefix_baseline": 0.0007680915296077728,
+      "same_yes_no_choice_vs_prefix_baseline": true
+    },
+    {
+      "runs": 50,
+      "mean_s": 0.010288774310611188,
+      "median_s": 0.010232828557491302,
+      "min_s": 0.010184243088588119,
+      "p90_s": 0.010288277990184724,
+      "max_s": 0.012585874181240797,
+      "pairs_s": 390.89876054570067,
+      "served_input_tok_s": 73488.96698259172,
+      "executed_model_tok_s": 50035.041349849686,
+      "physical_attention_q_tok_s": 100070.08269969937,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 0.5477465700823814,
+      "additional_warmup_s": [
+        0.010552129009738564,
+        0.010188023094087839
+      ],
+      "compile_wrapper_s": 0.0004153870977461338,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f/prefix_promptfa_combined_b4_q256_kv256_realq128_fp16_src167a52a5c20f",
+      "cache_was_warm": true,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "combined",
+      "max_abs_hidden_vs_prefix_baseline": 0.0625,
+      "max_abs_yes_no_logits_vs_prefix_baseline": 0.015625,
+      "max_abs_yes_score_vs_prefix_baseline": 0.0007680915296077728,
+      "same_yes_no_choice_vs_prefix_baseline": true
+    }
+  ]
+}

@@ -254,6 +254,7 @@ python3 13_qwen3_reranker/run_local_qwen3_reranker.py \
   --ffn-weight-mode dense \
   --prefill-chunk-size 128 \
   --prefix-cache \
+  --prefill-optimization combined \
   --compile-forward \
   --compile-cache-dir .runtime_cache/13_qwen3_reranker \
   --graph-warmups 2
@@ -263,6 +264,47 @@ The prefix/continuation tokenizer split is checked against the original full
 prompt token IDs for every pair. If segmentation changes any token ID, the
 runtime refuses to use the cache. Graph cache directories include the fixed
 shape, model dimensions, and a source hash.
+
+`--prefill-optimization baseline` preserves the original compiled suffix.
+`combined` keeps the one-time B1 prefix build on that eager/manual reference,
+then applies four changes only to the repeated compiled suffix:
+
+- native `npu_rms_norm` for decoder and Q/K norms;
+- one native Q/K rotary call per layer;
+- one square PromptFA mask prepared outside the compiled layer stack;
+- one-time expansion of reusable prefix K/V heads, while only current K/V is
+  repeated per request.
+
+The B4, real-Q128, physical-Q/KV256 FP16 comparison on Ascend 910B2 used 50
+warm synchronized repetitions. `combined` reduced median latency from 14.863
+ms to 10.233 ms and increased executed-model throughput from 34,447 to 50,035
+tok/s. Relative to the compiled baseline, maximum final-hidden absolute drift
+was 0.0625, maximum yes/no-logit drift was 0.015625, maximum yes-score drift was
+0.0007681, and every binary choice matched. This is a 910B2 result, not 310P
+validation. The compact result is retained under
+`tmp/13_qwen3_reranker/prefix_opt_final_b4_c128_910b2_ce8b947.json`.
+
+Run the same controlled matrix on 310P before making `combined` the deployment
+default:
+
+```bash
+python3 13_qwen3_reranker/benchmark_prefix_cache_throughput.py \
+  --model-dir /path/to/Qwen3-Reranker-0.6B \
+  --device npu:0 \
+  --batch-sizes 4 \
+  --continuation-lengths 128 \
+  --batch-sweep-continuation 128 \
+  --length-sweep-batch 4 \
+  --matrix axes \
+  --lanes prefix_promptfa_compiled \
+  --prefill-optimizations baseline native_rms native_rotary \
+    prebuilt_square_mask expanded_prefix_kv native_rms_rotary \
+    native_rms_rotary_mask combined \
+  --warmups 3 \
+  --repeats 50 \
+  --compile-cache-dir .runtime_cache/13_qwen3_reranker/prefix_opt_310p \
+  --json-out tmp/13_qwen3_reranker/prefix_opt_b4_c128_310p.json
+```
 
 ### Prefix-cache throughput matrix
 
