@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 import time
@@ -16,11 +17,16 @@ from paddleocr_vl.model.decode_kv_scatter_query import (
     decode_kv_scatter_query,
     register_decode_kv_scatter_query_converter,
 )
+from paddleocr_vl.model.gqa_increfa_aiv import (
+    gqa_incre_flash_attention_aiv,
+    register_gqa_increfa_aiv_converter,
+)
 
 
 class DecodeKvScatterQuery(torch.nn.Module):
-    def __init__(self, strict_scope: bool) -> None:
+    def __init__(self, strict_scope: bool, include_gqa: bool) -> None:
         super().__init__()
+        self.include_gqa = include_gqa
         self.scope = None
         if strict_scope:
             self.scope = __import__(
@@ -35,8 +41,8 @@ class DecodeKvScatterQuery(torch.nn.Module):
         cache_position: torch.Tensor,
         key_state: torch.Tensor,
         value_state: torch.Tensor,
-    ) -> torch.Tensor:
-        return decode_kv_scatter_query(
+    ) -> tuple[torch.Tensor, ...]:
+        ordered_query, attention_mask = decode_kv_scatter_query(
             query,
             key_cache,
             value_cache,
@@ -44,6 +50,20 @@ class DecodeKvScatterQuery(torch.nn.Module):
             key_state,
             value_state,
         )
+        if not self.include_gqa:
+            return ordered_query, attention_mask
+        attention_output = gqa_incre_flash_attention_aiv(
+            ordered_query,
+            key_cache,
+            value_cache,
+            attention_mask,
+            num_heads=16,
+            num_key_value_heads=2,
+            scale_value=1.0 / math.sqrt(128.0),
+            inner_precise=1,
+            vector_core_count=32,
+        )
+        return ordered_query, attention_mask, attention_output
 
     def forward(
         self,
@@ -53,7 +73,7 @@ class DecodeKvScatterQuery(torch.nn.Module):
         cache_position: torch.Tensor,
         key_state: torch.Tensor,
         value_state: torch.Tensor,
-    ) -> torch.Tensor:
+    ) -> tuple[torch.Tensor, ...]:
         args = (
             query,
             key_cache,
@@ -77,6 +97,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--strict-scope", action="store_true")
+    parser.add_argument(
+        "--include-gqa",
+        action="store_true",
+        help="fuse the exact V3 ref outputs directly into the 32-core GQA op",
+    )
     parser.add_argument("--direct-eager-extension", action="store_true")
     return parser.parse_args()
 
@@ -89,6 +114,8 @@ def main() -> int:
         raise RuntimeError("an Ascend NPU is required")
     torch.npu.set_compile_mode(jit_compile=False)
     register_decode_kv_scatter_query_converter()
+    if args.include_gqa:
+        register_gqa_increfa_aiv_converter()
 
     generator = torch.Generator(device="cpu")
     generator.manual_seed(20260810)
@@ -111,6 +138,8 @@ def main() -> int:
     if args.direct_eager_extension:
         if args.strict_scope:
             raise ValueError("direct eager extension does not use a SuperKernel scope")
+        if args.include_gqa:
+            raise ValueError("direct eager extension cannot include the TorchAir GQA op")
         import paddle_decode_kv_scatter_query_eager  # noqa: F401
 
         step = torch.ops.paddleocr_vl_npu.paddle_decode_kv_scatter_query_eager
@@ -123,7 +152,7 @@ def main() -> int:
         compiler_config.debug.graph_dump.type = "pbtxt"
         compiler_config.debug.graph_dump.path = str(graph_dump_dir)
         step = torchair.inference.cache_compile(
-            DecodeKvScatterQuery(args.strict_scope).forward,
+            DecodeKvScatterQuery(args.strict_scope, args.include_gqa).forward,
             config=compiler_config,
             dynamic=False,
             cache_dir=str(args.cache_dir),
@@ -132,6 +161,8 @@ def main() -> int:
     timings = []
     ordered_outputs = []
     mask_outputs = []
+    attention_outputs = []
+    attention_references = []
     ordered_aliases = []
     for position, key_state, value_state in zip(
         positions, key_states, value_states, strict=True
@@ -150,9 +181,28 @@ def main() -> int:
                 > position_tensor[0]
             ).view(1, 1, 1, 1024)
         else:
-            ordered, mask = result
+            if args.include_gqa:
+                ordered, mask, attention = result
+            else:
+                ordered, mask = result
         torch.npu.synchronize()
         timings.append(time.perf_counter() - started)
+        if args.include_gqa:
+            attention_reference = torch_npu.npu_incre_flash_attention(
+                ordered,
+                key_cache,
+                value_cache,
+                atten_mask=mask,
+                actual_seq_lengths=None,
+                num_heads=16,
+                num_key_value_heads=2,
+                input_layout="BNSD",
+                scale_value=1.0 / math.sqrt(128.0),
+                inner_precise=1,
+            )
+            torch.npu.synchronize()
+            attention_outputs.append(attention.cpu().clone())
+            attention_references.append(attention_reference.cpu().clone())
         ordered_aliases.append(
             {
                 "query": ordered.data_ptr() == query.data_ptr(),
@@ -190,8 +240,32 @@ def main() -> int:
         value_exact = bool(
             torch.equal(value_actual, value_expected)
         )
+        attention_max_abs = None
+        attention_close = None
+        if args.include_gqa:
+            attention_max_abs = float(
+                (
+                    attention_outputs[index].float()
+                    - attention_references[index].float()
+                )
+                .abs()
+                .max()
+            )
+            attention_close = bool(
+                torch.allclose(
+                    attention_outputs[index],
+                    attention_references[index],
+                    atol=3e-4,
+                    rtol=3e-4,
+                )
+            )
         all_exact = (
-            all_exact and query_exact and mask_exact and key_exact and value_exact
+            all_exact
+            and query_exact
+            and mask_exact
+            and key_exact
+            and value_exact
+            and (attention_close is not False)
         )
         checks.append(
             {
@@ -213,6 +287,8 @@ def main() -> int:
                 "value_max_abs": float(
                     (value_actual.float() - value_expected.float()).abs().max()
                 ),
+                "attention_vs_stock_close": attention_close,
+                "attention_vs_stock_max_abs": attention_max_abs,
                 "key_candidate_max_abs": {
                     name: float(
                         (key_actual.float() - candidate.float()).abs().max()
@@ -241,6 +317,8 @@ def main() -> int:
             "positions": positions,
             "strict_scope": args.strict_scope,
             "direct_eager_extension": args.direct_eager_extension,
+            "include_gqa": args.include_gqa,
+            "gqa_vector_core_count": 32 if args.include_gqa else None,
             "block_dim": 1,
             "core_type": "AIV_ONLY",
         },
