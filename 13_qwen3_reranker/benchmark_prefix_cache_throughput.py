@@ -549,42 +549,74 @@ def main() -> None:
     source_key = args.compile_source_key or source_hash()
     results = []
     for batch_size, continuation_length in shape_matrix(args):
-        full_length = PREFIX_BLOCK + continuation_length
+        cached_full_length = PREFIX_BLOCK + continuation_length
+        compact_full_length = prefix_valid_tokens + continuation_length
         continuation_ids, continuation_attention = make_continuation_inputs(
             tokenizer,
             batch_size=batch_size,
             continuation_length=continuation_length,
             device=device,
         )
-        prefix_ids = prefix_input_ids.expand(batch_size, -1)
-        prefix_attention = prefix_attention_mask.expand(batch_size, -1)
-        full_input_ids = torch.cat((prefix_ids, continuation_ids), dim=1).contiguous()
-        full_attention = torch.cat((prefix_attention, continuation_attention), dim=1)
-        full_position_ids = (full_attention.cumsum(dim=-1) - 1).clamp(min=0)
-        full_bool_mask = build_left_padded_causal_bool_mask(full_attention)
-        full_additive_mask = build_left_padded_causal_mask(full_attention, torch.float16)
-        continuation_position_ids = full_position_ids[:, PREFIX_BLOCK:].contiguous()
+        cached_prefix_attention = prefix_attention_mask.expand(batch_size, -1)
+        cached_full_attention = torch.cat(
+            (cached_prefix_attention, continuation_attention),
+            dim=1,
+        )
+        cached_full_position_ids = (
+            cached_full_attention.cumsum(dim=-1) - 1
+        ).clamp(min=0)
+        continuation_position_ids = cached_full_position_ids[
+            :, PREFIX_BLOCK:
+        ].contiguous()
         continuation_mask = build_left_padded_causal_bool_mask_chunk(
-            full_attention,
+            cached_full_attention,
             query_start=PREFIX_BLOCK,
-            query_end=full_length,
+            query_end=cached_full_length,
+        )
+
+        compact_prefix_ids = prefix_input_ids[
+            :, PREFIX_BLOCK - prefix_valid_tokens:
+        ].expand(batch_size, -1)
+        compact_input_ids = torch.cat(
+            (compact_prefix_ids, continuation_ids),
+            dim=1,
+        ).contiguous()
+        compact_attention = torch.ones(
+            (batch_size, compact_full_length),
+            device=device,
+            dtype=torch.long,
+        )
+        compact_position_ids = torch.arange(
+            compact_full_length,
+            device=device,
+            dtype=torch.long,
+        ).view(1, -1).expand(batch_size, -1).contiguous()
+        compact_bool_mask = build_left_padded_causal_bool_mask(compact_attention)
+        compact_additive_mask = build_left_padded_causal_mask(
+            compact_attention,
+            torch.float16,
         )
         served_tokens = batch_size * (prefix_valid_tokens + continuation_length)
-        attention_query_tokens = batch_size * full_length
+        compact_attention_query_tokens = batch_size * compact_full_length
+        cached_attention_query_tokens = batch_size * cached_full_length
         lane_outputs: dict[str, torch.Tensor] = {}
 
         if "full_manual" in args.lanes:
             set_attention_impl(model, "eager")
             summary, output = benchmark_lane(
                 lane="full_manual",
-                fn=lambda: full_stage(full_input_ids, full_position_ids, full_additive_mask),
+                fn=lambda: full_stage(
+                    compact_input_ids,
+                    compact_position_ids,
+                    compact_additive_mask,
+                ),
                 device=device,
                 warmups=args.warmups,
                 repeats=args.repeats,
                 batch_size=batch_size,
                 served_tokens=served_tokens,
-                executed_tokens=batch_size * full_length,
-                attention_query_tokens=attention_query_tokens,
+                executed_tokens=batch_size * compact_full_length,
+                attention_query_tokens=compact_attention_query_tokens,
                 compile_wrapper_s=None,
                 cache_dir=None,
                 cache_was_warm=None,
@@ -593,7 +625,7 @@ def main() -> None:
             summary.update(
                 batch_size=batch_size,
                 continuation_length=continuation_length,
-                full_physical_length=full_length,
+                full_physical_length=compact_full_length,
                 linear_weight_format=weight_format["effective_mode"],
             )
             attach_output_signature(
@@ -611,19 +643,19 @@ def main() -> None:
             for optimization_name in args.prefill_optimizations:
                 optimization = model.set_prefill_optimization(optimization_name)
                 compiled_mask = (
-                    build_310p_square_promptfa_mask(full_bool_mask)
+                    build_310p_square_promptfa_mask(compact_bool_mask)
                     if optimization.prebuilt_square_mask
-                    else full_bool_mask
+                    else compact_bool_mask
                 )
                 cache_dir = args.compile_cache_dir / (
                     f"full_promptfa_{optimization.name}_b{batch_size}_"
-                    f"s{full_length}_{weight_cache_key}_fp16_src{source_key}"
+                    f"s{compact_full_length}_{weight_cache_key}_fp16_src{source_key}"
                 )
                 compiled, wrapper_s, cache_was_warm = compile_stage(
                     full_stage,
                     entrypoint_name=(
                         f"reranker_full_promptfa_{optimization.name}_"
-                        f"b{batch_size}_s{full_length}_{weight_cache_key}"
+                        f"b{batch_size}_s{compact_full_length}_{weight_cache_key}"
                     ),
                     cache_dir=cache_dir,
                     device=device,
@@ -631,8 +663,8 @@ def main() -> None:
                 summary, output = benchmark_lane(
                     lane="full_promptfa_compiled",
                     fn=lambda: compiled(
-                        full_input_ids,
-                        full_position_ids,
+                        compact_input_ids,
+                        compact_position_ids,
                         compiled_mask,
                     ),
                     device=device,
@@ -640,8 +672,8 @@ def main() -> None:
                     repeats=args.repeats,
                     batch_size=batch_size,
                     served_tokens=served_tokens,
-                    executed_tokens=batch_size * full_length,
-                    attention_query_tokens=attention_query_tokens,
+                    executed_tokens=batch_size * compact_full_length,
+                    attention_query_tokens=compact_attention_query_tokens,
                     compile_wrapper_s=wrapper_s,
                     cache_dir=cache_dir,
                     cache_was_warm=cache_was_warm,
@@ -651,7 +683,7 @@ def main() -> None:
                 summary.update(
                     batch_size=batch_size,
                     continuation_length=continuation_length,
-                    full_physical_length=full_length,
+                    full_physical_length=compact_full_length,
                     prefill_optimization=optimization.name,
                     linear_weight_format=weight_format["effective_mode"],
                 )
@@ -690,14 +722,16 @@ def main() -> None:
                 )
                 cache_dir = args.compile_cache_dir / (
                     f"prefix_promptfa_{optimization.name}_b{batch_size}_"
-                    f"q{full_length}_kv{full_length}_realq{continuation_length}_"
+                    f"q{cached_full_length}_kv{cached_full_length}_"
+                    f"realq{continuation_length}_"
                     f"{weight_cache_key}_fp16_src{source_key}"
                 )
                 compiled, wrapper_s, cache_was_warm = compile_stage(
                     prefix_stage,
                     entrypoint_name=(
                         f"reranker_prefix_promptfa_{optimization.name}_b{batch_size}_"
-                        f"realq{continuation_length}_s{full_length}_{weight_cache_key}"
+                        f"realq{continuation_length}_s{cached_full_length}_"
+                        f"{weight_cache_key}"
                     ),
                     cache_dir=cache_dir,
                     device=device,
@@ -717,7 +751,7 @@ def main() -> None:
                     batch_size=batch_size,
                     served_tokens=served_tokens,
                     executed_tokens=batch_size * continuation_length,
-                    attention_query_tokens=attention_query_tokens,
+                    attention_query_tokens=cached_attention_query_tokens,
                     compile_wrapper_s=wrapper_s,
                     cache_dir=cache_dir,
                     cache_was_warm=cache_was_warm,
@@ -727,7 +761,7 @@ def main() -> None:
                 summary.update(
                     batch_size=batch_size,
                     continuation_length=continuation_length,
-                    full_physical_length=full_length,
+                    full_physical_length=cached_full_length,
                     prefill_optimization=optimization.name,
                     linear_weight_format=weight_format["effective_mode"],
                 )
