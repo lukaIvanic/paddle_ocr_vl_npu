@@ -257,6 +257,14 @@ soon as all their crops finish. The initial implementation performs replacement
 prefill synchronously between decode iterations. It does not yet overlap NPU
 prefill with decode.
 
+Set `UNIREC_STATIC_CACHE_LEN` to select the static self-KV capacity. Set
+`UNIREC_STATIC_CROSS_CACHE_LEN` to select a smaller fixed cross-KV capacity.
+When the latter is nonzero, the image processor preserves the normal crop size
+when it fits and proportionally downsizes only crops whose encoder sequence
+would exceed the requested capacity. The cross cache is then padded to the
+exact requested length. This is a throughput/quality tradeoff, not an exact
+parity lane, because overflowing crops receive fewer vision tokens.
+
 ## Layout detector lab
 
 `layout_detector_lab.py` isolates the same eager PP-DocLayoutV2 NPU adapter
