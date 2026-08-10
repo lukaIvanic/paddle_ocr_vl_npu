@@ -17,6 +17,13 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_attention_aiv(
     __gm__ uint8_t *workspace,
     __gm__ uint8_t *tiling)
 {
+    // The enclosing decoder has a 1:1 mixed AIC/AIV launch. This subfunction
+    // is vector-only: AIC workers must not enter the inherited attention body
+    // or the AIV-only completion barrier below.
+    if (g_coreType == AIC) {
+        return;
+    }
+
     // The enclosing decoder launches 24 AIV workers, while this attention
     // tiling owns workers 0..15. Only those workers may allocate the inherited
     // attention pipe. Workers 16..23 remain in the subfunction so they can

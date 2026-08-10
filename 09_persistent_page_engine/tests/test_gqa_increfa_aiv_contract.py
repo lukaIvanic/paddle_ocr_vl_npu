@@ -175,7 +175,12 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("KERNEL_TYPE_MIX_AIC_1_1", geometry_patch)
         self.assertIn("launchAivNum = 24U", geometry_patch)
         self.assertIn("launchAicNum = 24U", geometry_patch)
+        self.assertIn("if (g_coreType == AIC)", kernel)
         self.assertIn("if (GetBlockIdx() < 16U)", kernel)
+        self.assertLess(
+            kernel.index("if (g_coreType == AIC)"),
+            kernel.index("if (GetBlockIdx() < 16U)"),
+        )
         self.assertIn("TPipe attentionPipe;", kernel)
         self.assertIn("&attentionPipe);", kernel)
         self.assertIn("PipeBarrier<PIPE_ALL>();", kernel)
