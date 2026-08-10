@@ -1,0 +1,126 @@
+{
+  "environment": {
+    "host": "liteserver-c001-4",
+    "device": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "git_commit": "459a9c2b00074d9efa4c154b3d9c17dd2c6fb53d"
+  },
+  "configuration": {
+    "model_dir": "/workspace/models/Qwen3-Reranker-0.6B",
+    "batch_sizes": [
+      4
+    ],
+    "continuation_lengths": [
+      128
+    ],
+    "batch_sweep_continuation": 128,
+    "length_sweep_batch": 4,
+    "matrix": "axes",
+    "lanes": [
+      "prefix_promptfa_compiled"
+    ],
+    "warmups": 3,
+    "repeats": 50,
+    "prefix_block": 128,
+    "prefix_valid_tokens": 60,
+    "prefix_build_s": 0.22164842719212174,
+    "source_hash": "167a52a5c20f",
+    "compile_source_key_override": "167a52a5c20f",
+    "prefill_optimizations": [
+      "baseline",
+      "combined",
+      "combined_bsnd"
+    ]
+  },
+  "metric_definitions": {
+    "served_input_tok_s": "valid prefix plus continuation tokens served per median call second",
+    "executed_model_tok_s": "token rows executing decoder QKV and MLP per median call second",
+    "physical_attention_q_tok_s": "physical attention Q rows, including square-padding dummies, per median call second"
+  },
+  "results": [
+    {
+      "runs": 50,
+      "mean_s": 0.015533603448420762,
+      "median_s": 0.015497243031859398,
+      "min_s": 0.015468142926692963,
+      "p90_s": 0.015519402944482862,
+      "max_s": 0.017075040144845843,
+      "pairs_s": 258.11042594974845,
+      "served_input_tok_s": 48524.7600785527,
+      "executed_model_tok_s": 33038.1345215678,
+      "physical_attention_q_tok_s": 66076.2690431356,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 5.625483639072627,
+      "additional_warmup_s": [
+        0.016254345886409283,
+        0.015644715866073966
+      ],
+      "compile_wrapper_s": 0.0007378028240054846,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f/prefix_promptfa_baseline_b4_q256_kv256_realq128_fp16_src167a52a5c20f",
+      "cache_was_warm": true,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "baseline"
+    },
+    {
+      "runs": 50,
+      "mean_s": 0.010431451881304383,
+      "median_s": 0.010418442077934742,
+      "min_s": 0.01040318701416254,
+      "p90_s": 0.010442498046904801,
+      "max_s": 0.010682450840249658,
+      "pairs_s": 383.9345623921656,
+      "served_input_tok_s": 72179.69772972714,
+      "executed_model_tok_s": 49143.6239861972,
+      "physical_attention_q_tok_s": 98287.2479723944,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 0.5418000379577279,
+      "additional_warmup_s": [
+        0.01095117605291307,
+        0.010450647911056876
+      ],
+      "compile_wrapper_s": 0.000969436950981617,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f/prefix_promptfa_combined_b4_q256_kv256_realq128_fp16_src167a52a5c20f",
+      "cache_was_warm": true,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "combined",
+      "max_abs_hidden_vs_prefix_baseline": 0.0625,
+      "max_abs_yes_no_logits_vs_prefix_baseline": 0.015625,
+      "max_abs_yes_score_vs_prefix_baseline": 0.0007680915296077728,
+      "same_yes_no_choice_vs_prefix_baseline": true
+    },
+    {
+      "runs": 50,
+      "mean_s": 0.010384353841654956,
+      "median_s": 0.010383525979705155,
+      "min_s": 0.010362725937739015,
+      "p90_s": 0.010401518014259637,
+      "max_s": 0.01040803687646985,
+      "pairs_s": 385.22559752998103,
+      "served_input_tok_s": 72422.41233563643,
+      "executed_model_tok_s": 49308.87648383757,
+      "physical_attention_q_tok_s": 98617.75296767514,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 40.811859995825216,
+      "additional_warmup_s": [
+        0.011234641075134277,
+        0.010396416997537017
+      ],
+      "compile_wrapper_s": 0.0004911879077553749,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f/prefix_promptfa_combined_bsnd_b4_q256_kv256_realq128_fp16_src167a52a5c20f",
+      "cache_was_warm": false,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "combined_bsnd",
+      "max_abs_hidden_vs_prefix_baseline": 0.0625,
+      "max_abs_yes_no_logits_vs_prefix_baseline": 0.015625,
+      "max_abs_yes_score_vs_prefix_baseline": 0.0007680915296077728,
+      "same_yes_no_choice_vs_prefix_baseline": true
+    }
+  ]
+}

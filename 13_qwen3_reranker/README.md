@@ -275,6 +275,12 @@ then applies four changes only to the repeated compiled suffix:
 - one-time expansion of reusable prefix K/V heads, while only current K/V is
   repeated per request.
 
+`combined_bsnd` is an experimental derivative. It also converts the prepared
+prefix cache to BSND once, keeps projected Q/K/V in BSND, and consumes the BSND
+PromptFA output directly. This removes the Q, K, V, and attention-output
+transposes from every decoder layer. It does not change square Q padding or the
+explicit GQA expansion required by the 310P-safe contract.
+
 The B4, real-Q128, physical-Q/KV256 FP16 comparison on Ascend 910B2 used 50
 warm synchronized repetitions. `combined` reduced median latency from 14.863
 ms to 10.233 ms and increased executed-model throughput from 34,447 to 50,035
@@ -283,6 +289,26 @@ was 0.0625, maximum yes/no-logit drift was 0.015625, maximum yes-score drift was
 0.0007681, and every binary choice matched. This is a 910B2 result, not 310P
 validation. The compact result is retained under
 `tmp/13_qwen3_reranker/prefix_opt_final_b4_c128_910b2_ce8b947.json`.
+
+At `459a9c2`, the same B4/Q128 comparison tested `combined_bsnd` on Ascend
+910B2. A direct square-Q256 PromptFA call was bit-exact between BNSD and BSND,
+and operator latency was effectively unchanged. The compiled end-to-end gain
+came from the surrounding graph:
+
+- forward-order medians: BNSD 10.418 ms, BSND 10.384 ms (0.3% lower);
+- reverse-order warm-cache medians: BNSD 10.373 ms, BSND 10.118 ms (2.5% lower);
+- separate clean profile controls: BNSD 10.416 ms, BSND 10.001 ms (4.0% lower);
+- device time: 10.205 ms to 9.819 ms (3.8% lower);
+- kernel launches: 682 to 570 per forward; all 112 transposes were removed.
+
+Both layouts had the same maximum hidden-state, yes/no-logit, and yes-score
+deltas versus the compiled baseline, and every binary choice matched. Because
+the latency delta is small and order-sensitive, retain BSND as an experimental
+preset until an alternating same-process benchmark and a direct 310P run pass.
+Compact evidence is retained in
+`tmp/13_qwen3_reranker/prefix_bsnd_b4_c128_910b2_459a9c2.json`,
+`tmp/13_qwen3_reranker/prefix_bsnd_b4_c128_reverse_910b2_459a9c2.json`, and
+`tmp/13_qwen3_reranker/profile_prefix_combined_bsnd_b4_c128_910b2_459a9c2/`.
 
 Run the same controlled matrix on 310P before making `combined` the deployment
 default:
@@ -299,7 +325,7 @@ python3 13_qwen3_reranker/benchmark_prefix_cache_throughput.py \
   --lanes prefix_promptfa_compiled \
   --prefill-optimizations baseline native_rms native_rotary \
     prebuilt_square_mask expanded_prefix_kv native_rms_rotary \
-    native_rms_rotary_mask combined \
+    native_rms_rotary_mask combined combined_bsnd \
   --warmups 3 \
   --repeats 50 \
   --compile-cache-dir .runtime_cache/13_qwen3_reranker/prefix_opt_310p \
@@ -387,13 +413,12 @@ The remaining per-forward device profile is:
 | ApplyRotaryPosEmb | 28 | 3.5% | One native Q/K rotary call per layer. |
 | Other | 64 | 6.2% | MLP elementwise fusion, dummy-output slicing, embedding support. |
 
-The profile no longer exposes one dominant accidental slow path. MatMul,
-PromptFA, native/fused norms, rotary, and MLP elementwise work account for about
-76.5% of device time. Transpose, concat, GQA broadcast, and dummy-output slicing
-account for about 22.9%. The clean next experiment is an end-to-end BSND
-PromptFA/cache layout, which could remove four transposes per layer. Treat it as
-a 310P operator-compatibility experiment, not an assumed deployment change. The
-square Q padding remains required by the currently validated masked 310P
+The original BNSD profile no longer exposed one dominant accidental slow path.
+MatMul, PromptFA, native/fused norms, rotary, and MLP elementwise work accounted
+for about 76.5% of device time. Transpose, concat, GQA broadcast, and
+dummy-output slicing accounted for about 22.9%. The subsequent
+`combined_bsnd` experiment removed the four transposes per layer, as described
+above. Square Q padding remains required by the currently validated masked 310P
 PromptFA contract.
 
 ## Weight Modes
