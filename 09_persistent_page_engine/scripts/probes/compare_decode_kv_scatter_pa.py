@@ -13,8 +13,8 @@ import torch
 
 from paddleocr_vl.model.compile_utils import import_torchair
 from paddleocr_vl.model.decode_kv_scatter import (
+    decode_kv_scatter,
     register_decode_kv_scatter_converter,
-    update_decode_kv_cache_with_scatter_pa_,
 )
 
 
@@ -34,14 +34,13 @@ class DecodeKvScatter(torch.nn.Module):
         key_states: torch.Tensor,
         value_states: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        update_decode_kv_cache_with_scatter_pa_(
+        return decode_kv_scatter(
             key_cache,
             value_cache,
             cache_position,
             key_states,
             value_states,
         )
-        return key_cache, value_cache
 
     def forward(
         self,

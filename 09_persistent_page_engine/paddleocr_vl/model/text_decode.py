@@ -42,8 +42,8 @@ from .decode_rope_lookup import (
     register_decode_rope_lookup_converter,
 )
 from .decode_kv_scatter import (
+    decode_kv_scatter,
     register_decode_kv_scatter_converter,
-    update_decode_kv_cache_with_scatter_pa_,
 )
 from .config import PaddleOCRTextConfig
 from .gqa_increfa_aiv import (
@@ -588,16 +588,15 @@ def update_decode_kv_cache_(
     value_states: torch.Tensor,
     *,
     use_scatter_pa: bool = False,
-) -> None:
+) -> tuple[torch.Tensor, torch.Tensor]:
     if use_scatter_pa:
-        update_decode_kv_cache_with_scatter_pa_(
+        return decode_kv_scatter(
             key_cache,
             value_cache,
             cache_position,
             key_states,
             value_states,
         )
-        return
     positions = (
         cache_position.reshape(-1)
         .to(device=key_cache.device, dtype=torch.int64)
@@ -612,7 +611,7 @@ def update_decode_kv_cache_(
         torch_npu.scatter_update_(
             value_cache, positions, value_states.contiguous(), 2
         )
-        return
+        return key_cache, value_cache
     key_states = key_states.contiguous()
     value_states = value_states.contiguous()
     batch_indices = torch.arange(
@@ -622,6 +621,7 @@ def update_decode_kv_cache_(
     )
     key_cache[batch_indices, :, positions, :] = key_states.squeeze(2)
     value_cache[batch_indices, :, positions, :] = value_states.squeeze(2)
+    return key_cache, value_cache
 
 
 def _prepare_multimodal_rotary_factors(
@@ -1047,7 +1047,7 @@ def _decode_attention(
             .reshape(batch_size, expected_heads, token_count, head_dim)
             .contiguous()
         )
-    update_decode_kv_cache_(
+    key_cache, value_cache = update_decode_kv_cache_(
         key_cache,
         value_cache,
         cache_position,
