@@ -43,6 +43,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=128)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--warmup-pages", type=int, default=2)
+    parser.add_argument(
+        "--warmup-repeats",
+        type=int,
+        default=1,
+        help="Repeat the warmup page set in the same persistent worker pool.",
+    )
     parser.add_argument("--layout-threshold", type=float, default=0.4)
     parser.add_argument(
         "--layout-execution",
@@ -92,8 +98,11 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if args.offset < 0 or args.limit < 1:
         parser.error("--offset must be non-negative and --limit positive")
-    if args.workers < 1 or args.warmup_pages < 0:
-        parser.error("--workers must be positive and --warmup-pages non-negative")
+    if args.workers < 1 or args.warmup_pages < 0 or args.warmup_repeats < 1:
+        parser.error(
+            "--workers and --warmup-repeats must be positive and "
+            "--warmup-pages non-negative"
+        )
     if args.cross_cache_length < 1:
         parser.error("--cross-cache-length must be positive")
     return args
@@ -190,18 +199,20 @@ def main() -> None:
         profile_prefill_device_stages=args.profile_prefill_device_stages,
     )
     setup_s = pool.setup_wall_s
-    warmup_summary = None
+    warmup_summaries = []
     writer = CrossKvArtifactWriter(output_dir)
     try:
         if args.warmup_pages:
-            for payload in pool.iter_map(
-                image_paths[: args.warmup_pages],
-                label="prefill_export_warmup",
-            ):
-                _discard_payload(payload)
-            warmup_summary = pool.last_stream_summary
-            if warmup_summary is None:
-                raise RuntimeError("producer warmup stream has no timing summary")
+            for repeat_index in range(args.warmup_repeats):
+                for payload in pool.iter_map(
+                    image_paths[: args.warmup_pages],
+                    label=f"prefill_export_warmup_{repeat_index + 1}",
+                ):
+                    _discard_payload(payload)
+                warmup_summary = pool.last_stream_summary
+                if warmup_summary is None:
+                    raise RuntimeError("producer warmup stream has no timing summary")
+                warmup_summaries.append(warmup_summary)
         measured_started = time.perf_counter()
         for payload in pool.iter_map(image_paths, label="prefill_export_measured"):
             writer.add_page(payload)
@@ -232,7 +243,9 @@ def main() -> None:
                     args.profile_prefill_device_stages
                 ),
                 "setup_s": setup_s,
-                "warmup": warmup_summary,
+                "warmup_repeats": args.warmup_repeats,
+                "warmups": warmup_summaries,
+                "warmup": warmup_summaries[-1] if warmup_summaries else None,
                 "producer_stream_wall_s": stream_wall_s,
                 "worker_summary": worker_summary,
             }

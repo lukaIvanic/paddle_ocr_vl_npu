@@ -514,6 +514,8 @@ def _worker_main(
             frontend_timing: dict[str, float] = {}
             shared_pack_s = 0.0
             shared_payload_bytes = 0
+            prefix_new_first_calls: dict[str, float] = {}
+            prefix_call_count_delta = 0
             if prepare_pages:
                 result, frontend_timing = _prepare_frontend_payload(
                     page_index=page_index,
@@ -562,12 +564,35 @@ def _worker_main(
                     "recognition_input_prepare_worker_s": recognition_prepare_s,
                 }
                 if prefill_recognition:
+                    prefix_first_calls_before = set(
+                        getattr(
+                            vision_atlas_runtime,
+                            "prefix_first_call_wall_s",
+                            {},
+                        )
+                    )
+                    prefix_call_count_before = int(
+                        getattr(vision_atlas_runtime, "prefix_call_count", 0)
+                    )
                     prefill_timing = _prefill_worker_page(
                         result,
                         runner=recognition_runner,
                         vision_atlas_runtime=vision_atlas_runtime,
                         profile_device_stages=profile_prefill_device_stages,
                     )
+                    prefix_first_calls_after = getattr(
+                        vision_atlas_runtime,
+                        "prefix_first_call_wall_s",
+                        {},
+                    )
+                    prefix_new_first_calls = {
+                        str(name): float(wall_s)
+                        for name, wall_s in prefix_first_calls_after.items()
+                        if name not in prefix_first_calls_before
+                    }
+                    prefix_call_count_delta = int(
+                        getattr(vision_atlas_runtime, "prefix_call_count", 0)
+                    ) - prefix_call_count_before
                     result["frontend_timing_s"].update(
                         {
                             name: value
@@ -614,6 +639,10 @@ def _worker_main(
                             recognition_prepare_s if prepare_pages else 0.0
                         ),
                         "worker_page_s": ready_at - started,
+                    },
+                    "prefix_diagnostics": {
+                        "call_count": prefix_call_count_delta,
+                        "new_first_calls": prefix_new_first_calls,
                     },
                 }
             )
@@ -850,6 +879,13 @@ class DynamicLayoutProcessPool:
             self.task_queue.put((run_id, page_index, str(path)))
         worker_pages = [0] * self.worker_count
         worker_busy_s = [0.0] * self.worker_count
+        worker_page_indices: list[list[int]] = [
+            [] for _ in range(self.worker_count)
+        ]
+        worker_prefix_call_counts = [0] * self.worker_count
+        worker_prefix_new_first_calls: list[dict[str, float]] = [
+            {} for _ in range(self.worker_count)
+        ]
         stage_s = {
             "worker_file_read_sum_s": 0.0,
             "worker_direct_rgb_decode_sum_s": 0.0,
@@ -878,7 +914,20 @@ class DynamicLayoutProcessPool:
             worker_index = int(message["worker"])
             timing = message["timing"]
             worker_pages[worker_index] += 1
+            worker_page_indices[worker_index].append(int(message["page_index"]))
             worker_busy_s[worker_index] += float(timing["worker_page_s"])
+            prefix_diagnostics = message.get("prefix_diagnostics", {})
+            worker_prefix_call_counts[worker_index] += int(
+                prefix_diagnostics.get("call_count", 0)
+            )
+            worker_prefix_new_first_calls[worker_index].update(
+                {
+                    str(name): float(wall_s)
+                    for name, wall_s in prefix_diagnostics.get(
+                        "new_first_calls", {}
+                    ).items()
+                }
+            )
             ipc_delivery_s = time.perf_counter() - float(message["ready_at"])
             ipc_delivery_sum_s += ipc_delivery_s
             ipc_delivery_max_s = max(ipc_delivery_max_s, ipc_delivery_s)
@@ -918,7 +967,27 @@ class DynamicLayoutProcessPool:
             "wall_s": wall_s,
             "pages_per_s": len(paths) / wall_s if wall_s else None,
             "worker_page_counts": worker_pages,
+            "worker_page_indices": worker_page_indices,
             "worker_busy_s": worker_busy_s,
+            "prefix_diagnostics": {
+                "worker_call_counts": worker_prefix_call_counts,
+                "worker_new_first_call_counts": [
+                    len(values) for values in worker_prefix_new_first_calls
+                ],
+                "worker_new_first_call_wall_s": [
+                    sum(values.values()) for values in worker_prefix_new_first_calls
+                ],
+                "worker_new_first_call_shapes": [
+                    sorted(values) for values in worker_prefix_new_first_calls
+                ],
+                "new_first_call_count": sum(
+                    len(values) for values in worker_prefix_new_first_calls
+                ),
+                "new_first_call_wall_sum_s": sum(
+                    sum(values.values())
+                    for values in worker_prefix_new_first_calls
+                ),
+            },
             "stage_s": stage_s,
             "ipc_delivery_sum_s": ipc_delivery_sum_s,
             "ipc_delivery_mean_s": ipc_delivery_sum_s / len(paths),
