@@ -19,6 +19,7 @@ from paddleocr_vl.serving.table_speculative import DraftProposal  # noqa: E402
 FCEL = 101309
 MATH_OPEN = 47536
 OTHER = 123
+SLASH = 93980
 
 
 class CellBoundaryDraftTrustTest(unittest.TestCase):
@@ -28,6 +29,7 @@ class CellBoundaryDraftTrustTest(unittest.TestCase):
         *,
         accepted: int,
         base_next: int,
+        trust_slash: bool = False,
     ) -> int | None:
         return cell_boundary_math_open_draft_token(
             [FCEL],
@@ -36,6 +38,7 @@ class CellBoundaryDraftTrustTest(unittest.TestCase):
             base_next_token=base_next,
             cell_token_ids={FCEL},
             math_open_token_id=MATH_OPEN,
+            additional_trigger_token_ids={SLASH} if trust_slash else set(),
             minimum_match=5,
         )
 
@@ -54,6 +57,22 @@ class CellBoundaryDraftTrustTest(unittest.TestCase):
     def test_requires_cell_boundary(self) -> None:
         proposal = DraftProposal(10, (OTHER, MATH_OPEN), 6)
         self.assertIsNone(self.decide(proposal, accepted=1, base_next=OTHER))
+
+    def test_follows_draft_when_draft_starts_standalone_slash(self) -> None:
+        proposal = DraftProposal(10, (SLASH,), 6)
+        self.assertEqual(
+            self.decide(
+                proposal,
+                accepted=0,
+                base_next=OTHER,
+                trust_slash=True,
+            ),
+            SLASH,
+        )
+
+    def test_slash_rule_is_independent(self) -> None:
+        proposal = DraftProposal(10, (SLASH,), 6)
+        self.assertIsNone(self.decide(proposal, accepted=0, base_next=OTHER))
 
 
 if __name__ == "__main__":
