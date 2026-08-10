@@ -600,6 +600,7 @@ DECODE_OPTIMIZATION_PRESETS.update(
             ascendc_token_embedding=False,
             ascendc_qkv_split=False,
             ascendc_rope_lookup=False,
+            ascendc_position_add=True,
             ascendc_swiglu=False,
             ascendc_decode_gqa=False,
             ascendc_decode_gqa_mixed24=True,

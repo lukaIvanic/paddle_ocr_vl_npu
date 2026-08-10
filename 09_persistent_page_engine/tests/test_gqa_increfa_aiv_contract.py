@@ -440,6 +440,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertFalse(simple.ascendc_token_embedding)
         self.assertFalse(simple.ascendc_qkv_split)
         self.assertFalse(simple.ascendc_rope_lookup)
+        self.assertTrue(simple.ascendc_position_add)
         self.assertFalse(simple.ascendc_swiglu)
 
     def test_packed_qkv_rope_operator_removes_the_split_pipe_boundary(self) -> None:
