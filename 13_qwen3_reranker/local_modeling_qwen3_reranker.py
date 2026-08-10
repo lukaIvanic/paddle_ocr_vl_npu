@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -12,6 +13,8 @@ from torch import nn
 
 
 PROMPT_FA_FULL_ATTENTION_TOKENS = (1 << 31) - 1
+FRACTAL_NZ = 29
+RERANKER_LINEAR_WEIGHT_FORMAT_CHOICES = ("native", "fractal_nz")
 
 
 @dataclass(frozen=True)
@@ -1185,3 +1188,114 @@ class LocalQwen3RerankerForCausalLM(nn.Module):
         yes_no_ids = torch.tensor([false_token_id, true_token_id], device=input_ids.device, dtype=torch.long)
         yes_no_logits = F.linear(self.forward_hidden_states(input_ids, attention_mask)[:, -1], self.lm_head.weight[yes_no_ids])
         return F.softmax(yes_no_logits, dim=-1)[:, 1]
+
+
+def reranker_transformer_linears(
+    model: LocalQwen3RerankerForCausalLM,
+) -> tuple[tuple[str, nn.Linear], ...]:
+    """Return the seven timed transformer projections in every decoder layer."""
+    modules: list[tuple[str, nn.Linear]] = []
+    for layer_index, layer in enumerate(model.layers):
+        modules.extend(
+            (
+                (f"layers.{layer_index}.self_attn.q_proj", layer.self_attn.q_proj),
+                (f"layers.{layer_index}.self_attn.k_proj", layer.self_attn.k_proj),
+                (f"layers.{layer_index}.self_attn.v_proj", layer.self_attn.v_proj),
+                (f"layers.{layer_index}.self_attn.o_proj", layer.self_attn.o_proj),
+                (f"layers.{layer_index}.mlp.gate_proj", layer.mlp.gate_proj),
+                (f"layers.{layer_index}.mlp.up_proj", layer.mlp.up_proj),
+                (f"layers.{layer_index}.mlp.down_proj", layer.mlp.down_proj),
+            )
+        )
+    expected = len(model.layers) * 7
+    if len(modules) != expected:
+        raise RuntimeError(
+            f"expected {expected} reranker transformer Linear modules, found {len(modules)}"
+        )
+    return tuple(modules)
+
+
+def prepare_reranker_linear_weight_format(
+    model: LocalQwen3RerankerForCausalLM,
+    *,
+    requested: str,
+) -> dict[str, object]:
+    """Precast the 196 timed transformer Linear weights to FRACTAL_NZ.
+
+    The checkpoint ties ``lm_head`` to ``embed_tokens``. Keep that shared table
+    in ND for embedding lookup and for the tiny yes/no projection outside the
+    compiled prefill graph.
+    """
+    requested = str(requested)
+    if requested not in RERANKER_LINEAR_WEIGHT_FORMAT_CHOICES:
+        raise ValueError(
+            "reranker linear weight format must be one of "
+            f"{RERANKER_LINEAR_WEIGHT_FORMAT_CHOICES}, got {requested!r}"
+        )
+    modules = reranker_transformer_linears(model)
+    non_npu = [
+        (name, str(module.weight.device))
+        for name, module in modules
+        if module.weight.device.type != "npu"
+    ]
+    if non_npu:
+        raise RuntimeError(
+            "reranker Linear format preparation requires NPU-resident weights: "
+            f"{non_npu[:4]}"
+        )
+
+    import torch_npu
+
+    def histogram() -> dict[str, int]:
+        return dict(
+            sorted(
+                Counter(
+                    str(int(torch_npu.get_npu_format(module.weight)))
+                    for _name, module in modules
+                ).items()
+            )
+        )
+
+    before = histogram()
+    converted: list[str] = []
+    if requested == "fractal_nz":
+        for name, module in modules:
+            before_code = int(torch_npu.get_npu_format(module.weight))
+            if before_code == FRACTAL_NZ:
+                continue
+            module.weight.data = torch_npu.npu_format_cast(
+                module.weight.data,
+                FRACTAL_NZ,
+            )
+            after_code = int(torch_npu.get_npu_format(module.weight))
+            if after_code != FRACTAL_NZ:
+                raise RuntimeError(
+                    "reranker Linear format cast did not produce FRACTAL_NZ: "
+                    f"module={name} before={before_code} after={after_code}"
+                )
+            converted.append(name)
+    after = histogram()
+    all_after_are_nz = all(
+        int(torch_npu.get_npu_format(module.weight)) == FRACTAL_NZ
+        for _name, module in modules
+    )
+    if requested == "fractal_nz" and not all_after_are_nz:
+        raise RuntimeError(
+            f"not all reranker Linear weights are FRACTAL_NZ after conversion: {after}"
+        )
+    return {
+        "requested": requested,
+        "effective_mode": requested,
+        "target_format": "FRACTAL_NZ" if requested == "fractal_nz" else "unchanged",
+        "target_format_code": FRACTAL_NZ if requested == "fractal_nz" else None,
+        "linear_weight_count": len(modules),
+        "converted_count": len(converted),
+        "converted_modules_sample": converted[:16],
+        "before_format_histogram": before,
+        "after_format_histogram": after,
+        "all_after_are_nz": all_after_are_nz,
+        "excluded_shared_weight": {
+            "name": "embed_tokens.weight/lm_head.weight",
+            "reason": "embedding lookup and yes/no projection stay outside the compiled prefill graph",
+        },
+    }

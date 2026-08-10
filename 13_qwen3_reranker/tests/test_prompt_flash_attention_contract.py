@@ -24,6 +24,7 @@ from local_modeling_qwen3_reranker import (  # noqa: E402
     linear_tokenwise,
     prompt_flash_attention_bnsd_310p_compatible,
     prompt_flash_attention_bsnd_310p_compatible,
+    reranker_transformer_linears,
 )
 
 
@@ -298,6 +299,26 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
         self.assertEqual(values[0].shape, (1, 3, 4, 8))
         torch.testing.assert_close(keys[0][:, :, 0], key[:, 0])
         torch.testing.assert_close(keys[0][:, :, 1], key[:, 0])
+
+    def test_reranker_transformer_linears_selects_seven_projections_per_layer(self) -> None:
+        config = LocalQwen3RerankerConfig(
+            vocab_size=8,
+            hidden_size=16,
+            intermediate_size=32,
+            num_hidden_layers=2,
+            num_attention_heads=2,
+            num_key_value_heads=1,
+            head_dim=8,
+            rms_norm_eps=1e-6,
+            rope_theta=10000.0,
+            tie_word_embeddings=True,
+        )
+        model = LocalQwen3RerankerForCausalLM(config)
+        modules = reranker_transformer_linears(model)
+
+        self.assertEqual(len(modules), 14)
+        self.assertEqual(len({name for name, _module in modules}), 14)
+        self.assertFalse(any("embed_tokens" in name or "lm_head" in name for name, _ in modules))
 
 
 if __name__ == "__main__":
