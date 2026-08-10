@@ -29,8 +29,10 @@ from benchmark_prefix_cache_throughput import (
 )
 from local_modeling_qwen3_reranker import (
     PREFILL_OPTIMIZATION_PRESETS,
+    RERANKER_LINEAR_WEIGHT_FORMAT_CHOICES,
     build_310p_square_promptfa_mask,
     build_left_padded_causal_bool_mask_chunk,
+    prepare_reranker_linear_weight_format,
 )
 from run_local_qwen3_reranker import LocalQwen3RerankerRunner
 from transformers_rerank import DEFAULT_TASK
@@ -67,6 +69,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--task", default=DEFAULT_TASK)
+    parser.add_argument(
+        "--linear-weight-format",
+        choices=RERANKER_LINEAR_WEIGHT_FORMAT_CHOICES,
+        default="native",
+    )
+    parser.add_argument(
+        "--enable-internal-format",
+        action="store_true",
+        help="Enable torch-npu internal tensor formats before the first NPU allocation.",
+    )
     return parser.parse_args()
 
 
@@ -129,6 +141,10 @@ def main() -> None:
     import torch_npu
     import torch_npu.profiler as npu_prof
 
+    internal_format_enabled = (
+        args.enable_internal_format or args.linear_weight_format == "fractal_nz"
+    )
+    torch.npu.config.allow_internal_format = internal_format_enabled
     device = torch.device(args.device)
     torch.npu.set_device(device)
     torch.npu.set_compile_mode(jit_compile=False)
@@ -141,7 +157,8 @@ def main() -> None:
     )
     print(
         f"ENV host={platform.node()} device={torch.npu.get_device_name(device)!r} "
-        f"torch={torch.__version__} torch_npu={torch_npu.__version__} commit={git_commit()}",
+        f"torch={torch.__version__} torch_npu={torch_npu.__version__} commit={git_commit()} "
+        f"internal_format={internal_format_enabled}",
         flush=True,
     )
 
@@ -158,6 +175,18 @@ def main() -> None:
     )
     model = runner.model
     tokenizer = runner.tokenizer
+    weight_format_started = time.perf_counter()
+    weight_format = prepare_reranker_linear_weight_format(
+        model,
+        requested=args.linear_weight_format,
+    )
+    synchronize(device)
+    weight_format["setup_s"] = time.perf_counter() - weight_format_started
+    print("LINEAR_WEIGHT_FORMAT " + json.dumps(weight_format, sort_keys=True), flush=True)
+    weight_cache_key = (
+        f"weights{weight_format['effective_mode']}_"
+        f"internal{int(internal_format_enabled)}"
+    )
     prefix_ids, prefix_attention, prefix_valid_tokens = make_prefix_inputs(
         tokenizer,
         task=args.task,
@@ -213,13 +242,13 @@ def main() -> None:
     cache_dir = args.compile_cache_dir / (
         f"prefix_promptfa_{optimization.name}_b{args.batch_size}_"
         f"q{full_length}_kv{full_length}_realq{args.continuation_length}_"
-        f"fp16_src{source_key}"
+        f"{weight_cache_key}_fp16_src{source_key}"
     )
     compiled, compile_wrapper_s, cache_was_warm = compile_stage(
         stage,
         entrypoint_name=(
             f"reranker_prefix_promptfa_{optimization.name}_b{args.batch_size}_"
-            f"realq{args.continuation_length}_s{full_length}"
+            f"realq{args.continuation_length}_s{full_length}_{weight_cache_key}"
         ),
         cache_dir=cache_dir,
         device=device,
@@ -292,6 +321,8 @@ def main() -> None:
             "compile_source_key": source_key,
             "compile_source_key_override": args.compile_source_key,
             "prefill_optimization": optimization.name,
+            "internal_format_enabled": internal_format_enabled,
+            "linear_weight_format": weight_format,
         },
         "setup": {
             "prefix_build_s": prefix_build_s,
