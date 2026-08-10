@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import atexit
 import json
+import os
 import sys
 import time
 import warnings
@@ -1635,6 +1636,14 @@ def main() -> None:
             else None
         ),
     )
+    static_cross_cache_len = int(
+        os.environ.get("UNIREC_STATIC_CROSS_CACHE_LEN", "0")
+    )
+    if static_cross_cache_len > 0:
+        processor_shape = tuple(int(value) for value in runner.processor.max_side)
+        runner._static_cross_cache_len_by_processor_max_side[
+            processor_shape
+        ] = static_cross_cache_len
     if (
         args.vision_prefill_mode == "compiled_atlas_stage2"
         and args.text_prefill_mode != "compiled_packed_s1024"

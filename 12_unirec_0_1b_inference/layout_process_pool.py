@@ -8,6 +8,7 @@ no worker is tied to a slow static shard.
 from __future__ import annotations
 
 import multiprocessing as mp
+import os
 import queue
 import sys
 import time
@@ -446,12 +447,12 @@ def _worker_main(
 
             crop_margin = openocr_crop_margin
             tokenize_figure_of_table = openocr_tokenize_figure_of_table
-            from modeling_optimized_unirec import (
-                LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN,
-                UniRecImageProcessor,
-            )
+            from modeling_optimized_unirec import UniRecImageProcessor
 
             recognition_processor = UniRecImageProcessor()
+            static_cross_cache_len = int(
+                os.environ.get("UNIREC_STATIC_CROSS_CACHE_LEN", "0")
+            )
         else:
             recognition_processor = None
         if prefill_recognition:
@@ -468,6 +469,13 @@ def _worker_main(
                 dtype=recognition_dtype,
                 compile_cache_dir=recognition_cache_dir,
             )
+            if static_cross_cache_len > 0:
+                processor_shape = tuple(
+                    int(value) for value in recognition_runner.processor.max_side
+                )
+                recognition_runner._static_cross_cache_len_by_processor_max_side[
+                    processor_shape
+                ] = static_cross_cache_len
             vision_atlas_runtime = UniRecVisionAtlasRuntime(recognition_runner)
         else:
             recognition_runner = None
@@ -501,7 +509,7 @@ def _worker_main(
                 result["started_at"] = started
                 recognition_prepare_started = time.perf_counter()
                 rejected_crops = 0
-                if LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN > 0:
+                if static_cross_cache_len > 0:
                     kept_crops = []
                     kept_block_ids = []
                     for crop, block_id in zip(
@@ -511,7 +519,7 @@ def _worker_main(
                         tokens = recognition_processor.estimate_encoder_token_count_for_image_size(
                             width, height
                         )
-                        if tokens > LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN:
+                        if tokens > static_cross_cache_len:
                             rejected_crops += 1
                             continue
                         kept_crops.append(crop)

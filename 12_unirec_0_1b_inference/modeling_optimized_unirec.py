@@ -31,11 +31,6 @@ LOCAL_UNIREC_STATIC_CACHE_LEN = int(
 )
 if LOCAL_UNIREC_STATIC_CACHE_LEN < 1:
     raise ValueError("UNIREC_STATIC_CACHE_LEN must be >= 1")
-LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN = int(
-    os.environ.get("UNIREC_STATIC_CROSS_CACHE_LEN", "0")
-)
-if LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN < 0:
-    raise ValueError("UNIREC_STATIC_CROSS_CACHE_LEN must be >= 0")
 LOCAL_UNIREC_SELF_ATTN_BACKENDS = {"eager", "increfa", "increfa_all"}
 DTYPE_MAP = {
     "bfloat16": torch.bfloat16,
@@ -1925,8 +1920,6 @@ class OptimizedUniRecRunner:
         }
 
     def _get_static_cross_cache_len(self) -> int:
-        if LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN > 0:
-            return LOCAL_UNIREC_STATIC_CROSS_CACHE_LEN
         processor_max_side = tuple(int(value) for value in self.processor.max_side)
         cached = self._static_cross_cache_len_by_processor_max_side.get(processor_max_side)
         if cached is not None:
