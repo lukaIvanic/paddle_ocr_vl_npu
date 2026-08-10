@@ -108,6 +108,7 @@ def source_hash() -> str:
         "benchmark_prefix_cache_throughput.py",
         "local_modeling_qwen3_reranker.py",
         "local_reranker_w8a8.py",
+        "run_local_qwen3_reranker.py",
     ):
         digest.update((root / name).read_bytes())
     return digest.hexdigest()[:12]
@@ -461,6 +462,7 @@ def main() -> None:
 
     maximum_batch = max(max(args.batch_sizes), args.length_sweep_batch)
     print("loading model", flush=True)
+    model_load_started = time.perf_counter()
     runner = LocalQwen3RerankerRunner(
         args.model_dir,
         device=device,
@@ -470,6 +472,13 @@ def main() -> None:
         compile_forward=False,
         attention_impl="prompt_flash_attention",
         ffn_weight_mode=args.ffn_weight_mode,
+    )
+    model_load_s = time.perf_counter() - model_load_started
+    print(
+        "MODEL_LOAD "
+        f"wall_s={model_load_s:.6f} "
+        f"weight_quantization_s={runner.weight_quantization_s:.6f}",
+        flush=True,
     )
     model = runner.model
     tokenizer = runner.tokenizer
@@ -834,6 +843,8 @@ def main() -> None:
             "linear_weight_format": weight_format,
             "ffn_weight_mode": args.ffn_weight_mode,
             "quant_weight_format": quant_weight_format,
+            "model_load_s": model_load_s,
+            "weight_quantization_s": runner.weight_quantization_s,
         },
         "metric_definitions": {
             "served_input_tok_s": "valid prefix plus continuation tokens served per median call second",

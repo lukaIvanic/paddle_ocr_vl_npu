@@ -86,6 +86,7 @@ class LocalQwen3RerankerRunner:
         self._prefix_value_caches: tuple[torch.Tensor, ...] | None = None
         self._batched_prefix_key_caches: tuple[torch.Tensor, ...] | None = None
         self._batched_prefix_value_caches: tuple[torch.Tensor, ...] | None = None
+        self.weight_quantization_s = 0.0
         if self.attention_impl not in {"eager", "prompt_flash_attention"}:
             raise ValueError(f"Unsupported attention_impl={self.attention_impl!r}")
         if self.attention_impl == "prompt_flash_attention" and self.dtype is not torch.float16:
@@ -206,6 +207,7 @@ class LocalQwen3RerankerRunner:
             missing = []
         if missing or unexpected:
             raise RuntimeError(f"state_dict mismatch: missing={missing}, unexpected={unexpected}")
+        quantization_started = time.perf_counter()
         if self.ffn_weight_mode == "gate_up_w8a8":
             from local_reranker_w8a8 import quantize_reranker_gate_up_inplace
 
@@ -218,6 +220,8 @@ class LocalQwen3RerankerRunner:
             from local_reranker_w8a8 import quantize_reranker_all_linears_inplace
 
             quantize_reranker_all_linears_inplace(model, out_dtype=self.dtype)
+        if self.ffn_weight_mode != "dense":
+            self.weight_quantization_s = time.perf_counter() - quantization_started
         model.to(device=self.device, dtype=self.dtype)
         if self.ffn_weight_mode != "dense":
             from local_reranker_w8a8 import restore_w8a8_scale_dtypes
