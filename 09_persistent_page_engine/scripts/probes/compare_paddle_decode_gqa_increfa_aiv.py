@@ -102,7 +102,7 @@ def parse_args() -> argparse.Namespace:
         "--geometry",
         choices=("aiv", "mixed"),
         default="aiv",
-        help="Compile the zero-cube AIV op or its 1:2 mixed-task control.",
+        help="Compile the zero-cube AIV op or its 1:1 mixed-task control.",
     )
     parser.add_argument("--strict-scope", action="store_true")
     parser.add_argument(
@@ -276,7 +276,7 @@ def main() -> int:
             "super_kernel_options": args.super_kernel_options,
             "vector_core_count": 16,
             "core_type": (
-                "MIX_AIC_1_2_WITH_NOOP_AIC"
+                "MIX_AIC_1_1_WITH_NOOP_AIC"
                 if args.geometry == "mixed"
                 else "MIX_AIV_ZERO_CUBE"
             ),

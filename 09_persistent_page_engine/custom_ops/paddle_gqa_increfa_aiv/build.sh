@@ -26,6 +26,7 @@ PREPARED_OP_REL="$CUSTOM_OP_REL"
 OP_API_SYMBOL_PREFIX="PaddleGqaIncreFlashAttentionAiv"
 FUSED_DECODE=false
 EXPECT_AIV_ONLY=true
+EXPECTED_TASK_RATIO="0:1"
 ENTRY_REL="$UPSTREAM_OP_REL/op_kernel/incre_flash_attention_arch32.h"
 EXPECTED_ENTRY_SHA256="20cb2397d84cf5d5386ebc09b6aa79eacfd3f32d956309c1b4e7f3e2690ef63b"
 HOST_TILER_REL="$UPSTREAM_OP_REL/op_host/incre_flash_attention_tiling.cpp"
@@ -97,6 +98,7 @@ case "$EXPERIMENT_VARIANT" in
         OP_API_SYMBOL_PREFIX="PaddleDecodeGqaIncreFlashAttentionMixed"
         FUSED_DECODE=true
         EXPECT_AIV_ONLY=false
+        EXPECTED_TASK_RATIO="1:1"
         ;;
     decode_attention_only)
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
@@ -289,13 +291,13 @@ elif [[ "$(awk '$4 == "FUNC" && $8 ~ /_mix_aic$/ { count += 1 } END { print coun
     exit 3
 fi
 
-"$PYTHON_BIN" - "$KERNEL_JSON" "$EXPECT_AIV_ONLY" <<'PY'
+"$PYTHON_BIN" - "$KERNEL_JSON" "$EXPECTED_TASK_RATIO" <<'PY'
 import json
 import sys
 
 expected = {11000000000000000, 11000000000100000}
 path = sys.argv[1]
-expect_aiv_only = sys.argv[2] == "true"
+expected_ratio = sys.argv[2]
 metadata = json.load(open(path, encoding="utf-8"))
 kernels = metadata.get("kernelList", [])
 if len(kernels) != 2:
@@ -317,7 +319,6 @@ for kernel in kernels:
     })
     if metadata.get("coreType") not in ("MIX", "MIX_AIV"):
         raise SystemExit(f"{path}: unexpected core type")
-    expected_ratio = "0:1" if expect_aiv_only else "1:2"
     if task_ratio != expected_ratio:
         raise SystemExit(
             f"{path}: expected taskRation={expected_ratio}, got {task_ratio}"

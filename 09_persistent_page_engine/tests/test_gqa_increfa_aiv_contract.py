@@ -204,7 +204,12 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         )
         self.assertIn("0018-decoder-mixed-task-geometry.patch", build_script)
         self.assertIn("renamed_path=", build_script)
-        self.assertIn("KERNEL_TYPE_MIX_AIC_1_2", mixed_patch)
+        self.assertIn("KERNEL_TYPE_MIX_AIC_1_1", mixed_patch)
+        self.assertIn("launchAicNum = launchAivNum", mixed_patch)
+        self.assertIn(
+            "SyncAll<false>(syncGlobal, syncLocal, kAivCoreCount)",
+            mixed_patch,
+        )
         self.assertIn("if (g_coreType == AIC)", mixed_patch)
         self.assertIn(
             'paddleocr_vl::decode_gqa_incre_flash_attention_mixed',
