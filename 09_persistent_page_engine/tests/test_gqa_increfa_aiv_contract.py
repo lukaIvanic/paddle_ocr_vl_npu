@@ -23,6 +23,39 @@ from paddleocr_vl.model import text_decode
 
 
 class GqaIncrefaAivContractTest(unittest.TestCase):
+    def test_functional_mixed24_kv_handoff_has_no_reference_aliases(self) -> None:
+        operator_root = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_decode_kv_prepare_functional_mixed24"
+        )
+        kernel = (
+            operator_root
+            / "op_kernel"
+            / "paddle_decode_kv_prepare_functional_mixed24.cpp"
+        ).read_text(encoding="utf-8")
+        op_json = (operator_root / "op.json").read_text(encoding="utf-8")
+        converter = (
+            EXPERIMENT_ROOT
+            / "paddleocr_vl"
+            / "model"
+            / "decode_kv_prepare_functional_mixed24.py"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("KERNEL_TYPE_MIX_AIC_1_1", kernel)
+        self.assertEqual(kernel.count("SyncAll<true>();"), 2)
+        self.assertIn("kernel.CopyCaches(GetBlockIdx());", kernel)
+        self.assertIn("kernel.PrepareToken();", kernel)
+        self.assertIn("PipeBarrier<PIPE_ALL>();", kernel)
+        self.assertIn('"key_cache_out"', op_json)
+        self.assertIn('"value_cache_out"', op_json)
+        self.assertNotIn('"key_cache_ref"', op_json)
+        self.assertNotIn("mutates_args=(\"key_cache\"", converter)
+        self.assertIn(
+            'GE_OP_NAME = "PaddleDecodeKvPrepareFunctionalMixed24"',
+            converter,
+        )
+
     def test_mixed24_prep_matches_outer_superkernel_geometry(self) -> None:
         kernel = (
             EXPERIMENT_ROOT
