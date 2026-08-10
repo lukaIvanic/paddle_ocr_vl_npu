@@ -55,13 +55,12 @@ public:
         ropeDeltaGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ int64_t *>(ropeDelta), 1);
 
-        pipe->InitBuffer(queryInputQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(packedInputQueue, 1, kPackedElements * sizeof(half));
         pipe->InitBuffer(queryOutputQueue, 1, kQueryElements * sizeof(half));
-        pipe->InitBuffer(keyInputQueue, 1, kStateElements * sizeof(half));
         pipe->InitBuffer(keyOutputQueue, 1, kStateElements * sizeof(half));
-        pipe->InitBuffer(valueInputQueue, 1, kStateElements * sizeof(half));
         pipe->InitBuffer(valueOutputQueue, 1, kStateElements * sizeof(half));
-        pipe->InitBuffer(factorInputQueue, 1, 2 * kHeadDim * sizeof(half));
+        pipe->InitBuffer(cosineInputQueue, 1, kHeadDim * sizeof(half));
+        pipe->InitBuffer(sineInputQueue, 1, kHeadDim * sizeof(half));
         pipe->InitBuffer(maskOutputQueue, 1, kCacheLength * sizeof(uint8_t));
         pipe->InitBuffer(rotateScratch, kHeadDim * sizeof(half));
     }
@@ -77,47 +76,45 @@ public:
         const int64_t cachePosition = cachePositionGm.GetValue(0);
         const int64_t ropePosition = cachePosition + ropeDeltaGm.GetValue(0);
 
-        LocalTensor<half> queryInput = queryInputQueue.AllocTensor<half>();
-        LocalTensor<half> keyInput = keyInputQueue.AllocTensor<half>();
-        LocalTensor<half> valueInput = valueInputQueue.AllocTensor<half>();
-        LocalTensor<half> factors = factorInputQueue.AllocTensor<half>();
-        DataCopy(queryInput, qkvGm, kQueryElements);
-        DataCopy(keyInput, qkvGm[kQueryElements], kStateElements);
-        DataCopy(valueInput, qkvGm[kValueOffset], kStateElements);
+        LocalTensor<half> packedInput = packedInputQueue.AllocTensor<half>();
+        LocalTensor<half> cosine = cosineInputQueue.AllocTensor<half>();
+        LocalTensor<half> sine = sineInputQueue.AllocTensor<half>();
+        DataCopy(packedInput, qkvGm, kPackedElements);
         const uint32_t factorOffset =
             static_cast<uint32_t>(ropePosition) * kHeadDim;
-        DataCopy(factors, factorLutGm[factorOffset], kHeadDim);
+        DataCopy(cosine, factorLutGm[factorOffset], kHeadDim);
         DataCopy(
-            factors[kHeadDim],
+            sine,
             factorLutGm[kFactorPlaneElements + factorOffset],
             kHeadDim);
-        queryInputQueue.EnQue(queryInput);
-        keyInputQueue.EnQue(keyInput);
-        valueInputQueue.EnQue(valueInput);
-        factorInputQueue.EnQue(factors);
+        packedInputQueue.EnQue(packedInput);
+        cosineInputQueue.EnQue(cosine);
+        sineInputQueue.EnQue(sine);
 
-        queryInput = queryInputQueue.DeQue<half>();
-        keyInput = keyInputQueue.DeQue<half>();
-        valueInput = valueInputQueue.DeQue<half>();
-        factors = factorInputQueue.DeQue<half>();
+        packedInput = packedInputQueue.DeQue<half>();
+        cosine = cosineInputQueue.DeQue<half>();
+        sine = sineInputQueue.DeQue<half>();
         LocalTensor<half> queryOutput = queryOutputQueue.AllocTensor<half>();
         LocalTensor<half> keyOutput = keyOutputQueue.AllocTensor<half>();
         LocalTensor<half> valueOutput = valueOutputQueue.AllocTensor<half>();
         LocalTensor<half> scratch = rotateScratch.Get<half>();
         RotateHalf(
-            queryOutput, queryInput, factors, factors[kHeadDim],
+            queryOutput, packedInput, cosine, sine,
             kQueryHeads, scratch);
         RotateHalf(
-            keyOutput, keyInput, factors, factors[kHeadDim],
+            keyOutput, packedInput[kQueryElements], cosine, sine,
             kKvHeads, scratch);
-        Adds(valueOutput, valueInput, static_cast<half>(0.0f), kStateElements);
+        Adds(
+            valueOutput,
+            packedInput[kValueOffset],
+            static_cast<half>(0.0f),
+            kStateElements);
         queryOutputQueue.EnQue(queryOutput);
         keyOutputQueue.EnQue(keyOutput);
         valueOutputQueue.EnQue(valueOutput);
-        queryInputQueue.FreeTensor(queryInput);
-        keyInputQueue.FreeTensor(keyInput);
-        valueInputQueue.FreeTensor(valueInput);
-        factorInputQueue.FreeTensor(factors);
+        packedInputQueue.FreeTensor(packedInput);
+        cosineInputQueue.FreeTensor(cosine);
+        sineInputQueue.FreeTensor(sine);
 
         LocalTensor<uint32_t> maskWords =
             maskOutputQueue.AllocTensor<uint32_t>();
@@ -207,13 +204,12 @@ private:
     GlobalTensor<int64_t> cachePositionGm;
     GlobalTensor<half> factorLutGm;
     GlobalTensor<int64_t> ropeDeltaGm;
-    TQue<QuePosition::VECIN, 1> queryInputQueue;
+    TQue<QuePosition::VECIN, 1> packedInputQueue;
     TQue<QuePosition::VECOUT, 1> queryOutputQueue;
-    TQue<QuePosition::VECIN, 1> keyInputQueue;
     TQue<QuePosition::VECOUT, 1> keyOutputQueue;
-    TQue<QuePosition::VECIN, 1> valueInputQueue;
     TQue<QuePosition::VECOUT, 1> valueOutputQueue;
-    TQue<QuePosition::VECIN, 1> factorInputQueue;
+    TQue<QuePosition::VECIN, 1> cosineInputQueue;
+    TQue<QuePosition::VECIN, 1> sineInputQueue;
     TQue<QuePosition::VECOUT, 1> maskOutputQueue;
     TBuf<TPosition::VECCALC> rotateScratch;
 };
