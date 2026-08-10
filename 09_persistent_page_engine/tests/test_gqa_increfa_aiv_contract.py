@@ -104,6 +104,14 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("if (GetBlockIdx() == 0)", kernel)
         self.assertNotIn("SyncAll();", kernel)
         self.assertIn("SyncAll(syncGlobal, syncLocal, kAivCoreCount)", kernel)
+        sync_call = kernel.index(
+            "SyncAll(syncGlobal, syncLocal, kAivCoreCount)"
+        )
+        destroy_call = kernel.index("syncPipe.Destroy();")
+        self.assertIn(
+            "PipeBarrier<PIPE_ALL>();",
+            kernel[sync_call:destroy_call],
+        )
         self.assertIn("GetUserWorkspace(workspace)", kernel)
         self.assertIn("workspace + kSyncWorkspaceBytes", kernel)
         self.assertIn("FetchEventID(HardEvent::V_MTE3)", kernel)

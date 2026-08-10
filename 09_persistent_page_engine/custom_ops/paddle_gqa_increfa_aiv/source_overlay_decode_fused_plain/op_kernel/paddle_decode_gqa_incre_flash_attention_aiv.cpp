@@ -189,6 +189,11 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
     DataCopy(syncGlobal, syncLocal, kSyncWorkspaceElements);
     PipeBarrier<PIPE_ALL>();
     SyncAll(syncGlobal, syncLocal, kAivCoreCount);
+    // SuperKernel compilation disables the final PIPE_ALL barrier normally
+    // inserted by TPipe::Destroy().  The stock attention dispatcher below
+    // initializes another TPipe, so complete this pipe's work explicitly
+    // before releasing and reusing its UB/event resources.
+    PipeBarrier<PIPE_ALL>();
     syncPipe.Destroy();
 
     // The tiler reserves the prefix above in addition to the stock workspace.

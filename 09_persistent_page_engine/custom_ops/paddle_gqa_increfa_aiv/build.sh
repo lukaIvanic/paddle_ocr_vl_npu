@@ -277,6 +277,7 @@ for kernel in kernels:
     summaries.append({
         "coreType": metadata.get("coreType"),
         "intercoreSync": metadata.get("intercoreSync"),
+        "crossCoreSync": kernel.get("crossCoreSync"),
         "tilingKey": key,
         "taskRation": task_ratio,
     })
@@ -286,8 +287,13 @@ for kernel in kernels:
 print("PADDLE_GQA_INCREFA_AIV_KERNEL_METADATA=" + json.dumps(summaries, sort_keys=True))
 if metadata.get("magic") != "RT_DEV_BINARY_MAGIC_ELF":
     raise SystemExit(f"{path}: unexpected ELF metadata")
-if metadata.get("intercoreSync") != 1:
-    raise SystemExit(f"{path}: hard-sync runtime contract is missing")
+top_level_sync = metadata.get("intercoreSync")
+per_kernel_sync = [kernel.get("crossCoreSync") for kernel in kernels]
+if top_level_sync != 1 and per_kernel_sync != [1] * len(kernels):
+    raise SystemExit(
+        f"{path}: hard-sync runtime contract is missing: "
+        f"intercoreSync={top_level_sync}, crossCoreSync={per_kernel_sync}"
+    )
 if seen != expected:
     raise SystemExit(f"unexpected tiling keys: {seen}")
 PY
