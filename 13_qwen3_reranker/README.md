@@ -296,6 +296,32 @@ call), and `physical_attention_q_tok_s` (PromptFA Q rows including disposable
 square-padding rows). Use `--matrix cross` only when the full batch-by-length
 cross-product is required.
 
+### Prefix-cache forward profile
+
+Profile one warm compiled prefix-cache graph separately from the unprofiled
+throughput measurement. The default B4/C128 case reuses the corresponding
+static graph cache from the throughput sweep:
+
+```bash
+python3 13_qwen3_reranker/profile_prefix_cache_forward.py \
+  --model-dir "$MODEL_DIR" \
+  --device npu:0 \
+  --batch-size 4 \
+  --continuation-length 128 \
+  --warmups 3 \
+  --repeats 20 \
+  --profile-iters 3 \
+  --compile-cache-dir .runtime_cache/13_qwen3_reranker/prefix_throughput \
+  --profile-dir tmp/13_qwen3_reranker/profile_prefix_b4_c128_910b2
+```
+
+The script reports the normal synchronized median and tok/s before enabling
+the profiler. It then reports the synchronized profiled-call latency and the
+profiler overhead ratio separately. Model loading, prefix-cache construction,
+graph cache load/compile, and trace export are outside the profiled forward
+window. The generated summary includes top NPU operator types, kernels, core
+types, and shape-based module attribution.
+
 ## Weight Modes
 
 - `dense`: all model weights stay FP16.
