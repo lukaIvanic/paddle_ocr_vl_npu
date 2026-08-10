@@ -38,9 +38,12 @@ def register_decode_kv_scatter_converter() -> None:
     converter_module = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
     )
-    ge = importlib.import_module(
+    ge_apis = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.ge_apis"
     )
+    ge_module = importlib.import_module(f"{torchair.__name__}.ge")
+    ge_attr = importlib.import_module(f"{torchair.__name__}.ge.attr")
+    ge_custom_op = ge_module.custom_op
     register_converter = converter_module.register_fx_node_ge_converter
 
     @register_converter(
@@ -64,21 +67,30 @@ def register_decode_kv_scatter_converter() -> None:
             raise ValueError(
                 "the Paddle B1 decoder KV scatter requires cache_mode='Norm'"
             )
-        key_cache_copy = ge.TensorMove(key_cache)
-        value_cache_copy = ge.TensorMove(value_cache)
-        return ge.ScatterPaKvCache(
-            key,
-            key_cache_copy,
-            slot_mapping,
-            value,
-            value_cache_copy,
-            compress_lens=compress_lens,
-            compress_seq_offset=compress_seq_offsets,
-            seq_lens=seq_lens,
-            cache_mode="Norm",
-            scatter_mode="None",
-            strides=[1, 1],
-            offsets=[0, 0],
+        key_cache_copy = ge_apis.TensorMove(key_cache)
+        value_cache_copy = ge_apis.TensorMove(value_cache)
+        # The generated CANN 9.0 GE wrapper also hard-codes PA_NZ even though
+        # its public signature defaults to Norm. Build the registered IR node
+        # directly so the selected attribute is the requested ND contract.
+        return ge_custom_op(
+            "ScatterPaKvCache",
+            inputs={
+                "key": key,
+                "key_cache": key_cache_copy,
+                "slot_mapping": slot_mapping,
+                "value": value,
+                "value_cache": value_cache_copy,
+                "compress_lens": compress_lens,
+                "compress_seq_offset": compress_seq_offsets,
+                "seq_lens": seq_lens,
+            },
+            attrs={
+                "cache_mode": ge_attr.Str("Norm"),
+                "scatter_mode": ge_attr.Str("None"),
+                "strides": ge_attr.ListInt([1, 1]),
+                "offsets": ge_attr.ListInt([0, 0]),
+            },
+            outputs=["key_cache", "value_cache"],
         )
 
     _CONVERTER_REGISTERED = True
