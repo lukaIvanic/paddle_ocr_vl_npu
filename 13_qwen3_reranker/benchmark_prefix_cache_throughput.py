@@ -62,6 +62,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--length-sweep-batch", type=int, default=1)
     parser.add_argument("--matrix", choices=("axes", "cross"), default="axes")
     parser.add_argument("--lanes", nargs="+", choices=LANES, default=list(LANES))
+    parser.add_argument(
+        "--full-lengths-are-total",
+        action="store_true",
+        help=(
+            "Interpret the length sweep as total valid sequence lengths for "
+            "full-prefill-only runs. The fixed instruction tokens are included "
+            "inside each requested length."
+        ),
+    )
     parser.add_argument("--warmups", type=int, default=2)
     parser.add_argument("--repeats", type=int, default=10)
     parser.add_argument(
@@ -417,10 +426,13 @@ def shape_matrix(args: argparse.Namespace) -> tuple[tuple[int, int], ...]:
 def print_result(result: dict) -> None:
     optimization = result.get("prefill_optimization")
     optimization_text = "" if optimization is None else f"optimization={optimization} "
+    requested_length = result.get("requested_sequence_length")
+    requested_text = "" if requested_length is None else f"T={requested_length} "
     print(
         "THROUGHPUT "
         f"lane={result['lane']} "
         f"{optimization_text}"
+        f"{requested_text}"
         f"B={result['batch_size']} C={result['continuation_length']} "
         f"S={result['full_physical_length']} "
         f"median_ms={result['median_s'] * 1000.0:.3f} "
@@ -441,6 +453,11 @@ def main() -> None:
     all_lengths = set(args.continuation_lengths) | {args.batch_sweep_continuation}
     if any(length % 128 != 0 for length in all_lengths):
         raise ValueError("all continuation lengths must be multiples of 128")
+    if args.full_lengths_are_total and "prefix_promptfa_compiled" in args.lanes:
+        raise ValueError(
+            "--full-lengths-are-total is only valid when the prefix-cached lane "
+            "is excluded"
+        )
 
     import torch_npu
 
@@ -467,7 +484,11 @@ def main() -> None:
         args.model_dir,
         device=device,
         dtype=torch.float16,
-        max_length=PREFIX_BLOCK + min(all_lengths),
+        max_length=(
+            min(all_lengths)
+            if args.full_lengths_are_total
+            else PREFIX_BLOCK + min(all_lengths)
+        ),
         batch_size=maximum_batch,
         compile_forward=False,
         attention_impl="prompt_flash_attention",
@@ -509,26 +530,52 @@ def main() -> None:
         task=args.task,
         device=device,
     )
+    if args.full_lengths_are_total and min(all_lengths) <= prefix_valid_tokens:
+        raise ValueError(
+            "every total full-prefill length must exceed the valid instruction "
+            f"length {prefix_valid_tokens}"
+        )
     if args.ffn_weight_mode != "dense":
-        calibration_length = max(all_lengths)
+        calibration_length = (
+            max(all_lengths) - prefix_valid_tokens
+            if args.full_lengths_are_total
+            else max(all_lengths)
+        )
         calibration_ids, calibration_attention = make_continuation_inputs(
             tokenizer,
             batch_size=maximum_batch,
             continuation_length=calibration_length,
             device=device,
         )
+        if args.full_lengths_are_total:
+            calibration_prefix_ids = prefix_input_ids[
+                :, PREFIX_BLOCK - prefix_valid_tokens:
+            ].expand(maximum_batch, -1)
+            calibration_prefix_attention = torch.ones(
+                (maximum_batch, prefix_valid_tokens),
+                device=device,
+                dtype=torch.long,
+            )
+        else:
+            calibration_prefix_ids = prefix_input_ids.expand(maximum_batch, -1)
+            calibration_prefix_attention = prefix_attention_mask.expand(
+                maximum_batch,
+                -1,
+            )
         calibration_full_ids = torch.cat(
-            (prefix_input_ids.expand(maximum_batch, -1), calibration_ids), dim=1
+            (calibration_prefix_ids, calibration_ids),
+            dim=1,
         ).contiguous()
         calibration_full_attention = torch.cat(
-            (prefix_attention_mask.expand(maximum_batch, -1), calibration_attention), dim=1
+            (calibration_prefix_attention, calibration_attention),
+            dim=1,
         )
         calibration_started = time.perf_counter()
         runner.calibrate_ffn_input_scales(calibration_full_ids, calibration_full_attention)
         synchronize(device)
         print(
             "W8A8_CALIBRATION "
-            f"batch={maximum_batch} sequence={PREFIX_BLOCK + calibration_length} "
+            f"batch={maximum_batch} sequence={calibration_full_ids.shape[1]} "
             f"wall_s={time.perf_counter() - calibration_started:.6f}",
             flush=True,
         )
@@ -548,7 +595,12 @@ def main() -> None:
     prefix_stage = PrefixLastHiddenStage(model).eval()
     source_key = args.compile_source_key or source_hash()
     results = []
-    for batch_size, continuation_length in shape_matrix(args):
+    for batch_size, requested_length in shape_matrix(args):
+        continuation_length = (
+            requested_length - prefix_valid_tokens
+            if args.full_lengths_are_total
+            else requested_length
+        )
         cached_full_length = PREFIX_BLOCK + continuation_length
         compact_full_length = prefix_valid_tokens + continuation_length
         continuation_ids, continuation_attention = make_continuation_inputs(
@@ -626,6 +678,9 @@ def main() -> None:
                 batch_size=batch_size,
                 continuation_length=continuation_length,
                 full_physical_length=compact_full_length,
+                requested_sequence_length=(
+                    requested_length if args.full_lengths_are_total else None
+                ),
                 linear_weight_format=weight_format["effective_mode"],
             )
             attach_output_signature(
@@ -684,6 +739,9 @@ def main() -> None:
                     batch_size=batch_size,
                     continuation_length=continuation_length,
                     full_physical_length=compact_full_length,
+                    requested_sequence_length=(
+                        requested_length if args.full_lengths_are_total else None
+                    ),
                     prefill_optimization=optimization.name,
                     linear_weight_format=weight_format["effective_mode"],
                 )
@@ -762,6 +820,9 @@ def main() -> None:
                     batch_size=batch_size,
                     continuation_length=continuation_length,
                     full_physical_length=cached_full_length,
+                    requested_sequence_length=(
+                        requested_length if args.full_lengths_are_total else None
+                    ),
                     prefill_optimization=optimization.name,
                     linear_weight_format=weight_format["effective_mode"],
                 )
@@ -879,6 +940,7 @@ def main() -> None:
             "length_sweep_batch": args.length_sweep_batch,
             "matrix": args.matrix,
             "lanes": list(args.lanes),
+            "full_lengths_are_total": args.full_lengths_are_total,
             "warmups": args.warmups,
             "repeats": args.repeats,
             "prefix_block": PREFIX_BLOCK,
