@@ -12,6 +12,7 @@ sys.path.insert(0, str(EXPERIMENT_ROOT / "scripts"))
 
 from table_spec_adaptive_k_lab import (  # noqa: E402
     cell_boundary_math_open_draft_token,
+    in_cell_draft_script_open_token,
 )
 from paddleocr_vl.serving.table_speculative import DraftProposal  # noqa: E402
 
@@ -20,6 +21,7 @@ FCEL = 101309
 MATH_OPEN = 47536
 OTHER = 123
 SLASH = 93980
+SCRIPT_OPEN = 1305
 
 
 class CellBoundaryDraftTrustTest(unittest.TestCase):
@@ -73,6 +75,32 @@ class CellBoundaryDraftTrustTest(unittest.TestCase):
     def test_slash_rule_is_independent(self) -> None:
         proposal = DraftProposal(10, (SLASH,), 6)
         self.assertIsNone(self.decide(proposal, accepted=0, base_next=OTHER))
+
+    def test_follows_draft_script_open_inside_cell(self) -> None:
+        proposal = DraftProposal(10, (OTHER, SCRIPT_OPEN), 6)
+        selected = in_cell_draft_script_open_token(
+            [FCEL],
+            proposal,
+            accepted_before_rejection=1,
+            cell_token_ids={FCEL},
+            newline_token_id=101313,
+            script_open_token_id=SCRIPT_OPEN,
+            minimum_match=5,
+        )
+        self.assertEqual(selected, SCRIPT_OPEN)
+
+    def test_script_open_requires_content_inside_cell(self) -> None:
+        proposal = DraftProposal(10, (SCRIPT_OPEN,), 6)
+        selected = in_cell_draft_script_open_token(
+            [FCEL],
+            proposal,
+            accepted_before_rejection=0,
+            cell_token_ids={FCEL},
+            newline_token_id=101313,
+            script_open_token_id=SCRIPT_OPEN,
+            minimum_match=5,
+        )
+        self.assertIsNone(selected)
 
 
 if __name__ == "__main__":

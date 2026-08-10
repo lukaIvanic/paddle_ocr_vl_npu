@@ -102,6 +102,14 @@ def parse_args() -> argparse.Namespace:
         help="Require current exact draft/target match length to be greater than this.",
     )
     parser.add_argument(
+        "--in-cell-draft-script-open-trust",
+        action="store_true",
+        help=(
+            "Inside a cell with a sufficiently long exact match, follow one "
+            "draft token when the draft next token is the exact ^{ token."
+        ),
+    )
+    parser.add_argument(
         "--decode-cache-dir",
         type=Path,
         default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair",
@@ -195,6 +203,40 @@ def cell_boundary_math_open_draft_token(
     return draft_next_token
 
 
+def in_cell_draft_script_open_token(
+    token_ids: list[int],
+    proposal: Any,
+    *,
+    accepted_before_rejection: int,
+    cell_token_ids: set[int],
+    newline_token_id: int,
+    script_open_token_id: int,
+    minimum_match: int,
+) -> int | None:
+    """Follow one exact draft ``^{`` token after a well-aligned cell prefix."""
+
+    accepted = int(accepted_before_rejection)
+    if accepted < 0 or accepted >= len(proposal.tokens):
+        return None
+    draft_next_token = int(proposal.tokens[accepted])
+    if draft_next_token != int(script_open_token_id):
+        return None
+    if int(proposal.anchor_tokens) + accepted <= int(minimum_match):
+        return None
+    prospective_prefix = [
+        *[int(value) for value in token_ids],
+        *[int(value) for value in proposal.tokens[:accepted]],
+    ]
+    tokens_inside_cell = 0
+    for token in reversed(prospective_prefix):
+        if token in cell_token_ids:
+            return draft_next_token if tokens_inside_cell > 0 else None
+        if token == int(newline_token_id):
+            return None
+        tokens_inside_cell += 1
+    return None
+
+
 @dataclass
 class AdaptiveKTableSpecDecodeResult(TableSpecDecodeResult):
     adaptive_k: dict[str, Any] = field(default_factory=dict)
@@ -212,6 +254,7 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
         cache_roots: dict[int, Path],
         cell_boundary_math_open_draft_trust: bool = False,
         cell_boundary_slash_draft_trust: bool = False,
+        in_cell_draft_script_open_trust: bool = False,
         cell_boundary_min_match: int = 5,
     ) -> None:
         if initial_k not in k_values:
@@ -227,6 +270,18 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
         self.cell_boundary_slash_draft_trust = bool(
             cell_boundary_slash_draft_trust
         )
+        self.in_cell_draft_script_open_trust = bool(
+            in_cell_draft_script_open_trust
+        )
+        tokenizer = recognizer.tokenizer
+        script_open_token_id = (
+            tokenizer.token_to_id("^{")
+            if hasattr(tokenizer, "token_to_id")
+            else tokenizer.convert_tokens_to_ids("^{")
+        )
+        if script_open_token_id is None:
+            raise ValueError("tokenizer does not contain exact ^{ token")
+        self.script_open_token_id = int(script_open_token_id)
         self.cell_boundary_min_match = int(cell_boundary_min_match)
         if self.cell_boundary_min_match < 0:
             raise ValueError("cell-boundary-min-match must be non-negative")
@@ -357,6 +412,7 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
                         break
                     accepted_here += 1
                 forced_draft_token = None
+                forced_rule = None
                 if (
                     (
                         self.cell_boundary_math_open_draft_trust
@@ -378,6 +434,24 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
                         ),
                         minimum_match=self.cell_boundary_min_match,
                     )
+                    if forced_draft_token is not None:
+                        forced_rule = "cell_boundary_math_open_or_slash"
+                if (
+                    forced_draft_token is None
+                    and self.in_cell_draft_script_open_trust
+                    and accepted_here < len(proposal_tokens)
+                ):
+                    forced_draft_token = in_cell_draft_script_open_token(
+                        token_ids,
+                        proposal,
+                        accepted_before_rejection=accepted_here,
+                        cell_token_ids=set(matcher.cell_tokens),
+                        newline_token_id=int(matcher.newline_token),
+                        script_open_token_id=self.script_open_token_id,
+                        minimum_match=self.cell_boundary_min_match,
+                    )
+                    if forced_draft_token is not None:
+                        forced_rule = "in_cell_draft_script_open"
                 fully_accepted = accepted_here == len(proposal_tokens)
                 accepted += accepted_here
                 if fully_accepted:
@@ -421,6 +495,7 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
                             ),
                             "base_next_token": int(targets[accepted_here]),
                             "draft_next_token": int(forced_draft_token),
+                            "rule": str(forced_rule),
                         }
                     )
                     emitted = list(proposal_tokens[: accepted_here + 1])
@@ -482,6 +557,10 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
                 "cell_boundary_math_open_draft_trust": {
                     "enabled": self.cell_boundary_math_open_draft_trust,
                     "standalone_slash_enabled": self.cell_boundary_slash_draft_trust,
+                    "in_cell_script_open_enabled": (
+                        self.in_cell_draft_script_open_trust
+                    ),
+                    "script_open_token_id": self.script_open_token_id,
                     "minimum_match_exclusive": self.cell_boundary_min_match,
                     "forced_tokens": len(cell_boundary_events),
                     "events": cell_boundary_events,
@@ -557,6 +636,7 @@ def main() -> None:
             args.cell_boundary_math_open_draft_trust
         ),
         cell_boundary_slash_draft_trust=args.cell_boundary_slash_draft_trust,
+        in_cell_draft_script_open_trust=args.in_cell_draft_script_open_trust,
         cell_boundary_min_match=args.cell_boundary_min_match,
     )
     setup_s = time.perf_counter() - setup_started
