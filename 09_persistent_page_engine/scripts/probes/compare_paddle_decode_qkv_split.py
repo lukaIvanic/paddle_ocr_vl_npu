@@ -18,10 +18,7 @@ from paddleocr_vl.model.decode_qkv_split import (
     PYTORCH_OP_NAME,
     PYTORCH_MULTI_OUTPUT_V2_OP_NAME,
     decode_qkv_split_v2_control,
-    decode_key_slice,
     decode_qkv_split,
-    decode_query_slice,
-    decode_value_slice,
     register_decode_qkv_split_converter,
 )
 
@@ -38,12 +35,6 @@ class CustomQkvSplit(torch.nn.Module):
     def _forward_impl(
         self, qkv: torch.Tensor
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        if self.component == "query":
-            return decode_query_slice(qkv)
-        if self.component == "key":
-            return decode_key_slice(qkv)
-        if self.component == "value":
-            return decode_value_slice(qkv)
         if self.component == "multi-v2":
             return decode_qkv_split_v2_control(qkv)
         return decode_qkv_split(qkv)
@@ -68,8 +59,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--strict-scope", action="store_true")
     parser.add_argument(
         "--component",
-        choices=("all", "query", "key", "value", "multi-v2"),
-        default="all",
+        choices=("v4", "multi-v2"),
+        default="v4",
     )
     return parser.parse_args()
 
@@ -109,14 +100,8 @@ def main() -> int:
     first_call_s = time.perf_counter() - started
 
     names = ("query", "key", "value")
-    if args.component in ("all", "multi-v2"):
-        outputs = output
-        references = reference
-    else:
-        selected = names.index(args.component)
-        outputs = (output,)
-        references = (reference[selected],)
-        names = (args.component,)
+    outputs = output
+    references = reference
 
     comparisons = {}
     all_exact = True
@@ -146,7 +131,7 @@ def main() -> int:
         all_exact = all_exact and exact
 
     region_diagnostics = None
-    if args.component == "all":
+    if args.component == "v4":
         actual_query = outputs[0].float().cpu().flatten()
         expected_query = reference[0].float().cpu().flatten()
         expected_key = reference[1].float().cpu().flatten()

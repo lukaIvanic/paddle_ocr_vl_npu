@@ -1,28 +1,12 @@
 [
   {
-    "op": "PaddleDecodeQuerySliceV3",
+    "op": "PaddleDecodeQkvSplitV4",
     "input_desc": [
       {"name": "qkv", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
     ],
     "output_desc": [
-      {"name": "query", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
-    ]
-  },
-  {
-    "op": "PaddleDecodeKeySliceV3",
-    "input_desc": [
-      {"name": "qkv", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
-    ],
-    "output_desc": [
-      {"name": "key", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
-    ]
-  },
-  {
-    "op": "PaddleDecodeValueSliceV3",
-    "input_desc": [
-      {"name": "qkv", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
-    ],
-    "output_desc": [
+      {"name": "query", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "key", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
       {"name": "value", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
     ]
   }

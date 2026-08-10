@@ -1,23 +1,17 @@
-# Paddle B1 decode QKV slices V3
+# Paddle B1 decode QKV split V4
 
-This package replaces the TBE/TIK `SplitV` plus packed-QKV layout chain with
-three independent single-output AIV-only AscendC operators. Each accepts the
-same FP16 `[1,1,2560]` tensor and emits one contiguous B1 view: Q
-`[1,16,1,128]`, K `[1,2,1,128]`, or V `[1,2,1,128]`. Separate operators avoid
-the multi-output custom-kernel ABI that executes normally but faults when
-binary-fused into a strict SuperKernel on this CANN 9.0 setup.
+This independent package replaces the packed-QKV `SplitV` and layout chain
+with one multi-output AIV-only AscendC operator. It accepts FP16
+`qkv[1,1,2560]` and emits contiguous Q `[1,16,1,128]`, K `[1,2,1,128]`, and V
+`[1,2,1,128]` tensors.
 
-V2 uses separate `VECIN` and `VECOUT` queues with a UB-to-UB copy between
-them. V1 incorrectly reused one `VECIN` queue for both directions; its final
-UB-to-HBM transfer could still be active when the next fused task reused the
-same UB address, which corrupted the first 256 query elements.
-
-V3 also loads and validates every registered tiling field in the device entry.
-V2 was exact outside a SuperKernel, but each single-component strict-fusion
-probe faulted with an out-of-range MTE address. Making the tiling pointer a
-live, checked ABI input follows the already strict-fusion-safe token-embedding
-kernel pattern.
+V4 retains the exact V2 data path, makes all tiling fields live device inputs,
+and explicitly destroys its `TPipe` before returning. The earlier three-op V3
+detour is removed. Its strict-scope failure was caused by the enclosing
+SuperKernel option `feed-sync-all=1`, not by the multi-output ABI. V2 is
+bit-exact both normally and under strict binary fusion when the scope uses
+`feed-sync-all=0`, `preload-code=none`, `early-start=0`, and `split-mode=1`.
 
 Build and install on Ascend 910B after `source npu-setup`, then source the
-generated `vendors/paddle_decode_qkv_slices_v3/bin/set_env.bash` before TorchAir
+generated `vendors/paddle_decode_qkv_split_v4/bin/set_env.bash` before TorchAir
 initializes GE.
