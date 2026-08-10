@@ -12,6 +12,7 @@ import platform
 import statistics
 import subprocess
 import time
+import types
 from pathlib import Path
 from typing import Callable
 
@@ -304,16 +305,28 @@ def benchmark_lane(
 def compile_stage(
     stage: nn.Module,
     *,
+    entrypoint_name: str,
     cache_dir: Path,
     device: torch.device,
 ) -> tuple[Callable, float]:
     from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
     cache_dir.mkdir(parents=True, exist_ok=True)
+    original = stage.forward.__func__
+    function = types.FunctionType(
+        original.__code__.replace(co_name=entrypoint_name),
+        original.__globals__,
+        entrypoint_name,
+        original.__defaults__,
+        original.__closure__,
+    )
+    function.__annotations__ = dict(original.__annotations__)
+    function.__kwdefaults__ = original.__kwdefaults__
+    entrypoint = types.MethodType(function, stage)
     synchronize(device)
     started = time.perf_counter()
     compiled = _import_cache_compile()(
-        stage.forward,
+        entrypoint,
         config=CompilerConfig(),
         dynamic=False,
         cache_dir=str(cache_dir),
@@ -477,7 +490,12 @@ def main() -> None:
             cache_dir = args.compile_cache_dir / (
                 f"full_promptfa_b{batch_size}_s{full_length}_fp16_src{source_key}"
             )
-            compiled, wrapper_s = compile_stage(full_stage, cache_dir=cache_dir, device=device)
+            compiled, wrapper_s = compile_stage(
+                full_stage,
+                entrypoint_name=f"reranker_full_promptfa_b{batch_size}_s{full_length}",
+                cache_dir=cache_dir,
+                device=device,
+            )
             summary, output = benchmark_lane(
                 lane="full_promptfa_compiled",
                 fn=lambda: compiled(full_input_ids, full_position_ids, full_bool_mask),
@@ -507,7 +525,15 @@ def main() -> None:
                 f"prefix_promptfa_b{batch_size}_q{full_length}_kv{full_length}_"
                 f"realq{continuation_length}_fp16_src{source_key}"
             )
-            compiled, wrapper_s = compile_stage(prefix_stage, cache_dir=cache_dir, device=device)
+            compiled, wrapper_s = compile_stage(
+                prefix_stage,
+                entrypoint_name=(
+                    f"reranker_prefix_promptfa_b{batch_size}_"
+                    f"realq{continuation_length}_s{full_length}"
+                ),
+                cache_dir=cache_dir,
+                device=device,
+            )
             flat_caches = batched_key_caches + batched_value_caches
             summary, output = benchmark_lane(
                 lane="prefix_promptfa_compiled",
