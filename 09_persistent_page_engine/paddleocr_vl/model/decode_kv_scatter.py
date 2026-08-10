@@ -42,7 +42,10 @@ def register_decode_kv_scatter_converter() -> None:
         f"{torchair.__name__}._ge_concrete_graph.ge_apis"
     )
     ge_module = importlib.import_module(f"{torchair.__name__}.ge")
-    ge_attr = importlib.import_module(f"{torchair.__name__}.ge.attr")
+    # The compat-IR type checks use the canonical ``torchair.ge.attr`` class
+    # objects. Importing the namespaced torch_npu module creates distinct
+    # Python class identities that the builder rejects.
+    ge_attr = importlib.import_module("torchair.ge.attr")
     ge_custom_op = ge_module.custom_op
     register_converter = converter_module.register_fx_node_ge_converter
 
