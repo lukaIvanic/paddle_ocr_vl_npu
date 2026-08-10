@@ -67,6 +67,10 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path(".runtime_cache/13_qwen3_reranker/prefix_throughput"),
     )
+    parser.add_argument(
+        "--compile-source-key",
+        help="Reuse a known-compatible graph source key after benchmark-only changes.",
+    )
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--task", default=DEFAULT_TASK)
     parser.add_argument(
@@ -442,7 +446,7 @@ def main() -> None:
 
     full_stage = FullLastHiddenStage(model).eval()
     prefix_stage = PrefixLastHiddenStage(model).eval()
-    source_key = source_hash()
+    source_key = args.compile_source_key or source_hash()
     results = []
     for batch_size, continuation_length in shape_matrix(args):
         full_length = PREFIX_BLOCK + continuation_length
@@ -629,20 +633,22 @@ def main() -> None:
                 dtype=torch.long,
             )
             yes_no_weight = model.lm_head.weight.index_select(0, yes_no_ids)
-            baseline_logits = torch.nn.functional.linear(
-                baseline_prefix,
-                yes_no_weight,
-            ).float()
-            baseline_scores = torch.softmax(baseline_logits, dim=-1)[:, 1]
+            with torch.no_grad():
+                baseline_logits = torch.nn.functional.linear(
+                    baseline_prefix,
+                    yes_no_weight,
+                ).float()
+                baseline_scores = torch.softmax(baseline_logits, dim=-1)[:, 1]
             for output_key, output in lane_outputs.items():
                 if not output_key.startswith("prefix_promptfa_compiled:") or output_key.endswith(":baseline"):
                     continue
                 max_abs = float((output.float() - baseline_prefix.float()).abs().max().detach().cpu())
-                candidate_logits = torch.nn.functional.linear(
-                    output,
-                    yes_no_weight,
-                ).float()
-                candidate_scores = torch.softmax(candidate_logits, dim=-1)[:, 1]
+                with torch.no_grad():
+                    candidate_logits = torch.nn.functional.linear(
+                        output,
+                        yes_no_weight,
+                    ).float()
+                    candidate_scores = torch.softmax(candidate_logits, dim=-1)[:, 1]
                 max_abs_logits = float(
                     (candidate_logits - baseline_logits).abs().max().detach().cpu()
                 )
@@ -703,6 +709,7 @@ def main() -> None:
             "prefix_valid_tokens": prefix_valid_tokens,
             "prefix_build_s": prefix_build_s,
             "source_hash": source_key,
+            "compile_source_key_override": args.compile_source_key,
             "prefill_optimizations": list(args.prefill_optimizations),
         },
         "metric_definitions": {
