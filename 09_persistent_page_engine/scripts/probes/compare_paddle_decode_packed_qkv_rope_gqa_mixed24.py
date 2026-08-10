@@ -221,6 +221,38 @@ def main() -> int:
             if actual_qkv is not None
             else None
         )
+        rope_diagnostics = None
+        if actual_qkv is not None:
+            candidate_diffs: dict[str, float] = {}
+            for candidate_position in (0, 7, position, position + 7):
+                candidate_cosine = factor_lut[0, candidate_position].view(1, 1, 1, 128)
+                candidate_sine = factor_lut[1, candidate_position].view(1, 1, 1, 128)
+                candidate_query = rotate_half(query_raw.view(1, 16, 1, 128), candidate_cosine, candidate_sine)
+                candidate_key = rotate_half(key_raw.view(1, 2, 1, 128), candidate_cosine, candidate_sine)
+                candidate_qkv = torch.cat(
+                    (
+                        candidate_query.reshape(1, 1, 2048),
+                        candidate_key.reshape(1, 1, 256),
+                        value_raw.reshape(1, 1, 256),
+                    ),
+                    dim=-1,
+                )
+                candidate_diffs[str(candidate_position)] = float(
+                    (actual_qkv.float() - candidate_qkv.float()).abs().max().item()
+                )
+            actual_key_row = key_cache[0, :, position, :].view(1, 2, 1, 128)
+            rope_diagnostics = {
+                "qkv_vs_unrotated_max_abs": float(
+                    (actual_qkv.float() - base_qkv.float()).abs().max().item()
+                ),
+                "key_row_vs_unrotated_max_abs": float(
+                    (actual_key_row.float() - key_raw.view(1, 2, 1, 128).float()).abs().max().item()
+                ),
+                "qkv_candidate_position_max_abs": candidate_diffs,
+                "actual_qkv_prefix": actual_qkv.flatten()[:8].float().cpu().tolist(),
+                "unrotated_qkv_prefix": base_qkv.flatten()[:8].float().cpu().tolist(),
+                "expected_qkv_prefix": expected_qkv.flatten()[:8].float().cpu().tolist(),
+            }
         passed = (
             output_diff <= 2.0e-3
             and key_diff <= 2.0e-3
@@ -236,6 +268,7 @@ def main() -> int:
                 "key_cache_max_abs": float(key_diff),
                 "value_cache_max_abs": float(value_diff),
                 "qkv_max_abs": None if qkv_diff is None else float(qkv_diff),
+                "rope_diagnostics": rope_diagnostics,
                 "attention_mask_exact": bool(torch.equal(attention_mask, expected_mask)),
                 "passed": bool(passed),
             }
