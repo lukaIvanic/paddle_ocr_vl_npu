@@ -99,7 +99,8 @@ def synchronize(device: torch.device) -> None:
 def timed_call(device: torch.device, fn: Callable[[], torch.Tensor]) -> tuple[float, torch.Tensor]:
     synchronize(device)
     started = time.perf_counter()
-    output = fn()
+    with torch.inference_mode():
+        output = fn()
     synchronize(device)
     return time.perf_counter() - started, output
 
@@ -541,7 +542,7 @@ def main() -> None:
             for lane, output in lane_outputs.items():
                 if lane == "full_manual":
                     continue
-                max_abs = float((output.float() - reference).abs().max().cpu())
+                max_abs = float((output.float() - reference).abs().max().detach().cpu())
                 for result in reversed(results):
                     if (
                         result["lane"] == lane
