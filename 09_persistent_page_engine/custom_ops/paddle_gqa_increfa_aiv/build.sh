@@ -65,6 +65,18 @@ case "$EXPERIMENT_VARIANT" in
         OP_API_SYMBOL_PREFIX="PaddleDecodeGqaIncreFlashAttentionAiv"
         FUSED_DECODE=true
         ;;
+    decode_fused_plain)
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
+        VENDOR_NAME="paddle_decode_kv_gqa_aiv"
+        CACHE_NAMESPACE="paddle_decode_kv_gqa_aiv"
+        OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode_fused_plain"
+        CUSTOM_OP_SNAKE="paddle_decode_gqa_incre_flash_attention_aiv"
+        CUSTOM_OP_GE="PaddleDecodeGqaIncreFlashAttentionAiv"
+        CUSTOM_OP_REL="attention/$CUSTOM_OP_SNAKE"
+        PREPARED_OP_REL="attention/paddle_gqa_incre_flash_attention_aiv"
+        OP_API_SYMBOL_PREFIX="PaddleDecodeGqaIncreFlashAttentionAiv"
+        FUSED_DECODE=true
+        ;;
     decode_attention_only)
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
         VENDOR_NAME="paddle_decode_gqa_attention_aiv"

@@ -47,7 +47,7 @@ class DecodeGqaIncrefaAiv(torch.nn.Module):
             key_state,
             value_state,
             scale_value=1.0 / math.sqrt(128.0),
-            vector_core_count=32,
+            vector_core_count=16,
         )
 
     def forward(
@@ -226,7 +226,7 @@ def main() -> int:
             "mask_shape": list(attention_mask.shape),
             "positions": positions,
             "strict_scope": args.strict_scope,
-            "vector_core_count": 32,
+            "vector_core_count": 16,
             "core_type": "MIX_AIV_ZERO_CUBE",
         },
         "environment": {

@@ -70,6 +70,43 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("PADDLE_DECODE_GQA_PLAIN_KV", kernel_entry)
         self.assertNotIn("uint8_t *pseShift", kernel_entry)
 
+    def test_fused_decode_overlay_has_compact_balanced_plain_kv_abi(self) -> None:
+        operator_root = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_gqa_increfa_aiv"
+        )
+        overlay = operator_root / "source_overlay_decode_fused_plain"
+        op_def = (
+            overlay
+            / "op_host"
+            / "paddle_decode_gqa_incre_flash_attention_aiv_def.cpp"
+        ).read_text(encoding="utf-8")
+        kernel = (
+            overlay
+            / "op_kernel"
+            / "paddle_decode_gqa_incre_flash_attention_aiv.cpp"
+        ).read_text(encoding="utf-8")
+        converter = (
+            EXPERIMENT_ROOT
+            / "paddleocr_vl"
+            / "model"
+            / "decode_gqa_increfa_aiv.py"
+        ).read_text(encoding="utf-8")
+        build_script = (operator_root / "build.sh").read_text(encoding="utf-8")
+
+        self.assertIn('Input("key").ParamType(REQUIRED)', op_def)
+        self.assertIn('Input("value").ParamType(REQUIRED)', op_def)
+        self.assertNotIn('Input("pse_shift")', op_def)
+        self.assertNotIn('Input("key_cache_ref")', op_def)
+        self.assertIn("PADDLE_DECODE_GQA_PLAIN_KV", kernel)
+        self.assertIn("if (GetBlockIdx() == 0)", kernel)
+        self.assertIn("SyncAll();", kernel)
+        self.assertIn('"key": key_cache', converter)
+        self.assertIn('mapping[1] = 1', converter)
+        self.assertIn('decode_fused_plain)', build_script)
+        self.assertIn("source_overlay_decode_fused_plain", build_script)
+
     def test_nonsplit_megakernel_uses_separate_prep_and_16_aiv_blocks(self) -> None:
         optimization = text_decode.resolve_decode_optimization(
             "paddle_decoder_megakernel_b1_nonsplit_gqa"

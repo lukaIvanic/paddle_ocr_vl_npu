@@ -190,7 +190,7 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rotary_factors="lookup",
         add_rms_norm=True,
         attention="gqa_aiv",
-        gqa_aiv_vector_core_count=32,
+        gqa_aiv_vector_core_count=16,
         super_kernel_scope=True,
         ascendc_token_embedding=True,
         ascendc_linear=True,
@@ -1204,7 +1204,7 @@ def _decode_attention(
             num_key_value_heads=int(attention.num_key_value_heads),
             scale_value=float(attention.scaling),
             inner_precise=1,
-            vector_core_count=32,
+            vector_core_count=16,
         )
         batch_size = query_states.shape[0]
         attention_output = (

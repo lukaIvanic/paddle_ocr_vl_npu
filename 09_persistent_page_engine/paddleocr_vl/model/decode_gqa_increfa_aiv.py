@@ -1,4 +1,4 @@
-"""Fused B1 K/V scatter, future-mask build, and GQA AIV attention."""
+"""One-entry B1 K/V update, future-mask build, and GQA AIV attention."""
 
 from __future__ import annotations
 
@@ -84,7 +84,7 @@ _REF_PASS_PATCHED = False
 
 
 def _patch_torchair_ref_mapping(torchair: Any) -> None:
-    """Map the fused GE op's trailing outputs back to its mutable inputs."""
+    """Map the compact GE op's trailing outputs back to mutable inputs."""
     global _REF_PASS_PATCHED
     if _REF_PASS_PATCHED:
         return
@@ -96,10 +96,10 @@ def _patch_torchair_ref_mapping(torchair: Any) -> None:
     def _get_output_to_input_ref_idx(op: Any) -> dict[int, int]:
         mapping = dict(original(op))
         if op.type == GE_OP_NAME:
-            # Compact GE inputs are query, dynamic-key[0], dynamic-value[0],
-            # mask, position, key-state, value-state, key-ref, value-ref.
-            mapping[1] = 7
-            mapping[2] = 8
+            # Inputs are Q, K, V, mask, position, new K, and new V. Outputs
+            # 1-3 are direct reference views of the mutable K, V, and mask.
+            mapping[1] = 1
+            mapping[2] = 2
             mapping[3] = 3
         return mapping
 
@@ -145,14 +145,12 @@ def register_decode_gqa_increfa_aiv_converter() -> None:
             GE_OP_NAME,
             inputs={
                 "query": query,
-                "key": [key_cache],
-                "value": [value_cache],
+                "key": key_cache,
+                "value": value_cache,
                 "atten_mask": attention_mask,
                 "cache_position": cache_position,
                 "key_state": key_state,
                 "value_state": value_state,
-                "key_cache_ref": key_cache,
-                "value_cache_ref": value_cache,
             },
             attrs={
                 "num_heads": ge_attr.Int(num_heads),
@@ -165,8 +163,8 @@ def register_decode_gqa_increfa_aiv_converter() -> None:
             },
             outputs=[
                 "attention_out",
-                "key_cache_ref",
-                "value_cache_ref",
+                "key",
+                "value",
                 "atten_mask",
             ],
         )
@@ -188,7 +186,7 @@ def decode_gqa_incre_flash_attention_aiv(
     num_key_value_heads: int = 2,
     scale_value: float,
     inner_precise: int = 1,
-    vector_core_count: int = 32,
+    vector_core_count: int = 16,
 ) -> torch.Tensor:
     """Execute the specialized KV1024 Paddle decoder attention boundary."""
     if query.shape != (1, 16, 1, 128):
@@ -210,8 +208,8 @@ def decode_gqa_incre_flash_attention_aiv(
         raise ValueError("fused decode GQA requires FP16 Q/K/V/state tensors")
     if num_heads != 16 or num_key_value_heads != 2:
         raise ValueError("fused decode GQA fixes 16 query and 2 KV heads")
-    if inner_precise != 1 or vector_core_count != 32:
-        raise ValueError("fused decode GQA fixes inner_precise=1 and 32 AIV cores")
+    if inner_precise != 1 or vector_core_count != 16:
+        raise ValueError("fused decode GQA fixes inner_precise=1 and 16 AIV cores")
     return _decode_gqa_incre_flash_attention_aiv(
         query.contiguous(),
         key_cache,
