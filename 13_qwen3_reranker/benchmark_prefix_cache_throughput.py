@@ -273,6 +273,7 @@ def benchmark_lane(
     attention_query_tokens: int,
     compile_wrapper_s: float | None,
     cache_dir: Path | None,
+    cache_was_warm: bool | None,
 ) -> tuple[dict, torch.Tensor]:
     first_call_s, output = timed_call(device, fn)
     warmup_seconds = []
@@ -297,6 +298,7 @@ def benchmark_lane(
             "additional_warmup_s": warmup_seconds,
             "compile_wrapper_s": compile_wrapper_s,
             "cache_dir": None if cache_dir is None else str(cache_dir),
+            "cache_was_warm": cache_was_warm,
         }
     )
     return summary, output
@@ -308,9 +310,10 @@ def compile_stage(
     entrypoint_name: str,
     cache_dir: Path,
     device: torch.device,
-) -> tuple[Callable, float]:
+) -> tuple[Callable, float, bool]:
     from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
+    cache_was_warm = cache_dir.is_dir() and any(cache_dir.iterdir())
     cache_dir.mkdir(parents=True, exist_ok=True)
     original = stage.forward.__func__
     function = types.FunctionType(
@@ -334,7 +337,7 @@ def compile_stage(
         fullgraph=True,
     )
     synchronize(device)
-    return compiled, time.perf_counter() - started
+    return compiled, time.perf_counter() - started, cache_was_warm
 
 
 def shape_matrix(args: argparse.Namespace) -> tuple[tuple[int, int], ...]:
@@ -367,7 +370,8 @@ def print_result(result: dict) -> None:
         f"served_tok_s={result['served_input_tok_s']:.2f} "
         f"executed_tok_s={result['executed_model_tok_s']:.2f} "
         f"attention_q_tok_s={result['physical_attention_q_tok_s']:.2f} "
-        f"first_call_s={result['first_call_s']:.3f}",
+        f"first_call_s={result['first_call_s']:.3f} "
+        f"cache_was_warm={result['cache_was_warm']}",
         flush=True,
     )
 
@@ -475,6 +479,7 @@ def main() -> None:
                 attention_query_tokens=attention_query_tokens,
                 compile_wrapper_s=None,
                 cache_dir=None,
+                cache_was_warm=None,
             )
             lane_outputs["full_manual"] = output
             summary.update(
@@ -490,7 +495,7 @@ def main() -> None:
             cache_dir = args.compile_cache_dir / (
                 f"full_promptfa_b{batch_size}_s{full_length}_fp16_src{source_key}"
             )
-            compiled, wrapper_s = compile_stage(
+            compiled, wrapper_s, cache_was_warm = compile_stage(
                 full_stage,
                 entrypoint_name=f"reranker_full_promptfa_b{batch_size}_s{full_length}",
                 cache_dir=cache_dir,
@@ -508,6 +513,7 @@ def main() -> None:
                 attention_query_tokens=attention_query_tokens,
                 compile_wrapper_s=wrapper_s,
                 cache_dir=cache_dir,
+                cache_was_warm=cache_was_warm,
             )
             lane_outputs["full_promptfa_compiled"] = output
             summary.update(
@@ -525,7 +531,7 @@ def main() -> None:
                 f"prefix_promptfa_b{batch_size}_q{full_length}_kv{full_length}_"
                 f"realq{continuation_length}_fp16_src{source_key}"
             )
-            compiled, wrapper_s = compile_stage(
+            compiled, wrapper_s, cache_was_warm = compile_stage(
                 prefix_stage,
                 entrypoint_name=(
                     f"reranker_prefix_promptfa_b{batch_size}_"
@@ -552,6 +558,7 @@ def main() -> None:
                 attention_query_tokens=attention_query_tokens,
                 compile_wrapper_s=wrapper_s,
                 cache_dir=cache_dir,
+                cache_was_warm=cache_was_warm,
             )
             lane_outputs["prefix_promptfa_compiled"] = output
             summary.update(
