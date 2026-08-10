@@ -16,8 +16,6 @@ public:
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
         this->Input("value").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
-        this->Input("pse_shift").ParamType(OPTIONAL).DataType({ge::DT_FLOAT16})
-            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
         this->Input("atten_mask").ParamType(REQUIRED).DataType({ge::DT_BOOL})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
 

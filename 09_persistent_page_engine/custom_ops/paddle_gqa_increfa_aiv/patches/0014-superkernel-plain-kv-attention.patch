@@ -31,6 +31,17 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_
      ifaContext.value.desc = context.GetInputDesc(VALUE_INPUT_INDEX);
      ifaContext.value.shape = context.GetInputShape(VALUE_INPUT_INDEX);
      return ge::GRAPH_SUCCESS;
+@@ -3645,4 +3635,6 @@ static void ConvertOptionalInputsContext(const gert::TilingContext &context, Inc
+-    ifaContext.pseShift.desc = context.GetOptionalInputDesc(PSE_SHIFT_INPUT_INDEX);
+-    ifaContext.pseShift.tensor = context.GetOptionalInputTensor(PSE_SHIFT_INPUT_INDEX);
+-    ifaContext.attenMask.desc = context.GetOptionalInputDesc(ATTEN_MASK_INPUT_INDEX);
+-    ifaContext.attenMask.tensor = context.GetOptionalInputTensor(ATTEN_MASK_INPUT_INDEX);
++    // The specialized ABI omits PSE entirely and moves the required mask to
++    // input slot 3. Avoid all stock optional-input indexing at this boundary.
++    ifaContext.pseShift.desc = nullptr;
++    ifaContext.pseShift.tensor = nullptr;
++    ifaContext.attenMask.desc = context.GetInputDesc(3);
++    ifaContext.attenMask.tensor = context.GetInputTensor(3);
 diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
 --- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
 +++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
