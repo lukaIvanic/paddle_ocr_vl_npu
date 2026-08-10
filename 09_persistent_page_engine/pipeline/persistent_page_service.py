@@ -59,6 +59,139 @@ class _PageState:
     prepared: PreparedLayoutPage
     remaining: int
     recognition: dict[int, str] = field(default_factory=dict)
+    recognition_results: dict[int, RecognitionResult] = field(default_factory=dict)
+
+
+def _recognition_metrics(page: _PageState) -> dict[str, Any]:
+    device_stage_s: defaultdict[str, float] = defaultdict(float)
+    crop_timing_sum_s: defaultdict[str, float] = defaultdict(float)
+    stop_reasons: Counter[str] = Counter()
+    vision_executions: Counter[str] = Counter()
+    vision_buckets: Counter[str] = Counter()
+    text_executions: Counter[str] = Counter()
+    text_buckets: Counter[str] = Counter()
+    token_totals = {
+        "input": 0,
+        "projected_image": 0,
+        "real_vision": 0,
+        "physical_vision": 0,
+        "real_text": 0,
+        "physical_text": 0,
+        "generated_including_eos": 0,
+        "decode_after_prefill_including_eos": 0,
+    }
+    request_by_block = dict(
+        zip(
+            page.prepared.request_block_indices,
+            page.prepared.requests,
+        )
+    )
+    crops: list[dict[str, Any]] = []
+    decode_calls: list[int] = []
+    for block_index, result in sorted(page.recognition_results.items()):
+        request = request_by_block[block_index]
+        block = page.prepared.blocks[block_index]
+        for stage, seconds in result.device_stage_s.items():
+            device_stage_s[stage] += float(seconds)
+        for stage, seconds in result.timing_s.items():
+            if isinstance(seconds, (int, float)):
+                crop_timing_sum_s[stage] += float(seconds)
+
+        vision = result.vision
+        text = result.text_prefill
+        stop_reasons[result.stop_reason] += 1
+        vision_executions[str(vision.get("execution"))] += 1
+        text_executions[str(text.get("execution"))] += 1
+        if vision.get("bucket") is not None:
+            vision_buckets[str(vision["bucket"])] += 1
+        if text.get("bucket") is not None:
+            text_buckets[str(text["bucket"])] += 1
+
+        token_totals["input"] += int(result.input_tokens)
+        token_totals["projected_image"] += int(result.projected_image_tokens)
+        token_totals["real_vision"] += int(vision.get("real_vision_tokens", 0))
+        token_totals["physical_vision"] += int(
+            vision.get("physical_vision_tokens", 0)
+        )
+        token_totals["real_text"] += int(text.get("real_text_tokens", 0))
+        token_totals["physical_text"] += int(
+            text.get("physical_text_tokens", 0)
+        )
+        token_totals["generated_including_eos"] += int(
+            result.generated_tokens_including_eos
+        )
+        token_totals["decode_after_prefill_including_eos"] += int(
+            result.decode_tokens_after_prefill_including_eos
+        )
+        decode_calls.append(int(result.decode_calls_executed))
+        crops.append(
+            {
+                "block_index": int(block_index),
+                "label": str(block.get("label", "")),
+                "request_id": result.request_id,
+                "prompt": result.prompt,
+                "source_crop_size": (
+                    list(request.source_crop_size)
+                    if request.source_crop_size is not None
+                    else None
+                ),
+                "model_crop_size": list(result.crop_size),
+                "input_tokens": int(result.input_tokens),
+                "projected_image_tokens": int(result.projected_image_tokens),
+                "real_vision_tokens": int(vision.get("real_vision_tokens", 0)),
+                "physical_vision_tokens": int(
+                    vision.get("physical_vision_tokens", 0)
+                ),
+                "real_text_tokens": int(text.get("real_text_tokens", 0)),
+                "physical_text_tokens": int(
+                    text.get("physical_text_tokens", 0)
+                ),
+                "generated_tokens_including_eos": int(
+                    result.generated_tokens_including_eos
+                ),
+                "decode_tokens_after_prefill_including_eos": int(
+                    result.decode_tokens_after_prefill_including_eos
+                ),
+                "decode_calls_executed": int(result.decode_calls_executed),
+                "stop_reason": result.stop_reason,
+                "timing_s": dict(result.timing_s),
+                "device_stage_s": dict(result.device_stage_s),
+                "vision": dict(vision),
+                "text_prefill": dict(text),
+            }
+        )
+
+    rates: dict[str, float | None] = {}
+    vision_device_s = float(device_stage_s.get("vision_prefill", 0.0))
+    text_device_s = float(device_stage_s.get("text_prefill", 0.0))
+    rates["useful_vision_tok_per_device_s"] = (
+        token_totals["real_vision"] / vision_device_s
+        if vision_device_s > 0.0
+        else None
+    )
+    rates["useful_text_tok_per_device_s"] = (
+        token_totals["real_text"] / text_device_s
+        if text_device_s > 0.0
+        else None
+    )
+    return {
+        "crops": len(crops),
+        "crop_details": crops,
+        "token_totals": token_totals,
+        "stop_reason_counts": dict(sorted(stop_reasons.items())),
+        "vision_execution_counts": dict(sorted(vision_executions.items())),
+        "vision_bucket_counts": dict(sorted(vision_buckets.items())),
+        "text_execution_counts": dict(sorted(text_executions.items())),
+        "text_bucket_counts": dict(sorted(text_buckets.items())),
+        "device_stage_s": dict(device_stage_s),
+        "crop_timing_sum_s": dict(crop_timing_sum_s),
+        "decode_calls_per_crop": {
+            "sum": sum(decode_calls),
+            "min": min(decode_calls, default=0),
+            "max": max(decode_calls, default=0),
+        },
+        "rates": rates,
+    }
 
 
 @dataclass(frozen=True)
@@ -500,6 +633,7 @@ class _UnifiedPageReadySource:
             if owner.block_index in page.recognition:
                 raise RuntimeError(f"duplicate recognition result: {result.request_id}")
             page.recognition[owner.block_index] = result.text
+            page.recognition_results[owner.block_index] = result
             page.remaining -= 1
             complete = page.remaining == 0
         if complete:
@@ -520,9 +654,25 @@ class _UnifiedPageReadySource:
             ),
             document_images=prepared.document_images,
         )
+        page_wall_s = time.perf_counter() - page.submission.submitted_at
+        recognition = _recognition_metrics(page)
+        page_frontend_s = float(prepared.timing_s.get("page_total_s", 0.0))
+        recognition["page_recognition_wall_s"] = max(
+            0.0,
+            page_wall_s - page_frontend_s,
+        )
+        generated_tokens = int(
+            recognition["token_totals"]["generated_including_eos"]
+        )
+        recognition["rates"]["generated_tok_per_page_recognition_wall_s"] = (
+            generated_tokens / recognition["page_recognition_wall_s"]
+            if recognition["page_recognition_wall_s"] > 0.0
+            else None
+        )
         timing_s = {
-            "page_wall_s": time.perf_counter() - page.submission.submitted_at,
+            "page_wall_s": page_wall_s,
             **prepared.timing_s,
+            "recognition": recognition,
         }
         for stage, seconds in prepared.timing_s.items():
             if isinstance(seconds, (int, float)):

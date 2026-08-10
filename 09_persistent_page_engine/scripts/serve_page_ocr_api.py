@@ -36,6 +36,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-image-bytes", type=int, default=64 * 1024 * 1024)
     parser.add_argument("--queue-capacity", type=int, default=64)
     parser.add_argument(
+        "--summary-json",
+        type=Path,
+        default=None,
+        help="Write the final worker/scheduler summary after graceful shutdown.",
+    )
+    parser.add_argument(
         "--spool-dir",
         type=Path,
         default=REPO_ROOT / "tmp/09_persistent_page_engine/page_api_uploads",
@@ -103,6 +109,7 @@ def worker_config(args: argparse.Namespace) -> dict[str, Any]:
         "max_image_bytes",
         "queue_capacity",
         "spool_dir",
+        "summary_json",
     }
     return {
         key: str(value.expanduser().resolve()) if isinstance(value, Path) else value
@@ -458,8 +465,9 @@ def main() -> None:
     try:
         server.serve_forever(poll_interval=0.25)
     finally:
+        summary = None
         try:
-            state.shutdown_worker()
+            summary = state.shutdown_worker()
         except (queue.Empty, queue.Full):
             worker.terminate()
         worker.join(timeout=10.0)
@@ -468,6 +476,19 @@ def main() -> None:
             worker.join(timeout=5.0)
         state.stopping.set()
         server.server_close()
+        if summary is not None:
+            print(
+                "PAGE_API_SERVICE_SUMMARY "
+                + json.dumps(summary, separators=(",", ":")),
+                flush=True,
+            )
+            if args.summary_json is not None:
+                summary_path = args.summary_json.expanduser().resolve()
+                summary_path.parent.mkdir(parents=True, exist_ok=True)
+                summary_path.write_text(
+                    json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
 
 
 if __name__ == "__main__":
