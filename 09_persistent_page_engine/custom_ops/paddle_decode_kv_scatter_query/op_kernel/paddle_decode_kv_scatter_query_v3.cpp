@@ -10,6 +10,8 @@ constexpr uint32_t kCacheLength = 1024;
 constexpr uint32_t kHeadDim = 128;
 constexpr uint32_t kQueryElements = kQueryHeads * kHeadDim;
 constexpr uint32_t kStateElements = kKvHeads * kHeadDim;
+constexpr uint32_t kMaskWords = kCacheLength / sizeof(uint32_t);
+constexpr uint32_t kFourTrueBytes = 0x01010101U;
 
 class PaddleDecodeKvScatterQueryKernel {
 public:
@@ -61,15 +63,27 @@ public:
             return;
         }
 
+        LocalTensor<uint32_t> attentionMaskWords =
+            maskOutputQueue.AllocTensor<uint32_t>();
+        Duplicate<uint32_t>(attentionMaskWords, kFourTrueBytes, kMaskWords);
+        const uint32_t prefixBytes = static_cast<uint32_t>(position + 1);
+        const uint32_t fullZeroWords = prefixBytes / sizeof(uint32_t);
+        const uint32_t remainingZeroBytes = prefixBytes % sizeof(uint32_t);
+        if (fullZeroWords > 0) {
+            Duplicate<uint32_t>(attentionMaskWords, 0, fullZeroWords);
+        }
+        PipeBarrier<PIPE_V>();
+        if (remainingZeroBytes > 0) {
+            attentionMaskWords.SetValue(
+                fullZeroWords,
+                kFourTrueBytes << (remainingZeroBytes * 8));
+        }
+        maskOutputQueue.EnQue(attentionMaskWords);
+        attentionMaskWords = maskOutputQueue.DeQue<uint32_t>();
         LocalTensor<uint8_t> attentionMask =
-            maskOutputQueue.AllocTensor<uint8_t>();
-        Duplicate<uint8_t>(attentionMask, 1, kCacheLength);
-        Duplicate<uint8_t>(
-            attentionMask, 0, static_cast<uint32_t>(position + 1));
-        maskOutputQueue.EnQue(attentionMask);
-        attentionMask = maskOutputQueue.DeQue<uint8_t>();
+            attentionMaskWords.ReinterpretCast<uint8_t>();
         DataCopy(attentionMaskGm, attentionMask, kCacheLength);
-        maskOutputQueue.FreeTensor(attentionMask);
+        maskOutputQueue.FreeTensor(attentionMaskWords);
 
         LocalTensor<half> queryInput = queryInputQueue.AllocTensor<half>();
         DataCopy(queryInput, queryGm, kQueryElements);
