@@ -229,6 +229,22 @@ def main() -> int:
         output_diff = (output.float() - reference.float()).abs().max().item()
         key_diff = (key_cache.float() - ref_key_cache.float()).abs().max().item()
         value_diff = (value_cache.float() - ref_value_cache.float()).abs().max().item()
+        mask_mismatches = torch.nonzero(
+            (attention_mask != expected_mask).reshape(-1),
+            as_tuple=False,
+        ).reshape(-1)
+        mask_diagnostics = {
+            "actual_true_count": int(attention_mask.sum().item()),
+            "expected_true_count": int(expected_mask.sum().item()),
+            "mismatch_count": int(mask_mismatches.numel()),
+            "first_mismatch_indices": mask_mismatches[:16].cpu().tolist(),
+            "actual_around_position": attention_mask.reshape(-1)[
+                max(0, position - 4): position + 8
+            ].to(dtype=torch.int8).cpu().tolist(),
+            "expected_around_position": expected_mask.reshape(-1)[
+                max(0, position - 4): position + 8
+            ].to(dtype=torch.int8).cpu().tolist(),
+        }
         qkv_diff = (
             (actual_qkv.float() - expected_qkv.float()).abs().max().item()
             if actual_qkv is not None
@@ -301,6 +317,7 @@ def main() -> int:
                 "value_cache_max_abs": float(value_diff),
                 "qkv_max_abs": None if qkv_diff is None else float(qkv_diff),
                 "rope_diagnostics": rope_diagnostics,
+                "mask_diagnostics": mask_diagnostics,
                 "attention_mask_exact": bool(torch.equal(attention_mask, expected_mask)),
                 "passed": bool(passed),
             }
