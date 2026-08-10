@@ -161,12 +161,8 @@ class PackedTextPrefillRuntime:
         self.dtype = dtype
         if self.max_members <= 0:
             raise ValueError("packed text max_members must be positive")
-        if self.buckets[-1] > self.destination_cache_length:
-            raise ValueError(
-                "largest packed text bucket exceeds destination cache length: "
-                f"bucket={self.buckets[-1]} "
-                f"cache={self.destination_cache_length}"
-            )
+        if self.destination_cache_length <= 0:
+            raise ValueError("destination cache length must be positive")
 
         torchair, CompilerConfig = import_torchair()
         hidden_size = int(model.config.text_config.hidden_size)
@@ -290,6 +286,13 @@ class PackedTextPrefillRuntime:
             raise ValueError(
                 f"packed text graph supports at most {self.max_members} members, "
                 f"got {len(lengths)}"
+            )
+        longest_segment = max(lengths)
+        if longest_segment > self.destination_cache_length:
+            raise ValueError(
+                "packed text segment exceeds destination cache length: "
+                f"segment={longest_segment} "
+                f"cache={self.destination_cache_length}"
             )
         real_seq_len = sum(lengths)
         bucket = select_text_bucket(real_seq_len, self.buckets)

@@ -40,6 +40,10 @@ The retained 16-block implementation was verified on 2026-08-09 at commit
   16-block preset remains unchanged while this result is repeated.
 - Whole attention on AI CPU is correct but 29.9x to 553.1x slower than stock
   IncreFA. Do not use AI CPU for QK, softmax, or AV.
+- The decoder mega-kernel is not complete. The separately named 1:1 mixed-task
+  fused KV/GQA operator now passes isolated TorchAir parity, but the
+  MatMulV3-to-QKV-to-GQA composed boundary still faults. Do not report the
+  isolated result as full-decoder correctness or throughput.
 
 The compact result bundle is
 [GQA AIV B1 evidence](../../tmp/09_persistent_page_engine/gqa_aiv_b1_1d16f33/README.md).
@@ -1371,16 +1375,19 @@ These failures are compatibility inventory, not reasons to relax the scope.
 Do not change strict checking to `bypass`: that can make a run appear successful
 while silently leaving several tasks outside the requested mega-kernel.
 
-The installed CANN 9.0 SuperKernel compiler also explains the prefetch model.
-Its defaults enable early-start v2 and per-function code preloading. The
-compiler chooses a mixed AIC/AIV launch from the maximum resource demand of its
-subkernels. `feed-sync-all=1` is the compiler's automatic mechanism for a
-subkernel whose `SyncAll` participant count differs from the enclosing launch,
-but it is not proven safe for this decoder. The generated wrapper faulted in
-both split-mode controls before the custom attention body. The current decoder
-therefore uses `feed-sync-all=0` and an explicit fixed-16 software barrier
-inside the fused cache-update/attention subkernel. Re-test automatic feeding
-only as a separately named compiler control.
+The installed CANN 9.0 SuperKernel compiler also explains the prefetch and
+synchronization controls. Its defaults enable early-start v2 and per-function
+code preloading. It chooses the enclosing mixed AIC/AIV launch from the maximum
+resource demand of its subkernels. Automatic cross-core completion is disabled
+by default. Setting `feed-sync-all=1` adds
+`__ASCENDC_SUPERKERNEL_AUTO_SYNC_ALL__` while recompiling every sub-operator and
+makes the wrapper call `SuperKernelAutoSyncAllEndImpl` plus the complement path.
+This is a graph-boundary barrier. It does not replace the fixed-participant
+barrier used inside the attention algorithm. Keep it as a separately named
+compiler control because applying it after every decoder subkernel can cost
+latency. The 1:1 mixed-GQA feed-sync control has not executed yet: its attempted
+run failed while starting a previously quarantined physical NPU, before tensor
+allocation, compile, or kernel launch.
 
 The acceptance gate is stronger than a successful compile:
 
@@ -1461,10 +1468,10 @@ GQA-to-MatMul boundary with 0.0 maximum absolute error, but the complete
 of the full-graph failure.
 
 This result changes the next debugging question. Do not add more lifecycle
-barriers blindly. CANN documents that the SuperKernel compiler inserts
-inter-operator synchronization by default. Instead, use separately named
-discriminator operators or smaller real-model scopes to decide among these
-remaining causes:
+barriers blindly. The installed compiler source shows that automatic
+cross-core completion is optional and disabled by default. Use separately
+named discriminator operators or smaller real-model scopes to decide among
+these remaining causes:
 
 1. the all-core software-sync prologue behaves differently in the enclosing
    mixed-core launch;
@@ -1494,10 +1501,10 @@ idle `GetBlockIdx()` values before it creates a `TPipe`, allocates UB, calls a
 fixed-participant `SyncAll`, or indexes tiling data. Returning from the
 subfunction still returns control to the generated SuperKernel wrapper and its
 inter-operator handoff. The fused GQA therefore guards
-`GetBlockIdx() >= 16` before all local state. Huawei's `SyncAll` contract also
-states that `usedCores` cannot exceed the operator's logical launch dimension;
-mixed AIC/AIV launches can expose a larger AIV index range than an AIV-only
-launch.
+`GetBlockIdx() >= 16` before all local state. This guard is necessary hygiene,
+but later evidence proved that it is not sufficient: CANN recompiles and
+relinks each sub-operator under the enclosing task geometry, and the binary's
+declared AIC:AIV ratio must also match that geometry.
 
 Retained one-layer evidence:
 
@@ -1556,15 +1563,105 @@ and host plugins.
 ### SSH workflow on the blue-zone gateway
 
 OpenSSH ControlMaster sockets closed immediately on the current gateway with
-`Connection closed by UNKNOWN port 65535`. Use the reliable direct form and
-amortize its roughly seven-second handshake by running one retained remote job
-per experiment, then polling its log and `rc.txt`:
+`Connection closed by UNKNOWN port 65535`. Open one direct pseudo-terminal and
+reuse it instead of reconnecting for every probe:
 
 ```sh
-ssh -S none -o ControlMaster=no -o ConnectTimeout=20 \
-  blue_zone_npu_container '<one bounded experiment>'
+ssh -tt -S none -o ControlMaster=no -o ServerAliveInterval=30 \
+  blue_zone_npu_container
+
+cd /workspace/repos/paddle_ocr_vl_npu
+source npu-setup
+export PATH="$PWD/.runtime_cache/python312_path/bin:$PATH"
+export PYTHONPATH="$PWD/09_persistent_page_engine:${PYTHONPATH}"
 ```
+
+Retain the terminal or orchestrator session ID and send every later command to
+that same session. Initialize CANN once. This removes repeated SSH and
+`npu-setup` latency and keeps the selected package environment inspectable.
+The 2026-08-10 mega-kernel work used persistent terminal session `22409` from
+pull through package build, install, preflight, and validation.
 
 Do not launch `npu-setup` concurrently: each invocation selects a currently
 free device, so parallel setup can collide before either process allocates NPU
 memory.
+
+## 29. Match sub-operator and enclosing task geometry
+
+An AIV-only operator can pass in isolation and still be invalid when CANN
+recompiles it inside a Cube-first SuperKernel. Inspect both objects. The JSON
+task label from the installed package is not enough.
+
+The first independent mixed control used `KERNEL_TYPE_MIX_AIC_1_2`, eight AIC
+blocks, 16 AIV workers, and no-op AIC entry functions. It exposed two separate
+problems:
+
+1. the isolated operator hung in device execution after its OM had already
+   compiled because the fixed-16 software barrier used the wrong logical-index
+   mode for that mixed launch;
+2. `msobjdump -d` showed that the enclosing Cube-first SuperKernel was relinked
+   as `MIX_TASK_RATION [1:1]`, even though the installed sub-operator object was
+   `1:2`.
+
+The idle-core guard did not repair either compiler contract. The corrected
+diagnostic at commit `7a918d2` makes the two fixed VALL tiling keys
+`KERNEL_TYPE_MIX_AIC_1_1`, sets `launchAicNum = launchAivNum`, keeps 16 AIV
+workers plus 16 no-op AIC workers, and calls
+`SyncAll<false>(syncGlobal, syncLocal, 16)`. The explicit `false` selects mixed
+logical block indexing for the software barrier.
+
+Do not trust an incremental CMake success message by itself. The first narrow
+rebuild refreshed the host tiler but left the old device object and its 1:2
+metadata untouched. Move the generated `.done`, `.o`, and `.json` files to a
+recoverable backup, rerun the narrow device target, and verify that the object
+hash and metadata changed before packaging.
+
+Verified 1:1 build evidence:
+
+- kernel object SHA256:
+  `64f3d9fe540041693b972c6c929c57feb2575706921618ceaf40f4f2c554c0cb`;
+- package SHA256:
+  `5f03a9c1e9ffced05dbf32a4b58a3e2026d530a11642f237988b70fe97dd4643`;
+- both fixed tiling keys report `taskRation=1:1` and `crossCoreSync=1`;
+- the object contains two 312-byte no-op AIC functions and AIV functions of
+  22400 and 24332 bytes;
+- the forced AscendC device compile took about 45 seconds. The later CPack
+  archive step dominated the remaining build time; do not describe it as a
+  13-minute kernel compile.
+
+The isolated strict TorchAir result on physical Ascend910B2 NPU 0 passed at
+positions 128 and 129. Attention matched stock IncreFA with maximum absolute
+error `0.0`; K, V, and mask mutation were exact. Retained remote evidence:
+
+- `.runtime_cache/paddle_decode_kv_gqa_mixed/validation/isolated_mixed_1to1_7a918d2_npu0/result.json`
+- `.runtime_cache/paddle_decode_kv_gqa_mixed/validation/isolated_mixed_1to1_7a918d2_npu0/run.log`
+
+The stronger Cube-first boundary did not pass. After eight full-cache-shape
+preflight rounds, the strict MatMulV3 to QKV split to mixed GQA graph faulted
+on the first call. This was not stale linking: the dumped wrapper SHA256 was
+`f54291ae1654b608cbf731d8cd955960df82176ed1e6249c5de26e4b23988708`,
+different from the earlier 1:2 wrapper content, and every embedded function
+reported `MIX_TASK_RATION [1:1]`. The wrapper used `blockDim=24`. The runtime
+mapped the bad MTE instruction to the new GQA AIV split-1 clone at absolute
+object offset `0xf82c`, or `+0xa2c` from that clone's `0xee00` symbol. Retained
+remote evidence:
+
+- `.runtime_cache/paddle_decode_kv_gqa_mixed/validation/matmul_qkv_gqa_mixed_1to1_7a918d2_npu0/run.log`
+- `/root/ascend/log/debug/plog/plog-2784712_20260810115422446.log`
+- `extra-info/data-dump/0/te_superkernel_eb87c7e365f3cd96f3090cf812ae276e1de12fe193badc45fc37102813ef8c2c_host.o`
+
+The current evidence narrows the remaining boundary to synchronization,
+workspace, or intermediate-tensor handoff. The strongest next diagnostic is
+the same independent mixed operator with `feed-sync-all=1`. Installed CANN 9.0
+source shows why: the QKV split can run with fewer workers than the 16-worker
+GQA consumer, and the option inserts a completion barrier plus complement path
+for workers that skip the smaller sub-operator. This is a source-backed
+hypothesis, not a measured fix.
+
+Keep failure timing exact. The attempted feed-sync control on physical NPU 3
+never loaded the operator. That device passed eight transfer/vector preflight
+rounds, but the next Python process failed during its first `.to("npu:0")` with
+`507033` and `Inner_Error_Device_Subprocess_Startup_Timeout`. This proves that
+`Health=OK` and even one full-cache preflight process do not rehabilitate a
+previously faulted device. Quarantine it and wait for a clean physical NPU; do
+not count the startup failure against the feed-sync hypothesis.

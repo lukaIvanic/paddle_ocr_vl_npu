@@ -222,6 +222,29 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("decode_gqa_increfa_mixed", probe)
         self.assertNotIn("decode_gqa_increfa_aiv import", probe)
 
+        mixed_optimization = text_decode.resolve_decode_optimization(
+            "paddle_decoder_megakernel_b1_fused_gqa_mixed"
+        )
+        self.assertTrue(mixed_optimization.super_kernel_scope)
+        self.assertTrue(mixed_optimization.ascendc_decode_gqa_mixed)
+        self.assertFalse(mixed_optimization.ascendc_decode_gqa)
+        self.assertIn(
+            "strict-scope-check=abort",
+            mixed_optimization.super_kernel_options,
+        )
+        self.assertIn("early-start=0", mixed_optimization.super_kernel_options)
+        self.assertEqual(
+            text_decode.decode_attention_label(
+                SimpleNamespace(type="npu"), mixed_optimization
+            ),
+            "paddle_decode_gqa_increfa_mixed",
+        )
+        self.assertIn(
+            "register_decode_gqa_increfa_mixed_converter",
+            (EXPERIMENT_ROOT / "paddleocr_vl" / "model" / "text_decode.py")
+            .read_text(encoding="utf-8"),
+        )
+
     def test_rejects_unsafe_48_core_short_partition(self) -> None:
         kv_length = MIN_KV_LENGTH_FOR_48_CORES - 1
         query = torch.empty((1, 16, 1, 128), dtype=torch.float16)
