@@ -81,9 +81,11 @@ class LocalQwen3RerankerRotaryEmbedding(nn.Module):
         dtype: torch.dtype,
         device: torch.device,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        inv_freq = self.inv_freq.to(device=device)[None, :, None].float()
-        position_ids = position_ids.to(device=device, dtype=torch.float32)[:, None, :]
-        freqs = (inv_freq @ position_ids).transpose(1, 2)
+        # Elementwise broadcasting is equivalent to the usual outer product,
+        # but avoids a rank-3 broadcasted MatMul that GE mis-infers when B > 1.
+        inv_freq = self.inv_freq.to(device=device).view(1, 1, -1).float()
+        position_ids = position_ids.to(device=device, dtype=torch.float32).unsqueeze(-1)
+        freqs = position_ids * inv_freq
         emb = torch.cat((freqs, freqs), dim=-1)
         return emb.cos().to(dtype=dtype), emb.sin().to(dtype=dtype)
 

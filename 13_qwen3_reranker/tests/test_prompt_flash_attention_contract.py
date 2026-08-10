@@ -13,12 +13,35 @@ EXPERIMENT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(EXPERIMENT_DIR))
 
 from local_modeling_qwen3_reranker import (  # noqa: E402
+    LocalQwen3RerankerConfig,
+    LocalQwen3RerankerRotaryEmbedding,
     PROMPT_FA_FULL_ATTENTION_TOKENS,
     prompt_flash_attention_bnsd_310p_compatible,
 )
 
 
 class PromptFlashAttentionContractTest(unittest.TestCase):
+    def test_rotary_embedding_uses_compile_safe_outer_product(self) -> None:
+        config = LocalQwen3RerankerConfig(
+            vocab_size=8,
+            hidden_size=16,
+            intermediate_size=32,
+            num_hidden_layers=1,
+            num_attention_heads=2,
+            num_key_value_heads=1,
+            head_dim=8,
+            rms_norm_eps=1e-6,
+            rope_theta=10000.0,
+            tie_word_embeddings=False,
+        )
+        rotary = LocalQwen3RerankerRotaryEmbedding(config)
+        position_ids = torch.tensor([[0, 1, 2], [3, 4, 5]])
+        cos, sin = rotary(position_ids, dtype=torch.float32, device=torch.device("cpu"))
+        expected_freqs = position_ids.float().unsqueeze(-1) * rotary.inv_freq.view(1, 1, -1)
+        expected = torch.cat((expected_freqs, expected_freqs), dim=-1)
+        torch.testing.assert_close(cos, expected.cos())
+        torch.testing.assert_close(sin, expected.sin())
+
     def test_310p_contract_expands_gqa_and_omits_unsupported_arguments(self) -> None:
         captured: dict[str, object] = {}
 
