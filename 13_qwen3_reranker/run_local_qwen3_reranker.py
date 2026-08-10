@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import time
 from pathlib import Path
 
 import torch
@@ -14,7 +16,23 @@ from local_modeling_qwen3_reranker import (
     build_left_padded_causal_bool_mask_chunk,
     build_left_padded_causal_mask,
 )
-from transformers_rerank import DEFAULT_TASK, build_inputs, format_instruction
+from transformers_rerank import DEFAULT_TASK, PREFIX, SUFFIX, build_inputs, format_instruction
+
+
+def _source_hash() -> str:
+    digest = hashlib.sha256()
+    root = Path(__file__).resolve().parent
+    for name in ("run_local_qwen3_reranker.py", "local_modeling_qwen3_reranker.py"):
+        digest.update((root / name).read_bytes())
+    return digest.hexdigest()[:12]
+
+
+def _import_cache_compile():
+    try:
+        from torch_npu.dynamo.torchair.inference import cache_compile
+    except ImportError:
+        from torchair.inference import cache_compile
+    return cache_compile
 
 
 class LocalQwen3RerankerRunner:
@@ -30,6 +48,9 @@ class LocalQwen3RerankerRunner:
         attention_impl: str = "eager",
         ffn_weight_mode: str = "dense",
         prefill_chunk_size: int = 0,
+        prefix_cache: bool = False,
+        compile_cache_dir: str | Path | None = None,
+        graph_warmups: int = 0,
     ):
         self.model_dir = Path(model_dir)
         self.device = device
@@ -40,8 +61,23 @@ class LocalQwen3RerankerRunner:
         self.attention_impl = attention_impl
         self.ffn_weight_mode = ffn_weight_mode
         self.prefill_chunk_size = int(prefill_chunk_size)
+        self.prefix_cache = bool(prefix_cache)
+        self.compile_cache_dir = (
+            Path(compile_cache_dir).expanduser().resolve()
+            if compile_cache_dir is not None
+            else (Path.cwd() / ".runtime_cache" / "13_qwen3_reranker").resolve()
+        )
+        self.graph_warmups = int(graph_warmups)
         self.compiled_first_chunk = None
         self.compiled_next_chunk = None
+        self.compiled_cached_suffix = None
+        self._prefix_task: str | None = None
+        self._prefix_input_ids: torch.Tensor | None = None
+        self._prefix_attention_mask: torch.Tensor | None = None
+        self._prefix_key_caches: tuple[torch.Tensor, ...] | None = None
+        self._prefix_value_caches: tuple[torch.Tensor, ...] | None = None
+        self._batched_prefix_key_caches: tuple[torch.Tensor, ...] | None = None
+        self._batched_prefix_value_caches: tuple[torch.Tensor, ...] | None = None
         if self.attention_impl not in {"eager", "prompt_flash_attention"}:
             raise ValueError(f"Unsupported attention_impl={self.attention_impl!r}")
         if self.attention_impl == "prompt_flash_attention" and self.dtype is not torch.float16:
@@ -50,12 +86,23 @@ class LocalQwen3RerankerRunner:
             raise ValueError(f"Unsupported ffn_weight_mode={self.ffn_weight_mode!r}")
         if self.ffn_weight_mode != "dense" and self.dtype is not torch.float16:
             raise ValueError("W8A8 modes require float16")
+        if self.graph_warmups < 0:
+            raise ValueError("graph_warmups must be non-negative")
+        if self.prefix_cache:
+            if not self.compile_forward:
+                raise ValueError("prefix caching currently requires --compile-forward")
+            if self.attention_impl != "prompt_flash_attention":
+                raise ValueError("prefix caching requires prompt_flash_attention")
+            if self.ffn_weight_mode != "dense":
+                raise ValueError("prefix caching currently supports dense weights only")
+            if self.prefill_chunk_size != 128:
+                raise ValueError("the initial static prefix-cache shape requires --prefill-chunk-size 128")
         if self.prefill_chunk_size:
             if self.attention_impl != "prompt_flash_attention":
                 raise ValueError("chunked prefill requires --attention-impl prompt_flash_attention")
             if self.prefill_chunk_size % 128 != 0:
                 raise ValueError("310P-compatible prefill chunk size must be a multiple of 128")
-            if self.max_length % self.prefill_chunk_size != 0:
+            if not self.prefix_cache and self.max_length % self.prefill_chunk_size != 0:
                 raise ValueError("--max-length must be divisible by --prefill-chunk-size")
         from transformers import AutoTokenizer
 
@@ -65,28 +112,61 @@ class LocalQwen3RerankerRunner:
         self.config = LocalQwen3RerankerConfig.from_model_dir(self.model_dir)
         self.model = self.load_model()
         if compile_forward:
-            from torch_npu.dynamo import torchair
             from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
-            backend = torchair.get_npu_backend(compiler_config=CompilerConfig())
-            if self.prefill_chunk_size:
-                self.compiled_first_chunk = torch.compile(
-                    self.model.forward_first_chunk_prepared,
-                    backend=backend,
+            self.compile_cache_dir.mkdir(parents=True, exist_ok=True)
+            cache_compile = _import_cache_compile()
+            config = CompilerConfig()
+            source_hash = _source_hash()
+            shape_key = (
+                f"b{self.batch_size}_s{self.max_length}_c{self.prefill_chunk_size}_"
+                f"h{self.config.hidden_size}_l{self.config.num_hidden_layers}_fp16_src{source_hash}"
+            )
+            if self.prefix_cache:
+                continuation_dir = self.compile_cache_dir / (
+                    f"prefix_cached_suffix_b{self.batch_size}_q128_kv256_{shape_key}"
+                )
+                continuation_dir.mkdir(parents=True, exist_ok=True)
+                self.compiled_cached_suffix = cache_compile(
+                    self.model.forward_cached_suffix_prepared,
+                    config=config,
                     dynamic=False,
+                    cache_dir=str(continuation_dir),
+                    ge_cache=True,
                     fullgraph=True,
                 )
-                self.compiled_next_chunk = torch.compile(
-                    self.model.forward_next_chunk_prepared,
-                    backend=backend,
+            elif self.prefill_chunk_size:
+                prefix_dir = self.compile_cache_dir / f"prefix_b1_q128_{shape_key}"
+                continuation_dir = self.compile_cache_dir / (
+                    f"continuation_b{self.batch_size}_q128_kv256_{shape_key}"
+                )
+                prefix_dir.mkdir(parents=True, exist_ok=True)
+                continuation_dir.mkdir(parents=True, exist_ok=True)
+                self.compiled_first_chunk = cache_compile(
+                    self.model.forward_first_chunk_prepared,
+                    config=config,
                     dynamic=False,
+                    cache_dir=str(prefix_dir),
+                    ge_cache=True,
+                    fullgraph=True,
+                )
+                self.compiled_next_chunk = cache_compile(
+                    self.model.forward_next_chunk_prepared,
+                    config=config,
+                    dynamic=False,
+                    cache_dir=str(continuation_dir),
+                    ge_cache=True,
                     fullgraph=True,
                 )
             else:
-                self.model.forward_prepared_yes_no = torch.compile(
+                full_dir = self.compile_cache_dir / f"full_yes_no_{shape_key}"
+                full_dir.mkdir(parents=True, exist_ok=True)
+                self.model.forward_prepared_yes_no = cache_compile(
                     self.model.forward_prepared_yes_no,
-                    backend=backend,
+                    config=config,
                     dynamic=False,
+                    cache_dir=str(full_dir),
+                    ge_cache=True,
                     fullgraph=True,
                 )
 
@@ -127,8 +207,165 @@ class LocalQwen3RerankerRunner:
     def encode_pairs(self, query: str, documents: list[str], task: str) -> dict[str, torch.Tensor]:
         if len(documents) != self.batch_size:
             raise ValueError(f"expected exactly batch_size={self.batch_size} documents, got {len(documents)}")
+        if self.prefix_cache:
+            return self._encode_prefix_cached_pairs(query, documents, task)
         pairs = [format_instruction(task, query, document) for document in documents]
         return build_inputs(self.tokenizer, pairs, max_length=self.max_length, device=self.device)
+
+    def _encode_prefix_cached_pairs(
+        self,
+        query: str,
+        documents: list[str],
+        task: str,
+    ) -> dict[str, torch.Tensor]:
+        block_size = self.prefill_chunk_size
+        fixed_body_prefix = f"<Instruct>: {task}\n<Query>:"
+        fixed_prefix_ids = self.tokenizer.encode(PREFIX, add_special_tokens=False)
+        fixed_body_prefix_ids = self.tokenizer.encode(fixed_body_prefix, add_special_tokens=False)
+        prefix_ids = fixed_prefix_ids + fixed_body_prefix_ids
+        suffix_ids = self.tokenizer.encode(SUFFIX, add_special_tokens=False)
+        if len(prefix_ids) > block_size:
+            raise ValueError(f"fixed prefix uses {len(prefix_ids)} tokens, exceeding block_size={block_size}")
+        expected_max_length = len(prefix_ids) + block_size
+        if self.max_length != expected_max_length:
+            raise ValueError(
+                "the initial static prefix-cache shape requires max_length="
+                f"prefix_tokens({len(prefix_ids)}) + continuation_block({block_size}) = "
+                f"{expected_max_length}, got {self.max_length}"
+            )
+
+        prefix_padding = block_size - len(prefix_ids)
+        prefix_input_ids = [int(self.tokenizer.pad_token_id)] * prefix_padding + prefix_ids
+        prefix_attention = [0] * prefix_padding + [1] * len(prefix_ids)
+        prefix_input_tensor = torch.tensor(
+            [prefix_input_ids], device=self.device, dtype=torch.long
+        )
+        prefix_attention_tensor = torch.tensor(
+            [prefix_attention], device=self.device, dtype=torch.long
+        )
+        self._ensure_prefix_cache(
+            task=task,
+            input_ids=prefix_input_tensor,
+            attention_mask=prefix_attention_tensor,
+        )
+
+        body_capacity = self.max_length - len(fixed_prefix_ids) - len(suffix_ids)
+        continuation_body_capacity = block_size - len(suffix_ids)
+        continuation_rows: list[list[int]] = []
+        continuation_attention_rows: list[list[int]] = []
+        for document in documents:
+            full_body = format_instruction(task, query, document)
+            full_body_ids = self.tokenizer(
+                full_body,
+                padding=False,
+                truncation=True,
+                return_attention_mask=False,
+                max_length=body_capacity,
+            )["input_ids"]
+            continuation_text = f" {query}\n<Document>: {document}"
+            continuation_body_ids = self.tokenizer(
+                continuation_text,
+                add_special_tokens=False,
+                truncation=True,
+                max_length=continuation_body_capacity,
+            )["input_ids"]
+            if fixed_body_prefix_ids + continuation_body_ids != full_body_ids:
+                raise RuntimeError(
+                    "prefix-cache token boundary changed the reference token IDs; "
+                    "refusing to cache this prompt"
+                )
+            continuation_ids = continuation_body_ids + suffix_ids
+            continuation_padding = block_size - len(continuation_ids)
+            continuation_rows.append(
+                [int(self.tokenizer.pad_token_id)] * continuation_padding + continuation_ids
+            )
+            continuation_attention_rows.append(
+                [0] * continuation_padding + [1] * len(continuation_ids)
+            )
+        return {
+            "input_ids": torch.tensor(continuation_rows, device=self.device, dtype=torch.long),
+            "attention_mask": torch.tensor(
+                continuation_attention_rows, device=self.device, dtype=torch.long
+            ),
+        }
+
+    def _ensure_prefix_cache(
+        self,
+        *,
+        task: str,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> None:
+        if self._prefix_key_caches is not None:
+            if task != self._prefix_task:
+                raise ValueError("one runner cannot reuse a prefix cache across different tasks")
+            if not torch.equal(input_ids, self._prefix_input_ids) or not torch.equal(
+                attention_mask, self._prefix_attention_mask
+            ):
+                raise RuntimeError("fixed prefix tensors changed after prefix-cache creation")
+            return
+        position_ids = attention_mask.to(dtype=torch.long).cumsum(dim=-1) - 1
+        position_ids = position_ids.clamp(min=0)
+        prefix_mask = build_left_padded_causal_bool_mask(attention_mask)
+        started = time.perf_counter()
+        with torch.inference_mode():
+            key_caches, value_caches = self.model.build_prefix_cache_eager(
+                input_ids,
+                position_ids,
+                prefix_mask,
+            )
+        if self.device.type == "npu":
+            torch.npu.synchronize()
+        print(
+            "PREFIX_CACHE_EAGER_BUILD "
+            f"tokens={int(attention_mask.sum().item())} wall_s={time.perf_counter() - started:.3f}",
+            flush=True,
+        )
+        self._prefix_task = task
+        self._prefix_input_ids = input_ids
+        self._prefix_attention_mask = attention_mask
+        self._prefix_key_caches = key_caches
+        self._prefix_value_caches = value_caches
+        self._batched_prefix_key_caches = tuple(
+            cache.expand(self.batch_size, -1, -1, -1).contiguous() for cache in key_caches
+        )
+        self._batched_prefix_value_caches = tuple(
+            cache.expand(self.batch_size, -1, -1, -1).contiguous() for cache in value_caches
+        )
+
+    def forward_prefix_cached_hidden_states(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        if self.compiled_cached_suffix is None:
+            raise RuntimeError("compiled continuation graph is not initialized")
+        if (
+            self._prefix_attention_mask is None
+            or self._batched_prefix_key_caches is None
+            or self._batched_prefix_value_caches is None
+        ):
+            raise RuntimeError("prefix KV cache has not been created")
+        batch = int(input_ids.shape[0])
+        if batch != self.batch_size:
+            raise ValueError(f"expected static batch_size={self.batch_size}, got {batch}")
+        prefix_attention = self._prefix_attention_mask.expand(batch, -1)
+        combined_attention = torch.cat((prefix_attention, attention_mask), dim=1)
+        position_ids = combined_attention.to(dtype=torch.long).cumsum(dim=-1) - 1
+        position_ids = position_ids.clamp(min=0)
+        continuation_mask = build_left_padded_causal_bool_mask_chunk(
+            combined_attention,
+            query_start=self.prefill_chunk_size,
+            query_end=2 * self.prefill_chunk_size,
+        )
+        hidden_states = self.compiled_cached_suffix(
+            input_ids,
+            position_ids[:, self.prefill_chunk_size :].contiguous(),
+            continuation_mask,
+            self._batched_prefix_key_caches,
+            self._batched_prefix_value_caches,
+        )
+        return hidden_states
 
     def prepared_forward_inputs(
         self,
@@ -144,6 +381,9 @@ class LocalQwen3RerankerRunner:
         return position_ids, layer_attention_mask
 
     def logits_ids(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+        if self.prefix_cache:
+            hidden_states = self.forward_prefix_cached_hidden_states(input_ids, attention_mask)
+            return self.model.lm_head(hidden_states[:, -1])
         if self.compiled_first_chunk is not None:
             hidden_states = self.forward_hidden_states_chunked_compiled(input_ids, attention_mask)
             return self.model.lm_head(hidden_states[:, -1])
@@ -169,7 +409,10 @@ class LocalQwen3RerankerRunner:
                 dtype=torch.long,
             )
             yes_no_weight = self.model.lm_head.weight[yes_no_ids]
-            if self.compiled_first_chunk is not None:
+            if self.prefix_cache:
+                hidden_states = self.forward_prefix_cached_hidden_states(input_ids, attention_mask)
+                yes_no_logits = torch.nn.functional.linear(hidden_states[:, -1], yes_no_weight)
+            elif self.compiled_first_chunk is not None:
                 hidden_states = self.forward_hidden_states_chunked_compiled(input_ids, attention_mask)
                 yes_no_logits = torch.nn.functional.linear(hidden_states[:, -1], yes_no_weight)
             elif self.compile_forward:
@@ -264,6 +507,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dtype", choices=("float16", "float32"), default="float16")
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--compile-forward", action="store_true")
+    parser.add_argument("--prefix-cache", action="store_true")
+    parser.add_argument(
+        "--compile-cache-dir",
+        type=Path,
+        default=Path(".runtime_cache/13_qwen3_reranker"),
+    )
+    parser.add_argument("--graph-warmups", type=int, default=2)
     parser.add_argument("--attention-impl", choices=("eager", "prompt_flash_attention"), default="eager")
     parser.add_argument("--ffn-weight-mode", choices=("dense", "w8a8", "all_w8a8"), default="dense")
     parser.add_argument(
@@ -288,6 +538,7 @@ def main() -> None:
     device = parse_device(args.device)
     if device.type == "npu":
         torch.npu.set_device(device)
+        torch.npu.set_compile_mode(jit_compile=False)
     runner = LocalQwen3RerankerRunner(
         args.model_dir,
         device=device,
@@ -298,9 +549,23 @@ def main() -> None:
         attention_impl=args.attention_impl,
         ffn_weight_mode=args.ffn_weight_mode,
         prefill_chunk_size=args.prefill_chunk_size,
+        prefix_cache=args.prefix_cache,
+        compile_cache_dir=args.compile_cache_dir,
+        graph_warmups=args.graph_warmups,
     )
     inputs = runner.encode_pairs(args.query, args.documents, args.task)
     runner.calibrate_ffn_input_scales(inputs["input_ids"], inputs["attention_mask"])
+    for warmup_index in range(args.graph_warmups):
+        started = time.perf_counter()
+        runner.score_ids(inputs["input_ids"], inputs["attention_mask"])
+        if device.type == "npu":
+            torch.npu.synchronize()
+        print(
+            "RERANKER_GRAPH_WARMUP "
+            f"pass={warmup_index + 1}/{args.graph_warmups} "
+            f"wall_s={time.perf_counter() - started:.3f}",
+            flush=True,
+        )
     scores = runner.score_ids(inputs["input_ids"], inputs["attention_mask"])
     ranked = sorted(enumerate(scores.detach().float().cpu().tolist()), key=lambda item: item[1], reverse=True)
     print(f"shape={tuple(scores.shape)}")

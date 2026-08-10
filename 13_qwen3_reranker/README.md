@@ -226,6 +226,41 @@ the per-layer cache and are expanded only at the PromptFA boundary. Add
 host sequences the compiled steps while KV tensors remain on NPU; the yes/no
 projection remains outside the compiled prefill graphs.
 
+## Static Prefix Cache
+
+The first throughput-oriented prefix-cache lane uses one static shape. It
+caches the fixed 60-token system/task prefix once, using manual eager attention,
+then runs one disk-cached TorchAir continuation graph with PromptFA:
+
+- prefix build: B1, physical S128, manual eager attention;
+- continuation: fixed request batch, Q128, KV256, PromptFA;
+- graph output: final continuation hidden states only; continuation KV is not
+  returned or stored.
+
+The semantic maximum length is 60 cached tokens plus 128 continuation tokens,
+so the default task requires `--max-length 188`:
+
+```bash
+python3 13_qwen3_reranker/run_local_qwen3_reranker.py \
+  --model-dir "$MODEL_DIR" \
+  --max-length 188 \
+  --batch-size 2 \
+  --dtype float16 \
+  --device npu:0 \
+  --attention-impl prompt_flash_attention \
+  --ffn-weight-mode dense \
+  --prefill-chunk-size 128 \
+  --prefix-cache \
+  --compile-forward \
+  --compile-cache-dir .runtime_cache/13_qwen3_reranker \
+  --graph-warmups 2
+```
+
+The prefix/continuation tokenizer split is checked against the original full
+prompt token IDs for every pair. If segmentation changes any token ID, the
+runtime refuses to use the cache. Graph cache directories include the fixed
+shape, model dimensions, and a source hash.
+
 ## Weight Modes
 
 - `dense`: all model weights stay FP16.

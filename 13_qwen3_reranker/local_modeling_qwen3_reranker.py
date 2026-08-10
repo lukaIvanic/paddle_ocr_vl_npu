@@ -389,6 +389,54 @@ class LocalQwen3RerankerAttention(nn.Module):
             value_states,
         )
 
+    def forward_eager_prefix_cache(
+        self,
+        hidden_states: torch.Tensor,
+        cos: torch.Tensor,
+        sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        batch, sequence_length, _hidden = hidden_states.shape
+        query_states, key_states, value_states = self.project_qkv(hidden_states, cos, sin)
+        key_for_attention = repeat_kv(key_states, self.num_key_value_groups)
+        value_for_attention = repeat_kv(value_states, self.num_key_value_groups)
+        scores = torch.matmul(query_states, key_for_attention.transpose(-2, -1)) * self.scaling
+        scores = scores.masked_fill(attention_mask, torch.finfo(scores.dtype).min)
+        probabilities = torch.softmax(scores, dim=-1, dtype=torch.float32).to(query_states.dtype)
+        attention_output = torch.matmul(probabilities, value_for_attention)
+        attention_output = attention_output.transpose(1, 2).reshape(
+            batch, sequence_length, self.num_heads * self.head_dim
+        )
+        return linear_tokenwise(self.o_proj, attention_output), key_states, value_states
+
+    def forward_prompt_flash_attention_cached_prefix(
+        self,
+        hidden_states: torch.Tensor,
+        cos: torch.Tensor,
+        sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+        prefix_key_states: torch.Tensor,
+        prefix_value_states: torch.Tensor,
+    ) -> torch.Tensor:
+        batch, query_length, _hidden = hidden_states.shape
+        query_states, current_key_states, current_value_states = self.project_qkv(
+            hidden_states, cos, sin
+        )
+        key_states = torch.cat((prefix_key_states, current_key_states), dim=2).contiguous()
+        value_states = torch.cat((prefix_value_states, current_value_states), dim=2).contiguous()
+        attention_output = prompt_flash_attention_bnsd_310p_compatible(
+            query_states,
+            key_states,
+            value_states,
+            attention_mask=attention_mask,
+            num_heads=int(self.num_heads),
+            scale=float(self.scaling),
+        )
+        attention_output = attention_output.transpose(1, 2).reshape(
+            batch, query_length, self.num_heads * self.head_dim
+        )
+        return linear_tokenwise(self.o_proj, attention_output)
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -447,6 +495,42 @@ class LocalQwen3RerankerDecoderLayer(nn.Module):
         hidden_states = hidden_states + attention_output
         hidden_states = hidden_states + self.mlp(self.post_attention_layernorm(hidden_states))
         return hidden_states, updated_key_states, updated_value_states
+
+    def forward_eager_prefix_cache(
+        self,
+        hidden_states: torch.Tensor,
+        cos: torch.Tensor,
+        sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        attention_output, key_states, value_states = self.self_attn.forward_eager_prefix_cache(
+            self.input_layernorm(hidden_states),
+            cos,
+            sin,
+            attention_mask,
+        )
+        hidden_states = hidden_states + attention_output
+        hidden_states = hidden_states + self.mlp(self.post_attention_layernorm(hidden_states))
+        return hidden_states, key_states, value_states
+
+    def forward_prompt_flash_attention_cached_prefix(
+        self,
+        hidden_states: torch.Tensor,
+        cos: torch.Tensor,
+        sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+        prefix_key_states: torch.Tensor,
+        prefix_value_states: torch.Tensor,
+    ) -> torch.Tensor:
+        hidden_states = hidden_states + self.self_attn.forward_prompt_flash_attention_cached_prefix(
+            self.input_layernorm(hidden_states),
+            cos,
+            sin,
+            attention_mask,
+            prefix_key_states,
+            prefix_value_states,
+        )
+        return hidden_states + self.mlp(self.post_attention_layernorm(hidden_states))
 
 
 class LocalQwen3RerankerForCausalLM(nn.Module):
@@ -628,6 +712,56 @@ class LocalQwen3RerankerForCausalLM(nn.Module):
             key_caches,
             value_caches,
         )
+
+    def build_prefix_cache_eager(
+        self,
+        input_ids: torch.Tensor,
+        position_ids: torch.Tensor,
+        prefix_mask: torch.Tensor,
+    ) -> tuple[tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
+        hidden_states = self.embed_tokens(input_ids)
+        cos, sin = self.rotary_emb(
+            position_ids,
+            dtype=hidden_states.dtype,
+            device=hidden_states.device,
+        )
+        key_caches: list[torch.Tensor] = []
+        value_caches: list[torch.Tensor] = []
+        for layer in self.layers:
+            hidden_states, key_states, value_states = layer.forward_eager_prefix_cache(
+                hidden_states,
+                cos,
+                sin,
+                prefix_mask,
+            )
+            key_caches.append(key_states)
+            value_caches.append(value_states)
+        return tuple(key_caches), tuple(value_caches)
+
+    def forward_cached_suffix_prepared(
+        self,
+        input_ids: torch.Tensor,
+        position_ids: torch.Tensor,
+        continuation_mask: torch.Tensor,
+        prefix_key_caches: tuple[torch.Tensor, ...],
+        prefix_value_caches: tuple[torch.Tensor, ...],
+    ) -> torch.Tensor:
+        hidden_states = self.embed_tokens(input_ids)
+        cos, sin = self.rotary_emb(
+            position_ids,
+            dtype=hidden_states.dtype,
+            device=hidden_states.device,
+        )
+        for layer_index, layer in enumerate(self.layers):
+            hidden_states = layer.forward_prompt_flash_attention_cached_prefix(
+                hidden_states,
+                cos,
+                sin,
+                continuation_mask,
+                prefix_key_caches[layer_index],
+                prefix_value_caches[layer_index],
+            )
+        return self.norm(hidden_states)
 
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         hidden_states = self.forward_hidden_states(input_ids, attention_mask)
