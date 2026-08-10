@@ -28,6 +28,7 @@ class W8A8Linear(nn.Module):
         self.use_static_input_scale = False
         self.use_static_packed_deq_scale = False
         self.weight_is_matmul_ready = False
+        self.weight_requires_graph_transpose = False
         self.collect_input_scale_stats = False
         self._observed_input_scale = 0.0
 
@@ -92,7 +93,11 @@ class W8A8Linear(nn.Module):
         else:
             deq_scale = self.weight_scale.to(torch.float32) * input_scale.to(torch.float32)
             deq_scale = torch_npu.npu_trans_quant_param(deq_scale, None)
-        weight = self.weight_q if self.weight_is_matmul_ready else self.weight_q.transpose(0, 1)
+        weight = (
+            self.weight_q.transpose(0, 1)
+            if self.weight_requires_graph_transpose or not self.weight_is_matmul_ready
+            else self.weight_q
+        )
         return torch_npu.npu_quant_matmul(
             x_q,
             weight,
@@ -249,13 +254,14 @@ def prepare_w8a8_weight_format(module: nn.Module, *, requested: str) -> dict[str
         if requested == "fractal_nz_inference_doc":
             if not is_310p:
                 raise ValueError("fractal_nz_inference_doc is only for Atlas inference products")
-            # The Atlas inference-product QuantMatmul contract consumes the
-            # [N,K] transposed weight after it has been converted to NZ. Do
-            # not transpose the formatted tensor back to a [K,N] view.
+            # Keep the formatted buffer in physical/logical [N,K] form. The
+            # compiled forward must express the transpose to [K,N], matching
+            # Huawei's Atlas-inference high-performance example exactly.
             prepared = torch_npu.npu_format_cast(
                 linear.weight_q.contiguous(),
                 FRACTAL_NZ,
             )
+            linear.weight_requires_graph_transpose = True
         elif requested == "fractal_nz":
             if is_310p:
                 prepared = torch_npu.npu_format_cast(linear.weight_q, FRACTAL_NZ).transpose(0, 1)
@@ -290,6 +296,7 @@ def prepare_w8a8_weight_format(module: nn.Module, *, requested: str) -> dict[str
                 "shape": list(linear.weight_q.shape),
                 "stride": list(linear.weight_q.stride()),
                 "contiguous": bool(linear.weight_q.is_contiguous()),
+                "graph_transpose": bool(linear.weight_requires_graph_transpose),
             }
             for linear in linears
         ],
