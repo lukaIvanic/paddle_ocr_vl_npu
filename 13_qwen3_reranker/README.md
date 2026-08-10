@@ -221,8 +221,9 @@ python3 13_qwen3_reranker/run_local_qwen3_reranker.py \
 
 Each block uses a bool `[B,1,Q,K]` causal/padding mask and omits
 `actual_seq_lengths` and `actual_seq_lengths_kv`. GQA KV states stay compact in
-the per-layer cache and are expanded only at the PromptFA boundary. Compiled
-chunked prefill is intentionally rejected until it has its own validation.
+the per-layer cache and are expanded only at the PromptFA boundary. Add
+`--compile-forward` to compile the fixed chunk schedule as one static TorchAir
+prefill graph; the yes/no projection remains outside that graph.
 
 ## Weight Modes
 

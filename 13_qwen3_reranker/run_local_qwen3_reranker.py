@@ -39,6 +39,7 @@ class LocalQwen3RerankerRunner:
         self.attention_impl = attention_impl
         self.ffn_weight_mode = ffn_weight_mode
         self.prefill_chunk_size = int(prefill_chunk_size)
+        self.compiled_chunked_hidden_states = None
         if self.attention_impl not in {"eager", "prompt_flash_attention"}:
             raise ValueError(f"Unsupported attention_impl={self.attention_impl!r}")
         if self.attention_impl == "prompt_flash_attention" and self.dtype is not torch.float16:
@@ -54,8 +55,6 @@ class LocalQwen3RerankerRunner:
                 raise ValueError("310P-compatible prefill chunk size must be a multiple of 128")
             if self.max_length % self.prefill_chunk_size != 0:
                 raise ValueError("--max-length must be divisible by --prefill-chunk-size")
-            if self.compile_forward:
-                raise ValueError("chunked prefill compilation is not implemented yet")
         from transformers import AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir, padding_side="left")
@@ -68,12 +67,20 @@ class LocalQwen3RerankerRunner:
             from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
             backend = torchair.get_npu_backend(compiler_config=CompilerConfig())
-            self.model.forward_prepared_yes_no = torch.compile(
-                self.model.forward_prepared_yes_no,
-                backend=backend,
-                dynamic=False,
-                fullgraph=True,
-            )
+            if self.prefill_chunk_size:
+                self.compiled_chunked_hidden_states = torch.compile(
+                    self.model.forward_hidden_states_chunked,
+                    backend=backend,
+                    dynamic=False,
+                    fullgraph=True,
+                )
+            else:
+                self.model.forward_prepared_yes_no = torch.compile(
+                    self.model.forward_prepared_yes_no,
+                    backend=backend,
+                    dynamic=False,
+                    fullgraph=True,
+                )
 
     def load_model(self) -> LocalQwen3RerankerForCausalLM:
         from safetensors.torch import load_file
@@ -129,6 +136,13 @@ class LocalQwen3RerankerRunner:
         return position_ids, layer_attention_mask
 
     def logits_ids(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+        if self.compiled_chunked_hidden_states is not None:
+            hidden_states = self.compiled_chunked_hidden_states(
+                input_ids,
+                attention_mask,
+                chunk_size=self.prefill_chunk_size,
+            )
+            return self.model.lm_head(hidden_states[:, -1])
         if not self.compile_forward:
             hidden_states = (
                 self.model.forward_hidden_states_chunked(
@@ -151,7 +165,14 @@ class LocalQwen3RerankerRunner:
                 dtype=torch.long,
             )
             yes_no_weight = self.model.lm_head.weight[yes_no_ids]
-            if self.compile_forward:
+            if self.compiled_chunked_hidden_states is not None:
+                hidden_states = self.compiled_chunked_hidden_states(
+                    input_ids,
+                    attention_mask,
+                    chunk_size=self.prefill_chunk_size,
+                )
+                yes_no_logits = torch.nn.functional.linear(hidden_states[:, -1], yes_no_weight)
+            elif self.compile_forward:
                 position_ids, additive_mask = self.prepared_forward_inputs(attention_mask)
                 yes_no_logits = self.model.forward_prepared_yes_no(
                     input_ids,
