@@ -58,44 +58,49 @@ public:
         }
 
         LocalTensor<half> queryInput = queryInputQueue.AllocTensor<half>();
-        LocalTensor<half> keyInput = keyInputQueue.AllocTensor<half>();
-        LocalTensor<half> valueInput = valueInputQueue.AllocTensor<half>();
         DataCopy(queryInput, queryGm, kQueryElements);
-        DataCopy(keyInput, keyStateGm, kStateElements);
-        DataCopy(valueInput, valueStateGm, kStateElements);
         queryInputQueue.EnQue(queryInput);
-        keyInputQueue.EnQue(keyInput);
-        valueInputQueue.EnQue(valueInput);
-
         queryInput = queryInputQueue.DeQue<half>();
-        keyInput = keyInputQueue.DeQue<half>();
-        valueInput = valueInputQueue.DeQue<half>();
         LocalTensor<half> queryOutput = queryOutputQueue.AllocTensor<half>();
-        LocalTensor<half> keyOutput = keyOutputQueue.AllocTensor<half>();
-        LocalTensor<half> valueOutput = valueOutputQueue.AllocTensor<half>();
         Adds(queryOutput, queryInput, static_cast<half>(0.0f), kQueryElements);
-        Adds(keyOutput, keyInput, static_cast<half>(0.0f), kStateElements);
-        Adds(valueOutput, valueInput, static_cast<half>(0.0f), kStateElements);
         queryOutputQueue.EnQue(queryOutput);
-        keyOutputQueue.EnQue(keyOutput);
-        valueOutputQueue.EnQue(valueOutput);
         queryInputQueue.FreeTensor(queryInput);
-        keyInputQueue.FreeTensor(keyInput);
-        valueInputQueue.FreeTensor(valueInput);
-
         queryOutput = queryOutputQueue.DeQue<half>();
-        keyOutput = keyOutputQueue.DeQue<half>();
-        valueOutput = valueOutputQueue.DeQue<half>();
         DataCopy(orderedQueryGm, queryOutput, kQueryElements);
+        queryOutputQueue.FreeTensor(queryOutput);
+
+        LocalTensor<half> keyInput = keyInputQueue.AllocTensor<half>();
+        DataCopy(keyInput, keyStateGm, kStateElements);
+        keyInputQueue.EnQue(keyInput);
+        keyInput = keyInputQueue.DeQue<half>();
+        LocalTensor<half> keyOutput = keyOutputQueue.AllocTensor<half>();
+        Adds(keyOutput, keyInput, static_cast<half>(0.0f), kStateElements);
+        keyOutputQueue.EnQue(keyOutput);
+        keyInputQueue.FreeTensor(keyInput);
+        keyOutput = keyOutputQueue.DeQue<half>();
         for (uint32_t head = 0; head < kKvHeads; ++head) {
             const uint32_t stateOffset = head * kHeadDim;
             const uint32_t cacheOffset =
                 (head * kCacheLength + static_cast<uint32_t>(position)) * kHeadDim;
             DataCopy(keyCacheGm[cacheOffset], keyOutput[stateOffset], kHeadDim);
+        }
+        keyOutputQueue.FreeTensor(keyOutput);
+
+        LocalTensor<half> valueInput = valueInputQueue.AllocTensor<half>();
+        DataCopy(valueInput, valueStateGm, kStateElements);
+        valueInputQueue.EnQue(valueInput);
+        valueInput = valueInputQueue.DeQue<half>();
+        LocalTensor<half> valueOutput = valueOutputQueue.AllocTensor<half>();
+        Adds(valueOutput, valueInput, static_cast<half>(0.0f), kStateElements);
+        valueOutputQueue.EnQue(valueOutput);
+        valueInputQueue.FreeTensor(valueInput);
+        valueOutput = valueOutputQueue.DeQue<half>();
+        for (uint32_t head = 0; head < kKvHeads; ++head) {
+            const uint32_t stateOffset = head * kHeadDim;
+            const uint32_t cacheOffset =
+                (head * kCacheLength + static_cast<uint32_t>(position)) * kHeadDim;
             DataCopy(valueCacheGm[cacheOffset], valueOutput[stateOffset], kHeadDim);
         }
-        queryOutputQueue.FreeTensor(queryOutput);
-        keyOutputQueue.FreeTensor(keyOutput);
         valueOutputQueue.FreeTensor(valueOutput);
     }
 
