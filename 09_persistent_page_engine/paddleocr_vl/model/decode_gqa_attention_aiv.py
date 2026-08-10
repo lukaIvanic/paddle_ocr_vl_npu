@@ -96,8 +96,10 @@ def register_decode_gqa_attention_aiv_converter() -> None:
             GE_OP_NAME,
             inputs={
                 "query": query,
-                "key": key,
-                "value": value,
+                # The pinned FIAS implementation uses the dynamic K/V list
+                # descriptor even for this fixed B1, one-tensor specialization.
+                "key": [key],
+                "value": [value],
                 "atten_mask": atten_mask,
             },
             attrs={

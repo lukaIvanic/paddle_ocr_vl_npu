@@ -22,6 +22,32 @@ from paddleocr_vl.model import text_decode
 
 
 class GqaIncrefaAivContractTest(unittest.TestCase):
+    def test_attention_overlay_preserves_dynamic_kv_descriptor_abi(self) -> None:
+        operator_root = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_gqa_increfa_aiv"
+        )
+        op_def = (
+            operator_root
+            / "source_overlay_decode_attention"
+            / "op_host"
+            / "paddle_decode_gqa_attention_aiv_def.cpp"
+        ).read_text(encoding="utf-8")
+        converter = (
+            EXPERIMENT_ROOT
+            / "paddleocr_vl"
+            / "model"
+            / "decode_gqa_attention_aiv.py"
+        ).read_text(encoding="utf-8")
+        build_script = (operator_root / "build.sh").read_text(encoding="utf-8")
+
+        self.assertIn('Input("key").ParamType(DYNAMIC)', op_def)
+        self.assertIn('Input("value").ParamType(DYNAMIC)', op_def)
+        self.assertIn('"key": [key]', converter)
+        self.assertIn('"value": [value]', converter)
+        self.assertNotIn("required-single-kv-attention", build_script)
+
     def test_nonsplit_megakernel_uses_separate_prep_and_16_aiv_blocks(self) -> None:
         optimization = text_decode.resolve_decode_optimization(
             "paddle_decoder_megakernel_b1_nonsplit_gqa"
