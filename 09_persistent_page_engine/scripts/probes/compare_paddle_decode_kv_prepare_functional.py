@@ -24,12 +24,20 @@ from paddleocr_vl.model.decode_kv_prepare_functional_mixed24 import (
 
 
 class FunctionalKvAttention(torch.nn.Module):
-    def __init__(self, options: str) -> None:
+    def __init__(
+        self,
+        options: str,
+        strict_scope: bool,
+        include_gqa: bool,
+    ) -> None:
         super().__init__()
         self.options = options
-        self.scope = __import__(
-            "torchair.scope", fromlist=["super_kernel"]
-        ).super_kernel
+        self.include_gqa = include_gqa
+        self.scope = None
+        if strict_scope:
+            self.scope = __import__(
+                "torchair.scope", fromlist=["super_kernel"]
+            ).super_kernel
 
     def forward(
         self,
@@ -40,7 +48,7 @@ class FunctionalKvAttention(torch.nn.Module):
         key_state: torch.Tensor,
         value_state: torch.Tensor,
     ) -> tuple[torch.Tensor, ...]:
-        with self.scope("paddle_functional_kv_attention", self.options):
+        def run() -> tuple[torch.Tensor, ...]:
             ordered_query, mask, key_out, value_out = (
                 decode_kv_prepare_functional_mixed24(
                     query,
@@ -51,6 +59,8 @@ class FunctionalKvAttention(torch.nn.Module):
                     value_state,
                 )
             )
+            if not self.include_gqa:
+                return ordered_query, mask, key_out, value_out
             attention = decode_gqa_attention_mixed24(
                 ordered_query,
                 key_out,
@@ -63,12 +73,18 @@ class FunctionalKvAttention(torch.nn.Module):
                 vector_core_count=16,
             )
             return ordered_query, mask, key_out, value_out, attention
+        if self.scope is None:
+            return run()
+        with self.scope("paddle_functional_kv_attention", self.options):
+            return run()
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--no-super-kernel", action="store_true")
+    parser.add_argument("--functional-only", action="store_true")
     parser.add_argument(
         "--super-kernel-options",
         default=(
@@ -87,7 +103,8 @@ def main() -> int:
         raise RuntimeError("an Ascend NPU is required")
     torch.npu.set_compile_mode(jit_compile=False)
     register_decode_kv_prepare_functional_mixed24_converter()
-    register_decode_gqa_attention_mixed24_converter()
+    if not args.functional_only:
+        register_decode_gqa_attention_mixed24_converter()
 
     torchair, CompilerConfig = import_torchair()
     args.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -97,7 +114,11 @@ def main() -> int:
     config.debug.graph_dump.type = "pbtxt"
     config.debug.graph_dump.path = str(dump_dir)
     step = torchair.inference.cache_compile(
-        FunctionalKvAttention(args.super_kernel_options).forward,
+        FunctionalKvAttention(
+            args.super_kernel_options,
+            strict_scope=not args.no_super_kernel,
+            include_gqa=not args.functional_only,
+        ).forward,
         config=config,
         dynamic=False,
         cache_dir=str(args.cache_dir),
@@ -132,7 +153,7 @@ def main() -> int:
             [position], dtype=torch.int64, device="npu:0"
         )
         started = time.perf_counter()
-        ordered, mask, key_cache, value_cache, attention = step(
+        outputs = step(
             query,
             key_cache,
             value_cache,
@@ -140,22 +161,29 @@ def main() -> int:
             key_state,
             value_state,
         )
+        if args.functional_only:
+            ordered, mask, key_cache, value_cache = outputs
+            attention = None
+        else:
+            ordered, mask, key_cache, value_cache, attention = outputs
         torch.npu.synchronize()
         timings.append(time.perf_counter() - started)
 
-        reference = torch_npu.npu_incre_flash_attention(
-            ordered,
-            key_cache,
-            value_cache,
-            atten_mask=mask,
-            actual_seq_lengths=None,
-            num_heads=16,
-            num_key_value_heads=2,
-            input_layout="BNSD",
-            scale_value=1.0 / math.sqrt(128.0),
-            inner_precise=1,
-        )
-        torch.npu.synchronize()
+        reference = None
+        if attention is not None:
+            reference = torch_npu.npu_incre_flash_attention(
+                ordered,
+                key_cache,
+                value_cache,
+                atten_mask=mask,
+                actual_seq_lengths=None,
+                num_heads=16,
+                num_key_value_heads=2,
+                input_layout="BNSD",
+                scale_value=1.0 / math.sqrt(128.0),
+                inner_precise=1,
+            )
+            torch.npu.synchronize()
         query_exact = bool(torch.equal(ordered.cpu(), query.cpu()))
         mask_expected = (
             torch.arange(1024, dtype=torch.int64) > position
@@ -165,18 +193,25 @@ def main() -> int:
         value_actual = value_cache[:, :, position : position + 1, :].cpu()
         key_exact = bool(torch.equal(key_actual, key_state.cpu()))
         value_exact = bool(torch.equal(value_actual, value_state.cpu()))
-        attention_max_abs = float(
-            (attention.float() - reference.float()).abs().max().cpu()
-        )
-        attention_close = bool(
-            torch.allclose(attention, reference, atol=3e-4, rtol=3e-4)
-        )
+        attention_max_abs = None
+        attention_close = None
+        attention_output_max_abs = None
+        if attention is not None and reference is not None:
+            attention_max_abs = float(
+                (attention.float() - reference.float()).abs().max().cpu()
+            )
+            attention_close = bool(
+                torch.allclose(attention, reference, atol=3e-4, rtol=3e-4)
+            )
+            attention_output_max_abs = float(
+                attention.float().abs().max().cpu()
+            )
         step_exact = (
             query_exact
             and mask_exact
             and key_exact
             and value_exact
-            and attention_close
+            and (attention_close is not False)
         )
         all_exact = all_exact and step_exact
         checks.append(
@@ -188,9 +223,7 @@ def main() -> int:
                 "value_exact": value_exact,
                 "attention_vs_stock_close": attention_close,
                 "attention_vs_stock_max_abs": attention_max_abs,
-                "attention_output_max_abs": float(
-                    attention.float().abs().max().cpu()
-                ),
+                "attention_output_max_abs": attention_output_max_abs,
             }
         )
 
@@ -206,6 +239,8 @@ def main() -> int:
         },
         "contract": {
             "cache_semantics": "functional_explicit_outputs",
+            "strict_scope": not args.no_super_kernel,
+            "include_gqa": not args.functional_only,
             "cache_shape": list(key_cache.shape),
             "positions": positions,
             "super_kernel_options": args.super_kernel_options,

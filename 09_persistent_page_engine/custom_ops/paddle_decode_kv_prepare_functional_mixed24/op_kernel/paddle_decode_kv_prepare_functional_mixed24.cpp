@@ -53,8 +53,13 @@ public:
         valueCacheOutGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ half*>(valueCacheOut), kCacheElements);
         pipe->InitBuffer(
-            copyQueue, 1, kCopyElementsPerCore * sizeof(half));
-        pipe->InitBuffer(tokenQueue, 1, kQueryElements * sizeof(half));
+            copyInputQueue, 1, kCopyElementsPerCore * sizeof(half));
+        pipe->InitBuffer(
+            copyOutputQueue, 1, kCopyElementsPerCore * sizeof(half));
+        pipe->InitBuffer(
+            tokenInputQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(
+            tokenOutputQueue, 1, kQueryElements * sizeof(half));
         pipe->InitBuffer(maskQueue, 1, kCacheLength * sizeof(uint8_t));
     }
 
@@ -134,12 +139,17 @@ private:
         uint32_t start,
         uint32_t count)
     {
-        LocalTensor<half> local = copyQueue.AllocTensor<half>();
-        DataCopy(local, source[start], count);
-        copyQueue.EnQue(local);
-        local = copyQueue.DeQue<half>();
-        DataCopy(destination[start], local, count);
-        copyQueue.FreeTensor(local);
+        LocalTensor<half> input = copyInputQueue.AllocTensor<half>();
+        DataCopy(input, source[start], count);
+        copyInputQueue.EnQue(input);
+        input = copyInputQueue.DeQue<half>();
+        LocalTensor<half> output = copyOutputQueue.AllocTensor<half>();
+        Adds(output, input, static_cast<half>(0.0f), count);
+        copyOutputQueue.EnQue(output);
+        copyInputQueue.FreeTensor(input);
+        output = copyOutputQueue.DeQue<half>();
+        DataCopy(destination[start], output, count);
+        copyOutputQueue.FreeTensor(output);
     }
 
     __aicore__ inline void CopyToken(
@@ -149,12 +159,17 @@ private:
         uint32_t destinationOffset,
         uint32_t count)
     {
-        LocalTensor<half> local = tokenQueue.AllocTensor<half>();
-        DataCopy(local, source[sourceOffset], count);
-        tokenQueue.EnQue(local);
-        local = tokenQueue.DeQue<half>();
-        DataCopy(destination[destinationOffset], local, count);
-        tokenQueue.FreeTensor(local);
+        LocalTensor<half> input = tokenInputQueue.AllocTensor<half>();
+        DataCopy(input, source[sourceOffset], count);
+        tokenInputQueue.EnQue(input);
+        input = tokenInputQueue.DeQue<half>();
+        LocalTensor<half> output = tokenOutputQueue.AllocTensor<half>();
+        Adds(output, input, static_cast<half>(0.0f), count);
+        tokenOutputQueue.EnQue(output);
+        tokenInputQueue.FreeTensor(input);
+        output = tokenOutputQueue.DeQue<half>();
+        DataCopy(destination[destinationOffset], output, count);
+        tokenOutputQueue.FreeTensor(output);
     }
 
     GlobalTensor<half> queryGm;
@@ -167,8 +182,10 @@ private:
     GlobalTensor<uint8_t> attentionMaskGm;
     GlobalTensor<half> keyCacheOutGm;
     GlobalTensor<half> valueCacheOutGm;
-    TQue<QuePosition::VECIN, 1> copyQueue;
-    TQue<QuePosition::VECIN, 1> tokenQueue;
+    TQue<QuePosition::VECIN, 1> copyInputQueue;
+    TQue<QuePosition::VECOUT, 1> copyOutputQueue;
+    TQue<QuePosition::VECIN, 1> tokenInputQueue;
+    TQue<QuePosition::VECOUT, 1> tokenOutputQueue;
     TQue<QuePosition::VECOUT, 1> maskQueue;
 };
 }
