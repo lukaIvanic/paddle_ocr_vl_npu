@@ -65,7 +65,13 @@ def parse_args() -> argparse.Namespace:
             ".runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf"
         ),
     )
-    parser.add_argument("--use-chart-recognition", action="store_true")
+    parser.add_argument(
+        "--no-chart-recognition",
+        dest="use_chart_recognition",
+        action="store_false",
+        help="Treat chart regions as images instead of recognition crops.",
+    )
+    parser.set_defaults(use_chart_recognition=True)
     parser.add_argument("--worker-empty-cache-after-page", action="store_true")
     args = parser.parse_args()
     if args.offset < 0 or args.limit < 1:
@@ -191,6 +197,7 @@ def main() -> None:
                 "dtype": args.dtype,
                 "cross_cache_length": args.cross_cache_length,
                 "layout_execution": args.layout_execution,
+                "use_chart_recognition": args.use_chart_recognition,
                 "setup_s": setup_s,
                 "warmup": warmup_summary,
                 "producer_stream_wall_s": stream_wall_s,
