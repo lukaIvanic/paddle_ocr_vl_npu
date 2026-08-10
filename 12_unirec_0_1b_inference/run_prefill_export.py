@@ -243,6 +243,7 @@ def main() -> None:
                     args.profile_prefill_device_stages
                 ),
                 "setup_s": setup_s,
+                "worker_setup_diagnostics": pool.worker_setup_diagnostics,
                 "warmup_repeats": args.warmup_repeats,
                 "warmups": warmup_summaries,
                 "warmup": warmup_summaries[-1] if warmup_summaries else None,

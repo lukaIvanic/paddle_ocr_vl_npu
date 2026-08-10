@@ -483,6 +483,7 @@ def _worker_main(
                 ] = static_cross_cache_len
             if recognition_prefix_shapes_manifest is None:
                 vision_atlas_runtime = UniRecVisionAtlasRuntime(recognition_runner)
+                prefix_graph_warmup = None
             else:
                 from vision_static_shape import (
                     PerShapeCompiledPrefixUniRecVisionRuntime,
@@ -495,10 +496,47 @@ def _worker_main(
                         Path(recognition_prefix_shapes_manifest)
                     ),
                 )
+                prefix_graph_warmup_started = time.perf_counter()
+                prefix_graph_warmup_report = (
+                    vision_atlas_runtime.warmup_all_prefix_graphs(passes=1)
+                )
+                prefix_graph_warmup_wall_s = (
+                    time.perf_counter() - prefix_graph_warmup_started
+                )
+                prefix_graph_call_wall_s = {
+                    str(shape): float(values["pass_wall_s"][0])
+                    for shape, values in prefix_graph_warmup_report.items()
+                }
+                # The explicit graph sweep is the first call for every shape
+                # in this worker. Mark those shapes warm so page diagnostics
+                # only report unexpected post-warmup first calls.
+                vision_atlas_runtime.prefix_first_call_wall_s.update(
+                    prefix_graph_call_wall_s
+                )
+                prefix_graph_warmup = {
+                    "shape_count": len(prefix_graph_call_wall_s),
+                    "wall_s": prefix_graph_warmup_wall_s,
+                    "graph_call_wall_sum_s": sum(
+                        prefix_graph_call_wall_s.values()
+                    ),
+                    "graph_call_wall_min_s": min(
+                        prefix_graph_call_wall_s.values()
+                    ),
+                    "graph_call_wall_max_s": max(
+                        prefix_graph_call_wall_s.values()
+                    ),
+                }
         else:
             recognition_runner = None
             vision_atlas_runtime = None
-        result_queue.put({"status": "ready", "worker": worker_index})
+            prefix_graph_warmup = None
+        result_queue.put(
+            {
+                "status": "ready",
+                "worker": worker_index,
+                "prefix_graph_warmup": prefix_graph_warmup,
+            }
+        )
         while True:
             task = task_queue.get()
             if task is None:
@@ -738,6 +776,13 @@ class DynamicLayoutProcessPool:
         if errors:
             self.close()
             raise RuntimeError(f"layout process setup failed: {errors}")
+        self.worker_setup_diagnostics = [
+            {
+                "worker": int(message["worker"]),
+                "prefix_graph_warmup": message.get("prefix_graph_warmup"),
+            }
+            for message in sorted(ready, key=lambda value: int(value["worker"]))
+        ]
         self.setup_wall_s = time.perf_counter() - setup_started
         self._next_run_id = 0
         self.last_stream_summary: dict[str, Any] | None = None
