@@ -14,6 +14,7 @@ sys.path.insert(0, str(EXPERIMENT_DIR))
 
 from local_modeling_qwen3_reranker import (  # noqa: E402
     LocalQwen3RerankerConfig,
+    LocalQwen3RerankerAttention,
     LocalQwen3RerankerForCausalLM,
     LocalQwen3RerankerRotaryEmbedding,
     PROMPT_FA_FULL_ATTENTION_TOKENS,
@@ -22,6 +23,7 @@ from local_modeling_qwen3_reranker import (  # noqa: E402
     build_left_padded_causal_bool_mask_chunk,
     linear_tokenwise,
     prompt_flash_attention_bnsd_310p_compatible,
+    prompt_flash_attention_bsnd_310p_compatible,
 )
 
 
@@ -189,6 +191,61 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
         torch.testing.assert_close(output, query)
         self.assertIs(captured["kwargs"]["atten_mask"], square_mask)
 
+    def test_310p_bsnd_contract_square_pads_sequence_axis(self) -> None:
+        captured: dict[str, object] = {}
+
+        def fake_prompt_flash_attention(query, key, value, **kwargs):
+            captured.update(query=query, key=key, value=value, kwargs=kwargs)
+            return query
+
+        fake_torch_npu = SimpleNamespace(npu_prompt_flash_attention=fake_prompt_flash_attention)
+        query = torch.randn(2, 2, 4, 8, dtype=torch.float16)
+        key = torch.randn(2, 4, 2, 8, dtype=torch.float16)
+        value = torch.randn(2, 4, 2, 8, dtype=torch.float16)
+        real_mask = torch.zeros(2, 1, 2, 4, dtype=torch.bool)
+
+        with patch.dict(sys.modules, {"torch_npu": fake_torch_npu}):
+            output = prompt_flash_attention_bsnd_310p_compatible(
+                query,
+                key,
+                value,
+                attention_mask=real_mask,
+                num_heads=4,
+                scale=8**-0.5,
+            )
+
+        torch.testing.assert_close(output, query)
+        self.assertEqual(captured["query"].shape, (2, 4, 4, 8))
+        self.assertEqual(captured["key"].shape, (2, 4, 4, 8))
+        self.assertEqual(captured["value"].shape, (2, 4, 4, 8))
+        self.assertEqual(captured["kwargs"]["input_layout"], "BSND")
+        self.assertEqual(captured["kwargs"]["atten_mask"].shape, (2, 1, 4, 4))
+
+    def test_project_qkv_bsnd_is_layout_view_of_bnsd_result(self) -> None:
+        config = LocalQwen3RerankerConfig(
+            vocab_size=8,
+            hidden_size=16,
+            intermediate_size=32,
+            num_hidden_layers=1,
+            num_attention_heads=2,
+            num_key_value_heads=1,
+            head_dim=8,
+            rms_norm_eps=1e-6,
+            rope_theta=10000.0,
+            tie_word_embeddings=False,
+        )
+        attention = LocalQwen3RerankerAttention(config, attention_impl="prompt_flash_attention")
+        rotary = LocalQwen3RerankerRotaryEmbedding(config)
+        hidden_states = torch.randn(2, 3, 16)
+        position_ids = torch.arange(3).view(1, 3).expand(2, -1)
+        cos, sin = rotary(position_ids, dtype=torch.float32, device=torch.device("cpu"))
+
+        bnsd = attention.project_qkv(hidden_states, cos, sin, output_layout="BNSD")
+        bsnd = attention.project_qkv(hidden_states, cos, sin, output_layout="BSND")
+
+        for bnsd_tensor, bsnd_tensor in zip(bnsd, bsnd):
+            torch.testing.assert_close(bsnd_tensor, bnsd_tensor.transpose(1, 2))
+
     def test_combined_preset_expands_prefix_cache_heads_once(self) -> None:
         config = LocalQwen3RerankerConfig(
             vocab_size=8,
@@ -215,6 +272,32 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
         self.assertEqual(values[0].shape, (1, 4, 3, 8))
         torch.testing.assert_close(keys[0][:, 0], key[:, 0])
         torch.testing.assert_close(keys[0][:, 1], key[:, 0])
+
+    def test_combined_bsnd_preset_transposes_expanded_prefix_cache_once(self) -> None:
+        config = LocalQwen3RerankerConfig(
+            vocab_size=8,
+            hidden_size=16,
+            intermediate_size=32,
+            num_hidden_layers=1,
+            num_attention_heads=4,
+            num_key_value_heads=2,
+            head_dim=8,
+            rms_norm_eps=1e-6,
+            rope_theta=10000.0,
+            tie_word_embeddings=False,
+        )
+        model = LocalQwen3RerankerForCausalLM(config)
+        selected = model.set_prefill_optimization("combined_bsnd")
+        key = torch.randn(1, 2, 3, 8)
+        value = torch.randn(1, 2, 3, 8)
+        keys, values = model.prepare_prefix_caches((key,), (value,))
+
+        self.assertEqual(selected.prompt_fa_layout, "BSND")
+        self.assertEqual(model.layers[0].self_attn.prompt_fa_layout, "BSND")
+        self.assertEqual(keys[0].shape, (1, 3, 4, 8))
+        self.assertEqual(values[0].shape, (1, 3, 4, 8))
+        torch.testing.assert_close(keys[0][:, :, 0], key[:, 0])
+        torch.testing.assert_close(keys[0][:, :, 1], key[:, 0])
 
 
 if __name__ == "__main__":

@@ -21,6 +21,7 @@ class RerankerPrefillOptimizationConfig:
     native_rotary: bool = False
     prebuilt_square_mask: bool = False
     expanded_prefix_kv: bool = False
+    prompt_fa_layout: str = "BNSD"
 
 
 PREFILL_OPTIMIZATION_PRESETS: dict[str, RerankerPrefillOptimizationConfig] = {
@@ -58,6 +59,14 @@ PREFILL_OPTIMIZATION_PRESETS: dict[str, RerankerPrefillOptimizationConfig] = {
         native_rotary=True,
         prebuilt_square_mask=True,
         expanded_prefix_kv=True,
+    ),
+    "combined_bsnd": RerankerPrefillOptimizationConfig(
+        name="combined_bsnd",
+        native_rms_norm=True,
+        native_rotary=True,
+        prebuilt_square_mask=True,
+        expanded_prefix_kv=True,
+        prompt_fa_layout="BSND",
     ),
 }
 
@@ -206,6 +215,32 @@ def repeat_kv(hidden_states: torch.Tensor, repeats: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_kv_heads * repeats, sequence_length, head_dim)
 
 
+def repeat_kv_bsnd(hidden_states: torch.Tensor, repeats: int) -> torch.Tensor:
+    if repeats == 1:
+        return hidden_states
+    batch, sequence_length, num_kv_heads, head_dim = hidden_states.shape
+    hidden_states = hidden_states[:, :, :, None, :].expand(
+        batch,
+        sequence_length,
+        num_kv_heads,
+        repeats,
+        head_dim,
+    )
+    return hidden_states.reshape(batch, sequence_length, num_kv_heads * repeats, head_dim)
+
+
+def repeat_kv_for_layout(
+    hidden_states: torch.Tensor,
+    repeats: int,
+    input_layout: str,
+) -> torch.Tensor:
+    if input_layout == "BNSD":
+        return repeat_kv(hidden_states, repeats)
+    if input_layout == "BSND":
+        return repeat_kv_bsnd(hidden_states, repeats)
+    raise ValueError(f"unsupported PromptFA input layout {input_layout!r}")
+
+
 def build_310p_square_promptfa_mask(attention_mask: torch.Tensor) -> torch.Tensor:
     """Prepend valid dummy rows so masked PromptFA receives square Q/K."""
     if attention_mask.ndim != 4 or int(attention_mask.shape[1]) != 1:
@@ -245,7 +280,7 @@ def linear_tokenwise(linear: nn.Linear, hidden_states: torch.Tensor) -> torch.Te
     return output.reshape(*leading_shape, output.shape[-1])
 
 
-def prompt_flash_attention_bnsd_310p_compatible(
+def prompt_flash_attention_310p_compatible(
     query_states: torch.Tensor,
     key_states: torch.Tensor,
     value_states: torch.Tensor,
@@ -253,6 +288,7 @@ def prompt_flash_attention_bnsd_310p_compatible(
     attention_mask: torch.Tensor,
     num_heads: int,
     scale: float,
+    input_layout: str,
     attention_mask_is_square: bool = False,
 ) -> torch.Tensor:
     """Run the Atlas inference-series-safe PromptFA contract.
@@ -267,22 +303,34 @@ def prompt_flash_attention_bnsd_310p_compatible(
         raise ValueError("310P-compatible prompt_flash_attention requires float16 Q/K/V")
     if key_states.dtype != query_states.dtype or value_states.dtype != query_states.dtype:
         raise ValueError("prompt_flash_attention requires matching Q/K/V dtypes")
+    if input_layout not in {"BNSD", "BSND"}:
+        raise ValueError(f"unsupported PromptFA input layout {input_layout!r}")
     if query_states.ndim != 4 or key_states.ndim != 4 or value_states.ndim != 4:
-        raise ValueError("BNSD prompt_flash_attention requires rank-4 Q/K/V tensors")
-    if int(query_states.shape[1]) != int(num_heads):
+        raise ValueError(f"{input_layout} prompt_flash_attention requires rank-4 Q/K/V tensors")
+    head_axis = 1 if input_layout == "BNSD" else 2
+    sequence_axis = 2 if input_layout == "BNSD" else 1
+    if int(query_states.shape[head_axis]) != int(num_heads):
         raise ValueError("num_heads must match the query N dimension")
     if key_states.shape != value_states.shape:
         raise ValueError("key and value shapes must match")
 
-    num_key_value_heads = int(key_states.shape[1])
+    num_key_value_heads = int(key_states.shape[head_axis])
     if int(num_heads) % num_key_value_heads != 0:
         raise ValueError("query heads must be divisible by key/value heads")
     num_key_value_groups = int(num_heads) // num_key_value_heads
-    key_states = repeat_kv(key_states, num_key_value_groups).contiguous()
-    value_states = repeat_kv(value_states, num_key_value_groups).contiguous()
+    key_states = repeat_kv_for_layout(
+        key_states,
+        num_key_value_groups,
+        input_layout,
+    ).contiguous()
+    value_states = repeat_kv_for_layout(
+        value_states,
+        num_key_value_groups,
+        input_layout,
+    ).contiguous()
 
-    query_length = int(query_states.shape[2])
-    key_length = int(key_states.shape[2])
+    query_length = int(query_states.shape[sequence_axis])
+    key_length = int(key_states.shape[sequence_axis])
     if query_length > key_length:
         raise ValueError("310P-compatible masked PromptFA requires Q length <= K length")
     mask_query_length = key_length if attention_mask_is_square else query_length
@@ -299,15 +347,25 @@ def prompt_flash_attention_bnsd_310p_compatible(
 
     padded_query_rows = key_length - query_length
     if padded_query_rows:
-        dummy_queries = query_states.new_zeros(
-            (
+        if input_layout == "BNSD":
+            dummy_shape = (
                 int(query_states.shape[0]),
                 int(query_states.shape[1]),
                 padded_query_rows,
                 int(query_states.shape[3]),
             )
-        )
-        query_states = torch.cat((dummy_queries, query_states), dim=2).contiguous()
+        else:
+            dummy_shape = (
+                int(query_states.shape[0]),
+                padded_query_rows,
+                int(query_states.shape[2]),
+                int(query_states.shape[3]),
+            )
+        dummy_queries = query_states.new_zeros(dummy_shape)
+        query_states = torch.cat(
+            (dummy_queries, query_states),
+            dim=sequence_axis,
+        ).contiguous()
 
         if not attention_mask_is_square:
             attention_mask = build_310p_square_promptfa_mask(attention_mask)
@@ -323,15 +381,62 @@ def prompt_flash_attention_bnsd_310p_compatible(
         value_states,
         atten_mask=attention_mask.to(dtype=torch.bool).contiguous(),
         num_heads=int(num_heads),
-        input_layout="BNSD",
+        input_layout=input_layout,
         scale_value=float(scale),
         pre_tokens=PROMPT_FA_FULL_ATTENTION_TOKENS,
         next_tokens=PROMPT_FA_FULL_ATTENTION_TOKENS,
         sparse_mode=0,
     )
     if padded_query_rows:
-        attention_output = attention_output[:, :, -query_length:, :]
+        if input_layout == "BNSD":
+            attention_output = attention_output[:, :, -query_length:, :]
+        else:
+            attention_output = attention_output[:, -query_length:, :, :]
     return attention_output
+
+
+def prompt_flash_attention_bnsd_310p_compatible(
+    query_states: torch.Tensor,
+    key_states: torch.Tensor,
+    value_states: torch.Tensor,
+    *,
+    attention_mask: torch.Tensor,
+    num_heads: int,
+    scale: float,
+    attention_mask_is_square: bool = False,
+) -> torch.Tensor:
+    return prompt_flash_attention_310p_compatible(
+        query_states,
+        key_states,
+        value_states,
+        attention_mask=attention_mask,
+        num_heads=num_heads,
+        scale=scale,
+        input_layout="BNSD",
+        attention_mask_is_square=attention_mask_is_square,
+    )
+
+
+def prompt_flash_attention_bsnd_310p_compatible(
+    query_states: torch.Tensor,
+    key_states: torch.Tensor,
+    value_states: torch.Tensor,
+    *,
+    attention_mask: torch.Tensor,
+    num_heads: int,
+    scale: float,
+    attention_mask_is_square: bool = False,
+) -> torch.Tensor:
+    return prompt_flash_attention_310p_compatible(
+        query_states,
+        key_states,
+        value_states,
+        attention_mask=attention_mask,
+        num_heads=num_heads,
+        scale=scale,
+        input_layout="BSND",
+        attention_mask_is_square=attention_mask_is_square,
+    )
 
 
 def build_left_padded_causal_mask(attention_mask: torch.Tensor, dtype: torch.dtype) -> torch.Tensor:
@@ -444,13 +549,18 @@ class LocalQwen3RerankerAttention(nn.Module):
         self.native_rotary = False
         self.prebuilt_square_mask = False
         self.expanded_prefix_kv = False
+        self.prompt_fa_layout = "BNSD"
 
     def project_qkv(
         self,
         hidden_states: torch.Tensor,
         cos: torch.Tensor,
         sin: torch.Tensor,
+        *,
+        output_layout: str = "BNSD",
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        if output_layout not in {"BNSD", "BSND"}:
+            raise ValueError(f"unsupported projected QKV layout {output_layout!r}")
         batch, sequence_length, _hidden = hidden_states.shape
         query_states = linear_tokenwise(self.q_proj, hidden_states).view(
             batch, sequence_length, self.num_heads, self.head_dim
@@ -470,8 +580,9 @@ class LocalQwen3RerankerAttention(nn.Module):
                 cos,
                 sin,
             )
-            query_states = query_states.transpose(1, 2)
-            key_states = key_states.transpose(1, 2)
+            if output_layout == "BNSD":
+                query_states = query_states.transpose(1, 2)
+                key_states = key_states.transpose(1, 2)
         else:
             query_states = query_states.transpose(1, 2)
             key_states = key_states.transpose(1, 2)
@@ -481,8 +592,29 @@ class LocalQwen3RerankerAttention(nn.Module):
                 cos,
                 sin,
             )
-        value_states = value_states.transpose(1, 2)
+            if output_layout == "BSND":
+                query_states = query_states.transpose(1, 2)
+                key_states = key_states.transpose(1, 2)
+        if output_layout == "BNSD":
+            value_states = value_states.transpose(1, 2)
         return query_states.contiguous(), key_states.contiguous(), value_states.contiguous()
+
+    def merge_attention_heads(
+        self,
+        attention_output: torch.Tensor,
+        *,
+        batch: int,
+        sequence_length: int,
+    ) -> torch.Tensor:
+        if self.prompt_fa_layout == "BNSD":
+            attention_output = attention_output.transpose(1, 2)
+        elif self.prompt_fa_layout != "BSND":
+            raise ValueError(f"unsupported PromptFA layout {self.prompt_fa_layout!r}")
+        return attention_output.reshape(
+            batch,
+            sequence_length,
+            self.num_heads * self.head_dim,
+        )
 
     def forward_eager(
         self,
@@ -513,18 +645,28 @@ class LocalQwen3RerankerAttention(nn.Module):
         if hidden_states.device.type != "npu":
             raise RuntimeError("prompt_flash_attention requires NPU tensors")
         batch, sequence_length, _hidden = hidden_states.shape
-        query_states, key_states, value_states = self.project_qkv(hidden_states, cos, sin)
+        query_states, key_states, value_states = self.project_qkv(
+            hidden_states,
+            cos,
+            sin,
+            output_layout=self.prompt_fa_layout,
+        )
 
-        attn_output = prompt_flash_attention_bnsd_310p_compatible(
+        attn_output = prompt_flash_attention_310p_compatible(
             query_states,
             key_states,
             value_states,
             attention_mask=attention_mask,
             num_heads=int(self.num_heads),
             scale=float(self.scaling),
+            input_layout=self.prompt_fa_layout,
             attention_mask_is_square=self.prebuilt_square_mask,
         )
-        attn_output = attn_output.transpose(1, 2).reshape(batch, sequence_length, self.num_heads * self.head_dim)
+        attn_output = self.merge_attention_heads(
+            attn_output,
+            batch=batch,
+            sequence_length=sequence_length,
+        )
         return linear_tokenwise(self.o_proj, attn_output)
 
     def forward_prompt_flash_attention_chunk(
@@ -540,7 +682,10 @@ class LocalQwen3RerankerAttention(nn.Module):
             raise RuntimeError("prompt_flash_attention requires NPU tensors")
         batch, query_length, _hidden = hidden_states.shape
         query_states, current_key_states, current_value_states = self.project_qkv(
-            hidden_states, cos, sin
+            hidden_states,
+            cos,
+            sin,
+            output_layout=self.prompt_fa_layout,
         )
         if (past_key_states is None) != (past_value_states is None):
             raise ValueError("past key and value states must both be present or absent")
@@ -548,19 +693,29 @@ class LocalQwen3RerankerAttention(nn.Module):
             key_states = current_key_states
             value_states = current_value_states
         else:
-            key_states = torch.cat((past_key_states, current_key_states), dim=2).contiguous()
-            value_states = torch.cat((past_value_states, current_value_states), dim=2).contiguous()
+            sequence_axis = 2 if self.prompt_fa_layout == "BNSD" else 1
+            key_states = torch.cat(
+                (past_key_states, current_key_states),
+                dim=sequence_axis,
+            ).contiguous()
+            value_states = torch.cat(
+                (past_value_states, current_value_states),
+                dim=sequence_axis,
+            ).contiguous()
 
-        attn_output = prompt_flash_attention_bnsd_310p_compatible(
+        attn_output = prompt_flash_attention_310p_compatible(
             query_states,
             key_states,
             value_states,
             attention_mask=attention_mask,
             num_heads=int(self.num_heads),
             scale=float(self.scaling),
+            input_layout=self.prompt_fa_layout,
         )
-        attn_output = attn_output.transpose(1, 2).reshape(
-            batch, query_length, self.num_heads * self.head_dim
+        attn_output = self.merge_attention_heads(
+            attn_output,
+            batch=batch,
+            sequence_length=query_length,
         )
         return (
             linear_tokenwise(self.o_proj, attn_output),
@@ -599,32 +754,48 @@ class LocalQwen3RerankerAttention(nn.Module):
     ) -> torch.Tensor:
         batch, query_length, _hidden = hidden_states.shape
         query_states, current_key_states, current_value_states = self.project_qkv(
-            hidden_states, cos, sin
+            hidden_states,
+            cos,
+            sin,
+            output_layout=self.prompt_fa_layout,
         )
         if self.expanded_prefix_kv:
-            if int(prefix_key_states.shape[1]) != int(self.num_heads):
+            head_axis = 1 if self.prompt_fa_layout == "BNSD" else 2
+            if int(prefix_key_states.shape[head_axis]) != int(self.num_heads):
                 raise ValueError("expanded prefix K/V must use the query-head count")
-            current_key_states = repeat_kv(
+            current_key_states = repeat_kv_for_layout(
                 current_key_states,
                 self.num_key_value_groups,
+                self.prompt_fa_layout,
             ).contiguous()
-            current_value_states = repeat_kv(
+            current_value_states = repeat_kv_for_layout(
                 current_value_states,
                 self.num_key_value_groups,
+                self.prompt_fa_layout,
             ).contiguous()
-        key_states = torch.cat((prefix_key_states, current_key_states), dim=2).contiguous()
-        value_states = torch.cat((prefix_value_states, current_value_states), dim=2).contiguous()
-        attention_output = prompt_flash_attention_bnsd_310p_compatible(
+        sequence_axis = 2 if self.prompt_fa_layout == "BNSD" else 1
+        key_states = torch.cat(
+            (prefix_key_states, current_key_states),
+            dim=sequence_axis,
+        ).contiguous()
+        value_states = torch.cat(
+            (prefix_value_states, current_value_states),
+            dim=sequence_axis,
+        ).contiguous()
+        attention_output = prompt_flash_attention_310p_compatible(
             query_states,
             key_states,
             value_states,
             attention_mask=attention_mask,
             num_heads=int(self.num_heads),
             scale=float(self.scaling),
+            input_layout=self.prompt_fa_layout,
             attention_mask_is_square=self.prebuilt_square_mask,
         )
-        attention_output = attention_output.transpose(1, 2).reshape(
-            batch, query_length, self.num_heads * self.head_dim
+        attention_output = self.merge_attention_heads(
+            attention_output,
+            batch=batch,
+            sequence_length=query_length,
         )
         return linear_tokenwise(self.o_proj, attention_output)
 
@@ -750,6 +921,10 @@ class LocalQwen3RerankerForCausalLM(nn.Module):
         optimization: str | RerankerPrefillOptimizationConfig,
     ) -> RerankerPrefillOptimizationConfig:
         config = resolve_prefill_optimization(optimization)
+        if config.prompt_fa_layout not in {"BNSD", "BSND"}:
+            raise ValueError(
+                f"unsupported PromptFA input layout {config.prompt_fa_layout!r}"
+            )
         self.prefill_optimization = config
         for module in self.modules():
             if isinstance(module, LocalQwen3RerankerRMSNorm):
@@ -759,6 +934,7 @@ class LocalQwen3RerankerForCausalLM(nn.Module):
             attention.native_rotary = config.native_rotary
             attention.prebuilt_square_mask = config.prebuilt_square_mask
             attention.expanded_prefix_kv = config.expanded_prefix_kv
+            attention.prompt_fa_layout = config.prompt_fa_layout
         return config
 
     def prepare_prefix_caches(
@@ -766,13 +942,24 @@ class LocalQwen3RerankerForCausalLM(nn.Module):
         key_caches: tuple[torch.Tensor, ...],
         value_caches: tuple[torch.Tensor, ...],
     ) -> tuple[tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
-        if not self.prefill_optimization.expanded_prefix_kv:
-            return key_caches, value_caches
-        repeats = int(self.config.num_attention_heads // self.config.num_key_value_heads)
-        return (
-            tuple(repeat_kv(cache, repeats).contiguous() for cache in key_caches),
-            tuple(repeat_kv(cache, repeats).contiguous() for cache in value_caches),
-        )
+        prepared_keys = key_caches
+        prepared_values = value_caches
+        if self.prefill_optimization.expanded_prefix_kv:
+            repeats = int(self.config.num_attention_heads // self.config.num_key_value_heads)
+            prepared_keys = tuple(
+                repeat_kv(cache, repeats).contiguous() for cache in prepared_keys
+            )
+            prepared_values = tuple(
+                repeat_kv(cache, repeats).contiguous() for cache in prepared_values
+            )
+        if self.prefill_optimization.prompt_fa_layout == "BSND":
+            prepared_keys = tuple(
+                cache.transpose(1, 2).contiguous() for cache in prepared_keys
+            )
+            prepared_values = tuple(
+                cache.transpose(1, 2).contiguous() for cache in prepared_values
+            )
+        return prepared_keys, prepared_values
 
     def forward_hidden_states_prepared(
         self,
