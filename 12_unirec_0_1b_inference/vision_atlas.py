@@ -342,6 +342,52 @@ class UniRecVisionAtlasRuntime:
             x, height, width = layer(x, height, width)
         return x, height, width
 
+    def _install_prefix_timing_hooks(
+        self,
+        timeline: PrefillDeviceTimeline | None,
+    ) -> list[Any]:
+        """Time disjoint stage-0/1 modules without changing prefix execution."""
+        if timeline is None:
+            return []
+
+        hooks = []
+
+        def instrument(module: nn.Module, stage_name: str) -> None:
+            marker_stack: list[tuple[str, Any] | None] = []
+
+            def before(_module: nn.Module, _inputs: tuple[Any, ...]) -> None:
+                marker_stack.append(timeline.begin(stage_name))
+
+            def after(
+                _module: nn.Module,
+                _inputs: tuple[Any, ...],
+                _output: Any,
+            ) -> None:
+                marker = marker_stack.pop()
+                if marker is not None:
+                    timeline.end(marker)
+
+            hooks.append(module.register_forward_pre_hook(before))
+            hooks.append(module.register_forward_hook(after))
+
+        vision = self.runner.model.encoder.vision_encoder
+        instrument(vision.patch_embed, "vision_prefix_convolution_stem")
+        for stage_index, layer in enumerate(vision.layers[:ATLAS_STAGE]):
+            for block in layer.blocks:
+                instrument(
+                    block,
+                    f"vision_prefix_stage{stage_index}_focal_blocks",
+                )
+            if layer.downsample is None:
+                raise AssertionError(
+                    f"UniRec prefix stage {stage_index} must have a downsample"
+                )
+            instrument(
+                layer.downsample,
+                f"vision_prefix_stage{stage_index}_downsample",
+            )
+        return hooks
+
     def _run_suffix(self, x: torch.Tensor, height: int, width: int) -> torch.Tensor:
         vision = self.runner.model.encoder.vision_encoder
         if self.stage.downsample is None:
@@ -442,73 +488,78 @@ class UniRecVisionAtlasRuntime:
             else None
         )
         measure = timeline.measure if timeline is not None else lambda _name, fn: fn()
+        prefix_timing_hooks = self._install_prefix_timing_hooks(timeline)
 
         synchronize_device(self.runner.device)
         started = time.perf_counter()
         prefix_states: dict[int, torch.Tensor] = {}
         shapes: list[CropShape] = []
-        with torch.inference_mode():
-            for source_index, (inputs, _prep) in enumerate(prepared):
-                x, height, width = measure(
-                    "vision_crop_prefix_stages_0_1",
-                    lambda inputs=inputs: self._run_prefix(inputs["pixel_values"]),
-                )
-                prefix_states[source_index] = x
-                shapes.append(CropShape(source_index, height, width))
+        try:
+            with torch.inference_mode():
+                for source_index, (inputs, _prep) in enumerate(prepared):
+                    x, height, width = measure(
+                        "vision_crop_prefix_stages_0_1",
+                        lambda inputs=inputs: self._run_prefix(inputs["pixel_values"]),
+                    )
+                    prefix_states[source_index] = x
+                    shapes.append(CropShape(source_index, height, width))
 
-            packs, overflow = _pack_shapes(shapes)
-            atlas_outputs = measure(
-                "compiled_vision_atlas_stage2",
-                lambda: self._run_atlas_packs(packs, prefix_states),
-            )
-            for crop in overflow:
-                atlas_outputs[crop.source_index] = measure(
-                    "vision_stage2_eager_overflow",
-                    lambda crop=crop: self._run_stage2_eager(
-                        prefix_states[crop.source_index], crop.height, crop.width
-                    ),
+                packs, overflow = _pack_shapes(shapes)
+                atlas_outputs = measure(
+                    "compiled_vision_atlas_stage2",
+                    lambda: self._run_atlas_packs(packs, prefix_states),
                 )
-
-            encoder_hidden_states: list[torch.Tensor] = []
-            encoder_attention_masks: list[torch.Tensor] = []
-            for crop in sorted(shapes, key=lambda item: item.source_index):
-                hidden = measure(
-                    "vision_crop_suffix_stage3_projection",
-                    lambda crop=crop: self._run_suffix(
-                        atlas_outputs[crop.source_index], crop.height, crop.width
-                    ),
-                )
-                encoder_hidden_states.append(hidden)
-                encoder_attention_masks.append(
-                    self.runner.model.build_encoder_attention_mask(hidden)
-                )
-
-            packed_output = measure(
-                "compiled_packed_text_prefill_s1024",
-                lambda: text_runtime.run(
-                    encoder_hidden_states=encoder_hidden_states,
-                ),
-            )
-            caches = []
-            for member, attention_mask in enumerate(encoder_attention_masks):
-                decode_mask = self.runner.model.decoder.build_cross_attention_mask(
-                    encoder_attention_mask=attention_mask,
-                    target_length=1,
-                )
-                caches.append(
-                    measure(
-                        "static_cache_build_and_padding",
-                        lambda member=member, decode_mask=decode_mask: (
-                            LocalUniRecStaticCache.from_cross_prefill(
-                                cross_key_cache=packed_output.cross_key_cache[member],
-                                cross_value_cache=packed_output.cross_value_cache[member],
-                                cross_attention_mask=decode_mask,
-                                cache_len=self_cache_len,
-                                cross_cache_len=cross_cache_len,
-                            )
+                for crop in overflow:
+                    atlas_outputs[crop.source_index] = measure(
+                        "vision_stage2_eager_overflow",
+                        lambda crop=crop: self._run_stage2_eager(
+                            prefix_states[crop.source_index], crop.height, crop.width
                         ),
                     )
+
+                encoder_hidden_states: list[torch.Tensor] = []
+                encoder_attention_masks: list[torch.Tensor] = []
+                for crop in sorted(shapes, key=lambda item: item.source_index):
+                    hidden = measure(
+                        "vision_crop_suffix_stage3_projection",
+                        lambda crop=crop: self._run_suffix(
+                            atlas_outputs[crop.source_index], crop.height, crop.width
+                        ),
+                    )
+                    encoder_hidden_states.append(hidden)
+                    encoder_attention_masks.append(
+                        self.runner.model.build_encoder_attention_mask(hidden)
+                    )
+
+                packed_output = measure(
+                    "compiled_packed_text_prefill_s1024",
+                    lambda: text_runtime.run(
+                        encoder_hidden_states=encoder_hidden_states,
+                    ),
                 )
+                caches = []
+                for member, attention_mask in enumerate(encoder_attention_masks):
+                    decode_mask = self.runner.model.decoder.build_cross_attention_mask(
+                        encoder_attention_mask=attention_mask,
+                        target_length=1,
+                    )
+                    caches.append(
+                        measure(
+                            "static_cache_build_and_padding",
+                            lambda member=member, decode_mask=decode_mask: (
+                                LocalUniRecStaticCache.from_cross_prefill(
+                                    cross_key_cache=packed_output.cross_key_cache[member],
+                                    cross_value_cache=packed_output.cross_value_cache[member],
+                                    cross_attention_mask=decode_mask,
+                                    cache_len=self_cache_len,
+                                    cross_cache_len=cross_cache_len,
+                                )
+                            ),
+                        )
+                    )
+        finally:
+            for hook in prefix_timing_hooks:
+                hook.remove()
 
         if timeline is None:
             synchronize_device(self.runner.device)
