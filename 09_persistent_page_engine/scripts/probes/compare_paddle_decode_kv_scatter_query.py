@@ -45,7 +45,23 @@ class DecodeKvScatterQuery(torch.nn.Module):
             value_state,
         )
 
-    def forward(self, *args: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        query: torch.Tensor,
+        key_cache: torch.Tensor,
+        value_cache: torch.Tensor,
+        cache_position: torch.Tensor,
+        key_state: torch.Tensor,
+        value_state: torch.Tensor,
+    ) -> torch.Tensor:
+        args = (
+            query,
+            key_cache,
+            value_cache,
+            cache_position,
+            key_state,
+            value_state,
+        )
         if self.scope is None:
             return self._forward_impl(*args)
         with self.scope(
