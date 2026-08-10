@@ -21,10 +21,12 @@ from torch import nn
 
 from local_modeling_qwen3_reranker import (
     PREFILL_OPTIMIZATION_PRESETS,
+    RERANKER_LINEAR_WEIGHT_FORMAT_CHOICES,
     build_310p_square_promptfa_mask,
     build_left_padded_causal_bool_mask,
     build_left_padded_causal_bool_mask_chunk,
     build_left_padded_causal_mask,
+    prepare_reranker_linear_weight_format,
 )
 from run_local_qwen3_reranker import LocalQwen3RerankerRunner, _import_cache_compile
 from transformers_rerank import DEFAULT_TASK, PREFIX, SUFFIX
@@ -73,6 +75,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--task", default=DEFAULT_TASK)
+    parser.add_argument(
+        "--linear-weight-format",
+        choices=RERANKER_LINEAR_WEIGHT_FORMAT_CHOICES,
+        default="native",
+    )
+    parser.add_argument(
+        "--enable-internal-format",
+        action="store_true",
+        help="Enable torch-npu internal tensor formats before the first NPU allocation.",
+    )
     parser.add_argument(
         "--prefill-optimizations",
         nargs="+",
@@ -152,6 +164,28 @@ def summarize_timings(
         "executed_model_tok_s": executed_tokens / median_s,
         "physical_attention_q_tok_s": attention_query_tokens / median_s,
     }
+
+
+def attach_output_signature(
+    summary: dict[str, object],
+    output: torch.Tensor,
+    *,
+    model: nn.Module,
+    false_token_id: int,
+    true_token_id: int,
+) -> None:
+    yes_no_ids = torch.tensor(
+        [false_token_id, true_token_id],
+        device=output.device,
+        dtype=torch.long,
+    )
+    with torch.no_grad():
+        weight = model.lm_head.weight.index_select(0, yes_no_ids)
+        logits = torch.nn.functional.linear(output, weight).float()
+        scores = torch.softmax(logits, dim=-1)[:, 1]
+    summary["yes_no_logits"] = logits.detach().cpu().tolist()
+    summary["yes_scores"] = scores.detach().cpu().tolist()
+    summary["yes_no_choices"] = logits.argmax(dim=-1).detach().cpu().tolist()
 
 
 class FullLastHiddenStage(nn.Module):
@@ -402,6 +436,10 @@ def main() -> None:
 
     import torch_npu
 
+    internal_format_enabled = bool(
+        args.enable_internal_format or args.linear_weight_format == "fractal_nz"
+    )
+    torch.npu.config.allow_internal_format = internal_format_enabled
     device = torch.device(args.device)
     torch.npu.set_device(device)
     torch.npu.set_compile_mode(jit_compile=False)
@@ -409,7 +447,8 @@ def main() -> None:
     args.compile_cache_dir.mkdir(parents=True, exist_ok=True)
     print(
         f"ENV host={platform.node()} device={torch.npu.get_device_name(device)!r} "
-        f"torch={torch.__version__} torch_npu={torch_npu.__version__} commit={git_commit()}",
+        f"torch={torch.__version__} torch_npu={torch_npu.__version__} commit={git_commit()} "
+        f"internal_format={internal_format_enabled}",
         flush=True,
     )
 
@@ -427,6 +466,18 @@ def main() -> None:
     )
     model = runner.model
     tokenizer = runner.tokenizer
+    weight_format_started = time.perf_counter()
+    weight_format = prepare_reranker_linear_weight_format(
+        model,
+        requested=args.linear_weight_format,
+    )
+    synchronize(device)
+    weight_format["setup_s"] = time.perf_counter() - weight_format_started
+    print("LINEAR_WEIGHT_FORMAT " + json.dumps(weight_format, sort_keys=True), flush=True)
+    weight_cache_key = (
+        f"weights{weight_format['effective_mode']}_"
+        f"internal{int(internal_format_enabled)}"
+    )
     prefix_input_ids, prefix_attention_mask, prefix_valid_tokens = make_prefix_inputs(
         tokenizer,
         task=args.task,
@@ -494,6 +545,14 @@ def main() -> None:
                 batch_size=batch_size,
                 continuation_length=continuation_length,
                 full_physical_length=full_length,
+                linear_weight_format=weight_format["effective_mode"],
+            )
+            attach_output_signature(
+                summary,
+                output,
+                model=model,
+                false_token_id=runner.false_token_id,
+                true_token_id=runner.true_token_id,
             )
             results.append(summary)
             print_result(summary)
@@ -501,11 +560,15 @@ def main() -> None:
         if "full_promptfa_compiled" in args.lanes:
             set_attention_impl(model, "prompt_flash_attention")
             cache_dir = args.compile_cache_dir / (
-                f"full_promptfa_b{batch_size}_s{full_length}_fp16_src{source_key}"
+                f"full_promptfa_b{batch_size}_s{full_length}_{weight_cache_key}_"
+                f"fp16_src{source_key}"
             )
             compiled, wrapper_s, cache_was_warm = compile_stage(
                 full_stage,
-                entrypoint_name=f"reranker_full_promptfa_b{batch_size}_s{full_length}",
+                entrypoint_name=(
+                    f"reranker_full_promptfa_b{batch_size}_s{full_length}_"
+                    f"{weight_cache_key}"
+                ),
                 cache_dir=cache_dir,
                 device=device,
             )
@@ -528,6 +591,14 @@ def main() -> None:
                 batch_size=batch_size,
                 continuation_length=continuation_length,
                 full_physical_length=full_length,
+                linear_weight_format=weight_format["effective_mode"],
+            )
+            attach_output_signature(
+                summary,
+                output,
+                model=model,
+                false_token_id=runner.false_token_id,
+                true_token_id=runner.true_token_id,
             )
             results.append(summary)
             print_result(summary)
@@ -557,13 +628,13 @@ def main() -> None:
                 cache_dir = args.compile_cache_dir / (
                     f"prefix_promptfa_{optimization.name}_b{batch_size}_"
                     f"q{full_length}_kv{full_length}_realq{continuation_length}_"
-                    f"fp16_src{source_key}"
+                    f"{weight_cache_key}_fp16_src{source_key}"
                 )
                 compiled, wrapper_s, cache_was_warm = compile_stage(
                     prefix_stage,
                     entrypoint_name=(
                         f"reranker_prefix_promptfa_{optimization.name}_b{batch_size}_"
-                        f"realq{continuation_length}_s{full_length}"
+                        f"realq{continuation_length}_s{full_length}_{weight_cache_key}"
                     ),
                     cache_dir=cache_dir,
                     device=device,
@@ -595,6 +666,14 @@ def main() -> None:
                     continuation_length=continuation_length,
                     full_physical_length=full_length,
                     prefill_optimization=optimization.name,
+                    linear_weight_format=weight_format["effective_mode"],
+                )
+                attach_output_signature(
+                    summary,
+                    output,
+                    model=model,
+                    false_token_id=runner.false_token_id,
+                    true_token_id=runner.true_token_id,
                 )
                 results.append(summary)
                 print_result(summary)
@@ -711,6 +790,8 @@ def main() -> None:
             "source_hash": source_key,
             "compile_source_key_override": args.compile_source_key,
             "prefill_optimizations": list(args.prefill_optimizations),
+            "internal_format_enabled": internal_format_enabled,
+            "linear_weight_format": weight_format,
         },
         "metric_definitions": {
             "served_input_tok_s": "valid prefix plus continuation tokens served per median call second",
