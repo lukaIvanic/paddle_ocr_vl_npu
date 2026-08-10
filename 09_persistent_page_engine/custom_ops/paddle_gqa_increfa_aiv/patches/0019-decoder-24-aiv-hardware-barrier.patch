@@ -37,7 +37,7 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_dec
 -        return;
 -    }
 -
-@@ -187,24 +171,11 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_aiv(
+@@ -187,24 +171,16 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_aiv(
 -    // The enclosing SuperKernel has 24 AIV slots, but only the first 16 enter
 -    // this subfunction. Its zero-argument hardware barrier would therefore
 -    // wait for workers that returned above. Use the fixed-participant software
@@ -68,6 +68,11 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_dec
 +    // the remaining workers return after they have completed the barrier.
 +    SyncAll<true>();
 +    if (GetBlockIdx() >= kAivCoreCount) {
++        // These workers do no inherited attention work, but the enclosing
++        // SuperKernel continues after this subfunction. Close the local pipe
++        // lifetime before returning to the generated wrapper.
++        PipeBarrier<PIPE_ALL>();
++        fusedPipe.Destroy();
 +        return;
 +    }
 +

@@ -375,6 +375,12 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             / "patches"
             / "0019-decoder-24-aiv-hardware-barrier.patch"
         ).read_text(encoding="utf-8")
+        kernel = (
+            operator_root
+            / "source_overlay_decode_fused_plain"
+            / "op_kernel"
+            / "paddle_decode_gqa_incre_flash_attention_aiv.cpp"
+        ).read_text(encoding="utf-8")
         converter = (
             EXPERIMENT_ROOT
             / "paddleocr_vl"
@@ -400,16 +406,23 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("GQA mixed24 block dim", mixed24_patch)
         self.assertIn("SyncAll<true>();", mixed24_patch)
         barrier = mixed24_patch.index("SyncAll<true>();")
+        idle_destroy = mixed24_patch.index("fusedPipe.Destroy();", barrier)
         idle_return = mixed24_patch.index(
             "if (GetBlockIdx() >= kAivCoreCount)", barrier
         )
         self.assertLess(barrier, idle_return)
+        self.assertLess(idle_return, idle_destroy)
         self.assertNotIn("SyncAll<false>", added_lines)
         self.assertNotIn("kSyncStorageBytes", added_lines)
         self.assertIn(
             'GE_OP_NAME_MIXED24 = "PaddleDecodeGqaIncreFlashAttentionMixed24"',
             converter,
         )
+        inherited_attention = kernel.rindex("incre_flash_attention_FIAS_arch32(")
+        final_barrier = kernel.index("PipeBarrier<PIPE_ALL>();", inherited_attention)
+        final_destroy = kernel.index("fusedPipe.Destroy();", final_barrier)
+        self.assertLess(inherited_attention, final_barrier)
+        self.assertLess(final_barrier, final_destroy)
         self.assertIn('choices=("mixed", "mixed24")', boundary_probe)
 
         optimization = text_decode.resolve_decode_optimization(

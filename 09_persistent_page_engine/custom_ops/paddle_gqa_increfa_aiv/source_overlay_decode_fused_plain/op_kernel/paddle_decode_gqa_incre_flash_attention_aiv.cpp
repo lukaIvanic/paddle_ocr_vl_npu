@@ -247,4 +247,10 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
         workspace,
         tiling,
         &fusedPipe);
+    // A standalone attention task ends here, but a binary-fused decoder
+    // immediately enters the residual/MLP subfunctions.  SuperKernel builds
+    // remove TPipe::Destroy()'s implicit final barrier, so finish all inherited
+    // attention pipeline traffic and explicitly close this pipe lifetime.
+    PipeBarrier<PIPE_ALL>();
+    fusedPipe.Destroy();
 }
