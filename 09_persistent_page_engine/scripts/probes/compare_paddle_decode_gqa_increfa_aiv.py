@@ -20,8 +20,9 @@ from paddleocr_vl.model.decode_gqa_increfa_aiv import (
 
 
 class DecodeGqaIncrefaAiv(torch.nn.Module):
-    def __init__(self, strict_scope: bool) -> None:
+    def __init__(self, strict_scope: bool, super_kernel_options: str) -> None:
         super().__init__()
+        self.super_kernel_options = super_kernel_options
         self.scope = None
         if strict_scope:
             self.scope = __import__(
@@ -73,8 +74,7 @@ class DecodeGqaIncrefaAiv(torch.nn.Module):
             return self._forward_impl(*args)
         with self.scope(
             "paddle_decode_gqa_increfa_aiv_probe",
-            "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
-            "preload-code=none:early-start=0:split-mode=1",
+            self.super_kernel_options,
         ):
             return self._forward_impl(*args)
 
@@ -84,6 +84,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--strict-scope", action="store_true")
+    parser.add_argument(
+        "--super-kernel-options",
+        default=(
+            "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+            "preload-code=per-func:early-start=1:split-mode=4"
+        ),
+    )
     return parser.parse_args()
 
 
@@ -132,7 +139,10 @@ def main() -> int:
     compiler_config.debug.graph_dump.type = "pbtxt"
     compiler_config.debug.graph_dump.path = str(graph_dump_dir)
     step = torchair.inference.cache_compile(
-        DecodeGqaIncrefaAiv(args.strict_scope).forward,
+        DecodeGqaIncrefaAiv(
+            args.strict_scope,
+            args.super_kernel_options,
+        ).forward,
         config=compiler_config,
         dynamic=False,
         cache_dir=str(args.cache_dir),
@@ -226,6 +236,7 @@ def main() -> int:
             "mask_shape": list(attention_mask.shape),
             "positions": positions,
             "strict_scope": args.strict_scope,
+            "super_kernel_options": args.super_kernel_options,
             "vector_core_count": 16,
             "core_type": "MIX_AIV_ZERO_CUBE",
         },

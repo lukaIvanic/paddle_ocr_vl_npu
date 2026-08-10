@@ -113,6 +113,14 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("+    ifaContext.deqScale1.tensor = nullptr;", fixed_abi_patch)
         self.assertIn("+    ifaContext.blockTable.tensor = nullptr;", fixed_abi_patch)
         self.assertIn("+    ifaContext.kvPaddingSize.desc = nullptr;", fixed_abi_patch)
+        probe = (
+            EXPERIMENT_ROOT
+            / "scripts"
+            / "probes"
+            / "compare_paddle_decode_gqa_increfa_aiv.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("--super-kernel-options", probe)
+        self.assertIn("split-mode=4", probe)
 
     def test_nonsplit_megakernel_uses_separate_prep_and_16_aiv_blocks(self) -> None:
         optimization = text_decode.resolve_decode_optimization(
