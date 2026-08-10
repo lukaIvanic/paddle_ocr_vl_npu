@@ -62,6 +62,8 @@ class RegionRecognitionResult:
     rates: dict[str, float | None]
     vision: dict[str, Any] = field(default_factory=dict)
     text_prefill: dict[str, Any] = field(default_factory=dict)
+    input_fingerprints: dict[str, Any] = field(default_factory=dict)
+    repetition: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_recognition(
