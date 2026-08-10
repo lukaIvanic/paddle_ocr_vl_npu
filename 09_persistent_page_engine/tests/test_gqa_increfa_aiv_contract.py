@@ -203,6 +203,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             build_script,
         )
         self.assertIn("0018-decoder-mixed-task-geometry.patch", build_script)
+        self.assertIn("renamed_path=", build_script)
         self.assertIn("KERNEL_TYPE_MIX_AIC_1_2", mixed_patch)
         self.assertIn("if (g_coreType == AIC)", mixed_patch)
         self.assertIn(

@@ -232,6 +232,13 @@ if [[ "$SOURCE_PREPARED" == false ]]; then
                 "$source_path"
         done < <(find "$OP_ROOT" -type f \
             ! -path '*/op_api_upstream_disabled/*' ! -name '*.upstream_disabled' -print0)
+        while IFS= read -r -d '' source_path; do
+            renamed_path="${source_path//paddle_decode_gqa_incre_flash_attention_aiv/$CUSTOM_OP_SNAKE}"
+            if [[ "$renamed_path" != "$source_path" ]]; then
+                mv "$source_path" "$renamed_path"
+            fi
+        done < <(find "$OP_ROOT" -type f \
+            -name '*paddle_decode_gqa_incre_flash_attention_aiv*' -print0)
         mv \
             "$BUILD_SOURCE_ROOT/$PREPARED_OP_REL" \
             "$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
