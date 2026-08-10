@@ -11,6 +11,9 @@ import torch.nn.functional as F
 from torch import nn
 
 
+PROMPT_FA_FULL_ATTENTION_TOKENS = (1 << 31) - 1
+
+
 @dataclass(frozen=True)
 class LocalQwen3RerankerConfig:
     vocab_size: int
@@ -109,6 +112,59 @@ def repeat_kv(hidden_states: torch.Tensor, repeats: int) -> torch.Tensor:
     batch, num_kv_heads, sequence_length, head_dim = hidden_states.shape
     hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_kv_heads, repeats, sequence_length, head_dim)
     return hidden_states.reshape(batch, num_kv_heads * repeats, sequence_length, head_dim)
+
+
+def prompt_flash_attention_bnsd_310p_compatible(
+    query_states: torch.Tensor,
+    key_states: torch.Tensor,
+    value_states: torch.Tensor,
+    *,
+    attention_mask: torch.Tensor,
+    num_heads: int,
+    scale: float,
+) -> torch.Tensor:
+    """Run the Atlas inference-series-safe PromptFA contract.
+
+    Atlas 310P does not support the PromptFA actual-sequence-length inputs or a
+    non-default ``num_key_value_heads``. Expand GQA key/value heads explicitly,
+    encode left padding and causality in a bool mask, and omit those unsupported
+    optional arguments from the operator call.
+    """
+    if query_states.dtype != torch.float16:
+        raise ValueError("310P-compatible prompt_flash_attention requires float16 Q/K/V")
+    if key_states.dtype != query_states.dtype or value_states.dtype != query_states.dtype:
+        raise ValueError("prompt_flash_attention requires matching Q/K/V dtypes")
+    if query_states.ndim != 4 or key_states.ndim != 4 or value_states.ndim != 4:
+        raise ValueError("BNSD prompt_flash_attention requires rank-4 Q/K/V tensors")
+    if int(query_states.shape[1]) != int(num_heads):
+        raise ValueError("num_heads must match the query N dimension")
+    if key_states.shape != value_states.shape:
+        raise ValueError("key and value shapes must match")
+
+    num_key_value_heads = int(key_states.shape[1])
+    if int(num_heads) % num_key_value_heads != 0:
+        raise ValueError("query heads must be divisible by key/value heads")
+    num_key_value_groups = int(num_heads) // num_key_value_heads
+    key_states = repeat_kv(key_states, num_key_value_groups).contiguous()
+    value_states = repeat_kv(value_states, num_key_value_groups).contiguous()
+
+    try:
+        import torch_npu
+    except Exception as exc:
+        raise RuntimeError(f"torch_npu import failed for prompt flash attention: {exc}") from exc
+
+    return torch_npu.npu_prompt_flash_attention(
+        query_states.contiguous(),
+        key_states,
+        value_states,
+        atten_mask=attention_mask.to(dtype=torch.bool).contiguous(),
+        num_heads=int(num_heads),
+        input_layout="BNSD",
+        scale_value=float(scale),
+        pre_tokens=PROMPT_FA_FULL_ATTENTION_TOKENS,
+        next_tokens=PROMPT_FA_FULL_ATTENTION_TOKENS,
+        sparse_mode=0,
+    )
 
 
 def build_left_padded_causal_mask(attention_mask: torch.Tensor, dtype: torch.dtype) -> torch.Tensor:
@@ -236,24 +292,13 @@ class LocalQwen3RerankerAttention(nn.Module):
         key_states = key_states.contiguous()
         value_states = value_states.contiguous()
 
-        try:
-            import torch_npu
-        except Exception as exc:
-            raise RuntimeError(f"torch_npu import failed for prompt flash attention: {exc}") from exc
-
-        actual_seq_lengths = [int(sequence_length)] * int(batch)
-        attn_output = torch_npu.npu_prompt_flash_attention(
+        attn_output = prompt_flash_attention_bnsd_310p_compatible(
             query_states,
             key_states,
             value_states,
-            atten_mask=attention_mask.contiguous(),
-            actual_seq_lengths=actual_seq_lengths,
-            actual_seq_lengths_kv=actual_seq_lengths,
+            attention_mask=attention_mask,
             num_heads=int(self.num_heads),
-            num_key_value_heads=int(self.num_key_value_heads),
-            input_layout="BNSD",
-            scale_value=float(self.scaling),
-            sparse_mode=0,
+            scale=float(self.scaling),
         )
         attn_output = attn_output.transpose(1, 2).reshape(batch, sequence_length, self.num_heads * self.head_dim)
         return self.o_proj(attn_output)
