@@ -14,7 +14,10 @@ import torch
 from paddleocr_vl.model.compile_utils import import_torchair
 from paddleocr_vl.model.decode_qkv_split import (
     GE_OP_NAME,
+    GE_MULTI_OUTPUT_V2_OP_NAME,
     PYTORCH_OP_NAME,
+    PYTORCH_MULTI_OUTPUT_V2_OP_NAME,
+    decode_qkv_split_v2_control,
     decode_key_slice,
     decode_qkv_split,
     decode_query_slice,
@@ -41,6 +44,8 @@ class CustomQkvSplit(torch.nn.Module):
             return decode_key_slice(qkv)
         if self.component == "value":
             return decode_value_slice(qkv)
+        if self.component == "multi-v2":
+            return decode_qkv_split_v2_control(qkv)
         return decode_qkv_split(qkv)
 
     def forward(
@@ -63,7 +68,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--strict-scope", action="store_true")
     parser.add_argument(
         "--component",
-        choices=("all", "query", "key", "value"),
+        choices=("all", "query", "key", "value", "multi-v2"),
         default="all",
     )
     return parser.parse_args()
@@ -104,7 +109,7 @@ def main() -> int:
     first_call_s = time.perf_counter() - started
 
     names = ("query", "key", "value")
-    if args.component == "all":
+    if args.component in ("all", "multi-v2"):
         outputs = output
         references = reference
     else:
@@ -177,7 +182,18 @@ def main() -> int:
 
     result = {
         "kind": "paddle_decode_qkv_split_torchair_probe",
-        "operator": {"pytorch": PYTORCH_OP_NAME, "ge": GE_OP_NAME},
+        "operator": {
+            "pytorch": (
+                PYTORCH_MULTI_OUTPUT_V2_OP_NAME
+                if args.component == "multi-v2"
+                else PYTORCH_OP_NAME
+            ),
+            "ge": (
+                GE_MULTI_OUTPUT_V2_OP_NAME
+                if args.component == "multi-v2"
+                else GE_OP_NAME
+            ),
+        },
         "contract": {
             "qkv_shape": list(qkv.shape),
             "dtype": str(qkv.dtype),
