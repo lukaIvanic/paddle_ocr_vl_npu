@@ -133,9 +133,14 @@ def main() -> int:
     ref_value_cache = torch.zeros_like(value_cache)
 
     reference_qkv = F.linear(hidden_states, qkv_weight).reshape(1, 1, 2560)
-    reference_query, reference_key_state, reference_value_state = (
-        decode_qkv_split(reference_qkv)
+    reference_query_raw, reference_key_raw, reference_value_raw = (
+        reference_qkv.split((2048, 256, 256), dim=-1)
     )
+    reference_query = reference_query_raw.view(1, 1, 16, 128).transpose(1, 2)
+    reference_key_state = reference_key_raw.view(1, 1, 2, 128).transpose(1, 2)
+    reference_value_state = reference_value_raw.view(
+        1, 1, 2, 128
+    ).transpose(1, 2)
 
     torchair, CompilerConfig = import_torchair()
     args.cache_dir.mkdir(parents=True, exist_ok=True)
