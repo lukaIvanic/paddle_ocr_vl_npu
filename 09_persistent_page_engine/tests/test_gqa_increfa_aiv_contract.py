@@ -120,8 +120,12 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         )
         self.assertNotIn("syncPipe.Destroy();", kernel)
         self.assertIn("&fusedPipe);", kernel)
-        self.assertIn("GetUserWorkspace(workspace)", kernel)
-        self.assertIn("workspace + kSyncWorkspaceBytes", kernel)
+        self.assertNotIn("GetUserWorkspace(workspace)", kernel)
+        self.assertIn(
+            "reinterpret_cast<__gm__ int32_t *>(attentionOut)", kernel
+        )
+        self.assertIn("kSyncStorageBytes", kernel)
+        self.assertNotIn("attentionWorkspace", kernel)
         self.assertIn("FetchEventID(HardEvent::V_MTE3)", kernel)
         self.assertNotIn("SetWaitFlag", kernel)
         self.assertIn('"key": key_cache', converter)
@@ -134,19 +138,12 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("+    ifaContext.deqScale1.tensor = nullptr;", fixed_abi_patch)
         self.assertIn("+    ifaContext.blockTable.tensor = nullptr;", fixed_abi_patch)
         self.assertIn("+    ifaContext.kvPaddingSize.desc = nullptr;", fixed_abi_patch)
-        self.assertIn("0016-decoder-soft-sync-workspace.patch", build_script)
+        self.assertNotIn("0016-decoder-soft-sync-workspace.patch", build_script)
         self.assertIn("0017-decoder-reuse-attention-tpipe.patch", build_script)
         tpipe_reuse_patch = (
             operator_root / "patches" / "0017-decoder-reuse-attention-tpipe.patch"
         ).read_text(encoding="utf-8")
         self.assertIn("+    TPipe &tPipe = *externalPipe;", tpipe_reuse_patch)
-        sync_workspace_patch = (
-            operator_root / "patches" / "0016-decoder-soft-sync-workspace.patch"
-        ).read_text(encoding="utf-8")
-        self.assertIn(
-            "+    workspaceSize_ += static_cast<size_t>(16U)",
-            sync_workspace_patch,
-        )
         probe = (
             EXPERIMENT_ROOT
             / "scripts"

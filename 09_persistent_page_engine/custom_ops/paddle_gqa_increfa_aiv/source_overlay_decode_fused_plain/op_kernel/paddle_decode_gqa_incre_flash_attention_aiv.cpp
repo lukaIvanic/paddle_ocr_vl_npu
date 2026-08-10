@@ -19,9 +19,9 @@ constexpr uint32_t kMaskWords = kCacheLength / sizeof(uint32_t);
 constexpr uint32_t kFourTrueBytes = 0x01010101U;
 constexpr uint32_t kAivCoreCount = 16;
 constexpr uint32_t kSyncBytesPerCore = 32;
-constexpr uint32_t kSyncWorkspaceBytes = kAivCoreCount * kSyncBytesPerCore;
-constexpr uint32_t kSyncWorkspaceElements =
-    kSyncWorkspaceBytes / sizeof(int32_t);
+constexpr uint32_t kSyncStorageBytes = kAivCoreCount * kSyncBytesPerCore;
+constexpr uint32_t kSyncStorageElements =
+    kSyncStorageBytes / sizeof(int32_t);
 
 class PaddleDecodeAttentionPrep {
 public:
@@ -183,25 +183,27 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
         prep.Process();
     }
 
-    // The zero-argument hard barrier depends on hidden runtime state and is not
-    // safe when this object is relinked into CANN's split SuperKernel wrapper.
-    // Use the public software barrier with an explicit user-workspace prefix.
-    // Huawei's contract requires 32 bytes per participating core in both GM
-    // and UB, and every core must initialize the complete GM flag area to zero.
+    // The enclosing SuperKernel has 24 AIV slots, but only the first 16 enter
+    // this subfunction. Its zero-argument hardware barrier would therefore
+    // wait for workers that returned above. Use the fixed-participant software
+    // barrier instead. Huawei's contract requires 32 bytes per participant in
+    // both GM and UB, and every core must initialize the complete GM flag area.
+    // attentionOut is 4096 bytes and is not read before stock attention writes
+    // all of it, so its first 512 bytes are safe transient barrier storage. This
+    // also avoids depending on SuperKernel workspace-pointer rewriting.
     GlobalTensor<int32_t> syncGlobal;
-    __gm__ uint8_t *userWorkspace = GetUserWorkspace(workspace);
     syncGlobal.SetGlobalBuffer(
-        reinterpret_cast<__gm__ int32_t *>(userWorkspace),
-        kSyncWorkspaceElements);
+        reinterpret_cast<__gm__ int32_t *>(attentionOut),
+        kSyncStorageElements);
     TBuf<TPosition::VECCALC> syncBuffer;
-    fusedPipe.InitBuffer(syncBuffer, kSyncWorkspaceBytes);
+    fusedPipe.InitBuffer(syncBuffer, kSyncStorageBytes);
     LocalTensor<int32_t> syncLocal = syncBuffer.Get<int32_t>();
-    Duplicate<int32_t>(syncLocal, 0, kSyncWorkspaceElements);
+    Duplicate<int32_t>(syncLocal, 0, kSyncStorageElements);
     event_t eventIdVToMte3 = static_cast<event_t>(
         fusedPipe.FetchEventID(HardEvent::V_MTE3));
     SetFlag<HardEvent::V_MTE3>(eventIdVToMte3);
     WaitFlag<HardEvent::V_MTE3>(eventIdVToMte3);
-    DataCopy(syncGlobal, syncLocal, kSyncWorkspaceElements);
+    DataCopy(syncGlobal, syncLocal, kSyncStorageElements);
     PipeBarrier<PIPE_ALL>();
     SyncAll(syncGlobal, syncLocal, kAivCoreCount);
     // SuperKernel compilation disables the final PIPE_ALL barrier normally
@@ -211,10 +213,6 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
     PipeBarrier<PIPE_ALL>();
     fusedPipe.Reset();
 
-    // The tiler reserves the prefix above in addition to the stock workspace.
-    // Shift the raw pointer so the unchanged dispatcher derives the original
-    // attention scratch base after its own GetUserWorkspace() call.
-    __gm__ uint8_t *attentionWorkspace = workspace + kSyncWorkspaceBytes;
     incre_flash_attention_FIAS_arch32(
         query,
         key,
@@ -246,7 +244,7 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
         nullptr,
         attentionOut,
         nullptr,
-        attentionWorkspace,
+        workspace,
         tiling,
         &fusedPipe);
 }
