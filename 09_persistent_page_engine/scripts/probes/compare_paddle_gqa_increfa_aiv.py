@@ -47,6 +47,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--valid-kv-length", type=int)
     parser.add_argument("--vector-core-count", type=int, required=True)
     parser.add_argument(
+        "--strict-super-kernel",
+        action="store_true",
+        help=(
+            "Compile the custom operator inside an isolated strict "
+            "SuperKernel scope. This diagnoses binary-fusion compatibility; "
+            "it does not change the operator contract."
+        ),
+    )
+    parser.add_argument(
         "--experimental-grouped-serial-control",
         action="store_true",
         help=(
@@ -400,12 +409,32 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return stock(q, k, v, mask)
 
         class Custom(torch.nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.scope = None
+                if args.strict_super_kernel:
+                    self.scope = __import__(
+                        "torchair.scope", fromlist=["super_kernel"]
+                    ).super_kernel
+
             def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-                return gqa_incre_flash_attention_aiv(
-                    q, k, v, mask, num_heads=QUERY_HEADS,
-                    num_key_value_heads=KV_HEADS, scale_value=SCALE_VALUE,
-                    inner_precise=1, vector_core_count=args.vector_core_count,
-                )
+                if self.scope is None:
+                    return gqa_incre_flash_attention_aiv(
+                        q, k, v, mask, num_heads=QUERY_HEADS,
+                        num_key_value_heads=KV_HEADS, scale_value=SCALE_VALUE,
+                        inner_precise=1, vector_core_count=args.vector_core_count,
+                    )
+                with self.scope(
+                    "paddle_gqa_increfa_aiv_strict_probe",
+                    "feed-sync-all=0:stream-fusion=0:"
+                    "strict-scope-check=abort:preload-code=none:"
+                    "early-start=0:split-mode=1",
+                ):
+                    return gqa_incre_flash_attention_aiv(
+                        q, k, v, mask, num_heads=QUERY_HEADS,
+                        num_key_value_heads=KV_HEADS, scale_value=SCALE_VALUE,
+                        inner_precise=1, vector_core_count=args.vector_core_count,
+                    )
 
         assert args.cache_root is not None
         stock_step = compile_step(Stock(), args.cache_root / "stock")
@@ -492,6 +521,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             **eager_identity,
         },
         "backend": args.backend,
+        "strict_super_kernel": args.strict_super_kernel,
         "experiment_variant": (
             "grouped_serial_control"
             if args.experimental_grouped_serial_control
