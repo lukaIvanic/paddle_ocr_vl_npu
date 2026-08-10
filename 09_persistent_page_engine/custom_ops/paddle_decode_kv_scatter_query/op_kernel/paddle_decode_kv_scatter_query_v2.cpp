@@ -121,7 +121,7 @@ private:
 };
 }
 
-extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v1(
+extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v2(
     GM_ADDR query,
     GM_ADDR keyCache,
     GM_ADDR valueCache,
@@ -129,12 +129,17 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v1(
     GM_ADDR keyState,
     GM_ADDR valueState,
     GM_ADDR orderedQuery,
+    GM_ADDR keyCacheOut,
+    GM_ADDR valueCacheOut,
     GM_ADDR workspace,
     GM_ADDR tiling)
 {
     KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_AIV_ONLY);
     REGISTER_TILING_DEFAULT(PaddleDecodeKvScatterQueryTilingData);
     GET_TILING_DATA(tilingData, tiling);
+    (void)keyCacheOut;
+    (void)valueCacheOut;
+    (void)workspace;
     if (GetBlockIdx() != 0 || tilingData.cacheLength != kCacheLength ||
         tilingData.queryElements != kQueryElements ||
         tilingData.stateElements != kStateElements) {

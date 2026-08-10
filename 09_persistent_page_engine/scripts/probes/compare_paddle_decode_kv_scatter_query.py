@@ -217,9 +217,9 @@ def main() -> int:
     result = {
         "kind": "paddle_decode_kv_scatter_query_torchair_probe",
         "operator": {
-            "pytorch": "paddleocr_vl::decode_kv_scatter_query_v1",
-            "ge": "PaddleDecodeKvScatterQueryV1",
-            "kernel": "paddle_decode_kv_scatter_query_v1",
+            "pytorch": "paddleocr_vl::decode_kv_scatter_query_v2",
+            "ge": "PaddleDecodeKvScatterQueryV2",
+            "kernel": "paddle_decode_kv_scatter_query_v2",
         },
         "contract": {
             "query_shape": list(query.shape),
@@ -257,7 +257,7 @@ def main() -> int:
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2))
     if not all_exact:
-        raise RuntimeError("PaddleDecodeKvScatterQueryV1 failed exact parity")
+        raise RuntimeError("PaddleDecodeKvScatterQueryV2 failed exact parity")
     return 0
 
 

@@ -1,4 +1,4 @@
-"""Ordering-token binding for the B1 AscendC K/V scatter side effect."""
+"""Mutable B1 K/V scatter plus query ordering token for TorchAir."""
 
 from __future__ import annotations
 
@@ -10,11 +10,14 @@ import torch
 from .compile_utils import import_torchair
 
 
-PYTORCH_OP_NAME = "paddleocr_vl::decode_kv_scatter_query_v1"
-GE_OP_NAME = "PaddleDecodeKvScatterQueryV1"
+PYTORCH_OP_NAME = "paddleocr_vl::decode_kv_scatter_query_v2"
+GE_OP_NAME = "PaddleDecodeKvScatterQueryV2"
 
 
-@torch.library.custom_op(PYTORCH_OP_NAME, mutates_args=())
+@torch.library.custom_op(
+    PYTORCH_OP_NAME,
+    mutates_args=("key_cache", "value_cache"),
+)
 def _decode_kv_scatter_query(
     query: torch.Tensor,
     key_cache: torch.Tensor,
@@ -23,10 +26,14 @@ def _decode_kv_scatter_query(
     key_state: torch.Tensor,
     value_state: torch.Tensor,
 ) -> torch.Tensor:
-    # Eager is only a trace/reference surface. The installed AscendC kernel
-    # performs the persistent cache side effect; its ordered query output keeps
-    # that side effect live and ordered before attention in the GE graph.
-    del key_cache, value_cache, cache_position, key_state, value_state
+    # This eager implementation is also the correctness reference. TorchAir
+    # auto-functionalizes the two mutable arguments and lowers the call to the
+    # independent AscendC reference operator below.
+    import torch_npu
+
+    positions = cache_position.reshape(-1).contiguous()
+    torch_npu.scatter_update_(key_cache, positions, key_state, 2)
+    torch_npu.scatter_update_(value_cache, positions, value_state, 2)
     return query.clone()
 
 
@@ -44,14 +51,37 @@ def _decode_kv_scatter_query_fake(
 
 
 _CONVERTER_REGISTERED = False
+_REF_PASS_PATCHED = False
+
+
+def _patch_torchair_ref_mapping(torchair: Any) -> None:
+    """Teach this installed TorchAir release the V2 reference-output ABI."""
+    global _REF_PASS_PATCHED
+    if _REF_PASS_PATCHED:
+        return
+    graph_pass = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.graph_pass"
+    )
+    original = graph_pass._get_output_to_input_ref_idx
+
+    def _get_output_to_input_ref_idx(op: Any) -> dict[int, int]:
+        mapping = dict(original(op))
+        if op.type == GE_OP_NAME:
+            mapping[1] = 1
+            mapping[2] = 2
+        return mapping
+
+    graph_pass._get_output_to_input_ref_idx = _get_output_to_input_ref_idx
+    _REF_PASS_PATCHED = True
 
 
 def register_decode_kv_scatter_query_converter() -> None:
-    """Lower the explicit ordering identity to the independent AscendC op."""
+    """Lower the mutable custom op to the independent AscendC ref op."""
     global _CONVERTER_REGISTERED
     if _CONVERTER_REGISTERED:
         return
     torchair, _CompilerConfig = import_torchair()
+    _patch_torchair_ref_mapping(torchair)
     converter_module = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
     )
@@ -59,7 +89,7 @@ def register_decode_kv_scatter_query_converter() -> None:
     register_converter = converter_module.register_fx_node_ge_converter
     ge_custom_op = ge_module.custom_op
 
-    @register_converter(torch.ops.paddleocr_vl.decode_kv_scatter_query_v1.default)
+    @register_converter(torch.ops.paddleocr_vl.decode_kv_scatter_query_v2.default)
     def _convert_decode_kv_scatter_query(
         query: Any,
         key_cache: Any,
@@ -70,7 +100,7 @@ def register_decode_kv_scatter_query_converter() -> None:
         meta_outputs: Any = None,
     ) -> Any:
         del meta_outputs
-        return ge_custom_op(
+        outputs = ge_custom_op(
             GE_OP_NAME,
             inputs={
                 "query": query,
@@ -80,8 +110,11 @@ def register_decode_kv_scatter_query_converter() -> None:
                 "key_state": key_state,
                 "value_state": value_state,
             },
-            outputs=["ordered_query"],
+            outputs=["ordered_query", "key_cache", "value_cache"],
         )
+        # The PyTorch schema returns only the query. TorchAir's mutable-op
+        # functionalization discovers the two cache ref outputs by their names.
+        return outputs[0]
 
     _CONVERTER_REGISTERED = True
 
