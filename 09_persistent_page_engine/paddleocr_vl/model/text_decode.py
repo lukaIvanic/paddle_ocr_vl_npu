@@ -984,7 +984,12 @@ def _decode_mlp(
     hidden_states: torch.Tensor,
     optimization: DecodeOptimizationConfig,
 ) -> torch.Tensor:
-    if not optimization.packed_mlp:
+    if optimization.ascendc_linear and not optimization.packed_mlp:
+        gate = _linear_tokenwise(mlp.gate_proj, hidden_states)
+        up = _linear_tokenwise(mlp.up_proj, hidden_states)
+        activated = torch.nn.functional.silu(gate) * up
+        output = _linear_tokenwise(mlp.down_proj, activated)
+    elif not optimization.packed_mlp:
         output = mlp(hidden_states)
     else:
         gate_up = _linear_tokenwise(
