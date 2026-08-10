@@ -20,6 +20,8 @@ import torch
 from torch import nn
 
 from local_modeling_qwen3_reranker import (
+    PREFILL_OPTIMIZATION_PRESETS,
+    build_310p_square_promptfa_mask,
     build_left_padded_causal_bool_mask,
     build_left_padded_causal_bool_mask_chunk,
     build_left_padded_causal_mask,
@@ -67,6 +69,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--task", default=DEFAULT_TASK)
+    parser.add_argument(
+        "--prefill-optimizations",
+        nargs="+",
+        choices=tuple(PREFILL_OPTIMIZATION_PRESETS),
+        default=["baseline"],
+        help="Compiled prefix-suffix implementation presets to compare.",
+    )
     return parser.parse_args()
 
 
@@ -360,9 +369,12 @@ def shape_matrix(args: argparse.Namespace) -> tuple[tuple[int, int], ...]:
 
 
 def print_result(result: dict) -> None:
+    optimization = result.get("prefill_optimization")
+    optimization_text = "" if optimization is None else f"optimization={optimization} "
     print(
         "THROUGHPUT "
         f"lane={result['lane']} "
+        f"{optimization_text}"
         f"B={result['batch_size']} C={result['continuation_length']} "
         f"S={result['full_physical_length']} "
         f"median_ms={result['median_s'] * 1000.0:.3f} "
@@ -453,14 +465,6 @@ def main() -> None:
             query_start=PREFIX_BLOCK,
             query_end=full_length,
         )
-        batched_key_caches = tuple(
-            cache.expand(batch_size, -1, -1, -1).contiguous()
-            for cache in prefix_key_caches
-        )
-        batched_value_caches = tuple(
-            cache.expand(batch_size, -1, -1, -1).contiguous()
-            for cache in prefix_value_caches
-        )
         served_tokens = batch_size * (prefix_valid_tokens + continuation_length)
         attention_query_tokens = batch_size * full_length
         lane_outputs: dict[str, torch.Tensor] = {}
@@ -527,66 +531,115 @@ def main() -> None:
 
         if "prefix_promptfa_compiled" in args.lanes:
             set_attention_impl(model, "prompt_flash_attention")
-            cache_dir = args.compile_cache_dir / (
-                f"prefix_promptfa_b{batch_size}_q{full_length}_kv{full_length}_"
-                f"realq{continuation_length}_fp16_src{source_key}"
-            )
-            compiled, wrapper_s, cache_was_warm = compile_stage(
-                prefix_stage,
-                entrypoint_name=(
-                    f"reranker_prefix_promptfa_b{batch_size}_"
-                    f"realq{continuation_length}_s{full_length}"
-                ),
-                cache_dir=cache_dir,
-                device=device,
-            )
-            flat_caches = batched_key_caches + batched_value_caches
-            summary, output = benchmark_lane(
-                lane="prefix_promptfa_compiled",
-                fn=lambda: compiled(
-                    continuation_ids,
-                    continuation_position_ids,
-                    continuation_mask,
-                    *flat_caches,
-                ),
-                device=device,
-                warmups=args.warmups,
-                repeats=args.repeats,
-                batch_size=batch_size,
-                served_tokens=served_tokens,
-                executed_tokens=batch_size * continuation_length,
-                attention_query_tokens=attention_query_tokens,
-                compile_wrapper_s=wrapper_s,
-                cache_dir=cache_dir,
-                cache_was_warm=cache_was_warm,
-            )
-            lane_outputs["prefix_promptfa_compiled"] = output
-            summary.update(
-                batch_size=batch_size,
-                continuation_length=continuation_length,
-                full_physical_length=full_length,
-            )
-            results.append(summary)
-            print_result(summary)
-            del compiled
+            for optimization_name in args.prefill_optimizations:
+                optimization = model.set_prefill_optimization(optimization_name)
+                prepared_keys, prepared_values = model.prepare_prefix_caches(
+                    prefix_key_caches,
+                    prefix_value_caches,
+                )
+                batched_key_caches = tuple(
+                    cache.expand(batch_size, -1, -1, -1).contiguous()
+                    for cache in prepared_keys
+                )
+                batched_value_caches = tuple(
+                    cache.expand(batch_size, -1, -1, -1).contiguous()
+                    for cache in prepared_values
+                )
+                compiled_mask = (
+                    build_310p_square_promptfa_mask(continuation_mask)
+                    if optimization.prebuilt_square_mask
+                    else continuation_mask
+                )
+                cache_dir = args.compile_cache_dir / (
+                    f"prefix_promptfa_{optimization.name}_b{batch_size}_"
+                    f"q{full_length}_kv{full_length}_realq{continuation_length}_"
+                    f"fp16_src{source_key}"
+                )
+                compiled, wrapper_s, cache_was_warm = compile_stage(
+                    prefix_stage,
+                    entrypoint_name=(
+                        f"reranker_prefix_promptfa_{optimization.name}_b{batch_size}_"
+                        f"realq{continuation_length}_s{full_length}"
+                    ),
+                    cache_dir=cache_dir,
+                    device=device,
+                )
+                flat_caches = batched_key_caches + batched_value_caches
+                summary, output = benchmark_lane(
+                    lane="prefix_promptfa_compiled",
+                    fn=lambda: compiled(
+                        continuation_ids,
+                        continuation_position_ids,
+                        compiled_mask,
+                        *flat_caches,
+                    ),
+                    device=device,
+                    warmups=args.warmups,
+                    repeats=args.repeats,
+                    batch_size=batch_size,
+                    served_tokens=served_tokens,
+                    executed_tokens=batch_size * continuation_length,
+                    attention_query_tokens=attention_query_tokens,
+                    compile_wrapper_s=wrapper_s,
+                    cache_dir=cache_dir,
+                    cache_was_warm=cache_was_warm,
+                )
+                output_key = f"prefix_promptfa_compiled:{optimization.name}"
+                lane_outputs[output_key] = output
+                summary.update(
+                    batch_size=batch_size,
+                    continuation_length=continuation_length,
+                    full_physical_length=full_length,
+                    prefill_optimization=optimization.name,
+                )
+                results.append(summary)
+                print_result(summary)
+                del compiled
+            model.set_prefill_optimization("baseline")
 
         if "full_manual" in lane_outputs:
             reference = lane_outputs["full_manual"].float()
-            for lane, output in lane_outputs.items():
-                if lane == "full_manual":
+            for output_key, output in lane_outputs.items():
+                if output_key == "full_manual":
                     continue
                 max_abs = float((output.float() - reference).abs().max().detach().cpu())
                 for result in reversed(results):
                     if (
-                        result["lane"] == lane
+                        output_key.startswith(result["lane"])
                         and result["batch_size"] == batch_size
                         and result["continuation_length"] == continuation_length
+                        and (
+                            result.get("prefill_optimization") is None
+                            or output_key.endswith(f":{result['prefill_optimization']}")
+                        )
                     ):
                         result["max_abs_hidden_vs_full_manual"] = max_abs
                         break
                 print(
-                    f"CORRECTNESS lane={lane} B={batch_size} C={continuation_length} "
+                    f"CORRECTNESS lane={output_key} B={batch_size} C={continuation_length} "
                     f"max_abs_hidden_vs_full_manual={max_abs:.6f}",
+                    flush=True,
+                )
+
+        baseline_prefix = lane_outputs.get("prefix_promptfa_compiled:baseline")
+        if baseline_prefix is not None:
+            for output_key, output in lane_outputs.items():
+                if not output_key.startswith("prefix_promptfa_compiled:") or output_key.endswith(":baseline"):
+                    continue
+                max_abs = float((output.float() - baseline_prefix.float()).abs().max().detach().cpu())
+                optimization_name = output_key.rsplit(":", 1)[1]
+                for result in reversed(results):
+                    if (
+                        result["lane"] == "prefix_promptfa_compiled"
+                        and result.get("prefill_optimization") == optimization_name
+                        and result["batch_size"] == batch_size
+                        and result["continuation_length"] == continuation_length
+                    ):
+                        result["max_abs_hidden_vs_prefix_baseline"] = max_abs
+                        break
+                print(
+                    f"CORRECTNESS lane={output_key} B={batch_size} C={continuation_length} "
+                    f"max_abs_hidden_vs_prefix_baseline={max_abs:.6f}",
                     flush=True,
                 )
 
@@ -616,6 +669,7 @@ def main() -> None:
             "prefix_valid_tokens": prefix_valid_tokens,
             "prefix_build_s": prefix_build_s,
             "source_hash": source_key,
+            "prefill_optimizations": list(args.prefill_optimizations),
         },
         "metric_definitions": {
             "served_input_tok_s": "valid prefix plus continuation tokens served per median call second",

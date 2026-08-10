@@ -15,6 +15,57 @@ PROMPT_FA_FULL_ATTENTION_TOKENS = (1 << 31) - 1
 
 
 @dataclass(frozen=True)
+class RerankerPrefillOptimizationConfig:
+    name: str
+    native_rms_norm: bool = False
+    native_rotary: bool = False
+    prebuilt_square_mask: bool = False
+    expanded_prefix_kv: bool = False
+
+
+PREFILL_OPTIMIZATION_PRESETS: dict[str, RerankerPrefillOptimizationConfig] = {
+    "baseline": RerankerPrefillOptimizationConfig(name="baseline"),
+    "native_rms": RerankerPrefillOptimizationConfig(
+        name="native_rms",
+        native_rms_norm=True,
+    ),
+    "native_rotary": RerankerPrefillOptimizationConfig(
+        name="native_rotary",
+        native_rotary=True,
+    ),
+    "prebuilt_square_mask": RerankerPrefillOptimizationConfig(
+        name="prebuilt_square_mask",
+        prebuilt_square_mask=True,
+    ),
+    "expanded_prefix_kv": RerankerPrefillOptimizationConfig(
+        name="expanded_prefix_kv",
+        expanded_prefix_kv=True,
+    ),
+    "combined": RerankerPrefillOptimizationConfig(
+        name="combined",
+        native_rms_norm=True,
+        native_rotary=True,
+        prebuilt_square_mask=True,
+        expanded_prefix_kv=True,
+    ),
+}
+
+
+def resolve_prefill_optimization(
+    optimization: str | RerankerPrefillOptimizationConfig,
+) -> RerankerPrefillOptimizationConfig:
+    if isinstance(optimization, RerankerPrefillOptimizationConfig):
+        return optimization
+    try:
+        return PREFILL_OPTIMIZATION_PRESETS[str(optimization)]
+    except KeyError as exc:
+        raise ValueError(
+            f"unknown prefill optimization {optimization!r}; expected one of "
+            f"{tuple(PREFILL_OPTIMIZATION_PRESETS)}"
+        ) from exc
+
+
+@dataclass(frozen=True)
 class LocalQwen3RerankerConfig:
     vocab_size: int
     hidden_size: int
@@ -56,8 +107,17 @@ class LocalQwen3RerankerRMSNorm(nn.Module):
         super().__init__()
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = float(eps)
+        self.native_npu = False
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        if self.native_npu and hidden_states.device.type == "npu":
+            import torch_npu
+
+            return torch_npu.npu_rms_norm(
+                hidden_states,
+                self.weight,
+                self.variance_epsilon,
+            )[0]
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
         variance = hidden_states.pow(2).mean(dim=-1, keepdim=True)
@@ -108,12 +168,63 @@ def apply_rotary_pos_emb(
     return query_states, key_states
 
 
+def apply_native_rotary_pos_emb_bsnd(
+    query_states: torch.Tensor,
+    key_states: torch.Tensor,
+    cos: torch.Tensor,
+    sin: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Apply one native half-RoPE call to BSND Q/K tensors."""
+    import torch_npu
+
+    return torch_npu.npu_apply_rotary_pos_emb(
+        query_states.contiguous(),
+        key_states.contiguous(),
+        cos.unsqueeze(2).contiguous(),
+        sin.unsqueeze(2).contiguous(),
+        layout="BSND",
+        rotary_mode="half",
+    )
+
+
 def repeat_kv(hidden_states: torch.Tensor, repeats: int) -> torch.Tensor:
     if repeats == 1:
         return hidden_states
     batch, num_kv_heads, sequence_length, head_dim = hidden_states.shape
     hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_kv_heads, repeats, sequence_length, head_dim)
     return hidden_states.reshape(batch, num_kv_heads * repeats, sequence_length, head_dim)
+
+
+def build_310p_square_promptfa_mask(attention_mask: torch.Tensor) -> torch.Tensor:
+    """Prepend valid dummy rows so masked PromptFA receives square Q/K."""
+    if attention_mask.ndim != 4 or int(attention_mask.shape[1]) != 1:
+        raise ValueError("PromptFA attention mask must have shape [B,1,Q,K]")
+    batch, _one, query_length, key_length = attention_mask.shape
+    if int(query_length) > int(key_length):
+        raise ValueError("PromptFA square-mask preparation requires Q length <= K length")
+    padded_query_rows = int(key_length) - int(query_length)
+    if padded_query_rows == 0:
+        return attention_mask.to(dtype=torch.bool).contiguous()
+    dummy_query_positions = torch.arange(
+        padded_query_rows,
+        device=attention_mask.device,
+        dtype=torch.int64,
+    ).view(1, 1, padded_query_rows, 1)
+    key_positions = torch.arange(
+        int(key_length),
+        device=attention_mask.device,
+        dtype=torch.int64,
+    ).view(1, 1, 1, int(key_length))
+    dummy_mask = (dummy_query_positions != key_positions).expand(
+        int(batch),
+        1,
+        padded_query_rows,
+        int(key_length),
+    )
+    return torch.cat(
+        (dummy_mask, attention_mask.to(dtype=torch.bool)),
+        dim=2,
+    ).contiguous()
 
 
 def linear_tokenwise(linear: nn.Linear, hidden_states: torch.Tensor) -> torch.Tensor:
@@ -131,6 +242,7 @@ def prompt_flash_attention_bnsd_310p_compatible(
     attention_mask: torch.Tensor,
     num_heads: int,
     scale: float,
+    attention_mask_is_square: bool = False,
 ) -> torch.Tensor:
     """Run the Atlas inference-series-safe PromptFA contract.
 
@@ -162,7 +274,13 @@ def prompt_flash_attention_bnsd_310p_compatible(
     key_length = int(key_states.shape[2])
     if query_length > key_length:
         raise ValueError("310P-compatible masked PromptFA requires Q length <= K length")
-    expected_mask_shape = (int(query_states.shape[0]), 1, query_length, key_length)
+    mask_query_length = key_length if attention_mask_is_square else query_length
+    expected_mask_shape = (
+        int(query_states.shape[0]),
+        1,
+        mask_query_length,
+        key_length,
+    )
     if tuple(attention_mask.shape) != expected_mask_shape:
         raise ValueError(
             f"expected attention mask shape {expected_mask_shape}, got {tuple(attention_mask.shape)}"
@@ -180,28 +298,8 @@ def prompt_flash_attention_bnsd_310p_compatible(
         )
         query_states = torch.cat((dummy_queries, query_states), dim=2).contiguous()
 
-        # PromptFA rejects a mask row with no participating key. Dummy outputs
-        # are discarded, so let each dummy query attend one matching key row.
-        dummy_query_positions = torch.arange(
-            padded_query_rows,
-            device=attention_mask.device,
-            dtype=torch.int64,
-        ).view(1, 1, padded_query_rows, 1)
-        key_positions = torch.arange(
-            key_length,
-            device=attention_mask.device,
-            dtype=torch.int64,
-        ).view(1, 1, 1, key_length)
-        dummy_mask = (dummy_query_positions != key_positions).expand(
-            int(query_states.shape[0]),
-            1,
-            padded_query_rows,
-            key_length,
-        )
-        attention_mask = torch.cat(
-            (dummy_mask, attention_mask.to(dtype=torch.bool)),
-            dim=2,
-        )
+        if not attention_mask_is_square:
+            attention_mask = build_310p_square_promptfa_mask(attention_mask)
 
     try:
         import torch_npu
@@ -332,6 +430,9 @@ class LocalQwen3RerankerAttention(nn.Module):
         self.o_proj = nn.Linear(config.num_attention_heads * config.head_dim, config.hidden_size, bias=False)
         self.q_norm = LocalQwen3RerankerRMSNorm(config.head_dim, config.rms_norm_eps)
         self.k_norm = LocalQwen3RerankerRMSNorm(config.head_dim, config.rms_norm_eps)
+        self.native_rotary = False
+        self.prebuilt_square_mask = False
+        self.expanded_prefix_kv = False
 
     def project_qkv(
         self,
@@ -349,10 +450,27 @@ class LocalQwen3RerankerAttention(nn.Module):
         value_states = linear_tokenwise(self.v_proj, hidden_states).view(
             batch, sequence_length, self.num_key_value_heads, self.head_dim
         )
-        query_states = self.q_norm(query_states).transpose(1, 2)
-        key_states = self.k_norm(key_states).transpose(1, 2)
+        query_states = self.q_norm(query_states)
+        key_states = self.k_norm(key_states)
+        if self.native_rotary and query_states.device.type == "npu":
+            query_states, key_states = apply_native_rotary_pos_emb_bsnd(
+                query_states,
+                key_states,
+                cos,
+                sin,
+            )
+            query_states = query_states.transpose(1, 2)
+            key_states = key_states.transpose(1, 2)
+        else:
+            query_states = query_states.transpose(1, 2)
+            key_states = key_states.transpose(1, 2)
+            query_states, key_states = apply_rotary_pos_emb(
+                query_states,
+                key_states,
+                cos,
+                sin,
+            )
         value_states = value_states.transpose(1, 2)
-        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
         return query_states.contiguous(), key_states.contiguous(), value_states.contiguous()
 
     def forward_eager(
@@ -393,6 +511,7 @@ class LocalQwen3RerankerAttention(nn.Module):
             attention_mask=attention_mask,
             num_heads=int(self.num_heads),
             scale=float(self.scaling),
+            attention_mask_is_square=self.prebuilt_square_mask,
         )
         attn_output = attn_output.transpose(1, 2).reshape(batch, sequence_length, self.num_heads * self.head_dim)
         return linear_tokenwise(self.o_proj, attn_output)
@@ -471,6 +590,17 @@ class LocalQwen3RerankerAttention(nn.Module):
         query_states, current_key_states, current_value_states = self.project_qkv(
             hidden_states, cos, sin
         )
+        if self.expanded_prefix_kv:
+            if int(prefix_key_states.shape[1]) != int(self.num_heads):
+                raise ValueError("expanded prefix K/V must use the query-head count")
+            current_key_states = repeat_kv(
+                current_key_states,
+                self.num_key_value_groups,
+            ).contiguous()
+            current_value_states = repeat_kv(
+                current_value_states,
+                self.num_key_value_groups,
+            ).contiguous()
         key_states = torch.cat((prefix_key_states, current_key_states), dim=2).contiguous()
         value_states = torch.cat((prefix_value_states, current_value_states), dim=2).contiguous()
         attention_output = prompt_flash_attention_bnsd_310p_compatible(
@@ -480,6 +610,7 @@ class LocalQwen3RerankerAttention(nn.Module):
             attention_mask=attention_mask,
             num_heads=int(self.num_heads),
             scale=float(self.scaling),
+            attention_mask_is_square=self.prebuilt_square_mask,
         )
         attention_output = attention_output.transpose(1, 2).reshape(
             batch, query_length, self.num_heads * self.head_dim
@@ -601,6 +732,36 @@ class LocalQwen3RerankerForCausalLM(nn.Module):
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         if config.tie_word_embeddings:
             self.lm_head.weight = self.embed_tokens.weight
+        self.prefill_optimization = PREFILL_OPTIMIZATION_PRESETS["baseline"]
+
+    def set_prefill_optimization(
+        self,
+        optimization: str | RerankerPrefillOptimizationConfig,
+    ) -> RerankerPrefillOptimizationConfig:
+        config = resolve_prefill_optimization(optimization)
+        self.prefill_optimization = config
+        for module in self.modules():
+            if isinstance(module, LocalQwen3RerankerRMSNorm):
+                module.native_npu = config.native_rms_norm
+        for layer in self.layers:
+            attention = layer.self_attn
+            attention.native_rotary = config.native_rotary
+            attention.prebuilt_square_mask = config.prebuilt_square_mask
+            attention.expanded_prefix_kv = config.expanded_prefix_kv
+        return config
+
+    def prepare_prefix_caches(
+        self,
+        key_caches: tuple[torch.Tensor, ...],
+        value_caches: tuple[torch.Tensor, ...],
+    ) -> tuple[tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
+        if not self.prefill_optimization.expanded_prefix_kv:
+            return key_caches, value_caches
+        repeats = int(self.config.num_attention_heads // self.config.num_key_value_heads)
+        return (
+            tuple(repeat_kv(cache, repeats).contiguous() for cache in key_caches),
+            tuple(repeat_kv(cache, repeats).contiguous() for cache in value_caches),
+        )
 
     def forward_hidden_states_prepared(
         self,

@@ -12,6 +12,8 @@ import torch
 from local_modeling_qwen3_reranker import (
     LocalQwen3RerankerConfig,
     LocalQwen3RerankerForCausalLM,
+    PREFILL_OPTIMIZATION_PRESETS,
+    build_310p_square_promptfa_mask,
     build_left_padded_causal_bool_mask,
     build_left_padded_causal_bool_mask_chunk,
     build_left_padded_causal_mask,
@@ -51,6 +53,7 @@ class LocalQwen3RerankerRunner:
         prefix_cache: bool = False,
         compile_cache_dir: str | Path | None = None,
         graph_warmups: int = 0,
+        prefill_optimization: str = "baseline",
     ):
         self.model_dir = Path(model_dir)
         self.device = device
@@ -68,6 +71,7 @@ class LocalQwen3RerankerRunner:
             else (Path.cwd() / ".runtime_cache" / "13_qwen3_reranker").resolve()
         )
         self.graph_warmups = int(graph_warmups)
+        self.prefill_optimization = str(prefill_optimization)
         self.compiled_first_chunk = None
         self.compiled_next_chunk = None
         self.compiled_cached_suffix = None
@@ -88,6 +92,10 @@ class LocalQwen3RerankerRunner:
             raise ValueError("W8A8 modes require float16")
         if self.graph_warmups < 0:
             raise ValueError("graph_warmups must be non-negative")
+        if self.prefill_optimization not in PREFILL_OPTIMIZATION_PRESETS:
+            raise ValueError(
+                f"unsupported prefill_optimization={self.prefill_optimization!r}"
+            )
         if self.prefix_cache:
             if not self.compile_forward:
                 raise ValueError("prefix caching currently requires --compile-forward")
@@ -111,6 +119,7 @@ class LocalQwen3RerankerRunner:
         self.true_token_id = int(self.tokenizer.convert_tokens_to_ids("yes"))
         self.config = LocalQwen3RerankerConfig.from_model_dir(self.model_dir)
         self.model = self.load_model()
+        self.model.set_prefill_optimization(self.prefill_optimization)
         if compile_forward:
             from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
@@ -120,7 +129,8 @@ class LocalQwen3RerankerRunner:
             source_hash = _source_hash()
             shape_key = (
                 f"b{self.batch_size}_s{self.max_length}_c{self.prefill_chunk_size}_"
-                f"h{self.config.hidden_size}_l{self.config.num_hidden_layers}_fp16_src{source_hash}"
+                f"h{self.config.hidden_size}_l{self.config.num_hidden_layers}_"
+                f"opt{self.prefill_optimization}_fp16_src{source_hash}"
             )
             if self.prefix_cache:
                 continuation_dir = self.compile_cache_dir / (
@@ -308,12 +318,17 @@ class LocalQwen3RerankerRunner:
         position_ids = position_ids.clamp(min=0)
         prefix_mask = build_left_padded_causal_bool_mask(attention_mask)
         started = time.perf_counter()
-        with torch.inference_mode():
-            key_caches, value_caches = self.model.build_prefix_cache_eager(
-                input_ids,
-                position_ids,
-                prefix_mask,
-            )
+        selected_optimization = self.model.prefill_optimization
+        self.model.set_prefill_optimization("baseline")
+        try:
+            with torch.inference_mode():
+                key_caches, value_caches = self.model.build_prefix_cache_eager(
+                    input_ids,
+                    position_ids,
+                    prefix_mask,
+                )
+        finally:
+            self.model.set_prefill_optimization(selected_optimization)
         if self.device.type == "npu":
             torch.npu.synchronize()
         print(
@@ -326,11 +341,15 @@ class LocalQwen3RerankerRunner:
         self._prefix_attention_mask = attention_mask
         self._prefix_key_caches = key_caches
         self._prefix_value_caches = value_caches
+        prepared_keys, prepared_values = self.model.prepare_prefix_caches(
+            key_caches,
+            value_caches,
+        )
         self._batched_prefix_key_caches = tuple(
-            cache.expand(self.batch_size, -1, -1, -1).contiguous() for cache in key_caches
+            cache.expand(self.batch_size, -1, -1, -1).contiguous() for cache in prepared_keys
         )
         self._batched_prefix_value_caches = tuple(
-            cache.expand(self.batch_size, -1, -1, -1).contiguous() for cache in value_caches
+            cache.expand(self.batch_size, -1, -1, -1).contiguous() for cache in prepared_values
         )
 
     def forward_prefix_cached_hidden_states(
@@ -358,6 +377,8 @@ class LocalQwen3RerankerRunner:
             query_start=self.prefill_chunk_size,
             query_end=2 * self.prefill_chunk_size,
         )
+        if self.model.prefill_optimization.prebuilt_square_mask:
+            continuation_mask = build_310p_square_promptfa_mask(continuation_mask)
         hidden_states = self.compiled_cached_suffix(
             input_ids,
             position_ids[:, self.prefill_chunk_size :].contiguous(),
@@ -514,6 +535,12 @@ def parse_args() -> argparse.Namespace:
         default=Path(".runtime_cache/13_qwen3_reranker"),
     )
     parser.add_argument("--graph-warmups", type=int, default=2)
+    parser.add_argument(
+        "--prefill-optimization",
+        choices=tuple(PREFILL_OPTIMIZATION_PRESETS),
+        default="baseline",
+        help="Compiled prefix-cache suffix optimization preset.",
+    )
     parser.add_argument("--attention-impl", choices=("eager", "prompt_flash_attention"), default="eager")
     parser.add_argument("--ffn-weight-mode", choices=("dense", "w8a8", "all_w8a8"), default="dense")
     parser.add_argument(
@@ -552,6 +579,7 @@ def main() -> None:
         prefix_cache=args.prefix_cache,
         compile_cache_dir=args.compile_cache_dir,
         graph_warmups=args.graph_warmups,
+        prefill_optimization=args.prefill_optimization,
     )
     inputs = runner.encode_pairs(args.query, args.documents, args.task)
     runner.calibrate_ffn_input_scales(inputs["input_ids"], inputs["attention_mask"])

@@ -14,8 +14,10 @@ sys.path.insert(0, str(EXPERIMENT_DIR))
 
 from local_modeling_qwen3_reranker import (  # noqa: E402
     LocalQwen3RerankerConfig,
+    LocalQwen3RerankerForCausalLM,
     LocalQwen3RerankerRotaryEmbedding,
     PROMPT_FA_FULL_ATTENTION_TOKENS,
+    build_310p_square_promptfa_mask,
     build_left_padded_causal_bool_mask,
     build_left_padded_causal_bool_mask_chunk,
     linear_tokenwise,
@@ -158,6 +160,61 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
         self.assertEqual(square_mask.shape, (2, 1, 4, 4))
         self.assertFalse(square_mask[:, :, :2].all(dim=-1).any().item())
         torch.testing.assert_close(square_mask[:, :, -2:], real_mask)
+
+    def test_prebuilt_square_mask_skips_per_attention_mask_construction(self) -> None:
+        captured: dict[str, object] = {}
+
+        def fake_prompt_flash_attention(query, key, value, **kwargs):
+            captured.update(query=query, key=key, value=value, kwargs=kwargs)
+            return query
+
+        fake_torch_npu = SimpleNamespace(npu_prompt_flash_attention=fake_prompt_flash_attention)
+        query = torch.randn(2, 4, 2, 8, dtype=torch.float16)
+        key = torch.randn(2, 2, 4, 8, dtype=torch.float16)
+        value = torch.randn(2, 2, 4, 8, dtype=torch.float16)
+        real_mask = torch.zeros(2, 1, 2, 4, dtype=torch.bool)
+        square_mask = build_310p_square_promptfa_mask(real_mask)
+
+        with patch.dict(sys.modules, {"torch_npu": fake_torch_npu}):
+            output = prompt_flash_attention_bnsd_310p_compatible(
+                query,
+                key,
+                value,
+                attention_mask=square_mask,
+                num_heads=4,
+                scale=8**-0.5,
+                attention_mask_is_square=True,
+            )
+
+        torch.testing.assert_close(output, query)
+        self.assertIs(captured["kwargs"]["atten_mask"], square_mask)
+
+    def test_combined_preset_expands_prefix_cache_heads_once(self) -> None:
+        config = LocalQwen3RerankerConfig(
+            vocab_size=8,
+            hidden_size=16,
+            intermediate_size=32,
+            num_hidden_layers=1,
+            num_attention_heads=4,
+            num_key_value_heads=2,
+            head_dim=8,
+            rms_norm_eps=1e-6,
+            rope_theta=10000.0,
+            tie_word_embeddings=False,
+        )
+        model = LocalQwen3RerankerForCausalLM(config)
+        selected = model.set_prefill_optimization("combined")
+        key = torch.randn(1, 2, 3, 8)
+        value = torch.randn(1, 2, 3, 8)
+        keys, values = model.prepare_prefix_caches((key,), (value,))
+
+        self.assertTrue(selected.native_rms_norm)
+        self.assertTrue(selected.native_rotary)
+        self.assertTrue(selected.prebuilt_square_mask)
+        self.assertEqual(keys[0].shape, (1, 4, 3, 8))
+        self.assertEqual(values[0].shape, (1, 4, 3, 8))
+        torch.testing.assert_close(keys[0][:, 0], key[:, 0])
+        torch.testing.assert_close(keys[0][:, 1], key[:, 0])
 
 
 if __name__ == "__main__":
