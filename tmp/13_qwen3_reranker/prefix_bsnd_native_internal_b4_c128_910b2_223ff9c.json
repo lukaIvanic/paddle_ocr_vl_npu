@@ -1,0 +1,121 @@
+{
+  "environment": {
+    "host": "liteserver-c001-4",
+    "device": "Ascend910B2",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "git_commit": "223ff9c4a033c44454b66968e884315824b4149a"
+  },
+  "configuration": {
+    "model_dir": "/workspace/models/Qwen3-Reranker-0.6B",
+    "batch_sizes": [
+      4
+    ],
+    "continuation_lengths": [
+      128
+    ],
+    "batch_sweep_continuation": 128,
+    "length_sweep_batch": 4,
+    "matrix": "axes",
+    "lanes": [
+      "prefix_promptfa_compiled"
+    ],
+    "warmups": 5,
+    "repeats": 100,
+    "prefix_block": 128,
+    "prefix_valid_tokens": 60,
+    "prefix_build_s": 0.23132937215268612,
+    "source_hash": "374c218e7141",
+    "compile_source_key_override": null,
+    "prefill_optimizations": [
+      "combined_bsnd"
+    ],
+    "internal_format_enabled": true,
+    "linear_weight_format": {
+      "requested": "native",
+      "effective_mode": "native",
+      "target_format": "unchanged",
+      "target_format_code": null,
+      "linear_weight_count": 196,
+      "converted_count": 0,
+      "converted_modules_sample": [],
+      "before_format_histogram": {
+        "2": 196
+      },
+      "after_format_histogram": {
+        "2": 196
+      },
+      "all_after_are_nz": false,
+      "excluded_shared_weight": {
+        "name": "embed_tokens.weight/lm_head.weight",
+        "reason": "embedding lookup and yes/no projection stay outside the compiled prefill graph"
+      },
+      "setup_s": 0.005799428094178438
+    }
+  },
+  "metric_definitions": {
+    "served_input_tok_s": "valid prefix plus continuation tokens served per median call second",
+    "executed_model_tok_s": "token rows executing decoder QKV and MLP per median call second",
+    "physical_attention_q_tok_s": "physical attention Q rows, including square-padding dummies, per median call second"
+  },
+  "results": [
+    {
+      "runs": 100,
+      "mean_s": 0.010157759846188129,
+      "median_s": 0.010157602489925921,
+      "min_s": 0.010126912035048008,
+      "p90_s": 0.010173751972615719,
+      "max_s": 0.010258745169267058,
+      "pairs_s": 393.7937130309154,
+      "served_input_tok_s": 74033.2180498121,
+      "executed_model_tok_s": 50405.59526795717,
+      "physical_attention_q_tok_s": 100811.19053591434,
+      "lane": "prefix_promptfa_compiled",
+      "first_call_s": 28.572686033090577,
+      "additional_warmup_s": [
+        0.011046167928725481,
+        0.010213912930339575,
+        0.010171942878514528,
+        0.010187563020735979
+      ],
+      "compile_wrapper_s": 0.0007284020539373159,
+      "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/13_qwen3_reranker/prefix_nz_223ff9c/prefix_promptfa_combined_bsnd_b4_q256_kv256_realq128_weightsnative_internal1_fp16_src374c218e7141",
+      "cache_was_warm": false,
+      "batch_size": 4,
+      "continuation_length": 128,
+      "full_physical_length": 256,
+      "prefill_optimization": "combined_bsnd",
+      "linear_weight_format": "native",
+      "yes_no_logits": [
+        [
+          14.65625,
+          11.7578125
+        ],
+        [
+          14.65625,
+          11.7578125
+        ],
+        [
+          14.65625,
+          11.7578125
+        ],
+        [
+          14.65625,
+          11.7578125
+        ]
+      ],
+      "yes_scores": [
+        0.05223085731267929,
+        0.05223085731267929,
+        0.05223085731267929,
+        0.05223085731267929
+      ],
+      "yes_no_choices": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

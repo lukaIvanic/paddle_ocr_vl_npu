@@ -310,6 +310,79 @@ Compact evidence is retained in
 `tmp/13_qwen3_reranker/prefix_bsnd_b4_c128_reverse_910b2_459a9c2.json`, and
 `tmp/13_qwen3_reranker/profile_prefix_combined_bsnd_b4_c128_910b2_459a9c2/`.
 
+### FRACTAL_NZ linear weights
+
+The prefix-cache benchmark can cast the seven transformer linears in every
+decoder layer to torch-npu format code 29 before prefix construction and graph
+compile:
+
+```bash
+python3 13_qwen3_reranker/benchmark_prefix_cache_throughput.py \
+  --model-dir "$MODEL_DIR" \
+  --device npu:0 \
+  --batch-sizes 4 \
+  --continuation-lengths 128 \
+  --batch-sweep-continuation 128 \
+  --length-sweep-batch 4 \
+  --matrix axes \
+  --lanes prefix_promptfa_compiled \
+  --prefill-optimizations combined_bsnd \
+  --linear-weight-format fractal_nz \
+  --warmups 5 \
+  --repeats 100 \
+  --compile-cache-dir .runtime_cache/13_qwen3_reranker/prefix_nz \
+  --json-out tmp/13_qwen3_reranker/prefix_bsnd_fractal_nz.json
+```
+
+The option enables `torch.npu.config.allow_internal_format` before the first NPU
+allocation, casts with `torch_npu.npu_format_cast(weight, 29)`, and fails if any
+target weight does not report format 29. It targets 196 weights in the 28-layer
+0.6B model. The tied embedding/lm-head weight stays native because embedding
+lookup and the two-row yes/no projection are outside the compiled transformer
+prefill graph. The one-time cast is model setup, not timed forward work.
+
+At `223ff9c`, a B4, real-Q128, physical-Q/KV256 FP16 test on Ascend 910B2 found
+no decisive steady-state gain. With native run first, native was 10.158 ms and
+NZ was 10.171 ms, so NZ was 0.13% slower. With the order reversed and both
+graphs warm, NZ was 9.942 ms and native was 10.049 ms, so NZ was 1.07% faster.
+All 196 weights changed from format 2 to format 29. The maximum yes/no-logit
+difference was 0.015625, the yes-score difference was 0.0003854, and every
+binary choice matched.
+
+A three-forward kernel profile at `4dea1ee` also showed no 910B2 MatMul gain:
+MatMul time changed from 3.273 to 3.325 ms per forward, while total traced device
+time changed from 10.040 to 9.988 ms. Both graphs launched the same 196 MatMuls
+and 570 total kernels per forward. Treat FRACTAL_NZ as a 310P experiment, not a
+910B2 default. The compact evidence is retained under
+`tmp/13_qwen3_reranker/prefix_bsnd_*_910b2_223ff9c.json` and
+`tmp/13_qwen3_reranker/profile_prefix_bsnd_*_910b2_4dea1ee/`.
+
+For a fair 310P comparison, also enable internal formats in the native control.
+Run the native and NZ commands in separate processes and use separate graph
+cache paths:
+
+```bash
+python3 13_qwen3_reranker/benchmark_prefix_cache_throughput.py \
+  --model-dir /path/to/Qwen3-Reranker-0.6B \
+  --device npu:0 --batch-sizes 4 --continuation-lengths 128 \
+  --batch-sweep-continuation 128 --length-sweep-batch 4 --matrix axes \
+  --lanes prefix_promptfa_compiled --prefill-optimizations combined_bsnd \
+  --linear-weight-format native --enable-internal-format \
+  --warmups 5 --repeats 100 \
+  --compile-cache-dir .runtime_cache/13_qwen3_reranker/prefix_nz_310p \
+  --json-out tmp/13_qwen3_reranker/prefix_native_310p.json
+
+python3 13_qwen3_reranker/benchmark_prefix_cache_throughput.py \
+  --model-dir /path/to/Qwen3-Reranker-0.6B \
+  --device npu:0 --batch-sizes 4 --continuation-lengths 128 \
+  --batch-sweep-continuation 128 --length-sweep-batch 4 --matrix axes \
+  --lanes prefix_promptfa_compiled --prefill-optimizations combined_bsnd \
+  --linear-weight-format fractal_nz \
+  --warmups 5 --repeats 100 \
+  --compile-cache-dir .runtime_cache/13_qwen3_reranker/prefix_nz_310p \
+  --json-out tmp/13_qwen3_reranker/prefix_fractal_nz_310p.json
+```
+
 Run the same controlled matrix on 310P before making `combined` the deployment
 default:
 
