@@ -46,7 +46,7 @@ class CustomEmbedding(torch.nn.Module):
             return self._forward_impl(weight, input_ids)
         with self.scope(
             "paddle_decode_token_embedding_probe",
-            "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort:"
+            "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
             "preload-code=none:early-start=0:split-mode=1",
         ):
             return self._forward_impl(weight, input_ids)
