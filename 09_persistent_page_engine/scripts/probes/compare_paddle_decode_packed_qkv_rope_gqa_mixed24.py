@@ -96,7 +96,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=("standalone", "boundary"), required=True)
     parser.add_argument(
         "--factor-mode",
-        choices=("trig", "identity"),
+        choices=("trig", "identity", "ones"),
         default="trig",
     )
     parser.add_argument("--cache-dir", type=Path, required=True)
@@ -141,7 +141,9 @@ def main() -> int:
         torch.arange(1024, dtype=torch.float32).view(1024, 1)
         * torch.linspace(0.0001, 0.01, 64, dtype=torch.float32).view(1, 64)
     )
-    if args.factor_mode == "identity":
+    if args.factor_mode == "ones":
+        factor_lut = torch.ones((2, 1024, 128), dtype=torch.float16, device="npu:0")
+    elif args.factor_mode == "identity":
         factor_lut = torch.stack(
             (torch.ones((1024, 128)), torch.zeros((1024, 128))),
             dim=0,
