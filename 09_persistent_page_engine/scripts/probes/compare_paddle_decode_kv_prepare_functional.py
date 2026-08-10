@@ -11,6 +11,7 @@ from pathlib import Path
 import time
 
 import torch
+import torch_npu
 
 from paddleocr_vl.model.compile_utils import import_torchair
 from paddleocr_vl.model.decode_gqa_attention_mixed24 import (
@@ -29,10 +30,12 @@ class FunctionalKvAttention(torch.nn.Module):
         options: str,
         strict_scope: bool,
         include_gqa: bool,
+        attention_impl: str,
     ) -> None:
         super().__init__()
         self.options = options
         self.include_gqa = include_gqa
+        self.attention_impl = attention_impl
         self.scope = None
         if strict_scope:
             self.scope = __import__(
@@ -61,17 +64,31 @@ class FunctionalKvAttention(torch.nn.Module):
             )
             if not self.include_gqa:
                 return ordered_query, mask, key_out, value_out
-            attention = decode_gqa_attention_mixed24(
-                ordered_query,
-                key_out,
-                value_out,
-                mask,
-                num_heads=16,
-                num_key_value_heads=2,
-                scale_value=1.0 / math.sqrt(128.0),
-                inner_precise=1,
-                vector_core_count=16,
-            )
+            if self.attention_impl == "stock":
+                attention = torch_npu.npu_incre_flash_attention(
+                    ordered_query,
+                    key_out,
+                    value_out,
+                    atten_mask=mask,
+                    actual_seq_lengths=None,
+                    num_heads=16,
+                    num_key_value_heads=2,
+                    input_layout="BNSD",
+                    scale_value=1.0 / math.sqrt(128.0),
+                    inner_precise=1,
+                )
+            else:
+                attention = decode_gqa_attention_mixed24(
+                    ordered_query,
+                    key_out,
+                    value_out,
+                    mask,
+                    num_heads=16,
+                    num_key_value_heads=2,
+                    scale_value=1.0 / math.sqrt(128.0),
+                    inner_precise=1,
+                    vector_core_count=16,
+                )
             return ordered_query, mask, key_out, value_out, attention
         if self.scope is None:
             return run()
@@ -86,6 +103,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-super-kernel", action="store_true")
     parser.add_argument("--functional-only", action="store_true")
     parser.add_argument(
+        "--attention-impl",
+        choices=("custom", "stock"),
+        default="custom",
+    )
+    parser.add_argument(
         "--super-kernel-options",
         default=(
             "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
@@ -97,13 +119,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    import torch_npu
-
     if not torch.npu.is_available():
         raise RuntimeError("an Ascend NPU is required")
     torch.npu.set_compile_mode(jit_compile=False)
     register_decode_kv_prepare_functional_mixed24_converter()
-    if not args.functional_only:
+    if not args.functional_only and args.attention_impl == "custom":
         register_decode_gqa_attention_mixed24_converter()
 
     torchair, CompilerConfig = import_torchair()
@@ -118,6 +138,7 @@ def main() -> int:
             args.super_kernel_options,
             strict_scope=not args.no_super_kernel,
             include_gqa=not args.functional_only,
+            attention_impl=args.attention_impl,
         ).forward,
         config=config,
         dynamic=False,
@@ -241,6 +262,7 @@ def main() -> int:
             "cache_semantics": "functional_explicit_outputs",
             "strict_scope": not args.no_super_kernel,
             "include_gqa": not args.functional_only,
+            "attention_impl": args.attention_impl,
             "cache_shape": list(key_cache.shape),
             "positions": positions,
             "super_kernel_options": args.super_kernel_options,
