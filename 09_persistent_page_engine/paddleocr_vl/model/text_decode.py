@@ -435,6 +435,22 @@ DECODE_OPTIMIZATION_PRESETS.update(
                 "preload-code=per-func:early-start=0:split-mode=4"
             ),
         ),
+        "paddle_decoder_megakernel_b1_feed_sync_split1": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1,
+            name="paddle_decoder_megakernel_b1_feed_sync_split1",
+            super_kernel_options=(
+                "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=none:early-start=0:split-mode=1"
+            ),
+        ),
+        "paddle_decoder_megakernel_b1_feed_sync": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1,
+            name="paddle_decoder_megakernel_b1_feed_sync",
+            super_kernel_options=(
+                "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=per-func:early-start=1:split-mode=4"
+            ),
+        ),
     }
 )
 
