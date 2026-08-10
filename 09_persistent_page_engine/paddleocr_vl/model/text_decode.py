@@ -587,6 +587,27 @@ DECODE_OPTIMIZATION_PRESETS.update(
                 "preload-code=per-func:early-start=0:split-mode=4"
             ),
         ),
+        "paddle_decoder_superkernel_b1_simple_gqa_mixed24": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
+            name="paddle_decoder_superkernel_b1_simple_gqa_mixed24",
+            # Keep the one custom subfunction that has already passed strict
+            # SuperKernel validation.  Let ordinary CANN subfunctions perform
+            # embedding, QKV views, scalar RoPE preparation, and SwiGLU.  This
+            # is the minimum-complexity one-launch decoder lane; the marginal
+            # custom lookup/split/SwiGLU optimizations are intentionally not a
+            # correctness dependency.
+            rotary_factors="scalar",
+            ascendc_token_embedding=False,
+            ascendc_qkv_split=False,
+            ascendc_rope_lookup=False,
+            ascendc_swiglu=False,
+            ascendc_decode_gqa=False,
+            ascendc_decode_gqa_mixed24=True,
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=per-func:early-start=0:split-mode=4"
+            ),
+        ),
         "paddle_decoder_megakernel_b1_packed_qkv_rope_gqa_mixed24": replace(
             _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
             name="paddle_decoder_megakernel_b1_packed_qkv_rope_gqa_mixed24",

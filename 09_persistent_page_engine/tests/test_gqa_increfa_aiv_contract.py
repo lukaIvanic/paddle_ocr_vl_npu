@@ -429,6 +429,19 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             "paddle_decode_gqa_increfa_mixed24",
         )
 
+        simple = text_decode.resolve_decode_optimization(
+            "paddle_decoder_superkernel_b1_simple_gqa_mixed24"
+        )
+        self.assertTrue(simple.super_kernel_scope)
+        self.assertTrue(simple.ascendc_linear)
+        self.assertTrue(simple.packed_qkv)
+        self.assertTrue(simple.ascendc_decode_gqa_mixed24)
+        self.assertEqual(simple.rotary_factors, "scalar")
+        self.assertFalse(simple.ascendc_token_embedding)
+        self.assertFalse(simple.ascendc_qkv_split)
+        self.assertFalse(simple.ascendc_rope_lookup)
+        self.assertFalse(simple.ascendc_swiglu)
+
     def test_packed_qkv_rope_operator_removes_the_split_pipe_boundary(self) -> None:
         operator_root = (
             EXPERIMENT_ROOT / "custom_ops" / "paddle_gqa_increfa_aiv"
