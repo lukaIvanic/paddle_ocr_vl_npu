@@ -39,7 +39,9 @@ public:
             reinterpret_cast<__gm__ half*>(valueState), kStateElements);
         orderedQueryGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ half*>(orderedQuery), kQueryElements);
-        pipe->InitBuffer(copyQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(queryQueue, 1, kQueryElements * sizeof(half));
+        pipe->InitBuffer(keyQueue, 1, kStateElements * sizeof(half));
+        pipe->InitBuffer(valueQueue, 1, kStateElements * sizeof(half));
     }
 
     __aicore__ inline void Process()
@@ -52,32 +54,30 @@ public:
             return;
         }
 
-        LocalTensor<half> copy = copyQueue.AllocTensor<half>();
-        DataCopy(copy, queryGm, kQueryElements);
-        copyQueue.EnQue(copy);
-        copy = copyQueue.DeQue<half>();
-        DataCopy(orderedQueryGm, copy, kQueryElements);
-        copyQueue.FreeTensor(copy);
+        LocalTensor<half> queryLocal = queryQueue.AllocTensor<half>();
+        LocalTensor<half> keyLocal = keyQueue.AllocTensor<half>();
+        LocalTensor<half> valueLocal = valueQueue.AllocTensor<half>();
+        DataCopy(queryLocal, queryGm, kQueryElements);
+        DataCopy(keyLocal, keyStateGm, kStateElements);
+        DataCopy(valueLocal, valueStateGm, kStateElements);
+        queryQueue.EnQue(queryLocal);
+        keyQueue.EnQue(keyLocal);
+        valueQueue.EnQue(valueLocal);
 
+        queryLocal = queryQueue.DeQue<half>();
+        keyLocal = keyQueue.DeQue<half>();
+        valueLocal = valueQueue.DeQue<half>();
+        DataCopy(orderedQueryGm, queryLocal, kQueryElements);
         for (uint32_t head = 0; head < kKvHeads; ++head) {
             const uint32_t stateOffset = head * kHeadDim;
             const uint32_t cacheOffset =
                 (head * kCacheLength + static_cast<uint32_t>(position)) * kHeadDim;
-
-            copy = copyQueue.AllocTensor<half>();
-            DataCopy(copy, keyStateGm[stateOffset], kHeadDim);
-            copyQueue.EnQue(copy);
-            copy = copyQueue.DeQue<half>();
-            DataCopy(keyCacheGm[cacheOffset], copy, kHeadDim);
-            copyQueue.FreeTensor(copy);
-
-            copy = copyQueue.AllocTensor<half>();
-            DataCopy(copy, valueStateGm[stateOffset], kHeadDim);
-            copyQueue.EnQue(copy);
-            copy = copyQueue.DeQue<half>();
-            DataCopy(valueCacheGm[cacheOffset], copy, kHeadDim);
-            copyQueue.FreeTensor(copy);
+            DataCopy(keyCacheGm[cacheOffset], keyLocal[stateOffset], kHeadDim);
+            DataCopy(valueCacheGm[cacheOffset], valueLocal[stateOffset], kHeadDim);
         }
+        queryQueue.FreeTensor(queryLocal);
+        keyQueue.FreeTensor(keyLocal);
+        valueQueue.FreeTensor(valueLocal);
     }
 
 private:
@@ -88,7 +88,9 @@ private:
     GlobalTensor<half> keyStateGm;
     GlobalTensor<half> valueStateGm;
     GlobalTensor<half> orderedQueryGm;
-    TQue<QuePosition::VECIN, 1> copyQueue;
+    TQue<QuePosition::VECIN, 1> queryQueue;
+    TQue<QuePosition::VECIN, 1> keyQueue;
+    TQue<QuePosition::VECIN, 1> valueQueue;
 };
 }
 
