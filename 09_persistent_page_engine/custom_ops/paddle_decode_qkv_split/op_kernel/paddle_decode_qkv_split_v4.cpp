@@ -111,5 +111,10 @@ extern "C" __global__ __aicore__ void paddle_decode_qkv_split_v4(
     PaddleDecodeQkvSplitKernel kernel;
     kernel.Init(qkv, query, key, value, &pipe);
     kernel.Process();
+    // TPipe::Destroy() deliberately omits its final PIPE_ALL when CANN
+    // recompiles this function into a SuperKernel. Complete the three
+    // UB-to-GM outputs before the next fused subfunction reuses the global
+    // vector-pipe state or reads Q/K/V on another worker.
+    PipeBarrier<PIPE_ALL>();
     pipe.Destroy();
 }

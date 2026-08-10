@@ -264,6 +264,20 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
                 vector_core_count=48,
             )
 
+    def test_qkv_split_completes_fused_producer_before_destroy(self) -> None:
+        kernel = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_decode_qkv_split"
+            / "op_kernel"
+            / "paddle_decode_qkv_split_v4.cpp"
+        ).read_text(encoding="utf-8")
+        process = kernel.index("kernel.Process();")
+        barrier = kernel.index("PipeBarrier<PIPE_ALL>();", process)
+        destroy = kernel.index("pipe.Destroy();", barrier)
+        self.assertLess(process, barrier)
+        self.assertLess(barrier, destroy)
+
     def test_fused_decode_attention_uses_static_b1_shape(self) -> None:
         query = torch.empty((1, 16, 1, 128), dtype=torch.float16)
         key_state = torch.empty((1, 2, 1, 128), dtype=torch.float16)

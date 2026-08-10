@@ -6,11 +6,14 @@ with one multi-output AIV-only AscendC operator. It accepts FP16
 `[1,2,1,128]` tensors.
 
 V4 retains the exact V2 data path, makes all tiling fields live device inputs,
-and explicitly destroys its `TPipe` before returning. The earlier three-op V3
-detour is removed. Its strict-scope failure was caused by the enclosing
-SuperKernel option `feed-sync-all=1`, not by the multi-output ABI. V2 is
-bit-exact both normally and under strict binary fusion when the scope uses
-`feed-sync-all=0`, `preload-code=none`, `early-start=0`, and `split-mode=1`.
+and explicitly completes every pipeline before destroying its `TPipe` and
+returning. The explicit `PIPE_ALL` is required at a fused producer boundary:
+installed CANN suppresses the final barrier in `TPipe::Destroy()` when it
+recompiles the function into a SuperKernel. The earlier three-op V3 detour is
+removed. Its strict-scope failure was caused by the enclosing SuperKernel
+option `feed-sync-all=1`, not by the multi-output ABI. V2 is bit-exact both
+normally and under strict binary fusion when the scope uses `feed-sync-all=0`,
+`preload-code=none`, `early-start=0`, and `split-mode=1`.
 
 Build and install on Ascend 910B after `source npu-setup`, then source the
 generated `vendors/paddle_decode_qkv_split_v4/bin/set_env.bash` before TorchAir
