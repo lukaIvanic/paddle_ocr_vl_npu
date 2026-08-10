@@ -92,5 +92,8 @@ extern "C" __global__ __aicore__ void paddle_decode_swi_glu_v1(
     PaddleDecodeSwiGluKernel kernel;
     kernel.Init(gate, up, output, &pipe);
     kernel.Process();
+    // SuperKernel compilation removes TPipe::Destroy()'s final barrier.  The
+    // down projection must not consume output while its MTE3 copy is active.
+    PipeBarrier<PIPE_ALL>();
     pipe.Destroy();
 }

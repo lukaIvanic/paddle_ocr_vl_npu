@@ -107,5 +107,8 @@ extern "C" __global__ __aicore__ void paddle_decode_rope_lookup_v1(
     PaddleDecodeRopeLookupKernel kernel;
     kernel.Init(factorLut, cachePosition, ropeDelta, cos, sin, &pipe);
     kernel.Process();
+    // SuperKernel compilation removes TPipe::Destroy()'s final barrier.  The
+    // following rotary subkernel must not read cos/sin while MTE3 is active.
+    PipeBarrier<PIPE_ALL>();
     pipe.Destroy();
 }

@@ -595,15 +595,15 @@ DECODE_OPTIMIZATION_PRESETS.update(
             # Add/Cast/Cos/Sin scalar-RoPE path cannot enter strict scope, so
             # retain the small AscendC embedding and lookup prologue.  SplitV
             # is also a non-fusible TBE kernel, so use the independent QKV
-            # split with its explicit producer barrier.  Keep ordinary SwiGLU;
-            # its custom variant remains optional unless strict scope rejects
-            # the stock decomposition too.
+            # split with its explicit producer barrier.  SwishMul is also TBE,
+            # so use the independent SwiGLU subfunction with the same explicit
+            # producer-handoff rule.
             rotary_factors="lookup",
             ascendc_token_embedding=True,
             ascendc_qkv_split=True,
             ascendc_rope_lookup=True,
             ascendc_position_add=False,
-            ascendc_swiglu=False,
+            ascendc_swiglu=True,
             ascendc_decode_gqa=False,
             ascendc_decode_gqa_mixed24=True,
             super_kernel_options=(

@@ -441,7 +441,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertTrue(simple.ascendc_qkv_split)
         self.assertTrue(simple.ascendc_rope_lookup)
         self.assertFalse(simple.ascendc_position_add)
-        self.assertFalse(simple.ascendc_swiglu)
+        self.assertTrue(simple.ascendc_swiglu)
 
     def test_packed_qkv_rope_operator_removes_the_split_pipe_boundary(self) -> None:
         operator_root = (
@@ -560,6 +560,34 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             / "paddle_decode_token_embedding"
             / "op_kernel"
             / "paddle_decode_token_embedding.cpp"
+        ).read_text(encoding="utf-8")
+        process = kernel.index("kernel.Process();")
+        barrier = kernel.index("PipeBarrier<PIPE_ALL>();", process)
+        destroy = kernel.index("pipe.Destroy();", barrier)
+        self.assertLess(process, barrier)
+        self.assertLess(barrier, destroy)
+
+    def test_rope_lookup_completes_fused_producer_before_destroy(self) -> None:
+        kernel = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_decode_rope_lookup"
+            / "op_kernel"
+            / "paddle_decode_rope_lookup_v1.cpp"
+        ).read_text(encoding="utf-8")
+        process = kernel.index("kernel.Process();")
+        barrier = kernel.index("PipeBarrier<PIPE_ALL>();", process)
+        destroy = kernel.index("pipe.Destroy();", barrier)
+        self.assertLess(process, barrier)
+        self.assertLess(barrier, destroy)
+
+    def test_swiglu_completes_fused_producer_before_destroy(self) -> None:
+        kernel = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_decode_swiglu"
+            / "op_kernel"
+            / "paddle_decode_swi_glu_v1.cpp"
         ).read_text(encoding="utf-8")
         process = kernel.index("kernel.Process();")
         barrier = kernel.index("PipeBarrier<PIPE_ALL>();", process)
