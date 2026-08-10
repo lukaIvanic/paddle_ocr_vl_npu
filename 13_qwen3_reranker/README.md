@@ -559,10 +559,9 @@ performed inside each forward pass.
 - Optional 310P-compatible PromptFA attention path:
   `--attention-impl prompt_flash_attention` uses FP16 BNSD inputs, a contiguous
   bool causal/padding mask, `sparse_mode=0`, and no actual-sequence-length
-  arguments. Atlas inference-series hardware does not support a non-default
-  `num_key_value_heads`, so the runtime expands GQA key/value heads before the
-  operator call. This uses more KV memory than native GQA on 910B, but keeps one
-  operator contract that can also run on 310P.
+  arguments. The runtime keeps compact GQA key/value heads and passes their real
+  count through `num_key_value_heads`; this contract was validated directly on
+  310P before becoming the default.
 - Yes/no-only scoring head: reranking only needs the `yes` and `no` logits, so
   the local runtime projects the final hidden state onto those two lm-head rows
   instead of computing the full vocabulary logits.
@@ -580,10 +579,9 @@ performed inside each forward pass.
 
 - The compiled path is fixed-shape. Change `--max-length` or `--batch-size` and
   you should expect a separate compile.
-- The PromptFA path deliberately does not pass `actual_seq_lengths`,
-  `actual_seq_lengths_kv`, or `num_key_value_heads`. Left padding and causality
-  are represented only by the full boolean attention mask. This is required by
-  the Atlas inference-series PromptFA contract used by 310P.
+- The PromptFA path deliberately does not pass `actual_seq_lengths` or
+  `actual_seq_lengths_kv`. It does pass `num_key_value_heads` for native GQA.
+  Left padding and causality are represented by the full boolean attention mask.
 - The local runtime currently uses explicit fixed-shape causal attention. Large
   buckets such as `--max-length 8192` can materialize very large attention
   tensors and OOM even when the Transformers reference fits. Use

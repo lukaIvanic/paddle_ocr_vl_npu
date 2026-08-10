@@ -76,7 +76,7 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
         torch.testing.assert_close(cos, expected.cos())
         torch.testing.assert_close(sin, expected.sin())
 
-    def test_310p_contract_expands_gqa_and_omits_unsupported_arguments(self) -> None:
+    def test_310p_contract_keeps_native_gqa_and_omits_sequence_lengths(self) -> None:
         captured: dict[str, object] = {}
 
         def fake_prompt_flash_attention(query, key, value, **kwargs):
@@ -100,12 +100,12 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
             )
 
         self.assertIs(output, query)
-        self.assertEqual(captured["key"].shape, (2, 4, 3, 8))
-        self.assertEqual(captured["value"].shape, (2, 4, 3, 8))
+        self.assertEqual(captured["key"].shape, (2, 2, 3, 8))
+        self.assertEqual(captured["value"].shape, (2, 2, 3, 8))
         kwargs = captured["kwargs"]
         self.assertNotIn("actual_seq_lengths", kwargs)
         self.assertNotIn("actual_seq_lengths_kv", kwargs)
-        self.assertNotIn("num_key_value_heads", kwargs)
+        self.assertEqual(kwargs["num_key_value_heads"], 2)
         self.assertEqual(kwargs["num_heads"], 4)
         self.assertEqual(kwargs["input_layout"], "BNSD")
         self.assertEqual(kwargs["pre_tokens"], PROMPT_FA_FULL_ATTENTION_TOKENS)
@@ -158,7 +158,7 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
 
         torch.testing.assert_close(output, query)
         self.assertEqual(captured["query"].shape, (2, 4, 4, 8))
-        self.assertEqual(captured["key"].shape, (2, 4, 4, 8))
+        self.assertEqual(captured["key"].shape, (2, 2, 4, 8))
         square_mask = captured["kwargs"]["atten_mask"]
         self.assertEqual(square_mask.shape, (2, 1, 4, 4))
         self.assertFalse(square_mask[:, :, :2].all(dim=-1).any().item())
@@ -217,8 +217,8 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
 
         torch.testing.assert_close(output, query)
         self.assertEqual(captured["query"].shape, (2, 4, 4, 8))
-        self.assertEqual(captured["key"].shape, (2, 4, 4, 8))
-        self.assertEqual(captured["value"].shape, (2, 4, 4, 8))
+        self.assertEqual(captured["key"].shape, (2, 4, 2, 8))
+        self.assertEqual(captured["value"].shape, (2, 4, 2, 8))
         self.assertEqual(captured["kwargs"]["input_layout"], "BSND")
         self.assertEqual(captured["kwargs"]["atten_mask"].shape, (2, 1, 4, 4))
 
@@ -247,7 +247,7 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
         for bnsd_tensor, bsnd_tensor in zip(bnsd, bsnd):
             torch.testing.assert_close(bsnd_tensor, bnsd_tensor.transpose(1, 2))
 
-    def test_combined_preset_expands_prefix_cache_heads_once(self) -> None:
+    def test_expanded_prefix_cache_preset_remains_explicit(self) -> None:
         config = LocalQwen3RerankerConfig(
             vocab_size=8,
             hidden_size=16,
@@ -261,20 +261,18 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
             tie_word_embeddings=False,
         )
         model = LocalQwen3RerankerForCausalLM(config)
-        selected = model.set_prefill_optimization("combined")
+        selected = model.set_prefill_optimization("expanded_prefix_kv")
         key = torch.randn(1, 2, 3, 8)
         value = torch.randn(1, 2, 3, 8)
         keys, values = model.prepare_prefix_caches((key,), (value,))
 
-        self.assertTrue(selected.native_rms_norm)
-        self.assertTrue(selected.native_rotary)
-        self.assertTrue(selected.prebuilt_square_mask)
+        self.assertTrue(selected.expanded_prefix_kv)
         self.assertEqual(keys[0].shape, (1, 4, 3, 8))
         self.assertEqual(values[0].shape, (1, 4, 3, 8))
         torch.testing.assert_close(keys[0][:, 0], key[:, 0])
         torch.testing.assert_close(keys[0][:, 1], key[:, 0])
 
-    def test_combined_bsnd_preset_transposes_expanded_prefix_cache_once(self) -> None:
+    def test_combined_bsnd_preset_transposes_compact_prefix_cache_once(self) -> None:
         config = LocalQwen3RerankerConfig(
             vocab_size=8,
             hidden_size=16,
@@ -294,11 +292,12 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
         keys, values = model.prepare_prefix_caches((key,), (value,))
 
         self.assertEqual(selected.prompt_fa_layout, "BSND")
+        self.assertFalse(selected.expanded_prefix_kv)
         self.assertEqual(model.layers[0].self_attn.prompt_fa_layout, "BSND")
-        self.assertEqual(keys[0].shape, (1, 3, 4, 8))
-        self.assertEqual(values[0].shape, (1, 3, 4, 8))
+        self.assertEqual(keys[0].shape, (1, 3, 2, 8))
+        self.assertEqual(values[0].shape, (1, 3, 2, 8))
         torch.testing.assert_close(keys[0][:, :, 0], key[:, 0])
-        torch.testing.assert_close(keys[0][:, :, 1], key[:, 0])
+        torch.testing.assert_close(keys[0][:, :, 1], key[:, 1])
 
     def test_reranker_transformer_linears_selects_seven_projections_per_layer(self) -> None:
         config = LocalQwen3RerankerConfig(

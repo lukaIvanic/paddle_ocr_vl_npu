@@ -61,14 +61,12 @@ PREFILL_OPTIMIZATION_PRESETS: dict[str, RerankerPrefillOptimizationConfig] = {
         native_rms_norm=True,
         native_rotary=True,
         prebuilt_square_mask=True,
-        expanded_prefix_kv=True,
     ),
     "combined_bsnd": RerankerPrefillOptimizationConfig(
         name="combined_bsnd",
         native_rms_norm=True,
         native_rotary=True,
         prebuilt_square_mask=True,
-        expanded_prefix_kv=True,
         prompt_fa_layout="BSND",
     ),
 }
@@ -294,13 +292,13 @@ def prompt_flash_attention_310p_compatible(
     input_layout: str,
     attention_mask_is_square: bool = False,
 ) -> torch.Tensor:
-    """Run the Atlas inference-series-safe PromptFA contract.
+    """Run the Atlas inference-series PromptFA contract with native GQA.
 
     Atlas 310P does not support the PromptFA actual-sequence-length inputs or a
-    non-default ``num_key_value_heads``. Its masked path also rejects unequal
-    Q/K sequence lengths. Expand GQA key/value heads, square-pad projected Q
-    with disposable rows when Q is shorter than K, encode left padding and
-    causality in a bool mask, and omit the unsupported optional arguments.
+    rectangular masked Q/K shape. Keep compact GQA key/value heads and pass
+    their real count to PromptFA. Square-pad projected Q with disposable rows
+    when Q is shorter than K, encode left padding and causality in a bool mask,
+    and omit actual-sequence-length arguments.
     """
     if query_states.dtype != torch.float16:
         raise ValueError("310P-compatible prompt_flash_attention requires float16 Q/K/V")
@@ -320,17 +318,6 @@ def prompt_flash_attention_310p_compatible(
     num_key_value_heads = int(key_states.shape[head_axis])
     if int(num_heads) % num_key_value_heads != 0:
         raise ValueError("query heads must be divisible by key/value heads")
-    num_key_value_groups = int(num_heads) // num_key_value_heads
-    key_states = repeat_kv_for_layout(
-        key_states,
-        num_key_value_groups,
-        input_layout,
-    ).contiguous()
-    value_states = repeat_kv_for_layout(
-        value_states,
-        num_key_value_groups,
-        input_layout,
-    ).contiguous()
 
     query_length = int(query_states.shape[sequence_axis])
     key_length = int(key_states.shape[sequence_axis])
@@ -384,6 +371,7 @@ def prompt_flash_attention_310p_compatible(
         value_states,
         atten_mask=attention_mask.to(dtype=torch.bool).contiguous(),
         num_heads=int(num_heads),
+        num_key_value_heads=num_key_value_heads,
         input_layout=input_layout,
         scale_value=float(scale),
         pre_tokens=PROMPT_FA_FULL_ATTENTION_TOKENS,
