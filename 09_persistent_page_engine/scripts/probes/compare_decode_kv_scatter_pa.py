@@ -102,7 +102,7 @@ def main() -> int:
         (1, 2, 1, 128), generator=generator, dtype=torch.float16
     ).to("npu:0")
     key_cache = torch.zeros(
-        (1, 2, 1024, 128), dtype=torch.float16, device="npu:0"
+        (1, 1024, 2, 128), dtype=torch.float16, device="npu:0"
     )
     value_cache = torch.zeros_like(key_cache)
     cache_position = torch.tensor(
@@ -110,12 +110,12 @@ def main() -> int:
     )
     expected_key = key_cache.clone()
     expected_value = value_cache.clone()
-    expected_key[:, :, args.cache_position : args.cache_position + 1, :].copy_(
-        key_states
+    expected_key[:, args.cache_position : args.cache_position + 1, :, :].copy_(
+        key_states.transpose(1, 2)
     )
     expected_value[
-        :, :, args.cache_position : args.cache_position + 1, :
-    ].copy_(value_states)
+        :, args.cache_position : args.cache_position + 1, :, :
+    ].copy_(value_states.transpose(1, 2))
 
     torchair, CompilerConfig = import_torchair()
     args.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -151,7 +151,7 @@ def main() -> int:
             "max_abs": float((actual_cpu - expected_cpu).abs().max().item()),
             "nonzero_count": int(torch.count_nonzero(actual_cpu).item()),
             "selected_first_8": actual_cpu[
-                0, 0, args.cache_position, :8
+                0, args.cache_position, 0, :8
             ].tolist(),
         }
         all_exact = all_exact and exact

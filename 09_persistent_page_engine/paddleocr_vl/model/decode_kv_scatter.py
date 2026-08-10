@@ -107,8 +107,8 @@ def update_decode_kv_cache_with_scatter_pa_(
     value_states: torch.Tensor,
 ) -> None:
     """Write one B1/GQA K/V row into the persistent ND decode arena."""
-    if key_cache.shape != (1, 2, 1024, 128):
-        raise ValueError("specialized KV scatter requires K cache[1,2,1024,128]")
+    if key_cache.shape != (1, 1024, 2, 128):
+        raise ValueError("specialized KV scatter requires K cache[1,1024,2,128]")
     if value_cache.shape != key_cache.shape:
         raise ValueError("specialized KV scatter requires matching K/V caches")
     if key_states.shape != (1, 2, 1, 128):
@@ -125,8 +125,8 @@ def update_decode_kv_cache_with_scatter_pa_(
     import torch_npu
 
     torch_npu.npu_scatter_pa_kv_cache(
-        key_states.squeeze(2).contiguous(),
-        value_states.squeeze(2).contiguous(),
+        key_states.transpose(1, 2).reshape(1, 2, 128).contiguous(),
+        value_states.transpose(1, 2).reshape(1, 2, 128).contiguous(),
         key_cache,
         value_cache,
         cache_position.reshape(-1).contiguous(),
