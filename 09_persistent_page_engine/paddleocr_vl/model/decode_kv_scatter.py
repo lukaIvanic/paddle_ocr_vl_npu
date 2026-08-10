@@ -28,6 +28,13 @@ def register_decode_kv_scatter_converter() -> None:
     import torch_npu  # noqa: F401
 
     torchair, _CompilerConfig = import_torchair()
+    # Force TorchAir's lazy custom-converter package to load first. Otherwise
+    # its PA_NZ-only registration runs after this function and overwrites the
+    # ND converter below on the first graph conversion.
+    importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.ge_converter.custom."
+        "npu_scatter_pa_kv_cache"
+    )
     converter_module = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
     )
