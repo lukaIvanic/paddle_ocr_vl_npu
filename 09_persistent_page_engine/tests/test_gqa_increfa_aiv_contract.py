@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -365,7 +366,11 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertNotIn('mapping[3] = 3', converter)
         self.assertIn('mapping[4] = 0', converter)
         self.assertIn('"query": qkv', converter)
-        self.assertIn("rope_delta.reshape(-1)", converter)
+        self.assertIn("rope_delta.shape != (1,)", converter)
+        self.assertIn(
+            "rope_deltas = rope_deltas.reshape(-1)",
+            inspect.getsource(text_decode),
+        )
 
         optimization = text_decode.resolve_decode_optimization(
             "paddle_decoder_megakernel_b1_packed_qkv_rope_gqa_mixed24"

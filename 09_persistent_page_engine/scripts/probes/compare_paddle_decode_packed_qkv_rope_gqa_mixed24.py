@@ -47,7 +47,7 @@ class PackedStep(torch.nn.Module):
         rope_delta: torch.Tensor,
     ) -> torch.Tensor:
         return decode_packed_qkv_rope_gqa_mixed24(
-            qkv.reshape(1, 1, 2560),
+            qkv,
             key_cache,
             value_cache,
             attention_mask,
@@ -135,7 +135,7 @@ def main() -> int:
         (2560, 1024), generator=generator, dtype=torch.float16
     ).to("npu:0")
     qkv_weight = torch_npu.npu_format_cast(qkv_weight, FRACTAL_NZ)
-    base_qkv = F.linear(hidden, qkv_weight).reshape(1, 1, 2560)
+    base_qkv = F.linear(hidden, qkv_weight)
     source_template = base_qkv if args.mode == "standalone" else hidden
     angles = (
         torch.arange(1024, dtype=torch.float32).view(1024, 1)
@@ -204,9 +204,9 @@ def main() -> int:
         value_state = value_raw.view(1, 2, 1, 128)
         expected_qkv = torch.cat(
             (
-                query.reshape(1, 1, 2048),
-                key_state.reshape(1, 1, 256),
-                value_state.reshape(1, 1, 256),
+                query.reshape(1, 2048),
+                key_state.reshape(1, 256),
+                value_state.reshape(1, 256),
             ),
             dim=-1,
         )
@@ -226,7 +226,7 @@ def main() -> int:
         )
         torch.npu.synchronize()
 
-        actual_qkv = source.reshape(1, 1, 2560) if args.mode == "standalone" else None
+        actual_qkv = source if args.mode == "standalone" else None
         output_diff = (output.float() - reference.float()).abs().max().item()
         key_diff = (key_cache.float() - ref_key_cache.float()).abs().max().item()
         value_diff = (value_cache.float() - ref_value_cache.float()).abs().max().item()
@@ -333,7 +333,7 @@ def main() -> int:
         "contract": {
             "mode": args.mode,
             "factor_mode": args.factor_mode,
-            "qkv_shape": [1, 1, 2560],
+            "qkv_shape": [1, 2560],
             "cache_shape": [1, 2, 1024, 128],
             "factor_lut_shape": [2, 1024, 128],
             "rope_delta": 7,

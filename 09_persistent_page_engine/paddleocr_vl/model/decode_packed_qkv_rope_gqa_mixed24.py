@@ -1,4 +1,4 @@
-"""Packed B1 QKV, RoPE, KV update, mask build, and GQA AscendC op."""
+"""Packed B1 QKV, RoPE, KV update, and GQA AscendC op."""
 
 from __future__ import annotations
 
@@ -59,9 +59,9 @@ def _decode_packed_qkv_rope_gqa_mixed24(
     qkv.copy_(
         torch.cat(
             (
-                query.reshape(1, 1, 2048),
-                key_state.reshape(1, 1, 256),
-                value_state.reshape(1, 1, 256),
+                query.reshape(1, 2048),
+                key_state.reshape(1, 256),
+                value_state.reshape(1, 256),
             ),
             dim=-1,
         )
@@ -205,8 +205,8 @@ def decode_packed_qkv_rope_gqa_mixed24(
     inner_precise: int = 1,
     vector_core_count: int = 16,
 ) -> torch.Tensor:
-    if qkv.shape != (1, 1, 2560) or qkv.dtype != torch.float16:
-        raise ValueError("packed mixed24 GQA requires FP16 qkv[1,1,2560]")
+    if qkv.shape != (1, 2560) or qkv.dtype != torch.float16:
+        raise ValueError("packed mixed24 GQA requires FP16 qkv[1,2560]")
     if key_cache.shape != (1, 2, 1024, 128):
         raise ValueError("packed mixed24 GQA requires key cache[1,2,1024,128]")
     if value_cache.shape != key_cache.shape:
@@ -219,8 +219,8 @@ def decode_packed_qkv_rope_gqa_mixed24(
         raise ValueError("packed mixed24 GQA requires INT64 cache_position[1]")
     if factor_lut.shape != (2, 1024, 128) or factor_lut.dtype != torch.float16:
         raise ValueError("packed mixed24 GQA requires FP16 factor_lut[2,1024,128]")
-    if rope_delta.shape not in ((1,), (1, 1)) or rope_delta.dtype != torch.int64:
-        raise ValueError("packed mixed24 GQA requires INT64 rope_delta[1] or [1,1]")
+    if rope_delta.shape != (1,) or rope_delta.dtype != torch.int64:
+        raise ValueError("packed mixed24 GQA requires INT64 rope_delta[1]")
     if any(t.dtype != torch.float16 for t in (key_cache, value_cache)):
         raise ValueError("packed mixed24 GQA requires FP16 caches")
     if num_heads != 16 or num_key_value_heads != 2:
@@ -234,7 +234,7 @@ def decode_packed_qkv_rope_gqa_mixed24(
         attention_mask,
         cache_position,
         factor_lut,
-        rope_delta.reshape(-1),
+        rope_delta,
         num_heads,
         num_key_value_heads,
         scale_value,

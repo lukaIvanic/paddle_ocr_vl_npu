@@ -1249,7 +1249,7 @@ def _decode_attention(
         packed_qkv = _linear_tokenwise(
             attention.decode_qkv_proj,
             hidden_states,
-        ).reshape(1, 1, 2560)
+        )
         attention_output = decode_packed_qkv_rope_gqa_mixed24(
             packed_qkv,
             key_cache,
@@ -2028,6 +2028,11 @@ class TextDecodeStage(torch.nn.Module):
 
         if self._super_kernel_scope is None:
             raise RuntimeError("TorchAir SuperKernel scope was not initialized")
+        # The packed AscendC ABI requires a rank-one scalar buffer. Normalize
+        # it outside the strict SuperKernel scope so GE does not have to fuse
+        # the view-only AsStrided node with device subkernels.
+        if self.optimization.ascendc_packed_qkv_rope_gqa_mixed24:
+            rope_deltas = rope_deltas.reshape(-1)
         with self._super_kernel_scope(
             f"{self.optimization.name}_scope",
             self.optimization.super_kernel_options,
