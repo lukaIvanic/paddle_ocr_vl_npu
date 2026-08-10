@@ -49,6 +49,10 @@ from .decode_kv_scatter_query import (
     decode_kv_scatter_query,
     register_decode_kv_scatter_query_converter,
 )
+from .decode_gqa_increfa_aiv import (
+    decode_gqa_incre_flash_attention_aiv,
+    register_decode_gqa_increfa_aiv_converter,
+)
 from .decode_swiglu import (
     decode_swiglu,
     register_decode_swiglu_converter,
@@ -107,6 +111,7 @@ class DecodeOptimizationConfig:
     ascendc_rope_lookup: bool = False
     ascendc_kv_scatter: bool = False
     ascendc_kv_scatter_query: bool = False
+    ascendc_decode_gqa: bool = False
     ascendc_swiglu: bool = False
 
 
@@ -448,6 +453,16 @@ DECODE_OPTIMIZATION_PRESETS.update(
             name="paddle_decoder_megakernel_b1_feed_sync",
             super_kernel_options=(
                 "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=per-func:early-start=1:split-mode=4"
+            ),
+        ),
+        "paddle_decoder_megakernel_b1_fused_gqa": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1,
+            name="paddle_decoder_megakernel_b1_fused_gqa",
+            ascendc_kv_scatter_query=False,
+            ascendc_decode_gqa=True,
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
                 "preload-code=per-func:early-start=1:split-mode=4"
             ),
         ),
@@ -1117,6 +1132,31 @@ def _decode_attention(
         prepared_factors,
         optimization,
     )
+    if optimization.ascendc_decode_gqa:
+        if attention_mask is None:
+            raise ValueError("fused decode GQA requires persistent mask scratch")
+        if pse_shift is not None or actual_seq_lengths is not None:
+            raise ValueError("fused decode GQA requires masked static attention")
+        attention_output = decode_gqa_incre_flash_attention_aiv(
+            query_states,
+            key_cache,
+            value_cache,
+            attention_mask,
+            cache_position,
+            key_states,
+            value_states,
+            num_heads=int(attention.num_heads),
+            num_key_value_heads=int(attention.num_key_value_heads),
+            scale_value=float(attention.scaling),
+            inner_precise=1,
+            vector_core_count=32,
+        )
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .reshape(batch, 1, attention.num_heads * attention.head_dim)
+        )
+        return _linear_tokenwise(attention.o_proj, attention_output)
     if optimization.attention == "mha_cache":
         if query_states.device.type != "npu":
             raise ValueError("mha_cache is an NPU-only decode lab path")
@@ -1704,6 +1744,8 @@ class TextDecodeStage(torch.nn.Module):
                     "the Paddle decoder SuperKernel requires cache_length"
                 )
             parameter = next(model.parameters())
+            if self.optimization.ascendc_decode_gqa and int(cache_length) != 1024:
+                raise ValueError("fused decode GQA is specialized for cache_length=1024")
             self.register_buffer(
                 "_super_kernel_kv_positions",
                 torch.arange(
@@ -1713,6 +1755,16 @@ class TextDecodeStage(torch.nn.Module):
                 ),
                 persistent=False,
             )
+            if self.optimization.ascendc_decode_gqa:
+                self.register_buffer(
+                    "_super_kernel_attention_mask_scratch",
+                    torch.zeros(
+                        (1, 1, 1, int(cache_length)),
+                        device=parameter.device,
+                        dtype=torch.bool,
+                    ),
+                    persistent=False,
+                )
             torchair, _CompilerConfig = import_torchair()
             scope_module = importlib.import_module(
                 f"{torchair.__name__}.scope"
@@ -1744,7 +1796,11 @@ class TextDecodeStage(torch.nn.Module):
             key_caches=key_caches,
             value_caches=value_caches,
             cache_length=int(key_caches[0].shape[2]),
-            attention_mask=None,
+            attention_mask=(
+                self._super_kernel_attention_mask_scratch
+                if self.optimization.ascendc_decode_gqa
+                else None
+            ),
             static_kv_positions=(
                 self._super_kernel_kv_positions
                 if self.optimization.super_kernel_scope
@@ -1790,6 +1846,8 @@ def decode_attention_label(
     if device.type != "npu":
         return "manual"
     if optimization is not None and optimization.attention == "gqa_aiv":
+        if optimization.ascendc_decode_gqa:
+            return "paddle_decode_gqa_increfa_aiv"
         return "paddle_gqa_increfa_aiv"
     return DECODE_ATTENTION
 
@@ -1804,6 +1862,12 @@ def decode_cache_update_label(
         and optimization.ascendc_kv_scatter_query
     ):
         return "paddle_decode_kv_scatter_query_v3"
+    if (
+        device.type == "npu"
+        and optimization is not None
+        and optimization.ascendc_decode_gqa
+    ):
+        return "paddle_decode_gqa_increfa_aiv"
     return DECODE_CACHE_UPDATE if device.type == "npu" else "per_row_copy"
 
 
@@ -1816,6 +1880,7 @@ def decode_source_hash() -> str:
         "text_prefill.py",
         "text_decode.py",
         "gqa_increfa_aiv.py",
+        "decode_gqa_increfa_aiv.py",
         "decode_token_embedding.py",
         "decode_linear_matmul_v3.py",
         "decode_qkv_split.py",
@@ -1946,6 +2011,7 @@ def compile_text_decode_stage(
             "ascendc_kv_scatter_query": (
                 optimization.ascendc_kv_scatter_query
             ),
+            "ascendc_decode_gqa": optimization.ascendc_decode_gqa,
             "ascendc_swiglu": optimization.ascendc_swiglu,
         },
     }
@@ -1958,8 +2024,13 @@ def compile_text_decode_stage(
         if optimization.vector_add_rms_norm:
             _register_vector_add_rms_norm_converter()
         torchair, CompilerConfig = import_torchair()
-        if optimization.attention == "gqa_aiv":
+        if (
+            optimization.attention == "gqa_aiv"
+            and not optimization.ascendc_decode_gqa
+        ):
             register_gqa_increfa_aiv_converter()
+        if optimization.ascendc_decode_gqa:
+            register_decode_gqa_increfa_aiv_converter()
         if optimization.ascendc_token_embedding:
             register_decode_token_embedding_converter()
         if optimization.ascendc_linear:

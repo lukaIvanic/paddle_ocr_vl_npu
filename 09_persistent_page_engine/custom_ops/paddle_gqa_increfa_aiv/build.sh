@@ -22,6 +22,9 @@ UPSTREAM_OP_REL="attention/incre_flash_attention"
 CUSTOM_OP_SNAKE="paddle_gqa_incre_flash_attention_aiv"
 CUSTOM_OP_GE="PaddleGqaIncreFlashAttentionAiv"
 CUSTOM_OP_REL="attention/$CUSTOM_OP_SNAKE"
+PREPARED_OP_REL="$CUSTOM_OP_REL"
+OP_API_SYMBOL_PREFIX="PaddleGqaIncreFlashAttentionAiv"
+FUSED_DECODE=false
 ENTRY_REL="$UPSTREAM_OP_REL/op_kernel/incre_flash_attention_arch32.h"
 EXPECTED_ENTRY_SHA256="20cb2397d84cf5d5386ebc09b6aa79eacfd3f32d956309c1b4e7f3e2690ef63b"
 HOST_TILER_REL="$UPSTREAM_OP_REL/op_host/incre_flash_attention_tiling.cpp"
@@ -49,6 +52,18 @@ case "$EXPERIMENT_VARIANT" in
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0009-force-split-k32-control.patch")
         VENDOR_NAME="paddle_gqa_split_k32_increfa_aiv"
         CACHE_NAMESPACE="paddle_gqa_split_k32_increfa_aiv"
+        ;;
+    decode_split_k32_control)
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0009-force-split-k32-control.patch")
+        VENDOR_NAME="paddle_decode_gqa_split_k32_increfa_aiv"
+        CACHE_NAMESPACE="paddle_decode_gqa_split_k32_increfa_aiv"
+        OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode"
+        CUSTOM_OP_SNAKE="paddle_decode_gqa_incre_flash_attention_aiv"
+        CUSTOM_OP_GE="PaddleDecodeGqaIncreFlashAttentionAiv"
+        CUSTOM_OP_REL="attention/$CUSTOM_OP_SNAKE"
+        PREPARED_OP_REL="attention/paddle_gqa_incre_flash_attention_aiv"
+        OP_API_SYMBOL_PREFIX="PaddleDecodeGqaIncreFlashAttentionAiv"
+        FUSED_DECODE=true
         ;;
     split_k32_pairwise_sync_control)
         PATCH_PATHS+=(
@@ -125,8 +140,8 @@ mkdir -p "$BUILD_SOURCE_PARENT" "$RUN_ROOT"
 SOURCE_PREPARED=false
 if [[ ! -e "$BUILD_SOURCE_ROOT/.git" ]]; then
     git -C "$SOURCE_ROOT" worktree add --detach "$BUILD_SOURCE_ROOT" "$EXPECTED_SOURCE_COMMIT"
-    git -C "$BUILD_SOURCE_ROOT" mv "$UPSTREAM_OP_REL" "$CUSTOM_OP_REL"
-    OP_ROOT="$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
+    git -C "$BUILD_SOURCE_ROOT" mv "$UPSTREAM_OP_REL" "$PREPARED_OP_REL"
+    OP_ROOT="$BUILD_SOURCE_ROOT/$PREPARED_OP_REL"
     mv "$OP_ROOT/op_host/incre_flash_attention_def.cpp" "$OP_ROOT/op_host/incre_flash_attention_def.cpp.upstream_disabled"
     mv "$OP_ROOT/op_host/incre_flash_attention_infershape.cpp" "$OP_ROOT/op_host/incre_flash_attention_infershape.cpp.upstream_disabled"
     mv "$OP_ROOT/op_host/incre_flash_attention_tiling_register.cpp" "$OP_ROOT/op_host/incre_flash_attention_tiling_register.cpp.upstream_disabled"
@@ -147,22 +162,37 @@ else
     SOURCE_PREPARED=true
 fi
 
-OP_ROOT="$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
 if [[ "$SOURCE_PREPARED" == false ]]; then
+    OP_ROOT="$BUILD_SOURCE_ROOT/$PREPARED_OP_REL"
     cp -p "$OVERLAY_ROOT/CMakeLists.txt" "$OP_ROOT/CMakeLists.txt"
     cp -p "$OVERLAY_ROOT/op_host/CMakeLists.txt" "$OP_ROOT/op_host/CMakeLists.txt"
-    mkdir -p "$OP_ROOT/op_host/op_api"
-    cp -p "$OVERLAY_ROOT/op_host/op_api/"* "$OP_ROOT/op_host/op_api/"
+    if [[ "$FUSED_DECODE" == false ]]; then
+        mkdir -p "$OP_ROOT/op_host/op_api"
+        cp -p "$OVERLAY_ROOT/op_host/op_api/"* "$OP_ROOT/op_host/op_api/"
+    fi
     cp -p "$OVERLAY_ROOT/op_host/"*.cpp "$OP_ROOT/op_host/"
     cp -p "$OVERLAY_ROOT/op_kernel/"*.cpp "$OP_ROOT/op_kernel/"
     for patch_path in "${PATCH_PATHS[@]}"; do
         git -C "$BUILD_SOURCE_ROOT" apply --unidiff-zero --check "$patch_path"
         git -C "$BUILD_SOURCE_ROOT" apply --unidiff-zero "$patch_path"
     done
+    if [[ "$FUSED_DECODE" == true ]]; then
+        while IFS= read -r -d '' source_path; do
+            sed -i \
+                -e 's/PaddleGqaIncreFlashAttentionAiv/PaddleDecodeGqaIncreFlashAttentionAiv/g' \
+                -e 's/paddle_gqa_incre_flash_attention_aiv/paddle_decode_gqa_incre_flash_attention_aiv/g' \
+                "$source_path"
+        done < <(find "$OP_ROOT" -type f \
+            ! -path '*/op_api_upstream_disabled/*' ! -name '*.upstream_disabled' -print0)
+        git -C "$BUILD_SOURCE_ROOT" mv "$PREPARED_OP_REL" "$CUSTOM_OP_REL"
+        OP_ROOT="$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
+    fi
     find "$OP_ROOT/CMakeLists.txt" "$OP_ROOT/op_host" "$OP_ROOT/op_kernel" -type f \
         ! -path '*/op_api_upstream_disabled/*' ! -name '*.upstream_disabled' -print0 \
         | sort -z | xargs -0 sha256sum > "$SOURCE_MANIFEST"
     printf '%s\n' "$OVERLAY_SHA" > "$OVERLAY_MANIFEST"
+else
+    OP_ROOT="$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
 fi
 
 cd "$BUILD_SOURCE_ROOT"
@@ -240,11 +270,14 @@ INSTALL_ROOT="$RUN_ROOT/installed"
 "$PACKAGE_PATH" --quiet --install-path="$INSTALL_ROOT"
 SET_ENV_PATH="$INSTALL_ROOT/vendors/$INSTALLED_VENDOR_NAME/bin/set_env.bash"
 OP_API_LIB="$INSTALL_ROOT/vendors/$INSTALLED_VENDOR_NAME/op_api/lib/libcust_opapi.so"
-[[ -s "$SET_ENV_PATH" && -s "$OP_API_LIB" ]] || { echo "ERROR: installed runtime is incomplete" >&2; exit 4; }
-OP_API_SYMBOLS="$(nm -D "$OP_API_LIB")"
-for symbol in aclnnPaddleGqaIncreFlashAttentionAivGetWorkspaceSize aclnnPaddleGqaIncreFlashAttentionAiv; do
-    grep -q " T $symbol$" <<<"$OP_API_SYMBOLS" || { echo "ERROR: missing $symbol" >&2; exit 4; }
-done
+[[ -s "$SET_ENV_PATH" ]] || { echo "ERROR: installed runtime is incomplete" >&2; exit 4; }
+if [[ "$FUSED_DECODE" == false ]]; then
+    [[ -s "$OP_API_LIB" ]] || { echo "ERROR: installed op API is missing" >&2; exit 4; }
+    OP_API_SYMBOLS="$(nm -D "$OP_API_LIB")"
+    for symbol in "aclnn${OP_API_SYMBOL_PREFIX}GetWorkspaceSize" "aclnn${OP_API_SYMBOL_PREFIX}"; do
+        grep -q " T $symbol$" <<<"$OP_API_SYMBOLS" || { echo "ERROR: missing $symbol" >&2; exit 4; }
+    done
+fi
 
 echo "PADDLE_GQA_INCREFA_AIV_BUILD_ROOT=$RUN_ROOT"
 echo "PADDLE_GQA_INCREFA_AIV_BUILD_SOURCE=$BUILD_SOURCE_ROOT"
