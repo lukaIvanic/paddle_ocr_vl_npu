@@ -184,14 +184,6 @@ if [[ "$SOURCE_PREPARED" == false ]]; then
                 "$source_path"
         done < <(find "$OP_ROOT" -type f \
             ! -path '*/op_api_upstream_disabled/*' ! -name '*.upstream_disabled' -print0)
-        for tiler_path in \
-            "$OP_ROOT/op_host/incre_flash_attention_tiling.cpp" \
-            "$OP_ROOT/op_host/incre_flash_attention_tiling_v2.cpp"; do
-            sed -i -E \
-                -e 's/context\.GetDynamicInputShape\(KEY_INPUT_INDEX, (size|0)\)/context.GetInputShape(KEY_INPUT_INDEX)/g' \
-                -e 's/context\.GetDynamicInputShape\(VALUE_INPUT_INDEX, (size|0)\)/context.GetInputShape(VALUE_INPUT_INDEX)/g' \
-                "$tiler_path"
-        done
         mv \
             "$BUILD_SOURCE_ROOT/$PREPARED_OP_REL" \
             "$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"

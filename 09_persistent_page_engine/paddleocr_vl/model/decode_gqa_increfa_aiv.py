@@ -96,8 +96,10 @@ def _patch_torchair_ref_mapping(torchair: Any) -> None:
     def _get_output_to_input_ref_idx(op: Any) -> dict[int, int]:
         mapping = dict(original(op))
         if op.type == GE_OP_NAME:
-            mapping[1] = 1
-            mapping[2] = 2
+            # Compact GE inputs are query, dynamic-key[0], dynamic-value[0],
+            # mask, position, key-state, value-state, key-ref, value-ref.
+            mapping[1] = 7
+            mapping[2] = 8
             mapping[3] = 3
         return mapping
 
@@ -143,12 +145,14 @@ def register_decode_gqa_increfa_aiv_converter() -> None:
             GE_OP_NAME,
             inputs={
                 "query": query,
-                "key": key_cache,
-                "value": value_cache,
+                "key": [key_cache],
+                "value": [value_cache],
                 "atten_mask": attention_mask,
                 "cache_position": cache_position,
                 "key_state": key_state,
                 "value_state": value_state,
+                "key_cache_ref": key_cache,
+                "value_cache_ref": value_cache,
             },
             attrs={
                 "num_heads": ge_attr.Int(num_heads),
@@ -159,7 +163,12 @@ def register_decode_gqa_increfa_aiv_converter() -> None:
                 "inner_precise": ge_attr.Int(inner_precise),
                 "vector_core_count": ge_attr.Int(vector_core_count),
             },
-            outputs=["attention_out", "key", "value", "atten_mask"],
+            outputs=[
+                "attention_out",
+                "key_cache_ref",
+                "value_cache_ref",
+                "atten_mask",
+            ],
         )
         return outputs[0]
 

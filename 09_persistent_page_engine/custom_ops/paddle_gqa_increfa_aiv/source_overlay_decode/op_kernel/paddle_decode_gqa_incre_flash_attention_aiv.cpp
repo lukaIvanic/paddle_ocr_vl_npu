@@ -148,6 +148,8 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
     __gm__ uint8_t *cachePosition,
     __gm__ uint8_t *keyState,
     __gm__ uint8_t *valueState,
+    __gm__ uint8_t *keyCacheRef,
+    __gm__ uint8_t *valueCacheRef,
     __gm__ uint8_t *attentionOut,
     __gm__ uint8_t *keyCacheOut,
     __gm__ uint8_t *valueCacheOut,
@@ -162,7 +164,13 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
         TPipe pipe;
         PaddleDecodeAttentionPrep prep;
         prep.Init(
-            key, value, attenMask, cachePosition, keyState, valueState, &pipe);
+            keyCacheRef,
+            valueCacheRef,
+            attenMask,
+            cachePosition,
+            keyState,
+            valueState,
+            &pipe);
         prep.Process();
         pipe.Destroy();
     }

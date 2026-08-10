@@ -9,9 +9,9 @@ public:
     {
         this->Input("query").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
-        this->Input("key").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+        this->Input("key").ParamType(DYNAMIC).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
-        this->Input("value").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+        this->Input("value").ParamType(DYNAMIC).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
         this->Input("pse_shift").ParamType(OPTIONAL).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
@@ -43,12 +43,19 @@ public:
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
         this->Input("value_state").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
+        // The upstream GQA kernel requires dynamic K/V inputs.  These required
+        // aliases point at the same tensors and provide legal tensor-to-tensor
+        // reference outputs for TorchAir's mutable-op functionalization.
+        this->Input("key_cache_ref").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
+        this->Input("value_cache_ref").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+            .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
 
         this->Output("attention_out").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Output("key").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+        this->Output("key_cache_ref").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
-        this->Output("value").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
+        this->Output("value_cache_ref").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
         this->Output("atten_mask").ParamType(REQUIRED).DataType({ge::DT_BOOL})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});
