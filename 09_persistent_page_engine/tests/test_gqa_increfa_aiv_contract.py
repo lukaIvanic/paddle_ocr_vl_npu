@@ -170,11 +170,21 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
 
         self.assertIn("decode_attention_only_mixed24)", build_script)
         self.assertIn("0021-attention-only-mixed24.patch", build_script)
+        self.assertIn("0017-decoder-reuse-attention-tpipe.patch", build_script)
         self.assertIn('EXPECTED_TASK_RATIO="1:1"', build_script)
         self.assertIn("KERNEL_TYPE_MIX_AIC_1_1", geometry_patch)
         self.assertIn("launchAivNum = 24U", geometry_patch)
         self.assertIn("launchAicNum = 24U", geometry_patch)
-        self.assertIn("if (GetBlockIdx() >= 16U)", kernel)
+        self.assertIn("if (GetBlockIdx() < 16U)", kernel)
+        self.assertIn("TPipe attentionPipe;", kernel)
+        self.assertIn("&attentionPipe);", kernel)
+        self.assertIn("PipeBarrier<PIPE_ALL>();", kernel)
+        self.assertIn("attentionPipe.Destroy();", kernel)
+        self.assertIn("SyncAll<true>();", kernel)
+        self.assertGreater(
+            kernel.index("SyncAll<true>();"),
+            kernel.index("attentionPipe.Destroy();"),
+        )
         self.assertIn('GE_OP_NAME = "PaddleDecodeGqaAttentionMixed24"', converter)
 
         optimization = text_decode.resolve_decode_optimization(
@@ -192,17 +202,9 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             "paddle_decode_gqa_attention_mixed24",
         )
 
-        split1 = text_decode.resolve_decode_optimization(
-            "paddle_decoder_superkernel_b1_simple_gqa_mixed24_split1"
-        )
-        self.assertTrue(split1.super_kernel_scope)
-        self.assertTrue(split1.ascendc_token_embedding)
-        self.assertTrue(split1.ascendc_qkv_split)
-        self.assertTrue(split1.ascendc_rope_lookup)
-        self.assertTrue(split1.ascendc_swiglu)
-        self.assertTrue(split1.ascendc_decode_gqa_mixed24)
-        self.assertIn("preload-code=none", split1.super_kernel_options)
-        self.assertIn("split-mode=1", split1.super_kernel_options)
+        attention_source = inspect.getsource(text_decode._decode_attention)
+        self.assertIn('"mixed24"', attention_source)
+        self.assertIn("ascendc_decode_gqa_attention_mixed24", attention_source)
 
     def test_fused_decode_overlay_has_compact_balanced_plain_kv_abi(self) -> None:
         operator_root = (

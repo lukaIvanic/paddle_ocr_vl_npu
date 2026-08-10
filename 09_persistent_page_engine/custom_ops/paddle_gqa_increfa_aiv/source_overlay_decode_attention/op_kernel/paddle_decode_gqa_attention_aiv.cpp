@@ -17,43 +17,48 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_attention_aiv(
     __gm__ uint8_t *workspace,
     __gm__ uint8_t *tiling)
 {
-    // A complete Cube-first decoder SuperKernel launches 24 logical AIV
-    // workers. This attention tiling owns only workers 0..15. Reject idle
-    // workers before the inherited dispatcher constructs any local pipe state.
-    if (GetBlockIdx() >= 16U) {
-        return;
+    // The enclosing decoder launches 24 AIV workers, while this attention
+    // tiling owns workers 0..15. Only those workers may allocate the inherited
+    // attention pipe. Workers 16..23 remain in the subfunction so they can
+    // join the completion barrier before the following output projection.
+    if (GetBlockIdx() < 16U) {
+        TPipe attentionPipe;
+        incre_flash_attention_FIAS_arch32(
+            query,
+            key,
+            value,
+            nullptr,
+            attenMask,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            attentionOut,
+            nullptr,
+            workspace,
+            tiling,
+            &attentionPipe);
+        PipeBarrier<PIPE_ALL>();
+        attentionPipe.Destroy();
     }
-    incre_flash_attention_FIAS_arch32(
-        query,
-        key,
-        value,
-        nullptr,
-        attenMask,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        attentionOut,
-        nullptr,
-        workspace,
-        tiling);
+    SyncAll<true>();
 }
