@@ -87,6 +87,8 @@ def main() -> int:
         for _ in range(2)
     ]
     value_states = [torch.randn_like(state) for state in key_states]
+    expected_keys = [state.cpu().clone() for state in key_states]
+    expected_values = [state.cpu().clone() for state in value_states]
     positions = [128, 129]
 
     torchair, CompilerConfig = import_torchair()
@@ -100,6 +102,7 @@ def main() -> int:
     )
     timings = []
     ordered_outputs = []
+    ordered_aliases = []
     for position, key_state, value_state in zip(
         positions, key_states, value_states, strict=True
     ):
@@ -117,22 +120,31 @@ def main() -> int:
         )
         torch.npu.synchronize()
         timings.append(time.perf_counter() - started)
+        ordered_aliases.append(
+            {
+                "query": ordered.data_ptr() == query.data_ptr(),
+                "key_cache": ordered.data_ptr() == key_cache.data_ptr(),
+                "value_cache": ordered.data_ptr() == value_cache.data_ptr(),
+                "key_state": ordered.data_ptr() == key_state.data_ptr(),
+                "value_state": ordered.data_ptr() == value_state.data_ptr(),
+            }
+        )
         ordered_outputs.append(ordered.cpu().clone())
 
     checks = []
     all_exact = True
     state_candidates = {
-        "key_0": key_states[0].cpu(),
-        "key_1": key_states[1].cpu(),
-        "value_0": value_states[0].cpu(),
-        "value_1": value_states[1].cpu(),
+        "key_0": expected_keys[0],
+        "key_1": expected_keys[1],
+        "value_0": expected_values[0],
+        "value_1": expected_values[1],
     }
     for index, position in enumerate(positions):
         query_expected = query.cpu()
         key_actual = key_cache[:, :, position : position + 1, :].cpu()
-        key_expected = key_states[index].cpu()
+        key_expected = expected_keys[index]
         value_actual = value_cache[:, :, position : position + 1, :].cpu()
-        value_expected = value_states[index].cpu()
+        value_expected = expected_values[index]
         query_exact = bool(torch.equal(ordered_outputs[index], query_expected))
         key_exact = bool(
             torch.equal(key_actual, key_expected)
@@ -145,6 +157,7 @@ def main() -> int:
             {
                 "position": position,
                 "query_exact": query_exact,
+                "ordered_output_aliases": ordered_aliases[index],
                 "query_max_abs": float(
                     (ordered_outputs[index].float() - query_expected.float())
                     .abs()
@@ -199,6 +212,14 @@ def main() -> int:
             "steps": checks,
             "key_nonzero_count": int(torch.count_nonzero(key_cache).cpu()),
             "value_nonzero_count": int(torch.count_nonzero(value_cache).cpu()),
+            "key_state_inputs_preserved": [
+                bool(torch.equal(actual.cpu(), expected))
+                for actual, expected in zip(key_states, expected_keys, strict=True)
+            ],
+            "value_state_inputs_preserved": [
+                bool(torch.equal(actual.cpu(), expected))
+                for actual, expected in zip(value_states, expected_values, strict=True)
+            ],
         },
         "timing": {"call_s": timings},
     }
