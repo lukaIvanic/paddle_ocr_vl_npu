@@ -177,6 +177,10 @@ def main() -> int:
     for position in (128, 129):
         source = source_template.clone()
         position_tensor = torch.tensor([position], dtype=torch.int64, device="npu:0")
+        expected_mask = (
+            torch.arange(1024, dtype=torch.int64, device="npu:0") > position
+        ).view(1, 1, 1, 1024)
+        attention_mask.copy_(expected_mask)
         started = time.perf_counter()
         output = step(
             source,
@@ -208,9 +212,6 @@ def main() -> int:
         )
         torch_npu.scatter_update_(ref_key_cache, position_tensor, key_state, 2)
         torch_npu.scatter_update_(ref_value_cache, position_tensor, value_state, 2)
-        expected_mask = (
-            torch.arange(1024, dtype=torch.int64, device="npu:0") > position
-        ).view(1, 1, 1, 1024)
         reference = torch_npu.npu_incre_flash_attention(
             query,
             ref_key_cache,

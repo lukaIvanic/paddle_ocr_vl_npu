@@ -21,8 +21,6 @@ constexpr uint32_t kStateElements = kKvHeads * kHeadDim;
 constexpr uint32_t kValueOffset = kQueryElements + kStateElements;
 constexpr uint32_t kPackedElements = kValueOffset + kStateElements;
 constexpr uint32_t kFactorPlaneElements = kCacheLength * kHeadDim;
-constexpr uint32_t kMaskWords = kCacheLength / sizeof(uint32_t);
-constexpr uint32_t kFourTrueBytes = 0x01010101U;
 constexpr uint32_t kAttentionWorkers = 16;
 
 class PaddleDecodePackedQkvRopePrep {
@@ -31,7 +29,6 @@ public:
         GM_ADDR qkv,
         GM_ADDR keyCache,
         GM_ADDR valueCache,
-        GM_ADDR attentionMask,
         GM_ADDR cachePosition,
         GM_ADDR factorLut,
         GM_ADDR ropeDelta,
@@ -45,8 +42,6 @@ public:
         valueCacheGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ half *>(valueCache),
             kKvHeads * kCacheLength * kHeadDim);
-        attentionMaskGm.SetGlobalBuffer(
-            reinterpret_cast<__gm__ uint8_t *>(attentionMask), kCacheLength);
         cachePositionGm.SetGlobalBuffer(
             reinterpret_cast<__gm__ int64_t *>(cachePosition), 1);
         factorLutGm.SetGlobalBuffer(
@@ -61,7 +56,6 @@ public:
         pipe->InitBuffer(valueOutputQueue, 1, kStateElements * sizeof(half));
         pipe->InitBuffer(cosineInputQueue, 1, kHeadDim * sizeof(half));
         pipe->InitBuffer(sineInputQueue, 1, kHeadDim * sizeof(half));
-        pipe->InitBuffer(maskOutputQueue, 1, kCacheLength * sizeof(uint8_t));
         pipe->InitBuffer(rotateScratch, kHeadDim * sizeof(half));
     }
 
@@ -116,35 +110,11 @@ public:
         cosineInputQueue.FreeTensor(cosine);
         sineInputQueue.FreeTensor(sine);
 
-        LocalTensor<uint32_t> maskWords =
-            maskOutputQueue.AllocTensor<uint32_t>();
-        Duplicate<uint32_t>(maskWords, kFourTrueBytes, kMaskWords);
-        const uint32_t prefixBytes = static_cast<uint32_t>(cachePosition + 1);
-        const uint32_t fullZeroWords = prefixBytes / sizeof(uint32_t);
-        const uint32_t remainingZeroBytes = prefixBytes % sizeof(uint32_t);
-        if (fullZeroWords > 0) {
-            Duplicate<uint32_t>(maskWords, 0, fullZeroWords);
-        }
-        PipeBarrier<PIPE_V>();
-        if (remainingZeroBytes > 0) {
-            Duplicate<uint32_t>(
-                maskWords[fullZeroWords],
-                kFourTrueBytes << (remainingZeroBytes * 8),
-                1);
-            PipeBarrier<PIPE_V>();
-        }
-        maskOutputQueue.EnQue(maskWords);
-
         queryOutput = queryOutputQueue.DeQue<half>();
         keyOutput = keyOutputQueue.DeQue<half>();
         valueOutput = valueOutputQueue.DeQue<half>();
-        maskWords = maskOutputQueue.DeQue<uint32_t>();
         DataCopy(qkvGm, queryOutput, kQueryElements);
         DataCopy(qkvGm[kQueryElements], keyOutput, kStateElements);
-        DataCopy(
-            attentionMaskGm,
-            maskWords.ReinterpretCast<uint8_t>(),
-            kCacheLength);
         for (uint32_t head = 0; head < kKvHeads; ++head) {
             const uint32_t stateOffset = head * kHeadDim;
             const uint32_t cacheOffset =
@@ -158,7 +128,6 @@ public:
         queryOutputQueue.FreeTensor(queryOutput);
         keyOutputQueue.FreeTensor(keyOutput);
         valueOutputQueue.FreeTensor(valueOutput);
-        maskOutputQueue.FreeTensor(maskWords);
     }
 
 private:
@@ -202,7 +171,6 @@ private:
     GlobalTensor<half> qkvGm;
     GlobalTensor<half> keyCacheGm;
     GlobalTensor<half> valueCacheGm;
-    GlobalTensor<uint8_t> attentionMaskGm;
     GlobalTensor<int64_t> cachePositionGm;
     GlobalTensor<half> factorLutGm;
     GlobalTensor<int64_t> ropeDeltaGm;
@@ -212,7 +180,6 @@ private:
     TQue<QuePosition::VECOUT, 1> valueOutputQueue;
     TQue<QuePosition::VECIN, 1> cosineInputQueue;
     TQue<QuePosition::VECIN, 1> sineInputQueue;
-    TQue<QuePosition::VECOUT, 1> maskOutputQueue;
     TBuf<TPosition::VECCALC> rotateScratch;
 };
 } // namespace
@@ -249,7 +216,6 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
             qkv,
             key,
             value,
-            attenMask,
             cachePosition,
             factorLut,
             ropeDelta,

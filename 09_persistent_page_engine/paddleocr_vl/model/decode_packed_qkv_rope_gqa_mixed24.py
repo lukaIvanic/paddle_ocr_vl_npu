@@ -27,7 +27,7 @@ def _rotary_half(
 
 @torch.library.custom_op(
     PYTORCH_OP_NAME,
-    mutates_args=("qkv", "key_cache", "value_cache", "attention_mask"),
+    mutates_args=("qkv", "key_cache", "value_cache"),
 )
 def _decode_packed_qkv_rope_gqa_mixed24(
     qkv: torch.Tensor,
@@ -69,10 +69,6 @@ def _decode_packed_qkv_rope_gqa_mixed24(
     positions = cache_position.reshape(-1).contiguous()
     torch_npu.scatter_update_(key_cache, positions, key_state, 2)
     torch_npu.scatter_update_(value_cache, positions, value_state, 2)
-    future_mask = (
-        torch.arange(1024, dtype=torch.int64, device=qkv.device) > positions[0]
-    ).view(1, 1, 1, 1024)
-    attention_mask.copy_(future_mask)
     return torch_npu.npu_incre_flash_attention(
         query,
         key_cache,
@@ -126,7 +122,6 @@ def _patch_torchair_ref_mapping(torchair: Any) -> None:
         if op.type == GE_OP_NAME:
             mapping[1] = 1
             mapping[2] = 2
-            mapping[3] = 3
             mapping[4] = 0
         return mapping
 
