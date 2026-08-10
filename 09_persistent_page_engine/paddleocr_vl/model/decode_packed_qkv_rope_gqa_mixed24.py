@@ -239,7 +239,7 @@ def decode_packed_qkv_rope_gqa_mixed24(
         attention_mask,
         cache_position,
         factor_lut,
-        rope_delta,
+        rope_delta.reshape(-1),
         num_heads,
         num_key_value_heads,
         scale_value,

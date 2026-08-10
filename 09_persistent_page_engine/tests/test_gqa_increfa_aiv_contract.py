@@ -355,6 +355,8 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("sineInputQueue", kernel)
         self.assertNotIn("factorInputQueue", kernel)
         self.assertIn("packedInputQueue", kernel)
+        self.assertNotIn("maskWords.SetValue", kernel)
+        self.assertIn("maskWords[fullZeroWords]", kernel)
         self.assertIn("SyncAll<true>();", kernel)
         self.assertGreaterEqual(kernel.count("PipeBarrier<PIPE_V>();"), 7)
         self.assertNotIn("SyncAll<false>", kernel)
@@ -363,6 +365,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("launchAivNum = 24U", geometry_patch)
         self.assertIn('mapping[4] = 0', converter)
         self.assertIn('"query": qkv', converter)
+        self.assertIn("rope_delta.reshape(-1)", converter)
 
         optimization = text_decode.resolve_decode_optimization(
             "paddle_decoder_megakernel_b1_packed_qkv_rope_gqa_mixed24"

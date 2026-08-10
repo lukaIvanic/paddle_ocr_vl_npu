@@ -127,9 +127,11 @@ public:
         }
         PipeBarrier<PIPE_V>();
         if (remainingZeroBytes > 0) {
-            maskWords.SetValue(
-                fullZeroWords,
-                kFourTrueBytes << (remainingZeroBytes * 8));
+            Duplicate<uint32_t>(
+                maskWords[fullZeroWords],
+                kFourTrueBytes << (remainingZeroBytes * 8),
+                1);
+            PipeBarrier<PIPE_V>();
         }
         maskOutputQueue.EnQue(maskWords);
 
