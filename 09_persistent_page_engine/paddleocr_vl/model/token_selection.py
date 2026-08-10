@@ -99,10 +99,13 @@ def select_token_ids(
                 f"alternate_preferred_token_id {alternate} is outside vocabulary "
                 f"size {scores.shape[-1]}"
             )
-        suppressed_scores = scores.clone()
-        suppressed_scores[..., int(preferred_token_id)] = -torch.inf
-        suppressed_scores[..., alternate] = -torch.inf
-        replacement = torch.argmax(suppressed_scores, dim=-1)
+        top3 = torch.topk(scores, k=3, dim=-1).indices
+        allowed = (
+            (top3 != int(preferred_token_id))
+            & (top3 != alternate)
+        )
+        first_allowed = torch.argmax(allowed.to(dtype=torch.int64), dim=-1)
+        replacement = top3.gather(-1, first_allowed.unsqueeze(-1)).squeeze(-1)
         selected = torch.where(
             (greedy == int(preferred_token_id)) | (greedy == alternate),
             replacement,
