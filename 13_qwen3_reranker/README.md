@@ -353,6 +353,7 @@ python3 13_qwen3_reranker/profile_prefix_cache_forward.py \
   --warmups 3 \
   --repeats 20 \
   --profile-iters 3 \
+  --prefill-optimization combined \
   --compile-cache-dir .runtime_cache/13_qwen3_reranker/prefix_throughput \
   --profile-dir tmp/13_qwen3_reranker/profile_prefix_b4_c128_910b2
 ```
@@ -363,6 +364,37 @@ profiler overhead ratio separately. Model loading, prefix-cache construction,
 graph cache load/compile, and trace export are outside the profiled forward
 window. The generated summary includes top NPU operator types, kernels, core
 types, and shape-based module attribution.
+
+The optimized B4, real-Q128, physical-Q/KV256 profile on Ascend 910B2 at
+`23d590b` used a warm `combined` graph, 30 clean repetitions, and three profiled
+calls. Clean median latency was 10.416 ms (49,153 executed model tok/s); the
+profiled median was 10.711 ms, so profiler overhead was 2.83%. The NPU trace
+accounted for 10.205 ms and 682 kernels per forward. Compared with the earlier
+baseline profile from `c0943f8`, clean latency fell from 15.422 ms, device time
+fell from 15.578 ms, and kernel count fell from 1,582. That is 32.5% lower clean
+latency, 34.5% lower device time, and 56.9% fewer kernel launches.
+
+The remaining per-forward device profile is:
+
+| Operator family | Kernels | Device share | Interpretation |
+|---|---:|---:|---|
+| MatMul | 196 | 32.3% | Seven dense projections per decoder layer. |
+| PromptFlashAttention | 28 | 17.3% | One square physical Q256/KV256 call per layer. |
+| RmsNorm + InplaceAddRmsNorm | 113 | 19.8% | Native Q/K/final norms plus graph-fused residual norms. |
+| Transpose | 112 | 10.4% | Q, K, V into BNSD and attention output back to BSND. |
+| Concat | 85 | 6.8% | Prefix/current K/V, dummy Q rows, and one RoPE frequency concat. |
+| BroadcastTo | 56 | 3.8% | Current GQA K/V expansion from 8 to 16 heads. |
+| ApplyRotaryPosEmb | 28 | 3.5% | One native Q/K rotary call per layer. |
+| Other | 64 | 6.2% | MLP elementwise fusion, dummy-output slicing, embedding support. |
+
+The profile no longer exposes one dominant accidental slow path. MatMul,
+PromptFA, native/fused norms, rotary, and MLP elementwise work account for about
+76.5% of device time. Transpose, concat, GQA broadcast, and dummy-output slicing
+account for about 22.9%. The clean next experiment is an end-to-end BSND
+PromptFA/cache layout, which could remove four transposes per layer. Treat it as
+a 310P operator-compatibility experiment, not an assumed deployment change. The
+square Q padding remains required by the currently validated masked 310P
+PromptFA contract.
 
 ## Weight Modes
 

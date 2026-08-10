@@ -1,0 +1,20 @@
+commit: 23d590ba817753ce474d9034324b697d29f46c2d
+hostname: liteserver-c001-4
+device: Ascend 910B2 selected by source npu-setup; logical npu:0
+cache: warm
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  13_qwen3_reranker/profile_prefix_cache_forward.py \
+  --model-dir /workspace/models/Qwen3-Reranker-0.6B \
+  --device npu:0 \
+  --batch-size 4 \
+  --continuation-length 128 \
+  --warmups 3 \
+  --repeats 30 \
+  --profile-iters 3 \
+  --topn 40 \
+  --prefill-optimization combined \
+  --compile-cache-dir .runtime_cache/13_qwen3_reranker/prefix_opt_18bd28f \
+  --compile-source-key 167a52a5c20f \
+  --profile-dir tmp/13_qwen3_reranker/profile_prefix_combined_b4_c128_910b2_23d590b \
+  --json-out tmp/13_qwen3_reranker/profile_prefix_combined_b4_c128_910b2_23d590b/prefix_profile_summary.json
