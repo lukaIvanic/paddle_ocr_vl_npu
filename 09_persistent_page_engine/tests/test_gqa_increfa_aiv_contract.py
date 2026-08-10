@@ -436,11 +436,11 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertTrue(simple.ascendc_linear)
         self.assertTrue(simple.packed_qkv)
         self.assertTrue(simple.ascendc_decode_gqa_mixed24)
-        self.assertEqual(simple.rotary_factors, "scalar")
+        self.assertEqual(simple.rotary_factors, "lookup")
         self.assertFalse(simple.ascendc_token_embedding)
         self.assertFalse(simple.ascendc_qkv_split)
-        self.assertFalse(simple.ascendc_rope_lookup)
-        self.assertTrue(simple.ascendc_position_add)
+        self.assertTrue(simple.ascendc_rope_lookup)
+        self.assertFalse(simple.ascendc_position_add)
         self.assertFalse(simple.ascendc_swiglu)
 
     def test_packed_qkv_rope_operator_removes_the_split_pipe_boundary(self) -> None:
