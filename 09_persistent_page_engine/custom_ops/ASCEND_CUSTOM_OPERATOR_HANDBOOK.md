@@ -1439,9 +1439,9 @@ to the entry symbol's object address and inspect sorted symbols in the dumped
 same custom fused-GQA function offset, `+0x600`, even though one outer report
 showed `tslot=3` and another showed `tslot=7`.
 
-That exact mapping exposed a composition-specific lifecycle problem. The fused
-entry constructed one `TPipe` for cache/mask preparation and software sync,
-destroyed it, and then entered the stock attention dispatcher, which
+That exact mapping first suggested a composition-specific lifecycle problem.
+The fused entry constructed one `TPipe` for cache/mask preparation and software
+sync, destroyed it, and then entered the stock attention dispatcher, which
 constructed another `TPipe`. Installed CANN 9.0 source shows two relevant
 rules:
 
@@ -1449,20 +1449,57 @@ rules:
 2. SuperKernel compilation suppresses the final `PIPE_ALL` barrier normally
    emitted by `TPipe::Destroy()`.
 
-An extra barrier before `Destroy()` did not fix the full decoder. The next
-structural implementation uses one `TPipe` object for the entire fused
-subkernel, executes an explicit all-pipe barrier after software `SyncAll`, calls
-the supported `TPipe::Reset()` to release phase-one UB/event resources, and
-passes the same object into the unchanged stock all-vector attention
-implementation. Validate it again in this order: isolated fused op, fused
-op-to-MatMul boundary, conservative full decoder, default full decoder,
-multi-step correctness, and only then performance.
+An extra barrier before `Destroy()` did not fix the full decoder. The stronger
+single-pipe control then used one `TPipe` object for the entire fused subkernel,
+executed an explicit all-pipe barrier after software `SyncAll`, called the
+supported `TPipe::Reset()` to release phase-one UB/event resources, and passed
+the same object into the unchanged stock all-vector attention implementation.
+That build passed both the isolated fused operator and the strict
+GQA-to-MatMul boundary with 0.0 maximum absolute error, but the complete
+202-subkernel decoder still faulted at the identical fused-function offset,
+`+0x600`. Reusing one pipe is therefore valid hygiene, but it is not the cause
+of the full-graph failure.
+
+This result changes the next debugging question. Do not add more lifecycle
+barriers blindly. CANN documents that the SuperKernel compiler inserts
+inter-operator synchronization by default. Instead, use separately named
+discriminator operators or smaller real-model scopes to decide among these
+remaining causes:
+
+1. the all-core software-sync prologue behaves differently in the enclosing
+   mixed-core launch;
+2. the stock attention body receives a bad argument, tiling pointer, workspace,
+   or launch geometry only in the large flattened scope;
+3. repeated in-place reference outputs or 18 repeated operator instances expose
+   a SuperKernel ABI/composition limit.
+
+A useful first discriminator keeps core-0 cache/mask preparation and the
+16-core software barrier but replaces attention with a deterministic output.
+If that separately named sync-only operator faults at the same PC, the prologue
+or enclosing launch is responsible. If it runs, keep the prologue fixed and
+isolate the attention ABI. A one-layer real-model strict scope is the second
+control: success at one layer and failure only after repetition points away
+from the attention math and toward flattened argument/tiling composition.
 
 Retained remote evidence for the pre-reset build:
 
 - `.runtime_cache/paddle_decode_kv_gqa_aiv/validation/tpipe_2f9c6f1_strict_npu6/result.json`
 - `.runtime_cache/paddle_decode_kv_gqa_aiv/validation/gqa_matmul_boundary_tpipe_2f9c6f1_early1_npu6/result.json`
 - `tmp/09_persistent_page_engine/text_decode_lab/megakernel_fused_gqa_tpipe_2f9c6f1_early0_npu6/run.log`
+
+Retained remote evidence for the single-pipe control (`20bc8e0`):
+
+- `.runtime_cache/paddle_decode_kv_gqa_aiv/validation/onepipe_20bc8e0_strict_npu0/result.json`
+- `.runtime_cache/paddle_decode_kv_gqa_aiv/validation/gqa_matmul_boundary_onepipe_20bc8e0_early1_npu0/result.json`
+- `tmp/09_persistent_page_engine/text_decode_lab/megakernel_fused_gqa_onepipe_20bc8e0_early0_npu0/run.log`
+
+The single-pipe package SHA256 is
+`99766195710b2cb3d988debeab60cf438291b45a8b3cad73dd074ac07fd56cfe`.
+The compiled kernel object SHA256 is
+`41184b6b69df84df768351b6ec3d4be3a56718173c59aa93bc5e5f0357e8519f`.
+The failing full graph ran on physical Ascend 910B2 NPU 0 after the full-shape
+device preflight passed. It then poisoned that device for later work, so NPU 0
+was quarantined.
 
 ### Device and compile preflight
 

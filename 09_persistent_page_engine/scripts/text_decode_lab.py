@@ -11,7 +11,7 @@ import shutil
 import statistics
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -88,6 +88,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "conversion and compilation. Production code is unchanged."
         ),
     )
+    parser.add_argument(
+        "--synthetic-decoder-layers",
+        type=int,
+        help=(
+            "Lab-only prefix length for the real decoder stack. The selected "
+            "checkpoint layers, final norm, and LM head remain unchanged; "
+            "only later repeated decoder layers are removed before cache "
+            "allocation and compilation."
+        ),
+    )
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--dtype", choices=("fp16", "bf16"), default="fp16")
@@ -162,6 +172,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         and args.synthetic_lm_head_size <= 0
     ):
         parser.error("--synthetic-lm-head-size must be positive")
+    if (
+        args.synthetic_decoder_layers is not None
+        and args.synthetic_decoder_layers <= 0
+    ):
+        parser.error("--synthetic-decoder-layers must be positive")
     if args.warmup < 0 or args.repeats <= 0:
         parser.error("--warmup must be non-negative and --repeats positive")
     if args.max_items is not None and args.max_items <= 0:
@@ -403,6 +418,30 @@ class TextDecodeLab:
         synchronize(self.device)
         self.model_load_s = time.perf_counter() - model_started
 
+        self.original_decoder_layers = len(self.model.model.layers)
+        requested_decoder_layers = args.synthetic_decoder_layers
+        if requested_decoder_layers is not None:
+            requested_decoder_layers = int(requested_decoder_layers)
+            if requested_decoder_layers > self.original_decoder_layers:
+                raise ValueError(
+                    "--synthetic-decoder-layers exceeds the checkpoint "
+                    f"decoder depth: {requested_decoder_layers} > "
+                    f"{self.original_decoder_layers}"
+                )
+            truncated_text_config = replace(
+                self.model.config.text_config,
+                num_hidden_layers=requested_decoder_layers,
+            )
+            self.model.config = replace(
+                self.model.config,
+                text_config=truncated_text_config,
+            )
+            self.model.model.config = truncated_text_config
+            self.model.model.layers = torch.nn.ModuleList(
+                list(self.model.model.layers[:requested_decoder_layers])
+            )
+        self.effective_decoder_layers = len(self.model.model.layers)
+
         self.original_lm_head_size = int(self.model.lm_head.weight.shape[0])
         requested_head_size = args.synthetic_lm_head_size
         if requested_head_size is not None:
@@ -433,6 +472,11 @@ class TextDecodeLab:
         if requested_head_size is not None:
             self.runtime_cache_root = (
                 args.cache_dir / f"synthetic_lm_head_{requested_head_size}"
+            )
+        if requested_decoder_layers is not None:
+            self.runtime_cache_root = (
+                self.runtime_cache_root
+                / f"synthetic_decoder_layers_{requested_decoder_layers}"
             )
 
         self.optimization = prepare_decode_optimization_modules(
@@ -1412,6 +1456,7 @@ def _write_report(
             "decode_optimization": args.decode_optimization,
             "cache_dir": str(args.cache_dir.expanduser().resolve()),
             "synthetic_lm_head_size": args.synthetic_lm_head_size,
+            "synthetic_decoder_layers": args.synthetic_decoder_layers,
             "active_slots": args.active_slots,
             "profile_position": args.profile_position,
             "tail_positions": list(args.tail_positions),
@@ -1443,6 +1488,11 @@ def _write_report(
                 "divisible_by_1024": (
                     lab.effective_lm_head_size % 1024 == 0
                 ),
+            },
+            "decoder_layers": {
+                "original": lab.original_decoder_layers,
+                "effective": lab.effective_decoder_layers,
+                "synthetic": args.synthetic_decoder_layers is not None,
             },
             "effective_cache_root": str(
                 lab.runtime_cache_root.expanduser().resolve()
