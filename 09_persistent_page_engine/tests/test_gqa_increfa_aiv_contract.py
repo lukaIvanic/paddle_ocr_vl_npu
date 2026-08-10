@@ -22,7 +22,7 @@ from paddleocr_vl.model import text_decode
 
 
 class GqaIncrefaAivContractTest(unittest.TestCase):
-    def test_attention_overlay_preserves_dynamic_kv_descriptor_abi(self) -> None:
+    def test_attention_overlay_uses_superkernel_safe_plain_kv_abi(self) -> None:
         operator_root = (
             EXPERIMENT_ROOT
             / "custom_ops"
@@ -41,12 +41,19 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             / "decode_gqa_attention_aiv.py"
         ).read_text(encoding="utf-8")
         build_script = (operator_root / "build.sh").read_text(encoding="utf-8")
+        kernel_entry = (
+            operator_root
+            / "source_overlay_decode_attention"
+            / "op_kernel"
+            / "paddle_decode_gqa_attention_aiv.cpp"
+        ).read_text(encoding="utf-8")
 
-        self.assertIn('Input("key").ParamType(DYNAMIC)', op_def)
-        self.assertIn('Input("value").ParamType(DYNAMIC)', op_def)
-        self.assertIn('"key": [key]', converter)
-        self.assertIn('"value": [value]', converter)
-        self.assertNotIn("required-single-kv-attention", build_script)
+        self.assertIn('Input("key").ParamType(REQUIRED)', op_def)
+        self.assertIn('Input("value").ParamType(REQUIRED)', op_def)
+        self.assertIn('"key": key', converter)
+        self.assertIn('"value": value', converter)
+        self.assertIn("0014-superkernel-plain-kv-attention.patch", build_script)
+        self.assertIn("PADDLE_DECODE_GQA_PLAIN_KV", kernel_entry)
 
     def test_nonsplit_megakernel_uses_separate_prep_and_16_aiv_blocks(self) -> None:
         optimization = text_decode.resolve_decode_optimization(

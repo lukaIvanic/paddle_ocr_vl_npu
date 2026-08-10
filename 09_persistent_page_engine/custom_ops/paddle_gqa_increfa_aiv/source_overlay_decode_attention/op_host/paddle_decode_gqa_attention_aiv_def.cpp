@@ -9,11 +9,12 @@ public:
     {
         this->Input("query").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
-        // The pinned FIAS kernel resolves K/V with GET_TENSOR_ADDR. Keep the
-        // one-element dynamic-list ABI even though this decoder is fixed B1.
-        this->Input("key").ParamType(DYNAMIC).DataType({ge::DT_FLOAT16})
+        // This decoder-only entry patches the pinned all-vector kernel to bind
+        // the fixed B1 K/V tensors directly. Dynamic list descriptors are not
+        // stable when this function is extracted into a SuperKernel.
+        this->Input("key").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
-        this->Input("value").ParamType(DYNAMIC).DataType({ge::DT_FLOAT16})
+        this->Input("value").ParamType(REQUIRED).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND}).AutoContiguous();
         this->Input("pse_shift").ParamType(OPTIONAL).DataType({ge::DT_FLOAT16})
             .Format({ge::FORMAT_ND}).UnknownShapeFormat({ge::FORMAT_ND});

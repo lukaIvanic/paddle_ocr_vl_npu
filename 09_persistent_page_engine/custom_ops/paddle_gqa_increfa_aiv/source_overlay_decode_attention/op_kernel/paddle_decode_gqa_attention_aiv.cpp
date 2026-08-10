@@ -5,6 +5,7 @@
 #include "kernel_operator.h"
 #endif
 
+#define PADDLE_DECODE_GQA_PLAIN_KV 1
 #include "incre_flash_attention_arch32.h"
 
 extern "C" __global__ __aicore__ void paddle_decode_gqa_attention_aiv(

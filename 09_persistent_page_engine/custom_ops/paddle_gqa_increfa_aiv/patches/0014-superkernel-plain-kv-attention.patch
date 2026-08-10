@@ -1,0 +1,63 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -3627,22 +3627,12 @@ static ge::graphStatus ConvertQKVandCacheContext(const gert::TilingContext &conte
+     OP_CHECK_IF((ifaContext.query.shape == nullptr) || (ifaContext.key.shape == nullptr),
+                OP_LOGE(context.GetNodeName(), "shape of query or shape of key is null."), return ge::GRAPH_FAILED);
+-    auto batchOfQuery = ifaContext.query.shape->GetStorageShape().GetDim(0);
+-    auto batchOfKey = ifaContext.key.shape->GetStorageShape().GetDim(0);
+-    if (batchOfQuery != batchOfKey) {
+-        ifaContext.kCache.resize(batchOfQuery);
+-        ifaContext.vCache.resize(batchOfQuery);
+-        for (int64_t size = 0; size < batchOfQuery; ++size) {
+-            ifaContext.kCache[size] =
+-                const_cast<gert::StorageShape *>(context.GetDynamicInputShape(KEY_INPUT_INDEX, size));
+-            ifaContext.vCache[size] =
+-                const_cast<gert::StorageShape *>(context.GetDynamicInputShape(VALUE_INPUT_INDEX, size));
+-        }
+-    } else {
+-        ifaContext.kCache.resize(1);
+-        ifaContext.vCache.resize(1);
+-        ifaContext.kCache[0] = const_cast<gert::StorageShape *>(context.GetDynamicInputShape(KEY_INPUT_INDEX, 0));
+-        ifaContext.vCache[0] = const_cast<gert::StorageShape *>(context.GetDynamicInputShape(VALUE_INPUT_INDEX, 0));
+-    }
++    // PaddleOCR-VL decode is fixed B1 and supplies one plain K tensor and one
++    // plain V tensor. The matching all-vector kernel specialization below
++    // binds these GM pointers directly instead of decoding ListTensorDesc.
++    ifaContext.kCache.resize(1);
++    ifaContext.vCache.resize(1);
++    ifaContext.kCache[0] = const_cast<gert::StorageShape *>(context.GetInputShape(KEY_INPUT_INDEX));
++    ifaContext.vCache[0] = const_cast<gert::StorageShape *>(context.GetInputShape(VALUE_INPUT_INDEX));
+     ifaContext.value.desc = context.GetInputDesc(VALUE_INPUT_INDEX);
+     ifaContext.value.shape = context.GetInputShape(VALUE_INPUT_INDEX);
+     return ge::GRAPH_SUCCESS;
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_allvec_new.h
+@@ -587,0 +588,4 @@
++#ifdef PADDLE_DECODE_GQA_PLAIN_KV
++    (void)bIndex;
++    return kvSeqSize;
++#else
+@@ -597,0 +602,1 @@
++#endif
+@@ -695,4 +701,10 @@
++#ifdef PADDLE_DECODE_GQA_PLAIN_KV
++    __gm__ uint8_t *value_ = value;
++    __gm__ uint8_t *key_ = key;
++#else
+-    ListTensorDesc keyListTensorDesc((__gm__ void *)keyPtr);
+-    ListTensorDesc valueListTensorDesc((__gm__ void *)valuePtr);
+-    __gm__ uint8_t *value_ = (__gm__ uint8_t *)valueListTensorDesc.GetDataPtr<__gm__ uint8_t>(0);
+-    __gm__ uint8_t *key_ = (__gm__ uint8_t *)keyListTensorDesc.GetDataPtr<__gm__ uint8_t>(0);
++#endif
+@@ -852,4 +864,10 @@
++#ifdef PADDLE_DECODE_GQA_PLAIN_KV
++        __gm__ uint8_t *key = keyPtr;
++        __gm__ uint8_t *value = valuePtr;
++#else
+-        ListTensorDesc keyListTensorDesc((__gm__ void *)keyPtr);
+-        ListTensorDesc valueListTensorDesc((__gm__ void *)valuePtr);
+-        __gm__ uint8_t *key = (__gm__ uint8_t *)keyListTensorDesc.GetDataPtr<__gm__ uint8_t>(bIdx);
+-        __gm__ uint8_t *value = (__gm__ uint8_t *)valueListTensorDesc.GetDataPtr<__gm__ uint8_t>(bIdx);
++#endif
