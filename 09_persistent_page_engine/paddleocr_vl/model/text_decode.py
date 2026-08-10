@@ -591,13 +591,13 @@ DECODE_OPTIMIZATION_PRESETS.update(
             _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
             name="paddle_decoder_superkernel_b1_simple_gqa_mixed24",
             # Keep the one custom subfunction that has already passed strict
-            # SuperKernel validation.  Let ordinary CANN subfunctions perform
-            # embedding, QKV views, and SwiGLU.  Strict scope cannot fuse the
-            # TBE Add/Cast/Cos/Sin scalar-RoPE path, so keep lookup as one small
-            # independent AscendC prologue rather than packing it into GQA.
-            # Custom QKV split and SwiGLU remain optional optimizations.
+            # SuperKernel validation.  GatherV2 and the TBE
+            # Add/Cast/Cos/Sin scalar-RoPE path cannot enter strict scope, so
+            # retain only the small AscendC embedding and lookup prologue.
+            # Keep ordinary QKV views and SwiGLU; their custom variants remain
+            # optional optimizations rather than correctness dependencies.
             rotary_factors="lookup",
-            ascendc_token_embedding=False,
+            ascendc_token_embedding=True,
             ascendc_qkv_split=False,
             ascendc_rope_lookup=True,
             ascendc_position_add=False,

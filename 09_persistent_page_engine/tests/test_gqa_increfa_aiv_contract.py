@@ -437,7 +437,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertTrue(simple.packed_qkv)
         self.assertTrue(simple.ascendc_decode_gqa_mixed24)
         self.assertEqual(simple.rotary_factors, "lookup")
-        self.assertFalse(simple.ascendc_token_embedding)
+        self.assertTrue(simple.ascendc_token_embedding)
         self.assertFalse(simple.ascendc_qkv_split)
         self.assertTrue(simple.ascendc_rope_lookup)
         self.assertFalse(simple.ascendc_position_add)
@@ -546,6 +546,20 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             / "paddle_decode_qkv_split"
             / "op_kernel"
             / "paddle_decode_qkv_split_v4.cpp"
+        ).read_text(encoding="utf-8")
+        process = kernel.index("kernel.Process();")
+        barrier = kernel.index("PipeBarrier<PIPE_ALL>();", process)
+        destroy = kernel.index("pipe.Destroy();", barrier)
+        self.assertLess(process, barrier)
+        self.assertLess(barrier, destroy)
+
+    def test_token_embedding_completes_fused_producer_before_destroy(self) -> None:
+        kernel = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_decode_token_embedding"
+            / "op_kernel"
+            / "paddle_decode_token_embedding.cpp"
         ).read_text(encoding="utf-8")
         process = kernel.index("kernel.Process();")
         barrier = kernel.index("PipeBarrier<PIPE_ALL>();", process)
