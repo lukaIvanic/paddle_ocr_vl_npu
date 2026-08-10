@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -96,6 +96,10 @@ class DecodeOptimizationConfig:
     vector_add_rms_norm: bool = False
     gqa_aiv_vector_core_count: int = 0
     super_kernel_scope: bool = False
+    super_kernel_options: str = (
+        "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+        "preload-code=per-func:early-start=1:split-mode=4"
+    )
     ascendc_token_embedding: bool = False
     ascendc_linear: bool = False
     ascendc_qkv_split: bool = False
@@ -397,6 +401,42 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         add_rms_norm=True,
     ),
 }
+
+# Retain explicit compiler-layout controls for the one-task decoder experiment.
+# The production-named preset above uses the installed CANN 9.0 defaults for
+# code splitting, code preload, and early start.  These variants isolate the
+# three controls without relaxing strict scope checking or changing the graph.
+_PADDLE_DECODER_MEGAKERNEL_B1 = DECODE_OPTIMIZATION_PRESETS[
+    "paddle_decoder_megakernel_b1"
+]
+DECODE_OPTIMIZATION_PRESETS.update(
+    {
+        "paddle_decoder_megakernel_b1_split1_nopreload": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1,
+            name="paddle_decoder_megakernel_b1_split1_nopreload",
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=none:early-start=0:split-mode=1"
+            ),
+        ),
+        "paddle_decoder_megakernel_b1_split4_nopreload": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1,
+            name="paddle_decoder_megakernel_b1_split4_nopreload",
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=none:early-start=0:split-mode=4"
+            ),
+        ),
+        "paddle_decoder_megakernel_b1_split4_perfunc_early0": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1,
+            name="paddle_decoder_megakernel_b1_split4_perfunc_early0",
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=per-func:early-start=0:split-mode=4"
+            ),
+        ),
+    }
+)
 
 
 def decode_optimization_names() -> tuple[str, ...]:
@@ -1716,9 +1756,8 @@ class TextDecodeStage(torch.nn.Module):
         if self._super_kernel_scope is None:
             raise RuntimeError("TorchAir SuperKernel scope was not initialized")
         with self._super_kernel_scope(
-            "paddle_decoder_b1_megakernel",
-            "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
-            "preload-code=none:early-start=0:split-mode=1",
+            f"{self.optimization.name}_scope",
+            self.optimization.super_kernel_options,
         ):
             return self._forward_impl(
                 input_ids,
@@ -1881,6 +1920,7 @@ def compile_text_decode_stage(
                 optimization.gqa_aiv_vector_core_count
             ),
             "super_kernel_scope": optimization.super_kernel_scope,
+            "super_kernel_options": optimization.super_kernel_options,
             "ascendc_token_embedding": optimization.ascendc_token_embedding,
             "ascendc_linear": optimization.ascendc_linear,
             "ascendc_qkv_split": optimization.ascendc_qkv_split,
