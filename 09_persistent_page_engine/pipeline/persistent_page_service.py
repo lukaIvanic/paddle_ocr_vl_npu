@@ -653,6 +653,9 @@ class _UnifiedPageReadySource:
                 dropped_figure_paths=prepared.dropped_figure_paths,
             ),
             document_images=prepared.document_images,
+            use_layout_detection=bool(
+                prepared.statistics.get("use_layout_detection", True)
+            ),
         )
         page_wall_s = time.perf_counter() - page.submission.submitted_at
         recognition = _recognition_metrics(page)

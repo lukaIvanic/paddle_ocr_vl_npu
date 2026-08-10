@@ -153,6 +153,9 @@ class OwnedPageEngine:
             height=height,
             blocks=blocks,
             document_images=prepared.document_images,
+            use_layout_detection=bool(
+                prepared.statistics.get("use_layout_detection", True)
+            ),
         )
 
     @staticmethod

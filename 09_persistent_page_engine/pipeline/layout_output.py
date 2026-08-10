@@ -607,6 +607,7 @@ class OwnedPageResult:
         height: int,
         blocks: list[OwnedPageBlock],
         document_images: list[dict[str, Any]],
+        use_layout_detection: bool = True,
     ) -> None:
         self.data = {
             "input_path": str(input_path),
@@ -616,6 +617,7 @@ class OwnedPageResult:
             "height": int(height),
             "parsing_res_list": blocks,
             "imgs_in_doc": document_images,
+            "use_layout_detection": bool(use_layout_detection),
         }
 
     def __getitem__(self, key: str) -> Any:
@@ -655,7 +657,7 @@ class OwnedPageResult:
                 "height": self.data["height"],
                 "model_settings": {
                     "use_doc_preprocessor": False,
-                    "use_layout_detection": True,
+                    "use_layout_detection": self.data["use_layout_detection"],
                     "use_chart_recognition": False,
                     "use_seal_recognition": False,
                     "use_ocr_for_image_block": False,

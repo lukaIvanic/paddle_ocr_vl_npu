@@ -52,6 +52,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=Path("/workspace/models/PP-DocLayoutV3_safetensors"),
     )
     parser.add_argument(
+        "--page-frontend",
+        choices=("layout", "phone_text_20"),
+        default="layout",
+        help=(
+            "Use PP-DocLayoutV3, or deterministic crops for the fixed "
+            "1280x1920 phone-text workload."
+        ),
+    )
+    parser.add_argument(
         "--recognizer-model",
         type=Path,
         default=Path("/workspace/models/PaddleOCR-VL-1.6"),
@@ -127,19 +136,25 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
         from paddleocr_vl.model.text_prefill import parse_text_buckets
         from paddleocr_vl.model.vision_prefill import parse_vision_buckets
         from paddleocr_vl.serving.engine import ContinuousRecognizer
-        from pipeline.layout_frontend import OwnedLayoutFrontend
-        from pipeline.layout_mask_guard import install_layout_mask_guard
         from pipeline.layout_output import page_markdown
         from pipeline.persistent_page_service import PageSubmission, PersistentPageEngine
 
         torch.npu.config.allow_internal_format = True
         torch.npu.set_compile_mode(jit_compile=False)
-        install_layout_mask_guard()
-        frontend = OwnedLayoutFrontend(
-            Path(config["layout_model"]),
-            torch.device("npu:0"),
-            graph_capture=config["layout_graph_capture"],
-        )
+        if config["page_frontend"] == "phone_text_20":
+            from pipeline.phone_text_frontend import PhoneText20Frontend
+
+            frontend = PhoneText20Frontend()
+        else:
+            from pipeline.layout_frontend import OwnedLayoutFrontend
+            from pipeline.layout_mask_guard import install_layout_mask_guard
+
+            install_layout_mask_guard()
+            frontend = OwnedLayoutFrontend(
+                Path(config["layout_model"]),
+                torch.device("npu:0"),
+                graph_capture=config["layout_graph_capture"],
+            )
         recognizer = ContinuousRecognizer(
             model=config["recognizer_model"],
             dtype="fp16",
@@ -211,7 +226,10 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
             {
                 "kind": "ready",
                 "worker_pid": __import__("os").getpid(),
-                "configuration": recognizer.configuration(),
+                "configuration": {
+                    **recognizer.configuration(),
+                    "page_frontend": config["page_frontend"],
+                },
             }
         )
 
