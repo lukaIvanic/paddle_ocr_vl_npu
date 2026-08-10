@@ -175,10 +175,9 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v4(
     (void)keyCacheOut;
     (void)valueCacheOut;
     (void)workspace;
-    // In a SuperKernel the enclosing fused task can launch more blocks than
-    // this single-worker prep stage needs. Keep the extra workers idle, but do
-    // not return: feed-sync-all inserts the balanced all-core barrier at the
-    // subfunction boundary, and every fused worker must reach it.
+    // This reference identity remains a one-worker AIV operator. Its final
+    // PIPE_ALL barrier is required because SuperKernel compilation removes the
+    // implicit barrier normally provided by TPipe::Destroy().
     if (GetBlockIdx() == 0 && tilingData.cacheLength == kCacheLength &&
         tilingData.queryElements == kQueryElements &&
         tilingData.stateElements == kStateElements) {
@@ -191,8 +190,50 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v4(
         PipeBarrier<PIPE_ALL>();
         pipe.Destroy();
     }
-    // All AIV workers in the enclosing SuperKernel reach this hardware
-    // barrier. Attention cannot read K/V until core 0 has completed its GM
-    // writes, while a standalone blockDim=1 launch remains valid.
+}
+
+extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_mixed24(
+    GM_ADDR query,
+    GM_ADDR key,
+    GM_ADDR value,
+    GM_ADDR cachePosition,
+    GM_ADDR keyState,
+    GM_ADDR valueState,
+    GM_ADDR keyCacheRef,
+    GM_ADDR valueCacheRef,
+    GM_ADDR orderedQuery,
+    GM_ADDR attentionMask,
+    GM_ADDR keyCacheOut,
+    GM_ADDR valueCacheOut,
+    GM_ADDR workspace,
+    GM_ADDR tiling)
+{
+    KERNEL_TASK_TYPE_DEFAULT(KERNEL_TYPE_MIX_AIC_1_1);
+    REGISTER_TILING_DEFAULT(PaddleDecodeKvScatterQueryTilingData);
+    GET_TILING_DATA(tilingData, tiling);
+    (void)key;
+    (void)value;
+    (void)keyCacheOut;
+    (void)valueCacheOut;
+    (void)workspace;
+    if (g_coreType == AIC) {
+        return;
+    }
+    if (GetBlockIdx() == 0 && tilingData.cacheLength == kCacheLength &&
+        tilingData.queryElements == kQueryElements &&
+        tilingData.stateElements == kStateElements) {
+        TPipe pipe;
+        PaddleDecodeKvScatterQueryKernel kernel;
+        kernel.Init(
+            query, keyCacheRef, valueCacheRef, cachePosition, keyState,
+            valueState, orderedQuery, attentionMask, &pipe);
+        kernel.Process();
+        PipeBarrier<PIPE_ALL>();
+        pipe.Destroy();
+    }
+    // This operator advertises the same 24-AIV/24-AIC geometry as the decoder
+    // SuperKernel. Every AIV worker therefore enters this subfunction. Core 0
+    // produces Q/K/V/mask, and this hardware barrier publishes those writes to
+    // the following attention subfunction without feed-sync-all.
     SyncAll<true>();
 }

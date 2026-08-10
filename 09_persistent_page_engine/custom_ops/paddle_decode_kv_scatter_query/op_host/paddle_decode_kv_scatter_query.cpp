@@ -37,6 +37,16 @@ static ge::graphStatus TilingFunc(gert::TilingContext* context)
     context->GetWorkspaceSizes(1)[0] = 0;
     return ge::GRAPH_SUCCESS;
 }
+
+static ge::graphStatus TilingFuncMixed24(gert::TilingContext* context)
+{
+    const ge::graphStatus status = TilingFunc(context);
+    if (status != ge::GRAPH_SUCCESS) {
+        return status;
+    }
+    context->SetBlockDim(24);
+    return ge::GRAPH_SUCCESS;
+}
 }
 
 namespace ge {
@@ -105,5 +115,15 @@ public:
     }
 };
 
+class PaddleDecodeKvScatterQueryMixed24 : public PaddleDecodeKvScatterQueryV4 {
+public:
+    explicit PaddleDecodeKvScatterQueryMixed24(const char* name)
+        : PaddleDecodeKvScatterQueryV4(name)
+    {
+        this->AICore().SetTiling(optiling::TilingFuncMixed24);
+    }
+};
+
 OP_ADD(PaddleDecodeKvScatterQueryV4);
+OP_ADD(PaddleDecodeKvScatterQueryMixed24);
 }

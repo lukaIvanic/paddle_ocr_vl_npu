@@ -17,5 +17,24 @@
       {"name": "key_cache_ref", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
       {"name": "value_cache_ref", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
     ]
+  },
+  {
+    "op": "PaddleDecodeKvScatterQueryMixed24",
+    "input_desc": [
+      {"name": "query", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "key", "param_type": "dynamic", "format": ["ND"], "type": ["fp16"]},
+      {"name": "value", "param_type": "dynamic", "format": ["ND"], "type": ["fp16"]},
+      {"name": "cache_position", "param_type": "required", "format": ["ND"], "type": ["int64"]},
+      {"name": "key_state", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "value_state", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "key_cache_ref", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "value_cache_ref", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
+    ],
+    "output_desc": [
+      {"name": "ordered_query", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "attention_mask", "param_type": "required", "format": ["ND"], "type": ["bool"]},
+      {"name": "key_cache_ref", "param_type": "required", "format": ["ND"], "type": ["fp16"]},
+      {"name": "value_cache_ref", "param_type": "required", "format": ["ND"], "type": ["fp16"]}
+    ]
   }
 ]

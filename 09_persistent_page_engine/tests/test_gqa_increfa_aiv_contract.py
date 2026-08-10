@@ -23,7 +23,7 @@ from paddleocr_vl.model import text_decode
 
 
 class GqaIncrefaAivContractTest(unittest.TestCase):
-    def test_v4_prep_keeps_idle_superkernel_workers_at_boundary(self) -> None:
+    def test_mixed24_prep_matches_outer_superkernel_geometry(self) -> None:
         kernel = (
             EXPERIMENT_ROOT
             / "custom_ops"
@@ -32,15 +32,46 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             / "paddle_decode_kv_scatter_query_v4.cpp"
         ).read_text(encoding="utf-8")
 
-        self.assertIn("GetBlockIdx() == 0", kernel)
-        self.assertNotIn("if (GetBlockIdx() != 0", kernel)
-        self.assertIn("feed-sync-all", kernel)
-        self.assertIn("kernel.Process();\n        PipeBarrier<PIPE_ALL>();", kernel)
-        self.assertIn("SyncAll<true>();", kernel)
-        self.assertGreater(
-            kernel.index("SyncAll<true>();"),
-            kernel.index("PipeBarrier<PIPE_ALL>();"),
+        v4_start = kernel.index(
+            'void paddle_decode_kv_scatter_query_v4('
         )
+        mixed_start = kernel.index(
+            'void paddle_decode_kv_scatter_query_mixed24('
+        )
+        v4_kernel = kernel[v4_start:mixed_start]
+        mixed_kernel = kernel[mixed_start:]
+
+        self.assertIn("GetBlockIdx() == 0", v4_kernel)
+        self.assertIn(
+            "kernel.Process();\n        PipeBarrier<PIPE_ALL>();",
+            v4_kernel,
+        )
+        self.assertNotIn("SyncAll<true>();", v4_kernel)
+        self.assertIn("KERNEL_TYPE_MIX_AIC_1_1", mixed_kernel)
+        self.assertIn("if (g_coreType == AIC)", mixed_kernel)
+        self.assertIn("GetBlockIdx() == 0", mixed_kernel)
+        self.assertIn("SyncAll<true>();", mixed_kernel)
+        self.assertGreater(
+            mixed_kernel.index("SyncAll<true>();"),
+            mixed_kernel.index("PipeBarrier<PIPE_ALL>();"),
+        )
+
+        host = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_decode_kv_scatter_query"
+            / "op_host"
+            / "paddle_decode_kv_scatter_query.cpp"
+        ).read_text(encoding="utf-8")
+        converter = (
+            EXPERIMENT_ROOT
+            / "paddleocr_vl"
+            / "model"
+            / "decode_kv_scatter_query.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("context->SetBlockDim(24);", host)
+        self.assertIn("PaddleDecodeKvScatterQueryMixed24", host)
+        self.assertIn('GE_OP_NAME_MIXED24 = "PaddleDecodeKvScatterQueryMixed24"', converter)
 
     def test_attention_overlay_uses_superkernel_safe_plain_kv_abi(self) -> None:
         operator_root = (

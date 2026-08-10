@@ -12,6 +12,8 @@ from .compile_utils import import_torchair
 
 PYTORCH_OP_NAME = "paddleocr_vl::decode_kv_scatter_query_v4"
 GE_OP_NAME = "PaddleDecodeKvScatterQueryV4"
+PYTORCH_OP_NAME_MIXED24 = "paddleocr_vl::decode_kv_scatter_query_mixed24"
+GE_OP_NAME_MIXED24 = "PaddleDecodeKvScatterQueryMixed24"
 
 
 @torch.library.custom_op(
@@ -45,6 +47,28 @@ def _decode_kv_scatter_query(
     return query.clone(), attention_mask
 
 
+@torch.library.custom_op(
+    PYTORCH_OP_NAME_MIXED24,
+    mutates_args=("key_cache", "value_cache"),
+)
+def _decode_kv_scatter_query_mixed24(
+    query: torch.Tensor,
+    key_cache: torch.Tensor,
+    value_cache: torch.Tensor,
+    cache_position: torch.Tensor,
+    key_state: torch.Tensor,
+    value_state: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    return _decode_kv_scatter_query(
+        query,
+        key_cache,
+        value_cache,
+        cache_position,
+        key_state,
+        value_state,
+    )
+
+
 @_decode_kv_scatter_query.register_fake
 def _decode_kv_scatter_query_fake(
     query: torch.Tensor,
@@ -65,6 +89,25 @@ def _decode_kv_scatter_query_fake(
     )
 
 
+@_decode_kv_scatter_query_mixed24.register_fake
+def _decode_kv_scatter_query_mixed24_fake(
+    query: torch.Tensor,
+    key_cache: torch.Tensor,
+    value_cache: torch.Tensor,
+    cache_position: torch.Tensor,
+    key_state: torch.Tensor,
+    value_state: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    return _decode_kv_scatter_query_fake(
+        query,
+        key_cache,
+        value_cache,
+        cache_position,
+        key_state,
+        value_state,
+    )
+
+
 _CONVERTER_REGISTERED = False
 _REF_PASS_PATCHED = False
 
@@ -81,7 +124,7 @@ def _patch_torchair_ref_mapping(torchair: Any) -> None:
 
     def _get_output_to_input_ref_idx(op: Any) -> dict[int, int]:
         mapping = dict(original(op))
-        if op.type == GE_OP_NAME:
+        if op.type in (GE_OP_NAME, GE_OP_NAME_MIXED24):
             # Compact GE inputs are query, dynamic-key[0], dynamic-value[0],
             # position, key-state, value-state, key-ref, and value-ref.
             mapping[2] = 6
@@ -141,6 +184,40 @@ def register_decode_kv_scatter_query_converter() -> None:
         # their names.
         return outputs[0], outputs[1]
 
+    @register_converter(
+        torch.ops.paddleocr_vl.decode_kv_scatter_query_mixed24.default
+    )
+    def _convert_decode_kv_scatter_query_mixed24(
+        query: Any,
+        key_cache: Any,
+        value_cache: Any,
+        cache_position: Any,
+        key_state: Any,
+        value_state: Any,
+        meta_outputs: Any = None,
+    ) -> Any:
+        del meta_outputs
+        outputs = ge_custom_op(
+            GE_OP_NAME_MIXED24,
+            inputs={
+                "query": query,
+                "key": [key_cache],
+                "value": [value_cache],
+                "cache_position": cache_position,
+                "key_state": key_state,
+                "value_state": value_state,
+                "key_cache_ref": key_cache,
+                "value_cache_ref": value_cache,
+            },
+            outputs=[
+                "ordered_query",
+                "attention_mask",
+                "key_cache_ref",
+                "value_cache_ref",
+            ],
+        )
+        return outputs[0], outputs[1]
+
     _CONVERTER_REGISTERED = True
 
 
@@ -151,6 +228,8 @@ def decode_kv_scatter_query(
     cache_position: torch.Tensor,
     key_state: torch.Tensor,
     value_state: torch.Tensor,
+    *,
+    variant: str = "v4",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Write BNSD K/V state and return ordered query plus future mask."""
     if query.shape != (1, 16, 1, 128):
@@ -166,7 +245,14 @@ def decode_kv_scatter_query(
     tensors = (query, key_cache, value_cache, key_state, value_state)
     if any(tensor.dtype != torch.float16 for tensor in tensors):
         raise ValueError("specialized KV scatter query requires FP16 tensors")
-    return _decode_kv_scatter_query(
+    if variant not in ("v4", "mixed24"):
+        raise ValueError(f"unsupported KV scatter query variant: {variant}")
+    op = (
+        _decode_kv_scatter_query_mixed24
+        if variant == "mixed24"
+        else _decode_kv_scatter_query
+    )
+    return op(
         query.contiguous(),
         key_cache,
         value_cache,

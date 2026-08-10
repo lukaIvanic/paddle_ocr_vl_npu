@@ -32,12 +32,14 @@ class DecodeKvScatterQuery(torch.nn.Module):
         self,
         strict_scope: bool,
         include_gqa: bool,
+        kv_variant: str,
         gqa_variant: str,
         gqa_vector_core_count: int,
         super_kernel_options: str,
     ) -> None:
         super().__init__()
         self.include_gqa = include_gqa
+        self.kv_variant = kv_variant
         self.gqa_variant = gqa_variant
         self.gqa_vector_core_count = gqa_vector_core_count
         self.super_kernel_options = super_kernel_options
@@ -63,6 +65,7 @@ class DecodeKvScatterQuery(torch.nn.Module):
             cache_position,
             key_state,
             value_state,
+            variant=self.kv_variant,
         )
         if not self.include_gqa:
             return ordered_query, attention_mask
@@ -115,6 +118,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--strict-scope", action="store_true")
+    parser.add_argument(
+        "--kv-variant",
+        choices=("v4", "mixed24"),
+        default="v4",
+    )
     parser.add_argument(
         "--include-gqa",
         action="store_true",
@@ -194,6 +202,7 @@ def main() -> int:
             DecodeKvScatterQuery(
                 args.strict_scope,
                 args.include_gqa,
+                args.kv_variant,
                 args.gqa_variant,
                 args.gqa_vector_core_count,
                 args.super_kernel_options,
