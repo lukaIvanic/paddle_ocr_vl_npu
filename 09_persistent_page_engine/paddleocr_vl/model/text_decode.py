@@ -67,6 +67,10 @@ from .decode_gqa_attention_aiv import (
     decode_gqa_attention_aiv,
     register_decode_gqa_attention_aiv_converter,
 )
+from .decode_gqa_attention_mixed24 import (
+    decode_gqa_attention_mixed24,
+    register_decode_gqa_attention_mixed24_converter,
+)
 from .decode_swiglu import (
     decode_swiglu,
     register_decode_swiglu_converter,
@@ -130,6 +134,7 @@ class DecodeOptimizationConfig:
     ascendc_decode_gqa_mixed24: bool = False
     ascendc_packed_qkv_rope_gqa_mixed24: bool = False
     ascendc_decode_gqa_attention: bool = False
+    ascendc_decode_gqa_attention_mixed24: bool = False
     ascendc_swiglu: bool = False
 
 
@@ -532,6 +537,16 @@ DECODE_OPTIMIZATION_PRESETS.update(
             super_kernel_options=(
                 "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
                 "preload-code=per-func:early-start=1:split-mode=4"
+            ),
+        ),
+        "paddle_decoder_megakernel_b1_attention_mixed24": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1,
+            name="paddle_decoder_megakernel_b1_attention_mixed24",
+            gqa_aiv_vector_core_count=16,
+            ascendc_decode_gqa_attention_mixed24=True,
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=per-func:early-start=0:split-mode=4"
             ),
         ),
     }
@@ -1501,11 +1516,12 @@ def _decode_attention(
             )
         if attention_mask is None:
             raise ValueError("gqa_aiv requires the static bool attention mask")
-        attention_fn = (
-            decode_gqa_attention_aiv
-            if optimization.ascendc_decode_gqa_attention
-            else gqa_incre_flash_attention_aiv
-        )
+        if optimization.ascendc_decode_gqa_attention_mixed24:
+            attention_fn = decode_gqa_attention_mixed24
+        elif optimization.ascendc_decode_gqa_attention:
+            attention_fn = decode_gqa_attention_aiv
+        else:
+            attention_fn = gqa_incre_flash_attention_aiv
         attention_output = attention_fn(
             query_states.contiguous(),
             key_for_attention.contiguous(),
@@ -2062,6 +2078,8 @@ def decode_attention_label(
             return "paddle_decode_gqa_increfa_aiv"
         if optimization.ascendc_decode_gqa_attention:
             return "paddle_decode_gqa_attention_aiv"
+        if optimization.ascendc_decode_gqa_attention_mixed24:
+            return "paddle_decode_gqa_attention_mixed24"
         return "paddle_gqa_increfa_aiv"
     return DECODE_ATTENTION
 
@@ -2113,6 +2131,7 @@ def decode_source_hash() -> str:
         "decode_qkv_split.py",
         "decode_kv_scatter_query.py",
         "decode_gqa_attention_aiv.py",
+        "decode_gqa_attention_mixed24.py",
         "decode_swiglu.py",
         "decode_position_add.py",
         "decode_rope_lookup.py",
@@ -2259,6 +2278,9 @@ def compile_text_decode_stage(
             "ascendc_decode_gqa_attention": (
                 optimization.ascendc_decode_gqa_attention
             ),
+            "ascendc_decode_gqa_attention_mixed24": (
+                optimization.ascendc_decode_gqa_attention_mixed24
+            ),
             "ascendc_swiglu": optimization.ascendc_swiglu,
         },
     }
@@ -2278,6 +2300,7 @@ def compile_text_decode_stage(
             and not optimization.ascendc_decode_gqa_mixed24
             and not optimization.ascendc_packed_qkv_rope_gqa_mixed24
             and not optimization.ascendc_decode_gqa_attention
+            and not optimization.ascendc_decode_gqa_attention_mixed24
         ):
             register_gqa_increfa_aiv_converter()
         if optimization.ascendc_decode_gqa:
@@ -2290,6 +2313,8 @@ def compile_text_decode_stage(
             register_decode_packed_qkv_rope_gqa_mixed24_converter()
         if optimization.ascendc_decode_gqa_attention:
             register_decode_gqa_attention_aiv_converter()
+        if optimization.ascendc_decode_gqa_attention_mixed24:
+            register_decode_gqa_attention_mixed24_converter()
         if optimization.ascendc_token_embedding:
             register_decode_token_embedding_converter()
         if optimization.ascendc_linear:

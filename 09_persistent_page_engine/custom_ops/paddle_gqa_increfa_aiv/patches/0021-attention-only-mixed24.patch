@@ -1,0 +1,23 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flash_attention_arch32.h
+@@ -226,4 +226,4 @@ inline __aicore__ void incre_flash_attention_FIAS_arch32(
+     KERNEL_TASK_TYPE(QF16_KVF16_OUTF16_ANTIPERCHANNEL_VALL_TILING,
+-                     KERNEL_TYPE_MIX_AIV_1_0);
++                     KERNEL_TYPE_MIX_AIC_1_1);
+     KERNEL_TASK_TYPE(QF16_KVF16_OUTF16_ANTIPERCHANNEL_FLASHDECODING_VALL_TILING,
+-                     KERNEL_TYPE_MIX_AIV_1_0);
++                     KERNEL_TYPE_MIX_AIC_1_1);
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -3505,4 +3505,8 @@ ge::graphStatus IFATiling::CalcNumBlocks()
+     if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) {
+-        const uint32_t launchAivNum = usedCoreNum_;
+-        ifaContext_->numBlocks = ascendcPlatform.CalcTschBlockDim(launchAivNum, 0U, launchAivNum);
++        // Match the enclosing Cube-first decoder geometry. The independent
++        // entry keeps workers 16..23 idle before entering stock attention.
++        constexpr uint32_t launchAivNum = 24U;
++        constexpr uint32_t launchAicNum = 24U;
++        ifaContext_->numBlocks =
++            ascendcPlatform.CalcTschBlockDim(launchAivNum, launchAicNum, launchAivNum);

@@ -188,6 +188,7 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v4(
             query, keyCacheRef, valueCacheRef, cachePosition, keyState,
             valueState, orderedQuery, attentionMask, &pipe);
         kernel.Process();
+        PipeBarrier<PIPE_ALL>();
         pipe.Destroy();
     }
 }

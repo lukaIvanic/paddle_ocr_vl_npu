@@ -17,6 +17,12 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_attention_aiv(
     __gm__ uint8_t *workspace,
     __gm__ uint8_t *tiling)
 {
+    // A complete Cube-first decoder SuperKernel launches 24 logical AIV
+    // workers. This attention tiling owns only workers 0..15. Reject idle
+    // workers before the inherited dispatcher constructs any local pipe state.
+    if (GetBlockIdx() >= 16U) {
+        return;
+    }
     incre_flash_attention_FIAS_arch32(
         query,
         key,

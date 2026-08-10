@@ -35,6 +35,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("GetBlockIdx() == 0", kernel)
         self.assertNotIn("if (GetBlockIdx() != 0", kernel)
         self.assertIn("feed-sync-all", kernel)
+        self.assertIn("kernel.Process();\n        PipeBarrier<PIPE_ALL>();", kernel)
 
     def test_attention_overlay_uses_superkernel_safe_plain_kv_abi(self) -> None:
         operator_root = (
@@ -71,6 +72,51 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("0015-decoder-fixed-no-optional-inputs.patch", build_script)
         self.assertIn("PADDLE_DECODE_GQA_PLAIN_KV", kernel_entry)
         self.assertNotIn("uint8_t *pseShift", kernel_entry)
+
+    def test_attention_only_mixed24_matches_outer_decoder_geometry(self) -> None:
+        operator_root = (
+            EXPERIMENT_ROOT / "custom_ops" / "paddle_gqa_increfa_aiv"
+        )
+        build_script = (operator_root / "build.sh").read_text(encoding="utf-8")
+        geometry_patch = (
+            operator_root / "patches" / "0021-attention-only-mixed24.patch"
+        ).read_text(encoding="utf-8")
+        kernel = (
+            operator_root
+            / "source_overlay_decode_attention"
+            / "op_kernel"
+            / "paddle_decode_gqa_attention_aiv.cpp"
+        ).read_text(encoding="utf-8")
+        converter = (
+            EXPERIMENT_ROOT
+            / "paddleocr_vl"
+            / "model"
+            / "decode_gqa_attention_mixed24.py"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("decode_attention_only_mixed24)", build_script)
+        self.assertIn("0021-attention-only-mixed24.patch", build_script)
+        self.assertIn('EXPECTED_TASK_RATIO="1:1"', build_script)
+        self.assertIn("KERNEL_TYPE_MIX_AIC_1_1", geometry_patch)
+        self.assertIn("launchAivNum = 24U", geometry_patch)
+        self.assertIn("launchAicNum = 24U", geometry_patch)
+        self.assertIn("if (GetBlockIdx() >= 16U)", kernel)
+        self.assertIn('GE_OP_NAME = "PaddleDecodeGqaAttentionMixed24"', converter)
+
+        optimization = text_decode.resolve_decode_optimization(
+            "paddle_decoder_megakernel_b1_attention_mixed24"
+        )
+        self.assertTrue(optimization.super_kernel_scope)
+        self.assertTrue(optimization.ascendc_decode_gqa_attention_mixed24)
+        self.assertFalse(optimization.ascendc_decode_gqa_attention)
+        self.assertFalse(optimization.ascendc_decode_gqa)
+        self.assertFalse(optimization.ascendc_packed_qkv_rope_gqa_mixed24)
+        self.assertEqual(
+            text_decode.decode_attention_label(
+                SimpleNamespace(type="npu"), optimization
+            ),
+            "paddle_decode_gqa_attention_mixed24",
+        )
 
     def test_fused_decode_overlay_has_compact_balanced_plain_kv_abi(self) -> None:
         operator_root = (

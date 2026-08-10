@@ -146,6 +146,22 @@ case "$EXPERIMENT_VARIANT" in
         OP_API_SYMBOL_PREFIX="PaddleDecodeGqaAttentionAiv"
         FUSED_DECODE=true
         ;;
+    decode_attention_only_mixed24)
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0015-decoder-fixed-no-optional-inputs.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0021-attention-only-mixed24.patch")
+        VENDOR_NAME="paddle_decode_gqa_attention_mixed24"
+        CACHE_NAMESPACE="paddle_decode_gqa_attention_mixed24"
+        OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode_attention"
+        CUSTOM_OP_SNAKE="paddle_decode_gqa_attention_mixed24"
+        CUSTOM_OP_GE="PaddleDecodeGqaAttentionMixed24"
+        CUSTOM_OP_REL="attention/$CUSTOM_OP_SNAKE"
+        PREPARED_OP_REL="attention/paddle_gqa_incre_flash_attention_aiv"
+        OP_API_SYMBOL_PREFIX="PaddleDecodeGqaAttentionMixed24"
+        FUSED_DECODE=true
+        EXPECT_AIV_ONLY=false
+        EXPECTED_TASK_RATIO="1:1"
+        ;;
     split_k32_pairwise_sync_control)
         PATCH_PATHS+=(
             "$CUSTOM_ROOT/patches/0009-force-split-k32-control.patch"
@@ -267,16 +283,20 @@ if [[ "$SOURCE_PREPARED" == false ]]; then
                 -e "s/paddle_decode_gqa_incre_flash_attention_aiv/$CUSTOM_OP_SNAKE/g" \
                 -e "s/PaddleGqaIncreFlashAttentionAiv/$CUSTOM_OP_GE/g" \
                 -e "s/paddle_gqa_incre_flash_attention_aiv/$CUSTOM_OP_SNAKE/g" \
+                -e "s/PaddleDecodeGqaAttentionAiv/$CUSTOM_OP_GE/g" \
+                -e "s/paddle_decode_gqa_attention_aiv/$CUSTOM_OP_SNAKE/g" \
                 "$source_path"
         done < <(find "$OP_ROOT" -type f \
             ! -path '*/op_api_upstream_disabled/*' ! -name '*.upstream_disabled' -print0)
         while IFS= read -r -d '' source_path; do
             renamed_path="${source_path//paddle_decode_gqa_incre_flash_attention_aiv/$CUSTOM_OP_SNAKE}"
+            renamed_path="${renamed_path//paddle_decode_gqa_attention_aiv/$CUSTOM_OP_SNAKE}"
             if [[ "$renamed_path" != "$source_path" ]]; then
                 mv "$source_path" "$renamed_path"
             fi
         done < <(find "$OP_ROOT" -type f \
-            -name '*paddle_decode_gqa_incre_flash_attention_aiv*' -print0)
+            \( -name '*paddle_decode_gqa_incre_flash_attention_aiv*' \
+               -o -name '*paddle_decode_gqa_attention_aiv*' \) -print0)
         mv \
             "$BUILD_SOURCE_ROOT/$PREPARED_OP_REL" \
             "$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
