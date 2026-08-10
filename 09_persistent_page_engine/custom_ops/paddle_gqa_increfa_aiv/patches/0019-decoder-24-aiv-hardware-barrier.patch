@@ -25,7 +25,7 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_dec
 -constexpr uint32_t kSyncStorageElements =
 -    kSyncStorageBytes / sizeof(int32_t);
 -
-@@ -164,13 +159,0 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_aiv(
+@@ -164,11 +159,0 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_aiv(
 -    // Binary fusion launches every subfunction with the enclosing
 -    // SuperKernel's blockDim. The full Paddle decoder uses blockDim=24, while
 -    // this specialized attention tiling has exactly 16 AIV workers. Never let
@@ -37,7 +37,7 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_dec
 -        return;
 -    }
 -
-@@ -187,31 +169,15 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_aiv(
+@@ -187,24 +171,11 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_aiv(
 -    // The enclosing SuperKernel has 24 AIV slots, but only the first 16 enter
 -    // this subfunction. Its zero-argument hardware barrier would therefore
 -    // wait for workers that returned above. Use the fixed-participant software
