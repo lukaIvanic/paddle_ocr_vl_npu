@@ -184,7 +184,9 @@ if [[ "$SOURCE_PREPARED" == false ]]; then
                 "$source_path"
         done < <(find "$OP_ROOT" -type f \
             ! -path '*/op_api_upstream_disabled/*' ! -name '*.upstream_disabled' -print0)
-        git -C "$BUILD_SOURCE_ROOT" mv "$PREPARED_OP_REL" "$CUSTOM_OP_REL"
+        mv \
+            "$BUILD_SOURCE_ROOT/$PREPARED_OP_REL" \
+            "$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
         OP_ROOT="$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
     fi
     find "$OP_ROOT/CMakeLists.txt" "$OP_ROOT/op_host" "$OP_ROOT/op_kernel" -type f \
