@@ -94,6 +94,11 @@ class PackedStep(torch.nn.Module):
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("standalone", "boundary"), required=True)
+    parser.add_argument(
+        "--factor-mode",
+        choices=("trig", "identity"),
+        default="trig",
+    )
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
@@ -136,11 +141,17 @@ def main() -> int:
         torch.arange(1024, dtype=torch.float32).view(1024, 1)
         * torch.linspace(0.0001, 0.01, 64, dtype=torch.float32).view(1, 64)
     )
-    factor_lut = torch.stack(
-        (torch.cat((angles, angles), dim=-1).cos(),
-         torch.cat((angles, angles), dim=-1).sin()),
-        dim=0,
-    ).to(dtype=torch.float16, device="npu:0")
+    if args.factor_mode == "identity":
+        factor_lut = torch.stack(
+            (torch.ones((1024, 128)), torch.zeros((1024, 128))),
+            dim=0,
+        ).to(dtype=torch.float16, device="npu:0")
+    else:
+        factor_lut = torch.stack(
+            (torch.cat((angles, angles), dim=-1).cos(),
+             torch.cat((angles, angles), dim=-1).sin()),
+            dim=0,
+        ).to(dtype=torch.float16, device="npu:0")
     rope_delta = torch.tensor([[7]], dtype=torch.int64, device="npu:0")
     key_cache = torch.zeros((1, 2, 1024, 128), dtype=torch.float16, device="npu:0")
     value_cache = torch.zeros_like(key_cache)
@@ -282,6 +293,7 @@ def main() -> int:
         },
         "contract": {
             "mode": args.mode,
+            "factor_mode": args.factor_mode,
             "qkv_shape": [1, 1, 2560],
             "cache_shape": [1, 2, 1024, 128],
             "factor_lut_shape": [2, 1024, 128],
