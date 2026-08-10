@@ -1,0 +1,12 @@
+[
+  {
+    "op": "PaddleDecodePositionAddV1",
+    "input_desc": [
+      {"name": "cache_position", "param_type": "required", "format": ["ND"], "type": ["int64"]},
+      {"name": "rope_delta", "param_type": "required", "format": ["ND"], "type": ["int64"]}
+    ],
+    "output_desc": [
+      {"name": "decode_position", "param_type": "required", "format": ["ND"], "type": ["int64"]}
+    ]
+  }
+]

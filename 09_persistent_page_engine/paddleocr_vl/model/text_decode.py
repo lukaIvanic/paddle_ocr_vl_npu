@@ -33,6 +33,10 @@ from .decode_qkv_split import (
     decode_qkv_split,
     register_decode_qkv_split_converter,
 )
+from .decode_position_add import (
+    decode_position_add,
+    register_decode_position_add_converter,
+)
 from .config import PaddleOCRTextConfig
 from .gqa_increfa_aiv import (
     gqa_incre_flash_attention_aiv,
@@ -79,6 +83,7 @@ class DecodeOptimizationConfig:
     ascendc_token_embedding: bool = False
     ascendc_linear: bool = False
     ascendc_qkv_split: bool = False
+    ascendc_position_add: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -138,6 +143,7 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         ascendc_token_embedding=True,
         ascendc_linear=True,
         ascendc_qkv_split=True,
+        ascendc_position_add=True,
     ),
     "combined_apply_pse_sentinel": DecodeOptimizationConfig(
         name="combined_apply_pse_sentinel",
@@ -1279,8 +1285,14 @@ def run_text_decode_transformer(
             "unsupported IncreFA length mode: "
             f"{optimization.increfa_length_mode!r}"
         )
-    decode_position = cache_position.view(batch_size, 1) + rope_deltas.to(
+    cache_position_2d = cache_position.view(batch_size, 1)
+    rope_deltas_i64 = rope_deltas.to(
         device=inputs_embeds.device, dtype=torch.int64
+    )
+    decode_position = (
+        decode_position_add(cache_position_2d, rope_deltas_i64)
+        if optimization.ascendc_position_add
+        else cache_position_2d + rope_deltas_i64
     )
     if optimization.rotary_factors == "mrope":
         position_ids = decode_position.unsqueeze(0).expand(3, -1, -1)
@@ -1659,6 +1671,7 @@ def decode_source_hash() -> str:
         "decode_token_embedding.py",
         "decode_linear_matmul_v3.py",
         "decode_qkv_split.py",
+        "decode_position_add.py",
     ):
         path = here / name
         digest.update(name.encode("utf-8"))
@@ -1765,6 +1778,7 @@ def compile_text_decode_stage(
             "ascendc_token_embedding": optimization.ascendc_token_embedding,
             "ascendc_linear": optimization.ascendc_linear,
             "ascendc_qkv_split": optimization.ascendc_qkv_split,
+            "ascendc_position_add": optimization.ascendc_position_add,
         },
     }
     if backend_name == "raw_eager":
@@ -1784,6 +1798,8 @@ def compile_text_decode_stage(
             register_decode_linear_matmul_v3_converter()
         if optimization.ascendc_qkv_split:
             register_decode_qkv_split_converter()
+        if optimization.ascendc_position_add:
+            register_decode_position_add_converter()
         shape_cache_dir = torchair_cache_dir_for_shape(
             cache_root,
             batch_size=batch_size,
