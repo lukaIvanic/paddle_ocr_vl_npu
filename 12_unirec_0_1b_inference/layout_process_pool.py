@@ -412,6 +412,7 @@ def _worker_main(
     recognition_model_path: str | None,
     recognition_dtype: str,
     recognition_cache_dir: str | None,
+    empty_cache_after_page: bool,
     task_queue: Any,
     result_queue: Any,
 ) -> None:
@@ -530,6 +531,12 @@ def _worker_main(
                         for name, value in prefill_timing.items()
                         if not name.endswith("_s")
                     }
+                    if empty_cache_after_page:
+                        empty_cache_started = time.perf_counter()
+                        torch.npu.empty_cache()
+                        result["frontend_timing_s"][
+                            "recognition_worker_empty_cache_s"
+                        ] = time.perf_counter() - empty_cache_started
                 result, shared_pack_s, shared_payload_bytes = (
                     _pack_frontend_payload_shared(result)
                 )
@@ -591,6 +598,7 @@ class DynamicLayoutProcessPool:
         recognition_model_path: Path | None = None,
         recognition_dtype: str = "float16",
         recognition_cache_dir: Path | None = None,
+        empty_cache_after_page: bool = False,
         timeout_s: float = 1800.0,
     ) -> None:
         if worker_count < 1:
@@ -628,6 +636,7 @@ class DynamicLayoutProcessPool:
                         if recognition_cache_dir is not None
                         else None
                     ),
+                    empty_cache_after_page,
                     self.task_queue,
                     self.result_queue,
                 ),

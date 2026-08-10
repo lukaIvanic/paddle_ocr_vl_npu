@@ -196,6 +196,15 @@ def parse_args() -> argparse.Namespace:
             "through shared memory; the coordinator owns continuous decode."
         ),
     )
+    parser.add_argument(
+        "--worker-empty-cache-after-page",
+        action="store_true",
+        help=(
+            "Experimental HBM control: after a layout worker finishes one "
+            "page's recognition prefill and all temporary NPU tensors leave "
+            "scope, return unused cached allocator blocks to the device."
+        ),
+    )
     parser.add_argument("--stock-encoder", type=Path, required=True)
     parser.add_argument("--stock-decoder", type=Path, required=True)
     parser.add_argument("--stock-tokenizer-mapping", type=Path, required=True)
@@ -1533,6 +1542,11 @@ def main() -> None:
                 "--prefill-in-layout-workers requires "
                 "--text-prefill-mode compiled_packed_s1024"
             )
+    elif args.worker_empty_cache_after_page:
+        raise ValueError(
+            "--worker-empty-cache-after-page requires "
+            "--prefill-in-layout-workers"
+        )
     if args.layout_batch_size > 1 and args.layout_backend != "transformers_npu":
         raise ValueError(
             "--layout-batch-size > 1 requires --layout-backend transformers_npu"
@@ -1659,6 +1673,7 @@ def main() -> None:
             recognition_model_path=model_path,
             recognition_dtype=args.dtype,
             recognition_cache_dir=args.compile_cache_dir.expanduser().resolve(),
+            empty_cache_after_page=args.worker_empty_cache_after_page,
         )
         atexit.register(layout_process_pool.close)
         layout_process_setup_s = layout_process_pool.setup_wall_s
@@ -2159,6 +2174,7 @@ def main() -> None:
         "layout_batch_size": args.layout_batch_size,
         "layout_process_workers": args.layout_process_workers,
         "prefill_in_layout_workers": args.prefill_in_layout_workers,
+        "worker_empty_cache_after_page": args.worker_empty_cache_after_page,
         "layout_process_setup_s": layout_process_setup_s,
         "layout_process_warmup": layout_process_warmup,
         "layout_process": layout_process_summary,
