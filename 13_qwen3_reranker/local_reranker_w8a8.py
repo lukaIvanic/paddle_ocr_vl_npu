@@ -251,9 +251,7 @@ def prepare_w8a8_weight_format(module: nn.Module, *, requested: str) -> dict[str
     for linear in linears:
         if linear.weight_is_matmul_ready:
             continue
-        if requested == "fractal_nz_inference_doc":
-            if not is_310p:
-                raise ValueError("fractal_nz_inference_doc is only for Atlas inference products")
+        if is_310p and requested in {"fractal_nz", "fractal_nz_inference_doc"}:
             # Keep the formatted buffer in physical/logical [N,K] form. The
             # compiled forward must express the transpose to [K,N], matching
             # Huawei's Atlas-inference high-performance example exactly.
@@ -262,14 +260,13 @@ def prepare_w8a8_weight_format(module: nn.Module, *, requested: str) -> dict[str
                 FRACTAL_NZ,
             )
             linear.weight_requires_graph_transpose = True
+        elif requested == "fractal_nz_inference_doc":
+            raise ValueError("fractal_nz_inference_doc is only for Atlas inference products")
         elif requested == "fractal_nz":
-            if is_310p:
-                prepared = torch_npu.npu_format_cast(linear.weight_q, FRACTAL_NZ).transpose(0, 1)
-            else:
-                prepared = torch_npu.npu_format_cast(
-                    linear.weight_q.transpose(0, 1).contiguous(),
-                    FRACTAL_NZ,
-                )
+            prepared = torch_npu.npu_format_cast(
+                linear.weight_q.transpose(0, 1).contiguous(),
+                FRACTAL_NZ,
+            )
         else:
             prepared = linear.weight_q.transpose(0, 1).contiguous()
         linear.weight_q = prepared
@@ -282,10 +279,8 @@ def prepare_w8a8_weight_format(module: nn.Module, *, requested: str) -> dict[str
         "device_layout_branch": (
             "native_logical_k_n"
             if requested == "native"
-            else "310p_documented_transposed_weight_then_format"
-            if requested == "fractal_nz_inference_doc"
-            else "310p_format_then_transpose"
-            if is_310p
+            else "310p_n_k_format_then_graph_transpose"
+            if requested in {"fractal_nz", "fractal_nz_inference_doc"} and is_310p
             else "a2_logical_k_n_then_format"
         ),
         "quant_linear_count": len(linears),
