@@ -264,6 +264,38 @@ prompt token IDs for every pair. If segmentation changes any token ID, the
 runtime refuses to use the cache. Graph cache directories include the fixed
 shape, model dimensions, and a source hash.
 
+### Prefix-cache throughput matrix
+
+Use the static-shape benchmark to sweep batch size at continuation length 128
+and continuation length at batch size 1:
+
+```bash
+python3 13_qwen3_reranker/benchmark_prefix_cache_throughput.py \
+  --model-dir "$MODEL_DIR" \
+  --device npu:0 \
+  --batch-sizes 1,2,4,8 \
+  --continuation-lengths 128,256,512 \
+  --matrix axes \
+  --warmups 2 \
+  --repeats 10 \
+  --compile-cache-dir .runtime_cache/13_qwen3_reranker/prefix_throughput \
+  --json-out /tmp/qwen3_reranker_prefix_throughput.json
+```
+
+The benchmark loads the model once, builds the 60-token reusable prefix once
+with manual eager attention, and compares three lanes for every selected shape:
+
+- full manual prefill;
+- full compiled PromptFA prefill;
+- prefix-cached compiled PromptFA with square-padded Q.
+
+It excludes the first graph call and all warmups from steady measurements. The
+main metrics are `served_input_tok_s` (semantic prompt tokens served),
+`executed_model_tok_s` (tokens that execute decoder QKV and MLP in the timed
+call), and `physical_attention_q_tok_s` (PromptFA Q rows including disposable
+square-padding rows). Use `--matrix cross` only when the full batch-by-length
+cross-product is required.
+
 ## Weight Modes
 
 - `dense`: all model weights stay FP16.
