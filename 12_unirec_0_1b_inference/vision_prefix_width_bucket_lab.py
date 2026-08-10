@@ -45,12 +45,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--bucket-width", type=int, default=960)
     parser.add_argument("--bucket-height", type=int, default=64)
     parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument(
+        "--page-limit",
+        type=int,
+        default=0,
+        help="Use only the first N page-manifest rows; zero keeps every page.",
+    )
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--repeats", type=int, default=20)
     args = parser.parse_args()
     if args.bucket_width % 16 or args.bucket_height % 16:
         parser.error("bucket dimensions must be divisible by 16")
-    if args.batch_size < 1 or args.warmup < 0 or args.repeats < 1:
+    if args.batch_size < 1 or args.page_limit < 0 or args.warmup < 0 or args.repeats < 1:
         parser.error("batch size and repeats must be positive; warmup cannot be negative")
     return args
 
@@ -292,7 +298,15 @@ def main() -> None:
         tokenize_figure_of_table,
     )
 
+    page_rows = read_jsonl(args.page_manifest.expanduser().resolve())
     all_rows = read_jsonl(args.crop_manifest.expanduser().resolve())
+    if args.page_limit:
+        selected_page_indices = {
+            int(row["page_index"]) for row in page_rows[: args.page_limit]
+        }
+        all_rows = [
+            row for row in all_rows if int(row["page_index"]) in selected_page_indices
+        ]
     selected_rows, width_counts, fitting_count = _select_rows(
         all_rows,
         bucket_height=args.bucket_height,
@@ -469,6 +483,7 @@ def main() -> None:
         "status": "ok" if allclose else "correctness_failed",
         "physical_devices": physical_devices,
         "worker_count": 1,
+        "page_limit": args.page_limit,
         "compile_api": compile_api,
         "bucket": {
             "processed_size": [args.bucket_width, args.bucket_height],
