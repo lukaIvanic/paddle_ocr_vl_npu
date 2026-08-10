@@ -29,10 +29,12 @@ class DecodeKvScatterQuery(torch.nn.Module):
         strict_scope: bool,
         include_gqa: bool,
         gqa_vector_core_count: int,
+        super_kernel_options: str,
     ) -> None:
         super().__init__()
         self.include_gqa = include_gqa
         self.gqa_vector_core_count = gqa_vector_core_count
+        self.super_kernel_options = super_kernel_options
         self.scope = None
         if strict_scope:
             self.scope = __import__(
@@ -92,8 +94,7 @@ class DecodeKvScatterQuery(torch.nn.Module):
             return self._forward_impl(*args)
         with self.scope(
             "paddle_decode_kv_scatter_query_probe",
-            "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
-            "preload-code=none:early-start=0:split-mode=1",
+            self.super_kernel_options,
         ):
             return self._forward_impl(*args)
 
@@ -113,6 +114,13 @@ def parse_args() -> argparse.Namespace:
         type=int,
         choices=(16, 32),
         default=16,
+    )
+    parser.add_argument(
+        "--super-kernel-options",
+        default=(
+            "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+            "preload-code=per-func:early-start=1:split-mode=4"
+        ),
     )
     parser.add_argument("--direct-eager-extension", action="store_true")
     return parser.parse_args()
@@ -168,6 +176,7 @@ def main() -> int:
                 args.strict_scope,
                 args.include_gqa,
                 args.gqa_vector_core_count,
+                args.super_kernel_options,
             ).forward,
             config=compiler_config,
             dynamic=False,
@@ -334,6 +343,7 @@ def main() -> int:
             "strict_scope": args.strict_scope,
             "direct_eager_extension": args.direct_eager_extension,
             "include_gqa": args.include_gqa,
+            "super_kernel_options": args.super_kernel_options,
             "gqa_vector_core_count": (
                 args.gqa_vector_core_count if args.include_gqa else None
             ),
