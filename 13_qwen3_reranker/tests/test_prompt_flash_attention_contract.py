@@ -122,6 +122,43 @@ class PromptFlashAttentionContractTest(unittest.TestCase):
                 scale=8**-0.5,
             )
 
+    def test_310p_rectangular_mask_square_pads_query_and_discards_dummy_rows(self) -> None:
+        captured: dict[str, object] = {}
+
+        def fake_prompt_flash_attention(query, key, value, **kwargs):
+            captured.update(query=query, key=key, value=value, kwargs=kwargs)
+            return query
+
+        fake_torch_npu = SimpleNamespace(npu_prompt_flash_attention=fake_prompt_flash_attention)
+        query = torch.randn(2, 4, 2, 8, dtype=torch.float16)
+        key = torch.randn(2, 2, 4, 8, dtype=torch.float16)
+        value = torch.randn(2, 2, 4, 8, dtype=torch.float16)
+        real_mask = torch.tensor(
+            [
+                [[[False, False, True, True], [False, False, False, True]]],
+                [[[False, True, True, True], [False, False, True, True]]],
+            ],
+            dtype=torch.bool,
+        )
+
+        with patch.dict(sys.modules, {"torch_npu": fake_torch_npu}):
+            output = prompt_flash_attention_bnsd_310p_compatible(
+                query,
+                key,
+                value,
+                attention_mask=real_mask,
+                num_heads=4,
+                scale=8**-0.5,
+            )
+
+        torch.testing.assert_close(output, query)
+        self.assertEqual(captured["query"].shape, (2, 4, 4, 8))
+        self.assertEqual(captured["key"].shape, (2, 4, 4, 8))
+        square_mask = captured["kwargs"]["atten_mask"]
+        self.assertEqual(square_mask.shape, (2, 1, 4, 4))
+        self.assertFalse(square_mask[:, :, :2].all(dim=-1).any().item())
+        torch.testing.assert_close(square_mask[:, :, -2:], real_mask)
+
 
 if __name__ == "__main__":
     unittest.main()

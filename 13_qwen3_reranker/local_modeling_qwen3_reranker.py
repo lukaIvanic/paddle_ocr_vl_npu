@@ -135,9 +135,10 @@ def prompt_flash_attention_bnsd_310p_compatible(
     """Run the Atlas inference-series-safe PromptFA contract.
 
     Atlas 310P does not support the PromptFA actual-sequence-length inputs or a
-    non-default ``num_key_value_heads``. Expand GQA key/value heads explicitly,
-    encode left padding and causality in a bool mask, and omit those unsupported
-    optional arguments from the operator call.
+    non-default ``num_key_value_heads``. Its masked path also rejects unequal
+    Q/K sequence lengths. Expand GQA key/value heads, square-pad projected Q
+    with disposable rows when Q is shorter than K, encode left padding and
+    causality in a bool mask, and omit the unsupported optional arguments.
     """
     if query_states.dtype != torch.float16:
         raise ValueError("310P-compatible prompt_flash_attention requires float16 Q/K/V")
@@ -157,12 +158,57 @@ def prompt_flash_attention_bnsd_310p_compatible(
     key_states = repeat_kv(key_states, num_key_value_groups).contiguous()
     value_states = repeat_kv(value_states, num_key_value_groups).contiguous()
 
+    query_length = int(query_states.shape[2])
+    key_length = int(key_states.shape[2])
+    if query_length > key_length:
+        raise ValueError("310P-compatible masked PromptFA requires Q length <= K length")
+    expected_mask_shape = (int(query_states.shape[0]), 1, query_length, key_length)
+    if tuple(attention_mask.shape) != expected_mask_shape:
+        raise ValueError(
+            f"expected attention mask shape {expected_mask_shape}, got {tuple(attention_mask.shape)}"
+        )
+
+    padded_query_rows = key_length - query_length
+    if padded_query_rows:
+        dummy_queries = query_states.new_zeros(
+            (
+                int(query_states.shape[0]),
+                int(query_states.shape[1]),
+                padded_query_rows,
+                int(query_states.shape[3]),
+            )
+        )
+        query_states = torch.cat((dummy_queries, query_states), dim=2).contiguous()
+
+        # PromptFA rejects a mask row with no participating key. Dummy outputs
+        # are discarded, so let each dummy query attend one matching key row.
+        dummy_query_positions = torch.arange(
+            padded_query_rows,
+            device=attention_mask.device,
+            dtype=torch.int64,
+        ).view(1, 1, padded_query_rows, 1)
+        key_positions = torch.arange(
+            key_length,
+            device=attention_mask.device,
+            dtype=torch.int64,
+        ).view(1, 1, 1, key_length)
+        dummy_mask = (dummy_query_positions != key_positions).expand(
+            int(query_states.shape[0]),
+            1,
+            padded_query_rows,
+            key_length,
+        )
+        attention_mask = torch.cat(
+            (dummy_mask, attention_mask.to(dtype=torch.bool)),
+            dim=2,
+        )
+
     try:
         import torch_npu
     except Exception as exc:
         raise RuntimeError(f"torch_npu import failed for prompt flash attention: {exc}") from exc
 
-    return torch_npu.npu_prompt_flash_attention(
+    attention_output = torch_npu.npu_prompt_flash_attention(
         query_states.contiguous(),
         key_states,
         value_states,
@@ -174,6 +220,9 @@ def prompt_flash_attention_bnsd_310p_compatible(
         next_tokens=PROMPT_FA_FULL_ATTENTION_TOKENS,
         sparse_mode=0,
     )
+    if padded_query_rows:
+        attention_output = attention_output[:, :, -query_length:, :]
+    return attention_output
 
 
 def build_left_padded_causal_mask(attention_mask: torch.Tensor, dtype: torch.dtype) -> torch.Tensor:

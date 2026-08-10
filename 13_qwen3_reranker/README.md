@@ -220,8 +220,11 @@ python3 13_qwen3_reranker/run_local_qwen3_reranker.py \
 ```
 
 Each block uses a bool `[B,1,Q,K]` causal/padding mask and omits
-`actual_seq_lengths` and `actual_seq_lengths_kv`. GQA KV states stay compact in
-the per-layer cache and are expanded only at the PromptFA boundary. Add
+`actual_seq_lengths` and `actual_seq_lengths_kv`. When cached K/V makes `Q<K`,
+the 310P boundary prepends disposable projected-Q rows and a safe dummy mask so
+PromptFA physically receives `Q=K`; only the real output rows are retained. GQA
+KV states stay compact in the per-layer cache and are expanded only at the
+PromptFA boundary. Add
 `--compile-forward` to compile each fixed-shape chunk step with TorchAir. The
 host sequences the compiled steps while KV tensors remain on NPU; the yes/no
 projection remains outside the compiled prefill graphs.
@@ -233,7 +236,7 @@ caches the fixed 60-token system/task prefix once, using manual eager attention,
 then runs one disk-cached TorchAir continuation graph with PromptFA:
 
 - prefix build: B1, physical S128, manual eager attention;
-- continuation: fixed request batch, Q128, KV256, PromptFA;
+- continuation: fixed request batch, real Q128, physical Q256/KV256, PromptFA;
 - graph output: final continuation hidden states only; continuation KV is not
   returned or stored.
 
