@@ -24,9 +24,15 @@ from paddleocr_vl.model.gqa_increfa_aiv import (
 
 
 class DecodeKvScatterQuery(torch.nn.Module):
-    def __init__(self, strict_scope: bool, include_gqa: bool) -> None:
+    def __init__(
+        self,
+        strict_scope: bool,
+        include_gqa: bool,
+        gqa_vector_core_count: int,
+    ) -> None:
         super().__init__()
         self.include_gqa = include_gqa
+        self.gqa_vector_core_count = gqa_vector_core_count
         self.scope = None
         if strict_scope:
             self.scope = __import__(
@@ -61,7 +67,7 @@ class DecodeKvScatterQuery(torch.nn.Module):
             num_key_value_heads=2,
             scale_value=1.0 / math.sqrt(128.0),
             inner_precise=1,
-            vector_core_count=32,
+            vector_core_count=self.gqa_vector_core_count,
         )
         return ordered_query, attention_mask, attention_output
 
@@ -100,7 +106,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--include-gqa",
         action="store_true",
-        help="fuse the exact V3 ref outputs directly into the 32-core GQA op",
+        help="fuse the exact V4 ref outputs directly into the GQA op",
+    )
+    parser.add_argument(
+        "--gqa-vector-core-count",
+        type=int,
+        choices=(16, 32),
+        default=16,
     )
     parser.add_argument("--direct-eager-extension", action="store_true")
     return parser.parse_args()
@@ -152,7 +164,11 @@ def main() -> int:
         compiler_config.debug.graph_dump.type = "pbtxt"
         compiler_config.debug.graph_dump.path = str(graph_dump_dir)
         step = torchair.inference.cache_compile(
-            DecodeKvScatterQuery(args.strict_scope, args.include_gqa).forward,
+            DecodeKvScatterQuery(
+                args.strict_scope,
+                args.include_gqa,
+                args.gqa_vector_core_count,
+            ).forward,
             config=compiler_config,
             dynamic=False,
             cache_dir=str(args.cache_dir),
@@ -306,9 +322,9 @@ def main() -> int:
     result = {
         "kind": "paddle_decode_kv_scatter_query_torchair_probe",
         "operator": {
-            "pytorch": "paddleocr_vl::decode_kv_scatter_query_v3",
-            "ge": "PaddleDecodeKvScatterQueryV3",
-            "kernel": "paddle_decode_kv_scatter_query_v3",
+            "pytorch": "paddleocr_vl::decode_kv_scatter_query_v4",
+            "ge": "PaddleDecodeKvScatterQueryV4",
+            "kernel": "paddle_decode_kv_scatter_query_v4",
         },
         "contract": {
             "query_shape": list(query.shape),
@@ -318,7 +334,9 @@ def main() -> int:
             "strict_scope": args.strict_scope,
             "direct_eager_extension": args.direct_eager_extension,
             "include_gqa": args.include_gqa,
-            "gqa_vector_core_count": 32 if args.include_gqa else None,
+            "gqa_vector_core_count": (
+                args.gqa_vector_core_count if args.include_gqa else None
+            ),
             "block_dim": 1,
             "core_type": "AIV_ONLY",
         },
@@ -348,7 +366,7 @@ def main() -> int:
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2))
     if not all_exact:
-        raise RuntimeError("PaddleDecodeKvScatterQueryV3 failed exact parity")
+        raise RuntimeError("PaddleDecodeKvScatterQueryV4 failed exact parity")
     return 0
 
 
