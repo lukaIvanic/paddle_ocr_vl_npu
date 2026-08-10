@@ -469,6 +469,46 @@ DECODE_OPTIMIZATION_PRESETS.update(
     }
 )
 
+_PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA = DECODE_OPTIMIZATION_PRESETS[
+    "paddle_decoder_megakernel_b1_fused_gqa"
+]
+DECODE_OPTIMIZATION_PRESETS.update(
+    {
+        "paddle_decoder_megakernel_b1_fused_gqa_split4_nopreload": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
+            name="paddle_decoder_megakernel_b1_fused_gqa_split4_nopreload",
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=none:early-start=0:split-mode=4"
+            ),
+        ),
+        "paddle_decoder_megakernel_b1_fused_gqa_split1_nopreload": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
+            name="paddle_decoder_megakernel_b1_fused_gqa_split1_nopreload",
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=none:early-start=0:split-mode=1"
+            ),
+        ),
+        "paddle_decoder_megakernel_b1_fused_gqa_feed_sync": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
+            name="paddle_decoder_megakernel_b1_fused_gqa_feed_sync",
+            super_kernel_options=(
+                "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=per-func:early-start=1:split-mode=4"
+            ),
+        ),
+        "paddle_decoder_megakernel_b1_fused_gqa_feed_sync_split1": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
+            name="paddle_decoder_megakernel_b1_fused_gqa_feed_sync_split1",
+            super_kernel_options=(
+                "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=none:early-start=0:split-mode=1"
+            ),
+        ),
+    }
+)
+
 
 def decode_optimization_names() -> tuple[str, ...]:
     return tuple(DECODE_OPTIMIZATION_PRESETS)
