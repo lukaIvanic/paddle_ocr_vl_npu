@@ -1622,7 +1622,7 @@ class TextDecodeStage(torch.nn.Module):
         with self._super_kernel_scope(
             "paddle_decoder_b1_megakernel",
             "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort:"
-            "preload-code=none:early-start=0",
+            "preload-code=none:early-start=0:split-mode=1",
         ):
             return self._forward_impl(
                 input_ids,
