@@ -1,0 +1,46 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -3642,19 +3642,23 @@ static void ConvertOptionalInputsContext(const gert::TilingContext &context, Inc
+-    ifaContext.actualSeqLengths.tensor = context.GetOptionalInputTensor(ACT_SEQ_LEN_INPUT_INDEX);
+-    ifaContext.deqScale1.tensor = context.GetOptionalInputTensor(DEQUANT_SCALE_1_INPUT_INDEX);
+-    ifaContext.quantScale1.tensor = context.GetOptionalInputTensor(QUANT_SCALE_1_INPUT_INDEX);
+-    ifaContext.deqScale2.tensor = context.GetOptionalInputTensor(DEQUANT_SCALE_2_INPUT_INDEX);
+-    ifaContext.quantScale2.tensor = context.GetOptionalInputTensor(QUANT_SCALE_2_INPUT_INDEX);
+-    ifaContext.quantOffset2.tensor = context.GetOptionalInputTensor(QUANT_OFFSET_2_INPUT_INDEX);
+-    ifaContext.deqScale1.desc = context.GetOptionalInputDesc(DEQUANT_SCALE_1_INPUT_INDEX);
+-    ifaContext.quantScale1.desc = context.GetOptionalInputDesc(QUANT_SCALE_1_INPUT_INDEX);
+-    ifaContext.deqScale2.desc = context.GetOptionalInputDesc(DEQUANT_SCALE_2_INPUT_INDEX);
+-    ifaContext.quantScale2.desc = context.GetOptionalInputDesc(QUANT_SCALE_2_INPUT_INDEX);
+-    ifaContext.quantOffset2.desc = context.GetOptionalInputDesc(QUANT_OFFSET_2_INPUT_INDEX);
+-    ifaContext.antiquantScale.tensor = context.GetOptionalInputTensor(ANTIQUANT_SCALE_INPUT_INDEX);
+-    ifaContext.antiquantOffset.tensor = context.GetOptionalInputTensor(ANTIQUANT_OFFSET_INPUT_INDEX);
+-    ifaContext.antiquantScale.desc = context.GetOptionalInputDesc(ANTIQUANT_SCALE_INPUT_INDEX);
+-    ifaContext.antiquantOffset.desc = context.GetOptionalInputDesc(ANTIQUANT_OFFSET_INPUT_INDEX);
+-    ifaContext.blockTable.tensor = context.GetOptionalInputTensor(BLOCK_TABLE_INPUT_INDEX);
+-    ifaContext.blockTable.desc = context.GetOptionalInputDesc(BLOCK_TABLE_INPUT_INDEX);
+-    ifaContext.kvPaddingSize.tensor = context.GetOptionalInputTensor(KV_PADDING_SIZE_INPUT_INDEX);
+-    ifaContext.kvPaddingSize.desc = context.GetOptionalInputDesc(KV_PADDING_SIZE_INPUT_INDEX);
++    // PaddleOCR-VL B1 FP16 decode supports none of the stock quantization,
++    // paged-attention, or KV-padding optional inputs. Reading those indices
++    // would reinterpret the compact decoder ABI's cache-position and cache
++    // tensors as unrelated optional fields.
++    ifaContext.actualSeqLengths.tensor = nullptr;
++    ifaContext.deqScale1.tensor = nullptr;
++    ifaContext.quantScale1.tensor = nullptr;
++    ifaContext.deqScale2.tensor = nullptr;
++    ifaContext.quantScale2.tensor = nullptr;
++    ifaContext.quantOffset2.tensor = nullptr;
++    ifaContext.deqScale1.desc = nullptr;
++    ifaContext.quantScale1.desc = nullptr;
++    ifaContext.deqScale2.desc = nullptr;
++    ifaContext.quantScale2.desc = nullptr;
++    ifaContext.quantOffset2.desc = nullptr;
++    ifaContext.antiquantScale.tensor = nullptr;
++    ifaContext.antiquantOffset.tensor = nullptr;
++    ifaContext.antiquantScale.desc = nullptr;
++    ifaContext.antiquantOffset.desc = nullptr;
++    ifaContext.blockTable.tensor = nullptr;
++    ifaContext.blockTable.desc = nullptr;
++    ifaContext.kvPaddingSize.tensor = nullptr;
++    ifaContext.kvPaddingSize.desc = nullptr;

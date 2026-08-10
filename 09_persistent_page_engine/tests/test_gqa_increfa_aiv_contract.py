@@ -67,6 +67,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn('"key": key', converter)
         self.assertIn('"value": value', converter)
         self.assertIn("0014-superkernel-plain-kv-attention.patch", build_script)
+        self.assertIn("0015-decoder-fixed-no-optional-inputs.patch", build_script)
         self.assertIn("PADDLE_DECODE_GQA_PLAIN_KV", kernel_entry)
         self.assertNotIn("uint8_t *pseShift", kernel_entry)
 
@@ -106,6 +107,12 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn('mapping[1] = 1', converter)
         self.assertIn('decode_fused_plain)', build_script)
         self.assertIn("source_overlay_decode_fused_plain", build_script)
+        fixed_abi_patch = (
+            operator_root / "patches" / "0015-decoder-fixed-no-optional-inputs.patch"
+        ).read_text(encoding="utf-8")
+        self.assertIn("+    ifaContext.deqScale1.tensor = nullptr;", fixed_abi_patch)
+        self.assertIn("+    ifaContext.blockTable.tensor = nullptr;", fixed_abi_patch)
+        self.assertIn("+    ifaContext.kvPaddingSize.desc = nullptr;", fixed_abi_patch)
 
     def test_nonsplit_megakernel_uses_separate_prep_and_16_aiv_blocks(self) -> None:
         optimization = text_decode.resolve_decode_optimization(

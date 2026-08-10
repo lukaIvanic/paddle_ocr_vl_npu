@@ -67,6 +67,7 @@ case "$EXPERIMENT_VARIANT" in
         ;;
     decode_fused_plain)
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0015-decoder-fixed-no-optional-inputs.patch")
         VENDOR_NAME="paddle_decode_kv_gqa_aiv"
         CACHE_NAMESPACE="paddle_decode_kv_gqa_aiv"
         OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode_fused_plain"
@@ -79,6 +80,7 @@ case "$EXPERIMENT_VARIANT" in
         ;;
     decode_attention_only)
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0015-decoder-fixed-no-optional-inputs.patch")
         VENDOR_NAME="paddle_decode_gqa_attention_aiv"
         CACHE_NAMESPACE="paddle_decode_gqa_attention_aiv"
         OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode_attention"
