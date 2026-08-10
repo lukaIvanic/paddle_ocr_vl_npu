@@ -702,11 +702,6 @@ class ContinuousRecognizer:
             raise ValueError("text_pack_max_members must be positive")
         if self.text_packing != "off" and self.text_backend != "torchair":
             raise ValueError("packed text prefill requires TorchAir text prefill")
-        if self.text_pack_buckets[-1] > self.cache_length:
-            raise ValueError(
-                "largest packed text bucket exceeds the decode cache length: "
-                f"bucket={self.text_pack_buckets[-1]} cache={self.cache_length}"
-            )
         if self.decode_backend not in DECODE_BACKEND_CHOICES:
             raise ValueError(
                 f"decode_backend must be one of {DECODE_BACKEND_CHOICES}, "
