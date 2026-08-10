@@ -41,6 +41,17 @@ PREFILL_OPTIMIZATION_PRESETS: dict[str, RerankerPrefillOptimizationConfig] = {
         name="expanded_prefix_kv",
         expanded_prefix_kv=True,
     ),
+    "native_rms_rotary": RerankerPrefillOptimizationConfig(
+        name="native_rms_rotary",
+        native_rms_norm=True,
+        native_rotary=True,
+    ),
+    "native_rms_rotary_mask": RerankerPrefillOptimizationConfig(
+        name="native_rms_rotary_mask",
+        native_rms_norm=True,
+        native_rotary=True,
+        prebuilt_square_mask=True,
+    ),
     "combined": RerankerPrefillOptimizationConfig(
         name="combined",
         native_rms_norm=True,

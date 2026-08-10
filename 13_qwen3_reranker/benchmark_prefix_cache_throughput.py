@@ -623,10 +623,38 @@ def main() -> None:
 
         baseline_prefix = lane_outputs.get("prefix_promptfa_compiled:baseline")
         if baseline_prefix is not None:
+            yes_no_ids = torch.tensor(
+                [runner.false_token_id, runner.true_token_id],
+                device=device,
+                dtype=torch.long,
+            )
+            yes_no_weight = model.lm_head.weight.index_select(0, yes_no_ids)
+            baseline_logits = torch.nn.functional.linear(
+                baseline_prefix,
+                yes_no_weight,
+            ).float()
+            baseline_scores = torch.softmax(baseline_logits, dim=-1)[:, 1]
             for output_key, output in lane_outputs.items():
                 if not output_key.startswith("prefix_promptfa_compiled:") or output_key.endswith(":baseline"):
                     continue
                 max_abs = float((output.float() - baseline_prefix.float()).abs().max().detach().cpu())
+                candidate_logits = torch.nn.functional.linear(
+                    output,
+                    yes_no_weight,
+                ).float()
+                candidate_scores = torch.softmax(candidate_logits, dim=-1)[:, 1]
+                max_abs_logits = float(
+                    (candidate_logits - baseline_logits).abs().max().detach().cpu()
+                )
+                max_abs_scores = float(
+                    (candidate_scores - baseline_scores).abs().max().detach().cpu()
+                )
+                same_binary_choice = bool(
+                    torch.equal(
+                        candidate_logits.argmax(dim=-1),
+                        baseline_logits.argmax(dim=-1),
+                    )
+                )
                 optimization_name = output_key.rsplit(":", 1)[1]
                 for result in reversed(results):
                     if (
@@ -636,10 +664,16 @@ def main() -> None:
                         and result["continuation_length"] == continuation_length
                     ):
                         result["max_abs_hidden_vs_prefix_baseline"] = max_abs
+                        result["max_abs_yes_no_logits_vs_prefix_baseline"] = max_abs_logits
+                        result["max_abs_yes_score_vs_prefix_baseline"] = max_abs_scores
+                        result["same_yes_no_choice_vs_prefix_baseline"] = same_binary_choice
                         break
                 print(
                     f"CORRECTNESS lane={output_key} B={batch_size} C={continuation_length} "
-                    f"max_abs_hidden_vs_prefix_baseline={max_abs:.6f}",
+                    f"max_abs_hidden_vs_prefix_baseline={max_abs:.6f} "
+                    f"max_abs_yes_no_logits={max_abs_logits:.6f} "
+                    f"max_abs_yes_score={max_abs_scores:.8f} "
+                    f"same_yes_no_choice={same_binary_choice}",
                     flush=True,
                 )
 
