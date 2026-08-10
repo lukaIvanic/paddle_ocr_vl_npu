@@ -1,3 +1,4 @@
+// The filename follows CANN's PaddleDecodeSwiGluV1 -> paddle_decode_swi_glu_v1 mapping.
 #include "kernel_operator.h"
 #include "paddle_decode_swiglu_tiling.h"
 
