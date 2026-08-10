@@ -41,6 +41,10 @@ from .decode_rope_lookup import (
     decode_rope_lookup,
     register_decode_rope_lookup_converter,
 )
+from .decode_kv_scatter import (
+    register_decode_kv_scatter_converter,
+    update_decode_kv_cache_with_scatter_pa_,
+)
 from .config import PaddleOCRTextConfig
 from .gqa_increfa_aiv import (
     gqa_incre_flash_attention_aiv,
@@ -89,6 +93,7 @@ class DecodeOptimizationConfig:
     ascendc_qkv_split: bool = False
     ascendc_position_add: bool = False
     ascendc_rope_lookup: bool = False
+    ascendc_kv_scatter: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -150,6 +155,7 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         ascendc_linear=True,
         ascendc_qkv_split=True,
         ascendc_rope_lookup=True,
+        ascendc_kv_scatter=True,
     ),
     "combined_apply_pse_sentinel": DecodeOptimizationConfig(
         name="combined_apply_pse_sentinel",
@@ -580,7 +586,18 @@ def update_decode_kv_cache_(
     cache_position: torch.Tensor,
     key_states: torch.Tensor,
     value_states: torch.Tensor,
+    *,
+    use_scatter_pa: bool = False,
 ) -> None:
+    if use_scatter_pa:
+        update_decode_kv_cache_with_scatter_pa_(
+            key_cache,
+            value_cache,
+            cache_position,
+            key_states,
+            value_states,
+        )
+        return
     positions = (
         cache_position.reshape(-1)
         .to(device=key_cache.device, dtype=torch.int64)
@@ -1036,6 +1053,7 @@ def _decode_attention(
         cache_position,
         key_states,
         value_states,
+        use_scatter_pa=optimization.ascendc_kv_scatter,
     )
     if optimization.post_scatter_kv_prefetch:
         if key_cache.device.type != "npu":
@@ -1692,6 +1710,7 @@ def decode_source_hash() -> str:
         "decode_qkv_split.py",
         "decode_position_add.py",
         "decode_rope_lookup.py",
+        "decode_kv_scatter.py",
     ):
         path = here / name
         digest.update(name.encode("utf-8"))
@@ -1809,6 +1828,7 @@ def compile_text_decode_stage(
             "ascendc_qkv_split": optimization.ascendc_qkv_split,
             "ascendc_position_add": optimization.ascendc_position_add,
             "ascendc_rope_lookup": optimization.ascendc_rope_lookup,
+            "ascendc_kv_scatter": optimization.ascendc_kv_scatter,
         },
     }
     if backend_name == "raw_eager":
@@ -1832,6 +1852,8 @@ def compile_text_decode_stage(
             register_decode_position_add_converter()
         if optimization.ascendc_rope_lookup:
             register_decode_rope_lookup_converter()
+        if optimization.ascendc_kv_scatter:
+            register_decode_kv_scatter_converter()
         shape_cache_dir = torchair_cache_dir_for_shape(
             cache_root,
             batch_size=batch_size,
