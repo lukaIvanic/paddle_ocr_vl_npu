@@ -116,10 +116,10 @@ def main() -> int:
 
     generator = torch.Generator(device="cpu")
     generator.manual_seed(20260810)
-    query_bsnd = torch.randn(
+    base_query_bsnd = torch.randn(
         (1, 1, 16, 128), generator=generator, dtype=torch.float16
     ).to("npu:0")
-    key_bsnd = torch.randn(
+    base_key_bsnd = torch.randn(
         (1, 1, 2, 128), generator=generator, dtype=torch.float16
     ).to("npu:0")
     value_states = [
@@ -160,6 +160,18 @@ def main() -> int:
         position_tensor = torch.tensor(
             [position], dtype=torch.int64, device="npu:0"
         )
+        reference_query_bsnd, reference_key_bsnd = (
+            torch_npu.npu_apply_rotary_pos_emb(
+                base_query_bsnd.clone(),
+                base_key_bsnd.clone(),
+                cos,
+                sin,
+                layout="BSND",
+                rotary_mode="half",
+            )
+        )
+        query_bsnd = base_query_bsnd.clone()
+        key_bsnd = base_key_bsnd.clone()
         started = time.perf_counter()
         output = step(
             query_bsnd,
@@ -175,15 +187,7 @@ def main() -> int:
         torch.npu.synchronize()
         timings.append(time.perf_counter() - started)
 
-        ref_query_bsnd, ref_key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
-            query_bsnd,
-            key_bsnd,
-            cos,
-            sin,
-            layout="BSND",
-            rotary_mode="half",
-        )
-        ref_key_state = ref_key_bsnd.transpose(1, 2)
+        ref_key_state = reference_key_bsnd.transpose(1, 2)
         torch_npu.scatter_update_(
             ref_key_cache, position_tensor, ref_key_state, 2
         )
@@ -194,7 +198,7 @@ def main() -> int:
             torch.arange(1024, dtype=torch.int64, device="npu:0") > position
         ).view(1, 1, 1, 1024)
         reference = torch_npu.npu_incre_flash_attention(
-            ref_query_bsnd.transpose(1, 2),
+            reference_query_bsnd.transpose(1, 2),
             ref_key_cache,
             ref_value_cache,
             atten_mask=expected_mask,
@@ -232,8 +236,8 @@ def main() -> int:
     result = {
         "kind": "paddle_decode_rotary_gqa_boundary_probe",
         "contract": {
-            "query_bsnd_shape": list(query_bsnd.shape),
-            "key_bsnd_shape": list(key_bsnd.shape),
+            "query_bsnd_shape": list(base_query_bsnd.shape),
+            "key_bsnd_shape": list(base_key_bsnd.shape),
             "cache_shape": list(key_cache.shape),
             "factor_shape": list(cos.shape),
             "positions": [128, 129],
