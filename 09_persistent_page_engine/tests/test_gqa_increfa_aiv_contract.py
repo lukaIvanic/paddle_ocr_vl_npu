@@ -106,6 +106,8 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("SyncAll(syncGlobal, syncLocal, kAivCoreCount)", kernel)
         self.assertIn("GetUserWorkspace(workspace)", kernel)
         self.assertIn("workspace + kSyncWorkspaceBytes", kernel)
+        self.assertIn("FetchEventID(HardEvent::V_MTE3)", kernel)
+        self.assertNotIn("SetWaitFlag", kernel)
         self.assertIn('"key": key_cache', converter)
         self.assertIn('mapping[1] = 1', converter)
         self.assertIn('decode_fused_plain)', build_script)

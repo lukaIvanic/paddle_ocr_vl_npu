@@ -182,7 +182,10 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_ai
     syncPipe.InitBuffer(syncBuffer, kSyncWorkspaceBytes);
     LocalTensor<int32_t> syncLocal = syncBuffer.Get<int32_t>();
     Duplicate<int32_t>(syncLocal, 0, kSyncWorkspaceElements);
-    SetWaitFlag<HardEvent::V_MTE3>(HardEvent::V_MTE3);
+    event_t eventIdVToMte3 = static_cast<event_t>(
+        syncPipe.FetchEventID(HardEvent::V_MTE3));
+    SetFlag<HardEvent::V_MTE3>(eventIdVToMte3);
+    WaitFlag<HardEvent::V_MTE3>(eventIdVToMte3);
     DataCopy(syncGlobal, syncLocal, kSyncWorkspaceElements);
     PipeBarrier<PIPE_ALL>();
     SyncAll(syncGlobal, syncLocal, kAivCoreCount);
