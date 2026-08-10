@@ -331,6 +331,18 @@ class PerShapeCompiledPrefixUniRecVisionRuntime(UniRecVisionAtlasRuntime):
     ) -> None:
         super().__init__(runner)
         self.shapes = tuple(shapes)
+        # TorchDynamo defaults to eight specializations for a shared nested
+        # Python code object. This registry deliberately owns one static graph
+        # per declared image shape, so size both compiler limits explicitly.
+        required_cache_entries = len(self.shapes) + 8
+        torch._dynamo.config.cache_size_limit = max(
+            int(torch._dynamo.config.cache_size_limit),
+            required_cache_entries,
+        )
+        torch._dynamo.config.accumulated_cache_size_limit = max(
+            int(torch._dynamo.config.accumulated_cache_size_limit),
+            required_cache_entries * 4,
+        )
         self.prefix_modules: dict[tuple[int, int], _StaticVisionPrefix] = {}
         self.compiled_prefixes: dict[
             tuple[int, int], Callable[[torch.Tensor], torch.Tensor]
