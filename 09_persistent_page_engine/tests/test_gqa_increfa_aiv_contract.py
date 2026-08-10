@@ -50,6 +50,8 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("if (g_coreType == AIC)", mixed_kernel)
         self.assertIn("GetBlockIdx() == 0", mixed_kernel)
         self.assertIn("SyncAll<true>();", mixed_kernel)
+        self.assertIn("CacheLine::ENTIRE_DATA_CACHE", mixed_kernel)
+        self.assertIn("DcciDst::CACHELINE_OUT", mixed_kernel)
         self.assertGreater(
             mixed_kernel.index("SyncAll<true>();"),
             mixed_kernel.index("PipeBarrier<PIPE_ALL>();"),

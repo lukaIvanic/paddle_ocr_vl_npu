@@ -48,4 +48,14 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_mixed24(
     // 0 publishes Q/K/V/mask, then this barrier hands those GM writes to the
     // following attention subfunction without feed-sync-all.
     SyncAll<true>();
+    // A SuperKernel keeps the same physical workers alive across subfunctions.
+    // Invalidate each AIV worker's data cache after the producer barrier so
+    // the following attention subfunction cannot reuse cache lines that
+    // predate core 0's MTE3 K/V writes.
+    GlobalTensor<half> cacheAnchor;
+    cacheAnchor.SetGlobalBuffer(
+        reinterpret_cast<__gm__ half*>(keyCacheRef), 1);
+    DataCacheCleanAndInvalid<
+        half, CacheLine::ENTIRE_DATA_CACHE, DcciDst::CACHELINE_OUT>(
+            cacheAnchor);
 }
