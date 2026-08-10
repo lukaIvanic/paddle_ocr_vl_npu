@@ -59,6 +59,10 @@ from .decode_gqa_increfa_mixed import (
     register_decode_gqa_increfa_mixed_converter,
     register_decode_gqa_increfa_mixed24_converter,
 )
+from .decode_packed_qkv_rope_gqa_mixed24 import (
+    decode_packed_qkv_rope_gqa_mixed24,
+    register_decode_packed_qkv_rope_gqa_mixed24_converter,
+)
 from .decode_gqa_attention_aiv import (
     decode_gqa_attention_aiv,
     register_decode_gqa_attention_aiv_converter,
@@ -124,6 +128,7 @@ class DecodeOptimizationConfig:
     ascendc_decode_gqa: bool = False
     ascendc_decode_gqa_mixed: bool = False
     ascendc_decode_gqa_mixed24: bool = False
+    ascendc_packed_qkv_rope_gqa_mixed24: bool = False
     ascendc_decode_gqa_attention: bool = False
     ascendc_swiglu: bool = False
 
@@ -562,6 +567,18 @@ DECODE_OPTIMIZATION_PRESETS.update(
             name="paddle_decoder_megakernel_b1_fused_gqa_mixed24",
             ascendc_decode_gqa=False,
             ascendc_decode_gqa_mixed24=True,
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=per-func:early-start=0:split-mode=4"
+            ),
+        ),
+        "paddle_decoder_megakernel_b1_packed_qkv_rope_gqa_mixed24": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
+            name="paddle_decoder_megakernel_b1_packed_qkv_rope_gqa_mixed24",
+            ascendc_qkv_split=False,
+            ascendc_rope_lookup=False,
+            ascendc_decode_gqa=False,
+            ascendc_packed_qkv_rope_gqa_mixed24=True,
             super_kernel_options=(
                 "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
                 "preload-code=per-func:early-start=0:split-mode=4"
@@ -1210,6 +1227,8 @@ def _decode_attention(
     pse_shift: torch.Tensor | None,
     actual_seq_lengths: list[int] | None,
     optimization: DecodeOptimizationConfig,
+    packed_factor_lut: torch.Tensor | None = None,
+    packed_rope_delta: torch.Tensor | None = None,
 ) -> torch.Tensor:
     if optimization.stage_aware_weight_prefetch:
         import torch_npu
@@ -1220,6 +1239,37 @@ def _decode_attention(
                 hidden_states,
                 int(weight.numel() * weight.element_size()),
             )
+    if optimization.ascendc_packed_qkv_rope_gqa_mixed24:
+        if packed_factor_lut is None or packed_rope_delta is None:
+            raise ValueError("packed QKV/RoPE GQA requires its factor LUT and delta")
+        if attention_mask is None:
+            raise ValueError("packed QKV/RoPE GQA requires persistent mask scratch")
+        if pse_shift is not None or actual_seq_lengths is not None:
+            raise ValueError("packed QKV/RoPE GQA requires masked static attention")
+        packed_qkv = _linear_tokenwise(
+            attention.decode_qkv_proj,
+            hidden_states,
+        ).reshape(1, 1, 2560)
+        attention_output = decode_packed_qkv_rope_gqa_mixed24(
+            packed_qkv,
+            key_cache,
+            value_cache,
+            attention_mask,
+            cache_position,
+            packed_factor_lut,
+            packed_rope_delta,
+            num_heads=int(attention.num_heads),
+            num_key_value_heads=int(attention.num_key_value_heads),
+            scale_value=float(attention.scaling),
+            inner_precise=1,
+            vector_core_count=16,
+        )
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .reshape(1, 1, attention.num_heads * attention.head_dim)
+        )
+        return _linear_tokenwise(attention.o_proj, attention_output)
     query_states, key_states, value_states = _project_decode_qkv(
         attention,
         hidden_states,
@@ -1577,7 +1627,14 @@ def run_text_decode_transformer(
     rope_deltas_i64 = rope_deltas.to(
         device=inputs_embeds.device, dtype=torch.int64
     )
-    if (
+    packed_factor_lut: torch.Tensor | None = None
+    packed_rope_delta: torch.Tensor | None = None
+    if optimization.ascendc_packed_qkv_rope_gqa_mixed24:
+        packed_factor_lut = text_model.rotary_emb.decode_rope_factor_lut
+        packed_rope_delta = rope_deltas_i64
+        prepared_factors = None
+        position_embeddings = (packed_factor_lut, packed_factor_lut)
+    elif (
         optimization.rotary_factors == "lookup"
         and optimization.ascendc_rope_lookup
     ):
@@ -1641,6 +1698,8 @@ def run_text_decode_transformer(
                 pse_shift,
                 actual_seq_lengths,
                 optimization,
+                packed_factor_lut=packed_factor_lut,
+                packed_rope_delta=packed_rope_delta,
             )
             hidden_states = layer.apply_blocks(residual, attention_output)
         return text_model.norm(hidden_states)
@@ -1674,6 +1733,8 @@ def run_text_decode_transformer(
                 pse_shift,
                 actual_seq_lengths,
                 optimization,
+                packed_factor_lut=packed_factor_lut,
+                packed_rope_delta=packed_rope_delta,
             )
             mlp_input, residual = _decode_add_with_optional_rms_norm(
                 attention_output,
@@ -1713,6 +1774,8 @@ def run_text_decode_transformer(
             pse_shift,
             actual_seq_lengths,
             optimization,
+            packed_factor_lut=packed_factor_lut,
+            packed_rope_delta=packed_rope_delta,
         )
         if (
             optimization.rms_norm == "manual"
@@ -1869,6 +1932,7 @@ class TextDecodeStage(torch.nn.Module):
                 self.optimization.ascendc_decode_gqa
                 or self.optimization.ascendc_decode_gqa_mixed
                 or self.optimization.ascendc_decode_gqa_mixed24
+                or self.optimization.ascendc_packed_qkv_rope_gqa_mixed24
             ) and int(cache_length) != 1024:
                 raise ValueError(
                     "fused decode GQA is specialized for cache_length=1024"
@@ -1886,6 +1950,7 @@ class TextDecodeStage(torch.nn.Module):
                 self.optimization.ascendc_decode_gqa
                 or self.optimization.ascendc_decode_gqa_mixed
                 or self.optimization.ascendc_decode_gqa_mixed24
+                or self.optimization.ascendc_packed_qkv_rope_gqa_mixed24
             ):
                 self.register_buffer(
                     "_super_kernel_attention_mask_scratch",
@@ -1933,6 +1998,7 @@ class TextDecodeStage(torch.nn.Module):
                     self.optimization.ascendc_decode_gqa
                     or self.optimization.ascendc_decode_gqa_mixed
                     or self.optimization.ascendc_decode_gqa_mixed24
+                    or self.optimization.ascendc_packed_qkv_rope_gqa_mixed24
                 )
                 else None
             ),
@@ -1981,6 +2047,8 @@ def decode_attention_label(
     if device.type != "npu":
         return "manual"
     if optimization is not None and optimization.attention == "gqa_aiv":
+        if optimization.ascendc_packed_qkv_rope_gqa_mixed24:
+            return "paddle_decode_packed_qkv_rope_gqa_mixed24"
         if optimization.ascendc_decode_gqa_mixed24:
             return "paddle_decode_gqa_increfa_mixed24"
         if optimization.ascendc_decode_gqa_mixed:
@@ -2010,8 +2078,11 @@ def decode_cache_update_label(
             optimization.ascendc_decode_gqa
             or optimization.ascendc_decode_gqa_mixed
             or optimization.ascendc_decode_gqa_mixed24
+            or optimization.ascendc_packed_qkv_rope_gqa_mixed24
         )
     ):
+        if optimization.ascendc_packed_qkv_rope_gqa_mixed24:
+            return "paddle_decode_packed_qkv_rope_gqa_mixed24"
         if optimization.ascendc_decode_gqa_mixed24:
             return "paddle_decode_gqa_increfa_mixed24"
         if optimization.ascendc_decode_gqa_mixed:
@@ -2031,6 +2102,7 @@ def decode_source_hash() -> str:
         "gqa_increfa_aiv.py",
         "decode_gqa_increfa_aiv.py",
         "decode_gqa_increfa_mixed.py",
+        "decode_packed_qkv_rope_gqa_mixed24.py",
         "decode_token_embedding.py",
         "decode_linear_matmul_v3.py",
         "decode_qkv_split.py",
@@ -2122,6 +2194,13 @@ def compile_text_decode_stage(
             raise ValueError(
                 "the specialized Paddle decoder RoPE lookup requires FP16"
             )
+        if (
+            optimization.ascendc_packed_qkv_rope_gqa_mixed24
+            and (cache_length != 1024 or dtype != torch.float16)
+        ):
+            raise ValueError(
+                "packed QKV/RoPE GQA requires FP16 with cache_length=1024"
+            )
     common_metadata = {
         "backend": backend_name,
         "enabled": backend_name != "raw_eager",
@@ -2169,6 +2248,9 @@ def compile_text_decode_stage(
             "ascendc_decode_gqa_mixed24": (
                 optimization.ascendc_decode_gqa_mixed24
             ),
+            "ascendc_packed_qkv_rope_gqa_mixed24": (
+                optimization.ascendc_packed_qkv_rope_gqa_mixed24
+            ),
             "ascendc_decode_gqa_attention": (
                 optimization.ascendc_decode_gqa_attention
             ),
@@ -2189,6 +2271,7 @@ def compile_text_decode_stage(
             and not optimization.ascendc_decode_gqa
             and not optimization.ascendc_decode_gqa_mixed
             and not optimization.ascendc_decode_gqa_mixed24
+            and not optimization.ascendc_packed_qkv_rope_gqa_mixed24
             and not optimization.ascendc_decode_gqa_attention
         ):
             register_gqa_increfa_aiv_converter()
@@ -2198,6 +2281,8 @@ def compile_text_decode_stage(
             register_decode_gqa_increfa_mixed_converter()
         if optimization.ascendc_decode_gqa_mixed24:
             register_decode_gqa_increfa_mixed24_converter()
+        if optimization.ascendc_packed_qkv_rope_gqa_mixed24:
+            register_decode_packed_qkv_rope_gqa_mixed24_converter()
         if optimization.ascendc_decode_gqa_attention:
             register_decode_gqa_attention_aiv_converter()
         if optimization.ascendc_token_embedding:

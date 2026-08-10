@@ -116,6 +116,23 @@ case "$EXPERIMENT_VARIANT" in
         EXPECT_AIV_ONLY=false
         EXPECTED_TASK_RATIO="1:1"
         ;;
+    decode_packed_qkv_rope_mixed24)
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0015-decoder-fixed-no-optional-inputs.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0017-decoder-reuse-attention-tpipe.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0020-packed-qkv-rope-mixed24.patch")
+        VENDOR_NAME="paddle_decode_packed_qkv_rope_gqa_mixed24"
+        CACHE_NAMESPACE="paddle_decode_packed_qkv_rope_gqa_mixed24"
+        OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode_packed_qkv_rope"
+        CUSTOM_OP_SNAKE="paddle_decode_packed_qkv_rope_gqa_mixed24"
+        CUSTOM_OP_GE="PaddleDecodePackedQkvRopeGqaMixed24"
+        CUSTOM_OP_REL="attention/$CUSTOM_OP_SNAKE"
+        PREPARED_OP_REL="attention/paddle_gqa_incre_flash_attention_aiv"
+        OP_API_SYMBOL_PREFIX="PaddleDecodePackedQkvRopeGqaMixed24"
+        FUSED_DECODE=true
+        EXPECT_AIV_ONLY=false
+        EXPECTED_TASK_RATIO="1:1"
+        ;;
     decode_attention_only)
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0015-decoder-fixed-no-optional-inputs.patch")
@@ -268,6 +285,65 @@ if [[ "$SOURCE_PREPARED" == false ]]; then
     printf '%s\n' "$OVERLAY_SHA" > "$OVERLAY_MANIFEST"
 else
     OP_ROOT="$BUILD_SOURCE_ROOT/$CUSTOM_OP_REL"
+fi
+
+if [[ "${PADDLE_GQA_PREFLIGHT_ONLY:-0}" == "1" ]]; then
+    ACTIVE_FILES=(
+        "$OP_ROOT/CMakeLists.txt"
+        "$OP_ROOT/op_host"
+        "$OP_ROOT/op_kernel"
+    )
+    if [[ ! -s "$OP_ROOT/op_kernel/$CUSTOM_OP_SNAKE.cpp" ]]; then
+        echo "ERROR: renamed kernel entry is missing" >&2
+        exit 3
+    fi
+    if ! grep -Rqs -- "$CUSTOM_OP_GE" "${ACTIVE_FILES[@]}"; then
+        echo "ERROR: renamed GE identity is absent from prepared source" >&2
+        exit 3
+    fi
+    mapfile -d '' ACTIVE_SOURCES < <(
+        find "$OP_ROOT/op_host" "$OP_ROOT/op_kernel" -maxdepth 1 -type f \
+            ! -name '*.upstream_disabled' -print0
+    )
+    if grep -qs -- "PaddleGqaIncreFlashAttentionAiv" "${ACTIVE_SOURCES[@]}"; then
+        echo "ERROR: upstream GE identity remains in active prepared source" >&2
+        exit 3
+    fi
+    if [[ "$EXPECTED_TASK_RATIO" == "1:1" ]] &&
+        ! grep -qs -- "KERNEL_TYPE_MIX_AIC_1_1" \
+            "$OP_ROOT/op_kernel/incre_flash_attention_arch32.h"; then
+        echo "ERROR: prepared mixed operator lacks 1:1 task geometry" >&2
+        exit 3
+    fi
+    if [[ "$EXPERIMENT_VARIANT" == "decode_packed_qkv_rope_mixed24" ]]; then
+        grep -qs -- "SyncAll<true>();" "$OP_ROOT/op_kernel/$CUSTOM_OP_SNAKE.cpp"
+        grep -qs -- "kPackedQueryShape" "$OP_ROOT/op_host/incre_flash_attention_tiling.cpp"
+        grep -qs -- "launchAivNum = 24U" "$OP_ROOT/op_host/incre_flash_attention_tiling.cpp"
+    fi
+    PREFLIGHT_JSON="$RUN_ROOT/preflight.json"
+    "$PYTHON_BIN" - \
+        "$PREFLIGHT_JSON" "$EXPERIMENT_VARIANT" "$CUSTOM_OP_GE" \
+        "$CUSTOM_OP_SNAKE" "$EXPECTED_TASK_RATIO" "$BUILD_SOURCE_ROOT" \
+        "$OVERLAY_SHA" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+path, variant, ge_op, snake_op, ratio, source_root, overlay_sha = sys.argv[1:]
+summary = {
+    "status": "passed",
+    "variant": variant,
+    "ge_operator": ge_op,
+    "snake_operator": snake_op,
+    "expected_task_ratio": ratio,
+    "prepared_source_root": source_root,
+    "overlay_sha256": overlay_sha,
+}
+Path(path).write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+print("PREFLIGHT_SUMMARY " + json.dumps(summary, sort_keys=True))
+print("PREFLIGHT_JSON " + path)
+PY
+    exit 0
 fi
 
 cd "$BUILD_SOURCE_ROOT"
