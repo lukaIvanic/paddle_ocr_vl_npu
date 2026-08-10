@@ -143,8 +143,8 @@ def register_decode_gqa_increfa_aiv_converter() -> None:
             GE_OP_NAME,
             inputs={
                 "query": query,
-                "key": [key_cache],
-                "value": [value_cache],
+                "key": key_cache,
+                "value": value_cache,
                 "atten_mask": attention_mask,
                 "cache_position": cache_position,
                 "key_state": key_state,
