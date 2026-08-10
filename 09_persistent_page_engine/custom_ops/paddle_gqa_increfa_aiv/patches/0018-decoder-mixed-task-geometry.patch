@@ -20,7 +20,7 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_
 diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_decode_gqa_incre_flash_attention_aiv.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_decode_gqa_incre_flash_attention_aiv.cpp
 --- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_decode_gqa_incre_flash_attention_aiv.cpp
 +++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_decode_gqa_incre_flash_attention_aiv.cpp
-@@ -157,1 +157,7 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_aiv(
+@@ -157,1 +157,8 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_aiv(
      (void)maskOut;
 +
 +    // This independently named diagnostic is compiled with the enclosing
