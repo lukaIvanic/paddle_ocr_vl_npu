@@ -1,0 +1,74 @@
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_host/incre_flash_attention_tiling.cpp
+@@ -3505,4 +3505,8 @@ ge::graphStatus IFATiling::CalcNumBlocks()
+     if (perfMode_ == IfaPerfMode::BMM_ALL_BY_VEC) {
+-        const uint32_t launchAivNum = usedCoreNum_;
++        // The complete Paddle decoder SuperKernel is Cube-first and launches
++        // 24 AIV workers. Match that geometry so every AIV can enter the
++        // hardware completion barrier before the 16 attention workers run.
++        constexpr uint32_t launchAivNum = 24U;
+         const uint32_t launchAicNum = launchAivNum;
+         ifaContext_->numBlocks = ascendcPlatform.CalcTschBlockDim(launchAivNum, launchAicNum, launchAivNum);
+@@ -3509,3 +3513,3 @@ ge::graphStatus IFATiling::CalcNumBlocks()
+         OP_LOGI(ifaContext_->opName,
+-            "GQA AIV block dim: %u launch aiv Num: %u launch aic Num: 0.",
+-            ifaContext_->numBlocks, launchAivNum);
++            "GQA mixed24 block dim: %u launch aiv Num: %u launch aic Num: %u.",
++            ifaContext_->numBlocks, launchAivNum, launchAicNum);
+diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_decode_gqa_incre_flash_attention_aiv.cpp b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_decode_gqa_incre_flash_attention_aiv.cpp
+--- a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_decode_gqa_incre_flash_attention_aiv.cpp
++++ b/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/paddle_decode_gqa_incre_flash_attention_aiv.cpp
+@@ -19,5 +19,0 @@ constexpr uint32_t kFourTrueBytes = 0x01010101U;
+-constexpr uint32_t kSyncBytesPerCore = 32;
+-constexpr uint32_t kSyncStorageBytes = kAivCoreCount * kSyncBytesPerCore;
+-constexpr uint32_t kSyncStorageElements =
+-    kSyncStorageBytes / sizeof(int32_t);
+-
+@@ -164,13 +159,0 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_aiv(
+-    // Binary fusion launches every subfunction with the enclosing
+-    // SuperKernel's blockDim. The full Paddle decoder uses blockDim=24, while
+-    // this specialized attention tiling has exactly 16 AIV workers. Never let
+-    // an enclosing idle worker allocate UB, enter the 16-participant software
+-    // barrier, or execute attention with a block index outside its tiling.
+-    // Returning here exits this subfunction; the generated SuperKernel wrapper
+-    // still performs its normal inter-operator handoff.
+-    if (GetBlockIdx() >= kAivCoreCount) {
+-        return;
+-    }
+-
+@@ -187,31 +169,15 @@ extern "C" __global__ __aicore__ void paddle_decode_gqa_incre_flash_attention_aiv(
+-    // The enclosing SuperKernel has 24 AIV slots, but only the first 16 enter
+-    // this subfunction. Its zero-argument hardware barrier would therefore
+-    // wait for workers that returned above. Use the fixed-participant software
+-    // barrier instead. Huawei's contract requires 32 bytes per participant in
+-    // both GM and UB, and every core must initialize the complete GM flag area.
+-    // attentionOut is 4096 bytes and is not read before stock attention writes
+-    // all of it, so its first 512 bytes are safe transient barrier storage. This
+-    // also avoids depending on SuperKernel workspace-pointer rewriting.
+-    GlobalTensor<int32_t> syncGlobal;
+-    syncGlobal.SetGlobalBuffer(
+-        reinterpret_cast<__gm__ int32_t *>(attentionOut),
+-        kSyncStorageElements);
+-    TBuf<TPosition::VECCALC> syncBuffer;
+-    fusedPipe.InitBuffer(syncBuffer, kSyncStorageBytes);
+-    LocalTensor<int32_t> syncLocal = syncBuffer.Get<int32_t>();
+-    Duplicate<int32_t>(syncLocal, 0, kSyncStorageElements);
+-    event_t eventIdVToMte3 = static_cast<event_t>(
+-        fusedPipe.FetchEventID(HardEvent::V_MTE3));
+-    SetFlag<HardEvent::V_MTE3>(eventIdVToMte3);
+-    WaitFlag<HardEvent::V_MTE3>(eventIdVToMte3);
+-    DataCopy(syncGlobal, syncLocal, kSyncStorageElements);
+-    PipeBarrier<PIPE_ALL>();
+-    SyncAll<false>(syncGlobal, syncLocal, kAivCoreCount);
++    // All 24 AIV workers declared by this mixed operator enter the hardware
++    // AIV-only barrier. This matches the complete Cube-first decoder launch
++    // geometry and avoids the software barrier's transient GM and UB storage.
++    // Only the first 16 workers are present in the inherited attention tiling;
++    // the remaining workers return after they have completed the barrier.
++    SyncAll<true>();
++    if (GetBlockIdx() >= kAivCoreCount) {
++        return;
++    }
++
+     // SuperKernel compilation disables the final PIPE_ALL barrier normally

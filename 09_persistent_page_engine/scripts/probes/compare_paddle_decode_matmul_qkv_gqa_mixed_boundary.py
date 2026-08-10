@@ -16,7 +16,9 @@ import torch.nn.functional as F
 from paddleocr_vl.model.compile_utils import import_torchair
 from paddleocr_vl.model.decode_gqa_increfa_mixed import (
     decode_gqa_incre_flash_attention_mixed,
+    decode_gqa_incre_flash_attention_mixed24,
     register_decode_gqa_increfa_mixed_converter,
+    register_decode_gqa_increfa_mixed24_converter,
 )
 from paddleocr_vl.model.decode_linear_matmul_v3 import (
     decode_linear_matmul_v3,
@@ -32,8 +34,9 @@ FRACTAL_NZ = 29
 
 
 class DecodeMatMulQkvGqaMixedBoundary(torch.nn.Module):
-    def __init__(self, super_kernel_options: str) -> None:
+    def __init__(self, geometry: str, super_kernel_options: str) -> None:
         super().__init__()
+        self.geometry = geometry
         self.super_kernel_options = super_kernel_options
         self.scope = __import__(
             "torchair.scope", fromlist=["super_kernel"]
@@ -52,7 +55,12 @@ class DecodeMatMulQkvGqaMixedBoundary(torch.nn.Module):
         query, key_state, value_state = decode_qkv_split(
             packed_qkv.reshape(1, 1, 2560)
         )
-        return decode_gqa_incre_flash_attention_mixed(
+        fused_attention = (
+            decode_gqa_incre_flash_attention_mixed24
+            if self.geometry == "mixed24"
+            else decode_gqa_incre_flash_attention_mixed
+        )
+        return fused_attention(
             query,
             key_cache,
             value_cache,
@@ -74,7 +82,7 @@ class DecodeMatMulQkvGqaMixedBoundary(torch.nn.Module):
         cache_position: torch.Tensor,
     ) -> torch.Tensor:
         with self.scope(
-            "paddle_decode_matmul_qkv_gqa_mixed_boundary",
+            f"paddle_decode_matmul_qkv_gqa_{self.geometry}_boundary",
             self.super_kernel_options,
         ):
             return self._forward_impl(
@@ -91,6 +99,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--geometry",
+        choices=("mixed", "mixed24"),
+        default="mixed",
+        help="Select the independent fused GQA operator identity.",
+    )
     parser.add_argument(
         "--super-kernel-options",
         default=(
@@ -111,7 +125,10 @@ def main() -> int:
     torch.npu.set_compile_mode(jit_compile=False)
     register_decode_linear_matmul_v3_converter()
     register_decode_qkv_split_converter()
-    register_decode_gqa_increfa_mixed_converter()
+    if args.geometry == "mixed24":
+        register_decode_gqa_increfa_mixed24_converter()
+    else:
+        register_decode_gqa_increfa_mixed_converter()
 
     generator = torch.Generator(device="cpu")
     generator.manual_seed(20260810)
@@ -145,7 +162,9 @@ def main() -> int:
     torchair, CompilerConfig = import_torchair()
     args.cache_dir.mkdir(parents=True, exist_ok=True)
     step = torchair.inference.cache_compile(
-        DecodeMatMulQkvGqaMixedBoundary(args.super_kernel_options).forward,
+        DecodeMatMulQkvGqaMixedBoundary(
+            args.geometry, args.super_kernel_options
+        ).forward,
         config=CompilerConfig(),
         dynamic=False,
         cache_dir=str(args.cache_dir),
@@ -236,7 +255,19 @@ def main() -> int:
         )
 
     result = {
-        "kind": "paddle_decode_matmul_qkv_gqa_mixed_boundary_probe",
+        "kind": f"paddle_decode_matmul_qkv_gqa_{args.geometry}_boundary_probe",
+        "operator": {
+            "pytorch": (
+                "paddleocr_vl::decode_gqa_incre_flash_attention_mixed24"
+                if args.geometry == "mixed24"
+                else "paddleocr_vl::decode_gqa_incre_flash_attention_mixed"
+            ),
+            "ge": (
+                "PaddleDecodeGqaIncreFlashAttentionMixed24"
+                if args.geometry == "mixed24"
+                else "PaddleDecodeGqaIncreFlashAttentionMixed"
+            ),
+        },
         "contract": {
             "hidden_shape": list(hidden_states.shape),
             "qkv_weight_shape": list(qkv_weight.shape),
@@ -244,6 +275,7 @@ def main() -> int:
             "cache_shape": list(key_cache.shape),
             "positions": [128, 129],
             "vector_core_count": 16,
+            "launch_aiv_count": 24 if args.geometry == "mixed24" else 16,
             "super_kernel_options": args.super_kernel_options,
         },
         "environment": {

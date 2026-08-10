@@ -19,7 +19,9 @@ from paddleocr_vl.model.decode_gqa_increfa_aiv import (
 )
 from paddleocr_vl.model.decode_gqa_increfa_mixed import (
     decode_gqa_incre_flash_attention_mixed,
+    decode_gqa_incre_flash_attention_mixed24,
     register_decode_gqa_increfa_mixed_converter,
+    register_decode_gqa_increfa_mixed24_converter,
 )
 
 
@@ -49,11 +51,12 @@ class DecodeGqaIncrefaAiv(torch.nn.Module):
         key_state: torch.Tensor,
         value_state: torch.Tensor,
     ) -> torch.Tensor:
-        operator = (
-            decode_gqa_incre_flash_attention_mixed
-            if self.geometry == "mixed"
-            else decode_gqa_incre_flash_attention_aiv
-        )
+        operators = {
+            "aiv": decode_gqa_incre_flash_attention_aiv,
+            "mixed": decode_gqa_incre_flash_attention_mixed,
+            "mixed24": decode_gqa_incre_flash_attention_mixed24,
+        }
+        operator = operators[self.geometry]
         return operator(
             query,
             key_cache,
@@ -100,9 +103,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
         "--geometry",
-        choices=("aiv", "mixed"),
+        choices=("aiv", "mixed", "mixed24"),
         default="aiv",
-        help="Compile the zero-cube AIV op or its 1:1 mixed-task control.",
+        help=(
+            "Compile the zero-cube AIV op, the 16-worker mixed control, or "
+            "the independent 24-AIV hardware-barrier operator."
+        ),
     )
     parser.add_argument("--strict-scope", action="store_true")
     parser.add_argument(
@@ -122,7 +128,9 @@ def main() -> int:
     if not torch.npu.is_available():
         raise RuntimeError("an Ascend NPU is required")
     torch.npu.set_compile_mode(jit_compile=False)
-    if args.geometry == "mixed":
+    if args.geometry == "mixed24":
+        register_decode_gqa_increfa_mixed24_converter()
+    elif args.geometry == "mixed":
         register_decode_gqa_increfa_mixed_converter()
     else:
         register_decode_gqa_increfa_aiv_converter()
@@ -247,24 +255,36 @@ def main() -> int:
             }
         )
 
+    operator_identities = {
+        "aiv": {
+            "pytorch": "paddleocr_vl::decode_gqa_incre_flash_attention_aiv",
+            "ge": "PaddleDecodeGqaIncreFlashAttentionAiv",
+            "kernel": "paddle_decode_gqa_incre_flash_attention_aiv",
+            "core_type": "MIX_AIV_ZERO_CUBE",
+            "launch_aiv_count": 16,
+        },
+        "mixed": {
+            "pytorch": "paddleocr_vl::decode_gqa_incre_flash_attention_mixed",
+            "ge": "PaddleDecodeGqaIncreFlashAttentionMixed",
+            "kernel": "paddle_decode_gqa_incre_flash_attention_mixed",
+            "core_type": "MIX_AIC_1_1_WITH_NOOP_AIC",
+            "launch_aiv_count": 16,
+        },
+        "mixed24": {
+            "pytorch": "paddleocr_vl::decode_gqa_incre_flash_attention_mixed24",
+            "ge": "PaddleDecodeGqaIncreFlashAttentionMixed24",
+            "kernel": "paddle_decode_gqa_incre_flash_attention_mixed24",
+            "core_type": "MIX_AIC_1_1_WITH_NOOP_AIC_HARDWARE_BARRIER",
+            "launch_aiv_count": 24,
+        },
+    }
+    identity = operator_identities[args.geometry]
     result = {
         "kind": f"paddle_decode_gqa_increfa_{args.geometry}_torchair_probe",
         "operator": {
-            "pytorch": (
-                "paddleocr_vl::decode_gqa_incre_flash_attention_mixed"
-                if args.geometry == "mixed"
-                else "paddleocr_vl::decode_gqa_incre_flash_attention_aiv"
-            ),
-            "ge": (
-                "PaddleDecodeGqaIncreFlashAttentionMixed"
-                if args.geometry == "mixed"
-                else "PaddleDecodeGqaIncreFlashAttentionAiv"
-            ),
-            "kernel": (
-                "paddle_decode_gqa_incre_flash_attention_mixed"
-                if args.geometry == "mixed"
-                else "paddle_decode_gqa_incre_flash_attention_aiv"
-            ),
+            "pytorch": identity["pytorch"],
+            "ge": identity["ge"],
+            "kernel": identity["kernel"],
         },
         "contract": {
             "query_shape": list(query.shape),
@@ -275,11 +295,8 @@ def main() -> int:
             "strict_scope": args.strict_scope,
             "super_kernel_options": args.super_kernel_options,
             "vector_core_count": 16,
-            "core_type": (
-                "MIX_AIC_1_1_WITH_NOOP_AIC"
-                if args.geometry == "mixed"
-                else "MIX_AIV_ZERO_CUBE"
-            ),
+            "launch_aiv_count": identity["launch_aiv_count"],
+            "core_type": identity["core_type"],
         },
         "environment": {
             "device": torch.npu.get_device_name(0),

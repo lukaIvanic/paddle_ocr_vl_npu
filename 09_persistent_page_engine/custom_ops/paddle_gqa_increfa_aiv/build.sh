@@ -98,6 +98,24 @@ case "$EXPERIMENT_VARIANT" in
         EXPECT_AIV_ONLY=false
         EXPECTED_TASK_RATIO="1:1"
         ;;
+    decode_fused_plain_mixed_superkernel24)
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0015-decoder-fixed-no-optional-inputs.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0017-decoder-reuse-attention-tpipe.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0018-decoder-mixed-task-geometry.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0019-decoder-24-aiv-hardware-barrier.patch")
+        VENDOR_NAME="paddle_decode_kv_gqa_mixed24"
+        CACHE_NAMESPACE="paddle_decode_kv_gqa_mixed24"
+        OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode_fused_plain"
+        CUSTOM_OP_SNAKE="paddle_decode_gqa_incre_flash_attention_mixed24"
+        CUSTOM_OP_GE="PaddleDecodeGqaIncreFlashAttentionMixed24"
+        CUSTOM_OP_REL="attention/$CUSTOM_OP_SNAKE"
+        PREPARED_OP_REL="attention/paddle_gqa_incre_flash_attention_aiv"
+        OP_API_SYMBOL_PREFIX="PaddleDecodeGqaIncreFlashAttentionMixed24"
+        FUSED_DECODE=true
+        EXPECT_AIV_ONLY=false
+        EXPECTED_TASK_RATIO="1:1"
+        ;;
     decode_attention_only)
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0015-decoder-fixed-no-optional-inputs.patch")

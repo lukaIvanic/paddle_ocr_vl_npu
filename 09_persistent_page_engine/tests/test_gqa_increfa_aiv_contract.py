@@ -242,6 +242,72 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             .read_text(encoding="utf-8"),
         )
 
+    def test_mixed24_matches_decoder_geometry_before_hardware_barrier(self) -> None:
+        operator_root = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_gqa_increfa_aiv"
+        )
+        build_script = (operator_root / "build.sh").read_text(encoding="utf-8")
+        mixed24_patch = (
+            operator_root
+            / "patches"
+            / "0019-decoder-24-aiv-hardware-barrier.patch"
+        ).read_text(encoding="utf-8")
+        converter = (
+            EXPERIMENT_ROOT
+            / "paddleocr_vl"
+            / "model"
+            / "decode_gqa_increfa_mixed.py"
+        ).read_text(encoding="utf-8")
+        boundary_probe = (
+            EXPERIMENT_ROOT
+            / "scripts"
+            / "probes"
+            / "compare_paddle_decode_matmul_qkv_gqa_mixed_boundary.py"
+        ).read_text(encoding="utf-8")
+        added_lines = "\n".join(
+            line[1:]
+            for line in mixed24_patch.splitlines()
+            if line.startswith("+") and not line.startswith("+++")
+        )
+
+        self.assertIn("decode_fused_plain_mixed_superkernel24", build_script)
+        self.assertIn("paddle_decode_kv_gqa_mixed24", build_script)
+        self.assertIn("0019-decoder-24-aiv-hardware-barrier.patch", build_script)
+        self.assertIn("constexpr uint32_t launchAivNum = 24U", mixed24_patch)
+        self.assertIn("GQA mixed24 block dim", mixed24_patch)
+        self.assertIn("SyncAll<true>();", mixed24_patch)
+        barrier = mixed24_patch.index("SyncAll<true>();")
+        idle_return = mixed24_patch.index(
+            "if (GetBlockIdx() >= kAivCoreCount)", barrier
+        )
+        self.assertLess(barrier, idle_return)
+        self.assertNotIn("SyncAll<false>", added_lines)
+        self.assertNotIn("kSyncStorageBytes", added_lines)
+        self.assertIn(
+            'GE_OP_NAME_MIXED24 = "PaddleDecodeGqaIncreFlashAttentionMixed24"',
+            converter,
+        )
+        self.assertIn('choices=("mixed", "mixed24")', boundary_probe)
+
+        optimization = text_decode.resolve_decode_optimization(
+            "paddle_decoder_megakernel_b1_fused_gqa_mixed24"
+        )
+        self.assertTrue(optimization.super_kernel_scope)
+        self.assertTrue(optimization.ascendc_decode_gqa_mixed24)
+        self.assertFalse(optimization.ascendc_decode_gqa_mixed)
+        self.assertFalse(optimization.ascendc_decode_gqa)
+        self.assertEqual(optimization.gqa_aiv_vector_core_count, 16)
+        self.assertIn("feed-sync-all=0", optimization.super_kernel_options)
+        self.assertIn("early-start=0", optimization.super_kernel_options)
+        self.assertEqual(
+            text_decode.decode_attention_label(
+                SimpleNamespace(type="npu"), optimization
+            ),
+            "paddle_decode_gqa_increfa_mixed24",
+        )
+
     def test_rejects_unsafe_48_core_short_partition(self) -> None:
         kv_length = MIN_KV_LENGTH_FOR_48_CORES - 1
         query = torch.empty((1, 16, 1, 128), dtype=torch.float16)

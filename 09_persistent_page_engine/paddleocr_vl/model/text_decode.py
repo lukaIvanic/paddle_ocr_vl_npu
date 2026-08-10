@@ -55,7 +55,9 @@ from .decode_gqa_increfa_aiv import (
 )
 from .decode_gqa_increfa_mixed import (
     decode_gqa_incre_flash_attention_mixed,
+    decode_gqa_incre_flash_attention_mixed24,
     register_decode_gqa_increfa_mixed_converter,
+    register_decode_gqa_increfa_mixed24_converter,
 )
 from .decode_gqa_attention_aiv import (
     decode_gqa_attention_aiv,
@@ -121,6 +123,7 @@ class DecodeOptimizationConfig:
     ascendc_kv_scatter_query: bool = False
     ascendc_decode_gqa: bool = False
     ascendc_decode_gqa_mixed: bool = False
+    ascendc_decode_gqa_mixed24: bool = False
     ascendc_decode_gqa_attention: bool = False
     ascendc_swiglu: bool = False
 
@@ -551,6 +554,16 @@ DECODE_OPTIMIZATION_PRESETS.update(
             ascendc_decode_gqa_mixed=True,
             super_kernel_options=(
                 "feed-sync-all=1:stream-fusion=0:strict-scope-check=abort:"
+                "preload-code=per-func:early-start=0:split-mode=4"
+            ),
+        ),
+        "paddle_decoder_megakernel_b1_fused_gqa_mixed24": replace(
+            _PADDLE_DECODER_MEGAKERNEL_B1_FUSED_GQA,
+            name="paddle_decoder_megakernel_b1_fused_gqa_mixed24",
+            ascendc_decode_gqa=False,
+            ascendc_decode_gqa_mixed24=True,
+            super_kernel_options=(
+                "feed-sync-all=0:stream-fusion=0:strict-scope-check=abort:"
                 "preload-code=per-func:early-start=0:split-mode=4"
             ),
         ),
@@ -1223,16 +1236,18 @@ def _decode_attention(
     if (
         optimization.ascendc_decode_gqa
         or optimization.ascendc_decode_gqa_mixed
+        or optimization.ascendc_decode_gqa_mixed24
     ):
         if attention_mask is None:
             raise ValueError("fused decode GQA requires persistent mask scratch")
         if pse_shift is not None or actual_seq_lengths is not None:
             raise ValueError("fused decode GQA requires masked static attention")
-        fused_attention = (
-            decode_gqa_incre_flash_attention_mixed
-            if optimization.ascendc_decode_gqa_mixed
-            else decode_gqa_incre_flash_attention_aiv
-        )
+        if optimization.ascendc_decode_gqa_mixed24:
+            fused_attention = decode_gqa_incre_flash_attention_mixed24
+        elif optimization.ascendc_decode_gqa_mixed:
+            fused_attention = decode_gqa_incre_flash_attention_mixed
+        else:
+            fused_attention = decode_gqa_incre_flash_attention_aiv
         attention_output = fused_attention(
             query_states,
             key_cache,
@@ -1853,6 +1868,7 @@ class TextDecodeStage(torch.nn.Module):
             if (
                 self.optimization.ascendc_decode_gqa
                 or self.optimization.ascendc_decode_gqa_mixed
+                or self.optimization.ascendc_decode_gqa_mixed24
             ) and int(cache_length) != 1024:
                 raise ValueError(
                     "fused decode GQA is specialized for cache_length=1024"
@@ -1869,6 +1885,7 @@ class TextDecodeStage(torch.nn.Module):
             if (
                 self.optimization.ascendc_decode_gqa
                 or self.optimization.ascendc_decode_gqa_mixed
+                or self.optimization.ascendc_decode_gqa_mixed24
             ):
                 self.register_buffer(
                     "_super_kernel_attention_mask_scratch",
@@ -1915,6 +1932,7 @@ class TextDecodeStage(torch.nn.Module):
                 if (
                     self.optimization.ascendc_decode_gqa
                     or self.optimization.ascendc_decode_gqa_mixed
+                    or self.optimization.ascendc_decode_gqa_mixed24
                 )
                 else None
             ),
@@ -1963,6 +1981,8 @@ def decode_attention_label(
     if device.type != "npu":
         return "manual"
     if optimization is not None and optimization.attention == "gqa_aiv":
+        if optimization.ascendc_decode_gqa_mixed24:
+            return "paddle_decode_gqa_increfa_mixed24"
         if optimization.ascendc_decode_gqa_mixed:
             return "paddle_decode_gqa_increfa_mixed"
         if optimization.ascendc_decode_gqa:
@@ -1989,13 +2009,14 @@ def decode_cache_update_label(
         and (
             optimization.ascendc_decode_gqa
             or optimization.ascendc_decode_gqa_mixed
+            or optimization.ascendc_decode_gqa_mixed24
         )
     ):
-        return (
-            "paddle_decode_gqa_increfa_mixed"
-            if optimization.ascendc_decode_gqa_mixed
-            else "paddle_decode_gqa_increfa_aiv"
-        )
+        if optimization.ascendc_decode_gqa_mixed24:
+            return "paddle_decode_gqa_increfa_mixed24"
+        if optimization.ascendc_decode_gqa_mixed:
+            return "paddle_decode_gqa_increfa_mixed"
+        return "paddle_decode_gqa_increfa_aiv"
     return DECODE_CACHE_UPDATE if device.type == "npu" else "per_row_copy"
 
 
@@ -2145,6 +2166,9 @@ def compile_text_decode_stage(
             "ascendc_decode_gqa_mixed": (
                 optimization.ascendc_decode_gqa_mixed
             ),
+            "ascendc_decode_gqa_mixed24": (
+                optimization.ascendc_decode_gqa_mixed24
+            ),
             "ascendc_decode_gqa_attention": (
                 optimization.ascendc_decode_gqa_attention
             ),
@@ -2164,6 +2188,7 @@ def compile_text_decode_stage(
             optimization.attention == "gqa_aiv"
             and not optimization.ascendc_decode_gqa
             and not optimization.ascendc_decode_gqa_mixed
+            and not optimization.ascendc_decode_gqa_mixed24
             and not optimization.ascendc_decode_gqa_attention
         ):
             register_gqa_increfa_aiv_converter()
@@ -2171,6 +2196,8 @@ def compile_text_decode_stage(
             register_decode_gqa_increfa_aiv_converter()
         if optimization.ascendc_decode_gqa_mixed:
             register_decode_gqa_increfa_mixed_converter()
+        if optimization.ascendc_decode_gqa_mixed24:
+            register_decode_gqa_increfa_mixed24_converter()
         if optimization.ascendc_decode_gqa_attention:
             register_decode_gqa_attention_aiv_converter()
         if optimization.ascendc_token_embedding:
