@@ -191,4 +191,8 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v4(
         PipeBarrier<PIPE_ALL>();
         pipe.Destroy();
     }
+    // All AIV workers in the enclosing SuperKernel reach this hardware
+    // barrier. Attention cannot read K/V until core 0 has completed its GM
+    // writes, while a standalone blockDim=1 launch remains valid.
+    SyncAll<true>();
 }

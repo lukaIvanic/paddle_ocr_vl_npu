@@ -36,6 +36,11 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertNotIn("if (GetBlockIdx() != 0", kernel)
         self.assertIn("feed-sync-all", kernel)
         self.assertIn("kernel.Process();\n        PipeBarrier<PIPE_ALL>();", kernel)
+        self.assertIn("SyncAll<true>();", kernel)
+        self.assertGreater(
+            kernel.index("SyncAll<true>();"),
+            kernel.index("PipeBarrier<PIPE_ALL>();"),
+        )
 
     def test_attention_overlay_uses_superkernel_safe_plain_kv_abi(self) -> None:
         operator_root = (
