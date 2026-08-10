@@ -25,6 +25,7 @@ CUSTOM_OP_REL="attention/$CUSTOM_OP_SNAKE"
 PREPARED_OP_REL="$CUSTOM_OP_REL"
 OP_API_SYMBOL_PREFIX="PaddleGqaIncreFlashAttentionAiv"
 FUSED_DECODE=false
+EXPECT_AIV_ONLY=true
 ENTRY_REL="$UPSTREAM_OP_REL/op_kernel/incre_flash_attention_arch32.h"
 EXPECTED_ENTRY_SHA256="20cb2397d84cf5d5386ebc09b6aa79eacfd3f32d956309c1b4e7f3e2690ef63b"
 HOST_TILER_REL="$UPSTREAM_OP_REL/op_host/incre_flash_attention_tiling.cpp"
@@ -79,6 +80,23 @@ case "$EXPERIMENT_VARIANT" in
         PREPARED_OP_REL="attention/paddle_gqa_incre_flash_attention_aiv"
         OP_API_SYMBOL_PREFIX="PaddleDecodeGqaIncreFlashAttentionAiv"
         FUSED_DECODE=true
+        ;;
+    decode_fused_plain_mixed_superkernel)
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0015-decoder-fixed-no-optional-inputs.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0016-decoder-soft-sync-workspace.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0017-decoder-reuse-attention-tpipe.patch")
+        PATCH_PATHS+=("$CUSTOM_ROOT/patches/0018-decoder-mixed-task-geometry.patch")
+        VENDOR_NAME="paddle_decode_kv_gqa_mixed"
+        CACHE_NAMESPACE="paddle_decode_kv_gqa_mixed"
+        OVERLAY_ROOT="$CUSTOM_ROOT/source_overlay_decode_fused_plain"
+        CUSTOM_OP_SNAKE="paddle_decode_gqa_incre_flash_attention_mixed"
+        CUSTOM_OP_GE="PaddleDecodeGqaIncreFlashAttentionMixed"
+        CUSTOM_OP_REL="attention/$CUSTOM_OP_SNAKE"
+        PREPARED_OP_REL="attention/paddle_gqa_incre_flash_attention_aiv"
+        OP_API_SYMBOL_PREFIX="PaddleDecodeGqaIncreFlashAttentionMixed"
+        FUSED_DECODE=true
+        EXPECT_AIV_ONLY=false
         ;;
     decode_attention_only)
         PATCH_PATHS+=("$CUSTOM_ROOT/patches/0014-superkernel-plain-kv-attention.patch")
@@ -252,17 +270,23 @@ if [[ "$(awk '$4 == "FUNC" && $8 ~ /_mix_aiv$/ { count += 1 } END { print count 
     echo "ERROR: $KERNEL_OBJECT does not contain both MIX_AIV functions" >&2
     exit 3
 fi
-if awk '$4 == "FUNC" && $8 ~ /_mix_aic$/ { found = 1 } END { exit !found }' <<<"$symbols"; then
-    echo "ERROR: $KERNEL_OBJECT still contains a cube function" >&2
+if [[ "$EXPECT_AIV_ONLY" == true ]]; then
+    if awk '$4 == "FUNC" && $8 ~ /_mix_aic$/ { found = 1 } END { exit !found }' <<<"$symbols"; then
+        echo "ERROR: $KERNEL_OBJECT still contains a cube function" >&2
+        exit 3
+    fi
+elif [[ "$(awk '$4 == "FUNC" && $8 ~ /_mix_aic$/ { count += 1 } END { print count + 0 }' <<<"$symbols")" != "2" ]]; then
+    echo "ERROR: $KERNEL_OBJECT does not contain both no-op MIX_AIC functions" >&2
     exit 3
 fi
 
-"$PYTHON_BIN" - "$KERNEL_JSON" <<'PY'
+"$PYTHON_BIN" - "$KERNEL_JSON" "$EXPECT_AIV_ONLY" <<'PY'
 import json
 import sys
 
 expected = {11000000000000000, 11000000000100000}
 path = sys.argv[1]
+expect_aiv_only = sys.argv[2] == "true"
 metadata = json.load(open(path, encoding="utf-8"))
 kernels = metadata.get("kernelList", [])
 if len(kernels) != 2:
@@ -282,8 +306,13 @@ for kernel in kernels:
         "tilingKey": key,
         "taskRation": task_ratio,
     })
-    if metadata.get("coreType") not in ("MIX", "MIX_AIV") or task_ratio != "0:1":
-        raise SystemExit(f"{path}: not a zero-cube MIX_AIV kernel")
+    if metadata.get("coreType") not in ("MIX", "MIX_AIV"):
+        raise SystemExit(f"{path}: unexpected core type")
+    expected_ratio = "0:1" if expect_aiv_only else "1:2"
+    if task_ratio != expected_ratio:
+        raise SystemExit(
+            f"{path}: expected taskRation={expected_ratio}, got {task_ratio}"
+        )
     seen.add(key)
 print("PADDLE_GQA_INCREFA_AIV_KERNEL_METADATA=" + json.dumps(summaries, sort_keys=True))
 if metadata.get("magic") != "RT_DEV_BINARY_MAGIC_ELF":

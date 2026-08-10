@@ -171,6 +171,51 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
             optimization.super_kernel_options,
         )
 
+    def test_mixed_superkernel_gqa_is_an_independent_operator(self) -> None:
+        operator_root = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_gqa_increfa_aiv"
+        )
+        build_script = (operator_root / "build.sh").read_text(encoding="utf-8")
+        mixed_patch = (
+            operator_root
+            / "patches"
+            / "0018-decoder-mixed-task-geometry.patch"
+        ).read_text(encoding="utf-8")
+        converter = (
+            EXPERIMENT_ROOT
+            / "paddleocr_vl"
+            / "model"
+            / "decode_gqa_increfa_mixed.py"
+        ).read_text(encoding="utf-8")
+        probe = (
+            EXPERIMENT_ROOT
+            / "scripts"
+            / "probes"
+            / "compare_paddle_decode_matmul_qkv_gqa_mixed_boundary.py"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("decode_fused_plain_mixed_superkernel)", build_script)
+        self.assertIn("paddle_decode_kv_gqa_mixed", build_script)
+        self.assertIn(
+            "paddle_decode_gqa_incre_flash_attention_mixed",
+            build_script,
+        )
+        self.assertIn("0018-decoder-mixed-task-geometry.patch", build_script)
+        self.assertIn("KERNEL_TYPE_MIX_AIC_1_2", mixed_patch)
+        self.assertIn("if (g_coreType == AIC)", mixed_patch)
+        self.assertIn(
+            'paddleocr_vl::decode_gqa_incre_flash_attention_mixed',
+            converter,
+        )
+        self.assertIn(
+            'GE_OP_NAME = "PaddleDecodeGqaIncreFlashAttentionMixed"',
+            converter,
+        )
+        self.assertIn("decode_gqa_increfa_mixed", probe)
+        self.assertNotIn("decode_gqa_increfa_aiv import", probe)
+
     def test_rejects_unsafe_48_core_short_partition(self) -> None:
         kv_length = MIN_KV_LENGTH_FOR_48_CORES - 1
         query = torch.empty((1, 16, 1, 128), dtype=torch.float16)
