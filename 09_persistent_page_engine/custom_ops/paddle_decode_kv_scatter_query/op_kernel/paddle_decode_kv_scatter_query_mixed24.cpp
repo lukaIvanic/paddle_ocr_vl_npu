@@ -1,5 +1,6 @@
 #include "paddle_decode_kv_scatter_query_kernel.h"
 #include "paddle_decode_kv_scatter_query_tiling.h"
+#include "lib/matmul_intf.h"
 
 using namespace AscendC;
 using namespace paddle_decode_kv_scatter_query;

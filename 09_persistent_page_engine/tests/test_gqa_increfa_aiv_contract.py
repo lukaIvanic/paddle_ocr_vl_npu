@@ -46,6 +46,7 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         )
         self.assertNotIn("SyncAll<true>();", kernel)
         self.assertIn("KERNEL_TYPE_MIX_AIC_1_1", mixed_kernel)
+        self.assertIn('#include "lib/matmul_intf.h"', mixed_kernel)
         self.assertIn("if (g_coreType == AIC)", mixed_kernel)
         self.assertIn("GetBlockIdx() == 0", mixed_kernel)
         self.assertIn("SyncAll<true>();", mixed_kernel)
