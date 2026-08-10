@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the fused Paddle B1 cache-update and GQA AIV op through TorchAir."""
+"""Validate a fused Paddle B1 cache-update and GQA op through TorchAir."""
 
 from __future__ import annotations
 
@@ -17,11 +17,21 @@ from paddleocr_vl.model.decode_gqa_increfa_aiv import (
     decode_gqa_incre_flash_attention_aiv,
     register_decode_gqa_increfa_aiv_converter,
 )
+from paddleocr_vl.model.decode_gqa_increfa_mixed import (
+    decode_gqa_incre_flash_attention_mixed,
+    register_decode_gqa_increfa_mixed_converter,
+)
 
 
 class DecodeGqaIncrefaAiv(torch.nn.Module):
-    def __init__(self, strict_scope: bool, super_kernel_options: str) -> None:
+    def __init__(
+        self,
+        geometry: str,
+        strict_scope: bool,
+        super_kernel_options: str,
+    ) -> None:
         super().__init__()
+        self.geometry = geometry
         self.super_kernel_options = super_kernel_options
         self.scope = None
         if strict_scope:
@@ -39,7 +49,12 @@ class DecodeGqaIncrefaAiv(torch.nn.Module):
         key_state: torch.Tensor,
         value_state: torch.Tensor,
     ) -> torch.Tensor:
-        return decode_gqa_incre_flash_attention_aiv(
+        operator = (
+            decode_gqa_incre_flash_attention_mixed
+            if self.geometry == "mixed"
+            else decode_gqa_incre_flash_attention_aiv
+        )
+        return operator(
             query,
             key_cache,
             value_cache,
@@ -73,7 +88,7 @@ class DecodeGqaIncrefaAiv(torch.nn.Module):
         if self.scope is None:
             return self._forward_impl(*args)
         with self.scope(
-            "paddle_decode_gqa_increfa_aiv_probe",
+            f"paddle_decode_gqa_increfa_{self.geometry}_probe",
             self.super_kernel_options,
         ):
             return self._forward_impl(*args)
@@ -83,6 +98,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--geometry",
+        choices=("aiv", "mixed"),
+        default="aiv",
+        help="Compile the zero-cube AIV op or its 1:2 mixed-task control.",
+    )
     parser.add_argument("--strict-scope", action="store_true")
     parser.add_argument(
         "--super-kernel-options",
@@ -101,7 +122,10 @@ def main() -> int:
     if not torch.npu.is_available():
         raise RuntimeError("an Ascend NPU is required")
     torch.npu.set_compile_mode(jit_compile=False)
-    register_decode_gqa_increfa_aiv_converter()
+    if args.geometry == "mixed":
+        register_decode_gqa_increfa_mixed_converter()
+    else:
+        register_decode_gqa_increfa_aiv_converter()
 
     generator = torch.Generator(device="cpu")
     generator.manual_seed(20260810)
@@ -140,6 +164,7 @@ def main() -> int:
     compiler_config.debug.graph_dump.path = str(graph_dump_dir)
     step = torchair.inference.cache_compile(
         DecodeGqaIncrefaAiv(
+            args.geometry,
             args.strict_scope,
             args.super_kernel_options,
         ).forward,
@@ -223,11 +248,23 @@ def main() -> int:
         )
 
     result = {
-        "kind": "paddle_decode_gqa_increfa_aiv_torchair_probe",
+        "kind": f"paddle_decode_gqa_increfa_{args.geometry}_torchair_probe",
         "operator": {
-            "pytorch": "paddleocr_vl::decode_gqa_incre_flash_attention_aiv",
-            "ge": "PaddleDecodeGqaIncreFlashAttentionAiv",
-            "kernel": "paddle_decode_gqa_incre_flash_attention_aiv",
+            "pytorch": (
+                "paddleocr_vl::decode_gqa_incre_flash_attention_mixed"
+                if args.geometry == "mixed"
+                else "paddleocr_vl::decode_gqa_incre_flash_attention_aiv"
+            ),
+            "ge": (
+                "PaddleDecodeGqaIncreFlashAttentionMixed"
+                if args.geometry == "mixed"
+                else "PaddleDecodeGqaIncreFlashAttentionAiv"
+            ),
+            "kernel": (
+                "paddle_decode_gqa_incre_flash_attention_mixed"
+                if args.geometry == "mixed"
+                else "paddle_decode_gqa_incre_flash_attention_aiv"
+            ),
         },
         "contract": {
             "query_shape": list(query.shape),
@@ -238,7 +275,11 @@ def main() -> int:
             "strict_scope": args.strict_scope,
             "super_kernel_options": args.super_kernel_options,
             "vector_core_count": 16,
-            "core_type": "MIX_AIV_ZERO_CUBE",
+            "core_type": (
+                "MIX_AIC_1_2_WITH_NOOP_AIC"
+                if args.geometry == "mixed"
+                else "MIX_AIV_ZERO_CUBE"
+            ),
         },
         "environment": {
             "device": torch.npu.get_device_name(0),
