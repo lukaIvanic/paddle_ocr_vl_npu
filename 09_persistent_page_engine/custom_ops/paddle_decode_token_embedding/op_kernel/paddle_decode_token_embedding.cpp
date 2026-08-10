@@ -65,4 +65,8 @@ extern "C" __global__ __aicore__ void paddle_decode_token_embedding(
     PaddleDecodeTokenEmbeddingKernel kernel;
     kernel.Init(weight, inputIds, embedding, &pipe);
     kernel.Process();
+    // A standalone task releases TPipe state when the task ends.  A binary-
+    // fused decoder continues into later subkernels in the same task, so make
+    // that lifetime boundary explicit and return its events/resources now.
+    pipe.Destroy();
 }

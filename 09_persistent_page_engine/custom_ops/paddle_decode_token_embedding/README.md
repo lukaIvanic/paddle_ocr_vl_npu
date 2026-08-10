@@ -8,6 +8,12 @@ output `[1, 1, 1024]` on Ascend 910B.
 The specialization is intentional. Its purpose is to make the embedding
 subkernel eligible for strict TorchAir SuperKernel binary fusion.
 
+The device entry explicitly calls `pipe.Destroy()` before it returns. This is
+required for a long binary-fused scope: ending a standalone task implicitly
+releases `TPipe` state, but the decoder SuperKernel continues into later
+subkernels in the same task. Every custom subkernel that constructs a `TPipe`
+must close that lifetime itself.
+
 Build and install on the Blue Zone container:
 
 ```sh
