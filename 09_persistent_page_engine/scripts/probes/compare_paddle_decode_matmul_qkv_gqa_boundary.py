@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the real Paddle B1 rotary-to-fused-GQA SuperKernel boundary."""
+"""Validate the cube-first MatMul-to-QKV-to-fused-GQA boundary."""
 
 from __future__ import annotations
 
@@ -11,15 +11,27 @@ from pathlib import Path
 import time
 
 import torch
+import torch.nn.functional as F
 
 from paddleocr_vl.model.compile_utils import import_torchair
 from paddleocr_vl.model.decode_gqa_increfa_aiv import (
     decode_gqa_incre_flash_attention_aiv,
     register_decode_gqa_increfa_aiv_converter,
 )
+from paddleocr_vl.model.decode_linear_matmul_v3 import (
+    decode_linear_matmul_v3,
+    register_decode_linear_matmul_v3_converter,
+)
+from paddleocr_vl.model.decode_qkv_split import (
+    decode_qkv_split,
+    register_decode_qkv_split_converter,
+)
 
 
-class DecodeRotaryGqaBoundary(torch.nn.Module):
+FRACTAL_NZ = 29
+
+
+class DecodeMatMulQkvGqaBoundary(torch.nn.Module):
     def __init__(self, super_kernel_options: str) -> None:
         super().__init__()
         self.super_kernel_options = super_kernel_options
@@ -29,33 +41,24 @@ class DecodeRotaryGqaBoundary(torch.nn.Module):
 
     def _forward_impl(
         self,
-        query_bsnd: torch.Tensor,
-        key_bsnd: torch.Tensor,
-        value_state: torch.Tensor,
-        cos: torch.Tensor,
-        sin: torch.Tensor,
+        hidden_states: torch.Tensor,
+        qkv_weight: torch.Tensor,
         key_cache: torch.Tensor,
         value_cache: torch.Tensor,
         attention_mask: torch.Tensor,
         cache_position: torch.Tensor,
     ) -> torch.Tensor:
-        import torch_npu
-
-        query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
-            query_bsnd,
-            key_bsnd,
-            cos,
-            sin,
-            layout="BSND",
-            rotary_mode="half",
+        packed_qkv = decode_linear_matmul_v3(hidden_states, qkv_weight)
+        query, key_state, value_state = decode_qkv_split(
+            packed_qkv.reshape(1, 1, 2560)
         )
         return decode_gqa_incre_flash_attention_aiv(
-            query_bsnd.transpose(1, 2),
+            query,
             key_cache,
             value_cache,
             attention_mask,
             cache_position,
-            key_bsnd.transpose(1, 2),
+            key_state,
             value_state,
             scale_value=1.0 / math.sqrt(128.0),
             vector_core_count=16,
@@ -63,26 +66,20 @@ class DecodeRotaryGqaBoundary(torch.nn.Module):
 
     def forward(
         self,
-        query_bsnd: torch.Tensor,
-        key_bsnd: torch.Tensor,
-        value_state: torch.Tensor,
-        cos: torch.Tensor,
-        sin: torch.Tensor,
+        hidden_states: torch.Tensor,
+        qkv_weight: torch.Tensor,
         key_cache: torch.Tensor,
         value_cache: torch.Tensor,
         attention_mask: torch.Tensor,
         cache_position: torch.Tensor,
     ) -> torch.Tensor:
         with self.scope(
-            "paddle_decode_rotary_gqa_boundary",
+            "paddle_decode_matmul_qkv_gqa_boundary",
             self.super_kernel_options,
         ):
             return self._forward_impl(
-                query_bsnd,
-                key_bsnd,
-                value_state,
-                cos,
-                sin,
+                hidden_states,
+                qkv_weight,
                 key_cache,
                 value_cache,
                 attention_mask,
@@ -112,27 +109,19 @@ def main() -> int:
         raise RuntimeError("an Ascend NPU is required")
     torch.npu.config.allow_internal_format = True
     torch.npu.set_compile_mode(jit_compile=False)
+    register_decode_linear_matmul_v3_converter()
+    register_decode_qkv_split_converter()
     register_decode_gqa_increfa_aiv_converter()
 
     generator = torch.Generator(device="cpu")
     generator.manual_seed(20260810)
-    base_query_bsnd = torch.randn(
-        (1, 1, 16, 128), generator=generator, dtype=torch.float16
+    hidden_states = torch.randn(
+        (1, 1024), generator=generator, dtype=torch.float16
     ).to("npu:0")
-    base_key_bsnd = torch.randn(
-        (1, 1, 2, 128), generator=generator, dtype=torch.float16
+    qkv_weight = torch.randn(
+        (2560, 1024), generator=generator, dtype=torch.float16
     ).to("npu:0")
-    value_states = [
-        torch.randn(
-            (1, 2, 1, 128), generator=generator, dtype=torch.float16
-        ).to("npu:0")
-        for _ in range(2)
-    ]
-    angles = torch.randn(
-        (1, 1, 1, 128), generator=generator, dtype=torch.float16
-    )
-    cos = torch.cos(angles.float()).to(torch.float16).to("npu:0")
-    sin = torch.sin(angles.float()).to(torch.float16).to("npu:0")
+    qkv_weight = torch_npu.npu_format_cast(qkv_weight, FRACTAL_NZ)
     key_cache = torch.zeros(
         (1, 2, 1024, 128), dtype=torch.float16, device="npu:0"
     )
@@ -143,10 +132,15 @@ def main() -> int:
     ref_key_cache = torch.zeros_like(key_cache)
     ref_value_cache = torch.zeros_like(value_cache)
 
+    reference_qkv = F.linear(hidden_states, qkv_weight).reshape(1, 1, 2560)
+    reference_query, reference_key_state, reference_value_state = (
+        decode_qkv_split(reference_qkv)
+    )
+
     torchair, CompilerConfig = import_torchair()
     args.cache_dir.mkdir(parents=True, exist_ok=True)
     step = torchair.inference.cache_compile(
-        DecodeRotaryGqaBoundary(args.super_kernel_options).forward,
+        DecodeMatMulQkvGqaBoundary(args.super_kernel_options).forward,
         config=CompilerConfig(),
         dynamic=False,
         cache_dir=str(args.cache_dir),
@@ -156,29 +150,14 @@ def main() -> int:
     checks: list[dict[str, object]] = []
     timings: list[float] = []
     all_close = True
-    for position, value_state in zip((128, 129), value_states, strict=True):
+    for position in (128, 129):
         position_tensor = torch.tensor(
             [position], dtype=torch.int64, device="npu:0"
         )
-        reference_query_bsnd, reference_key_bsnd = (
-            torch_npu.npu_apply_rotary_pos_emb(
-                base_query_bsnd.clone(),
-                base_key_bsnd.clone(),
-                cos,
-                sin,
-                layout="BSND",
-                rotary_mode="half",
-            )
-        )
-        query_bsnd = base_query_bsnd.clone()
-        key_bsnd = base_key_bsnd.clone()
         started = time.perf_counter()
         output = step(
-            query_bsnd,
-            key_bsnd,
-            value_state,
-            cos,
-            sin,
+            hidden_states,
+            qkv_weight,
             key_cache,
             value_cache,
             attention_mask,
@@ -187,18 +166,17 @@ def main() -> int:
         torch.npu.synchronize()
         timings.append(time.perf_counter() - started)
 
-        ref_key_state = reference_key_bsnd.transpose(1, 2)
         torch_npu.scatter_update_(
-            ref_key_cache, position_tensor, ref_key_state, 2
+            ref_key_cache, position_tensor, reference_key_state, 2
         )
         torch_npu.scatter_update_(
-            ref_value_cache, position_tensor, value_state, 2
+            ref_value_cache, position_tensor, reference_value_state, 2
         )
         expected_mask = (
             torch.arange(1024, dtype=torch.int64, device="npu:0") > position
         ).view(1, 1, 1, 1024)
         reference = torch_npu.npu_incre_flash_attention(
-            reference_query_bsnd.transpose(1, 2),
+            reference_query,
             ref_key_cache,
             ref_value_cache,
             atten_mask=expected_mask,
@@ -213,37 +191,52 @@ def main() -> int:
 
         output_cpu = output.float().cpu()
         reference_cpu = reference.float().cpu()
+        key_cache_cpu = key_cache.float().cpu()
+        ref_key_cache_cpu = ref_key_cache.float().cpu()
+        value_cache_cpu = value_cache.float().cpu()
+        ref_value_cache_cpu = ref_value_cache.float().cpu()
         output_diff = (output_cpu - reference_cpu).abs()
-        output_exact = bool(torch.equal(output_cpu, reference_cpu))
+        key_diff = (key_cache_cpu - ref_key_cache_cpu).abs()
+        value_diff = (value_cache_cpu - ref_value_cache_cpu).abs()
         output_close = bool(
-            torch.allclose(output_cpu, reference_cpu, atol=2.0e-5, rtol=0.0)
+            torch.allclose(output_cpu, reference_cpu, atol=2.0e-3, rtol=2.0e-3)
         )
-        key_exact = bool(torch.equal(key_cache.cpu(), ref_key_cache.cpu()))
-        value_exact = bool(
-            torch.equal(value_cache.cpu(), ref_value_cache.cpu())
+        key_close = bool(
+            torch.allclose(
+                key_cache_cpu, ref_key_cache_cpu, atol=2.0e-3, rtol=2.0e-3
+            )
+        )
+        value_close = bool(
+            torch.allclose(
+                value_cache_cpu,
+                ref_value_cache_cpu,
+                atol=2.0e-3,
+                rtol=2.0e-3,
+            )
         )
         mask_exact = bool(torch.equal(attention_mask.cpu(), expected_mask.cpu()))
-        passed = output_close and key_exact and value_exact and mask_exact
+        passed = output_close and key_close and value_close and mask_exact
         all_close = all_close and passed
         checks.append(
             {
                 "position": position,
-                "output_exact": output_exact,
-                "output_allclose_atol_2e_5_rtol_0": output_close,
+                "output_allclose_atol_2e_3_rtol_2e_3": output_close,
                 "output_max_abs": float(output_diff.max().item()),
-                "key_cache_exact": key_exact,
-                "value_cache_exact": value_exact,
+                "key_cache_allclose_atol_2e_3_rtol_2e_3": key_close,
+                "key_cache_max_abs": float(key_diff.max().item()),
+                "value_cache_allclose_atol_2e_3_rtol_2e_3": value_close,
+                "value_cache_max_abs": float(value_diff.max().item()),
                 "attention_mask_exact": mask_exact,
             }
         )
 
     result = {
-        "kind": "paddle_decode_rotary_gqa_boundary_probe",
+        "kind": "paddle_decode_matmul_qkv_gqa_boundary_probe",
         "contract": {
-            "query_bsnd_shape": list(base_query_bsnd.shape),
-            "key_bsnd_shape": list(base_key_bsnd.shape),
+            "hidden_shape": list(hidden_states.shape),
+            "qkv_weight_shape": list(qkv_weight.shape),
+            "qkv_weight_npu_format": int(torch_npu.get_npu_format(qkv_weight)),
             "cache_shape": list(key_cache.shape),
-            "factor_shape": list(cos.shape),
             "positions": [128, 129],
             "vector_core_count": 16,
             "super_kernel_options": args.super_kernel_options,
@@ -264,7 +257,7 @@ def main() -> int:
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2))
     if not all_close:
-        raise RuntimeError("rotary-to-fused-GQA boundary failed parity")
+        raise RuntimeError("cube-first MatMul/QKV/fused-GQA boundary failed")
     return 0
 
 
