@@ -45,6 +45,10 @@ from .decode_kv_scatter import (
     decode_kv_scatter,
     register_decode_kv_scatter_converter,
 )
+from .decode_kv_scatter_query import (
+    decode_kv_scatter_query,
+    register_decode_kv_scatter_query_converter,
+)
 from .config import PaddleOCRTextConfig
 from .gqa_increfa_aiv import (
     gqa_incre_flash_attention_aiv,
@@ -94,6 +98,7 @@ class DecodeOptimizationConfig:
     ascendc_position_add: bool = False
     ascendc_rope_lookup: bool = False
     ascendc_kv_scatter: bool = False
+    ascendc_kv_scatter_query: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -156,6 +161,23 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         ascendc_qkv_split=True,
         ascendc_rope_lookup=True,
         ascendc_kv_scatter=True,
+    ),
+    "paddle_decoder_megakernel_b1": DecodeOptimizationConfig(
+        name="paddle_decoder_megakernel_b1",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        attention="gqa_aiv",
+        gqa_aiv_vector_core_count=32,
+        super_kernel_scope=True,
+        ascendc_token_embedding=True,
+        ascendc_linear=True,
+        ascendc_qkv_split=True,
+        ascendc_rope_lookup=True,
+        ascendc_kv_scatter_query=True,
     ),
     "combined_apply_pse_sentinel": DecodeOptimizationConfig(
         name="combined_apply_pse_sentinel",
@@ -1047,14 +1069,24 @@ def _decode_attention(
             .reshape(batch_size, expected_heads, token_count, head_dim)
             .contiguous()
         )
-    key_cache, value_cache = update_decode_kv_cache_(
-        key_cache,
-        value_cache,
-        cache_position,
-        key_states,
-        value_states,
-        use_scatter_pa=optimization.ascendc_kv_scatter,
-    )
+    if optimization.ascendc_kv_scatter_query:
+        query_states = decode_kv_scatter_query(
+            query_states,
+            key_cache,
+            value_cache,
+            cache_position,
+            key_states,
+            value_states,
+        )
+    else:
+        key_cache, value_cache = update_decode_kv_cache_(
+            key_cache,
+            value_cache,
+            cache_position,
+            key_states,
+            value_states,
+            use_scatter_pa=optimization.ascendc_kv_scatter,
+        )
     if optimization.post_scatter_kv_prefetch:
         if key_cache.device.type != "npu":
             raise ValueError(
@@ -1692,7 +1724,16 @@ def decode_attention_label(
     return DECODE_ATTENTION
 
 
-def decode_cache_update_label(device: torch.device) -> str:
+def decode_cache_update_label(
+    device: torch.device,
+    optimization: DecodeOptimizationConfig | None = None,
+) -> str:
+    if (
+        device.type == "npu"
+        and optimization is not None
+        and optimization.ascendc_kv_scatter_query
+    ):
+        return "paddle_decode_kv_scatter_query_v2"
     return DECODE_CACHE_UPDATE if device.type == "npu" else "per_row_copy"
 
 
@@ -1708,6 +1749,7 @@ def decode_source_hash() -> str:
         "decode_token_embedding.py",
         "decode_linear_matmul_v3.py",
         "decode_qkv_split.py",
+        "decode_kv_scatter_query.py",
         "decode_position_add.py",
         "decode_rope_lookup.py",
         "decode_kv_scatter.py",
@@ -1799,7 +1841,7 @@ def compile_text_decode_stage(
         "boundary": "token_embedding_text_transformer_lm_head_static_step",
         "linear_weight_format": linear_weight_format,
         "decode_attention": decode_attention_label(device, optimization),
-        "decode_cache_update": decode_cache_update_label(device),
+        "decode_cache_update": decode_cache_update_label(device, optimization),
         "decode_optimization": optimization.name,
         "decode_optimization_config": {
             "hoist_mrope": optimization.hoist_mrope,
@@ -1829,6 +1871,9 @@ def compile_text_decode_stage(
             "ascendc_position_add": optimization.ascendc_position_add,
             "ascendc_rope_lookup": optimization.ascendc_rope_lookup,
             "ascendc_kv_scatter": optimization.ascendc_kv_scatter,
+            "ascendc_kv_scatter_query": (
+                optimization.ascendc_kv_scatter_query
+            ),
         },
     }
     if backend_name == "raw_eager":
@@ -1854,6 +1899,8 @@ def compile_text_decode_stage(
             register_decode_rope_lookup_converter()
         if optimization.ascendc_kv_scatter:
             register_decode_kv_scatter_converter()
+        if optimization.ascendc_kv_scatter_query:
+            register_decode_kv_scatter_query_converter()
         shape_cache_dir = torchair_cache_dir_for_shape(
             cache_root,
             batch_size=batch_size,
@@ -1894,7 +1941,9 @@ def compile_text_decode_stage(
                 "decode_attention": decode_attention_label(
                     device, optimization
                 ),
-                "decode_cache_update": decode_cache_update_label(device),
+                "decode_cache_update": decode_cache_update_label(
+                    device, optimization
+                ),
                 "execution_mode": TORCHAIR_EXECUTION_MODE,
                 "decode_optimization": optimization.name,
             },
