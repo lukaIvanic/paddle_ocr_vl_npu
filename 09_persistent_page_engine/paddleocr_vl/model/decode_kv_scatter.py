@@ -85,6 +85,9 @@ def register_decode_kv_scatter_converter() -> None:
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
     )
     ge_module = importlib.import_module(f"{torchair.__name__}.ge")
+    ge_apis = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.ge_apis"
+    )
     ge_attr = importlib.import_module("torchair.ge.attr")
     register_converter = converter_module.register_fx_node_ge_converter
     ge_custom_op = ge_module.custom_op
@@ -99,14 +102,20 @@ def register_decode_kv_scatter_converter() -> None:
         meta_outputs: Any = None,
     ) -> Any:
         del meta_outputs
+        # A GE ref op writes its cache *input*. A purely functional PyTorch
+        # identity has no trailing Assign for TorchAir's ref-op pass to use,
+        # so give it explicit output storage here. The integrated mutable cache
+        # path removes these moves after its alias contract is proven.
+        key_cache_copy = ge_apis.TensorMove(key_cache)
+        value_cache_copy = ge_apis.TensorMove(value_cache)
         return ge_custom_op(
             GE_OP_NAME,
             inputs={
                 "key": key_states,
-                "key_cache": key_cache,
+                "key_cache": key_cache_copy,
                 "slot_mapping": cache_position,
                 "value": value_states,
-                "value_cache": value_cache,
+                "value_cache": value_cache_copy,
                 "compress_lens": None,
                 "compress_seq_offset": None,
                 "seq_lens": None,
