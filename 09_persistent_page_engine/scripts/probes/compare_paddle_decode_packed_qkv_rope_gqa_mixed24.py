@@ -154,7 +154,7 @@ def main() -> int:
              torch.cat((angles, angles), dim=-1).sin()),
             dim=0,
         ).to(dtype=torch.float16, device="npu:0")
-    rope_delta = torch.tensor([[7]], dtype=torch.int64, device="npu:0")
+    rope_delta = torch.tensor([7], dtype=torch.int64, device="npu:0")
     key_cache = torch.zeros((1, 2, 1024, 128), dtype=torch.float16, device="npu:0")
     value_cache = torch.zeros_like(key_cache)
     attention_mask = torch.zeros((1, 1, 1, 1024), dtype=torch.bool, device="npu:0")
