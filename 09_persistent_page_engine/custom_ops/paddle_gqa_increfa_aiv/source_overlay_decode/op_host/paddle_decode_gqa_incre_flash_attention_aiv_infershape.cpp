@@ -12,7 +12,10 @@ static ge::graphStatus InferShapePaddleDecodeGqaIncreFlashAttentionAiv(
     *context->GetOutputShape(0) = *context->GetInputShape(0);
     *context->GetOutputShape(1) = *context->GetInputShape(1);
     *context->GetOutputShape(2) = *context->GetInputShape(2);
-    *context->GetOutputShape(3) = *context->GetInputShape(4);
+    // Optional inputs that are not supplied are omitted from the runtime
+    // InferShapeContext.  In the Paddle decoder specialization the mask is
+    // therefore compact input 3, immediately after query/key/value.
+    *context->GetOutputShape(3) = *context->GetInputShape(3);
     return ge::GRAPH_SUCCESS;
 }
 
@@ -25,7 +28,7 @@ static ge::graphStatus InferDataTypePaddleDecodeGqaIncreFlashAttentionAiv(
     context->SetOutputDataType(0, context->GetInputDataType(0));
     context->SetOutputDataType(1, context->GetInputDataType(1));
     context->SetOutputDataType(2, context->GetInputDataType(2));
-    context->SetOutputDataType(3, context->GetInputDataType(4));
+    context->SetOutputDataType(3, context->GetInputDataType(3));
     return ge::GRAPH_SUCCESS;
 }
 
