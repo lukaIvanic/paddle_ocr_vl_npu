@@ -41,23 +41,17 @@ diff --git a/attention/paddle_gqa_incre_flash_attention_aiv/op_kernel/incre_flas
 +#else
 @@ -597,0 +602,1 @@
 +#endif
-@@ -695,4 +701,10 @@
+@@ -694,0 +700,4 @@
 +#ifdef PADDLE_DECODE_GQA_PLAIN_KV
 +    __gm__ uint8_t *value_ = value;
 +    __gm__ uint8_t *key_ = key;
 +#else
--    ListTensorDesc keyListTensorDesc((__gm__ void *)keyPtr);
--    ListTensorDesc valueListTensorDesc((__gm__ void *)valuePtr);
--    __gm__ uint8_t *value_ = (__gm__ uint8_t *)valueListTensorDesc.GetDataPtr<__gm__ uint8_t>(0);
--    __gm__ uint8_t *key_ = (__gm__ uint8_t *)keyListTensorDesc.GetDataPtr<__gm__ uint8_t>(0);
+@@ -698,0 +708,1 @@
 +#endif
-@@ -852,4 +864,10 @@
+@@ -851,0 +862,4 @@
 +#ifdef PADDLE_DECODE_GQA_PLAIN_KV
 +        __gm__ uint8_t *key = keyPtr;
 +        __gm__ uint8_t *value = valuePtr;
 +#else
--        ListTensorDesc keyListTensorDesc((__gm__ void *)keyPtr);
--        ListTensorDesc valueListTensorDesc((__gm__ void *)valuePtr);
--        __gm__ uint8_t *key = (__gm__ uint8_t *)keyListTensorDesc.GetDataPtr<__gm__ uint8_t>(bIdx);
--        __gm__ uint8_t *value = (__gm__ uint8_t *)valueListTensorDesc.GetDataPtr<__gm__ uint8_t>(bIdx);
+@@ -855,0 +871,1 @@
 +#endif
