@@ -175,16 +175,19 @@ extern "C" __global__ __aicore__ void paddle_decode_kv_scatter_query_v4(
     (void)keyCacheOut;
     (void)valueCacheOut;
     (void)workspace;
-    if (GetBlockIdx() != 0 || tilingData.cacheLength != kCacheLength ||
-        tilingData.queryElements != kQueryElements ||
-        tilingData.stateElements != kStateElements) {
-        return;
+    // In a SuperKernel the enclosing fused task can launch more blocks than
+    // this single-worker prep stage needs. Keep the extra workers idle, but do
+    // not return: feed-sync-all inserts the balanced all-core barrier at the
+    // subfunction boundary, and every fused worker must reach it.
+    if (GetBlockIdx() == 0 && tilingData.cacheLength == kCacheLength &&
+        tilingData.queryElements == kQueryElements &&
+        tilingData.stateElements == kStateElements) {
+        TPipe pipe;
+        PaddleDecodeKvScatterQueryKernel kernel;
+        kernel.Init(
+            query, keyCacheRef, valueCacheRef, cachePosition, keyState,
+            valueState, orderedQuery, attentionMask, &pipe);
+        kernel.Process();
+        pipe.Destroy();
     }
-    TPipe pipe;
-    PaddleDecodeKvScatterQueryKernel kernel;
-    kernel.Init(
-        query, keyCacheRef, valueCacheRef, cachePosition, keyState, valueState,
-        orderedQuery, attentionMask, &pipe);
-    kernel.Process();
-    pipe.Destroy();
 }

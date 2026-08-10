@@ -22,6 +22,19 @@ from paddleocr_vl.model import text_decode
 
 
 class GqaIncrefaAivContractTest(unittest.TestCase):
+    def test_v4_prep_keeps_idle_superkernel_workers_at_boundary(self) -> None:
+        kernel = (
+            EXPERIMENT_ROOT
+            / "custom_ops"
+            / "paddle_decode_kv_scatter_query"
+            / "op_kernel"
+            / "paddle_decode_kv_scatter_query_v4.cpp"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("GetBlockIdx() == 0", kernel)
+        self.assertNotIn("if (GetBlockIdx() != 0", kernel)
+        self.assertIn("feed-sync-all", kernel)
+
     def test_attention_overlay_uses_superkernel_safe_plain_kv_abi(self) -> None:
         operator_root = (
             EXPERIMENT_ROOT
