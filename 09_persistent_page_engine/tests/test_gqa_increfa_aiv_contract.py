@@ -102,7 +102,10 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertNotIn('Input("key_cache_ref")', op_def)
         self.assertIn("PADDLE_DECODE_GQA_PLAIN_KV", kernel)
         self.assertIn("if (GetBlockIdx() == 0)", kernel)
-        self.assertIn("SyncAll();", kernel)
+        self.assertNotIn("SyncAll();", kernel)
+        self.assertIn("SyncAll(syncGlobal, syncLocal, kAivCoreCount)", kernel)
+        self.assertIn("GetUserWorkspace(workspace)", kernel)
+        self.assertIn("workspace + kSyncWorkspaceBytes", kernel)
         self.assertIn('"key": key_cache', converter)
         self.assertIn('mapping[1] = 1', converter)
         self.assertIn('decode_fused_plain)', build_script)
@@ -113,6 +116,14 @@ class GqaIncrefaAivContractTest(unittest.TestCase):
         self.assertIn("+    ifaContext.deqScale1.tensor = nullptr;", fixed_abi_patch)
         self.assertIn("+    ifaContext.blockTable.tensor = nullptr;", fixed_abi_patch)
         self.assertIn("+    ifaContext.kvPaddingSize.desc = nullptr;", fixed_abi_patch)
+        self.assertIn("0016-decoder-soft-sync-workspace.patch", build_script)
+        sync_workspace_patch = (
+            operator_root / "patches" / "0016-decoder-soft-sync-workspace.patch"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "+    workspaceSize_ += static_cast<size_t>(16U)",
+            sync_workspace_patch,
+        )
         probe = (
             EXPERIMENT_ROOT
             / "scripts"
