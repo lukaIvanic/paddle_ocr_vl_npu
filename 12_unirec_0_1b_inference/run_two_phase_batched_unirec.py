@@ -18,6 +18,8 @@ import time
 from collections import deque
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
+from queue import SimpleQueue
+from threading import Thread
 from types import SimpleNamespace
 from typing import Any
 
@@ -330,6 +332,13 @@ def main() -> None:
     )
     written_pages = 0
     max_pending_writes = 8
+    completion_queue: SimpleQueue[
+        tuple[str, base.PageRequest | ContinuousCompletedItem] | None
+    ] = SimpleQueue()
+    collector_errors: list[BaseException] = []
+    collector_completion_processing_s = 0.0
+    collector_join_s = 0.0
+    collector_stopped = False
 
     def write_page(result: dict[str, Any]) -> tuple[float, float]:
         started = time.perf_counter()
@@ -404,8 +413,7 @@ def main() -> None:
                 metrics.frontend_timing_s,
                 page.frontend_timing_s,
             )
-            pending_pages.append(page)
-            flush_ready_pages()
+            completion_queue.put(("page", page))
             for crop in page.crops:
                 item = base.build_worker_prefilled_item(crop)
                 base.record_prefill_metrics(metrics, item)
@@ -415,7 +423,7 @@ def main() -> None:
                     prefilled=item,
                 )
 
-    def complete_crop(completed_item: ContinuousCompletedItem) -> None:
+    def process_completed_crop(completed_item: ContinuousCompletedItem) -> None:
         crop = completed_item.payload
         if not isinstance(crop, base.CropRequest):
             raise TypeError(f"unexpected crop payload: {type(crop)!r}")
@@ -451,7 +459,68 @@ def main() -> None:
         )
         flush_ready_pages()
 
+    def collect_completions() -> None:
+        nonlocal collector_completion_processing_s
+        try:
+            while True:
+                message = completion_queue.get()
+                if message is None:
+                    break
+                kind, payload = message
+                if kind == "page":
+                    if not isinstance(payload, base.PageRequest):
+                        raise TypeError(
+                            f"unexpected page payload: {type(payload)!r}"
+                        )
+                    pending_pages.append(payload)
+                    flush_ready_pages()
+                    continue
+                if kind != "crop" or not isinstance(
+                    payload,
+                    ContinuousCompletedItem,
+                ):
+                    raise TypeError(
+                        f"unexpected completion message: {kind!r} "
+                        f"{type(payload)!r}"
+                    )
+                started = time.perf_counter()
+                process_completed_crop(payload)
+                collector_completion_processing_s += (
+                    time.perf_counter() - started
+                )
+            flush_ready_pages()
+            if pending_pages:
+                raise RuntimeError(
+                    f"unfinished pages after decode: {len(pending_pages)}"
+                )
+            final_drain_started = time.perf_counter()
+            drain_completed_writes(wait=True)
+            metrics.output_write_final_drain_s = (
+                time.perf_counter() - final_drain_started
+            )
+        except BaseException as exception:
+            collector_errors.append(exception)
+
+    def enqueue_completed_crop(completed_item: ContinuousCompletedItem) -> None:
+        completion_queue.put(("crop", completed_item))
+
+    collector_thread = Thread(
+        target=collect_completions,
+        name="unirec-two-phase-result-collector",
+    )
+
+    def stop_collector() -> None:
+        nonlocal collector_join_s, collector_stopped
+        if collector_stopped:
+            return
+        collector_stopped = True
+        completion_queue.put(None)
+        join_started = time.perf_counter()
+        collector_thread.join()
+        collector_join_s = time.perf_counter() - join_started
+
     decode_phase_started = time.perf_counter()
+    collector_thread.start()
     try:
         continuous_decode = ContinuousUniRecDecoder(
             runner=runner,
@@ -459,7 +528,7 @@ def main() -> None:
             max_length=args.max_length,
             decode_mode="compiled_ifa",
             compile_backend="torchair",
-        ).run(ready_source(), on_complete=complete_crop)
+        ).run(ready_source(), on_complete=enqueue_completed_crop)
         base.record_direct_arena_admission_metrics(metrics, continuous_decode)
         metrics.decode_s = float(continuous_decode["decode_s"])
         metrics.raw_decode_token_slots = int(
@@ -474,26 +543,24 @@ def main() -> None:
         metrics.padding_decode_token_slots = (
             metrics.raw_decode_token_slots - metrics.effective_decode_tokens
         )
-        flush_ready_pages()
-        if pending_pages:
-            raise RuntimeError(
-                f"unfinished pages after decode: {len(pending_pages)}"
+        stop_collector()
+        if collector_errors:
+            raise RuntimeError("background result collector failed") from (
+                collector_errors[0]
             )
-        final_drain_started = time.perf_counter()
-        drain_completed_writes(wait=True)
-        metrics.output_write_final_drain_s = (
-            time.perf_counter() - final_drain_started
-        )
         write_executor.shutdown(wait=True)
         if written_pages != len(image_paths):
             raise RuntimeError(
                 f"written page mismatch: {written_pages} != {len(image_paths)}"
             )
     except BaseException:
+        stop_collector()
         write_executor.shutdown(wait=True, cancel_futures=True)
         for payload in retained_payloads:
             release_unopened_payload(payload)
         for page in pending_pages:
+            base.release_page_frontend_storage(page)
+        for page, _future in pending_writes:
             base.release_page_frontend_storage(page)
         raise
     decode_phase_wall_s = time.perf_counter() - decode_phase_started
@@ -544,6 +611,10 @@ def main() -> None:
             "output_write": metrics.output_write_s,
             "output_write_backpressure": metrics.output_write_backpressure_s,
             "output_write_final_drain": metrics.output_write_final_drain_s,
+            "completion_collector_processing": (
+                collector_completion_processing_s
+            ),
+            "completion_collector_final_join": collector_join_s,
         },
         "throughput": {
             "prefill_pages_per_s": len(image_paths) / prefill_phase_wall_s,
