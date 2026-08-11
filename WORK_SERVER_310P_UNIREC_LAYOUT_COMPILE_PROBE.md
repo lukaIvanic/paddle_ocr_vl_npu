@@ -164,7 +164,17 @@ test -f "$COMPILED_JSON"
 
 Both compiled warmup calls and the measured call must finish.
 
-## 5. Exact output comparison and stdout result
+## 5. Structural and numeric output comparison
+
+Do not require an exact JSON digest. TorchAir and eager FP32 can differ in the
+last floating-point bits while producing the same layout. On a 16-page 910B
+control at this source revision, all 96 final boxes had identical class IDs,
+labels, and reading order. The maximum coordinate difference was 0.0121 pixels
+and the maximum score difference was 0.000395.
+
+Require exact box count, class ID, label, and reading-order value. Also require
+the maximum coordinate difference to be at most 0.25 pixels and the maximum
+score difference to be at most 0.002:
 
 ```sh
 EAGER_JSON="$EAGER_JSON" COMPILED_JSON="$COMPILED_JSON" \
@@ -177,19 +187,62 @@ eager = json.loads(Path(os.environ["EAGER_JSON"]).read_text())
 compiled = json.loads(Path(os.environ["COMPILED_JSON"]).read_text())
 eager_page = eager["pages"][0]
 compiled_page = compiled["pages"][0]
-digest_match = eager_page["result_digest"] == compiled_page["result_digest"]
-box_match = eager_page["box_count"] == compiled_page["box_count"]
-classification = "PASS_EXACT" if digest_match and box_match else "FAIL_PARITY"
+eager_boxes = eager_page["result"]["boxes"]
+compiled_boxes = compiled_page["result"]["boxes"]
+
+box_count_match = len(eager_boxes) == len(compiled_boxes)
+class_id_match = box_count_match and all(
+    eager_box["cls_id"] == compiled_box["cls_id"]
+    for eager_box, compiled_box in zip(eager_boxes, compiled_boxes)
+)
+label_match = box_count_match and all(
+    eager_box["label"] == compiled_box["label"]
+    for eager_box, compiled_box in zip(eager_boxes, compiled_boxes)
+)
+order_match = box_count_match and all(
+    eager_box["custom_value"] == compiled_box["custom_value"]
+    for eager_box, compiled_box in zip(eager_boxes, compiled_boxes)
+)
+coordinate_max_abs_px = max(
+    (
+        abs(eager_value - compiled_value)
+        for eager_box, compiled_box in zip(eager_boxes, compiled_boxes)
+        for eager_value, compiled_value in zip(
+            eager_box["coordinate"], compiled_box["coordinate"]
+        )
+    ),
+    default=0.0,
+)
+score_max_abs = max(
+    (
+        abs(eager_box["score"] - compiled_box["score"])
+        for eager_box, compiled_box in zip(eager_boxes, compiled_boxes)
+    ),
+    default=0.0,
+)
+parity = (
+    box_count_match
+    and class_id_match
+    and label_match
+    and order_match
+    and coordinate_max_abs_px <= 0.25
+    and score_max_abs <= 0.002
+)
+classification = "PASS_PARITY" if parity else "FAIL_PARITY"
 print(
     "UNIREC_310P_LAYOUT_COMPILE: "
     f"{classification} — "
     f"boxes={compiled_page['box_count']} "
-    f"digest_match={str(digest_match).lower()} "
+    f"class_id_match={str(class_id_match).lower()} "
+    f"label_match={str(label_match).lower()} "
+    f"order_match={str(order_match).lower()} "
+    f"coordinate_max_abs_px={coordinate_max_abs_px:.6f} "
+    f"score_max_abs={score_max_abs:.6f} "
     f"eager_forward_ms={eager_page['stage_s']['model_forward_s'] * 1000:.3f} "
     f"compiled_forward_ms={compiled_page['stage_s']['model_forward_s'] * 1000:.3f} "
     f"compiled_pg_s={compiled['summary']['pages_per_s']:.3f}"
 )
-if classification != "PASS_EXACT":
+if not parity:
     raise SystemExit(1)
 PY
 ```
