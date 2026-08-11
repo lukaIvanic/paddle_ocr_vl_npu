@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+from queue import Queue
+from threading import Event as ThreadEvent
+from threading import Thread
 from typing import Any, Callable, Iterable
 
 import torch
@@ -48,6 +51,144 @@ class ContinuousCompletedItem:
     completion_index: int
 
 
+@dataclass
+class _StagedWorkerAdmission:
+    ready: ContinuousReadyItem
+    buffer_index: int
+    device_flat: torch.Tensor
+    source_len: int
+    elements: int
+    ready_event: Any
+
+
+class _WorkerAdmissionPrefetcher:
+    """Move future pageable CPU cross-K/V into a small NPU staging ring."""
+
+    def __init__(
+        self,
+        *,
+        next_ready: Callable[[], ContinuousReadyItem | None],
+        device: str,
+        dtype: torch.dtype,
+        max_elements: int,
+        depth: int,
+    ) -> None:
+        if depth < 1:
+            raise ValueError("admission prefetch depth must be positive")
+        self.next_ready = next_ready
+        self.device = device
+        self.buffers = tuple(
+            torch.empty(max_elements, dtype=dtype, device=device)
+            for _ in range(depth)
+        )
+        self.transfer_stream = torch.npu.Stream(device=torch.device(device))
+        self.free: Queue[int | None] = Queue()
+        self.ready: Queue[_StagedWorkerAdmission | BaseException | None] = Queue()
+        self.release_events: list[Any | None] = [None for _ in range(depth)]
+        self.stop_requested = ThreadEvent()
+        self.h2d_host_enqueue_s = 0.0
+        self.h2d_items = 0
+        self.h2d_bytes = 0
+        self.max_ready_depth = 0
+        for index in range(depth):
+            self.free.put(index)
+        self.thread = Thread(
+            target=self._run,
+            name="unirec-cross-kv-prefetch",
+            daemon=True,
+        )
+        self.thread.start()
+
+    def _run(self) -> None:
+        try:
+            import torch_npu
+
+            torch_npu.npu.set_device(self.device)
+            while not self.stop_requested.is_set():
+                buffer_index = self.free.get()
+                if buffer_index is None or self.stop_requested.is_set():
+                    return
+                ready = self.next_ready()
+                if ready is None:
+                    self.ready.put(None)
+                    return
+                if not isinstance(ready.prefilled, ContinuousWorkerPrefilledItem):
+                    raise RuntimeError(
+                        "admission prefetch requires worker-prefilled items"
+                    )
+                packed_host = ready.prefilled.packed_cross_kv
+                source = torch.from_numpy(packed_host).reshape(-1)
+                elements = source.numel()
+                if elements > self.buffers[buffer_index].numel():
+                    raise RuntimeError(
+                        "worker cross-K/V exceeds admission staging buffer: "
+                        f"{elements} > {self.buffers[buffer_index].numel()}"
+                    )
+                enqueue_started = time.perf_counter()
+                with torch.npu.stream(self.transfer_stream):
+                    release_event = self.release_events[buffer_index]
+                    if release_event is not None:
+                        self.transfer_stream.wait_event(release_event)
+                    self.buffers[buffer_index][:elements].copy_(
+                        source,
+                        non_blocking=True,
+                    )
+                    ready_event = torch.npu.Event()
+                    ready_event.record(self.transfer_stream)
+                self.h2d_host_enqueue_s += time.perf_counter() - enqueue_started
+                self.h2d_items += 1
+                self.h2d_bytes += int(packed_host.nbytes)
+                self.ready.put(
+                    _StagedWorkerAdmission(
+                        ready=ready,
+                        buffer_index=buffer_index,
+                        device_flat=self.buffers[buffer_index],
+                        source_len=int(packed_host.shape[-2]),
+                        elements=elements,
+                        ready_event=ready_event,
+                    )
+                )
+                self.max_ready_depth = max(
+                    self.max_ready_depth,
+                    self.ready.qsize(),
+                )
+        except BaseException as exception:
+            self.ready.put(exception)
+
+    def take(self) -> _StagedWorkerAdmission | None:
+        value = self.ready.get()
+        if isinstance(value, BaseException):
+            raise RuntimeError("cross-K/V admission prefetch failed") from value
+        return value
+
+    def release(self, staged: _StagedWorkerAdmission) -> None:
+        release_event = torch.npu.Event()
+        release_event.record(torch.npu.current_stream(torch.device(self.device)))
+        self.release_events[staged.buffer_index] = release_event
+        self.free.put(staged.buffer_index)
+
+    def close(self) -> None:
+        if self.thread.is_alive():
+            self.stop_requested.set()
+            self.free.put(None)
+            self.thread.join(timeout=30.0)
+        if self.thread.is_alive():
+            raise RuntimeError("cross-K/V admission prefetch thread did not stop")
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "depth": len(self.buffers),
+            "buffer_bytes": sum(
+                int(buffer.numel() * buffer.element_size())
+                for buffer in self.buffers
+            ),
+            "h2d_host_enqueue_s": self.h2d_host_enqueue_s,
+            "h2d_items": self.h2d_items,
+            "h2d_bytes": self.h2d_bytes,
+            "max_ready_depth": self.max_ready_depth,
+        }
+
+
 class ContinuousUniRecDecoder:
     """Hot-swap B1-prefilled requests in a fixed physical decode batch."""
 
@@ -60,6 +201,7 @@ class ContinuousUniRecDecoder:
         decode_mode: str,
         compile_backend: str,
         compile_dynamic: bool = False,
+        admission_prefetch_depth: int = 0,
     ) -> None:
         if batch_size < 1:
             raise ValueError("Continuous decode batch_size must be >= 1")
@@ -75,6 +217,10 @@ class ContinuousUniRecDecoder:
         self.decode_mode = decode_mode
         self.compile_backend = compile_backend
         self.compile_dynamic = bool(compile_dynamic)
+        self.admission_prefetch_depth = int(admission_prefetch_depth)
+        if self.admission_prefetch_depth < 0:
+            raise ValueError("admission_prefetch_depth must be non-negative")
+        self._cross_attention_mask_templates: torch.Tensor | None = None
 
     @staticmethod
     def _copy_cache_row(
@@ -156,6 +302,27 @@ class ContinuousUniRecDecoder:
                 dtype=torch.float32,
                 device=device,
             )
+            positions = torch.arange(
+                cross_cache_len,
+                dtype=torch.int64,
+                device=device,
+            ).view(1, 1, 1, cross_cache_len)
+            lengths = torch.arange(
+                cross_cache_len + 1,
+                dtype=torch.int64,
+                device=device,
+            ).view(cross_cache_len + 1, 1, 1, 1)
+            valid = positions < lengths
+            self._cross_attention_mask_templates = torch.where(
+                valid,
+                torch.zeros((), dtype=torch.float32, device=device),
+                torch.full(
+                    (),
+                    negative_inf,
+                    dtype=torch.float32,
+                    device=device,
+                ),
+            )
         return LocalUniRecStaticCache(
             key_cache=key_cache,
             value_cache=value_cache,
@@ -165,6 +332,19 @@ class ContinuousUniRecDecoder:
             cross_attention_mask=cross_attention_mask,
             actual_cross_attention_length=None,
             packed_cross_kv=packed_cross_kv,
+        )
+
+    def _write_cross_attention_mask(
+        self,
+        destination: LocalUniRecStaticCache,
+        slot: int,
+        source_len: int,
+    ) -> None:
+        templates = self._cross_attention_mask_templates
+        if templates is None:
+            raise RuntimeError("cross-attention mask templates are not allocated")
+        destination.cross_attention_mask[slot : slot + 1].copy_(
+            templates[source_len : source_len + 1]
         )
 
     def _admit_worker_row(
@@ -218,13 +398,8 @@ class ContinuousUniRecDecoder:
             )
 
         started = time.perf_counter()
-        negative_inf = torch.finfo(destination.cross_attention_mask.dtype).min
         with torch.inference_mode():
-            if reset_reused_row:
-                destination.cross_attention_mask[slot : slot + 1].fill_(negative_inf)
-            destination.cross_attention_mask[
-                slot : slot + 1, :, :, :source_len
-            ].zero_()
+            self._write_cross_attention_mask(destination, slot, source_len)
             # Reused self-K/V is safe without clearing: every decode layer
             # overwrites cache_position before attention, and the static
             # self-attention mask excludes every later position. Likewise, the
@@ -257,6 +432,52 @@ class ContinuousUniRecDecoder:
                 * destination.cross_attention_mask.element_size()
             )
         return enqueue_s, transferred_bytes, reset_bytes
+
+    def _admit_staged_worker_row(
+        self,
+        destination: LocalUniRecStaticCache,
+        slot: int,
+        staged: _StagedWorkerAdmission,
+    ) -> tuple[float, int, int]:
+        """Place one already-device-resident cross-K/V row into the arena."""
+        source = staged.ready.prefilled
+        if not isinstance(source, ContinuousWorkerPrefilledItem):
+            raise RuntimeError("staged admission requires a worker-prefilled item")
+        packed_host = source.packed_cross_kv
+        source_len = staged.source_len
+        if source_len != int(source.actual_cross_attention_length):
+            raise RuntimeError(
+                "staged cross-K/V length mismatch: "
+                f"staged={source_len} metadata={source.actual_cross_attention_length}"
+            )
+        if destination.packed_cross_kv is None:
+            raise RuntimeError("staged admission requires a packed decode arena")
+        expected_elements = int(packed_host.size)
+        if staged.elements != expected_elements:
+            raise RuntimeError(
+                "staged cross-K/V element mismatch: "
+                f"{staged.elements} != {expected_elements}"
+            )
+        started = time.perf_counter()
+        current_stream = torch.npu.current_stream(torch.device(self.runner.device))
+        current_stream.wait_event(staged.ready_event)
+        with torch.inference_mode():
+            self._write_cross_attention_mask(destination, slot, source_len)
+            staged_source = staged.device_flat[: staged.elements].view(
+                packed_host.shape
+            )
+            destination.packed_cross_kv[
+                :, slot : slot + 1, :, :source_len, :
+            ].copy_(staged_source)
+        enqueue_s = time.perf_counter() - started
+        source.prefill_s += enqueue_s
+        stages = dict(source.prefill_device_stage_s or {})
+        stages["coordinator_staged_arena_admission_enqueue"] = enqueue_s
+        source.prefill_device_stage_s = stages
+        return enqueue_s, int(packed_host.nbytes), int(
+            destination.cross_attention_mask[slot : slot + 1].numel()
+            * destination.cross_attention_mask.element_size()
+        )
 
     @staticmethod
     def _initial_token_ids(
@@ -502,6 +723,21 @@ class ContinuousUniRecDecoder:
             )
             compile_wrap_s = time.perf_counter() - compile_started
 
+        admission_prefetcher: _WorkerAdmissionPrefetcher | None = None
+        admission_prefetch_exhausted = False
+        if direct_initial and self.admission_prefetch_depth:
+            if cache.packed_cross_kv is None:
+                raise RuntimeError("admission prefetch requires a packed arena")
+            admission_prefetcher = _WorkerAdmissionPrefetcher(
+                next_ready=next_ready,
+                device=self.runner.device,
+                dtype=self.runner.dtype,
+                max_elements=int(
+                    cache.packed_cross_kv[:, 0:1].numel()
+                ),
+                depth=self.admission_prefetch_depth,
+            )
+
         def complete_slot(slot: int) -> None:
             nonlocal completed, completion_callback_s, result_build_s
             ready = slots[slot]
@@ -538,8 +774,18 @@ class ContinuousUniRecDecoder:
             nonlocal cache_refill_direct_admission_enqueue_s
             nonlocal direct_admission_count, direct_cross_kv_bytes, direct_reset_bytes
             nonlocal next_admission_index, slot_refills
+            nonlocal admission_prefetch_exhausted
             while slots[slot] is None:
-                ready = next_ready()
+                staged: _StagedWorkerAdmission | None = None
+                if admission_prefetcher is None:
+                    ready = next_ready()
+                elif admission_prefetch_exhausted:
+                    ready = None
+                else:
+                    staged = admission_prefetcher.take()
+                    ready = staged.ready if staged is not None else None
+                    if staged is None:
+                        admission_prefetch_exhausted = True
                 if ready is None:
                     token_ids[slot] = [
                         int(self.runner.config.decoder_start_token_id),
@@ -549,12 +795,24 @@ class ContinuousUniRecDecoder:
                     cache_positions[slot] = 1
                     return
                 if isinstance(ready.prefilled, ContinuousWorkerPrefilledItem):
-                    enqueue_s, transferred_bytes, reset_bytes = self._admit_worker_row(
-                        cache,
-                        slot,
-                        ready.prefilled,
-                        reset_reused_row=True,
-                    )
+                    if staged is None:
+                        enqueue_s, transferred_bytes, reset_bytes = (
+                            self._admit_worker_row(
+                                cache,
+                                slot,
+                                ready.prefilled,
+                                reset_reused_row=True,
+                            )
+                        )
+                    else:
+                        enqueue_s, transferred_bytes, reset_bytes = (
+                            self._admit_staged_worker_row(
+                                cache,
+                                slot,
+                                staged,
+                            )
+                        )
+                        admission_prefetcher.release(staged)
                     cache_refill_direct_admission_enqueue_s += enqueue_s
                     direct_admission_count += 1
                     direct_cross_kv_bytes += transferred_bytes
@@ -611,79 +869,92 @@ class ContinuousUniRecDecoder:
         decode_s = 0.0
         first_decode_step_s: float | None = None
 
-        with torch.inference_mode():
-            while any(slot is not None for slot in slots):
-                active_slots = [slot is not None for slot in slots]
-                input_build_started = time.perf_counter()
-                next_token_tensor = torch.tensor(
-                    last_tokens,
-                    dtype=torch.long,
-                    device=self.runner.device,
-                ).view(self.batch_size, 1)
-                cache_position_tensor = torch.tensor(
-                    cache_positions,
-                    dtype=torch.int64,
-                    device=self.runner.device,
-                )
-                decode_input_build_s += time.perf_counter() - input_build_started
-                sync_started = time.perf_counter()
-                synchronize_device(self.runner.device)
-                pre_decode_sync_s += time.perf_counter() - sync_started
-                step_started = time.perf_counter()
-                if decode_module is None:
-                    logits = self.runner.model.forward_cached_logits(
-                        decoder_input_ids=next_token_tensor,
-                        cache_position=cache_position_tensor,
-                        active_length=0,
-                        key_cache=cache.key_cache,
-                        value_cache=cache.value_cache,
-                        cross_key_cache=cache.cross_key_cache,
-                        cross_value_cache=cache.cross_value_cache,
-                        cross_attention_mask=cache.cross_attention_mask,
-                        self_attention_backend="eager",
+        try:
+            with torch.inference_mode():
+                while any(slot is not None for slot in slots):
+                    active_slots = [slot is not None for slot in slots]
+                    input_build_started = time.perf_counter()
+                    next_token_tensor = torch.tensor(
+                        last_tokens,
+                        dtype=torch.long,
+                        device=self.runner.device,
+                    ).view(self.batch_size, 1)
+                    cache_position_tensor = torch.tensor(
+                        cache_positions,
+                        dtype=torch.int64,
+                        device=self.runner.device,
                     )
-                else:
-                    logits = decode_module(
-                        next_token_tensor,
-                        cache_position_tensor,
-                        0,
-                        cache.key_cache,
-                        cache.value_cache,
-                        cache.cross_key_cache,
-                        cache.cross_value_cache,
-                        cache.cross_attention_mask,
-                    )
-                predicted = self.runner.model.select_next_token(logits)
-                predicted_ids = [
-                    int(token) for token in predicted.detach().cpu().view(-1).tolist()
-                ]
-                step_s = time.perf_counter() - step_started
-                decode_s += step_s
-                if first_decode_step_s is None:
-                    first_decode_step_s = step_s
-                decode_iterations += 1
-                raw_decode_token_slots += self.batch_size
-                active_count = sum(active_slots)
-                effective_decode_tokens += active_count
-                idle_decode_token_slots += self.batch_size - active_count
+                    decode_input_build_s += time.perf_counter() - input_build_started
+                    sync_started = time.perf_counter()
+                    synchronize_device(self.runner.device)
+                    pre_decode_sync_s += time.perf_counter() - sync_started
+                    step_started = time.perf_counter()
+                    if decode_module is None:
+                        logits = self.runner.model.forward_cached_logits(
+                            decoder_input_ids=next_token_tensor,
+                            cache_position=cache_position_tensor,
+                            active_length=0,
+                            key_cache=cache.key_cache,
+                            value_cache=cache.value_cache,
+                            cross_key_cache=cache.cross_key_cache,
+                            cross_value_cache=cache.cross_value_cache,
+                            cross_attention_mask=cache.cross_attention_mask,
+                            self_attention_backend="eager",
+                        )
+                    else:
+                        logits = decode_module(
+                            next_token_tensor,
+                            cache_position_tensor,
+                            0,
+                            cache.key_cache,
+                            cache.value_cache,
+                            cache.cross_key_cache,
+                            cache.cross_value_cache,
+                            cache.cross_attention_mask,
+                        )
+                    predicted = self.runner.model.select_next_token(logits)
+                    predicted_ids = [
+                        int(token)
+                        for token in predicted.detach().cpu().view(-1).tolist()
+                    ]
+                    step_s = time.perf_counter() - step_started
+                    decode_s += step_s
+                    if first_decode_step_s is None:
+                        first_decode_step_s = step_s
+                    decode_iterations += 1
+                    raw_decode_token_slots += self.batch_size
+                    active_count = sum(active_slots)
+                    effective_decode_tokens += active_count
+                    idle_decode_token_slots += self.batch_size - active_count
 
-                completed_slots = []
-                for slot, is_active in enumerate(active_slots):
-                    if not is_active:
-                        continue
-                    token = predicted_ids[slot]
-                    token_ids[slot].append(token)
-                    last_tokens[slot] = token
-                    cache_positions[slot] += 1
-                    slot_decode_counts[slot] += 1
-                    slot_active_decode_s[slot] += step_s
-                    if token == eos_token_id or len(token_ids[slot]) >= self.max_length:
-                        completed_slots.append(slot)
+                    completed_slots = []
+                    for slot, is_active in enumerate(active_slots):
+                        if not is_active:
+                            continue
+                        token = predicted_ids[slot]
+                        token_ids[slot].append(token)
+                        last_tokens[slot] = token
+                        cache_positions[slot] += 1
+                        slot_decode_counts[slot] += 1
+                        slot_active_decode_s[slot] += step_s
+                        if (
+                            token == eos_token_id
+                            or len(token_ids[slot]) >= self.max_length
+                        ):
+                            completed_slots.append(slot)
 
-                for slot in completed_slots:
-                    complete_slot(slot)
-                for slot in completed_slots:
-                    refill_slot(slot)
+                    for slot in completed_slots:
+                        complete_slot(slot)
+                    for slot in completed_slots:
+                        refill_slot(slot)
+        finally:
+            if admission_prefetcher is not None:
+                admission_prefetcher.close()
+        admission_prefetch_summary = (
+            admission_prefetcher.summary()
+            if admission_prefetcher is not None
+            else None
+        )
 
         steady_decode_s = decode_s - (first_decode_step_s or 0.0)
         steady_raw_slots = max(0, raw_decode_token_slots - self.batch_size)
@@ -753,6 +1024,7 @@ class ContinuousUniRecDecoder:
                 "direct_admission_count": direct_admission_count,
                 "direct_cross_kv_bytes": direct_cross_kv_bytes,
                 "direct_reset_bytes": direct_reset_bytes,
+                "admission_prefetch": admission_prefetch_summary,
                 "result_build_s": result_build_s,
                 "completion_callback_s": completion_callback_s,
                 "decode_input_build_s": decode_input_build_s,

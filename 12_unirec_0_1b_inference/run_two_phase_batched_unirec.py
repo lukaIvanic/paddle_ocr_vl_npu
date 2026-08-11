@@ -87,6 +87,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--decode-warmup-passes", type=int, default=2)
+    parser.add_argument(
+        "--decode-admission-prefetch-depth",
+        type=int,
+        default=0,
+        help=(
+            "Opt-in NPU cross-K/V staging-ring depth. Zero keeps direct "
+            "pageable-host admission."
+        ),
+    )
     parser.add_argument("--prefill-device-timing", action="store_true")
     args = parser.parse_args()
     if args.workers < 1:
@@ -105,6 +114,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--decode-batch-size must be positive")
     if args.max_length > args.self_cache_length:
         parser.error("--max-length cannot exceed --self-cache-length")
+    if args.decode_admission_prefetch_depth < 0:
+        parser.error("--decode-admission-prefetch-depth must be non-negative")
     return args
 
 
@@ -570,6 +581,7 @@ def main() -> None:
             max_length=args.max_length,
             decode_mode="compiled_ifa",
             compile_backend="torchair",
+            admission_prefetch_depth=args.decode_admission_prefetch_depth,
         ).run(ready_source(), on_complete=enqueue_completed_crop)
         decode_inference_wall_s = time.perf_counter() - decode_phase_started
         base.record_direct_arena_admission_metrics(metrics, continuous_decode)
@@ -636,6 +648,9 @@ def main() -> None:
         "decode_mode": "compiled_ifa",
         "decode_scheduling": "continuous",
         "decode_batch_size": args.decode_batch_size,
+        "decode_admission_prefetch_depth": (
+            args.decode_admission_prefetch_depth
+        ),
         "self_cache_length": args.self_cache_length,
         "cross_cache_length": args.cross_cache_length,
         "retained_bank": {
