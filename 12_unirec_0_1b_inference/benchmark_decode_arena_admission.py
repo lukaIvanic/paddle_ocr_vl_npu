@@ -122,10 +122,7 @@ def run_policy(
         for admission, source_len in enumerate(lengths):
             slot = admission % batch_size
             packed = host_by_length[source_len]
-            if policy == "full_reset":
-                cross_mask[slot : slot + 1].fill_(negative_inf)
-                cross_mask[slot : slot + 1, :, :, :source_len].zero_()
-            elif policy == "no_self_reset":
+            if policy in {"full_reset", "no_self_reset", "kv_reuse"}:
                 cross_mask[slot : slot + 1].fill_(negative_inf)
                 cross_mask[slot : slot + 1, :, :, :source_len].zero_()
             elif policy == "masked_reuse":
@@ -186,7 +183,12 @@ def main() -> None:
     )
     warmup_lengths = lengths[: args.warmup_admissions]
     results = {}
-    for policy in ("full_reset", "no_self_reset", "masked_reuse"):
+    for policy in (
+        "full_reset",
+        "no_self_reset",
+        "kv_reuse",
+        "masked_reuse",
+    ):
         if warmup_lengths:
             run_policy(
                 policy,
