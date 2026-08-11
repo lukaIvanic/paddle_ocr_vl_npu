@@ -41,7 +41,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--warmup-crops", type=int, default=32)
     parser.add_argument("--limit-crops", type=int)
+    parser.add_argument(
+        "--lanes",
+        help="Comma-separated subset of lanes. pillow_reference is added automatically.",
+    )
     args = parser.parse_args()
+    args.lanes = (
+        [value.strip() for value in args.lanes.split(",") if value.strip()]
+        if args.lanes
+        else None
+    )
     if args.rounds < 1 or args.warmup_crops < 0:
         parser.error("--rounds must be positive and --warmup-crops non-negative")
     if args.limit_crops is not None and args.limit_crops < 1:
@@ -116,10 +125,25 @@ def _pillow_resize(
     )
 
 
+def _pillow_resize_without_convert(
+    crop: np.ndarray,
+    processor: UniRecImageProcessor,
+) -> Image.Image:
+    image = Image.fromarray(crop)
+    if image.mode != "RGB":
+        raise ValueError(f"expected uint8 RGB crop, got Pillow mode {image.mode}")
+    target_size = processor.get_processed_size(*image.size)
+    return image.resize(target_size, resample=processor.resample)
+
+
 def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
     mean = np.asarray(processor.image_mean, dtype=np.float32)
     std = np.asarray(processor.image_std, dtype=np.float32)
     scale = np.float32(processor.rescale_factor)
+    fp16_lut = np.arange(256, dtype=np.float32)
+    fp16_lut *= np.float32(2.0 / 255.0)
+    fp16_lut -= np.float32(1.0)
+    fp16_lut = fp16_lut.astype(np.float16)
 
     def pillow_reference(crop: np.ndarray) -> np.ndarray:
         inputs = processor(Image.fromarray(crop))
@@ -154,6 +178,21 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
         np.multiply(chw, np.float32(2.0 / 255.0), out=chw)
         np.subtract(chw, np.float32(1.0), out=chw)
         return chw[None]
+
+    def pillow_no_convert_chw_fused_formula(crop: np.ndarray) -> np.ndarray:
+        image = _pillow_resize_without_convert(crop, processor)
+        chw = np.ascontiguousarray(
+            np.transpose(np.asarray(image), (2, 0, 1)),
+            dtype=np.float32,
+        )
+        np.multiply(chw, np.float32(2.0 / 255.0), out=chw)
+        np.subtract(chw, np.float32(1.0), out=chw)
+        return chw[None]
+
+    def pillow_no_convert_chw_fp16_lut(crop: np.ndarray) -> np.ndarray:
+        image = _pillow_resize_without_convert(crop, processor)
+        chw_u8 = np.transpose(np.asarray(image), (2, 0, 1))
+        return np.ascontiguousarray(fp16_lut[chw_u8])[None]
 
     def pillow_reducing_gap_2(crop: np.ndarray) -> np.ndarray:
         image = _pillow_resize(crop, processor, reducing_gap=2.0)
@@ -207,6 +246,10 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
         "pillow_inplace_hwc": pillow_inplace_hwc,
         "pillow_chw_exact_steps": pillow_chw_exact_steps,
         "pillow_chw_fused_formula": pillow_chw_fused_formula,
+        "pillow_no_convert_chw_fused_formula": (
+            pillow_no_convert_chw_fused_formula
+        ),
+        "pillow_no_convert_chw_fp16_lut": pillow_no_convert_chw_fp16_lut,
         "pillow_reducing_gap_2": pillow_reducing_gap_2,
         "pillow_opencv_blob": pillow_opencv_blob,
         "torchvision_uint8_bicubic": torchvision_uint8_bicubic,
@@ -302,9 +345,17 @@ def main() -> None:
         for crop in crops
     )
     lanes = build_lanes(processor)
+    if args.lanes is not None:
+        unknown = sorted(set(args.lanes) - set(lanes))
+        if unknown:
+            raise ValueError(f"unknown lanes: {unknown}; available={sorted(lanes)}")
+        selected_names = list(dict.fromkeys(["pillow_reference", *args.lanes]))
+    else:
+        selected_names = list(lanes)
     results: dict[str, dict[str, object]] = {}
     reference = lanes["pillow_reference"]
-    for name, lane in lanes.items():
+    for name in selected_names:
+        lane = lanes[name]
         print(f"UNIREC_CPU_PREPROCESS_LANE_BEGIN name={name}", flush=True)
         timing = benchmark_lane(
             crops,
@@ -331,6 +382,12 @@ def main() -> None:
         )
         timing["speedup_vs_reference"] = None
         timing["parity"] = parity
+        if name == "pillow_no_convert_chw_fp16_lut":
+            timing["model_input_fp16_parity"] = compare_lane(
+                crops,
+                lambda crop: reference(crop).astype(np.float16),
+                lane,
+            )
         results[name] = timing
         print(
             "UNIREC_CPU_PREPROCESS_LANE_END "
