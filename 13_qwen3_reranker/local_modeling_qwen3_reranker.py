@@ -558,6 +558,8 @@ class LocalQwen3RerankerAttention(nn.Module):
             query_states = linear_tokenwise(self.q_proj, hidden_states)
             key_states = linear_tokenwise(self.k_proj, hidden_states)
             value_states = linear_tokenwise(self.v_proj, hidden_states)
+        elif getattr(self.qkv_proj, "returns_separate_qkv", False):
+            query_states, key_states, value_states = self.qkv_proj(hidden_states)
         else:
             projected = linear_tokenwise(self.qkv_proj, hidden_states)
             query_width = self.num_heads * self.head_dim
