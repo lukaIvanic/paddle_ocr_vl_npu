@@ -13,7 +13,8 @@ PHASE_ORDER = {
     ("4b", "dense"): 1,
     ("06b", "w8a8"): 2,
     ("4b", "w8a8"): 3,
-    ("4b", "separate_qkv_ffn_w8a8"): 4,
+    ("06b", "separate_qkv_ffn_w8a8"): 4,
+    ("4b", "separate_qkv_ffn_w8a8"): 5,
 }
 
 

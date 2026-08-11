@@ -13,9 +13,13 @@ EXPERIMENT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(EXPERIMENT_DIR))
 
 from local_reranker_w8a8 import W8A8Linear  # noqa: E402
+from summarize_310p_reranker_matrix import PHASE_ORDER  # noqa: E402
 
 
 class W8A8ContractTest(unittest.TestCase):
+    def test_matrix_summarizer_accepts_06b_separate_qkv_mode(self) -> None:
+        self.assertIn(("06b", "separate_qkv_ffn_w8a8"), PHASE_ORDER)
+
     def test_inference_formatted_weight_transposes_inside_forward(self) -> None:
         captured: dict[str, torch.Tensor] = {}
 
