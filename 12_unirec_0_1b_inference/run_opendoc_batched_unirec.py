@@ -71,9 +71,10 @@ class CropRequest:
     page_index: int
     crop_index: int
     page_name: str
-    image: Image.Image
+    image: Image.Image | None
     label: str
     figure_token_map: dict[str, Any]
+    source_image_size: tuple[int, int] | None = None
     prepared_pixel_values: np.ndarray | None = None
     worker_cross_kv: np.ndarray | None = None
     worker_prefill_metadata: dict[str, Any] | None = None
@@ -83,12 +84,25 @@ class CropRequest:
     def request_id(self) -> str:
         return f"page_{self.page_index:06d}_crop_{self.crop_index:04d}"
 
+    @property
+    def image_size(self) -> tuple[int, int]:
+        if self.source_image_size is not None:
+            return self.source_image_size
+        if self.image is None:
+            raise RuntimeError(f"Crop {self.request_id} has no source image size")
+        return int(self.image.width), int(self.image.height)
+
+    def require_image(self) -> Image.Image:
+        if self.image is None:
+            raise RuntimeError(f"Crop {self.request_id} has no retained image")
+        return self.image
+
 
 @dataclass
 class PageRequest:
     page_index: int
     image_path: Path
-    image: np.ndarray
+    image: np.ndarray | None
     width: int
     height: int
     layout_results: dict[str, Any]
@@ -370,9 +384,10 @@ def filter_page_recognition_shapes(
     kept_crops: list[CropRequest] = []
     kept_block_ids: list[int] = []
     for crop, block_id in zip(page.crops, page.vlm_block_ids):
+        crop_width, crop_height = crop.image_size
         processed = runner.processor.get_processed_size(
-            crop.image.width,
-            crop.image.height,
+            crop_width,
+            crop_height,
         )
         if processed == target:
             kept_crops.append(crop)
@@ -702,10 +717,11 @@ def iter_greedy_text_packs(
     current: list[CropRequest] = []
     current_tokens = 0
     for crop in crops:
+        crop_width, crop_height = crop.image_size
         tokens = int(
             runner.processor.estimate_encoder_token_count_for_image_size(
-                crop.image.width,
-                crop.image.height,
+                crop_width,
+                crop_height,
             )
         )
         if tokens > PACKED_TEXT_PREFILL_BUCKET:
@@ -737,12 +753,12 @@ def prefill_crop_group(
         (
             runner.prepare_preprocessed_pixels(
                 crop.prepared_pixel_values,
-                original_image_size=(crop.image.width, crop.image.height),
+                original_image_size=crop.image_size,
                 image_source=crop.request_id,
             )
             if crop.prepared_pixel_values is not None
             else runner.prepare_pil_image(
-                crop.image,
+                crop.require_image(),
                 image_source=crop.request_id,
             )
         )
@@ -926,29 +942,47 @@ def page_request_from_process_payload(
     if not isinstance(shared, dict):
         raise RuntimeError("process frontend payload has no shared-memory arena")
     lease = SharedPageLease(str(shared["name"]))
-    image_bgr = lease.array(payload["image_bgr_descriptor"])
-    crops = [
-        CropRequest(
-            page_index=page_index,
-            crop_index=int(crop["crop_index"]),
-            page_name=image_path.name,
-            image=Image.fromarray(lease.array(crop["image_rgb_descriptor"])),
-            label=crop["label"],
-            figure_token_map=crop["figure_token_map"],
-            prepared_pixel_values=(
-                lease.array(crop["processed_pixel_values_descriptor"])
-                if "processed_pixel_values_descriptor" in crop
-                else None
-            ),
-            worker_cross_kv=(
-                lease.array(crop["worker_cross_kv_descriptor"])
-                if "worker_cross_kv_descriptor" in crop
-                else None
-            ),
-            worker_prefill_metadata=crop.get("worker_prefill_metadata"),
+    image_bgr = (
+        lease.array(payload["image_bgr_descriptor"])
+        if "image_bgr_descriptor" in payload
+        else None
+    )
+    crops = []
+    for crop in payload["crops"]:
+        image_rgb = (
+            Image.fromarray(lease.array(crop["image_rgb_descriptor"]))
+            if "image_rgb_descriptor" in crop
+            else None
         )
-        for crop in payload["crops"]
-    ]
+        source_image_size = crop.get("source_image_size")
+        if source_image_size is None:
+            if image_rgb is None:
+                raise RuntimeError("process crop has no image or source size")
+            source_image_size = image_rgb.size
+        crops.append(
+            CropRequest(
+                page_index=page_index,
+                crop_index=int(crop["crop_index"]),
+                page_name=image_path.name,
+                image=image_rgb,
+                label=crop["label"],
+                figure_token_map=crop["figure_token_map"],
+                source_image_size=tuple(
+                    int(value) for value in source_image_size
+                ),
+                prepared_pixel_values=(
+                    lease.array(crop["processed_pixel_values_descriptor"])
+                    if "processed_pixel_values_descriptor" in crop
+                    else None
+                ),
+                worker_cross_kv=(
+                    lease.array(crop["worker_cross_kv_descriptor"])
+                    if "worker_cross_kv_descriptor" in crop
+                    else None
+                ),
+                worker_prefill_metadata=crop.get("worker_prefill_metadata"),
+            )
+        )
     frontend_timing_s = dict(payload["frontend_timing_s"])
     frontend_timing_s["layout_s"] = measured_layout_s
     frontend_timing_s["process_payload_materialize_s"] = (
@@ -1028,10 +1062,11 @@ def release_page_frontend_storage(page: PageRequest) -> None:
     lease = page.frontend_storage_lease
     if lease is None:
         return
-    page.image = np.empty((0, 0, 3), dtype=np.uint8)
+    page.image = None
     for crop in page.crops:
-        crop.image.close()
-        crop.image = Image.new("RGB", (1, 1))
+        if crop.image is not None:
+            crop.image.close()
+        crop.image = None
         crop.prepared_pixel_values = None
         crop.worker_cross_kv = None
     page.frontend_storage_lease = None
@@ -1214,9 +1249,8 @@ def assemble_page(
                 }
             )
 
-    return {
+    result = {
         "input_path": str(page.image_path),
-        "_page_image": page.image,
         "width": page.width,
         "height": page.height,
         "layout_results": page.layout_results,
@@ -1224,6 +1258,9 @@ def assemble_page(
         "blocks": page.blocks,
         "timing": {"total": time.perf_counter() - page.started_at},
     }
+    if page.image is not None:
+        result["_page_image"] = page.image
+    return result
 
 
 def warmup_full_pipeline(
@@ -1443,7 +1480,7 @@ def recognize_cohort(
                 "page_index": crop.page_index,
                 "crop_index": crop.crop_index,
                 "label": crop.label,
-                "crop_size": [crop.image.width, crop.image.height],
+                "crop_size": list(crop.image_size),
                 "processed_image_size": result["prep"]["processed_image_size"],
                 "encoder_seq_len_hint": result["prep"]["encoder_seq_len_hint"],
                 "token_ids": result["generated_ids"],
@@ -2001,7 +2038,7 @@ def main() -> None:
                     "page_index": crop.page_index,
                     "crop_index": crop.crop_index,
                     "label": crop.label,
-                    "crop_size": [crop.image.width, crop.image.height],
+                    "crop_size": list(crop.image_size),
                     "processed_image_size": result["prep"]["processed_image_size"],
                     "encoder_seq_len_hint": result["prep"]["encoder_seq_len_hint"],
                     "token_ids": result["generated_ids"],

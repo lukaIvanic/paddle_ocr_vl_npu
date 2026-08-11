@@ -23,6 +23,8 @@ from threading import Thread
 from types import SimpleNamespace
 from typing import Any
 
+import numpy as np
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -227,6 +229,7 @@ def main() -> None:
         recognition_full_vision_buckets=True,
         recognition_page_lookahead=args.vision_page_lookahead,
         profile_prefill_device_stages=args.prefill_device_timing,
+        retain_shared_images=False,
     )
     prefill_worker_setup_s = pool.setup_wall_s
     warmup_wall_s = 0.0
@@ -332,13 +335,15 @@ def main() -> None:
     metrics = base.RunMetrics()
     pending_pages: deque[base.PageRequest] = deque()
     pending_writes: deque[
-        tuple[base.PageRequest, Future[tuple[float, float]]]
+        tuple[base.PageRequest, Future[tuple[float, float, float, bool]]]
     ] = deque()
     write_executor = ThreadPoolExecutor(
         max_workers=1,
         thread_name_prefix="unirec-two-phase-writer",
     )
     written_pages = 0
+    output_image_reload_s = 0.0
+    output_image_reload_pages = 0
     max_pending_writes = 8
     completion_queue: SimpleQueue[
         tuple[str, base.PageRequest | ContinuousCompletedItem] | None
@@ -348,20 +353,48 @@ def main() -> None:
     collector_join_s = 0.0
     collector_stopped = False
 
-    def write_page(result: dict[str, Any]) -> tuple[float, float]:
+    def write_page(result: dict[str, Any]) -> tuple[float, float, float, bool]:
+        image_reload_s = 0.0
+        reloaded_image = False
+        if any(
+            bool(record.get("is_image", False))
+            for record in result["recognition_results"]
+        ):
+            import cv2
+
+            reload_started = time.perf_counter()
+            page_image = cv2.imread(result["input_path"], cv2.IMREAD_COLOR)
+            image_reload_s = time.perf_counter() - reload_started
+            if page_image is None:
+                raise RuntimeError(
+                    f"failed to reload output page: {result['input_path']}"
+                )
+            result["_page_image"] = page_image
+            reloaded_image = True
+        else:
+            # OpenDoc's writer otherwise reloads the input unconditionally.
+            # A zero-sized sentinel is sufficient when no image region is saved.
+            result["_page_image"] = np.empty((0, 0, 3), dtype=np.uint8)
         started = time.perf_counter()
         pipeline.save_to_json(result, str(output_dir))
         pipeline.save_to_markdown(result, str(output_dir))
         completed_at = time.perf_counter()
-        return completed_at - started, completed_at
+        return (
+            completed_at - started,
+            completed_at,
+            image_reload_s,
+            reloaded_image,
+        )
 
     def record_completed_write(
         page: base.PageRequest,
-        future: Future[tuple[float, float]],
+        future: Future[tuple[float, float, float, bool]],
     ) -> None:
-        nonlocal written_pages
-        write_s, completed_at = future.result()
+        nonlocal written_pages, output_image_reload_s, output_image_reload_pages
+        write_s, completed_at, image_reload_s, reloaded_image = future.result()
         metrics.output_write_s += write_s
+        output_image_reload_s += image_reload_s
+        output_image_reload_pages += int(reloaded_image)
         written_pages += 1
         metrics.page_records.append(
             {
@@ -444,7 +477,7 @@ def main() -> None:
                 "page_index": crop.page_index,
                 "crop_index": crop.crop_index,
                 "label": crop.label,
-                "crop_size": [crop.image.width, crop.image.height],
+                "crop_size": list(crop.image_size),
                 "processed_image_size": result["prep"]["processed_image_size"],
                 "encoder_seq_len_hint": result["prep"]["encoder_seq_len_hint"],
                 "token_ids": result["generated_ids"],
@@ -529,6 +562,7 @@ def main() -> None:
 
     decode_phase_started = time.perf_counter()
     collector_thread.start()
+    decode_inference_wall_s = 0.0
     try:
         continuous_decode = ContinuousUniRecDecoder(
             runner=runner,
@@ -537,6 +571,7 @@ def main() -> None:
             decode_mode="compiled_ifa",
             compile_backend="torchair",
         ).run(ready_source(), on_complete=enqueue_completed_crop)
+        decode_inference_wall_s = time.perf_counter() - decode_phase_started
         base.record_direct_arena_admission_metrics(metrics, continuous_decode)
         metrics.decode_s = float(continuous_decode["decode_s"])
         metrics.raw_decode_token_slots = int(
@@ -582,6 +617,9 @@ def main() -> None:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 
     retained = payload_totals(retained_payloads)
+    sequential_inference_core_wall_s = (
+        prefill_phase_wall_s + decode_inference_wall_s
+    )
     sequential_core_wall_s = prefill_phase_wall_s + decode_phase_wall_s
     summary = {
         "status": "ok",
@@ -603,7 +641,8 @@ def main() -> None:
         "retained_bank": {
             **retained,
             "shared_payload_bytes": prefill_summary["shared_payload_bytes"],
-            "storage": "page_scoped_posix_shared_memory",
+            "storage": "page_scoped_posix_shared_memory_cross_kv_only",
+            "retained_images": False,
             "disk_bytes": 0,
         },
         "timing_s": {
@@ -612,12 +651,15 @@ def main() -> None:
             "prefill_phase": prefill_phase_wall_s,
             "prefill_worker_shutdown": prefill_worker_shutdown_s,
             "decode_setup_and_graph_warmup": decode_setup_s,
+            "decode_inference_including_ingress": decode_inference_wall_s,
             "decode_phase_including_ingress_and_output": decode_phase_wall_s,
+            "sequential_inference_core": sequential_inference_core_wall_s,
             "sequential_core_prefill_plus_decode": sequential_core_wall_s,
             "lifecycle": time.perf_counter() - lifecycle_started,
             "decode_graph": metrics.decode_s,
             "output_assembly": metrics.output_assembly_s,
             "output_write": metrics.output_write_s,
+            "output_image_reload": output_image_reload_s,
             "output_write_backpressure": metrics.output_write_backpressure_s,
             "output_write_final_drain": metrics.output_write_final_drain_s,
             "completion_collector_processing": (
@@ -627,7 +669,11 @@ def main() -> None:
         },
         "throughput": {
             "prefill_pages_per_s": len(image_paths) / prefill_phase_wall_s,
+            "decode_inference_pages_per_s": len(image_paths)
+            / decode_inference_wall_s,
             "decode_phase_pages_per_s": len(image_paths) / decode_phase_wall_s,
+            "sequential_inference_core_pages_per_s": len(image_paths)
+            / sequential_inference_core_wall_s,
             "sequential_core_pages_per_s": len(image_paths)
             / sequential_core_wall_s,
             "decode_effective_tokens_per_s": (
@@ -652,6 +698,7 @@ def main() -> None:
             metrics.text_prefill_physical_source_tokens
         ),
         "crop_count": len(metrics.crop_records),
+        "output_image_reload_pages": output_image_reload_pages,
         "output_write_max_pending": metrics.output_write_max_pending,
         "max_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
         "trace": str(trace_path),

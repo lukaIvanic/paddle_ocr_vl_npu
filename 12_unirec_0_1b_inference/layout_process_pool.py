@@ -120,13 +120,18 @@ class SharedPageLease:
 
 def _pack_frontend_payload_shared(
     result: dict[str, Any],
+    *,
+    retain_images: bool = True,
 ) -> tuple[dict[str, Any], float, int]:
-    """Move one full frontend payload into one aligned shared arena."""
-    entries: list[tuple[str, dict[str, Any] | None, np.ndarray]] = [
-        ("image_bgr_descriptor", None, result["image_bgr"])
-    ]
+    """Move selected frontend arrays into one aligned shared arena."""
+    entries: list[tuple[str, dict[str, Any] | None, np.ndarray]] = []
+    if retain_images:
+        entries.append(("image_bgr_descriptor", None, result["image_bgr"]))
     for crop in result["crops"]:
-        entries.append(("image_rgb_descriptor", crop, crop["image_rgb"]))
+        height, width = crop["image_rgb"].shape[:2]
+        crop["source_image_size"] = [int(width), int(height)]
+        if retain_images:
+            entries.append(("image_rgb_descriptor", crop, crop["image_rgb"]))
         if "worker_cross_kv" in crop:
             entries.append(
                 ("worker_cross_kv_descriptor", crop, crop["worker_cross_kv"])
@@ -140,6 +145,11 @@ def _pack_frontend_payload_shared(
                 )
             )
     arrays = [entry[2] for entry in entries]
+    if not arrays:
+        raise RuntimeError(
+            "shared frontend payload has no retained arrays; image-free payloads "
+            "require worker cross-K/V or processed pixels"
+        )
     offsets = []
     total_bytes = 0
     for array in arrays:
@@ -885,6 +895,7 @@ def _run_full_vision_worker_group(
     page_lookahead: int,
     empty_cache_after_page: bool,
     profile_prefill_device_stages: bool,
+    retain_shared_images: bool,
     result_queue: Any,
 ) -> None:
     """Prepare, batch-prefill, pack, and publish one worker-local page group."""
@@ -1021,7 +1032,10 @@ def _run_full_vision_worker_group(
                     }
                 )
             result, shared_pack_s, shared_payload_bytes = (
-                _pack_frontend_payload_shared(result)
+                _pack_frontend_payload_shared(
+                    result,
+                    retain_images=retain_shared_images,
+                )
             )
             result["frontend_timing_s"]["process_shared_pack_s"] = shared_pack_s
             context["result"] = result
@@ -1197,6 +1211,7 @@ def _worker_main(
     recognition_page_lookahead: int,
     empty_cache_after_page: bool,
     profile_prefill_device_stages: bool,
+    retain_shared_images: bool,
     task_queue: Any,
     result_queue: Any,
 ) -> None:
@@ -1401,6 +1416,7 @@ def _worker_main(
                     profile_prefill_device_stages=(
                         profile_prefill_device_stages
                     ),
+                    retain_shared_images=retain_shared_images,
                     result_queue=result_queue,
                 )
                 if saw_shutdown:
@@ -1518,7 +1534,10 @@ def _worker_main(
                             "recognition_worker_empty_cache_s"
                         ] = time.perf_counter() - empty_cache_started
                 result, shared_pack_s, shared_payload_bytes = (
-                    _pack_frontend_payload_shared(result)
+                    _pack_frontend_payload_shared(
+                        result,
+                        retain_images=retain_shared_images,
+                    )
                 )
                 result["frontend_timing_s"]["process_shared_pack_s"] = (
                     shared_pack_s
@@ -1588,6 +1607,7 @@ class DynamicLayoutProcessPool:
         recognition_page_lookahead: int = 1,
         empty_cache_after_page: bool = False,
         profile_prefill_device_stages: bool = False,
+        retain_shared_images: bool = True,
         timeout_s: float = 1800.0,
     ) -> None:
         if worker_count < 1:
@@ -1611,6 +1631,7 @@ class DynamicLayoutProcessPool:
         self.prepare_pages = prepare_pages
         self.recognition_full_vision_buckets = recognition_full_vision_buckets
         self.recognition_page_lookahead = recognition_page_lookahead
+        self.retain_shared_images = bool(retain_shared_images)
         self.timeout_s = timeout_s
         self.context = mp.get_context("spawn")
         self.task_queue = self.context.Queue()
@@ -1650,6 +1671,7 @@ class DynamicLayoutProcessPool:
                     recognition_page_lookahead,
                     empty_cache_after_page,
                     profile_prefill_device_stages,
+                    self.retain_shared_images,
                     self.task_queue,
                     self.result_queue,
                 ),
@@ -1833,6 +1855,7 @@ class DynamicLayoutProcessPool:
                 ),
             },
             "full_page_frontend": self.prepare_pages,
+            "retained_shared_images": self.retain_shared_images,
             "recognition_full_vision_buckets": (
                 self.recognition_full_vision_buckets
             ),
@@ -2016,6 +2039,7 @@ class DynamicLayoutProcessPool:
                 ),
             },
             "full_page_frontend": self.prepare_pages,
+            "retained_shared_images": self.retain_shared_images,
             "recognition_full_vision_buckets": (
                 self.recognition_full_vision_buckets
             ),
