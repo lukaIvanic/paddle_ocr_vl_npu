@@ -15,6 +15,33 @@ from run_opendoc_batched_unirec import (
 
 
 class SlimFrontendPayloadTest(unittest.TestCase):
+    def test_zero_crop_page_needs_no_shared_arena(self) -> None:
+        payload = {
+            "page_index": 0,
+            "image_path": "/tmp/empty.png",
+            "image_bgr": np.zeros((2, 3, 3), dtype=np.uint8),
+            "width": 3,
+            "height": 2,
+            "layout_results": {"boxes": []},
+            "blocks": [],
+            "vlm_block_ids": [],
+            "drop_figures_set": [],
+            "started_at": 1.0,
+            "frontend_timing_s": {"layout_s": 0.1},
+            "cross_capacity_rejected_crops": 0,
+            "crops": [],
+        }
+        packed, _pack_s, retained_bytes = _pack_frontend_payload_shared(
+            payload,
+            retain_images=False,
+        )
+        self.assertEqual(retained_bytes, 0)
+        self.assertIsNone(packed["shared_memory"])
+        page = page_request_from_process_payload(packed, measured_layout_s=0.1)
+        self.assertIsNone(page.image)
+        self.assertEqual(page.crops, [])
+        self.assertTrue(page.is_ready())
+
     def test_cross_kv_round_trip_without_page_or_crop_images(self) -> None:
         page_image = np.zeros((8, 12, 3), dtype=np.uint8)
         crop_image = np.zeros((4, 5, 3), dtype=np.uint8)

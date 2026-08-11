@@ -146,10 +146,15 @@ def _pack_frontend_payload_shared(
             )
     arrays = [entry[2] for entry in entries]
     if not arrays:
-        raise RuntimeError(
-            "shared frontend payload has no retained arrays; image-free payloads "
-            "require worker cross-K/V or processed pixels"
-        )
+        if result["crops"]:
+            raise RuntimeError(
+                "shared frontend payload has crops but no retained arrays; "
+                "image-free crops require worker cross-K/V or processed pixels"
+            )
+        started = time.perf_counter()
+        result["shared_memory"] = None
+        result["image_bgr"] = None
+        return result, time.perf_counter() - started, 0
     offsets = []
     total_bytes = 0
     for array in arrays:

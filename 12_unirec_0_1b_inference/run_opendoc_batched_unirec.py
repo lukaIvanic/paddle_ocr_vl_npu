@@ -939,19 +939,29 @@ def page_request_from_process_payload(
     page_index = int(payload["page_index"])
     image_path = Path(payload["image_path"])
     shared = payload.get("shared_memory")
-    if not isinstance(shared, dict):
-        raise RuntimeError("process frontend payload has no shared-memory arena")
-    lease = SharedPageLease(str(shared["name"]))
+    lease = (
+        SharedPageLease(str(shared["name"]))
+        if isinstance(shared, dict)
+        else None
+    )
+    if lease is None and (
+        "image_bgr_descriptor" in payload
+        or any(
+            any(name.endswith("_descriptor") for name in crop)
+            for crop in payload["crops"]
+        )
+    ):
+        raise RuntimeError("process frontend descriptors have no shared arena")
     image_bgr = (
         lease.array(payload["image_bgr_descriptor"])
-        if "image_bgr_descriptor" in payload
+        if lease is not None and "image_bgr_descriptor" in payload
         else None
     )
     crops = []
     for crop in payload["crops"]:
         image_rgb = (
             Image.fromarray(lease.array(crop["image_rgb_descriptor"]))
-            if "image_rgb_descriptor" in crop
+            if lease is not None and "image_rgb_descriptor" in crop
             else None
         )
         source_image_size = crop.get("source_image_size")
@@ -972,12 +982,14 @@ def page_request_from_process_payload(
                 ),
                 prepared_pixel_values=(
                     lease.array(crop["processed_pixel_values_descriptor"])
-                    if "processed_pixel_values_descriptor" in crop
+                    if lease is not None
+                    and "processed_pixel_values_descriptor" in crop
                     else None
                 ),
                 worker_cross_kv=(
                     lease.array(crop["worker_cross_kv_descriptor"])
-                    if "worker_cross_kv_descriptor" in crop
+                    if lease is not None
+                    and "worker_cross_kv_descriptor" in crop
                     else None
                 ),
                 worker_prefill_metadata=crop.get("worker_prefill_metadata"),
