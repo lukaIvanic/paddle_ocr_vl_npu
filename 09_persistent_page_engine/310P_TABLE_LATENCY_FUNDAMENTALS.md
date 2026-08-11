@@ -1,6 +1,16 @@
 # PaddleOCR-VL latency on Ascend 310P3
 
-### 1. Measured end-to-end result
+## Introduction
+
+This note examines the fundamental latency limits of 1) **ordinary autoregressive
+decoding** on Ascend hardware. It then considers how those limits can be addressed
+for table recognition with 2) **split-table speculative decoding**: generate table
+section drafts in parallel, then verify them with the same full-table model.
+
+
+## 1. Ordinary autoregressive decoding
+
+### 1.1 Measured end-to-end result
 
 We created our custom PaddleOCR-VL 1.6 e2e page pipeline, and evaluated on **OmniDocBench v1.6** using **1 x Ascend 310P3**.
 
@@ -20,11 +30,11 @@ The measured full-benchmark result was:
 
 Although **throughput** is 0.7 page/s, this does not mean **e2e latency** per page is `1 / 0.7 = 1.43` seconds.
 
-### 2. Latency is not throughput
+### 1.2 Latency is not throughput
 
 Concurrency is good for the throughput metric. If you give us 70 pages, we will return OCR in <=100 seconds for all of them. However, each page may return at for example 30s, 60s, 80s. This would mean >>10s latency per page.
 
-### 3. CBG latency requirement
+### 1.3 CBG latency requirement
 
 The CBG team requested:
 
@@ -47,7 +57,7 @@ The following distribution comes from all **665 table crops** in OmniDocBench v1
 | Maximum | 3,111 |
 
 
-### 4. Decode speed required for latency below 2 seconds
+### 1.4 Decode speed required for latency below 2 seconds
 
 If we wanted to achieve P99 <2 seconds, it is clear we need to produce 3000+ output tokens in that time:
 
@@ -66,7 +76,7 @@ The lower percentiles also require high throughput:
 
 These numbers allow only two seconds for decode. Although decode is the biggest bottleneck - they leave no time for image loading, preprocessing, vision encoding, text prefill, HTTP, scheduling, or result serialization.
 
-### 5. What is theoretically possible?
+### 1.5 What is theoretically possible?
 
 If we want to minimize latency, we should use 1x concurrency. That way, multiple tables won't fight for the same pipeline resources.
 
@@ -82,7 +92,7 @@ The NPU hardware bandwidths are:
 | Ascend 310P3 | **204 GB/s per processor** | [Atlas 300I Duo specifies 408 GB/s across two processors](https://www.hiascend.com/hardware/accelerator-card?tag=300I-duo) |
 | Ascend 910B2 environment | **1.6 TB/s** | [64 GB Atlas 300I A2 specification](https://www.hiascend.com/hardware/accelerator-card?tag=300I-A2)                        |
 
-### 6. Why one output token requires reading the decoder weights
+### 1.6 Why one output token requires reading the decoder weights
 
 Autoregressive decoding runs the complete decoder once for each new output token.
 
@@ -112,23 +122,23 @@ This is an optimistic upper bound. It assumes:
 
 No real implementation can meet all these assumptions.
 
-### 7. Theoretical peak and measured batch-size-1 decode throughput
+### 1.7 Theoretical peak and measured batch-size-1 decode throughput
 
-#### Ascend 310P3:
+#### 1.7.1 Ascend 310P3
 
 $$
 \frac{204\ \text{GB/s}}{0.7215\ \text{GB/token}}
 = 283\ \text{tokens/s}
 $$
 
-#### Ascend 910B2:
+#### 1.7.2 Ascend 910B2
 
 $$
 \frac{1{,}600\ \text{GB/s}}{0.7215\ \text{GB/token}}
 = 2{,}218\ \text{tokens/s}
 $$
 
-### Comparison with our results
+#### 1.7.3 Comparison with our results
 
 | Device | Theoretical FP16 roof | Measured B1 decode | Measured fraction of roof | P99 decode time at measured speed |
 |---|---:|---:|---:|---:|
@@ -148,7 +158,7 @@ The requested P99 throughput of 1,546 tokens/s is:
 - **2.1 times** our 910B2 result;
 - approximately 70% of the "impossible" 910B2 bandwidth roof, before any other work.
 
-## 9. Conclusion
+### 1.8 Regular decoding conclusion
 
 For the current 360.7M-active-parameter FP16 decoder:
 
@@ -165,11 +175,9 @@ Meeting the requirement needs a fundamental change, such as:
 
 ---
 
-## Addendum A — Core idea: split-table speculative decoding
+## 2. Split-table speculative decoding
 
-![Normal table decoding compared with split-table speculative decoding](book/figures/16-table-split-speculation.png)
-
-### Normal table recognition
+### 2.1 Normal table recognition
 
 The model receives the complete table image and generates the table one token at
 a time. Every new token needs another pass through the full decoder.
@@ -180,7 +188,7 @@ For a long table, this creates a long sequential chain:
 table image → token 1 → token 2 → token 3 → ... → final table
 ```
 
-### Split-table speculative recognition
+### 2.2 Split-table speculative recognition
 
 The alternative path uses the visible row structure of the table:
 
@@ -197,7 +205,9 @@ Splitting and stitching alone are not the optimization. They only create the
 proposal. The speedup comes when speculative verification uses that proposal to
 accept many authoritative output tokens in one full-model call.
 
-### Why it can be faster
+![Normal table decoding compared with split-table speculative decoding](book/figures/16-table-split-speculation-user-edited.png)
+
+### 2.3 Why it can be faster
 
 Normal autoregressive decoding uses one expensive full-model call for each
 output token.
@@ -223,5 +233,37 @@ The Ascend 910B2 experiments validate the mechanism: the split drafts are useful
 enough to reduce the slow-table tail. The remaining engineering task is routing
 only the tables that are likely to benefit.
 
-Detailed measurements are recorded in
-[`TABLE_SPECULATIVE_RUNTIME_RESULTS.md`](TABLE_SPECULATIVE_RUNTIME_RESULTS.md).
+### 2.4 Measured 910B2 prototype results (draft)
+
+The prototype was evaluated on all 665 OmniDocBench v1.6 table crops on an
+Ascend 910B2. The row-draft stage and full-table speculative-verification stage
+were measured separately and added per table. Model setup was excluded. These
+are measured stage times, not a hardware-rate projection.
+
+#### 2.4.1 Verifier efficiency and output quality
+
+| Metric | Result |
+|---|---:|
+| Ordinary B1 target-model decoder forward passes | 267,413 |
+| Speculative-path target-model decoder forward passes | 41,896 |
+| Accepted tokens per speculative call | 6.15 |
+| Ordinary B1 Page-TEDS | 94.8% |
+| Speculative Page-TEDS | 94.8% |
+
+The full-table B1 execution remained authoritative.
+
+#### 2.4.2 Composed per-table latency
+
+| Percentile | Ordinary B1 | Split + speculative | Change |
+|---|---:|---:|---:|
+| P90 | 1.642 s | 1.345 s | **18.1% faster** |
+| P95 | 2.449 s | 1.740 s | **29.0% faster** |
+| P99 | 4.847 s | 3.720 s | **23.3% faster** |
+| Maximum | 5.292 s | 6.260 s | slower |
+
+The result confirms the intended mechanism: speculative verification reduces
+the sequential work and improves the slow-table tail.
+
+The current prototype demonstrates lower tail latency. But it certainly won't improve throughput.
+Although this method was used for tables, the same method can be applied to text paragraphs.
+Text paragraphs have a much larger potential for latency improvement, because they are simpler and produce less token mismatches.
