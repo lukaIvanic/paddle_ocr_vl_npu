@@ -167,7 +167,7 @@ Meeting the requirement needs a fundamental change, such as:
 
 ## Addendum A — Core idea: split-table speculative decoding
 
-![Normal table decoding compared with split-table speculative decoding](book/figures/16-table-split-speculation.svg)
+![Normal table decoding compared with split-table speculative decoding](book/figures/16-table-split-speculation.png)
 
 ### Normal table recognition
 
