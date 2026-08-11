@@ -36,6 +36,7 @@ RECOGNITION_CPU_DETAIL_TIMING_FIELDS = (
     "recognition_processor_image_convert_rgb_s",
     "recognition_processor_target_size_s",
     "recognition_processor_resize_s",
+    "recognition_processor_pil_to_uint8_hwc_s",
     "recognition_processor_pil_to_float_array_s",
     "recognition_processor_rescale_s",
     "recognition_processor_normalize_s",
@@ -44,6 +45,47 @@ RECOGNITION_CPU_DETAIL_TIMING_FIELDS = (
     "recognition_tensor_numpy_view_s",
     "recognition_contiguous_chw_copy_s",
 )
+
+
+def _resize_recognition_compact_hwc_with_timing(
+    image: Image.Image,
+    *,
+    processor: Any,
+) -> tuple[np.ndarray, dict[str, float]]:
+    """Resize one RGB crop but leave normalization/layout work for the NPU."""
+    timing_s: dict[str, float] = {}
+    started = time.perf_counter()
+    if image.mode != "RGB":
+        raise ValueError(
+            "compact UniRec input requires an RGB crop, "
+            f"got Pillow mode {image.mode!r}"
+        )
+    timing_s["recognition_processor_image_convert_rgb_s"] = (
+        time.perf_counter() - started
+    )
+
+    started = time.perf_counter()
+    target_size = processor.get_processed_size(*image.size)
+    timing_s["recognition_processor_target_size_s"] = (
+        time.perf_counter() - started
+    )
+
+    started = time.perf_counter()
+    resized = image.resize(target_size, resample=processor.resample)
+    timing_s["recognition_processor_resize_s"] = time.perf_counter() - started
+
+    started = time.perf_counter()
+    pixels = np.asarray(resized)
+    timing_s["recognition_processor_pil_to_uint8_hwc_s"] = (
+        time.perf_counter() - started
+    )
+    expected = (target_size[1], target_size[0], 3)
+    if pixels.dtype != np.uint8 or tuple(pixels.shape) != expected:
+        raise ValueError(
+            "compact UniRec resize produced an invalid array: "
+            f"{pixels.dtype} {pixels.shape}, expected uint8 {expected}"
+        )
+    return pixels, timing_s
 
 
 class SharedPageLease:
@@ -719,24 +761,15 @@ def _prepare_full_vision_worker_page(
         recognition_detail_s["recognition_pil_fromarray_s"] += (
             time.perf_counter() - operation_started
         )
-        inputs, processor_timing_s = recognition_processor.process_with_timing(
-            image
+        pixel_values, processor_timing_s = (
+            _resize_recognition_compact_hwc_with_timing(
+                image,
+                processor=recognition_processor,
+            )
         )
         for name, value in processor_timing_s.items():
             recognition_detail_s[name] += float(value)
-        operation_started = time.perf_counter()
-        pixel_values_numpy = inputs["pixel_values"].numpy()
-        recognition_detail_s["recognition_tensor_numpy_view_s"] += (
-            time.perf_counter() - operation_started
-        )
-        operation_started = time.perf_counter()
-        crop["processed_pixel_values"] = np.ascontiguousarray(
-            pixel_values_numpy,
-            dtype=np.float32,
-        )
-        recognition_detail_s["recognition_contiguous_chw_copy_s"] += (
-            time.perf_counter() - operation_started
-        )
+        crop["processed_pixel_values"] = pixel_values
     recognition_prepare_s = time.perf_counter() - recognition_prepare_started
     result["frontend_timing_s"] = {
         "page_file_read_s": decode_timing["file_read_s"],

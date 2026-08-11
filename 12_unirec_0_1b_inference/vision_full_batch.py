@@ -61,11 +61,36 @@ class PreprocessedVisionInput:
     image_source: str
 
     @property
+    def input_contract(self) -> str:
+        pixels = self.pixel_values
+        if (
+            pixels.dtype == np.uint8
+            and pixels.ndim == 3
+            and pixels.shape[2] == 3
+        ):
+            return "compact_uint8_hwc"
+        if (
+            pixels.dtype == np.float32
+            and pixels.ndim == 4
+            and pixels.shape[0] == 1
+            and pixels.shape[1] == 3
+        ):
+            return "legacy_float32_bchw"
+        raise ValueError(
+            f"invalid processed vision input for {self.image_source}: "
+            f"{pixels.dtype} {pixels.shape}"
+        )
+
+    @property
     def processed_height(self) -> int:
+        if self.input_contract == "compact_uint8_hwc":
+            return int(self.pixel_values.shape[0])
         return int(self.pixel_values.shape[2])
 
     @property
     def processed_width(self) -> int:
+        if self.input_contract == "compact_uint8_hwc":
+            return int(self.pixel_values.shape[1])
         return int(self.pixel_values.shape[3])
 
 
@@ -268,6 +293,26 @@ def _make_host_masks(
     return tuple(masks)
 
 
+def _compact_uint8_hwc_to_device(
+    host_pixels: np.ndarray,
+    *,
+    device: str | torch.device,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """Transfer compact HWC pixels, then normalize and transpose on device."""
+    pixels = torch.from_numpy(host_pixels).to(device)
+    if pixels.ndim == 3:
+        pixels = pixels.permute(2, 0, 1).unsqueeze(0)
+    elif pixels.ndim == 4:
+        pixels = pixels.permute(0, 3, 1, 2)
+    else:
+        raise ValueError(f"compact pixels must be HWC or BHWC, got {pixels.shape}")
+    output = pixels.to(torch.float32)
+    output.mul_(np.float32(2.0 / 255.0))
+    output.sub_(np.float32(1.0))
+    return output.to(dtype).contiguous()
+
+
 class BucketedFullVisionRuntime:
     """Dispatch real processed crops through a small full-encoder bucket set."""
 
@@ -331,6 +376,8 @@ class BucketedFullVisionRuntime:
             "bucket_calls": {spec.key: 0 for spec in self.specs},
             "bucket_real_rows": {spec.key: 0 for spec in self.specs},
             "fallback_rows": 0,
+            "compact_input_rows": 0,
+            "legacy_input_rows": 0,
             "batch_h2d_s": 0.0,
             "vision_wall_s": 0.0,
             "output_compact_s": 0.0,
@@ -369,6 +416,7 @@ class BucketedFullVisionRuntime:
                 )
             ),
             "pixel_values_shape": list(item.pixel_values.shape),
+            "pixel_values_contract": item.input_contract,
             "image_load_s": 0.0,
             "image_preprocess_s": 0.0,
             "move_to_device_s": 0.0,
@@ -385,39 +433,78 @@ class BucketedFullVisionRuntime:
             raise ValueError(
                 f"bucket {spec.key} received {len(items)} real rows"
             )
-        host_pixels = np.zeros(
-            (spec.batch_size, 3, spec.height, spec.width),
-            dtype=np.float32,
-        )
+        contracts = {item.input_contract for item in items}
+        if len(contracts) != 1:
+            raise ValueError(
+                f"bucket {spec.key} cannot mix input contracts: {contracts}"
+            )
+        compact_input = contracts == {"compact_uint8_hwc"}
+        if compact_input:
+            host_pixels = np.zeros(
+                (spec.batch_size, spec.height, spec.width, 3),
+                dtype=np.uint8,
+            )
+            host_pixel_mask = np.zeros(
+                (spec.batch_size, 1, spec.height, spec.width),
+                dtype=np.uint8,
+            )
+        else:
+            host_pixels = np.zeros(
+                (spec.batch_size, 3, spec.height, spec.width),
+                dtype=np.float32,
+            )
+            host_pixel_mask = None
         dimensions = []
         for row, item in enumerate(items):
             pixels = item.pixel_values
-            expected = (1, 3, item.processed_height, item.processed_width)
-            if pixels.dtype != np.float32 or tuple(pixels.shape) != expected:
-                raise ValueError(
-                    f"invalid processed pixels for {item.image_source}: "
-                    f"{pixels.dtype} {pixels.shape}, expected float32 {expected}"
-                )
             if not spec.accepts(item.processed_width, item.processed_height):
                 raise ValueError(
                     f"{item.processed_width}x{item.processed_height} does not fit "
                     f"bucket {spec.key}"
                 )
-            host_pixels[
-                row,
-                :,
-                : item.processed_height,
-                : item.processed_width,
-            ] = pixels[0]
+            if compact_input:
+                host_pixels[
+                    row,
+                    : item.processed_height,
+                    : item.processed_width,
+                    :,
+                ] = pixels
+                assert host_pixel_mask is not None
+                host_pixel_mask[
+                    row,
+                    :,
+                    : item.processed_height,
+                    : item.processed_width,
+                ] = 1
+            else:
+                host_pixels[
+                    row,
+                    :,
+                    : item.processed_height,
+                    : item.processed_width,
+                ] = pixels[0]
             dimensions.append((item.processed_width, item.processed_height))
         host_masks = _make_host_masks(dimensions, spec=spec)
 
         transfer_started = time.perf_counter()
         with torch.inference_mode(False):
-            pixel_values = torch.from_numpy(host_pixels).to(
-                self.runner.device,
-                dtype=self.runner.dtype,
-            )
+            if compact_input:
+                pixel_values = _compact_uint8_hwc_to_device(
+                    host_pixels,
+                    device=self.runner.device,
+                    dtype=self.runner.dtype,
+                )
+                assert host_pixel_mask is not None
+                pixel_mask = torch.from_numpy(host_pixel_mask).to(
+                    self.runner.device,
+                    dtype=self.runner.dtype,
+                )
+                pixel_values.mul_(pixel_mask)
+            else:
+                pixel_values = torch.from_numpy(host_pixels).to(
+                    self.runner.device,
+                    dtype=self.runner.dtype,
+                )
             masks = tuple(
                 torch.from_numpy(mask).to(self.runner.device)
                 for mask in host_masks
@@ -439,6 +526,10 @@ class BucketedFullVisionRuntime:
         self.stats["vision_wall_s"] += time.perf_counter() - started
         self.stats["bucket_calls"][spec.key] += 1
         self.stats["bucket_real_rows"][spec.key] += len(items)
+        input_row_key = (
+            "compact_input_rows" if compact_input else "legacy_input_rows"
+        )
+        self.stats[input_row_key] += len(items)
 
         compact_started = time.perf_counter()
         grid = output.reshape(
@@ -469,14 +560,28 @@ class BucketedFullVisionRuntime:
         self,
         item: PreprocessedVisionInput,
     ) -> EncodedVisionItem:
+        compact_input = item.input_contract == "compact_uint8_hwc"
+        transfer_started = time.perf_counter()
         with torch.inference_mode(False):
-            pixel_values = torch.from_numpy(item.pixel_values).to(
-                self.runner.device,
-                dtype=self.runner.dtype,
-            )
+            if compact_input:
+                pixel_values = _compact_uint8_hwc_to_device(
+                    item.pixel_values,
+                    device=self.runner.device,
+                    dtype=self.runner.dtype,
+                )
+            else:
+                pixel_values = torch.from_numpy(item.pixel_values).to(
+                    self.runner.device,
+                    dtype=self.runner.dtype,
+                )
+        self.stats["batch_h2d_s"] += time.perf_counter() - transfer_started
         with torch.inference_mode():
             hidden = self.runner.model.forward_encoder(pixel_values)
         self.stats["fallback_rows"] += 1
+        input_row_key = (
+            "compact_input_rows" if compact_input else "legacy_input_rows"
+        )
+        self.stats[input_row_key] += 1
         return EncodedVisionItem(
             source_index=item.source_index,
             hidden_states=hidden,
