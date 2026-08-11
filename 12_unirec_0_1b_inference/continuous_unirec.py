@@ -572,6 +572,8 @@ class ContinuousUniRecDecoder:
         result_build_s = 0.0
         completion_callback_s = 0.0
         decode_input_build_s = 0.0
+        decode_input_buffer_setup_s = 0.0
+        decode_input_host_pinned = False
         pre_decode_sync_s = 0.0
 
         def next_ready() -> ContinuousReadyItem | None:
@@ -869,20 +871,58 @@ class ContinuousUniRecDecoder:
         decode_s = 0.0
         first_decode_step_s: float | None = None
 
+        input_buffer_setup_started = time.perf_counter()
+        try:
+            next_token_host = torch.empty(
+                self.batch_size,
+                dtype=torch.long,
+                pin_memory=True,
+            )
+            cache_position_host = torch.empty(
+                self.batch_size,
+                dtype=torch.int64,
+                pin_memory=True,
+            )
+            decode_input_host_pinned = True
+        except RuntimeError:
+            # Some non-accelerator test environments do not expose a pinned
+            # allocator. Reuse pageable host storage there instead of falling
+            # back to per-iteration device allocations.
+            next_token_host = torch.empty(self.batch_size, dtype=torch.long)
+            cache_position_host = torch.empty(
+                self.batch_size,
+                dtype=torch.int64,
+            )
+        next_token_host_array = next_token_host.numpy()
+        cache_position_host_array = cache_position_host.numpy()
+        next_token_tensor = torch.empty(
+            (self.batch_size, 1),
+            dtype=torch.long,
+            device=self.runner.device,
+        )
+        cache_position_tensor = torch.empty(
+            self.batch_size,
+            dtype=torch.int64,
+            device=self.runner.device,
+        )
+        decode_input_buffer_setup_s = (
+            time.perf_counter() - input_buffer_setup_started
+        )
+
         try:
             with torch.inference_mode():
                 while any(slot is not None for slot in slots):
                     active_slots = [slot is not None for slot in slots]
                     input_build_started = time.perf_counter()
-                    next_token_tensor = torch.tensor(
-                        last_tokens,
-                        dtype=torch.long,
-                        device=self.runner.device,
-                    ).view(self.batch_size, 1)
-                    cache_position_tensor = torch.tensor(
-                        cache_positions,
-                        dtype=torch.int64,
-                        device=self.runner.device,
+                    next_token_host_array[:] = last_tokens
+                    cache_position_host_array[:] = cache_positions
+                    next_token_tensor.view(-1).copy_(
+                        next_token_host,
+                        non_blocking=decode_input_host_pinned,
+                    )
+                    cache_position_tensor.copy_(
+                        cache_position_host,
+                        non_blocking=decode_input_host_pinned,
                     )
                     decode_input_build_s += time.perf_counter() - input_build_started
                     sync_started = time.perf_counter()
@@ -973,6 +1013,7 @@ class ContinuousUniRecDecoder:
                 cache_refill_direct_admission_enqueue_s,
                 result_build_s,
                 completion_callback_s,
+                decode_input_buffer_setup_s,
                 decode_input_build_s,
                 pre_decode_sync_s,
                 decode_s,
@@ -1027,6 +1068,8 @@ class ContinuousUniRecDecoder:
                 "admission_prefetch": admission_prefetch_summary,
                 "result_build_s": result_build_s,
                 "completion_callback_s": completion_callback_s,
+                "decode_input_buffer_setup_s": decode_input_buffer_setup_s,
+                "decode_input_host_pinned": decode_input_host_pinned,
                 "decode_input_build_s": decode_input_build_s,
                 "pre_decode_sync_s": pre_decode_sync_s,
                 "decode_s": decode_s,
