@@ -57,6 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=128)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--warmup-pages", type=int, default=8)
+    parser.add_argument("--layout-batch-size", type=int, default=1)
     parser.add_argument("--vision-page-lookahead", type=int, default=4)
     parser.add_argument(
         "--no-chart-recognition",
@@ -90,6 +91,12 @@ def parse_args() -> argparse.Namespace:
         parser.error("--workers must be positive")
     if args.warmup_pages < 0:
         parser.error("--warmup-pages must be non-negative")
+    if args.layout_batch_size < 1:
+        parser.error("--layout-batch-size must be positive")
+    if args.layout_batch_size > args.vision_page_lookahead:
+        parser.error(
+            "--layout-batch-size cannot exceed --vision-page-lookahead"
+        )
     if args.limit < 1:
         parser.error("--limit must be positive")
     if args.decode_batch_size < 1:
@@ -209,6 +216,7 @@ def main() -> None:
         threshold=args.layout_threshold,
         execution=args.layout_execution,
         warmup_paths=image_paths[: args.workers],
+        layout_batch_size=args.layout_batch_size,
         openocr_root=openocr_root,
         prepare_pages=True,
         use_chart_recognition=args.use_chart_recognition,
@@ -582,6 +590,7 @@ def main() -> None:
         "page_count": len(image_paths),
         "offset": args.offset,
         "workers": args.workers,
+        "layout_batch_size": args.layout_batch_size,
         "recognition_preprocess_threads": args.recognition_preprocess_threads,
         "use_chart_recognition": args.use_chart_recognition,
         "vision_prefill_mode": "compiled_full_buckets",

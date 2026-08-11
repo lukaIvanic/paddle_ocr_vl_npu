@@ -1,8 +1,9 @@
-"""Persistent dynamic B1 PP-DocLayoutV2 process pool.
+"""Persistent dynamic PP-DocLayoutV2 process pool.
 
 The coordinator sends only page indices and file paths.  Every spawned process
 owns one complete layout model/runtime.  Workers draw from one shared queue, so
-no worker is tied to a slow static shard.
+no worker is tied to a slow static shard. Full-vision workers can combine their
+bounded page lookahead into real static layout batches.
 """
 
 from __future__ import annotations
@@ -711,16 +712,25 @@ def _prepare_full_vision_worker_page(
     recognition_processor: Any,
     recognition_preprocess_executor: ThreadPoolExecutor | None,
     static_cross_cache_len: int,
+    predecoded: tuple[float, np.ndarray, dict[str, float]] | None = None,
+    layout_result: dict[str, Any] | None = None,
+    detector_s: float | None = None,
 ) -> dict[str, Any]:
     """Run the CPU/layout half of one page before cross-page vision batching."""
     run_id, page_index, path_string = task
     path = Path(path_string)
-    started = time.perf_counter()
-    rgb, decode_timing = _decode_rgb(path)
-    bgr = np.ascontiguousarray(rgb[..., ::-1])
-    detector_started = time.perf_counter()
-    layout_result = runtime([bgr], threshold=threshold)[0]
-    detector_s = time.perf_counter() - detector_started
+    if predecoded is None:
+        started = time.perf_counter()
+        rgb, decode_timing = _decode_rgb(path)
+        bgr = np.ascontiguousarray(rgb[..., ::-1])
+    else:
+        started, bgr, decode_timing = predecoded
+    if layout_result is None:
+        detector_started = time.perf_counter()
+        layout_result = runtime([bgr], threshold=threshold)[0]
+        detector_s = time.perf_counter() - detector_started
+    elif detector_s is None:
+        raise ValueError("precomputed layout result requires detector timing")
     result, frontend_timing = _prepare_frontend_payload(
         page_index=page_index,
         path=path,
@@ -878,20 +888,56 @@ def _run_full_vision_worker_group(
     result_queue: Any,
 ) -> None:
     """Prepare, batch-prefill, pack, and publish one worker-local page group."""
-    contexts = [
-        _prepare_full_vision_worker_page(
-            task,
-            runtime=runtime,
+    layout_batch_size = int(getattr(runtime, "batch_size", 1))
+    contexts = []
+    for batch_start in range(0, len(tasks), layout_batch_size):
+        batch_tasks = tasks[batch_start : batch_start + layout_batch_size]
+        decoded_batch = []
+        for task in batch_tasks:
+            path = Path(task[2])
+            page_started = time.perf_counter()
+            rgb, decode_timing = _decode_rgb(path)
+            decoded_batch.append(
+                (
+                    page_started,
+                    np.ascontiguousarray(rgb[..., ::-1]),
+                    decode_timing,
+                )
+            )
+        detector_started = time.perf_counter()
+        layout_results = runtime(
+            [decoded[1] for decoded in decoded_batch],
             threshold=threshold,
-            use_chart_recognition=use_chart_recognition,
-            crop_margin=crop_margin,
-            tokenize_figure_of_table=tokenize_figure_of_table,
-            recognition_processor=recognition_processor,
-            recognition_preprocess_executor=recognition_preprocess_executor,
-            static_cross_cache_len=static_cross_cache_len,
         )
-        for task in tasks
-    ]
+        detector_batch_s = time.perf_counter() - detector_started
+        if len(layout_results) != len(batch_tasks):
+            raise RuntimeError(
+                "layout batch result count mismatch: "
+                f"{len(layout_results)} != {len(batch_tasks)}"
+            )
+        detector_page_s = detector_batch_s / len(batch_tasks)
+        for task, predecoded, layout_result in zip(
+            batch_tasks,
+            decoded_batch,
+            layout_results,
+        ):
+            context = _prepare_full_vision_worker_page(
+                task,
+                runtime=runtime,
+                threshold=threshold,
+                use_chart_recognition=use_chart_recognition,
+                crop_margin=crop_margin,
+                tokenize_figure_of_table=tokenize_figure_of_table,
+                recognition_processor=recognition_processor,
+                recognition_preprocess_executor=recognition_preprocess_executor,
+                static_cross_cache_len=static_cross_cache_len,
+                predecoded=predecoded,
+                layout_result=layout_result,
+                detector_s=detector_page_s,
+            )
+            context["layout_batch_real_size"] = len(batch_tasks)
+            context["layout_batch_physical_size"] = layout_batch_size
+            contexts.append(context)
     results = [context["result"] for context in contexts]
     memory_device = torch.device(recognition_runner.device)
     torch.npu.reset_peak_memory_stats(memory_device)
@@ -948,6 +994,12 @@ def _run_full_vision_worker_group(
                     ),
                     "recognition_full_vision_page_group_index": group_index,
                     "recognition_full_vision_page_lookahead": page_lookahead,
+                    "layout_batch_real_size": context[
+                        "layout_batch_real_size"
+                    ],
+                    "layout_batch_physical_size": context[
+                        "layout_batch_physical_size"
+                    ],
                 }
             )
             if group_index == 0:
@@ -1023,6 +1075,12 @@ def _run_full_vision_worker_group(
                         "recognition_prepare_s"
                     ],
                     "recognition_page_lookahead_collect_s": collect_share_s,
+                    "layout_batch_call_share": 1.0
+                    / float(context["layout_batch_real_size"]),
+                    "layout_batch_physical_row_share": float(
+                        context["layout_batch_physical_size"]
+                    )
+                    / float(context["layout_batch_real_size"]),
                     "worker_page_s": worker_page_s,
                 },
                 "prefix_diagnostics": {
@@ -1125,6 +1183,7 @@ def _worker_main(
     cache_dir: str,
     threshold: float,
     execution: str,
+    layout_batch_size: int,
     warmup_path: str,
     openocr_root: str | None,
     prepare_pages: bool,
@@ -1153,7 +1212,7 @@ def _worker_main(
             profile_stages=False,
             execution=execution,
             compile_cache_dir=cache_dir,
-            batch_size=1,
+            batch_size=layout_batch_size,
         )
         warmup_rgb, _ = _decode_rgb(Path(warmup_path))
         runtime([warmup_rgb[..., ::-1]], threshold=threshold)
@@ -1298,6 +1357,7 @@ def _worker_main(
                 "recognition_preprocess_threads": (
                     recognition_preprocess_threads
                 ),
+                "layout_batch_size": layout_batch_size,
             }
         )
         if full_vision_runtime is not None:
@@ -1515,6 +1575,7 @@ class DynamicLayoutProcessPool:
         threshold: float,
         execution: str,
         warmup_paths: list[Path],
+        layout_batch_size: int = 1,
         openocr_root: Path | None = None,
         prepare_pages: bool = False,
         use_chart_recognition: bool = False,
@@ -1535,7 +1596,18 @@ class DynamicLayoutProcessPool:
             raise ValueError("layout process pool requires at least one warmup page")
         if recognition_page_lookahead < 1:
             raise ValueError("recognition page lookahead must be positive")
+        if layout_batch_size < 1:
+            raise ValueError("layout batch size must be positive")
+        if layout_batch_size > 1 and not recognition_full_vision_buckets:
+            raise ValueError(
+                "process-worker layout batching requires full-vision grouping"
+            )
+        if layout_batch_size > recognition_page_lookahead:
+            raise ValueError(
+                "layout batch size cannot exceed recognition page lookahead"
+            )
         self.worker_count = worker_count
+        self.layout_batch_size = int(layout_batch_size)
         self.prepare_pages = prepare_pages
         self.recognition_full_vision_buckets = recognition_full_vision_buckets
         self.recognition_page_lookahead = recognition_page_lookahead
@@ -1552,6 +1624,7 @@ class DynamicLayoutProcessPool:
                     str(cache_dir),
                     threshold,
                     execution,
+                    self.layout_batch_size,
                     str(warmup_paths[worker_index % len(warmup_paths)]),
                     str(openocr_root) if openocr_root is not None else None,
                     prepare_pages,
@@ -1599,6 +1672,7 @@ class DynamicLayoutProcessPool:
                 "recognition_preprocess_threads": int(
                     message.get("recognition_preprocess_threads", 1)
                 ),
+                "layout_batch_size": int(message.get("layout_batch_size", 1)),
             }
             for message in sorted(ready, key=lambda value: int(value["worker"]))
         ]
@@ -1653,6 +1727,8 @@ class DynamicLayoutProcessPool:
         )
         vision_batch_summary = _new_worker_vision_batch_summary()
         shared_payload_bytes = 0
+        layout_batch_call_shares = 0.0
+        layout_batch_physical_row_shares = 0.0
         ipc_delivery_sum_s = 0.0
         ipc_delivery_max_s = 0.0
         progress_step = max(1, len(paths) // 10)
@@ -1717,6 +1793,12 @@ class DynamicLayoutProcessPool:
                 message["result"],
             )
             shared_payload_bytes += int(timing.get("shared_payload_bytes", 0))
+            layout_batch_call_shares += float(
+                timing.get("layout_batch_call_share", 1.0)
+            )
+            layout_batch_physical_row_shares += float(
+                timing.get("layout_batch_physical_row_share", 1.0)
+            )
             completed += 1
             if completed % progress_step == 0 or completed == len(paths):
                 print(
@@ -1739,7 +1821,17 @@ class DynamicLayoutProcessPool:
             "ipc_delivery_max_s": ipc_delivery_max_s,
             "shared_payload_bytes": shared_payload_bytes,
             "scheduling": "dynamic_shared_filepath_queue",
-            "layout_batch_size": 1,
+            "layout_batch_size": self.layout_batch_size,
+            "layout_batching": {
+                "calls": int(round(layout_batch_call_shares)),
+                "real_rows": len(paths),
+                "physical_rows": int(round(layout_batch_physical_row_shares)),
+                "slot_efficiency": (
+                    len(paths) / layout_batch_physical_row_shares
+                    if layout_batch_physical_row_shares
+                    else None
+                ),
+            },
             "full_page_frontend": self.prepare_pages,
             "recognition_full_vision_buckets": (
                 self.recognition_full_vision_buckets
@@ -1797,6 +1889,8 @@ class DynamicLayoutProcessPool:
         )
         vision_batch_summary = _new_worker_vision_batch_summary()
         shared_payload_bytes = 0
+        layout_batch_call_shares = 0.0
+        layout_batch_physical_row_shares = 0.0
         ipc_delivery_sum_s = 0.0
         ipc_delivery_max_s = 0.0
         progress_step = max(1, len(paths) // 10)
@@ -1860,6 +1954,12 @@ class DynamicLayoutProcessPool:
                 message["result"],
             )
             shared_payload_bytes += int(timing.get("shared_payload_bytes", 0))
+            layout_batch_call_shares += float(
+                timing.get("layout_batch_call_share", 1.0)
+            )
+            layout_batch_physical_row_shares += float(
+                timing.get("layout_batch_physical_row_share", 1.0)
+            )
             completed += 1
             if completed % progress_step == 0 or completed == len(paths):
                 print(
@@ -1904,7 +2004,17 @@ class DynamicLayoutProcessPool:
             "ipc_delivery_max_s": ipc_delivery_max_s,
             "shared_payload_bytes": shared_payload_bytes,
             "scheduling": "dynamic_completion_order_stream",
-            "layout_batch_size": 1,
+            "layout_batch_size": self.layout_batch_size,
+            "layout_batching": {
+                "calls": int(round(layout_batch_call_shares)),
+                "real_rows": len(paths),
+                "physical_rows": int(round(layout_batch_physical_row_shares)),
+                "slot_efficiency": (
+                    len(paths) / layout_batch_physical_row_shares
+                    if layout_batch_physical_row_shares
+                    else None
+                ),
+            },
             "full_page_frontend": self.prepare_pages,
             "recognition_full_vision_buckets": (
                 self.recognition_full_vision_buckets

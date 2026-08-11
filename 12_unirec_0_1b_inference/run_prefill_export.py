@@ -62,9 +62,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-threshold", type=float, default=0.4)
     parser.add_argument(
         "--layout-execution",
-        choices=("eager", "compiled"),
+        choices=("eager", "torchair"),
         default="eager",
     )
+    parser.add_argument("--layout-batch-size", type=int, default=1)
     parser.add_argument("--dtype", choices=("float16",), default="float16")
     parser.add_argument("--cross-cache-length", type=int, default=512)
     parser.add_argument(
@@ -148,6 +149,14 @@ def parse_args() -> argparse.Namespace:
         parser.error("--recognition-preprocess-threads must be positive")
     if args.vision_page_lookahead < 1:
         parser.error("--vision-page-lookahead must be positive")
+    if args.layout_batch_size < 1:
+        parser.error("--layout-batch-size must be positive")
+    if args.layout_batch_size > args.vision_page_lookahead:
+        parser.error(
+            "--layout-batch-size cannot exceed --vision-page-lookahead"
+        )
+    if args.layout_batch_size > 1 and not args.vision_full_batches:
+        parser.error("--layout-batch-size > 1 requires --vision-full-batches")
     if args.vision_full_batches and args.vision_prefix_shapes_manifest is not None:
         parser.error(
             "--vision-full-batches cannot be combined with "
@@ -241,6 +250,7 @@ def main() -> None:
         threshold=args.layout_threshold,
         execution=args.layout_execution,
         warmup_paths=image_paths[: args.workers],
+        layout_batch_size=args.layout_batch_size,
         openocr_root=openocr_root,
         prepare_pages=True,
         use_chart_recognition=args.use_chart_recognition,
@@ -294,6 +304,7 @@ def main() -> None:
                 "dtype": args.dtype,
                 "cross_cache_length": args.cross_cache_length,
                 "layout_execution": args.layout_execution,
+                "layout_batch_size": args.layout_batch_size,
                 "vision_prefix_shapes_manifest": (
                     str(vision_prefix_shapes_manifest)
                     if vision_prefix_shapes_manifest is not None
