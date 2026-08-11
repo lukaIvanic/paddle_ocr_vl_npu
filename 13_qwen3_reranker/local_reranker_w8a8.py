@@ -219,6 +219,50 @@ class W8A8SeparateQKV(nn.Module):
         )
 
 
+class W8A8PackedQKV(nn.Module):
+    """One packed W8A8 projection whose output is split into Q, K, and V."""
+
+    returns_separate_qkv = True
+
+    def __init__(
+        self,
+        q_proj: nn.Linear,
+        k_proj: nn.Linear,
+        v_proj: nn.Linear,
+        *,
+        out_dtype: torch.dtype,
+    ):
+        super().__init__()
+        if not (q_proj.in_features == k_proj.in_features == v_proj.in_features):
+            raise ValueError("Q/K/V input sizes must match")
+        self.query_width = int(q_proj.out_features)
+        self.key_width = int(k_proj.out_features)
+        self.value_width = int(v_proj.out_features)
+        packed = nn.Linear(
+            q_proj.in_features,
+            self.query_width + self.key_width + self.value_width,
+            bias=False,
+            device=q_proj.weight.device,
+            dtype=q_proj.weight.dtype,
+        )
+        with torch.no_grad():
+            packed.weight.copy_(
+                torch.cat((q_proj.weight, k_proj.weight, v_proj.weight), dim=0)
+            )
+        self.proj = W8A8Linear.from_linear(packed, out_dtype=out_dtype)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        projected = self.proj(x)
+        return torch.split(
+            projected,
+            (self.query_width, self.key_width, self.value_width),
+            dim=-1,
+        )
+
+
 class W8A8MLP(nn.Module):
     def __init__(self, dense_mlp: LocalQwen3RerankerMLP, *, out_dtype: torch.dtype):
         super().__init__()
@@ -268,6 +312,27 @@ def quantize_reranker_qkv_inplace(module: nn.Module, *, out_dtype: torch.dtype) 
         if child.qkv_proj is not None:
             raise ValueError("separate QKV W8A8 requires unfused Q/K/V projections")
         child.qkv_proj = W8A8SeparateQKV(
+            child.q_proj,
+            child.k_proj,
+            child.v_proj,
+            out_dtype=out_dtype,
+        )
+        child.q_proj = None
+        child.k_proj = None
+        child.v_proj = None
+
+
+def quantize_reranker_packed_qkv_inplace(
+    module: nn.Module,
+    *,
+    out_dtype: torch.dtype,
+) -> None:
+    for child in module.modules():
+        if not isinstance(child, LocalQwen3RerankerAttention):
+            continue
+        if child.qkv_proj is not None:
+            raise ValueError("packed QKV W8A8 requires unfused Q/K/V projections")
+        child.qkv_proj = W8A8PackedQKV(
             child.q_proj,
             child.k_proj,
             child.v_proj,

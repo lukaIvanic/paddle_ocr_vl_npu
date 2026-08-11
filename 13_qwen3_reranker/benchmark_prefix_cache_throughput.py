@@ -92,12 +92,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--ffn-weight-mode",
-        choices=("dense", "gate_up_w8a8", "w8a8", "qkv_w8a8"),
+        choices=("dense", "gate_up_w8a8", "w8a8", "qkv_w8a8", "packed_qkv_w8a8"),
         default="dense",
         help=(
             "Use dense FFNs, shared-activation W8A8 gate/up projections, or "
             "W8A8 for gate/up/down FFN projections, or separate Q/K/V W8A8 "
-            "matmuls sharing one activation quantization."
+            "matmuls sharing one activation quantization, or one packed QKV "
+            "W8A8 matmul."
         ),
     )
     parser.add_argument(
