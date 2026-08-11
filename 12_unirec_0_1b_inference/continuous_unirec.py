@@ -16,7 +16,6 @@ from modeling_optimized_unirec import (
     LocalUniRecStaticCache,
     OptimizedUniRecRunner,
     UniRecPrefilledItem,
-    synchronize_device,
 )
 
 
@@ -925,9 +924,12 @@ class ContinuousUniRecDecoder:
                         non_blocking=decode_input_host_pinned,
                     )
                     decode_input_build_s += time.perf_counter() - input_build_started
-                    sync_started = time.perf_counter()
-                    synchronize_device(self.runner.device)
-                    pre_decode_sync_s += time.perf_counter() - sync_started
+                    # Default-stream ordering makes the input copies and any
+                    # admitted arena rows visible to the graph. A device-wide
+                    # synchronization here would also drain the independent
+                    # admission transfer stream and defeat cross-K/V prefetch.
+                    # The sampled-token CPU read below remains the required
+                    # completion point for this iteration.
                     step_started = time.perf_counter()
                     if decode_module is None:
                         logits = self.runner.model.forward_cached_logits(
@@ -1071,6 +1073,7 @@ class ContinuousUniRecDecoder:
                 "decode_input_buffer_setup_s": decode_input_buffer_setup_s,
                 "decode_input_host_pinned": decode_input_host_pinned,
                 "decode_input_build_s": decode_input_build_s,
+                "explicit_pre_decode_sync": False,
                 "pre_decode_sync_s": pre_decode_sync_s,
                 "decode_s": decode_s,
                 "scheduler_bookkeeping_residual_s": max(
