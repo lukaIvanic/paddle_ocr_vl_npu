@@ -221,18 +221,11 @@ class ContinuousUniRecDecoder:
                 slot : slot + 1, :, :, :source_len
             ].zero_()
             for layer in range(layer_count):
-                if reset_reused_row:
-                    # Preserve the old B1-copy contract without allocating a
-                    # temporary full static cache. The new prefix overwrites the
-                    # head of cross-K/V, so only its stale tail must be cleared.
-                    destination.key_cache[layer][slot : slot + 1].zero_()
-                    destination.value_cache[layer][slot : slot + 1].zero_()
-                    destination.cross_key_cache[layer][
-                        slot : slot + 1, :, source_len:, :
-                    ].zero_()
-                    destination.cross_value_cache[layer][
-                        slot : slot + 1, :, source_len:, :
-                    ].zero_()
+                # Reused self-K/V is safe without clearing: every decode layer
+                # overwrites cache_position before attention, and the static
+                # self-attention mask excludes every later position. Likewise,
+                # the new prefix overwrites the live cross-K/V range while the
+                # cross-attention mask excludes the stale tail.
                 destination.cross_key_cache[layer][
                     slot : slot + 1, :, :source_len, :
                 ].copy_(torch.from_numpy(packed_host[layer]))
@@ -247,24 +240,7 @@ class ContinuousUniRecDecoder:
         transferred_bytes = int(packed_host.nbytes)
         reset_bytes = 0
         if reset_reused_row:
-            reset_bytes = sum(
-                int(tensor[slot : slot + 1].numel() * tensor.element_size())
-                for tensor_group in (
-                    destination.key_cache,
-                    destination.value_cache,
-                )
-                for tensor in tensor_group
-            ) + sum(
-                int(
-                    tensor[slot : slot + 1, :, source_len:, :].numel()
-                    * tensor.element_size()
-                )
-                for tensor_group in (
-                    destination.cross_key_cache,
-                    destination.cross_value_cache,
-                )
-                for tensor in tensor_group
-            ) + int(
+            reset_bytes = int(
                 destination.cross_attention_mask[slot : slot + 1].numel()
                 * destination.cross_attention_mask.element_size()
             )
