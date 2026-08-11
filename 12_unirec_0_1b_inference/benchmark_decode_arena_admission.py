@@ -13,6 +13,11 @@ from pathlib import Path
 import numpy as np
 import torch
 
+try:
+    import torch_npu  # noqa: F401
+except Exception:
+    torch_npu = None
+
 
 LAYERS = 6
 HEADS = 6
