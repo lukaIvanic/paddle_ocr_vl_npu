@@ -193,6 +193,10 @@ The draft does not control the final answer. The full-table model still sees the
 original image and remains authoritative. It accepts draft content where it
 agrees and corrects it where it does not.
 
+Splitting and stitching alone are not the optimization. They only create the
+proposal. The speedup comes when speculative verification uses that proposal to
+accept many authoritative output tokens in one full-model call.
+
 ### Why it can be faster
 
 Normal autoregressive decoding uses one expensive full-model call for each
