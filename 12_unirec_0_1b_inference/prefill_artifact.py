@@ -269,6 +269,132 @@ class CrossKvArtifactWriter:
         self._data.close()
 
 
+class CrossKvDiscardSink:
+    """Validate and release page-scoped cross K/V without retaining its bytes."""
+
+    def __init__(self, output_dir: Path) -> None:
+        self.output_dir = output_dir.resolve()
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.summary_path = self.output_dir / "summary.json"
+        if self.summary_path.exists():
+            raise FileExistsError(
+                f"prefill discard summary already exists: {self.summary_path}"
+            )
+        self.page_count = 0
+        self.crop_count = 0
+        self.rejected_crop_count = 0
+        self.real_source_tokens = 0
+        self.physical_source_tokens = 0
+        self.cross_kv_bytes = 0
+        self.shared_payload_bytes = 0
+        self.attach_s = 0.0
+        self.descriptor_validation_s = 0.0
+        self.finalize_s = 0.0
+        self.closed = False
+
+    def add_page(self, payload: dict[str, Any]) -> None:
+        if self.closed:
+            raise RuntimeError("prefill discard sink is closed")
+        shared = payload.get("shared_memory")
+        if not isinstance(shared, dict):
+            raise RuntimeError("worker page has no shared-memory payload")
+        shared_nbytes = int(shared["nbytes"])
+        attach_started = time.perf_counter()
+        lease = _SharedPageLease(str(shared["name"]))
+        self.attach_s += time.perf_counter() - attach_started
+        try:
+            validation_started = time.perf_counter()
+            for crop in payload["crops"]:
+                descriptor = crop.get("worker_cross_kv_descriptor")
+                metadata = crop.get("worker_prefill_metadata")
+                if not isinstance(descriptor, dict) or not isinstance(metadata, dict):
+                    raise RuntimeError("worker crop has no cross-KV discard payload")
+                shape = tuple(int(value) for value in descriptor["shape"])
+                dtype = np.dtype(descriptor["dtype"])
+                if len(shape) != 5 or dtype != np.dtype(np.float16):
+                    raise RuntimeError(
+                        f"unexpected cross-KV descriptor: shape={shape} dtype={dtype}"
+                    )
+                offset = int(descriptor["offset"])
+                nbytes = int(descriptor["nbytes"])
+                expected_nbytes = int(np.prod(shape, dtype=np.int64)) * dtype.itemsize
+                if nbytes != expected_nbytes:
+                    raise RuntimeError(
+                        f"cross-KV descriptor byte mismatch: {nbytes} != {expected_nbytes}"
+                    )
+                if offset < 0 or offset + nbytes > shared_nbytes:
+                    raise RuntimeError(
+                        "cross-KV descriptor exceeds its shared page arena: "
+                        f"offset={offset} nbytes={nbytes} arena={shared_nbytes}"
+                    )
+                source_length = int(shape[-2])
+                if source_length != int(metadata["actual_cross_attention_length"]):
+                    raise RuntimeError(
+                        "cross-KV source length mismatch: "
+                        f"descriptor={source_length} metadata="
+                        f"{metadata['actual_cross_attention_length']}"
+                    )
+                self.crop_count += 1
+                self.real_source_tokens += int(
+                    metadata["text_prefill_real_source_tokens"]
+                )
+                self.physical_source_tokens += int(
+                    metadata["text_prefill_physical_source_tokens"]
+                )
+                self.cross_kv_bytes += nbytes
+            self.descriptor_validation_s += time.perf_counter() - validation_started
+        finally:
+            lease.close()
+        self.page_count += 1
+        self.rejected_crop_count += int(
+            payload.get("cross_capacity_rejected_crops", 0)
+        )
+        self.shared_payload_bytes += shared_nbytes
+
+    def finish(self, summary: dict[str, Any]) -> dict[str, Any]:
+        if self.closed:
+            raise RuntimeError("prefill discard sink is already closed")
+        finalize_started = time.perf_counter()
+        result = {
+            "format": FORMAT_NAME,
+            **_json_value(summary),
+            "artifact": {
+                "storage_mode": "discard",
+                "directory": str(self.output_dir),
+                "cross_kv_file": None,
+                "crop_manifest": None,
+                "page_manifest": None,
+                "page_count": self.page_count,
+                "crop_count": self.crop_count,
+                "rejected_crop_count": self.rejected_crop_count,
+                "real_source_tokens": self.real_source_tokens,
+                "physical_source_tokens": self.physical_source_tokens,
+                "cross_kv_payload_bytes": self.cross_kv_bytes,
+                "cross_kv_file_bytes": 0,
+                "shared_payload_bytes": self.shared_payload_bytes,
+            },
+            "coordinator_timing_s": {
+                "shared_memory_attach": self.attach_s,
+                "cross_kv_descriptor_validation": self.descriptor_validation_s,
+                "cross_kv_crc_and_write": 0.0,
+                "artifact_finalize": 0.0,
+            },
+        }
+        partial = self.summary_path.with_suffix(".json.partial")
+        partial.write_text(
+            json.dumps(result, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        os.replace(partial, self.summary_path)
+        self.finalize_s = time.perf_counter() - finalize_started
+        result["coordinator_timing_s"]["artifact_finalize"] = self.finalize_s
+        self.closed = True
+        return result
+
+    def abort(self) -> None:
+        self.closed = True
+
+
 def read_crop_array(
     artifact_dir: Path,
     row: dict[str, Any],

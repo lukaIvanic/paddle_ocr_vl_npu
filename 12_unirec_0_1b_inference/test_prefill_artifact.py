@@ -10,7 +10,12 @@ from pathlib import Path
 
 import numpy as np
 
-from prefill_artifact import CrossKvArtifactWriter, read_crop_array, read_jsonl
+from prefill_artifact import (
+    CrossKvArtifactWriter,
+    CrossKvDiscardSink,
+    read_crop_array,
+    read_jsonl,
+)
 
 
 class CrossKvArtifactTest(unittest.TestCase):
@@ -91,6 +96,55 @@ class CrossKvArtifactTest(unittest.TestCase):
                 self.assertEqual(
                     summary["artifact"]["cross_kv_payload_bytes"], expected.nbytes
                 )
+        finally:
+            try:
+                storage.unlink()
+            except FileNotFoundError:
+                pass
+
+    def test_discard_sink_validates_without_writing_cross_kv(self) -> None:
+        expected = np.zeros((12, 1, 6, 7, 64), dtype=np.float16)
+        storage = SharedMemory(create=True, size=expected.nbytes)
+        np.ndarray(expected.shape, expected.dtype, storage.buf)[:] = expected
+        payload = {
+            "page_index": 0,
+            "image_path": "/tmp/page.png",
+            "shared_memory": {"name": storage.name, "nbytes": storage.size},
+            "cross_capacity_rejected_crops": 2,
+            "crops": [
+                {
+                    "crop_index": 0,
+                    "label": "text_01",
+                    "worker_cross_kv_descriptor": {
+                        "offset": 0,
+                        "shape": list(expected.shape),
+                        "dtype": expected.dtype.str,
+                        "nbytes": expected.nbytes,
+                    },
+                    "worker_prefill_metadata": {
+                        "text_prefill_real_source_tokens": 7,
+                        "text_prefill_physical_source_tokens": 1024,
+                        "actual_cross_attention_length": 7,
+                    },
+                }
+            ],
+        }
+        storage.close()
+        try:
+            with tempfile.TemporaryDirectory() as temporary:
+                output_dir = Path(temporary) / "discard"
+                sink = CrossKvDiscardSink(output_dir)
+                sink.add_page(payload)
+                summary = sink.finish({"status": "ok"})
+                self.assertEqual(summary["artifact"]["storage_mode"], "discard")
+                self.assertEqual(summary["artifact"]["crop_count"], 1)
+                self.assertEqual(summary["artifact"]["rejected_crop_count"], 2)
+                self.assertEqual(
+                    summary["artifact"]["cross_kv_payload_bytes"],
+                    expected.nbytes,
+                )
+                self.assertEqual(summary["artifact"]["cross_kv_file_bytes"], 0)
+                self.assertFalse((output_dir / "cross_kv.bin").exists())
         finally:
             try:
                 storage.unlink()

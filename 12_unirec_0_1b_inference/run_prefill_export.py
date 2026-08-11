@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the full UniRec producer and export CPU cross-KV without decoding."""
+"""Run the full UniRec producer without decoding, optionally exporting cross-KV."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from typing import Any
 from layout_process_pool import DynamicLayoutProcessPool, SharedPageLease
 from prefill_artifact import (
     CrossKvArtifactWriter,
+    CrossKvDiscardSink,
     read_crop_array,
     read_jsonl,
 )
@@ -39,6 +40,15 @@ def parse_args() -> argparse.Namespace:
         default=Path("/workspace/datasets/OmniDocBench/images"),
     )
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--artifact-storage",
+        choices=("persistent", "discard"),
+        default="persistent",
+        help=(
+            "Persist cross-KV with CRCs for decode replay, or validate and "
+            "immediately release each shared payload for producer timing."
+        ),
+    )
     parser.add_argument("--offset", type=int, default=769)
     parser.add_argument("--limit", type=int, default=128)
     parser.add_argument("--workers", type=int, default=8)
@@ -246,7 +256,11 @@ def main() -> None:
     )
     setup_s = pool.setup_wall_s
     warmup_summaries = []
-    writer = CrossKvArtifactWriter(output_dir)
+    writer = (
+        CrossKvArtifactWriter(output_dir)
+        if args.artifact_storage == "persistent"
+        else CrossKvDiscardSink(output_dir)
+    )
     try:
         if args.warmup_pages:
             for repeat_index in range(args.warmup_repeats):
@@ -272,6 +286,7 @@ def main() -> None:
                 "model_path": str(model_path),
                 "layout_model": str(layout_model),
                 "input": str(input_path),
+                "artifact_storage": args.artifact_storage,
                 "offset": args.offset,
                 "limit": args.limit,
                 "workers": args.workers,
@@ -305,33 +320,42 @@ def main() -> None:
         )
         result["producer_wall_s"] = time.perf_counter() - measured_started
 
-        crop_rows = read_jsonl(writer.manifest_path)
-        if not crop_rows:
-            raise RuntimeError("producer emitted no recognition crops")
-        sample_indices = sorted({0, len(crop_rows) // 2, len(crop_rows) - 1})
         validation_started = time.perf_counter()
-        validated = []
-        for index in sample_indices:
-            row = crop_rows[index]
-            array = read_crop_array(output_dir, row, verify_crc=True)
-            validated.append(
-                {
-                    "index": index,
-                    "request_id": row["request_id"],
-                    "shape": list(array.shape),
-                    "nbytes": int(array.nbytes),
-                }
-            )
-            del array
-        result["validation"] = {
-            "manifest_crop_count": len(crop_rows),
-            "sample_crc_count": len(validated),
-            "samples": validated,
-            "wall_s": time.perf_counter() - validation_started,
-            "passed": len(crop_rows) == writer.crop_count,
-        }
+        if args.artifact_storage == "persistent":
+            crop_rows = read_jsonl(writer.manifest_path)
+            if not crop_rows:
+                raise RuntimeError("producer emitted no recognition crops")
+            sample_indices = sorted({0, len(crop_rows) // 2, len(crop_rows) - 1})
+            validated = []
+            for index in sample_indices:
+                row = crop_rows[index]
+                array = read_crop_array(output_dir, row, verify_crc=True)
+                validated.append(
+                    {
+                        "index": index,
+                        "request_id": row["request_id"],
+                        "shape": list(array.shape),
+                        "nbytes": int(array.nbytes),
+                    }
+                )
+                del array
+            result["validation"] = {
+                "mode": "sample_crc",
+                "manifest_crop_count": len(crop_rows),
+                "sample_crc_count": len(validated),
+                "samples": validated,
+                "wall_s": time.perf_counter() - validation_started,
+                "passed": len(crop_rows) == writer.crop_count,
+            }
+        else:
+            result["validation"] = {
+                "mode": "all_descriptors",
+                "descriptor_crop_count": writer.crop_count,
+                "wall_s": time.perf_counter() - validation_started,
+                "passed": writer.crop_count > 0,
+            }
         if not result["validation"]["passed"]:
-            raise RuntimeError("artifact manifest count validation failed")
+            raise RuntimeError("prefill output validation failed")
         artifact = result["artifact"]
         result["throughput"] = {
             "pages_per_s": writer.page_count / result["producer_wall_s"],
