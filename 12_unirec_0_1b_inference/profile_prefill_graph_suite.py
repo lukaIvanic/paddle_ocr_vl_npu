@@ -25,8 +25,6 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
-import cv2
-import numpy as np
 import torch
 
 

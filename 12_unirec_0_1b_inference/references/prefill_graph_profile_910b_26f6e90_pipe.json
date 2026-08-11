@@ -1,0 +1,5268 @@
+{
+  "config": {
+    "control_repeats": 10,
+    "parser_topn": 50,
+    "profile_metric": "pipe",
+    "profile_steps": 1,
+    "warmup": 2
+  },
+  "environment": {
+    "device_name": "Ascend910B2",
+    "python": "3.12.13 (main, May 15 2026, 02:51:13) [GCC 11.4.0]",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "torchair": null
+  },
+  "first128_workload": {
+    "layout_calls": 128,
+    "text_prefill_calls": 126,
+    "vision_calls": {
+      "512x256_b16": 8,
+      "512x512_b8": 4,
+      "960x256_b4": 52,
+      "960x512_b4": 12,
+      "960x64_b16": 63
+    },
+    "vision_fallback_rows_not_profiled": 1
+  },
+  "format": "unirec_prefill_graph_profile_reference_v1",
+  "lanes": [
+    {
+      "control_after": {
+        "device_event": {
+          "mean_ms": 25.02607192993164,
+          "median_ms": 24.49739933013916,
+          "p05_ms": 24.220517349243167,
+          "p95_ms": 26.78630514144897
+        }
+      },
+      "control_before": {
+        "device_event": {
+          "mean_ms": 25.394355964660644,
+          "median_ms": 25.56313991546631,
+          "p05_ms": 24.438406181335452,
+          "p95_ms": 26.039127922058107
+        }
+      },
+      "first128_calls": 128,
+      "input_contract": {
+        "dtype": "float32",
+        "execution": "compiled_fullgraph",
+        "pixel_values": [
+          1,
+          3,
+          800,
+          800
+        ]
+      },
+      "name": "layout_b1_800x800_fp32",
+      "profile": {
+        "api": {
+          "row_count": 8,
+          "top_apis": [
+            {
+              "avg_us": 406947.58,
+              "count": 1,
+              "max_us": 406947.58,
+              "time_us": 406947.58
+            },
+            {
+              "avg_us": 11995.25,
+              "count": 2,
+              "max_us": 23975.32,
+              "time_us": 23990.5
+            },
+            {
+              "avg_us": 11.89,
+              "count": 1543,
+              "max_us": 362.42,
+              "time_us": 18346.2
+            },
+            {
+              "avg_us": 141.7,
+              "count": 1,
+              "max_us": 141.7,
+              "time_us": 141.7
+            },
+            {
+              "avg_us": 26.13,
+              "count": 1,
+              "max_us": 26.13,
+              "time_us": 26.13
+            },
+            {
+              "avg_us": 23.44,
+              "count": 1,
+              "max_us": 23.44,
+              "time_us": 23.44
+            },
+            {
+              "avg_us": 4.205,
+              "count": 2,
+              "max_us": 6.38,
+              "time_us": 8.41
+            },
+            {
+              "avg_us": 0.8,
+              "count": 1,
+              "max_us": 0.8,
+              "time_us": 0.8
+            }
+          ]
+        },
+        "kernel": {
+          "row_count": 1571,
+          "top_core_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 1267,
+              "duration_us": 13366.199999999995,
+              "name": "AI_VECTOR_CORE",
+              "wait_us": 96.98000000000009
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 7140.719999999999,
+              "name": "AI_CPU",
+              "wait_us": 0.22
+            },
+            {
+              "aicore_time_us": 2962.882999999999,
+              "count": 295,
+              "duration_us": 3682.060000000002,
+              "name": "AI_CORE",
+              "wait_us": 15.91999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 64.92,
+              "name": "MIX_AIV",
+              "wait_us": 2.54
+            },
+            {
+              "aicore_time_us": 22.168,
+              "count": 1,
+              "duration_us": 25.86,
+              "name": "MIX_AIC",
+              "wait_us": 1.15
+            }
+          ],
+          "top_kernel_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 6191.36,
+              "name": "Index",
+              "wait_us": 0.02
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 378,
+              "duration_us": 4322.7199999999975,
+              "name": "TransData",
+              "wait_us": 21.11999999999998
+            },
+            {
+              "aicore_time_us": 1800.438,
+              "count": 123,
+              "duration_us": 2244.520000000002,
+              "name": "Conv2D",
+              "wait_us": 6.279999999999997
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 202,
+              "duration_us": 1477.8199999999988,
+              "name": "AutomaticBufferFusionOp",
+              "wait_us": 10.459999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 137,
+              "duration_us": 1465.3799999999997,
+              "name": "Add",
+              "wait_us": 7.599999999999996
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 125,
+              "duration_us": 1331.38,
+              "name": "Transpose",
+              "wait_us": 6.719999999999995
+            },
+            {
+              "aicore_time_us": 940.6610000000001,
+              "count": 145,
+              "duration_us": 1149.7199999999993,
+              "name": "MatMulV2",
+              "wait_us": 8.029999999999998
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 1011.28,
+              "name": "GridSample",
+              "wait_us": 0.8500000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 7,
+              "duration_us": 834.78,
+              "name": "GatherElements",
+              "wait_us": 0.62
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 44,
+              "duration_us": 432.4600000000001,
+              "name": "GatherV2",
+              "wait_us": 2.3899999999999997
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 428.88,
+              "name": "ReduceSumD",
+              "wait_us": 0.08
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 42,
+              "duration_us": 402.2,
+              "name": "BNInfer",
+              "wait_us": 2.71
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 34,
+              "duration_us": 308.4,
+              "name": "LayerNormV3",
+              "wait_us": 2.1500000000000004
+            },
+            {
+              "aicore_time_us": 221.78399999999996,
+              "count": 27,
+              "duration_us": 287.82000000000005,
+              "name": "BatchMatMul",
+              "wait_us": 1.6099999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 20,
+              "duration_us": 271.62,
+              "name": "Mul",
+              "wait_us": 1.7000000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 19,
+              "duration_us": 267.58,
+              "name": "SoftmaxV2",
+              "wait_us": 0.93
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 23,
+              "duration_us": 225.67999999999998,
+              "name": "StridedSliceD",
+              "wait_us": 1.0799999999999998
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 26,
+              "duration_us": 185.04,
+              "name": "Relu",
+              "wait_us": 1.84
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 8,
+              "duration_us": 166.39999999999998,
+              "name": "ArgMaxWithValue",
+              "wait_us": 0.64
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 146.74,
+              "name": "MaxPoolWithArgmaxV1",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 12,
+              "duration_us": 121.05999999999999,
+              "name": "Pack",
+              "wait_us": 0.44000000000000006
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 86.92,
+              "name": "Sort",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 86.39999999999999,
+              "name": "ConcatV2D",
+              "wait_us": 0.79
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 84.74,
+              "name": "Cumsum",
+              "wait_us": 0.2
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 81.30000000000001,
+              "name": "Range",
+              "wait_us": 1.2300000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 40,
+              "duration_us": 81.24000000000001,
+              "name": "Cast",
+              "wait_us": 1.6500000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 8,
+              "duration_us": 79.78,
+              "name": "Swish",
+              "wait_us": 0.71
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 7,
+              "duration_us": 68.42,
+              "name": "Gelu",
+              "wait_us": 0.19
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 12,
+              "duration_us": 61.54,
+              "name": "Muls",
+              "wait_us": 0.7300000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 5,
+              "duration_us": 58.88,
+              "name": "FloorMod",
+              "wait_us": 0.04
+            }
+          ],
+          "top_matmul_shape_signatures": [
+            {
+              "aicore_time_us": 209.507,
+              "count": 9,
+              "duration_us": 228.89999999999998,
+              "name": "MatMulV2 | \"13125,256;256,256\" -> \"13125,256\" | ND;ND -> ND",
+              "wait_us": 1.09
+            },
+            {
+              "aicore_time_us": 114.258,
+              "count": 42,
+              "duration_us": 159.22,
+              "name": "MatMulV2 | \"300,256;256,256\" -> \"300,256\" | ND;ND -> ND",
+              "wait_us": 2.6500000000000004
+            },
+            {
+              "aicore_time_us": 114.537,
+              "count": 24,
+              "duration_us": 149.04,
+              "name": "MatMulV2 | \"302,512;512,512\" -> \"302,512\" | ND;ND -> ND",
+              "wait_us": 1.3400000000000003
+            },
+            {
+              "aicore_time_us": 81.714,
+              "count": 6,
+              "duration_us": 95.7,
+              "name": "MatMulV2 | \"302,512;2048,512\" -> \"302,2048\" | ND;ND -> ND",
+              "wait_us": 0.28
+            },
+            {
+              "aicore_time_us": 79.952,
+              "count": 6,
+              "duration_us": 94.44,
+              "name": "MatMulV2 | \"300,4;512,4\" -> \"300,512\" | ND;ND -> ND",
+              "wait_us": 0.36
+            },
+            {
+              "aicore_time_us": 75.12899999999999,
+              "count": 6,
+              "duration_us": 84.44,
+              "name": "MatMulV2 | \"302,2048;512,2048\" -> \"302,512\" | ND;ND -> ND",
+              "wait_us": 0.33000000000000007
+            },
+            {
+              "aicore_time_us": 57.730999999999995,
+              "count": 6,
+              "duration_us": 77.06,
+              "name": "BatchMatMul | \"8,300,32;8,300,32\" -> \"8,300,300\" | ND;ND -> ND",
+              "wait_us": 0.13
+            },
+            {
+              "aicore_time_us": 51.285,
+              "count": 6,
+              "duration_us": 70.44,
+              "name": "BatchMatMul | \"8,302,64;8,302,64\" -> \"8,302,302\" | ND;ND -> ND",
+              "wait_us": 0.34
+            },
+            {
+              "aicore_time_us": 42.168,
+              "count": 6,
+              "duration_us": 50.080000000000005,
+              "name": "MatMulV2 | \"300,1024;256,1024\" -> \"300,256\" | ND;ND -> ND",
+              "wait_us": 0.37
+            },
+            {
+              "aicore_time_us": 36.374,
+              "count": 6,
+              "duration_us": 43.66,
+              "name": "MatMulV2 | \"300,256;1024,256\" -> \"300,1024\" | ND;ND -> ND",
+              "wait_us": 0.22
+            },
+            {
+              "aicore_time_us": 31.779999999999998,
+              "count": 6,
+              "duration_us": 40.16,
+              "name": "BatchMatMul | \"8,300,300;8,300,32\" -> \"8,300,32\" | ND;ND -> ND",
+              "wait_us": 0.42000000000000004
+            },
+            {
+              "aicore_time_us": 31.791,
+              "count": 6,
+              "duration_us": 40.080000000000005,
+              "name": "MatMulV2 | \"300,512;256,512\" -> \"300,256\" | ND;ND -> ND",
+              "wait_us": 0.34
+            },
+            {
+              "aicore_time_us": 33.202,
+              "count": 1,
+              "duration_us": 40.06,
+              "name": "BatchMatMul | \"8,625,32;8,625,32\" -> \"8,625,625\" | ND;ND -> ND",
+              "wait_us": 0.1
+            },
+            {
+              "aicore_time_us": 28.892,
+              "count": 6,
+              "duration_us": 37.2,
+              "name": "BatchMatMul | \"8,302,302;8,302,64\" -> \"8,302,64\" | ND;ND -> ND",
+              "wait_us": 0.6200000000000001
+            },
+            {
+              "aicore_time_us": 25.597,
+              "count": 6,
+              "duration_us": 33.2,
+              "name": "MatMulV2 | \"300,256;192,256\" -> \"300,192\" | ND;ND -> ND",
+              "wait_us": 0.12000000000000001
+            },
+            {
+              "aicore_time_us": 25.104,
+              "count": 6,
+              "duration_us": 32.18,
+              "name": "MatMulV2 | \"300,256;96,256\" -> \"300,96\" | ND;ND -> ND",
+              "wait_us": 0.17
+            },
+            {
+              "aicore_time_us": 23.614,
+              "count": 6,
+              "duration_us": 31.159999999999997,
+              "name": "MatMulV2 | \"300,256;25,256\" -> \"300,25\" | ND;ND -> ND",
+              "wait_us": 0.33
+            },
+            {
+              "aicore_time_us": 22.168,
+              "count": 1,
+              "duration_us": 25.86,
+              "name": "MatMulV3 | \"13125,256;25,256\" -> \"13125,25\" | ND;ND -> ND",
+              "wait_us": 1.15
+            },
+            {
+              "aicore_time_us": 13.349,
+              "count": 6,
+              "duration_us": 22.42,
+              "name": "MatMulV2 | \"300,256;4,256\" -> \"300,4\" | ND;ND -> ND",
+              "wait_us": 0.07999999999999999
+            },
+            {
+              "aicore_time_us": 15.21,
+              "count": 1,
+              "duration_us": 17.48,
+              "name": "BatchMatMul | \"8,625,625;8,625,32\" -> \"8,625,32\" | ND;ND -> ND",
+              "wait_us": 0.0
+            }
+          ],
+          "top_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 4698.58,
+              "name": "Index | \"1,256,50,50;4;4;100,1;100\" -> \"1,256,100,100\"",
+              "wait_us": 0.02
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 1492.78,
+              "name": "Index | \"1,256,25,25;4;4;50,1;50\" -> \"1,256,50,50\"",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 799.3799999999999,
+              "name": "TransData | \"25,12,16,8\" -> \"600,1,16,8\"",
+              "wait_us": 0.9000000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 719.8,
+              "name": "GatherElements | \"1,13125,256;1,300,256\" -> \"1,300,256\"",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 466.43999999999994,
+              "name": "TransData | \"25,24,16,8\" -> \"1200,1,16,8\"",
+              "wait_us": 0.36
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 428.88,
+              "name": "ReduceSumD | \"8,32,300,12\" -> \"8,32,300\"",
+              "wait_us": 0.08
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 36,
+              "duration_us": 408.0799999999999,
+              "name": "Add | \"1,192,1,1;;1,192,1,1;1,192,1,1;1,192,1,1;1,192,50,50\" -> \"1,192,50,50\"",
+              "wait_us": 2.58
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 352.98,
+              "name": "GridSample | \"8,25,25,32;8,300,4,2\" -> \"8,32,300,4\"",
+              "wait_us": 0.30000000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 350.66,
+              "name": "GridSample | \"8,100,100,32;8,300,4,2\" -> \"8,32,300,4\"",
+              "wait_us": 0.2
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 307.64,
+              "name": "GridSample | \"8,50,50,32;8,300,4,2\" -> \"8,32,300,4\"",
+              "wait_us": 0.35000000000000003
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 297.78,
+              "name": "TransData | \"256,256,3,3\" -> \"288,16,16,8\"",
+              "wait_us": 1.22
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 54,
+              "duration_us": 288.00000000000006,
+              "name": "AutomaticBufferFusionOp | \"300,256;;256\" -> \"300,256\"",
+              "wait_us": 2.23
+            },
+            {
+              "aicore_time_us": 223.54500000000002,
+              "count": 3,
+              "duration_us": 275.65999999999997,
+              "name": "Conv2D | \"1,32,100,100,8;288,16,16,8\" -> \"1,32,100,100,8\"",
+              "wait_us": 0.32
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 30,
+              "duration_us": 246.88000000000002,
+              "name": "Add | \"1,300,256;1,300,256\" -> \"1,300,256\"",
+              "wait_us": 1.53
+            },
+            {
+              "aicore_time_us": 209.507,
+              "count": 9,
+              "duration_us": 228.89999999999998,
+              "name": "MatMulV2 | \"13125,256;256,256\" -> \"13125,256\"",
+              "wait_us": 1.09
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 36,
+              "duration_us": 210.38,
+              "name": "TransData | \"1,24,50,50,8\" -> \"1,192,50,50\"",
+              "wait_us": 2.2600000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 33,
+              "duration_us": 193.96,
+              "name": "TransData | \"1,192,50,50\" -> \"1,24,50,50,8\"",
+              "wait_us": 1.33
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 189.79999999999998,
+              "name": "AutomaticBufferFusionOp | \"13125,256;;256\" -> \"13125,256\"",
+              "wait_us": 0.32
+            },
+            {
+              "aicore_time_us": 160.178,
+              "count": 6,
+              "duration_us": 182.84,
+              "name": "Conv2D | \"1,32,50,50,8;288,16,16,8\" -> \"1,32,50,50,8\"",
+              "wait_us": 0.22
+            },
+            {
+              "aicore_time_us": 131.84799999999998,
+              "count": 18,
+              "duration_us": 175.42,
+              "name": "Conv2D | \"1,24,50,50,8;600,1,16,8\" -> \"1,24,50,50,8\"",
+              "wait_us": 0.9199999999999999
+            }
+          ],
+          "top_transdata_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 799.3799999999999,
+              "name": "TransData | \"25,12,16,8\" -> \"600,1,16,8\" | FRACTAL_Z -> FRACTAL_Z:192",
+              "wait_us": 0.9000000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 466.43999999999994,
+              "name": "TransData | \"25,24,16,8\" -> \"1200,1,16,8\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.36
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 297.78,
+              "name": "TransData | \"256,256,3,3\" -> \"288,16,16,8\" | NCHW -> FRACTAL_Z",
+              "wait_us": 1.22
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 36,
+              "duration_us": 210.38,
+              "name": "TransData | \"1,24,50,50,8\" -> \"1,192,50,50\" | NC1HWC0 -> NCHW",
+              "wait_us": 2.2600000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 33,
+              "duration_us": 193.96,
+              "name": "TransData | \"1,192,50,50\" -> \"1,24,50,50,8\" | NCHW -> NC1HWC0",
+              "wait_us": 1.33
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 20,
+              "duration_us": 131.67999999999998,
+              "name": "TransData | \"1,32,50,50,8\" -> \"1,256,50,50\" | NC1HWC0 -> NCHW",
+              "wait_us": 1.11
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 11,
+              "duration_us": 123.21999999999998,
+              "name": "TransData | \"1,32,100,100,8\" -> \"1,256,100,100\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.68
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 17,
+              "duration_us": 109.83999999999999,
+              "name": "TransData | \"256,256,1,1\" -> \"32,16,16,8\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.93
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 106.82000000000001,
+              "name": "TransData | \"192,1,5,5\" -> \"25,12,16,8\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.9500000000000003
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 12,
+              "duration_us": 82.4,
+              "name": "TransData | \"1,48,25,25,8\" -> \"1,384,25,25\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.8799999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 76.78,
+              "name": "TransData | \"192,192,1,1\" -> \"24,12,16,8\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.9000000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 11,
+              "duration_us": 73.58,
+              "name": "TransData | \"1,384,25,25\" -> \"1,48,25,25,8\" | NCHW -> NC1HWC0",
+              "wait_us": 0.59
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 70.22,
+              "name": "TransData | \"9,64,16,8\" -> \"1152,1,16,8\" | FRACTAL_Z -> FRACTAL_Z:1024",
+              "wait_us": 0.12
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 12,
+              "duration_us": 66.33999999999999,
+              "name": "TransData | \"1,32,25,25,8\" -> \"1,256,25,25\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.79
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 59.8,
+              "name": "TransData | \"384,1,5,5\" -> \"25,24,16,8\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.21000000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 59.239999999999995,
+              "name": "TransData | \"1,512,50,50\" -> \"1,64,50,50,8\" | NCHW -> NC1HWC0",
+              "wait_us": 0.36000000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 8,
+              "duration_us": 58.74,
+              "name": "TransData | \"1,256,50,50\" -> \"1,32,50,50,8\" | NCHW -> NC1HWC0",
+              "wait_us": 0.01
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 5,
+              "duration_us": 53.2,
+              "name": "TransData | \"1,256,100,100\" -> \"1,32,100,100,8\" | NCHW -> NC1HWC0",
+              "wait_us": 0.22000000000000003
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 53.0,
+              "name": "TransData | \"256,512,1,1\" -> \"64,16,16,8\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.41000000000000003
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 7,
+              "duration_us": 49.61999999999999,
+              "name": "TransData | \"1,6,200,200,8\" -> \"1,48,200,200\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.15
+            }
+          ],
+          "total_aicore_time_us": 2985.0509999999986,
+          "total_duration_us": 24279.759999999995,
+          "total_wait_us": 116.8100000000002,
+          "weighted_cube_utilization_pct": 78.14031138751645
+        },
+        "operator": {
+          "row_count": 16,
+          "top_by_device_total_us": [
+            {
+              "count": 1,
+              "device_total_us": 24219.48,
+              "host_total_us": 1612.7,
+              "name": "unirec.prefill_graph.layout_b1_800x800_fp32"
+            },
+            {
+              "count": 1,
+              "device_total_us": 24219.48,
+              "host_total_us": 1521.51,
+              "name": "cache_compiler inference"
+            },
+            {
+              "count": 1,
+              "device_total_us": 24219.48,
+              "host_total_us": 652.14,
+              "name": "TorchNpuGraphBase::Run"
+            },
+            {
+              "count": 1,
+              "device_total_us": 24210.36,
+              "host_total_us": 206.82,
+              "name": "AssembleInputs"
+            },
+            {
+              "count": 1,
+              "device_total_us": 192.02,
+              "host_total_us": 192.02,
+              "name": "ExecuteGraph"
+            },
+            {
+              "count": 1,
+              "device_total_us": 153.93,
+              "host_total_us": 153.93,
+              "name": "RefreshAtTensorFromGeTensor"
+            },
+            {
+              "count": 3,
+              "device_total_us": 63.45,
+              "host_total_us": 63.45,
+              "name": "aten::set_"
+            },
+            {
+              "count": 3,
+              "device_total_us": 53.99,
+              "host_total_us": 53.99,
+              "name": "aten::empty"
+            },
+            {
+              "count": 3,
+              "device_total_us": 22.18,
+              "host_total_us": 22.18,
+              "name": "empty_tensor"
+            },
+            {
+              "count": 1,
+              "device_total_us": 20.87,
+              "host_total_us": 20.87,
+              "name": "AssembleOutputs"
+            }
+          ],
+          "total_device_us": 97375.24,
+          "total_host_us": 4499.6100000000015
+        }
+      },
+      "profile_steps": 1,
+      "steady_device_event_mean_ms": 25.21021394729614,
+      "weighted_first128_device_s": 3.226907385253906
+    },
+    {
+      "control_after": {
+        "device_event": {
+          "mean_ms": 14.562515926361083,
+          "median_ms": 14.392710208892822,
+          "p05_ms": 14.361035108566284,
+          "p95_ms": 15.283262920379638
+        }
+      },
+      "control_before": {
+        "device_event": {
+          "mean_ms": 14.341563987731934,
+          "median_ms": 14.343500137329102,
+          "p05_ms": 14.302837038040161,
+          "p95_ms": 14.36951560974121
+        }
+      },
+      "first128_calls": 63,
+      "input_contract": {
+        "dtype": "float16",
+        "execution": "compiled_masked_full_vision",
+        "mask_shapes": [
+          [
+            16,
+            1,
+            32,
+            480
+          ],
+          [
+            16,
+            1,
+            16,
+            240
+          ],
+          [
+            16,
+            1,
+            8,
+            120
+          ],
+          [
+            16,
+            1,
+            4,
+            60
+          ],
+          [
+            16,
+            1,
+            2,
+            30
+          ]
+        ],
+        "pixel_values": [
+          16,
+          3,
+          64,
+          960
+        ]
+      },
+      "name": "vision_960x64_b16_fp16",
+      "profile": {
+        "api": {
+          "row_count": 8,
+          "top_apis": [
+            {
+              "avg_us": 196100.8,
+              "count": 1,
+              "max_us": 196100.8,
+              "time_us": 196100.8
+            },
+            {
+              "avg_us": 6914.32,
+              "count": 2,
+              "max_us": 13818.76,
+              "time_us": 13828.64
+            },
+            {
+              "avg_us": 11.21,
+              "count": 1013,
+              "max_us": 79.91,
+              "time_us": 11355.33
+            },
+            {
+              "avg_us": 175.13,
+              "count": 1,
+              "max_us": 175.13,
+              "time_us": 175.13
+            },
+            {
+              "avg_us": 32.85,
+              "count": 1,
+              "max_us": 32.85,
+              "time_us": 32.85
+            },
+            {
+              "avg_us": 25.74,
+              "count": 1,
+              "max_us": 25.74,
+              "time_us": 25.74
+            },
+            {
+              "avg_us": 4.355,
+              "count": 2,
+              "max_us": 6.95,
+              "time_us": 8.71
+            },
+            {
+              "avg_us": 1.45,
+              "count": 1,
+              "max_us": 1.45,
+              "time_us": 1.45
+            }
+          ]
+        },
+        "kernel": {
+          "row_count": 1058,
+          "top_core_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 932,
+              "duration_us": 11113.439999999995,
+              "name": "AI_VECTOR_CORE",
+              "wait_us": 87.15000000000019
+            },
+            {
+              "aicore_time_us": 2828.319000000001,
+              "count": 126,
+              "duration_us": 3096.919999999999,
+              "name": "AI_CORE",
+              "wait_us": 6.13
+            }
+          ],
+          "top_kernel_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 305,
+              "duration_us": 4425.260000000001,
+              "name": "TransData",
+              "wait_us": 52.200000000000024
+            },
+            {
+              "aicore_time_us": 1532.9919999999997,
+              "count": 65,
+              "duration_us": 1643.5,
+              "name": "Conv2D",
+              "wait_us": 3.3099999999999987
+            },
+            {
+              "aicore_time_us": 1295.3269999999998,
+              "count": 61,
+              "duration_us": 1453.42,
+              "name": "MatMulV2",
+              "wait_us": 2.82
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 127,
+              "duration_us": 1254.6600000000003,
+              "name": "Mul",
+              "wait_us": 7.509999999999998
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 75,
+              "duration_us": 1198.4799999999998,
+              "name": "Gelu",
+              "wait_us": 4.649999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 62,
+              "duration_us": 1196.9599999999996,
+              "name": "Transpose",
+              "wait_us": 2.81
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 62,
+              "duration_us": 744.7600000000001,
+              "name": "AutomaticBufferFusionOp",
+              "wait_us": 3.19
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 75,
+              "duration_us": 662.7199999999998,
+              "name": "ReduceSumD",
+              "wait_us": 3.719999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 484.7800000000001,
+              "name": "LayerNormV3",
+              "wait_us": 0.8500000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 454.18,
+              "name": "AddLayerNorm",
+              "wait_us": 0.93
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 168.30000000000004,
+              "name": "SplitVD",
+              "wait_us": 0.4
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 60,
+              "duration_us": 155.55999999999997,
+              "name": "StridedSliceD",
+              "wait_us": 3.669999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 144.20000000000002,
+              "name": "RealDiv",
+              "wait_us": 1.1
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 4,
+              "duration_us": 73.86,
+              "name": "ConfusionTransposeD",
+              "wait_us": 0.15000000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 23,
+              "duration_us": 23.419999999999995,
+              "name": "Cast",
+              "wait_us": 1.1400000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 19.82,
+              "name": "te_memset_c5915091bfb49096ccb18078301bc1bb843b986c8a5a4f18113775c18a780cff__kernel0",
+              "wait_us": 0.26
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 17.580000000000002,
+              "name": "te_memset_00a8d74a61eef3ccfed01a58c41d4b9a57bcbb7bb8a54dfa7ce2f005cb3e54ee__kernel0",
+              "wait_us": 0.5800000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 17.339999999999996,
+              "name": "ClipByValueV2",
+              "wait_us": 1.13
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 16.520000000000003,
+              "name": "Greater",
+              "wait_us": 0.92
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 13.280000000000001,
+              "name": "te_memset_7c44fff972a5f467305c930a3baa6b740e43526ea49cbd6c2a0361cad81c6c87__kernel0",
+              "wait_us": 0.89
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 10.16,
+              "name": "te_memset_fd0b8bfd78092fa1f04914ba4490a52d36e0616c9ac1582fb25168ee739988ff__kernel0",
+              "wait_us": 0.05
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 5.98,
+              "name": "te_memset_945d6bb5b54bd857c32e617bf2caf3b9454cfb94db8b1a74f5b8f394414d6ab8__kernel0",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 4.68,
+              "name": "Data",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 4.08,
+              "name": "te_memset_a113fdda027366378b20e69bc6b225456fa028644a92dae844f18ae8f399cc78__kernel0",
+              "wait_us": 0.09
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.54,
+              "name": "te_memset_619f3a863d0d4b6b62bd43c44e0ca4717ae86e1dce03738f2dff7454d8b2933a__kernel0",
+              "wait_us": 0.25
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.18,
+              "name": "te_memset_f04627f4f7d3de0949ff0415a753e65bed684a132e63f1f774292018461d682e__kernel0",
+              "wait_us": 0.16
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.98,
+              "name": "te_memset_5a0a32eda276876561d15804319803dd0bf7da3c67a378eab2af4b9b589af7a9__kernel0",
+              "wait_us": 0.03
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.6799999999999997,
+              "name": "te_memset_61631f07d34817c7a35f16e3d3109826f40e72e381656fdda34c1d289c1b132f__kernel0",
+              "wait_us": 0.19
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.36,
+              "name": "te_memset_d2f05e67ad1fc8b80cd5351db84bab7c147b314657a08f73e9aa7fd24776df6e__kernel0",
+              "wait_us": 0.28
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.12,
+              "name": "te_memset_6d9d1e0cd10593b04c9233bf02bab2ddbfc66478c79c35c092db0c2788f72d38__kernel0",
+              "wait_us": 0.0
+            }
+          ],
+          "top_matmul_shape_signatures": [
+            {
+              "aicore_time_us": 212.789,
+              "count": 9,
+              "duration_us": 269.88,
+              "name": "MatMulV2 | \"3840,384;772,384;772\" -> \"3840,772\" | ND;ND;ND -> ND",
+              "wait_us": 0.5900000000000001
+            },
+            {
+              "aicore_time_us": 185.67999999999998,
+              "count": 9,
+              "duration_us": 197.72000000000003,
+              "name": "MatMulV2 | \"3840,384;1536,384;1536\" -> \"3840,1536\" | ND;ND;ND -> ND",
+              "wait_us": 0.53
+            },
+            {
+              "aicore_time_us": 150.703,
+              "count": 9,
+              "duration_us": 161.22,
+              "name": "MatMulV2 | \"3840,1536;384,1536;384\" -> \"3840,384\" | ND;ND;ND -> ND",
+              "wait_us": 0.23000000000000004
+            },
+            {
+              "aicore_time_us": 131.64999999999998,
+              "count": 2,
+              "duration_us": 137.5,
+              "name": "MatMulV2 | \"6,3840,16,16;6,13,16,16;196\" -> \"61440,196\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 101.91,
+              "count": 9,
+              "duration_us": 117.32,
+              "name": "MatMulV2 | \"3840,384;384,384;384\" -> \"3840,384\" | ND;ND;ND -> ND",
+              "wait_us": 0.4
+            },
+            {
+              "aicore_time_us": 87.35,
+              "count": 2,
+              "duration_us": 106.56,
+              "name": "MatMulV2 | \"6,3840,16,16;6,24,16,16;384\" -> \"61440,384\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.02
+            },
+            {
+              "aicore_time_us": 81.89,
+              "count": 2,
+              "duration_us": 85.68,
+              "name": "MatMulV2 | \"15360,192;388,192;388\" -> \"15360,388\" | ND;ND;ND -> ND",
+              "wait_us": 0.14
+            },
+            {
+              "aicore_time_us": 49.979,
+              "count": 2,
+              "duration_us": 52.18,
+              "name": "MatMulV2 | \"15360,768;192,768;192\" -> \"15360,192\" | ND;ND;ND -> ND",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 45.451,
+              "count": 2,
+              "duration_us": 50.18,
+              "name": "MatMulV2 | \"960,768;3072,768;3072\" -> \"960,3072\" | ND;ND;ND -> ND",
+              "wait_us": 0.01
+            },
+            {
+              "aicore_time_us": 47.367,
+              "count": 2,
+              "duration_us": 49.86,
+              "name": "MatMulV2 | \"15360,192;768,192;768\" -> \"15360,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 39.828,
+              "count": 2,
+              "duration_us": 48.900000000000006,
+              "name": "MatMulV2 | \"960,768;1540,768;1540\" -> \"960,1540\" | ND;ND;ND -> ND",
+              "wait_us": 0.21
+            },
+            {
+              "aicore_time_us": 41.352,
+              "count": 2,
+              "duration_us": 43.42,
+              "name": "MatMulV2 | \"61440,384;96,384;96\" -> \"61440,96\" | ND;ND;ND -> ND",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 38.497,
+              "count": 2,
+              "duration_us": 41.96,
+              "name": "MatMulV2 | \"960,3072;768,3072;768\" -> \"960,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.18
+            },
+            {
+              "aicore_time_us": 38.689,
+              "count": 2,
+              "duration_us": 41.66,
+              "name": "MatMulV2 | \"15360,192;192,192;192\" -> \"15360,192\" | ND;ND;ND -> ND",
+              "wait_us": 0.01
+            },
+            {
+              "aicore_time_us": 26.155,
+              "count": 3,
+              "duration_us": 30.04,
+              "name": "MatMulV2 | \"960,768;768,768;768\" -> \"960,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.39
+            },
+            {
+              "aicore_time_us": 16.037,
+              "count": 2,
+              "duration_us": 19.34,
+              "name": "MatMulV2 | \"6,3840,16,16;6,6,16,16;96\" -> \"61440,96\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.11
+            }
+          ],
+          "top_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 715.8199999999999,
+              "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\"",
+              "wait_us": 0.33999999999999997
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 63,
+              "duration_us": 447.88,
+              "name": "TransData | \"16,384,4,60\" -> \"16,24,4,60,16\"",
+              "wait_us": 2.4800000000000004
+            },
+            {
+              "aicore_time_us": 379.584,
+              "count": 9,
+              "duration_us": 394.4,
+              "name": "Conv2D | \"16,24,4,60,16;24,24,16,16;384\" -> \"16,24,4,60,16\"",
+              "wait_us": 0.5700000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 383.96000000000004,
+              "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\"",
+              "wait_us": 0.29000000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 37,
+              "duration_us": 355.84,
+              "name": "TransData | \"16,24,4,60,16\" -> \"16,384,4,60\"",
+              "wait_us": 2.32
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 314.34000000000003,
+              "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\"",
+              "wait_us": 0.33999999999999997
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 27,
+              "duration_us": 291.97999999999996,
+              "name": "Gelu | \"16,24,4,60,16\" -> \"16,24,4,60,16\"",
+              "wait_us": 1.3700000000000003
+            },
+            {
+              "aicore_time_us": 267.87000000000006,
+              "count": 9,
+              "duration_us": 278.03999999999996,
+              "name": "Conv2D | \"16,24,4,60,16;1176,1,16,16\" -> \"16,24,4,60,16\"",
+              "wait_us": 0.27
+            },
+            {
+              "aicore_time_us": 212.789,
+              "count": 9,
+              "duration_us": 269.88,
+              "name": "MatMulV2 | \"3840,384;772,384;772\" -> \"3840,772\"",
+              "wait_us": 0.5900000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 259.54,
+              "name": "Gelu | \"16,4,60,1536\" -> \"16,4,60,1536\"",
+              "wait_us": 0.7000000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 253.38,
+              "name": "ReduceSumD | \"16,384,4,60\" -> \"16,384,4,1\"",
+              "wait_us": 0.88
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 243.46,
+              "name": "Transpose | \"16,4,60,772;4\" -> \"16,772,4,60\"",
+              "wait_us": 0.65
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 217.52,
+              "name": "AddLayerNorm | \"16,4,60,384;16,4,60,384;384;384\" -> \"16,4,60,384;16,4,60,1;16,4,60,1;16,4,60,384\"",
+              "wait_us": 0.64
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 215.82,
+              "name": "Transpose | \"16,384,4,60;4\" -> \"16,4,60,384\"",
+              "wait_us": 0.38999999999999996
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 207.12,
+              "name": "TransData | \"384,1,7,7\" -> \"49,24,16,16\"",
+              "wait_us": 0.47
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 202.42000000000002,
+              "name": "LayerNormV3 | \"16,4,60,384;384;384\" -> \"16,4,60,384;16,4,60,1;16,4,60,1\"",
+              "wait_us": 0.56
+            },
+            {
+              "aicore_time_us": 185.67999999999998,
+              "count": 9,
+              "duration_us": 197.72000000000003,
+              "name": "MatMulV2 | \"3840,384;1536,384;1536\" -> \"3840,1536\"",
+              "wait_us": 0.53
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 182.60000000000002,
+              "name": "Gelu | \"16,16,240,384\" -> \"16,16,240,384\"",
+              "wait_us": 0.44
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 180.28000000000003,
+              "name": "Mul | \"16,384,4,60;16,1,4,60\" -> \"16,384,4,60\"",
+              "wait_us": 1.61
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 168.66,
+              "name": "TransData | \"25,48,16,16\" -> \"1200,1,16,16\"",
+              "wait_us": 0.04
+            }
+          ],
+          "top_transdata_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 715.8199999999999,
+              "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.33999999999999997
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 63,
+              "duration_us": 447.88,
+              "name": "TransData | \"16,384,4,60\" -> \"16,24,4,60,16\" | NCHW -> NC1HWC0",
+              "wait_us": 2.4800000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 383.96000000000004,
+              "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.29000000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 37,
+              "duration_us": 355.84,
+              "name": "TransData | \"16,24,4,60,16\" -> \"16,384,4,60\" | NC1HWC0 -> NCHW",
+              "wait_us": 2.32
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 314.34000000000003,
+              "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.33999999999999997
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 207.12,
+              "name": "TransData | \"384,1,7,7\" -> \"49,24,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.47
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 168.66,
+              "name": "TransData | \"25,48,16,16\" -> \"1200,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.04
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 160.8,
+              "name": "TransData | \"9,24,16,16\" -> \"216,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.7000000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 122.61999999999999,
+              "name": "TransData | \"384,384,1,1\" -> \"24,24,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.33999999999999997
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 117.32,
+              "name": "TransData | \"16,6,16,240,16\" -> \"16,96,16,240\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.5900000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 112.8,
+              "name": "TransData | \"16,96,16,240\" -> \"16,6,16,240,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.81
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 100.78,
+              "name": "TransData | \"16,768,2,30\" -> \"16,48,2,30,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.8900000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 93.56,
+              "name": "TransData | \"16,192,8,120\" -> \"16,12,8,120,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.9800000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 90.36,
+              "name": "TransData | \"16,12,8,120,16\" -> \"16,192,8,120\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.64
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 89.36,
+              "name": "TransData | \"16,48,2,30,16\" -> \"16,768,2,30\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.87
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 87.92,
+              "name": "TransData | \"49,12,16,16\" -> \"588,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:192",
+              "wait_us": 0.08
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 69.2,
+              "name": "TransData | \"9,48,16,16\" -> \"432,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.03
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 63.18000000000001,
+              "name": "TransData | \"61440,96\" -> \"6,3840,16,16\" | ND -> FRACTAL_NZ",
+              "wait_us": 0.30000000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 52.82,
+              "name": "TransData | \"768,1,7,7\" -> \"49,48,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 51.879999999999995,
+              "name": "TransData | \"25,12,16,16\" -> \"300,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:192",
+              "wait_us": 0.27
+            }
+          ],
+          "total_aicore_time_us": 2828.319000000001,
+          "total_duration_us": 14210.359999999988,
+          "total_wait_us": 93.28000000000019,
+          "weighted_cube_utilization_pct": 80.33780463815667
+        },
+        "operator": {
+          "row_count": 12,
+          "top_by_device_total_us": [
+            {
+              "count": 1,
+              "device_total_us": 14125.52,
+              "host_total_us": 2170.04,
+              "name": "unirec.prefill_graph.vision_960x64_b16_fp16"
+            },
+            {
+              "count": 1,
+              "device_total_us": 14125.52,
+              "host_total_us": 2076.69,
+              "name": "cache_compiler inference"
+            },
+            {
+              "count": 1,
+              "device_total_us": 14117.92,
+              "host_total_us": 664.89,
+              "name": "TorchDynamo Cache Lookup"
+            },
+            {
+              "count": 1,
+              "device_total_us": 1061.94,
+              "host_total_us": 1061.94,
+              "name": "Torch-Compiled Region: 0/0"
+            },
+            {
+              "count": 1,
+              "device_total_us": 575.39,
+              "host_total_us": 575.39,
+              "name": "TorchNpuGraphBase::Run"
+            },
+            {
+              "count": 1,
+              "device_total_us": 238.1,
+              "host_total_us": 238.1,
+              "name": "ExecuteGraph"
+            },
+            {
+              "count": 1,
+              "device_total_us": 108.03,
+              "host_total_us": 108.03,
+              "name": "AssembleInputs"
+            },
+            {
+              "count": 1,
+              "device_total_us": 107.61,
+              "host_total_us": 107.61,
+              "name": "RefreshAtTensorFromGeTensor"
+            },
+            {
+              "count": 1,
+              "device_total_us": 52.07,
+              "host_total_us": 52.07,
+              "name": "aten::empty"
+            },
+            {
+              "count": 1,
+              "device_total_us": 30.05,
+              "host_total_us": 30.05,
+              "name": "aten::set_"
+            },
+            {
+              "count": 1,
+              "device_total_us": 28.93,
+              "host_total_us": 28.93,
+              "name": "empty_tensor"
+            },
+            {
+              "count": 1,
+              "device_total_us": 26.55,
+              "host_total_us": 26.55,
+              "name": "AssembleOutputs"
+            }
+          ],
+          "total_device_us": 44597.630000000005,
+          "total_host_us": 7140.29
+        }
+      },
+      "profile_steps": 1,
+      "steady_device_event_mean_ms": 14.452039957046509,
+      "weighted_first128_device_s": 0.91047851729393
+    },
+    {
+      "control_after": {
+        "device_event": {
+          "mean_ms": 20.265807723999025,
+          "median_ms": 20.12209987640381,
+          "p05_ms": 20.10746927261353,
+          "p95_ms": 20.765001678466795
+        }
+      },
+      "control_before": {
+        "device_event": {
+          "mean_ms": 20.094473838806152,
+          "median_ms": 20.09468936920166,
+          "p05_ms": 20.065513992309572,
+          "p95_ms": 20.128823661804198
+        }
+      },
+      "first128_calls": 8,
+      "input_contract": {
+        "dtype": "float16",
+        "execution": "compiled_masked_full_vision",
+        "mask_shapes": [
+          [
+            16,
+            1,
+            128,
+            256
+          ],
+          [
+            16,
+            1,
+            64,
+            128
+          ],
+          [
+            16,
+            1,
+            32,
+            64
+          ],
+          [
+            16,
+            1,
+            16,
+            32
+          ],
+          [
+            16,
+            1,
+            8,
+            16
+          ]
+        ],
+        "pixel_values": [
+          16,
+          3,
+          256,
+          512
+        ]
+      },
+      "name": "vision_512x256_b16_fp16",
+      "profile": {
+        "api": {
+          "row_count": 8,
+          "top_apis": [
+            {
+              "avg_us": 192528.385,
+              "count": 2,
+              "max_us": 196100.8,
+              "time_us": 385056.77
+            },
+            {
+              "avg_us": 11.17,
+              "count": 2025,
+              "max_us": 91.97,
+              "time_us": 22619.75
+            },
+            {
+              "avg_us": 9808.905,
+              "count": 2,
+              "max_us": 19609.47,
+              "time_us": 19617.81
+            },
+            {
+              "avg_us": 119.4,
+              "count": 1,
+              "max_us": 119.4,
+              "time_us": 119.4
+            },
+            {
+              "avg_us": 38.48,
+              "count": 1,
+              "max_us": 38.48,
+              "time_us": 38.48
+            },
+            {
+              "avg_us": 22.9,
+              "count": 1,
+              "max_us": 22.9,
+              "time_us": 22.9
+            },
+            {
+              "avg_us": 4.44,
+              "count": 2,
+              "max_us": 6.93,
+              "time_us": 8.88
+            },
+            {
+              "avg_us": 0.94,
+              "count": 1,
+              "max_us": 0.94,
+              "time_us": 0.94
+            }
+          ]
+        },
+        "kernel": {
+          "row_count": 1058,
+          "top_core_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 932,
+              "duration_us": 13979.760000000004,
+              "name": "AI_VECTOR_CORE",
+              "wait_us": 75.99000000000012
+            },
+            {
+              "aicore_time_us": 5258.504999999999,
+              "count": 126,
+              "duration_us": 5978.120000000004,
+              "name": "AI_CORE",
+              "wait_us": 6.479999999999998
+            }
+          ],
+          "top_kernel_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 305,
+              "duration_us": 4787.779999999997,
+              "name": "TransData",
+              "wait_us": 40.66000000000004
+            },
+            {
+              "aicore_time_us": 2784.758999999999,
+              "count": 65,
+              "duration_us": 3312.3999999999996,
+              "name": "Conv2D",
+              "wait_us": 2.8400000000000003
+            },
+            {
+              "aicore_time_us": 2473.746000000001,
+              "count": 61,
+              "duration_us": 2665.719999999999,
+              "name": "MatMulV2",
+              "wait_us": 3.6399999999999997
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 75,
+              "duration_us": 2082.9199999999987,
+              "name": "Gelu",
+              "wait_us": 4.41
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 127,
+              "duration_us": 1549.259999999999,
+              "name": "Mul",
+              "wait_us": 6.999999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 46,
+              "duration_us": 1193.62,
+              "name": "Transpose",
+              "wait_us": 2.43
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 62,
+              "duration_us": 1040.4800000000002,
+              "name": "AutomaticBufferFusionOp",
+              "wait_us": 3.7299999999999995
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 788.8,
+              "name": "LayerNormV3",
+              "wait_us": 0.94
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 75,
+              "duration_us": 572.16,
+              "name": "ReduceSumD",
+              "wait_us": 4.8199999999999985
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 13,
+              "duration_us": 486.58,
+              "name": "AddLayerNorm",
+              "wait_us": 0.55
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 20,
+              "duration_us": 409.44000000000005,
+              "name": "ConfusionTransposeD",
+              "wait_us": 0.7400000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 60,
+              "duration_us": 260.88000000000005,
+              "name": "StridedSliceD",
+              "wait_us": 3.7999999999999994
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 258.34000000000003,
+              "name": "SplitVD",
+              "wait_us": 1.1800000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 241.95999999999998,
+              "name": "InplaceAddLayerNorm",
+              "wait_us": 0.35
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 150.78,
+              "name": "RealDiv",
+              "wait_us": 0.68
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 23,
+              "duration_us": 24.759999999999998,
+              "name": "Cast",
+              "wait_us": 0.8400000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 20.48,
+              "name": "te_memset_c5915091bfb49096ccb18078301bc1bb843b986c8a5a4f18113775c18a780cff__kernel0",
+              "wait_us": 0.46
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 18.340000000000003,
+              "name": "ClipByValueV2",
+              "wait_us": 0.6000000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 18.06,
+              "name": "te_memset_00a8d74a61eef3ccfed01a58c41d4b9a57bcbb7bb8a54dfa7ce2f005cb3e54ee__kernel0",
+              "wait_us": 0.49
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 16.92,
+              "name": "Greater",
+              "wait_us": 0.76
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 13.72,
+              "name": "te_memset_7c44fff972a5f467305c930a3baa6b740e43526ea49cbd6c2a0361cad81c6c87__kernel0",
+              "wait_us": 0.63
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 10.42,
+              "name": "te_memset_fd0b8bfd78092fa1f04914ba4490a52d36e0616c9ac1582fb25168ee739988ff__kernel0",
+              "wait_us": 0.02
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 6.4399999999999995,
+              "name": "te_memset_945d6bb5b54bd857c32e617bf2caf3b9454cfb94db8b1a74f5b8f394414d6ab8__kernel0",
+              "wait_us": 0.19
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 5.0,
+              "name": "Data",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 4.38,
+              "name": "te_memset_a113fdda027366378b20e69bc6b225456fa028644a92dae844f18ae8f399cc78__kernel0",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 4.0,
+              "name": "te_memset_619f3a863d0d4b6b62bd43c44e0ca4717ae86e1dce03738f2dff7454d8b2933a__kernel0",
+              "wait_us": 0.07
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.42,
+              "name": "te_memset_f04627f4f7d3de0949ff0415a753e65bed684a132e63f1f774292018461d682e__kernel0",
+              "wait_us": 0.18
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.2199999999999998,
+              "name": "te_memset_5a0a32eda276876561d15804319803dd0bf7da3c67a378eab2af4b9b589af7a9__kernel0",
+              "wait_us": 0.04
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.74,
+              "name": "te_memset_61631f07d34817c7a35f16e3d3109826f40e72e381656fdda34c1d289c1b132f__kernel0",
+              "wait_us": 0.18
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.48,
+              "name": "te_memset_d2f05e67ad1fc8b80cd5351db84bab7c147b314657a08f73e9aa7fd24776df6e__kernel0",
+              "wait_us": 0.03
+            }
+          ],
+          "top_matmul_shape_signatures": [
+            {
+              "aicore_time_us": 451.73400000000004,
+              "count": 9,
+              "duration_us": 463.78000000000003,
+              "name": "MatMulV2 | \"8192,384;1536,384;1536\" -> \"8192,1536\" | ND;ND;ND -> ND",
+              "wait_us": 0.6599999999999999
+            },
+            {
+              "aicore_time_us": 314.234,
+              "count": 9,
+              "duration_us": 334.16,
+              "name": "MatMulV2 | \"8192,384;772,384;772\" -> \"8192,772\" | ND;ND;ND -> ND",
+              "wait_us": 0.87
+            },
+            {
+              "aicore_time_us": 310.45699999999994,
+              "count": 9,
+              "duration_us": 320.04,
+              "name": "MatMulV2 | \"8192,1536;384,1536;384\" -> \"8192,384\" | ND;ND;ND -> ND",
+              "wait_us": 0.44
+            },
+            {
+              "aicore_time_us": 267.738,
+              "count": 2,
+              "duration_us": 285.48,
+              "name": "MatMulV2 | \"6,8192,16,16;6,13,16,16;196\" -> \"131072,196\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.03
+            },
+            {
+              "aicore_time_us": 206.633,
+              "count": 9,
+              "duration_us": 219.26,
+              "name": "MatMulV2 | \"8192,384;384,384;384\" -> \"8192,384\" | ND;ND;ND -> ND",
+              "wait_us": 0.59
+            },
+            {
+              "aicore_time_us": 178.961,
+              "count": 2,
+              "duration_us": 216.92000000000002,
+              "name": "MatMulV2 | \"6,8192,16,16;6,24,16,16;384\" -> \"131072,384\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.18
+            },
+            {
+              "aicore_time_us": 151.046,
+              "count": 2,
+              "duration_us": 194.0,
+              "name": "MatMulV2 | \"32768,192;388,192;388\" -> \"32768,388\" | ND;ND;ND -> ND",
+              "wait_us": 0.01
+            },
+            {
+              "aicore_time_us": 90.723,
+              "count": 2,
+              "duration_us": 93.18,
+              "name": "MatMulV2 | \"32768,768;192,768;192\" -> \"32768,192\" | ND;ND;ND -> ND",
+              "wait_us": 0.09
+            },
+            {
+              "aicore_time_us": 87.624,
+              "count": 2,
+              "duration_us": 90.6,
+              "name": "MatMulV2 | \"32768,192;768,192;768\" -> \"32768,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.01
+            },
+            {
+              "aicore_time_us": 72.562,
+              "count": 2,
+              "duration_us": 85.32,
+              "name": "MatMulV2 | \"2048,768;1540,768;1540\" -> \"2048,1540\" | ND;ND;ND -> ND",
+              "wait_us": 0.09
+            },
+            {
+              "aicore_time_us": 76.176,
+              "count": 2,
+              "duration_us": 79.41999999999999,
+              "name": "MatMulV2 | \"2048,768;3072,768;3072\" -> \"2048,3072\" | ND;ND;ND -> ND",
+              "wait_us": 0.04
+            },
+            {
+              "aicore_time_us": 76.213,
+              "count": 2,
+              "duration_us": 79.08000000000001,
+              "name": "MatMulV2 | \"131072,384;96,384;96\" -> \"131072,96\" | ND;ND;ND -> ND",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 71.28200000000001,
+              "count": 2,
+              "duration_us": 74.92,
+              "name": "MatMulV2 | \"2048,3072;768,3072;768\" -> \"2048,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.07
+            },
+            {
+              "aicore_time_us": 51.195,
+              "count": 2,
+              "duration_us": 54.42,
+              "name": "MatMulV2 | \"32768,192;192,192;192\" -> \"32768,192\" | ND;ND;ND -> ND",
+              "wait_us": 0.32
+            },
+            {
+              "aicore_time_us": 48.002,
+              "count": 3,
+              "duration_us": 52.02,
+              "name": "MatMulV2 | \"2048,768;768,768;768\" -> \"2048,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.13
+            },
+            {
+              "aicore_time_us": 19.166,
+              "count": 2,
+              "duration_us": 23.12,
+              "name": "MatMulV2 | \"6,8192,16,16;6,6,16,16;96\" -> \"131072,96\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.11
+            }
+          ],
+          "top_shape_signatures": [
+            {
+              "aicore_time_us": 676.5090000000001,
+              "count": 9,
+              "duration_us": 1042.4199999999998,
+              "name": "Conv2D | \"16,24,16,32,16;24,24,16,16;384\" -> \"16,24,16,32,16\"",
+              "wait_us": 0.36
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 714.1400000000001,
+              "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\"",
+              "wait_us": 0.42
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 63,
+              "duration_us": 465.19999999999993,
+              "name": "TransData | \"16,384,16,32\" -> \"16,24,16,32,16\"",
+              "wait_us": 3.4400000000000004
+            },
+            {
+              "aicore_time_us": 451.73400000000004,
+              "count": 9,
+              "duration_us": 463.78000000000003,
+              "name": "MatMulV2 | \"8192,384;1536,384;1536\" -> \"8192,1536\"",
+              "wait_us": 0.6599999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 459.34000000000003,
+              "name": "Gelu | \"16,16,32,1536\" -> \"16,16,32,1536\"",
+              "wait_us": 0.45999999999999996
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 27,
+              "duration_us": 458.36000000000007,
+              "name": "Gelu | \"16,24,16,32,16\" -> \"16,24,16,32,16\"",
+              "wait_us": 1.83
+            },
+            {
+              "aicore_time_us": 416.63500000000005,
+              "count": 9,
+              "duration_us": 426.92,
+              "name": "Conv2D | \"16,24,16,32,16;1176,1,16,16\" -> \"16,24,16,32,16\"",
+              "wait_us": 0.27
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 37,
+              "duration_us": 408.34000000000003,
+              "name": "TransData | \"16,24,16,32,16\" -> \"16,384,16,32\"",
+              "wait_us": 2.1499999999999995
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 381.86,
+              "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\"",
+              "wait_us": 0.63
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 359.22,
+              "name": "Gelu | \"16,64,128,384\" -> \"16,64,128,384\"",
+              "wait_us": 0.08
+            },
+            {
+              "aicore_time_us": 314.234,
+              "count": 9,
+              "duration_us": 334.16,
+              "name": "MatMulV2 | \"8192,384;772,384;772\" -> \"8192,772\"",
+              "wait_us": 0.87
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 323.53999999999996,
+              "name": "AddLayerNorm | \"16,16,32,384;16,16,32,384;384;384\" -> \"16,16,32,384;16,16,32,1;16,16,32,1;16,16,32,384\"",
+              "wait_us": 0.15999999999999998
+            },
+            {
+              "aicore_time_us": 310.45699999999994,
+              "count": 9,
+              "duration_us": 320.04,
+              "name": "MatMulV2 | \"8192,1536;384,1536;384\" -> \"8192,384\"",
+              "wait_us": 0.44
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 316.38,
+              "name": "LayerNormV3 | \"16,16,32,384;384;384\" -> \"16,16,32,384;16,16,32,1;16,16,32,1\"",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 312.94,
+              "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\"",
+              "wait_us": 0.19
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 292.26,
+              "name": "Gelu | \"16,6,64,128,16\" -> \"16,6,64,128,16\"",
+              "wait_us": 0.33000000000000007
+            },
+            {
+              "aicore_time_us": 267.738,
+              "count": 2,
+              "duration_us": 285.48,
+              "name": "MatMulV2 | \"6,8192,16,16;6,13,16,16;196\" -> \"131072,196\"",
+              "wait_us": 0.03
+            },
+            {
+              "aicore_time_us": 281.21000000000004,
+              "count": 2,
+              "duration_us": 285.22,
+              "name": "Conv2D | \"16,6,64,128,16;294,1,16,16\" -> \"16,6,64,128,16\"",
+              "wait_us": 0.05
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 263.56,
+              "name": "Transpose | \"16,16,32,772;4\" -> \"16,772,16,32\"",
+              "wait_us": 0.36999999999999994
+            },
+            {
+              "aicore_time_us": 240.412,
+              "count": 9,
+              "duration_us": 253.48000000000002,
+              "name": "Conv2D | \"16,24,16,32,16;600,1,16,16\" -> \"16,24,16,32,16\"",
+              "wait_us": 0.68
+            }
+          ],
+          "top_transdata_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 714.1400000000001,
+              "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.42
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 63,
+              "duration_us": 465.19999999999993,
+              "name": "TransData | \"16,384,16,32\" -> \"16,24,16,32,16\" | NCHW -> NC1HWC0",
+              "wait_us": 3.4400000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 37,
+              "duration_us": 408.34000000000003,
+              "name": "TransData | \"16,24,16,32,16\" -> \"16,384,16,32\" | NC1HWC0 -> NCHW",
+              "wait_us": 2.1499999999999995
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 381.86,
+              "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.63
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 312.94,
+              "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.19
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 205.32,
+              "name": "TransData | \"384,1,7,7\" -> \"49,24,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.5800000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 196.14,
+              "name": "TransData | \"16,96,64,128\" -> \"16,6,64,128,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.6700000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 166.68,
+              "name": "TransData | \"25,48,16,16\" -> \"1200,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 163.62,
+              "name": "TransData | \"16,6,64,128,16\" -> \"16,96,64,128\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.54
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 160.57999999999998,
+              "name": "TransData | \"9,24,16,16\" -> \"216,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.43999999999999995
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 126.75999999999999,
+              "name": "TransData | \"16,192,32,64\" -> \"16,12,32,64,16\" | NCHW -> NC1HWC0",
+              "wait_us": 1.07
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 120.60000000000001,
+              "name": "TransData | \"16,12,32,64,16\" -> \"16,192,32,64\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.6
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 120.30000000000001,
+              "name": "TransData | \"384,384,1,1\" -> \"24,24,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.6200000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 99.04,
+              "name": "TransData | \"16,768,8,16\" -> \"16,48,8,16,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.53
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 97.01999999999998,
+              "name": "TransData | \"131072,96\" -> \"6,8192,16,16\" | ND -> FRACTAL_NZ",
+              "wait_us": 0.07
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 89.77999999999999,
+              "name": "TransData | \"16,48,8,16,16\" -> \"16,768,8,16\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.27
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 87.7,
+              "name": "TransData | \"49,12,16,16\" -> \"588,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:192",
+              "wait_us": 0.12
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 69.56,
+              "name": "TransData | \"9,48,16,16\" -> \"432,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.25
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 52.86,
+              "name": "TransData | \"768,1,7,7\" -> \"49,48,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.22
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 52.34,
+              "name": "TransData | \"25,12,16,16\" -> \"300,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:192",
+              "wait_us": 0.06
+            }
+          ],
+          "total_aicore_time_us": 5258.504999999999,
+          "total_duration_us": 19957.879999999997,
+          "total_wait_us": 82.47000000000014,
+          "weighted_cube_utilization_pct": 84.05661453768072
+        },
+        "operator": {
+          "row_count": 12,
+          "top_by_device_total_us": [
+            {
+              "count": 1,
+              "device_total_us": 19869.46,
+              "host_total_us": 1940.74,
+              "name": "unirec.prefill_graph.vision_512x256_b16_fp16"
+            },
+            {
+              "count": 1,
+              "device_total_us": 19869.46,
+              "host_total_us": 1858.96,
+              "name": "cache_compiler inference"
+            },
+            {
+              "count": 1,
+              "device_total_us": 19861.14,
+              "host_total_us": 635.15,
+              "name": "TorchDynamo Cache Lookup"
+            },
+            {
+              "count": 1,
+              "device_total_us": 918.59,
+              "host_total_us": 918.59,
+              "name": "Torch-Compiled Region: 0/1"
+            },
+            {
+              "count": 1,
+              "device_total_us": 492.9,
+              "host_total_us": 492.9,
+              "name": "TorchNpuGraphBase::Run"
+            },
+            {
+              "count": 1,
+              "device_total_us": 191.01,
+              "host_total_us": 191.01,
+              "name": "ExecuteGraph"
+            },
+            {
+              "count": 1,
+              "device_total_us": 109.03,
+              "host_total_us": 109.03,
+              "name": "AssembleInputs"
+            },
+            {
+              "count": 1,
+              "device_total_us": 96.32,
+              "host_total_us": 96.32,
+              "name": "RefreshAtTensorFromGeTensor"
+            },
+            {
+              "count": 1,
+              "device_total_us": 46.3,
+              "host_total_us": 46.3,
+              "name": "aten::empty"
+            },
+            {
+              "count": 1,
+              "device_total_us": 26.83,
+              "host_total_us": 26.83,
+              "name": "aten::set_"
+            },
+            {
+              "count": 1,
+              "device_total_us": 26.27,
+              "host_total_us": 26.27,
+              "name": "empty_tensor"
+            },
+            {
+              "count": 1,
+              "device_total_us": 22.22,
+              "host_total_us": 22.22,
+              "name": "AssembleOutputs"
+            }
+          ],
+          "total_device_us": 61529.53,
+          "total_host_us": 6364.32
+        }
+      },
+      "profile_steps": 1,
+      "steady_device_event_mean_ms": 20.18014078140259,
+      "weighted_first128_device_s": 0.1614411262512207
+    },
+    {
+      "control_after": {
+        "device_event": {
+          "mean_ms": 13.323573970794678,
+          "median_ms": 13.200530052185059,
+          "p05_ms": 13.191896915435791,
+          "p95_ms": 13.854668951034544
+        }
+      },
+      "control_before": {
+        "device_event": {
+          "mean_ms": 13.184206008911133,
+          "median_ms": 13.184370040893555,
+          "p05_ms": 13.150759077072145,
+          "p95_ms": 13.216015005111695
+        }
+      },
+      "first128_calls": 52,
+      "input_contract": {
+        "dtype": "float16",
+        "execution": "compiled_masked_full_vision",
+        "mask_shapes": [
+          [
+            4,
+            1,
+            128,
+            480
+          ],
+          [
+            4,
+            1,
+            64,
+            240
+          ],
+          [
+            4,
+            1,
+            32,
+            120
+          ],
+          [
+            4,
+            1,
+            16,
+            60
+          ],
+          [
+            4,
+            1,
+            8,
+            30
+          ]
+        ],
+        "pixel_values": [
+          4,
+          3,
+          256,
+          960
+        ]
+      },
+      "name": "vision_960x256_b4_fp16",
+      "profile": {
+        "api": {
+          "row_count": 8,
+          "top_apis": [
+            {
+              "avg_us": 189600.337,
+              "count": 3,
+              "max_us": 196100.8,
+              "time_us": 568801.01
+            },
+            {
+              "avg_us": 11.087,
+              "count": 3037,
+              "max_us": 91.97,
+              "time_us": 33671.85
+            },
+            {
+              "avg_us": 6432.06,
+              "count": 2,
+              "max_us": 12856.21,
+              "time_us": 12864.12
+            },
+            {
+              "avg_us": 94.91,
+              "count": 1,
+              "max_us": 94.91,
+              "time_us": 94.91
+            },
+            {
+              "avg_us": 21.53,
+              "count": 1,
+              "max_us": 21.53,
+              "time_us": 21.53
+            },
+            {
+              "avg_us": 21.18,
+              "count": 1,
+              "max_us": 21.18,
+              "time_us": 21.18
+            },
+            {
+              "avg_us": 3.435,
+              "count": 2,
+              "max_us": 5.62,
+              "time_us": 6.87
+            },
+            {
+              "avg_us": 0.91,
+              "count": 1,
+              "max_us": 0.91,
+              "time_us": 0.91
+            }
+          ]
+        },
+        "kernel": {
+          "row_count": 1058,
+          "top_core_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 932,
+              "duration_us": 10404.920000000004,
+              "name": "AI_VECTOR_CORE",
+              "wait_us": 76.28000000000011
+            },
+            {
+              "aicore_time_us": 2378.7680000000005,
+              "count": 126,
+              "duration_us": 2676.9800000000005,
+              "name": "AI_CORE",
+              "wait_us": 6.230000000000001
+            }
+          ],
+          "top_kernel_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 305,
+              "duration_us": 4227.840000000003,
+              "name": "TransData",
+              "wait_us": 40.22
+            },
+            {
+              "aicore_time_us": 1300.2379999999996,
+              "count": 61,
+              "duration_us": 1459.3200000000002,
+              "name": "MatMulV2",
+              "wait_us": 3.28
+            },
+            {
+              "aicore_time_us": 1078.53,
+              "count": 65,
+              "duration_us": 1217.66,
+              "name": "Conv2D",
+              "wait_us": 2.9499999999999997
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 127,
+              "duration_us": 1177.82,
+              "name": "Mul",
+              "wait_us": 7.63
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 75,
+              "duration_us": 1173.6999999999996,
+              "name": "Gelu",
+              "wait_us": 4.52
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 62,
+              "duration_us": 1045.4200000000003,
+              "name": "Transpose",
+              "wait_us": 4.640000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 62,
+              "duration_us": 694.76,
+              "name": "AutomaticBufferFusionOp",
+              "wait_us": 3.7300000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 75,
+              "duration_us": 594.8799999999999,
+              "name": "ReduceSumD",
+              "wait_us": 3.2799999999999994
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 477.8400000000001,
+              "name": "AddLayerNorm",
+              "wait_us": 0.7200000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 458.7800000000001,
+              "name": "LayerNormV3",
+              "wait_us": 0.7000000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 162.68000000000004,
+              "name": "SplitVD",
+              "wait_us": 0.65
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 92.36,
+              "name": "RealDiv",
+              "wait_us": 0.6900000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 60,
+              "duration_us": 75.30000000000001,
+              "name": "StridedSliceD",
+              "wait_us": 3.5499999999999994
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 4,
+              "duration_us": 72.54,
+              "name": "ConfusionTransposeD",
+              "wait_us": 0.18
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 23,
+              "duration_us": 24.06,
+              "name": "Cast",
+              "wait_us": 1.04
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 19.680000000000003,
+              "name": "te_memset_c5915091bfb49096ccb18078301bc1bb843b986c8a5a4f18113775c18a780cff__kernel0",
+              "wait_us": 0.56
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 17.8,
+              "name": "te_memset_00a8d74a61eef3ccfed01a58c41d4b9a57bcbb7bb8a54dfa7ce2f005cb3e54ee__kernel0",
+              "wait_us": 0.56
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 17.54,
+              "name": "ClipByValueV2",
+              "wait_us": 0.73
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 16.400000000000002,
+              "name": "Greater",
+              "wait_us": 0.8900000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 13.6,
+              "name": "te_memset_7c44fff972a5f467305c930a3baa6b740e43526ea49cbd6c2a0361cad81c6c87__kernel0",
+              "wait_us": 0.62
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 9.879999999999999,
+              "name": "te_memset_fd0b8bfd78092fa1f04914ba4490a52d36e0616c9ac1582fb25168ee739988ff__kernel0",
+              "wait_us": 0.22999999999999998
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 5.8,
+              "name": "te_memset_945d6bb5b54bd857c32e617bf2caf3b9454cfb94db8b1a74f5b8f394414d6ab8__kernel0",
+              "wait_us": 0.05
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 4.82,
+              "name": "Data",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.98,
+              "name": "te_memset_a113fdda027366378b20e69bc6b225456fa028644a92dae844f18ae8f399cc78__kernel0",
+              "wait_us": 0.19
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.56,
+              "name": "te_memset_619f3a863d0d4b6b62bd43c44e0ca4717ae86e1dce03738f2dff7454d8b2933a__kernel0",
+              "wait_us": 0.26
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.34,
+              "name": "te_memset_f04627f4f7d3de0949ff0415a753e65bed684a132e63f1f774292018461d682e__kernel0",
+              "wait_us": 0.18
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.2800000000000002,
+              "name": "te_memset_5a0a32eda276876561d15804319803dd0bf7da3c67a378eab2af4b9b589af7a9__kernel0",
+              "wait_us": 0.24
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.66,
+              "name": "te_memset_61631f07d34817c7a35f16e3d3109826f40e72e381656fdda34c1d289c1b132f__kernel0",
+              "wait_us": 0.06
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.34,
+              "name": "te_memset_d2f05e67ad1fc8b80cd5351db84bab7c147b314657a08f73e9aa7fd24776df6e__kernel0",
+              "wait_us": 0.12
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.26,
+              "name": "te_memset_6d9d1e0cd10593b04c9233bf02bab2ddbfc66478c79c35c092db0c2788f72d38__kernel0",
+              "wait_us": 0.04
+            }
+          ],
+          "top_matmul_shape_signatures": [
+            {
+              "aicore_time_us": 213.60700000000003,
+              "count": 9,
+              "duration_us": 270.73999999999995,
+              "name": "MatMulV2 | \"3840,384;772,384;772\" -> \"3840,772\" | ND;ND;ND -> ND",
+              "wait_us": 0.5800000000000001
+            },
+            {
+              "aicore_time_us": 182.523,
+              "count": 9,
+              "duration_us": 195.24,
+              "name": "MatMulV2 | \"3840,384;1536,384;1536\" -> \"3840,1536\" | ND;ND;ND -> ND",
+              "wait_us": 0.9100000000000001
+            },
+            {
+              "aicore_time_us": 149.69299999999998,
+              "count": 9,
+              "duration_us": 160.84,
+              "name": "MatMulV2 | \"3840,1536;384,1536;384\" -> \"3840,384\" | ND;ND;ND -> ND",
+              "wait_us": 0.37
+            },
+            {
+              "aicore_time_us": 131.627,
+              "count": 2,
+              "duration_us": 135.39999999999998,
+              "name": "MatMulV2 | \"6,3840,16,16;6,13,16,16;196\" -> \"61440,196\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.21
+            },
+            {
+              "aicore_time_us": 101.16,
+              "count": 9,
+              "duration_us": 116.86,
+              "name": "MatMulV2 | \"3840,384;384,384;384\" -> \"3840,384\" | ND;ND;ND -> ND",
+              "wait_us": 0.27
+            },
+            {
+              "aicore_time_us": 87.16300000000001,
+              "count": 2,
+              "duration_us": 106.41999999999999,
+              "name": "MatMulV2 | \"6,3840,16,16;6,24,16,16;384\" -> \"61440,384\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 81.483,
+              "count": 2,
+              "duration_us": 85.58000000000001,
+              "name": "MatMulV2 | \"15360,192;388,192;388\" -> \"15360,388\" | ND;ND;ND -> ND",
+              "wait_us": 0.01
+            },
+            {
+              "aicore_time_us": 42.74,
+              "count": 2,
+              "duration_us": 52.1,
+              "name": "MatMulV2 | \"960,768;1540,768;1540\" -> \"960,1540\" | ND;ND;ND -> ND",
+              "wait_us": 0.03
+            },
+            {
+              "aicore_time_us": 49.72,
+              "count": 2,
+              "duration_us": 51.74,
+              "name": "MatMulV2 | \"15360,768;192,768;192\" -> \"15360,192\" | ND;ND;ND -> ND",
+              "wait_us": 0.17
+            },
+            {
+              "aicore_time_us": 47.808,
+              "count": 2,
+              "duration_us": 51.02,
+              "name": "MatMulV2 | \"15360,192;768,192;768\" -> \"15360,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.15
+            },
+            {
+              "aicore_time_us": 45.315,
+              "count": 2,
+              "duration_us": 49.8,
+              "name": "MatMulV2 | \"960,768;3072,768;3072\" -> \"960,3072\" | ND;ND;ND -> ND",
+              "wait_us": 0.07
+            },
+            {
+              "aicore_time_us": 40.615,
+              "count": 2,
+              "duration_us": 44.38,
+              "name": "MatMulV2 | \"960,3072;768,3072;768\" -> \"960,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.2
+            },
+            {
+              "aicore_time_us": 41.68,
+              "count": 2,
+              "duration_us": 43.980000000000004,
+              "name": "MatMulV2 | \"61440,384;96,384;96\" -> \"61440,96\" | ND;ND;ND -> ND",
+              "wait_us": 0.08
+            },
+            {
+              "aicore_time_us": 39.340999999999994,
+              "count": 2,
+              "duration_us": 42.7,
+              "name": "MatMulV2 | \"15360,192;192,192;192\" -> \"15360,192\" | ND;ND;ND -> ND",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 29.732,
+              "count": 3,
+              "duration_us": 33.02,
+              "name": "MatMulV2 | \"960,768;768,768;768\" -> \"960,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.22999999999999998
+            },
+            {
+              "aicore_time_us": 16.031,
+              "count": 2,
+              "duration_us": 19.5,
+              "name": "MatMulV2 | \"6,3840,16,16;6,6,16,16;96\" -> \"61440,96\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.0
+            }
+          ],
+          "top_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 713.6600000000001,
+              "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\"",
+              "wait_us": 0.68
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 381.9,
+              "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\"",
+              "wait_us": 0.55
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 63,
+              "duration_us": 376.71999999999997,
+              "name": "TransData | \"4,384,16,60\" -> \"4,24,16,60,16\"",
+              "wait_us": 3.2199999999999993
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 314.22,
+              "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\"",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 27,
+              "duration_us": 290.65999999999997,
+              "name": "Gelu | \"4,24,16,60,16\" -> \"4,24,16,60,16\"",
+              "wait_us": 2.4700000000000006
+            },
+            {
+              "aicore_time_us": 213.60700000000003,
+              "count": 9,
+              "duration_us": 270.73999999999995,
+              "name": "MatMulV2 | \"3840,384;772,384;772\" -> \"3840,772\"",
+              "wait_us": 0.5800000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 37,
+              "duration_us": 265.53999999999996,
+              "name": "TransData | \"4,24,16,60,16\" -> \"4,384,16,60\"",
+              "wait_us": 1.4300000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 246.36,
+              "name": "Gelu | \"4,16,60,1536\" -> \"4,16,60,1536\"",
+              "wait_us": 0.29
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 235.16000000000003,
+              "name": "Transpose | \"4,384,16,60;4\" -> \"4,16,60,384\"",
+              "wait_us": 1.42
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 230.92,
+              "name": "AddLayerNorm | \"4,16,60,384;4,16,60,384;384;384\" -> \"4,16,60,384;4,16,60,1;4,16,60,1;4,16,60,384\"",
+              "wait_us": 0.44000000000000006
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 230.8,
+              "name": "ReduceSumD | \"4,384,16,60\" -> \"4,384,16,1\"",
+              "wait_us": 0.23000000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 208.95999999999998,
+              "name": "TransData | \"384,1,7,7\" -> \"49,24,16,16\"",
+              "wait_us": 0.44000000000000006
+            },
+            {
+              "aicore_time_us": 182.523,
+              "count": 9,
+              "duration_us": 195.24,
+              "name": "MatMulV2 | \"3840,384;1536,384;1536\" -> \"3840,1536\"",
+              "wait_us": 0.9100000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 177.68,
+              "name": "Gelu | \"4,64,240,384\" -> \"4,64,240,384\"",
+              "wait_us": 0.13
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 177.38,
+              "name": "LayerNormV3 | \"4,16,60,384;384;384\" -> \"4,16,60,384;4,16,60,1;4,16,60,1\"",
+              "wait_us": 0.23
+            },
+            {
+              "aicore_time_us": 164.208,
+              "count": 9,
+              "duration_us": 175.50000000000003,
+              "name": "Conv2D | \"4,24,16,60,16;1176,1,16,16\" -> \"4,24,16,60,16\"",
+              "wait_us": 0.38
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 166.48000000000002,
+              "name": "TransData | \"25,48,16,16\" -> \"1200,1,16,16\"",
+              "wait_us": 0.1
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 165.0,
+              "name": "Gelu | \"4,6,64,240,16\" -> \"4,6,64,240,16\"",
+              "wait_us": 0.32999999999999996
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 161.39999999999998,
+              "name": "Transpose | \"4,16,60,772;4\" -> \"4,772,16,60\"",
+              "wait_us": 0.68
+            },
+            {
+              "aicore_time_us": 149.69299999999998,
+              "count": 9,
+              "duration_us": 160.84,
+              "name": "MatMulV2 | \"3840,1536;384,1536;384\" -> \"3840,384\"",
+              "wait_us": 0.37
+            }
+          ],
+          "top_transdata_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 713.6600000000001,
+              "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.68
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 381.9,
+              "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.55
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 63,
+              "duration_us": 376.71999999999997,
+              "name": "TransData | \"4,384,16,60\" -> \"4,24,16,60,16\" | NCHW -> NC1HWC0",
+              "wait_us": 3.2199999999999993
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 314.22,
+              "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 37,
+              "duration_us": 265.53999999999996,
+              "name": "TransData | \"4,24,16,60,16\" -> \"4,384,16,60\" | NC1HWC0 -> NCHW",
+              "wait_us": 1.4300000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 208.95999999999998,
+              "name": "TransData | \"384,1,7,7\" -> \"49,24,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.44000000000000006
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 166.48000000000002,
+              "name": "TransData | \"25,48,16,16\" -> \"1200,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.1
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 158.24,
+              "name": "TransData | \"9,24,16,16\" -> \"216,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.55
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 124.11999999999999,
+              "name": "TransData | \"4,96,64,240\" -> \"4,6,64,240,16\" | NCHW -> NC1HWC0",
+              "wait_us": 1.12
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 122.46000000000001,
+              "name": "TransData | \"384,384,1,1\" -> \"24,24,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.35
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 120.38000000000002,
+              "name": "TransData | \"4,6,64,240,16\" -> \"4,96,64,240\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.29
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 95.96000000000001,
+              "name": "TransData | \"4,192,32,120\" -> \"4,12,32,120,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.91
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 87.32,
+              "name": "TransData | \"49,12,16,16\" -> \"588,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:192",
+              "wait_us": 0.06
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 86.9,
+              "name": "TransData | \"4,12,32,120,16\" -> \"4,192,32,120\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.38
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 72.92000000000002,
+              "name": "TransData | \"4,768,8,30\" -> \"4,48,8,30,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.8700000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 68.62,
+              "name": "TransData | \"4,48,8,30,16\" -> \"4,768,8,30\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.56
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 68.32,
+              "name": "TransData | \"9,48,16,16\" -> \"432,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.01
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 62.12,
+              "name": "TransData | \"61440,96\" -> \"6,3840,16,16\" | ND -> FRACTAL_NZ",
+              "wait_us": 0.45
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 53.019999999999996,
+              "name": "TransData | \"768,1,7,7\" -> \"49,48,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.06
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 52.76,
+              "name": "TransData | \"25,12,16,16\" -> \"300,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:192",
+              "wait_us": 0.13
+            }
+          ],
+          "total_aicore_time_us": 2378.7680000000005,
+          "total_duration_us": 13081.900000000003,
+          "total_wait_us": 82.51000000000006,
+          "weighted_cube_utilization_pct": 85.94932265463316
+        },
+        "operator": {
+          "row_count": 12,
+          "top_by_device_total_us": [
+            {
+              "count": 1,
+              "device_total_us": 12996.88,
+              "host_total_us": 1241.88,
+              "name": "unirec.prefill_graph.vision_960x256_b4_fp16"
+            },
+            {
+              "count": 1,
+              "device_total_us": 12996.88,
+              "host_total_us": 1172.7,
+              "name": "cache_compiler inference"
+            },
+            {
+              "count": 1,
+              "device_total_us": 12988.9,
+              "host_total_us": 337.62,
+              "name": "TorchDynamo Cache Lookup"
+            },
+            {
+              "count": 1,
+              "device_total_us": 614.53,
+              "host_total_us": 614.53,
+              "name": "Torch-Compiled Region: 0/2"
+            },
+            {
+              "count": 1,
+              "device_total_us": 336.64,
+              "host_total_us": 336.64,
+              "name": "TorchNpuGraphBase::Run"
+            },
+            {
+              "count": 1,
+              "device_total_us": 142.06,
+              "host_total_us": 142.06,
+              "name": "ExecuteGraph"
+            },
+            {
+              "count": 1,
+              "device_total_us": 64.99,
+              "host_total_us": 64.99,
+              "name": "RefreshAtTensorFromGeTensor"
+            },
+            {
+              "count": 1,
+              "device_total_us": 53.62,
+              "host_total_us": 53.62,
+              "name": "AssembleInputs"
+            },
+            {
+              "count": 1,
+              "device_total_us": 30.01,
+              "host_total_us": 30.01,
+              "name": "aten::empty"
+            },
+            {
+              "count": 1,
+              "device_total_us": 17.6,
+              "host_total_us": 17.6,
+              "name": "aten::set_"
+            },
+            {
+              "count": 1,
+              "device_total_us": 15.9,
+              "host_total_us": 15.9,
+              "name": "empty_tensor"
+            },
+            {
+              "count": 1,
+              "device_total_us": 14.26,
+              "host_total_us": 14.26,
+              "name": "AssembleOutputs"
+            }
+          ],
+          "total_device_us": 40272.27,
+          "total_host_us": 4041.8099999999995
+        }
+      },
+      "profile_steps": 1,
+      "steady_device_event_mean_ms": 13.253889989852905,
+      "weighted_first128_device_s": 0.689202279472351
+    },
+    {
+      "control_after": {
+        "device_event": {
+          "mean_ms": 18.535886001586913,
+          "median_ms": 18.41631031036377,
+          "p05_ms": 18.388458251953125,
+          "p95_ms": 19.07995843887329
+        }
+      },
+      "control_before": {
+        "device_event": {
+          "mean_ms": 18.405526161193848,
+          "median_ms": 18.40877056121826,
+          "p05_ms": 18.377541637420656,
+          "p95_ms": 18.423213481903076
+        }
+      },
+      "first128_calls": 4,
+      "input_contract": {
+        "dtype": "float16",
+        "execution": "compiled_masked_full_vision",
+        "mask_shapes": [
+          [
+            8,
+            1,
+            256,
+            256
+          ],
+          [
+            8,
+            1,
+            128,
+            128
+          ],
+          [
+            8,
+            1,
+            64,
+            64
+          ],
+          [
+            8,
+            1,
+            32,
+            32
+          ],
+          [
+            8,
+            1,
+            16,
+            16
+          ]
+        ],
+        "pixel_values": [
+          8,
+          3,
+          512,
+          512
+        ]
+      },
+      "name": "vision_512x512_b8_fp16",
+      "profile": {
+        "api": {
+          "row_count": 8,
+          "top_apis": [
+            {
+              "avg_us": 187956.393,
+              "count": 4,
+              "max_us": 196100.8,
+              "time_us": 751825.57
+            },
+            {
+              "avg_us": 11.03,
+              "count": 4049,
+              "max_us": 91.97,
+              "time_us": 44661.39
+            },
+            {
+              "avg_us": 9037.0,
+              "count": 2,
+              "max_us": 18065.74,
+              "time_us": 18074.0
+            },
+            {
+              "avg_us": 117.49,
+              "count": 1,
+              "max_us": 117.49,
+              "time_us": 117.49
+            },
+            {
+              "avg_us": 35.0,
+              "count": 1,
+              "max_us": 35.0,
+              "time_us": 35.0
+            },
+            {
+              "avg_us": 22.02,
+              "count": 1,
+              "max_us": 22.02,
+              "time_us": 22.02
+            },
+            {
+              "avg_us": 3.565,
+              "count": 2,
+              "max_us": 5.78,
+              "time_us": 7.13
+            },
+            {
+              "avg_us": 1.08,
+              "count": 1,
+              "max_us": 1.08,
+              "time_us": 1.08
+            }
+          ]
+        },
+        "kernel": {
+          "row_count": 1058,
+          "top_core_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 932,
+              "duration_us": 13435.359999999982,
+              "name": "AI_VECTOR_CORE",
+              "wait_us": 73.63000000000002
+            },
+            {
+              "aicore_time_us": 4469.761000000002,
+              "count": 126,
+              "duration_us": 4858.580000000001,
+              "name": "AI_CORE",
+              "wait_us": 6.84
+            }
+          ],
+          "top_kernel_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 305,
+              "duration_us": 4656.179999999996,
+              "name": "TransData",
+              "wait_us": 38.92999999999999
+            },
+            {
+              "aicore_time_us": 2398.3149999999996,
+              "count": 61,
+              "duration_us": 2590.760000000001,
+              "name": "MatMulV2",
+              "wait_us": 3.3100000000000005
+            },
+            {
+              "aicore_time_us": 2071.446000000001,
+              "count": 65,
+              "duration_us": 2267.82,
+              "name": "Conv2D",
+              "wait_us": 3.53
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 75,
+              "duration_us": 2060.4000000000005,
+              "name": "Gelu",
+              "wait_us": 3.6299999999999994
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 127,
+              "duration_us": 1536.8800000000006,
+              "name": "Mul",
+              "wait_us": 8.28
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 42,
+              "duration_us": 1128.7,
+              "name": "Transpose",
+              "wait_us": 1.8300000000000007
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 62,
+              "duration_us": 981.4000000000001,
+              "name": "AutomaticBufferFusionOp",
+              "wait_us": 3.3999999999999995
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 748.06,
+              "name": "LayerNormV3",
+              "wait_us": 1.3800000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 75,
+              "duration_us": 514.7,
+              "name": "ReduceSumD",
+              "wait_us": 4.029999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 13,
+              "duration_us": 491.96000000000004,
+              "name": "AddLayerNorm",
+              "wait_us": 1.05
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 24,
+              "duration_us": 457.47999999999996,
+              "name": "ConfusionTransposeD",
+              "wait_us": 1.62
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 248.1,
+              "name": "SplitVD",
+              "wait_us": 0.51
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 243.0,
+              "name": "InplaceAddLayerNorm",
+              "wait_us": 0.17
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 117.9,
+              "name": "RealDiv",
+              "wait_us": 0.7600000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 60,
+              "duration_us": 93.52000000000001,
+              "name": "StridedSliceD",
+              "wait_us": 3.039999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 23,
+              "duration_us": 24.560000000000002,
+              "name": "Cast",
+              "wait_us": 1.5
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 20.480000000000004,
+              "name": "te_memset_c5915091bfb49096ccb18078301bc1bb843b986c8a5a4f18113775c18a780cff__kernel0",
+              "wait_us": 0.09000000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 18.540000000000003,
+              "name": "ClipByValueV2",
+              "wait_us": 0.8
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 18.28,
+              "name": "te_memset_00a8d74a61eef3ccfed01a58c41d4b9a57bcbb7bb8a54dfa7ce2f005cb3e54ee__kernel0",
+              "wait_us": 0.45999999999999996
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 17.240000000000002,
+              "name": "Greater",
+              "wait_us": 0.54
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 13.639999999999999,
+              "name": "te_memset_7c44fff972a5f467305c930a3baa6b740e43526ea49cbd6c2a0361cad81c6c87__kernel0",
+              "wait_us": 0.8200000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 10.52,
+              "name": "te_memset_fd0b8bfd78092fa1f04914ba4490a52d36e0616c9ac1582fb25168ee739988ff__kernel0",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 6.4399999999999995,
+              "name": "te_memset_945d6bb5b54bd857c32e617bf2caf3b9454cfb94db8b1a74f5b8f394414d6ab8__kernel0",
+              "wait_us": 0.12
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 4.54,
+              "name": "Data",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 4.52,
+              "name": "te_memset_a113fdda027366378b20e69bc6b225456fa028644a92dae844f18ae8f399cc78__kernel0",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.7199999999999998,
+              "name": "te_memset_619f3a863d0d4b6b62bd43c44e0ca4717ae86e1dce03738f2dff7454d8b2933a__kernel0",
+              "wait_us": 0.06
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.58,
+              "name": "te_memset_5a0a32eda276876561d15804319803dd0bf7da3c67a378eab2af4b9b589af7a9__kernel0",
+              "wait_us": 0.01
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.44,
+              "name": "te_memset_f04627f4f7d3de0949ff0415a753e65bed684a132e63f1f774292018461d682e__kernel0",
+              "wait_us": 0.24
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.7800000000000002,
+              "name": "te_memset_61631f07d34817c7a35f16e3d3109826f40e72e381656fdda34c1d289c1b132f__kernel0",
+              "wait_us": 0.27
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.54,
+              "name": "te_memset_d2f05e67ad1fc8b80cd5351db84bab7c147b314657a08f73e9aa7fd24776df6e__kernel0",
+              "wait_us": 0.01
+            }
+          ],
+          "top_matmul_shape_signatures": [
+            {
+              "aicore_time_us": 432.86299999999994,
+              "count": 9,
+              "duration_us": 445.82,
+              "name": "MatMulV2 | \"8192,384;1536,384;1536\" -> \"8192,1536\" | ND;ND;ND -> ND",
+              "wait_us": 0.44999999999999996
+            },
+            {
+              "aicore_time_us": 310.935,
+              "count": 9,
+              "duration_us": 329.74,
+              "name": "MatMulV2 | \"8192,384;772,384;772\" -> \"8192,772\" | ND;ND;ND -> ND",
+              "wait_us": 0.79
+            },
+            {
+              "aicore_time_us": 287.822,
+              "count": 9,
+              "duration_us": 298.41999999999996,
+              "name": "MatMulV2 | \"8192,1536;384,1536;384\" -> \"8192,384\" | ND;ND;ND -> ND",
+              "wait_us": 0.49
+            },
+            {
+              "aicore_time_us": 267.877,
+              "count": 2,
+              "duration_us": 284.08,
+              "name": "MatMulV2 | \"6,8192,16,16;6,13,16,16;196\" -> \"131072,196\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.05
+            },
+            {
+              "aicore_time_us": 179.77300000000002,
+              "count": 2,
+              "duration_us": 218.28,
+              "name": "MatMulV2 | \"6,8192,16,16;6,24,16,16;384\" -> \"131072,384\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.1
+            },
+            {
+              "aicore_time_us": 152.522,
+              "count": 2,
+              "duration_us": 197.10000000000002,
+              "name": "MatMulV2 | \"32768,192;388,192;388\" -> \"32768,388\" | ND;ND;ND -> ND",
+              "wait_us": 0.03
+            },
+            {
+              "aicore_time_us": 182.072,
+              "count": 9,
+              "duration_us": 194.88000000000002,
+              "name": "MatMulV2 | \"8192,384;384,384;384\" -> \"8192,384\" | ND;ND;ND -> ND",
+              "wait_us": 0.37
+            },
+            {
+              "aicore_time_us": 87.762,
+              "count": 2,
+              "duration_us": 90.4,
+              "name": "MatMulV2 | \"32768,768;192,768;192\" -> \"32768,192\" | ND;ND;ND -> ND",
+              "wait_us": 0.060000000000000005
+            },
+            {
+              "aicore_time_us": 86.623,
+              "count": 2,
+              "duration_us": 89.58000000000001,
+              "name": "MatMulV2 | \"32768,192;768,192;768\" -> \"32768,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.21000000000000002
+            },
+            {
+              "aicore_time_us": 72.896,
+              "count": 2,
+              "duration_us": 84.82,
+              "name": "MatMulV2 | \"2048,768;1540,768;1540\" -> \"2048,1540\" | ND;ND;ND -> ND",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 76.561,
+              "count": 2,
+              "duration_us": 80.03999999999999,
+              "name": "MatMulV2 | \"2048,768;3072,768;3072\" -> \"2048,3072\" | ND;ND;ND -> ND",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 76.709,
+              "count": 2,
+              "duration_us": 79.66,
+              "name": "MatMulV2 | \"131072,384;96,384;96\" -> \"131072,96\" | ND;ND;ND -> ND",
+              "wait_us": 0.18
+            },
+            {
+              "aicore_time_us": 71.118,
+              "count": 2,
+              "duration_us": 74.46000000000001,
+              "name": "MatMulV2 | \"2048,3072;768,3072;768\" -> \"2048,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.31
+            },
+            {
+              "aicore_time_us": 49.501000000000005,
+              "count": 2,
+              "duration_us": 52.18000000000001,
+              "name": "MatMulV2 | \"32768,192;192,192;192\" -> \"32768,192\" | ND;ND;ND -> ND",
+              "wait_us": 0.02
+            },
+            {
+              "aicore_time_us": 44.139,
+              "count": 3,
+              "duration_us": 47.94,
+              "name": "MatMulV2 | \"2048,768;768,768;768\" -> \"2048,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.08
+            },
+            {
+              "aicore_time_us": 19.142,
+              "count": 2,
+              "duration_us": 23.36,
+              "name": "MatMulV2 | \"6,8192,16,16;6,6,16,16;96\" -> \"131072,96\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.17
+            }
+          ],
+          "top_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 714.76,
+              "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\"",
+              "wait_us": 0.54
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 464.8,
+              "name": "Gelu | \"8,32,32,1536\" -> \"8,32,32,1536\"",
+              "wait_us": 0.14
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 27,
+              "duration_us": 447.0000000000001,
+              "name": "Gelu | \"8,24,32,32,16\" -> \"8,24,32,32,16\"",
+              "wait_us": 2.1100000000000003
+            },
+            {
+              "aicore_time_us": 432.86299999999994,
+              "count": 9,
+              "duration_us": 445.82,
+              "name": "MatMulV2 | \"8192,384;1536,384;1536\" -> \"8192,1536\"",
+              "wait_us": 0.44999999999999996
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 63,
+              "duration_us": 437.65999999999997,
+              "name": "TransData | \"8,384,32,32\" -> \"8,24,32,32,16\"",
+              "wait_us": 3.289999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 383.38000000000005,
+              "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\"",
+              "wait_us": 0.46
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 356.58,
+              "name": "Gelu | \"8,128,128,384\" -> \"8,128,128,384\"",
+              "wait_us": 0.09
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 37,
+              "duration_us": 351.71999999999997,
+              "name": "TransData | \"8,24,32,32,16\" -> \"8,384,32,32\"",
+              "wait_us": 1.9700000000000002
+            },
+            {
+              "aicore_time_us": 310.935,
+              "count": 9,
+              "duration_us": 329.74,
+              "name": "MatMulV2 | \"8192,384;772,384;772\" -> \"8192,772\"",
+              "wait_us": 0.79
+            },
+            {
+              "aicore_time_us": 314.94599999999997,
+              "count": 9,
+              "duration_us": 326.50000000000006,
+              "name": "Conv2D | \"8,24,32,32,16;1176,1,16,16\" -> \"8,24,32,32,16\"",
+              "wait_us": 0.36
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 322.4,
+              "name": "AddLayerNorm | \"8,32,32,384;8,32,32,384;384;384\" -> \"8,32,32,384;8,32,32,1;8,32,32,1;8,32,32,384\"",
+              "wait_us": 0.8400000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 315.14,
+              "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\"",
+              "wait_us": 0.23
+            },
+            {
+              "aicore_time_us": 287.822,
+              "count": 9,
+              "duration_us": 298.41999999999996,
+              "name": "MatMulV2 | \"8192,1536;384,1536;384\" -> \"8192,384\"",
+              "wait_us": 0.49
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 289.34,
+              "name": "Gelu | \"8,6,128,128,16\" -> \"8,6,128,128,16\"",
+              "wait_us": 0.14
+            },
+            {
+              "aicore_time_us": 281.72799999999995,
+              "count": 2,
+              "duration_us": 286.0,
+              "name": "Conv2D | \"8,6,128,128,16;294,1,16,16\" -> \"8,6,128,128,16\"",
+              "wait_us": 0.03
+            },
+            {
+              "aicore_time_us": 267.877,
+              "count": 2,
+              "duration_us": 284.08,
+              "name": "MatMulV2 | \"6,8192,16,16;6,13,16,16;196\" -> \"131072,196\"",
+              "wait_us": 0.05
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 281.14,
+              "name": "LayerNormV3 | \"8,32,32,384;384;384\" -> \"8,32,32,384;8,32,32,1;8,32,32,1\"",
+              "wait_us": 0.55
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 261.92,
+              "name": "Transpose | \"8,32,32,772;4\" -> \"8,772,32,32\"",
+              "wait_us": 0.25
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 243.0,
+              "name": "InplaceAddLayerNorm | \"8,128,128,96;8,128,128,96;96;96\" -> \"8,128,128,96;8,128,128,1;8,128,128,1;8,128,128,96\"",
+              "wait_us": 0.17
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 221.95999999999998,
+              "name": "Transpose | \"8,128,128,196;4\" -> \"8,196,128,128\"",
+              "wait_us": 0.16999999999999998
+            }
+          ],
+          "top_transdata_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 714.76,
+              "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.54
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 63,
+              "duration_us": 437.65999999999997,
+              "name": "TransData | \"8,384,32,32\" -> \"8,24,32,32,16\" | NCHW -> NC1HWC0",
+              "wait_us": 3.289999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 383.38000000000005,
+              "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.46
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 37,
+              "duration_us": 351.71999999999997,
+              "name": "TransData | \"8,24,32,32,16\" -> \"8,384,32,32\" | NC1HWC0 -> NCHW",
+              "wait_us": 1.9700000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 315.14,
+              "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.23
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 206.04,
+              "name": "TransData | \"384,1,7,7\" -> \"49,24,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.8200000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 204.11999999999998,
+              "name": "TransData | \"8,96,128,128\" -> \"8,6,128,128,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.7900000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 166.36,
+              "name": "TransData | \"25,48,16,16\" -> \"1200,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.06
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 160.54000000000002,
+              "name": "TransData | \"9,24,16,16\" -> \"216,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.42000000000000004
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 158.98000000000002,
+              "name": "TransData | \"8,6,128,128,16\" -> \"8,96,128,128\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.41000000000000003
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 121.43999999999998,
+              "name": "TransData | \"8,192,64,64\" -> \"8,12,64,64,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.53
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 119.88,
+              "name": "TransData | \"384,384,1,1\" -> \"24,24,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.16999999999999998
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 107.96000000000001,
+              "name": "TransData | \"8,12,64,64,16\" -> \"8,192,64,64\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.47000000000000003
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 96.48,
+              "name": "TransData | \"131072,96\" -> \"6,8192,16,16\" | ND -> FRACTAL_NZ",
+              "wait_us": 0.39
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 87.18,
+              "name": "TransData | \"49,12,16,16\" -> \"588,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:192",
+              "wait_us": 0.03
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 84.03999999999999,
+              "name": "TransData | \"8,768,16,16\" -> \"8,48,16,16,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.98
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 83.66,
+              "name": "TransData | \"8,48,16,16,16\" -> \"8,768,16,16\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.59
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 68.86,
+              "name": "TransData | \"9,48,16,16\" -> \"432,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 58.78,
+              "name": "TransData | \"25,12,16,16\" -> \"300,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:192",
+              "wait_us": 0.26
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 53.54,
+              "name": "TransData | \"768,1,7,7\" -> \"49,48,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.05
+            }
+          ],
+          "total_aicore_time_us": 4469.761000000002,
+          "total_duration_us": 18293.93999999999,
+          "total_wait_us": 80.46999999999998,
+          "weighted_cube_utilization_pct": 88.20212716061071
+        },
+        "operator": {
+          "row_count": 12,
+          "top_by_device_total_us": [
+            {
+              "count": 1,
+              "device_total_us": 18205.54,
+              "host_total_us": 1316.31,
+              "name": "unirec.prefill_graph.vision_512x512_b8_fp16"
+            },
+            {
+              "count": 1,
+              "device_total_us": 18205.54,
+              "host_total_us": 1244.21,
+              "name": "cache_compiler inference"
+            },
+            {
+              "count": 1,
+              "device_total_us": 18197.2,
+              "host_total_us": 344.58,
+              "name": "TorchDynamo Cache Lookup"
+            },
+            {
+              "count": 1,
+              "device_total_us": 645.63,
+              "host_total_us": 645.63,
+              "name": "Torch-Compiled Region: 0/3"
+            },
+            {
+              "count": 1,
+              "device_total_us": 365.34,
+              "host_total_us": 365.34,
+              "name": "TorchNpuGraphBase::Run"
+            },
+            {
+              "count": 1,
+              "device_total_us": 166.46,
+              "host_total_us": 166.46,
+              "name": "ExecuteGraph"
+            },
+            {
+              "count": 1,
+              "device_total_us": 62.82,
+              "host_total_us": 62.82,
+              "name": "RefreshAtTensorFromGeTensor"
+            },
+            {
+              "count": 1,
+              "device_total_us": 54.66,
+              "host_total_us": 54.66,
+              "name": "AssembleInputs"
+            },
+            {
+              "count": 1,
+              "device_total_us": 29.26,
+              "host_total_us": 29.26,
+              "name": "aten::empty"
+            },
+            {
+              "count": 1,
+              "device_total_us": 16.62,
+              "host_total_us": 16.62,
+              "name": "AssembleOutputs"
+            },
+            {
+              "count": 1,
+              "device_total_us": 16.22,
+              "host_total_us": 16.22,
+              "name": "aten::set_"
+            },
+            {
+              "count": 1,
+              "device_total_us": 16.06,
+              "host_total_us": 16.06,
+              "name": "empty_tensor"
+            }
+          ],
+          "total_device_us": 55981.35,
+          "total_host_us": 4278.17
+        }
+      },
+      "profile_steps": 1,
+      "steady_device_event_mean_ms": 18.470706081390382,
+      "weighted_first128_device_s": 0.07388282432556154
+    },
+    {
+      "control_after": {
+        "device_event": {
+          "mean_ms": 18.437479972839355,
+          "median_ms": 18.315699577331543,
+          "p05_ms": 18.292436599731445,
+          "p95_ms": 18.983129501342773
+        }
+      },
+      "control_before": {
+        "device_event": {
+          "mean_ms": 18.286494064331055,
+          "median_ms": 18.29000949859619,
+          "p05_ms": 18.25318851470947,
+          "p95_ms": 18.309159660339354
+        }
+      },
+      "first128_calls": 12,
+      "input_contract": {
+        "dtype": "float16",
+        "execution": "compiled_masked_full_vision",
+        "mask_shapes": [
+          [
+            4,
+            1,
+            256,
+            480
+          ],
+          [
+            4,
+            1,
+            128,
+            240
+          ],
+          [
+            4,
+            1,
+            64,
+            120
+          ],
+          [
+            4,
+            1,
+            32,
+            60
+          ],
+          [
+            4,
+            1,
+            16,
+            30
+          ]
+        ],
+        "pixel_values": [
+          4,
+          3,
+          512,
+          960
+        ]
+      },
+      "name": "vision_960x512_b4_fp16",
+      "profile": {
+        "api": {
+          "row_count": 8,
+          "top_apis": [
+            {
+              "avg_us": 187370.39,
+              "count": 5,
+              "max_us": 196100.8,
+              "time_us": 936851.95
+            },
+            {
+              "avg_us": 11.084,
+              "count": 5061,
+              "max_us": 96.91,
+              "time_us": 56095.47
+            },
+            {
+              "avg_us": 8958.865,
+              "count": 2,
+              "max_us": 17909.86,
+              "time_us": 17917.73
+            },
+            {
+              "avg_us": 95.46,
+              "count": 1,
+              "max_us": 95.46,
+              "time_us": 95.46
+            },
+            {
+              "avg_us": 37.95,
+              "count": 1,
+              "max_us": 37.95,
+              "time_us": 37.95
+            },
+            {
+              "avg_us": 12.02,
+              "count": 2,
+              "max_us": 17.75,
+              "time_us": 24.04
+            },
+            {
+              "avg_us": 20.35,
+              "count": 1,
+              "max_us": 20.35,
+              "time_us": 20.35
+            },
+            {
+              "avg_us": 0.9,
+              "count": 1,
+              "max_us": 0.9,
+              "time_us": 0.9
+            }
+          ]
+        },
+        "kernel": {
+          "row_count": 1058,
+          "top_core_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 932,
+              "duration_us": 13284.300000000005,
+              "name": "AI_VECTOR_CORE",
+              "wait_us": 76.38000000000007
+            },
+            {
+              "aicore_time_us": 4502.076999999999,
+              "count": 126,
+              "duration_us": 4884.2,
+              "name": "AI_CORE",
+              "wait_us": 7.269999999999999
+            }
+          ],
+          "top_kernel_types": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 305,
+              "duration_us": 4597.5199999999995,
+              "name": "TransData",
+              "wait_us": 43.9
+            },
+            {
+              "aicore_time_us": 2397.1039999999994,
+              "count": 61,
+              "duration_us": 2568.7200000000007,
+              "name": "MatMulV2",
+              "wait_us": 3.959999999999999
+            },
+            {
+              "aicore_time_us": 2104.973,
+              "count": 65,
+              "duration_us": 2315.4800000000005,
+              "name": "Conv2D",
+              "wait_us": 3.3099999999999996
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 75,
+              "duration_us": 1948.6799999999998,
+              "name": "Gelu",
+              "wait_us": 3.5299999999999994
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 127,
+              "duration_us": 1499.46,
+              "name": "Mul",
+              "wait_us": 6.809999999999996
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 62,
+              "duration_us": 1378.94,
+              "name": "Transpose",
+              "wait_us": 3.8600000000000003
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 62,
+              "duration_us": 986.4999999999999,
+              "name": "AutomaticBufferFusionOp",
+              "wait_us": 3.8099999999999996
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 75,
+              "duration_us": 821.9599999999999,
+              "name": "ReduceSumD",
+              "wait_us": 4.069999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 18,
+              "duration_us": 708.8,
+              "name": "LayerNormV3",
+              "wait_us": 0.52
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 653.4200000000001,
+              "name": "AddLayerNorm",
+              "wait_us": 0.7000000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 250.26000000000005,
+              "name": "SplitVD",
+              "wait_us": 0.6600000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 4,
+              "duration_us": 101.8,
+              "name": "ConfusionTransposeD",
+              "wait_us": 0.26
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 60,
+              "duration_us": 91.53999999999999,
+              "name": "StridedSliceD",
+              "wait_us": 3.149999999999999
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 90.7,
+              "name": "RealDiv",
+              "wait_us": 0.4
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 23,
+              "duration_us": 24.1,
+              "name": "Cast",
+              "wait_us": 1.01
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 19.959999999999997,
+              "name": "te_memset_c5915091bfb49096ccb18078301bc1bb843b986c8a5a4f18113775c18a780cff__kernel0",
+              "wait_us": 0.53
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 18.119999999999997,
+              "name": "te_memset_00a8d74a61eef3ccfed01a58c41d4b9a57bcbb7bb8a54dfa7ce2f005cb3e54ee__kernel0",
+              "wait_us": 0.38
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 17.46,
+              "name": "ClipByValueV2",
+              "wait_us": 0.39999999999999997
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 15,
+              "duration_us": 16.7,
+              "name": "Greater",
+              "wait_us": 1.01
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 13.42,
+              "name": "te_memset_7c44fff972a5f467305c930a3baa6b740e43526ea49cbd6c2a0361cad81c6c87__kernel0",
+              "wait_us": 0.41000000000000003
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 10.66,
+              "name": "te_memset_fd0b8bfd78092fa1f04914ba4490a52d36e0616c9ac1582fb25168ee739988ff__kernel0",
+              "wait_us": 0.21000000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 6.4399999999999995,
+              "name": "te_memset_945d6bb5b54bd857c32e617bf2caf3b9454cfb94db8b1a74f5b8f394414d6ab8__kernel0",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 4.88,
+              "name": "Data",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 4.58,
+              "name": "te_memset_a113fdda027366378b20e69bc6b225456fa028644a92dae844f18ae8f399cc78__kernel0",
+              "wait_us": 0.27
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.6799999999999997,
+              "name": "te_memset_619f3a863d0d4b6b62bd43c44e0ca4717ae86e1dce03738f2dff7454d8b2933a__kernel0",
+              "wait_us": 0.22
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.56,
+              "name": "te_memset_f04627f4f7d3de0949ff0415a753e65bed684a132e63f1f774292018461d682e__kernel0",
+              "wait_us": 0.04
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 3.32,
+              "name": "te_memset_5a0a32eda276876561d15804319803dd0bf7da3c67a378eab2af4b9b589af7a9__kernel0",
+              "wait_us": 0.11
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.8600000000000003,
+              "name": "te_memset_61631f07d34817c7a35f16e3d3109826f40e72e381656fdda34c1d289c1b132f__kernel0",
+              "wait_us": 0.11
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.64,
+              "name": "te_memset_d2f05e67ad1fc8b80cd5351db84bab7c147b314657a08f73e9aa7fd24776df6e__kernel0",
+              "wait_us": 0.0
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 2.34,
+              "name": "te_memset_6d9d1e0cd10593b04c9233bf02bab2ddbfc66478c79c35c092db0c2788f72d38__kernel0",
+              "wait_us": 0.01
+            }
+          ],
+          "top_matmul_shape_signatures": [
+            {
+              "aicore_time_us": 423.738,
+              "count": 9,
+              "duration_us": 436.3,
+              "name": "MatMulV2 | \"7680,384;1536,384;1536\" -> \"7680,1536\" | ND;ND;ND -> ND",
+              "wait_us": 0.6900000000000001
+            },
+            {
+              "aicore_time_us": 380.44899999999996,
+              "count": 9,
+              "duration_us": 400.7,
+              "name": "MatMulV2 | \"7680,384;772,384;772\" -> \"7680,772\" | ND;ND;ND -> ND",
+              "wait_us": 0.55
+            },
+            {
+              "aicore_time_us": 290.866,
+              "count": 9,
+              "duration_us": 301.14,
+              "name": "MatMulV2 | \"7680,1536;384,1536;384\" -> \"7680,384\" | ND;ND;ND -> ND",
+              "wait_us": 0.19
+            },
+            {
+              "aicore_time_us": 250.885,
+              "count": 2,
+              "duration_us": 260.22,
+              "name": "MatMulV2 | \"6,7680,16,16;6,13,16,16;196\" -> \"122880,196\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.11
+            },
+            {
+              "aicore_time_us": 167.631,
+              "count": 2,
+              "duration_us": 203.32,
+              "name": "MatMulV2 | \"6,7680,16,16;6,24,16,16;384\" -> \"122880,384\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.22
+            },
+            {
+              "aicore_time_us": 175.61899999999997,
+              "count": 9,
+              "duration_us": 189.3,
+              "name": "MatMulV2 | \"7680,384;384,384;384\" -> \"7680,384\" | ND;ND;ND -> ND",
+              "wait_us": 0.32
+            },
+            {
+              "aicore_time_us": 142.51999999999998,
+              "count": 2,
+              "duration_us": 179.28,
+              "name": "MatMulV2 | \"30720,192;388,192;388\" -> \"30720,388\" | ND;ND;ND -> ND",
+              "wait_us": 0.08
+            },
+            {
+              "aicore_time_us": 85.39699999999999,
+              "count": 2,
+              "duration_us": 87.68,
+              "name": "MatMulV2 | \"30720,768;192,768;192\" -> \"30720,192\" | ND;ND;ND -> ND",
+              "wait_us": 0.12
+            },
+            {
+              "aicore_time_us": 83.832,
+              "count": 2,
+              "duration_us": 86.74000000000001,
+              "name": "MatMulV2 | \"30720,192;768,192;768\" -> \"30720,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.14
+            },
+            {
+              "aicore_time_us": 72.72800000000001,
+              "count": 2,
+              "duration_us": 82.92,
+              "name": "MatMulV2 | \"1920,768;1540,768;1540\" -> \"1920,1540\" | ND;ND;ND -> ND",
+              "wait_us": 0.2
+            },
+            {
+              "aicore_time_us": 71.575,
+              "count": 2,
+              "duration_us": 74.22,
+              "name": "MatMulV2 | \"122880,384;96,384;96\" -> \"122880,96\" | ND;ND;ND -> ND",
+              "wait_us": 0.13
+            },
+            {
+              "aicore_time_us": 71.55199999999999,
+              "count": 2,
+              "duration_us": 73.69999999999999,
+              "name": "MatMulV2 | \"1920,768;3072,768;3072\" -> \"1920,3072\" | ND;ND;ND -> ND",
+              "wait_us": 0.19
+            },
+            {
+              "aicore_time_us": 67.005,
+              "count": 2,
+              "duration_us": 69.6,
+              "name": "MatMulV2 | \"1920,3072;768,3072;768\" -> \"1920,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.37
+            },
+            {
+              "aicore_time_us": 48.754999999999995,
+              "count": 2,
+              "duration_us": 51.36,
+              "name": "MatMulV2 | \"30720,192;192,192;192\" -> \"30720,192\" | ND;ND;ND -> ND",
+              "wait_us": 0.22
+            },
+            {
+              "aicore_time_us": 43.611,
+              "count": 3,
+              "duration_us": 47.599999999999994,
+              "name": "MatMulV2 | \"1920,768;768,768;768\" -> \"1920,768\" | ND;ND;ND -> ND",
+              "wait_us": 0.33999999999999997
+            },
+            {
+              "aicore_time_us": 20.941000000000003,
+              "count": 2,
+              "duration_us": 24.64,
+              "name": "MatMulV2 | \"6,7680,16,16;6,6,16,16;96\" -> \"122880,96\" | FRACTAL_NZ;FRACTAL_NZ;ND -> ND",
+              "wait_us": 0.09
+            }
+          ],
+          "top_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 712.3599999999999,
+              "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\"",
+              "wait_us": 0.51
+            },
+            {
+              "aicore_time_us": 423.738,
+              "count": 9,
+              "duration_us": 436.3,
+              "name": "MatMulV2 | \"7680,384;1536,384;1536\" -> \"7680,1536\"",
+              "wait_us": 0.6900000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 428.94,
+              "name": "Gelu | \"4,32,60,1536\" -> \"4,32,60,1536\"",
+              "wait_us": 0.3
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 27,
+              "duration_us": 428.5399999999999,
+              "name": "Gelu | \"4,24,32,60,16\" -> \"4,24,32,60,16\"",
+              "wait_us": 1.4300000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 63,
+              "duration_us": 414.3199999999999,
+              "name": "TransData | \"4,384,32,60\" -> \"4,24,32,60,16\"",
+              "wait_us": 3.810000000000001
+            },
+            {
+              "aicore_time_us": 380.44899999999996,
+              "count": 9,
+              "duration_us": 400.7,
+              "name": "MatMulV2 | \"7680,384;772,384;772\" -> \"7680,772\"",
+              "wait_us": 0.55
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 378.2,
+              "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\"",
+              "wait_us": 0.5
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 371.70000000000005,
+              "name": "ReduceSumD | \"4,384,32,60\" -> \"4,384,32,1\"",
+              "wait_us": 0.19999999999999998
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 37,
+              "duration_us": 348.28000000000003,
+              "name": "TransData | \"4,24,32,60,16\" -> \"4,384,32,60\"",
+              "wait_us": 2.3700000000000006
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 336.52,
+              "name": "Gelu | \"4,128,240,384\" -> \"4,128,240,384\"",
+              "wait_us": 0.02
+            },
+            {
+              "aicore_time_us": 321.41200000000003,
+              "count": 9,
+              "duration_us": 331.22,
+              "name": "Conv2D | \"4,24,32,60,16;1176,1,16,16\" -> \"4,24,32,60,16\"",
+              "wait_us": 0.15000000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 313.72,
+              "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\"",
+              "wait_us": 0.09
+            },
+            {
+              "aicore_time_us": 290.866,
+              "count": 9,
+              "duration_us": 301.14,
+              "name": "MatMulV2 | \"7680,1536;384,1536;384\" -> \"7680,384\"",
+              "wait_us": 0.19
+            },
+            {
+              "aicore_time_us": 280.421,
+              "count": 2,
+              "duration_us": 283.65999999999997,
+              "name": "Conv2D | \"4,6,128,240,16;294,1,16,16\" -> \"4,6,128,240,16\"",
+              "wait_us": 0.06
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 277.85999999999996,
+              "name": "Gelu | \"4,6,128,240,16\" -> \"4,6,128,240,16\"",
+              "wait_us": 0.46
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 266.40000000000003,
+              "name": "LayerNormV3 | \"4,32,60,384;384;384\" -> \"4,32,60,384;4,32,60,1;4,32,60,1\"",
+              "wait_us": 0.32000000000000006
+            },
+            {
+              "aicore_time_us": 250.885,
+              "count": 2,
+              "duration_us": 260.22,
+              "name": "MatMulV2 | \"6,7680,16,16;6,13,16,16;196\" -> \"122880,196\"",
+              "wait_us": 0.11
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 259.68,
+              "name": "AddLayerNorm | \"4,32,60,384;4,32,60,384;384;384\" -> \"4,32,60,384;4,32,60,1;4,32,60,1;4,32,60,384\"",
+              "wait_us": 0.55
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 257.5,
+              "name": "Transpose | \"4,32,60,772;4\" -> \"4,772,32,60\"",
+              "wait_us": 0.66
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 244.54,
+              "name": "AddLayerNorm | \"4,128,240,96;4,128,240,96;96;96\" -> \"4,128,240,96;4,128,240,1;4,128,240,1;4,128,240,96\"",
+              "wait_us": 0.13
+            }
+          ],
+          "top_transdata_shape_signatures": [
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 712.3599999999999,
+              "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.51
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 63,
+              "duration_us": 414.3199999999999,
+              "name": "TransData | \"4,384,32,60\" -> \"4,24,32,60,16\" | NCHW -> NC1HWC0",
+              "wait_us": 3.810000000000001
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 378.2,
+              "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.5
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 37,
+              "duration_us": 348.28000000000003,
+              "name": "TransData | \"4,24,32,60,16\" -> \"4,384,32,60\" | NC1HWC0 -> NCHW",
+              "wait_us": 2.3700000000000006
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 313.72,
+              "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.09
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 208.32,
+              "name": "TransData | \"384,1,7,7\" -> \"49,24,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.17
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 190.74000000000004,
+              "name": "TransData | \"4,96,128,240\" -> \"4,6,128,240,16\" | NCHW -> NC1HWC0",
+              "wait_us": 0.38
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 170.68,
+              "name": "TransData | \"25,48,16,16\" -> \"1200,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.1
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 158.7,
+              "name": "TransData | \"4,6,128,240,16\" -> \"4,96,128,240\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.4
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 157.83999999999997,
+              "name": "TransData | \"9,24,16,16\" -> \"216,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:384",
+              "wait_us": 0.51
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 123.0,
+              "name": "TransData | \"384,384,1,1\" -> \"24,24,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.92
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 115.66,
+              "name": "TransData | \"4,192,64,120\" -> \"4,12,64,120,16\" | NCHW -> NC1HWC0",
+              "wait_us": 1.01
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 112.83999999999999,
+              "name": "TransData | \"4,12,64,120,16\" -> \"4,192,64,120\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.73
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 14,
+              "duration_us": 94.53999999999999,
+              "name": "TransData | \"4,768,16,30\" -> \"4,48,16,30,16\" | NCHW -> NC1HWC0",
+              "wait_us": 1.4200000000000002
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 87.44,
+              "name": "TransData | \"49,12,16,16\" -> \"588,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:192",
+              "wait_us": 0.06
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 6,
+              "duration_us": 86.62,
+              "name": "TransData | \"122880,96\" -> \"6,7680,16,16\" | ND -> FRACTAL_NZ",
+              "wait_us": 0.33000000000000007
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 69.58,
+              "name": "TransData | \"9,48,16,16\" -> \"432,1,16,16\" | FRACTAL_Z -> FRACTAL_Z:768",
+              "wait_us": 0.07
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 9,
+              "duration_us": 66.74000000000001,
+              "name": "TransData | \"4,48,16,30,16\" -> \"4,768,16,30\" | NC1HWC0 -> NCHW",
+              "wait_us": 0.36
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 53.04,
+              "name": "TransData | \"768,1,7,7\" -> \"49,48,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.06
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 2,
+              "duration_us": 50.480000000000004,
+              "name": "TransData | \"192,1,7,7\" -> \"49,12,16,16\" | NCHW -> FRACTAL_Z",
+              "wait_us": 0.0
+            }
+          ],
+          "total_aicore_time_us": 4502.076999999999,
+          "total_duration_us": 18168.500000000004,
+          "total_wait_us": 83.65000000000008,
+          "weighted_cube_utilization_pct": 89.93958229392733
+        },
+        "operator": {
+          "row_count": 12,
+          "top_by_device_total_us": [
+            {
+              "count": 1,
+              "device_total_us": 18079.98,
+              "host_total_us": 1269.52,
+              "name": "unirec.prefill_graph.vision_960x512_b4_fp16"
+            },
+            {
+              "count": 1,
+              "device_total_us": 18079.98,
+              "host_total_us": 1196.54,
+              "name": "cache_compiler inference"
+            },
+            {
+              "count": 1,
+              "device_total_us": 18072.04,
+              "host_total_us": 344.22,
+              "name": "TorchDynamo Cache Lookup"
+            },
+            {
+              "count": 1,
+              "device_total_us": 625.87,
+              "host_total_us": 625.87,
+              "name": "Torch-Compiled Region: 0/4"
+            },
+            {
+              "count": 1,
+              "device_total_us": 350.04,
+              "host_total_us": 350.04,
+              "name": "TorchNpuGraphBase::Run"
+            },
+            {
+              "count": 1,
+              "device_total_us": 158.08,
+              "host_total_us": 158.08,
+              "name": "ExecuteGraph"
+            },
+            {
+              "count": 1,
+              "device_total_us": 63.89,
+              "host_total_us": 63.89,
+              "name": "RefreshAtTensorFromGeTensor"
+            },
+            {
+              "count": 1,
+              "device_total_us": 51.05,
+              "host_total_us": 51.05,
+              "name": "AssembleInputs"
+            },
+            {
+              "count": 1,
+              "device_total_us": 29.68,
+              "host_total_us": 29.68,
+              "name": "aten::empty"
+            },
+            {
+              "count": 1,
+              "device_total_us": 17.9,
+              "host_total_us": 17.9,
+              "name": "aten::set_"
+            },
+            {
+              "count": 1,
+              "device_total_us": 16.31,
+              "host_total_us": 16.31,
+              "name": "AssembleOutputs"
+            },
+            {
+              "count": 1,
+              "device_total_us": 15.7,
+              "host_total_us": 15.7,
+              "name": "empty_tensor"
+            }
+          ],
+          "total_device_us": 55560.520000000004,
+          "total_host_us": 4138.799999999999
+        }
+      },
+      "profile_steps": 1,
+      "steady_device_event_mean_ms": 18.361987018585204,
+      "weighted_first128_device_s": 0.22034384422302244
+    },
+    {
+      "control_after": {
+        "device_event": {
+          "mean_ms": 0.37945000231266024,
+          "median_ms": 0.3344700038433075,
+          "p05_ms": 0.3157960116863251,
+          "p95_ms": 0.5914490073919293
+        }
+      },
+      "control_before": {
+        "device_event": {
+          "mean_ms": 0.35506999492645264,
+          "median_ms": 0.35019999742507935,
+          "p05_ms": 0.3252139911055565,
+          "p95_ms": 0.3906409919261932
+        }
+      },
+      "first128_calls": 126,
+      "input_contract": {
+        "dtype": "float16",
+        "encoder_hidden_states": [
+          1,
+          1024,
+          768
+        ],
+        "execution": "compiled_packed_cross_kv"
+      },
+      "name": "cross_kv_packed_b1_s1024_fp16",
+      "profile": {
+        "api": {
+          "row_count": 8,
+          "top_apis": [
+            {
+              "avg_us": 157597.98,
+              "count": 6,
+              "max_us": 196100.8,
+              "time_us": 945587.88
+            },
+            {
+              "avg_us": 11.15,
+              "count": 5085,
+              "max_us": 283.61,
+              "time_us": 56695.87
+            },
+            {
+              "avg_us": 97.52,
+              "count": 1,
+              "max_us": 97.52,
+              "time_us": 97.52
+            },
+            {
+              "avg_us": 63.01,
+              "count": 1,
+              "max_us": 63.01,
+              "time_us": 63.01
+            },
+            {
+              "avg_us": 22.605,
+              "count": 2,
+              "max_us": 34.82,
+              "time_us": 45.21
+            },
+            {
+              "avg_us": 41.21,
+              "count": 1,
+              "max_us": 41.21,
+              "time_us": 41.21
+            },
+            {
+              "avg_us": 11.9,
+              "count": 2,
+              "max_us": 15.89,
+              "time_us": 23.8
+            },
+            {
+              "avg_us": 1.26,
+              "count": 1,
+              "max_us": 1.26,
+              "time_us": 1.26
+            }
+          ]
+        },
+        "kernel": {
+          "row_count": 25,
+          "top_core_types": [
+            {
+              "aicore_time_us": 78.243,
+              "count": 12,
+              "duration_us": 93.2,
+              "name": "AI_CORE",
+              "wait_us": 41.100000000000016
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 13,
+              "duration_us": 53.540000000000006,
+              "name": "AI_VECTOR_CORE",
+              "wait_us": 0.33
+            }
+          ],
+          "top_kernel_types": [
+            {
+              "aicore_time_us": 78.243,
+              "count": 12,
+              "duration_us": 93.2,
+              "name": "MatMulV2",
+              "wait_us": 41.100000000000016
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 12,
+              "duration_us": 50.56,
+              "name": "Transpose",
+              "wait_us": 0.33
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 2.98,
+              "name": "Data",
+              "wait_us": 0.0
+            }
+          ],
+          "top_matmul_shape_signatures": [
+            {
+              "aicore_time_us": 78.243,
+              "count": 12,
+              "duration_us": 93.2,
+              "name": "MatMulV2 | \"1024,768;768,768;768\" -> \"1024,768\" | ND;ND;ND -> ND",
+              "wait_us": 41.100000000000016
+            }
+          ],
+          "top_shape_signatures": [
+            {
+              "aicore_time_us": 78.243,
+              "count": 12,
+              "duration_us": 93.2,
+              "name": "MatMulV2 | \"1024,768;768,768;768\" -> \"1024,768\"",
+              "wait_us": 41.100000000000016
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 12,
+              "duration_us": 50.56,
+              "name": "Transpose | \"1024,6,128;3\" -> \"6,1024,128\"",
+              "wait_us": 0.33
+            },
+            {
+              "aicore_time_us": 0.0,
+              "count": 1,
+              "duration_us": 2.98,
+              "name": "Data | N/A -> N/A",
+              "wait_us": 0.0
+            }
+          ],
+          "top_transdata_shape_signatures": [],
+          "total_aicore_time_us": 78.243,
+          "total_duration_us": 146.73999999999995,
+          "total_wait_us": 41.43000000000001,
+          "weighted_cube_utilization_pct": 83.95387038626608
+        },
+        "operator": {
+          "row_count": 43,
+          "top_by_device_total_us": [
+            {
+              "count": 1,
+              "device_total_us": 1034.0,
+              "host_total_us": 1034.0,
+              "name": "unirec.prefill_graph.cross_kv_packed_b1_s1024_fp16"
+            },
+            {
+              "count": 1,
+              "device_total_us": 920.41,
+              "host_total_us": 920.41,
+              "name": "cache_compiler inference"
+            },
+            {
+              "count": 1,
+              "device_total_us": 600.44,
+              "host_total_us": 600.44,
+              "name": "TorchNpuGraphBase::Run"
+            },
+            {
+              "count": 1,
+              "device_total_us": 245.01,
+              "host_total_us": 245.01,
+              "name": "RefreshAtTensorFromGeTensor"
+            },
+            {
+              "count": 1,
+              "device_total_us": 176.55,
+              "host_total_us": 176.55,
+              "name": "ExecuteGraph"
+            },
+            {
+              "count": 1,
+              "device_total_us": 143.76,
+              "host_total_us": 16.68,
+              "name": "AssembleInputs"
+            },
+            {
+              "count": 12,
+              "device_total_us": 113.78999999999999,
+              "host_total_us": 113.78999999999999,
+              "name": "aten::empty"
+            },
+            {
+              "count": 12,
+              "device_total_us": 75.11,
+              "host_total_us": 75.11,
+              "name": "aten::set_"
+            },
+            {
+              "count": 1,
+              "device_total_us": 70.9,
+              "host_total_us": 70.9,
+              "name": "AssembleOutputs"
+            },
+            {
+              "count": 12,
+              "device_total_us": 59.5,
+              "host_total_us": 59.5,
+              "name": "empty_tensor"
+            }
+          ],
+          "total_device_us": 3439.4699999999993,
+          "total_host_us": 3312.3899999999994
+        }
+      },
+      "profile_steps": 1,
+      "steady_device_event_mean_ms": 0.36725999861955644,
+      "weighted_first128_device_s": 0.04627475982606411
+    }
+  ],
+  "source_commit": "26f6e90",
+  "weighted_first128_device_s": {
+    "cross_kv_graph": 0.04627475982606411,
+    "layout_graph": 3.226907385253906,
+    "recognition_graphs_total": 2.10162335139215,
+    "vision_graphs": 2.055348591566086
+  }
+}
