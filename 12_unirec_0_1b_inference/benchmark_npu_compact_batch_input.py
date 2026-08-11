@@ -76,6 +76,27 @@ def parse_bucket_calls(
     return sorted(result)
 
 
+def read_fallback_calls(
+    crops_jsonl: Path,
+) -> list[tuple[str, int, int, int, int]]:
+    counts: dict[tuple[int, int], int] = {}
+    with crops_jsonl.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            prefill = record["prefill"]
+            if prefill.get("vision_bucket") not in {None, "fallback_eager"}:
+                continue
+            width, height = prefill["prep"]["processed_image_size"]
+            shape = (int(width), int(height))
+            counts[shape] = counts.get(shape, 0) + 1
+    return [
+        (f"fallback_{width}x{height}", 1, height, width, count)
+        for (width, height), count in sorted(counts.items())
+    ]
+
+
 def normalize_to_fp16(device_pixels: torch.Tensor) -> torch.Tensor:
     output = device_pixels.to(torch.float32)
     output.mul_(np.float32(2.0 / 255.0))
@@ -87,7 +108,17 @@ def main() -> None:
     args = parse_args()
     summary = json.loads(args.summary.expanduser().resolve().read_text())
     batching = find_aggregate_vision_batching(summary)
-    calls = parse_bucket_calls(batching)
+    bucket_calls = parse_bucket_calls(batching)
+    crops_jsonl = args.summary.expanduser().resolve().parent / "crops.jsonl"
+    fallback_calls = read_fallback_calls(crops_jsonl)
+    calls = [*bucket_calls, *fallback_calls]
+    expected_fallback_rows = int(batching.get("fallback_rows", 0))
+    actual_fallback_rows = sum(count for *_shape, count in fallback_calls)
+    if actual_fallback_rows != expected_fallback_rows:
+        raise ValueError(
+            f"fallback crop mismatch: {actual_fallback_rows} != "
+            f"{expected_fallback_rows}"
+        )
     device = torch.device(args.device)
 
     float32_chw = {
@@ -166,11 +197,13 @@ def main() -> None:
         "physical_npu": os.environ["ASCEND_RT_VISIBLE_DEVICES"],
         "device": str(device),
         "summary": str(args.summary),
-        "bucket_calls": {key: count for key, *_shape, count in calls},
-        "bucket_call_count": sum(count for *_shape, count in calls),
+        "bucket_calls": {key: count for key, *_shape, count in bucket_calls},
+        "bucket_call_count": sum(count for *_shape, count in bucket_calls),
         "bucket_real_rows": batching.get("bucket_real_rows"),
         "bucket_physical_rows": batching.get("bucket_physical_rows"),
-        "fallback_rows_excluded": int(batching.get("fallback_rows", 0)),
+        "fallback_rows_included": actual_fallback_rows,
+        "fallback_shape_count": len(fallback_calls),
+        "total_input_call_count": sum(count for *_shape, count in calls),
         "padded_source_elements": total_elements,
         "normalization_fp16_parity": value_parity,
         "timing_scope": (
