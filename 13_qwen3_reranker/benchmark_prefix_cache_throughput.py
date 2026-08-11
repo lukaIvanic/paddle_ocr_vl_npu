@@ -91,9 +91,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--ffn-weight-mode",
-        choices=("dense", "gate_up_w8a8"),
+        choices=("dense", "gate_up_w8a8", "w8a8"),
         default="dense",
-        help="Use dense FFNs or shared-activation W8A8 gate/up projections.",
+        help=(
+            "Use dense FFNs, shared-activation W8A8 gate/up projections, or "
+            "W8A8 for gate/up/down FFN projections."
+        ),
     )
     parser.add_argument(
         "--enable-internal-format",
