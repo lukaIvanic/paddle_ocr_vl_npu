@@ -37,6 +37,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--warmup-crops", type=int, default=64)
     parser.add_argument("--device", default="npu:0")
+    parser.add_argument(
+        "--task-granularity",
+        choices=("crop", "canvas"),
+        default="canvas",
+    )
     args = parser.parse_args()
     if min(args.workers, args.page_lookahead, args.rounds) < 1:
         parser.error("workers, page lookahead, and rounds must be positive")
@@ -88,13 +93,24 @@ def main() -> None:
     )
     device = torch.device(args.device)
     member_counts = [0] * len(canvases)
+    canvas_members: list[list[int]] = [[] for _canvas in canvases]
     for canvas_index in canvas_indices:
         member_counts[canvas_index] += 1
+    for crop_index, canvas_index in enumerate(canvas_indices):
+        canvas_members[canvas_index].append(crop_index)
 
     def resize_and_pack(index: int) -> tuple[int, float]:
         output = lane(crops[index])
         np.copyto(destinations[index], output)
         return canvas_indices[index], float(output.reshape(-1)[0])
+
+    def resize_and_pack_canvas(canvas_index: int) -> tuple[int, float]:
+        local_checksum = 0.0
+        for crop_index in canvas_members[canvas_index]:
+            output = lane(crops[crop_index])
+            np.copyto(destinations[crop_index], output)
+            local_checksum += float(output.reshape(-1)[0])
+        return canvas_index, local_checksum
 
     unique_shapes = {}
     for canvas in canvases:
@@ -122,16 +138,26 @@ def main() -> None:
                 canvas.fill(0)
             zeroed = time.perf_counter()
             remaining = member_counts.copy()
-            futures = [
-                executor.submit(resize_and_pack, index)
-                for index in range(len(crops))
-            ]
+            if args.task_granularity == "canvas":
+                futures = [
+                    executor.submit(resize_and_pack_canvas, canvas_index)
+                    for canvas_index in range(len(canvases))
+                ]
+            else:
+                futures = [
+                    executor.submit(resize_and_pack, index)
+                    for index in range(len(crops))
+                ]
             npu_call_count = 0
             with torch.inference_mode():
                 for future in as_completed(futures):
                     canvas_index, value = future.result()
                     checksum += value
-                    remaining[canvas_index] -= 1
+                    remaining[canvas_index] -= (
+                        member_counts[canvas_index]
+                        if args.task_granularity == "canvas"
+                        else 1
+                    )
                     if remaining[canvas_index] == 0:
                         prepared = prepare_canvas_on_npu(
                             canvases[canvas_index],
@@ -160,6 +186,7 @@ def main() -> None:
         "physical_npu": os.environ["ASCEND_RT_VISIBLE_DEVICES"],
         "device": str(device),
         "workers": args.workers,
+        "task_granularity": args.task_granularity,
         "crop_count": len(crops),
         "canvas_count": len(canvases),
         "canvas_bytes": sum(canvas.nbytes for canvas in canvases),
