@@ -27,11 +27,32 @@ from PIL import Image
 from torchvision.transforms import InterpolationMode
 from torchvision.transforms.v2 import functional as tv_functional
 
+try:
+    import numba
+except ImportError:  # Optional portable JIT lane.
+    numba = None
+
 from layout_process_pool import _decode_rgb, _prepare_frontend_payload
 from modeling_optimized_unirec import UniRecImageProcessor
 
 
 ArrayLane = Callable[[np.ndarray], np.ndarray]
+
+
+if numba is not None:
+
+    @numba.njit(nogil=True)
+    def _numba_u8_hwc_to_normalized_chw(source: np.ndarray) -> np.ndarray:
+        height, width, _channels = source.shape
+        output = np.empty((1, 3, height, width), dtype=np.float32)
+        scale = np.float32(2.0 / 255.0)
+        offset = np.float32(1.0)
+        for channel in range(3):
+            for row in range(height):
+                for column in range(width):
+                    value = np.float32(source[row, column, channel])
+                    output[0, channel, row, column] = value * scale - offset
+        return output
 
 
 def parse_args() -> argparse.Namespace:
@@ -194,6 +215,12 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
         chw_u8 = np.transpose(np.asarray(image), (2, 0, 1))
         return np.ascontiguousarray(fp16_lut[chw_u8])[None]
 
+    def pillow_no_convert_numba_fused(crop: np.ndarray) -> np.ndarray:
+        if numba is None:
+            raise RuntimeError("Numba is not installed")
+        image = _pillow_resize_without_convert(crop, processor)
+        return _numba_u8_hwc_to_normalized_chw(np.asarray(image))
+
     def pillow_reducing_gap_2(crop: np.ndarray) -> np.ndarray:
         image = _pillow_resize(crop, processor, reducing_gap=2.0)
         chw = np.ascontiguousarray(
@@ -241,7 +268,7 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
         np.subtract(chw, np.float32(1.0), out=chw)
         return chw[None]
 
-    return {
+    lanes = {
         "pillow_reference": pillow_reference,
         "pillow_inplace_hwc": pillow_inplace_hwc,
         "pillow_chw_exact_steps": pillow_chw_exact_steps,
@@ -255,6 +282,9 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
         "torchvision_uint8_bicubic": torchvision_uint8_bicubic,
         "opencv_cubic_chw": opencv_cubic_chw,
     }
+    if numba is not None:
+        lanes["pillow_no_convert_numba_fused"] = pillow_no_convert_numba_fused
+    return lanes
 
 
 def compare_lane(
