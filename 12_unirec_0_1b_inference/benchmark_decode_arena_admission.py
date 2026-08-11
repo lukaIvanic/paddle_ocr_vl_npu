@@ -63,7 +63,8 @@ def parse_args() -> argparse.Namespace:
         "--artifact-policies",
         default=(
             "mask_fill_zero,mask_template,direct_pageable,"
-            "direct_pageable_template,pinned_staging"
+            "direct_pageable_template,pinned_staging,h2d_flat_staging,"
+            "d2d_flat_staging,serial_flat_staging"
         ),
         help="Comma-separated artifact policies, or 'none'.",
     )
@@ -358,6 +359,7 @@ def run_artifact_policy(
     device: str,
     batch_size: int,
     pinned_flat: torch.Tensor | None,
+    device_flat: torch.Tensor | None,
 ) -> float:
     *_, cross_mask, packed_cross = arena
     negative_inf = torch.finfo(cross_mask.dtype).min
@@ -371,12 +373,13 @@ def run_artifact_policy(
                 "mask_fill_zero",
                 "direct_pageable",
                 "pinned_staging",
+                "serial_flat_staging",
             }:
                 cross_mask[slot : slot + 1].fill_(negative_inf)
                 cross_mask[slot : slot + 1, :, :, :source_len].zero_()
             elif policy in {"mask_template", "direct_pageable_template"}:
                 cross_mask[slot : slot + 1].copy_(mask_templates[source_len])
-            else:
+            elif policy not in {"h2d_flat_staging", "d2d_flat_staging"}:
                 raise ValueError(f"unknown artifact policy: {policy}")
 
             if policy in {"mask_fill_zero", "mask_template"}:
@@ -389,6 +392,20 @@ def run_artifact_policy(
                 staged = pinned_flat[:elements].view(source.shape)
                 staged.copy_(source)
                 source = staged
+            if policy in {
+                "h2d_flat_staging",
+                "d2d_flat_staging",
+                "serial_flat_staging",
+            }:
+                if device_flat is None:
+                    raise RuntimeError(f"{policy} requires a device buffer")
+                elements = source.numel()
+                staged_device = device_flat[:elements].view(source.shape)
+                if policy in {"h2d_flat_staging", "serial_flat_staging"}:
+                    device_flat[:elements].copy_(source.reshape(-1))
+                if policy == "h2d_flat_staging":
+                    continue
+                source = staged_device
             packed_cross[
                 :, slot : slot + 1, :, :source_len, :
             ].copy_(source)
@@ -506,12 +523,20 @@ def main() -> None:
             dtype=torch.float16,
             pin_memory=True,
         )
+        device_flat = torch.empty(
+            max_elements,
+            dtype=torch.float16,
+            device=args.device,
+        )
         known_artifact_policies = {
             "mask_fill_zero",
             "mask_template",
             "direct_pageable",
             "direct_pageable_template",
             "pinned_staging",
+            "h2d_flat_staging",
+            "d2d_flat_staging",
+            "serial_flat_staging",
         }
         unknown_artifact = set(artifact_policies) - known_artifact_policies
         if unknown_artifact:
@@ -530,6 +555,7 @@ def main() -> None:
                     device=args.device,
                     batch_size=args.batch_size,
                     pinned_flat=pinned_flat,
+                    device_flat=device_flat,
                 )
             samples = [
                 run_artifact_policy(
@@ -540,11 +566,16 @@ def main() -> None:
                     device=args.device,
                     batch_size=args.batch_size,
                     pinned_flat=pinned_flat,
+                    device_flat=device_flat,
                 )
                 for _ in range(args.rounds)
             ]
             median_s = statistics.median(samples)
-            copies_payload = policy not in {"mask_fill_zero", "mask_template"}
+            copies_payload = policy not in {
+                "mask_fill_zero",
+                "mask_template",
+                "d2d_flat_staging",
+            }
             artifact_results[policy] = {
                 "samples_s": samples,
                 "median_s": median_s,
@@ -569,6 +600,9 @@ def main() -> None:
                 pinned_flat.numel() * pinned_flat.element_size()
             ),
             "pinned_staging_is_pinned": bool(pinned_flat.is_pinned()),
+            "device_staging_bytes": int(
+                device_flat.numel() * device_flat.element_size()
+            ),
             "results": artifact_results,
         }
     summary = {
