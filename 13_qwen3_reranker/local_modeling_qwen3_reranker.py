@@ -1217,8 +1217,6 @@ def reranker_transformer_linears(
         and name.rsplit(".", 1)[-1] in projection_names
         and isinstance(module, nn.Linear)
     ]
-    if not modules:
-        raise RuntimeError("no dense reranker transformer Linear modules found")
     return tuple(modules)
 
 

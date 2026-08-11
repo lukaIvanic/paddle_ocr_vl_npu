@@ -343,6 +343,29 @@ def quantize_reranker_packed_qkv_inplace(
         child.v_proj = None
 
 
+def quantize_reranker_o_proj_inplace(
+    module: nn.Module,
+    *,
+    out_dtype: torch.dtype,
+) -> None:
+    for child in module.modules():
+        if not isinstance(child, LocalQwen3RerankerAttention):
+            continue
+        if not isinstance(child.o_proj, nn.Linear):
+            raise TypeError("O-projection W8A8 requires a dense nn.Linear")
+        child.o_proj = W8A8Linear.from_linear(child.o_proj, out_dtype=out_dtype)
+
+
+def quantize_reranker_full_packed_w8a8_inplace(
+    module: nn.Module,
+    *,
+    out_dtype: torch.dtype,
+) -> None:
+    quantize_reranker_packed_qkv_inplace(module, out_dtype=out_dtype)
+    quantize_reranker_o_proj_inplace(module, out_dtype=out_dtype)
+    quantize_reranker_ffn_inplace(module, out_dtype=out_dtype)
+
+
 def quantize_reranker_all_linears_inplace(
     module: nn.Module,
     *,
