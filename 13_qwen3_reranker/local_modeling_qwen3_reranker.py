@@ -534,6 +534,7 @@ class LocalQwen3RerankerAttention(nn.Module):
         self.q_proj = nn.Linear(config.hidden_size, config.num_attention_heads * config.head_dim, bias=False)
         self.k_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * config.head_dim, bias=False)
         self.v_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * config.head_dim, bias=False)
+        self.qkv_proj: nn.Linear | None = None
         self.o_proj = nn.Linear(config.num_attention_heads * config.head_dim, config.hidden_size, bias=False)
         self.q_norm = LocalQwen3RerankerRMSNorm(config.head_dim, config.rms_norm_eps)
         self.k_norm = LocalQwen3RerankerRMSNorm(config.head_dim, config.rms_norm_eps)
@@ -553,13 +554,26 @@ class LocalQwen3RerankerAttention(nn.Module):
         if output_layout not in {"BNSD", "BSND"}:
             raise ValueError(f"unsupported projected QKV layout {output_layout!r}")
         batch, sequence_length, _hidden = hidden_states.shape
-        query_states = linear_tokenwise(self.q_proj, hidden_states).view(
+        if self.qkv_proj is None:
+            query_states = linear_tokenwise(self.q_proj, hidden_states)
+            key_states = linear_tokenwise(self.k_proj, hidden_states)
+            value_states = linear_tokenwise(self.v_proj, hidden_states)
+        elif getattr(self.qkv_proj, "returns_separate_qkv", False):
+            query_states, key_states, value_states = self.qkv_proj(hidden_states)
+        else:
+            projected = linear_tokenwise(self.qkv_proj, hidden_states)
+            query_width = self.num_heads * self.head_dim
+            kv_width = self.num_key_value_heads * self.head_dim
+            query_states = projected[..., :query_width]
+            key_states = projected[..., query_width : query_width + kv_width]
+            value_states = projected[..., query_width + kv_width :]
+        query_states = query_states.view(
             batch, sequence_length, self.num_heads, self.head_dim
         )
-        key_states = linear_tokenwise(self.k_proj, hidden_states).view(
+        key_states = key_states.view(
             batch, sequence_length, self.num_key_value_heads, self.head_dim
         )
-        value_states = linear_tokenwise(self.v_proj, hidden_states).view(
+        value_states = value_states.view(
             batch, sequence_length, self.num_key_value_heads, self.head_dim
         )
         query_states = self.q_norm(query_states)
@@ -1190,6 +1204,7 @@ def reranker_transformer_linears(
         "q_proj",
         "k_proj",
         "v_proj",
+        "qkv_proj",
         "o_proj",
         "gate_proj",
         "up_proj",
@@ -1202,9 +1217,40 @@ def reranker_transformer_linears(
         and name.rsplit(".", 1)[-1] in projection_names
         and isinstance(module, nn.Linear)
     ]
-    if not modules:
-        raise RuntimeError("no dense reranker transformer Linear modules found")
     return tuple(modules)
+
+
+def fuse_reranker_qkv_projections_inplace(
+    model: LocalQwen3RerankerForCausalLM,
+) -> int:
+    """Replace each attention layer's three FP16 Q/K/V linears with one."""
+    fused_count = 0
+    for layer in model.layers:
+        attention = layer.self_attn
+        if attention.qkv_proj is not None:
+            continue
+        q_proj = attention.q_proj
+        k_proj = attention.k_proj
+        v_proj = attention.v_proj
+        if not all(isinstance(proj, nn.Linear) for proj in (q_proj, k_proj, v_proj)):
+            raise TypeError("QKV fusion requires dense nn.Linear projections")
+        fused = nn.Linear(
+            q_proj.in_features,
+            q_proj.out_features + k_proj.out_features + v_proj.out_features,
+            bias=False,
+            device=q_proj.weight.device,
+            dtype=q_proj.weight.dtype,
+        )
+        with torch.no_grad():
+            fused.weight.copy_(
+                torch.cat((q_proj.weight, k_proj.weight, v_proj.weight), dim=0)
+            )
+        attention.qkv_proj = fused
+        attention.q_proj = None
+        attention.k_proj = None
+        attention.v_proj = None
+        fused_count += 1
+    return fused_count
 
 
 def prepare_reranker_linear_weight_format(

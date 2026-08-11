@@ -3,7 +3,12 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from local_modeling_qwen3_reranker import FRACTAL_NZ, LocalQwen3RerankerMLP, linear_tokenwise
+from local_modeling_qwen3_reranker import (
+    FRACTAL_NZ,
+    LocalQwen3RerankerAttention,
+    LocalQwen3RerankerMLP,
+    linear_tokenwise,
+)
 
 
 def quantize_per_output_channel(weight: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -151,6 +156,113 @@ class W8A8GateUp(nn.Module):
         return gate.reshape(*shape, self.gate_proj.out_features), up.reshape(*shape, self.up_proj.out_features)
 
 
+class W8A8SeparateQKV(nn.Module):
+    """Three W8A8 projections that share one activation quantization."""
+
+    returns_separate_qkv = True
+
+    def __init__(
+        self,
+        q_proj: nn.Linear,
+        k_proj: nn.Linear,
+        v_proj: nn.Linear,
+        *,
+        out_dtype: torch.dtype,
+    ):
+        super().__init__()
+        if not (q_proj.in_features == k_proj.in_features == v_proj.in_features):
+            raise ValueError("Q/K/V input sizes must match")
+        self.q_proj = W8A8Linear.from_linear(q_proj, out_dtype=out_dtype)
+        self.k_proj = W8A8Linear.from_linear(k_proj, out_dtype=out_dtype)
+        self.v_proj = W8A8Linear.from_linear(v_proj, out_dtype=out_dtype)
+
+    def begin_input_scale_calibration(self) -> None:
+        self.q_proj.begin_input_scale_calibration()
+
+    def finish_input_scale_calibration(self) -> None:
+        self.q_proj.finish_input_scale_calibration()
+        self.k_proj.set_static_input_scale(self.q_proj.static_input_scale)
+        self.v_proj.set_static_input_scale(self.q_proj.static_input_scale)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        import torch_npu
+
+        shape = x.shape[:-1]
+        x_fp16 = x.reshape(-1, self.q_proj.in_features).to(torch.float16)
+        if self.q_proj.use_static_input_scale:
+            input_scale = self.q_proj.static_input_scale.reshape(())
+        else:
+            input_scale = x_fp16.abs().amax().clamp_min(1e-6) / 127.0
+        if self.q_proj.collect_input_scale_stats:
+            self.q_proj._observed_input_scale = max(
+                self.q_proj._observed_input_scale,
+                float(input_scale.detach().cpu().item()),
+            )
+        x_q = torch_npu.npu_quantize(
+            x_fp16,
+            scales=input_scale.reshape(1).to(torch.float32),
+            zero_points=None,
+            dtype=torch.qint8,
+            axis=0,
+            div_mode=True,
+        )
+        query = self.q_proj.quant_matmul_from_quantized(x_q, input_scale)
+        key = self.k_proj.quant_matmul_from_quantized(x_q, input_scale)
+        value = self.v_proj.quant_matmul_from_quantized(x_q, input_scale)
+        return (
+            query.reshape(*shape, self.q_proj.out_features),
+            key.reshape(*shape, self.k_proj.out_features),
+            value.reshape(*shape, self.v_proj.out_features),
+        )
+
+
+class W8A8PackedQKV(nn.Module):
+    """One packed W8A8 projection whose output is split into Q, K, and V."""
+
+    returns_separate_qkv = True
+
+    def __init__(
+        self,
+        q_proj: nn.Linear,
+        k_proj: nn.Linear,
+        v_proj: nn.Linear,
+        *,
+        out_dtype: torch.dtype,
+    ):
+        super().__init__()
+        if not (q_proj.in_features == k_proj.in_features == v_proj.in_features):
+            raise ValueError("Q/K/V input sizes must match")
+        self.query_width = int(q_proj.out_features)
+        self.key_width = int(k_proj.out_features)
+        self.value_width = int(v_proj.out_features)
+        packed = nn.Linear(
+            q_proj.in_features,
+            self.query_width + self.key_width + self.value_width,
+            bias=False,
+            device=q_proj.weight.device,
+            dtype=q_proj.weight.dtype,
+        )
+        with torch.no_grad():
+            packed.weight.copy_(
+                torch.cat((q_proj.weight, k_proj.weight, v_proj.weight), dim=0)
+            )
+        self.proj = W8A8Linear.from_linear(packed, out_dtype=out_dtype)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        projected = self.proj(x)
+        return torch.split(
+            projected,
+            (self.query_width, self.key_width, self.value_width),
+            dim=-1,
+        )
+
+
 class W8A8MLP(nn.Module):
     def __init__(self, dense_mlp: LocalQwen3RerankerMLP, *, out_dtype: torch.dtype):
         super().__init__()
@@ -193,6 +305,67 @@ def quantize_reranker_ffn_inplace(module: nn.Module, *, out_dtype: torch.dtype) 
                 setattr(parent, name, W8A8MLP(child, out_dtype=out_dtype))
 
 
+def quantize_reranker_qkv_inplace(module: nn.Module, *, out_dtype: torch.dtype) -> None:
+    for child in module.modules():
+        if not isinstance(child, LocalQwen3RerankerAttention):
+            continue
+        if child.qkv_proj is not None:
+            raise ValueError("separate QKV W8A8 requires unfused Q/K/V projections")
+        child.qkv_proj = W8A8SeparateQKV(
+            child.q_proj,
+            child.k_proj,
+            child.v_proj,
+            out_dtype=out_dtype,
+        )
+        child.q_proj = None
+        child.k_proj = None
+        child.v_proj = None
+
+
+def quantize_reranker_packed_qkv_inplace(
+    module: nn.Module,
+    *,
+    out_dtype: torch.dtype,
+) -> None:
+    for child in module.modules():
+        if not isinstance(child, LocalQwen3RerankerAttention):
+            continue
+        if child.qkv_proj is not None:
+            raise ValueError("packed QKV W8A8 requires unfused Q/K/V projections")
+        child.qkv_proj = W8A8PackedQKV(
+            child.q_proj,
+            child.k_proj,
+            child.v_proj,
+            out_dtype=out_dtype,
+        )
+        child.q_proj = None
+        child.k_proj = None
+        child.v_proj = None
+
+
+def quantize_reranker_o_proj_inplace(
+    module: nn.Module,
+    *,
+    out_dtype: torch.dtype,
+) -> None:
+    for child in module.modules():
+        if not isinstance(child, LocalQwen3RerankerAttention):
+            continue
+        if not isinstance(child.o_proj, nn.Linear):
+            raise TypeError("O-projection W8A8 requires a dense nn.Linear")
+        child.o_proj = W8A8Linear.from_linear(child.o_proj, out_dtype=out_dtype)
+
+
+def quantize_reranker_full_packed_w8a8_inplace(
+    module: nn.Module,
+    *,
+    out_dtype: torch.dtype,
+) -> None:
+    quantize_reranker_packed_qkv_inplace(module, out_dtype=out_dtype)
+    quantize_reranker_o_proj_inplace(module, out_dtype=out_dtype)
+    quantize_reranker_ffn_inplace(module, out_dtype=out_dtype)
+
+
 def quantize_reranker_all_linears_inplace(
     module: nn.Module,
     *,
@@ -221,6 +394,12 @@ def iter_w8a8_linears(module: nn.Module):
 def iter_w8a8_gate_up(module: nn.Module):
     for child in module.modules():
         if isinstance(child, W8A8GateUp):
+            yield child
+
+
+def iter_w8a8_separate_qkv(module: nn.Module):
+    for child in module.modules():
+        if isinstance(child, W8A8SeparateQKV):
             yield child
 
 
@@ -301,17 +480,26 @@ def prepare_w8a8_weight_format(module: nn.Module, *, requested: str) -> dict[str
 
 def calibrate_w8a8_input_scales(model: nn.Module, forward_fn) -> None:
     gate_up_modules = list(iter_w8a8_gate_up(model))
+    qkv_modules = list(iter_w8a8_separate_qkv(model))
     linears = [
         linear
         for linear in iter_w8a8_linears(model)
         if not any(linear is gate_up.gate_proj or linear is gate_up.up_proj for gate_up in gate_up_modules)
+        and not any(
+            linear is qkv.q_proj or linear is qkv.k_proj or linear is qkv.v_proj
+            for qkv in qkv_modules
+        )
     ]
     for gate_up in gate_up_modules:
         gate_up.begin_input_scale_calibration()
+    for qkv in qkv_modules:
+        qkv.begin_input_scale_calibration()
     for linear in linears:
         linear.begin_input_scale_calibration()
     forward_fn()
     for gate_up in gate_up_modules:
         gate_up.finish_input_scale_calibration()
+    for qkv in qkv_modules:
+        qkv.finish_input_scale_calibration()
     for linear in linears:
         linear.finish_input_scale_calibration()

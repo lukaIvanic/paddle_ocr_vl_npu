@@ -26,6 +26,7 @@ from local_modeling_qwen3_reranker import (
     build_left_padded_causal_bool_mask,
     build_left_padded_causal_bool_mask_chunk,
     build_left_padded_causal_mask,
+    fuse_reranker_qkv_projections_inplace,
     prepare_reranker_linear_weight_format,
 )
 from run_local_qwen3_reranker import LocalQwen3RerankerRunner, _import_cache_compile
@@ -91,17 +92,24 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--ffn-weight-mode",
-        choices=("dense", "gate_up_w8a8", "w8a8"),
+        choices=("dense", "gate_up_w8a8", "w8a8", "qkv_w8a8", "packed_qkv_w8a8", "o_w8a8", "full_w8a8"),
         default="dense",
         help=(
             "Use dense FFNs, shared-activation W8A8 gate/up projections, or "
-            "W8A8 for gate/up/down FFN projections."
+            "W8A8 for gate/up/down FFN projections, or separate Q/K/V W8A8 "
+            "matmuls sharing one activation quantization, or one packed QKV "
+            "W8A8 matmul, O-only W8A8, or full packed-QKV/O/FFN W8A8."
         ),
     )
     parser.add_argument(
         "--enable-internal-format",
         action="store_true",
         help="Enable torch-npu internal tensor formats before the first NPU allocation.",
+    )
+    parser.add_argument(
+        "--fuse-qkv-projections",
+        action="store_true",
+        help="Replace each layer's three FP16 Q/K/V linears with one concatenated linear.",
     )
     parser.add_argument(
         "--prefill-optimizations",
@@ -506,6 +514,18 @@ def main() -> None:
     )
     model = runner.model
     tokenizer = runner.tokenizer
+    qkv_fusion_s = 0.0
+    fused_qkv_layer_count = 0
+    if args.fuse_qkv_projections:
+        qkv_fusion_started = time.perf_counter()
+        fused_qkv_layer_count = fuse_reranker_qkv_projections_inplace(model)
+        synchronize(device)
+        qkv_fusion_s = time.perf_counter() - qkv_fusion_started
+        print(
+            "QKV_FUSION "
+            f"layers={fused_qkv_layer_count} wall_s={qkv_fusion_s:.6f}",
+            flush=True,
+        )
     weight_format_started = time.perf_counter()
     weight_format = prepare_reranker_linear_weight_format(
         model,
@@ -526,7 +546,8 @@ def main() -> None:
         print("W8A8_WEIGHT_FORMAT " + json.dumps(quant_weight_format, sort_keys=True), flush=True)
     weight_cache_key = (
         f"ffn{args.ffn_weight_mode}_weights{weight_format['effective_mode']}_"
-        f"internal{int(internal_format_enabled)}"
+        f"internal{int(internal_format_enabled)}_"
+        f"qkvfused{int(args.fuse_qkv_projections)}"
     )
     prefix_input_ids, prefix_attention_mask, prefix_valid_tokens = make_prefix_inputs(
         tokenizer,
@@ -955,6 +976,9 @@ def main() -> None:
             "internal_format_enabled": internal_format_enabled,
             "linear_weight_format": weight_format,
             "ffn_weight_mode": args.ffn_weight_mode,
+            "fuse_qkv_projections": args.fuse_qkv_projections,
+            "fused_qkv_layer_count": fused_qkv_layer_count,
+            "qkv_fusion_s": qkv_fusion_s,
             "quant_weight_format": quant_weight_format,
             "model_load_s": model_load_s,
             "weight_quantization_s": runner.weight_quantization_s,
