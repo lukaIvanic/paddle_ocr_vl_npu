@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720" viewBox="0 0 1440 720" role="img" aria-labelledby="t d">
+  <title id="t">Measured table latency distribution on one Ascend 910B2</title>
+  <desc id="d">Grouped horizontal bars compare ordinary B1 whole-table OCR with U8 fixed-D16 speculative decoding at P50, P75, P90, P95, P99, and maximum latency. Speculation improves P90 through P99 but regresses the median and maximum.</desc>
+  <rect width="1440" height="720" fill="#fff"/>
+  <defs>
+    <style>
+      text{font-family:Arial,sans-serif;fill:#172033}.title{font-size:28px;font-weight:700}.sub{font-size:15px;fill:#4a5568}
+      .axis{stroke:#718096;stroke-width:1.5}.grid{stroke:#d7dee8;stroke-width:1}.goal{stroke:#e53e3e;stroke-width:3;stroke-dasharray:8 6}
+      .label{font-size:16px;font-weight:700}.tick{font-size:13px;fill:#4a5568}.value{font-size:13px;font-weight:700}
+      .base{fill:#718096}.spec{fill:#1d9a8a}.callout{fill:#fff8dc;stroke:#b7791f;stroke-width:2;rx:12}.n{font-size:15px;font-weight:700}.s{font-size:13px}
+    </style>
+  </defs>
+  <text x="42" y="46" class="title">Measured latency shifts from the middle toward the long-table tail</text>
+  <text x="42" y="74" class="sub">665 OmniDocBench v1.6 tables · one Ascend 910B2 · measured draft stage + measured target stage</text>
+
+  <rect x="865" y="80" width="22" height="14" class="base"/><text x="896" y="93" class="tick">ordinary B1</text>
+  <rect x="1005" y="80" width="22" height="14" class="spec"/><text x="1036" y="93" class="tick">U8 + fixed D16</text>
+  <line x1="1185" y1="87" x2="1220" y2="87" class="goal"/><text x="1229" y="93" class="tick">2 s requirement</text>
+
+  <line x1="190" y1="112" x2="190" y2="607" class="axis"/><line x1="190" y1="607" x2="1325" y2="607" class="axis"/>
+  <g>
+    <line x1="190" y1="112" x2="190" y2="607" class="grid"/><text x="186" y="632" class="tick">0</text>
+    <line x1="365" y1="112" x2="365" y2="607" class="grid"/><text x="361" y="632" class="tick">1</text>
+    <line x1="539" y1="112" x2="539" y2="607" class="goal"/><text x="535" y="632" class="tick" fill="#e53e3e">2</text>
+    <line x1="714" y1="112" x2="714" y2="607" class="grid"/><text x="710" y="632" class="tick">3</text>
+    <line x1="888" y1="112" x2="888" y2="607" class="grid"/><text x="884" y="632" class="tick">4</text>
+    <line x1="1063" y1="112" x2="1063" y2="607" class="grid"/><text x="1059" y="632" class="tick">5</text>
+    <line x1="1237" y1="112" x2="1237" y2="607" class="grid"/><text x="1233" y="632" class="tick">6</text>
+    <text x="1268" y="632" class="tick">seconds</text>
+  </g>
+
+  <text x="86" y="154" class="label">P50</text><rect x="190" y="130" width="81" height="19" class="base"/><rect x="190" y="154" width="104" height="19" class="spec"/>
+  <text x="279" y="145" class="value">0.463</text><text x="302" y="169" class="value">0.596</text><text x="370" y="164" class="s" fill="#b7791f">28.7% slower</text>
+
+  <text x="86" y="230" class="label">P75</text><rect x="190" y="206" width="154" height="19" class="base"/><rect x="190" y="230" width="165" height="19" class="spec"/>
+  <text x="352" y="221" class="value">0.884</text><text x="363" y="245" class="value">0.944</text><text x="430" y="240" class="s" fill="#b7791f">6.8% slower</text>
+
+  <text x="86" y="306" class="label">P90</text><rect x="190" y="282" width="287" height="19" class="base"/><rect x="190" y="306" width="235" height="19" class="spec"/>
+  <text x="485" y="297" class="value">1.642</text><text x="433" y="321" class="value">1.345</text><text x="555" y="316" class="s" fill="#1d7b86">18.1% faster</text>
+
+  <text x="86" y="382" class="label">P95</text><rect x="190" y="358" width="427" height="19" class="base"/><rect x="190" y="382" width="304" height="19" class="spec"/>
+  <text x="625" y="373" class="value">2.449</text><text x="502" y="397" class="value">1.740</text><text x="675" y="392" class="s" fill="#1d7b86">29.0% faster</text>
+
+  <text x="86" y="458" class="label">P99</text><rect x="190" y="434" width="846" height="19" class="base"/><rect x="190" y="458" width="649" height="19" class="spec"/>
+  <text x="1044" y="449" class="value">4.847</text><text x="847" y="473" class="value">3.720</text><text x="1105" y="468" class="s" fill="#1d7b86">23.3% faster</text>
+
+  <text x="62" y="534" class="label">Maximum</text><rect x="190" y="510" width="924" height="19" class="base"/><rect x="190" y="534" width="1093" height="19" class="spec"/>
+  <text x="1122" y="525" class="value">5.292</text><text x="1291" y="549" class="value">6.260</text>
+
+  <rect x="42" y="655" width="1356" height="46" class="callout"/>
+  <text x="62" y="684" class="n">Interpretation: draft overhead loses at P50/P75; amortized target-call reduction wins at P90–P99; one matcher failure creates the new maximum.</text>
+</svg>

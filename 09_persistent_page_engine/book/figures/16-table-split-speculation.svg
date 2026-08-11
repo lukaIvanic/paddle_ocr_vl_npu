@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="t d">
+  <title id="t">Table splitting and speculative decoding data flow</title>
+  <desc id="d">The same table image feeds a fast eight-band draft path and an authoritative whole-table target path. Exact draft token IDs are matched against the generated target prefix and verified in blocks by the full-table model.</desc>
+  <rect width="1440" height="760" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="3.5" orient="auto">
+      <path d="M0,0 L0,7 L10,3.5 z" fill="#1d7b86"/>
+    </marker>
+    <style>
+      text{font-family:Arial,sans-serif;fill:#172033}
+      .title{font-size:28px;font-weight:700}.subtitle{font-size:15px;fill:#4a5568}
+      .lane{font-size:14px;font-weight:700;letter-spacing:1.4px}.h{font-size:19px;font-weight:700}
+      .n{font-size:15px;font-weight:700}.s{font-size:13px}.tiny{font-size:12px}
+      .box{stroke:#40516b;stroke-width:2;rx:14}.cpu{fill:#edf3f8}.npu{fill:#fff0d9}
+      .draft{fill:#e7f6ec}.target{fill:#f1eafd}.warn{fill:#fff8dc;stroke:#b7791f;stroke-width:2;rx:11}
+      .arrow{stroke:#1d7b86;stroke-width:3;fill:none;marker-end:url(#arrow)}
+      .soft{stroke:#8aa1b4;stroke-width:2;fill:none;stroke-dasharray:7 6;marker-end:url(#arrow)}
+      .cut{stroke:#e53e3e;stroke-width:2;stroke-dasharray:7 5}.rule{stroke:#718096;stroke-width:1.5}
+      .id{fill:#dbe8f7;stroke:#40516b;stroke-width:1;rx:5}.accept{fill:#c6f6d5}.reject{fill:#fed7d7}
+    </style>
+  </defs>
+
+  <text x="42" y="45" class="title">One table, two paths: cheap draft guidance + authoritative full-table output</text>
+  <text x="42" y="72" class="subtitle">U is the number of full-width image bands. A band is a scheduling unit, not necessarily one semantic table row.</text>
+
+  <text x="42" y="116" class="lane" fill="#4a5568">CPU · IMAGE-ONLY PREPARATION</text>
+  <rect x="42" y="132" width="228" height="224" class="box cpu"/>
+  <text x="62" y="162" class="h">Whole table crop</text>
+  <rect x="72" y="184" width="168" height="138" fill="#fff" stroke="#40516b" stroke-width="2" rx="5"/>
+  <line x1="72" y1="216" x2="240" y2="216" class="rule"/><line x1="72" y1="250" x2="240" y2="250" class="rule"/>
+  <line x1="72" y1="283" x2="240" y2="283" class="rule"/><line x1="128" y1="184" x2="128" y2="322" class="rule"/>
+  <line x1="184" y1="184" x2="184" y2="322" class="rule"/>
+  <text x="84" y="207" class="tiny">header</text><text x="84" y="240" class="tiny">12.4</text><text x="143" y="240" class="tiny">8.7</text>
+  <text x="84" y="273" class="tiny">13.1</text><text x="143" y="273" class="tiny">9.2</text>
+  <text x="62" y="344" class="tiny">target image remains unchanged</text>
+
+  <rect x="328" y="132" width="274" height="224" class="box cpu"/>
+  <text x="350" y="162" class="h">Draft-only normalization</text>
+  <text x="350" y="192" class="s">1. Rotate known sideways crops.</text>
+  <text x="350" y="219" class="s">2. Resize the whole draft image.</text>
+  <text x="350" y="246" class="s">3. Start from U uniform bands.</text>
+  <text x="350" y="273" class="s">4. Snap cuts to a nearby rule</text>
+  <text x="369" y="294" class="s">or low-ink separator.</text>
+  <rect x="350" y="314" width="225" height="26" class="warn"/>
+  <text x="363" y="332" class="tiny">pixels only · no GT row metadata</text>
+
+  <rect x="660" y="106" width="216" height="276" class="box draft"/>
+  <text x="681" y="136" class="h">U8 row-band crops</text>
+  <text x="681" y="159" class="tiny">full table width in every crop</text>
+  <g>
+    <rect x="686" y="178" width="164" height="19" fill="#fff" stroke="#40516b"/><text x="694" y="192" class="tiny">band 0 · header context</text>
+    <rect x="686" y="203" width="164" height="19" fill="#fff" stroke="#40516b"/><text x="694" y="217" class="tiny">band 1</text>
+    <rect x="686" y="228" width="164" height="19" fill="#fff" stroke="#40516b"/><text x="694" y="242" class="tiny">band 2</text>
+    <rect x="686" y="253" width="164" height="19" fill="#fff" stroke="#40516b"/><text x="694" y="267" class="tiny">band 3</text>
+    <rect x="686" y="278" width="164" height="19" fill="#fff" stroke="#40516b"/><text x="694" y="292" class="tiny">band 4</text>
+    <rect x="686" y="303" width="164" height="19" fill="#fff" stroke="#40516b"/><text x="694" y="317" class="tiny">band 5</text>
+    <rect x="686" y="328" width="164" height="19" fill="#fff" stroke="#40516b"/><text x="694" y="342" class="tiny">bands 6–7</text>
+  </g>
+
+  <path d="M270 242 H328" class="arrow"/>
+  <path d="M602 242 H660" class="arrow"/>
+
+  <text x="42" y="432" class="lane" fill="#b7791f">ASCEND 910B2 · DRAFT PATH</text>
+  <rect x="42" y="449" width="325" height="154" class="box npu"/>
+  <text x="64" y="481" class="h">Fast row-band OCR</text>
+  <text x="64" y="509" class="s">B8 continuous schedule across row requests</text>
+  <text x="64" y="535" class="s">vision + text prefill → cheap draft decode</text>
+  <text x="64" y="561" class="s">each band returns generated token IDs</text>
+  <text x="64" y="585" class="tiny">draft may be incomplete or structurally wrong</text>
+  <path d="M768 382 V412 H204 V449" class="arrow"/>
+
+  <rect x="426" y="449" width="330" height="154" class="box cpu"/>
+  <text x="448" y="481" class="h">ID-native stitch + matcher</text>
+  <text x="448" y="508" class="s">strip each band EOS; concatenate IDs</text>
+  <text x="448" y="534" class="s">index exact target-prefix suffix anchors</text>
+  <text x="448" y="560" class="s">rank by anchor, column/width, and cursor</text>
+  <text x="448" y="586" class="tiny">propose the next K draft token IDs</text>
+  <path d="M367 526 H426" class="arrow"/>
+
+  <text x="824" y="432" class="lane" fill="#805ad5">ASCEND 910B2 · AUTHORITATIVE TARGET PATH</text>
+  <rect x="824" y="449" width="252" height="154" class="box target"/>
+  <text x="846" y="481" class="h">Whole-table B1</text>
+  <text x="846" y="508" class="s">one full-image prefill</text>
+  <text x="846" y="534" class="s">full target KV state</text>
+  <text x="846" y="560" class="s">greedy target semantics</text>
+  <text x="846" y="586" class="tiny">never replaced by stitched draft text</text>
+  <path d="M156 356 V404 H950 V449" class="soft"/>
+
+  <rect x="1130" y="449" width="268" height="154" class="box target"/>
+  <text x="1152" y="481" class="h">K-token verifier</text>
+  <text x="1152" y="508" class="s">accept common target/draft prefix</text>
+  <text x="1152" y="534" class="s">on mismatch, emit target token</text>
+  <text x="1152" y="560" class="s">fallback to ordinary B1 if no match</text>
+  <text x="1152" y="586" class="tiny">final token stream stays target-authoritative</text>
+  <path d="M756 526 H1130" class="arrow"/>
+  <path d="M1076 526 H1130" class="arrow"/>
+
+  <rect x="42" y="648" width="1356" height="76" class="warn"/>
+  <text x="64" y="680" class="n">Hard invariant: the matcher consumes the generated IDs saved by both models.</text>
+  <text x="64" y="706" class="s">Text rendering is for inspection and scoring only. The speculative path must never decode IDs to text and encode that text back into IDs.</text>
+</svg>
