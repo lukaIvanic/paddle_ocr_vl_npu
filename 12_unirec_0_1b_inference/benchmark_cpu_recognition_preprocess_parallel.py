@@ -49,13 +49,14 @@ def parse_args() -> argparse.Namespace:
         parser.error("worker counts and --rounds must be positive")
     if not set(args.modes) <= {
         "threads",
+        "threads_retained",
         "processes",
         "processes_shared",
         "processes_shared_io",
         "processes_streamed_shared_io",
     }:
         parser.error(
-            "--modes accepts only threads, processes, processes_shared, "
+            "--modes accepts only threads, threads_retained, processes, processes_shared, "
             "processes_shared_io, and processes_streamed_shared_io"
         )
     return args
@@ -176,7 +177,7 @@ def _verify_shared_outputs(
             ),
         )
     return {
-        "reference": "direct_pillow_chw_fused_formula",
+        "reference": "direct_selected_lane",
         "all_exact": different_values == 0,
         "exact_crops": exact_crops,
         "crop_count": len(crops),
@@ -218,6 +219,40 @@ def benchmark_threads(
         wall_times=wall_times,
         checksum=checksum,
     )
+
+
+def benchmark_threads_retained(
+    crops: list[np.ndarray],
+    lane: ArrayLane,
+    *,
+    workers: int,
+    rounds: int,
+    warmup_crops: int,
+) -> dict[str, object]:
+    checksum = 0.0
+    retained_output_bytes = 0
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        warmup_outputs = list(executor.map(lane, crops[:warmup_crops]))
+        checksum += sum(float(output.reshape(-1)[0]) for output in warmup_outputs)
+        del warmup_outputs
+        wall_times = []
+        for _round_index in range(rounds):
+            gc.collect()
+            started = time.perf_counter()
+            outputs = list(executor.map(lane, crops))
+            wall_times.append(time.perf_counter() - started)
+            retained_output_bytes = sum(output.nbytes for output in outputs)
+            checksum += sum(float(output.reshape(-1)[0]) for output in outputs)
+            del outputs
+    result = _finish_result(
+        mode="threads_retained",
+        workers=workers,
+        crop_count=len(crops),
+        wall_times=wall_times,
+        checksum=checksum,
+    )
+    result["retained_output_bytes"] = retained_output_bytes
+    return result
 
 
 def benchmark_processes(
@@ -549,7 +584,11 @@ def main() -> None:
             crop.shape[0],
         )
         output_bytes = (output_bytes + 63) // 64 * 64
-        shape = (1, 3, height, width)
+        shape = (
+            (height, width, 3)
+            if args.lane == "pillow_no_convert_uint8_hwc"
+            else (1, 3, height, width)
+        )
         output_specs.append((output_bytes, shape))
         output_bytes += int(np.prod(shape, dtype=np.int64)) * output_dtype.itemsize
     results = []
@@ -561,6 +600,14 @@ def main() -> None:
             )
             if mode == "threads":
                 result = benchmark_threads(
+                    crops,
+                    lane,
+                    workers=workers,
+                    rounds=args.rounds,
+                    warmup_crops=args.warmup_crops,
+                )
+            elif mode == "threads_retained":
+                result = benchmark_threads_retained(
                     crops,
                     lane,
                     workers=workers,

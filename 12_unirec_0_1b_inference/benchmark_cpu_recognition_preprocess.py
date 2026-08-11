@@ -221,6 +221,10 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
             np.transpose(np.asarray(image), (2, 0, 1))
         )[None]
 
+    def pillow_no_convert_uint8_hwc(crop: np.ndarray) -> np.ndarray:
+        image = _pillow_resize_without_convert(crop, processor)
+        return np.asarray(image)
+
     def pillow_no_convert_numba_fused(crop: np.ndarray) -> np.ndarray:
         if numba is None:
             raise RuntimeError("Numba is not installed")
@@ -284,6 +288,7 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
         ),
         "pillow_no_convert_chw_fp16_lut": pillow_no_convert_chw_fp16_lut,
         "pillow_no_convert_uint8_chw": pillow_no_convert_uint8_chw,
+        "pillow_no_convert_uint8_hwc": pillow_no_convert_uint8_hwc,
         "pillow_reducing_gap_2": pillow_reducing_gap_2,
         "pillow_opencv_blob": pillow_opencv_blob,
         "torchvision_uint8_bicubic": torchvision_uint8_bicubic,
@@ -403,6 +408,7 @@ def main() -> None:
         model_input_contract = name in {
             "pillow_no_convert_chw_fp16_lut",
             "pillow_no_convert_uint8_chw",
+            "pillow_no_convert_uint8_hwc",
         }
         parity = (
             {
@@ -431,10 +437,18 @@ def main() -> None:
         timing["speedup_vs_reference"] = None
         timing["parity"] = parity
         if model_input_contract:
-            if name == "pillow_no_convert_uint8_chw":
+            if name in {
+                "pillow_no_convert_uint8_chw",
+                "pillow_no_convert_uint8_hwc",
+            }:
 
                 def candidate_model_input(crop: np.ndarray) -> np.ndarray:
-                    output = lane(crop).astype(np.float32)
+                    output = lane(crop)
+                    if name == "pillow_no_convert_uint8_hwc":
+                        output = np.ascontiguousarray(
+                            np.transpose(output, (2, 0, 1))
+                        )[None]
+                    output = output.astype(np.float32)
                     output *= np.float32(2.0 / 255.0)
                     output -= np.float32(1.0)
                     return output.astype(np.float16)
