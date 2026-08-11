@@ -27,6 +27,7 @@ _PROCESS_CROPS: list[np.ndarray] | None = None
 _PROCESS_LANE: ArrayLane | None = None
 _PROCESS_OUTPUT: mmap.mmap | None = None
 _PROCESS_OUTPUT_SPECS: list[tuple[int, tuple[int, ...]]] | None = None
+_PROCESS_OUTPUT_DTYPE: np.dtype | None = None
 _PROCESS_INPUT: mmap.mmap | None = None
 _PROCESS_INPUT_SPECS: list[tuple[int, tuple[int, ...]]] | None = None
 
@@ -40,6 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--warmup-crops", type=int, default=64)
     parser.add_argument("--verify-shared-outputs", action="store_true")
+    parser.add_argument("--lane", default="pillow_chw_fused_formula")
     args = parser.parse_args()
     args.workers = [int(value) for value in args.workers.split(",")]
     args.modes = [value.strip() for value in args.modes.split(",")]
@@ -75,13 +77,14 @@ def _process_shared_output(index: int) -> float:
         or _PROCESS_LANE is None
         or _PROCESS_OUTPUT is None
         or _PROCESS_OUTPUT_SPECS is None
+        or _PROCESS_OUTPUT_DTYPE is None
     ):
         raise RuntimeError("shared-output process globals are not initialized")
     output = _PROCESS_LANE(_PROCESS_CROPS[index])
     offset, shape = _PROCESS_OUTPUT_SPECS[index]
     destination = np.ndarray(
         shape,
-        dtype=np.float32,
+        dtype=_PROCESS_OUTPUT_DTYPE,
         buffer=_PROCESS_OUTPUT,
         offset=offset,
     )
@@ -96,6 +99,7 @@ def _process_shared_io(index: int) -> float:
         or _PROCESS_INPUT_SPECS is None
         or _PROCESS_OUTPUT is None
         or _PROCESS_OUTPUT_SPECS is None
+        or _PROCESS_OUTPUT_DTYPE is None
     ):
         raise RuntimeError("shared-input/output process globals are not initialized")
     input_offset, input_shape = _PROCESS_INPUT_SPECS[index]
@@ -109,7 +113,7 @@ def _process_shared_io(index: int) -> float:
     output_offset, output_shape = _PROCESS_OUTPUT_SPECS[index]
     destination = np.ndarray(
         output_shape,
-        dtype=np.float32,
+        dtype=_PROCESS_OUTPUT_DTYPE,
         buffer=_PROCESS_OUTPUT,
         offset=output_offset,
     )
@@ -141,6 +145,7 @@ def _verify_shared_outputs(
     lane: ArrayLane,
     output: mmap.mmap,
     output_specs: list[tuple[int, tuple[int, ...]]],
+    output_dtype: np.dtype,
 ) -> dict[str, object]:
     started = time.perf_counter()
     exact_crops = 0
@@ -152,18 +157,23 @@ def _verify_shared_outputs(
         offset, shape = output_specs[index]
         actual = np.ndarray(
             shape,
-            dtype=np.float32,
+            dtype=output_dtype,
             buffer=output,
             offset=offset,
         )
-        difference = actual - expected
-        crop_different = int(np.count_nonzero(difference))
+        different = actual != expected
+        crop_different = int(np.count_nonzero(different))
         exact_crops += int(crop_different == 0)
         different_values += crop_different
         total_values += int(difference.size)
         max_absolute = max(
             max_absolute,
-            float(np.max(np.abs(difference), initial=0.0)),
+            float(
+                np.max(
+                    np.abs(actual.astype(np.float64) - expected.astype(np.float64)),
+                    initial=0.0,
+                )
+            ),
         )
     return {
         "reference": "direct_pillow_chw_fused_formula",
@@ -263,11 +273,14 @@ def benchmark_processes_shared(
     warmup_crops: int,
     output_specs: list[tuple[int, tuple[int, ...]]],
     output_bytes: int,
+    output_dtype: np.dtype,
 ) -> dict[str, object]:
     global _PROCESS_CROPS, _PROCESS_LANE, _PROCESS_OUTPUT, _PROCESS_OUTPUT_SPECS
+    global _PROCESS_OUTPUT_DTYPE
     _PROCESS_CROPS = crops
     _PROCESS_LANE = lane
     _PROCESS_OUTPUT_SPECS = output_specs
+    _PROCESS_OUTPUT_DTYPE = output_dtype
     _PROCESS_OUTPUT = mmap.mmap(
         -1,
         output_bytes,
@@ -303,7 +316,7 @@ def benchmark_processes_shared(
         offset, shape = output_specs[index]
         output = np.ndarray(
             shape,
-            dtype=np.float32,
+            dtype=output_dtype,
             buffer=_PROCESS_OUTPUT,
             offset=offset,
         )
@@ -313,6 +326,7 @@ def benchmark_processes_shared(
     _PROCESS_LANE = None
     _PROCESS_OUTPUT = None
     _PROCESS_OUTPUT_SPECS = None
+    _PROCESS_OUTPUT_DTYPE = None
     result = _finish_result(
         mode="processes_shared",
         workers=workers,
@@ -336,14 +350,16 @@ def benchmark_processes_shared_io(
     input_bytes: int,
     output_specs: list[tuple[int, tuple[int, ...]]],
     output_bytes: int,
+    output_dtype: np.dtype,
     stream_inputs: bool = False,
     verify_outputs: bool = False,
 ) -> dict[str, object]:
     global _PROCESS_LANE, _PROCESS_INPUT, _PROCESS_INPUT_SPECS
-    global _PROCESS_OUTPUT, _PROCESS_OUTPUT_SPECS
+    global _PROCESS_OUTPUT, _PROCESS_OUTPUT_SPECS, _PROCESS_OUTPUT_DTYPE
     _PROCESS_LANE = lane
     _PROCESS_INPUT_SPECS = input_specs
     _PROCESS_OUTPUT_SPECS = output_specs
+    _PROCESS_OUTPUT_DTYPE = output_dtype
     _PROCESS_INPUT = mmap.mmap(
         -1,
         input_bytes,
@@ -437,7 +453,7 @@ def benchmark_processes_shared_io(
         offset, shape = output_specs[index]
         output = np.ndarray(
             shape,
-            dtype=np.float32,
+            dtype=output_dtype,
             buffer=_PROCESS_OUTPUT,
             offset=offset,
         )
@@ -448,6 +464,7 @@ def benchmark_processes_shared_io(
             lane,
             _PROCESS_OUTPUT,
             output_specs,
+            output_dtype,
         )
         if verify_outputs
         else None
@@ -459,6 +476,7 @@ def benchmark_processes_shared_io(
     _PROCESS_INPUT_SPECS = None
     _PROCESS_OUTPUT = None
     _PROCESS_OUTPUT_SPECS = None
+    _PROCESS_OUTPUT_DTYPE = None
     result = _finish_result(
         mode=mode,
         workers=workers,
@@ -513,7 +531,11 @@ def main() -> None:
         args.openocr_root.expanduser().resolve(),
         processor,
     )
-    lane = build_lanes(processor)["pillow_chw_fused_formula"]
+    lanes = build_lanes(processor)
+    if args.lane not in lanes:
+        raise ValueError(f"unknown lane {args.lane!r}; available={sorted(lanes)}")
+    lane = lanes[args.lane]
+    output_dtype = lane(crops[0]).dtype
     input_specs = []
     input_bytes = 0
     output_specs = []
@@ -529,7 +551,7 @@ def main() -> None:
         output_bytes = (output_bytes + 63) // 64 * 64
         shape = (1, 3, height, width)
         output_specs.append((output_bytes, shape))
-        output_bytes += int(np.prod(shape, dtype=np.int64)) * 4
+        output_bytes += int(np.prod(shape, dtype=np.int64)) * output_dtype.itemsize
     results = []
     for mode in args.modes:
         for workers in args.workers:
@@ -562,6 +584,7 @@ def main() -> None:
                     warmup_crops=args.warmup_crops,
                     output_specs=output_specs,
                     output_bytes=output_bytes,
+                    output_dtype=output_dtype,
                 )
             elif mode == "processes_shared_io":
                 result = benchmark_processes_shared_io(
@@ -574,6 +597,7 @@ def main() -> None:
                     input_bytes=input_bytes,
                     output_specs=output_specs,
                     output_bytes=output_bytes,
+                    output_dtype=output_dtype,
                     verify_outputs=args.verify_shared_outputs,
                 )
             else:
@@ -587,6 +611,7 @@ def main() -> None:
                     input_bytes=input_bytes,
                     output_specs=output_specs,
                     output_bytes=output_bytes,
+                    output_dtype=output_dtype,
                     stream_inputs=True,
                     verify_outputs=args.verify_shared_outputs,
                 )
@@ -610,8 +635,8 @@ def main() -> None:
             {
                 "status": "ok",
                 "crop_count": len(crops),
-                "lane": "pillow_chw_fused_formula",
-                "parity": "bit_exact_in_full_sequential_lab",
+                "lane": args.lane,
+                "output_dtype": str(output_dtype),
                 "baseline_mode": baseline["mode"],
                 "baseline_workers": baseline["workers"],
                 "input_bytes": input_bytes,

@@ -215,6 +215,12 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
         chw_u8 = np.transpose(np.asarray(image), (2, 0, 1))
         return np.ascontiguousarray(fp16_lut[chw_u8])[None]
 
+    def pillow_no_convert_uint8_chw(crop: np.ndarray) -> np.ndarray:
+        image = _pillow_resize_without_convert(crop, processor)
+        return np.ascontiguousarray(
+            np.transpose(np.asarray(image), (2, 0, 1))
+        )[None]
+
     def pillow_no_convert_numba_fused(crop: np.ndarray) -> np.ndarray:
         if numba is None:
             raise RuntimeError("Numba is not installed")
@@ -277,6 +283,7 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
             pillow_no_convert_chw_fused_formula
         ),
         "pillow_no_convert_chw_fp16_lut": pillow_no_convert_chw_fp16_lut,
+        "pillow_no_convert_uint8_chw": pillow_no_convert_uint8_chw,
         "pillow_reducing_gap_2": pillow_reducing_gap_2,
         "pillow_opencv_blob": pillow_opencv_blob,
         "torchvision_uint8_bicubic": torchvision_uint8_bicubic,
@@ -393,6 +400,10 @@ def main() -> None:
             rounds=args.rounds,
             warmup_crops=args.warmup_crops,
         )
+        model_input_contract = name in {
+            "pillow_no_convert_chw_fp16_lut",
+            "pillow_no_convert_uint8_chw",
+        }
         parity = (
             {
                 "all_exact": True,
@@ -405,18 +416,35 @@ def main() -> None:
                 "total_values": processed_pixels * 3,
             }
             if name == "pillow_reference"
-            else compare_lane(crops, reference, lane)
+            else (
+                {
+                    "comparison": "model_input_fp16_only",
+                    "reason": "candidate intentionally returns a compact dtype",
+                }
+                if model_input_contract
+                else compare_lane(crops, reference, lane)
+            )
         )
         timing["processed_megapixels_per_s"] = (
             processed_pixels / 1e6 / float(timing["median_s"])
         )
         timing["speedup_vs_reference"] = None
         timing["parity"] = parity
-        if name == "pillow_no_convert_chw_fp16_lut":
+        if model_input_contract:
+            if name == "pillow_no_convert_uint8_chw":
+
+                def candidate_model_input(crop: np.ndarray) -> np.ndarray:
+                    output = lane(crop).astype(np.float32)
+                    output *= np.float32(2.0 / 255.0)
+                    output -= np.float32(1.0)
+                    return output.astype(np.float16)
+
+            else:
+                candidate_model_input = lane
             timing["model_input_fp16_parity"] = compare_lane(
                 crops,
                 lambda crop: reference(crop).astype(np.float16),
-                lane,
+                candidate_model_input,
             )
         results[name] = timing
         print(
