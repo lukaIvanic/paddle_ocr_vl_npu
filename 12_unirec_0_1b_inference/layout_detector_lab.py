@@ -224,6 +224,7 @@ def main() -> None:
             "height": int(image.shape[0]),
             "width": int(image.shape[1]),
             "box_count": len(result["boxes"]),
+            "result": result,
             "result_digest": result_digest(result),
             "page_wall_s": time.perf_counter() - page_started,
             "stage_s": stage_s,
