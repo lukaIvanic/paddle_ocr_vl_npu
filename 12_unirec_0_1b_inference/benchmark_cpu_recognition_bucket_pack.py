@@ -67,7 +67,7 @@ def build_canvases_and_destinations(
     processor: UniRecImageProcessor,
     *,
     page_lookahead: int,
-) -> tuple[list[np.ndarray], list[np.ndarray], dict[str, int]]:
+) -> tuple[list[np.ndarray], list[np.ndarray], list[int], dict[str, int]]:
     crop_groups = []
     offset = 0
     for start in range(0, len(page_crop_counts), page_lookahead):
@@ -79,6 +79,7 @@ def build_canvases_and_destinations(
 
     canvases = []
     destinations: list[np.ndarray | None] = [None] * len(crops)
+    destination_canvas_indices: list[int | None] = [None] * len(crops)
     call_counts: dict[str, int] = {}
     for crop_indices in crop_groups:
         grouped: dict[str, list[int]] = {
@@ -105,6 +106,7 @@ def build_canvases_and_destinations(
                     dtype=np.uint8,
                 )
                 canvases.append(canvas)
+                canvas_index = len(canvases) - 1
                 call_counts[spec.key] = call_counts.get(spec.key, 0) + 1
                 for row, crop_index in enumerate(members):
                     height, width = crops[crop_index].shape[:2]
@@ -118,19 +120,29 @@ def build_canvases_and_destinations(
                         :processed_width,
                         :,
                     ]
+                    destination_canvas_indices[crop_index] = canvas_index
         for crop_index, processed_width, processed_height in fallbacks:
             canvas = np.zeros(
                 (1, processed_height, processed_width, 3),
                 dtype=np.uint8,
             )
             canvases.append(canvas)
+            canvas_index = len(canvases) - 1
             call_counts["fallback_eager"] = (
                 call_counts.get("fallback_eager", 0) + 1
             )
             destinations[crop_index] = canvas[0]
-    if any(destination is None for destination in destinations):
+            destination_canvas_indices[crop_index] = canvas_index
+    if any(destination is None for destination in destinations) or any(
+        index is None for index in destination_canvas_indices
+    ):
         raise RuntimeError("one or more crops have no canvas destination")
-    return canvases, list(destinations), call_counts
+    return (
+        canvases,
+        list(destinations),
+        list(destination_canvas_indices),
+        call_counts,
+    )
 
 
 def main() -> None:
@@ -151,11 +163,13 @@ def main() -> None:
     )
     page_crop_counts = [len(page["crops"]) for page in pages]
     lane = build_lanes(processor)["pillow_no_convert_uint8_hwc"]
-    canvases, destinations, call_counts = build_canvases_and_destinations(
-        crops,
-        page_crop_counts,
-        processor,
-        page_lookahead=args.page_lookahead,
+    canvases, destinations, _canvas_indices, call_counts = (
+        build_canvases_and_destinations(
+            crops,
+            page_crop_counts,
+            processor,
+            page_lookahead=args.page_lookahead,
+        )
     )
 
     def resize_and_pack(index: int) -> float:
