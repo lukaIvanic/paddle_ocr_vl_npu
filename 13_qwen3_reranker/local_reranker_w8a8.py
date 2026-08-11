@@ -291,6 +291,26 @@ class W8A8GateUpOnlyMLP(nn.Module):
         return linear_tokenwise(self.down_proj, F.silu(gate) * up)
 
 
+class W8A8DownOnlyMLP(nn.Module):
+    """Keep gate/up FP16 and quantize only the FFN down projection."""
+
+    def __init__(self, dense_mlp: LocalQwen3RerankerMLP, *, out_dtype: torch.dtype):
+        super().__init__()
+        self.gate_proj = dense_mlp.gate_proj
+        self.up_proj = dense_mlp.up_proj
+        self.down_proj = W8A8Linear.from_linear(
+            dense_mlp.down_proj,
+            out_dtype=out_dtype,
+        )
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        import torch.nn.functional as F
+
+        gate = linear_tokenwise(self.gate_proj, hidden_states)
+        up = linear_tokenwise(self.up_proj, hidden_states)
+        return self.down_proj(F.silu(gate) * up)
+
+
 def quantize_reranker_gate_up_inplace(module: nn.Module, *, out_dtype: torch.dtype) -> None:
     for parent in module.modules():
         for name, child in list(parent.named_children()):
@@ -303,6 +323,13 @@ def quantize_reranker_ffn_inplace(module: nn.Module, *, out_dtype: torch.dtype) 
         for name, child in list(parent.named_children()):
             if isinstance(child, LocalQwen3RerankerMLP):
                 setattr(parent, name, W8A8MLP(child, out_dtype=out_dtype))
+
+
+def quantize_reranker_down_inplace(module: nn.Module, *, out_dtype: torch.dtype) -> None:
+    for parent in module.modules():
+        for name, child in list(parent.named_children()):
+            if isinstance(child, LocalQwen3RerankerMLP):
+                setattr(parent, name, W8A8DownOnlyMLP(child, out_dtype=out_dtype))
 
 
 def quantize_reranker_qkv_inplace(module: nn.Module, *, out_dtype: torch.dtype) -> None:

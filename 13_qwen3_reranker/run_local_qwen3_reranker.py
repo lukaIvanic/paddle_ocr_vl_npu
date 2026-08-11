@@ -91,7 +91,7 @@ class LocalQwen3RerankerRunner:
             raise ValueError(f"Unsupported attention_impl={self.attention_impl!r}")
         if self.attention_impl == "prompt_flash_attention" and self.dtype is not torch.float16:
             raise ValueError("prompt_flash_attention requires float16")
-        if self.ffn_weight_mode not in {"dense", "gate_up_w8a8", "w8a8", "qkv_w8a8", "packed_qkv_w8a8", "o_w8a8", "full_w8a8", "all_w8a8"}:
+        if self.ffn_weight_mode not in {"dense", "gate_up_w8a8", "down_w8a8", "w8a8", "qkv_w8a8", "packed_qkv_w8a8", "o_w8a8", "full_w8a8", "all_w8a8"}:
             raise ValueError(f"Unsupported ffn_weight_mode={self.ffn_weight_mode!r}")
         if self.ffn_weight_mode != "dense" and self.dtype is not torch.float16:
             raise ValueError("W8A8 modes require float16")
@@ -212,6 +212,10 @@ class LocalQwen3RerankerRunner:
             from local_reranker_w8a8 import quantize_reranker_gate_up_inplace
 
             quantize_reranker_gate_up_inplace(model, out_dtype=self.dtype)
+        elif self.ffn_weight_mode == "down_w8a8":
+            from local_reranker_w8a8 import quantize_reranker_down_inplace
+
+            quantize_reranker_down_inplace(model, out_dtype=self.dtype)
         elif self.ffn_weight_mode == "w8a8":
             from local_reranker_w8a8 import quantize_reranker_ffn_inplace
 
@@ -576,7 +580,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--attention-impl", choices=("eager", "prompt_flash_attention"), default="eager")
     parser.add_argument(
         "--ffn-weight-mode",
-        choices=("dense", "gate_up_w8a8", "w8a8", "qkv_w8a8", "packed_qkv_w8a8", "o_w8a8", "full_w8a8", "all_w8a8"),
+        choices=("dense", "gate_up_w8a8", "down_w8a8", "w8a8", "qkv_w8a8", "packed_qkv_w8a8", "o_w8a8", "full_w8a8", "all_w8a8"),
         default="dense",
     )
     parser.add_argument(
