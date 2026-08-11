@@ -233,7 +233,7 @@ The Ascend 910B2 experiments validate the mechanism: the split drafts are useful
 enough to reduce the slow-table tail. The remaining engineering task is routing
 only the tables that are likely to benefit.
 
-### 2.4 Measured 910B2 prototype results (draft)
+### 2.4 Measured 910B2 prototype results
 
 The prototype was evaluated on all 665 OmniDocBench v1.6 table crops on an
 Ascend 910B2. The row-draft stage and full-table speculative-verification stage
