@@ -17,7 +17,23 @@ import torch.nn as nn
 ROOT = Path(__file__).resolve().parent
 
 
-class _LayoutClass(nn.Module):
+class _SelfAttentionClass(nn.Module):
+    pass
+
+
+class _ReadingOrderSelfAttentionClass(nn.Module):
+    pass
+
+
+class _GlobalPointerClass(nn.Module):
+    pass
+
+
+class _SinePositionClass(nn.Module):
+    pass
+
+
+class _ReadingOrderEncoderClass(nn.Module):
     pass
 
 
@@ -25,10 +41,14 @@ def _load_layout_torchair():
     layout_module = types.ModuleType(
         "transformers.models.pp_doclayout_v2.modeling_pp_doclayout_v2"
     )
-    layout_module.PPDocLayoutV2SelfAttention = _LayoutClass
-    layout_module.PPDocLayoutV2ReadingOrderSelfAttention = _LayoutClass
-    layout_module.PPDocLayoutV2GlobalPointer = _LayoutClass
-    layout_module.PPDocLayoutV2SinePositionEmbedding = _LayoutClass
+    layout_module.PPDocLayoutV2SelfAttention = _SelfAttentionClass
+    layout_module.PPDocLayoutV2ReadingOrderSelfAttention = (
+        _ReadingOrderSelfAttentionClass
+    )
+    layout_module.PPDocLayoutV2ReadingOrderEncoder = _ReadingOrderEncoderClass
+    layout_module.PPDocLayoutV2GlobalPointer = _GlobalPointerClass
+    layout_module.PPDocLayoutV2SinePositionEmbedding = _SinePositionClass
+    layout_module.PPDocLayoutV2ForObjectDetectionOutput = SimpleNamespace
     def rejected_bidirectional_mask(**kwargs):
         del kwargs
         raise AssertionError("eager reading order must not call the HF mask helper")
@@ -89,7 +109,7 @@ class _CapturingEmbeddings(nn.Module):
         return input_ids.to(torch.float32).unsqueeze(-1)
 
 
-class _IdentityEncoder(nn.Module):
+class _IdentityEncoder(_ReadingOrderEncoderClass):
     def __init__(self) -> None:
         super().__init__()
         self.attention_mask: torch.Tensor | None = None
@@ -122,15 +142,23 @@ class _ReadingOrder(nn.Module):
         self.relative_head = nn.Identity()
 
 
-class _AnchorOwner:
+class _AnchorOwner(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+
     def generate_anchors(self):
         raise AssertionError("unpatched anchor method")
 
 
-class _Model:
+class _Model(nn.Module):
     def __init__(self) -> None:
+        super().__init__()
         self.model = _AnchorOwner()
         self.reading_order = _ReadingOrder()
+
+    def forward(self, *args, **kwargs):
+        del args, kwargs
+        raise AssertionError("unpatched object-detection forward")
 
 
 class LayoutNpuCompatibilityTest(unittest.TestCase):
@@ -193,6 +221,30 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
         )
         torch.testing.assert_close(
             model.reading_order.encoder.attention_mask, expected_attention_mask
+        )
+
+    def test_table_lookup_matches_advanced_indexing_for_float_and_int(self) -> None:
+        indices = torch.tensor([[0, 2, 1], [1, 0, 2]], dtype=torch.long)
+        for table in (
+            torch.tensor([0.1, 0.5, 0.9], dtype=torch.float32),
+            torch.tensor([7, 3, 11], dtype=torch.int32),
+            torch.arange(12, dtype=torch.float32).reshape(3, 4),
+        ):
+            expected = table[indices]
+            actual = self.layout_torchair._table_lookup(table, indices)
+            torch.testing.assert_close(actual, expected)
+
+    def test_compile_bundle_rewrites_all_index_by_tensor_sources(self) -> None:
+        model = _Model()
+        self.layout_torchair.make_compile_compatible(model)
+
+        self.assertIs(
+            model.forward.__func__,
+            self.layout_torchair._object_detection_forward,
+        )
+        self.assertIs(
+            model.reading_order.encoder._cal_1d_pos_emb.__func__,
+            self.layout_torchair._reading_order_cal_1d_pos_emb,
         )
 
     def test_adapter_installs_the_eager_bundle(self) -> None:

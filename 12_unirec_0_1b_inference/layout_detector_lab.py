@@ -9,6 +9,7 @@ crop construction, and output assembly are intentionally excluded.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import statistics
 import sys
@@ -37,6 +38,19 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", default="npu:0")
+    parser.add_argument(
+        "--execution",
+        choices=("eager", "torchair"),
+        default="eager",
+        help="Run the model eagerly or through the static fullgraph TorchAir path",
+    )
+    parser.add_argument(
+        "--compile-cache-dir",
+        type=Path,
+        default=Path(
+            ".runtime_cache/12_unirec_0_1b_inference/layout_detector_lab"
+        ),
+    )
     parser.add_argument(
         "--dtype",
         choices=("float16", "float32"),
@@ -73,6 +87,16 @@ def percentile(values: list[float], fraction: float) -> float:
     ordered = sorted(values)
     index = round((len(ordered) - 1) * fraction)
     return ordered[index]
+
+
+def result_digest(result: dict[str, Any]) -> str:
+    payload = json.dumps(
+        result,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def summarize(records: list[dict[str, Any]], setup_s: float) -> dict[str, Any]:
@@ -149,21 +173,38 @@ def main() -> None:
 
     print(
         f"LAYOUT_LAB setup pages={len(image_paths)} dtype={args.dtype} "
-        f"device={args.device}",
+        f"device={args.device} execution={args.execution}",
         flush=True,
     )
+    print("LAYOUT_LAB phase=model_setup_begin", flush=True)
     detector = PPDocLayoutV2NpuAdapter(
         model_path=args.model_path,
         device=args.device,
         dtype=args.dtype,
         threshold=args.threshold,
         profile_stages=True,
+        execution=args.execution,
+        compile_cache_dir=args.compile_cache_dir,
+        batch_size=1,
+    )
+    print(
+        f"LAYOUT_LAB phase=model_setup_end setup_s={detector.setup_s:.3f}",
+        flush=True,
     )
 
     warmup_image, _ = decode_page_bgr(image_paths[0])
     for index in range(args.warmup_pages):
+        print(
+            f"LAYOUT_LAB phase=warmup_call_begin "
+            f"call={index + 1}/{args.warmup_pages}",
+            flush=True,
+        )
         detector([warmup_image], threshold=args.threshold)
-        print(f"LAYOUT_LAB warmup {index + 1}/{args.warmup_pages}", flush=True)
+        print(
+            f"LAYOUT_LAB phase=warmup_call_end "
+            f"call={index + 1}/{args.warmup_pages}",
+            flush=True,
+        )
     detector.reset_timing()
 
     records: list[dict[str, Any]] = []
@@ -183,6 +224,7 @@ def main() -> None:
             "height": int(image.shape[0]),
             "width": int(image.shape[1]),
             "box_count": len(result["boxes"]),
+            "result_digest": result_digest(result),
             "page_wall_s": time.perf_counter() - page_started,
             "stage_s": stage_s,
         }
@@ -191,7 +233,8 @@ def main() -> None:
             f"LAYOUT_LAB page={page_index + 1}/{len(image_paths)} "
             f"wall_ms={record['page_wall_s'] * 1000.0:.1f} "
             f"forward_ms={stage_s.get('model_forward_s', 0.0) * 1000.0:.1f} "
-            f"boxes={record['box_count']}",
+            f"boxes={record['box_count']} "
+            f"digest={record['result_digest'][:12]}",
             flush=True,
         )
 
@@ -202,11 +245,13 @@ def main() -> None:
             "input": str(input_path),
             "device": args.device,
             "dtype": args.dtype,
+            "execution": args.execution,
+            "compile_cache_dir": str(args.compile_cache_dir.expanduser().resolve()),
             "threshold": args.threshold,
             "offset": args.offset,
             "limit": args.limit,
             "warmup_pages": args.warmup_pages,
-            "execution": "sequential_b1",
+            "scheduling": "sequential_b1_same_process",
         },
         "summary": summarize(records, detector.setup_s),
         "pages": records,

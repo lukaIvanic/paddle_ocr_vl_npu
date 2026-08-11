@@ -66,6 +66,26 @@ def _reading_order_attention_bias(
     )
 
 
+def _table_lookup(table: torch.Tensor, indices: torch.Tensor) -> torch.Tensor:
+    """Replace tensor advanced indexing with the supported embedding lookup."""
+    if table.ndim == 1:
+        return F.embedding(indices, table.unsqueeze(-1)).squeeze(-1)
+    return F.embedding(indices, table)
+
+
+def _reading_order_cal_1d_pos_emb(self, position_ids):
+    """Build relative-position bias without ``weight[relative_positions]``."""
+    relative_positions = position_ids.unsqueeze(-2) - position_ids.unsqueeze(-1)
+    buckets = self.relative_position_bucket(
+        relative_positions,
+        num_buckets=self.rel_pos_bins,
+        max_distance=self.max_rel_pos,
+    )
+    with torch.no_grad():
+        relative_bias = _table_lookup(self.rel_pos_bias.weight.t(), buckets)
+    return relative_bias.permute(0, 3, 1, 2).contiguous()
+
+
 def _reading_order(self, boxes, labels=None, mask=None, **kwargs):
     batch_size, seq_len = mask.shape
     num_pred = mask.sum(dim=1)
@@ -109,6 +129,113 @@ def _reading_order(self, boxes, labels=None, mask=None, **kwargs):
         hidden_states=embeddings, bbox=pad_boxes, attention_mask=attention_mask
     ).last_hidden_state
     return self.relative_head(encoded[:, 1 : 1 + seq_len, :])
+
+
+def _object_detection_forward(
+    self,
+    pixel_values,
+    pixel_mask=None,
+    encoder_outputs=None,
+    inputs_embeds=None,
+    decoder_inputs_embeds=None,
+    labels=None,
+    **kwargs,
+):
+    """Run the inference forward without data-dependent tensor indexing.
+
+    Transformers 5.5.4 uses three advanced table reads in this path: class
+    thresholds, class-order remapping, and reading-order relative-position
+    bias. Atlas 310P lowers those reads to its unsupported ``IndexByTensor``
+    AICPU kernel. The first two are rewritten here as embedding lookups; the
+    relative-position read is patched on its owning encoder above.
+    """
+    outputs = self.model(
+        pixel_values,
+        pixel_mask=pixel_mask,
+        encoder_outputs=encoder_outputs,
+        inputs_embeds=inputs_embeds,
+        decoder_inputs_embeds=decoder_inputs_embeds,
+        labels=labels,
+        **kwargs,
+    )
+
+    raw_bboxes = outputs.intermediate_reference_points[:, -1]
+    logits = outputs.intermediate_logits[:, -1]
+
+    box_centers, box_sizes = raw_bboxes.split(2, dim=-1)
+    bboxes = torch.cat(
+        [box_centers - 0.5 * box_sizes, box_centers + 0.5 * box_sizes],
+        dim=-1,
+    ) * 1000
+    bboxes = bboxes.clamp_(0.0, 1000.0)
+
+    max_logits, class_ids = logits.max(dim=-1)
+    max_probs = max_logits.sigmoid()
+    class_thresholds = torch.tensor(
+        self.config.class_thresholds,
+        dtype=torch.float32,
+        device=logits.device,
+    )
+    thresholds = _table_lookup(class_thresholds, class_ids)
+    mask = max_probs >= thresholds
+
+    indices = torch.argsort(mask.to(torch.int8), dim=1, descending=True)
+    sorted_class_ids = torch.take_along_dim(class_ids, indices, dim=1)
+    expanded_box_indices = indices.unsqueeze(-1).expand(-1, -1, 4)
+    sorted_boxes = torch.take_along_dim(bboxes, expanded_box_indices, dim=1)
+    pred_boxes = torch.take_along_dim(raw_bboxes, expanded_box_indices, dim=1)
+    expanded_logit_indices = indices.unsqueeze(-1).expand(
+        -1, -1, logits.shape[-1]
+    )
+    logits = torch.take_along_dim(logits, expanded_logit_indices, dim=1)
+    sorted_mask = torch.take_along_dim(mask, indices, dim=1)
+
+    pad_boxes = torch.where(
+        sorted_mask.unsqueeze(-1), sorted_boxes, torch.zeros_like(sorted_boxes)
+    )
+    pad_class_ids = torch.where(
+        sorted_mask, sorted_class_ids, torch.zeros_like(sorted_class_ids)
+    )
+    class_order = torch.tensor(
+        self.config.class_order,
+        dtype=torch.float32,
+        device=logits.device,
+    )
+    pad_class_ids = _table_lookup(class_order, pad_class_ids).to(torch.int32)
+
+    order_logits = self.reading_order(
+        boxes=pad_boxes,
+        labels=pad_class_ids,
+        mask=mask,
+    )
+    order_logits = order_logits[:, :, : self.num_queries]
+
+    if labels is not None:
+        raise ValueError("PPDocLayoutV2ForObjectDetection does not support training")
+
+    return layout_mod.PPDocLayoutV2ForObjectDetectionOutput(
+        logits=logits,
+        pred_boxes=pred_boxes,
+        order_logits=order_logits,
+        last_hidden_state=outputs.last_hidden_state,
+        intermediate_hidden_states=outputs.intermediate_hidden_states,
+        intermediate_logits=outputs.intermediate_logits,
+        intermediate_reference_points=outputs.intermediate_reference_points,
+        intermediate_predicted_corners=outputs.intermediate_predicted_corners,
+        initial_reference_points=outputs.initial_reference_points,
+        decoder_hidden_states=outputs.decoder_hidden_states,
+        decoder_attentions=outputs.decoder_attentions,
+        cross_attentions=outputs.cross_attentions,
+        encoder_last_hidden_state=outputs.encoder_last_hidden_state,
+        encoder_hidden_states=outputs.encoder_hidden_states,
+        encoder_attentions=outputs.encoder_attentions,
+        init_reference_points=outputs.init_reference_points,
+        enc_topk_logits=outputs.enc_topk_logits,
+        enc_topk_bboxes=outputs.enc_topk_bboxes,
+        enc_outputs_class=outputs.enc_outputs_class,
+        enc_outputs_coord_logits=outputs.enc_outputs_coord_logits,
+        denoising_meta_values=outputs.denoising_meta_values,
+    )
 
 
 def _cogview_attention(self, attention_scores, alpha=32):
@@ -247,9 +374,15 @@ def make_compile_compatible(model: nn.Module) -> None:
     """Apply algebraically equivalent rewrites only to this layout model."""
     layout_mod.torch_compilable_check = lambda *args, **kwargs: None
     make_eager_npu_compatible(model)
+    _bind(model, _object_detection_forward)
     for module in model.modules():
         if isinstance(module, layout_mod.PPDocLayoutV2SelfAttention):
             _bind(module, _model_self_attention)
+        elif isinstance(module, layout_mod.PPDocLayoutV2ReadingOrderEncoder):
+            module._cal_1d_pos_emb = types.MethodType(
+                _reading_order_cal_1d_pos_emb,
+                module,
+            )
         elif isinstance(module, layout_mod.PPDocLayoutV2ReadingOrderSelfAttention):
             _bind(module, _reading_order_attention)
         elif isinstance(module, layout_mod.PPDocLayoutV2GlobalPointer):
