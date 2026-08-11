@@ -165,7 +165,7 @@ def _verify_shared_outputs(
         crop_different = int(np.count_nonzero(different))
         exact_crops += int(crop_different == 0)
         different_values += crop_different
-        total_values += int(difference.size)
+        total_values += int(different.size)
         max_absolute = max(
             max_absolute,
             float(
