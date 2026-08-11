@@ -49,10 +49,11 @@ def parse_args() -> argparse.Namespace:
         "processes",
         "processes_shared",
         "processes_shared_io",
+        "processes_streamed_shared_io",
     }:
         parser.error(
             "--modes accepts only threads, processes, processes_shared, "
-            "and processes_shared_io"
+            "processes_shared_io, and processes_streamed_shared_io"
         )
     return args
 
@@ -293,6 +294,7 @@ def benchmark_processes_shared_io(
     input_bytes: int,
     output_specs: list[tuple[int, tuple[int, ...]]],
     output_bytes: int,
+    stream_inputs: bool = False,
 ) -> dict[str, object]:
     global _PROCESS_LANE, _PROCESS_INPUT, _PROCESS_INPUT_SPECS
     global _PROCESS_OUTPUT, _PROCESS_OUTPUT_SPECS
@@ -324,6 +326,11 @@ def benchmark_processes_shared_io(
             np.copyto(destination, crop)
 
     checksum = 0.0
+    mode = (
+        "processes_streamed_shared_io"
+        if stream_inputs
+        else "processes_shared_io"
+    )
     context = mp.get_context("fork")
     with context.Pool(processes=workers) as pool:
         warmup_count = min(warmup_crops, len(crops))
@@ -341,15 +348,42 @@ def benchmark_processes_shared_io(
         for _round_index in range(rounds):
             gc.collect()
             started = time.perf_counter()
-            pack_inputs(len(crops))
-            packed = time.perf_counter()
-            checksum += sum(
-                pool.imap_unordered(
-                    _process_shared_io,
-                    range(len(crops)),
-                    chunksize=1,
+            if stream_inputs:
+                input_pack_s = 0.0
+
+                def pack_and_yield_indices():
+                    nonlocal input_pack_s
+                    for index, crop in enumerate(crops):
+                        copy_started = time.perf_counter()
+                        offset, shape = input_specs[index]
+                        destination = np.ndarray(
+                            shape,
+                            dtype=np.uint8,
+                            buffer=_PROCESS_INPUT,
+                            offset=offset,
+                        )
+                        np.copyto(destination, crop)
+                        input_pack_s += time.perf_counter() - copy_started
+                        yield index
+
+                checksum += sum(
+                    pool.imap_unordered(
+                        _process_shared_io,
+                        pack_and_yield_indices(),
+                        chunksize=1,
+                    )
                 )
-            )
+                packed = started + input_pack_s
+            else:
+                pack_inputs(len(crops))
+                packed = time.perf_counter()
+                checksum += sum(
+                    pool.imap_unordered(
+                        _process_shared_io,
+                        range(len(crops)),
+                        chunksize=1,
+                    )
+                )
             finished = time.perf_counter()
             input_pack_times.append(packed - started)
             compute_output_times.append(finished - packed)
@@ -373,7 +407,7 @@ def benchmark_processes_shared_io(
     _PROCESS_OUTPUT = None
     _PROCESS_OUTPUT_SPECS = None
     result = _finish_result(
-        mode="processes_shared_io",
+        mode=mode,
         workers=workers,
         crop_count=len(crops),
         wall_times=wall_times,
@@ -383,13 +417,34 @@ def benchmark_processes_shared_io(
         {
             "input_bytes": input_bytes,
             "output_bytes": output_bytes,
-            "round_input_pack_s": input_pack_times,
-            "round_compute_and_output_s": compute_output_times,
-            "median_input_pack_s": statistics.median(input_pack_times),
-            "median_compute_and_output_s": statistics.median(compute_output_times),
             "boundary_checksum": boundary_checksum,
+            "input_delivery": (
+                "streamed_and_overlapped" if stream_inputs else "pack_then_compute"
+            ),
         }
     )
+    if stream_inputs:
+        result.update(
+            {
+                "round_input_copy_cpu_s": input_pack_times,
+                "round_wall_minus_input_copy_cpu_s": compute_output_times,
+                "median_input_copy_cpu_s": statistics.median(input_pack_times),
+                "median_wall_minus_input_copy_cpu_s": statistics.median(
+                    compute_output_times
+                ),
+            }
+        )
+    else:
+        result.update(
+            {
+                "round_input_pack_s": input_pack_times,
+                "round_compute_and_output_s": compute_output_times,
+                "median_input_pack_s": statistics.median(input_pack_times),
+                "median_compute_and_output_s": statistics.median(
+                    compute_output_times
+                ),
+            }
+        )
     return result
 
 
@@ -454,6 +509,18 @@ def main() -> None:
                     output_specs=output_specs,
                     output_bytes=output_bytes,
                 )
+            elif mode == "processes_shared_io":
+                result = benchmark_processes_shared_io(
+                    crops,
+                    lane,
+                    workers=workers,
+                    rounds=args.rounds,
+                    warmup_crops=args.warmup_crops,
+                    input_specs=input_specs,
+                    input_bytes=input_bytes,
+                    output_specs=output_specs,
+                    output_bytes=output_bytes,
+                )
             else:
                 result = benchmark_processes_shared_io(
                     crops,
@@ -465,6 +532,7 @@ def main() -> None:
                     input_bytes=input_bytes,
                     output_specs=output_specs,
                     output_bytes=output_bytes,
+                    stream_inputs=True,
                 )
             results.append(result)
             print(
