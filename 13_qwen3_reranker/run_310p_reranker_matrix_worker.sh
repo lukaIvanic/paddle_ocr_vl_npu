@@ -37,8 +37,11 @@ case "$MATRIX_MODE" in
   w8a8)
     ffn_mode="gate_up_w8a8"
     ;;
+  separate_qkv_ffn_w8a8)
+    ffn_mode="separate_qkv_ffn_w8a8"
+    ;;
   *)
-    echo "MATRIX_MODE must be dense or w8a8" >&2
+    echo "MATRIX_MODE must be dense, w8a8, or separate_qkv_ffn_w8a8" >&2
     exit 2
     ;;
 esac

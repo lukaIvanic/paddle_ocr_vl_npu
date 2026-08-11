@@ -13,6 +13,7 @@ PHASE_ORDER = {
     ("4b", "dense"): 1,
     ("06b", "w8a8"): 2,
     ("4b", "w8a8"): 3,
+    ("4b", "separate_qkv_ffn_w8a8"): 4,
 }
 
 
@@ -20,6 +21,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--json-out", type=Path)
+    parser.add_argument("--comparison-mode", default="w8a8")
+    parser.add_argument("--expected-cells", type=int)
     return parser.parse_args()
 
 
@@ -85,7 +88,7 @@ def load_rows(output_root: Path) -> list[dict]:
     )
 
 
-def comparisons(rows: list[dict]) -> list[dict]:
+def comparisons(rows: list[dict], *, quantized_mode: str) -> list[dict]:
     indexed = {
         (
             row["path"],
@@ -102,27 +105,32 @@ def comparisons(rows: list[dict]) -> list[dict]:
         if mode != "dense":
             continue
         quantized = indexed.get(
-            (path_kind, model, "w8a8", batch_size, continuation_length)
+            (path_kind, model, quantized_mode, batch_size, continuation_length)
         )
         if quantized is None:
             continue
-        values.append(
-            {
+        comparison = {
                 "model": model,
                 "path": path_kind,
                 "batch_size": batch_size,
                 "continuation_length": continuation_length,
+                "quantized_mode": quantized_mode,
                 "dense_median_ms": dense["median_ms"],
-                "w8a8_median_ms": quantized["median_ms"],
+                "quantized_median_ms": quantized["median_ms"],
                 "latency_speedup": dense["median_ms"] / quantized["median_ms"],
                 "dense_executed_model_tok_s": dense["executed_model_tok_s"],
-                "w8a8_executed_model_tok_s": quantized["executed_model_tok_s"],
+                "quantized_executed_model_tok_s": quantized["executed_model_tok_s"],
                 "executed_model_tok_s_speedup": (
                     quantized["executed_model_tok_s"]
                     / dense["executed_model_tok_s"]
                 ),
             }
-        )
+        if quantized_mode == "w8a8":
+            comparison.update(
+                w8a8_median_ms=quantized["median_ms"],
+                w8a8_executed_model_tok_s=quantized["executed_model_tok_s"],
+            )
+        values.append(comparison)
     return sorted(
         values,
         key=lambda row: (
@@ -136,16 +144,20 @@ def comparisons(rows: list[dict]) -> list[dict]:
 def main() -> None:
     args = parse_args()
     rows = load_rows(args.output_root)
-    paired = comparisons(rows)
+    paired = comparisons(rows, quantized_mode=args.comparison_mode)
+    expected_cells = args.expected_cells
+    if expected_cells is None:
+        expected_cells = 64 if args.comparison_mode == "w8a8" else 32
     summary = {
         "output_root": str(args.output_root),
         "completed_cells": len(rows),
-        "expected_cells": 64,
+        "expected_cells": expected_cells,
+        "comparison_mode": args.comparison_mode,
         "rows": rows,
         "comparisons": paired,
     }
     print(
-        f"MATRIX_SUMMARY completed_cells={len(rows)} expected_cells=64 "
+        f"MATRIX_SUMMARY completed_cells={len(rows)} expected_cells={expected_cells} "
         f"paired_comparisons={len(paired)}"
     )
     for row in rows:

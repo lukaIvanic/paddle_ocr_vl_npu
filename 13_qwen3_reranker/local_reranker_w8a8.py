@@ -349,6 +349,16 @@ def quantize_reranker_qkv_inplace(module: nn.Module, *, out_dtype: torch.dtype) 
         child.v_proj = None
 
 
+def quantize_reranker_separate_qkv_ffn_w8a8_inplace(
+    module: nn.Module,
+    *,
+    out_dtype: torch.dtype,
+) -> None:
+    """Quantize separate shared-input QKV plus every FFN projection; keep O dense."""
+    quantize_reranker_qkv_inplace(module, out_dtype=out_dtype)
+    quantize_reranker_ffn_inplace(module, out_dtype=out_dtype)
+
+
 def quantize_reranker_packed_qkv_inplace(
     module: nn.Module,
     *,

@@ -92,7 +92,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--ffn-weight-mode",
-        choices=("dense", "gate_up_w8a8", "down_w8a8", "w8a8", "qkv_w8a8", "packed_qkv_w8a8", "o_w8a8", "full_w8a8"),
+        choices=("dense", "gate_up_w8a8", "down_w8a8", "w8a8", "qkv_w8a8", "packed_qkv_w8a8", "separate_qkv_ffn_w8a8", "o_w8a8", "full_w8a8"),
         default="dense",
         help=(
             "Use dense projections, isolated or combined FFN W8A8, separate Q/K/V W8A8 "
