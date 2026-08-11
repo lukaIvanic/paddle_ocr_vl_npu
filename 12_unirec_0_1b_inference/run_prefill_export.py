@@ -88,6 +88,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--recognition-input-contract",
+        choices=("compact_uint8_hwc", "legacy_float32_bchw"),
+        default="compact_uint8_hwc",
+        help=(
+            "Choose whether full-vision workers normalize crops on the NPU "
+            "or retain the prior CPU float32 BCHW path."
+        ),
+    )
+    parser.add_argument(
         "--vision-page-lookahead",
         type=int,
         default=4,
@@ -166,6 +175,9 @@ def main() -> None:
     if 5 in physical_devices:
         raise RuntimeError("physical NPU 5 is excluded from UniRec experiments")
     os.environ["UNIREC_STATIC_CROSS_CACHE_LEN"] = str(args.cross_cache_length)
+    os.environ["UNIREC_RECOGNITION_INPUT_CONTRACT"] = (
+        args.recognition_input_contract
+    )
 
     openocr_root = args.openocr_root.expanduser().resolve()
     model_path = args.model_path.expanduser().resolve()
@@ -262,6 +274,7 @@ def main() -> None:
                     else None
                 ),
                 "vision_full_batches": args.vision_full_batches,
+                "recognition_input_contract": args.recognition_input_contract,
                 "vision_page_lookahead": args.vision_page_lookahead,
                 "use_chart_recognition": args.use_chart_recognition,
                 "profile_prefill_device_stages": (

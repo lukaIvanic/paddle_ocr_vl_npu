@@ -755,18 +755,48 @@ def _prepare_full_vision_worker_page(
         time.perf_counter() - capacity_filter_started
     )
     result["cross_capacity_rejected_crops"] = rejected_crops
+    recognition_input_contract = os.environ.get(
+        "UNIREC_RECOGNITION_INPUT_CONTRACT",
+        "compact_uint8_hwc",
+    )
+    if recognition_input_contract not in {
+        "compact_uint8_hwc",
+        "legacy_float32_bchw",
+    }:
+        raise ValueError(
+            "invalid UNIREC_RECOGNITION_INPUT_CONTRACT: "
+            f"{recognition_input_contract!r}"
+        )
     for crop in result["crops"]:
         operation_started = time.perf_counter()
         image = Image.fromarray(crop["image_rgb"])
         recognition_detail_s["recognition_pil_fromarray_s"] += (
             time.perf_counter() - operation_started
         )
-        pixel_values, processor_timing_s = (
-            _resize_recognition_compact_hwc_with_timing(
-                image,
-                processor=recognition_processor,
+        if recognition_input_contract == "compact_uint8_hwc":
+            pixel_values, processor_timing_s = (
+                _resize_recognition_compact_hwc_with_timing(
+                    image,
+                    processor=recognition_processor,
+                )
             )
-        )
+        else:
+            inputs, processor_timing_s = (
+                recognition_processor.process_with_timing(image)
+            )
+            operation_started = time.perf_counter()
+            pixel_values_numpy = inputs["pixel_values"].numpy()
+            recognition_detail_s["recognition_tensor_numpy_view_s"] += (
+                time.perf_counter() - operation_started
+            )
+            operation_started = time.perf_counter()
+            pixel_values = np.ascontiguousarray(
+                pixel_values_numpy,
+                dtype=np.float32,
+            )
+            recognition_detail_s["recognition_contiguous_chw_copy_s"] += (
+                time.perf_counter() - operation_started
+            )
         for name, value in processor_timing_s.items():
             recognition_detail_s[name] += float(value)
         crop["processed_pixel_values"] = pixel_values
