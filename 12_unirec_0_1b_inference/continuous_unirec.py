@@ -138,13 +138,17 @@ class ContinuousUniRecDecoder:
                 torch.zeros(cache_shape, dtype=dtype, device=device)
                 for _ in range(layer_count)
             )
+            packed_cross_kv = torch.zeros(
+                (2 * layer_count, *cross_shape),
+                dtype=dtype,
+                device=device,
+            )
             cross_key_cache = tuple(
-                torch.zeros(cross_shape, dtype=dtype, device=device)
-                for _ in range(layer_count)
+                packed_cross_kv[layer] for layer in range(layer_count)
             )
             cross_value_cache = tuple(
-                torch.zeros(cross_shape, dtype=dtype, device=device)
-                for _ in range(layer_count)
+                packed_cross_kv[layer_count + layer]
+                for layer in range(layer_count)
             )
             cross_attention_mask = torch.full(
                 (self.batch_size, 1, 1, cross_cache_len),
@@ -160,6 +164,7 @@ class ContinuousUniRecDecoder:
             cross_value_cache=cross_value_cache,
             cross_attention_mask=cross_attention_mask,
             actual_cross_attention_length=None,
+            packed_cross_kv=packed_cross_kv,
         )
 
     def _admit_worker_row(
@@ -220,18 +225,25 @@ class ContinuousUniRecDecoder:
             destination.cross_attention_mask[
                 slot : slot + 1, :, :, :source_len
             ].zero_()
-            for layer in range(layer_count):
-                # Reused self-K/V is safe without clearing: every decode layer
-                # overwrites cache_position before attention, and the static
-                # self-attention mask excludes every later position. Likewise,
-                # the new prefix overwrites the live cross-K/V range while the
-                # cross-attention mask excludes the stale tail.
-                destination.cross_key_cache[layer][
-                    slot : slot + 1, :, :source_len, :
-                ].copy_(torch.from_numpy(packed_host[layer]))
-                destination.cross_value_cache[layer][
-                    slot : slot + 1, :, :source_len, :
-                ].copy_(torch.from_numpy(packed_host[layer_count + layer]))
+            # Reused self-K/V is safe without clearing: every decode layer
+            # overwrites cache_position before attention, and the static
+            # self-attention mask excludes every later position. Likewise, the
+            # new prefix overwrites the live cross-K/V range while the cross-
+            # attention mask excludes the stale tail.
+            if destination.packed_cross_kv is not None:
+                destination.packed_cross_kv[
+                    :, slot : slot + 1, :, :source_len, :
+                ].copy_(torch.from_numpy(packed_host))
+            else:
+                for layer in range(layer_count):
+                    destination.cross_key_cache[layer][
+                        slot : slot + 1, :, :source_len, :
+                    ].copy_(torch.from_numpy(packed_host[layer]))
+                    destination.cross_value_cache[layer][
+                        slot : slot + 1, :, :source_len, :
+                    ].copy_(
+                        torch.from_numpy(packed_host[layer_count + layer])
+                    )
         enqueue_s = time.perf_counter() - started
         source.prefill_s += enqueue_s
         stages = dict(source.prefill_device_stage_s or {})

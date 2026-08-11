@@ -335,6 +335,7 @@ class LocalUniRecStaticCache:
     cross_value_cache: tuple[torch.Tensor, ...] | None = None
     cross_attention_mask: torch.Tensor | None = None
     actual_cross_attention_length: int | None = None
+    packed_cross_kv: torch.Tensor | None = None
 
     @classmethod
     def from_prefill(
