@@ -13,6 +13,7 @@ import queue
 import sys
 import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import resource_tracker
 from multiprocessing.shared_memory import SharedMemory
 from pathlib import Path
@@ -708,6 +709,7 @@ def _prepare_full_vision_worker_page(
     crop_margin: Any,
     tokenize_figure_of_table: Any,
     recognition_processor: Any,
+    recognition_preprocess_executor: ThreadPoolExecutor | None,
     static_cross_cache_len: int,
 ) -> dict[str, Any]:
     """Run the CPU/layout half of one page before cross-page vision batching."""
@@ -767,10 +769,11 @@ def _prepare_full_vision_worker_page(
             "invalid UNIREC_RECOGNITION_INPUT_CONTRACT: "
             f"{recognition_input_contract!r}"
         )
-    for crop in result["crops"]:
+    def prepare_crop(crop: dict[str, Any]) -> tuple[np.ndarray, dict[str, float]]:
+        detail_s: dict[str, float] = {}
         operation_started = time.perf_counter()
         image = Image.fromarray(crop["image_rgb"])
-        recognition_detail_s["recognition_pil_fromarray_s"] += (
+        detail_s["recognition_pil_fromarray_s"] = (
             time.perf_counter() - operation_started
         )
         if recognition_input_contract == "compact_uint8_hwc":
@@ -786,7 +789,7 @@ def _prepare_full_vision_worker_page(
             )
             operation_started = time.perf_counter()
             pixel_values_numpy = inputs["pixel_values"].numpy()
-            recognition_detail_s["recognition_tensor_numpy_view_s"] += (
+            detail_s["recognition_tensor_numpy_view_s"] = (
                 time.perf_counter() - operation_started
             )
             operation_started = time.perf_counter()
@@ -794,10 +797,26 @@ def _prepare_full_vision_worker_page(
                 pixel_values_numpy,
                 dtype=np.float32,
             )
-            recognition_detail_s["recognition_contiguous_chw_copy_s"] += (
+            detail_s["recognition_contiguous_chw_copy_s"] = (
                 time.perf_counter() - operation_started
             )
-        for name, value in processor_timing_s.items():
+        detail_s.update(
+            {name: float(value) for name, value in processor_timing_s.items()}
+        )
+        return pixel_values, detail_s
+
+    if recognition_preprocess_executor is None:
+        prepared_crops = map(prepare_crop, result["crops"])
+    else:
+        prepared_crops = recognition_preprocess_executor.map(
+            prepare_crop,
+            result["crops"],
+        )
+    for crop, (pixel_values, detail_s) in zip(
+        result["crops"],
+        prepared_crops,
+    ):
+        for name, value in detail_s.items():
             recognition_detail_s[name] += float(value)
         crop["processed_pixel_values"] = pixel_values
     recognition_prepare_s = time.perf_counter() - recognition_prepare_started
@@ -849,6 +868,7 @@ def _run_full_vision_worker_group(
     crop_margin: Any,
     tokenize_figure_of_table: Any,
     recognition_processor: Any,
+    recognition_preprocess_executor: ThreadPoolExecutor | None,
     static_cross_cache_len: int,
     recognition_runner: Any,
     full_vision_runtime: Any,
@@ -867,6 +887,7 @@ def _run_full_vision_worker_group(
             crop_margin=crop_margin,
             tokenize_figure_of_table=tokenize_figure_of_table,
             recognition_processor=recognition_processor,
+            recognition_preprocess_executor=recognition_preprocess_executor,
             static_cross_cache_len=static_cross_cache_len,
         )
         for task in tasks
@@ -1153,11 +1174,28 @@ def _worker_main(
             from modeling_optimized_unirec import UniRecImageProcessor
 
             recognition_processor = UniRecImageProcessor()
+            recognition_preprocess_threads = int(
+                os.environ.get("UNIREC_RECOGNITION_PREPROCESS_THREADS", "1")
+            )
+            if recognition_preprocess_threads < 1:
+                raise ValueError(
+                    "UNIREC_RECOGNITION_PREPROCESS_THREADS must be positive"
+                )
+            recognition_preprocess_executor = (
+                ThreadPoolExecutor(
+                    max_workers=recognition_preprocess_threads,
+                    thread_name_prefix=f"unirec-crop-{worker_index}",
+                )
+                if recognition_preprocess_threads > 1
+                else None
+            )
             static_cross_cache_len = int(
                 os.environ.get("UNIREC_STATIC_CROSS_CACHE_LEN", "0")
             )
         else:
             recognition_processor = None
+            recognition_preprocess_threads = 1
+            recognition_preprocess_executor = None
         if prefill_recognition:
             if not prepare_pages:
                 raise RuntimeError("worker recognition prefill requires page preparation")
@@ -1257,6 +1295,9 @@ def _worker_main(
                 "status": "ready",
                 "worker": worker_index,
                 "prefix_graph_warmup": prefix_graph_warmup,
+                "recognition_preprocess_threads": (
+                    recognition_preprocess_threads
+                ),
             }
         )
         if full_vision_runtime is not None:
@@ -1289,6 +1330,9 @@ def _worker_main(
                     crop_margin=crop_margin,
                     tokenize_figure_of_table=tokenize_figure_of_table,
                     recognition_processor=recognition_processor,
+                    recognition_preprocess_executor=(
+                        recognition_preprocess_executor
+                    ),
                     static_cross_cache_len=static_cross_cache_len,
                     recognition_runner=recognition_runner,
                     full_vision_runtime=full_vision_runtime,
@@ -1552,6 +1596,9 @@ class DynamicLayoutProcessPool:
             {
                 "worker": int(message["worker"]),
                 "prefix_graph_warmup": message.get("prefix_graph_warmup"),
+                "recognition_preprocess_threads": int(
+                    message.get("recognition_preprocess_threads", 1)
+                ),
             }
             for message in sorted(ready, key=lambda value: int(value["worker"]))
         ]

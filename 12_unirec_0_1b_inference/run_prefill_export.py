@@ -97,6 +97,12 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--recognition-preprocess-threads",
+        type=int,
+        default=1,
+        help="Persistent crop-resize threads inside each process worker.",
+    )
+    parser.add_argument(
         "--vision-page-lookahead",
         type=int,
         default=4,
@@ -128,6 +134,8 @@ def parse_args() -> argparse.Namespace:
         )
     if args.cross_cache_length < 1:
         parser.error("--cross-cache-length must be positive")
+    if args.recognition_preprocess_threads < 1:
+        parser.error("--recognition-preprocess-threads must be positive")
     if args.vision_page_lookahead < 1:
         parser.error("--vision-page-lookahead must be positive")
     if args.vision_full_batches and args.vision_prefix_shapes_manifest is not None:
@@ -177,6 +185,9 @@ def main() -> None:
     os.environ["UNIREC_STATIC_CROSS_CACHE_LEN"] = str(args.cross_cache_length)
     os.environ["UNIREC_RECOGNITION_INPUT_CONTRACT"] = (
         args.recognition_input_contract
+    )
+    os.environ["UNIREC_RECOGNITION_PREPROCESS_THREADS"] = str(
+        args.recognition_preprocess_threads
     )
 
     openocr_root = args.openocr_root.expanduser().resolve()
@@ -275,6 +286,9 @@ def main() -> None:
                 ),
                 "vision_full_batches": args.vision_full_batches,
                 "recognition_input_contract": args.recognition_input_contract,
+                "recognition_preprocess_threads": (
+                    args.recognition_preprocess_threads
+                ),
                 "vision_page_lookahead": args.vision_page_lookahead,
                 "use_chart_recognition": args.use_chart_recognition,
                 "profile_prefill_device_stages": (
