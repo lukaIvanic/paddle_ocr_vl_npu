@@ -80,6 +80,20 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--vision-full-batches",
+        action="store_true",
+        help=(
+            "Run the complete vision encoder through five masked fixed-canvas "
+            "batch graphs before page-local packed text prefill."
+        ),
+    )
+    parser.add_argument(
+        "--vision-page-lookahead",
+        type=int,
+        default=4,
+        help="Maximum pages one worker may combine into local vision batches.",
+    )
+    parser.add_argument(
         "--no-chart-recognition",
         dest="use_chart_recognition",
         action="store_false",
@@ -105,6 +119,13 @@ def parse_args() -> argparse.Namespace:
         )
     if args.cross_cache_length < 1:
         parser.error("--cross-cache-length must be positive")
+    if args.vision_page_lookahead < 1:
+        parser.error("--vision-page-lookahead must be positive")
+    if args.vision_full_batches and args.vision_prefix_shapes_manifest is not None:
+        parser.error(
+            "--vision-full-batches cannot be combined with "
+            "--vision-prefix-shapes-manifest"
+        )
     return args
 
 
@@ -195,6 +216,8 @@ def main() -> None:
         recognition_dtype=args.dtype,
         recognition_cache_dir=recognition_cache_dir,
         recognition_prefix_shapes_manifest=vision_prefix_shapes_manifest,
+        recognition_full_vision_buckets=args.vision_full_batches,
+        recognition_page_lookahead=args.vision_page_lookahead,
         empty_cache_after_page=args.worker_empty_cache_after_page,
         profile_prefill_device_stages=args.profile_prefill_device_stages,
     )
@@ -238,6 +261,8 @@ def main() -> None:
                     if vision_prefix_shapes_manifest is not None
                     else None
                 ),
+                "vision_full_batches": args.vision_full_batches,
+                "vision_page_lookahead": args.vision_page_lookahead,
                 "use_chart_recognition": args.use_chart_recognition,
                 "profile_prefill_device_stages": (
                     args.profile_prefill_device_stages

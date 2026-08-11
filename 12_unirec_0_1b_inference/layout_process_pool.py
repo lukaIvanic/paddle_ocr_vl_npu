@@ -402,6 +402,173 @@ def _prefill_worker_page(
     }
 
 
+def _prefill_worker_pages_bucketed(
+    results: list[dict[str, Any]],
+    *,
+    runner: Any,
+    vision_runtime: Any,
+    profile_device_stages: bool = False,
+) -> list[dict[str, Any]]:
+    """Batch full vision across pages, then keep text packs page-local."""
+    from text_packed_prefill import PACKED_TEXT_PREFILL_BUCKET
+    from vision_full_batch import PreprocessedVisionInput
+
+    if not results:
+        raise ValueError("bucketed worker prefill requires at least one page")
+    flat_inputs = []
+    flat_crops: list[dict[str, Any]] = []
+    crop_source_indices: dict[int, int] = {}
+    for result in results:
+        for crop in result["crops"]:
+            source_index = len(flat_inputs)
+            height, width = crop["image_rgb"].shape[:2]
+            request_id = (
+                f"page_{int(result['page_index']):06d}_"
+                f"crop_{int(crop['crop_index']):04d}"
+            )
+            flat_inputs.append(
+                PreprocessedVisionInput(
+                    source_index=source_index,
+                    pixel_values=crop["processed_pixel_values"],
+                    original_image_size=(width, height),
+                    image_source=request_id,
+                )
+            )
+            flat_crops.append(crop)
+            crop_source_indices[id(crop)] = source_index
+    if not flat_inputs:
+        return [
+            {
+                "recognition_prefill_worker_s": 0.0,
+                "recognition_prefill_cache_d2h_s": 0.0,
+                "recognition_prefill_real_source_tokens": 0.0,
+                "recognition_prefill_physical_source_tokens": 0.0,
+                "recognition_prefill_pack_count": 0.0,
+                "recognition_prefill_fallback_count": 0.0,
+                "recognition_vision_bucket_rows": {},
+            }
+            for _result in results
+        ]
+
+    synchronize_started = time.perf_counter()
+    torch.npu.synchronize()
+    vision_started = time.perf_counter()
+    encoded = vision_runtime.encode(flat_inputs)
+    torch.npu.synchronize()
+    vision_s = time.perf_counter() - vision_started
+    synchronization_s = vision_started - synchronize_started
+    encoded_by_source = {item.source_index: item for item in encoded}
+    vision_share_per_crop = vision_s / len(flat_inputs)
+    page_timings = []
+    for result in results:
+        page_started = time.perf_counter()
+        cache_d2h_s = 0.0
+        real_tokens = 0
+        physical_tokens = 0
+        pack_count = 0
+        fallback_count = 0
+        bucket_rows: dict[str, int] = {}
+        for crop in result["crops"]:
+            item = encoded_by_source[crop_source_indices[id(crop)]]
+            bucket_name = item.bucket_key or "fallback_eager"
+            bucket_rows[bucket_name] = bucket_rows.get(bucket_name, 0) + 1
+        for use_packed_graph, group in _iter_worker_prefill_groups(
+            result["crops"],
+            runner=runner,
+            bucket=PACKED_TEXT_PREFILL_BUCKET,
+        ):
+            if not use_packed_graph:
+                raise RuntimeError(
+                    "bucketed full-vision worker encountered an encoded crop "
+                    "larger than the packed text-prefill bucket"
+                )
+            encoded_group = []
+            for crop in group:
+                source_index = crop_source_indices[id(crop)]
+                vision_item = encoded_by_source[source_index]
+                encoded_group.append(
+                    (vision_item.hidden_states, vision_item.prep)
+                )
+            items = runner.prefill_encoder_hidden_states_packed_for_cohort(
+                encoded_group,
+                profile_device_stages=profile_device_stages,
+                decode_ready=False,
+            )
+            pack_count += 1
+            for crop, item in zip(group, items):
+                cache = item.kv_cache
+                actual_length = int(cache.actual_cross_attention_length or 0)
+                if actual_length <= 0:
+                    raise RuntimeError(
+                        "bucketed worker prefill produced an empty cross cache"
+                    )
+                d2h_started = time.perf_counter()
+                packed_cache = torch.stack(
+                    tuple(
+                        tensor[:, :, :actual_length, :]
+                        for tensor in (
+                            *cache.cross_key_cache,
+                            *cache.cross_value_cache,
+                        )
+                    ),
+                    dim=0,
+                ).contiguous()
+                packed_host = packed_cache.cpu().numpy()
+                item_d2h_s = time.perf_counter() - d2h_started
+                cache_d2h_s += item_d2h_s
+                member_real = int(
+                    item.text_prefill_real_source_tokens or actual_length
+                )
+                member_physical = int(
+                    item.text_prefill_physical_source_tokens or member_real
+                )
+                real_tokens += member_real
+                physical_tokens += member_physical
+                crop["worker_cross_kv"] = packed_host
+                stages = (
+                    dict(item.prefill_device_stage_s)
+                    if item.prefill_device_stage_s is not None
+                    else None
+                )
+                if stages is not None:
+                    stages["compiled_full_vision_buckets"] = vision_share_per_crop
+                crop["worker_prefill_metadata"] = {
+                    "prep": item.prep,
+                    "prefill_s": float(item.prefill_s + vision_share_per_crop),
+                    "cache_d2h_s": item_d2h_s,
+                    "prefill_device_stage_s": stages,
+                    "text_prefill_execution": item.text_prefill_execution,
+                    "text_prefill_real_source_tokens": member_real,
+                    "text_prefill_physical_source_tokens": member_physical,
+                    "actual_cross_attention_length": actual_length,
+                    "vision_bucket": encoded_by_source[
+                        crop_source_indices[id(crop)]
+                    ].bucket_key,
+                }
+        page_crop_count = len(result["crops"])
+        page_vision_s = vision_share_per_crop * page_crop_count
+        page_timings.append(
+            {
+                "recognition_prefill_worker_s": (
+                    time.perf_counter() - page_started + page_vision_s
+                ),
+                "recognition_prefill_cache_d2h_s": cache_d2h_s,
+                "recognition_prefill_real_source_tokens": float(real_tokens),
+                "recognition_prefill_physical_source_tokens": float(
+                    physical_tokens
+                ),
+                "recognition_prefill_pack_count": float(pack_count),
+                "recognition_prefill_fallback_count": float(fallback_count),
+                "recognition_full_vision_s": page_vision_s,
+                "recognition_full_vision_initial_sync_s": (
+                    synchronization_s if result is results[0] else 0.0
+                ),
+                "recognition_vision_bucket_rows": bucket_rows,
+            }
+        )
+    return page_timings
+
+
 def _worker_main(
     worker_index: int,
     model_path: str,
@@ -417,6 +584,8 @@ def _worker_main(
     recognition_dtype: str,
     recognition_cache_dir: str | None,
     recognition_prefix_shapes_manifest: str | None,
+    recognition_full_vision_buckets: bool,
+    recognition_page_lookahead: int,
     empty_cache_after_page: bool,
     profile_prefill_device_stages: bool,
     task_queue: Any,
@@ -481,10 +650,33 @@ def _worker_main(
                 recognition_runner._static_cross_cache_len_by_processor_max_side[
                     processor_shape
                 ] = static_cross_cache_len
-            if recognition_prefix_shapes_manifest is None:
+            if recognition_full_vision_buckets:
+                if recognition_prefix_shapes_manifest is not None:
+                    raise RuntimeError(
+                        "full-vision buckets cannot be combined with a "
+                        "per-shape prefix manifest"
+                    )
+                from vision_full_batch import BucketedFullVisionRuntime
+
+                full_vision_runtime = BucketedFullVisionRuntime(
+                    recognition_runner
+                )
+                vision_atlas_runtime = None
+                warmup_started = time.perf_counter()
+                warmup_report = full_vision_runtime.warmup_all(passes=1)
+                warmup_wall_s = time.perf_counter() - warmup_started
+                prefix_graph_warmup = {
+                    "execution": "compiled_masked_full_encoder_buckets",
+                    "shape_count": len(warmup_report),
+                    "wall_s": warmup_wall_s,
+                    "graphs": warmup_report,
+                }
+            elif recognition_prefix_shapes_manifest is None:
+                full_vision_runtime = None
                 vision_atlas_runtime = UniRecVisionAtlasRuntime(recognition_runner)
                 prefix_graph_warmup = None
             else:
+                full_vision_runtime = None
                 from vision_static_shape import (
                     PerShapeCompiledPrefixUniRecVisionRuntime,
                     load_static_vision_shapes,
@@ -529,6 +721,7 @@ def _worker_main(
         else:
             recognition_runner = None
             vision_atlas_runtime = None
+            full_vision_runtime = None
             prefix_graph_warmup = None
         result_queue.put(
             {
@@ -601,7 +794,32 @@ def _worker_main(
                     **frontend_timing,
                     "recognition_input_prepare_worker_s": recognition_prepare_s,
                 }
-                if prefill_recognition:
+                if prefill_recognition and full_vision_runtime is not None:
+                    prefill_timing = _prefill_worker_pages_bucketed(
+                        [result],
+                        runner=recognition_runner,
+                        vision_runtime=full_vision_runtime,
+                        profile_device_stages=profile_prefill_device_stages,
+                    )[0]
+                    result["frontend_timing_s"].update(
+                        {
+                            name: value
+                            for name, value in prefill_timing.items()
+                            if name.endswith("_s")
+                        }
+                    )
+                    result["worker_prefill_stats"] = {
+                        name: value
+                        for name, value in prefill_timing.items()
+                        if not name.endswith("_s")
+                    }
+                    if empty_cache_after_page:
+                        empty_cache_started = time.perf_counter()
+                        torch.npu.empty_cache()
+                        result["frontend_timing_s"][
+                            "recognition_worker_empty_cache_s"
+                        ] = time.perf_counter() - empty_cache_started
+                elif prefill_recognition:
                     prefix_first_calls_before = set(
                         getattr(
                             vision_atlas_runtime,
@@ -715,6 +933,8 @@ class DynamicLayoutProcessPool:
         recognition_dtype: str = "float16",
         recognition_cache_dir: Path | None = None,
         recognition_prefix_shapes_manifest: Path | None = None,
+        recognition_full_vision_buckets: bool = False,
+        recognition_page_lookahead: int = 1,
         empty_cache_after_page: bool = False,
         profile_prefill_device_stages: bool = False,
         timeout_s: float = 1800.0,
@@ -723,6 +943,8 @@ class DynamicLayoutProcessPool:
             raise ValueError("layout process worker count must be positive")
         if not warmup_paths:
             raise ValueError("layout process pool requires at least one warmup page")
+        if recognition_page_lookahead < 1:
+            raise ValueError("recognition page lookahead must be positive")
         self.worker_count = worker_count
         self.prepare_pages = prepare_pages
         self.timeout_s = timeout_s
@@ -759,6 +981,8 @@ class DynamicLayoutProcessPool:
                         if recognition_prefix_shapes_manifest is not None
                         else None
                     ),
+                    recognition_full_vision_buckets,
+                    recognition_page_lookahead,
                     empty_cache_after_page,
                     profile_prefill_device_stages,
                     self.task_queue,

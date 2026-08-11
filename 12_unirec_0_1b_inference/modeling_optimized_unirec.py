@@ -2545,6 +2545,120 @@ class OptimizedUniRecRunner:
             )
         return results
 
+    def prefill_encoder_hidden_states_packed_for_cohort(
+        self,
+        encoded: list[tuple[torch.Tensor, dict[str, Any]]],
+        *,
+        profile_device_stages: bool = False,
+        decode_ready: bool = True,
+    ) -> list[UniRecPrefilledItem]:
+        """Run packed cross-KV prefill from already-computed vision outputs.
+
+        This is the phase boundary used by the bucketed full-vision worker.
+        Vision batches can span pages; text packs remain page-local and retain
+        their existing FIFO token-budget policy.
+        """
+        if not encoded:
+            raise ValueError("cannot prefill an empty encoded UniRec text pack")
+        runtime = self._get_compiled_packed_text_prefill_runtime()
+        cross_cache_len = self._get_static_cross_cache_len() if decode_ready else None
+        self_cache_len = LOCAL_UNIREC_STATIC_CACHE_LEN if decode_ready else 0
+        encoder_hidden_states = [hidden for hidden, _prep in encoded]
+        encoder_attention_masks = [
+            self.model.build_encoder_attention_mask(hidden)
+            for hidden in encoder_hidden_states
+        ]
+
+        with torch.inference_mode():
+            synchronize_device(self.device)
+            packed_started = time.perf_counter()
+            packed_timeline = (
+                PrefillDeviceTimeline(torch.device(self.device))
+                if profile_device_stages
+                else None
+            )
+            packed_measure = (
+                packed_timeline.measure
+                if packed_timeline is not None
+                else lambda _name, fn: fn()
+            )
+            packed_output = packed_measure(
+                "compiled_packed_text_prefill_s1024",
+                lambda: runtime.run(
+                    encoder_hidden_states=encoder_hidden_states,
+                ),
+            )
+            caches = []
+            for member, attention_mask in enumerate(encoder_attention_masks):
+                decode_cross_attention_mask = (
+                    self.model.decoder.build_cross_attention_mask(
+                        encoder_attention_mask=attention_mask,
+                        target_length=1,
+                    )
+                )
+                cache = packed_measure(
+                    "static_cache_build_and_padding",
+                    lambda member=member,
+                    decode_cross_attention_mask=decode_cross_attention_mask: (
+                        LocalUniRecStaticCache.from_cross_prefill(
+                            cross_key_cache=packed_output.cross_key_cache[member],
+                            cross_value_cache=packed_output.cross_value_cache[member],
+                            cross_attention_mask=decode_cross_attention_mask,
+                            cache_len=self_cache_len,
+                            cross_cache_len=cross_cache_len,
+                        )
+                    ),
+                )
+                caches.append(cache)
+            if packed_timeline is None:
+                synchronize_device(self.device)
+                packed_stage_s = None
+            else:
+                packed_stage_s = packed_timeline.resolve()
+            packed_s = time.perf_counter() - packed_started
+
+        members = len(encoded)
+        real_tokens = packed_output.real_source_tokens
+        physical_tokens = packed_output.physical_source_tokens
+        padding_tokens = physical_tokens - real_tokens
+        self._packed_text_prefill_stats["packs"] += 1
+        self._packed_text_prefill_stats["members"] += members
+        self._packed_text_prefill_stats["real_source_tokens"] += real_tokens
+        self._packed_text_prefill_stats["physical_source_tokens"] += physical_tokens
+        histogram = self._packed_text_prefill_stats["member_histogram"]
+        histogram[str(members)] = histogram.get(str(members), 0) + 1
+
+        results = []
+        for member, ((_hidden, prep), cache) in enumerate(zip(encoded, caches)):
+            stages = None
+            if packed_stage_s is not None:
+                stages = {
+                    name: seconds / members
+                    for name, seconds in packed_stage_s.items()
+                }
+            generated_ids = self.model.decoder_start_ids(
+                batch_size=1,
+                device=cache.key_cache[0].device,
+            )
+            member_real_tokens = packed_output.segment_lengths[member]
+            member_physical_tokens = member_real_tokens
+            if member == members - 1:
+                member_physical_tokens += padding_tokens
+            results.append(
+                UniRecPrefilledItem(
+                    prep=prep,
+                    kv_cache=cache,
+                    generated_ids=generated_ids,
+                    next_token=generated_ids,
+                    prefill_s=packed_s / members,
+                    prefill_device_stage_s=stages,
+                    text_prefill_execution="compiled_packed_s1024",
+                    text_prefill_real_source_tokens=member_real_tokens,
+                    text_prefill_physical_source_tokens=member_physical_tokens,
+                )
+            )
+        return results
+
     def _get_compiled_text_prefill_runtime(self) -> UniRecTextPrefillRuntime:
         if self._compiled_text_prefill_runtime is not None:
             return self._compiled_text_prefill_runtime
