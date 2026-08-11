@@ -39,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--modes", default="threads,processes")
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--warmup-crops", type=int, default=64)
+    parser.add_argument("--verify-shared-outputs", action="store_true")
     args = parser.parse_args()
     args.workers = [int(value) for value in args.workers.split(",")]
     args.modes = [value.strip() for value in args.modes.split(",")]
@@ -132,6 +133,47 @@ def _finish_result(
         "median_s": median_s,
         "crops_per_s": crop_count / median_s,
         "checksum": checksum,
+    }
+
+
+def _verify_shared_outputs(
+    crops: list[np.ndarray],
+    lane: ArrayLane,
+    output: mmap.mmap,
+    output_specs: list[tuple[int, tuple[int, ...]]],
+) -> dict[str, object]:
+    started = time.perf_counter()
+    exact_crops = 0
+    different_values = 0
+    total_values = 0
+    max_absolute = 0.0
+    for index, crop in enumerate(crops):
+        expected = lane(crop)
+        offset, shape = output_specs[index]
+        actual = np.ndarray(
+            shape,
+            dtype=np.float32,
+            buffer=output,
+            offset=offset,
+        )
+        difference = actual - expected
+        crop_different = int(np.count_nonzero(difference))
+        exact_crops += int(crop_different == 0)
+        different_values += crop_different
+        total_values += int(difference.size)
+        max_absolute = max(
+            max_absolute,
+            float(np.max(np.abs(difference), initial=0.0)),
+        )
+    return {
+        "reference": "direct_pillow_chw_fused_formula",
+        "all_exact": different_values == 0,
+        "exact_crops": exact_crops,
+        "crop_count": len(crops),
+        "different_values": different_values,
+        "total_values": total_values,
+        "max_absolute": max_absolute,
+        "wall_s_outside_benchmark": time.perf_counter() - started,
     }
 
 
@@ -295,6 +337,7 @@ def benchmark_processes_shared_io(
     output_specs: list[tuple[int, tuple[int, ...]]],
     output_bytes: int,
     stream_inputs: bool = False,
+    verify_outputs: bool = False,
 ) -> dict[str, object]:
     global _PROCESS_LANE, _PROCESS_INPUT, _PROCESS_INPUT_SPECS
     global _PROCESS_OUTPUT, _PROCESS_OUTPUT_SPECS
@@ -399,6 +442,16 @@ def benchmark_processes_shared_io(
             offset=offset,
         )
         boundary_checksum += float(output.reshape(-1)[0])
+    verification = (
+        _verify_shared_outputs(
+            crops,
+            lane,
+            _PROCESS_OUTPUT,
+            output_specs,
+        )
+        if verify_outputs
+        else None
+    )
     _PROCESS_INPUT.close()
     _PROCESS_OUTPUT.close()
     _PROCESS_LANE = None
@@ -421,6 +474,7 @@ def benchmark_processes_shared_io(
             "input_delivery": (
                 "streamed_and_overlapped" if stream_inputs else "pack_then_compute"
             ),
+            "shared_output_verification": verification,
         }
     )
     if stream_inputs:
@@ -520,6 +574,7 @@ def main() -> None:
                     input_bytes=input_bytes,
                     output_specs=output_specs,
                     output_bytes=output_bytes,
+                    verify_outputs=args.verify_shared_outputs,
                 )
             else:
                 result = benchmark_processes_shared_io(
@@ -533,6 +588,7 @@ def main() -> None:
                     output_specs=output_specs,
                     output_bytes=output_bytes,
                     stream_inputs=True,
+                    verify_outputs=args.verify_shared_outputs,
                 )
             results.append(result)
             print(
