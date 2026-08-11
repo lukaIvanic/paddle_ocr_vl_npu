@@ -214,7 +214,7 @@ class ContinuousUniRecDecoder:
 
         started = time.perf_counter()
         negative_inf = torch.finfo(destination.cross_attention_mask.dtype).min
-        with torch.inference_mode(False):
+        with torch.inference_mode():
             if reset_reused_row:
                 destination.cross_attention_mask[slot : slot + 1].fill_(negative_inf)
             destination.cross_attention_mask[
