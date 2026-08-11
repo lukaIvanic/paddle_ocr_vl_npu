@@ -27,6 +27,8 @@ _PROCESS_CROPS: list[np.ndarray] | None = None
 _PROCESS_LANE: ArrayLane | None = None
 _PROCESS_OUTPUT: mmap.mmap | None = None
 _PROCESS_OUTPUT_SPECS: list[tuple[int, tuple[int, ...]]] | None = None
+_PROCESS_INPUT: mmap.mmap | None = None
+_PROCESS_INPUT_SPECS: list[tuple[int, tuple[int, ...]]] | None = None
 
 
 def parse_args() -> argparse.Namespace:
@@ -42,9 +44,15 @@ def parse_args() -> argparse.Namespace:
     args.modes = [value.strip() for value in args.modes.split(",")]
     if any(value < 1 for value in args.workers) or args.rounds < 1:
         parser.error("worker counts and --rounds must be positive")
-    if not set(args.modes) <= {"threads", "processes", "processes_shared"}:
+    if not set(args.modes) <= {
+        "threads",
+        "processes",
+        "processes_shared",
+        "processes_shared_io",
+    }:
         parser.error(
-            "--modes accepts only threads, processes, and processes_shared"
+            "--modes accepts only threads, processes, processes_shared, "
+            "and processes_shared_io"
         )
     return args
 
@@ -74,6 +82,34 @@ def _process_shared_output(index: int) -> float:
         dtype=np.float32,
         buffer=_PROCESS_OUTPUT,
         offset=offset,
+    )
+    np.copyto(destination, output)
+    return float(output.reshape(-1)[0])
+
+
+def _process_shared_io(index: int) -> float:
+    if (
+        _PROCESS_LANE is None
+        or _PROCESS_INPUT is None
+        or _PROCESS_INPUT_SPECS is None
+        or _PROCESS_OUTPUT is None
+        or _PROCESS_OUTPUT_SPECS is None
+    ):
+        raise RuntimeError("shared-input/output process globals are not initialized")
+    input_offset, input_shape = _PROCESS_INPUT_SPECS[index]
+    crop = np.ndarray(
+        input_shape,
+        dtype=np.uint8,
+        buffer=_PROCESS_INPUT,
+        offset=input_offset,
+    )
+    output = _PROCESS_LANE(crop)
+    output_offset, output_shape = _PROCESS_OUTPUT_SPECS[index]
+    destination = np.ndarray(
+        output_shape,
+        dtype=np.float32,
+        buffer=_PROCESS_OUTPUT,
+        offset=output_offset,
     )
     np.copyto(destination, output)
     return float(output.reshape(-1)[0])
@@ -246,6 +282,117 @@ def benchmark_processes_shared(
     return result
 
 
+def benchmark_processes_shared_io(
+    crops: list[np.ndarray],
+    lane: ArrayLane,
+    *,
+    workers: int,
+    rounds: int,
+    warmup_crops: int,
+    input_specs: list[tuple[int, tuple[int, ...]]],
+    input_bytes: int,
+    output_specs: list[tuple[int, tuple[int, ...]]],
+    output_bytes: int,
+) -> dict[str, object]:
+    global _PROCESS_LANE, _PROCESS_INPUT, _PROCESS_INPUT_SPECS
+    global _PROCESS_OUTPUT, _PROCESS_OUTPUT_SPECS
+    _PROCESS_LANE = lane
+    _PROCESS_INPUT_SPECS = input_specs
+    _PROCESS_OUTPUT_SPECS = output_specs
+    _PROCESS_INPUT = mmap.mmap(
+        -1,
+        input_bytes,
+        flags=mmap.MAP_SHARED | mmap.MAP_ANONYMOUS,
+        prot=mmap.PROT_READ | mmap.PROT_WRITE,
+    )
+    _PROCESS_OUTPUT = mmap.mmap(
+        -1,
+        output_bytes,
+        flags=mmap.MAP_SHARED | mmap.MAP_ANONYMOUS,
+        prot=mmap.PROT_READ | mmap.PROT_WRITE,
+    )
+
+    def pack_inputs(count: int) -> None:
+        for index, crop in enumerate(crops[:count]):
+            offset, shape = input_specs[index]
+            destination = np.ndarray(
+                shape,
+                dtype=np.uint8,
+                buffer=_PROCESS_INPUT,
+                offset=offset,
+            )
+            np.copyto(destination, crop)
+
+    checksum = 0.0
+    context = mp.get_context("fork")
+    with context.Pool(processes=workers) as pool:
+        warmup_count = min(warmup_crops, len(crops))
+        pack_inputs(warmup_count)
+        checksum += sum(
+            pool.imap_unordered(
+                _process_shared_io,
+                range(warmup_count),
+                chunksize=1,
+            )
+        )
+        wall_times = []
+        input_pack_times = []
+        compute_output_times = []
+        for _round_index in range(rounds):
+            gc.collect()
+            started = time.perf_counter()
+            pack_inputs(len(crops))
+            packed = time.perf_counter()
+            checksum += sum(
+                pool.imap_unordered(
+                    _process_shared_io,
+                    range(len(crops)),
+                    chunksize=1,
+                )
+            )
+            finished = time.perf_counter()
+            input_pack_times.append(packed - started)
+            compute_output_times.append(finished - packed)
+            wall_times.append(finished - started)
+
+    boundary_checksum = 0.0
+    for index in (0, len(crops) // 2, len(crops) - 1):
+        offset, shape = output_specs[index]
+        output = np.ndarray(
+            shape,
+            dtype=np.float32,
+            buffer=_PROCESS_OUTPUT,
+            offset=offset,
+        )
+        boundary_checksum += float(output.reshape(-1)[0])
+    _PROCESS_INPUT.close()
+    _PROCESS_OUTPUT.close()
+    _PROCESS_LANE = None
+    _PROCESS_INPUT = None
+    _PROCESS_INPUT_SPECS = None
+    _PROCESS_OUTPUT = None
+    _PROCESS_OUTPUT_SPECS = None
+    result = _finish_result(
+        mode="processes_shared_io",
+        workers=workers,
+        crop_count=len(crops),
+        wall_times=wall_times,
+        checksum=checksum,
+    )
+    result.update(
+        {
+            "input_bytes": input_bytes,
+            "output_bytes": output_bytes,
+            "round_input_pack_s": input_pack_times,
+            "round_compute_and_output_s": compute_output_times,
+            "median_input_pack_s": statistics.median(input_pack_times),
+            "median_compute_and_output_s": statistics.median(compute_output_times),
+            "boundary_checksum": boundary_checksum,
+        }
+    )
+    return result
+
+
 def main() -> None:
     args = parse_args()
     cv2.setNumThreads(1)
@@ -258,9 +405,14 @@ def main() -> None:
         processor,
     )
     lane = build_lanes(processor)["pillow_chw_fused_formula"]
+    input_specs = []
+    input_bytes = 0
     output_specs = []
     output_bytes = 0
     for crop in crops:
+        input_bytes = (input_bytes + 63) // 64 * 64
+        input_specs.append((input_bytes, crop.shape))
+        input_bytes += crop.nbytes
         width, height = processor.get_processed_size(
             crop.shape[1],
             crop.shape[0],
@@ -292,7 +444,7 @@ def main() -> None:
                     rounds=args.rounds,
                     warmup_crops=args.warmup_crops,
                 )
-            else:
+            elif mode == "processes_shared":
                 result = benchmark_processes_shared(
                     crops,
                     lane,
@@ -302,19 +454,32 @@ def main() -> None:
                     output_specs=output_specs,
                     output_bytes=output_bytes,
                 )
+            else:
+                result = benchmark_processes_shared_io(
+                    crops,
+                    lane,
+                    workers=workers,
+                    rounds=args.rounds,
+                    warmup_crops=args.warmup_crops,
+                    input_specs=input_specs,
+                    input_bytes=input_bytes,
+                    output_specs=output_specs,
+                    output_bytes=output_bytes,
+                )
             results.append(result)
             print(
                 "UNIREC_CPU_PARALLEL_END " + json.dumps(result, sort_keys=True),
                 flush=True,
             )
-    baseline = next(
-        value
-        for value in results
-        if value["mode"] == args.modes[0] and value["workers"] == 1
+    baseline = min(
+        (value for value in results if value["mode"] == args.modes[0]),
+        key=lambda value: int(value["workers"]),
     )
     baseline_s = float(baseline["median_s"])
     for result in results:
-        result["speedup_vs_one_worker"] = baseline_s / float(result["median_s"])
+        result["speedup_vs_baseline_configuration"] = baseline_s / float(
+            result["median_s"]
+        )
     print(
         "UNIREC_CPU_PARALLEL_SUMMARY "
         + json.dumps(
@@ -323,6 +488,10 @@ def main() -> None:
                 "crop_count": len(crops),
                 "lane": "pillow_chw_fused_formula",
                 "parity": "bit_exact_in_full_sequential_lab",
+                "baseline_mode": baseline["mode"],
+                "baseline_workers": baseline["workers"],
+                "input_bytes": input_bytes,
+                "output_bytes": output_bytes,
                 "opencv_threads_per_worker": cv2.getNumThreads(),
                 "torch_threads_per_worker": torch.get_num_threads(),
                 "results": results,
