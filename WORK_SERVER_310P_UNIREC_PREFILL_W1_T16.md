@@ -5,24 +5,45 @@ U2.5 is already complete. Do not repeat it. Run only the experiment in this
 brief and stop.
 
 The first Pass A attempt failed in eager PP-DocLayoutV2 reading-order input
-construction. That attempt established a second Ascend 310P eager incompatibility
-in Transformers 5.5.4: data-dependent indexed writes into `input_ids`. The
-current source binds a shape-explicit `torch.where` implementation alongside the
-previous anchor-generation fix. Pull the new commit and retry Pass A from a new
-commit-specific output and cache root. Do not reuse or delete the failed run.
+construction. It established that Transformers 5.5.4's data-dependent indexed
+writes into `input_ids` are not valid on this 310P stack. A follow-up source
+audit found that the first local rewrite was incomplete: after replacing those
+writes, it still called `create_bidirectional_mask`. In Transformers 5.5.4 that
+helper reads `padding_mask[batch_idx, kv_idx]` with broadcast tensor indices,
+then converts the mask with `torch.where(mask, zero_dimensional_tensor,
+python_scalar)`. Both forms can dispatch to the same failing 310P AICPU Index
+path.
+
+The current source no longer calls that helper from reading order. It builds the
+exact `[B, 1, S, S]` bidirectional key-padding bias directly from full-shape
+zero and negative branches, using only `unsqueeze` and `expand` afterward. The
+CPU compatibility test makes the upstream helper raise if it is called, and
+checks every bias value for zero-, one-, and full-prediction boundary rows.
+
+The audit also found variable-result tensor indexing in the official layout
+postprocessor: `scatter_`, boolean selection, and tensor selection. The fixed
+detector and reading-order forward remain on NPU. The adapter now copies only
+`logits`, `pred_boxes`, and `order_logits` to CPU before official
+postprocessing. This small CPU tail prevents those variable-size operations
+from reaching the 310P AICPU Index path.
 
 The eager fix intentionally does not install the broader attention, global
 pointer, sine-position, or linear rewrites used by TorchAir fullgraph layout.
-U2 proved those upstream operators on eager 310P for its fixed page. If the
-retry reaches a new first causal failure in one of them, stop and report it
-instead of enabling all compile rewrites speculatively.
+U2 and the failed Pass A crossed the detector's direct gather/take-along path;
+those operations are not the broadcast advanced-index form removed here. If a
+new first causal model-forward failure appears, stop and report its exact
+operator and call site instead of enabling all compile rewrites speculatively.
 
-A static audit of the later recognition-prefill path found no additional use of
-the same two failing forms inside the five compiled full-vision graph forwards
-or the packed S1024 cross-KV graph. Vision masks are filled in NumPy on CPU
-before transfer. Cross-KV cache padding uses fixed contiguous slice copies that
-the eager recognizer already exercised. This does not prove TorchAir lowering
-on 310P; preserve and report the first graph-compile error if one occurs.
+A static audit of the later recognition-prefill path found no use of the two
+failing forms inside the five compiled full-vision forwards or the packed S1024
+cross-KV graph. The vision graph is convolution, linear, normalization, masking
+arithmetic, reductions, reshapes, and basic fixed slices. Vision masks are
+filled in NumPy on CPU before transfer. The packed cross-KV graph is six pairs
+of fixed-shape linear projections plus reshapes. Cache segmentation and
+cross-KV padding happen after the graph through fixed contiguous slices; no
+decode/scatter path runs in this task. This audit does not prove TorchAir
+lowering on 310P, so preserve and report the first graph-compile error if one
+occurs.
 
 Read `AGENTS.md` and `CLAUDE.md` first. Do not edit tracked files, create a
 branch, commit, or push from the work server. If the run needs a source change,
@@ -117,6 +138,18 @@ OUT="$REPO/tmp/12_unirec_0_1b_inference/310p_prefill_w1_t16_$COMMIT_SHORT"
 CACHE_ROOT="$REPO/.runtime_cache/12_unirec_0_1b_inference/310p_prefill_w1_t16_$COMMIT_SHORT"
 mkdir -p "$OUT" "$CACHE_ROOT/layout" "$CACHE_ROOT/recognition"
 ```
+
+Run the committed CPU-only compatibility checks before loading either model:
+
+```sh
+PYTHONPYCACHEPREFIX="$OUT/pycache" \
+  "$PYTHON_BIN" -m unittest \
+  "$REPO/12_unirec_0_1b_inference/test_layout_npu_compat.py"
+```
+
+All four tests must pass. In particular, the reading-order test must complete
+while its fake Transformers `create_bidirectional_mask` raises on any call.
+If the tests fail, stop and report that failure before starting Pass A.
 
 Do not delete an existing cache. Record whether it already contains files:
 

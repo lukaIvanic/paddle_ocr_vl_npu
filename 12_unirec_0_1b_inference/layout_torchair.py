@@ -43,6 +43,29 @@ def _generate_anchors(self, spatial_shapes=None, grid_size=0.05, device="cpu", d
     return torch.where(valid_mask, anchors, replacement), valid_mask
 
 
+def _reading_order_attention_bias(
+    valid_tokens: torch.Tensor, dtype: torch.dtype
+) -> torch.Tensor:
+    """Build the eager bidirectional key-padding bias without indexed masks.
+
+    Transformers 5.5.4 routes ``create_bidirectional_mask`` through a mask
+    function that reads ``padding_mask[batch_idx, kv_idx]`` with broadcast
+    tensor indices, then converts the result with a scalar-tensor
+    ``torch.where`` branch. Both forms can dispatch to the failing AICPU Index
+    path on Ascend 310P. Reading-order attention is fully bidirectional, so its
+    only restriction is whether each key token is valid. Materialize that bias
+    directly with full-shape branches and view expansion.
+    """
+    valid_tokens = valid_tokens.bool()
+    zeros = torch.zeros_like(valid_tokens, dtype=dtype)
+    negative = torch.full_like(valid_tokens, torch.finfo(dtype).min, dtype=dtype)
+    key_bias = torch.where(valid_tokens, zeros, negative)
+    sequence_length = valid_tokens.shape[1]
+    return key_bias.unsqueeze(1).unsqueeze(1).expand(
+        valid_tokens.shape[0], 1, sequence_length, sequence_length
+    )
+
+
 def _reading_order(self, boxes, labels=None, mask=None, **kwargs):
     batch_size, seq_len = mask.shape
     num_pred = mask.sum(dim=1)
@@ -78,9 +101,9 @@ def _reading_order(self, boxes, labels=None, mask=None, **kwargs):
     else:
         label_proj = torch.zeros_like(bbox_embedding)
     embeddings = self.embeddings.dropout(self.embeddings.norm(bbox_embedding + label_proj))
-    attention_mask = positions < (num_pred + 2).unsqueeze(1)
-    attention_mask = layout_mod.create_bidirectional_mask(
-        config=self.config, inputs_embeds=embeddings, attention_mask=attention_mask
+    valid_tokens = positions < (num_pred + 2).unsqueeze(1)
+    attention_mask = _reading_order_attention_bias(
+        valid_tokens, embeddings.dtype
     )
     encoded = self.encoder(
         hidden_states=embeddings, bbox=pad_boxes, attention_mask=attention_mask
@@ -210,10 +233,11 @@ def _bind(instance: Any, method: Any) -> None:
 def make_eager_npu_compatible(model: nn.Module) -> None:
     """Apply only the rewrites required by eager PP-DocLayoutV2 on NPU.
 
-    Ascend 310P rejects the scalar ``torch.where`` branch in anchor generation
-    and the data-dependent indexed writes in the upstream reading-order input
-    construction.  The remaining rewrites below are TorchAir fullgraph
-    accommodations and must not change the eager path unnecessarily.
+    Ascend 310P rejects the scalar ``torch.where`` branch in anchor generation,
+    the data-dependent indexed writes in the upstream reading-order input
+    construction, and the broadcast advanced-indexing path used by the upstream
+    reading-order mask helper. The remaining rewrites below are TorchAir
+    fullgraph accommodations and must not change the eager path unnecessarily.
     """
     model.model.generate_anchors = types.MethodType(_generate_anchors, model.model)
     _bind(model.reading_order, _reading_order)

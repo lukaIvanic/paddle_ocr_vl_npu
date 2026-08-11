@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import cv2
@@ -16,6 +17,21 @@ DTYPE_MAP = {
     "float16": torch.float16,
     "float32": torch.float32,
 }
+
+
+def _layout_outputs_for_cpu_postprocess(outputs: Any) -> SimpleNamespace:
+    """Copy only the tensors consumed by the variable-size postprocessor.
+
+    Transformers postprocessing uses scatter plus boolean/tensor indexing to
+    construct a variable-size result. Keep the fixed-shape detector forward on
+    NPU, then execute this small selection/ranking tail on CPU so Atlas 310P
+    does not dispatch those operations through its failing AICPU Index path.
+    """
+    return SimpleNamespace(
+        logits=outputs.logits.detach().cpu(),
+        pred_boxes=outputs.pred_boxes.detach().cpu(),
+        order_logits=outputs.order_logits.detach().cpu(),
+    )
 
 
 def filter_overlap_boxes_vectorized(
@@ -158,11 +174,12 @@ class PPDocLayoutV2NpuAdapter:
         started = time.perf_counter()
         self.processor = AutoImageProcessor.from_pretrained(self.model_path)
         self.model = AutoModelForObjectDetection.from_pretrained(self.model_path)
-        # Transformers 5.5.4 uses two forms rejected by eager Ascend 310P:
-        # a 0-D torch.where branch in anchor generation and data-dependent
-        # indexed writes in reading-order input construction. Bind only those
-        # shape-explicit equivalents here. TorchAir-only attention/linear
-        # rewrites remain confined to LayoutFullGraphRuntime.
+        # Transformers 5.5.4 uses forms rejected by eager Ascend 310P: a 0-D
+        # torch.where branch in anchor generation, data-dependent indexed writes
+        # in reading-order input construction, and broadcast advanced indexing
+        # in its reading-order mask helper. Bind only their shape-explicit
+        # equivalents here. TorchAir-only attention/linear rewrites remain
+        # confined to LayoutFullGraphRuntime.
         from layout_torchair import make_eager_npu_compatible
 
         make_eager_npu_compatible(self.model)
@@ -292,13 +309,15 @@ class PPDocLayoutV2NpuAdapter:
 
         postprocess_started = time.perf_counter()
         started = postprocess_started
+        cpu_outputs = _layout_outputs_for_cpu_postprocess(outputs)
+        self._record_stage("outputs_d2h_s", started)
+
+        started = time.perf_counter()
         prediction = self.processor.post_process_object_detection(
-            outputs,
+            cpu_outputs,
             threshold=threshold,
             target_sizes=target_sizes,
         )
-        if self.profile_stages:
-            torch.npu.synchronize()
         self._record_stage("hf_box_decode_s", started)
 
         started = time.perf_counter()
@@ -312,7 +331,7 @@ class PPDocLayoutV2NpuAdapter:
                     "order_seq": item["order_seq"].detach().cpu().tolist(),
                 }
             )
-        self._record_stage("outputs_d2h_s", started)
+        self._record_stage("postprocess_tensor_to_list_s", started)
 
         started = time.perf_counter()
         results = []

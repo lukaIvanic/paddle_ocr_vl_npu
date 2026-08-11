@@ -29,9 +29,11 @@ def _load_layout_torchair():
     layout_module.PPDocLayoutV2ReadingOrderSelfAttention = _LayoutClass
     layout_module.PPDocLayoutV2GlobalPointer = _LayoutClass
     layout_module.PPDocLayoutV2SinePositionEmbedding = _LayoutClass
-    layout_module.create_bidirectional_mask = (
-        lambda *, config, inputs_embeds, attention_mask: attention_mask
-    )
+    def rejected_bidirectional_mask(**kwargs):
+        del kwargs
+        raise AssertionError("eager reading order must not call the HF mask helper")
+
+    layout_module.create_bidirectional_mask = rejected_bidirectional_mask
 
     transformers = types.ModuleType("transformers")
     transformers.__path__ = []
@@ -88,6 +90,10 @@ class _CapturingEmbeddings(nn.Module):
 
 
 class _IdentityEncoder(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.attention_mask: torch.Tensor | None = None
+
     def forward(
         self,
         *,
@@ -95,7 +101,8 @@ class _IdentityEncoder(nn.Module):
         bbox: torch.Tensor,
         attention_mask: torch.Tensor,
     ) -> SimpleNamespace:
-        del bbox, attention_mask
+        del bbox
+        self.attention_mask = attention_mask.detach().clone()
         return SimpleNamespace(last_hidden_state=hidden_states)
 
 
@@ -169,10 +176,53 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
         torch.testing.assert_close(model.reading_order.embeddings.input_ids, expected)
         torch.testing.assert_close(output, expected[:, 1:5].to(torch.float32).unsqueeze(-1))
 
+        expected_valid = torch.tensor(
+            [
+                [True, True, False, False, False, False],
+                [True, True, True, False, False, False],
+                [True, True, True, True, True, True],
+            ]
+        )
+        zeros = torch.zeros_like(expected_valid, dtype=torch.float32)
+        negative = torch.full_like(
+            expected_valid, torch.finfo(torch.float32).min, dtype=torch.float32
+        )
+        expected_key_bias = torch.where(expected_valid, zeros, negative)
+        expected_attention_mask = expected_key_bias.unsqueeze(1).unsqueeze(1).expand(
+            3, 1, 6, 6
+        )
+        torch.testing.assert_close(
+            model.reading_order.encoder.attention_mask, expected_attention_mask
+        )
+
     def test_adapter_installs_the_eager_bundle(self) -> None:
         source = (ROOT / "opendoc_layout_npu.py").read_text(encoding="utf-8")
         self.assertIn("make_eager_npu_compatible(self.model)", source)
         self.assertNotIn("from layout_torchair import _generate_anchors", source)
+
+    def test_layout_postprocess_copies_only_required_outputs_to_cpu(self) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "opendoc_layout_npu_under_test",
+            ROOT / "opendoc_layout_npu.py",
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError("cannot load opendoc_layout_npu.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        outputs = SimpleNamespace(
+            logits=torch.randn(1, 3, 4, requires_grad=True),
+            pred_boxes=torch.randn(1, 3, 4, requires_grad=True),
+            order_logits=torch.randn(1, 3, 3, requires_grad=True),
+            ignored=torch.randn(1024),
+        )
+
+        copied = module._layout_outputs_for_cpu_postprocess(outputs)
+
+        self.assertEqual(set(vars(copied)), {"logits", "pred_boxes", "order_logits"})
+        for name in vars(copied):
+            tensor = getattr(copied, name)
+            self.assertEqual(tensor.device.type, "cpu")
+            self.assertFalse(tensor.requires_grad)
 
 
 if __name__ == "__main__":
