@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import gc
 import json
+import mmap
 import multiprocessing as mp
 import statistics
 import time
@@ -24,6 +25,8 @@ from modeling_optimized_unirec import UniRecImageProcessor
 ArrayLane = Callable[[np.ndarray], np.ndarray]
 _PROCESS_CROPS: list[np.ndarray] | None = None
 _PROCESS_LANE: ArrayLane | None = None
+_PROCESS_OUTPUT: mmap.mmap | None = None
+_PROCESS_OUTPUT_SPECS: list[tuple[int, tuple[int, ...]]] | None = None
 
 
 def parse_args() -> argparse.Namespace:
@@ -39,8 +42,10 @@ def parse_args() -> argparse.Namespace:
     args.modes = [value.strip() for value in args.modes.split(",")]
     if any(value < 1 for value in args.workers) or args.rounds < 1:
         parser.error("worker counts and --rounds must be positive")
-    if not set(args.modes) <= {"threads", "processes"}:
-        parser.error("--modes accepts only threads and processes")
+    if not set(args.modes) <= {"threads", "processes", "processes_shared"}:
+        parser.error(
+            "--modes accepts only threads, processes, and processes_shared"
+        )
     return args
 
 
@@ -52,6 +57,26 @@ def _process_checksum(index: int) -> float:
     if _PROCESS_CROPS is None or _PROCESS_LANE is None:
         raise RuntimeError("process benchmark globals are not initialized")
     return _checksum(_PROCESS_LANE, _PROCESS_CROPS[index])
+
+
+def _process_shared_output(index: int) -> float:
+    if (
+        _PROCESS_CROPS is None
+        or _PROCESS_LANE is None
+        or _PROCESS_OUTPUT is None
+        or _PROCESS_OUTPUT_SPECS is None
+    ):
+        raise RuntimeError("shared-output process globals are not initialized")
+    output = _PROCESS_LANE(_PROCESS_CROPS[index])
+    offset, shape = _PROCESS_OUTPUT_SPECS[index]
+    destination = np.ndarray(
+        shape,
+        dtype=np.float32,
+        buffer=_PROCESS_OUTPUT,
+        offset=offset,
+    )
+    np.copyto(destination, output)
+    return float(output.reshape(-1)[0])
 
 
 def _finish_result(
@@ -150,6 +175,77 @@ def benchmark_processes(
     )
 
 
+def benchmark_processes_shared(
+    crops: list[np.ndarray],
+    lane: ArrayLane,
+    *,
+    workers: int,
+    rounds: int,
+    warmup_crops: int,
+    output_specs: list[tuple[int, tuple[int, ...]]],
+    output_bytes: int,
+) -> dict[str, object]:
+    global _PROCESS_CROPS, _PROCESS_LANE, _PROCESS_OUTPUT, _PROCESS_OUTPUT_SPECS
+    _PROCESS_CROPS = crops
+    _PROCESS_LANE = lane
+    _PROCESS_OUTPUT_SPECS = output_specs
+    _PROCESS_OUTPUT = mmap.mmap(
+        -1,
+        output_bytes,
+        flags=mmap.MAP_SHARED | mmap.MAP_ANONYMOUS,
+        prot=mmap.PROT_READ | mmap.PROT_WRITE,
+    )
+    checksum = 0.0
+    context = mp.get_context("fork")
+    with context.Pool(processes=workers) as pool:
+        checksum += sum(
+            pool.imap_unordered(
+                _process_shared_output,
+                range(min(warmup_crops, len(crops))),
+                chunksize=1,
+            )
+        )
+        wall_times = []
+        for _round_index in range(rounds):
+            gc.collect()
+            started = time.perf_counter()
+            checksum += sum(
+                pool.imap_unordered(
+                    _process_shared_output,
+                    range(len(crops)),
+                    chunksize=1,
+                )
+            )
+            wall_times.append(time.perf_counter() - started)
+    # Prove that the completed output mapping is readable by the owner without
+    # adding a full 1.6 GB consumer scan to the preprocessing timing window.
+    boundary_checksum = 0.0
+    for index in (0, len(crops) // 2, len(crops) - 1):
+        offset, shape = output_specs[index]
+        output = np.ndarray(
+            shape,
+            dtype=np.float32,
+            buffer=_PROCESS_OUTPUT,
+            offset=offset,
+        )
+        boundary_checksum += float(output.reshape(-1)[0])
+    _PROCESS_OUTPUT.close()
+    _PROCESS_CROPS = None
+    _PROCESS_LANE = None
+    _PROCESS_OUTPUT = None
+    _PROCESS_OUTPUT_SPECS = None
+    result = _finish_result(
+        mode="processes_shared",
+        workers=workers,
+        crop_count=len(crops),
+        wall_times=wall_times,
+        checksum=checksum,
+    )
+    result["output_bytes"] = output_bytes
+    result["boundary_checksum"] = boundary_checksum
+    return result
+
+
 def main() -> None:
     args = parse_args()
     cv2.setNumThreads(1)
@@ -162,6 +258,17 @@ def main() -> None:
         processor,
     )
     lane = build_lanes(processor)["pillow_chw_fused_formula"]
+    output_specs = []
+    output_bytes = 0
+    for crop in crops:
+        width, height = processor.get_processed_size(
+            crop.shape[1],
+            crop.shape[0],
+        )
+        output_bytes = (output_bytes + 63) // 64 * 64
+        shape = (1, 3, height, width)
+        output_specs.append((output_bytes, shape))
+        output_bytes += int(np.prod(shape, dtype=np.int64)) * 4
     results = []
     for mode in args.modes:
         for workers in args.workers:
@@ -169,14 +276,32 @@ def main() -> None:
                 f"UNIREC_CPU_PARALLEL_BEGIN mode={mode} workers={workers}",
                 flush=True,
             )
-            benchmark = benchmark_threads if mode == "threads" else benchmark_processes
-            result = benchmark(
-                crops,
-                lane,
-                workers=workers,
-                rounds=args.rounds,
-                warmup_crops=args.warmup_crops,
-            )
+            if mode == "threads":
+                result = benchmark_threads(
+                    crops,
+                    lane,
+                    workers=workers,
+                    rounds=args.rounds,
+                    warmup_crops=args.warmup_crops,
+                )
+            elif mode == "processes":
+                result = benchmark_processes(
+                    crops,
+                    lane,
+                    workers=workers,
+                    rounds=args.rounds,
+                    warmup_crops=args.warmup_crops,
+                )
+            else:
+                result = benchmark_processes_shared(
+                    crops,
+                    lane,
+                    workers=workers,
+                    rounds=args.rounds,
+                    warmup_crops=args.warmup_crops,
+                    output_specs=output_specs,
+                    output_bytes=output_bytes,
+                )
             results.append(result)
             print(
                 "UNIREC_CPU_PARALLEL_END " + json.dumps(result, sort_keys=True),
