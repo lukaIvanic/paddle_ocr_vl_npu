@@ -407,7 +407,7 @@ def main() -> None:
             pending_pages.append(page)
             flush_ready_pages()
             for crop in page.crops:
-                item = base.materialize_worker_prefilled_item(crop, runner=runner)
+                item = base.build_worker_prefilled_item(crop)
                 base.record_prefill_metrics(metrics, item)
                 yield ContinuousReadyItem(
                     request_id=crop.request_id,
@@ -460,6 +460,7 @@ def main() -> None:
             decode_mode="compiled_ifa",
             compile_backend="torchair",
         ).run(ready_source(), on_complete=complete_crop)
+        base.record_direct_arena_admission_metrics(metrics, continuous_decode)
         metrics.decode_s = float(continuous_decode["decode_s"])
         metrics.raw_decode_token_slots = int(
             continuous_decode["raw_decode_token_slots"]

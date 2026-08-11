@@ -32,11 +32,11 @@ from continuous_unirec import (
     ContinuousCompletedItem,
     ContinuousReadyItem,
     ContinuousUniRecDecoder,
+    ContinuousWorkerPrefilledItem,
 )
 from layout_process_pool import DynamicLayoutProcessPool, SharedPageLease
 from modeling_optimized_unirec import (
     LOCAL_UNIREC_STATIC_CACHE_LEN,
-    LocalUniRecStaticCache,
     OptimizedUniRecRunner,
     UniRecPrefilledItem,
     synchronize_device,
@@ -487,6 +487,28 @@ def record_prefill_metrics(metrics: RunMetrics, item: Any) -> None:
     accumulate_stage_seconds(
         metrics.prefill_device_stage_s,
         item.prefill_device_stage_s,
+    )
+
+
+def record_direct_arena_admission_metrics(
+    metrics: RunMetrics,
+    decode_summary: dict[str, Any],
+) -> None:
+    timing = decode_summary.get("timing_detail") or {}
+    admission_s = float(
+        timing.get("initial_arena_admission_enqueue_s", 0.0)
+    ) + float(timing.get("cache_refill_direct_admission_enqueue_s", 0.0))
+    if admission_s <= 0:
+        return
+    metrics.prefill_s += admission_s
+    metrics.prefill_device_stage_s[
+        "coordinator_direct_arena_admission_enqueue"
+    ] = (
+        metrics.prefill_device_stage_s.get(
+            "coordinator_direct_arena_admission_enqueue",
+            0.0,
+        )
+        + admission_s
     )
 
 
@@ -955,23 +977,24 @@ def page_request_from_process_payload(
     )
 
 
-def materialize_worker_prefilled_item(
+def build_worker_prefilled_item(
     crop: CropRequest,
-    *,
-    runner: OptimizedUniRecRunner,
-) -> UniRecPrefilledItem:
-    """Move one worker-produced real cross-K/V prefix into decode storage."""
+) -> ContinuousWorkerPrefilledItem:
+    """Wrap worker-produced CPU cross-K/V for direct decode-arena admission."""
     packed_host = crop.worker_cross_kv
     metadata = crop.worker_prefill_metadata
     if packed_host is None or metadata is None:
         raise RuntimeError(
             f"crop {crop.request_id} has no worker-prefill payload"
         )
-    num_layers = len(runner.model.decoder.layers)
-    if packed_host.ndim != 5 or int(packed_host.shape[0]) != 2 * num_layers:
+    if packed_host.ndim != 5 or int(packed_host.shape[0]) % 2:
         raise RuntimeError(
-            "unexpected worker cross-K/V shape: "
-            f"{packed_host.shape}; decoder_layers={num_layers}"
+            f"unexpected worker cross-K/V shape: {packed_host.shape}"
+        )
+    if packed_host.dtype != np.float16 or not packed_host.flags.c_contiguous:
+        raise RuntimeError(
+            "worker cross-K/V must be contiguous float16, got "
+            f"dtype={packed_host.dtype} contiguous={packed_host.flags.c_contiguous}"
         )
     source_len = int(packed_host.shape[-2])
     if source_len != int(metadata["actual_cross_attention_length"]):
@@ -980,57 +1003,15 @@ def materialize_worker_prefilled_item(
             f"tensor={source_len} metadata={metadata['actual_cross_attention_length']}"
         )
 
-    started = time.perf_counter()
-    with torch.inference_mode(False):
-        packed_device = torch.from_numpy(packed_host).to(
-            runner.device,
-            dtype=runner.dtype,
-        )
-    synchronize_device(runner.device)
-    h2d_s = time.perf_counter() - started
-
-    cross_keys = tuple(packed_device[index] for index in range(num_layers))
-    cross_values = tuple(
-        packed_device[num_layers + index] for index in range(num_layers)
-    )
-    cache_started = time.perf_counter()
-    with torch.inference_mode(False):
-        encoder_mask = torch.ones(
-            (1, source_len),
-            dtype=torch.long,
-            device=runner.device,
-        )
-        decode_mask = runner.model.decoder.build_cross_attention_mask(
-            encoder_attention_mask=encoder_mask,
-            target_length=1,
-        )
-        cache = LocalUniRecStaticCache.from_cross_prefill(
-            cross_key_cache=cross_keys,
-            cross_value_cache=cross_values,
-            cross_attention_mask=decode_mask,
-            cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
-            cross_cache_len=runner._get_static_cross_cache_len(),
-        )
-        generated_ids = runner.model.decoder_start_ids(
-            batch_size=1,
-            device=packed_device.device,
-        )
-    synchronize_device(runner.device)
-    cache_build_s = time.perf_counter() - cache_started
     stages = dict(metadata.get("prefill_device_stage_s") or {})
-    stages["worker_cross_kv_h2d"] = h2d_s
-    stages["coordinator_static_cache_build"] = cache_build_s
-    return UniRecPrefilledItem(
+    return ContinuousWorkerPrefilledItem(
+        packed_cross_kv=packed_host,
         prep=dict(metadata["prep"]),
-        kv_cache=cache,
-        generated_ids=generated_ids,
-        next_token=generated_ids,
         prefill_s=(
             float(metadata["prefill_s"])
             + float(metadata.get("cache_d2h_s", 0.0))
-            + h2d_s
-            + cache_build_s
         ),
+        actual_cross_attention_length=source_len,
         prefill_device_stage_s=stages,
         text_prefill_execution=str(metadata["text_prefill_execution"]),
         text_prefill_real_source_tokens=int(
@@ -1308,10 +1289,7 @@ def warmup_full_pipeline(
         def ready_source() -> Iterable[ContinuousReadyItem]:
             if args.prefill_in_layout_workers:
                 for crop in crops:
-                    item = materialize_worker_prefilled_item(
-                        crop,
-                        runner=runner,
-                    )
+                    item = build_worker_prefilled_item(crop)
                     record_prefill_metrics(warmup_metrics, item)
                     yield ContinuousReadyItem(
                         request_id=crop.request_id,
@@ -1355,6 +1333,7 @@ def warmup_full_pipeline(
             decode_mode=args.decode_mode,
             compile_backend=args.compile_backend,
         ).run(ready_source(), on_complete=complete_crop)
+        record_direct_arena_admission_metrics(warmup_metrics, decode_summary)
     else:
         pending = deque(crops)
         while pending:
@@ -1978,10 +1957,7 @@ def main() -> None:
             crops = crop_source()
             if args.prefill_in_layout_workers:
                 for crop in crops:
-                    item = materialize_worker_prefilled_item(
-                        crop,
-                        runner=runner,
-                    )
+                    item = build_worker_prefilled_item(crop)
                     record_prefill_metrics(metrics, item)
                     yield ContinuousReadyItem(
                         request_id=crop.request_id,
@@ -2067,6 +2043,7 @@ def main() -> None:
             ready_source(),
             on_complete=complete_crop,
         )
+        record_direct_arena_admission_metrics(metrics, continuous_decode)
         metrics.decode_s = float(continuous_decode["decode_s"])
         metrics.raw_decode_token_slots = int(
             continuous_decode["raw_decode_token_slots"]

@@ -21,7 +21,21 @@ from modeling_optimized_unirec import (
 class ContinuousReadyItem:
     request_id: str
     payload: Any
-    prefilled: UniRecPrefilledItem
+    prefilled: UniRecPrefilledItem | "ContinuousWorkerPrefilledItem"
+
+
+@dataclass
+class ContinuousWorkerPrefilledItem:
+    """Compact CPU cross-K/V prefix ready for direct arena admission."""
+
+    packed_cross_kv: Any
+    prep: dict[str, Any]
+    prefill_s: float
+    actual_cross_attention_length: int
+    prefill_device_stage_s: dict[str, float] | None = None
+    text_prefill_execution: str = "eager"
+    text_prefill_real_source_tokens: int | None = None
+    text_prefill_physical_source_tokens: int | None = None
 
 
 @dataclass
@@ -94,6 +108,181 @@ class ContinuousUniRecDecoder:
             source.cross_attention_mask
         )
 
+    def _allocate_empty_arena(self) -> LocalUniRecStaticCache:
+        """Allocate the fixed physical decode cache without temporary B1 rows."""
+        layer_count = len(self.runner.model.decoder.layers)
+        num_heads = int(self.runner.config.decoder_attention_heads)
+        head_dim = int(self.runner.config.d_model) // num_heads
+        cross_cache_len = int(self.runner._get_static_cross_cache_len())
+        cache_shape = (
+            self.batch_size,
+            num_heads,
+            LOCAL_UNIREC_STATIC_CACHE_LEN,
+            head_dim,
+        )
+        cross_shape = (
+            self.batch_size,
+            num_heads,
+            cross_cache_len,
+            head_dim,
+        )
+        device = self.runner.device
+        dtype = self.runner.dtype
+        negative_inf = torch.finfo(torch.float32).min
+        with torch.inference_mode():
+            key_cache = tuple(
+                torch.zeros(cache_shape, dtype=dtype, device=device)
+                for _ in range(layer_count)
+            )
+            value_cache = tuple(
+                torch.zeros(cache_shape, dtype=dtype, device=device)
+                for _ in range(layer_count)
+            )
+            cross_key_cache = tuple(
+                torch.zeros(cross_shape, dtype=dtype, device=device)
+                for _ in range(layer_count)
+            )
+            cross_value_cache = tuple(
+                torch.zeros(cross_shape, dtype=dtype, device=device)
+                for _ in range(layer_count)
+            )
+            cross_attention_mask = torch.full(
+                (self.batch_size, 1, 1, cross_cache_len),
+                negative_inf,
+                dtype=torch.float32,
+                device=device,
+            )
+        return LocalUniRecStaticCache(
+            key_cache=key_cache,
+            value_cache=value_cache,
+            cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
+            cross_key_cache=cross_key_cache,
+            cross_value_cache=cross_value_cache,
+            cross_attention_mask=cross_attention_mask,
+            actual_cross_attention_length=None,
+        )
+
+    def _admit_worker_row(
+        self,
+        destination: LocalUniRecStaticCache,
+        slot: int,
+        source: ContinuousWorkerPrefilledItem,
+        *,
+        reset_reused_row: bool,
+    ) -> tuple[float, int, int]:
+        """Write compact CPU cross-K/V directly into one existing arena row."""
+        if (
+            destination.cross_key_cache is None
+            or destination.cross_value_cache is None
+            or destination.cross_attention_mask is None
+        ):
+            raise RuntimeError("Continuous decode requires static cross-attention caches")
+        packed_host = source.packed_cross_kv
+        layer_count = len(destination.key_cache)
+        if packed_host.ndim != 5 or int(packed_host.shape[0]) != 2 * layer_count:
+            raise RuntimeError(
+                "unexpected worker cross-K/V shape: "
+                f"{packed_host.shape}; decoder_layers={layer_count}"
+            )
+        if int(packed_host.shape[1]) != 1:
+            raise RuntimeError(
+                "worker cross-K/V must contain exactly one batch row, got "
+                f"shape={packed_host.shape}"
+            )
+        source_len = int(packed_host.shape[-2])
+        if source_len != int(source.actual_cross_attention_length):
+            raise RuntimeError(
+                "worker cross-K/V length mismatch: "
+                f"tensor={source_len} metadata={source.actual_cross_attention_length}"
+            )
+        cross_cache_len = int(destination.cross_attention_mask.shape[-1])
+        if source_len > cross_cache_len:
+            raise RuntimeError(
+                "worker cross-K/V exceeds the decode arena: "
+                f"source={source_len} capacity={cross_cache_len}"
+            )
+        expected_tail = (
+            int(destination.cross_key_cache[0].shape[1]),
+            source_len,
+            int(destination.cross_key_cache[0].shape[3]),
+        )
+        if tuple(int(value) for value in packed_host.shape[2:]) != expected_tail:
+            raise RuntimeError(
+                "worker cross-K/V head shape mismatch: "
+                f"tensor={tuple(packed_host.shape[2:])} expected={expected_tail}"
+            )
+
+        started = time.perf_counter()
+        negative_inf = torch.finfo(destination.cross_attention_mask.dtype).min
+        with torch.inference_mode(False):
+            if reset_reused_row:
+                destination.cross_attention_mask[slot : slot + 1].fill_(negative_inf)
+            destination.cross_attention_mask[
+                slot : slot + 1, :, :, :source_len
+            ].zero_()
+            for layer in range(layer_count):
+                if reset_reused_row:
+                    # Preserve the old B1-copy contract without allocating a
+                    # temporary full static cache. The new prefix overwrites the
+                    # head of cross-K/V, so only its stale tail must be cleared.
+                    destination.key_cache[layer][slot : slot + 1].zero_()
+                    destination.value_cache[layer][slot : slot + 1].zero_()
+                    destination.cross_key_cache[layer][
+                        slot : slot + 1, :, source_len:, :
+                    ].zero_()
+                    destination.cross_value_cache[layer][
+                        slot : slot + 1, :, source_len:, :
+                    ].zero_()
+                destination.cross_key_cache[layer][
+                    slot : slot + 1, :, :source_len, :
+                ].copy_(torch.from_numpy(packed_host[layer]))
+                destination.cross_value_cache[layer][
+                    slot : slot + 1, :, :source_len, :
+                ].copy_(torch.from_numpy(packed_host[layer_count + layer]))
+        enqueue_s = time.perf_counter() - started
+        source.prefill_s += enqueue_s
+        stages = dict(source.prefill_device_stage_s or {})
+        stages["coordinator_direct_arena_admission_enqueue"] = enqueue_s
+        source.prefill_device_stage_s = stages
+        transferred_bytes = int(packed_host.nbytes)
+        reset_bytes = 0
+        if reset_reused_row:
+            reset_bytes = sum(
+                int(tensor[slot : slot + 1].numel() * tensor.element_size())
+                for tensor_group in (
+                    destination.key_cache,
+                    destination.value_cache,
+                )
+                for tensor in tensor_group
+            ) + sum(
+                int(
+                    tensor[slot : slot + 1, :, source_len:, :].numel()
+                    * tensor.element_size()
+                )
+                for tensor_group in (
+                    destination.cross_key_cache,
+                    destination.cross_value_cache,
+                )
+                for tensor in tensor_group
+            ) + int(
+                destination.cross_attention_mask[slot : slot + 1].numel()
+                * destination.cross_attention_mask.element_size()
+            )
+        return enqueue_s, transferred_bytes, reset_bytes
+
+    @staticmethod
+    def _initial_token_ids(
+        ready: ContinuousReadyItem,
+        *,
+        decoder_start_token_id: int,
+    ) -> list[int]:
+        if isinstance(ready.prefilled, UniRecPrefilledItem):
+            return [
+                int(token)
+                for token in ready.prefilled.generated_ids[0].detach().cpu().tolist()
+            ]
+        return [int(decoder_start_token_id)]
+
     def _build_result(
         self,
         *,
@@ -103,12 +292,10 @@ class ContinuousUniRecDecoder:
         decode_active_s: float,
         compile_wrap_s: float | None,
         compile_meta: dict[str, Any] | None,
+        cross_cache_len: int,
     ) -> dict[str, Any]:
         text = self.runner._decode_text_batch([token_ids])[0]
         prep = ready.prefilled.prep
-        cross_attention_mask = ready.prefilled.kv_cache.cross_attention_mask
-        if cross_attention_mask is None:
-            raise RuntimeError("Continuous decode requires a static cross-attention mask")
         return {
             "image": str(prep["image"]),
             "text": text,
@@ -138,7 +325,7 @@ class ContinuousUniRecDecoder:
             ),
             "compile_wrap_s": compile_wrap_s,
             "compile": compile_meta,
-            "cross_cache_len": int(cross_attention_mask.shape[-1]),
+            "cross_cache_len": int(cross_cache_len),
             "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
             "device": self.runner.device,
             "dtype": self.runner.dtype_name,
@@ -164,9 +351,15 @@ class ContinuousUniRecDecoder:
         completed = 0
         source_pull_s = 0.0
         initial_cache_stack_s = 0.0
+        initial_arena_allocate_s = 0.0
+        initial_arena_admission_enqueue_s = 0.0
         initial_state_build_s = 0.0
         cache_refill_copy_enqueue_s = 0.0
+        cache_refill_direct_admission_enqueue_s = 0.0
         cache_refill_row_bytes = 0
+        direct_admission_count = 0
+        direct_cross_kv_bytes = 0
+        direct_reset_bytes = 0
         result_build_s = 0.0
         completion_callback_s = 0.0
         decode_input_build_s = 0.0
@@ -214,14 +407,59 @@ class ContinuousUniRecDecoder:
                 "compile": None,
             }
 
-        padded_initial = list(initial)
-        while len(padded_initial) < self.batch_size:
-            padded_initial.append(initial[-1])
-        cache_stack_started = time.perf_counter()
-        cache = self.runner._stack_prefilled_caches(
-            [item.prefilled for item in padded_initial]
+        direct_initial = isinstance(
+            initial[0].prefilled,
+            ContinuousWorkerPrefilledItem,
         )
-        initial_cache_stack_s = time.perf_counter() - cache_stack_started
+        if direct_initial:
+            arena_allocate_started = time.perf_counter()
+            cache = self._allocate_empty_arena()
+            initial_arena_allocate_s = time.perf_counter() - arena_allocate_started
+            for slot, ready in enumerate(initial):
+                if not isinstance(ready.prefilled, ContinuousWorkerPrefilledItem):
+                    raise RuntimeError("Cannot mix worker and B1 initial prefill items")
+                enqueue_s, transferred_bytes, reset_bytes = self._admit_worker_row(
+                    cache,
+                    slot,
+                    ready.prefilled,
+                    reset_reused_row=False,
+                )
+                initial_arena_admission_enqueue_s += enqueue_s
+                direct_admission_count += 1
+                direct_cross_kv_bytes += transferred_bytes
+                direct_reset_bytes += reset_bytes
+            if len(initial) < self.batch_size:
+                # Keep inactive graph rows numerically valid, matching the old
+                # behavior that padded the initial cohort with its last item.
+                last_slot = len(initial) - 1
+                for slot in range(len(initial), self.batch_size):
+                    for tensor_group in (
+                        cache.key_cache,
+                        cache.value_cache,
+                        cache.cross_key_cache or (),
+                        cache.cross_value_cache or (),
+                    ):
+                        for tensor in tensor_group:
+                            tensor[slot : slot + 1].copy_(
+                                tensor[last_slot : last_slot + 1]
+                            )
+                    cache.cross_attention_mask[slot : slot + 1].copy_(
+                        cache.cross_attention_mask[last_slot : last_slot + 1]
+                    )
+        else:
+            padded_initial = list(initial)
+            while len(padded_initial) < self.batch_size:
+                padded_initial.append(initial[-1])
+            if any(
+                not isinstance(item.prefilled, UniRecPrefilledItem)
+                for item in padded_initial
+            ):
+                raise RuntimeError("Cannot mix worker and B1 initial prefill items")
+            cache_stack_started = time.perf_counter()
+            cache = self.runner._stack_prefilled_caches(
+                [item.prefilled for item in padded_initial]
+            )
+            initial_cache_stack_s = time.perf_counter() - cache_stack_started
         state_build_started = time.perf_counter()
         slots: list[ContinuousReadyItem | None] = [
             initial[index] if index < len(initial) else None
@@ -229,7 +467,12 @@ class ContinuousUniRecDecoder:
         ]
         token_ids: list[list[int]] = [
             (
-                [int(token) for token in slots[index].prefilled.generated_ids[0].detach().cpu().tolist()]
+                self._initial_token_ids(
+                    slots[index],
+                    decoder_start_token_id=int(
+                        self.runner.config.decoder_start_token_id
+                    ),
+                )
                 if slots[index] is not None
                 else [
                     int(self.runner.config.decoder_start_token_id),
@@ -284,6 +527,7 @@ class ContinuousUniRecDecoder:
                 decode_active_s=slot_active_decode_s[slot],
                 compile_wrap_s=compile_wrap_s,
                 compile_meta=compile_meta,
+                cross_cache_len=cross_cache_len,
             )
             result_build_s += time.perf_counter() - result_started
             callback_started = time.perf_counter()
@@ -303,6 +547,8 @@ class ContinuousUniRecDecoder:
 
         def refill_slot(slot: int) -> None:
             nonlocal cache_refill_copy_enqueue_s, cache_refill_row_bytes
+            nonlocal cache_refill_direct_admission_enqueue_s
+            nonlocal direct_admission_count, direct_cross_kv_bytes, direct_reset_bytes
             nonlocal next_admission_index, slot_refills
             while slots[slot] is None:
                 ready = next_ready()
@@ -314,30 +560,44 @@ class ContinuousUniRecDecoder:
                     last_tokens[slot] = eos_token_id
                     cache_positions[slot] = 1
                     return
-                if cache_refill_row_bytes == 0:
-                    cache_refill_row_bytes = sum(
-                        int(tensor[slot : slot + 1].numel() * tensor.element_size())
-                        for tensor_group in (
-                            cache.key_cache,
-                            cache.value_cache,
-                            cache.cross_key_cache or (),
-                            cache.cross_value_cache or (),
-                        )
-                        for tensor in tensor_group
+                if isinstance(ready.prefilled, ContinuousWorkerPrefilledItem):
+                    enqueue_s, transferred_bytes, reset_bytes = self._admit_worker_row(
+                        cache,
+                        slot,
+                        ready.prefilled,
+                        reset_reused_row=True,
                     )
-                    if cache.cross_attention_mask is not None:
-                        mask_row = cache.cross_attention_mask[slot : slot + 1]
-                        cache_refill_row_bytes += int(
-                            mask_row.numel() * mask_row.element_size()
+                    cache_refill_direct_admission_enqueue_s += enqueue_s
+                    direct_admission_count += 1
+                    direct_cross_kv_bytes += transferred_bytes
+                    direct_reset_bytes += reset_bytes
+                else:
+                    if cache_refill_row_bytes == 0:
+                        cache_refill_row_bytes = sum(
+                            int(tensor[slot : slot + 1].numel() * tensor.element_size())
+                            for tensor_group in (
+                                cache.key_cache,
+                                cache.value_cache,
+                                cache.cross_key_cache or (),
+                                cache.cross_value_cache or (),
+                            )
+                            for tensor in tensor_group
                         )
-                copy_started = time.perf_counter()
-                self._copy_cache_row(cache, slot, ready.prefilled.kv_cache)
-                cache_refill_copy_enqueue_s += time.perf_counter() - copy_started
+                        if cache.cross_attention_mask is not None:
+                            mask_row = cache.cross_attention_mask[slot : slot + 1]
+                            cache_refill_row_bytes += int(
+                                mask_row.numel() * mask_row.element_size()
+                            )
+                    copy_started = time.perf_counter()
+                    self._copy_cache_row(cache, slot, ready.prefilled.kv_cache)
+                    cache_refill_copy_enqueue_s += time.perf_counter() - copy_started
                 slots[slot] = ready
-                token_ids[slot] = [
-                    int(token)
-                    for token in ready.prefilled.generated_ids[0].detach().cpu().tolist()
-                ]
+                token_ids[slot] = self._initial_token_ids(
+                    ready,
+                    decoder_start_token_id=int(
+                        self.runner.config.decoder_start_token_id
+                    ),
+                )
                 last_tokens[slot] = token_ids[slot][-1]
                 cache_positions[slot] = len(token_ids[slot]) - 1
                 slot_decode_counts[slot] = 0
@@ -446,9 +706,12 @@ class ContinuousUniRecDecoder:
             (
                 source_pull_s,
                 initial_cache_stack_s,
+                initial_arena_allocate_s,
+                initial_arena_admission_enqueue_s,
                 initial_state_build_s,
                 compile_wrap_s or 0.0,
                 cache_refill_copy_enqueue_s,
+                cache_refill_direct_admission_enqueue_s,
                 result_build_s,
                 completion_callback_s,
                 decode_input_build_s,
@@ -488,10 +751,20 @@ class ContinuousUniRecDecoder:
                 "run_wall_s": run_wall_s,
                 "source_pull_s": source_pull_s,
                 "initial_cache_stack_s": initial_cache_stack_s,
+                "initial_arena_allocate_s": initial_arena_allocate_s,
+                "initial_arena_admission_enqueue_s": (
+                    initial_arena_admission_enqueue_s
+                ),
                 "initial_state_build_s": initial_state_build_s,
                 "cache_refill_copy_enqueue_s": cache_refill_copy_enqueue_s,
+                "cache_refill_direct_admission_enqueue_s": (
+                    cache_refill_direct_admission_enqueue_s
+                ),
                 "cache_refill_row_bytes": cache_refill_row_bytes,
                 "cache_refill_total_bytes": cache_refill_row_bytes * slot_refills,
+                "direct_admission_count": direct_admission_count,
+                "direct_cross_kv_bytes": direct_cross_kv_bytes,
+                "direct_reset_bytes": direct_reset_bytes,
                 "result_build_s": result_build_s,
                 "completion_callback_s": completion_callback_s,
                 "decode_input_build_s": decode_input_build_s,
