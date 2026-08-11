@@ -68,6 +68,7 @@ def allocate_arena(
     tuple[torch.Tensor, ...],
     tuple[torch.Tensor, ...],
     torch.Tensor,
+    torch.Tensor,
 ]:
     self_shape = (batch_size, HEADS, self_cache_length, HEAD_DIM)
     cross_shape = (batch_size, HEADS, cross_cache_length, HEAD_DIM)
@@ -81,13 +82,14 @@ def allocate_arena(
             torch.zeros(self_shape, dtype=torch.float16, device=device)
             for _ in range(LAYERS)
         )
-        cross_keys = tuple(
-            torch.zeros(cross_shape, dtype=torch.float16, device=device)
-            for _ in range(LAYERS)
+        packed_cross = torch.zeros(
+            (2 * LAYERS, *cross_shape),
+            dtype=torch.float16,
+            device=device,
         )
+        cross_keys = tuple(packed_cross[layer] for layer in range(LAYERS))
         cross_values = tuple(
-            torch.zeros(cross_shape, dtype=torch.float16, device=device)
-            for _ in range(LAYERS)
+            packed_cross[LAYERS + layer] for layer in range(LAYERS)
         )
         cross_mask = torch.full(
             (batch_size, 1, 1, cross_cache_length),
@@ -95,7 +97,14 @@ def allocate_arena(
             dtype=torch.float32,
             device=device,
         )
-    return self_keys, self_values, cross_keys, cross_values, cross_mask
+    return (
+        self_keys,
+        self_values,
+        cross_keys,
+        cross_values,
+        cross_mask,
+        packed_cross,
+    )
 
 
 def run_policy(
@@ -109,12 +118,20 @@ def run_policy(
         tuple[torch.Tensor, ...],
         tuple[torch.Tensor, ...],
         torch.Tensor,
+        torch.Tensor,
     ],
     mask_templates: dict[int, torch.Tensor],
     device: str,
     batch_size: int,
 ) -> float:
-    self_keys, self_values, cross_keys, cross_values, cross_mask = arena
+    (
+        self_keys,
+        self_values,
+        cross_keys,
+        cross_values,
+        cross_mask,
+        packed_cross,
+    ) = arena
     negative_inf = torch.finfo(cross_mask.dtype).min
     synchronize(device)
     started = time.perf_counter()
@@ -122,13 +139,23 @@ def run_policy(
         for admission, source_len in enumerate(lengths):
             slot = admission % batch_size
             packed = host_by_length[source_len]
-            if policy in {"full_reset", "no_self_reset", "kv_reuse"}:
+            if policy in {
+                "full_reset",
+                "no_self_reset",
+                "kv_reuse",
+                "packed_copy",
+            }:
                 cross_mask[slot : slot + 1].fill_(negative_inf)
                 cross_mask[slot : slot + 1, :, :, :source_len].zero_()
             elif policy == "masked_reuse":
                 cross_mask[slot : slot + 1].copy_(mask_templates[source_len])
             else:
                 raise ValueError(f"unknown policy: {policy}")
+            if policy == "packed_copy":
+                packed_cross[
+                    :, slot : slot + 1, :, :source_len, :
+                ].copy_(torch.from_numpy(packed))
+                continue
             for layer in range(LAYERS):
                 if policy == "full_reset":
                     self_keys[layer][slot : slot + 1].zero_()
@@ -187,6 +214,7 @@ def main() -> None:
         "full_reset",
         "no_self_reset",
         "kv_reuse",
+        "packed_copy",
         "masked_reuse",
     ):
         if warmup_lengths:
