@@ -207,11 +207,22 @@ def _bind(instance: Any, method: Any) -> None:
     instance.forward = types.MethodType(method, instance)
 
 
+def make_eager_npu_compatible(model: nn.Module) -> None:
+    """Apply only the rewrites required by eager PP-DocLayoutV2 on NPU.
+
+    Ascend 310P rejects the scalar ``torch.where`` branch in anchor generation
+    and the data-dependent indexed writes in the upstream reading-order input
+    construction.  The remaining rewrites below are TorchAir fullgraph
+    accommodations and must not change the eager path unnecessarily.
+    """
+    model.model.generate_anchors = types.MethodType(_generate_anchors, model.model)
+    _bind(model.reading_order, _reading_order)
+
+
 def make_compile_compatible(model: nn.Module) -> None:
     """Apply algebraically equivalent rewrites only to this layout model."""
     layout_mod.torch_compilable_check = lambda *args, **kwargs: None
-    model.model.generate_anchors = types.MethodType(_generate_anchors, model.model)
-    _bind(model.reading_order, _reading_order)
+    make_eager_npu_compatible(model)
     for module in model.modules():
         if isinstance(module, layout_mod.PPDocLayoutV2SelfAttention):
             _bind(module, _model_self_attention)

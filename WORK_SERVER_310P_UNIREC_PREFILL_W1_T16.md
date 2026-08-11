@@ -1,8 +1,28 @@
 # Work-server 310P UniRec prefill W1/T16 smoke
 
 This is the next pull-only task for the agent on Luka's Atlas 310P server.
-Complete the active U2.5 comparison first. Then run only the experiment in this
+U2.5 is already complete. Do not repeat it. Run only the experiment in this
 brief and stop.
+
+The first Pass A attempt failed in eager PP-DocLayoutV2 reading-order input
+construction. That attempt established a second Ascend 310P eager incompatibility
+in Transformers 5.5.4: data-dependent indexed writes into `input_ids`. The
+current source binds a shape-explicit `torch.where` implementation alongside the
+previous anchor-generation fix. Pull the new commit and retry Pass A from a new
+commit-specific output and cache root. Do not reuse or delete the failed run.
+
+The eager fix intentionally does not install the broader attention, global
+pointer, sine-position, or linear rewrites used by TorchAir fullgraph layout.
+U2 proved those upstream operators on eager 310P for its fixed page. If the
+retry reaches a new first causal failure in one of them, stop and report it
+instead of enabling all compile rewrites speculatively.
+
+A static audit of the later recognition-prefill path found no additional use of
+the same two failing forms inside the five compiled full-vision graph forwards
+or the packed S1024 cross-KV graph. Vision masks are filled in NumPy on CPU
+before transfer. Cross-KV cache padding uses fixed contiguous slice copies that
+the eager recognizer already exercised. This does not prove TorchAir lowering
+on 310P; preserve and report the first graph-compile error if one occurs.
 
 Read `AGENTS.md` and `CLAUDE.md` first. Do not edit tracked files, create a
 branch, commit, or push from the work server. If the run needs a source change,
