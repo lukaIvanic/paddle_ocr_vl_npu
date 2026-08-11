@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import mmap
 import statistics
 import time
 from collections import Counter
@@ -41,6 +42,15 @@ def parse_args() -> argparse.Namespace:
             "Optional unirec_cross_kv_v1 artifact directory. When set, replay "
             "its real, unique cross-K/V rows in addition to the synthetic "
             "length-distribution policies."
+        ),
+    )
+    parser.add_argument(
+        "--artifact-mapping",
+        choices=("contiguous", "page_segmented"),
+        default="contiguous",
+        help=(
+            "Map the artifact as one bank or as one virtual mapping per page, "
+            "which approximates the production page-scoped shared-memory leases."
         ),
     )
     parser.add_argument(
@@ -88,7 +98,8 @@ class ArtifactRow:
 def load_artifact_rows(
     artifact_dir: Path,
     cross_cache_length: int,
-) -> tuple[list[ArtifactRow], np.memmap, int]:
+    mapping: str,
+) -> tuple[list[ArtifactRow], list[np.memmap], int, int]:
     metadata_path = artifact_dir / "crops.jsonl"
     rows = [
         json.loads(line)
@@ -101,14 +112,48 @@ def load_artifact_rows(
     if len(data_names) != 1:
         raise ValueError(f"artifact must use one data file, got {data_names}")
     data_path = artifact_dir / next(iter(data_names))
-    mapped = np.memmap(data_path, dtype=np.uint8, mode="r")
+    if mapping == "contiguous":
+        mapped_storage = [np.memmap(data_path, dtype=np.uint8, mode="r")]
+        row_storage = [mapped_storage[0] for _ in rows]
+        row_offsets = [int(row["cross_kv"]["offset"]) for row in rows]
+    elif mapping == "page_segmented":
+        mapped_storage = []
+        row_storage = [None for _ in rows]
+        row_offsets = [0 for _ in rows]
+        page_indices: dict[int, list[int]] = {}
+        for index, row in enumerate(rows):
+            page_indices.setdefault(int(row["page_index"]), []).append(index)
+        for indices in page_indices.values():
+            start = min(int(rows[index]["cross_kv"]["offset"]) for index in indices)
+            end = max(
+                int(rows[index]["cross_kv"]["offset"])
+                + int(rows[index]["cross_kv"]["nbytes"])
+                for index in indices
+            )
+            aligned_start = start - (start % mmap.ALLOCATIONGRANULARITY)
+            page_mapping = np.memmap(
+                data_path,
+                dtype=np.uint8,
+                mode="r",
+                offset=aligned_start,
+                shape=(end - aligned_start,),
+            )
+            mapped_storage.append(page_mapping)
+            for index in indices:
+                row_storage[index] = page_mapping
+                row_offsets[index] = (
+                    int(rows[index]["cross_kv"]["offset"]) - aligned_start
+                )
+    else:
+        raise ValueError(f"unknown artifact mapping: {mapping}")
     artifact_rows = []
     payload_bytes = 0
     for index, row in enumerate(rows):
         cross = row["cross_kv"]
         shape = tuple(int(value) for value in cross["shape"])
         dtype = np.dtype(cross["dtype"])
-        offset = int(cross["offset"])
+        file_offset = int(cross["offset"])
+        offset = row_offsets[index]
         nbytes = int(cross["nbytes"])
         source_len = int(cross["source_length"])
         if dtype != np.dtype(np.float16) or len(shape) != 5:
@@ -129,20 +174,25 @@ def load_artifact_rows(
                 f"artifact row {index} exceeds cross cache: "
                 f"{source_len} > {cross_cache_length}"
             )
-        if offset < 0 or offset + nbytes > mapped.nbytes:
+        storage = row_storage[index]
+        if storage is None:
+            raise RuntimeError(f"artifact row {index} has no mapped storage")
+        if offset < 0 or offset + nbytes > storage.nbytes:
             raise ValueError(
-                f"artifact row {index} exceeds data file: "
-                f"offset={offset} nbytes={nbytes} file={mapped.nbytes}"
+                f"artifact row {index} exceeds mapping: "
+                f"file_offset={file_offset} mapping_offset={offset} "
+                f"nbytes={nbytes} mapping={storage.nbytes}"
             )
         array = np.ndarray(
             shape=shape,
             dtype=dtype,
-            buffer=mapped,
+            buffer=storage,
             offset=offset,
         )
         artifact_rows.append(ArtifactRow(source_len=source_len, array=array))
         payload_bytes += nbytes
-    return artifact_rows, mapped, payload_bytes
+    mapped_bytes = sum(int(storage.nbytes) for storage in mapped_storage)
+    return artifact_rows, mapped_storage, payload_bytes, mapped_bytes
 
 
 def parse_policy_list(value: str) -> list[str]:
@@ -411,9 +461,15 @@ def main() -> None:
 
     artifact_summary = None
     if args.artifact_dir is not None:
-        artifact_rows, mapped, artifact_payload_bytes = load_artifact_rows(
+        (
+            artifact_rows,
+            mapped_storage,
+            artifact_payload_bytes,
+            artifact_mapped_bytes,
+        ) = load_artifact_rows(
             args.artifact_dir,
             args.cross_cache_length,
+            args.artifact_mapping,
         )
         artifact_lengths = [row.source_len for row in artifact_rows]
         missing_templates = set(artifact_lengths) - set(mask_templates)
@@ -484,9 +540,11 @@ def main() -> None:
             }
         artifact_summary = {
             "directory": str(args.artifact_dir),
+            "mapping": args.artifact_mapping,
             "admissions": len(artifact_rows),
             "payload_bytes": artifact_payload_bytes,
-            "mapped_file_bytes": int(mapped.nbytes),
+            "mapped_file_bytes": artifact_mapped_bytes,
+            "mapping_count": len(mapped_storage),
             "source_length_histogram": dict(
                 sorted(Counter(artifact_lengths).items())
             ),
