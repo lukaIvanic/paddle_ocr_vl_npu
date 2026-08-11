@@ -1621,20 +1621,79 @@ class UniRecImageProcessor:
             processed_height=processed_height,
         )
 
-    def __call__(self, image: Image.Image) -> dict[str, torch.Tensor]:
+    def _process(
+        self,
+        image: Image.Image,
+        *,
+        timing_s: dict[str, float] | None,
+    ) -> dict[str, torch.Tensor]:
+        started = time.perf_counter() if timing_s is not None else 0.0
         image = image.convert("RGB")
+        if timing_s is not None:
+            timing_s["recognition_processor_image_convert_rgb_s"] = (
+                time.perf_counter() - started
+            )
+            started = time.perf_counter()
         original_width, original_height = image.size
         target_size = self.get_processed_size(original_width, original_height)
+        if timing_s is not None:
+            timing_s["recognition_processor_target_size_s"] = (
+                time.perf_counter() - started
+            )
+            started = time.perf_counter()
         image = image.resize(target_size, resample=self.resample)
+        if timing_s is not None:
+            timing_s["recognition_processor_resize_s"] = (
+                time.perf_counter() - started
+            )
+            started = time.perf_counter()
         array = np.asarray(image, dtype=np.float32)
+        if timing_s is not None:
+            timing_s["recognition_processor_pil_to_float_array_s"] = (
+                time.perf_counter() - started
+            )
         if self.do_rescale:
+            if timing_s is not None:
+                started = time.perf_counter()
             array *= self.rescale_factor
+            if timing_s is not None:
+                timing_s["recognition_processor_rescale_s"] = (
+                    time.perf_counter() - started
+                )
         if self.do_normalize:
+            if timing_s is not None:
+                started = time.perf_counter()
             mean = np.asarray(self.image_mean, dtype=np.float32)
             std = np.asarray(self.image_std, dtype=np.float32)
             array = (array - mean) / std
+            if timing_s is not None:
+                timing_s["recognition_processor_normalize_s"] = (
+                    time.perf_counter() - started
+                )
+        if timing_s is not None:
+            started = time.perf_counter()
         array = np.transpose(array, (2, 0, 1))
-        return {"pixel_values": torch.from_numpy(array).unsqueeze(0)}
+        if timing_s is not None:
+            timing_s["recognition_processor_transpose_s"] = (
+                time.perf_counter() - started
+            )
+            started = time.perf_counter()
+        result = {"pixel_values": torch.from_numpy(array).unsqueeze(0)}
+        if timing_s is not None:
+            timing_s["recognition_processor_tensor_view_s"] = (
+                time.perf_counter() - started
+            )
+        return result
+
+    def __call__(self, image: Image.Image) -> dict[str, torch.Tensor]:
+        return self._process(image, timing_s=None)
+
+    def process_with_timing(
+        self,
+        image: Image.Image,
+    ) -> tuple[dict[str, torch.Tensor], dict[str, float]]:
+        timing_s: dict[str, float] = {}
+        return self._process(image, timing_s=timing_s), timing_s
 
 
 def synchronize_device(device: str | torch.device | None = None) -> None:

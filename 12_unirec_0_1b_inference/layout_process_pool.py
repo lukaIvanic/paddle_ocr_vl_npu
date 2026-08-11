@@ -30,6 +30,20 @@ from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 FULL_VISION_PAGE_COLLECT_TIMEOUT_S = 0.02
+RECOGNITION_CPU_DETAIL_TIMING_FIELDS = (
+    "recognition_capacity_filter_s",
+    "recognition_pil_fromarray_s",
+    "recognition_processor_image_convert_rgb_s",
+    "recognition_processor_target_size_s",
+    "recognition_processor_resize_s",
+    "recognition_processor_pil_to_float_array_s",
+    "recognition_processor_rescale_s",
+    "recognition_processor_normalize_s",
+    "recognition_processor_transpose_s",
+    "recognition_processor_tensor_view_s",
+    "recognition_tensor_numpy_view_s",
+    "recognition_contiguous_chw_copy_s",
+)
 
 
 class SharedPageLease:
@@ -674,7 +688,11 @@ def _prepare_full_vision_worker_page(
     )
     result["started_at"] = started
     recognition_prepare_started = time.perf_counter()
+    recognition_detail_s = {
+        name: 0.0 for name in RECOGNITION_CPU_DETAIL_TIMING_FIELDS
+    }
     rejected_crops = 0
+    capacity_filter_started = time.perf_counter()
     if static_cross_cache_len > 0:
         kept_crops = []
         kept_block_ids = []
@@ -691,12 +709,33 @@ def _prepare_full_vision_worker_page(
             kept_block_ids.append(block_id)
         result["crops"] = kept_crops
         result["vlm_block_ids"] = kept_block_ids
+    recognition_detail_s["recognition_capacity_filter_s"] = (
+        time.perf_counter() - capacity_filter_started
+    )
     result["cross_capacity_rejected_crops"] = rejected_crops
     for crop in result["crops"]:
-        inputs = recognition_processor(Image.fromarray(crop["image_rgb"]))
+        operation_started = time.perf_counter()
+        image = Image.fromarray(crop["image_rgb"])
+        recognition_detail_s["recognition_pil_fromarray_s"] += (
+            time.perf_counter() - operation_started
+        )
+        inputs, processor_timing_s = recognition_processor.process_with_timing(
+            image
+        )
+        for name, value in processor_timing_s.items():
+            recognition_detail_s[name] += float(value)
+        operation_started = time.perf_counter()
+        pixel_values_numpy = inputs["pixel_values"].numpy()
+        recognition_detail_s["recognition_tensor_numpy_view_s"] += (
+            time.perf_counter() - operation_started
+        )
+        operation_started = time.perf_counter()
         crop["processed_pixel_values"] = np.ascontiguousarray(
-            inputs["pixel_values"].numpy(),
+            pixel_values_numpy,
             dtype=np.float32,
+        )
+        recognition_detail_s["recognition_contiguous_chw_copy_s"] += (
+            time.perf_counter() - operation_started
         )
     recognition_prepare_s = time.perf_counter() - recognition_prepare_started
     result["frontend_timing_s"] = {
@@ -705,6 +744,7 @@ def _prepare_full_vision_worker_page(
         "layout_s": detector_s,
         **frontend_timing,
         "recognition_input_prepare_worker_s": recognition_prepare_s,
+        **recognition_detail_s,
     }
     return {
         "run_id": int(run_id),
@@ -1495,6 +1535,12 @@ class DynamicLayoutProcessPool:
             "worker_recognition_page_collect_sum_s": 0.0,
             "worker_shared_pack_sum_s": 0.0,
         }
+        stage_s.update(
+            {
+                f"worker_{name.removesuffix('_s')}_sum_s": 0.0
+                for name in RECOGNITION_CPU_DETAIL_TIMING_FIELDS
+            }
+        )
         vision_batch_summary = _new_worker_vision_batch_summary()
         shared_payload_bytes = 0
         ipc_delivery_sum_s = 0.0
@@ -1540,6 +1586,10 @@ class DynamicLayoutProcessPool:
                 timing.get("recognition_input_prepare_s", 0.0)
             )
             frontend = message["result"].get("frontend_timing_s", {})
+            for name in RECOGNITION_CPU_DETAIL_TIMING_FIELDS:
+                stage_s[f"worker_{name.removesuffix('_s')}_sum_s"] += float(
+                    frontend.get(name, 0.0)
+                )
             stage_s["worker_recognition_prefill_sum_s"] += float(
                 frontend.get("recognition_prefill_worker_s", 0.0)
             )
@@ -1629,6 +1679,12 @@ class DynamicLayoutProcessPool:
             "worker_recognition_page_collect_sum_s": 0.0,
             "worker_shared_pack_sum_s": 0.0,
         }
+        stage_s.update(
+            {
+                f"worker_{name.removesuffix('_s')}_sum_s": 0.0
+                for name in RECOGNITION_CPU_DETAIL_TIMING_FIELDS
+            }
+        )
         vision_batch_summary = _new_worker_vision_batch_summary()
         shared_payload_bytes = 0
         ipc_delivery_sum_s = 0.0
@@ -1679,6 +1735,10 @@ class DynamicLayoutProcessPool:
             ):
                 stage_s[destination] += float(timing.get(source, 0.0))
             frontend = message["result"].get("frontend_timing_s", {})
+            for name in RECOGNITION_CPU_DETAIL_TIMING_FIELDS:
+                stage_s[f"worker_{name.removesuffix('_s')}_sum_s"] += float(
+                    frontend.get(name, 0.0)
+                )
             stage_s["worker_recognition_prefill_sum_s"] += float(
                 frontend.get("recognition_prefill_worker_s", 0.0)
             )
