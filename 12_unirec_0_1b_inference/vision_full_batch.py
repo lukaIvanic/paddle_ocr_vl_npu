@@ -426,7 +426,11 @@ class BucketedFullVisionRuntime:
 
         first_call = self.stats["bucket_calls"][spec.key] == 0
         started = time.perf_counter()
-        output = self.compiled[spec.key](pixel_values, *masks)
+        # Warmup uses inference mode. Keep the production call under the same
+        # Dynamo guard so the first real crop batch loads that graph instead of
+        # compiling a second grad-enabled specialization in the timed window.
+        with torch.inference_mode():
+            output = self.compiled[spec.key](pixel_values, *masks)
         if first_call:
             synchronize_device(self.runner.device)
             self.stats["first_call_wall_s"][spec.key] = (
