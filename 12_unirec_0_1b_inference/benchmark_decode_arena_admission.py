@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import mmap
+import os
 import statistics
 import time
 from collections import Counter
@@ -99,7 +100,7 @@ def load_artifact_rows(
     artifact_dir: Path,
     cross_cache_length: int,
     mapping: str,
-) -> tuple[list[ArtifactRow], list[np.memmap], int, int]:
+) -> tuple[list[ArtifactRow], list[object], int, int]:
     metadata_path = artifact_dir / "crops.jsonl"
     rows = [
         json.loads(line)
@@ -123,27 +124,33 @@ def load_artifact_rows(
         page_indices: dict[int, list[int]] = {}
         for index, row in enumerate(rows):
             page_indices.setdefault(int(row["page_index"]), []).append(index)
-        for indices in page_indices.values():
-            start = min(int(rows[index]["cross_kv"]["offset"]) for index in indices)
-            end = max(
-                int(rows[index]["cross_kv"]["offset"])
-                + int(rows[index]["cross_kv"]["nbytes"])
-                for index in indices
-            )
-            aligned_start = start - (start % mmap.ALLOCATIONGRANULARITY)
-            page_mapping = np.memmap(
-                data_path,
-                dtype=np.uint8,
-                mode="r",
-                offset=aligned_start,
-                shape=(end - aligned_start,),
-            )
-            mapped_storage.append(page_mapping)
-            for index in indices:
-                row_storage[index] = page_mapping
-                row_offsets[index] = (
-                    int(rows[index]["cross_kv"]["offset"]) - aligned_start
+        data_fd = os.open(data_path, os.O_RDONLY)
+        try:
+            for indices in page_indices.values():
+                start = min(
+                    int(rows[index]["cross_kv"]["offset"]) for index in indices
                 )
+                end = max(
+                    int(rows[index]["cross_kv"]["offset"])
+                    + int(rows[index]["cross_kv"]["nbytes"])
+                    for index in indices
+                )
+                aligned_start = start - (start % mmap.ALLOCATIONGRANULARITY)
+                page_mapping = mmap.mmap(
+                    data_fd,
+                    end - aligned_start,
+                    access=mmap.ACCESS_READ,
+                    offset=aligned_start,
+                )
+                mapped_storage.append(page_mapping)
+                for index in indices:
+                    row_storage[index] = page_mapping
+                    row_offsets[index] = (
+                        int(rows[index]["cross_kv"]["offset"])
+                        - aligned_start
+                    )
+        finally:
+            os.close(data_fd)
     else:
         raise ValueError(f"unknown artifact mapping: {mapping}")
     artifact_rows = []
@@ -177,11 +184,16 @@ def load_artifact_rows(
         storage = row_storage[index]
         if storage is None:
             raise RuntimeError(f"artifact row {index} has no mapped storage")
-        if offset < 0 or offset + nbytes > storage.nbytes:
+        storage_nbytes = (
+            int(storage.nbytes)
+            if isinstance(storage, np.ndarray)
+            else len(storage)
+        )
+        if offset < 0 or offset + nbytes > storage_nbytes:
             raise ValueError(
                 f"artifact row {index} exceeds mapping: "
                 f"file_offset={file_offset} mapping_offset={offset} "
-                f"nbytes={nbytes} mapping={storage.nbytes}"
+                f"nbytes={nbytes} mapping={storage_nbytes}"
             )
         array = np.ndarray(
             shape=shape,
@@ -191,7 +203,12 @@ def load_artifact_rows(
         )
         artifact_rows.append(ArtifactRow(source_len=source_len, array=array))
         payload_bytes += nbytes
-    mapped_bytes = sum(int(storage.nbytes) for storage in mapped_storage)
+    mapped_bytes = sum(
+        int(storage.nbytes)
+        if isinstance(storage, np.ndarray)
+        else len(storage)
+        for storage in mapped_storage
+    )
     return artifact_rows, mapped_storage, payload_bytes, mapped_bytes
 
 
