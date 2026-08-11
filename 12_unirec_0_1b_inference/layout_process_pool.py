@@ -29,6 +29,7 @@ from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+FULL_VISION_PAGE_COLLECT_TIMEOUT_S = 0.02
 
 
 class SharedPageLease:
@@ -416,7 +417,6 @@ def _prefill_worker_pages_bucketed(
     if not results:
         raise ValueError("bucketed worker prefill requires at least one page")
     flat_inputs = []
-    flat_crops: list[dict[str, Any]] = []
     crop_source_indices: dict[int, int] = {}
     for result in results:
         for crop in result["crops"]:
@@ -434,7 +434,6 @@ def _prefill_worker_pages_bucketed(
                     image_source=request_id,
                 )
             )
-            flat_crops.append(crop)
             crop_source_indices[id(crop)] = source_index
     if not flat_inputs:
         return [
@@ -446,10 +445,18 @@ def _prefill_worker_pages_bucketed(
                 "recognition_prefill_pack_count": 0.0,
                 "recognition_prefill_fallback_count": 0.0,
                 "recognition_vision_bucket_rows": {},
+                "recognition_vision_group_owner": index == 0,
+                "recognition_vision_group_bucket_calls": {},
+                "recognition_vision_group_bucket_real_rows": {},
+                "recognition_vision_group_bucket_physical_rows": {},
+                "recognition_vision_group_fallback_rows": 0,
             }
-            for _result in results
+            for index, _result in enumerate(results)
         ]
 
+    bucket_calls_before = dict(vision_runtime.stats["bucket_calls"])
+    bucket_real_rows_before = dict(vision_runtime.stats["bucket_real_rows"])
+    fallback_rows_before = int(vision_runtime.stats["fallback_rows"])
     synchronize_started = time.perf_counter()
     torch.npu.synchronize()
     vision_started = time.perf_counter()
@@ -457,10 +464,34 @@ def _prefill_worker_pages_bucketed(
     torch.npu.synchronize()
     vision_s = time.perf_counter() - vision_started
     synchronization_s = vision_started - synchronize_started
+    group_bucket_calls = {
+        key: int(value) - int(bucket_calls_before.get(key, 0))
+        for key, value in vision_runtime.stats["bucket_calls"].items()
+        if int(value) - int(bucket_calls_before.get(key, 0))
+    }
+    group_bucket_real_rows = {
+        key: int(value) - int(bucket_real_rows_before.get(key, 0))
+        for key, value in vision_runtime.stats["bucket_real_rows"].items()
+        if int(value) - int(bucket_real_rows_before.get(key, 0))
+    }
+    bucket_batch_sizes = {
+        spec.key: int(spec.batch_size) for spec in vision_runtime.specs
+    }
+    group_bucket_physical_rows = {
+        key: calls * bucket_batch_sizes[key]
+        for key, calls in group_bucket_calls.items()
+    }
+    group_fallback_rows = (
+        int(vision_runtime.stats["fallback_rows"]) - fallback_rows_before
+    )
     encoded_by_source = {item.source_index: item for item in encoded}
+    vision_bucket_by_source = {
+        item.source_index: item.bucket_key for item in encoded
+    }
+    encoded.clear()
     vision_share_per_crop = vision_s / len(flat_inputs)
     page_timings = []
-    for result in results:
+    for result_index, result in enumerate(results):
         page_started = time.perf_counter()
         cache_d2h_s = 0.0
         real_tokens = 0
@@ -485,7 +516,7 @@ def _prefill_worker_pages_bucketed(
             encoded_group = []
             for crop in group:
                 source_index = crop_source_indices[id(crop)]
-                vision_item = encoded_by_source[source_index]
+                vision_item = encoded_by_source.pop(source_index)
                 encoded_group.append(
                     (vision_item.hidden_states, vision_item.prep)
                 )
@@ -541,9 +572,9 @@ def _prefill_worker_pages_bucketed(
                     "text_prefill_real_source_tokens": member_real,
                     "text_prefill_physical_source_tokens": member_physical,
                     "actual_cross_attention_length": actual_length,
-                    "vision_bucket": encoded_by_source[
+                    "vision_bucket": vision_bucket_by_source[
                         crop_source_indices[id(crop)]
-                    ].bucket_key,
+                    ],
                 }
         page_crop_count = len(result["crops"])
         page_vision_s = vision_share_per_crop * page_crop_count
@@ -564,9 +595,404 @@ def _prefill_worker_pages_bucketed(
                     synchronization_s if result is results[0] else 0.0
                 ),
                 "recognition_vision_bucket_rows": bucket_rows,
+                "recognition_vision_group_owner": result_index == 0,
+                "recognition_vision_group_bucket_calls": (
+                    group_bucket_calls if result_index == 0 else {}
+                ),
+                "recognition_vision_group_bucket_real_rows": (
+                    group_bucket_real_rows if result_index == 0 else {}
+                ),
+                "recognition_vision_group_bucket_physical_rows": (
+                    group_bucket_physical_rows if result_index == 0 else {}
+                ),
+                "recognition_vision_group_fallback_rows": (
+                    group_fallback_rows if result_index == 0 else 0
+                ),
             }
         )
+    if encoded_by_source:
+        raise RuntimeError(
+            f"bucketed worker left {len(encoded_by_source)} vision rows unconsumed"
+        )
     return page_timings
+
+
+def _collect_full_vision_worker_tasks(
+    first_task: tuple[int, int, str],
+    *,
+    task_queue: Any,
+    page_lookahead: int,
+) -> tuple[list[tuple[int, int, str]], bool, tuple[int, int, str] | None]:
+    """Collect one bounded same-run page group without delaying a partial tail."""
+    tasks = [first_task]
+    saw_shutdown = False
+    deferred_task = None
+    first_run_id = int(first_task[0])
+    while len(tasks) < page_lookahead:
+        try:
+            task = task_queue.get(timeout=FULL_VISION_PAGE_COLLECT_TIMEOUT_S)
+        except queue.Empty:
+            break
+        if task is None:
+            saw_shutdown = True
+            break
+        if int(task[0]) != first_run_id:
+            deferred_task = task
+            break
+        tasks.append(task)
+    return tasks, saw_shutdown, deferred_task
+
+
+def _prepare_full_vision_worker_page(
+    task: tuple[int, int, str],
+    *,
+    runtime: Any,
+    threshold: float,
+    use_chart_recognition: bool,
+    crop_margin: Any,
+    tokenize_figure_of_table: Any,
+    recognition_processor: Any,
+    static_cross_cache_len: int,
+) -> dict[str, Any]:
+    """Run the CPU/layout half of one page before cross-page vision batching."""
+    run_id, page_index, path_string = task
+    path = Path(path_string)
+    started = time.perf_counter()
+    rgb, decode_timing = _decode_rgb(path)
+    bgr = np.ascontiguousarray(rgb[..., ::-1])
+    detector_started = time.perf_counter()
+    layout_result = runtime([bgr], threshold=threshold)[0]
+    detector_s = time.perf_counter() - detector_started
+    result, frontend_timing = _prepare_frontend_payload(
+        page_index=page_index,
+        path=path,
+        bgr=bgr,
+        layout_result=layout_result,
+        use_chart_recognition=use_chart_recognition,
+        crop_margin=crop_margin,
+        tokenize_figure_of_table=tokenize_figure_of_table,
+    )
+    result["started_at"] = started
+    recognition_prepare_started = time.perf_counter()
+    rejected_crops = 0
+    if static_cross_cache_len > 0:
+        kept_crops = []
+        kept_block_ids = []
+        for crop, block_id in zip(result["crops"], result["vlm_block_ids"]):
+            height, width = crop["image_rgb"].shape[:2]
+            tokens = recognition_processor.estimate_encoder_token_count_for_image_size(
+                width,
+                height,
+            )
+            if tokens > static_cross_cache_len:
+                rejected_crops += 1
+                continue
+            kept_crops.append(crop)
+            kept_block_ids.append(block_id)
+        result["crops"] = kept_crops
+        result["vlm_block_ids"] = kept_block_ids
+    result["cross_capacity_rejected_crops"] = rejected_crops
+    for crop in result["crops"]:
+        inputs = recognition_processor(Image.fromarray(crop["image_rgb"]))
+        crop["processed_pixel_values"] = np.ascontiguousarray(
+            inputs["pixel_values"].numpy(),
+            dtype=np.float32,
+        )
+    recognition_prepare_s = time.perf_counter() - recognition_prepare_started
+    result["frontend_timing_s"] = {
+        "page_file_read_s": decode_timing["file_read_s"],
+        "page_image_decode_s": decode_timing["direct_rgb_decode_s"],
+        "layout_s": detector_s,
+        **frontend_timing,
+        "recognition_input_prepare_worker_s": recognition_prepare_s,
+    }
+    return {
+        "run_id": int(run_id),
+        "page_index": int(page_index),
+        "path": path_string,
+        "started": started,
+        "decode_timing": decode_timing,
+        "detector_s": detector_s,
+        "frontend_timing": frontend_timing,
+        "recognition_prepare_s": recognition_prepare_s,
+        "result": result,
+    }
+
+
+def _unlink_worker_shared_payload(result: dict[str, Any]) -> None:
+    """Best-effort cleanup if a grouped page fails after shared packing."""
+    shared = result.get("shared_memory")
+    if shared is None:
+        return
+    try:
+        storage = SharedMemory(name=str(shared["name"]))
+    except FileNotFoundError:
+        return
+    try:
+        storage.unlink()
+    finally:
+        storage.close()
+
+
+def _run_full_vision_worker_group(
+    tasks: list[tuple[int, int, str]],
+    *,
+    group_started: float,
+    collect_s: float,
+    worker_index: int,
+    runtime: Any,
+    threshold: float,
+    use_chart_recognition: bool,
+    crop_margin: Any,
+    tokenize_figure_of_table: Any,
+    recognition_processor: Any,
+    static_cross_cache_len: int,
+    recognition_runner: Any,
+    full_vision_runtime: Any,
+    page_lookahead: int,
+    empty_cache_after_page: bool,
+    profile_prefill_device_stages: bool,
+    result_queue: Any,
+) -> None:
+    """Prepare, batch-prefill, pack, and publish one worker-local page group."""
+    contexts = [
+        _prepare_full_vision_worker_page(
+            task,
+            runtime=runtime,
+            threshold=threshold,
+            use_chart_recognition=use_chart_recognition,
+            crop_margin=crop_margin,
+            tokenize_figure_of_table=tokenize_figure_of_table,
+            recognition_processor=recognition_processor,
+            static_cross_cache_len=static_cross_cache_len,
+        )
+        for task in tasks
+    ]
+    results = [context["result"] for context in contexts]
+    memory_device = torch.device(recognition_runner.device)
+    torch.npu.reset_peak_memory_stats(memory_device)
+    npu_memory_before_bytes = int(torch.npu.memory_allocated(memory_device))
+    prefill_timings = _prefill_worker_pages_bucketed(
+        results,
+        runner=recognition_runner,
+        vision_runtime=full_vision_runtime,
+        profile_device_stages=profile_prefill_device_stages,
+    )
+    npu_memory_after_bytes = int(torch.npu.memory_allocated(memory_device))
+    npu_peak_memory_bytes = int(torch.npu.max_memory_allocated(memory_device))
+    group_size = len(contexts)
+    group_crop_count = sum(len(result["crops"]) for result in results)
+    collect_share_s = collect_s / group_size
+    empty_cache_share_s = 0.0
+    if empty_cache_after_page:
+        empty_cache_started = time.perf_counter()
+        torch.npu.empty_cache()
+        empty_cache_share_s = (
+            time.perf_counter() - empty_cache_started
+        ) / group_size
+
+    packed_contexts = []
+    try:
+        for group_index, (context, prefill_timing) in enumerate(
+            zip(contexts, prefill_timings)
+        ):
+            result = context["result"]
+            result["frontend_timing_s"].update(
+                {
+                    name: value
+                    for name, value in prefill_timing.items()
+                    if name.endswith("_s")
+                }
+            )
+            result["frontend_timing_s"][
+                "recognition_page_lookahead_collect_s"
+            ] = collect_share_s
+            if empty_cache_after_page:
+                result["frontend_timing_s"][
+                    "recognition_worker_empty_cache_s"
+                ] = empty_cache_share_s
+            result["worker_prefill_stats"] = {
+                name: value
+                for name, value in prefill_timing.items()
+                if not name.endswith("_s")
+            }
+            result["worker_prefill_stats"].update(
+                {
+                    "recognition_full_vision_page_group_size": group_size,
+                    "recognition_full_vision_page_group_crop_count": (
+                        group_crop_count
+                    ),
+                    "recognition_full_vision_page_group_index": group_index,
+                    "recognition_full_vision_page_lookahead": page_lookahead,
+                }
+            )
+            if group_index == 0:
+                result["worker_prefill_stats"].update(
+                    {
+                        "recognition_group_npu_memory_before_bytes": (
+                            npu_memory_before_bytes
+                        ),
+                        "recognition_group_npu_memory_after_bytes": (
+                            npu_memory_after_bytes
+                        ),
+                        "recognition_group_npu_peak_memory_bytes": (
+                            npu_peak_memory_bytes
+                        ),
+                        "recognition_group_npu_peak_increment_bytes": max(
+                            0,
+                            npu_peak_memory_bytes - npu_memory_before_bytes,
+                        ),
+                    }
+                )
+            result, shared_pack_s, shared_payload_bytes = (
+                _pack_frontend_payload_shared(result)
+            )
+            result["frontend_timing_s"]["process_shared_pack_s"] = shared_pack_s
+            context["result"] = result
+            context["prefill_timing"] = prefill_timing
+            context["shared_pack_s"] = shared_pack_s
+            context["shared_payload_bytes"] = shared_payload_bytes
+            packed_contexts.append(context)
+    except BaseException:
+        for context in packed_contexts:
+            _unlink_worker_shared_payload(context["result"])
+        raise
+
+    group_wall_s = time.perf_counter() - group_started
+    work_estimates = []
+    for context in packed_contexts:
+        prefill_timing = context["prefill_timing"]
+        work_estimates.append(
+            sum(float(value) for value in context["decode_timing"].values())
+            + float(context["detector_s"])
+            + sum(float(value) for value in context["frontend_timing"].values())
+            + float(context["recognition_prepare_s"])
+            + float(prefill_timing["recognition_prefill_worker_s"])
+            + float(context["shared_pack_s"])
+        )
+    estimate_total = sum(work_estimates)
+    if estimate_total <= 0:
+        worker_page_shares = [group_wall_s / group_size] * group_size
+    else:
+        worker_page_shares = [
+            group_wall_s * estimate / estimate_total for estimate in work_estimates
+        ]
+
+    for context, worker_page_s in zip(packed_contexts, worker_page_shares):
+        ready_at = time.perf_counter()
+        result_queue.put(
+            {
+                "status": "ok",
+                "worker": worker_index,
+                "run_id": context["run_id"],
+                "page_index": context["page_index"],
+                "path": context["path"],
+                "result": context["result"],
+                "ready_at": ready_at,
+                "timing": {
+                    **context["decode_timing"],
+                    "detector_call_s": context["detector_s"],
+                    **context["frontend_timing"],
+                    "shared_pack_s": context["shared_pack_s"],
+                    "shared_payload_bytes": context["shared_payload_bytes"],
+                    "recognition_input_prepare_s": context[
+                        "recognition_prepare_s"
+                    ],
+                    "recognition_page_lookahead_collect_s": collect_share_s,
+                    "worker_page_s": worker_page_s,
+                },
+                "prefix_diagnostics": {
+                    "call_count": 0,
+                    "new_first_calls": {},
+                },
+            }
+        )
+
+
+def _new_worker_vision_batch_summary() -> dict[str, Any]:
+    return {
+        "page_groups": 0,
+        "pages": 0,
+        "crops": 0,
+        "page_group_size_histogram": {},
+        "bucket_real_rows": {},
+        "bucket_calls": {},
+        "bucket_physical_rows": {},
+        "fallback_rows": 0,
+        "max_npu_memory_before_bytes": 0,
+        "max_npu_memory_after_bytes": 0,
+        "max_npu_peak_memory_bytes": 0,
+        "max_npu_peak_increment_bytes": 0,
+    }
+
+
+def _accumulate_worker_vision_batch_summary(
+    summary: dict[str, Any],
+    result: dict[str, Any],
+) -> None:
+    stats = result.get("worker_prefill_stats", {})
+    if not stats:
+        return
+    summary["pages"] += 1
+    for key, rows in stats.get("recognition_vision_bucket_rows", {}).items():
+        summary["bucket_real_rows"][key] = (
+            summary["bucket_real_rows"].get(key, 0) + int(rows)
+        )
+    if not stats.get("recognition_vision_group_owner", False):
+        return
+    summary["page_groups"] += 1
+    group_size = int(stats["recognition_full_vision_page_group_size"])
+    group_crops = int(stats["recognition_full_vision_page_group_crop_count"])
+    summary["crops"] += group_crops
+    histogram = summary["page_group_size_histogram"]
+    histogram[str(group_size)] = histogram.get(str(group_size), 0) + 1
+    for destination, source in (
+        ("bucket_calls", "recognition_vision_group_bucket_calls"),
+        (
+            "bucket_physical_rows",
+            "recognition_vision_group_bucket_physical_rows",
+        ),
+    ):
+        for key, value in stats.get(source, {}).items():
+            summary[destination][key] = (
+                summary[destination].get(key, 0) + int(value)
+            )
+    summary["fallback_rows"] += int(
+        stats.get("recognition_vision_group_fallback_rows", 0)
+    )
+    for destination, source in (
+        ("max_npu_memory_before_bytes", "recognition_group_npu_memory_before_bytes"),
+        ("max_npu_memory_after_bytes", "recognition_group_npu_memory_after_bytes"),
+        ("max_npu_peak_memory_bytes", "recognition_group_npu_peak_memory_bytes"),
+        (
+            "max_npu_peak_increment_bytes",
+            "recognition_group_npu_peak_increment_bytes",
+        ),
+    ):
+        summary[destination] = max(
+            int(summary[destination]),
+            int(stats.get(source, 0)),
+        )
+
+
+def _finish_worker_vision_batch_summary(
+    summary: dict[str, Any],
+) -> dict[str, Any]:
+    compiled_real_rows = sum(int(value) for value in summary["bucket_real_rows"].values())
+    compiled_physical_rows = sum(
+        int(value) for value in summary["bucket_physical_rows"].values()
+    )
+    return {
+        **summary,
+        "compiled_real_rows": compiled_real_rows,
+        "compiled_physical_rows": compiled_physical_rows,
+        "compiled_padding_rows": compiled_physical_rows - compiled_real_rows,
+        "compiled_slot_efficiency": (
+            compiled_real_rows / compiled_physical_rows
+            if compiled_physical_rows
+            else None
+        ),
+    }
 
 
 def _worker_main(
@@ -730,6 +1156,48 @@ def _worker_main(
                 "prefix_graph_warmup": prefix_graph_warmup,
             }
         )
+        if full_vision_runtime is not None:
+            deferred_task = None
+            while True:
+                if deferred_task is None:
+                    first_task = task_queue.get()
+                else:
+                    first_task = deferred_task
+                    deferred_task = None
+                if first_task is None:
+                    return
+                group_started = time.perf_counter()
+                tasks, saw_shutdown, deferred_task = (
+                    _collect_full_vision_worker_tasks(
+                        first_task,
+                        task_queue=task_queue,
+                        page_lookahead=recognition_page_lookahead,
+                    )
+                )
+                collect_s = time.perf_counter() - group_started
+                _run_full_vision_worker_group(
+                    tasks,
+                    group_started=group_started,
+                    collect_s=collect_s,
+                    worker_index=worker_index,
+                    runtime=runtime,
+                    threshold=threshold,
+                    use_chart_recognition=use_chart_recognition,
+                    crop_margin=crop_margin,
+                    tokenize_figure_of_table=tokenize_figure_of_table,
+                    recognition_processor=recognition_processor,
+                    static_cross_cache_len=static_cross_cache_len,
+                    recognition_runner=recognition_runner,
+                    full_vision_runtime=full_vision_runtime,
+                    page_lookahead=recognition_page_lookahead,
+                    empty_cache_after_page=empty_cache_after_page,
+                    profile_prefill_device_stages=(
+                        profile_prefill_device_stages
+                    ),
+                    result_queue=result_queue,
+                )
+                if saw_shutdown:
+                    return
         while True:
             task = task_queue.get()
             if task is None:
@@ -794,32 +1262,7 @@ def _worker_main(
                     **frontend_timing,
                     "recognition_input_prepare_worker_s": recognition_prepare_s,
                 }
-                if prefill_recognition and full_vision_runtime is not None:
-                    prefill_timing = _prefill_worker_pages_bucketed(
-                        [result],
-                        runner=recognition_runner,
-                        vision_runtime=full_vision_runtime,
-                        profile_device_stages=profile_prefill_device_stages,
-                    )[0]
-                    result["frontend_timing_s"].update(
-                        {
-                            name: value
-                            for name, value in prefill_timing.items()
-                            if name.endswith("_s")
-                        }
-                    )
-                    result["worker_prefill_stats"] = {
-                        name: value
-                        for name, value in prefill_timing.items()
-                        if not name.endswith("_s")
-                    }
-                    if empty_cache_after_page:
-                        empty_cache_started = time.perf_counter()
-                        torch.npu.empty_cache()
-                        result["frontend_timing_s"][
-                            "recognition_worker_empty_cache_s"
-                        ] = time.perf_counter() - empty_cache_started
-                elif prefill_recognition:
+                if prefill_recognition:
                     prefix_first_calls_before = set(
                         getattr(
                             vision_atlas_runtime,
@@ -947,6 +1390,8 @@ class DynamicLayoutProcessPool:
             raise ValueError("recognition page lookahead must be positive")
         self.worker_count = worker_count
         self.prepare_pages = prepare_pages
+        self.recognition_full_vision_buckets = recognition_full_vision_buckets
+        self.recognition_page_lookahead = recognition_page_lookahead
         self.timeout_s = timeout_s
         self.context = mp.get_context("spawn")
         self.task_queue = self.context.Queue()
@@ -1047,8 +1492,10 @@ class DynamicLayoutProcessPool:
             "worker_recognition_input_prepare_sum_s": 0.0,
             "worker_recognition_prefill_sum_s": 0.0,
             "worker_recognition_prefill_cache_d2h_sum_s": 0.0,
+            "worker_recognition_page_collect_sum_s": 0.0,
             "worker_shared_pack_sum_s": 0.0,
         }
+        vision_batch_summary = _new_worker_vision_batch_summary()
         shared_payload_bytes = 0
         ipc_delivery_sum_s = 0.0
         ipc_delivery_max_s = 0.0
@@ -1099,8 +1546,15 @@ class DynamicLayoutProcessPool:
             stage_s["worker_recognition_prefill_cache_d2h_sum_s"] += float(
                 frontend.get("recognition_prefill_cache_d2h_s", 0.0)
             )
+            stage_s["worker_recognition_page_collect_sum_s"] += float(
+                timing.get("recognition_page_lookahead_collect_s", 0.0)
+            )
             stage_s["worker_shared_pack_sum_s"] += float(
                 timing.get("shared_pack_s", 0.0)
+            )
+            _accumulate_worker_vision_batch_summary(
+                vision_batch_summary,
+                message["result"],
             )
             shared_payload_bytes += int(timing.get("shared_payload_bytes", 0))
             completed += 1
@@ -1127,6 +1581,13 @@ class DynamicLayoutProcessPool:
             "scheduling": "dynamic_shared_filepath_queue",
             "layout_batch_size": 1,
             "full_page_frontend": self.prepare_pages,
+            "recognition_full_vision_buckets": (
+                self.recognition_full_vision_buckets
+            ),
+            "recognition_page_lookahead": self.recognition_page_lookahead,
+            "vision_batching": _finish_worker_vision_batch_summary(
+                vision_batch_summary
+            ),
         }
         if any(result is None for result in results):
             raise RuntimeError("layout process pool returned incomplete results")
@@ -1165,8 +1626,10 @@ class DynamicLayoutProcessPool:
             "worker_recognition_input_prepare_sum_s": 0.0,
             "worker_recognition_prefill_sum_s": 0.0,
             "worker_recognition_prefill_cache_d2h_sum_s": 0.0,
+            "worker_recognition_page_collect_sum_s": 0.0,
             "worker_shared_pack_sum_s": 0.0,
         }
+        vision_batch_summary = _new_worker_vision_batch_summary()
         shared_payload_bytes = 0
         ipc_delivery_sum_s = 0.0
         ipc_delivery_max_s = 0.0
@@ -1208,6 +1671,10 @@ class DynamicLayoutProcessPool:
                 ("worker_document_image_index_sum_s", "document_image_index_s"),
                 ("worker_recognition_crop_build_sum_s", "recognition_crop_build_s"),
                 ("worker_recognition_input_prepare_sum_s", "recognition_input_prepare_s"),
+                (
+                    "worker_recognition_page_collect_sum_s",
+                    "recognition_page_lookahead_collect_s",
+                ),
                 ("worker_shared_pack_sum_s", "shared_pack_s"),
             ):
                 stage_s[destination] += float(timing.get(source, 0.0))
@@ -1217,6 +1684,10 @@ class DynamicLayoutProcessPool:
             )
             stage_s["worker_recognition_prefill_cache_d2h_sum_s"] += float(
                 frontend.get("recognition_prefill_cache_d2h_s", 0.0)
+            )
+            _accumulate_worker_vision_batch_summary(
+                vision_batch_summary,
+                message["result"],
             )
             shared_payload_bytes += int(timing.get("shared_payload_bytes", 0))
             completed += 1
@@ -1265,6 +1736,13 @@ class DynamicLayoutProcessPool:
             "scheduling": "dynamic_completion_order_stream",
             "layout_batch_size": 1,
             "full_page_frontend": self.prepare_pages,
+            "recognition_full_vision_buckets": (
+                self.recognition_full_vision_buckets
+            ),
+            "recognition_page_lookahead": self.recognition_page_lookahead,
+            "vision_batching": _finish_worker_vision_batch_summary(
+                vision_batch_summary
+            ),
         }
 
     def close(self) -> None:

@@ -300,11 +300,27 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--vision-prefill-mode",
-        choices=("eager", "compiled_atlas_stage2"),
+        choices=(
+            "eager",
+            "compiled_atlas_stage2",
+            "compiled_full_buckets",
+        ),
         default="eager",
         help=(
             "Vision execution. compiled_atlas_stage2 packs crop-local stage-2 "
-            "feature maps into the validated guarded 64x192 atlas graph"
+            "feature maps into the validated guarded 64x192 atlas graph; "
+            "compiled_full_buckets runs five masked fixed-canvas full-encoder "
+            "graphs inside layout/prefill workers"
+        ),
+    )
+    parser.add_argument(
+        "--vision-page-lookahead",
+        type=int,
+        default=4,
+        help=(
+            "Maximum pages one layout/prefill worker may combine into its "
+            "worker-local full-vision batches. Used only by "
+            "compiled_full_buckets."
         ),
     )
     parser.add_argument(
@@ -1502,6 +1518,8 @@ def main() -> None:
         raise ValueError("--layout-batch-size must be >= 1")
     if args.layout_process_workers < 0:
         raise ValueError("--layout-process-workers must be >= 0")
+    if args.vision_page_lookahead < 1:
+        raise ValueError("--vision-page-lookahead must be >= 1")
     if args.layout_process_workers:
         if args.layout_backend != "transformers_npu":
             raise ValueError(
@@ -1533,10 +1551,14 @@ def main() -> None:
             raise ValueError(
                 "--prefill-in-layout-workers requires --decode-scheduling continuous"
             )
-        if args.vision_prefill_mode != "compiled_atlas_stage2":
+        if args.vision_prefill_mode not in {
+            "compiled_atlas_stage2",
+            "compiled_full_buckets",
+        }:
             raise ValueError(
                 "--prefill-in-layout-workers requires "
-                "--vision-prefill-mode compiled_atlas_stage2"
+                "--vision-prefill-mode compiled_atlas_stage2 or "
+                "compiled_full_buckets"
             )
         if args.text_prefill_mode != "compiled_packed_s1024":
             raise ValueError(
@@ -1547,6 +1569,13 @@ def main() -> None:
         raise ValueError(
             "--worker-empty-cache-after-page requires "
             "--prefill-in-layout-workers"
+        )
+    if (
+        args.vision_prefill_mode == "compiled_full_buckets"
+        and not args.prefill_in_layout_workers
+    ):
+        raise ValueError(
+            "compiled_full_buckets requires --prefill-in-layout-workers"
         )
     if args.layout_batch_size > 1 and args.layout_backend != "transformers_npu":
         raise ValueError(
@@ -1631,7 +1660,8 @@ def main() -> None:
                 args.decode_mode.startswith("compiled")
                 or args.text_prefill_mode
                 in {"compiled_s512", "compiled_packed_s1024"}
-                or args.vision_prefill_mode == "compiled_atlas_stage2"
+                or args.vision_prefill_mode
+                in {"compiled_atlas_stage2", "compiled_full_buckets"}
             )
             else None
         ),
@@ -1645,11 +1675,12 @@ def main() -> None:
             processor_shape
         ] = static_cross_cache_len
     if (
-        args.vision_prefill_mode == "compiled_atlas_stage2"
+        args.vision_prefill_mode
+        in {"compiled_atlas_stage2", "compiled_full_buckets"}
         and args.text_prefill_mode != "compiled_packed_s1024"
     ):
         raise ValueError(
-            "compiled_atlas_stage2 currently requires "
+            "compiled vision prefill currently requires "
             "--text-prefill-mode compiled_packed_s1024"
         )
     if args.vision_prefill_mode == "compiled_atlas_stage2":
@@ -1682,7 +1713,12 @@ def main() -> None:
             recognition_model_path=model_path,
             recognition_dtype=args.dtype,
             recognition_cache_dir=args.compile_cache_dir.expanduser().resolve(),
+            recognition_full_vision_buckets=(
+                args.vision_prefill_mode == "compiled_full_buckets"
+            ),
+            recognition_page_lookahead=args.vision_page_lookahead,
             empty_cache_after_page=args.worker_empty_cache_after_page,
+            profile_prefill_device_stages=args.prefill_device_timing,
         )
         atexit.register(layout_process_pool.close)
         layout_process_setup_s = layout_process_pool.setup_wall_s
@@ -2174,6 +2210,7 @@ def main() -> None:
         "decode_batch_size": args.decode_batch_size,
         "text_prefill_mode": args.text_prefill_mode,
         "vision_prefill_mode": args.vision_prefill_mode,
+        "vision_page_lookahead": args.vision_page_lookahead,
         "vision_spatial_execution": args.vision_spatial_execution,
         "recognition_shape_filter": args.recognition_shape_filter,
         "max_length": args.max_length,

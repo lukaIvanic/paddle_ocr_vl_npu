@@ -206,6 +206,7 @@ class CrossKvArtifactWriter:
                 "vlm_block_ids": payload["vlm_block_ids"],
                 "drop_figures_set": payload["drop_figures_set"],
                 "frontend_timing_s": payload["frontend_timing_s"],
+                "worker_prefill_stats": payload.get("worker_prefill_stats"),
                 "cross_capacity_rejected_crops": int(
                     payload.get("cross_capacity_rejected_crops", 0)
                 ),
