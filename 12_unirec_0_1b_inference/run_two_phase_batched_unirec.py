@@ -56,6 +56,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--warmup-pages", type=int, default=8)
     parser.add_argument("--vision-page-lookahead", type=int, default=4)
+    parser.add_argument(
+        "--no-chart-recognition",
+        dest="use_chart_recognition",
+        action="store_false",
+        help="Exclude chart blocks from UniRec recognition prefill",
+    )
+    parser.set_defaults(use_chart_recognition=True)
     parser.add_argument("--recognition-preprocess-threads", type=int, default=8)
     parser.add_argument(
         "--recognition-input-contract",
@@ -202,7 +209,7 @@ def main() -> None:
         warmup_paths=image_paths[: args.workers],
         openocr_root=openocr_root,
         prepare_pages=True,
-        use_chart_recognition=False,
+        use_chart_recognition=args.use_chart_recognition,
         prefill_recognition=True,
         recognition_model_path=model_path,
         recognition_dtype=args.dtype,
@@ -508,6 +515,7 @@ def main() -> None:
         "offset": args.offset,
         "workers": args.workers,
         "recognition_preprocess_threads": args.recognition_preprocess_threads,
+        "use_chart_recognition": args.use_chart_recognition,
         "vision_prefill_mode": "compiled_full_buckets",
         "text_prefill_mode": "compiled_packed_s1024",
         "decode_mode": "compiled_ifa",
