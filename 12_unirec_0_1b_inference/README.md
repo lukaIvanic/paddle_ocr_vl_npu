@@ -332,6 +332,16 @@ the parsed kernel/operator report can become large. Changing
 `--page-lookahead` is an explicit batching experiment, and the report marks
 that it no longer matches the production scheduling contract.
 
+For a hard worker or NPU process failure, add `--diagnostic-graph-log`. The lab
+then flushes one `UNIREC_VISION_GRAPH_DIAGNOSTIC` JSON line before and after
+every graph registration, graph warmup submission/synchronization, workload
+bucket call, and first workload synchronization. Each line includes the exact
+bucket, graph/pass/call index, cache OM count, and PyTorch NPU allocated,
+reserved, and peak memory counters. The last complete line identifies the
+operation active when a process dies. Registration is separate from the first
+graph execution, so these logs also distinguish five Python graph wrappers
+from the lazy compile/cache-load work triggered by warmup.
+
 ## Guarded-atlas vision lab
 
 `vision_atlas_lab.py` tests a fixed-shape representation for the spatial

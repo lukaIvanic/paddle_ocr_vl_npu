@@ -105,6 +105,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="pipe",
     )
     parser.add_argument("--parser-topn", type=int, default=50)
+    parser.add_argument(
+        "--diagnostic-graph-log",
+        action="store_true",
+        help=(
+            "Flush one JSON diagnostic line around every graph registration, "
+            "warmup, bucket call, and first-call synchronization."
+        ),
+    )
     args = parser.parse_args(argv)
     if args.page_offset < 0 or args.page_limit < 1:
         parser.error("page offset must be non-negative and page limit positive")
@@ -452,7 +460,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         dtype="float16",
         compile_cache_dir=args.cache_dir.expanduser().resolve(),
     )
-    runtime = BucketedFullVisionRuntime(runner)
+    runtime = BucketedFullVisionRuntime(
+        runner,
+        diagnostic_graph_log=args.diagnostic_graph_log,
+    )
     actual_buckets = [spec.key for spec in runtime.specs]
     expected_buckets = [spec.key for spec in DEFAULT_VISION_BUCKETS]
     if actual_buckets != expected_buckets:
@@ -460,27 +471,71 @@ def main(argv: Sequence[str] | None = None) -> None:
             f"production bucket drift: {actual_buckets} != {expected_buckets}"
         )
 
+    runtime.diagnostic_event("lab_graph_warmup_begin", passes=1)
     graph_warmup = runtime.warmup_all(passes=1)
+    runtime.diagnostic_event("lab_graph_warmup_end", passes=1)
     workload = lambda: _run_groups(runtime, groups)
-    for _ in range(args.warmup_replays):
-        workload()
+    for replay_index in range(args.warmup_replays):
+        runtime.diagnostic_event(
+            "lab_workload_warmup_begin",
+            replay_index=replay_index,
+            replay_count=args.warmup_replays,
+            page_groups=len(groups),
+        )
+        warmup_output_count = workload()
+        runtime.diagnostic_event(
+            "lab_workload_warmup_submitted",
+            replay_index=replay_index,
+            replay_count=args.warmup_replays,
+            output_count=warmup_output_count,
+        )
+    runtime.diagnostic_event(
+        "lab_workload_warmup_sync_begin",
+        replay_count=args.warmup_replays,
+    )
     synchronize_device("npu:0")
+    runtime.diagnostic_event(
+        "lab_workload_warmup_sync_end",
+        replay_count=args.warmup_replays,
+    )
 
     before_stats = copy.deepcopy(runtime.summary())
-    samples = [
-        _measure_replay(workload, device="npu:0") for _ in range(args.repeats)
-    ]
+    samples = []
+    for replay_index in range(args.repeats):
+        runtime.diagnostic_event(
+            "lab_measurement_replay_begin",
+            replay_index=replay_index,
+            replay_count=args.repeats,
+            page_groups=len(groups),
+        )
+        sample = _measure_replay(workload, device="npu:0")
+        samples.append(sample)
+        runtime.diagnostic_event(
+            "lab_measurement_replay_end",
+            replay_index=replay_index,
+            replay_count=args.repeats,
+            **sample,
+        )
     after_stats = copy.deepcopy(runtime.summary())
     stats_delta = _runtime_stats_delta(before_stats, after_stats)
     expected_outputs = len(crop_rows)
     if any(int(sample["output_count"]) != expected_outputs for sample in samples):
         raise RuntimeError("production vision replay lost outputs")
 
+    runtime.diagnostic_event(
+        "lab_parity_begin",
+        samples_per_route=args.parity_samples_per_route,
+    )
     parity = _parity_check(
         runtime,
         runner,
         groups,
         samples_per_route=args.parity_samples_per_route,
+    )
+    runtime.diagnostic_event(
+        "lab_parity_end",
+        status=parity["status"],
+        sample_count=parity.get("sample_count", 0),
     )
     profile = None
     if args.profile_scope != "none":
@@ -493,12 +548,24 @@ def main(argv: Sequence[str] | None = None) -> None:
             selected_groups = [groups[args.profile_group_index]]
         else:
             selected_groups = groups
+        runtime.diagnostic_event(
+            "lab_profile_begin",
+            scope=args.profile_scope,
+            metric=args.profile_metric,
+            page_groups=len(selected_groups),
+        )
         profile = _profile(
             lambda: _run_groups(runtime, selected_groups),
             output_dir=output_dir,
             metric=args.profile_metric,
             parser_topn=args.parser_topn,
             device="npu:0",
+        )
+        runtime.diagnostic_event(
+            "lab_profile_end",
+            scope=args.profile_scope,
+            metric=args.profile_metric,
+            page_groups=len(selected_groups),
         )
 
     wall_samples = [float(row["synchronized_wall_ms"]) for row in samples]
@@ -526,6 +593,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             ),
             "buckets": actual_buckets,
             "runtime_source": str(Path(runtime.__class__.__module__.replace(".", "/"))),
+            "diagnostic_graph_log": args.diagnostic_graph_log,
             "graph_cache_dirs": {
                 key: str(path) for key, path in runtime.cache_dirs.items()
             },

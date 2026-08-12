@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import json
+import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -321,6 +323,7 @@ class BucketedFullVisionRuntime:
         runner: OptimizedUniRecRunner,
         *,
         specs: Sequence[VisionBucketSpec] = DEFAULT_VISION_BUCKETS,
+        diagnostic_graph_log: bool = False,
     ) -> None:
         if not specs:
             raise ValueError("bucketed UniRec vision requires at least one bucket")
@@ -328,6 +331,7 @@ class BucketedFullVisionRuntime:
             raise ValueError("bucketed UniRec vision requires compile_cache_dir")
         self.runner = runner
         self.specs = tuple(specs)
+        self.diagnostic_graph_log = bool(diagnostic_graph_log)
         required_specializations = len(self.specs) + 16
         torch._dynamo.config.cache_size_limit = max(
             int(torch._dynamo.config.cache_size_limit),
@@ -356,7 +360,14 @@ class BucketedFullVisionRuntime:
         self.modules: dict[str, _MaskedFullVisionEncoder] = {}
         self.compiled: dict[str, Callable[..., torch.Tensor]] = {}
         self.cache_dirs: dict[str, Path] = {}
-        for spec in self.specs:
+        self._diagnostic_bucket_calls = {spec.key: 0 for spec in self.specs}
+        self._diagnostic_log(
+            "runtime_init_begin",
+            graph_count=len(self.specs),
+            graph_keys=[spec.key for spec in self.specs],
+            compile_api=import_path,
+        )
+        for graph_index, spec in enumerate(self.specs):
             module = _new_masked_full_encoder_module(runner, spec)
             cache_dir = runner.compile_cache_dir / (
                 f"vision_full_bucket_{spec.key}_{runner.dtype_name}_src{source_hash}"
@@ -364,6 +375,17 @@ class BucketedFullVisionRuntime:
             cache_dir.mkdir(parents=True, exist_ok=True)
             self.modules[spec.key] = module
             self.cache_dirs[spec.key] = cache_dir
+            self._diagnostic_log(
+                "graph_registration_begin",
+                graph_index=graph_index,
+                graph_count=len(self.specs),
+                bucket=spec.key,
+                width=spec.width,
+                height=spec.height,
+                batch_size=spec.batch_size,
+                cache=self._cache_snapshot(cache_dir),
+            )
+            registration_started = time.perf_counter()
             self.compiled[spec.key] = cache_compile(
                 module.forward,
                 config=config,
@@ -372,6 +394,19 @@ class BucketedFullVisionRuntime:
                 ge_cache=True,
                 fullgraph=True,
             )
+            self._diagnostic_log(
+                "graph_registration_end",
+                graph_index=graph_index,
+                graph_count=len(self.specs),
+                bucket=spec.key,
+                registration_wall_s=time.perf_counter() - registration_started,
+                cache=self._cache_snapshot(cache_dir),
+            )
+        self._diagnostic_log(
+            "runtime_init_end",
+            graph_count=len(self.specs),
+            graph_keys=[spec.key for spec in self.specs],
+        )
         self.stats: dict[str, Any] = {
             "bucket_calls": {spec.key: 0 for spec in self.specs},
             "bucket_real_rows": {spec.key: 0 for spec in self.specs},
@@ -383,6 +418,59 @@ class BucketedFullVisionRuntime:
             "output_compact_s": 0.0,
             "first_call_wall_s": {},
         }
+
+    @staticmethod
+    def _cache_snapshot(cache_dir: Path) -> dict[str, Any]:
+        try:
+            om_files = list(cache_dir.rglob("*.om"))
+            return {
+                "directory": str(cache_dir),
+                "om_count": len(om_files),
+                "om_bytes": sum(path.stat().st_size for path in om_files),
+            }
+        except OSError as exception:
+            return {
+                "directory": str(cache_dir),
+                "error": repr(exception),
+            }
+
+    def _memory_snapshot(self) -> dict[str, Any]:
+        snapshot: dict[str, Any] = {}
+        device = torch.device(self.runner.device)
+        for name in (
+            "memory_allocated",
+            "memory_reserved",
+            "max_memory_allocated",
+            "max_memory_reserved",
+        ):
+            operation = getattr(torch.npu, name, None)
+            if operation is None:
+                continue
+            try:
+                snapshot[f"{name}_bytes"] = int(operation(device))
+            except BaseException as exception:  # diagnostic must not mask inference
+                snapshot[f"{name}_error"] = repr(exception)
+        return snapshot
+
+    def _diagnostic_log(self, event: str, **fields: Any) -> None:
+        if not self.diagnostic_graph_log:
+            return
+        payload = {
+            "event": event,
+            "monotonic_s": time.monotonic(),
+            "pid": os.getpid(),
+            "npu_memory": self._memory_snapshot(),
+            **fields,
+        }
+        print(
+            "UNIREC_VISION_GRAPH_DIAGNOSTIC "
+            + json.dumps(payload, sort_keys=True),
+            flush=True,
+        )
+
+    def diagnostic_event(self, event: str, **fields: Any) -> None:
+        """Emit one opt-in lab-level event with the runtime memory snapshot."""
+        self._diagnostic_log(event, **fields)
 
     def select_bucket(self, width: int, height: int) -> VisionBucketSpec | None:
         candidates = [spec for spec in self.specs if spec.accepts(width, height)]
@@ -433,6 +521,18 @@ class BucketedFullVisionRuntime:
             raise ValueError(
                 f"bucket {spec.key} received {len(items)} real rows"
             )
+        self._diagnostic_bucket_calls[spec.key] += 1
+        diagnostic_call = self._diagnostic_bucket_calls[spec.key]
+        self._diagnostic_log(
+            "bucket_call_begin",
+            bucket=spec.key,
+            bucket_call=diagnostic_call,
+            real_rows=len(items),
+            physical_rows=spec.batch_size,
+            processed_shapes=[
+                [item.processed_width, item.processed_height] for item in items
+            ],
+        )
         contracts = {item.input_contract for item in items}
         if len(contracts) != 1:
             raise ValueError(
@@ -510,18 +610,50 @@ class BucketedFullVisionRuntime:
                 for mask in host_masks
             )
         self.stats["batch_h2d_s"] += time.perf_counter() - transfer_started
+        self._diagnostic_log(
+            "bucket_inputs_ready",
+            bucket=spec.key,
+            bucket_call=diagnostic_call,
+            h2d_wall_s=time.perf_counter() - transfer_started,
+        )
 
         first_call = self.stats["bucket_calls"][spec.key] == 0
         started = time.perf_counter()
         # Warmup uses inference mode. Keep the production call under the same
         # Dynamo guard so the first real crop batch loads that graph instead of
         # compiling a second grad-enabled specialization in the timed window.
+        self._diagnostic_log(
+            "bucket_graph_call_begin",
+            bucket=spec.key,
+            bucket_call=diagnostic_call,
+            first_workload_call=first_call,
+            cache=self._cache_snapshot(self.cache_dirs[spec.key]),
+        )
         with torch.inference_mode():
             output = self.compiled[spec.key](pixel_values, *masks)
+        self._diagnostic_log(
+            "bucket_graph_submit_end",
+            bucket=spec.key,
+            bucket_call=diagnostic_call,
+            first_workload_call=first_call,
+            submit_wall_s=time.perf_counter() - started,
+        )
         if first_call:
+            self._diagnostic_log(
+                "bucket_first_call_sync_begin",
+                bucket=spec.key,
+                bucket_call=diagnostic_call,
+            )
             synchronize_device(self.runner.device)
             self.stats["first_call_wall_s"][spec.key] = (
                 time.perf_counter() - started
+            )
+            self._diagnostic_log(
+                "bucket_first_call_sync_end",
+                bucket=spec.key,
+                bucket_call=diagnostic_call,
+                synchronized_wall_s=time.perf_counter() - started,
+                cache=self._cache_snapshot(self.cache_dirs[spec.key]),
             )
         self.stats["vision_wall_s"] += time.perf_counter() - started
         self.stats["bucket_calls"][spec.key] += 1
@@ -554,6 +686,14 @@ class BucketedFullVisionRuntime:
                 )
             )
         self.stats["output_compact_s"] += time.perf_counter() - compact_started
+        self._diagnostic_log(
+            "bucket_call_end",
+            bucket=spec.key,
+            bucket_call=diagnostic_call,
+            real_rows=len(items),
+            output_rows=len(encoded),
+            output_compact_wall_s=time.perf_counter() - compact_started,
+        )
         return encoded
 
     def _run_fallback(
@@ -629,7 +769,19 @@ class BucketedFullVisionRuntime:
             raise ValueError("bucketed vision warmup passes must be positive")
         report = {}
         device = torch.device(self.runner.device)
-        for spec in self.specs:
+        self._diagnostic_log(
+            "warmup_all_begin",
+            graph_count=len(self.specs),
+            passes=passes,
+        )
+        for graph_index, spec in enumerate(self.specs):
+            self._diagnostic_log(
+                "warmup_graph_inputs_begin",
+                graph_index=graph_index,
+                graph_count=len(self.specs),
+                bucket=spec.key,
+                passes=passes,
+            )
             with torch.inference_mode(False):
                 pixels = torch.zeros(
                     (spec.batch_size, 3, spec.height, spec.width),
@@ -649,23 +801,70 @@ class BucketedFullVisionRuntime:
                     )
                     for factor in (2, 4, 8, 16, 32)
                 )
+            self._diagnostic_log(
+                "warmup_graph_inputs_ready",
+                graph_index=graph_index,
+                graph_count=len(self.specs),
+                bucket=spec.key,
+                pixel_shape=list(pixels.shape),
+                mask_shapes=[list(mask.shape) for mask in masks],
+            )
             pass_wall_s = []
-            for _ in range(passes):
+            for pass_index in range(passes):
+                self._diagnostic_log(
+                    "warmup_graph_call_begin",
+                    graph_index=graph_index,
+                    graph_count=len(self.specs),
+                    bucket=spec.key,
+                    pass_index=pass_index,
+                    pass_count=passes,
+                    cache=self._cache_snapshot(self.cache_dirs[spec.key]),
+                )
                 started = time.perf_counter()
                 with torch.inference_mode():
                     self.compiled[spec.key](pixels, *masks)
+                self._diagnostic_log(
+                    "warmup_graph_submit_end",
+                    graph_index=graph_index,
+                    graph_count=len(self.specs),
+                    bucket=spec.key,
+                    pass_index=pass_index,
+                    submit_wall_s=time.perf_counter() - started,
+                )
+                self._diagnostic_log(
+                    "warmup_graph_sync_begin",
+                    graph_index=graph_index,
+                    graph_count=len(self.specs),
+                    bucket=spec.key,
+                    pass_index=pass_index,
+                )
                 synchronize_device(self.runner.device)
                 pass_wall_s.append(time.perf_counter() - started)
+                self._diagnostic_log(
+                    "warmup_graph_call_end",
+                    graph_index=graph_index,
+                    graph_count=len(self.specs),
+                    bucket=spec.key,
+                    pass_index=pass_index,
+                    synchronized_wall_s=pass_wall_s[-1],
+                    cache=self._cache_snapshot(self.cache_dirs[spec.key]),
+                )
             report[spec.key] = {
                 "pass_wall_s": pass_wall_s,
                 "cache_dir": str(self.cache_dirs[spec.key]),
             }
+        self._diagnostic_log(
+            "warmup_all_end",
+            graph_count=len(self.specs),
+            passes=passes,
+        )
         return report
 
     def summary(self) -> dict[str, Any]:
         return {
             "spatial_execution": "compiled_masked_full_encoder_buckets",
             "compile_api": self.compile_api,
+            "diagnostic_graph_log": self.diagnostic_graph_log,
             "buckets": [
                 {
                     "key": spec.key,
