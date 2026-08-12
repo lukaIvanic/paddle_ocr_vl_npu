@@ -30,7 +30,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--implementation",
-        choices=("all", "stock_depthwise", "grouped16", "shift_sum"),
+        choices=(
+            "all",
+            "stock_depthwise",
+            "grouped16",
+            "grouped16_fz",
+            "grouped32_fz",
+            "grouped64_fz",
+            "dense_fz",
+            "shift_sum",
+        ),
         default="all",
     )
     parser.add_argument("--channels", type=int, choices=(192, 384))
@@ -38,13 +47,18 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def grouped16_weight(weight: torch.Tensor) -> torch.Tensor:
+def grouped_weight(weight: torch.Tensor, group_width: int) -> torch.Tensor:
     channels = weight.shape[0]
-    if channels % 16:
-        raise ValueError(f"channels must be divisible by 16, got {channels}")
-    channel_in_group = torch.arange(channels, device=weight.device).remainder(16)
-    selector = F.one_hot(channel_in_group, num_classes=16).to(weight.dtype)
-    return weight * selector.view(channels, 16, 1, 1)
+    if channels % group_width:
+        raise ValueError(
+            f"channels must be divisible by group_width, got {channels=} "
+            f"{group_width=}"
+        )
+    channel_in_group = torch.arange(channels, device=weight.device).remainder(
+        group_width
+    )
+    selector = F.one_hot(channel_in_group, num_classes=group_width).to(weight.dtype)
+    return weight * selector.view(channels, group_width, 1, 1)
 
 
 class StockDepthwise(torch.nn.Module):
@@ -56,13 +70,25 @@ class StockDepthwise(torch.nn.Module):
         return F.conv2d(inputs, self.weight, padding=2, groups=inputs.shape[1])
 
 
-class Grouped16(torch.nn.Module):
-    def __init__(self, weight: torch.Tensor) -> None:
+class ExactGrouped(torch.nn.Module):
+    def __init__(
+        self,
+        weight: torch.Tensor,
+        *,
+        group_width: int,
+        preformat_fz: bool,
+    ) -> None:
         super().__init__()
-        self.weight = torch.nn.Parameter(grouped16_weight(weight), requires_grad=False)
+        grouped = grouped_weight(weight, group_width)
+        if preformat_fz:
+            import torch_npu
+
+            grouped = torch_npu.npu_format_cast(grouped, 4)
+        self.weight = torch.nn.Parameter(grouped, requires_grad=False)
+        self.groups = weight.shape[0] // group_width
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        return F.conv2d(inputs, self.weight, padding=2, groups=inputs.shape[1] // 16)
+        return F.conv2d(inputs, self.weight, padding=2, groups=self.groups)
 
 
 class ShiftSum(torch.nn.Module):
@@ -190,7 +216,31 @@ def main() -> None:
         )
         modules = {
             "stock_depthwise": StockDepthwise(weight.clone()).to(args.device).eval(),
-            "grouped16": Grouped16(weight.clone()).to(args.device).eval(),
+            "grouped16": ExactGrouped(
+                weight.clone(), group_width=16, preformat_fz=False
+            )
+            .to(args.device)
+            .eval(),
+            "grouped16_fz": ExactGrouped(
+                weight.clone(), group_width=16, preformat_fz=True
+            )
+            .to(args.device)
+            .eval(),
+            "grouped32_fz": ExactGrouped(
+                weight.clone(), group_width=32, preformat_fz=True
+            )
+            .to(args.device)
+            .eval(),
+            "grouped64_fz": ExactGrouped(
+                weight.clone(), group_width=64, preformat_fz=True
+            )
+            .to(args.device)
+            .eval(),
+            "dense_fz": ExactGrouped(
+                weight.clone(), group_width=channels, preformat_fz=True
+            )
+            .to(args.device)
+            .eval(),
             "shift_sum": ShiftSum(weight.clone()).to(args.device).eval(),
         }
         with torch.inference_mode():
