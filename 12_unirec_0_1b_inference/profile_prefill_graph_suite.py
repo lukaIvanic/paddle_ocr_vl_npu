@@ -86,6 +86,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="native",
     )
     parser.add_argument("--layout-fuse-frozen-bn", action="store_true")
+    parser.add_argument("--layout-fuse-eval-bn", action="store_true")
     parser.add_argument(
         "--profile-metric",
         choices=("pipe", "memory", "l2", "memory_access"),
@@ -306,6 +307,7 @@ def _layout_lane(
         depthwise_rewrite=args.layout_depthwise_rewrite,
         weight_format=args.layout_weight_format,
         fuse_frozen_bn=args.layout_fuse_frozen_bn,
+        fuse_eval_bn=args.layout_fuse_eval_bn,
     )
     if detector.compiled_runtime is None:
         raise RuntimeError("layout profiler requires the compiled runtime")
@@ -319,7 +321,8 @@ def _layout_lane(
     run = lambda: detector.compiled_runtime(pixel_values)
     result = _profile_lane(
         f"layout_b1_800x800_{args.layout_dtype}_{args.layout_depthwise_rewrite}_"
-        f"{args.layout_weight_format}_frozenbn{int(args.layout_fuse_frozen_bn)}",
+        f"{args.layout_weight_format}_frozenbn{int(args.layout_fuse_frozen_bn)}_"
+        f"evalbn{int(args.layout_fuse_eval_bn)}",
         run,
         output_root=output_root,
         device=args.device,
@@ -335,6 +338,7 @@ def _layout_lane(
             "depthwise_rewrite": args.layout_depthwise_rewrite,
             "weight_format": args.layout_weight_format,
             "fuse_frozen_bn": args.layout_fuse_frozen_bn,
+            "fuse_eval_bn": args.layout_fuse_eval_bn,
             "execution": "compiled_fullgraph",
         },
     )
@@ -515,6 +519,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "layout_depthwise_rewrite": args.layout_depthwise_rewrite,
             "layout_weight_format": args.layout_weight_format,
             "layout_fuse_frozen_bn": args.layout_fuse_frozen_bn,
+            "layout_fuse_eval_bn": args.layout_fuse_eval_bn,
         },
         "first128_workload": {
             "layout_calls": FIRST128_LAYOUT_CALLS,

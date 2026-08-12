@@ -202,6 +202,18 @@ class _ConvFrozenNorm(nn.Module):
         return self.normalization(self.convolution(inputs))
 
 
+class _ConvEvalNorm(nn.Module):
+    def __init__(self, channels: int, *, affine: bool) -> None:
+        super().__init__()
+        self.conv = nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False)
+        self.norm = nn.BatchNorm2d(channels, eps=1e-3, affine=affine)
+        self.norm.running_mean.copy_(torch.randn(channels))
+        self.norm.running_var.copy_(torch.rand(channels) + 0.5)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        return self.norm(self.conv(inputs))
+
+
 class LayoutNpuCompatibilityTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -353,6 +365,22 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
             self.assertEqual(summary["fused_count"], 1)
             self.assertIsInstance(candidate[0].normalization, nn.Identity)
             self.assertIsNotNone(candidate[0].convolution.bias)
+
+    def test_eval_batch_norm_folding_matches_unfused_module(self) -> None:
+        module = _load_layout_adapter()
+        torch.manual_seed(31)
+        inputs = torch.randn(2, 16, 9, 11)
+        for affine in (False, True):
+            candidate = nn.Sequential(_ConvEvalNorm(16, affine=affine)).eval()
+            with torch.inference_mode():
+                reference = candidate(inputs)
+            summary = module._fuse_layout_eval_batch_norms(candidate)
+            with torch.inference_mode():
+                actual = candidate(inputs)
+            torch.testing.assert_close(actual, reference, atol=2e-5, rtol=2e-5)
+            self.assertEqual(summary["fused_count"], 1)
+            self.assertIsInstance(candidate[0].norm, nn.Identity)
+            self.assertIsNotNone(candidate[0].conv.bias)
 
 
 if __name__ == "__main__":

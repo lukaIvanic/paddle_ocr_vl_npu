@@ -138,6 +138,54 @@ def _fuse_layout_frozen_batch_norms(model: torch.nn.Module) -> dict[str, Any]:
     }
 
 
+def _fuse_layout_eval_batch_norms(model: torch.nn.Module) -> dict[str, Any]:
+    """Fold evaluation BatchNorm2d modules in ConvNormLayer into Conv2d."""
+    fused: list[dict[str, Any]] = []
+    with torch.no_grad():
+        for name, module in list(model.named_modules()):
+            convolution = getattr(module, "conv", None)
+            normalization = getattr(module, "norm", None)
+            if not isinstance(convolution, torch.nn.Conv2d):
+                continue
+            if not isinstance(normalization, torch.nn.BatchNorm2d):
+                continue
+            if normalization.running_mean is None or normalization.running_var is None:
+                raise RuntimeError(f"BatchNorm2d has no running stats at {name}")
+            if normalization.affine:
+                norm_weight = normalization.weight
+                norm_bias = normalization.bias
+            else:
+                norm_weight = torch.ones_like(normalization.running_mean)
+                norm_bias = torch.zeros_like(normalization.running_mean)
+            scale = norm_weight * (
+                normalization.running_var + normalization.eps
+            ).rsqrt()
+            source_bias = convolution.bias
+            if source_bias is None:
+                source_bias = torch.zeros_like(normalization.running_mean)
+            convolution.weight = torch.nn.Parameter(
+                convolution.weight * scale.reshape(-1, 1, 1, 1),
+                requires_grad=False,
+            )
+            convolution.bias = torch.nn.Parameter(
+                source_bias * scale
+                + norm_bias
+                - normalization.running_mean * scale,
+                requires_grad=False,
+            )
+            module.norm = torch.nn.Identity()
+            fused.append(
+                {
+                    "module": name,
+                    "channels": int(convolution.out_channels),
+                    "weight_shape": [
+                        int(value) for value in convolution.weight.shape
+                    ],
+                }
+            )
+    return {"fused_count": len(fused), "modules": fused}
+
+
 def _prepare_layout_weight_formats(
     model: torch.nn.Module,
     *,
@@ -327,6 +375,7 @@ class PPDocLayoutV2NpuAdapter:
         freeze_parameters: bool = False,
         depthwise_rewrite: str = "native",
         fuse_frozen_bn: bool = False,
+        fuse_eval_bn: bool = False,
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
@@ -359,6 +408,7 @@ class PPDocLayoutV2NpuAdapter:
         self.freeze_parameters = bool(freeze_parameters)
         self.depthwise_rewrite = str(depthwise_rewrite)
         self.fuse_frozen_bn = bool(fuse_frozen_bn)
+        self.fuse_eval_bn = bool(fuse_eval_bn)
         self._filter_overlap_boxes = filter_overlap_boxes_vectorized
 
         started = time.perf_counter()
@@ -376,6 +426,11 @@ class PPDocLayoutV2NpuAdapter:
         self.frozen_bn_fusion_summary = (
             _fuse_layout_frozen_batch_norms(self.model)
             if self.fuse_frozen_bn
+            else {"fused_count": 0, "modules": []}
+        )
+        self.eval_bn_fusion_summary = (
+            _fuse_layout_eval_batch_norms(self.model)
+            if self.fuse_eval_bn
             else {"fused_count": 0, "modules": []}
         )
         self.depthwise_rewrite_summary = _rewrite_layout_depthwise_convs(
@@ -400,7 +455,8 @@ class PPDocLayoutV2NpuAdapter:
                 self.model,
                 cache_root=Path(compile_cache_dir) / (
                     f"depthwise_{self.depthwise_rewrite}_"
-                    f"frozenbn{int(self.fuse_frozen_bn)}"
+                    f"frozenbn{int(self.fuse_frozen_bn)}_"
+                    f"evalbn{int(self.fuse_eval_bn)}"
                 ),
                 dtype=self.dtype,
                 device=self.device,

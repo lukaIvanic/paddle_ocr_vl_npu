@@ -82,6 +82,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fold inference-only backbone FrozenBatchNorm2d into Conv2d",
     )
+    parser.add_argument(
+        "--fuse-eval-bn",
+        action="store_true",
+        help="Fold evaluation FPN/PAN BatchNorm2d into Conv2d",
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument(
@@ -215,6 +220,7 @@ def main() -> None:
         freeze_parameters=args.freeze_parameters,
         depthwise_rewrite=args.depthwise_rewrite,
         fuse_frozen_bn=args.fuse_frozen_bn,
+        fuse_eval_bn=args.fuse_eval_bn,
     )
     print(
         f"LAYOUT_LAB phase=model_setup_end setup_s={detector.setup_s:.3f}",
@@ -288,6 +294,8 @@ def main() -> None:
             "depthwise_rewrite_summary": detector.depthwise_rewrite_summary,
             "fuse_frozen_bn": args.fuse_frozen_bn,
             "frozen_bn_fusion_summary": detector.frozen_bn_fusion_summary,
+            "fuse_eval_bn": args.fuse_eval_bn,
+            "eval_bn_fusion_summary": detector.eval_bn_fusion_summary,
             "scheduling": "sequential_b1_same_process",
         },
         "summary": summarize(records, detector.setup_s),
