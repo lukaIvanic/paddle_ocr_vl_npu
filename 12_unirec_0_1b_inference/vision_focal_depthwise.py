@@ -145,7 +145,7 @@ def register_focal_group_prepack_converter() -> None:
         meta_outputs: Any = None,
     ) -> Any:
         del meta_outputs
-        return ge.TransData(
+        packed = ge.TransData(
             weight,
             src_format="NCHW",
             dst_format="FRACTAL_Z",
@@ -153,6 +153,8 @@ def register_focal_group_prepack_converter() -> None:
             dst_subformat=int(groups),
             groups=int(groups),
         )
+        packed.desc.layout = "FRACTAL_Z"
+        return packed
 
     _PREPACK_CONVERTER_REGISTERED = True
 
