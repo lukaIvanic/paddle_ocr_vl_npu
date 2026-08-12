@@ -270,7 +270,6 @@ class PPDocLayoutV2NpuAdapter:
                 dtype=self.dtype,
                 device=self.device,
                 batch_size=self.batch_size,
-                weight_format=self.weight_format,
             )
         self.setup_s = time.perf_counter() - started
         self.page_count = 0
