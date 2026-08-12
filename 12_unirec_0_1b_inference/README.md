@@ -347,6 +347,29 @@ from the lazy compile/cache-load work triggered by warmup. Eager fallback calls
 also report the exact processed width and height. This is important when a
 bucket is removed experimentally: its crops become variable-shape eager calls.
 
+For a smaller crash reproducer, use `vision_graph_crash_probe.py`. It excludes
+manifests, page reconstruction, layout, multiprocessing queues, compact crop
+preprocessing, eager fallback, parity, and profiling. Each isolated case loads
+one production graph in a fresh child process and synchronously calls it twice.
+The parent does not initialize an NPU, so it survives a hard child exit and
+records the actual return code or signal. The cumulative forward/reverse cases
+then distinguish a broken graph from graph-residency or order dependence.
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  12_unirec_0_1b_inference/vision_graph_crash_probe.py \
+  --model-path /workspace/models/unirec-0.1b \
+  --cache-dir .runtime_cache/12_unirec_0_1b_inference/vision_crash_probe \
+  --output-dir \
+    tmp/12_unirec_0_1b_inference/vision_crash_probe_310p \
+  --suite both --calls 2 --jit-compile off
+```
+
+Use a new `--cache-dir` for the first cold run. Repeat with that same cache
+directory to test cache loading. To isolate only one suspect graph, pass for
+example `--buckets 512x512_b8 --suite isolated`. `--jit-compile on` exists only
+to reproduce the earlier standalone-lab mismatch; production is `off`.
+
 ## Guarded-atlas vision lab
 
 `vision_atlas_lab.py` tests a fixed-shape representation for the spatial
