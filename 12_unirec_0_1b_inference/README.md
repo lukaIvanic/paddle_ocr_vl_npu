@@ -343,7 +343,9 @@ bucket, graph/pass/call index, cache OM count, and PyTorch NPU allocated,
 reserved, and peak memory counters. The last complete line identifies the
 operation active when a process dies. Registration is separate from the first
 graph execution, so these logs also distinguish five Python graph wrappers
-from the lazy compile/cache-load work triggered by warmup.
+from the lazy compile/cache-load work triggered by warmup. Eager fallback calls
+also report the exact processed width and height. This is important when a
+bucket is removed experimentally: its crops become variable-shape eager calls.
 
 ## Guarded-atlas vision lab
 

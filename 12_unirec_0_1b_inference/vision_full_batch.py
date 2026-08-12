@@ -361,6 +361,7 @@ class BucketedFullVisionRuntime:
         self.compiled: dict[str, Callable[..., torch.Tensor]] = {}
         self.cache_dirs: dict[str, Path] = {}
         self._diagnostic_bucket_calls = {spec.key: 0 for spec in self.specs}
+        self._diagnostic_fallback_calls = 0
         self._diagnostic_log(
             "runtime_init_begin",
             graph_count=len(self.specs),
@@ -700,6 +701,14 @@ class BucketedFullVisionRuntime:
         self,
         item: PreprocessedVisionInput,
     ) -> EncodedVisionItem:
+        self._diagnostic_fallback_calls += 1
+        diagnostic_call = self._diagnostic_fallback_calls
+        self._diagnostic_log(
+            "fallback_call_begin",
+            fallback_call=diagnostic_call,
+            request_id=item.image_source,
+            processed_shape=[item.processed_width, item.processed_height],
+        )
         compact_input = item.input_contract == "compact_uint8_hwc"
         transfer_started = time.perf_counter()
         with torch.inference_mode(False):
@@ -715,19 +724,48 @@ class BucketedFullVisionRuntime:
                     dtype=self.runner.dtype,
                 )
         self.stats["batch_h2d_s"] += time.perf_counter() - transfer_started
+        self._diagnostic_log(
+            "fallback_inputs_ready",
+            fallback_call=diagnostic_call,
+            request_id=item.image_source,
+            processed_shape=[item.processed_width, item.processed_height],
+            h2d_wall_s=time.perf_counter() - transfer_started,
+        )
+        started = time.perf_counter()
+        self._diagnostic_log(
+            "fallback_eager_call_begin",
+            fallback_call=diagnostic_call,
+            request_id=item.image_source,
+            processed_shape=[item.processed_width, item.processed_height],
+        )
         with torch.inference_mode():
             hidden = self.runner.model.forward_encoder(pixel_values)
+        self._diagnostic_log(
+            "fallback_eager_submit_end",
+            fallback_call=diagnostic_call,
+            request_id=item.image_source,
+            processed_shape=[item.processed_width, item.processed_height],
+            submit_wall_s=time.perf_counter() - started,
+        )
         self.stats["fallback_rows"] += 1
         input_row_key = (
             "compact_input_rows" if compact_input else "legacy_input_rows"
         )
         self.stats[input_row_key] += 1
-        return EncodedVisionItem(
+        encoded = EncodedVisionItem(
             source_index=item.source_index,
             hidden_states=hidden,
             prep=self._prep_metadata(item),
             bucket_key=None,
         )
+        self._diagnostic_log(
+            "fallback_call_end",
+            fallback_call=diagnostic_call,
+            request_id=item.image_source,
+            processed_shape=[item.processed_width, item.processed_height],
+            output_shape=list(hidden.shape),
+        )
+        return encoded
 
     def encode(
         self,
