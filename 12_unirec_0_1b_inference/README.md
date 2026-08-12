@@ -290,6 +290,48 @@ totals, means, medians, p90 values, and detector pages/s. Device
 synchronization is enabled only in this profiling lane so asynchronous NPU work
 is charged to the stage that submitted it.
 
+## Production vision lab
+
+`vision_production_lab.py` is the current UniRec vision-optimization boundary.
+It replays one worker from the optimized 1,651-page pipeline that measured
+9.8247 sequential-core pages/s on Ascend 910B2. It directly imports the
+production compact uint8 HWC resize helper, `PreprocessedVisionInput`, all five
+`DEFAULT_VISION_BUCKETS`, and `BucketedFullVisionRuntime.encode`. It does not
+maintain a second vision implementation.
+
+The default lab uses the production four-page lookahead but only one process
+worker. Its measured window includes fixed-bucket host materialization, compact
+H2D, NPU normalization and transpose, routing, partial-batch padding, compiled
+vision graphs, eager overflow, and output compaction. Page/layout work, bicubic
+crop resize, text prefill, and cross-KV export stay outside the vision window.
+
+Use the existing full-run manifests so crop identities, dimensions, ordering,
+and route distribution come from real production pages:
+
+```sh
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
+  12_unirec_0_1b_inference/vision_production_lab.py \
+  --openocr-root /workspace/repos/OpenOCR \
+  --model-path /workspace/models/unirec-0.1b \
+  --page-manifest \
+    tmp/12_unirec_0_1b_inference/prefill_export_full1651_w8_t8_fullvision_37b4032_20260811/pages.jsonl \
+  --crop-manifest \
+    tmp/12_unirec_0_1b_inference/prefill_export_full1651_w8_t8_fullvision_37b4032_20260811/crops.jsonl \
+  --cache-dir \
+    .runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf \
+  --page-offset 0 --page-limit 32 --page-lookahead 4 \
+  --warmup-replays 1 --repeats 5 \
+  --profile-scope group --profile-group-index 0 --profile-metric pipe \
+  --output-dir \
+    tmp/12_unirec_0_1b_inference/vision_production_lab_first32
+```
+
+The lab runs sampled eager parity by route before accepting a result. Change
+`--profile-scope` to `workload` only when a full multi-group trace is needed;
+the parsed kernel/operator report can become large. Changing
+`--page-lookahead` is an explicit batching experiment, and the report marks
+that it no longer matches the production scheduling contract.
+
 ## Guarded-atlas vision lab
 
 `vision_atlas_lab.py` tests a fixed-shape representation for the spatial
