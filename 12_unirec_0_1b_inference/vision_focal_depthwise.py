@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import hashlib
 import importlib
 from pathlib import Path
@@ -192,6 +193,54 @@ def register_focal_group_prepack_converter() -> None:
         return packed
 
     _PREPACK_CONVERTER_REGISTERED = True
+
+
+@contextmanager
+def focal_group_prepack_netoutput_context() -> Any:
+    """Describe grouped storage only at the setup graph's output boundary."""
+    torchair = _import_torchair()
+    converter_module = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
+    )
+    ge = converter_module.ge
+    original_netoutput = ge.NetOutput
+
+    def _grouped_netoutput(
+        inputs: list[Any],
+        name: str | None = None,
+        *,
+        dependencies: tuple[Any, ...] = (),
+    ) -> Any:
+        result = original_netoutput(
+            inputs,
+            name=name,
+            dependencies=dependencies,
+        )
+        graph = converter_module.get_default_ge_graph()
+        netoutput = graph.op[-1]
+        if netoutput.type != "NetOutput":
+            raise RuntimeError("TorchAir did not append the expected NetOutput")
+        for index, input_tensor in enumerate(inputs):
+            if input_tensor.node.type != "TransData":
+                continue
+            groups = int(input_tensor.node.attr["dst_subformat"].i)
+            if groups <= 1:
+                continue
+            logical_shape = tuple(int(value) for value in input_tensor.symsize)
+            output_desc = netoutput.input_desc[index]
+            output_desc.attr["format_for_int"].i = (groups << 8) | 4
+            output_desc.attr["origin_format_for_int"].i = 0
+            output_desc.attr["origin_shape"].list.val_type = 2
+            output_desc.attr["origin_shape"].list.i.extend(logical_shape)
+            output_desc.attr["origin_shape_initialized"].b = True
+            output_desc.attr["origin_format_is_set"].b = True
+        return result
+
+    ge.NetOutput = _grouped_netoutput
+    try:
+        yield
+    finally:
+        ge.NetOutput = original_netoutput
 
 
 def focal_group_prepack(
