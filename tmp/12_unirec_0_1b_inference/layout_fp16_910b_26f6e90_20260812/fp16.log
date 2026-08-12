@@ -1,0 +1,152 @@
+LAYOUT_LAB setup pages=128 dtype=float16 device=npu:0 execution=torchair
+LAYOUT_LAB phase=model_setup_begin
+Loading weights:   0%|          | 0/961 [00:00<?, ?it/s]Loading weights:  54%|█████▎    | 515/961 [00:00<00:00, 5146.04it/s]Loading weights: 100%|██████████| 961/961 [00:00<00:00, 5383.24it/s]
+LAYOUT_LAB phase=model_setup_end setup_s=3.133
+LAYOUT_LAB phase=warmup_call_begin call=1/2
+/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/utils/storage.py:56: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  if self.device.type != 'cpu':
+..LAYOUT_LAB phase=warmup_call_end call=1/2
+LAYOUT_LAB phase=warmup_call_begin call=2/2
+LAYOUT_LAB phase=warmup_call_end call=2/2
+LAYOUT_LAB page=1/128 wall_ms=86.9 forward_ms=24.2 boxes=6 digest=d16544a6b9ee
+LAYOUT_LAB page=2/128 wall_ms=85.9 forward_ms=24.4 boxes=8 digest=c8fefcfb784d
+LAYOUT_LAB page=3/128 wall_ms=86.7 forward_ms=24.5 boxes=12 digest=7f240ecee4b3
+LAYOUT_LAB page=4/128 wall_ms=90.8 forward_ms=23.9 boxes=6 digest=95759f951bc0
+LAYOUT_LAB page=5/128 wall_ms=82.8 forward_ms=24.6 boxes=7 digest=71db4db7a8b6
+LAYOUT_LAB page=6/128 wall_ms=80.1 forward_ms=22.4 boxes=5 digest=ced2ed112e80
+LAYOUT_LAB page=7/128 wall_ms=101.4 forward_ms=22.3 boxes=5 digest=d923a8c69b8d
+LAYOUT_LAB page=8/128 wall_ms=100.4 forward_ms=22.9 boxes=5 digest=dd42d6d8f61d
+LAYOUT_LAB page=9/128 wall_ms=109.3 forward_ms=23.1 boxes=9 digest=39c6382fe457
+LAYOUT_LAB page=10/128 wall_ms=82.6 forward_ms=21.6 boxes=2 digest=2ff849acdcd9
+LAYOUT_LAB page=11/128 wall_ms=84.3 forward_ms=22.6 boxes=5 digest=9a8571e081a8
+LAYOUT_LAB page=12/128 wall_ms=84.0 forward_ms=21.6 boxes=7 digest=2304c26c3f32
+LAYOUT_LAB page=13/128 wall_ms=88.3 forward_ms=24.3 boxes=5 digest=b146e94ca228
+LAYOUT_LAB page=14/128 wall_ms=83.0 forward_ms=22.2 boxes=4 digest=8777b14e3f04
+LAYOUT_LAB page=15/128 wall_ms=90.4 forward_ms=23.2 boxes=6 digest=b03efc0518b4
+LAYOUT_LAB page=16/128 wall_ms=87.1 forward_ms=24.2 boxes=4 digest=4371a1d0570e
+LAYOUT_LAB page=17/128 wall_ms=83.3 forward_ms=22.6 boxes=5 digest=0bcea43223d4
+LAYOUT_LAB page=18/128 wall_ms=98.1 forward_ms=22.2 boxes=5 digest=12b22c13d493
+LAYOUT_LAB page=19/128 wall_ms=76.6 forward_ms=22.0 boxes=4 digest=1b190d0c49d0
+LAYOUT_LAB page=20/128 wall_ms=75.6 forward_ms=22.0 boxes=7 digest=14a6e9e6f5df
+LAYOUT_LAB page=21/128 wall_ms=78.6 forward_ms=23.5 boxes=5 digest=727e79fa626d
+LAYOUT_LAB page=22/128 wall_ms=81.7 forward_ms=22.5 boxes=7 digest=ae58ed803c44
+LAYOUT_LAB page=23/128 wall_ms=87.0 forward_ms=22.2 boxes=10 digest=ff5c98b6cc1a
+LAYOUT_LAB page=24/128 wall_ms=86.0 forward_ms=22.1 boxes=13 digest=8f21c77cba2d
+LAYOUT_LAB page=25/128 wall_ms=81.9 forward_ms=22.3 boxes=6 digest=e3ea5e6b6623
+LAYOUT_LAB page=26/128 wall_ms=84.2 forward_ms=21.5 boxes=8 digest=f372340a8924
+LAYOUT_LAB page=27/128 wall_ms=86.9 forward_ms=22.2 boxes=6 digest=9f7425826f2e
+LAYOUT_LAB page=28/128 wall_ms=78.0 forward_ms=21.5 boxes=8 digest=fb5bdb2e2e7e
+LAYOUT_LAB page=29/128 wall_ms=88.0 forward_ms=22.2 boxes=9 digest=a7d8fc6f2d72
+LAYOUT_LAB page=30/128 wall_ms=79.5 forward_ms=21.6 boxes=5 digest=3bb21ae31cc7
+LAYOUT_LAB page=31/128 wall_ms=81.0 forward_ms=21.5 boxes=5 digest=f5f5fc5f0b6b
+LAYOUT_LAB page=32/128 wall_ms=81.2 forward_ms=21.8 boxes=4 digest=c2be769fc63e
+LAYOUT_LAB page=33/128 wall_ms=95.1 forward_ms=22.2 boxes=7 digest=2c1714014c58
+LAYOUT_LAB page=34/128 wall_ms=97.8 forward_ms=21.7 boxes=2 digest=d1dc2794f47d
+LAYOUT_LAB page=35/128 wall_ms=80.4 forward_ms=21.7 boxes=7 digest=4d3afcad1bb2
+LAYOUT_LAB page=36/128 wall_ms=80.4 forward_ms=21.7 boxes=4 digest=95d1a9d6879b
+LAYOUT_LAB page=37/128 wall_ms=80.4 forward_ms=23.2 boxes=9 digest=30b407e884c9
+LAYOUT_LAB page=38/128 wall_ms=84.3 forward_ms=21.5 boxes=3 digest=34d884ac9e82
+LAYOUT_LAB page=39/128 wall_ms=82.1 forward_ms=21.5 boxes=6 digest=385ff1f701a7
+LAYOUT_LAB page=40/128 wall_ms=77.1 forward_ms=21.6 boxes=6 digest=9c09fcb8dbac
+LAYOUT_LAB page=41/128 wall_ms=74.9 forward_ms=21.8 boxes=6 digest=02f7778968bb
+LAYOUT_LAB page=42/128 wall_ms=74.0 forward_ms=21.6 boxes=2 digest=439739362e2c
+LAYOUT_LAB page=43/128 wall_ms=73.3 forward_ms=22.6 boxes=2 digest=94c0b9be679e
+LAYOUT_LAB page=44/128 wall_ms=89.9 forward_ms=21.6 boxes=6 digest=b1d291fdd2f7
+LAYOUT_LAB page=45/128 wall_ms=91.3 forward_ms=21.7 boxes=11 digest=91091066b377
+LAYOUT_LAB page=46/128 wall_ms=88.9 forward_ms=21.5 boxes=9 digest=c768e7381661
+LAYOUT_LAB page=47/128 wall_ms=88.5 forward_ms=21.7 boxes=1 digest=eb2bb631a1bc
+LAYOUT_LAB page=48/128 wall_ms=87.5 forward_ms=21.6 boxes=1 digest=17370149775e
+LAYOUT_LAB page=49/128 wall_ms=89.5 forward_ms=21.6 boxes=3 digest=149c8ff416b6
+LAYOUT_LAB page=50/128 wall_ms=82.2 forward_ms=21.8 boxes=11 digest=14d23788bb4c
+LAYOUT_LAB page=51/128 wall_ms=79.0 forward_ms=21.6 boxes=7 digest=873734f2c7f9
+LAYOUT_LAB page=52/128 wall_ms=83.0 forward_ms=21.5 boxes=11 digest=3fcfddb3d1fc
+LAYOUT_LAB page=53/128 wall_ms=76.5 forward_ms=22.4 boxes=10 digest=8ce36cf7da4b
+LAYOUT_LAB page=54/128 wall_ms=80.7 forward_ms=21.6 boxes=12 digest=5a31719a3e9c
+LAYOUT_LAB page=55/128 wall_ms=79.8 forward_ms=21.7 boxes=6 digest=38235d68e607
+LAYOUT_LAB page=56/128 wall_ms=80.9 forward_ms=22.8 boxes=9 digest=4c8c87f274a6
+LAYOUT_LAB page=57/128 wall_ms=83.8 forward_ms=21.8 boxes=7 digest=43085c1f7e65
+LAYOUT_LAB page=58/128 wall_ms=83.2 forward_ms=21.5 boxes=5 digest=8d6a0ea62435
+LAYOUT_LAB page=59/128 wall_ms=80.5 forward_ms=21.7 boxes=7 digest=1c21ff8869cf
+LAYOUT_LAB page=60/128 wall_ms=82.3 forward_ms=21.5 boxes=9 digest=0e4820ec58f0
+LAYOUT_LAB page=61/128 wall_ms=75.1 forward_ms=21.7 boxes=5 digest=b7a7579f0f9e
+LAYOUT_LAB page=62/128 wall_ms=72.4 forward_ms=23.0 boxes=3 digest=98be7690115e
+LAYOUT_LAB page=63/128 wall_ms=71.3 forward_ms=21.6 boxes=5 digest=0352eb47cbef
+LAYOUT_LAB page=64/128 wall_ms=71.0 forward_ms=21.8 boxes=10 digest=8ee055e45abb
+LAYOUT_LAB page=65/128 wall_ms=79.1 forward_ms=21.6 boxes=5 digest=0279dbbfe1ef
+LAYOUT_LAB page=66/128 wall_ms=79.1 forward_ms=21.4 boxes=3 digest=2d0155b62f63
+LAYOUT_LAB page=67/128 wall_ms=81.3 forward_ms=21.5 boxes=4 digest=fe7d4b676f00
+LAYOUT_LAB page=68/128 wall_ms=78.4 forward_ms=21.5 boxes=6 digest=83116c08b8e3
+LAYOUT_LAB page=69/128 wall_ms=83.8 forward_ms=21.5 boxes=16 digest=5961c009063e
+LAYOUT_LAB page=70/128 wall_ms=80.0 forward_ms=21.5 boxes=6 digest=b40a94c7a4b0
+LAYOUT_LAB page=71/128 wall_ms=78.9 forward_ms=21.3 boxes=8 digest=276a9c036e59
+LAYOUT_LAB page=72/128 wall_ms=77.6 forward_ms=21.5 boxes=9 digest=be6d2f2b0ee8
+LAYOUT_LAB page=73/128 wall_ms=73.8 forward_ms=21.4 boxes=14 digest=d709606e3f97
+LAYOUT_LAB page=74/128 wall_ms=85.2 forward_ms=21.6 boxes=7 digest=612dd1fe2ed2
+LAYOUT_LAB page=75/128 wall_ms=74.9 forward_ms=21.6 boxes=7 digest=1f0890e64058
+LAYOUT_LAB page=76/128 wall_ms=79.8 forward_ms=22.2 boxes=12 digest=9b65b5a3af76
+LAYOUT_LAB page=77/128 wall_ms=76.4 forward_ms=21.7 boxes=15 digest=82c1e52144d7
+LAYOUT_LAB page=78/128 wall_ms=78.9 forward_ms=21.4 boxes=18 digest=5dc25dbf5013
+LAYOUT_LAB page=79/128 wall_ms=82.5 forward_ms=21.5 boxes=8 digest=61d69b8f4c88
+LAYOUT_LAB page=80/128 wall_ms=78.5 forward_ms=21.4 boxes=10 digest=d786c8c9c2e4
+LAYOUT_LAB page=81/128 wall_ms=88.0 forward_ms=22.7 boxes=5 digest=c355012d5d55
+LAYOUT_LAB page=82/128 wall_ms=81.2 forward_ms=21.5 boxes=4 digest=3d33c267c772
+LAYOUT_LAB page=83/128 wall_ms=78.7 forward_ms=21.4 boxes=6 digest=b6b829386809
+LAYOUT_LAB page=84/128 wall_ms=82.7 forward_ms=21.4 boxes=5 digest=edac9e29f126
+LAYOUT_LAB page=85/128 wall_ms=84.4 forward_ms=21.7 boxes=2 digest=5d8c4056c3cf
+LAYOUT_LAB page=86/128 wall_ms=81.9 forward_ms=21.5 boxes=3 digest=21146947047e
+LAYOUT_LAB page=87/128 wall_ms=84.1 forward_ms=21.5 boxes=4 digest=0e3105c9ea3c
+LAYOUT_LAB page=88/128 wall_ms=101.8 forward_ms=21.7 boxes=2 digest=cbd0451d8808
+LAYOUT_LAB page=89/128 wall_ms=84.6 forward_ms=23.6 boxes=5 digest=3b92159b24b2
+LAYOUT_LAB page=90/128 wall_ms=86.0 forward_ms=21.4 boxes=6 digest=a141dd922018
+LAYOUT_LAB page=91/128 wall_ms=81.3 forward_ms=21.5 boxes=4 digest=808c9bccfea1
+LAYOUT_LAB page=92/128 wall_ms=81.6 forward_ms=21.4 boxes=4 digest=9fae77a79300
+LAYOUT_LAB page=93/128 wall_ms=83.7 forward_ms=21.5 boxes=6 digest=fc8d5853c3c9
+LAYOUT_LAB page=94/128 wall_ms=81.8 forward_ms=21.4 boxes=9 digest=01b0170a188f
+LAYOUT_LAB page=95/128 wall_ms=82.0 forward_ms=21.3 boxes=6 digest=8112efabb9a3
+LAYOUT_LAB page=96/128 wall_ms=82.4 forward_ms=21.6 boxes=8 digest=e96720e3e04e
+LAYOUT_LAB page=97/128 wall_ms=83.1 forward_ms=21.4 boxes=6 digest=0e57c4261e05
+LAYOUT_LAB page=98/128 wall_ms=98.4 forward_ms=22.0 boxes=3 digest=449d657bd08a
+LAYOUT_LAB page=99/128 wall_ms=98.5 forward_ms=21.4 boxes=3 digest=c5700d8e9107
+LAYOUT_LAB page=100/128 wall_ms=98.6 forward_ms=21.4 boxes=7 digest=174a81e07550
+LAYOUT_LAB page=101/128 wall_ms=97.8 forward_ms=21.5 boxes=4 digest=842756232188
+LAYOUT_LAB page=102/128 wall_ms=87.1 forward_ms=23.4 boxes=8 digest=90e80bf22dca
+LAYOUT_LAB page=103/128 wall_ms=84.9 forward_ms=23.5 boxes=20 digest=d8f80374ef19
+LAYOUT_LAB page=104/128 wall_ms=85.0 forward_ms=22.0 boxes=11 digest=26ea26fd0405
+LAYOUT_LAB page=105/128 wall_ms=78.5 forward_ms=21.5 boxes=3 digest=07c06eef5326
+LAYOUT_LAB page=106/128 wall_ms=80.4 forward_ms=21.4 boxes=3 digest=40be6fbd9d81
+LAYOUT_LAB page=107/128 wall_ms=82.2 forward_ms=22.9 boxes=3 digest=986cf77c18e2
+LAYOUT_LAB page=108/128 wall_ms=84.4 forward_ms=23.4 boxes=6 digest=93b46c00f03a
+LAYOUT_LAB page=109/128 wall_ms=81.2 forward_ms=23.7 boxes=8 digest=ea78d1996567
+LAYOUT_LAB page=110/128 wall_ms=76.9 forward_ms=22.2 boxes=12 digest=b30da59bcfb6
+LAYOUT_LAB page=111/128 wall_ms=100.8 forward_ms=21.6 boxes=17 digest=12787a6a0cba
+LAYOUT_LAB page=112/128 wall_ms=98.8 forward_ms=21.4 boxes=22 digest=86cea844a591
+LAYOUT_LAB page=113/128 wall_ms=96.3 forward_ms=21.4 boxes=9 digest=8c33f930b528
+LAYOUT_LAB page=114/128 wall_ms=94.7 forward_ms=21.4 boxes=18 digest=a159e39430d0
+LAYOUT_LAB page=115/128 wall_ms=77.7 forward_ms=21.4 boxes=14 digest=34a41ce6c49d
+LAYOUT_LAB page=116/128 wall_ms=81.5 forward_ms=21.2 boxes=22 digest=a628f0041329
+LAYOUT_LAB page=117/128 wall_ms=82.3 forward_ms=21.2 boxes=18 digest=b45143021559
+LAYOUT_LAB page=118/128 wall_ms=81.9 forward_ms=21.4 boxes=3 digest=05b196a272e6
+LAYOUT_LAB page=119/128 wall_ms=107.5 forward_ms=21.2 boxes=14 digest=186f5814b5ec
+LAYOUT_LAB page=120/128 wall_ms=74.4 forward_ms=21.1 boxes=3 digest=acf45102fc8a
+LAYOUT_LAB page=121/128 wall_ms=74.6 forward_ms=21.1 boxes=9 digest=7a8388e64c37
+LAYOUT_LAB page=122/128 wall_ms=78.7 forward_ms=21.3 boxes=15 digest=0d52f455d9ae
+LAYOUT_LAB page=123/128 wall_ms=80.8 forward_ms=21.2 boxes=20 digest=fee4366eb38c
+LAYOUT_LAB page=124/128 wall_ms=79.6 forward_ms=21.4 boxes=14 digest=d66f445e8e8f
+LAYOUT_LAB page=125/128 wall_ms=82.3 forward_ms=22.3 boxes=17 digest=749ba1007043
+LAYOUT_LAB page=126/128 wall_ms=80.6 forward_ms=21.2 boxes=13 digest=820f3a6d2dc5
+LAYOUT_LAB page=127/128 wall_ms=82.9 forward_ms=21.5 boxes=17 digest=ca8e388740fd
+LAYOUT_LAB page=128/128 wall_ms=80.4 forward_ms=21.6 boxes=13 digest=14a682888227
+LAYOUT_LAB summary
+  page_image_decode_s: total=4.345s mean=33.94ms p90=44.66ms
+  model_forward_s: total=2.813s mean=21.98ms p90=23.22ms
+  processor_preprocess_s: total=1.688s mean=13.19ms p90=14.99ms
+  hf_box_decode_s: total=1.089s mean=8.51ms p90=10.11ms
+  inputs_h2d_s: total=0.275s mean=2.15ms p90=2.60ms
+  bgr_to_rgb_s: total=0.129s mean=1.01ms p90=1.34ms
+  result_box_build_s: total=0.103s mean=0.81ms p90=1.52ms
+  page_file_read_s: total=0.052s mean=0.41ms p90=0.76ms
+  overlap_filter_s: total=0.033s mean=0.26ms p90=0.37ms
+  outputs_d2h_s: total=0.028s mean=0.22ms p90=0.28ms
+  postprocess_tensor_to_list_s: total=0.006s mean=0.05ms p90=0.06ms
+  order_and_label_s: total=0.004s mean=0.03ms p90=0.04ms
+LAYOUT_LAB done pages_per_s=11.923 output=/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/layout_fp16_910b_26f6e90_20260812_retry1/fp16.json
