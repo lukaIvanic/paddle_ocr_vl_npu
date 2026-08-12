@@ -40,6 +40,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    last_position = args.profile_position + args.warmup + args.rounds
+    if last_position >= args.cache_length:
+        raise ValueError(
+            "profile position plus warmup/rounds reaches cache capacity: "
+            f"{last_position} >= {args.cache_length}"
+        )
     if bool(args.control_optimization) != bool(args.candidate_optimization):
         raise ValueError(
             "--control-optimization and --candidate-optimization must be "
