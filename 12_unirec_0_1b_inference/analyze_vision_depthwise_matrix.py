@@ -123,14 +123,16 @@ def main() -> None:
         validation = row["validation"]
         parity = "native"
         max_abs = 0.0
+        mean_abs = 0.0
         if validation is not None:
             parity = str(validation["allclose_atol_5e_2_rtol_5e_2"]).lower()
             max_abs = float(validation["max_abs"])
+            mean_abs = float(validation["mean_abs"])
         print(
             "UNIREC_VISION_DEPTHWISE "
             f"lane={row['name']} device_ms={row['device_ms']:.6f} "
             f"speedup={row['speedup_vs_native']:.4f}x "
-            f"parity={parity} max_abs={max_abs:.6f} "
+            f"parity={parity} max_abs={max_abs:.6f} mean_abs={mean_abs:.6f} "
             f"TransData={row['transdata_ms']:.3f}ms/{row['transdata_count']} "
             f"target_repack={row['target_repack_ms']:.3f}ms/"
             f"{row['target_repack_count']} "
