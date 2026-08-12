@@ -22,6 +22,7 @@ from modeling_optimized_unirec import (
 )
 from vision_focal_depthwise import (
     VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES,
+    focal_group_prepack,
     rewrite_vision_focal_depthwise_convs,
     vision_rewrite_source_hash,
 )
@@ -62,14 +63,27 @@ DEFAULT_VISION_BUCKETS = (
 
 VISION_WEIGHT_FORMAT_CHOICES = (
     "native",
+    "focal_prepack",
     "torchair_internal",
 )
+
+
+class _FocalGroupPrepackModule(nn.Module):
+    def __init__(self, groups: int) -> None:
+        super().__init__()
+        self.groups = int(groups)
+
+    def forward(self, weight: torch.Tensor) -> torch.Tensor:
+        return focal_group_prepack(weight, groups=self.groups)
 
 
 def _prepare_vision_weight_formats(
     vision_encoder: nn.Module,
     *,
     requested: str,
+    cache_compile: Any,
+    compiler_config: Any,
+    cache_root: Path,
 ) -> dict[str, Any]:
     """Apply the proven TorchAir internal-weight pass to the vision encoder."""
     if requested not in VISION_WEIGHT_FORMAT_CHOICES:
@@ -90,6 +104,7 @@ def _prepare_vision_weight_formats(
         return dict(sorted(result.items()))
 
     before = histogram()
+    focal_prepack_rows: list[dict[str, Any]] = []
     if requested == "torchair_internal":
         torch_npu.npu.config.allow_internal_format = True
         try:
@@ -97,11 +112,93 @@ def _prepare_vision_weight_formats(
         except ImportError:
             from torchair import use_internal_format_weight
         use_internal_format_weight(vision_encoder)
+    elif requested == "focal_prepack":
+        torch_npu.npu.config.allow_internal_format = True
+        compiler_config.experimental_config.frozen_parameter.value = True
+        compiled_by_signature: dict[tuple[Any, ...], Any] = {}
+        for stage_index, stage in enumerate(vision_encoder.layers):
+            if stage_index < 2:
+                continue
+            for block_index, block in enumerate(stage.blocks):
+                for focal_index, focal_layer in enumerate(
+                    block.modulation.focal_layers
+                ):
+                    convolution = focal_layer[0]
+                    if not isinstance(convolution, nn.Conv2d):
+                        continue
+                    kernel = tuple(
+                        int(value) for value in convolution.kernel_size
+                    )
+                    if kernel not in {(5, 5), (7, 7)}:
+                        continue
+                    channels = int(convolution.in_channels)
+                    if not (
+                        convolution.out_channels == channels
+                        and convolution.groups == channels
+                        and convolution.bias is None
+                    ):
+                        raise ValueError(
+                            "focal prepack requires native bias-free depthwise "
+                            f"Conv2d, got stage={stage_index} "
+                            f"block={block_index} focal={focal_index}"
+                        )
+                    signature = (
+                        tuple(int(value) for value in convolution.weight.shape),
+                        channels,
+                        str(convolution.weight.dtype),
+                    )
+                    if signature not in compiled_by_signature:
+                        module = _FocalGroupPrepackModule(channels)
+                        signature_hash = hashlib.sha256(
+                            repr(signature).encode("utf-8")
+                        ).hexdigest()[:12]
+                        cache_dir = cache_root / (
+                            "vision_focal_group_prepack_"
+                            f"{signature_hash}_{channels}g"
+                        )
+                        cache_dir.mkdir(parents=True, exist_ok=True)
+                        compiled_by_signature[signature] = cache_compile(
+                            module.forward,
+                            config=compiler_config,
+                            dynamic=False,
+                            cache_dir=str(cache_dir),
+                            ge_cache=True,
+                            fullgraph=True,
+                        )
+                    before_format = str(
+                        torch_npu.get_npu_format(convolution.weight)
+                    )
+                    with torch.inference_mode():
+                        packed = compiled_by_signature[signature](
+                            convolution.weight.detach()
+                        )
+                    synchronize_device(convolution.weight.device)
+                    convolution.weight = nn.Parameter(
+                        packed,
+                        requires_grad=False,
+                    )
+                    focal_prepack_rows.append(
+                        {
+                            "module": (
+                                f"layers.{stage_index}.blocks.{block_index}."
+                                f"modulation.focal_layers.{focal_index}.0"
+                            ),
+                            "groups": channels,
+                            "kernel": list(kernel),
+                            "logical_shape": list(convolution.weight.shape),
+                            "before_format": before_format,
+                            "after_format": str(
+                                torch_npu.get_npu_format(convolution.weight)
+                            ),
+                        }
+                    )
     return {
         "requested": requested,
         "tracked_count": len(tracked),
         "before_histogram": before,
         "after_histogram": histogram(),
+        "focal_prepack_count": len(focal_prepack_rows),
+        "focal_prepack_modules": focal_prepack_rows,
     }
 
 
@@ -110,6 +207,7 @@ def _vision_weight_format_source_hash(requested: str) -> str:
         return ""
     return hashlib.sha256(
         inspect.getsource(_prepare_vision_weight_formats).encode("utf-8")
+        + Path(__file__).with_name("vision_focal_depthwise.py").read_bytes()
     ).hexdigest()[:12]
 
 
@@ -399,10 +497,18 @@ class BucketedFullVisionRuntime:
                 requested=self.focal_depthwise_rewrite,
             )
         )
+        from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
+
+        config = CompilerConfig()
+        config.mode.value = "max-autotune"
+        cache_compile, import_path = import_torchair_cache_compile()
         self.weight_format = str(weight_format)
         self.weight_format_summary = _prepare_vision_weight_formats(
             runner.model.encoder.vision_encoder,
             requested=self.weight_format,
+            cache_compile=cache_compile,
+            compiler_config=config,
+            cache_root=runner.compile_cache_dir,
         )
         required_specializations = len(self.specs) + 16
         torch._dynamo.config.cache_size_limit = max(
@@ -422,11 +528,6 @@ class BucketedFullVisionRuntime:
             required_specializations * 4,
         )
 
-        from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
-
-        config = CompilerConfig()
-        config.mode.value = "max-autotune"
-        cache_compile, import_path = import_torchair_cache_compile()
         source_hash = _source_hash()
         rewrite_hash = vision_rewrite_source_hash(
             self.focal_depthwise_rewrite,

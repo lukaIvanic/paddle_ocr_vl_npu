@@ -24,6 +24,25 @@ VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES = (
 _CONSTANT_WEIGHTS: dict[int, dict[str, Any]] = {}
 _CONSTANT_CONVERTER_REGISTERED = False
 _NEXT_CONSTANT_WEIGHT_ID = 0
+_PREPACK_CONVERTER_REGISTERED = False
+
+
+@torch.library.custom_op("unirec::focal_group_prepack_v1", mutates_args=())
+def _focal_group_prepack(
+    weight: torch.Tensor,
+    groups: int,
+) -> torch.Tensor:
+    del groups
+    return weight.clone()
+
+
+@_focal_group_prepack.register_fake
+def _focal_group_prepack_fake(
+    weight: torch.Tensor,
+    groups: int,
+) -> torch.Tensor:
+    del groups
+    return torch.empty_like(weight)
 
 
 @torch.library.custom_op("unirec::focal_depthwise_const_v1", mutates_args=())
@@ -102,6 +121,49 @@ def register_focal_depthwise_constant_converter() -> None:
         return output
 
     _CONSTANT_CONVERTER_REGISTERED = True
+
+
+def register_focal_group_prepack_converter() -> None:
+    """Lower a setup-only call to the grouped Conv2D weight representation."""
+    global _PREPACK_CONVERTER_REGISTERED
+    if _PREPACK_CONVERTER_REGISTERED:
+        return
+    torchair = _import_torchair()
+    converter_module = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
+    )
+    converter_utils = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.ge_converter.converter_utils"
+    )
+    register_converter = converter_module.register_fx_node_ge_converter
+    ge = converter_utils.ge
+
+    @register_converter(torch.ops.unirec.focal_group_prepack_v1.default)
+    def _convert_focal_group_prepack(
+        weight: Any,
+        groups: int,
+        meta_outputs: Any = None,
+    ) -> Any:
+        del meta_outputs
+        return ge.TransData(
+            weight,
+            src_format="NCHW",
+            dst_format="FRACTAL_Z",
+            src_subformat=0,
+            dst_subformat=int(groups),
+            groups=int(groups),
+        )
+
+    _PREPACK_CONVERTER_REGISTERED = True
+
+
+def focal_group_prepack(
+    weight: torch.Tensor,
+    *,
+    groups: int,
+) -> torch.Tensor:
+    register_focal_group_prepack_converter()
+    return _focal_group_prepack(weight, int(groups))
 
 
 class ConstantFocalDepthwiseConv(nn.Module):
