@@ -191,6 +191,7 @@ def register_focal_depthwise_constant_converter() -> None:
             logical_shape = row["shape"]
             storage_format = (int(row["groups"]) << 8) | 4
             filter_desc = output.node.input_desc[1]
+            filter_desc.shape.dim[:] = logical_shape
             filter_desc.attr["format_for_int"].i = storage_format
             filter_desc.attr["origin_format_for_int"].i = 0
             filter_desc.attr["origin_shape"].list.val_type = 2
