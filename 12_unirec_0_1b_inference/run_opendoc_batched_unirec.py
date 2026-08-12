@@ -651,15 +651,29 @@ def warmup_configured_graphs(
                 for _ in range(layer_count)
             )
             self_values = tuple(torch.zeros_like(tensor) for tensor in self_keys)
-            cross_keys = tuple(
-                torch.zeros(
-                    (batch_size, heads, cross_cache_len, head_dim),
-                    dtype=runner.dtype,
-                    device=device,
-                )
-                for _ in range(layer_count)
+            # Match ContinuousUniRecDecoder._allocate_empty_arena exactly.
+            # Dynamo guards tensor aliasing as well as shape/stride: warming
+            # independent per-layer tensors does not warm the production
+            # contract, where every cross-K/V layer is a view into one packed
+            # arena allocation.
+            packed_cross_kv = torch.zeros(
+                (
+                    2 * layer_count,
+                    batch_size,
+                    heads,
+                    cross_cache_len,
+                    head_dim,
+                ),
+                dtype=runner.dtype,
+                device=device,
             )
-            cross_values = tuple(torch.zeros_like(tensor) for tensor in cross_keys)
+            cross_keys = tuple(
+                packed_cross_kv[layer] for layer in range(layer_count)
+            )
+            cross_values = tuple(
+                packed_cross_kv[layer_count + layer]
+                for layer in range(layer_count)
+            )
             cross_mask = torch.zeros(
                 (batch_size, 1, 1, cross_cache_len),
                 dtype=torch.float32,
