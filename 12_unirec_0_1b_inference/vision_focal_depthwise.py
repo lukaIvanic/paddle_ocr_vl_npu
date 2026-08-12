@@ -168,17 +168,10 @@ def register_focal_depthwise_constant_converter() -> None:
         row = _CONSTANT_WEIGHTS[int(weight_id)]
         weight = ge.Const(row["host_weight"])
         if row["prepacked_grouped"]:
-            logical_shape = row["shape"]
             storage_format = (int(row["groups"]) << 8) | 4
-            descriptors = [weight.desc, weight.node.attr["value"].t.desc]
-            for descriptor in descriptors:
-                descriptor.layout = "FRACTAL_Z"
-                descriptor.attr["format_for_int"].i = storage_format
-                descriptor.attr["origin_format_for_int"].i = 0
-                descriptor.attr["origin_shape"].list.val_type = 2
-                descriptor.attr["origin_shape"].list.i.extend(logical_shape)
-                descriptor.attr["origin_shape_initialized"].b = True
-                descriptor.attr["origin_format_is_set"].b = True
+            weight.desc.layout = "FRACTAL_Z"
+            weight.desc.attr["format_for_int"].i = storage_format
+            specific_output_layout(weight, indices=0, layout="FRACTAL_Z")
             weight.node.attr["_enable_storage_format_spread"].b = False
         padding = int(row["padding"])
         output = ge.Conv2D(
@@ -194,6 +187,16 @@ def register_focal_depthwise_constant_converter() -> None:
         )
         specific_input_layout(output, indices=[0, 1], layout="NCHW")
         specific_output_layout(output, indices=0, layout="NCHW")
+        if row["prepacked_grouped"]:
+            logical_shape = row["shape"]
+            storage_format = (int(row["groups"]) << 8) | 4
+            filter_desc = output.node.input_desc[1]
+            filter_desc.attr["format_for_int"].i = storage_format
+            filter_desc.attr["origin_format_for_int"].i = 0
+            filter_desc.attr["origin_shape"].list.val_type = 2
+            filter_desc.attr["origin_shape"].list.i.extend(logical_shape)
+            filter_desc.attr["origin_shape_initialized"].b = True
+            filter_desc.attr["origin_format_is_set"].b = True
         return output
 
     _CONSTANT_CONVERTER_REGISTERED = True
