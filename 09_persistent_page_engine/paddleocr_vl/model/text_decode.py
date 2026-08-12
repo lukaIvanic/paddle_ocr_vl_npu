@@ -117,6 +117,8 @@ class DecodeOptimizationConfig:
     post_scatter_kv_prefetch: bool = False
     weight_prefetch_timing: str = "before_attention"
     complete_layer_prefetch_ahead: int = 0
+    zero_residual_first_rms_norm: bool = False
+    packed_kv_scatter: bool = False
     vector_add_rms_norm: bool = False
     gqa_aiv_vector_core_count: int = 0
     super_kernel_scope: bool = False
@@ -453,6 +455,49 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         weight_prefetch_timing="complete_layer_ahead",
         complete_layer_prefetch_ahead=2,
     ),
+    "combined_apply_complete_layer_prefetch1_rope_lut_zero_first_norm": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch1_rope_lut_zero_first_norm",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=1,
+        zero_residual_first_rms_norm=True,
+    ),
+    "combined_apply_complete_layer_prefetch1_rope_lut_packed_kv": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch1_rope_lut_packed_kv",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=1,
+        packed_kv_scatter=True,
+    ),
+    "combined_apply_complete_layer_prefetch1_rope_lut_zero_first_norm_packed_kv": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch1_rope_lut_zero_first_norm_packed_kv",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=1,
+        zero_residual_first_rms_norm=True,
+        packed_kv_scatter=True,
+    ),
     "combined_apply_kv_then_mlp_prefetch_rope_lut_pseudo_b2": DecodeOptimizationConfig(
         name="combined_apply_kv_then_mlp_prefetch_rope_lut_pseudo_b2",
         hoist_mrope=True,
@@ -748,6 +793,7 @@ class LocalPaddleOCRVLStaticCache:
     key_caches: tuple[torch.Tensor, ...]
     value_caches: tuple[torch.Tensor, ...]
     cache_length: int
+    packed_kv_caches: tuple[torch.Tensor, ...] | None = None
 
     @classmethod
     def allocate(
@@ -760,6 +806,7 @@ class LocalPaddleOCRVLStaticCache:
         dtype: torch.dtype,
         init_mode: str = "zeros",
         num_key_value_heads: int | None = None,
+        packed_kv: bool = False,
     ) -> "LocalPaddleOCRVLStaticCache":
         cache_heads = (
             int(config.num_key_value_heads)
@@ -776,8 +823,26 @@ class LocalPaddleOCRVLStaticCache:
         )
         key_caches = []
         value_caches = []
+        packed_kv_caches = []
         for _layer_idx in range(config.num_hidden_layers):
-            if init_mode == "zeros":
+            if packed_kv:
+                packed_shape = (2 * int(batch_size), *cache_shape[1:])
+                if init_mode == "zeros":
+                    packed_cache = torch.zeros(
+                        packed_shape, device=device, dtype=dtype
+                    )
+                elif init_mode == "empty":
+                    packed_cache = torch.empty(
+                        packed_shape, device=device, dtype=dtype
+                    )
+                else:
+                    raise ValueError(
+                        f"unknown static cache init_mode: {init_mode!r}"
+                    )
+                key_cache = packed_cache[: int(batch_size)]
+                value_cache = packed_cache[int(batch_size) :]
+                packed_kv_caches.append(packed_cache)
+            elif init_mode == "zeros":
                 key_cache = torch.zeros(
                     cache_shape, device=device, dtype=dtype
                 )
@@ -794,7 +859,10 @@ class LocalPaddleOCRVLStaticCache:
             key_caches.append(key_cache)
             value_caches.append(value_cache)
         return cls(
-            tuple(key_caches), tuple(value_caches), int(cache_length)
+            tuple(key_caches),
+            tuple(value_caches),
+            int(cache_length),
+            tuple(packed_kv_caches) if packed_kv else None,
         )
 
     def layer(self, layer_idx: int) -> tuple[torch.Tensor, torch.Tensor]:
@@ -804,6 +872,12 @@ class LocalPaddleOCRVLStaticCache:
         )
 
     def flat_tensors(self) -> tuple[torch.Tensor, ...]:
+        if self.packed_kv_caches is not None:
+            return self.packed_kv_caches
+        return (*self.key_caches, *self.value_caches)
+
+    def logical_tensors(self) -> tuple[torch.Tensor, ...]:
+        """Return the ordinary K-then-V view, independent of physical storage."""
         return (*self.key_caches, *self.value_caches)
 
 
@@ -991,6 +1065,33 @@ def update_decode_kv_cache_(
     key_cache[batch_indices, :, positions, :] = key_states.squeeze(2)
     value_cache[batch_indices, :, positions, :] = value_states.squeeze(2)
     return key_cache, value_cache
+
+
+def update_decode_packed_kv_cache_(
+    packed_kv_cache: torch.Tensor,
+    cache_position: torch.Tensor,
+    key_states: torch.Tensor,
+    value_states: torch.Tensor,
+) -> torch.Tensor:
+    """Write K and V through one stock ScatterUpdate invocation."""
+    if packed_kv_cache.device.type != "npu":
+        raise ValueError("packed KV scatter is an NPU-only decode lab path")
+    import torch_npu
+
+    positions = (
+        cache_position.reshape(-1)
+        .to(device=packed_kv_cache.device, dtype=torch.int64)
+        .contiguous()
+    )
+    packed_positions = torch.cat((positions, positions), dim=0)
+    packed_states = torch.cat((key_states, value_states), dim=0).contiguous()
+    torch_npu.scatter_update_(
+        packed_kv_cache,
+        packed_positions,
+        packed_states,
+        2,
+    )
+    return packed_kv_cache
 
 
 def _prepare_multimodal_rotary_factors(
@@ -1382,6 +1483,7 @@ def _decode_attention(
     pse_shift: torch.Tensor | None,
     actual_seq_lengths: list[int] | None,
     optimization: DecodeOptimizationConfig,
+    packed_kv_cache: torch.Tensor | None = None,
     packed_factor_lut: torch.Tensor | None = None,
     packed_rope_delta: torch.Tensor | None = None,
 ) -> torch.Tensor:
@@ -1504,7 +1606,19 @@ def _decode_attention(
             .reshape(batch_size, expected_heads, token_count, head_dim)
             .contiguous()
         )
-    if optimization.ascendc_kv_scatter_query:
+    if optimization.packed_kv_scatter:
+        if packed_kv_cache is None:
+            raise ValueError("packed KV scatter requires its packed cache tensor")
+        batch_size = int(query_states.shape[0])
+        packed_kv_cache = update_decode_packed_kv_cache_(
+            packed_kv_cache,
+            cache_position,
+            key_states,
+            value_states,
+        )
+        key_cache = packed_kv_cache[:batch_size]
+        value_cache = packed_kv_cache[batch_size:]
+    elif optimization.ascendc_kv_scatter_query:
         query_states, attention_mask = decode_kv_scatter_query(
             query_states,
             key_cache,
@@ -1764,6 +1878,8 @@ def run_text_decode_transformer(
     rope_deltas: torch.Tensor,
     key_caches: tuple[torch.Tensor, ...],
     value_caches: tuple[torch.Tensor, ...],
+    packed_kv_caches: tuple[torch.Tensor, ...] | None = None,
+    zero_residual: torch.Tensor | None = None,
     cache_length: int,
     attention_mask: torch.Tensor | None = None,
     static_kv_positions: torch.Tensor | None = None,
@@ -1918,6 +2034,11 @@ def run_text_decode_transformer(
                 pse_shift,
                 actual_seq_lengths,
                 optimization,
+                packed_kv_cache=(
+                    packed_kv_caches[layer_idx]
+                    if packed_kv_caches is not None
+                    else None
+                ),
                 packed_factor_lut=packed_factor_lut,
                 packed_rope_delta=packed_rope_delta,
             )
@@ -1937,12 +2058,23 @@ def run_text_decode_transformer(
                         int(weight.numel() * weight.element_size()),
                     )
             if residual is None:
-                attention_input = _decode_rms_norm(
-                    layer.input_layernorm,
-                    hidden_states,
-                    optimization,
-                )
-                residual = hidden_states
+                if optimization.zero_residual_first_rms_norm:
+                    if zero_residual is None:
+                        raise ValueError(
+                            "zero-residual first RMSNorm requires static scratch"
+                        )
+                    attention_input, residual = _decode_add_rms_norm(
+                        hidden_states,
+                        zero_residual,
+                        layer.input_layernorm,
+                    )
+                else:
+                    attention_input = _decode_rms_norm(
+                        layer.input_layernorm,
+                        hidden_states,
+                        optimization,
+                    )
+                    residual = hidden_states
             else:
                 attention_input, residual = _decode_add_with_optional_rms_norm(
                     hidden_states,
@@ -1962,6 +2094,11 @@ def run_text_decode_transformer(
                 pse_shift,
                 actual_seq_lengths,
                 optimization,
+                packed_kv_cache=(
+                    packed_kv_caches[layer_idx]
+                    if packed_kv_caches is not None
+                    else None
+                ),
                 packed_factor_lut=packed_factor_lut,
                 packed_rope_delta=packed_rope_delta,
             )
@@ -2003,6 +2140,11 @@ def run_text_decode_transformer(
             pse_shift,
             actual_seq_lengths,
             optimization,
+            packed_kv_cache=(
+                packed_kv_caches[layer_idx]
+                if packed_kv_caches is not None
+                else None
+            ),
             packed_factor_lut=packed_factor_lut,
             packed_rope_delta=packed_rope_delta,
         )
@@ -2151,6 +2293,19 @@ class TextDecodeStage(torch.nn.Module):
         self.num_layers = int(model.config.text_config.num_hidden_layers)
         self.optimization = resolve_decode_optimization(optimization)
         self._super_kernel_scope = None
+        if self.optimization.zero_residual_first_rms_norm:
+            parameter = next(model.parameters())
+            self.register_buffer(
+                "_zero_residual",
+                torch.zeros(
+                    (1, 1, int(model.config.text_config.hidden_size)),
+                    device=parameter.device,
+                    dtype=parameter.dtype,
+                ),
+                persistent=False,
+            )
+        else:
+            self._zero_residual = None
         if self.optimization.super_kernel_scope:
             if cache_length is None:
                 raise ValueError(
@@ -2203,8 +2358,17 @@ class TextDecodeStage(torch.nn.Module):
         rope_deltas: torch.Tensor,
         *flat_cache_tensors: torch.Tensor,
     ) -> torch.Tensor:
-        key_caches = flat_cache_tensors[: self.num_layers]
-        value_caches = flat_cache_tensors[self.num_layers :]
+        if self.optimization.packed_kv_scatter:
+            if len(flat_cache_tensors) != self.num_layers:
+                raise ValueError("packed KV decode requires one cache per layer")
+            batch_size = int(input_ids.shape[0])
+            packed_kv_caches = flat_cache_tensors
+            key_caches = tuple(cache[:batch_size] for cache in packed_kv_caches)
+            value_caches = tuple(cache[batch_size:] for cache in packed_kv_caches)
+        else:
+            packed_kv_caches = None
+            key_caches = flat_cache_tensors[: self.num_layers]
+            value_caches = flat_cache_tensors[self.num_layers :]
         inputs_embeds = (
             decode_token_embedding(
                 self.model.model.embed_tokens.weight,
@@ -2220,6 +2384,12 @@ class TextDecodeStage(torch.nn.Module):
             rope_deltas=rope_deltas,
             key_caches=key_caches,
             value_caches=value_caches,
+            packed_kv_caches=packed_kv_caches,
+            zero_residual=(
+                self._zero_residual.expand(input_ids.shape[0], -1, -1)
+                if self._zero_residual is not None
+                else None
+            ),
             cache_length=int(key_caches[0].shape[2]),
             attention_mask=(
                 self._super_kernel_attention_mask_scratch
@@ -2467,6 +2637,10 @@ def compile_text_decode_stage(
             "complete_layer_prefetch_ahead": (
                 optimization.complete_layer_prefetch_ahead
             ),
+            "zero_residual_first_rms_norm": (
+                optimization.zero_residual_first_rms_norm
+            ),
+            "packed_kv_scatter": optimization.packed_kv_scatter,
             "vector_add_rms_norm": optimization.vector_add_rms_norm,
             "gqa_aiv_vector_core_count": (
                 optimization.gqa_aiv_vector_core_count
@@ -2668,6 +2842,7 @@ class TextDecodeRuntime:
             dtype=dtype,
             init_mode="zeros",
             num_key_value_heads=self.cache_num_key_value_heads,
+            packed_kv=self.optimization.packed_kv_scatter,
         )
         self.metadata["cache_num_key_value_heads"] = (
             self.cache_num_key_value_heads

@@ -419,10 +419,10 @@ class DecodeArena:
         if int(source_cache.cache_length) != int(self.cache.cache_length):
             raise ValueError("ready cache and decode arena have different cache lengths")
 
-        source_tensors = source_cache.flat_tensors()
+        source_tensors = source_cache.logical_tensors()
         destination_tensors = tuple(
             destination[slot_index : slot_index + 1]
-            for destination in self.cache.flat_tensors()
+            for destination in self.cache.logical_tensors()
         )
         source_heads = int(source_tensors[0].shape[1])
         destination_heads = int(destination_tensors[0].shape[1])

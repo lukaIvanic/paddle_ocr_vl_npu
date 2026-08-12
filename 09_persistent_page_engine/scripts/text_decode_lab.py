@@ -1036,6 +1036,7 @@ class TextDecodeLab:
             device=self.device,
             dtype=self.dtype,
             init_mode="zeros",
+            packed_kv=self.optimization.packed_kv_scatter,
         )
         first_tokens = torch.tensor(
             [int(item["first_token"]) for item in items],
@@ -1222,6 +1223,7 @@ class TextDecodeLab:
             dtype=self.dtype,
             init_mode="zeros",
             num_key_value_heads=self.runtime.cache_num_key_value_heads,
+            packed_kv=self.optimization.packed_kv_scatter,
         )
         positions = torch.tensor(
             [int(item["prompt_tokens"]) for item in selected],
@@ -1286,9 +1288,15 @@ class TextDecodeLab:
             step_kv_max = 0.0
             step_kv_sum = 0.0
             step_kv_count = 0
+            eager_tensors = (*eager_cache.key_caches, *eager_cache.value_caches)
+            compiled_tensors = (
+                *compiled_cache.key_caches,
+                *compiled_cache.value_caches,
+            )
             for eager_tensor, compiled_tensor in zip(
-                eager_cache.flat_tensors(),
-                compiled_cache.flat_tensors(),
+                eager_tensors,
+                compiled_tensors,
+                strict=True,
             ):
                 eager_written = eager_tensor[
                     batch_indices, :, written_positions, :
