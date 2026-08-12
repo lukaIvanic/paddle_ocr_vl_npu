@@ -16,6 +16,7 @@ from torch import nn
 VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES = (
     "native",
     "constant",
+    "constant_grouped",
     "group16",
     "aligned_spatial",
 )
@@ -51,6 +52,42 @@ def grouped_fz_storage_shape(
         16,
         16,
     )
+
+
+def pack_grouped_fz_host(weight: np.ndarray, *, groups: int) -> np.ndarray:
+    """Pack an NCHW grouped-convolution filter into CANN FRACTAL_Z:G."""
+    if weight.ndim != 4:
+        raise ValueError(f"grouped FZ requires a 4D filter, got {weight.shape}")
+    output_channels, input_channels_per_group, kernel_h, kernel_w = (
+        int(value) for value in weight.shape
+    )
+    groups = int(groups)
+    storage_shape = grouped_fz_storage_shape(weight.shape, groups=groups)
+    output_channels_per_group = output_channels // groups
+    packed = np.zeros(storage_shape, dtype=weight.dtype)
+    kernel_area = kernel_h * kernel_w
+    for output_channel in range(output_channels):
+        group = output_channel // output_channels_per_group
+        output_in_group = output_channel % output_channels_per_group
+        for input_channel in range(input_channels_per_group):
+            grouped_input = group * input_channels_per_group + input_channel
+            storage_row_base = (grouped_input // 16) * kernel_area
+            storage_c0 = grouped_input % 16
+            for kernel_h_index in range(kernel_h):
+                for kernel_w_index in range(kernel_w):
+                    kernel_index = kernel_h_index * kernel_w + kernel_w_index
+                    packed[
+                        storage_row_base + kernel_index,
+                        output_in_group // 16,
+                        output_in_group % 16,
+                        storage_c0,
+                    ] = weight[
+                        output_channel,
+                        input_channel,
+                        kernel_h_index,
+                        kernel_w_index,
+                    ]
+    return packed
 
 
 @torch.library.custom_op("unirec::focal_group_prepack_v1", mutates_args=())
@@ -130,6 +167,19 @@ def register_focal_depthwise_constant_converter() -> None:
         del meta_outputs
         row = _CONSTANT_WEIGHTS[int(weight_id)]
         weight = ge.Const(row["host_weight"])
+        if row["prepacked_grouped"]:
+            logical_shape = row["shape"]
+            storage_format = (int(row["groups"]) << 8) | 4
+            descriptors = [weight.desc, weight.node.attr["value"].t.desc]
+            for descriptor in descriptors:
+                descriptor.layout = "FRACTAL_Z"
+                descriptor.attr["format_for_int"].i = storage_format
+                descriptor.attr["origin_format_for_int"].i = 0
+                descriptor.attr["origin_shape"].list.val_type = 2
+                descriptor.attr["origin_shape"].list.i.extend(logical_shape)
+                descriptor.attr["origin_shape_initialized"].b = True
+                descriptor.attr["origin_format_is_set"].b = True
+            weight.node.attr["_enable_storage_format_spread"].b = False
         padding = int(row["padding"])
         output = ge.Conv2D(
             inputs,
@@ -202,7 +252,13 @@ def focal_group_prepack(
 class ConstantFocalDepthwiseConv(nn.Module):
     """Native depthwise Conv2d whose immutable weight is embedded in the OM."""
 
-    def __init__(self, source: nn.Conv2d, *, weight_id: int) -> None:
+    def __init__(
+        self,
+        source: nn.Conv2d,
+        *,
+        weight_id: int,
+        prepack_grouped: bool = False,
+    ) -> None:
         super().__init__()
         kernel = tuple(int(value) for value in source.kernel_size)
         channels = int(source.in_channels)
@@ -219,14 +275,19 @@ class ConstantFocalDepthwiseConv(nn.Module):
                 "depthwise convolution"
             )
         weight = source.weight.detach().contiguous()
+        host_weight = np.ascontiguousarray(
+            weight.to(device="cpu", dtype=torch.float16).numpy()
+        )
+        if prepack_grouped:
+            host_weight = pack_grouped_fz_host(host_weight, groups=channels)
         _CONSTANT_WEIGHTS[int(weight_id)] = {
             "device_weight": weight,
-            "host_weight": np.ascontiguousarray(
-                weight.to(device="cpu", dtype=torch.float16).numpy()
-            ),
+            "host_weight": host_weight,
             "groups": channels,
             "padding": kernel[0] // 2,
             "shape": tuple(int(value) for value in weight.shape),
+            "storage_shape": tuple(int(value) for value in host_weight.shape),
+            "prepacked_grouped": bool(prepack_grouped),
         }
         self.weight_id = int(weight_id)
         self.groups = channels
@@ -329,12 +390,13 @@ def rewrite_vision_focal_depthwise_convs(
                     "source_kernel": list(kernel),
                     "source_groups": int(convolution.groups),
                 }
-                if requested == "constant":
+                if requested in {"constant", "constant_grouped"}:
                     weight_id = _NEXT_CONSTANT_WEIGHT_ID
                     _NEXT_CONSTANT_WEIGHT_ID += 1
                     constant = ConstantFocalDepthwiseConv(
                         convolution,
                         weight_id=weight_id,
+                        prepack_grouped=requested == "constant_grouped",
                     )
                     focal_layer[0] = constant
                     row.update(
@@ -346,7 +408,14 @@ def rewrite_vision_focal_depthwise_convs(
                             "weight_shape": list(
                                 _CONSTANT_WEIGHTS[weight_id]["shape"]
                             ),
-                            "weight_binding": "ge_const_not_runtime_input",
+                            "weight_storage_shape": list(
+                                _CONSTANT_WEIGHTS[weight_id]["storage_shape"]
+                            ),
+                            "weight_binding": (
+                                "ge_const_prepacked_fractal_z_grouped"
+                                if requested == "constant_grouped"
+                                else "ge_const_not_runtime_input"
+                            ),
                         }
                     )
                 elif requested == "group16":

@@ -19,6 +19,7 @@ from vision_focal_depthwise import (  # noqa: E402
     AlignedSpatialDepthwiseConv,
     ConstantFocalDepthwiseConv,
     grouped_fz_storage_shape,
+    pack_grouped_fz_host,
     rewrite_vision_focal_depthwise_convs,
 )
 
@@ -66,6 +67,26 @@ class VisionFocalDepthwiseRewriteTest(unittest.TestCase):
             (300, 1, 16, 16),
         )
 
+    def test_native_depthwise_grouped_pack_places_each_filter_once(self) -> None:
+        weight = torch.arange(32 * 1 * 5 * 5, dtype=torch.float16).reshape(
+            32, 1, 5, 5
+        ).numpy()
+        packed = pack_grouped_fz_host(weight, groups=32)
+        self.assertEqual(packed.shape, (50, 1, 16, 16))
+        recovered = torch.zeros(32, 1, 5, 5, dtype=torch.float16).numpy()
+        for output_channel in range(32):
+            group_block = output_channel // 16
+            group_lane = output_channel % 16
+            for kernel_h in range(5):
+                for kernel_w in range(5):
+                    recovered[output_channel, 0, kernel_h, kernel_w] = packed[
+                        group_block * 25 + kernel_h * 5 + kernel_w,
+                        0,
+                        0,
+                        group_lane,
+                    ]
+        self.assertTrue((recovered == weight).all())
+        self.assertEqual(int((packed != 0).sum()), int((weight != 0).sum()))
     def test_constant_wrapper_matches_native_depthwise_convolution(self) -> None:
         torch.manual_seed(5)
         source = torch.nn.Conv2d(
