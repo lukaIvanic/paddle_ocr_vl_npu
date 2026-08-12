@@ -33,6 +33,8 @@ from ..model.text_decode import (
     DECODE_CACHE_UPDATE,
     LocalPaddleOCRVLStaticCache,
     cast_decode_linear_weights_to_nz,
+    load_decode_vocab_token_ids,
+    prepare_decode_compact_lm_head,
     prepare_decode_optimization_modules,
 )
 from ..model.token_selection import (
@@ -537,6 +539,7 @@ class ContinuousRecognizer:
         diagnostic_decode_request_id: str | None = None,
         diagnostic_prefill_kv_request_ids: Iterable[str] | None = None,
         decode_optimization: str = DEFAULT_DECODE_OPTIMIZATION,
+        decode_vocab_token_ids: Path | None = None,
         recognition_input_fingerprints: bool = False,
         token_selection: str = TOKEN_SELECTION_GREEDY,
     ):
@@ -579,6 +582,11 @@ class ContinuousRecognizer:
         torch.npu.set_compile_mode(jit_compile=False)
         self.decode_backend = decode_backend
         self.decode_optimization = str(decode_optimization)
+        self.decode_vocab_token_ids_path = (
+            None
+            if decode_vocab_token_ids is None
+            else Path(decode_vocab_token_ids).expanduser().resolve()
+        )
         self.token_selection = str(token_selection)
         if self.token_selection not in TOKEN_SELECTION_CHOICES:
             raise ValueError(
@@ -766,6 +774,20 @@ class ContinuousRecognizer:
         synchronize(self.device)
         model_load_s = time.perf_counter() - started
 
+        self.decode_vocab: dict[str, Any] = {"enabled": False}
+        if self.decode_vocab_token_ids_path is not None:
+            if self.token_selection != TOKEN_SELECTION_GREEDY:
+                raise ValueError(
+                    "--decode-vocab-token-ids currently requires "
+                    "--token-selection greedy"
+                )
+            token_ids, self.decode_vocab = load_decode_vocab_token_ids(
+                self.decode_vocab_token_ids_path,
+                full_vocab_size=int(self.model.lm_head.weight.shape[0]),
+            )
+            prepare_decode_compact_lm_head(self.model, token_ids)
+            synchronize(self.device)
+
         synchronize(self.device)
         started = time.perf_counter()
         self.vision_mlp = prepare_vision_mlp_intermediate(
@@ -828,7 +850,15 @@ class ContinuousRecognizer:
             text_padding=self.text_padding,
             decode_backend=self.decode_backend,
             decode_optimization=decode_optimization_config.name,
-            decode_cache_root=torchair_cache_dir,
+            decode_cache_root=(
+                torchair_cache_dir
+                if not self.decode_vocab["enabled"]
+                else torchair_cache_dir
+                / (
+                    f"selected_vocab_{self.decode_vocab['selected_vocab_size']}_"
+                    f"{self.decode_vocab['token_ids_sha256'][:12]}"
+                )
+            ),
             batch_size=self.batch_size,
             cache_length=self.cache_length,
             device=self.device,
@@ -952,6 +982,11 @@ class ContinuousRecognizer:
             alternate_preferred_token_id=self.math_slash_token_id,
             cell_start_token_ids=self.table_cell_token_ids,
             math_close_token_id=self.math_close_token_id,
+            decode_token_id_map=getattr(
+                self.model,
+                "decode_token_id_map",
+                None,
+            ),
             timeline=self.timeline,
         )
         self.decode_scheduler = ContinuousDecodeScheduler(
@@ -3175,6 +3210,7 @@ class ContinuousRecognizer:
             "dtype": str(self.dtype),
             "decode_backend": self.decode_backend,
             "decode_optimization": self.decode_optimization,
+            "decode_vocab": dict(self.decode_vocab),
             "token_selection": {
                 "mode": self.token_selection,
                 "scope": "table_prompt_only",

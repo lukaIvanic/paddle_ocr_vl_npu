@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import json
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -964,6 +965,95 @@ def prepare_decode_optimization_modules(
     return config
 
 
+def load_decode_vocab_token_ids(
+    path: Path,
+    *,
+    full_vocab_size: int,
+) -> tuple[tuple[int, ...], dict[str, Any]]:
+    """Load an explicit native-token decode vocabulary.
+
+    The file contains token IDs, not text.  This deliberately has no tokenizer
+    dependency: generated text must never be decoded and re-encoded to build a
+    compact output head.
+    """
+    resolved = path.expanduser().resolve()
+    payload = json.loads(resolved.read_text(encoding="utf-8"))
+    raw_ids = payload.get("token_ids") if isinstance(payload, dict) else payload
+    if not isinstance(raw_ids, list) or not raw_ids:
+        raise ValueError(f"decode vocabulary {resolved} has no token_ids list")
+    token_ids = tuple(int(value) for value in raw_ids)
+    if len(set(token_ids)) != len(token_ids):
+        raise ValueError(f"decode vocabulary {resolved} contains duplicate IDs")
+    invalid = [
+        token_id
+        for token_id in token_ids
+        if not 0 <= token_id < int(full_vocab_size)
+    ]
+    if invalid:
+        raise ValueError(
+            f"decode vocabulary {resolved} has IDs outside [0, "
+            f"{int(full_vocab_size)}): {invalid[:16]}"
+        )
+    digest_payload = json.dumps(token_ids, separators=(",", ":")).encode("utf-8")
+    digest = hashlib.sha256(digest_payload).hexdigest()
+    declared_digest = (
+        payload.get("token_ids_sha256")
+        if isinstance(payload, dict)
+        else None
+    )
+    if declared_digest is not None and str(declared_digest) != digest:
+        raise ValueError(
+            f"decode vocabulary {resolved} digest mismatch: "
+            f"declared={declared_digest} actual={digest}"
+        )
+    metadata = {
+        "enabled": True,
+        "path": str(resolved),
+        "full_vocab_size": int(full_vocab_size),
+        "selected_vocab_size": len(token_ids),
+        "token_ids_sha256": digest,
+        "source": payload.get("source") if isinstance(payload, dict) else None,
+        "selection": (
+            payload.get("selection")
+            if isinstance(payload, dict)
+            else None
+        ),
+    }
+    return token_ids, metadata
+
+
+def prepare_decode_compact_lm_head(
+    model: "LocalPaddleOCRVLForConditionalGeneration",
+    token_ids: tuple[int, ...],
+) -> nn.Linear:
+    """Gather selected full-head rows into a decode-only LM head."""
+    if hasattr(model, "decode_lm_head"):
+        raise ValueError("model already has a decode-only LM head")
+    full_head = model.lm_head
+    index = torch.tensor(
+        token_ids,
+        device=full_head.weight.device,
+        dtype=torch.int64,
+    )
+    compact = nn.Linear(
+        int(full_head.in_features),
+        len(token_ids),
+        bias=False,
+        device=full_head.weight.device,
+        dtype=full_head.weight.dtype,
+    )
+    with torch.no_grad():
+        compact.weight.copy_(full_head.weight.index_select(0, index))
+    compact.weight.requires_grad_(False)
+    model.decode_lm_head = compact
+    model.register_buffer(
+        "decode_token_id_map",
+        index,
+        persistent=False,
+    )
+    return compact
+
+
 def prepare_decode_weight_prefetch(
     model: "LocalPaddleOCRVLForConditionalGeneration",
     optimization: str | DecodeOptimizationConfig,
@@ -973,6 +1063,7 @@ def prepare_decode_weight_prefetch(
     if not config.stage_aware_weight_prefetch:
         return
     layers = model.model.layers
+    decode_lm_head = getattr(model, "decode_lm_head", model.lm_head)
     def complete_layer_weights(layer: nn.Module) -> tuple[torch.Tensor, ...]:
         return (
             layer.self_attn.decode_qkv_proj.weight,
@@ -994,7 +1085,7 @@ def prepare_decode_weight_prefetch(
                 layers[index + 1].self_attn.o_proj.weight,
             )
             if index + 1 < len(layers)
-            else (model.lm_head.weight,)
+            else (decode_lm_head.weight,)
         )
         future_weights: list[torch.Tensor] = []
         for offset in range(1, config.complete_layer_prefetch_ahead + 1):
@@ -1002,7 +1093,7 @@ def prepare_decode_weight_prefetch(
             if future_index < len(layers):
                 future_weights.extend(complete_layer_weights(layers[future_index]))
         if index + 1 >= len(layers):
-            future_weights.append(model.lm_head.weight)
+            future_weights.append(decode_lm_head.weight)
         layer._decode_prefetch_future_layers = tuple(future_weights)
 
 
@@ -2175,6 +2266,8 @@ def cast_decode_linear_weights_to_nz(
         if isinstance(module, nn.Linear)
     ]
     modules.append(("lm_head", model.lm_head))
+    if hasattr(model, "decode_lm_head"):
+        modules.append(("decode_lm_head", model.decode_lm_head))
     non_npu_modules = [
         (name, str(module.weight.device))
         for name, module in modules
@@ -2385,7 +2478,8 @@ class TextDecodeStage(torch.nn.Module):
             ),
             optimization=self.optimization,
         )
-        return _linear_tokenwise(self.model.lm_head, hidden_states[:, -1:, :])
+        output_head = getattr(self.model, "decode_lm_head", self.model.lm_head)
+        return _linear_tokenwise(output_head, hidden_states[:, -1:, :])
 
     def forward(
         self,

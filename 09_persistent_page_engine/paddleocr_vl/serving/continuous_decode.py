@@ -193,6 +193,7 @@ class DecodeArena:
         alternate_preferred_token_id: int | None = None,
         cell_start_token_ids: Iterable[int] = (),
         math_close_token_id: int | None = None,
+        decode_token_id_map: torch.Tensor | None = None,
         timeline: TimelineRecorder | None = None,
     ) -> None:
         self.cache = cache
@@ -212,6 +213,15 @@ class DecodeArena:
         self.math_close_token_id = (
             None if math_close_token_id is None else int(math_close_token_id)
         )
+        if (
+            decode_token_id_map is not None
+            and self.token_selection != TOKEN_SELECTION_GREEDY
+        ):
+            raise ValueError(
+                "a compact decode vocabulary currently supports ordinary greedy "
+                "token selection only"
+            )
+        self.decode_token_id_map = decode_token_id_map
         self.timeline = timeline
         self.next_token = torch.full(
             (self.batch_size, 1),
@@ -631,6 +641,11 @@ class DecodeArena:
                 policy_mask=policy_mask,
                 legacy_policy_mask=self.token_selection_policy_mask,
             )
+            if self.decode_token_id_map is not None:
+                selected = self.decode_token_id_map.index_select(
+                    0,
+                    selected.reshape(-1),
+                ).reshape(selected.shape)
             greedy = torch.argmax(logits[:, -1, :].float(), dim=-1)
             if self.preferred_token_id is None:
                 override = torch.zeros_like(policy_mask)

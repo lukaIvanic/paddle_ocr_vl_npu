@@ -13,6 +13,8 @@ EVALUATOR_ROOT="${EVALUATOR_ROOT:-/workspace/repos/OmniDocBench_eval}"
 TEDS_WORKERS="${TEDS_WORKERS:-12}"
 TEDS_TIMEOUT_S="${TEDS_TIMEOUT_S:-120}"
 TOKEN_SELECTION="${TOKEN_SELECTION:-greedy}"
+DECODE_OPTIMIZATION="${DECODE_OPTIMIZATION:-combined_apply_pse_sentinel}"
+DECODE_VOCAB_TOKEN_IDS="${DECODE_VOCAB_TOKEN_IDS:-}"
 OFFSET="${OFFSET:-0}"
 LIMIT_PAGES="${LIMIT_PAGES:-}"
 
@@ -22,17 +24,24 @@ CLIENT_LOG="$OUTPUT_DIR/client.log"
 
 cd "$REPO_ROOT"
 
-"$SERVER_PYTHON" 09_persistent_page_engine/scripts/serve_crop_ocr_api.py \
-  --host 127.0.0.1 \
-  --port "$PORT" \
-  --decode-batch-size 1 \
-  --cache-length 4096 \
-  --max-new-tokens 4096 \
-  --decode-backend torchair \
-  --decode-optimization combined_apply_pse_sentinel \
-  --token-selection "$TOKEN_SELECTION" \
-  --min-pixels 28224 \
-  --max-pixels 802816 \
+SERVER_ARGS=(
+  09_persistent_page_engine/scripts/serve_crop_ocr_api.py
+  --host 127.0.0.1
+  --port "$PORT"
+  --decode-batch-size 1
+  --cache-length 4096
+  --max-new-tokens 4096
+  --decode-backend torchair
+  --decode-optimization "$DECODE_OPTIMIZATION"
+  --token-selection "$TOKEN_SELECTION"
+  --min-pixels 28224
+  --max-pixels 802816
+)
+if [[ -n "$DECODE_VOCAB_TOKEN_IDS" ]]; then
+  SERVER_ARGS+=(--decode-vocab-token-ids "$DECODE_VOCAB_TOKEN_IDS")
+fi
+
+"$SERVER_PYTHON" "${SERVER_ARGS[@]}" \
   >"$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 

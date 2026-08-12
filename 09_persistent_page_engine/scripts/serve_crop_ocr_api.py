@@ -58,6 +58,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--decode-backend", default="torchair")
     parser.add_argument("--decode-optimization", default="combined_apply_pse_sentinel")
     parser.add_argument(
+        "--decode-vocab-token-ids",
+        type=Path,
+        help=(
+            "Optional JSON file of native token IDs for a decode-only compact "
+            "LM head. Prefill keeps the full checkpoint head."
+        ),
+    )
+    parser.add_argument(
         "--token-selection",
         default="greedy",
         help="Direct-logit token selection policy; validated in the NPU worker.",
@@ -96,6 +104,11 @@ def _worker_main(
             dtype=config["dtype"],
             decode_backend=config["decode_backend"],
             decode_optimization=config["decode_optimization"],
+            decode_vocab_token_ids=(
+                None
+                if config["decode_vocab_token_ids"] is None
+                else Path(config["decode_vocab_token_ids"])
+            ),
             token_selection=config["token_selection"],
             batch_size=config["decode_batch_size"],
             cache_length=config["cache_length"],
@@ -405,6 +418,11 @@ def main() -> None:
         "dtype": args.dtype,
         "decode_backend": args.decode_backend,
         "decode_optimization": args.decode_optimization,
+        "decode_vocab_token_ids": (
+            None
+            if args.decode_vocab_token_ids is None
+            else str(args.decode_vocab_token_ids.expanduser().resolve())
+        ),
         "token_selection": args.token_selection,
         "decode_batch_size": args.decode_batch_size,
         "cache_length": args.cache_length,
