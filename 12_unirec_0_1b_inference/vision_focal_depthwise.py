@@ -71,7 +71,7 @@ def register_focal_depthwise_constant_converter() -> None:
     converter_utils = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.ge_converter.converter_utils"
     )
-    ge = importlib.import_module(f"{torchair.__name__}.ge")
+    ge = converter_utils.ge
     register_converter = converter_module.register_fx_node_ge_converter
     specific_input_layout = converter_utils.specific_op_input_layout
     specific_output_layout = converter_utils.specific_op_output_layout
