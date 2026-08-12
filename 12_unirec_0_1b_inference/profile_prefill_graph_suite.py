@@ -91,6 +91,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--layout-precompute-frozen-bn-affine", action="store_true"
     )
     parser.add_argument(
+        "--layout-preformat-frozen-bn-buffers", action="store_true"
+    )
+    parser.add_argument(
         "--profile-metric",
         choices=("pipe", "memory", "l2", "memory_access"),
         default="pipe",
@@ -314,6 +317,9 @@ def _layout_lane(
         precompute_frozen_bn_affine=(
             args.layout_precompute_frozen_bn_affine
         ),
+        preformat_frozen_bn_buffers=(
+            args.layout_preformat_frozen_bn_buffers
+        ),
     )
     if detector.compiled_runtime is None:
         raise RuntimeError("layout profiler requires the compiled runtime")
@@ -329,7 +335,8 @@ def _layout_lane(
         f"layout_b1_800x800_{args.layout_dtype}_{args.layout_depthwise_rewrite}_"
         f"{args.layout_weight_format}_frozenbn{int(args.layout_fuse_frozen_bn)}_"
         f"evalbn{int(args.layout_fuse_eval_bn)}_"
-        f"precomputedfrozenbn{int(args.layout_precompute_frozen_bn_affine)}",
+        f"precomputedfrozenbn{int(args.layout_precompute_frozen_bn_affine)}_"
+        f"formattedfrozenbnbuffers{int(args.layout_preformat_frozen_bn_buffers)}",
         run,
         output_root=output_root,
         device=args.device,
@@ -348,6 +355,9 @@ def _layout_lane(
             "fuse_eval_bn": args.layout_fuse_eval_bn,
             "precompute_frozen_bn_affine": (
                 args.layout_precompute_frozen_bn_affine
+            ),
+            "preformat_frozen_bn_buffers": (
+                args.layout_preformat_frozen_bn_buffers
             ),
             "execution": "compiled_fullgraph",
         },
@@ -532,6 +542,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             "layout_fuse_eval_bn": args.layout_fuse_eval_bn,
             "layout_precompute_frozen_bn_affine": (
                 args.layout_precompute_frozen_bn_affine
+            ),
+            "layout_preformat_frozen_bn_buffers": (
+                args.layout_preformat_frozen_bn_buffers
             ),
         },
         "first128_workload": {

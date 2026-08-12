@@ -194,6 +194,34 @@ def _precompute_layout_frozen_bn_affines(
     return {"replaced_count": len(replaced), "modules": replaced}
 
 
+def _preformat_layout_frozen_bn_buffers(
+    model: torch.nn.Module,
+) -> dict[str, Any]:
+    """Store original FrozenBN buffers as NC1HWC0 without changing its math."""
+    import torch_npu
+
+    converted: list[dict[str, Any]] = []
+    with torch.no_grad():
+        for name, normalization in list(model.named_modules()):
+            if type(normalization).__name__ != "PPDocLayoutV2FrozenBatchNorm2d":
+                continue
+            formats: dict[str, int] = {}
+            for field in ("weight", "bias", "running_var", "running_mean"):
+                source = getattr(normalization, field)
+                shaped = source.reshape(1, -1, 1, 1)
+                formatted = torch_npu.npu_format_cast(shaped, 3)
+                setattr(normalization, field, formatted)
+                formats[field] = int(torch_npu.get_npu_format(formatted))
+            converted.append(
+                {
+                    "module": name,
+                    "channels": int(normalization.weight.shape[1]),
+                    "formats": formats,
+                }
+            )
+    return {"converted_count": len(converted), "modules": converted}
+
+
 def _fuse_layout_eval_batch_norms(model: torch.nn.Module) -> dict[str, Any]:
     """Fold evaluation BatchNorm2d modules in ConvNormLayer into Conv2d."""
     fused: list[dict[str, Any]] = []
@@ -433,6 +461,7 @@ class PPDocLayoutV2NpuAdapter:
         fuse_frozen_bn: bool = False,
         fuse_eval_bn: bool = False,
         precompute_frozen_bn_affine: bool = False,
+        preformat_frozen_bn_buffers: bool = False,
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
@@ -467,9 +496,17 @@ class PPDocLayoutV2NpuAdapter:
         self.fuse_frozen_bn = bool(fuse_frozen_bn)
         self.fuse_eval_bn = bool(fuse_eval_bn)
         self.precompute_frozen_bn_affine = bool(precompute_frozen_bn_affine)
-        if self.fuse_frozen_bn and self.precompute_frozen_bn_affine:
+        self.preformat_frozen_bn_buffers = bool(preformat_frozen_bn_buffers)
+        frozen_bn_rewrite_count = sum(
+            (
+                self.fuse_frozen_bn,
+                self.precompute_frozen_bn_affine,
+                self.preformat_frozen_bn_buffers,
+            )
+        )
+        if frozen_bn_rewrite_count > 1:
             raise ValueError(
-                "fuse_frozen_bn and precompute_frozen_bn_affine are exclusive"
+                "FrozenBN fusion, affine precompute, and buffer preformat are exclusive"
             )
         self._filter_overlap_boxes = filter_overlap_boxes_vectorized
 
@@ -499,7 +536,11 @@ class PPDocLayoutV2NpuAdapter:
             self.model,
             requested=self.depthwise_rewrite,
         )
-        if self.weight_format != "native" or self.precompute_frozen_bn_affine:
+        if (
+            self.weight_format != "native"
+            or self.precompute_frozen_bn_affine
+            or self.preformat_frozen_bn_buffers
+        ):
             # This gate must precede the process's first NPU allocation.
             torch.npu.config.allow_internal_format = True
         self.model.eval().to(device=self.device, dtype=self.dtype)
@@ -510,6 +551,11 @@ class PPDocLayoutV2NpuAdapter:
             )
             if self.precompute_frozen_bn_affine
             else {"replaced_count": 0, "modules": []}
+        )
+        self.frozen_bn_buffer_format_summary = (
+            _preformat_layout_frozen_bn_buffers(self.model)
+            if self.preformat_frozen_bn_buffers
+            else {"converted_count": 0, "modules": []}
         )
         self.weight_format_summary = _prepare_layout_weight_formats(
             self.model,
@@ -527,7 +573,8 @@ class PPDocLayoutV2NpuAdapter:
                     f"depthwise_{self.depthwise_rewrite}_"
                     f"frozenbn{int(self.fuse_frozen_bn)}_"
                     f"evalbn{int(self.fuse_eval_bn)}_"
-                    f"precomputedfrozenbn{int(self.precompute_frozen_bn_affine)}"
+                    f"precomputedfrozenbn{int(self.precompute_frozen_bn_affine)}_"
+                    f"formattedfrozenbnbuffers{int(self.preformat_frozen_bn_buffers)}"
                 ),
                 dtype=self.dtype,
                 device=self.device,

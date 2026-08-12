@@ -92,6 +92,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Precompute exact FrozenBN scale/bias on NPU and store NC1HWC0",
     )
+    parser.add_argument(
+        "--preformat-frozen-bn-buffers",
+        action="store_true",
+        help="Keep FrozenBN math but store its four buffers as NC1HWC0",
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument(
@@ -227,6 +232,7 @@ def main() -> None:
         fuse_frozen_bn=args.fuse_frozen_bn,
         fuse_eval_bn=args.fuse_eval_bn,
         precompute_frozen_bn_affine=args.precompute_frozen_bn_affine,
+        preformat_frozen_bn_buffers=args.preformat_frozen_bn_buffers,
     )
     print(
         f"LAYOUT_LAB phase=model_setup_end setup_s={detector.setup_s:.3f}",
@@ -304,6 +310,10 @@ def main() -> None:
             "eval_bn_fusion_summary": detector.eval_bn_fusion_summary,
             "precompute_frozen_bn_affine": args.precompute_frozen_bn_affine,
             "frozen_bn_affine_summary": detector.frozen_bn_affine_summary,
+            "preformat_frozen_bn_buffers": args.preformat_frozen_bn_buffers,
+            "frozen_bn_buffer_format_summary": (
+                detector.frozen_bn_buffer_format_summary
+            ),
             "scheduling": "sequential_b1_same_process",
         },
         "summary": summarize(records, detector.setup_s),
