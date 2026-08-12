@@ -13,6 +13,12 @@ resolve_inputs() {
   : "${CROP_MANIFEST:?export CROP_MANIFEST for the matching crops.jsonl}"
   : "${VISION_CACHE:?export VISION_CACHE for the passed warm five-graph cache}"
   : "${ASCEND_RT_VISIBLE_DEVICES:?source npu-setup before launching}"
+  PAGE_LIMIT="${PAGE_LIMIT:-32}"
+
+  if ! [[ "$PAGE_LIMIT" =~ ^[1-9][0-9]*$ ]]; then
+    printf 'INVALID_PAGE_LIMIT=%s\n' "$PAGE_LIMIT" >&2
+    exit 2
+  fi
 
   case ",${ASCEND_RT_VISIBLE_DEVICES}," in
     *,5,*) printf 'REJECTED_PHYSICAL_DEVICE_5\n' >&2; exit 1 ;;
@@ -55,6 +61,7 @@ worker_main() {
     printf 'page_manifest=%s\n' "$PAGE_MANIFEST"
     printf 'crop_manifest=%s\n' "$CROP_MANIFEST"
     printf 'vision_cache=%s\n' "$VISION_CACHE"
+    printf 'page_limit=%s\n' "$PAGE_LIMIT"
     npu-smi info
   } >"$RUN_ROOT/preflight.log" 2>&1
 
@@ -72,7 +79,7 @@ worker_main() {
     --cache-dir "$VISION_CACHE"
     --output-dir "$OUTPUT_DIR"
     --page-offset 0
-    --page-limit 32
+    --page-limit "$PAGE_LIMIT"
     --page-lookahead 4
     --warmup-replays 1
     --repeats 2
@@ -108,7 +115,7 @@ launch_main() {
   resolve_inputs
   commit_short="$(git -C "$REPO" rev-parse --short HEAD)"
   timestamp="$(date +%Y%m%dT%H%M%S)"
-  RUN_ROOT="${RUN_ROOT:-$REPO/tmp/12_unirec_0_1b_inference/310p_vision_production_first32_${commit_short}_${timestamp}}"
+  RUN_ROOT="${RUN_ROOT:-$REPO/tmp/12_unirec_0_1b_inference/310p_vision_production_first${PAGE_LIMIT}_${commit_short}_${timestamp}}"
   RUN_ROOT="$(realpath -m "$RUN_ROOT")"
   RUN_LOG="$RUN_ROOT/run.log"
   test ! -e "$RUN_ROOT"
@@ -122,6 +129,7 @@ launch_main() {
     PAGE_MANIFEST="$PAGE_MANIFEST" \
     CROP_MANIFEST="$CROP_MANIFEST" \
     VISION_CACHE="$VISION_CACHE" \
+    PAGE_LIMIT="$PAGE_LIMIT" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     bash "$0" --worker "$RUN_ROOT" \
     >"$RUN_LOG" 2>&1 < /dev/null &
