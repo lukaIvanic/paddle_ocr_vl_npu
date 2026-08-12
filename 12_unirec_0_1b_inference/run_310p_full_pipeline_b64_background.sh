@@ -210,7 +210,22 @@ worker_entry() {
 
 launch_main() {
   resolve_inputs
-  local commit_short timestamp
+  local commit_short timestamp minimum_bytes shm_available
+  minimum_bytes=$((40 * 1024 * 1024 * 1024))
+  shm_available="$(df --output=avail -B1 /dev/shm | tail -n 1 | tr -d ' ')"
+  if (( shm_available < minimum_bytes )); then
+    cat >&2 <<EOF
+UNIREC_310P_SHM_PREFLIGHT_FAILED available=$shm_available required=$minimum_bytes
+The full retained cross-KV bank requires at least 40 GiB available in /dev/shm.
+Ask Luka to run this temporary repair on the Docker host (not in the container):
+  CONTAINER=<container-name>
+  PID=\$(docker inspect -f '{{.State.Pid}}' "\$CONTAINER")
+  sudo nsenter -t "\$PID" -m -- mount -o remount,size=64G /dev/shm
+  docker exec "\$CONTAINER" df -h /dev/shm
+Then rerun this launcher. See WORK_SERVER_310P_UNIREC_FULL_PIPELINE_B64.md.
+EOF
+    return 1
+  fi
   commit_short="$(git -C "$REPO" rev-parse --short HEAD)"
   timestamp="$(date +%Y%m%dT%H%M%S)"
   RUN_ROOT="${RUN_ROOT:-$REPO/tmp/12_unirec_0_1b_inference/310p_full_pipeline_b64_${commit_short}_${timestamp}}"

@@ -51,6 +51,52 @@ launcher checks CPU shared memory separately.
 The custom two-phase path uses OpenOCR's Python postprocessing and output writer,
 but it does not load or require stock ONNX exports.
 
+### Docker `/dev/shm` preflight
+
+Check shared memory before selecting an NPU or launching the gate:
+
+```bash
+df -h /dev/shm
+```
+
+The full retained cross-KV bank needs at least 40 GiB available. If `/dev/shm`
+is the Docker default (often 64 MiB or 1 GiB), **stop before running**. Do not
+change the inference code and do not substitute an ONNX model. Explain the
+following repair to Luka, including that the first command runs on the Docker
+host, not inside the container.
+
+Temporary repair without recreating the running container:
+
+```bash
+# Run on the Docker host. Replace <container-name>.
+CONTAINER=<container-name>
+PID="$(docker inspect -f '{{.State.Pid}}' "$CONTAINER")"
+sudo nsenter -t "$PID" -m -- mount -o remount,size=64G /dev/shm
+docker exec "$CONTAINER" df -h /dev/shm
+```
+
+This remount lasts until the container restarts. A 64 GiB tmpfs limit does not
+reserve 64 GiB immediately; memory is charged as files are written.
+
+Permanent repair requires recreating the container with one of:
+
+```bash
+docker run --shm-size=64g ...
+```
+
+or Docker Compose:
+
+```yaml
+services:
+  work_server:
+    shm_size: 64gb
+```
+
+After Luka confirms that `df -h /dev/shm` inside the container shows at least
+40 GiB available, continue with the launch below. If `nsenter` fails because
+the Docker host is unavailable or lacks permission, report that exact error and
+wait; do not attempt a destructive container recreation.
+
 ```bash
 set -euo pipefail
 REPO="$(git rev-parse --show-toplevel)"
