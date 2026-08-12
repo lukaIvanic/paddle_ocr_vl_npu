@@ -189,12 +189,6 @@ def register_focal_group_prepack_converter() -> None:
         specific_input_layout(packed, indices=0, layout="NCHW")
         specific_output_layout(packed, indices=0, layout="FRACTAL_Z")
         packed.desc.shape.dim[:] = storage_shape
-        packed.desc.attr["format_for_int"].i = (int(groups) << 8) | 4
-        packed.desc.attr["origin_format_for_int"].i = 0
-        packed.desc.attr["origin_shape"].list.val_type = 2
-        packed.desc.attr["origin_shape"].list.i.extend(logical_shape)
-        packed.desc.attr["origin_shape_initialized"].b = True
-        packed.desc.attr["origin_format_is_set"].b = True
         return packed
 
     _PREPACK_CONVERTER_REGISTERED = True
