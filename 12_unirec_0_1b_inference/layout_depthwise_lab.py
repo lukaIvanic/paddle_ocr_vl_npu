@@ -87,11 +87,25 @@ class ExactGrouped(torch.nn.Module):
             import torch_npu
 
             grouped = torch_npu.npu_format_cast(grouped, 4)
-        self.weight = torch.nn.Parameter(grouped, requires_grad=False)
-        self.groups = weight.shape[0] // group_width
+        channels = weight.shape[0]
+        self.conv = torch.nn.Conv2d(
+            channels,
+            channels,
+            kernel_size=5,
+            padding=2,
+            groups=channels // group_width,
+            bias=False,
+            device=weight.device,
+            dtype=weight.dtype,
+        )
+        self.conv.weight = torch.nn.Parameter(grouped, requires_grad=False)
+
+    @property
+    def weight(self) -> torch.nn.Parameter:
+        return self.conv.weight
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        return F.conv2d(inputs, self.weight, padding=2, groups=self.groups)
+        return self.conv(inputs)
 
 
 class ShiftSum(torch.nn.Module):
