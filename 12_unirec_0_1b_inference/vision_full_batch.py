@@ -423,7 +423,7 @@ class BucketedFullVisionRuntime:
     @staticmethod
     def _cache_snapshot(cache_dir: Path) -> dict[str, Any]:
         try:
-            om_files = list(cache_dir.rglob("*.om"))
+            om_files = sorted(cache_dir.rglob("*.om"))
             return {
                 "directory": str(cache_dir),
                 "om_count": len(om_files),
@@ -434,6 +434,31 @@ class BucketedFullVisionRuntime:
                 "directory": str(cache_dir),
                 "error": repr(exception),
             }
+
+    @staticmethod
+    def _cache_inventory_snapshot(cache_dir: Path) -> dict[str, Any]:
+        snapshot = BucketedFullVisionRuntime._cache_snapshot(cache_dir)
+        if "error" in snapshot:
+            return snapshot
+        try:
+            snapshot["om_files"] = [
+                {
+                    "path": str(path.relative_to(cache_dir)),
+                    "size_bytes": path.stat().st_size,
+                    "mtime_ns": path.stat().st_mtime_ns,
+                }
+                for path in sorted(cache_dir.rglob("*.om"))
+            ]
+        except OSError as exception:
+            snapshot["inventory_error"] = repr(exception)
+        return snapshot
+
+    def cache_inventory(self) -> dict[str, dict[str, Any]]:
+        """Return exact per-bucket OM identities for compile diagnostics."""
+        return {
+            spec.key: self._cache_inventory_snapshot(self.cache_dirs[spec.key])
+            for spec in self.specs
+        }
 
     def _memory_snapshot(self) -> dict[str, Any]:
         snapshot: dict[str, Any] = {}

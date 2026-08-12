@@ -10,11 +10,13 @@ happen before the measured window, as they do in the production stage split.
 from __future__ import annotations
 
 import argparse
+import atexit
 import copy
 import json
 import os
 import statistics
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any, Callable, Sequence
@@ -69,6 +71,91 @@ PRODUCTION_REFERENCE = {
 }
 
 
+def _emit_progress(event: str, **fields: Any) -> None:
+    print(
+        "UNIREC_PRODUCTION_VISION_PROGRESS "
+        + json.dumps(
+            {
+                "event": event,
+                "monotonic_s": time.monotonic(),
+                "pid": os.getpid(),
+                **fields,
+            },
+            sort_keys=True,
+        ),
+        flush=True,
+    )
+
+
+class _ProgressHeartbeat:
+    """Emit phase state while a synchronous compile or graph load is quiet."""
+
+    def __init__(self, interval_s: float) -> None:
+        self.interval_s = float(interval_s)
+        self._lock = threading.Lock()
+        self._stop_event = threading.Event()
+        self._phase = "startup"
+        self._phase_started = time.monotonic()
+        self._fields: dict[str, Any] = {}
+        self._thread: threading.Thread | None = None
+
+    def start(self) -> None:
+        if self.interval_s <= 0 or self._thread is not None:
+            return
+        self._thread = threading.Thread(
+            target=self._run,
+            name="unirec-vision-progress-heartbeat",
+            daemon=True,
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop_event.set()
+        if self._thread is not None and self._thread is not threading.current_thread():
+            self._thread.join(timeout=max(1.0, self.interval_s + 1.0))
+
+    def set_phase(self, phase: str, **fields: Any) -> None:
+        with self._lock:
+            self._phase = phase
+            self._phase_started = time.monotonic()
+            self._fields = dict(fields)
+        _emit_progress("phase_begin", phase=phase, **fields)
+
+    def finish_phase(self, phase: str, **fields: Any) -> None:
+        with self._lock:
+            elapsed_s = time.monotonic() - self._phase_started
+        _emit_progress(
+            "phase_end",
+            phase=phase,
+            phase_elapsed_s=elapsed_s,
+            **fields,
+        )
+
+    def _run(self) -> None:
+        while not self._stop_event.wait(self.interval_s):
+            with self._lock:
+                phase = self._phase
+                elapsed_s = time.monotonic() - self._phase_started
+                fields = dict(self._fields)
+            _emit_progress(
+                "heartbeat",
+                phase=phase,
+                phase_elapsed_s=elapsed_s,
+                **fields,
+            )
+
+
+def _cache_inventory_diff(
+    before: dict[str, dict[str, Any]],
+    after: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    return {
+        key: {"before": before.get(key), "after": after.get(key)}
+        for key in sorted(set(before) | set(after))
+        if before.get(key) != after.get(key)
+    }
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--openocr-root", type=Path, required=True)
@@ -113,6 +200,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "warmup, bucket call, and first-call synchronization."
         ),
     )
+    parser.add_argument(
+        "--diagnostic-heartbeat-s",
+        type=float,
+        default=0.0,
+        help=(
+            "Emit a flush-safe current-phase heartbeat at this interval. "
+            "Use 10-30 seconds when diagnosing a quiet compile or load."
+        ),
+    )
     args = parser.parse_args(argv)
     if args.page_offset < 0 or args.page_limit < 1:
         parser.error("page offset must be non-negative and page limit positive")
@@ -126,6 +222,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("profile group index cannot be negative")
     if args.parser_topn < 1:
         parser.error("parser topn must be positive")
+    if args.diagnostic_heartbeat_s < 0:
+        parser.error("diagnostic heartbeat interval cannot be negative")
     return args
 
 
@@ -285,13 +383,58 @@ def _runtime_stats_delta(
 def _run_groups(
     runtime: BucketedFullVisionRuntime,
     groups: Sequence[Sequence[PreprocessedVisionInput]],
+    *,
+    replay_kind: str,
+    replay_index: int,
 ) -> int:
     output_count = 0
-    for group in groups:
+    for group_index, group in enumerate(groups):
+        _emit_progress(
+            "page_group_begin",
+            replay_kind=replay_kind,
+            replay_index=replay_index,
+            group_index=group_index,
+            group_number=group_index + 1,
+            group_count=len(groups),
+            crop_count=len(group),
+            completed_crops=output_count,
+        )
         outputs = runtime.encode(group)
         output_count += len(outputs)
         del outputs
+        _emit_progress(
+            "page_group_submitted",
+            replay_kind=replay_kind,
+            replay_index=replay_index,
+            group_index=group_index,
+            group_number=group_index + 1,
+            group_count=len(groups),
+            crop_count=len(group),
+            completed_crops=output_count,
+        )
     return output_count
+
+
+def _record_cache_checkpoint(
+    runtime: BucketedFullVisionRuntime,
+    *,
+    checkpoint: str,
+    post_graph_warmup: dict[str, dict[str, Any]] | None,
+) -> dict[str, Any]:
+    inventory = runtime.cache_inventory()
+    changed = (
+        _cache_inventory_diff(post_graph_warmup, inventory)
+        if post_graph_warmup is not None
+        else {}
+    )
+    row = {
+        "checkpoint": checkpoint,
+        "inventory": inventory,
+        "changed_since_post_graph_warmup": changed,
+        "unexpected_cache_mutation": bool(changed),
+    }
+    _emit_progress("cache_inventory_checkpoint", **row)
+    return row
 
 
 def _measure_replay(
@@ -414,6 +557,10 @@ def _profile(
 
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
+    heartbeat = _ProgressHeartbeat(args.diagnostic_heartbeat_s)
+    heartbeat.start()
+    atexit.register(heartbeat.stop)
+    heartbeat.set_phase("npu_setup")
     physical_devices = _physical_devices()
     import torch_npu
 
@@ -423,13 +570,25 @@ def main(argv: Sequence[str] | None = None) -> None:
     torch_npu.npu.set_compile_mode(jit_compile=False)
     output_dir = args.output_dir.expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=False)
+    heartbeat.finish_phase("npu_setup", physical_devices=physical_devices)
+    heartbeat.set_phase(
+        "manifest_selection",
+        page_offset=args.page_offset,
+        page_limit=args.page_limit,
+    )
     pages, crop_rows = _select_manifest_rows(
         args.page_manifest.expanduser().resolve(),
         args.crop_manifest.expanduser().resolve(),
         page_offset=args.page_offset,
         page_limit=args.page_limit,
     )
+    heartbeat.finish_phase(
+        "manifest_selection",
+        page_count=len(pages),
+        crop_count=len(crop_rows),
+    )
 
+    heartbeat.set_phase("crop_reconstruction", crop_count=len(crop_rows))
     sys.path.insert(0, str(args.openocr_root.expanduser().resolve()))
     from tools.utils.opendoc_onnx_utils.utils import (  # noqa: PLC0415
         crop_margin,
@@ -446,6 +605,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         crop_margin=crop_margin,
         tokenize_figure_of_table=tokenize_figure_of_table,
     )
+    heartbeat.finish_phase("crop_reconstruction", image_count=len(images))
+    heartbeat.set_phase("crop_preparation", crop_count=len(crop_rows))
     processor = UniRecImageProcessor()
     inputs_by_page, crop_prepare_s = _prepare_production_inputs(
         crop_rows,
@@ -459,13 +620,21 @@ def main(argv: Sequence[str] | None = None) -> None:
         inputs_by_page,
         page_lookahead=args.page_lookahead,
     )
+    heartbeat.finish_phase(
+        "crop_preparation",
+        crop_count=len(crop_rows),
+        page_group_count=len(groups),
+    )
 
+    heartbeat.set_phase("model_load")
     runner = OptimizedUniRecRunner(
         model_path=args.model_path.expanduser().resolve(),
         device="npu:0",
         dtype="float16",
         compile_cache_dir=args.cache_dir.expanduser().resolve(),
     )
+    heartbeat.finish_phase("model_load")
+    heartbeat.set_phase("graph_registration", graph_count=len(DEFAULT_VISION_BUCKETS))
     runtime = BucketedFullVisionRuntime(
         runner,
         diagnostic_graph_log=args.diagnostic_graph_log,
@@ -476,25 +645,72 @@ def main(argv: Sequence[str] | None = None) -> None:
         raise RuntimeError(
             f"production bucket drift: {actual_buckets} != {expected_buckets}"
         )
+    heartbeat.finish_phase("graph_registration", graph_keys=actual_buckets)
+    pre_graph_warmup_inventory = runtime.cache_inventory()
+    cache_checkpoints = [
+        _record_cache_checkpoint(
+            runtime,
+            checkpoint="before_graph_warmup",
+            post_graph_warmup=None,
+        )
+    ]
 
+    heartbeat.set_phase("graph_warmup", graph_count=len(runtime.specs), passes=1)
     runtime.diagnostic_event("lab_graph_warmup_begin", passes=1)
     graph_warmup = runtime.warmup_all(passes=1)
     runtime.diagnostic_event("lab_graph_warmup_end", passes=1)
-    workload = lambda: _run_groups(runtime, groups)
+    heartbeat.finish_phase("graph_warmup", graph_count=len(runtime.specs), passes=1)
+    post_graph_warmup_inventory = runtime.cache_inventory()
+    graph_warmup_cache_changes = _cache_inventory_diff(
+        pre_graph_warmup_inventory,
+        post_graph_warmup_inventory,
+    )
+    _emit_progress(
+        "graph_warmup_cache_diff",
+        cache_mutated=bool(graph_warmup_cache_changes),
+        changes=graph_warmup_cache_changes,
+    )
+    cache_checkpoints.append(
+        _record_cache_checkpoint(
+            runtime,
+            checkpoint="after_graph_warmup",
+            post_graph_warmup=post_graph_warmup_inventory,
+        )
+    )
     for replay_index in range(args.warmup_replays):
+        heartbeat.set_phase(
+            "workload_warmup",
+            replay_index=replay_index,
+            replay_count=args.warmup_replays,
+            page_group_count=len(groups),
+        )
         runtime.diagnostic_event(
             "lab_workload_warmup_begin",
             replay_index=replay_index,
             replay_count=args.warmup_replays,
             page_groups=len(groups),
         )
-        warmup_output_count = workload()
+        warmup_output_count = _run_groups(
+            runtime,
+            groups,
+            replay_kind="warmup",
+            replay_index=replay_index,
+        )
         runtime.diagnostic_event(
             "lab_workload_warmup_submitted",
             replay_index=replay_index,
             replay_count=args.warmup_replays,
             output_count=warmup_output_count,
         )
+        heartbeat.finish_phase(
+            "workload_warmup",
+            replay_index=replay_index,
+            output_count=warmup_output_count,
+        )
+    heartbeat.set_phase(
+        "workload_warmup_sync",
+        replay_count=args.warmup_replays,
+    )
     runtime.diagnostic_event(
         "lab_workload_warmup_sync_begin",
         replay_count=args.warmup_replays,
@@ -504,17 +720,42 @@ def main(argv: Sequence[str] | None = None) -> None:
         "lab_workload_warmup_sync_end",
         replay_count=args.warmup_replays,
     )
+    heartbeat.finish_phase(
+        "workload_warmup_sync",
+        replay_count=args.warmup_replays,
+    )
+    cache_checkpoints.append(
+        _record_cache_checkpoint(
+            runtime,
+            checkpoint="after_workload_warmup",
+            post_graph_warmup=post_graph_warmup_inventory,
+        )
+    )
 
     before_stats = copy.deepcopy(runtime.summary())
     samples = []
     for replay_index in range(args.repeats):
+        heartbeat.set_phase(
+            "measurement_replay",
+            replay_index=replay_index,
+            replay_count=args.repeats,
+            page_group_count=len(groups),
+        )
         runtime.diagnostic_event(
             "lab_measurement_replay_begin",
             replay_index=replay_index,
             replay_count=args.repeats,
             page_groups=len(groups),
         )
-        sample = _measure_replay(workload, device="npu:0")
+        sample = _measure_replay(
+            lambda replay_index=replay_index: _run_groups(
+                runtime,
+                groups,
+                replay_kind="measurement",
+                replay_index=replay_index,
+            ),
+            device="npu:0",
+        )
         samples.append(sample)
         runtime.diagnostic_event(
             "lab_measurement_replay_end",
@@ -522,12 +763,28 @@ def main(argv: Sequence[str] | None = None) -> None:
             replay_count=args.repeats,
             **sample,
         )
+        heartbeat.finish_phase(
+            "measurement_replay",
+            replay_index=replay_index,
+            **sample,
+        )
+        cache_checkpoints.append(
+            _record_cache_checkpoint(
+                runtime,
+                checkpoint=f"after_measurement_replay_{replay_index}",
+                post_graph_warmup=post_graph_warmup_inventory,
+            )
+        )
     after_stats = copy.deepcopy(runtime.summary())
     stats_delta = _runtime_stats_delta(before_stats, after_stats)
     expected_outputs = len(crop_rows)
     if any(int(sample["output_count"]) != expected_outputs for sample in samples):
         raise RuntimeError("production vision replay lost outputs")
 
+    heartbeat.set_phase(
+        "parity",
+        samples_per_route=args.parity_samples_per_route,
+    )
     runtime.diagnostic_event(
         "lab_parity_begin",
         samples_per_route=args.parity_samples_per_route,
@@ -543,6 +800,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         status=parity["status"],
         sample_count=parity.get("sample_count", 0),
     )
+    heartbeat.finish_phase(
+        "parity",
+        status=parity["status"],
+        sample_count=parity.get("sample_count", 0),
+    )
     profile = None
     if args.profile_scope != "none":
         if args.profile_scope == "group":
@@ -554,6 +816,12 @@ def main(argv: Sequence[str] | None = None) -> None:
             selected_groups = [groups[args.profile_group_index]]
         else:
             selected_groups = groups
+        heartbeat.set_phase(
+            "profile",
+            scope=args.profile_scope,
+            metric=args.profile_metric,
+            page_group_count=len(selected_groups),
+        )
         runtime.diagnostic_event(
             "lab_profile_begin",
             scope=args.profile_scope,
@@ -561,7 +829,12 @@ def main(argv: Sequence[str] | None = None) -> None:
             page_groups=len(selected_groups),
         )
         profile = _profile(
-            lambda: _run_groups(runtime, selected_groups),
+            lambda: _run_groups(
+                runtime,
+                selected_groups,
+                replay_kind="profile",
+                replay_index=0,
+            ),
             output_dir=output_dir,
             metric=args.profile_metric,
             parser_topn=args.parser_topn,
@@ -573,7 +846,14 @@ def main(argv: Sequence[str] | None = None) -> None:
             metric=args.profile_metric,
             page_groups=len(selected_groups),
         )
+        heartbeat.finish_phase(
+            "profile",
+            scope=args.profile_scope,
+            metric=args.profile_metric,
+            page_group_count=len(selected_groups),
+        )
 
+    heartbeat.set_phase("report_write")
     wall_samples = [float(row["synchronized_wall_ms"]) for row in samples]
     device_samples = [float(row["device_timeline_ms"]) for row in samples]
     physical_rows_per_replay = sum(
@@ -600,6 +880,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "buckets": actual_buckets,
             "runtime_source": str(Path(runtime.__class__.__module__.replace(".", "/"))),
             "diagnostic_graph_log": args.diagnostic_graph_log,
+            "diagnostic_heartbeat_s": args.diagnostic_heartbeat_s,
             "npu_jit_compile": False,
             "graph_cache_dirs": {
                 key: str(path) for key, path in runtime.cache_dirs.items()
@@ -651,6 +932,17 @@ def main(argv: Sequence[str] | None = None) -> None:
             ),
         },
         "graph_warmup": graph_warmup,
+        "cache_diagnostics": {
+            "pre_graph_warmup_inventory": pre_graph_warmup_inventory,
+            "post_graph_warmup_inventory": post_graph_warmup_inventory,
+            "graph_warmup_cache_changes": graph_warmup_cache_changes,
+            "checkpoints": cache_checkpoints,
+            "unexpected_mutation_after_graph_warmup": any(
+                row["unexpected_cache_mutation"]
+                for row in cache_checkpoints
+                if row["checkpoint"] != "before_graph_warmup"
+            ),
+        },
         "timing_ms": {
             "production_boundary_wall": _sample_summary(wall_samples),
             "device_timeline_span": _sample_summary(device_samples),
@@ -702,6 +994,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         flush=True,
     )
     print(f"OUTPUT_JSON={output_path}", flush=True)
+    heartbeat.finish_phase(
+        "report_write",
+        status=report["status"],
+        output_json=str(output_path),
+    )
+    heartbeat.stop()
     if report["status"] != "ok":
         raise RuntimeError("production vision lab failed parity")
 
