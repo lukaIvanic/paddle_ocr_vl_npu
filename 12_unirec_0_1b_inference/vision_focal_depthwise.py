@@ -137,6 +137,8 @@ def register_focal_group_prepack_converter() -> None:
     )
     register_converter = converter_module.register_fx_node_ge_converter
     ge = converter_utils.ge
+    specific_input_layout = converter_utils.specific_op_input_layout
+    specific_output_layout = converter_utils.specific_op_output_layout
 
     @register_converter(torch.ops.unirec.focal_group_prepack_v1.default)
     def _convert_focal_group_prepack(
@@ -153,7 +155,8 @@ def register_focal_group_prepack_converter() -> None:
             dst_subformat=int(groups),
             groups=int(groups),
         )
-        packed.desc.layout = "FRACTAL_Z"
+        specific_input_layout(packed, indices=0, layout="NCHW")
+        specific_output_layout(packed, indices=0, layout="FRACTAL_Z")
         return packed
 
     _PREPACK_CONVERTER_REGISTERED = True
