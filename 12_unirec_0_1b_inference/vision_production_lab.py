@@ -10,6 +10,7 @@ happen before the measured window, as they do in the production stage split.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 import statistics
@@ -465,11 +466,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         workload()
     synchronize_device("npu:0")
 
-    before_stats = runtime.summary()
+    before_stats = copy.deepcopy(runtime.summary())
     samples = [
         _measure_replay(workload, device="npu:0") for _ in range(args.repeats)
     ]
-    after_stats = runtime.summary()
+    after_stats = copy.deepcopy(runtime.summary())
     stats_delta = _runtime_stats_delta(before_stats, after_stats)
     expected_outputs = len(crop_rows)
     if any(int(sample["output_count"]) != expected_outputs for sample in samples):
