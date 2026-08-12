@@ -435,10 +435,9 @@ class ConstantFocalDepthwiseConv(nn.Module):
         }
         self.prepack_grouped = bool(prepack_grouped)
         if self.prepack_grouped:
-            self.register_buffer(
-                "packed_weight",
+            self.packed_weight = nn.Parameter(
                 torch.from_numpy(host_weight).to(weight.device),
-                persistent=False,
+                requires_grad=False,
             )
         self.weight_id = int(weight_id)
         self.groups = channels
@@ -569,7 +568,7 @@ def rewrite_vision_focal_depthwise_convs(
                                 _CONSTANT_WEIGHTS[weight_id]["storage_shape"]
                             ),
                             "weight_binding": (
-                                "ge_const_prepacked_fractal_z_grouped"
+                                "frozen_prepacked_fractal_z_grouped"
                                 if requested == "constant_grouped"
                                 else "ge_const_not_runtime_input"
                             ),
