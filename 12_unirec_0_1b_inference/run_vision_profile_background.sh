@@ -128,14 +128,14 @@ worker_main() {
   printf '\n' >>"$RUN_ROOT/graph_command.sh"
 
   status=0
-  SECONDS=0
+  worker_started_epoch="$(date +%s)"
   run_phase production "$RUN_ROOT/production.log" \
     "${production_command[@]}" || status="$?"
   if test "$status" -eq 0; then
     run_phase graph_suite "$RUN_ROOT/graph_suite.log" \
       "${graph_command[@]}" || status="$?"
   fi
-  wall_s="$SECONDS"
+  wall_s="$(( $(date +%s) - worker_started_epoch ))"
 
   printf '%s\n' "$status" >"$RUN_ROOT/exit_code.txt"
   printf '%s\n' "$wall_s" >"$RUN_ROOT/process_wall_s.txt"
