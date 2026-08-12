@@ -262,7 +262,9 @@ The full-table B1 execution remained authoritative.
 | Maximum | 5.292 s | 6.260 s | slower |
 
 The result confirms the intended mechanism: speculative verification reduces
-the sequential work and improves the slow-table tail.
+the sequential work and improves the slow-table tail. The average speedup is 1.29x.
+
+**Why only 20% speedup and why is maximum slower?**: Difficult tables in OmniDocBench v1.6 often contain LaTeX representation (50% of the time). LaTeX can be very diverse, and OCR from the same model *and* table varies a lot even when introducing small changes like scaling table. This make speculative decoding ineffective - the semantic content can be 100% correct, but LaTeX differences override the speedups. On tables without formulas, average speedup is 1.61x. 
 
 The current prototype demonstrates lower tail latency. But it certainly won't improve throughput.
 Although this method was used for tables, the same method can be applied to text paragraphs.
