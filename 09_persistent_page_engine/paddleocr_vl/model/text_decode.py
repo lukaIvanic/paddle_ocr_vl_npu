@@ -1663,7 +1663,7 @@ def _decode_attention(
                 int(value_for_attention.shape[2]),
                 int(attention.head_dim),
             )
-            mask_for_attention = attention_mask.expand(2, -1, -1, -1)
+            mask_for_attention = attention_mask
             call_num_heads = 8
             call_num_key_value_heads = 1
         else:
@@ -1746,6 +1746,10 @@ def run_text_decode_transformer(
             cache_length,
             kv_positions=static_kv_positions,
         )
+    if optimization.attention == "gqa_pseudo_b2":
+        if batch_size != 1:
+            raise ValueError("pseudo-B2 GQA requires physical batch size one")
+        attention_mask = attention_mask.expand(2, -1, -1, -1).contiguous()
     pse_shift: torch.Tensor | None = None
     actual_seq_lengths: list[int] | None = None
     if optimization.increfa_length_mode == "pse_sentinel":

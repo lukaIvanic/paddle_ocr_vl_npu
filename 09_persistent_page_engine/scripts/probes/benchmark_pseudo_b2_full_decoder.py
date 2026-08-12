@@ -24,6 +24,7 @@ from utils.timing import DeviceTimeline, synchronize
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile-position", type=int, default=1249)
+    parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--rounds", type=int, default=200)
     parser.add_argument(
@@ -31,13 +32,23 @@ def parse_args() -> argparse.Namespace:
         choices=("weight", "kv_then_weight"),
         default="weight",
     )
+    parser.add_argument("--control-optimization")
+    parser.add_argument("--candidate-optimization")
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    if args.schedule == "weight":
+    if bool(args.control_optimization) != bool(args.candidate_optimization):
+        raise ValueError(
+            "--control-optimization and --candidate-optimization must be "
+            "provided together"
+        )
+    if args.control_optimization:
+        control_name = args.control_optimization
+        candidate_name = args.candidate_optimization
+    elif args.schedule == "weight":
         control_name = "combined_apply_prefetch_rope_lut"
         candidate_name = "combined_apply_prefetch_rope_lut_pseudo_b2"
     else:
@@ -52,7 +63,7 @@ def main() -> None:
         "--batch-size",
         "1",
         "--cache-length",
-        "4096",
+        str(args.cache_length),
         "--profile-position",
         str(args.profile_position),
         "--warmup",
@@ -136,7 +147,7 @@ def main() -> None:
         "contract": "alternating same-process full 18-layer decoder",
         "shape": {
             "physical_batch": 1,
-            "cache_length": 4096,
+            "cache_length": args.cache_length,
             "profile_position": args.profile_position,
             "synthetic_lm_head_size": 16384,
         },
