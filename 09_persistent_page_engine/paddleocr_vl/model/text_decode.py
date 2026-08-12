@@ -115,6 +115,7 @@ class DecodeOptimizationConfig:
     increfa_length_mode: str = "mask"
     stage_aware_weight_prefetch: bool = False
     post_scatter_kv_prefetch: bool = False
+    weight_prefetch_timing: str = "before_attention"
     vector_add_rms_norm: bool = False
     gqa_aiv_vector_core_count: int = 0
     super_kernel_scope: bool = False
@@ -369,6 +370,50 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rotary_factors="lookup",
         add_rms_norm=True,
         stage_aware_weight_prefetch=True,
+    ),
+    "combined_apply_pse_prefetch_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_pse_prefetch_rope_lut",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        increfa_length_mode="pse_sentinel",
+        stage_aware_weight_prefetch=True,
+    ),
+    "combined_apply_kv_prefetch_before_mlp_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_kv_prefetch_before_mlp_rope_lut",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+    ),
+    "combined_apply_kv_prefetch_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_kv_prefetch_rope_lut",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        post_scatter_kv_prefetch=True,
+    ),
+    "combined_apply_kv_then_mlp_prefetch_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_kv_then_mlp_prefetch_rope_lut",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="after_attention",
     ),
     "combined_apply_prefetch_rope_lut_no_norm": DecodeOptimizationConfig(
         name="combined_apply_prefetch_rope_lut_no_norm",
@@ -1269,7 +1314,10 @@ def _decode_attention(
     packed_factor_lut: torch.Tensor | None = None,
     packed_rope_delta: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    if optimization.stage_aware_weight_prefetch:
+    if (
+        optimization.stage_aware_weight_prefetch
+        and optimization.weight_prefetch_timing == "before_attention"
+    ):
         import torch_npu
 
         for weight in attention._decode_prefetch_current_mlp:
@@ -1582,6 +1630,16 @@ def _decode_attention(
         .contiguous()
         .reshape(batch, 1, attention.num_heads * attention.head_dim)
     )
+    if (
+        optimization.stage_aware_weight_prefetch
+        and optimization.weight_prefetch_timing == "after_attention"
+    ):
+        for weight in attention._decode_prefetch_current_mlp:
+            torch_npu.npu_prefetch(
+                weight,
+                attention_output,
+                int(weight.numel() * weight.element_size()),
+            )
     return _linear_tokenwise(attention.o_proj, attention_output)
 
 
@@ -2279,6 +2337,7 @@ def compile_text_decode_stage(
             "post_scatter_kv_prefetch": (
                 optimization.post_scatter_kv_prefetch
             ),
+            "weight_prefetch_timing": optimization.weight_prefetch_timing,
             "vector_add_rms_norm": optimization.vector_add_rms_norm,
             "gqa_aiv_vector_core_count": (
                 optimization.gqa_aiv_vector_core_count
