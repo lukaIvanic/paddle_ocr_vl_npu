@@ -12,9 +12,12 @@ The launcher performs three sequential phases on one physical NPU:
 
 Both measured lanes use eight workers, eight CPU preprocessing threads per
 worker, an eight-page in-pool warmup, compact HWC input, cross-KV 512, and
-discard-only output. The report requires identical page counts. It reports but
-does not reject crop/token drift from the FP16 layout candidate; those are
-quality inputs, not an arbitrary speed-test tolerance.
+discard-only output. Per-device event timing is intentionally disabled: the
+first 310P attempt failed at `NPUEvent.elapsed_time()` on page 161, while the
+pool already uses spawned workers and wall/aggregate stage timing does not need
+NPU events. The report requires identical page counts. It reports but does not
+reject crop/token drift from the FP16 layout candidate; those are quality
+inputs, not an arbitrary speed-test tolerance.
 
 ## 910B2 reference, not a 310P prediction
 
@@ -42,6 +45,8 @@ from isolated graphs or from the 910B2 result.
   FrozenBN` layout cache parent.
 - Give the optimized vision lane its own cache path. The launcher seeds it with
   one worker before W8 starts.
+- Do not add `--profile-prefill-device-stages`. That optional instrumentation
+  creates the NPU timing events that failed in the first 310P attempt.
 - Launch in the background. Send Luka the absolute log path immediately.
 - Do not retry or alter flags after a hard process exit. Report the first error.
 

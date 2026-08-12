@@ -62,8 +62,7 @@ common_args() {
     --recognition-input-contract compact_uint8_hwc \
     --recognition-preprocess-threads 8 \
     --vision-page-lookahead 4 \
-    --no-retain-shared-images \
-    --profile-prefill-device-stages
+    --no-retain-shared-images
 }
 
 run_lane() {
