@@ -80,8 +80,8 @@ def pack_grouped_fz_host(weight: np.ndarray, *, groups: int) -> np.ndarray:
                     packed[
                         storage_row_base + kernel_index,
                         output_in_group // 16,
-                        storage_c0,
                         output_in_group % 16,
+                        storage_c0,
                     ] = weight[
                         output_channel,
                         input_channel,
