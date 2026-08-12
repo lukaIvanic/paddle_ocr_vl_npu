@@ -173,6 +173,35 @@ class _Model(nn.Module):
         raise AssertionError("unpatched object-detection forward")
 
 
+class PPDocLayoutV2FrozenBatchNorm2d(nn.Module):
+    def __init__(self, channels: int) -> None:
+        super().__init__()
+        self.register_buffer("weight", torch.randn(channels))
+        self.register_buffer("bias", torch.randn(channels))
+        self.register_buffer("running_mean", torch.randn(channels))
+        self.register_buffer("running_var", torch.rand(channels) + 0.5)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        scale = self.weight.reshape(1, -1, 1, 1) * (
+            self.running_var.reshape(1, -1, 1, 1) + 1e-5
+        ).rsqrt()
+        bias = self.bias.reshape(1, -1, 1, 1)
+        bias = bias - self.running_mean.reshape(1, -1, 1, 1) * scale
+        return inputs * scale + bias
+
+
+class _ConvFrozenNorm(nn.Module):
+    def __init__(self, channels: int, *, conv_bias: bool) -> None:
+        super().__init__()
+        self.convolution = nn.Conv2d(
+            channels, channels, kernel_size=3, padding=1, bias=conv_bias
+        )
+        self.normalization = PPDocLayoutV2FrozenBatchNorm2d(channels)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        return self.normalization(self.convolution(inputs))
+
+
 class LayoutNpuCompatibilityTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -306,6 +335,24 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
             self.assertEqual(summary["target_count"], 1)
             self.assertEqual(summary["rewritten_count"], 1)
             self.assertEqual(candidate[0].groups, 64 // summary["modules"][0]["group_width"])
+
+    def test_frozen_batch_norm_folding_matches_unfused_module(self) -> None:
+        module = _load_layout_adapter()
+        torch.manual_seed(29)
+        inputs = torch.randn(2, 16, 9, 11)
+        for conv_bias in (False, True):
+            candidate = nn.Sequential(
+                _ConvFrozenNorm(16, conv_bias=conv_bias)
+            ).eval()
+            with torch.inference_mode():
+                reference = candidate(inputs)
+            summary = module._fuse_layout_frozen_batch_norms(candidate)
+            with torch.inference_mode():
+                actual = candidate(inputs)
+            torch.testing.assert_close(actual, reference, atol=2e-5, rtol=2e-5)
+            self.assertEqual(summary["fused_count"], 1)
+            self.assertIsInstance(candidate[0].normalization, nn.Identity)
+            self.assertIsNotNone(candidate[0].convolution.bias)
 
 
 if __name__ == "__main__":
