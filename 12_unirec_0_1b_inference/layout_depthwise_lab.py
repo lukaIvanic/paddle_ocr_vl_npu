@@ -37,6 +37,8 @@ def parse_args() -> argparse.Namespace:
             "grouped16_fz",
             "grouped32_fz",
             "grouped64_fz",
+            "dense_native",
+            "dense_internal",
             "dense_fz",
             "shift_sum",
         ),
@@ -44,6 +46,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--channels", type=int, choices=(192, 384))
     parser.add_argument("--profile-dir", type=Path)
+    parser.add_argument("--freeze-parameters", action="store_true")
     return parser.parse_args()
 
 
@@ -132,6 +135,7 @@ def compile_module(
     module: torch.nn.Module,
     *,
     cache_dir: Path,
+    freeze_parameters: bool,
 ) -> Callable[[torch.Tensor], torch.Tensor]:
     try:
         from torch_npu.dynamo.torchair.inference import cache_compile
@@ -141,6 +145,7 @@ def compile_module(
 
     config = CompilerConfig()
     config.mode.value = "max-autotune"
+    config.experimental_config.frozen_parameter.value = freeze_parameters
     cache_dir.mkdir(parents=True, exist_ok=True)
     return cache_compile(
         module.forward,
@@ -241,8 +246,23 @@ def main() -> None:
             )
             .to(args.device)
             .eval(),
+            "dense_native": ExactGrouped(
+                weight.clone(), group_width=channels, preformat_fz=False
+            )
+            .to(args.device)
+            .eval(),
+            "dense_internal": ExactGrouped(
+                weight.clone(), group_width=channels, preformat_fz=False
+            )
+            .to(args.device)
+            .eval(),
             "shift_sum": ShiftSum(weight.clone()).to(args.device).eval(),
         }
+        try:
+            from torch_npu.dynamo.torchair import use_internal_format_weight
+        except ImportError:
+            from torchair import use_internal_format_weight
+        use_internal_format_weight(modules["dense_internal"])
         with torch.inference_mode():
             reference = modules["stock_depthwise"](inputs)
             torch.npu.synchronize()
@@ -254,9 +274,14 @@ def main() -> None:
             if args.execution == "torchair":
                 source_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12]
                 cache_dir = args.cache_dir.expanduser().resolve() / (
-                    f"{name}_c{channels}_{height}x{width}_src{source_hash}"
+                    f"{name}_c{channels}_{height}x{width}_"
+                    f"frozen{int(args.freeze_parameters)}_src{source_hash}"
                 )
-                call = compile_module(module, cache_dir=cache_dir)
+                call = compile_module(
+                    module,
+                    cache_dir=cache_dir,
+                    freeze_parameters=args.freeze_parameters,
+                )
             with torch.inference_mode():
                 first_call_started = time.perf_counter()
                 output = call(inputs)
