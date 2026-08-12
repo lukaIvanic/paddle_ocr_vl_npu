@@ -420,6 +420,7 @@ class LayoutFullGraphRuntime:
         dtype: torch.dtype,
         device: torch.device,
         batch_size: int = 1,
+        weight_format: str = "native",
     ) -> None:
         if batch_size < 1:
             raise ValueError("layout batch size must be >= 1")
@@ -429,7 +430,8 @@ class LayoutFullGraphRuntime:
         source_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12]
         dtype_name = str(dtype).removeprefix("torch.")
         self.cache_dir = cache_root.expanduser().resolve() / (
-            f"layout_b{self.batch_size}_800x800_{dtype_name}_src{source_hash}"
+            f"layout_b{self.batch_size}_800x800_{dtype_name}_"
+            f"weights{weight_format}_src{source_hash}"
         )
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig

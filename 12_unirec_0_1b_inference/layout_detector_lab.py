@@ -20,7 +20,10 @@ from typing import Any
 import cv2
 import numpy as np
 
-from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
+from opendoc_layout_npu import (
+    LAYOUT_WEIGHT_FORMAT_CHOICES,
+    PPDocLayoutV2NpuAdapter,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -57,6 +60,11 @@ def parse_args() -> argparse.Namespace:
         default="float32",
     )
     parser.add_argument("--threshold", type=float, default=0.4)
+    parser.add_argument(
+        "--weight-format",
+        choices=LAYOUT_WEIGHT_FORMAT_CHOICES,
+        default="native",
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument(
@@ -186,6 +194,7 @@ def main() -> None:
         execution=args.execution,
         compile_cache_dir=args.compile_cache_dir,
         batch_size=1,
+        weight_format=args.weight_format,
     )
     print(
         f"LAYOUT_LAB phase=model_setup_end setup_s={detector.setup_s:.3f}",
@@ -252,6 +261,8 @@ def main() -> None:
             "offset": args.offset,
             "limit": args.limit,
             "warmup_pages": args.warmup_pages,
+            "weight_format": args.weight_format,
+            "weight_format_summary": detector.weight_format_summary,
             "scheduling": "sequential_b1_same_process",
         },
         "summary": summarize(records, detector.setup_s),

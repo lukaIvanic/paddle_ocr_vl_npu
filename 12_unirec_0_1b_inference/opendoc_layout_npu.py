@@ -18,6 +18,69 @@ DTYPE_MAP = {
     "float32": torch.float32,
 }
 
+LAYOUT_WEIGHT_FORMAT_CHOICES = (
+    "native",
+    "torchair_internal",
+    "torchair_internal_depthwise_fz",
+)
+
+
+def _prepare_layout_weight_formats(
+    model: torch.nn.Module,
+    *,
+    requested: str,
+) -> dict[str, Any]:
+    """Preformat layout weights while recording the exact NPU formats used."""
+    if requested not in LAYOUT_WEIGHT_FORMAT_CHOICES:
+        raise ValueError(f"Unsupported layout weight format: {requested}")
+    import torch_npu
+
+    tracked: list[tuple[str, str, torch.nn.Module]] = []
+    for name, module in model.named_modules():
+        if isinstance(module, torch.nn.Linear):
+            tracked.append((name, "linear", module))
+        elif isinstance(module, torch.nn.Conv2d):
+            kind = "depthwise_conv2d" if module.groups > 1 else "conv2d"
+            tracked.append((name, kind, module))
+
+    def histogram() -> dict[str, dict[str, int]]:
+        result: dict[str, dict[str, int]] = {}
+        for _name, kind, module in tracked:
+            code = str(int(torch_npu.get_npu_format(module.weight)))
+            bucket = result.setdefault(kind, {})
+            bucket[code] = bucket.get(code, 0) + 1
+        return {kind: dict(sorted(values.items())) for kind, values in sorted(result.items())}
+
+    before = histogram()
+    if requested != "native":
+        try:
+            from torch_npu.dynamo.torchair import use_internal_format_weight
+        except ImportError:
+            from torchair import use_internal_format_weight
+        use_internal_format_weight(model)
+
+    depthwise_converted: list[str] = []
+    if requested == "torchair_internal_depthwise_fz":
+        for name, kind, module in tracked:
+            if kind != "depthwise_conv2d" or module.weight.dtype != torch.float16:
+                continue
+            module.weight.data = torch_npu.npu_format_cast(module.weight.data, 4)
+            after_code = int(torch_npu.get_npu_format(module.weight))
+            if after_code != 4:
+                raise RuntimeError(
+                    "depthwise layout weight did not become FRACTAL_Z: "
+                    f"module={name} format={after_code}"
+                )
+            depthwise_converted.append(name)
+
+    return {
+        "requested": requested,
+        "before_histogram": before,
+        "after_histogram": histogram(),
+        "depthwise_fz_converted_count": len(depthwise_converted),
+        "depthwise_fz_modules": depthwise_converted,
+    }
+
 
 def _layout_outputs_for_cpu_postprocess(outputs: Any) -> SimpleNamespace:
     """Copy only the tensors consumed by the variable-size postprocessor.
@@ -147,6 +210,7 @@ class PPDocLayoutV2NpuAdapter:
         execution: str = "eager",
         compile_cache_dir: str | Path | None = None,
         batch_size: int = 1,
+        weight_format: str = "native",
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
@@ -158,6 +222,8 @@ class PPDocLayoutV2NpuAdapter:
             raise ValueError("TorchAir layout execution requires compile_cache_dir")
         if batch_size < 1:
             raise ValueError("layout batch size must be >= 1")
+        if weight_format not in LAYOUT_WEIGHT_FORMAT_CHOICES:
+            raise ValueError(f"Unsupported layout weight format: {weight_format}")
 
         import torch_npu  # noqa: F401
         from transformers import AutoImageProcessor, AutoModelForObjectDetection
@@ -169,6 +235,7 @@ class PPDocLayoutV2NpuAdapter:
         self.profile_stages = bool(profile_stages)
         self.execution = execution
         self.batch_size = int(batch_size)
+        self.weight_format = str(weight_format)
         self._filter_overlap_boxes = filter_overlap_boxes_vectorized
 
         started = time.perf_counter()
@@ -183,7 +250,14 @@ class PPDocLayoutV2NpuAdapter:
         from layout_torchair import make_eager_npu_compatible
 
         make_eager_npu_compatible(self.model)
+        if self.weight_format != "native":
+            # This gate must precede the process's first NPU allocation.
+            torch.npu.config.allow_internal_format = True
         self.model.eval().to(device=self.device, dtype=self.dtype)
+        self.weight_format_summary = _prepare_layout_weight_formats(
+            self.model,
+            requested=self.weight_format,
+        )
         torch.npu.synchronize()
         self.compiled_runtime = None
         self.graph_warmup = None
@@ -196,6 +270,7 @@ class PPDocLayoutV2NpuAdapter:
                 dtype=self.dtype,
                 device=self.device,
                 batch_size=self.batch_size,
+                weight_format=self.weight_format,
             )
         self.setup_s = time.perf_counter() - started
         self.page_count = 0
