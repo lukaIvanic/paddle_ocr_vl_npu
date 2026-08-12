@@ -116,6 +116,7 @@ class DecodeOptimizationConfig:
     stage_aware_weight_prefetch: bool = False
     post_scatter_kv_prefetch: bool = False
     weight_prefetch_timing: str = "before_attention"
+    complete_layer_prefetch_ahead: int = 0
     vector_add_rms_norm: bool = False
     gqa_aiv_vector_core_count: int = 0
     super_kernel_scope: bool = False
@@ -425,6 +426,32 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         stage_aware_weight_prefetch=True,
         post_scatter_kv_prefetch=True,
         weight_prefetch_timing="after_attention",
+    ),
+    "combined_apply_complete_layer_prefetch1_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch1_rope_lut",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=1,
+    ),
+    "combined_apply_complete_layer_prefetch2_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch2_rope_lut",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=2,
     ),
     "combined_apply_kv_then_mlp_prefetch_rope_lut_pseudo_b2": DecodeOptimizationConfig(
         name="combined_apply_kv_then_mlp_prefetch_rope_lut_pseudo_b2",
@@ -872,6 +899,15 @@ def prepare_decode_weight_prefetch(
     if not config.stage_aware_weight_prefetch:
         return
     layers = model.model.layers
+    def complete_layer_weights(layer: nn.Module) -> tuple[torch.Tensor, ...]:
+        return (
+            layer.self_attn.decode_qkv_proj.weight,
+            layer.self_attn.o_proj.weight,
+            layer.mlp.gate_proj.weight,
+            layer.mlp.up_proj.weight,
+            layer.mlp.down_proj.weight,
+        )
+
     for index, layer in enumerate(layers):
         layer.self_attn._decode_prefetch_current_mlp = (
             layer.mlp.gate_proj.weight,
@@ -886,6 +922,14 @@ def prepare_decode_weight_prefetch(
             if index + 1 < len(layers)
             else (model.lm_head.weight,)
         )
+        future_weights: list[torch.Tensor] = []
+        for offset in range(1, config.complete_layer_prefetch_ahead + 1):
+            future_index = index + offset
+            if future_index < len(layers):
+                future_weights.extend(complete_layer_weights(layers[future_index]))
+        if index + 1 >= len(layers):
+            future_weights.append(model.lm_head.weight)
+        layer._decode_prefetch_future_layers = tuple(future_weights)
 
 
 def build_static_decode_bool_mask(
@@ -1311,7 +1355,10 @@ def _decode_mlp(
             gate, up = gate_up.chunk(2, dim=-1)
             activated = torch.nn.functional.silu(gate) * up
         output = _linear_tokenwise(mlp.down_proj, activated)
-    if optimization.stage_aware_weight_prefetch:
+    if (
+        optimization.stage_aware_weight_prefetch
+        and optimization.weight_prefetch_timing != "complete_layer_ahead"
+    ):
         import torch_npu
 
         for weight in mlp._decode_prefetch_next_attention:
@@ -1880,6 +1927,15 @@ def run_text_decode_transformer(
     if optimization.add_rms_norm:
         residual: torch.Tensor | None = None
         for layer_idx, layer in enumerate(text_model.layers):
+            if optimization.complete_layer_prefetch_ahead:
+                import torch_npu
+
+                for weight in layer._decode_prefetch_future_layers:
+                    torch_npu.npu_prefetch(
+                        weight,
+                        hidden_states,
+                        int(weight.numel() * weight.element_size()),
+                    )
             if residual is None:
                 attention_input = _decode_rms_norm(
                     layer.input_layernorm,
@@ -2408,6 +2464,9 @@ def compile_text_decode_stage(
                 optimization.post_scatter_kv_prefetch
             ),
             "weight_prefetch_timing": optimization.weight_prefetch_timing,
+            "complete_layer_prefetch_ahead": (
+                optimization.complete_layer_prefetch_ahead
+            ),
             "vector_add_rms_norm": optimization.vector_add_rms_norm,
             "gqa_aiv_vector_core_count": (
                 optimization.gqa_aiv_vector_core_count
