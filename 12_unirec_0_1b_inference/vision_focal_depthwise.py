@@ -168,9 +168,16 @@ def register_focal_depthwise_constant_converter() -> None:
         row = _CONSTANT_WEIGHTS[int(weight_id)]
         weight = ge.Const(row["host_weight"])
         if row["prepacked_grouped"]:
+            logical_shape = row["shape"]
             storage_format = (int(row["groups"]) << 8) | 4
             weight.desc.layout = "FRACTAL_Z"
+            weight.desc.shape.dim[:] = []
             weight.desc.attr["format_for_int"].i = storage_format
+            weight.desc.attr["origin_format_for_int"].i = 0
+            weight.desc.attr["origin_shape"].list.val_type = 2
+            weight.desc.attr["origin_shape"].list.i.extend(logical_shape)
+            weight.desc.attr["origin_shape_initialized"].b = True
+            weight.desc.attr["origin_format_is_set"].b = True
             specific_output_layout(weight, indices=0, layout="FRACTAL_Z")
             weight.node.attr["_enable_storage_format_spread"].b = False
         padding = int(row["padding"])
@@ -191,7 +198,7 @@ def register_focal_depthwise_constant_converter() -> None:
             logical_shape = row["shape"]
             storage_format = (int(row["groups"]) << 8) | 4
             filter_desc = output.node.input_desc[1]
-            filter_desc.shape.dim[:] = logical_shape
+            filter_desc.shape.dim[:] = []
             filter_desc.attr["format_for_int"].i = storage_format
             filter_desc.attr["origin_format_for_int"].i = 0
             filter_desc.attr["origin_shape"].list.val_type = 2
