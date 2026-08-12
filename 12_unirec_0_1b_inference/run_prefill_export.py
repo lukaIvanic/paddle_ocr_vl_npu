@@ -195,6 +195,24 @@ def parse_args() -> argparse.Namespace:
             "prefill stages. Events synchronize once per packed prefill group."
         ),
     )
+    parser.add_argument(
+        "--progress-every-pages",
+        type=int,
+        default=0,
+        help=(
+            "Print a completion record every N pages; zero retains the "
+            "default ten-percent cadence."
+        ),
+    )
+    parser.add_argument(
+        "--progress-heartbeat-s",
+        type=float,
+        default=0.0,
+        help=(
+            "While no page completes, print worker liveness every N seconds; "
+            "zero disables heartbeat polling."
+        ),
+    )
     args = parser.parse_args()
     if args.offset < 0 or args.limit < 1:
         parser.error("--offset must be non-negative and --limit positive")
@@ -209,6 +227,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--recognition-preprocess-threads must be positive")
     if args.vision_page_lookahead < 1:
         parser.error("--vision-page-lookahead must be positive")
+    if args.progress_every_pages < 0 or args.progress_heartbeat_s < 0:
+        parser.error("progress intervals must be non-negative")
     if args.layout_batch_size < 1:
         parser.error("--layout-batch-size must be positive")
     if args.layout_batch_size > args.vision_page_lookahead:
@@ -344,6 +364,8 @@ def main() -> None:
         empty_cache_after_page=args.worker_empty_cache_after_page,
         profile_prefill_device_stages=args.profile_prefill_device_stages,
         retain_shared_images=args.retain_shared_images,
+        progress_every_pages=args.progress_every_pages,
+        progress_heartbeat_s=args.progress_heartbeat_s,
     )
     setup_s = pool.setup_wall_s
     warmup_summaries = []

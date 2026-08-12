@@ -19,6 +19,12 @@ NPU events. The report requires identical page counts. It reports but does not
 reject crop/token drift from the FP16 layout candidate; those are quality
 inputs, not an arbitrary speed-test tolerance.
 
+Every completed page is printed with its completion count, source page index,
+worker, worker time, elapsed time, crop count, and rejected-crop count. If no
+page finishes for 15 seconds, the runner prints a heartbeat with every worker's
+liveness and exit code. A dead worker now fails immediately instead of leaving
+the coordinator silent for its long safety timeout.
+
 ## 910B2 reference, not a 310P prediction
 
 At commit `46570ba`, physical 910B2 NPU 1:

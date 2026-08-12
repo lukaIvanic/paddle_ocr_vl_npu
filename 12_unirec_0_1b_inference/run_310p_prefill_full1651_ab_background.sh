@@ -62,7 +62,9 @@ common_args() {
     --recognition-input-contract compact_uint8_hwc \
     --recognition-preprocess-threads 8 \
     --vision-page-lookahead 4 \
-    --no-retain-shared-images
+    --no-retain-shared-images \
+    --progress-every-pages 1 \
+    --progress-heartbeat-s 15
 }
 
 run_lane() {

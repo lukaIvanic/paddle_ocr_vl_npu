@@ -1662,6 +1662,8 @@ class DynamicLayoutProcessPool:
         profile_prefill_device_stages: bool = False,
         retain_shared_images: bool = True,
         timeout_s: float = 1800.0,
+        progress_every_pages: int = 0,
+        progress_heartbeat_s: float = 0.0,
     ) -> None:
         if worker_count < 1:
             raise ValueError("layout process worker count must be positive")
@@ -1679,6 +1681,10 @@ class DynamicLayoutProcessPool:
             raise ValueError(
                 "layout batch size cannot exceed recognition page lookahead"
             )
+        if progress_every_pages < 0:
+            raise ValueError("progress page interval must be non-negative")
+        if progress_heartbeat_s < 0:
+            raise ValueError("progress heartbeat interval must be non-negative")
         self.worker_count = worker_count
         self.layout_batch_size = int(layout_batch_size)
         self.layout_dtype = str(layout_dtype)
@@ -1698,6 +1704,8 @@ class DynamicLayoutProcessPool:
         self.recognition_page_lookahead = recognition_page_lookahead
         self.retain_shared_images = bool(retain_shared_images)
         self.timeout_s = timeout_s
+        self.progress_every_pages = int(progress_every_pages)
+        self.progress_heartbeat_s = float(progress_heartbeat_s)
         self.context = mp.get_context("spawn")
         self.task_queue = self.context.Queue()
         self.result_queue = self.context.Queue(maxsize=max(2, worker_count * 2))
@@ -1810,6 +1818,44 @@ class DynamicLayoutProcessPool:
                 f"layout process pool was silent for {self.timeout_s}s; alive={alive}"
             ) from exception
 
+    def _receive_stream_message(
+        self,
+        *,
+        label: str,
+        completed: int,
+        total: int,
+        stream_started: float,
+        last_result_at: float,
+    ) -> dict[str, Any]:
+        """Receive one result while making a silent worker pool observable."""
+        if self.progress_heartbeat_s <= 0:
+            return self._receive()
+        while True:
+            try:
+                return self.result_queue.get(timeout=self.progress_heartbeat_s)
+            except queue.Empty as exception:
+                now = time.perf_counter()
+                alive = [process.is_alive() for process in self.processes]
+                exitcodes = [process.exitcode for process in self.processes]
+                silence_s = now - last_result_at
+                print(
+                    f"UNIREC_LAYOUT_PROCESS_HEARTBEAT label={label} "
+                    f"pages={completed}/{total} elapsed_s={now - stream_started:.1f} "
+                    f"silence_s={silence_s:.1f} alive={alive} "
+                    f"exitcodes={exitcodes}",
+                    flush=True,
+                )
+                if not all(alive):
+                    raise RuntimeError(
+                        "layout worker exited without returning a result: "
+                        f"alive={alive} exitcodes={exitcodes}"
+                    ) from exception
+                if silence_s >= self.timeout_s:
+                    raise TimeoutError(
+                        f"layout process pool was silent for {silence_s:.1f}s; "
+                        f"alive={alive} exitcodes={exitcodes}"
+                    ) from exception
+
     def map(
         self,
         paths: list[Path],
@@ -1851,10 +1897,18 @@ class DynamicLayoutProcessPool:
         layout_batch_physical_row_shares = 0.0
         ipc_delivery_sum_s = 0.0
         ipc_delivery_max_s = 0.0
-        progress_step = max(1, len(paths) // 10)
+        progress_step = self.progress_every_pages or max(1, len(paths) // 10)
         completed = 0
+        last_result_at = started
         while completed < len(paths):
-            message = self._receive()
+            message = self._receive_stream_message(
+                label=label,
+                completed=completed,
+                total=len(paths),
+                stream_started=started,
+                last_result_at=last_result_at,
+            )
+            last_result_at = time.perf_counter()
             if message["status"] != "ok":
                 raise RuntimeError(f"layout process execution failed: {message}")
             if int(message["run_id"]) != run_id:
@@ -1922,8 +1976,14 @@ class DynamicLayoutProcessPool:
             completed += 1
             if completed % progress_step == 0 or completed == len(paths):
                 print(
-                    f"UNIREC_LAYOUT_PROCESS_PROGRESS label={label} "
-                    f"pages={completed}/{len(paths)}",
+                    f"UNIREC_LAYOUT_PROCESS_PAGE label={label} "
+                    f"pages={completed}/{len(paths)} "
+                    f"page_index={int(message['page_index'])} "
+                    f"worker={worker_index} "
+                    f"worker_page_s={float(timing['worker_page_s']):.3f} "
+                    f"elapsed_s={time.perf_counter() - started:.3f} "
+                    f"crops={len(message['result'].get('crops', []))} "
+                    f"rejected={int(message['result'].get('cross_capacity_rejected_crops', 0))}",
                     flush=True,
                 )
         wall_s = time.perf_counter() - started
@@ -2014,10 +2074,18 @@ class DynamicLayoutProcessPool:
         layout_batch_physical_row_shares = 0.0
         ipc_delivery_sum_s = 0.0
         ipc_delivery_max_s = 0.0
-        progress_step = max(1, len(paths) // 10)
+        progress_step = self.progress_every_pages or max(1, len(paths) // 10)
         completed = 0
+        last_result_at = started
         while completed < len(paths):
-            message = self._receive()
+            message = self._receive_stream_message(
+                label=label,
+                completed=completed,
+                total=len(paths),
+                stream_started=started,
+                last_result_at=last_result_at,
+            )
+            last_result_at = time.perf_counter()
             if message["status"] != "ok":
                 raise RuntimeError(f"layout process execution failed: {message}")
             if int(message["run_id"]) != run_id:
@@ -2084,8 +2152,14 @@ class DynamicLayoutProcessPool:
             completed += 1
             if completed % progress_step == 0 or completed == len(paths):
                 print(
-                    f"UNIREC_LAYOUT_PROCESS_PROGRESS label={label} "
-                    f"pages={completed}/{len(paths)}",
+                    f"UNIREC_LAYOUT_PROCESS_PAGE label={label} "
+                    f"pages={completed}/{len(paths)} "
+                    f"page_index={int(message['page_index'])} "
+                    f"worker={worker_index} "
+                    f"worker_page_s={float(timing['worker_page_s']):.3f} "
+                    f"elapsed_s={time.perf_counter() - started:.3f} "
+                    f"crops={len(message['result'].get('crops', []))} "
+                    f"rejected={int(message['result'].get('cross_capacity_rejected_crops', 0))}",
                     flush=True,
                 )
             yield message["result"]
