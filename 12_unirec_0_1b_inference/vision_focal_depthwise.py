@@ -179,41 +179,55 @@ def _patch_grouped_runtime_input_formats(converter_module: Any) -> None:
     global _GROUPED_RUNTIME_FORMAT_PATCHED
     if _GROUPED_RUNTIME_FORMAT_PATCHED:
         return
-    original = converter_module._update_internal_format_from_inputs
-
-    def _update_internal_format_from_inputs(graph: Any, runtime_inputs: Any) -> None:
-        original(graph, runtime_inputs)
-        producers = {op.name: op for op in graph.op}
-        for convolution in graph.op:
-            marker = convolution.attr.get("_unirec_grouped_fz_format")
-            if marker is None:
-                continue
-            storage_format = int(marker.i)
-            logical_shape = list(
-                convolution.attr["_unirec_grouped_fz_logical_shape"].list.i
-            )
-            producer_name = convolution.input[1].split(":", 1)[0]
-            producer = producers[producer_name]
-            producer.attr["_enable_storage_format_spread"].b = False
-            if producer.type == "ConstPlaceHolder":
-                producer.attr["origin_shape"].list.i[:] = logical_shape
-                producer.attr["origin_format"].i = 0
-                producer.attr["storage_format"].i = storage_format
-            for descriptor in producer.output_desc:
-                descriptor.layout = "FRACTAL_Z"
-                descriptor.shape.dim[:] = []
-                descriptor.attr["format_for_int"].i = storage_format
-                descriptor.attr["origin_format_for_int"].i = 0
-                descriptor.attr["origin_shape"].list.val_type = 2
-                descriptor.attr["origin_shape"].list.i[:] = logical_shape
-                descriptor.attr["origin_shape_initialized"].b = True
-                descriptor.attr["origin_format_is_set"].b = True
-            for descriptor in producer.input_desc:
-                descriptor.CopyFrom(producer.output_desc[0])
-
-    converter_module._update_internal_format_from_inputs = (
-        _update_internal_format_from_inputs
+    modules = [converter_module]
+    generated_module = importlib.import_module(
+        "torchair._ge_concrete_graph.fx2ge_converter"
     )
+    if generated_module is not converter_module:
+        modules.append(generated_module)
+    for module in modules:
+        original = module._update_internal_format_from_inputs
+
+        def _update_internal_format_from_inputs(
+            graph: Any,
+            runtime_inputs: Any,
+            *,
+            _original: Any = original,
+        ) -> None:
+            _original(graph, runtime_inputs)
+            producers = {op.name: op for op in graph.op}
+            for convolution in graph.op:
+                marker = convolution.attr.get("_unirec_grouped_fz_format")
+                if marker is None:
+                    continue
+                storage_format = int(marker.i)
+                logical_shape = list(
+                    convolution.attr[
+                        "_unirec_grouped_fz_logical_shape"
+                    ].list.i
+                )
+                producer_name = convolution.input[1].split(":", 1)[0]
+                producer = producers[producer_name]
+                producer.attr["_enable_storage_format_spread"].b = False
+                if producer.type == "ConstPlaceHolder":
+                    producer.attr["origin_shape"].list.i[:] = logical_shape
+                    producer.attr["origin_format"].i = 0
+                    producer.attr["storage_format"].i = storage_format
+                for descriptor in producer.output_desc:
+                    descriptor.layout = "FRACTAL_Z"
+                    descriptor.shape.dim[:] = []
+                    descriptor.attr["format_for_int"].i = storage_format
+                    descriptor.attr["origin_format_for_int"].i = 0
+                    descriptor.attr["origin_shape"].list.val_type = 2
+                    descriptor.attr["origin_shape"].list.i[:] = logical_shape
+                    descriptor.attr["origin_shape_initialized"].b = True
+                    descriptor.attr["origin_format_is_set"].b = True
+                for descriptor in producer.input_desc:
+                    descriptor.CopyFrom(producer.output_desc[0])
+
+        module._update_internal_format_from_inputs = (
+            _update_internal_format_from_inputs
+        )
     _GROUPED_RUNTIME_FORMAT_PATCHED = True
 
 
