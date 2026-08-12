@@ -88,6 +88,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--layout-fuse-frozen-bn", action="store_true")
     parser.add_argument("--layout-fuse-eval-bn", action="store_true")
     parser.add_argument(
+        "--layout-precompute-frozen-bn-affine", action="store_true"
+    )
+    parser.add_argument(
         "--profile-metric",
         choices=("pipe", "memory", "l2", "memory_access"),
         default="pipe",
@@ -308,6 +311,9 @@ def _layout_lane(
         weight_format=args.layout_weight_format,
         fuse_frozen_bn=args.layout_fuse_frozen_bn,
         fuse_eval_bn=args.layout_fuse_eval_bn,
+        precompute_frozen_bn_affine=(
+            args.layout_precompute_frozen_bn_affine
+        ),
     )
     if detector.compiled_runtime is None:
         raise RuntimeError("layout profiler requires the compiled runtime")
@@ -322,7 +328,8 @@ def _layout_lane(
     result = _profile_lane(
         f"layout_b1_800x800_{args.layout_dtype}_{args.layout_depthwise_rewrite}_"
         f"{args.layout_weight_format}_frozenbn{int(args.layout_fuse_frozen_bn)}_"
-        f"evalbn{int(args.layout_fuse_eval_bn)}",
+        f"evalbn{int(args.layout_fuse_eval_bn)}_"
+        f"precomputedfrozenbn{int(args.layout_precompute_frozen_bn_affine)}",
         run,
         output_root=output_root,
         device=args.device,
@@ -339,6 +346,9 @@ def _layout_lane(
             "weight_format": args.layout_weight_format,
             "fuse_frozen_bn": args.layout_fuse_frozen_bn,
             "fuse_eval_bn": args.layout_fuse_eval_bn,
+            "precompute_frozen_bn_affine": (
+                args.layout_precompute_frozen_bn_affine
+            ),
             "execution": "compiled_fullgraph",
         },
     )
@@ -520,6 +530,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             "layout_weight_format": args.layout_weight_format,
             "layout_fuse_frozen_bn": args.layout_fuse_frozen_bn,
             "layout_fuse_eval_bn": args.layout_fuse_eval_bn,
+            "layout_precompute_frozen_bn_affine": (
+                args.layout_precompute_frozen_bn_affine
+            ),
         },
         "first128_workload": {
             "layout_calls": FIRST128_LAYOUT_CALLS,

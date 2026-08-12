@@ -366,6 +366,26 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
             self.assertIsInstance(candidate[0].normalization, nn.Identity)
             self.assertIsNotNone(candidate[0].convolution.bias)
 
+    def test_precomputed_frozen_batch_norm_affine_matches_unfused(self) -> None:
+        module = _load_layout_adapter()
+        torch.manual_seed(30)
+        candidate = nn.Sequential(_ConvFrozenNorm(16, conv_bias=False)).eval()
+        inputs = torch.randn(2, 16, 9, 11)
+        with torch.inference_mode():
+            reference = candidate(inputs)
+        summary = module._precompute_layout_frozen_bn_affines(
+            candidate,
+            preformat_nc1hwc0=False,
+        )
+        with torch.inference_mode():
+            actual = candidate(inputs)
+        torch.testing.assert_close(actual, reference, atol=0, rtol=0)
+        self.assertEqual(summary["replaced_count"], 1)
+        self.assertIsInstance(
+            candidate[0].normalization,
+            module._PrecomputedLayoutAffine2d,
+        )
+
     def test_eval_batch_norm_folding_matches_unfused_module(self) -> None:
         module = _load_layout_adapter()
         torch.manual_seed(31)

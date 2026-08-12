@@ -87,6 +87,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fold evaluation FPN/PAN BatchNorm2d into Conv2d",
     )
+    parser.add_argument(
+        "--precompute-frozen-bn-affine",
+        action="store_true",
+        help="Precompute exact FrozenBN scale/bias on NPU and store NC1HWC0",
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument(
@@ -221,6 +226,7 @@ def main() -> None:
         depthwise_rewrite=args.depthwise_rewrite,
         fuse_frozen_bn=args.fuse_frozen_bn,
         fuse_eval_bn=args.fuse_eval_bn,
+        precompute_frozen_bn_affine=args.precompute_frozen_bn_affine,
     )
     print(
         f"LAYOUT_LAB phase=model_setup_end setup_s={detector.setup_s:.3f}",
@@ -296,6 +302,8 @@ def main() -> None:
             "frozen_bn_fusion_summary": detector.frozen_bn_fusion_summary,
             "fuse_eval_bn": args.fuse_eval_bn,
             "eval_bn_fusion_summary": detector.eval_bn_fusion_summary,
+            "precompute_frozen_bn_affine": args.precompute_frozen_bn_affine,
+            "frozen_bn_affine_summary": detector.frozen_bn_affine_summary,
             "scheduling": "sequential_b1_same_process",
         },
         "summary": summarize(records, detector.setup_s),

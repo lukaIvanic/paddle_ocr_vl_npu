@@ -34,6 +34,16 @@ LAYOUT_DEPTHWISE_REWRITE_CHOICES = (
 )
 
 
+class _PrecomputedLayoutAffine2d(torch.nn.Module):
+    def __init__(self, scale: torch.Tensor, bias: torch.Tensor) -> None:
+        super().__init__()
+        self.register_buffer("scale", scale)
+        self.register_buffer("bias", bias)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        return inputs * self.scale + self.bias
+
+
 def _rewrite_layout_depthwise_convs(
     model: torch.nn.Module,
     *,
@@ -136,6 +146,52 @@ def _fuse_layout_frozen_batch_norms(model: torch.nn.Module) -> dict[str, Any]:
         "fused_count": len(fused),
         "modules": fused,
     }
+
+
+def _precompute_layout_frozen_bn_affines(
+    model: torch.nn.Module,
+    *,
+    preformat_nc1hwc0: bool,
+) -> dict[str, Any]:
+    """Precompute FrozenBatchNorm affine tensors without Conv-BN reassociation."""
+    torch_npu = None
+    if preformat_nc1hwc0:
+        import torch_npu as imported_torch_npu
+
+        torch_npu = imported_torch_npu
+    replaced: list[dict[str, Any]] = []
+    with torch.no_grad():
+        for name, module in list(model.named_modules()):
+            normalization = getattr(module, "normalization", None)
+            if type(normalization).__name__ != "PPDocLayoutV2FrozenBatchNorm2d":
+                continue
+            weight = normalization.weight.reshape(1, -1, 1, 1)
+            source_bias = normalization.bias.reshape(1, -1, 1, 1)
+            running_var = normalization.running_var.reshape(1, -1, 1, 1)
+            running_mean = normalization.running_mean.reshape(1, -1, 1, 1)
+            scale = weight * (running_var + 1e-5).rsqrt()
+            bias = source_bias - running_mean * scale
+            if torch_npu is not None:
+                scale = torch_npu.npu_format_cast(scale, 3)
+                bias = torch_npu.npu_format_cast(bias, 3)
+            module.normalization = _PrecomputedLayoutAffine2d(scale, bias)
+            replaced.append(
+                {
+                    "module": name,
+                    "channels": int(scale.shape[1]),
+                    "scale_format": (
+                        None
+                        if torch_npu is None
+                        else int(torch_npu.get_npu_format(scale))
+                    ),
+                    "bias_format": (
+                        None
+                        if torch_npu is None
+                        else int(torch_npu.get_npu_format(bias))
+                    ),
+                }
+            )
+    return {"replaced_count": len(replaced), "modules": replaced}
 
 
 def _fuse_layout_eval_batch_norms(model: torch.nn.Module) -> dict[str, Any]:
@@ -376,6 +432,7 @@ class PPDocLayoutV2NpuAdapter:
         depthwise_rewrite: str = "native",
         fuse_frozen_bn: bool = False,
         fuse_eval_bn: bool = False,
+        precompute_frozen_bn_affine: bool = False,
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
@@ -409,6 +466,11 @@ class PPDocLayoutV2NpuAdapter:
         self.depthwise_rewrite = str(depthwise_rewrite)
         self.fuse_frozen_bn = bool(fuse_frozen_bn)
         self.fuse_eval_bn = bool(fuse_eval_bn)
+        self.precompute_frozen_bn_affine = bool(precompute_frozen_bn_affine)
+        if self.fuse_frozen_bn and self.precompute_frozen_bn_affine:
+            raise ValueError(
+                "fuse_frozen_bn and precompute_frozen_bn_affine are exclusive"
+            )
         self._filter_overlap_boxes = filter_overlap_boxes_vectorized
 
         started = time.perf_counter()
@@ -437,10 +499,18 @@ class PPDocLayoutV2NpuAdapter:
             self.model,
             requested=self.depthwise_rewrite,
         )
-        if self.weight_format != "native":
+        if self.weight_format != "native" or self.precompute_frozen_bn_affine:
             # This gate must precede the process's first NPU allocation.
             torch.npu.config.allow_internal_format = True
         self.model.eval().to(device=self.device, dtype=self.dtype)
+        self.frozen_bn_affine_summary = (
+            _precompute_layout_frozen_bn_affines(
+                self.model,
+                preformat_nc1hwc0=True,
+            )
+            if self.precompute_frozen_bn_affine
+            else {"replaced_count": 0, "modules": []}
+        )
         self.weight_format_summary = _prepare_layout_weight_formats(
             self.model,
             requested=self.weight_format,
@@ -456,7 +526,8 @@ class PPDocLayoutV2NpuAdapter:
                 cache_root=Path(compile_cache_dir) / (
                     f"depthwise_{self.depthwise_rewrite}_"
                     f"frozenbn{int(self.fuse_frozen_bn)}_"
-                    f"evalbn{int(self.fuse_eval_bn)}"
+                    f"evalbn{int(self.fuse_eval_bn)}_"
+                    f"precomputedfrozenbn{int(self.precompute_frozen_bn_affine)}"
                 ),
                 dtype=self.dtype,
                 device=self.device,
