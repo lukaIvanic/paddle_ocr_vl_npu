@@ -43,7 +43,9 @@ from opendoc_layout_npu import (  # noqa: E402
 )
 from vision_full_batch import (  # noqa: E402
     DEFAULT_VISION_BUCKETS,
+    VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES,
     BucketedFullVisionRuntime,
+    _new_masked_full_encoder_module,
 )
 
 
@@ -73,6 +75,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--parser-topn", type=int, default=50)
     parser.add_argument(
         "--lane", choices=("all", "layout", "vision"), default="all"
+    )
+    parser.add_argument(
+        "--vision-depthwise-rewrite",
+        choices=VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES,
+        default="native",
+    )
+    parser.add_argument(
+        "--vision-bucket",
+        action="append",
+        choices=tuple(spec.key for spec in DEFAULT_VISION_BUCKETS),
+        help="profile only this vision bucket; repeat to select more than one",
     )
     parser.add_argument(
         "--layout-dtype", choices=("float16", "float32"), default="float32"
@@ -380,58 +393,139 @@ def _recognition_lanes(
         dtype="float16",
         compile_cache_dir=args.recognition_cache_dir.expanduser().resolve(),
     )
-    vision = BucketedFullVisionRuntime(runner, specs=DEFAULT_VISION_BUCKETS)
-    lanes = []
-    for spec in DEFAULT_VISION_BUCKETS:
-        pixels = torch.zeros(
-            (spec.batch_size, 3, spec.height, spec.width),
-            dtype=runner.dtype,
-            device=args.device,
-        )
-        masks = tuple(
-            torch.ones(
-                (
-                    spec.batch_size,
-                    1,
-                    spec.height // factor,
-                    spec.width // factor,
-                ),
+    selected_keys = set(args.vision_bucket or ())
+    vision_specs = tuple(
+        spec
+        for spec in DEFAULT_VISION_BUCKETS
+        if not selected_keys or spec.key in selected_keys
+    )
+    baseline_outputs: dict[str, torch.Tensor] = {}
+    validation_inputs: dict[
+        str, tuple[torch.Tensor, tuple[torch.Tensor, ...]]
+    ] = {}
+    if args.vision_depthwise_rewrite != "native":
+        for spec in vision_specs:
+            pixels = torch.zeros(
+                (spec.batch_size, 3, spec.height, spec.width),
                 dtype=runner.dtype,
                 device=args.device,
             )
-            for factor in (2, 4, 8, 16, 32)
-        )
+            masks = tuple(
+                torch.ones(
+                    (
+                        spec.batch_size,
+                        1,
+                        spec.height // factor,
+                        spec.width // factor,
+                    ),
+                    dtype=runner.dtype,
+                    device=args.device,
+                )
+                for factor in (2, 4, 8, 16, 32)
+            )
+            native_module = _new_masked_full_encoder_module(runner, spec)
+            with torch.inference_mode():
+                baseline_outputs[spec.key] = native_module(
+                    pixels, *masks
+                ).detach().clone()
+            validation_inputs[spec.key] = (pixels, masks)
+            del native_module
+        synchronize_device(args.device)
+    vision = BucketedFullVisionRuntime(
+        runner,
+        specs=vision_specs,
+        focal_depthwise_rewrite=args.vision_depthwise_rewrite,
+    )
+    lanes = []
+    for spec in vision_specs:
+        if spec.key in validation_inputs:
+            pixels, masks = validation_inputs[spec.key]
+        else:
+            pixels = torch.zeros(
+                (spec.batch_size, 3, spec.height, spec.width),
+                dtype=runner.dtype,
+                device=args.device,
+            )
+            masks = tuple(
+                torch.ones(
+                    (
+                        spec.batch_size,
+                        1,
+                        spec.height // factor,
+                        spec.width // factor,
+                    ),
+                    dtype=runner.dtype,
+                    device=args.device,
+                )
+                for factor in (2, 4, 8, 16, 32)
+            )
         compiled = vision.compiled[spec.key]
         run = lambda compiled=compiled, pixels=pixels, masks=masks: compiled(
             pixels, *masks
         )
-        lanes.append(
-            _profile_lane(
-                f"vision_{spec.key}_fp16",
-                run,
-                output_root=output_root,
-                device=args.device,
-                warmup=args.warmup,
-                control_repeats=args.control_repeats,
-                profile_steps=args.profile_steps,
-                profile_metric=args.profile_metric,
-                parser_topn=args.parser_topn,
-                first128_calls=FIRST128_VISION_CALLS[spec.key],
-                input_contract={
-                    "pixel_values": [
-                        spec.batch_size,
-                        3,
-                        spec.height,
-                        spec.width,
-                    ],
-                    "mask_shapes": [
-                        list(mask.shape) for mask in masks
-                    ],
-                    "dtype": "float16",
-                    "execution": "compiled_masked_full_vision",
-                },
-            )
+        validation = {
+            "rewrite": args.vision_depthwise_rewrite,
+            "reference": "not_required_for_native",
+            "allclose_atol_5e_2_rtol_5e_2": True,
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+        }
+        if spec.key in baseline_outputs:
+            with torch.inference_mode():
+                candidate = run()
+            synchronize_device(args.device)
+            difference = (candidate - baseline_outputs[spec.key]).abs()
+            validation = {
+                "rewrite": args.vision_depthwise_rewrite,
+                "reference": "same_process_native_masked_full_encoder",
+                "allclose_atol_5e_2_rtol_5e_2": bool(
+                    torch.allclose(
+                        candidate,
+                        baseline_outputs[spec.key],
+                        atol=5e-2,
+                        rtol=5e-2,
+                    )
+                ),
+                "max_abs": float(difference.max().item()),
+                "mean_abs": float(difference.mean().item()),
+            }
+            if not validation["allclose_atol_5e_2_rtol_5e_2"]:
+                raise RuntimeError(
+                    f"vision rewrite parity failed for {spec.key}: {validation}"
+                )
+            del candidate, difference
+        lane_name = f"vision_{spec.key}_fp16"
+        if args.vision_depthwise_rewrite != "native":
+            lane_name += f"_dw{args.vision_depthwise_rewrite}"
+        lane = _profile_lane(
+            lane_name,
+            run,
+            output_root=output_root,
+            device=args.device,
+            warmup=args.warmup,
+            control_repeats=args.control_repeats,
+            profile_steps=args.profile_steps,
+            profile_metric=args.profile_metric,
+            parser_topn=args.parser_topn,
+            first128_calls=FIRST128_VISION_CALLS[spec.key],
+            input_contract={
+                "pixel_values": [
+                    spec.batch_size,
+                    3,
+                    spec.height,
+                    spec.width,
+                ],
+                "mask_shapes": [list(mask.shape) for mask in masks],
+                "dtype": "float16",
+                "execution": "compiled_masked_full_vision",
+                "focal_depthwise_rewrite": args.vision_depthwise_rewrite,
+            },
         )
+        lane["focal_depthwise_rewrite_summary"] = (
+            vision.focal_depthwise_rewrite_summary
+        )
+        lane["rewrite_validation"] = validation
+        lanes.append(lane)
         del pixels, masks
 
     if args.lane != "vision":
@@ -543,6 +637,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             "profile_metric": args.profile_metric,
             "parser_topn": args.parser_topn,
             "lane": args.lane,
+            "vision_depthwise_rewrite": args.vision_depthwise_rewrite,
+            "vision_buckets": args.vision_bucket,
             "layout_dtype": args.layout_dtype,
             "layout_depthwise_rewrite": args.layout_depthwise_rewrite,
             "layout_weight_format": args.layout_weight_format,

@@ -20,6 +20,11 @@ from modeling_optimized_unirec import (
     import_torchair_cache_compile,
     synchronize_device,
 )
+from vision_focal_depthwise import (
+    VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES,
+    rewrite_vision_focal_depthwise_convs,
+    vision_rewrite_source_hash,
+)
 
 
 @dataclass(frozen=True, order=True)
@@ -324,6 +329,7 @@ class BucketedFullVisionRuntime:
         *,
         specs: Sequence[VisionBucketSpec] = DEFAULT_VISION_BUCKETS,
         diagnostic_graph_log: bool = False,
+        focal_depthwise_rewrite: str = "native",
     ) -> None:
         if not specs:
             raise ValueError("bucketed UniRec vision requires at least one bucket")
@@ -332,6 +338,13 @@ class BucketedFullVisionRuntime:
         self.runner = runner
         self.specs = tuple(specs)
         self.diagnostic_graph_log = bool(diagnostic_graph_log)
+        self.focal_depthwise_rewrite = str(focal_depthwise_rewrite)
+        self.focal_depthwise_rewrite_summary = (
+            rewrite_vision_focal_depthwise_convs(
+                runner.model.encoder.vision_encoder,
+                requested=self.focal_depthwise_rewrite,
+            )
+        )
         required_specializations = len(self.specs) + 16
         torch._dynamo.config.cache_size_limit = max(
             int(torch._dynamo.config.cache_size_limit),
@@ -356,6 +369,14 @@ class BucketedFullVisionRuntime:
         config.mode.value = "max-autotune"
         cache_compile, import_path = import_torchair_cache_compile()
         source_hash = _source_hash()
+        rewrite_hash = vision_rewrite_source_hash(
+            self.focal_depthwise_rewrite
+        )
+        rewrite_cache_suffix = (
+            ""
+            if self.focal_depthwise_rewrite == "native"
+            else f"_dw{self.focal_depthwise_rewrite}_src{rewrite_hash}"
+        )
         self.compile_api = import_path
         self.modules: dict[str, _MaskedFullVisionEncoder] = {}
         self.compiled: dict[str, Callable[..., torch.Tensor]] = {}
@@ -372,6 +393,7 @@ class BucketedFullVisionRuntime:
             module = _new_masked_full_encoder_module(runner, spec)
             cache_dir = runner.compile_cache_dir / (
                 f"vision_full_bucket_{spec.key}_{runner.dtype_name}_src{source_hash}"
+                f"{rewrite_cache_suffix}"
             )
             cache_dir.mkdir(parents=True, exist_ok=True)
             self.modules[spec.key] = module

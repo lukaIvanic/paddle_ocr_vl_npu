@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""CPU correctness checks for exact UniRec focal-depthwise rewrites."""
+
+from __future__ import annotations
+
+import copy
+import sys
+import unittest
+from pathlib import Path
+from types import SimpleNamespace
+
+import torch
+
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+from vision_focal_depthwise import (  # noqa: E402
+    AlignedSpatialDepthwiseConv,
+    rewrite_vision_focal_depthwise_convs,
+)
+
+
+def _fake_vision_encoder() -> SimpleNamespace:
+    stages = []
+    for stage_index, (channels, depth) in enumerate(
+        ((96, 2), (192, 2), (384, 9), (768, 2))
+    ):
+        blocks = []
+        for _ in range(depth):
+            focals = torch.nn.ModuleList(
+                [
+                    torch.nn.Sequential(
+                        torch.nn.Conv2d(
+                            channels,
+                            channels,
+                            kernel_size=kernel,
+                            padding=kernel // 2,
+                            groups=channels,
+                            bias=False,
+                        ),
+                        torch.nn.GELU(),
+                    )
+                    for kernel in (3, 5, 7)
+                ]
+            )
+            blocks.append(
+                SimpleNamespace(
+                    modulation=SimpleNamespace(focal_layers=focals)
+                )
+            )
+        stages.append(SimpleNamespace(blocks=blocks, stage=stage_index))
+    return SimpleNamespace(layers=stages)
+
+
+class VisionFocalDepthwiseRewriteTest(unittest.TestCase):
+    def test_aligned_spatial_filters_are_exact(self) -> None:
+        torch.manual_seed(7)
+        for kernel in (5, 7):
+            source = torch.nn.Conv2d(
+                16,
+                16,
+                kernel_size=kernel,
+                padding=kernel // 2,
+                groups=16,
+                bias=False,
+            ).eval()
+            inputs = torch.randn(2, 16, 11, 13)
+            expected = source(inputs)
+            rewritten = AlignedSpatialDepthwiseConv(source).eval()
+            actual = rewritten(inputs)
+            torch.testing.assert_close(actual, expected, atol=1e-6, rtol=1e-5)
+            self.assertEqual(rewritten.weight.shape[-2] * rewritten.weight.shape[-1] % 16, 0)
+
+    def test_group16_rewrite_is_exact_and_targets_only_stage2_and_stage3(self) -> None:
+        torch.manual_seed(11)
+        vision = _fake_vision_encoder()
+        original = copy.deepcopy(
+            vision.layers[2].blocks[0].modulation.focal_layers[2][0]
+        )
+        summary = rewrite_vision_focal_depthwise_convs(
+            vision,
+            requested="group16",
+        )
+        self.assertEqual(summary["target_count"], 22)
+        self.assertEqual(summary["rewritten_count"], 22)
+        self.assertEqual({row["stage"] for row in summary["modules"]}, {2, 3})
+        rewritten = vision.layers[2].blocks[0].modulation.focal_layers[2][0]
+        self.assertEqual(rewritten.groups, 24)
+        self.assertEqual(tuple(rewritten.weight.shape), (384, 16, 7, 7))
+        inputs = torch.randn(1, 384, 7, 9)
+        torch.testing.assert_close(
+            rewritten(inputs),
+            original(inputs),
+            atol=1e-6,
+            rtol=1e-5,
+        )
+
+    def test_native_lane_records_targets_without_mutation(self) -> None:
+        vision = _fake_vision_encoder()
+        before = vision.layers[3].blocks[1].modulation.focal_layers[1][0]
+        summary = rewrite_vision_focal_depthwise_convs(
+            vision,
+            requested="native",
+        )
+        after = vision.layers[3].blocks[1].modulation.focal_layers[1][0]
+        self.assertIs(after, before)
+        self.assertEqual(summary["target_count"], 22)
+        self.assertEqual(summary["rewritten_count"], 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
