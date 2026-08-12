@@ -468,10 +468,10 @@ def rewrite_vision_focal_depthwise_convs(
                         }
                     )
                 targets.append(row)
-    if requested == "constant":
+    if requested in {"constant", "constant_grouped"}:
         register_focal_depthwise_constant_converter()
     constant_digest = ""
-    if requested == "constant":
+    if requested in {"constant", "constant_grouped"}:
         digest = hashlib.sha256()
         for row in targets:
             digest.update(
