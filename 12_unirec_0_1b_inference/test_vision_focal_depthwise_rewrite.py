@@ -18,6 +18,7 @@ sys.path.insert(0, str(HERE))
 from vision_focal_depthwise import (  # noqa: E402
     AlignedSpatialDepthwiseConv,
     ConstantFocalDepthwiseConv,
+    grouped_fz_storage_shape,
     rewrite_vision_focal_depthwise_convs,
 )
 
@@ -55,6 +56,16 @@ def _fake_vision_encoder() -> SimpleNamespace:
 
 
 class VisionFocalDepthwiseRewriteTest(unittest.TestCase):
+    def test_grouped_fz_storage_shape_matches_cann_filter_layout(self) -> None:
+        self.assertEqual(
+            grouped_fz_storage_shape((384, 1, 7, 7), groups=384),
+            (1176, 1, 16, 16),
+        )
+        self.assertEqual(
+            grouped_fz_storage_shape((192, 1, 5, 5), groups=192),
+            (300, 1, 16, 16),
+        )
+
     def test_constant_wrapper_matches_native_depthwise_convolution(self) -> None:
         torch.manual_seed(5)
         source = torch.nn.Conv2d(

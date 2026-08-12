@@ -27,6 +27,32 @@ _NEXT_CONSTANT_WEIGHT_ID = 0
 _PREPACK_CONVERTER_REGISTERED = False
 
 
+def grouped_fz_storage_shape(
+    logical_shape: tuple[int, int, int, int] | list[int],
+    *,
+    groups: int,
+) -> tuple[int, int, int, int]:
+    """Return CANN's physical FRACTAL_Z:<groups> filter shape."""
+    output_channels, input_channels_per_group, kernel_h, kernel_w = (
+        int(value) for value in logical_shape
+    )
+    groups = int(groups)
+    if groups < 1 or output_channels % groups:
+        raise ValueError(
+            "grouped FZ requires output channels divisible by groups, got "
+            f"shape={tuple(logical_shape)} groups={groups}"
+        )
+    output_channels_per_group = output_channels // groups
+    return (
+        ((groups * input_channels_per_group + 15) // 16)
+        * kernel_h
+        * kernel_w,
+        (output_channels_per_group + 15) // 16,
+        16,
+        16,
+    )
+
+
 @torch.library.custom_op("unirec::focal_group_prepack_v1", mutates_args=())
 def _focal_group_prepack(
     weight: torch.Tensor,
@@ -147,6 +173,11 @@ def register_focal_group_prepack_converter() -> None:
         meta_outputs: Any = None,
     ) -> Any:
         del meta_outputs
+        logical_shape = tuple(int(value) for value in weight.symsize)
+        storage_shape = grouped_fz_storage_shape(
+            logical_shape,
+            groups=int(groups),
+        )
         packed = ge.TransData(
             weight,
             src_format="NCHW",
@@ -157,6 +188,13 @@ def register_focal_group_prepack_converter() -> None:
         )
         specific_input_layout(packed, indices=0, layout="NCHW")
         specific_output_layout(packed, indices=0, layout="FRACTAL_Z")
+        packed.desc.shape.dim[:] = storage_shape
+        packed.desc.attr["format_for_int"].i = (int(groups) << 8) | 4
+        packed.desc.attr["origin_format_for_int"].i = 0
+        packed.desc.attr["origin_shape"].list.val_type = 2
+        packed.desc.attr["origin_shape"].list.i.extend(logical_shape)
+        packed.desc.attr["origin_shape_initialized"].b = True
+        packed.desc.attr["origin_format_is_set"].b = True
         return packed
 
     _PREPACK_CONVERTER_REGISTERED = True
