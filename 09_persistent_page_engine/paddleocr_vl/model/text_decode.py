@@ -1663,9 +1663,7 @@ def _decode_attention(
                 int(value_for_attention.shape[2]),
                 int(attention.head_dim),
             )
-            mask_for_attention = attention_mask.view(
-                1, 1, 1, int(attention_mask.shape[-1])
-            )
+            mask_for_attention = attention_mask.expand(2, -1, -1, -1)
             call_num_heads = 8
             call_num_key_value_heads = 1
         else:
