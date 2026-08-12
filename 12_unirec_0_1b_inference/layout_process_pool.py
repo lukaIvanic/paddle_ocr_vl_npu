@@ -1217,6 +1217,8 @@ def _worker_main(
     recognition_cache_dir: str | None,
     recognition_prefix_shapes_manifest: str | None,
     recognition_full_vision_buckets: bool,
+    recognition_vision_focal_depthwise_rewrite: str,
+    recognition_vision_weight_format: str,
     recognition_page_lookahead: int,
     empty_cache_after_page: bool,
     profile_prefill_device_stages: bool,
@@ -1314,7 +1316,11 @@ def _worker_main(
                 from vision_full_batch import BucketedFullVisionRuntime
 
                 full_vision_runtime = BucketedFullVisionRuntime(
-                    recognition_runner
+                    recognition_runner,
+                    focal_depthwise_rewrite=(
+                        recognition_vision_focal_depthwise_rewrite
+                    ),
+                    weight_format=recognition_vision_weight_format,
                 )
                 vision_atlas_runtime = None
                 warmup_started = time.perf_counter()
@@ -1399,6 +1405,20 @@ def _worker_main(
                 "layout_weight_format_summary": runtime.weight_format_summary,
                 "layout_frozen_bn_buffer_format_summary": (
                     runtime.frozen_bn_buffer_format_summary
+                ),
+                "vision_focal_depthwise_rewrite": (
+                    recognition_vision_focal_depthwise_rewrite
+                ),
+                "vision_weight_format": recognition_vision_weight_format,
+                "vision_focal_depthwise_rewrite_summary": (
+                    full_vision_runtime.focal_depthwise_rewrite_summary
+                    if full_vision_runtime is not None
+                    else None
+                ),
+                "vision_weight_format_summary": (
+                    full_vision_runtime.weight_format_summary
+                    if full_vision_runtime is not None
+                    else None
                 ),
             }
         )
@@ -1635,6 +1655,8 @@ class DynamicLayoutProcessPool:
         recognition_cache_dir: Path | None = None,
         recognition_prefix_shapes_manifest: Path | None = None,
         recognition_full_vision_buckets: bool = False,
+        recognition_vision_focal_depthwise_rewrite: str = "native",
+        recognition_vision_weight_format: str = "native",
         recognition_page_lookahead: int = 1,
         empty_cache_after_page: bool = False,
         profile_prefill_device_stages: bool = False,
@@ -1667,6 +1689,12 @@ class DynamicLayoutProcessPool:
         )
         self.prepare_pages = prepare_pages
         self.recognition_full_vision_buckets = recognition_full_vision_buckets
+        self.recognition_vision_focal_depthwise_rewrite = str(
+            recognition_vision_focal_depthwise_rewrite
+        )
+        self.recognition_vision_weight_format = str(
+            recognition_vision_weight_format
+        )
         self.recognition_page_lookahead = recognition_page_lookahead
         self.retain_shared_images = bool(retain_shared_images)
         self.timeout_s = timeout_s
@@ -1709,6 +1737,8 @@ class DynamicLayoutProcessPool:
                         else None
                     ),
                     recognition_full_vision_buckets,
+                    self.recognition_vision_focal_depthwise_rewrite,
+                    self.recognition_vision_weight_format,
                     recognition_page_lookahead,
                     empty_cache_after_page,
                     profile_prefill_device_stages,
@@ -1752,6 +1782,16 @@ class DynamicLayoutProcessPool:
                 ],
                 "layout_frozen_bn_buffer_format_summary": message[
                     "layout_frozen_bn_buffer_format_summary"
+                ],
+                "vision_focal_depthwise_rewrite": str(
+                    message["vision_focal_depthwise_rewrite"]
+                ),
+                "vision_weight_format": str(message["vision_weight_format"]),
+                "vision_focal_depthwise_rewrite_summary": message[
+                    "vision_focal_depthwise_rewrite_summary"
+                ],
+                "vision_weight_format_summary": message[
+                    "vision_weight_format_summary"
                 ],
             }
             for message in sorted(ready, key=lambda value: int(value["worker"]))

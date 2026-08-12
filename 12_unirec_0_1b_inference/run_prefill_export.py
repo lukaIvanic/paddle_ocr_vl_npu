@@ -127,6 +127,28 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--vision-focal-depthwise-rewrite",
+        choices=(
+            "native",
+            "constant",
+            "constant_grouped",
+            "constant_grouped_all",
+            "group16",
+            "aligned_spatial",
+        ),
+        default="native",
+        help=(
+            "Select the focal-depthwise implementation inside every fixed "
+            "full-vision bucket graph."
+        ),
+    )
+    parser.add_argument(
+        "--vision-weight-format",
+        choices=("native", "focal_prepack", "torchair_internal"),
+        default="native",
+        help="Select the full-vision Conv/Linear weight preparation lane.",
+    )
+    parser.add_argument(
         "--recognition-input-contract",
         choices=("compact_uint8_hwc", "legacy_float32_bchw"),
         default="compact_uint8_hwc",
@@ -189,6 +211,14 @@ def parse_args() -> argparse.Namespace:
         parser.error(
             "--vision-full-batches cannot be combined with "
             "--vision-prefix-shapes-manifest"
+        )
+    if not args.vision_full_batches and (
+        args.vision_focal_depthwise_rewrite != "native"
+        or args.vision_weight_format != "native"
+    ):
+        parser.error(
+            "vision rewrite/weight-format controls require "
+            "--vision-full-batches"
         )
     return args
 
@@ -294,6 +324,10 @@ def main() -> None:
         recognition_cache_dir=recognition_cache_dir,
         recognition_prefix_shapes_manifest=vision_prefix_shapes_manifest,
         recognition_full_vision_buckets=args.vision_full_batches,
+        recognition_vision_focal_depthwise_rewrite=(
+            args.vision_focal_depthwise_rewrite
+        ),
+        recognition_vision_weight_format=args.vision_weight_format,
         recognition_page_lookahead=args.vision_page_lookahead,
         empty_cache_after_page=args.worker_empty_cache_after_page,
         profile_prefill_device_stages=args.profile_prefill_device_stages,
@@ -351,6 +385,10 @@ def main() -> None:
                     else None
                 ),
                 "vision_full_batches": args.vision_full_batches,
+                "vision_focal_depthwise_rewrite": (
+                    args.vision_focal_depthwise_rewrite
+                ),
+                "vision_weight_format": args.vision_weight_format,
                 "recognition_input_contract": args.recognition_input_contract,
                 "recognition_preprocess_threads": (
                     args.recognition_preprocess_threads
