@@ -70,6 +70,7 @@ def pack_grouped_fz_host(weight: np.ndarray, *, groups: int) -> np.ndarray:
     for output_channel in range(output_channels):
         group = output_channel // output_channels_per_group
         output_in_group = output_channel % output_channels_per_group
+        storage_output_c0 = output_channel % 16
         for input_channel in range(input_channels_per_group):
             grouped_input = group * input_channels_per_group + input_channel
             storage_row_base = (grouped_input // 16) * kernel_area
@@ -80,7 +81,7 @@ def pack_grouped_fz_host(weight: np.ndarray, *, groups: int) -> np.ndarray:
                     packed[
                         storage_row_base + kernel_index,
                         output_in_group // 16,
-                        output_in_group % 16,
+                        storage_output_c0,
                         storage_c0,
                     ] = weight[
                         output_channel,

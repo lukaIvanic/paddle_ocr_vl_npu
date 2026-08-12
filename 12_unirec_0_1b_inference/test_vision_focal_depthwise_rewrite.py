@@ -82,7 +82,7 @@ class VisionFocalDepthwiseRewriteTest(unittest.TestCase):
                     recovered[output_channel, 0, kernel_h, kernel_w] = packed[
                         group_block * 25 + kernel_h * 5 + kernel_w,
                         0,
-                        0,
+                        group_lane,
                         group_lane,
                     ]
         self.assertTrue((recovered == weight).all())
