@@ -23,7 +23,6 @@ from modeling_optimized_unirec import (
 from vision_focal_depthwise import (
     VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES,
     focal_group_prepack,
-    focal_group_prepack_netoutput_context,
     register_focal_group_prepack_converter,
     rewrite_vision_focal_depthwise_convs,
     vision_rewrite_source_hash,
@@ -171,10 +170,7 @@ def _prepare_vision_weight_formats(
                     before_format = str(
                         torch_npu.get_npu_format(convolution.weight)
                     )
-                    with (
-                        torch.inference_mode(),
-                        focal_group_prepack_netoutput_context(),
-                    ):
+                    with torch.inference_mode():
                         packed = compiled_by_signature[signature](
                             convolution.weight.detach()
                         )
