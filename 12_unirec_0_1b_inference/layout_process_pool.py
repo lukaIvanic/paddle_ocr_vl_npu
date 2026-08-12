@@ -1761,7 +1761,26 @@ class DynamicLayoutProcessPool:
         setup_started = time.perf_counter()
         for process in self.processes:
             process.start()
-        ready = [self._receive() for _ in self.processes]
+        ready = []
+        last_ready_at = setup_started
+        while len(ready) < len(self.processes):
+            message = self._receive_stream_message(
+                label="worker_setup",
+                completed=len(ready),
+                total=len(self.processes),
+                stream_started=setup_started,
+                last_result_at=last_ready_at,
+            )
+            last_ready_at = time.perf_counter()
+            ready.append(message)
+            print(
+                "UNIREC_LAYOUT_PROCESS_SETUP_WORKER_READY "
+                f"workers={len(ready)}/{len(self.processes)} "
+                f"worker={int(message.get('worker', -1))} "
+                f"status={message.get('status')} "
+                f"elapsed_s={last_ready_at - setup_started:.3f}",
+                flush=True,
+            )
         errors = [message for message in ready if message["status"] != "ready"]
         if errors:
             self.close()

@@ -4,7 +4,7 @@
 This is an isolation benchmark, not the streaming production path.  Persistent
 layout/recognition workers finish every selected page and leave their page
 arenas resident in CPU shared memory.  The workers are then closed before the
-coordinator model is created, warmed, and used for continuous B128 decoding.
+coordinator model is created, warmed, and used for fixed-batch continuous decode.
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ from collections import deque
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from queue import SimpleQueue
+from threading import Event as ThreadEvent
 from threading import Thread
 from types import SimpleNamespace
 from typing import Any
@@ -39,6 +40,31 @@ def parse_args() -> argparse.Namespace:
         "--layout-execution",
         choices=("eager", "torchair"),
         default="eager",
+    )
+    parser.add_argument(
+        "--layout-dtype",
+        choices=("float16", "float32"),
+        default="float32",
+    )
+    parser.add_argument(
+        "--layout-weight-format",
+        choices=(
+            "native",
+            "depthwise_fz",
+            "all_conv_fz",
+            "linear_nz",
+            "torchair_internal",
+        ),
+        default="native",
+    )
+    parser.add_argument(
+        "--layout-depthwise-rewrite",
+        choices=("native", "group16", "group32", "dense"),
+        default="native",
+    )
+    parser.add_argument(
+        "--layout-preformat-frozen-bn-buffers",
+        action="store_true",
     )
     parser.add_argument("--layout-threshold", type=float, default=0.4)
     parser.add_argument(
@@ -61,6 +87,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup-pages", type=int, default=8)
     parser.add_argument("--layout-batch-size", type=int, default=1)
     parser.add_argument("--vision-page-lookahead", type=int, default=4)
+    parser.add_argument(
+        "--vision-focal-depthwise-rewrite",
+        choices=(
+            "native",
+            "constant",
+            "constant_grouped",
+            "constant_grouped_all",
+            "group16",
+            "aligned_spatial",
+        ),
+        default="native",
+    )
+    parser.add_argument(
+        "--vision-weight-format",
+        choices=("native", "focal_prepack", "torchair_internal"),
+        default="native",
+    )
     parser.add_argument(
         "--no-chart-recognition",
         dest="use_chart_recognition",
@@ -97,6 +140,8 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--prefill-device-timing", action="store_true")
+    parser.add_argument("--progress-every-pages", type=int, default=0)
+    parser.add_argument("--progress-heartbeat-s", type=float, default=0.0)
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be positive")
@@ -116,6 +161,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--max-length cannot exceed --self-cache-length")
     if args.decode_admission_prefetch_depth < 0:
         parser.error("--decode-admission-prefetch-depth must be non-negative")
+    if args.progress_every_pages < 0 or args.progress_heartbeat_s < 0:
+        parser.error("progress intervals must be non-negative")
     return args
 
 
@@ -186,8 +233,10 @@ def atomic_write_json(path: Path, value: dict[str, Any]) -> None:
 def main() -> None:
     args = parse_args()
     devices = physical_devices()
-    if 5 in devices:
-        raise RuntimeError("physical NPU 5 is excluded from UniRec experiments")
+    if 5 in devices or 6 in devices:
+        raise RuntimeError(
+            "physical NPU 5 and NPU 6 are excluded from UniRec experiments"
+        )
     os.environ["UNIREC_STATIC_CACHE_LEN"] = str(args.self_cache_length)
     os.environ["UNIREC_STATIC_CROSS_CACHE_LEN"] = str(args.cross_cache_length)
     os.environ["UNIREC_RECOGNITION_PREPROCESS_THREADS"] = str(
@@ -222,6 +271,11 @@ def main() -> None:
     retained_payloads: list[dict[str, Any]] = []
     warmup_summary: dict[str, Any] | None = None
     prefill_summary: dict[str, Any] | None = None
+    print(
+        "UNIREC_TWO_PHASE_PREFILL_SETUP_BEGIN "
+        f"pages={len(image_paths)} workers={args.workers}",
+        flush=True,
+    )
     pool = DynamicLayoutProcessPool(
         worker_count=args.workers,
         model_path=layout_model,
@@ -229,6 +283,12 @@ def main() -> None:
         threshold=args.layout_threshold,
         execution=args.layout_execution,
         warmup_paths=image_paths[: args.workers],
+        layout_dtype=args.layout_dtype,
+        layout_weight_format=args.layout_weight_format,
+        layout_depthwise_rewrite=args.layout_depthwise_rewrite,
+        layout_preformat_frozen_bn_buffers=(
+            args.layout_preformat_frozen_bn_buffers
+        ),
         layout_batch_size=args.layout_batch_size,
         openocr_root=openocr_root,
         prepare_pages=True,
@@ -238,11 +298,22 @@ def main() -> None:
         recognition_dtype=args.dtype,
         recognition_cache_dir=args.compile_cache_dir.expanduser().resolve(),
         recognition_full_vision_buckets=True,
+        recognition_vision_focal_depthwise_rewrite=(
+            args.vision_focal_depthwise_rewrite
+        ),
+        recognition_vision_weight_format=args.vision_weight_format,
         recognition_page_lookahead=args.vision_page_lookahead,
         profile_prefill_device_stages=args.prefill_device_timing,
         retain_shared_images=False,
+        progress_every_pages=args.progress_every_pages,
+        progress_heartbeat_s=args.progress_heartbeat_s,
     )
     prefill_worker_setup_s = pool.setup_wall_s
+    print(
+        "UNIREC_TWO_PHASE_PREFILL_SETUP_END "
+        f"wall_s={prefill_worker_setup_s:.3f}",
+        flush=True,
+    )
     warmup_wall_s = 0.0
     prefill_phase_wall_s = 0.0
     prefill_worker_shutdown_s = 0.0
@@ -293,6 +364,12 @@ def main() -> None:
         prefill_worker_shutdown_s = time.perf_counter() - shutdown_started
 
     # Import the coordinator model only after every prefill worker is gone.
+    print(
+        "UNIREC_TWO_PHASE_DECODE_SETUP_BEGIN "
+        f"batch={args.decode_batch_size} self_kv={args.self_cache_length} "
+        f"cross_kv={args.cross_cache_length}",
+        flush=True,
+    )
     decode_setup_started = time.perf_counter()
     import torch_npu
 
@@ -342,6 +419,11 @@ def main() -> None:
         passes=args.decode_warmup_passes,
     )
     decode_setup_s = time.perf_counter() - decode_setup_started
+    print(
+        "UNIREC_TWO_PHASE_DECODE_SETUP_END "
+        f"wall_s={decode_setup_s:.3f} batch={args.decode_batch_size}",
+        flush=True,
+    )
 
     metrics = base.RunMetrics()
     pending_pages: deque[base.PageRequest] = deque()
@@ -363,6 +445,9 @@ def main() -> None:
     collector_completion_processing_s = 0.0
     collector_join_s = 0.0
     collector_stopped = False
+    decode_progress_stop = ThreadEvent()
+    decode_completed_crops = 0
+    decode_last_completion_at = time.perf_counter()
 
     def write_page(result: dict[str, Any]) -> tuple[float, float, float, bool]:
         image_reload_s = 0.0
@@ -407,6 +492,13 @@ def main() -> None:
         output_image_reload_s += image_reload_s
         output_image_reload_pages += int(reloaded_image)
         written_pages += 1
+        print(
+            "UNIREC_TWO_PHASE_DECODE_PAGE "
+            f"pages={written_pages}/{len(image_paths)} "
+            f"page_index={page.page_index} crops={len(page.crops)} "
+            f"elapsed_s={completed_at - decode_phase_started:.3f}",
+            flush=True,
+        )
         metrics.page_records.append(
             {
                 "page_index": page.page_index,
@@ -554,7 +646,22 @@ def main() -> None:
             collector_errors.append(exception)
 
     def enqueue_completed_crop(completed_item: ContinuousCompletedItem) -> None:
+        nonlocal decode_completed_crops, decode_last_completion_at
+        decode_completed_crops += 1
+        decode_last_completion_at = time.perf_counter()
         completion_queue.put(("crop", completed_item))
+
+    def report_decode_heartbeat() -> None:
+        while not decode_progress_stop.wait(15.0):
+            now = time.perf_counter()
+            print(
+                "UNIREC_TWO_PHASE_DECODE_HEARTBEAT "
+                f"completed_crops={decode_completed_crops}/{retained['crop_count']} "
+                f"written_pages={written_pages}/{len(image_paths)} "
+                f"elapsed_s={now - decode_phase_started:.1f} "
+                f"silence_s={now - decode_last_completion_at:.1f}",
+                flush=True,
+            )
 
     collector_thread = Thread(
         target=collect_completions,
@@ -572,7 +679,14 @@ def main() -> None:
         collector_join_s = time.perf_counter() - join_started
 
     decode_phase_started = time.perf_counter()
+    decode_last_completion_at = decode_phase_started
+    decode_progress_thread = Thread(
+        target=report_decode_heartbeat,
+        name="unirec-two-phase-decode-progress",
+        daemon=True,
+    )
     collector_thread.start()
+    decode_progress_thread.start()
     decode_inference_wall_s = 0.0
     try:
         continuous_decode = ContinuousUniRecDecoder(
@@ -599,6 +713,8 @@ def main() -> None:
             metrics.raw_decode_token_slots - metrics.effective_decode_tokens
         )
         stop_collector()
+        decode_progress_stop.set()
+        decode_progress_thread.join(timeout=20.0)
         if collector_errors:
             raise RuntimeError("background result collector failed") from (
                 collector_errors[0]
@@ -609,6 +725,8 @@ def main() -> None:
                 f"written page mismatch: {written_pages} != {len(image_paths)}"
             )
     except BaseException:
+        decode_progress_stop.set()
+        decode_progress_thread.join(timeout=20.0)
         stop_collector()
         write_executor.shutdown(wait=True, cancel_futures=True)
         for payload in retained_payloads:
@@ -641,6 +759,17 @@ def main() -> None:
         "offset": args.offset,
         "workers": args.workers,
         "layout_batch_size": args.layout_batch_size,
+        "layout_execution": args.layout_execution,
+        "layout_dtype": args.layout_dtype,
+        "layout_weight_format": args.layout_weight_format,
+        "layout_depthwise_rewrite": args.layout_depthwise_rewrite,
+        "layout_preformat_frozen_bn_buffers": (
+            args.layout_preformat_frozen_bn_buffers
+        ),
+        "vision_focal_depthwise_rewrite": (
+            args.vision_focal_depthwise_rewrite
+        ),
+        "vision_weight_format": args.vision_weight_format,
         "recognition_preprocess_threads": args.recognition_preprocess_threads,
         "use_chart_recognition": args.use_chart_recognition,
         "vision_prefill_mode": "compiled_full_buckets",
