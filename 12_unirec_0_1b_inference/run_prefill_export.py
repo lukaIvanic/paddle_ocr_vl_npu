@@ -65,6 +65,34 @@ def parse_args() -> argparse.Namespace:
         choices=("eager", "torchair"),
         default="eager",
     )
+    parser.add_argument(
+        "--layout-dtype",
+        choices=("float16", "float32"),
+        default="float32",
+    )
+    parser.add_argument(
+        "--layout-weight-format",
+        choices=(
+            "native",
+            "depthwise_fz",
+            "torchair_internal",
+            "torchair_internal_depthwise_fz",
+        ),
+        default="native",
+    )
+    parser.add_argument(
+        "--layout-depthwise-rewrite",
+        choices=("native", "group16", "group32", "group64", "dense"),
+        default="native",
+    )
+    parser.add_argument(
+        "--layout-preformat-frozen-bn-buffers",
+        action="store_true",
+        help=(
+            "Store the original FrozenBN buffers as NC1HWC0 without changing "
+            "the FrozenBN expression."
+        ),
+    )
     parser.add_argument("--layout-batch-size", type=int, default=1)
     parser.add_argument("--dtype", choices=("float16",), default="float16")
     parser.add_argument("--cross-cache-length", type=int, default=512)
@@ -250,6 +278,12 @@ def main() -> None:
         threshold=args.layout_threshold,
         execution=args.layout_execution,
         warmup_paths=image_paths[: args.workers],
+        layout_dtype=args.layout_dtype,
+        layout_weight_format=args.layout_weight_format,
+        layout_depthwise_rewrite=args.layout_depthwise_rewrite,
+        layout_preformat_frozen_bn_buffers=(
+            args.layout_preformat_frozen_bn_buffers
+        ),
         layout_batch_size=args.layout_batch_size,
         openocr_root=openocr_root,
         prepare_pages=True,
@@ -304,6 +338,12 @@ def main() -> None:
                 "dtype": args.dtype,
                 "cross_cache_length": args.cross_cache_length,
                 "layout_execution": args.layout_execution,
+                "layout_dtype": args.layout_dtype,
+                "layout_weight_format": args.layout_weight_format,
+                "layout_depthwise_rewrite": args.layout_depthwise_rewrite,
+                "layout_preformat_frozen_bn_buffers": (
+                    args.layout_preformat_frozen_bn_buffers
+                ),
                 "layout_batch_size": args.layout_batch_size,
                 "vision_prefix_shapes_manifest": (
                     str(vision_prefix_shapes_manifest)

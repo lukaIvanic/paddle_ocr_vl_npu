@@ -1202,6 +1202,10 @@ def _worker_main(
     cache_dir: str,
     threshold: float,
     execution: str,
+    layout_dtype: str,
+    layout_weight_format: str,
+    layout_depthwise_rewrite: str,
+    layout_preformat_frozen_bn_buffers: bool,
     layout_batch_size: int,
     warmup_path: str,
     openocr_root: str | None,
@@ -1227,12 +1231,17 @@ def _worker_main(
         runtime = PPDocLayoutV2NpuAdapter(
             model_path=model_path,
             device="npu:0",
-            dtype="float32",
+            dtype=layout_dtype,
             threshold=threshold,
             profile_stages=False,
             execution=execution,
             compile_cache_dir=cache_dir,
             batch_size=layout_batch_size,
+            weight_format=layout_weight_format,
+            depthwise_rewrite=layout_depthwise_rewrite,
+            preformat_frozen_bn_buffers=(
+                layout_preformat_frozen_bn_buffers
+            ),
         )
         warmup_rgb, _ = _decode_rgb(Path(warmup_path))
         runtime([warmup_rgb[..., ::-1]], threshold=threshold)
@@ -1378,6 +1387,19 @@ def _worker_main(
                     recognition_preprocess_threads
                 ),
                 "layout_batch_size": layout_batch_size,
+                "layout_dtype": layout_dtype,
+                "layout_weight_format": layout_weight_format,
+                "layout_depthwise_rewrite": layout_depthwise_rewrite,
+                "layout_preformat_frozen_bn_buffers": (
+                    layout_preformat_frozen_bn_buffers
+                ),
+                "layout_depthwise_rewrite_summary": (
+                    runtime.depthwise_rewrite_summary
+                ),
+                "layout_weight_format_summary": runtime.weight_format_summary,
+                "layout_frozen_bn_buffer_format_summary": (
+                    runtime.frozen_bn_buffer_format_summary
+                ),
             }
         )
         if full_vision_runtime is not None:
@@ -1599,6 +1621,10 @@ class DynamicLayoutProcessPool:
         threshold: float,
         execution: str,
         warmup_paths: list[Path],
+        layout_dtype: str = "float32",
+        layout_weight_format: str = "native",
+        layout_depthwise_rewrite: str = "native",
+        layout_preformat_frozen_bn_buffers: bool = False,
         layout_batch_size: int = 1,
         openocr_root: Path | None = None,
         prepare_pages: bool = False,
@@ -1633,6 +1659,12 @@ class DynamicLayoutProcessPool:
             )
         self.worker_count = worker_count
         self.layout_batch_size = int(layout_batch_size)
+        self.layout_dtype = str(layout_dtype)
+        self.layout_weight_format = str(layout_weight_format)
+        self.layout_depthwise_rewrite = str(layout_depthwise_rewrite)
+        self.layout_preformat_frozen_bn_buffers = bool(
+            layout_preformat_frozen_bn_buffers
+        )
         self.prepare_pages = prepare_pages
         self.recognition_full_vision_buckets = recognition_full_vision_buckets
         self.recognition_page_lookahead = recognition_page_lookahead
@@ -1650,6 +1682,10 @@ class DynamicLayoutProcessPool:
                     str(cache_dir),
                     threshold,
                     execution,
+                    self.layout_dtype,
+                    self.layout_weight_format,
+                    self.layout_depthwise_rewrite,
+                    self.layout_preformat_frozen_bn_buffers,
                     self.layout_batch_size,
                     str(warmup_paths[worker_index % len(warmup_paths)]),
                     str(openocr_root) if openocr_root is not None else None,
@@ -1700,6 +1736,23 @@ class DynamicLayoutProcessPool:
                     message.get("recognition_preprocess_threads", 1)
                 ),
                 "layout_batch_size": int(message.get("layout_batch_size", 1)),
+                "layout_dtype": str(message["layout_dtype"]),
+                "layout_weight_format": str(message["layout_weight_format"]),
+                "layout_depthwise_rewrite": str(
+                    message["layout_depthwise_rewrite"]
+                ),
+                "layout_preformat_frozen_bn_buffers": bool(
+                    message["layout_preformat_frozen_bn_buffers"]
+                ),
+                "layout_depthwise_rewrite_summary": message[
+                    "layout_depthwise_rewrite_summary"
+                ],
+                "layout_weight_format_summary": message[
+                    "layout_weight_format_summary"
+                ],
+                "layout_frozen_bn_buffer_format_summary": message[
+                    "layout_frozen_bn_buffer_format_summary"
+                ],
             }
             for message in sorted(ready, key=lambda value: int(value["worker"]))
         ]
