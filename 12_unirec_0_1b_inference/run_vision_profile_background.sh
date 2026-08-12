@@ -16,7 +16,7 @@ resolve_inputs() {
   : "${ASCEND_RT_VISIBLE_DEVICES:?source npu-setup before launching}"
 
   case ",${ASCEND_RT_VISIBLE_DEVICES}," in
-    *,5,*) printf 'REJECTED_PHYSICAL_DEVICE_5\n' >&2; exit 1 ;;
+    *,5,*|*,6,*) printf 'REJECTED_PHYSICAL_DEVICE_5_OR_6\n' >&2; exit 1 ;;
   esac
   if [[ "$ASCEND_RT_VISIBLE_DEVICES" == *,* ]]; then
     printf 'VISION_PROFILE_REQUIRES_ONE_VISIBLE_NPU=%s\n' \

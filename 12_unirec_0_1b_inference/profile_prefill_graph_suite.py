@@ -44,6 +44,7 @@ from opendoc_layout_npu import (  # noqa: E402
 from vision_full_batch import (  # noqa: E402
     DEFAULT_VISION_BUCKETS,
     VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES,
+    VISION_WEIGHT_FORMAT_CHOICES,
     BucketedFullVisionRuntime,
     _new_masked_full_encoder_module,
 )
@@ -86,6 +87,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="append",
         choices=tuple(spec.key for spec in DEFAULT_VISION_BUCKETS),
         help="profile only this vision bucket; repeat to select more than one",
+    )
+    parser.add_argument(
+        "--vision-weight-format",
+        choices=VISION_WEIGHT_FORMAT_CHOICES,
+        default="native",
     )
     parser.add_argument(
         "--layout-dtype", choices=("float16", "float32"), default="float32"
@@ -132,8 +138,11 @@ def _physical_devices() -> list[int]:
         raise RuntimeError("ASCEND_RT_VISIBLE_DEVICES must select one physical NPU")
     if len(devices) != 1:
         raise RuntimeError(f"profile suite requires one visible NPU, got {devices}")
-    if 5 in devices:
-        raise RuntimeError("physical NPU 5 is excluded from UniRec experiments")
+    excluded = sorted(set(devices) & {5, 6})
+    if excluded:
+        raise RuntimeError(
+            f"physical NPUs 5 and 6 are excluded from UniRec experiments: {excluded}"
+        )
     return devices
 
 
@@ -403,7 +412,10 @@ def _recognition_lanes(
     validation_inputs: dict[
         str, tuple[torch.Tensor, tuple[torch.Tensor, ...]]
     ] = {}
-    if args.vision_depthwise_rewrite != "native":
+    if (
+        args.vision_depthwise_rewrite != "native"
+        or args.vision_weight_format != "native"
+    ):
         for spec in vision_specs:
             pixels = torch.zeros(
                 (spec.batch_size, 3, spec.height, spec.width),
@@ -435,6 +447,7 @@ def _recognition_lanes(
         runner,
         specs=vision_specs,
         focal_depthwise_rewrite=args.vision_depthwise_rewrite,
+        weight_format=args.vision_weight_format,
     )
     lanes = []
     for spec in vision_specs:
@@ -465,6 +478,7 @@ def _recognition_lanes(
         )
         validation = {
             "rewrite": args.vision_depthwise_rewrite,
+            "weight_format": args.vision_weight_format,
             "reference": "not_required_for_native",
             "allclose_atol_5e_2_rtol_5e_2": True,
             "max_abs": 0.0,
@@ -477,6 +491,7 @@ def _recognition_lanes(
             difference = (candidate - baseline_outputs[spec.key]).abs()
             validation = {
                 "rewrite": args.vision_depthwise_rewrite,
+                "weight_format": args.vision_weight_format,
                 "reference": "same_process_native_masked_full_encoder",
                 "allclose_atol_5e_2_rtol_5e_2": bool(
                     torch.allclose(
@@ -497,6 +512,8 @@ def _recognition_lanes(
         lane_name = f"vision_{spec.key}_fp16"
         if args.vision_depthwise_rewrite != "native":
             lane_name += f"_dw{args.vision_depthwise_rewrite}"
+        if args.vision_weight_format != "native":
+            lane_name += f"_w{args.vision_weight_format}"
         lane = _profile_lane(
             lane_name,
             run,
@@ -519,12 +536,14 @@ def _recognition_lanes(
                 "dtype": "float16",
                 "execution": "compiled_masked_full_vision",
                 "focal_depthwise_rewrite": args.vision_depthwise_rewrite,
+                "weight_format": args.vision_weight_format,
             },
         )
         lane["focal_depthwise_rewrite_summary"] = (
             vision.focal_depthwise_rewrite_summary
         )
         lane["rewrite_validation"] = validation
+        lane["weight_format_summary"] = vision.weight_format_summary
         lanes.append(lane)
         del pixels, masks
 
@@ -638,6 +657,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "parser_topn": args.parser_topn,
             "lane": args.lane,
             "vision_depthwise_rewrite": args.vision_depthwise_rewrite,
+            "vision_weight_format": args.vision_weight_format,
             "vision_buckets": args.vision_bucket,
             "layout_dtype": args.layout_dtype,
             "layout_depthwise_rewrite": args.layout_depthwise_rewrite,

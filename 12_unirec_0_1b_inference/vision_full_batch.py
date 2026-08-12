@@ -60,6 +60,59 @@ DEFAULT_VISION_BUCKETS = (
 )
 
 
+VISION_WEIGHT_FORMAT_CHOICES = (
+    "native",
+    "torchair_internal",
+)
+
+
+def _prepare_vision_weight_formats(
+    vision_encoder: nn.Module,
+    *,
+    requested: str,
+) -> dict[str, Any]:
+    """Apply the proven TorchAir internal-weight pass to the vision encoder."""
+    if requested not in VISION_WEIGHT_FORMAT_CHOICES:
+        raise ValueError(f"unsupported vision weight format: {requested}")
+    import torch_npu
+
+    tracked = [
+        (name, module)
+        for name, module in vision_encoder.named_modules()
+        if isinstance(module, (nn.Conv2d, nn.Linear))
+    ]
+
+    def histogram() -> dict[str, int]:
+        result: dict[str, int] = {}
+        for _name, module in tracked:
+            code = str(int(torch_npu.get_npu_format(module.weight)))
+            result[code] = result.get(code, 0) + 1
+        return dict(sorted(result.items()))
+
+    before = histogram()
+    if requested == "torchair_internal":
+        torch_npu.npu.config.allow_internal_format = True
+        try:
+            from torch_npu.dynamo.torchair import use_internal_format_weight
+        except ImportError:
+            from torchair import use_internal_format_weight
+        use_internal_format_weight(vision_encoder)
+    return {
+        "requested": requested,
+        "tracked_count": len(tracked),
+        "before_histogram": before,
+        "after_histogram": histogram(),
+    }
+
+
+def _vision_weight_format_source_hash(requested: str) -> str:
+    if requested == "native":
+        return ""
+    return hashlib.sha256(
+        inspect.getsource(_prepare_vision_weight_formats).encode("utf-8")
+    ).hexdigest()[:12]
+
+
 @dataclass(frozen=True)
 class PreprocessedVisionInput:
     source_index: int
@@ -330,6 +383,7 @@ class BucketedFullVisionRuntime:
         specs: Sequence[VisionBucketSpec] = DEFAULT_VISION_BUCKETS,
         diagnostic_graph_log: bool = False,
         focal_depthwise_rewrite: str = "native",
+        weight_format: str = "native",
     ) -> None:
         if not specs:
             raise ValueError("bucketed UniRec vision requires at least one bucket")
@@ -344,6 +398,11 @@ class BucketedFullVisionRuntime:
                 runner.model.encoder.vision_encoder,
                 requested=self.focal_depthwise_rewrite,
             )
+        )
+        self.weight_format = str(weight_format)
+        self.weight_format_summary = _prepare_vision_weight_formats(
+            runner.model.encoder.vision_encoder,
+            requested=self.weight_format,
         )
         required_specializations = len(self.specs) + 16
         torch._dynamo.config.cache_size_limit = max(
@@ -377,6 +436,14 @@ class BucketedFullVisionRuntime:
             if self.focal_depthwise_rewrite == "native"
             else f"_dw{self.focal_depthwise_rewrite}_src{rewrite_hash}"
         )
+        weight_format_hash = _vision_weight_format_source_hash(
+            self.weight_format
+        )
+        weight_format_cache_suffix = (
+            ""
+            if self.weight_format == "native"
+            else f"_w{self.weight_format}_src{weight_format_hash}"
+        )
         self.compile_api = import_path
         self.modules: dict[str, _MaskedFullVisionEncoder] = {}
         self.compiled: dict[str, Callable[..., torch.Tensor]] = {}
@@ -394,6 +461,7 @@ class BucketedFullVisionRuntime:
             cache_dir = runner.compile_cache_dir / (
                 f"vision_full_bucket_{spec.key}_{runner.dtype_name}_src{source_hash}"
                 f"{rewrite_cache_suffix}"
+                f"{weight_format_cache_suffix}"
             )
             cache_dir.mkdir(parents=True, exist_ok=True)
             self.modules[spec.key] = module
