@@ -296,6 +296,12 @@ class CrossKvDiscardSink:
         if self.closed:
             raise RuntimeError("prefill discard sink is closed")
         shared = payload.get("shared_memory")
+        if shared is None and not payload.get("crops"):
+            self.page_count += 1
+            self.rejected_crop_count += int(
+                payload.get("cross_capacity_rejected_crops", 0)
+            )
+            return
         if not isinstance(shared, dict):
             raise RuntimeError("worker page has no shared-memory payload")
         shared_nbytes = int(shared["nbytes"])

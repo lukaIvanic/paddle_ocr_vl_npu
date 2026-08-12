@@ -151,6 +151,23 @@ class CrossKvArtifactTest(unittest.TestCase):
             except FileNotFoundError:
                 pass
 
+    def test_discard_sink_accepts_image_free_page_without_crops(self) -> None:
+        payload = {
+            "page_index": 0,
+            "image_path": "/tmp/page.png",
+            "shared_memory": None,
+            "cross_capacity_rejected_crops": 0,
+            "crops": [],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary) / "discard"
+            sink = CrossKvDiscardSink(output_dir)
+            sink.add_page(payload)
+            summary = sink.finish({"status": "ok"})
+            self.assertEqual(summary["artifact"]["page_count"], 1)
+            self.assertEqual(summary["artifact"]["crop_count"], 0)
+            self.assertEqual(summary["artifact"]["shared_payload_bytes"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
