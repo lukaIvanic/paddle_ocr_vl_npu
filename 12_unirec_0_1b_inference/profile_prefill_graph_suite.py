@@ -36,7 +36,10 @@ from modeling_optimized_unirec import (  # noqa: E402
     OptimizedUniRecRunner,
     synchronize_device,
 )
-from opendoc_layout_npu import PPDocLayoutV2NpuAdapter  # noqa: E402
+from opendoc_layout_npu import (  # noqa: E402
+    LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+    PPDocLayoutV2NpuAdapter,
+)
 from vision_full_batch import (  # noqa: E402
     DEFAULT_VISION_BUCKETS,
     BucketedFullVisionRuntime,
@@ -67,6 +70,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--control-repeats", type=int, default=10)
     parser.add_argument("--profile-steps", type=int, default=1)
     parser.add_argument("--parser-topn", type=int, default=50)
+    parser.add_argument("--lane", choices=("all", "layout"), default="all")
+    parser.add_argument(
+        "--layout-dtype", choices=("float16", "float32"), default="float32"
+    )
+    parser.add_argument(
+        "--layout-depthwise-rewrite",
+        choices=LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+        default="native",
+    )
     parser.add_argument(
         "--profile-metric",
         choices=("pipe", "memory", "l2", "memory_access"),
@@ -278,23 +290,26 @@ def _layout_lane(
     detector = PPDocLayoutV2NpuAdapter(
         model_path=args.layout_model.expanduser().resolve(),
         device=args.device,
-        dtype="float32",
+        dtype=args.layout_dtype,
         threshold=0.4,
         profile_stages=False,
         execution="torchair",
         compile_cache_dir=args.layout_cache_dir.expanduser().resolve(),
         batch_size=1,
+        depthwise_rewrite=args.layout_depthwise_rewrite,
     )
     if detector.compiled_runtime is None:
         raise RuntimeError("layout profiler requires the compiled runtime")
     pixel_values = torch.zeros(
         (1, 3, 800, 800),
-        dtype=torch.float32,
+        dtype={"float16": torch.float16, "float32": torch.float32}[
+            args.layout_dtype
+        ],
         device=args.device,
     )
     run = lambda: detector.compiled_runtime(pixel_values)
     result = _profile_lane(
-        "layout_b1_800x800_fp32",
+        f"layout_b1_800x800_{args.layout_dtype}_{args.layout_depthwise_rewrite}",
         run,
         output_root=output_root,
         device=args.device,
@@ -306,7 +321,8 @@ def _layout_lane(
         first128_calls=FIRST128_LAYOUT_CALLS,
         input_contract={
             "pixel_values": [1, 3, 800, 800],
-            "dtype": "float32",
+            "dtype": args.layout_dtype,
+            "depthwise_rewrite": args.layout_depthwise_rewrite,
             "execution": "compiled_fullgraph",
         },
     )
@@ -449,7 +465,9 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     started = time.perf_counter()
     layout = _layout_lane(args, output_root)
-    recognition = _recognition_lanes(args, output_root)
+    recognition = (
+        _recognition_lanes(args, output_root) if args.lane == "all" else []
+    )
     lanes = [layout, *recognition]
     vision_weighted_s = sum(
         float(lane["weighted_first128_device_s"])
@@ -457,9 +475,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         if lane["name"].startswith("vision_")
     )
     text_weighted_s = next(
-        float(lane["weighted_first128_device_s"])
-        for lane in recognition
-        if lane["name"].startswith("cross_kv_")
+        (
+            float(lane["weighted_first128_device_s"])
+            for lane in recognition
+            if lane["name"].startswith("cross_kv_")
+        ),
+        0.0,
     )
     report = {
         "format": "unirec_prefill_graph_profile_suite_v1",
@@ -477,6 +498,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             "profile_steps": args.profile_steps,
             "profile_metric": args.profile_metric,
             "parser_topn": args.parser_topn,
+            "lane": args.lane,
+            "layout_dtype": args.layout_dtype,
+            "layout_depthwise_rewrite": args.layout_depthwise_rewrite,
         },
         "first128_workload": {
             "layout_calls": FIRST128_LAYOUT_CALLS,
