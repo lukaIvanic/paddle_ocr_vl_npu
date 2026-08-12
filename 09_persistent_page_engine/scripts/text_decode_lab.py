@@ -1250,12 +1250,6 @@ class TextDecodeLab:
         argmax_matches = 0
         argmax_total = 0
         step_rows: list[dict[str, Any]] = []
-        batch_indices = torch.arange(
-            self.args.batch_size,
-            device=self.device,
-            dtype=torch.int64,
-        )
-
         for step in range(self.args.correctness_steps):
             written_positions = positions.clone()
             eager_logits = self.reference_stage(
@@ -1298,12 +1292,28 @@ class TextDecodeLab:
                 compiled_tensors,
                 strict=True,
             ):
-                eager_written = eager_tensor[
-                    batch_indices, :, written_positions, :
-                ]
-                compiled_written = compiled_tensor[
-                    batch_indices, :, written_positions, :
-                ]
+                eager_index = written_positions.view(-1, 1, 1, 1).expand(
+                    eager_tensor.shape[0],
+                    eager_tensor.shape[1],
+                    1,
+                    eager_tensor.shape[3],
+                )
+                compiled_index = written_positions.view(-1, 1, 1, 1).expand(
+                    compiled_tensor.shape[0],
+                    compiled_tensor.shape[1],
+                    1,
+                    compiled_tensor.shape[3],
+                )
+                eager_written = torch.gather(
+                    eager_tensor,
+                    2,
+                    eager_index,
+                ).squeeze(2)
+                compiled_written = torch.gather(
+                    compiled_tensor,
+                    2,
+                    compiled_index,
+                ).squeeze(2)
                 if compiled_written.shape[1] != eager_written.shape[1]:
                     groups = (
                         int(compiled_written.shape[1])
