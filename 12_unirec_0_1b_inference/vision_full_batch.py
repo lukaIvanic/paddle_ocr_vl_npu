@@ -429,7 +429,10 @@ class BucketedFullVisionRuntime:
         cache_compile, import_path = import_torchair_cache_compile()
         source_hash = _source_hash()
         rewrite_hash = vision_rewrite_source_hash(
-            self.focal_depthwise_rewrite
+            self.focal_depthwise_rewrite,
+            constant_weight_digest=self.focal_depthwise_rewrite_summary[
+                "constant_weight_digest"
+            ],
         )
         rewrite_cache_suffix = (
             ""

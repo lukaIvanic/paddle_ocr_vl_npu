@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import hashlib
-import inspect
+import importlib
+from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -13,9 +15,130 @@ from torch import nn
 
 VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES = (
     "native",
+    "constant",
     "group16",
     "aligned_spatial",
 )
+
+
+_CONSTANT_WEIGHTS: dict[int, dict[str, Any]] = {}
+_CONSTANT_CONVERTER_REGISTERED = False
+_NEXT_CONSTANT_WEIGHT_ID = 0
+
+
+@torch.library.custom_op("unirec::focal_depthwise_const_v1", mutates_args=())
+def _focal_depthwise_const(
+    inputs: torch.Tensor,
+    weight_id: int,
+) -> torch.Tensor:
+    row = _CONSTANT_WEIGHTS[int(weight_id)]
+    return F.conv2d(
+        inputs,
+        row["device_weight"],
+        bias=None,
+        stride=1,
+        padding=int(row["padding"]),
+        dilation=1,
+        groups=int(row["groups"]),
+    )
+
+
+@_focal_depthwise_const.register_fake
+def _focal_depthwise_const_fake(
+    inputs: torch.Tensor,
+    weight_id: int,
+) -> torch.Tensor:
+    del weight_id
+    return torch.empty_like(inputs)
+
+
+def _import_torchair() -> Any:
+    try:
+        return importlib.import_module("torch_npu.dynamo.torchair")
+    except ImportError:
+        return importlib.import_module("torchair")
+
+
+def register_focal_depthwise_constant_converter() -> None:
+    """Lower a native focal convolution with its immutable weight as GE Const."""
+    global _CONSTANT_CONVERTER_REGISTERED
+    if _CONSTANT_CONVERTER_REGISTERED:
+        return
+    torchair = _import_torchair()
+    converter_module = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
+    )
+    converter_utils = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.ge_converter.converter_utils"
+    )
+    ge = importlib.import_module(f"{torchair.__name__}.ge")
+    register_converter = converter_module.register_fx_node_ge_converter
+    specific_input_layout = converter_utils.specific_op_input_layout
+    specific_output_layout = converter_utils.specific_op_output_layout
+
+    @register_converter(torch.ops.unirec.focal_depthwise_const_v1.default)
+    def _convert_focal_depthwise_const(
+        inputs: Any,
+        weight_id: int,
+        meta_outputs: Any = None,
+    ) -> Any:
+        del meta_outputs
+        row = _CONSTANT_WEIGHTS[int(weight_id)]
+        weight = ge.Const(row["host_weight"])
+        padding = int(row["padding"])
+        output = ge.Conv2D(
+            inputs,
+            weight,
+            None,
+            None,
+            strides=[1, 1, 1, 1],
+            pads=[padding, padding, padding, padding],
+            dilations=[1, 1, 1, 1],
+            groups=int(row["groups"]),
+            data_format="NCHW",
+        )
+        specific_input_layout(output, indices=[0, 1], layout="NCHW")
+        specific_output_layout(output, indices=0, layout="NCHW")
+        return output
+
+    _CONSTANT_CONVERTER_REGISTERED = True
+
+
+class ConstantFocalDepthwiseConv(nn.Module):
+    """Native depthwise Conv2d whose immutable weight is embedded in the OM."""
+
+    def __init__(self, source: nn.Conv2d, *, weight_id: int) -> None:
+        super().__init__()
+        kernel = tuple(int(value) for value in source.kernel_size)
+        channels = int(source.in_channels)
+        if not (
+            kernel in {(5, 5), (7, 7)}
+            and source.out_channels == channels
+            and source.groups == channels
+            and tuple(source.stride) == (1, 1)
+            and tuple(source.dilation) == (1, 1)
+            and source.bias is None
+        ):
+            raise ValueError(
+                "constant focal rewrite requires a bias-free 5x5/7x7 "
+                "depthwise convolution"
+            )
+        weight = source.weight.detach().contiguous()
+        _CONSTANT_WEIGHTS[int(weight_id)] = {
+            "device_weight": weight,
+            "host_weight": np.ascontiguousarray(
+                weight.to(device="cpu", dtype=torch.float16).numpy()
+            ),
+            "groups": channels,
+            "padding": kernel[0] // 2,
+            "shape": tuple(int(value) for value in weight.shape),
+        }
+        self.weight_id = int(weight_id)
+        self.groups = channels
+        self.kernel_size = kernel
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        return _focal_depthwise_const(inputs, self.weight_id)
 
 
 class AlignedSpatialDepthwiseConv(nn.Module):
@@ -79,6 +202,7 @@ def rewrite_vision_focal_depthwise_convs(
     requested: str,
 ) -> dict[str, Any]:
     """Rewrite the dominant stage-2/3 5x5 and 7x7 focal convolutions exactly."""
+    global _NEXT_CONSTANT_WEIGHT_ID
     if requested not in VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES:
         raise ValueError(f"unsupported vision focal rewrite: {requested}")
     targets: list[dict[str, Any]] = []
@@ -110,7 +234,27 @@ def rewrite_vision_focal_depthwise_convs(
                     "source_kernel": list(kernel),
                     "source_groups": int(convolution.groups),
                 }
-                if requested == "group16":
+                if requested == "constant":
+                    weight_id = _NEXT_CONSTANT_WEIGHT_ID
+                    _NEXT_CONSTANT_WEIGHT_ID += 1
+                    constant = ConstantFocalDepthwiseConv(
+                        convolution,
+                        weight_id=weight_id,
+                    )
+                    focal_layer[0] = constant
+                    row.update(
+                        {
+                            "target_kernel": list(kernel),
+                            "target_groups": channels,
+                            "group_width": 1,
+                            "weight_id": weight_id,
+                            "weight_shape": list(
+                                _CONSTANT_WEIGHTS[weight_id]["shape"]
+                            ),
+                            "weight_binding": "ge_const_not_runtime_input",
+                        }
+                    )
+                elif requested == "group16":
                     group_width = 16
                     if channels % group_width:
                         raise ValueError(
@@ -160,19 +304,31 @@ def rewrite_vision_focal_depthwise_convs(
                         }
                     )
                 targets.append(row)
+    if requested == "constant":
+        register_focal_depthwise_constant_converter()
+    constant_digest = ""
+    if requested == "constant":
+        digest = hashlib.sha256()
+        for row in targets:
+            digest.update(
+                _CONSTANT_WEIGHTS[int(row["weight_id"])]["host_weight"].tobytes()
+            )
+        constant_digest = digest.hexdigest()[:16]
     return {
         "requested": requested,
         "target_count": len(targets),
         "rewritten_count": 0 if requested == "native" else len(targets),
+        "constant_weight_digest": constant_digest,
         "modules": targets,
     }
 
 
-def vision_rewrite_source_hash(requested: str) -> str:
+def vision_rewrite_source_hash(
+    requested: str,
+    *,
+    constant_weight_digest: str = "",
+) -> str:
     if requested == "native":
         return ""
-    payload = inspect.getsource(rewrite_vision_focal_depthwise_convs).encode(
-        "utf-8"
-    )
-    payload += inspect.getsource(AlignedSpatialDepthwiseConv).encode("utf-8")
+    payload = Path(__file__).read_bytes() + constant_weight_digest.encode("ascii")
     return hashlib.sha256(payload).hexdigest()[:12]

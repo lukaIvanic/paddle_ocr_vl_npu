@@ -17,6 +17,7 @@ sys.path.insert(0, str(HERE))
 
 from vision_focal_depthwise import (  # noqa: E402
     AlignedSpatialDepthwiseConv,
+    ConstantFocalDepthwiseConv,
     rewrite_vision_focal_depthwise_convs,
 )
 
@@ -54,6 +55,25 @@ def _fake_vision_encoder() -> SimpleNamespace:
 
 
 class VisionFocalDepthwiseRewriteTest(unittest.TestCase):
+    def test_constant_wrapper_matches_native_depthwise_convolution(self) -> None:
+        torch.manual_seed(5)
+        source = torch.nn.Conv2d(
+            16,
+            16,
+            kernel_size=7,
+            padding=3,
+            groups=16,
+            bias=False,
+        ).eval()
+        inputs = torch.randn(2, 16, 11, 13)
+        wrapped = ConstantFocalDepthwiseConv(source, weight_id=10_000).eval()
+        torch.testing.assert_close(
+            wrapped(inputs),
+            source(inputs),
+            atol=1e-6,
+            rtol=1e-5,
+        )
+
     def test_aligned_spatial_filters_are_exact(self) -> None:
         torch.manual_seed(7)
         for kernel in (5, 7):
