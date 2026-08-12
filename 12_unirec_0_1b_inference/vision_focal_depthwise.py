@@ -24,6 +24,7 @@ VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES = (
 
 _CONSTANT_WEIGHTS: dict[int, dict[str, Any]] = {}
 _CONSTANT_CONVERTER_REGISTERED = False
+_GROUPED_RUNTIME_FORMAT_PATCHED = False
 _NEXT_CONSTANT_WEIGHT_ID = 0
 _PREPACK_CONVERTER_REGISTERED = False
 
@@ -134,11 +135,86 @@ def _focal_depthwise_const_fake(
     return torch.empty_like(inputs)
 
 
+@torch.library.custom_op(
+    "unirec::focal_depthwise_prepacked_v1",
+    mutates_args=(),
+)
+def _focal_depthwise_prepacked(
+    inputs: torch.Tensor,
+    packed_weight: torch.Tensor,
+    weight_id: int,
+) -> torch.Tensor:
+    del packed_weight
+    row = _CONSTANT_WEIGHTS[int(weight_id)]
+    return F.conv2d(
+        inputs,
+        row["device_weight"],
+        bias=None,
+        stride=1,
+        padding=int(row["padding"]),
+        dilation=1,
+        groups=int(row["groups"]),
+    )
+
+
+@_focal_depthwise_prepacked.register_fake
+def _focal_depthwise_prepacked_fake(
+    inputs: torch.Tensor,
+    packed_weight: torch.Tensor,
+    weight_id: int,
+) -> torch.Tensor:
+    del packed_weight, weight_id
+    return torch.empty_like(inputs)
+
+
 def _import_torchair() -> Any:
     try:
         return importlib.import_module("torch_npu.dynamo.torchair")
     except ImportError:
         return importlib.import_module("torchair")
+
+
+def _patch_grouped_runtime_input_formats(converter_module: Any) -> None:
+    """Preserve marked grouped-FZ buffer descriptors after runtime binding."""
+    global _GROUPED_RUNTIME_FORMAT_PATCHED
+    if _GROUPED_RUNTIME_FORMAT_PATCHED:
+        return
+    original = converter_module._update_internal_format_from_inputs
+
+    def _update_internal_format_from_inputs(graph: Any, runtime_inputs: Any) -> None:
+        original(graph, runtime_inputs)
+        producers = {op.name: op for op in graph.op}
+        for convolution in graph.op:
+            marker = convolution.attr.get("_unirec_grouped_fz_format")
+            if marker is None:
+                continue
+            storage_format = int(marker.i)
+            logical_shape = list(
+                convolution.attr["_unirec_grouped_fz_logical_shape"].list.i
+            )
+            producer_name = convolution.input[1].split(":", 1)[0]
+            producer = producers[producer_name]
+            producer.attr["_enable_storage_format_spread"].b = False
+            if producer.type == "ConstPlaceHolder":
+                producer.attr["origin_shape"].list.i[:] = logical_shape
+                producer.attr["origin_format"].i = 0
+                producer.attr["storage_format"].i = storage_format
+            for descriptor in producer.output_desc:
+                descriptor.layout = "FRACTAL_Z"
+                descriptor.shape.dim[:] = []
+                descriptor.attr["format_for_int"].i = storage_format
+                descriptor.attr["origin_format_for_int"].i = 0
+                descriptor.attr["origin_shape"].list.val_type = 2
+                descriptor.attr["origin_shape"].list.i[:] = logical_shape
+                descriptor.attr["origin_shape_initialized"].b = True
+                descriptor.attr["origin_format_is_set"].b = True
+            for descriptor in producer.input_desc:
+                descriptor.CopyFrom(producer.output_desc[0])
+
+    converter_module._update_internal_format_from_inputs = (
+        _update_internal_format_from_inputs
+    )
+    _GROUPED_RUNTIME_FORMAT_PATCHED = True
 
 
 def register_focal_depthwise_constant_converter() -> None:
@@ -157,6 +233,7 @@ def register_focal_depthwise_constant_converter() -> None:
     register_converter = converter_module.register_fx_node_ge_converter
     specific_input_layout = converter_utils.specific_op_input_layout
     specific_output_layout = converter_utils.specific_op_output_layout
+    _patch_grouped_runtime_input_formats(converter_module)
 
     @register_converter(torch.ops.unirec.focal_depthwise_const_v1.default)
     def _convert_focal_depthwise_const(
@@ -205,6 +282,47 @@ def register_focal_depthwise_constant_converter() -> None:
             filter_desc.attr["origin_shape"].list.i.extend(logical_shape)
             filter_desc.attr["origin_shape_initialized"].b = True
             filter_desc.attr["origin_format_is_set"].b = True
+        return output
+
+    @register_converter(torch.ops.unirec.focal_depthwise_prepacked_v1.default)
+    def _convert_focal_depthwise_prepacked(
+        inputs: Any,
+        packed_weight: Any,
+        weight_id: int,
+        meta_outputs: Any = None,
+    ) -> Any:
+        del meta_outputs
+        row = _CONSTANT_WEIGHTS[int(weight_id)]
+        padding = int(row["padding"])
+        output = ge.Conv2D(
+            inputs,
+            packed_weight,
+            None,
+            None,
+            strides=[1, 1, 1, 1],
+            pads=[padding, padding, padding, padding],
+            dilations=[1, 1, 1, 1],
+            groups=int(row["groups"]),
+            data_format="NCHW",
+        )
+        specific_input_layout(output, indices=[0, 1], layout="NCHW")
+        specific_output_layout(output, indices=0, layout="NCHW")
+        logical_shape = row["shape"]
+        storage_format = (int(row["groups"]) << 8) | 4
+        output.node.attr["_unirec_grouped_fz_format"].i = storage_format
+        output.node.attr[
+            "_unirec_grouped_fz_logical_shape"
+        ].list.val_type = 2
+        output.node.attr[
+            "_unirec_grouped_fz_logical_shape"
+        ].list.i.extend(logical_shape)
+        filter_desc = output.node.input_desc[1]
+        filter_desc.attr["format_for_int"].i = storage_format
+        filter_desc.attr["origin_format_for_int"].i = 0
+        filter_desc.attr["origin_shape"].list.val_type = 2
+        filter_desc.attr["origin_shape"].list.i.extend(logical_shape)
+        filter_desc.attr["origin_shape_initialized"].b = True
+        filter_desc.attr["origin_format_is_set"].b = True
         return output
 
     _CONSTANT_CONVERTER_REGISTERED = True
@@ -300,11 +418,29 @@ class ConstantFocalDepthwiseConv(nn.Module):
             "storage_shape": tuple(int(value) for value in host_weight.shape),
             "prepacked_grouped": bool(prepack_grouped),
         }
+        self.prepack_grouped = bool(prepack_grouped)
+        if self.prepack_grouped:
+            packed_storage = torch.from_numpy(host_weight).to(weight.device)
+            packed_weight = packed_storage.as_strided(
+                tuple(int(value) for value in weight.shape),
+                tuple(int(value) for value in weight.stride()),
+            )
+            self.register_buffer(
+                "packed_weight",
+                packed_weight,
+                persistent=False,
+            )
         self.weight_id = int(weight_id)
         self.groups = channels
         self.kernel_size = kernel
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        if self.prepack_grouped:
+            return _focal_depthwise_prepacked(
+                inputs,
+                self.packed_weight,
+                self.weight_id,
+            )
         return _focal_depthwise_const(inputs, self.weight_id)
 
 

@@ -106,6 +106,34 @@ class VisionFocalDepthwiseRewriteTest(unittest.TestCase):
             rtol=1e-5,
         )
 
+    def test_prepacked_wrapper_keeps_logical_shape_and_physical_storage(self) -> None:
+        torch.manual_seed(6)
+        source = torch.nn.Conv2d(
+            32,
+            32,
+            kernel_size=5,
+            padding=2,
+            groups=32,
+            bias=False,
+        ).eval()
+        inputs = torch.randn(2, 32, 9, 11)
+        wrapped = ConstantFocalDepthwiseConv(
+            source,
+            weight_id=10_001,
+            prepack_grouped=True,
+        ).eval()
+        self.assertEqual(tuple(wrapped.packed_weight.shape), (32, 1, 5, 5))
+        self.assertEqual(
+            wrapped.packed_weight.untyped_storage().nbytes(),
+            50 * 1 * 16 * 16 * 2,
+        )
+        torch.testing.assert_close(
+            wrapped(inputs),
+            source(inputs),
+            atol=1e-6,
+            rtol=1e-5,
+        )
+
     def test_aligned_spatial_filters_are_exact(self) -> None:
         torch.manual_seed(7)
         for kernel in (5, 7):
