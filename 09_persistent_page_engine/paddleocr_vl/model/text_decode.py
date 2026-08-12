@@ -371,6 +371,17 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         add_rms_norm=True,
         stage_aware_weight_prefetch=True,
     ),
+    "combined_apply_prefetch_rope_lut_pseudo_b2": DecodeOptimizationConfig(
+        name="combined_apply_prefetch_rope_lut_pseudo_b2",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        attention="gqa_pseudo_b2",
+        stage_aware_weight_prefetch=True,
+    ),
     "combined_apply_pse_prefetch_rope_lut": DecodeOptimizationConfig(
         name="combined_apply_pse_prefetch_rope_lut",
         hoist_mrope=True,
@@ -411,6 +422,19 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rotary="npu_apply",
         rotary_factors="lookup",
         add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="after_attention",
+    ),
+    "combined_apply_kv_then_mlp_prefetch_rope_lut_pseudo_b2": DecodeOptimizationConfig(
+        name="combined_apply_kv_then_mlp_prefetch_rope_lut_pseudo_b2",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        attention="gqa_pseudo_b2",
         stage_aware_weight_prefetch=True,
         post_scatter_kv_prefetch=True,
         weight_prefetch_timing="after_attention",
@@ -1580,7 +1604,11 @@ def _decode_attention(
         if int(key_cache.shape[1]) != int(attention.num_heads):
             raise ValueError("mha_cache received a non-expanded decode arena")
         num_key_value_heads = 0
-    elif optimization.attention not in ("gqa", "gqa_aiv"):
+    elif optimization.attention not in (
+        "gqa",
+        "gqa_aiv",
+        "gqa_pseudo_b2",
+    ):
         raise ValueError(
             f"unsupported decode attention implementation: "
             f"{optimization.attention!r}"
@@ -1611,20 +1639,58 @@ def _decode_attention(
             vector_core_count=optimization.gqa_aiv_vector_core_count,
         )
     else:
+        pseudo_b2 = optimization.attention == "gqa_pseudo_b2"
+        if pseudo_b2:
+            if batch != 1:
+                raise ValueError("pseudo-B2 GQA requires physical batch size one")
+            if int(attention.num_heads) != 16:
+                raise ValueError("pseudo-B2 GQA requires 16 query heads")
+            if num_key_value_heads != 2:
+                raise ValueError("pseudo-B2 GQA requires two KV heads")
+            if pse_shift is not None or actual_seq_lengths is not None:
+                raise ValueError("pseudo-B2 GQA requires mask-only IncreFA")
+            if attention_mask is None:
+                raise ValueError("pseudo-B2 GQA requires a boolean mask")
+            query_for_attention = query_states.contiguous().view(
+                2, 8, 1, int(attention.head_dim)
+            )
+            key_for_attention = key_for_attention.view(
+                2, 1, int(key_for_attention.shape[2]), int(attention.head_dim)
+            )
+            value_for_attention = value_for_attention.view(
+                2,
+                1,
+                int(value_for_attention.shape[2]),
+                int(attention.head_dim),
+            )
+            mask_for_attention = attention_mask.expand(2, -1, -1, -1)
+            call_num_heads = 8
+            call_num_key_value_heads = 1
+        else:
+            query_for_attention = query_states
+            mask_for_attention = attention_mask
+            call_num_heads = int(attention.num_heads)
+            call_num_key_value_heads = num_key_value_heads
         attention_output = torch_npu.npu_incre_flash_attention(
-            query_states.contiguous(),
+            query_for_attention.contiguous(),
             key_for_attention.contiguous(),
             value_for_attention.contiguous(),
             pse_shift=pse_shift,
             atten_mask=(
-                None if attention_mask is None else attention_mask.contiguous()
+                None
+                if mask_for_attention is None
+                else mask_for_attention.contiguous()
             ),
             actual_seq_lengths=actual_seq_lengths,
-            num_heads=int(attention.num_heads),
-            num_key_value_heads=num_key_value_heads,
+            num_heads=call_num_heads,
+            num_key_value_heads=call_num_key_value_heads,
             input_layout="BNSD",
             scale_value=float(attention.scaling),
         )
+        if pseudo_b2:
+            attention_output = attention_output.view(
+                1, 16, 1, int(attention.head_dim)
+            )
     attention_output = (
         attention_output.transpose(1, 2)
         .contiguous()
