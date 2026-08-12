@@ -249,6 +249,8 @@ def _physical_devices() -> list[int]:
 
 def _discard_payload(payload: dict[str, Any]) -> None:
     shared = payload.get("shared_memory")
+    if shared is None and not payload.get("crops"):
+        return
     if not isinstance(shared, dict):
         raise RuntimeError("warmup payload has no shared-memory arena")
     lease = SharedPageLease(str(shared["name"]))
