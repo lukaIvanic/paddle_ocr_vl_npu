@@ -178,6 +178,16 @@ def parse_args() -> argparse.Namespace:
     parser.set_defaults(use_chart_recognition=True)
     parser.add_argument("--worker-empty-cache-after-page", action="store_true")
     parser.add_argument(
+        "--no-retain-shared-images",
+        dest="retain_shared_images",
+        action="store_false",
+        help=(
+            "Exclude page/crop image arrays from worker shared-memory payloads. "
+            "Use this for inference-only prefill timing and CPU-RAM decode banks."
+        ),
+    )
+    parser.set_defaults(retain_shared_images=True)
+    parser.add_argument(
         "--profile-prefill-device-stages",
         action="store_true",
         help=(
@@ -331,6 +341,7 @@ def main() -> None:
         recognition_page_lookahead=args.vision_page_lookahead,
         empty_cache_after_page=args.worker_empty_cache_after_page,
         profile_prefill_device_stages=args.profile_prefill_device_stages,
+        retain_shared_images=args.retain_shared_images,
     )
     setup_s = pool.setup_wall_s
     warmup_summaries = []
@@ -398,6 +409,7 @@ def main() -> None:
                 "profile_prefill_device_stages": (
                     args.profile_prefill_device_stages
                 ),
+                "retain_shared_images": args.retain_shared_images,
                 "setup_s": setup_s,
                 "worker_setup_diagnostics": pool.worker_setup_diagnostics,
                 "warmup_repeats": args.warmup_repeats,
