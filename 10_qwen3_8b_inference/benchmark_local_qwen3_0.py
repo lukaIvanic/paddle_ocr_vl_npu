@@ -31,6 +31,8 @@ warnings.filterwarnings(
 
 import torch
 
+from local_modeling_qwen3_0 import DECODE_OPTIMIZATION_PRESETS
+
 try:
     import torch_npu
     import torch_npu.profiler as npu_prof
@@ -60,6 +62,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--compile-decode-dynamic", action="store_true")
     parser.add_argument("--npugraph-decode", action="store_true")
     parser.add_argument("--decode-increfa-mode", choices=("mask", "actual_seq_lengths"), default="mask")
+    parser.add_argument(
+        "--decode-optimization",
+        choices=tuple(DECODE_OPTIMIZATION_PRESETS),
+        default="baseline",
+    )
+    parser.add_argument(
+        "--decode-linear-weight-format",
+        choices=("unchanged", "fractal_nz"),
+        default="unchanged",
+    )
     parser.add_argument("--prefill-warmups", type=int, default=1)
     parser.add_argument("--prefill-repeats", type=int, default=3)
     parser.add_argument("--decode-warmups", type=int, default=1)
@@ -467,6 +479,64 @@ def benchmark_decode(
 ) -> dict:
     compile_first_call_sec = None
     parity = None
+    baseline_parity = None
+    if runner.decode_optimization != "baseline":
+        log.log(
+            "checking optimized eager decode against baseline eager decode: "
+            f"steps={decode_steps}"
+        )
+        baseline_next_id, baseline_key_caches, baseline_value_caches = (
+            prepare_decode_state(runner, input_ids)
+        )
+        optimized_next_id, optimized_key_caches, optimized_value_caches = (
+            prepare_decode_state(runner, input_ids)
+        )
+        baseline_tokens = run_decode_loop(
+            runner,
+            input_ids,
+            baseline_next_id,
+            baseline_key_caches,
+            baseline_value_caches,
+            decode_steps=decode_steps,
+            decode_one=runner.decode_one_baseline,
+        )
+        optimized_tokens = run_decode_loop(
+            runner,
+            input_ids,
+            optimized_next_id,
+            optimized_key_caches,
+            optimized_value_caches,
+            decode_steps=decode_steps,
+            decode_one=runner.decode_one_eager,
+        )
+        sync()
+        token_mismatch_count = int(
+            (optimized_tokens != baseline_tokens).sum().item()
+        )
+        kv_max_abs = 0.0
+        for baseline_cache, optimized_cache in zip(
+            (*baseline_key_caches, *baseline_value_caches),
+            (*optimized_key_caches, *optimized_value_caches),
+        ):
+            kv_max_abs = max(
+                kv_max_abs,
+                float(
+                    (
+                        optimized_cache.float() - baseline_cache.float()
+                    ).abs().max().item()
+                ),
+            )
+        baseline_parity = {
+            "steps": int(decode_steps),
+            "token_mismatch_count": token_mismatch_count,
+            "token_exact_match": token_mismatch_count == 0,
+            "kv_max_abs": kv_max_abs,
+        }
+        if token_mismatch_count:
+            raise RuntimeError(
+                "optimized decode token mismatch versus baseline: "
+                f"token_mismatch_count={token_mismatch_count}"
+            )
     if runner.compile_decode:
         log.log(f"checking compiled/eager decode parity: steps={decode_steps}")
         eager_next_id, eager_key_caches, eager_value_caches = prepare_decode_state(
@@ -558,6 +628,8 @@ def benchmark_decode(
     summary["compile_decode_first_call_sec"] = compile_first_call_sec
     if parity is not None:
         summary["compiled_eager_parity"] = parity
+    if baseline_parity is not None:
+        summary["optimized_baseline_parity"] = baseline_parity
     return summary
 
 
@@ -964,6 +1036,8 @@ def main() -> None:
     device = torch.device(args.device)
     if device.type == "npu":
         require_torch_npu()
+        if args.decode_linear_weight_format == "fractal_nz":
+            torch.npu.config.allow_internal_format = True
         torch.npu.set_device(device)
         torch.npu.set_compile_mode(jit_compile=False)
     if args.npugraph_decode and args.compile_decode:
@@ -988,6 +1062,8 @@ def main() -> None:
                 compile_decode=args.compile_decode,
                 compile_decode_dynamic=args.compile_decode_dynamic,
                 decode_increfa_mode=args.decode_increfa_mode,
+                decode_optimization=args.decode_optimization,
+                decode_linear_weight_format=args.decode_linear_weight_format,
                 static_kv_cache_len=args.static_kv_cache_len,
             ),
             suppressed_substrings=(
@@ -1016,6 +1092,10 @@ def main() -> None:
         "compile_decode_dynamic": bool(args.compile_decode_dynamic),
         "npugraph_decode": bool(args.npugraph_decode),
         "decode_increfa_mode": args.decode_increfa_mode,
+        "decode_optimization": args.decode_optimization,
+        "decode_optimization_metadata": runner.decode_optimization_metadata,
+        "decode_linear_weight_format": args.decode_linear_weight_format,
+        "decode_linear_weight_metadata": runner.decode_linear_weight_metadata,
         "batch_size": int(args.batch_size),
         "prefill_tokens": int(args.prefill_tokens),
         "decode_steps": int(args.decode_steps),

@@ -13,7 +13,13 @@ from torch_npu.dynamo import torchair
 from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 from transformers import AutoTokenizer
 
-from local_modeling_qwen3_0 import LocalQwen3Config, LocalQwen3ForCausalLM
+from local_modeling_qwen3_0 import (
+    DECODE_OPTIMIZATION_PRESETS,
+    LocalQwen3Config,
+    LocalQwen3ForCausalLM,
+    cast_decode_linear_weights_to_nz,
+    resolve_decode_optimization,
+)
 
 
 class LocalQwen30Runner:
@@ -26,6 +32,8 @@ class LocalQwen30Runner:
         compile_decode: bool = False,
         compile_decode_dynamic: bool = False,
         decode_increfa_mode: str = "mask",
+        decode_optimization: str = "baseline",
+        decode_linear_weight_format: str = "unchanged",
         static_kv_cache_len: int = 65536,
     ):
         if decode_increfa_mode not in {"mask", "actual_seq_lengths"}:
@@ -36,10 +44,37 @@ class LocalQwen30Runner:
         self.compile_decode = compile_decode
         self.compile_decode_dynamic = compile_decode_dynamic
         self.decode_increfa_mode = decode_increfa_mode
+        if decode_optimization not in DECODE_OPTIMIZATION_PRESETS:
+            raise ValueError(
+                f"Unsupported decode_optimization={decode_optimization!r}; "
+                f"expected {tuple(DECODE_OPTIMIZATION_PRESETS)}"
+            )
+        if decode_linear_weight_format not in {"unchanged", "fractal_nz"}:
+            raise ValueError(
+                "decode_linear_weight_format must be 'unchanged' or "
+                f"'fractal_nz', got {decode_linear_weight_format!r}"
+            )
+        self.decode_optimization = decode_optimization
+        self.decode_linear_weight_format = decode_linear_weight_format
         self.static_kv_cache_len = int(static_kv_cache_len)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir)
         self.config = LocalQwen3Config.from_model_dir(self.model_dir)
         self.model = self.load_model()
+        self.decode_optimization_metadata = (
+            self.model.prepare_decode_optimizations(
+                cache_length=self.static_kv_cache_len,
+            )
+        )
+        self.decode_linear_weight_metadata = {
+            "requested": self.decode_linear_weight_format,
+            "effective": "unchanged",
+        }
+        if self.decode_linear_weight_format == "fractal_nz":
+            self.decode_linear_weight_metadata = {
+                "requested": self.decode_linear_weight_format,
+                "effective": "fractal_nz",
+                **cast_decode_linear_weights_to_nz(self.model),
+            }
         self.eager_decode = self.model.decode
         if compile_decode:
             compiler_config = CompilerConfig()
@@ -67,6 +102,7 @@ class LocalQwen30Runner:
             model = LocalQwen3ForCausalLM(
                 self.config,
                 decode_increfa_mode=self.decode_increfa_mode,
+                decode_optimization=self.decode_optimization,
             )
         model = model.to(dtype=self.dtype)
         model.to_empty(device=self.device)
@@ -185,6 +221,29 @@ class LocalQwen30Runner:
         )
         return output_next_id, key_caches, value_caches
 
+    def decode_one_baseline(
+        self,
+        next_id: torch.Tensor,
+        cache_position: torch.Tensor,
+        key_caches: tuple[torch.Tensor, ...],
+        value_caches: tuple[torch.Tensor, ...],
+        *,
+        actual_seq_length: int | None,
+    ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
+        previous = self.model.decode_optimization
+        self.model.decode_optimization = resolve_decode_optimization("baseline")
+        try:
+            output_next_id = self.eager_decode(
+                next_id,
+                cache_position,
+                key_caches,
+                value_caches,
+                actual_seq_length,
+            )
+        finally:
+            self.model.decode_optimization = previous
+        return output_next_id, key_caches, value_caches
+
     def encode_prompt(self, prompt: str) -> torch.Tensor:
         messages = [{"role": "user", "content": prompt}]
         if self.tokenizer.chat_template:
@@ -247,6 +306,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--compile-decode", action="store_true")
     parser.add_argument("--compile-decode-dynamic", action="store_true")
     parser.add_argument("--decode-increfa-mode", choices=("mask", "actual_seq_lengths"), default="mask")
+    parser.add_argument(
+        "--decode-optimization",
+        choices=tuple(DECODE_OPTIMIZATION_PRESETS),
+        default="baseline",
+    )
+    parser.add_argument(
+        "--decode-linear-weight-format",
+        choices=("unchanged", "fractal_nz"),
+        default="unchanged",
+    )
     return parser.parse_args()
 
 def main() -> None:
@@ -254,6 +323,8 @@ def main() -> None:
     dtype = {"float16": torch.float16, "float32": torch.float32}[args.dtype]
     device = torch.device(args.device)
     if device.type == "npu":
+        if args.decode_linear_weight_format == "fractal_nz":
+            torch.npu.config.allow_internal_format = True
         torch.npu.set_device(device)
         torch.npu.set_compile_mode(jit_compile=False)
     runner = LocalQwen30Runner(
@@ -263,6 +334,8 @@ def main() -> None:
         compile_decode=args.compile_decode,
         compile_decode_dynamic=args.compile_decode_dynamic,
         decode_increfa_mode=args.decode_increfa_mode,
+        decode_optimization=args.decode_optimization,
+        decode_linear_weight_format=args.decode_linear_weight_format,
         static_kv_cache_len=args.static_kv_cache_len,
     )
     print(runner.generate(args.prompt, max_new_tokens=args.max_new_tokens))
