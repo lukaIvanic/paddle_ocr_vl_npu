@@ -145,11 +145,15 @@ test "${PIPESTATUS[0]}" = 0
 test -f "$ANALYSIS"
 ```
 
-The analyzer rejects a different page/crop/group/bucket contract. It reports:
+The analyzer requires the same page offset, page count, and page-group contract.
+It permits crop and bucket-distribution drift, reports every difference, and
+normalizes the production, graph, and surrounding ratios per crop using each
+run's own bucket-call histogram. The five isolated graphs and their fixed
+first-128 weighting remain exact comparisons. It reports:
 
-- total production-boundary ratio;
-- isolated graph ratio and estimated graph share of the production gap;
-- surrounding transfer/normalization/padding/compaction ratio;
+- per-crop production-boundary ratio;
+- per-crop isolated graph ratio and estimated graph share of the production gap;
+- per-crop surrounding transfer/normalization/padding/compaction ratio;
 - all five bucket latency ratios and first-128 weighted gaps;
 - kernel counts and weighted cube utilization;
 - kernel types and exact shape signatures ranked by added weighted time.
@@ -182,3 +186,10 @@ analysis JSON / production JSON / graph JSON / evidence root:
 
 Paste the analyzer's `UNIREC_VISION_*` lines after this report. Do not start a
 debugging or optimization experiment.
+
+## Completed-run recovery
+
+If the NPU bundle already completed successfully but an older analyzer rejected
+only a crop or bucket-distribution mismatch, do not rerun the NPU bundle. Pull
+the new commit, keep the existing `$RUN_ROOT`, then repeat only section 4 and
+return section 5. Report `UNIREC_VISION_WORKLOAD_COMPARISON` prominently.

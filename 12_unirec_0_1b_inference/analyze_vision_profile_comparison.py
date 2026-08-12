@@ -23,12 +23,15 @@ EXPECTED_LANES = (
     "vision_512x512_b8_fp16",
     "vision_960x512_b4_fp16",
 )
-WORKLOAD_KEYS = (
+STRICT_WORKLOAD_KEYS = (
     "page_offset",
     "page_count",
-    "crop_count",
     "page_group_count",
     "page_group_size_histogram",
+)
+WORKLOAD_KEYS = (
+    *STRICT_WORKLOAD_KEYS,
+    "crop_count",
     "bucket_calls_per_replay",
     "bucket_real_rows_per_replay",
     "compiled_physical_rows_per_replay",
@@ -71,7 +74,7 @@ def _lane_map(graphs: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 def _validate_production(
     reference: dict[str, Any], candidate: dict[str, Any]
-) -> None:
+) -> dict[str, dict[str, Any]]:
     for label, report in (("910B2", reference), ("310P", candidate)):
         if report.get("status") != "ok":
             raise ValueError(f"{label} production status is not ok")
@@ -92,9 +95,17 @@ def _validate_production(
                     f"{label} production contract mismatch: "
                     f"{key}={contract.get(key)!r}, expected={value!r}"
                 )
-    for key in WORKLOAD_KEYS:
+    for key in STRICT_WORKLOAD_KEYS:
         if candidate["workload"].get(key) != reference["workload"].get(key):
-            raise ValueError(f"production workload mismatch for {key}")
+            raise ValueError(f"production page-group contract mismatch for {key}")
+    return {
+        key: {
+            "npu310": candidate["workload"].get(key),
+            "npu910": reference["workload"].get(key),
+        }
+        for key in WORKLOAD_KEYS
+        if candidate["workload"].get(key) != reference["workload"].get(key)
+    }
 
 
 def _validate_graphs(
@@ -323,22 +334,45 @@ def _summary(
     npu310_device_ms = float(
         production310["timing_ms"]["device_timeline_span"]["p50"]
     )
-    first32_calls = production_ref["workload"]["bucket_calls_per_replay"]
+    ref_calls = production_ref["workload"]["bucket_calls_per_replay"]
+    npu310_calls = production310["workload"]["bucket_calls_per_replay"]
+    ref_crops = int(production_ref["workload"]["crop_count"])
+    npu310_crops = int(production310["workload"]["crop_count"])
     by_lane = {lane["name"]: lane for lane in lanes}
     graph_ref_ms = 0.0
     graph310_ms = 0.0
-    for bucket, calls in first32_calls.items():
+    for bucket in production_ref["production_contract"]["buckets"]:
         lane = by_lane[f"vision_{bucket}_fp16"]
-        graph_ref_ms += float(lane["npu910_device_ms"]) * int(calls)
-        graph310_ms += float(lane["npu310_device_ms"]) * int(calls)
+        graph_ref_ms += float(lane["npu910_device_ms"]) * int(
+            ref_calls.get(bucket, 0)
+        )
+        graph310_ms += float(lane["npu310_device_ms"]) * int(
+            npu310_calls.get(bucket, 0)
+        )
     surrounding_ref_ms = ref_device_ms - graph_ref_ms
     surrounding310_ms = npu310_device_ms - graph310_ms
-    production_gap_ms = npu310_device_ms - ref_device_ms
-    graph_gap_ms = graph310_ms - graph_ref_ms
+    production_per_crop_ref_ms = ref_device_ms / ref_crops
+    production_per_crop310_ms = npu310_device_ms / npu310_crops
+    graph_per_crop_ref_ms = graph_ref_ms / ref_crops
+    graph_per_crop310_ms = graph310_ms / npu310_crops
+    surrounding_per_crop_ref_ms = surrounding_ref_ms / ref_crops
+    surrounding_per_crop310_ms = surrounding310_ms / npu310_crops
+    production_per_crop_gap_ms = (
+        production_per_crop310_ms - production_per_crop_ref_ms
+    )
+    graph_per_crop_gap_ms = graph_per_crop310_ms - graph_per_crop_ref_ms
     return {
+        "crop_count": {"npu310": npu310_crops, "npu910": ref_crops},
         "production_device_ms": {"npu310": npu310_device_ms, "npu910": ref_device_ms},
-        "production_device_ratio": _ratio(npu310_device_ms, ref_device_ms),
-        "production_wall_ratio": _ratio(
+        "production_device_ratio_raw": _ratio(npu310_device_ms, ref_device_ms),
+        "production_device_ms_per_crop": {
+            "npu310": production_per_crop310_ms,
+            "npu910": production_per_crop_ref_ms,
+        },
+        "production_device_ratio_per_crop": _ratio(
+            production_per_crop310_ms, production_per_crop_ref_ms
+        ),
+        "production_wall_ratio_raw": _ratio(
             float(
                 production310["timing_ms"]["production_boundary_wall"]["p50"]
             ),
@@ -351,17 +385,35 @@ def _summary(
             "npu910": float(production_ref["throughput"]["crops_per_s_wall_p50"]),
         },
         "first32_graph_device_ms": {"npu310": graph310_ms, "npu910": graph_ref_ms},
-        "first32_graph_ratio": _ratio(graph310_ms, graph_ref_ms),
+        "first32_graph_ratio_raw": _ratio(graph310_ms, graph_ref_ms),
+        "first32_graph_device_ms_per_crop": {
+            "npu310": graph_per_crop310_ms,
+            "npu910": graph_per_crop_ref_ms,
+        },
+        "first32_graph_ratio_per_crop": _ratio(
+            graph_per_crop310_ms, graph_per_crop_ref_ms
+        ),
         "first32_surrounding_device_ms": {
             "npu310": surrounding310_ms,
             "npu910": surrounding_ref_ms,
         },
-        "first32_surrounding_ratio": (
+        "first32_surrounding_ratio_raw": (
             _ratio(surrounding310_ms, surrounding_ref_ms)
-            if surrounding_ref_ms > 0 and surrounding310_ms > 0
+            if surrounding_ref_ms > 0 and surrounding310_ms >= 0
             else None
         ),
-        "graph_share_of_production_gap": _ratio(graph_gap_ms, production_gap_ms),
+        "first32_surrounding_device_ms_per_crop": {
+            "npu310": surrounding_per_crop310_ms,
+            "npu910": surrounding_per_crop_ref_ms,
+        },
+        "first32_surrounding_ratio_per_crop": (
+            _ratio(surrounding_per_crop310_ms, surrounding_per_crop_ref_ms)
+            if surrounding_per_crop_ref_ms > 0 and surrounding_per_crop310_ms >= 0
+            else None
+        ),
+        "graph_share_of_per_crop_production_gap": _ratio(
+            graph_per_crop_gap_ms, production_per_crop_gap_ms
+        ),
         "first128_graph_device_s": {
             "npu310": float(graphs310["weighted_first128_device_s"]["vision_graphs"]),
             "npu910": float(graphs_ref["weighted_first128_device_s"]["vision_graphs"]),
@@ -387,7 +439,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     graphs_ref = _read(REFERENCE_GRAPHS)
     production310 = _read(args.npu310_production)
     graphs310 = _read(args.npu310_graphs)
-    _validate_production(production_ref, production310)
+    workload_drift = _validate_production(production_ref, production310)
     _validate_graphs(graphs_ref, graphs310)
     lanes, graph_profile = _compare_graphs(
         graphs_ref, graphs310, topn=args.topn
@@ -402,6 +454,16 @@ def main(argv: Sequence[str] | None = None) -> None:
             "npu910": graphs_ref["environment"],
         },
         "summary": summary,
+        "workload_comparison": {
+            "exact_match": not workload_drift,
+            "differences": workload_drift,
+            "interpretation": (
+                "exact production workload"
+                if not workload_drift
+                else "same page-group contract; production ratios normalized "
+                "per crop using each run's own bucket-call histogram"
+            ),
+        },
         "lanes": lanes,
         "production_profile": _compare_production_profile(
             production_ref, production310, topn=args.topn
@@ -422,11 +484,22 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     print(
         "UNIREC_VISION_GAP_HEADLINE "
-        f"production={_fmt_ratio(summary['production_device_ratio'])} "
-        f"graphs_first32={_fmt_ratio(summary['first32_graph_ratio'])} "
-        f"surrounding={_fmt_ratio(summary['first32_surrounding_ratio'])} "
-        f"graph_gap_share={_fmt_fraction(summary['graph_share_of_production_gap'])} "
+        f"production_per_crop="
+        f"{_fmt_ratio(summary['production_device_ratio_per_crop'])} "
+        f"graphs_first32_per_crop="
+        f"{_fmt_ratio(summary['first32_graph_ratio_per_crop'])} "
+        f"surrounding_per_crop="
+        f"{_fmt_ratio(summary['first32_surrounding_ratio_per_crop'])} "
+        f"graph_gap_share="
+        f"{_fmt_fraction(summary['graph_share_of_per_crop_production_gap'])} "
         f"graphs_first128={_fmt_ratio(summary['first128_graph_ratio'])}"
+    )
+    print(
+        "UNIREC_VISION_WORKLOAD_COMPARISON "
+        f"exact_match={str(not workload_drift).lower()} "
+        f"crops={summary['crop_count']['npu310']}/"
+        f"{summary['crop_count']['npu910']} "
+        f"differences={json.dumps(workload_drift, sort_keys=True)}"
     )
     for lane in lanes:
         print(
