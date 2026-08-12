@@ -1,4 +1,4 @@
-"""Exact alternatives for UniRec stage-2/3 focal depthwise convolutions."""
+"""Exact alternatives for UniRec focal depthwise convolutions."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES = (
     "native",
     "constant",
     "constant_grouped",
+    "constant_grouped_all",
     "group16",
     "aligned_spatial",
 )
@@ -407,7 +408,7 @@ class ConstantFocalDepthwiseConv(nn.Module):
         kernel = tuple(int(value) for value in source.kernel_size)
         channels = int(source.in_channels)
         if not (
-            kernel in {(5, 5), (7, 7)}
+            kernel in {(3, 3), (5, 5), (7, 7)}
             and source.out_channels == channels
             and source.groups == channels
             and tuple(source.stride) == (1, 1)
@@ -415,7 +416,7 @@ class ConstantFocalDepthwiseConv(nn.Module):
             and source.bias is None
         ):
             raise ValueError(
-                "constant focal rewrite requires a bias-free 5x5/7x7 "
+                "constant focal rewrite requires a bias-free 3x3/5x5/7x7 "
                 "depthwise convolution"
             )
         weight = source.weight.detach().contiguous()
@@ -513,13 +514,14 @@ def rewrite_vision_focal_depthwise_convs(
     *,
     requested: str,
 ) -> dict[str, Any]:
-    """Rewrite the dominant stage-2/3 5x5 and 7x7 focal convolutions exactly."""
+    """Rewrite selected focal depthwise convolutions exactly."""
     global _NEXT_CONSTANT_WEIGHT_ID
     if requested not in VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES:
         raise ValueError(f"unsupported vision focal rewrite: {requested}")
+    all_focal = requested == "constant_grouped_all"
     targets: list[dict[str, Any]] = []
     for stage_index, stage in enumerate(vision_encoder.layers):
-        if stage_index < 2:
+        if not all_focal and stage_index < 2:
             continue
         for block_index, block in enumerate(stage.blocks):
             for focal_index, focal_layer in enumerate(
@@ -533,7 +535,12 @@ def rewrite_vision_focal_depthwise_convs(
                         f"focal={focal_index}"
                     )
                 kernel = tuple(int(value) for value in convolution.kernel_size)
-                if kernel not in {(5, 5), (7, 7)}:
+                target_kernels = (
+                    {(3, 3), (5, 5), (7, 7)}
+                    if all_focal
+                    else {(5, 5), (7, 7)}
+                )
+                if kernel not in target_kernels:
                     continue
                 channels = int(convolution.in_channels)
                 row: dict[str, Any] = {
@@ -546,13 +553,18 @@ def rewrite_vision_focal_depthwise_convs(
                     "source_kernel": list(kernel),
                     "source_groups": int(convolution.groups),
                 }
-                if requested in {"constant", "constant_grouped"}:
+                if requested in {
+                    "constant",
+                    "constant_grouped",
+                    "constant_grouped_all",
+                }:
                     weight_id = _NEXT_CONSTANT_WEIGHT_ID
                     _NEXT_CONSTANT_WEIGHT_ID += 1
                     constant = ConstantFocalDepthwiseConv(
                         convolution,
                         weight_id=weight_id,
-                        prepack_grouped=requested == "constant_grouped",
+                        prepack_grouped=requested
+                        in {"constant_grouped", "constant_grouped_all"},
                     )
                     focal_layer[0] = constant
                     row.update(
@@ -569,7 +581,8 @@ def rewrite_vision_focal_depthwise_convs(
                             ),
                             "weight_binding": (
                                 "frozen_prepacked_fractal_z_grouped"
-                                if requested == "constant_grouped"
+                                if requested
+                                in {"constant_grouped", "constant_grouped_all"}
                                 else "ge_const_not_runtime_input"
                             ),
                         }
@@ -624,10 +637,10 @@ def rewrite_vision_focal_depthwise_convs(
                         }
                     )
                 targets.append(row)
-    if requested in {"constant", "constant_grouped"}:
+    if requested in {"constant", "constant_grouped", "constant_grouped_all"}:
         register_focal_depthwise_constant_converter()
     constant_digest = ""
-    if requested in {"constant", "constant_grouped"}:
+    if requested in {"constant", "constant_grouped", "constant_grouped_all"}:
         digest = hashlib.sha256()
         for row in targets:
             digest.update(

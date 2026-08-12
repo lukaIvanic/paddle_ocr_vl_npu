@@ -6,6 +6,7 @@ from __future__ import annotations
 import copy
 import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -187,6 +188,33 @@ class VisionFocalDepthwiseRewriteTest(unittest.TestCase):
         self.assertIs(after, before)
         self.assertEqual(summary["target_count"], 22)
         self.assertEqual(summary["rewritten_count"], 0)
+
+    def test_constant_grouped_all_targets_every_focal_depthwise_filter(self) -> None:
+        vision = _fake_vision_encoder()
+        with mock.patch(
+            "vision_focal_depthwise.register_focal_depthwise_constant_converter"
+        ):
+            summary = rewrite_vision_focal_depthwise_convs(
+                vision,
+                requested="constant_grouped_all",
+            )
+        self.assertEqual(summary["target_count"], 45)
+        self.assertEqual(summary["rewritten_count"], 45)
+        self.assertEqual(
+            {row["stage"] for row in summary["modules"]},
+            {0, 1, 2, 3},
+        )
+        self.assertEqual(
+            {tuple(row["source_kernel"]) for row in summary["modules"]},
+            {(3, 3), (5, 5), (7, 7)},
+        )
+        self.assertTrue(
+            all(
+                row["weight_binding"]
+                == "frozen_prepacked_fractal_z_grouped"
+                for row in summary["modules"]
+            )
+        )
 
 
 if __name__ == "__main__":

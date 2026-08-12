@@ -503,7 +503,10 @@ class BucketedFullVisionRuntime:
 
         config = CompilerConfig()
         config.mode.value = "max-autotune"
-        if self.focal_depthwise_rewrite == "constant_grouped":
+        if self.focal_depthwise_rewrite in {
+            "constant_grouped",
+            "constant_grouped_all",
+        }:
             config.experimental_config.frozen_parameter.value = True
         cache_compile, import_path = import_torchair_cache_compile()
         self.weight_format = str(weight_format)
