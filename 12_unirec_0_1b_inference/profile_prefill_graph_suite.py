@@ -94,6 +94,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="native",
     )
     parser.add_argument(
+        "--allow-vision-parity-drift",
+        action="store_true",
+        help=(
+            "Record same-process native tensor differences without rejecting "
+            "the candidate. This is a performance-experiment control, not a "
+            "quality acceptance claim."
+        ),
+    )
+    parser.add_argument(
         "--layout-dtype", choices=("float16", "float32"), default="float32"
     )
     parser.add_argument(
@@ -503,8 +512,14 @@ def _recognition_lanes(
                 ),
                 "max_abs": float(difference.max().item()),
                 "mean_abs": float(difference.mean().item()),
+                "parity_policy": (
+                    "report" if args.allow_vision_parity_drift else "enforce"
+                ),
             }
-            if not validation["allclose_atol_5e_2_rtol_5e_2"]:
+            if (
+                not validation["allclose_atol_5e_2_rtol_5e_2"]
+                and not args.allow_vision_parity_drift
+            ):
                 raise RuntimeError(
                     f"vision rewrite parity failed for {spec.key}: {validation}"
                 )
