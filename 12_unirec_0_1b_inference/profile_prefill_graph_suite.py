@@ -38,6 +38,7 @@ from modeling_optimized_unirec import (  # noqa: E402
 )
 from opendoc_layout_npu import (  # noqa: E402
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+    LAYOUT_WEIGHT_FORMAT_CHOICES,
     PPDocLayoutV2NpuAdapter,
 )
 from vision_full_batch import (  # noqa: E402
@@ -77,6 +78,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--layout-depthwise-rewrite",
         choices=LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+        default="native",
+    )
+    parser.add_argument(
+        "--layout-weight-format",
+        choices=LAYOUT_WEIGHT_FORMAT_CHOICES,
         default="native",
     )
     parser.add_argument(
@@ -297,6 +303,7 @@ def _layout_lane(
         compile_cache_dir=args.layout_cache_dir.expanduser().resolve(),
         batch_size=1,
         depthwise_rewrite=args.layout_depthwise_rewrite,
+        weight_format=args.layout_weight_format,
     )
     if detector.compiled_runtime is None:
         raise RuntimeError("layout profiler requires the compiled runtime")
@@ -309,7 +316,8 @@ def _layout_lane(
     )
     run = lambda: detector.compiled_runtime(pixel_values)
     result = _profile_lane(
-        f"layout_b1_800x800_{args.layout_dtype}_{args.layout_depthwise_rewrite}",
+        f"layout_b1_800x800_{args.layout_dtype}_{args.layout_depthwise_rewrite}_"
+        f"{args.layout_weight_format}",
         run,
         output_root=output_root,
         device=args.device,
@@ -323,6 +331,7 @@ def _layout_lane(
             "pixel_values": [1, 3, 800, 800],
             "dtype": args.layout_dtype,
             "depthwise_rewrite": args.layout_depthwise_rewrite,
+            "weight_format": args.layout_weight_format,
             "execution": "compiled_fullgraph",
         },
     )
@@ -501,6 +510,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "lane": args.lane,
             "layout_dtype": args.layout_dtype,
             "layout_depthwise_rewrite": args.layout_depthwise_rewrite,
+            "layout_weight_format": args.layout_weight_format,
         },
         "first128_workload": {
             "layout_calls": FIRST128_LAYOUT_CALLS,
