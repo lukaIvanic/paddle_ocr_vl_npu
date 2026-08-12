@@ -11,6 +11,8 @@ resolve_inputs() {
   : "${MODEL:?export MODEL for the UniRec model directory}"
   : "${NATIVE_PROFILE:?export NATIVE_PROFILE for the completed native graph suite}"
   : "${ASCEND_RT_VISIBLE_DEVICES:?select one free physical NPU first}"
+  VISION_DEPTHWISE_REWRITE="${VISION_DEPTHWISE_REWRITE:-constant_grouped}"
+  VISION_WEIGHT_FORMAT="${VISION_WEIGHT_FORMAT:-native}"
   case ",${ASCEND_RT_VISIBLE_DEVICES}," in
     *,5,*|*,6,*) printf 'REJECTED_PHYSICAL_DEVICE_5_OR_6\n' >&2; exit 1 ;;
   esac
@@ -38,6 +40,8 @@ worker_main() {
     printf 'physical_device=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
     printf 'python=%s\nmodel=%s\nnative=%s\ncache=%s\n' \
       "$PYTHON_BIN" "$MODEL" "$NATIVE_PROFILE" "$CACHE_ROOT"
+    printf 'rewrite=%s\nweight_format=%s\n' \
+      "$VISION_DEPTHWISE_REWRITE" "$VISION_WEIGHT_FORMAT"
   } >"$RUN_ROOT/preflight.log"
 
   command=(
@@ -50,8 +54,8 @@ worker_main() {
     --device npu:0
     --lane vision
     --vision-bucket 960x64_b16
-    --vision-depthwise-rewrite constant_grouped
-    --vision-weight-format native
+    --vision-depthwise-rewrite "$VISION_DEPTHWISE_REWRITE"
+    --vision-weight-format "$VISION_WEIGHT_FORMAT"
     --warmup 3
     --control-repeats 50
     --profile-steps 1
@@ -72,7 +76,7 @@ worker_main() {
     test -f "$RUN_ROOT/output/profile_suite_summary.json"
     "$PYTHON_BIN" "$ANALYZER" \
       --native "$NATIVE_PROFILE" \
-      --variant "constant_grouped=$RUN_ROOT/output/profile_suite_summary.json" \
+      --variant "${VISION_DEPTHWISE_REWRITE}_${VISION_WEIGHT_FORMAT}=$RUN_ROOT/output/profile_suite_summary.json" \
       --output "$RUN_ROOT/comparison_summary.json" \
       2>&1 | tee "$RUN_ROOT/analysis.log" || status="$?"
   fi
@@ -99,6 +103,8 @@ launch_main() {
     PYTHON_BIN="$PYTHON_BIN" \
     MODEL="$MODEL" \
     NATIVE_PROFILE="$NATIVE_PROFILE" \
+    VISION_DEPTHWISE_REWRITE="$VISION_DEPTHWISE_REWRITE" \
+    VISION_WEIGHT_FORMAT="$VISION_WEIGHT_FORMAT" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     bash "$0" --worker "$RUN_ROOT" "$CACHE_ROOT" \
     >"$RUN_ROOT/run.log" 2>&1 < /dev/null &

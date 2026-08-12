@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import re
 from pathlib import Path
@@ -47,6 +48,44 @@ def _kernel_details(lane: dict[str, Any]) -> dict[str, Any]:
     if len(runs) != 1:
         raise ValueError(f"expected one profiler run, got {len(runs)}")
     return runs[0]["kernel_details"]
+
+
+def _full_transdata_inventory(lane: dict[str, Any]) -> dict[str, Any] | None:
+    runs = lane["parsed_profile"]["summary"]["runs"]
+    if len(runs) != 1:
+        raise ValueError(f"expected one profiler run, got {len(runs)}")
+    path = Path(runs[0]["ascend_output_dir"]) / "kernel_details.csv"
+    if not path.is_file():
+        return None
+    totals: dict[str, dict[str, float | int]] = {}
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        for row in csv.DictReader(handle):
+            if row["Type"] != "TransData":
+                continue
+            source = row["Input Formats"]
+            target = row["Output Formats"]
+            if source == "FRACTAL_Z" and target.startswith("FRACTAL_Z:"):
+                category = "grouped_focal_weight_repack"
+            elif source in {"NCHW", "ND"} and target == "FRACTAL_Z":
+                category = "base_weight_to_fz"
+            elif source == "ND" and target == "FRACTAL_NZ":
+                category = "nd_to_nz"
+            elif {source, target} <= {"NCHW", "NHWC", "NC1HWC0"}:
+                category = "activation_layout"
+            else:
+                category = "other"
+            aggregate = totals.setdefault(category, {"count": 0, "duration_us": 0.0})
+            aggregate["count"] = int(aggregate["count"]) + 1
+            aggregate["duration_us"] = float(aggregate["duration_us"]) + float(
+                row["Duration(us)"]
+            )
+    return {
+        name: {
+            "count": int(values["count"]),
+            "duration_ms": float(values["duration_us"]) / 1000.0,
+        }
+        for name, values in sorted(totals.items())
+    }
 
 
 def _summarize(name: str, path: Path) -> dict[str, Any]:
@@ -93,6 +132,7 @@ def _summarize(name: str, path: Path) -> dict[str, Any]:
         "validation": validation,
         "rewrite_summary": lane.get("focal_depthwise_rewrite_summary"),
         "weight_format_summary": lane.get("weight_format_summary"),
+        "full_transdata_inventory": _full_transdata_inventory(lane),
     }
 
 
@@ -128,10 +168,13 @@ def main() -> None:
             parity = str(validation["allclose_atol_5e_2_rtol_5e_2"]).lower()
             max_abs = float(validation["max_abs"])
             mean_abs = float(validation["mean_abs"])
+        rewrite_summary = row["rewrite_summary"] or {}
+        rewritten_count = int(rewrite_summary.get("rewritten_count", 0))
         print(
             "UNIREC_VISION_DEPTHWISE "
             f"lane={row['name']} device_ms={row['device_ms']:.6f} "
             f"speedup={row['speedup_vs_native']:.4f}x "
+            f"rewritten={rewritten_count} "
             f"parity={parity} max_abs={max_abs:.6f} mean_abs={mean_abs:.6f} "
             f"TransData={row['transdata_ms']:.3f}ms/{row['transdata_count']} "
             f"target_repack={row['target_repack_ms']:.3f}ms/"
@@ -140,6 +183,17 @@ def main() -> None:
             f"kernels={row['kernel_rows']}",
             flush=True,
         )
+        inventory = row["full_transdata_inventory"]
+        if inventory is not None:
+            fields = [
+                f"{name}={values['duration_ms']:.3f}ms/{values['count']}"
+                for name, values in inventory.items()
+            ]
+            print(
+                "UNIREC_VISION_TRANSDATA_INVENTORY "
+                f"lane={row['name']} " + " ".join(fields),
+                flush=True,
+            )
     if args.output is not None:
         print(f"UNIREC_VISION_DEPTHWISE_OUTPUT {output}", flush=True)
 
