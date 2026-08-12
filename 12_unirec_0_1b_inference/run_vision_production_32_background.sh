@@ -18,7 +18,13 @@ resolve_inputs() {
     *,5,*) printf 'REJECTED_PHYSICAL_DEVICE_5\n' >&2; exit 1 ;;
   esac
 
-  PYTHON_BIN="$(readlink -f "$PYTHON_BIN")"
+  # Preserve the venv interpreter leaf. Resolving bin/python to the base Python
+  # bypasses pyvenv.cfg and drops venv-only packages such as kornia_rs.
+  if [[ "$PYTHON_BIN" == */* ]]; then
+    PYTHON_BIN="$(cd "$(dirname "$PYTHON_BIN")" && pwd -P)/$(basename "$PYTHON_BIN")"
+  else
+    PYTHON_BIN="$(command -v "$PYTHON_BIN")"
+  fi
   MODEL="$(readlink -f "$MODEL")"
   OPENOCR_ROOT="$(readlink -f "$OPENOCR_ROOT")"
   PAGE_MANIFEST="$(readlink -f "$PAGE_MANIFEST")"
