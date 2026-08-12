@@ -48,8 +48,8 @@ launcher checks CPU shared memory separately.
 
 ## Launch
 
-Resolve the existing stock OpenOCR assets from the previous successful UniRec
-commands on this server. They are required only for final page assembly.
+The custom two-phase path uses OpenOCR's Python postprocessing and output writer,
+but it does not load or require stock ONNX exports.
 
 ```bash
 set -euo pipefail
@@ -67,9 +67,6 @@ export MODEL="${MODEL:-$REPO/models/unirec-0.1b}"
 export LAYOUT_MODEL="${LAYOUT_MODEL:-$REPO/models/PP-DocLayoutV2_safetensors}"
 export OPENOCR_ROOT="${OPENOCR_ROOT:-$REPO/deps/OpenOCR_0d522801}"
 export IMAGES_DIR="${IMAGES_DIR:?set the existing OmniDocBench image directory}"
-export STOCK_ENCODER="${STOCK_ENCODER:?set the existing UniRec encoder ONNX path}"
-export STOCK_DECODER="${STOCK_DECODER:?set the existing UniRec decoder ONNX path}"
-export STOCK_TOKENIZER_MAPPING="${STOCK_TOKENIZER_MAPPING:?set the existing tokenizer mapping path}"
 export LAYOUT_CACHE="${LAYOUT_CACHE:?reuse the successful optimized-layout cache parent}"
 export OPT_COMPILE_CACHE="${OPT_COMPILE_CACHE:?reuse the successful all-focal vision cache}"
 

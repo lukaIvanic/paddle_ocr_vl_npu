@@ -11,9 +11,6 @@ resolve_inputs() {
   : "${LAYOUT_MODEL:?export LAYOUT_MODEL for PP-DocLayoutV2}"
   : "${OPENOCR_ROOT:?export OPENOCR_ROOT for the passed OpenOCR checkout}"
   : "${IMAGES_DIR:?export IMAGES_DIR for OmniDocBench images}"
-  : "${STOCK_ENCODER:?export STOCK_ENCODER for OpenOCR output assembly}"
-  : "${STOCK_DECODER:?export STOCK_DECODER for OpenOCR output assembly}"
-  : "${STOCK_TOKENIZER_MAPPING:?export STOCK_TOKENIZER_MAPPING}"
   : "${LAYOUT_CACHE:?export the passed optimized-layout cache parent}"
   : "${OPT_COMPILE_CACHE:?export the passed all-focal vision cache}"
   : "${ASCEND_RT_VISIBLE_DEVICES:?source npu-setup before launching}"
@@ -35,9 +32,6 @@ resolve_inputs() {
   LAYOUT_MODEL="$(readlink -f "$LAYOUT_MODEL")"
   OPENOCR_ROOT="$(readlink -f "$OPENOCR_ROOT")"
   IMAGES_DIR="$(readlink -f "$IMAGES_DIR")"
-  STOCK_ENCODER="$(readlink -f "$STOCK_ENCODER")"
-  STOCK_DECODER="$(readlink -f "$STOCK_DECODER")"
-  STOCK_TOKENIZER_MAPPING="$(readlink -f "$STOCK_TOKENIZER_MAPPING")"
   LAYOUT_CACHE="$(readlink -f "$LAYOUT_CACHE")"
   OPT_COMPILE_CACHE="$(readlink -f "$OPT_COMPILE_CACHE")"
 
@@ -46,9 +40,6 @@ resolve_inputs() {
   test -d "$LAYOUT_MODEL"
   test -f "$OPENOCR_ROOT/tools/infer_doc_onnx.py"
   test -d "$IMAGES_DIR"
-  test -e "$STOCK_ENCODER"
-  test -e "$STOCK_DECODER"
-  test -e "$STOCK_TOKENIZER_MAPPING"
   test -d "$LAYOUT_CACHE"
   test -d "$OPT_COMPILE_CACHE"
   test -f "$RUNNER"
@@ -64,9 +55,6 @@ run_lane() {
     --openocr-root "$OPENOCR_ROOT"
     --model-path "$MODEL"
     --layout-model "$LAYOUT_MODEL"
-    --stock-encoder "$STOCK_ENCODER"
-    --stock-decoder "$STOCK_DECODER"
-    --stock-tokenizer-mapping "$STOCK_TOKENIZER_MAPPING"
     --input "$IMAGES_DIR"
     --output-dir "$output_dir"
     --device npu:0
@@ -236,9 +224,6 @@ launch_main() {
     LAYOUT_MODEL="$LAYOUT_MODEL" \
     OPENOCR_ROOT="$OPENOCR_ROOT" \
     IMAGES_DIR="$IMAGES_DIR" \
-    STOCK_ENCODER="$STOCK_ENCODER" \
-    STOCK_DECODER="$STOCK_DECODER" \
-    STOCK_TOKENIZER_MAPPING="$STOCK_TOKENIZER_MAPPING" \
     LAYOUT_CACHE="$LAYOUT_CACHE" \
     OPT_COMPILE_CACHE="$OPT_COMPILE_CACHE" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \

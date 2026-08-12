@@ -74,9 +74,6 @@ def parse_args() -> argparse.Namespace:
             ".runtime_cache/12_unirec_0_1b_inference/layout_process_pool"
         ),
     )
-    parser.add_argument("--stock-encoder", type=Path, required=True)
-    parser.add_argument("--stock-decoder", type=Path, required=True)
-    parser.add_argument("--stock-tokenizer-mapping", type=Path, required=True)
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--device", default="npu:0")
@@ -384,19 +381,23 @@ def main() -> None:
     )
     from modeling_optimized_unirec import OptimizedUniRecRunner
 
-    pipeline = infer_doc_onnx.OpenDocONNX(
-        layout_model_path=str(args.layout_model.expanduser().resolve()),
-        unirec_encoder_path=str(args.stock_encoder.expanduser().resolve()),
-        unirec_decoder_path=str(args.stock_decoder.expanduser().resolve()),
-        tokenizer_mapping_path=str(
-            args.stock_tokenizer_mapping.expanduser().resolve()
-        ),
-        use_gpu=False,
-        layout_threshold=args.layout_threshold,
-        use_layout_detection=False,
-        auto_download=False,
-        max_parallel_blocks=1,
-    )
+    # The two-phase path owns layout and recognition.  Reuse only OpenDoc's
+    # output methods without running OpenDocONNX.__init__, which would create
+    # unused ONNX Runtime layout/encoder/decoder sessions and require stock
+    # ONNX exports that are not part of the custom UniRec deployment.
+    pipeline = infer_doc_onnx.OpenDocONNX.__new__(infer_doc_onnx.OpenDocONNX)
+    pipeline.use_layout_detection = False
+    pipeline.use_chart_recognition = args.use_chart_recognition
+    pipeline.markdown_ignore_labels = [
+        "number",
+        "footnote",
+        "header",
+        "footer",
+        "aside_text",
+        "footer_image",
+        "header_image",
+        "chart",
+    ]
     runner = OptimizedUniRecRunner(
         model_path=model_path,
         device=args.device,
