@@ -162,7 +162,6 @@ def focal_group_prepack(
     *,
     groups: int,
 ) -> torch.Tensor:
-    register_focal_group_prepack_converter()
     return _focal_group_prepack(weight, int(groups))
 
 

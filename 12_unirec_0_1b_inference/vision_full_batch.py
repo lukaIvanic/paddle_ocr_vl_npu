@@ -23,6 +23,7 @@ from modeling_optimized_unirec import (
 from vision_focal_depthwise import (
     VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES,
     focal_group_prepack,
+    register_focal_group_prepack_converter,
     rewrite_vision_focal_depthwise_convs,
     vision_rewrite_source_hash,
 )
@@ -115,6 +116,7 @@ def _prepare_vision_weight_formats(
     elif requested == "focal_prepack":
         torch_npu.npu.config.allow_internal_format = True
         compiler_config.experimental_config.frozen_parameter.value = True
+        register_focal_group_prepack_converter()
         compiled_by_signature: dict[tuple[Any, ...], Any] = {}
         for stage_index, stage in enumerate(vision_encoder.layers):
             if stage_index < 2:
