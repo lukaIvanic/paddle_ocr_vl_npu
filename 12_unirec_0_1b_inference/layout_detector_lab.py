@@ -21,6 +21,7 @@ import cv2
 import numpy as np
 
 from opendoc_layout_npu import (
+    LAYOUT_DEPTHWISE_REWRITE_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
     PPDocLayoutV2NpuAdapter,
 )
@@ -69,6 +70,12 @@ def parse_args() -> argparse.Namespace:
         "--freeze-parameters",
         action="store_true",
         help="Let TorchAir treat model parameters as immutable graph data",
+    )
+    parser.add_argument(
+        "--depthwise-rewrite",
+        choices=LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+        default="native",
+        help="Exact block-diagonal replacement for depthwise 5x5 convolutions",
     )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
@@ -201,6 +208,7 @@ def main() -> None:
         batch_size=1,
         weight_format=args.weight_format,
         freeze_parameters=args.freeze_parameters,
+        depthwise_rewrite=args.depthwise_rewrite,
     )
     print(
         f"LAYOUT_LAB phase=model_setup_end setup_s={detector.setup_s:.3f}",
@@ -270,6 +278,8 @@ def main() -> None:
             "weight_format": args.weight_format,
             "weight_format_summary": detector.weight_format_summary,
             "freeze_parameters": args.freeze_parameters,
+            "depthwise_rewrite": args.depthwise_rewrite,
+            "depthwise_rewrite_summary": detector.depthwise_rewrite_summary,
             "scheduling": "sequential_b1_same_process",
         },
         "summary": summarize(records, detector.setup_s),

@@ -91,6 +91,18 @@ def _load_layout_torchair():
                 sys.modules[name] = old_module
 
 
+def _load_layout_adapter():
+    spec = importlib.util.spec_from_file_location(
+        "opendoc_layout_npu_under_test",
+        ROOT / "opendoc_layout_npu.py",
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load opendoc_layout_npu.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 class _CapturingEmbeddings(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -253,14 +265,7 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
         self.assertNotIn("from layout_torchair import _generate_anchors", source)
 
     def test_layout_postprocess_copies_only_required_outputs_to_cpu(self) -> None:
-        spec = importlib.util.spec_from_file_location(
-            "opendoc_layout_npu_under_test",
-            ROOT / "opendoc_layout_npu.py",
-        )
-        if spec is None or spec.loader is None:
-            raise RuntimeError("cannot load opendoc_layout_npu.py")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        module = _load_layout_adapter()
         outputs = SimpleNamespace(
             logits=torch.randn(1, 3, 4, requires_grad=True),
             pred_boxes=torch.randn(1, 3, 4, requires_grad=True),
@@ -275,6 +280,32 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
             tensor = getattr(copied, name)
             self.assertEqual(tensor.device.type, "cpu")
             self.assertFalse(tensor.requires_grad)
+
+    def test_depthwise_rewrites_are_exact_block_diagonal_convolutions(self) -> None:
+        module = _load_layout_adapter()
+        torch.manual_seed(17)
+        inputs = torch.randn(1, 64, 8, 8)
+        reference_conv = nn.Conv2d(
+            64, 64, kernel_size=5, padding=2, groups=64, bias=True
+        ).eval()
+        with torch.inference_mode():
+            reference = reference_conv(inputs)
+
+        for requested in ("group16", "group32", "group64", "dense"):
+            candidate = nn.Sequential(
+                nn.Conv2d(64, 64, kernel_size=5, padding=2, groups=64, bias=True)
+            ).eval()
+            candidate[0].load_state_dict(reference_conv.state_dict())
+            summary = module._rewrite_layout_depthwise_convs(
+                candidate,
+                requested=requested,
+            )
+            with torch.inference_mode():
+                actual = candidate(inputs)
+            torch.testing.assert_close(actual, reference, atol=1e-5, rtol=1e-5)
+            self.assertEqual(summary["target_count"], 1)
+            self.assertEqual(summary["rewritten_count"], 1)
+            self.assertEqual(candidate[0].groups, 64 // summary["modules"][0]["group_width"])
 
 
 if __name__ == "__main__":

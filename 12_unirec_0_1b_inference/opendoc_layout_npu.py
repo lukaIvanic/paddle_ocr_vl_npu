@@ -25,6 +25,72 @@ LAYOUT_WEIGHT_FORMAT_CHOICES = (
     "torchair_internal_depthwise_fz",
 )
 
+LAYOUT_DEPTHWISE_REWRITE_CHOICES = (
+    "native",
+    "group16",
+    "group32",
+    "group64",
+    "dense",
+)
+
+
+def _rewrite_layout_depthwise_convs(
+    model: torch.nn.Module,
+    *,
+    requested: str,
+) -> dict[str, Any]:
+    """Rewrite depthwise 5x5 filters as exact block-diagonal grouped filters."""
+    if requested not in LAYOUT_DEPTHWISE_REWRITE_CHOICES:
+        raise ValueError(f"Unsupported layout depthwise rewrite: {requested}")
+    rewritten: list[dict[str, Any]] = []
+    for name, module in model.named_modules():
+        if not isinstance(module, torch.nn.Conv2d):
+            continue
+        channels = int(module.in_channels)
+        is_target = (
+            tuple(module.kernel_size) == (5, 5)
+            and module.groups == channels
+            and module.out_channels == channels
+            and tuple(module.weight.shape) == (channels, 1, 5, 5)
+        )
+        if not is_target:
+            continue
+        if requested == "native":
+            group_width = 1
+        elif requested == "dense":
+            group_width = channels
+        else:
+            group_width = int(requested.removeprefix("group"))
+        if channels % group_width:
+            raise ValueError(
+                f"depthwise rewrite width does not divide channels: "
+                f"module={name} channels={channels} group_width={group_width}"
+            )
+        original_groups = int(module.groups)
+        if group_width > 1:
+            original = module.weight.detach()
+            expanded = original.new_zeros((channels, group_width, 5, 5))
+            indices = torch.arange(channels, device=original.device)
+            expanded[indices, indices.remainder(group_width)] = original[:, 0]
+            module.weight = torch.nn.Parameter(expanded, requires_grad=False)
+            module.groups = channels // group_width
+        rewritten.append(
+            {
+                "module": name,
+                "channels": channels,
+                "original_groups": original_groups,
+                "groups": int(module.groups),
+                "group_width": group_width,
+                "weight_shape": [int(value) for value in module.weight.shape],
+            }
+        )
+    return {
+        "requested": requested,
+        "target_count": len(rewritten),
+        "rewritten_count": sum(row["group_width"] > 1 for row in rewritten),
+        "modules": rewritten,
+    }
+
 
 def _prepare_layout_weight_formats(
     model: torch.nn.Module,
@@ -213,6 +279,7 @@ class PPDocLayoutV2NpuAdapter:
         batch_size: int = 1,
         weight_format: str = "native",
         freeze_parameters: bool = False,
+        depthwise_rewrite: str = "native",
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
@@ -226,6 +293,10 @@ class PPDocLayoutV2NpuAdapter:
             raise ValueError("layout batch size must be >= 1")
         if weight_format not in LAYOUT_WEIGHT_FORMAT_CHOICES:
             raise ValueError(f"Unsupported layout weight format: {weight_format}")
+        if depthwise_rewrite not in LAYOUT_DEPTHWISE_REWRITE_CHOICES:
+            raise ValueError(
+                f"Unsupported layout depthwise rewrite: {depthwise_rewrite}"
+            )
 
         import torch_npu  # noqa: F401
         from transformers import AutoImageProcessor, AutoModelForObjectDetection
@@ -239,6 +310,7 @@ class PPDocLayoutV2NpuAdapter:
         self.batch_size = int(batch_size)
         self.weight_format = str(weight_format)
         self.freeze_parameters = bool(freeze_parameters)
+        self.depthwise_rewrite = str(depthwise_rewrite)
         self._filter_overlap_boxes = filter_overlap_boxes_vectorized
 
         started = time.perf_counter()
@@ -253,6 +325,10 @@ class PPDocLayoutV2NpuAdapter:
         from layout_torchair import make_eager_npu_compatible
 
         make_eager_npu_compatible(self.model)
+        self.depthwise_rewrite_summary = _rewrite_layout_depthwise_convs(
+            self.model,
+            requested=self.depthwise_rewrite,
+        )
         if self.weight_format != "native":
             # This gate must precede the process's first NPU allocation.
             torch.npu.config.allow_internal_format = True
@@ -269,7 +345,9 @@ class PPDocLayoutV2NpuAdapter:
 
             self.compiled_runtime = LayoutFullGraphRuntime(
                 self.model,
-                cache_root=Path(compile_cache_dir),
+                cache_root=Path(compile_cache_dir) / (
+                    f"depthwise_{self.depthwise_rewrite}"
+                ),
                 dtype=self.dtype,
                 device=self.device,
                 batch_size=self.batch_size,
