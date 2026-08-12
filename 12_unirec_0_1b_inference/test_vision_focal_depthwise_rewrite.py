@@ -106,7 +106,7 @@ class VisionFocalDepthwiseRewriteTest(unittest.TestCase):
             rtol=1e-5,
         )
 
-    def test_prepacked_wrapper_keeps_logical_shape_and_physical_storage(self) -> None:
+    def test_prepacked_wrapper_keeps_physical_grouped_storage(self) -> None:
         torch.manual_seed(6)
         source = torch.nn.Conv2d(
             32,
@@ -122,7 +122,7 @@ class VisionFocalDepthwiseRewriteTest(unittest.TestCase):
             weight_id=10_001,
             prepack_grouped=True,
         ).eval()
-        self.assertEqual(tuple(wrapped.packed_weight.shape), (32, 1, 5, 5))
+        self.assertEqual(tuple(wrapped.packed_weight.shape), (50, 1, 16, 16))
         self.assertEqual(
             wrapped.packed_weight.untyped_storage().nbytes(),
             50 * 1 * 16 * 16 * 2,

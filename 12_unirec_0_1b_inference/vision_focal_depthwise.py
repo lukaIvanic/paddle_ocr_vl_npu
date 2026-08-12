@@ -434,14 +434,9 @@ class ConstantFocalDepthwiseConv(nn.Module):
         }
         self.prepack_grouped = bool(prepack_grouped)
         if self.prepack_grouped:
-            packed_storage = torch.from_numpy(host_weight).to(weight.device)
-            packed_weight = packed_storage.as_strided(
-                tuple(int(value) for value in weight.shape),
-                tuple(int(value) for value in weight.stride()),
-            )
             self.register_buffer(
                 "packed_weight",
-                packed_weight,
+                torch.from_numpy(host_weight).to(weight.device),
                 persistent=False,
             )
         self.weight_id = int(weight_id)
