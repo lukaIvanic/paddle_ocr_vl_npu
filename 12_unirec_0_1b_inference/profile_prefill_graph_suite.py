@@ -71,7 +71,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--control-repeats", type=int, default=10)
     parser.add_argument("--profile-steps", type=int, default=1)
     parser.add_argument("--parser-topn", type=int, default=50)
-    parser.add_argument("--lane", choices=("all", "layout"), default="all")
+    parser.add_argument(
+        "--lane", choices=("all", "layout", "vision"), default="all"
+    )
     parser.add_argument(
         "--layout-dtype", choices=("float16", "float32"), default="float32"
     )
@@ -432,37 +434,39 @@ def _recognition_lanes(
         )
         del pixels, masks
 
-    text_runtime = runner._get_compiled_packed_text_prefill_runtime()
-    packed = torch.zeros(
-        (1, text_runtime.bucket, int(runner.config.d_model)),
-        dtype=runner.dtype,
-        device=args.device,
-    )
-    text_run = lambda: text_runtime.compiled(packed)
-    lanes.append(
-        _profile_lane(
-            "cross_kv_packed_b1_s1024_fp16",
-            text_run,
-            output_root=output_root,
+    if args.lane != "vision":
+        text_runtime = runner._get_compiled_packed_text_prefill_runtime()
+        packed = torch.zeros(
+            (1, text_runtime.bucket, int(runner.config.d_model)),
+            dtype=runner.dtype,
             device=args.device,
-            warmup=args.warmup,
-            control_repeats=args.control_repeats,
-            profile_steps=args.profile_steps,
-            profile_metric=args.profile_metric,
-            parser_topn=args.parser_topn,
-            first128_calls=FIRST128_TEXT_PREFILL_CALLS,
-            input_contract={
-                "encoder_hidden_states": [
-                    1,
-                    text_runtime.bucket,
-                    int(runner.config.d_model),
-                ],
-                "dtype": "float16",
-                "execution": "compiled_packed_cross_kv",
-            },
         )
-    )
-    del packed, vision, runner
+        text_run = lambda: text_runtime.compiled(packed)
+        lanes.append(
+            _profile_lane(
+                "cross_kv_packed_b1_s1024_fp16",
+                text_run,
+                output_root=output_root,
+                device=args.device,
+                warmup=args.warmup,
+                control_repeats=args.control_repeats,
+                profile_steps=args.profile_steps,
+                profile_metric=args.profile_metric,
+                parser_topn=args.parser_topn,
+                first128_calls=FIRST128_TEXT_PREFILL_CALLS,
+                input_contract={
+                    "encoder_hidden_states": [
+                        1,
+                        text_runtime.bucket,
+                        int(runner.config.d_model),
+                    ],
+                    "dtype": "float16",
+                    "execution": "compiled_packed_cross_kv",
+                },
+            )
+        )
+        del packed
+    del vision, runner
     synchronize_device(args.device)
     torch.npu.empty_cache()
     return lanes
@@ -500,11 +504,15 @@ def main(argv: Sequence[str] | None = None) -> None:
     output_root.mkdir(parents=True, exist_ok=False)
 
     started = time.perf_counter()
-    layout = _layout_lane(args, output_root)
+    layout = _layout_lane(args, output_root) if args.lane != "vision" else None
     recognition = (
-        _recognition_lanes(args, output_root) if args.lane == "all" else []
+        _recognition_lanes(args, output_root) if args.lane != "layout" else []
     )
-    lanes = [layout, *recognition]
+    if args.lane == "vision":
+        recognition = [
+            lane for lane in recognition if lane["name"].startswith("vision_")
+        ]
+    lanes = [*([layout] if layout is not None else []), *recognition]
     vision_weighted_s = sum(
         float(lane["weighted_first128_device_s"])
         for lane in recognition
@@ -555,7 +563,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         },
         "lanes": lanes,
         "weighted_first128_device_s": {
-            "layout_graph": float(layout["weighted_first128_device_s"]),
+            "layout_graph": (
+                float(layout["weighted_first128_device_s"])
+                if layout is not None
+                else 0.0
+            ),
             "vision_graphs": vision_weighted_s,
             "cross_kv_graph": text_weighted_s,
             "recognition_graphs_total": vision_weighted_s + text_weighted_s,

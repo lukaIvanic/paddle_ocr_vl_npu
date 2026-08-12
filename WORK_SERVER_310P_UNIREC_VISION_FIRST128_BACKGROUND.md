@@ -105,7 +105,9 @@ Before declaring PASS, require all of the following:
 
 - 128 pages were submitted;
 - the warmup and both measured replays completed;
-- fallback count is zero;
+- fallback count is exactly one: `page_000091_crop_0002`, processed shape
+  `448x832`. Its height exceeds the largest compiled bucket height, so the
+  production eager route is expected;
 - `unexpected_mutation_after_graph_warmup` is false;
 - exit code is zero.
 
