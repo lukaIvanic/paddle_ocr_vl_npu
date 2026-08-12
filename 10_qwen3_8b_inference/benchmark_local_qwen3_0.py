@@ -59,13 +59,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dtype", choices=("float16", "float32"), default="float16")
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--compile-decode", action="store_true")
-    parser.add_argument("--compile-decode-dynamic", action="store_true")
+    parser.add_argument(
+        "--compile-decode-dynamic",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
     parser.add_argument("--npugraph-decode", action="store_true")
-    parser.add_argument("--decode-increfa-mode", choices=("mask", "actual_seq_lengths"), default="mask")
+    parser.add_argument(
+        "--decode-increfa-mode",
+        choices=("mask", "actual_seq_lengths"),
+        default="actual_seq_lengths",
+    )
     parser.add_argument(
         "--decode-optimization",
         choices=tuple(DECODE_OPTIMIZATION_PRESETS),
-        default="baseline",
+        default="combined_apply",
     )
     parser.add_argument(
         "--decode-linear-weight-format",

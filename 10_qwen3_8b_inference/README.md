@@ -23,6 +23,17 @@ Prefill deliberately produces KV state only. Generation re-feeds the final
 prompt token through decode to obtain the first output token, so the first and
 all subsequent decode iterations use one identical static graph contract.
 
+The default compiled decode path is the validated B1 preset:
+
+- dynamic TorchAir decode with `actual_seq_lengths`;
+- native NPU RMSNorm and fused residual-add plus RMSNorm;
+- one packed QKV projection per layer;
+- native NPU rotary embedding;
+- unchanged ND Linear weights.
+
+`--decode-optimization baseline --decode-linear-weight-format unchanged`
+retains the original implementation for controlled comparisons.
+
 ## Transformers Reference
 
 Use this as the correctness reference before comparing the local runtime.
@@ -64,6 +75,10 @@ $PYTHON ./run_local_qwen3_0.py \
   --static-kv-cache-len 4096
 ```
 
+The command uses `combined_apply`, dynamic compilation, and
+`actual_seq_lengths` by default. Use `--no-compile-decode-dynamic` or
+`--decode-increfa-mode mask` only for an explicit ablation.
+
 Minimal fixed-shape static-graph validation (64 prompt tokens, 64 decode
 iterations, KV length 128):
 
@@ -87,7 +102,7 @@ compiled lanes from independent prefills. It requires exact generated-token
 parity and records the final KV-cache maximum absolute difference before
 reporting warmed replay throughput.
 
-Compiled decode with `actual_seq_lengths`:
+Explicit equivalent of the default compiled decode contract:
 
 ```bash
 $PYTHON ./run_local_qwen3_0.py \
@@ -97,6 +112,8 @@ $PYTHON ./run_local_qwen3_0.py \
   --compile-decode \
   --compile-decode-dynamic \
   --decode-increfa-mode actual_seq_lengths \
+  --decode-optimization combined_apply \
+  --decode-linear-weight-format unchanged \
   --prompt "Write a tiny Python function that adds two numbers." \
   --max-new-tokens 64 \
   --static-kv-cache-len 65536
@@ -217,4 +234,33 @@ $PYTHON ./benchmark_local_qwen3_0.py \
   runtime does not retain a second complete CPU state dictionary while loading
   the 8B model.
 - `--compile-decode-dynamic --decode-increfa-mode actual_seq_lengths` avoids attending over the full static KV cache during decode.
+
+## Ascend 910B2 B1 Decode Result
+
+Measured on physical Ascend 910B2 NPU 7 with FP16, one 512-token prefix,
+64 decode steps, and KV capacity 4096. Every optimized lane matched the
+baseline greedy tokens for all 64 steps. The selected `combined_apply` lane
+also matched optimized eager versus compiled tokens exactly, with zero KV-cache
+maximum absolute difference between those two executions.
+
+| Decode implementation | Tokens/s |
+|---|---:|
+| Original baseline | 66.17 |
+| Native RMSNorm only | 69.41 |
+| **`combined_apply` (default)** | **79.11** |
+| `combined_apply` plus RoPE lookup | 78.95 |
+| RoPE lookup plus stage-aware weight prefetch | 60.75 |
+| RoPE lookup plus FRACTAL_NZ decode weights | 60.01 |
+
+The default is 19.6% faster than the original implementation. Qwen3-8B did
+not inherit two Paddle-specific wins: the stage-aware prefetch schedule and
+FRACTAL_NZ weights both regressed this B1 shape, so they remain explicit lab
+options rather than defaults.
+
+The before/after decode profiles verify that the original 9,280 AI-CPU scalar
+casts were removed. The optimized profile contains no AI-CPU Cast kernels;
+only 384 small AI-vector Cast kernels remain, totaling 886 microseconds across
+64 decode steps. The largest remaining non-matmul cost is stock
+IncreFlashAttention: 2,304 calls, or 36 layers times 64 steps, with 360,888
+microseconds of summed AI-CPU time and 51,924 microseconds of MIX_AIC time.
 - Keep `prefill_tokens + decode_steps <= static_kv_cache_len` for benchmark runs.

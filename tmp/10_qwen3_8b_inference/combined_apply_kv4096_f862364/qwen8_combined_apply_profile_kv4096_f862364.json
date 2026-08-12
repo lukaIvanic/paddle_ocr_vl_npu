@@ -1,0 +1,867 @@
+{
+  "model_dir": "/workspace/models/Qwen3-8B",
+  "device": "npu:0",
+  "dtype": "float16",
+  "compile_decode": true,
+  "compile_decode_dynamic": true,
+  "npugraph_decode": false,
+  "decode_increfa_mode": "actual_seq_lengths",
+  "decode_optimization": "combined_apply",
+  "decode_optimization_metadata": {
+    "name": "combined_apply",
+    "packed_qkv_count": 36,
+    "rope_lookup": false,
+    "rope_lookup_shape": null,
+    "weight_prefetch": false
+  },
+  "decode_linear_weight_format": "unchanged",
+  "decode_linear_weight_metadata": {
+    "requested": "unchanged",
+    "effective": "unchanged"
+  },
+  "batch_size": 1,
+  "prefill_tokens": 512,
+  "decode_steps": 64,
+  "static_kv_cache_len": 4096,
+  "prefill": {
+    "runs": 1,
+    "mean_sec": 0.22366541204974055,
+    "min_sec": 0.22366541204974055,
+    "max_sec": 0.22366541204974055,
+    "total_sec": 0.22366541204974055,
+    "tok_s": 2289.133555822825,
+    "batch_s": 4.4709639762164555
+  },
+  "decode": {
+    "runs": 1,
+    "mean_sec": 0.8080620337277651,
+    "min_sec": 0.8080620337277651,
+    "max_sec": 0.8080620337277651,
+    "total_sec": 0.8080620337277651,
+    "tok_s": 79.20184011709367,
+    "batch_s": 79.20184011709367,
+    "compile_decode_first_call_sec": 47.02187784900889,
+    "compiled_eager_parity": {
+      "steps": 64,
+      "token_mismatch_count": 0,
+      "token_exact_match": true,
+      "kv_max_abs": 0.0
+    },
+    "optimized_baseline_parity": {
+      "steps": 64,
+      "token_mismatch_count": 0,
+      "token_exact_match": true,
+      "kv_max_abs": 0.373046875
+    }
+  },
+  "dynamo_counters_after_decode": {
+    "stats": {
+      "calls_captured": 5152,
+      "unique_graphs": 1
+    }
+  },
+  "profiles": {
+    "decode": {
+      "phase": "decode",
+      "profiled_sec": 20.474900535307825,
+      "profile_root": "tmp/10_qwen3_8b_inference/profile_combined_apply_kv4096_f862364/decode/liteserver-c001-4_122043_20260812154719258_ascend_pt",
+      "operator_details_csv": "tmp/10_qwen3_8b_inference/profile_combined_apply_kv4096_f862364/decode/liteserver-c001-4_122043_20260812154719258_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+      "kernel_details_csv": "tmp/10_qwen3_8b_inference/profile_combined_apply_kv4096_f862364/decode/liteserver-c001-4_122043_20260812154719258_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "op_statistic_csv": "tmp/10_qwen3_8b_inference/profile_combined_apply_kv4096_f862364/decode/liteserver-c001-4_122043_20260812154719258_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+      "trace_view_json": "tmp/10_qwen3_8b_inference/profile_combined_apply_kv4096_f862364/decode/liteserver-c001-4_122043_20260812154719258_ascend_pt/trace_view.json",
+      "profile_parse_mode": "kernel_details",
+      "top_op_types_total_time_us": [
+        {
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "count": 11584,
+          "total_time_us": 681610.24,
+          "avg_time_us": 58.84,
+          "ratio_percent": 58.457
+        },
+        {
+          "op_type": "IncreFlashAttention",
+          "core_type": "AI_CPU",
+          "count": 2304,
+          "total_time_us": 360887.7,
+          "avg_time_us": 156.635,
+          "ratio_percent": 30.951
+        },
+        {
+          "op_type": "IncreFlashAttention",
+          "core_type": "MIX_AIC",
+          "count": 2304,
+          "total_time_us": 51924.08,
+          "avg_time_us": 22.536,
+          "ratio_percent": 4.453
+        },
+        {
+          "op_type": "RmsNorm",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 4672,
+          "total_time_us": 31259.42,
+          "avg_time_us": 6.69,
+          "ratio_percent": 2.681
+        },
+        {
+          "op_type": "InplaceAddRmsNorm",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 4608,
+          "total_time_us": 10288.9,
+          "avg_time_us": 2.232,
+          "ratio_percent": 0.882
+        },
+        {
+          "op_type": "Scatter",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 4608,
+          "total_time_us": 9329.62,
+          "avg_time_us": 2.024,
+          "ratio_percent": 0.8
+        },
+        {
+          "op_type": "ApplyRotaryPosEmb",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 2304,
+          "total_time_us": 7275.26,
+          "avg_time_us": 3.157,
+          "ratio_percent": 0.624
+        },
+        {
+          "op_type": "AutomaticBufferFusionOp",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 2304,
+          "total_time_us": 5975.9,
+          "avg_time_us": 2.593,
+          "ratio_percent": 0.513
+        },
+        {
+          "op_type": "SplitVD",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 2304,
+          "total_time_us": 2819.76,
+          "avg_time_us": 1.223,
+          "ratio_percent": 0.242
+        },
+        {
+          "op_type": "ArgMaxWithValue",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 64,
+          "total_time_us": 1531.14,
+          "avg_time_us": 23.924,
+          "ratio_percent": 0.131
+        },
+        {
+          "op_type": "GatherV2",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 128,
+          "total_time_us": 1118.92,
+          "avg_time_us": 8.741,
+          "ratio_percent": 0.096
+        },
+        {
+          "op_type": "Cast",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 384,
+          "total_time_us": 886.0,
+          "avg_time_us": 2.307,
+          "ratio_percent": 0.076
+        },
+        {
+          "op_type": "Data",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 64,
+          "total_time_us": 491.3,
+          "avg_time_us": 7.676,
+          "ratio_percent": 0.042
+        },
+        {
+          "op_type": "ConcatV2D",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 64,
+          "total_time_us": 216.92,
+          "avg_time_us": 3.389,
+          "ratio_percent": 0.019
+        },
+        {
+          "op_type": "Cos",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 64,
+          "total_time_us": 111.24,
+          "avg_time_us": 1.738,
+          "ratio_percent": 0.01
+        },
+        {
+          "op_type": "Sin",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 64,
+          "total_time_us": 107.9,
+          "avg_time_us": 1.685,
+          "ratio_percent": 0.009
+        },
+        {
+          "op_type": "Fill",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 64,
+          "total_time_us": 106.42,
+          "avg_time_us": 1.662,
+          "ratio_percent": 0.009
+        },
+        {
+          "op_type": "ConcatD",
+          "core_type": "AI_VECTOR_CORE",
+          "count": 3,
+          "total_time_us": 52.54,
+          "avg_time_us": 17.513,
+          "ratio_percent": 0.005
+        }
+      ],
+      "top_operator_device_total_us": [
+        {
+          "name": "aten::full",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 106.42,
+          "count": 64,
+          "avg_time_us": 1.6628125
+        },
+        {
+          "name": "aten::fill_",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 106.42,
+          "count": 64,
+          "avg_time_us": 1.6628125
+        },
+        {
+          "name": "aclnnInplaceFillScalar",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 106.42,
+          "count": 64,
+          "avg_time_us": 1.6628125
+        },
+        {
+          "name": "aten::cat",
+          "input_shapes": "",
+          "module_guess": "concat",
+          "total_time_us": 52.54,
+          "count": 1,
+          "avg_time_us": 52.54
+        },
+        {
+          "name": "aclnnCat",
+          "input_shapes": "",
+          "module_guess": "concat",
+          "total_time_us": 52.54,
+          "count": 1,
+          "avg_time_us": 52.54
+        },
+        {
+          "name": "empty_tensor",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 129,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "TorchDynamo Cache Lookup",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 64,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "aten::empty",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 11712,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "aten::to",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 11648,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "aten::lift_fresh",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 11712,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "aten::item",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 11648,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "aten::_local_scalar_dense",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 11648,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "Torch-Compiled Region: 0/0",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 64,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "npu_fx_compiler inference",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 64,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "TorchNpuGraphBase::Run",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 64,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "AssembleInputs",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 64,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "AssembleOutputs",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 64,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "ExecuteGraph",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 64,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "RefreshAtTensorFromGeTensor",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 64,
+          "avg_time_us": 0.0
+        },
+        {
+          "name": "aten::set_",
+          "input_shapes": "",
+          "module_guess": "other",
+          "total_time_us": 0.0,
+          "count": 64,
+          "avg_time_us": 0.0
+        }
+      ],
+      "top_kernel_duration_us": [
+        {
+          "name": "IncreFlashAttention",
+          "op_type": "IncreFlashAttention",
+          "core_type": "AI_CPU",
+          "input_shapes": "N/A",
+          "output_shapes": "N/A",
+          "module_guess": "incre_flash_attention",
+          "total_time_us": 360887.7000000006,
+          "count": 2304,
+          "avg_time_us": 156.63528645833358
+        },
+        {
+          "name": "MatMul_180",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,4096;151936,4096\"",
+          "output_shapes": "\"1,151936\"",
+          "module_guess": "lm_head",
+          "total_time_us": 48491.00000000001,
+          "count": 64,
+          "avg_time_us": 757.6718750000001
+        },
+        {
+          "name": "MatMul_4",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5505.580000000002,
+          "count": 64,
+          "avg_time_us": 86.02468750000003
+        },
+        {
+          "name": "MatMul_14",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5459.6399999999985,
+          "count": 64,
+          "avg_time_us": 85.30687499999998
+        },
+        {
+          "name": "MatMul_29",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5421.639999999999,
+          "count": 64,
+          "avg_time_us": 84.71312499999999
+        },
+        {
+          "name": "MatMul_44",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5390.360000000001,
+          "count": 64,
+          "avg_time_us": 84.22437500000001
+        },
+        {
+          "name": "MatMul_69",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5360.459999999998,
+          "count": 64,
+          "avg_time_us": 83.75718749999997
+        },
+        {
+          "name": "MatMul_164",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5359.420000000003,
+          "count": 64,
+          "avg_time_us": 83.74093750000004
+        },
+        {
+          "name": "MatMul_159",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5357.879999999999,
+          "count": 64,
+          "avg_time_us": 83.71687499999999
+        },
+        {
+          "name": "MatMul_64",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5335.880000000001,
+          "count": 64,
+          "avg_time_us": 83.37312500000002
+        },
+        {
+          "name": "MatMul_49",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5331.360000000001,
+          "count": 64,
+          "avg_time_us": 83.30250000000001
+        },
+        {
+          "name": "MatMul_79",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5318.84,
+          "count": 64,
+          "avg_time_us": 83.106875
+        },
+        {
+          "name": "MatMul_54",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5315.820000000001,
+          "count": 64,
+          "avg_time_us": 83.05968750000001
+        },
+        {
+          "name": "MatMul_59",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5308.359999999998,
+          "count": 64,
+          "avg_time_us": 82.94312499999997
+        },
+        {
+          "name": "MatMul_39",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5299.9800000000005,
+          "count": 64,
+          "avg_time_us": 82.81218750000001
+        },
+        {
+          "name": "MatMul_34",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5293.5599999999995,
+          "count": 64,
+          "avg_time_us": 82.71187499999999
+        },
+        {
+          "name": "MatMul_9",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5276.48,
+          "count": 64,
+          "avg_time_us": 82.445
+        },
+        {
+          "name": "MatMul_24",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5273.679999999998,
+          "count": 64,
+          "avg_time_us": 82.40124999999996
+        },
+        {
+          "name": "MatMul_154",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5266.660000000001,
+          "count": 64,
+          "avg_time_us": 82.29156250000001
+        },
+        {
+          "name": "MatMul_74",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5250.179999999999,
+          "count": 64,
+          "avg_time_us": 82.03406249999999
+        },
+        {
+          "name": "MatMul_139",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5233.980000000001,
+          "count": 64,
+          "avg_time_us": 81.78093750000002
+        },
+        {
+          "name": "MatMul_134",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5228.039999999999,
+          "count": 64,
+          "avg_time_us": 81.68812499999999
+        },
+        {
+          "name": "MatMul_144",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5215.499999999999,
+          "count": 64,
+          "avg_time_us": 81.49218749999999
+        },
+        {
+          "name": "MatMul_149",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5215.38,
+          "count": 64,
+          "avg_time_us": 81.4903125
+        },
+        {
+          "name": "MatMul_119",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5215.100000000001,
+          "count": 64,
+          "avg_time_us": 81.48593750000002
+        },
+        {
+          "name": "MatMul_19",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5200.74,
+          "count": 64,
+          "avg_time_us": 81.2615625
+        },
+        {
+          "name": "MatMul_179",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5196.6,
+          "count": 64,
+          "avg_time_us": 81.196875
+        },
+        {
+          "name": "MatMul_89",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5160.419999999999,
+          "count": 64,
+          "avg_time_us": 80.63156249999999
+        },
+        {
+          "name": "MatMul_169",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5151.0,
+          "count": 64,
+          "avg_time_us": 80.484375
+        },
+        {
+          "name": "MatMul_84",
+          "op_type": "MatMul",
+          "core_type": "AI_CORE",
+          "input_shapes": "\"1,12288;4096,12288\"",
+          "output_shapes": "\"1,4096\"",
+          "module_guess": "mlp.down",
+          "total_time_us": 5146.12,
+          "count": 64,
+          "avg_time_us": 80.408125
+        }
+      ],
+      "core_type_summary_total_us": [
+        {
+          "core_type": "AI_CORE",
+          "total_time_us": 681610.2399999988,
+          "count": 11584
+        },
+        {
+          "core_type": "AI_CPU",
+          "total_time_us": 360887.7000000006,
+          "count": 2304
+        },
+        {
+          "core_type": "AI_VECTOR_CORE",
+          "total_time_us": 71571.2400000005,
+          "count": 21699
+        },
+        {
+          "core_type": "MIX_AIC",
+          "total_time_us": 51924.07999999998,
+          "count": 2304
+        }
+      ],
+      "module_guess_summary_total_us": [
+        {
+          "module_guess": "incre_flash_attention",
+          "total_time_us": 412811.78000000067,
+          "count": 4608
+        },
+        {
+          "module_guess": "mlp.gate_or_up",
+          "total_time_us": 304547.4200000007,
+          "count": 4608
+        },
+        {
+          "module_guess": "mlp.down",
+          "total_time_us": 189095.2399999997,
+          "count": 2304
+        },
+        {
+          "module_guess": "other",
+          "total_time_us": 128226.9599999993,
+          "count": 11904
+        },
+        {
+          "module_guess": "attn.qkv_or_o_or_square",
+          "total_time_us": 55016.37999999996,
+          "count": 2304
+        },
+        {
+          "module_guess": "lm_head",
+          "total_time_us": 48491.00000000001,
+          "count": 64
+        },
+        {
+          "module_guess": "elementwise",
+          "total_time_us": 10288.899999999881,
+          "count": 4608
+        },
+        {
+          "module_guess": "scatter_update",
+          "total_time_us": 9329.619999999988,
+          "count": 4608
+        },
+        {
+          "module_guess": "elementwise_fusion",
+          "total_time_us": 5975.899999999998,
+          "count": 2304
+        },
+        {
+          "module_guess": "cast",
+          "total_time_us": 886.0,
+          "count": 384
+        },
+        {
+          "module_guess": "embed",
+          "total_time_us": 563.3000000000001,
+          "count": 64
+        },
+        {
+          "module_guess": "copy_or_update",
+          "total_time_us": 491.2999999999999,
+          "count": 64
+        },
+        {
+          "module_guess": "concat",
+          "total_time_us": 269.46,
+          "count": 67
+        }
+      ],
+      "top_trace_events_total_time_us": []
+    }
+  },
+  "npu_memory": {
+    "after_load": {
+      "label": "after_load",
+      "allocated_bytes": 18195710976,
+      "reserved_bytes": 18840813568,
+      "max_allocated_bytes": 18246043136,
+      "max_reserved_bytes": 18840813568,
+      "free_bytes": 46229970944,
+      "total_bytes": 65452113920,
+      "allocated_gib": 16.94607639312744,
+      "reserved_gib": 17.546875,
+      "max_allocated_gib": 16.9929518699646,
+      "max_reserved_gib": 17.546875,
+      "free_gib": 43.055015563964844,
+      "total_gib": 60.95703125
+    },
+    "after_prefill_benchmark": {
+      "label": "after_prefill_benchmark",
+      "allocated_bytes": 18195715584,
+      "reserved_bytes": 19644022784,
+      "max_allocated_bytes": 18909580800,
+      "max_reserved_bytes": 19644022784,
+      "free_bytes": 45412081664,
+      "total_bytes": 65452113920,
+      "allocated_gib": 16.946080684661865,
+      "reserved_gib": 18.294921875,
+      "max_allocated_gib": 17.61091947555542,
+      "max_reserved_gib": 18.294921875,
+      "free_gib": 42.293296813964844,
+      "total_gib": 60.95703125
+    },
+    "after_decode_benchmark": {
+      "label": "after_decode_benchmark",
+      "allocated_bytes": 18222337536,
+      "reserved_bytes": 23370661888,
+      "max_allocated_bytes": 21956933120,
+      "max_reserved_bytes": 23370661888,
+      "free_bytes": 41623109632,
+      "total_bytes": 65452113920,
+      "allocated_gib": 16.970874309539795,
+      "reserved_gib": 21.765625,
+      "max_allocated_gib": 20.44898748397827,
+      "max_reserved_gib": 21.765625,
+      "free_gib": 38.76454162597656,
+      "total_gib": 60.95703125
+    },
+    "after_profiles": {
+      "label": "after_profiles",
+      "allocated_bytes": 18826998272,
+      "reserved_bytes": 23370661888,
+      "max_allocated_bytes": 21956933120,
+      "max_reserved_bytes": 23370661888,
+      "free_bytes": 41618980864,
+      "total_bytes": 65452113920,
+      "allocated_gib": 17.534008502960205,
+      "reserved_gib": 21.765625,
+      "max_allocated_gib": 20.44898748397827,
+      "max_reserved_gib": 21.765625,
+      "free_gib": 38.76069641113281,
+      "total_gib": 60.95703125
+    }
+  }
+}

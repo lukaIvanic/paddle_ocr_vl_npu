@@ -1,0 +1,110 @@
+{
+  "model_dir": "/workspace/models/Qwen3-8B",
+  "device": "npu:0",
+  "dtype": "float16",
+  "compile_decode": true,
+  "compile_decode_dynamic": true,
+  "npugraph_decode": false,
+  "decode_increfa_mode": "actual_seq_lengths",
+  "decode_optimization": "npu_rms_norm",
+  "decode_optimization_metadata": {
+    "name": "npu_rms_norm",
+    "packed_qkv_count": 0,
+    "rope_lookup": false,
+    "rope_lookup_shape": null,
+    "weight_prefetch": false
+  },
+  "decode_linear_weight_format": "unchanged",
+  "decode_linear_weight_metadata": {
+    "requested": "unchanged",
+    "effective": "unchanged"
+  },
+  "batch_size": 1,
+  "prefill_tokens": 512,
+  "decode_steps": 64,
+  "static_kv_cache_len": 4096,
+  "prefill": {
+    "runs": 1,
+    "mean_sec": 0.07951631210744381,
+    "min_sec": 0.07951631210744381,
+    "max_sec": 0.07951631210744381,
+    "total_sec": 0.07951631210744381,
+    "tok_s": 6438.930408495012,
+    "batch_s": 12.57603595409182
+  },
+  "decode": {
+    "runs": 2,
+    "mean_sec": 0.9219920544419438,
+    "min_sec": 0.8848257078789175,
+    "max_sec": 0.9591584010049701,
+    "total_sec": 1.8439841088838875,
+    "tok_s": 69.41491490264244,
+    "batch_s": 69.41491490264244,
+    "compile_decode_first_call_sec": 60.590825143270195,
+    "compiled_eager_parity": {
+      "steps": 64,
+      "token_mismatch_count": 0,
+      "token_exact_match": true,
+      "kv_max_abs": 0.1875
+    },
+    "optimized_baseline_parity": {
+      "steps": 64,
+      "token_mismatch_count": 0,
+      "token_exact_match": true,
+      "kv_max_abs": 0.4208984375
+    }
+  },
+  "dynamo_counters_after_decode": {
+    "stats": {
+      "calls_captured": 5658,
+      "unique_graphs": 1
+    }
+  },
+  "npu_memory": {
+    "after_load": {
+      "label": "after_load",
+      "allocated_bytes": 16383753216,
+      "reserved_bytes": 18159239168,
+      "max_allocated_bytes": 17629462016,
+      "max_reserved_bytes": 18159239168,
+      "free_bytes": 46698635264,
+      "total_bytes": 65452113920,
+      "allocated_gib": 15.258559226989746,
+      "reserved_gib": 16.912109375,
+      "max_allocated_gib": 16.418715953826904,
+      "max_reserved_gib": 16.912109375,
+      "free_gib": 43.491493225097656,
+      "total_gib": 60.95703125
+    },
+    "after_prefill_benchmark": {
+      "label": "after_prefill_benchmark",
+      "allocated_bytes": 16383757824,
+      "reserved_bytes": 18161336320,
+      "max_allocated_bytes": 17629462016,
+      "max_reserved_bytes": 18161336320,
+      "free_bytes": 46681858048,
+      "total_bytes": 65452113920,
+      "allocated_gib": 15.25856351852417,
+      "reserved_gib": 16.9140625,
+      "max_allocated_gib": 16.418715953826904,
+      "max_reserved_gib": 16.9140625,
+      "free_gib": 43.475868225097656,
+      "total_gib": 60.95703125
+    },
+    "after_decode_benchmark": {
+      "label": "after_decode_benchmark",
+      "allocated_bytes": 16410379776,
+      "reserved_bytes": 21265121280,
+      "max_allocated_bytes": 20144975360,
+      "max_reserved_bytes": 21265121280,
+      "free_bytes": 43521306624,
+      "total_bytes": 65452113920,
+      "allocated_gib": 15.2833571434021,
+      "reserved_gib": 19.8046875,
+      "max_allocated_gib": 18.761470317840576,
+      "max_reserved_gib": 19.8046875,
+      "free_gib": 40.53237533569336,
+      "total_gib": 60.95703125
+    }
+  }
+}
