@@ -420,6 +420,7 @@ class LayoutFullGraphRuntime:
         dtype: torch.dtype,
         device: torch.device,
         batch_size: int = 1,
+        freeze_parameters: bool = False,
     ) -> None:
         if batch_size < 1:
             raise ValueError("layout batch size must be >= 1")
@@ -436,6 +437,7 @@ class LayoutFullGraphRuntime:
 
         config = CompilerConfig()
         config.mode.value = "max-autotune"
+        config.experimental_config.frozen_parameter.value = bool(freeze_parameters)
         self.compiled = _cache_compile()(
             self.stage.forward,
             config=config,

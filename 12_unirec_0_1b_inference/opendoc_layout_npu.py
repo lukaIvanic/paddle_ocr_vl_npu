@@ -212,6 +212,7 @@ class PPDocLayoutV2NpuAdapter:
         compile_cache_dir: str | Path | None = None,
         batch_size: int = 1,
         weight_format: str = "native",
+        freeze_parameters: bool = False,
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
@@ -237,6 +238,7 @@ class PPDocLayoutV2NpuAdapter:
         self.execution = execution
         self.batch_size = int(batch_size)
         self.weight_format = str(weight_format)
+        self.freeze_parameters = bool(freeze_parameters)
         self._filter_overlap_boxes = filter_overlap_boxes_vectorized
 
         started = time.perf_counter()
@@ -271,6 +273,7 @@ class PPDocLayoutV2NpuAdapter:
                 dtype=self.dtype,
                 device=self.device,
                 batch_size=self.batch_size,
+                freeze_parameters=self.freeze_parameters,
             )
         self.setup_s = time.perf_counter() - started
         self.page_count = 0

@@ -65,6 +65,11 @@ def parse_args() -> argparse.Namespace:
         choices=LAYOUT_WEIGHT_FORMAT_CHOICES,
         default="native",
     )
+    parser.add_argument(
+        "--freeze-parameters",
+        action="store_true",
+        help="Let TorchAir treat model parameters as immutable graph data",
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument(
@@ -195,6 +200,7 @@ def main() -> None:
         compile_cache_dir=args.compile_cache_dir,
         batch_size=1,
         weight_format=args.weight_format,
+        freeze_parameters=args.freeze_parameters,
     )
     print(
         f"LAYOUT_LAB phase=model_setup_end setup_s={detector.setup_s:.3f}",
@@ -263,6 +269,7 @@ def main() -> None:
             "warmup_pages": args.warmup_pages,
             "weight_format": args.weight_format,
             "weight_format_summary": detector.weight_format_summary,
+            "freeze_parameters": args.freeze_parameters,
             "scheduling": "sequential_b1_same_process",
         },
         "summary": summarize(records, detector.setup_s),
