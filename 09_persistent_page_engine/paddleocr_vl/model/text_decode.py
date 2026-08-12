@@ -2479,7 +2479,14 @@ class TextDecodeStage(torch.nn.Module):
             optimization=self.optimization,
         )
         output_head = getattr(self.model, "decode_lm_head", self.model.lm_head)
-        return _linear_tokenwise(output_head, hidden_states[:, -1:, :])
+        logits = _linear_tokenwise(output_head, hidden_states[:, -1:, :])
+        if hasattr(self.model, "decode_token_id_map"):
+            compact_ids = torch.argmax(logits[:, -1, :].float(), dim=-1)
+            return self.model.decode_token_id_map.index_select(
+                0,
+                compact_ids,
+            ).view(-1, 1)
+        return logits
 
     def forward(
         self,

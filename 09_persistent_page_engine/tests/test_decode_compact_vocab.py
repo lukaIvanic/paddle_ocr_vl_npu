@@ -77,7 +77,7 @@ def test_decode_arena_maps_compact_argmax_to_original_token_id() -> None:
     )
 
     step = arena.step(
-        lambda *unused: torch.tensor([[[0.0, 1.0, 3.0]]]),
+        lambda *unused: torch.tensor([[93937]]),
         iteration=0,
     )
 

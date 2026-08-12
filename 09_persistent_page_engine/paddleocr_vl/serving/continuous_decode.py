@@ -565,12 +565,15 @@ class DecodeArena:
                     slot.first_decode_launched_at = launched_at
 
         def execute() -> torch.Tensor:
-            logits = decode_fn(
+            decode_output = decode_fn(
                 self.next_token,
                 self.cache_position,
                 self.rope_deltas,
                 *self.cache.flat_tensors(),
             )
+            if self.decode_token_id_map is not None:
+                return decode_output.reshape(-1, 1)
+            logits = decode_output
             if self.preferred_token_id is not None:
                 self.token_selection_math_open.copy_(
                     torch.where(
@@ -641,11 +644,6 @@ class DecodeArena:
                 policy_mask=policy_mask,
                 legacy_policy_mask=self.token_selection_policy_mask,
             )
-            if self.decode_token_id_map is not None:
-                selected = self.decode_token_id_map.index_select(
-                    0,
-                    selected.reshape(-1),
-                ).reshape(selected.shape)
             greedy = torch.argmax(logits[:, -1, :].float(), dim=-1)
             if self.preferred_token_id is None:
                 override = torch.zeros_like(policy_mask)
