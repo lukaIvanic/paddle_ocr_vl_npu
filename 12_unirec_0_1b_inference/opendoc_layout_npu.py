@@ -20,6 +20,7 @@ DTYPE_MAP = {
 
 LAYOUT_WEIGHT_FORMAT_CHOICES = (
     "native",
+    "depthwise_fz",
     "torchair_internal",
     "torchair_internal_depthwise_fz",
 )
@@ -52,7 +53,7 @@ def _prepare_layout_weight_formats(
         return {kind: dict(sorted(values.items())) for kind, values in sorted(result.items())}
 
     before = histogram()
-    if requested != "native":
+    if requested in {"torchair_internal", "torchair_internal_depthwise_fz"}:
         try:
             from torch_npu.dynamo.torchair import use_internal_format_weight
         except ImportError:
@@ -60,7 +61,7 @@ def _prepare_layout_weight_formats(
         use_internal_format_weight(model)
 
     depthwise_converted: list[str] = []
-    if requested == "torchair_internal_depthwise_fz":
+    if requested in {"depthwise_fz", "torchair_internal_depthwise_fz"}:
         for name, kind, module in tracked:
             if kind != "depthwise_conv2d" or module.weight.dtype != torch.float16:
                 continue
