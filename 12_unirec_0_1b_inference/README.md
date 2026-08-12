@@ -297,7 +297,10 @@ It replays one worker from the optimized 1,651-page pipeline that measured
 9.8247 sequential-core pages/s on Ascend 910B2. It directly imports the
 production compact uint8 HWC resize helper, `PreprocessedVisionInput`, all five
 `DEFAULT_VISION_BUCKETS`, and `BucketedFullVisionRuntime.encode`. It does not
-maintain a second vision implementation.
+maintain a second vision implementation. Like the production worker, it calls
+`torch_npu.npu.set_compile_mode(jit_compile=False)` before model/runtime setup.
+This disables per-operator NPU JIT compilation; it does not disable the five
+static TorchAir `cache_compile` graphs.
 
 The default lab uses the production four-page lookahead but only one process
 worker. Its measured window includes fixed-bucket host materialization, compact

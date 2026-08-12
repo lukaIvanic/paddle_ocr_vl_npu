@@ -415,6 +415,12 @@ def _profile(
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     physical_devices = _physical_devices()
+    import torch_npu
+
+    # Match layout_process_pool._worker_main exactly. This disables per-op NPU
+    # JIT compilation; TorchAir still compiles or loads the five static GE
+    # graphs through cache_compile below.
+    torch_npu.npu.set_compile_mode(jit_compile=False)
     output_dir = args.output_dir.expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=False)
     pages, crop_rows = _select_manifest_rows(
@@ -594,6 +600,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "buckets": actual_buckets,
             "runtime_source": str(Path(runtime.__class__.__module__.replace(".", "/"))),
             "diagnostic_graph_log": args.diagnostic_graph_log,
+            "npu_jit_compile": False,
             "graph_cache_dirs": {
                 key: str(path) for key, path in runtime.cache_dirs.items()
             },
