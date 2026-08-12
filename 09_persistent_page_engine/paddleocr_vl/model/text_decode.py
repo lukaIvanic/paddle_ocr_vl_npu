@@ -1879,7 +1879,6 @@ def run_text_decode_transformer(
     key_caches: tuple[torch.Tensor, ...],
     value_caches: tuple[torch.Tensor, ...],
     packed_kv_caches: tuple[torch.Tensor, ...] | None = None,
-    zero_residual: torch.Tensor | None = None,
     cache_length: int,
     attention_mask: torch.Tensor | None = None,
     static_kv_positions: torch.Tensor | None = None,
@@ -2059,13 +2058,9 @@ def run_text_decode_transformer(
                     )
             if residual is None:
                 if optimization.zero_residual_first_rms_norm:
-                    if zero_residual is None:
-                        raise ValueError(
-                            "zero-residual first RMSNorm requires static scratch"
-                        )
                     attention_input, residual = _decode_add_rms_norm(
                         hidden_states,
-                        zero_residual,
+                        torch.zeros_like(hidden_states),
                         layer.input_layernorm,
                     )
                 else:
@@ -2293,19 +2288,6 @@ class TextDecodeStage(torch.nn.Module):
         self.num_layers = int(model.config.text_config.num_hidden_layers)
         self.optimization = resolve_decode_optimization(optimization)
         self._super_kernel_scope = None
-        if self.optimization.zero_residual_first_rms_norm:
-            parameter = next(model.parameters())
-            self.register_buffer(
-                "_zero_residual",
-                torch.zeros(
-                    (1, 1, int(model.config.text_config.hidden_size)),
-                    device=parameter.device,
-                    dtype=parameter.dtype,
-                ),
-                persistent=False,
-            )
-        else:
-            self._zero_residual = None
         if self.optimization.super_kernel_scope:
             if cache_length is None:
                 raise ValueError(
@@ -2385,11 +2367,6 @@ class TextDecodeStage(torch.nn.Module):
             key_caches=key_caches,
             value_caches=value_caches,
             packed_kv_caches=packed_kv_caches,
-            zero_residual=(
-                self._zero_residual.expand(input_ids.shape[0], -1, -1)
-                if self._zero_residual is not None
-                else None
-            ),
             cache_length=int(key_caches[0].shape[2]),
             attention_mask=(
                 self._super_kernel_attention_mask_scratch
