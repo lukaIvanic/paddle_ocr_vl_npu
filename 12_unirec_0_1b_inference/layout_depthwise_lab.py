@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 import time
 from pathlib import Path
 from typing import Callable
@@ -27,6 +28,13 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path(".runtime_cache/12_unirec_0_1b_inference/layout_depthwise_lab"),
     )
+    parser.add_argument(
+        "--implementation",
+        choices=("all", "stock_depthwise", "grouped16", "shift_sum"),
+        default="all",
+    )
+    parser.add_argument("--channels", type=int, choices=(192, 384))
+    parser.add_argument("--profile-dir", type=Path)
     return parser.parse_args()
 
 
@@ -118,6 +126,44 @@ def compile_module(
     )
 
 
+def profile_call(
+    call: Callable[[torch.Tensor], torch.Tensor],
+    inputs: torch.Tensor,
+    *,
+    profile_dir: Path,
+) -> None:
+    import torch_npu.profiler as npu_prof
+
+    profile_dir = profile_dir.expanduser().resolve()
+    shutil.rmtree(profile_dir, ignore_errors=True)
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+    experimental = npu_prof._ExperimentalConfig(
+        profiler_level=npu_prof.ProfilerLevel.Level1,
+        aic_metrics=npu_prof.AiCMetrics.PipeUtilization,
+        export_type=npu_prof.ExportType.Text,
+    )
+    torch.npu.synchronize()
+    with npu_prof.profile(
+        activities=[
+            npu_prof.ProfilerActivity.CPU,
+            npu_prof.ProfilerActivity.NPU,
+        ],
+        schedule=schedule,
+        experimental_config=experimental,
+        on_trace_ready=npu_prof.tensorboard_trace_handler(
+            str(profile_dir), analyse_flag=True
+        ),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=False,
+    ) as profiler:
+        with torch.profiler.record_function("unirec.layout_depthwise_lab"):
+            call(inputs)
+        torch.npu.synchronize()
+        profiler.step()
+
+
 def main() -> None:
     args = parse_args()
     import torch_npu
@@ -125,6 +171,14 @@ def main() -> None:
     torch.npu.set_device(torch.device(args.device))
     torch.npu.set_compile_mode(jit_compile=False)
     cases = ((192, 50, 50, 18), (384, 25, 25, 6))
+    if args.channels is not None:
+        cases = tuple(case for case in cases if case[0] == args.channels)
+    if args.profile_dir is not None and (
+        args.implementation == "all" or args.channels is None
+    ):
+        raise ValueError(
+            "--profile-dir requires one --implementation and one --channels"
+        )
     report = []
     for channels, height, width, production_calls in cases:
         torch.manual_seed(channels)
@@ -142,6 +196,8 @@ def main() -> None:
         with torch.inference_mode():
             reference = modules["stock_depthwise"](inputs)
             torch.npu.synchronize()
+        if args.implementation != "all":
+            modules = {args.implementation: modules[args.implementation]}
         for name, module in modules.items():
             call: Callable[[torch.Tensor], torch.Tensor] = module
             cache_dir = None
@@ -158,6 +214,8 @@ def main() -> None:
                 first_call_s = time.perf_counter() - first_call_started
                 difference = (output.float() - reference.float()).abs()
             mean_ms = event_ms(call, inputs, args.warmup, args.repeats)
+            if args.profile_dir is not None:
+                profile_call(call, inputs, profile_dir=args.profile_dir)
             row = {
                 "channels": channels,
                 "height": height,
