@@ -60,6 +60,12 @@ def parse_args() -> argparse.Namespace:
         choices=("float16", "float32"),
         default="float32",
     )
+    parser.add_argument(
+        "--reading-order-dtype",
+        choices=("float16", "float32"),
+        default=None,
+        help="Override only the learned reading-order head dtype",
+    )
     parser.add_argument("--threshold", type=float, default=0.4)
     parser.add_argument(
         "--weight-format",
@@ -213,6 +219,7 @@ def main() -> None:
 
     print(
         f"LAYOUT_LAB setup pages={len(image_paths)} dtype={args.dtype} "
+        f"reading_order_dtype={args.reading_order_dtype or args.dtype} "
         f"device={args.device} execution={args.execution}",
         flush=True,
     )
@@ -221,6 +228,7 @@ def main() -> None:
         model_path=args.model_path,
         device=args.device,
         dtype=args.dtype,
+        reading_order_dtype=args.reading_order_dtype,
         threshold=args.threshold,
         profile_stages=True,
         execution=args.execution,

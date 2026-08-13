@@ -87,6 +87,13 @@ def _reading_order_cal_1d_pos_emb(self, position_ids):
 
 
 def _reading_order(self, boxes, labels=None, mask=None, **kwargs):
+    # The detector and reading-order head may deliberately use different
+    # floating-point dtypes.  Box coordinates are integerized for the text
+    # embeddings, but the reading-order encoder also consumes the padded box
+    # tensor directly.  Keep that tensor in the head's parameter dtype.
+    head_dtype = self.label_embeddings.weight.dtype
+    if boxes.is_floating_point() and boxes.dtype != head_dtype:
+        boxes = boxes.to(dtype=head_dtype)
     batch_size, seq_len = mask.shape
     num_pred = mask.sum(dim=1)
     positions = torch.arange(seq_len + 2, device=mask.device).unsqueeze(0)

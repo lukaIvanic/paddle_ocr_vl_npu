@@ -450,6 +450,7 @@ class PPDocLayoutV2NpuAdapter:
         model_path: str | Path,
         device: str = "npu:0",
         dtype: str = "float32",
+        reading_order_dtype: str | None = None,
         threshold: float = 0.5,
         profile_stages: bool = False,
         execution: str = "eager",
@@ -465,6 +466,10 @@ class PPDocLayoutV2NpuAdapter:
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
+        if reading_order_dtype is not None and reading_order_dtype not in DTYPE_MAP:
+            raise ValueError(
+                f"Unsupported reading-order dtype: {reading_order_dtype}"
+            )
         if not str(device).startswith("npu"):
             raise ValueError("PPDocLayoutV2NpuAdapter requires an NPU device")
         if execution not in {"eager", "torchair"}:
@@ -486,6 +491,11 @@ class PPDocLayoutV2NpuAdapter:
         self.model_path = Path(model_path).expanduser().resolve()
         self.device = torch.device(device)
         self.dtype = DTYPE_MAP[dtype]
+        self.reading_order_dtype = (
+            self.dtype
+            if reading_order_dtype is None
+            else DTYPE_MAP[reading_order_dtype]
+        )
         self.threshold = float(threshold)
         self.profile_stages = bool(profile_stages)
         self.execution = execution
@@ -544,6 +554,8 @@ class PPDocLayoutV2NpuAdapter:
             # This gate must precede the process's first NPU allocation.
             torch.npu.config.allow_internal_format = True
         self.model.eval().to(device=self.device, dtype=self.dtype)
+        if self.reading_order_dtype != self.dtype:
+            self.model.reading_order.to(dtype=self.reading_order_dtype)
         self.frozen_bn_affine_summary = (
             _precompute_layout_frozen_bn_affines(
                 self.model,
