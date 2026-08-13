@@ -318,6 +318,9 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         text_packed_cache_dir=args.text_packed_cache_dir.resolve(),
         preprocessor_min_pixels=args.min_pixels,
         preprocessor_max_pixels=args.max_pixels,
+        compact_uint8_preprocess=getattr(
+            args, "compact_uint8_preprocess", False
+        ),
     )
 
 

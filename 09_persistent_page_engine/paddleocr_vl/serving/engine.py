@@ -541,6 +541,7 @@ class ContinuousRecognizer:
         decode_optimization: str = DEFAULT_DECODE_OPTIMIZATION,
         decode_vocab_token_ids: Path | None = None,
         recognition_input_fingerprints: bool = False,
+        compact_uint8_preprocess: bool = False,
         token_selection: str = TOKEN_SELECTION_GREEDY,
     ):
         # TorchAir guards tensor dispatch-key sets. Build and warm every graph
@@ -620,6 +621,7 @@ class ContinuousRecognizer:
         self.recognition_input_fingerprints = bool(
             recognition_input_fingerprints
         )
+        self.compact_uint8_preprocess = bool(compact_uint8_preprocess)
         self.vision_backend = str(vision_backend)
         self.vision_mlp_intermediate_size_requested = (
             None
@@ -735,6 +737,28 @@ class ContinuousRecognizer:
             min_pixels=self.preprocessor_min_pixels_override,
             max_pixels=self.preprocessor_max_pixels_override,
         )
+        if self.compact_uint8_preprocess:
+            mean = tuple(
+                float(value) for value in self.preprocessor_config["image_mean"]
+            )
+            std = tuple(
+                float(value) for value in self.preprocessor_config["image_std"]
+            )
+            if (
+                not self.preprocessor_config["do_rescale"]
+                or not self.preprocessor_config["do_normalize"]
+                or len(set(mean)) != 1
+                or len(set(std)) != 1
+            ):
+                raise ValueError(
+                    "compact_uint8_preprocess currently requires scalar RGB "
+                    "rescale and normalization parameters"
+                )
+            self.compact_rescale_factor = float(
+                self.preprocessor_config["rescale_factor"]
+            )
+            self.compact_image_mean = mean[0]
+            self.compact_image_std = std[0]
         # Encoding runs continuously on the CPU preparation thread while this
         # tokenizer remains owned by the NPU thread for result decoding.
         self.preprocessing_tokenizer = Tokenizer.from_file(
@@ -2013,6 +2037,7 @@ class ContinuousRecognizer:
         pixel_values, image_grid_thw = preprocess_pil_image(
             request.crop,
             preprocessor_config,
+            defer_normalization=self.compact_uint8_preprocess,
         )
         input_ids, attention_mask = build_inputs(
             self.preprocessing_tokenizer,
@@ -2213,14 +2238,22 @@ class ContinuousRecognizer:
                 def move_inputs(
                     prepared: CpuPreparedRecognition = prepared,
                 ) -> tuple[torch.Tensor, ...]:
-                    return (
-                        prepared.input_ids.to(self.device, non_blocking=True),
-                        prepared.attention_mask.to(self.device, non_blocking=True),
+                    pixel_values = (
                         prepared.pixel_values.to(
+                            device=self.device,
+                            non_blocking=True,
+                        )
+                        if prepared.pixel_values.dtype == torch.uint8
+                        else prepared.pixel_values.to(
                             device=self.device,
                             dtype=self.model.visual.dtype,
                             non_blocking=True,
-                        ),
+                        )
+                    )
+                    return (
+                        prepared.input_ids.to(self.device, non_blocking=True),
+                        prepared.attention_mask.to(self.device, non_blocking=True),
+                        pixel_values,
                         prepared.position_ids.to(self.device, non_blocking=True),
                         prepared.rope_deltas.to(self.device, non_blocking=True),
                     )
@@ -2285,6 +2318,20 @@ class ContinuousRecognizer:
             zip(group.members, moved_members)
         ):
             pixel_values_device = moved[2]
+            if pixel_values_device.dtype == torch.uint8:
+                def normalize_uint8(
+                    pixels: torch.Tensor = pixel_values_device,
+                ) -> torch.Tensor:
+                    output = pixels.to(torch.float32)
+                    output.mul_(self.compact_rescale_factor)
+                    output.sub_(self.compact_image_mean)
+                    output.div_(self.compact_image_std)
+                    return output.to(self.model.visual.dtype).contiguous()
+
+                pixel_values_device = device_timeline.measure(
+                    self._group_stage_key(index, "vision_input_normalize"),
+                    normalize_uint8,
+                )
             hidden_states.append(
                 device_timeline.measure(
                     self._group_stage_key(index, "vision_embeddings"),

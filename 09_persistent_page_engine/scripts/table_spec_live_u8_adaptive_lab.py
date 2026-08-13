@@ -94,6 +94,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--draft-vision-pack-target", type=int, default=2304)
     parser.add_argument("--row-overlap-px", type=int, default=3)
     parser.add_argument(
+        "--compact-uint8-preprocess",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    parser.add_argument(
         "--target-cpu-delay-ms",
         type=float,
         default=0.0,
@@ -173,6 +178,7 @@ def _b1_args(args: argparse.Namespace) -> SimpleNamespace:
         text_buckets=args.b1_text_buckets,
         min_pixels=args.min_pixels,
         max_pixels=args.max_pixels,
+        compact_uint8_preprocess=args.compact_uint8_preprocess,
     )
 
 
@@ -193,6 +199,7 @@ def _draft_args(args: argparse.Namespace) -> SimpleNamespace:
         vision_pack_target=args.draft_vision_pack_target,
         min_pixels=args.min_pixels,
         max_pixels=args.max_pixels,
+        compact_uint8_preprocess=args.compact_uint8_preprocess,
     )
 
 

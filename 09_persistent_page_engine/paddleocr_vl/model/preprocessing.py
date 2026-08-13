@@ -164,9 +164,11 @@ def image_grid_thw_from_size(
 def preprocess_pil_image(
     image: Image.Image,
     cfg: dict,
+    *,
+    defer_normalization: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Preprocess one in-memory crop with the local PaddleOCR-VL recipe."""
-    if cfg["do_convert_rgb"]:
+    if cfg["do_convert_rgb"] and image.mode != "RGB":
         image = image.convert("RGB")
     width, height = image.size
     patch_size = int(cfg["patch_size"])
@@ -195,14 +197,15 @@ def preprocess_pil_image(
         image = image.resize((resized_width, resized_height), resample=resample)
 
     array = np.asarray(image)
-    if cfg["do_rescale"]:
-        array = array.astype(np.float32) * float(cfg["rescale_factor"])
-    else:
-        array = array.astype(np.float32)
-    if cfg["do_normalize"]:
-        mean = np.array(cfg["image_mean"], dtype=np.float32)
-        std = np.array(cfg["image_std"], dtype=np.float32)
-        array = (array - mean) / std
+    if not defer_normalization:
+        if cfg["do_rescale"]:
+            array = array.astype(np.float32) * float(cfg["rescale_factor"])
+        else:
+            array = array.astype(np.float32)
+        if cfg["do_normalize"]:
+            mean = np.array(cfg["image_mean"], dtype=np.float32)
+            std = np.array(cfg["image_std"], dtype=np.float32)
+            array = (array - mean) / std
 
     patches = array.transpose(2, 0, 1)[None, ...]
     channel = patches.shape[1]
