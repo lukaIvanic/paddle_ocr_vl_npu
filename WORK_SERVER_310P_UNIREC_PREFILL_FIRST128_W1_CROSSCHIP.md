@@ -97,9 +97,9 @@ Return:
 3. process wall time;
 4. absolute `run.log`, `summary.json`, and recognition-cache paths.
 
-The workload must report 128 pages, 949 accepted crops, 6 rejected crops,
-61,492 real source tokens, 1 fallback, 1,424 physical compiled vision rows,
-and vision slot efficiency 0.666432584. If any differs, label it a workload
+The workload must report 128 pages, 950 accepted crops, 6 rejected crops,
+61,596 real source tokens, 1 fallback, 1,424 physical compiled vision rows,
+and vision slot efficiency 0.667134831. If any differs, label it a workload
 mismatch and do not calculate a cross-chip ratio.
 
 If the run fails, return the first causal error and the last completed page.
