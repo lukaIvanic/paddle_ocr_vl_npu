@@ -103,6 +103,19 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--save-vision-outputs-dir",
+        type=Path,
+        help="Save one warmed compiled output per selected vision bucket.",
+    )
+    parser.add_argument(
+        "--reference-vision-outputs-dir",
+        type=Path,
+        help=(
+            "Require every selected compiled vision output to be bit-exact "
+            "to a matching output saved by a native compiled run."
+        ),
+    )
+    parser.add_argument(
         "--layout-dtype", choices=("float16", "float32"), default="float32"
     )
     parser.add_argument(
@@ -411,6 +424,20 @@ def _recognition_lanes(
         dtype="float16",
         compile_cache_dir=args.recognition_cache_dir.expanduser().resolve(),
     )
+    save_outputs_dir = (
+        args.save_vision_outputs_dir.expanduser().resolve()
+        if args.save_vision_outputs_dir is not None
+        else None
+    )
+    reference_outputs_dir = (
+        args.reference_vision_outputs_dir.expanduser().resolve()
+        if args.reference_vision_outputs_dir is not None
+        else None
+    )
+    if save_outputs_dir is not None:
+        save_outputs_dir.mkdir(parents=True, exist_ok=False)
+    if reference_outputs_dir is not None and not reference_outputs_dir.is_dir():
+        raise FileNotFoundError(reference_outputs_dir)
     selected_keys = set(args.vision_bucket or ())
     vision_specs = tuple(
         spec
@@ -485,6 +512,41 @@ def _recognition_lanes(
         run = lambda compiled=compiled, pixels=pixels, masks=masks: compiled(
             pixels, *masks
         )
+        with torch.inference_mode():
+            compiled_output = run().detach()
+        synchronize_device(args.device)
+        compiled_output_cpu = compiled_output.cpu()
+        del compiled_output
+        compiled_reference_validation = {
+            "reference": "not_requested",
+            "exact": True,
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+        }
+        if reference_outputs_dir is not None:
+            reference_path = reference_outputs_dir / f"{spec.key}.pt"
+            reference_output = torch.load(
+                reference_path,
+                map_location="cpu",
+                weights_only=True,
+            )
+            difference = (compiled_output_cpu - reference_output).abs()
+            compiled_reference_validation = {
+                "reference": str(reference_path),
+                "exact": bool(torch.equal(compiled_output_cpu, reference_output)),
+                "max_abs": float(difference.max().item()),
+                "mean_abs": float(difference.mean().item()),
+            }
+            if not compiled_reference_validation["exact"]:
+                raise RuntimeError(
+                    "compiled vision output is not bit-exact to native "
+                    f"compiled reference for {spec.key}: "
+                    f"{compiled_reference_validation}"
+                )
+            del reference_output, difference
+        if save_outputs_dir is not None:
+            torch.save(compiled_output_cpu, save_outputs_dir / f"{spec.key}.pt")
+        del compiled_output_cpu
         validation = {
             "rewrite": args.vision_depthwise_rewrite,
             "weight_format": args.vision_weight_format,
@@ -558,6 +620,9 @@ def _recognition_lanes(
             vision.focal_depthwise_rewrite_summary
         )
         lane["rewrite_validation"] = validation
+        lane["compiled_reference_validation"] = (
+            compiled_reference_validation
+        )
         lane["weight_format_summary"] = vision.weight_format_summary
         lanes.append(lane)
         del pixels, masks
@@ -674,6 +739,16 @@ def main(argv: Sequence[str] | None = None) -> None:
             "vision_depthwise_rewrite": args.vision_depthwise_rewrite,
             "vision_weight_format": args.vision_weight_format,
             "vision_buckets": args.vision_bucket,
+            "save_vision_outputs_dir": (
+                str(args.save_vision_outputs_dir.expanduser().resolve())
+                if args.save_vision_outputs_dir is not None
+                else None
+            ),
+            "reference_vision_outputs_dir": (
+                str(args.reference_vision_outputs_dir.expanduser().resolve())
+                if args.reference_vision_outputs_dir is not None
+                else None
+            ),
             "layout_dtype": args.layout_dtype,
             "layout_depthwise_rewrite": args.layout_depthwise_rewrite,
             "layout_weight_format": args.layout_weight_format,
