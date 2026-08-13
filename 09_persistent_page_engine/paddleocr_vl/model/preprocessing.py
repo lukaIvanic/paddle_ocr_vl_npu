@@ -166,6 +166,7 @@ def preprocess_pil_image(
     cfg: dict,
     *,
     defer_normalization: bool = False,
+    resize_backend: str = "pillow",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Preprocess one in-memory crop with the local PaddleOCR-VL recipe."""
     if cfg["do_convert_rgb"] and image.mode != "RGB":
@@ -192,11 +193,26 @@ def preprocess_pil_image(
     )
     resized_height = grid_h * patch_size
     resized_width = grid_w * patch_size
+    resized_array: np.ndarray | None = None
     if cfg["do_resize"]:
-        resample = Image.Resampling(int(cfg["resample"]))
-        image = image.resize((resized_width, resized_height), resample=resample)
+        if resize_backend == "pillow":
+            resample = Image.Resampling(int(cfg["resample"]))
+            image = image.resize(
+                (resized_width, resized_height),
+                resample=resample,
+            )
+        elif resize_backend == "kornia_rs":
+            from kornia_rs.image import Image as KorniaImage
 
-    array = np.asarray(image)
+            resized_array = KorniaImage.fromarray(np.asarray(image)).resize(
+                resized_width,
+                resized_height,
+                "bicubic",
+            ).data
+        else:
+            raise ValueError(f"unsupported resize_backend: {resize_backend!r}")
+
+    array = resized_array if resized_array is not None else np.asarray(image)
     if not defer_normalization:
         if cfg["do_rescale"]:
             array = array.astype(np.float32) * float(cfg["rescale_factor"])

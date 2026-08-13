@@ -99,6 +99,11 @@ def parse_args() -> argparse.Namespace:
         default=False,
     )
     parser.add_argument(
+        "--image-resize-backend",
+        choices=("pillow", "kornia_rs"),
+        default="pillow",
+    )
+    parser.add_argument(
         "--target-cpu-delay-ms",
         type=float,
         default=0.0,
@@ -179,6 +184,7 @@ def _b1_args(args: argparse.Namespace) -> SimpleNamespace:
         min_pixels=args.min_pixels,
         max_pixels=args.max_pixels,
         compact_uint8_preprocess=args.compact_uint8_preprocess,
+        image_resize_backend=args.image_resize_backend,
     )
 
 
@@ -200,6 +206,7 @@ def _draft_args(args: argparse.Namespace) -> SimpleNamespace:
         min_pixels=args.min_pixels,
         max_pixels=args.max_pixels,
         compact_uint8_preprocess=args.compact_uint8_preprocess,
+        image_resize_backend=args.image_resize_backend,
     )
 
 

@@ -321,6 +321,7 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         compact_uint8_preprocess=getattr(
             args, "compact_uint8_preprocess", False
         ),
+        image_resize_backend=getattr(args, "image_resize_backend", "pillow"),
     )
 
 

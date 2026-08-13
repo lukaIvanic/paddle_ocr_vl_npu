@@ -542,6 +542,7 @@ class ContinuousRecognizer:
         decode_vocab_token_ids: Path | None = None,
         recognition_input_fingerprints: bool = False,
         compact_uint8_preprocess: bool = False,
+        image_resize_backend: str = "pillow",
         token_selection: str = TOKEN_SELECTION_GREEDY,
     ):
         # TorchAir guards tensor dispatch-key sets. Build and warm every graph
@@ -622,6 +623,12 @@ class ContinuousRecognizer:
             recognition_input_fingerprints
         )
         self.compact_uint8_preprocess = bool(compact_uint8_preprocess)
+        self.image_resize_backend = str(image_resize_backend)
+        if self.image_resize_backend not in {"pillow", "kornia_rs"}:
+            raise ValueError(
+                "image_resize_backend must be 'pillow' or 'kornia_rs', got "
+                f"{self.image_resize_backend!r}"
+            )
         self.vision_backend = str(vision_backend)
         self.vision_mlp_intermediate_size_requested = (
             None
@@ -2038,6 +2045,7 @@ class ContinuousRecognizer:
             request.crop,
             preprocessor_config,
             defer_normalization=self.compact_uint8_preprocess,
+            resize_backend=self.image_resize_backend,
         )
         input_ids, attention_mask = build_inputs(
             self.preprocessing_tokenizer,
