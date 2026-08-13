@@ -68,6 +68,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--all-tables", action="store_true")
     parser.add_argument("--k-values", default="8,16,32,64")
     parser.add_argument("--initial-k", type=int, default=16)
+    parser.add_argument(
+        "--verifier-optimization",
+        default="combined_apply",
+    )
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--max-new-tokens", type=int, default=4096)
     parser.add_argument(
@@ -283,6 +287,7 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
         k_values: tuple[int, ...],
         initial_k: int,
         cache_roots: dict[int, Path],
+        verifier_optimization: str = "combined_apply",
         cell_boundary_math_open_draft_trust: bool = False,
         cell_boundary_slash_draft_trust: bool = False,
         in_cell_draft_script_open_trust: bool = False,
@@ -317,6 +322,7 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
                 recognizer,
                 draft_length=value,
                 cache_root=cache_roots[value].resolve(),
+                verifier_optimization=verifier_optimization,
                 wrapper_rescue=False,
             )
             for value in k_values
@@ -635,7 +641,7 @@ def main() -> None:
             device=recognizer.device,
             model_dir=recognizer.model_dir,
             linear_weight_format=str(recognizer.weight_format["effective_mode"]),
-            optimization="combined_apply",
+            optimization=args.verifier_optimization,
             token_selection=args.token_selection,
             preferred_token_id=recognizer.math_open_token_id,
             alternate_preferred_token_id=recognizer.math_slash_token_id,
@@ -656,6 +662,7 @@ def main() -> None:
         k_values=k_values,
         initial_k=args.initial_k,
         cache_roots=cache_roots,
+        verifier_optimization=args.verifier_optimization,
         cell_boundary_math_open_draft_trust=(
             args.cell_boundary_math_open_draft_trust
         ),
@@ -775,6 +782,7 @@ def main() -> None:
             "k_values": list(k_values),
             "initial_k": args.initial_k,
             "policy": "fully accepted call doubles K; rejected call halves K",
+            "verifier_optimization": args.verifier_optimization,
             "cache_length": args.cache_length,
             "targets": str(args.targets),
             "drafts": str(args.drafts),

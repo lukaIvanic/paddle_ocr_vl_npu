@@ -107,6 +107,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--allow-compile", action="store_true")
     parser.add_argument(
+        "--decode-optimization",
+        default="combined_apply_pse_sentinel",
+    )
+    parser.add_argument(
+        "--decode-vocab-token-ids",
+        type=Path,
+        default=None,
+        help="Optional native-token ID list for a compact B1 and verifier LM head.",
+    )
+    parser.add_argument(
         "--decode-cache-dir",
         type=Path,
         default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair",
@@ -186,7 +196,8 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         model=str(args.model),
         dtype="fp16",
         decode_backend="torchair",
-        decode_optimization="combined_apply_pse_sentinel",
+        decode_optimization=args.decode_optimization,
+        decode_vocab_token_ids=args.decode_vocab_token_ids,
         batch_size=1,
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,

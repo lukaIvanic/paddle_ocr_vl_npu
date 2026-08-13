@@ -10,6 +10,7 @@ tail to commit by advancing the logical cache position.
 from __future__ import annotations
 
 import hashlib
+import os
 import time
 import types
 from pathlib import Path
@@ -37,6 +38,7 @@ from .text_decode import (
     _prepare_multimodal_rotary_factors,
     _project_decode_qkv,
     prepare_decode_optimization_modules,
+    prepare_decode_weight_prefetch,
     resolve_decode_optimization,
 )
 from .token_selection import (
@@ -52,8 +54,58 @@ if TYPE_CHECKING:
 
 
 FULL_ATTENTION_TOKENS = (1 << 31) - 1
-SPEC_VERIFY_ATTENTION = "promptfa_gqa"
+SPEC_VERIFY_ATTENTION = os.environ.get(
+    "SPEC_VERIFY_ATTENTION", "promptfa_gqa"
+)
+_COMBINED_QKV_LAYOUT_ATTENTION = (
+    "manual_grouped_legal_scaled_masked_softmax_fp16_combined_qkv_rotary_mul"
+)
+_COMBINED_QKV_POST_ROPE_ATTENTION = (
+    "manual_grouped_legal_scaled_masked_softmax_fp16_combined_qkv_post_rope"
+)
+if SPEC_VERIFY_ATTENTION not in (
+    "promptfa_gqa",
+    "manual_grouped_fp32",
+    "manual_grouped_scaled_masked_softmax",
+    "manual_grouped_legal_scaled_masked_softmax_fp16",
+    "manual_grouped_legal_scaled_masked_softmax_fp32",
+    _COMBINED_QKV_LAYOUT_ATTENTION,
+    _COMBINED_QKV_POST_ROPE_ATTENTION,
+):
+    raise ValueError(f"unsupported SPEC_VERIFY_ATTENTION={SPEC_VERIFY_ATTENTION!r}")
 SPEC_VERIFY_CACHE_UPDATE = "npu_scatter"
+_SCALED_MASKED_SOFTMAX_CONVERTER_REGISTERED = False
+
+
+def _register_scaled_masked_softmax_torchair_converter() -> None:
+    global _SCALED_MASKED_SOFTMAX_CONVERTER_REGISTERED
+    if _SCALED_MASKED_SOFTMAX_CONVERTER_REGISTERED:
+        return
+    from torchair._ge_concrete_graph import ge_apis as ge
+    from torchair._ge_concrete_graph.fx2ge_converter import (
+        register_fx_node_ge_converter,
+    )
+    from torchair.ge._ge_graph import Tensor, TensorSpec
+
+    op = torch.ops.npu.npu_scaled_masked_softmax.default
+
+    @register_fx_node_ge_converter(op)
+    def _convert_scaled_masked_softmax(
+        x: Tensor,
+        mask: Tensor,
+        scale: float = 1.0,
+        fixed_triu_mask: bool = False,
+        meta_outputs: TensorSpec | None = None,
+    ) -> Tensor:
+        del meta_outputs
+        return ge.ScaledMaskedSoftmax(
+            x,
+            mask,
+            scale=float(scale),
+            fixed_triu_mask=bool(fixed_triu_mask),
+        )
+
+    _SCALED_MASKED_SOFTMAX_CONVERTER_REGISTERED = True
 
 
 def _query_positions(
@@ -112,21 +164,124 @@ def _spec_attention(
     key_cache: torch.Tensor,
     value_cache: torch.Tensor,
     positions: torch.Tensor,
+    attention_mask: torch.Tensor,
+    legal_attention_mask: torch.Tensor | None,
     optimization: DecodeOptimizationConfig,
 ) -> torch.Tensor:
-    query_states, key_states, value_states = _project_decode_qkv(
-        attention,
-        hidden_states,
-        optimization,
-    )
-    query_states, key_states = _apply_decode_rotary(
-        attention,
-        query_states,
-        key_states,
-        position_embeddings,
-        prepared_factors,
-        optimization,
-    )
+    if SPEC_VERIFY_ATTENTION == _COMBINED_QKV_POST_ROPE_ATTENTION:
+        if int(hidden_states.shape[0]) != 1:
+            raise ValueError("combined-QKV verifier layout currently requires B1")
+        if not optimization.packed_qkv or optimization.rotary != "npu_apply":
+            raise ValueError(
+                "combined-QKV verifier layout requires packed QKV and NPU ApplyRotary"
+            )
+        batch_size, query_length, _hidden = hidden_states.shape
+        query_heads = int(attention.num_heads)
+        kv_heads = int(attention.num_key_value_heads)
+        head_dim = int(attention.head_dim)
+        packed_qkv = _linear_tokenwise(
+            attention.decode_qkv_proj,
+            hidden_states,
+        )
+        query_flat, key_flat, value_flat = packed_qkv.split(
+            (
+                query_heads * head_dim,
+                kv_heads * head_dim,
+                kv_heads * head_dim,
+            ),
+            dim=-1,
+        )
+        query_bsnd = query_flat.view(
+            batch_size, query_length, query_heads, head_dim
+        )
+        key_bsnd = key_flat.view(
+            batch_size, query_length, kv_heads, head_dim
+        )
+        value_bsnd = value_flat.view(
+            batch_size, query_length, kv_heads, head_dim
+        )
+        import torch_npu
+
+        cos, sin = prepared_factors
+        query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
+            query_bsnd,
+            key_bsnd,
+            cos,
+            sin,
+            layout="BSND",
+            rotary_mode="half",
+        )
+        packed_head_major = (
+            torch.cat((query_bsnd, key_bsnd, value_bsnd), dim=2)
+            .transpose(1, 2)
+            .contiguous()
+        )
+        query_states, key_states, value_states = packed_head_major.split(
+            (query_heads, kv_heads, kv_heads),
+            dim=1,
+        )
+    elif SPEC_VERIFY_ATTENTION == _COMBINED_QKV_LAYOUT_ATTENTION:
+        if int(hidden_states.shape[0]) != 1:
+            raise ValueError("combined-QKV verifier layout currently requires B1")
+        if not optimization.packed_qkv or optimization.rotary != "npu_apply":
+            raise ValueError(
+                "combined-QKV verifier layout requires packed QKV and NPU ApplyRotary"
+            )
+        batch_size, query_length, _hidden = hidden_states.shape
+        query_heads = int(attention.num_heads)
+        kv_heads = int(attention.num_key_value_heads)
+        head_dim = int(attention.head_dim)
+        packed_qkv = _linear_tokenwise(
+            attention.decode_qkv_proj,
+            hidden_states,
+        )
+        # One materialization converts all packed Q, K, and V heads from
+        # token-major to head-major layout. The subsequent B1 head-axis split
+        # produces contiguous BNSD Q/K/V views without three separate
+        # transposes.
+        packed_head_major = (
+            packed_qkv.view(
+                batch_size,
+                query_length,
+                query_heads + (2 * kv_heads),
+                head_dim,
+            )
+            .transpose(1, 2)
+            .contiguous()
+        )
+        query_states, key_states, value_states = packed_head_major.split(
+            (query_heads, kv_heads, kv_heads),
+            dim=1,
+        )
+        import torch_npu
+
+        cos, sin = prepared_factors
+        query_states = torch_npu.npu_rotary_mul(
+            query_states.contiguous(),
+            cos,
+            sin,
+            rotary_mode="half",
+        )
+        key_states = torch_npu.npu_rotary_mul(
+            key_states.contiguous(),
+            cos,
+            sin,
+            rotary_mode="half",
+        )
+    else:
+        query_states, key_states, value_states = _project_decode_qkv(
+            attention,
+            hidden_states,
+            optimization,
+        )
+        query_states, key_states = _apply_decode_rotary(
+            attention,
+            query_states,
+            key_states,
+            position_embeddings,
+            prepared_factors,
+            optimization,
+        )
     _update_spec_kv_cache_(
         key_cache,
         value_cache,
@@ -134,55 +289,26 @@ def _spec_attention(
         key_states,
         value_states,
     )
+    if optimization.post_scatter_kv_prefetch:
+        import torch_npu
+
+        torch_npu.npu_prefetch(
+            key_cache,
+            key_states,
+            int(key_cache.numel() * key_cache.element_size()),
+        )
+        torch_npu.npu_prefetch(
+            value_cache,
+            value_states,
+            int(value_cache.numel() * value_cache.element_size()),
+        )
 
     cache_length = int(key_cache.shape[2])
-    kv_positions = torch.arange(
-        cache_length,
-        device=hidden_states.device,
-        dtype=torch.int64,
-    )
     batch_size = int(hidden_states.shape[0])
-    attention_mask = kv_positions.view(1, 1, 1, cache_length) > positions.view(
-        batch_size,
-        1,
-        -1,
-        1,
-    )
 
-    if query_states.device.type != "npu":
-        groups = int(attention.num_key_value_groups)
-        _batch, kv_heads, _kv_length, head_dim = key_cache.shape
-        query_heads = int(attention.num_heads)
-        expanded_key = (
-            key_cache[:, :, None, :, :]
-            .expand(batch_size, kv_heads, groups, cache_length, head_dim)
-            .reshape(batch_size * query_heads, cache_length, head_dim)
-        )
-        expanded_value = (
-            value_cache[:, :, None, :, :]
-            .expand(batch_size, kv_heads, groups, cache_length, head_dim)
-            .reshape(batch_size * query_heads, cache_length, head_dim)
-        )
-        query = query_states.reshape(batch_size * query_heads, -1, head_dim)
-        scores = torch.bmm(query, expanded_key.transpose(1, 2)).view(
-            batch_size, query_heads, query.shape[1], cache_length
-        ) * float(attention.scaling)
-        scores = scores.masked_fill(
-            attention_mask,
-            torch.finfo(scores.dtype).min,
-        )
-        probabilities = torch.softmax(scores.float(), dim=-1).to(
-            query_states.dtype
-        )
-        attention_output = torch.bmm(
-            probabilities.reshape(
-                batch_size * query_heads,
-                query.shape[1],
-                cache_length,
-            ),
-            expanded_value,
-        ).view(batch_size, query_heads, query.shape[1], head_dim)
-    else:
+    if SPEC_VERIFY_ATTENTION == "promptfa_gqa":
+        if query_states.device.type != "npu":
+            raise ValueError("PromptFA speculative verification requires an NPU")
         import torch_npu
 
         attention_output = torch_npu.npu_prompt_flash_attention(
@@ -198,12 +324,123 @@ def _spec_attention(
             next_tokens=FULL_ATTENTION_TOKENS,
             sparse_mode=0,
         )
+        query_length = int(hidden_states.shape[1])
+        attention_output = (
+            attention_output.transpose(1, 2)
+            .contiguous()
+            .reshape(
+                batch_size,
+                query_length,
+                attention.num_heads * attention.head_dim,
+            )
+        )
+        return _linear_tokenwise(attention.o_proj, attention_output)
+
+    if query_states.device.type != "npu":
+        raise ValueError("group-folded manual attention is an NPU-only lab path")
+    import torch_npu
 
     query_length = int(hidden_states.shape[1])
+    head_dim = int(attention.head_dim)
+    kv_heads = int(attention.num_key_value_heads)
+    groups = int(attention.num_key_value_groups)
+    query_heads = int(attention.num_heads)
+    grouped_query = query_states.view(
+        batch_size, kv_heads, groups, query_length, head_dim
+    ).reshape(batch_size * kv_heads, groups * query_length, head_dim)
+    grouped_key = key_cache.reshape(
+        batch_size * kv_heads, cache_length, head_dim
+    )
+    grouped_value = value_cache.reshape(
+        batch_size * kv_heads, cache_length, head_dim
+    )
+    scores = torch.bmm(
+        grouped_query,
+        grouped_key.transpose(1, 2),
+    ).view(
+        batch_size * kv_heads,
+        groups,
+        query_length,
+        cache_length,
+    )
+    if SPEC_VERIFY_ATTENTION == "manual_grouped_scaled_masked_softmax":
+        probabilities = torch_npu.npu_scaled_masked_softmax(
+            scores,
+            attention_mask.contiguous(),
+            float(attention.scaling),
+            False,
+        )
+    elif SPEC_VERIFY_ATTENTION in (
+        "manual_grouped_legal_scaled_masked_softmax_fp16",
+        "manual_grouped_legal_scaled_masked_softmax_fp32",
+        _COMBINED_QKV_LAYOUT_ATTENTION,
+        _COMBINED_QKV_POST_ROPE_ATTENTION,
+    ):
+        flattened_rows = batch_size * query_heads * query_length
+        if (
+            flattened_rows < 32
+            or flattened_rows > 4096
+            or flattened_rows % 32 != 0
+            or cache_length < 32
+            or cache_length > 4096
+            or cache_length % 32 != 0
+        ):
+            raise ValueError(
+                "legal scaled-masked-softmax requires flattened rows and "
+                "cache length in [32, 4096] and divisible by 32"
+            )
+        legal_scores = scores.reshape(1, 1, flattened_rows, cache_length)
+        if legal_attention_mask is None:
+            raise ValueError("legal attention requires a hoisted legal mask")
+        if SPEC_VERIFY_ATTENTION.endswith("_fp32"):
+            legal_scores = (
+                legal_scores * float(attention.scaling)
+            ).float()
+            probabilities = torch_npu.npu_scaled_masked_softmax(
+                legal_scores,
+                legal_attention_mask,
+                1.0,
+                False,
+            ).to(query_states.dtype)
+        else:
+            probabilities = torch_npu.npu_scaled_masked_softmax(
+                legal_scores,
+                legal_attention_mask,
+                float(attention.scaling),
+                False,
+            )
+        probabilities = probabilities.view_as(scores)
+    else:
+        scores = scores * float(attention.scaling)
+        scores = scores.masked_fill(
+            attention_mask,
+            torch.finfo(scores.dtype).min,
+        )
+        probabilities = torch.softmax(scores.float(), dim=-1).to(
+            query_states.dtype
+        )
+    attention_output = torch.bmm(
+        probabilities.reshape(
+            batch_size * kv_heads,
+            groups * query_length,
+            cache_length,
+        ),
+        grouped_value,
+    ).view(
+        batch_size,
+        kv_heads,
+        groups,
+        query_length,
+        head_dim,
+    ).reshape(
+        batch_size,
+        query_heads,
+        query_length,
+        head_dim,
+    )
+
     attention_output = (
-        attention_output.transpose(1, 2)
-        .contiguous()
-        .reshape(
+        attention_output.transpose(1, 2).contiguous().reshape(
             batch_size,
             query_length,
             attention.num_heads * attention.head_dim,
@@ -231,21 +468,76 @@ def run_text_spec_verify_transformer(
         raise ValueError(
             "text speculative verification requires the optimized add-RMS path"
         )
-    if optimization.rotary_factors != "mrope":
-        raise ValueError("text speculative verification currently requires MRoPE")
+    if optimization.rotary_factors not in ("mrope", "lookup"):
+        raise ValueError(
+            "text speculative verification requires MRoPE or RoPE lookup"
+        )
 
     positions = _query_positions(cache_position, int(query_length))
+    cache_length = int(key_caches[0].shape[2])
+    kv_positions = torch.arange(
+        cache_length,
+        device=inputs_embeds.device,
+        dtype=torch.int64,
+    )
+    attention_mask = kv_positions.view(1, 1, 1, cache_length) > positions.view(
+        batch_size,
+        1,
+        -1,
+        1,
+    )
+    legal_attention_mask: torch.Tensor | None = None
+    if SPEC_VERIFY_ATTENTION in (
+        "manual_grouped_legal_scaled_masked_softmax_fp16",
+        "manual_grouped_legal_scaled_masked_softmax_fp32",
+        _COMBINED_QKV_LAYOUT_ATTENTION,
+        _COMBINED_QKV_POST_ROPE_ATTENTION,
+    ):
+        attention = text_model.layers[0].self_attn
+        kv_heads = int(attention.num_key_value_heads)
+        groups = int(attention.num_key_value_groups)
+        flattened_rows = batch_size * int(attention.num_heads) * query_length
+        legal_attention_mask = (
+            attention_mask.view(
+                batch_size, 1, 1, query_length, cache_length
+            )
+            .expand(
+                batch_size,
+                kv_heads,
+                groups,
+                query_length,
+                cache_length,
+            )
+            .reshape(1, 1, flattened_rows, cache_length)
+            .contiguous()
+        )
     decode_positions = positions + rope_deltas.to(
         device=inputs_embeds.device,
         dtype=torch.int64,
     )
-    position_ids = decode_positions.unsqueeze(0).expand(3, -1, -1)
-    position_embeddings = text_model.rotary_emb(inputs_embeds, position_ids)
-    prepared_factors = _prepare_multimodal_rotary_factors(
-        position_embeddings,
-        text_model.layers[0].self_attn.mrope_section,
-    )
-    if optimization.rotary == "npu_apply":
+    if optimization.rotary_factors == "lookup":
+        packed_factors = torch.index_select(
+            text_model.rotary_emb.decode_rope_factor_lut,
+            1,
+            decode_positions.reshape(-1),
+        )
+        cosine, sine = packed_factors.unbind(dim=0)
+        prepared_factors = (
+            cosine.view(batch_size, query_length, -1).unsqueeze(1),
+            sine.view(batch_size, query_length, -1).unsqueeze(1),
+        )
+        position_embeddings = prepared_factors
+    else:
+        position_ids = decode_positions.unsqueeze(0).expand(3, -1, -1)
+        position_embeddings = text_model.rotary_emb(inputs_embeds, position_ids)
+        prepared_factors = _prepare_multimodal_rotary_factors(
+            position_embeddings,
+            text_model.layers[0].self_attn.mrope_section,
+        )
+    if (
+        optimization.rotary == "npu_apply"
+        and SPEC_VERIFY_ATTENTION != _COMBINED_QKV_LAYOUT_ATTENTION
+    ):
         # _prepare_multimodal_rotary_factors returns BNSD factors. The public
         # ApplyRotaryPosEmb BSND layout accepts [B,Q,1,D]; Q=1 made these two
         # representations indistinguishable in the ordinary decode graph.
@@ -257,6 +549,15 @@ def run_text_spec_verify_transformer(
     hidden_states = inputs_embeds
     residual: torch.Tensor | None = None
     for layer_idx, layer in enumerate(text_model.layers):
+        if optimization.complete_layer_prefetch_ahead:
+            import torch_npu
+
+            for weight in layer._decode_prefetch_future_layers:
+                torch_npu.npu_prefetch(
+                    weight,
+                    hidden_states,
+                    int(weight.numel() * weight.element_size()),
+                )
         if residual is None:
             attention_input = _decode_rms_norm(
                 layer.input_layernorm,
@@ -279,6 +580,8 @@ def run_text_spec_verify_transformer(
             key_caches[layer_idx],
             value_caches[layer_idx],
             positions,
+            attention_mask,
+            legal_attention_mask,
             optimization,
         )
         mlp_input, residual = _decode_add_with_optional_rms_norm(
@@ -333,6 +636,11 @@ class TextSpecVerifyStage(nn.Module):
             else int(alternate_preferred_token_id)
         )
         self.cell_start_token_ids = tuple(int(value) for value in cell_start_token_ids)
+        self.compact_output_vocab = hasattr(model, "decode_token_id_map")
+        if self.compact_output_vocab and self.token_selection != TOKEN_SELECTION_GREEDY:
+            raise ValueError(
+                "compact verifier output currently supports greedy selection only"
+            )
 
     def forward(
         self,
@@ -363,7 +671,14 @@ class TextSpecVerifyStage(nn.Module):
             value_caches=value_caches,
             optimization=self.optimization,
         )
-        logits = _linear_tokenwise(self.model.lm_head, hidden_states)
+        output_head = getattr(self.model, "decode_lm_head", self.model.lm_head)
+        logits = _linear_tokenwise(output_head, hidden_states)
+        if self.compact_output_vocab:
+            compact_ids = torch.argmax(logits.float(), dim=-1)
+            return self.model.decode_token_id_map.index_select(
+                0,
+                compact_ids.reshape(-1),
+            ).view_as(compact_ids)
         cell_start_mask = torch.zeros_like(input_ids, dtype=torch.bool)
         for token_id in self.cell_start_token_ids:
             cell_start_mask |= input_ids == int(token_id)
@@ -500,6 +815,9 @@ class TextSpecVerifyRuntime:
             model,
             optimization,
         )
+        prepare_decode_weight_prefetch(model, self.optimization)
+        if SPEC_VERIFY_ATTENTION != "manual_grouped_fp32":
+            _register_scaled_masked_softmax_torchair_converter()
         self.token_selection = str(token_selection)
         self.preferred_token_id = (
             None if preferred_token_id is None else int(preferred_token_id)
@@ -595,6 +913,10 @@ class TextSpecVerifyRuntime:
             "token_selection": self.token_selection,
             "preferred_token_id": self.preferred_token_id,
             "cell_start_token_ids": list(self.cell_start_token_ids),
+            "output_vocab_size": int(
+                getattr(model, "decode_lm_head", model.lm_head).out_features
+            ),
+            "compact_output_vocab": bool(hasattr(model, "decode_token_id_map")),
             "torchair_cache_dir": str(cache_dir),
             "compile_wrapper_s": float(wrapper_s),
             "compile_first_call_s": float(first_call_s),
