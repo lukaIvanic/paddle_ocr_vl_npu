@@ -12,7 +12,7 @@ arguments.
 - all 128 pages once as an in-process warmup, then the same 128 measured;
 - compiled FP16 B1 optimized layout;
 - the five production compiled full-vision buckets;
-- `constant_grouped_all` plus `torchair_internal` vision weights;
+- `constant_grouped_all` plus native vision-weight handling;
 - compact uint8 HWC crop transfer and NPU normalization;
 - cross-KV length 512 and artifact storage `discard`;
 - one too-large crop may use the established eager fallback.
@@ -50,7 +50,7 @@ export LAYOUT_MODEL="${LAYOUT_MODEL:-$REPO/models/PP-DocLayoutV2_safetensors}"
 export OPENOCR_ROOT="${OPENOCR_ROOT:-$REPO/deps/OpenOCR_0d522801}"
 export IMAGES_DIR="${IMAGES_DIR:?reuse the existing OmniDocBench images directory}"
 export LAYOUT_CACHE="${LAYOUT_CACHE:?reuse the warmed optimized-layout cache parent}"
-export RECOGNITION_CACHE="${RECOGNITION_CACHE:?reuse the warmed constant_grouped_all plus torchair_internal cache parent}"
+export RECOGNITION_CACHE="${RECOGNITION_CACHE:?reuse the warmed constant_grouped_all plus native-weight cache parent from commit b3d331e}"
 
 launch_output="$(
   bash "$REPO/12_unirec_0_1b_inference/run_prefill_first128_w1_crosschip_background.sh" 2>&1

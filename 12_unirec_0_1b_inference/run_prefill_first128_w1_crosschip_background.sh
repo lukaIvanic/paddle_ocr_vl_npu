@@ -74,7 +74,7 @@ run_first128() {
     --recognition-cache-dir "$RECOGNITION_CACHE"
     --vision-full-batches
     --vision-focal-depthwise-rewrite constant_grouped_all
-    --vision-weight-format torchair_internal
+    --vision-weight-format native
     --recognition-input-contract compact_uint8_hwc
     --recognition-preprocess-threads 1
     --vision-page-lookahead 4
