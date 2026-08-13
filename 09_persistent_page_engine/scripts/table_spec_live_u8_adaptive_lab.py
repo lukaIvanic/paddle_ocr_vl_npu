@@ -112,6 +112,16 @@ def parse_args() -> argparse.Namespace:
             "run first; the work still overlaps draft decoding."
         ),
     )
+    parser.add_argument(
+        "--overlap-target-cpu-preparation",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Overlap full-table CPU preprocessing with draft recognition. "
+            "Disable to finish full-table preprocessing before draft-row "
+            "preprocessing starts."
+        ),
+    )
 
     parser.add_argument("--k-values", default="7,15,31,63")
     parser.add_argument("--initial-k", type=int, default=15)
@@ -399,13 +409,24 @@ def _run_one(
 
     target_request = fixed_lab.request_for(source, target_crop, _b1_args(args))
     cpu_submitted = time.perf_counter()
-    cpu_future = cpu_executor.submit(
-        _timed_cpu_prepare,
-        b1_recognizer,
-        target_request,
-        cpu_submitted,
-        max(0.0, float(args.target_cpu_delay_ms) / 1000.0),
-    )
+    cpu_future = None
+    if args.overlap_target_cpu_preparation:
+        cpu_future = cpu_executor.submit(
+            _timed_cpu_prepare,
+            b1_recognizer,
+            target_request,
+            cpu_submitted,
+            max(0.0, float(args.target_cpu_delay_ms) / 1000.0),
+        )
+    else:
+        prepared, cpu_started, cpu_finished, cpu_prepare_thread_s = (
+            _timed_cpu_prepare(
+                b1_recognizer,
+                target_request,
+                cpu_submitted,
+                max(0.0, float(args.target_cpu_delay_ms) / 1000.0),
+            )
+        )
     draft_started = time.perf_counter()
     draft, draft_wall_s = _run_draft(
         draft_recognizer,
@@ -415,8 +436,13 @@ def _run_one(
     )
     draft_finished = time.perf_counter()
     cpu_wait_started = time.perf_counter()
-    prepared, cpu_started, cpu_finished, cpu_prepare_thread_s = cpu_future.result()
-    cpu_wait_s = time.perf_counter() - cpu_wait_started
+    if cpu_future is not None:
+        prepared, cpu_started, cpu_finished, cpu_prepare_thread_s = (
+            cpu_future.result()
+        )
+        cpu_wait_s = time.perf_counter() - cpu_wait_started
+    else:
+        cpu_wait_s = 0.0
 
     matcher_future = cpu_executor.submit(
         _timed_matcher,
@@ -700,7 +726,11 @@ def main() -> None:
             "row_strategy": "uniform_8_snapped",
             "latency_boundary": "in_memory_table_crop_to_verified_output",
             "source_page_load_and_bbox_crop_included": False,
-            "target_cpu_overlap": "during_draft_recognition",
+            "target_cpu_overlap": (
+                "during_draft_recognition"
+                if args.overlap_target_cpu_preparation
+                else "disabled_prepare_before_draft"
+            ),
             "target_cpu_delay_ms": float(args.target_cpu_delay_ms),
             "matcher_overlap": "during_target_npu_prefill",
             "npu_overlap": False,
