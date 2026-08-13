@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Compare stock eager, bucket-module eager, and compiled full vision batches."""
+"""Compare stock and bucket eager/compiled full vision batches."""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import inspect
 import json
 import os
 import statistics
@@ -22,6 +24,7 @@ sys.path.insert(0, str(HERE))
 
 from modeling_optimized_unirec import (  # noqa: E402
     OptimizedUniRecRunner,
+    import_torchair_cache_compile,
     synchronize_device,
 )
 from vision_full_batch import (  # noqa: E402
@@ -125,6 +128,44 @@ def _difference(left: torch.Tensor, right: torch.Tensor) -> dict[str, Any]:
     }
 
 
+class _StockVisionEncoder(torch.nn.Module):
+    """Expose the unmodified UniRec encoder as one fixed-shape graph."""
+
+    def __init__(self, runner: OptimizedUniRecRunner) -> None:
+        super().__init__()
+        self.encoder = runner.model.encoder
+
+    def _forward_fixed(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        return self.encoder(pixel_values)
+
+    def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        return self._forward_fixed(pixel_values)
+
+
+def _new_stock_encoder_module(
+    runner: OptimizedUniRecRunner,
+    spec: VisionBucketSpec,
+) -> _StockVisionEncoder:
+    """Give every stock fixed batch a deterministic graph identity."""
+    filename = f"<unirec_stock_vision_{spec.key}>"
+    namespace: dict[str, Any] = {}
+    exec(
+        compile(
+            "def forward(self, pixel_values):\n"
+            "    return self._forward_fixed(pixel_values)\n",
+            filename,
+            "exec",
+        ),
+        namespace,
+    )
+    module_type = type(
+        f"StockVisionEncoder_{spec.width}x{spec.height}_b{spec.batch_size}",
+        (_StockVisionEncoder,),
+        {"forward": namespace["forward"]},
+    )
+    return module_type(runner).eval()
+
+
 def main() -> None:
     args = parse_args()
     physical_devices = _physical_devices()
@@ -155,6 +196,16 @@ def main() -> None:
         focal_depthwise_rewrite=args.focal_depthwise_rewrite,
         weight_format=args.weight_format,
     )
+    from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
+
+    stock_config = CompilerConfig()
+    stock_config.mode.value = "max-autotune"
+    cache_compile, stock_compile_api = import_torchair_cache_compile()
+    stock_source_hash = hashlib.sha256(
+        inspect.getsource(_StockVisionEncoder).encode("utf-8")
+        + inspect.getsource(_new_stock_encoder_module).encode("utf-8")
+        + Path(__file__).with_name("modeling_optimized_unirec.py").read_bytes()
+    ).hexdigest()[:12]
 
     rows = []
     with torch.inference_mode():
@@ -173,21 +224,46 @@ def main() -> None:
             )
             module = runtime.modules[spec.key]
             compiled = runtime.compiled[spec.key]
+            stock_module = _new_stock_encoder_module(runner, spec)
+            stock_cache_dir = cache_dir / (
+                f"vision_stock_fixed_{spec.key}_float16_src{stock_source_hash}"
+            )
+            stock_cache_dir.mkdir(parents=True, exist_ok=True)
+            stock_compiled = cache_compile(
+                stock_module.forward,
+                config=stock_config,
+                dynamic=False,
+                cache_dir=str(stock_cache_dir),
+                ge_cache=True,
+                fullgraph=True,
+            )
 
             lanes: tuple[tuple[str, Callable[[], torch.Tensor]], ...] = (
                 ("stock_eager", lambda: runner.model.forward_encoder(pixels)),
+                ("stock_compiled", lambda: stock_compiled(pixels)),
                 ("bucket_module_eager", lambda: module(pixels, *masks)),
                 ("compiled", lambda: compiled(pixels, *masks)),
             )
 
-            first_call_started = time.perf_counter()
+            bucket_first_call_started = time.perf_counter()
             compiled_output = compiled(pixels, *masks)
             synchronize_device(args.device)
-            compiled_first_call_wall_s = time.perf_counter() - first_call_started
+            bucket_compiled_first_call_wall_s = (
+                time.perf_counter() - bucket_first_call_started
+            )
+            stock_first_call_started = time.perf_counter()
+            stock_compiled_output = stock_compiled(pixels)
+            synchronize_device(args.device)
+            stock_compiled_first_call_wall_s = (
+                time.perf_counter() - stock_first_call_started
+            )
             stock_output = lanes[0][1]()
-            bucket_eager_output = lanes[1][1]()
+            bucket_eager_output = lanes[2][1]()
             synchronize_device(args.device)
             correctness = {
+                "stock_compiled_vs_stock_eager": _difference(
+                    stock_compiled_output, stock_output
+                ),
                 "compiled_vs_bucket_module_eager": _difference(
                     compiled_output, bucket_eager_output
                 ),
@@ -217,10 +293,20 @@ def main() -> None:
             row = {
                 "batch_size": spec.batch_size,
                 "shape": [spec.width, spec.height],
-                "compiled_first_call_wall_s": compiled_first_call_wall_s,
+                "stock_compiled_first_call_wall_s": (
+                    stock_compiled_first_call_wall_s
+                ),
+                "stock_compiled_cache_dir": str(stock_cache_dir),
+                "bucket_compiled_first_call_wall_s": (
+                    bucket_compiled_first_call_wall_s
+                ),
                 "correctness": correctness,
                 "timing": timing,
                 "speedup": {
+                    "stock_compiled_vs_stock_eager": (
+                        timing["stock_eager"]["median_ms"]
+                        / timing["stock_compiled"]["median_ms"]
+                    ),
                     "compiled_vs_bucket_module_eager": (
                         timing["bucket_module_eager"]["median_ms"]
                         / timing["compiled"]["median_ms"]
@@ -236,6 +322,7 @@ def main() -> None:
                 "UNIREC_VISION_COMPILE_BATCH "
                 f"batch={spec.batch_size} "
                 f"stock_eager_ms={timing['stock_eager']['median_ms']:.3f} "
+                f"stock_compiled_ms={timing['stock_compiled']['median_ms']:.3f} "
                 f"bucket_eager_ms={timing['bucket_module_eager']['median_ms']:.3f} "
                 f"compiled_ms={timing['compiled']['median_ms']:.3f} "
                 f"compile_speedup={row['speedup']['compiled_vs_bucket_module_eager']:.3f} "
@@ -252,7 +339,12 @@ def main() -> None:
                 * baseline["timing"][lane]["median_ms"]
                 / row["timing"][lane]["median_ms"]
             )
-            for lane in ("stock_eager", "bucket_module_eager", "compiled")
+            for lane in (
+                "stock_eager",
+                "stock_compiled",
+                "bucket_module_eager",
+                "compiled",
+            )
         }
 
     allclose = all(
@@ -274,6 +366,7 @@ def main() -> None:
         "focal_depthwise_rewrite": args.focal_depthwise_rewrite,
         "weight_format": args.weight_format,
         "compile_api": runtime.compile_api,
+        "stock_compile_api": stock_compile_api,
         "cache_inventory": runtime.cache_inventory(),
         "rows": rows,
         "measurement_scope": (
