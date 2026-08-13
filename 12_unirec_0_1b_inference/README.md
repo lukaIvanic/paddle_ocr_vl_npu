@@ -304,6 +304,23 @@ tmp/12_unirec_0_1b_inference/layout_production_lab_423e284_20260813T174247/resul
 tmp/12_unirec_0_1b_inference/prefill_first128_w1_crosschip_a64ddca_20260813T174418/output/summary.json
 ```
 
+The next exact graph rewrite removes both AICPU `IndexByTensor` calls produced
+by the top-down FPN's two nearest-neighbor 2x upsample operations. It duplicates
+each NCHW value through reshape/expand/reshape instead. On the same first 128
+pages, compiled forward fell from 19.66 to 12.70 ms/page (1.55x), while complete
+layout wall fell from 5.2440 to 4.4079 s (24.41 to 29.04 pages/s). All 128
+result digests and all 988 boxes remained exact. A warmed NPU profile measured
+12.71 ms and confirmed zero `Index` kernels, down from two calls totaling
+6.02 ms. The production one-worker prefill retained a lower layout stage,
+4.0033 s versus 4.6142 s, although unrelated recognition and IPC variance made
+that one complete-prefill repeat slower overall. Evidence:
+
+```text
+tmp/12_unirec_0_1b_inference/layout_indexfree_first128_69eaf86_20260813/result.json
+tmp/12_unirec_0_1b_inference/layout_indexfree_profile_69eaf86_20260813/profile_suite_summary.json
+tmp/12_unirec_0_1b_inference/prefill_first128_w1_crosschip_69eaf86_20260813T181612/output/summary.json
+```
+
 ```sh
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
   12_unirec_0_1b_inference/layout_detector_lab.py \
