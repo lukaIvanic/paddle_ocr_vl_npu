@@ -12,7 +12,7 @@ arguments.
 - all 128 pages once as an in-process warmup, then the same 128 measured;
 - compiled FP16 B1 optimized layout;
 - the five production compiled full-vision buckets;
-- `constant_grouped_all` plus native vision-weight handling;
+- `constant_grouped_all` plus `torchair_internal` vision weights;
 - compact uint8 HWC crop transfer and NPU normalization;
 - cross-KV length 512 and artifact storage `discard`;
 - one too-large crop may use the established eager fallback.
@@ -26,10 +26,13 @@ W1 page path and its existing stage timers, not another graph microbenchmark.
 - Use one genuinely free physical 310P. Never use physical NPU 5 or 6.
 - Do not stop another user's process.
 - Launch in the background and immediately send Luka the absolute log path.
-- Reuse the exact model, dataset, OpenOCR, layout cache, and all-45 recognition
-  cache paths from the latest successful UniRec work on this server.
-- If a required cache cannot be resolved, stop and name that missing path. Do
-  not create a different experimental lane.
+- Reuse the exact model, dataset, OpenOCR, and layout cache paths from the
+  latest successful UniRec work on this server.
+- Do not point `RECOGNITION_CACHE` at the native-weight all-45 cache built at
+  commit `b3d331e`. Use the cache from the earlier passed
+  `constant_grouped_all + torchair_internal` single-bucket run if it is
+  available; otherwise use a new dedicated cache path. The W1 worker will load
+  or build all five exact combined-lane graphs during excluded setup.
 
 ## Launch
 
@@ -50,7 +53,7 @@ export LAYOUT_MODEL="${LAYOUT_MODEL:-$REPO/models/PP-DocLayoutV2_safetensors}"
 export OPENOCR_ROOT="${OPENOCR_ROOT:-$REPO/deps/OpenOCR_0d522801}"
 export IMAGES_DIR="${IMAGES_DIR:?reuse the existing OmniDocBench images directory}"
 export LAYOUT_CACHE="${LAYOUT_CACHE:?reuse the warmed optimized-layout cache parent}"
-export RECOGNITION_CACHE="${RECOGNITION_CACHE:?reuse the warmed constant_grouped_all plus native-weight cache parent from commit b3d331e}"
+export RECOGNITION_CACHE="${RECOGNITION_CACHE:-$REPO/.runtime_cache/12_unirec_0_1b_inference/vision_all45_internal_first128_$(git rev-parse --short HEAD)}"
 
 launch_output="$(
   bash "$REPO/12_unirec_0_1b_inference/run_prefill_first128_w1_crosschip_background.sh" 2>&1
