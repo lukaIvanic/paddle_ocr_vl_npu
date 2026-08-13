@@ -235,9 +235,10 @@ class BatchedVisionGraphRuntime:
         device: torch.device,
         shapes: Sequence[tuple[int, int]] | None = None,
         require_warm_cache: bool = True,
+        validate_pinned_source: bool = True,
     ):
         expected_source = str(PINNED_910B2_PROFILE["vision_source_hash"])
-        if vision_source_hash() != expected_source:
+        if validate_pinned_source and vision_source_hash() != expected_source:
             raise RuntimeError(
                 "pinned vision profile source mismatch: "
                 f"expected={expected_source} actual={vision_source_hash()}"

@@ -1002,6 +1002,9 @@ class ContinuousRecognizer:
                     if self.vision_packing == "fixed_batch"
                     else True
                 ),
+                validate_pinned_source=(
+                    self.vision_packing == "profile_guided"
+                ),
             )
             if self.vision_packing in {"fixed_batch", "profile_guided"}
             else None
