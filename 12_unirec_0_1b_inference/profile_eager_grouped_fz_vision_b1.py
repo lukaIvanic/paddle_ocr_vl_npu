@@ -20,12 +20,39 @@ from profile_stock_eager_vision_b1 import (
     _parse_profile,
     _profile_once,
 )
-from vision_focal_depthwise import rewrite_eager_stage2_7x7_grouped_fz
+from vision_focal_depthwise import rewrite_eager_stage23_5x5_7x7_grouped_fz
 
 
-TARGET_LOGICAL_TO_FZ1 = 'TransData | "384,1,7,7" -> "49,24,16,16"'
-TARGET_GROUP_REPACK = 'TransData | "49,24,16,16" -> "1176,1,16,16"'
-TARGET_CONV = 'Conv2D | "1,24,4,60,16;1176,1,16,16"'
+TARGET_SIGNATURES = (
+    {
+        "key": "s2_c384_k5",
+        "count": 9,
+        "logical_to_fz1": 'TransData | "384,1,5,5" -> "25,24,16,16"',
+        "group_repack": 'TransData | "25,24,16,16" -> "600,1,16,16"',
+        "conv": 'Conv2D | "1,24,4,60,16;600,1,16,16"',
+    },
+    {
+        "key": "s2_c384_k7",
+        "count": 9,
+        "logical_to_fz1": 'TransData | "384,1,7,7" -> "49,24,16,16"',
+        "group_repack": 'TransData | "49,24,16,16" -> "1176,1,16,16"',
+        "conv": 'Conv2D | "1,24,4,60,16;1176,1,16,16"',
+    },
+    {
+        "key": "s3_c768_k5",
+        "count": 2,
+        "logical_to_fz1": 'TransData | "768,1,5,5" -> "25,48,16,16"',
+        "group_repack": 'TransData | "25,48,16,16" -> "1200,1,16,16"',
+        "conv": 'Conv2D | "1,48,2,30,16;1200,1,16,16"',
+    },
+    {
+        "key": "s3_c768_k7",
+        "count": 2,
+        "logical_to_fz1": 'TransData | "768,1,7,7" -> "49,48,16,16"',
+        "group_repack": 'TransData | "49,48,16,16" -> "2352,1,16,16"',
+        "conv": 'Conv2D | "1,48,2,30,16;2352,1,16,16"',
+    },
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -94,10 +121,32 @@ def _target_operations(parsed: dict[str, Any]) -> dict[str, Any]:
     kernel = parsed["summary"]["runs"][0]["kernel_details"]
     transdata = kernel.get("top_transdata_shape_signatures", [])
     shapes = kernel.get("top_shape_signatures", [])
+    per_signature = {}
+    for target in TARGET_SIGNATURES:
+        per_signature[target["key"]] = {
+            "expected_count": target["count"],
+            "logical_weight_to_fz1": _aggregate(
+                transdata, target["logical_to_fz1"]
+            ),
+            "fz1_to_grouped_fz": _aggregate(
+                transdata, target["group_repack"]
+            ),
+            "physical_conv2d": _aggregate(shapes, target["conv"]),
+        }
+
+    def total(field: str) -> dict[str, Any]:
+        return {
+            "count": sum(row[field]["count"] for row in per_signature.values()),
+            "duration_us": sum(
+                row[field]["duration_us"] for row in per_signature.values()
+            ),
+        }
+
     return {
-        "logical_weight_to_fz1": _aggregate(transdata, TARGET_LOGICAL_TO_FZ1),
-        "fz1_to_grouped_fz384": _aggregate(transdata, TARGET_GROUP_REPACK),
-        "physical_conv2d": _aggregate(shapes, TARGET_CONV),
+        "per_signature": per_signature,
+        "logical_weight_to_fz1": total("logical_weight_to_fz1"),
+        "fz1_to_grouped_fz": total("fz1_to_grouped_fz"),
+        "physical_conv2d": total("physical_conv2d"),
     }
 
 
@@ -145,7 +194,7 @@ def main() -> None:
         )
 
         rewrite_started = time.perf_counter()
-        rewrite = rewrite_eager_stage2_7x7_grouped_fz(
+        rewrite = rewrite_eager_stage23_5x5_7x7_grouped_fz(
             runner.model.encoder.vision_encoder
         )
         synchronize_device(args.device)
@@ -197,22 +246,39 @@ def main() -> None:
     }
 
     status = "ok"
-    if rewrite["rewritten_count"] != 9:
+    if rewrite["rewritten_count"] != 22:
         status = "rewrite_count_failed"
     if not parity["grouped_vs_native"]["exact"]:
         status = "model_parity_failed"
     if (
-        native_targets["logical_weight_to_fz1"]["count"] != 9
-        or native_targets["fz1_to_grouped_fz384"]["count"] != 9
-        or native_targets["physical_conv2d"]["count"] != 9
+        native_targets["logical_weight_to_fz1"]["count"] != 22
+        or native_targets["fz1_to_grouped_fz"]["count"] != 22
+        or native_targets["physical_conv2d"]["count"] != 22
     ):
         status = "native_target_count_failed"
     if (
         grouped_targets["logical_weight_to_fz1"]["count"] != 0
-        or grouped_targets["fz1_to_grouped_fz384"]["count"] != 0
-        or grouped_targets["physical_conv2d"]["count"] != 9
+        or grouped_targets["fz1_to_grouped_fz"]["count"] != 0
+        or grouped_targets["physical_conv2d"]["count"] != 22
     ):
         status = "grouped_target_count_failed"
+    for target in TARGET_SIGNATURES:
+        key = target["key"]
+        expected = int(target["count"])
+        native_row = native_targets["per_signature"][key]
+        grouped_row = grouped_targets["per_signature"][key]
+        if not (
+            native_row["logical_weight_to_fz1"]["count"] == expected
+            and native_row["fz1_to_grouped_fz"]["count"] == expected
+            and native_row["physical_conv2d"]["count"] == expected
+        ):
+            status = f"native_signature_count_failed:{key}"
+        if not (
+            grouped_row["logical_weight_to_fz1"]["count"] == 0
+            and grouped_row["fz1_to_grouped_fz"]["count"] == 0
+            and grouped_row["physical_conv2d"]["count"] == expected
+        ):
+            status = f"grouped_signature_count_failed:{key}"
 
     native_ms = float(native_after["device_event"]["median_ms"])
     grouped_ms = float(grouped_after["device_event"]["median_ms"])
@@ -286,18 +352,39 @@ def main() -> None:
         "UNIREC_EAGER_GROUPED_FZ_VISION_KERNELS "
         f"native_logical_fz1={native_targets['logical_weight_to_fz1']['count']}/"
         f"{native_targets['logical_weight_to_fz1']['duration_us'] / 1000.0:.6f}ms "
-        f"native_group_repack={native_targets['fz1_to_grouped_fz384']['count']}/"
-        f"{native_targets['fz1_to_grouped_fz384']['duration_us'] / 1000.0:.6f}ms "
+        f"native_group_repack={native_targets['fz1_to_grouped_fz']['count']}/"
+        f"{native_targets['fz1_to_grouped_fz']['duration_us'] / 1000.0:.6f}ms "
         f"native_conv={native_targets['physical_conv2d']['count']}/"
         f"{native_targets['physical_conv2d']['duration_us'] / 1000.0:.6f}ms "
         f"grouped_logical_fz1={grouped_targets['logical_weight_to_fz1']['count']}/"
         f"{grouped_targets['logical_weight_to_fz1']['duration_us'] / 1000.0:.6f}ms "
-        f"grouped_group_repack={grouped_targets['fz1_to_grouped_fz384']['count']}/"
-        f"{grouped_targets['fz1_to_grouped_fz384']['duration_us'] / 1000.0:.6f}ms "
+        f"grouped_group_repack={grouped_targets['fz1_to_grouped_fz']['count']}/"
+        f"{grouped_targets['fz1_to_grouped_fz']['duration_us'] / 1000.0:.6f}ms "
         f"grouped_conv={grouped_targets['physical_conv2d']['count']}/"
         f"{grouped_targets['physical_conv2d']['duration_us'] / 1000.0:.6f}ms",
         flush=True,
     )
+    for target in TARGET_SIGNATURES:
+        key = target["key"]
+        native_row = native_targets["per_signature"][key]
+        grouped_row = grouped_targets["per_signature"][key]
+        print(
+            "UNIREC_EAGER_GROUPED_FZ_VISION_SIGNATURE "
+            f"key={key} expected={target['count']} "
+            f"native_logical={native_row['logical_weight_to_fz1']['count']}/"
+            f"{native_row['logical_weight_to_fz1']['duration_us'] / 1000.0:.6f}ms "
+            f"native_grouped={native_row['fz1_to_grouped_fz']['count']}/"
+            f"{native_row['fz1_to_grouped_fz']['duration_us'] / 1000.0:.6f}ms "
+            f"native_conv={native_row['physical_conv2d']['count']}/"
+            f"{native_row['physical_conv2d']['duration_us'] / 1000.0:.6f}ms "
+            f"grouped_logical={grouped_row['logical_weight_to_fz1']['count']}/"
+            f"{grouped_row['logical_weight_to_fz1']['duration_us'] / 1000.0:.6f}ms "
+            f"grouped_grouped={grouped_row['fz1_to_grouped_fz']['count']}/"
+            f"{grouped_row['fz1_to_grouped_fz']['duration_us'] / 1000.0:.6f}ms "
+            f"grouped_conv={grouped_row['physical_conv2d']['count']}/"
+            f"{grouped_row['physical_conv2d']['duration_us'] / 1000.0:.6f}ms",
+            flush=True,
+        )
     print(
         "UNIREC_EAGER_GROUPED_FZ_VISION_PROFILE_STEP "
         f"native_compute_ms={float(native_step['Computing']) / 1000.0:.6f} "

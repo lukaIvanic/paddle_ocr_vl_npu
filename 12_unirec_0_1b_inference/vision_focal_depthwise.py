@@ -138,98 +138,122 @@ def _load_eager_grouped_fz_bridge() -> tuple[Any, float]:
     return _EAGER_GROUPED_FZ_BRIDGE, time.perf_counter() - started
 
 
-def rewrite_eager_stage2_7x7_grouped_fz(
+def rewrite_eager_stage23_5x5_7x7_grouped_fz(
     vision_encoder: nn.Module,
 ) -> dict[str, Any]:
-    """Prepack the nine stage-2 384-channel 7x7 focal weights for eager NPU."""
+    """Prepack all 22 stage-2/3 5x5 and 7x7 focal weights for eager NPU."""
     bridge, extension_build_s = _load_eager_grouped_fz_bridge()
     rows: list[dict[str, Any]] = []
-    stage_index = 2
-    stage = vision_encoder.layers[stage_index]
-    for block_index, block in enumerate(stage.blocks):
-        for focal_index, focal_layer in enumerate(block.modulation.focal_layers):
-            convolution = focal_layer[0]
-            if not isinstance(convolution, nn.Conv2d):
-                raise TypeError(
-                    "eager grouped-FZ rewrite expected native Conv2d at "
-                    f"stage={stage_index} block={block_index} focal={focal_index}"
-                )
-            kernel = tuple(int(value) for value in convolution.kernel_size)
-            if kernel != (7, 7):
-                continue
-            channels = int(convolution.in_channels)
-            if not (
-                channels == 384
-                and convolution.out_channels == channels
-                and convolution.groups == channels
-                and tuple(convolution.stride) == (1, 1)
-                and tuple(convolution.dilation) == (1, 1)
-                and convolution.bias is None
-                and convolution.weight.dtype == torch.float16
-                and convolution.weight.device.type == "npu"
+    for stage_index in (2, 3):
+        stage = vision_encoder.layers[stage_index]
+        expected_channels = 384 if stage_index == 2 else 768
+        for block_index, block in enumerate(stage.blocks):
+            for focal_index, focal_layer in enumerate(
+                block.modulation.focal_layers
             ):
-                raise ValueError(
-                    "unexpected stage-2 7x7 focal convolution contract: "
-                    f"{convolution} weight={convolution.weight.shape}/"
-                    f"{convolution.weight.dtype}/{convolution.weight.device}"
-                )
+                convolution = focal_layer[0]
+                if not isinstance(convolution, nn.Conv2d):
+                    raise TypeError(
+                        "eager grouped-FZ rewrite expected native Conv2d at "
+                        f"stage={stage_index} block={block_index} "
+                        f"focal={focal_index}"
+                    )
+                kernel = tuple(int(value) for value in convolution.kernel_size)
+                if kernel not in {(5, 5), (7, 7)}:
+                    continue
+                channels = int(convolution.in_channels)
+                if not (
+                    channels == expected_channels
+                    and convolution.out_channels == channels
+                    and convolution.groups == channels
+                    and tuple(convolution.stride) == (1, 1)
+                    and tuple(convolution.dilation) == (1, 1)
+                    and convolution.bias is None
+                    and convolution.weight.dtype == torch.float16
+                    and convolution.weight.device.type == "npu"
+                ):
+                    raise ValueError(
+                        "unexpected stage-2/3 focal convolution contract: "
+                        f"{convolution} weight={convolution.weight.shape}/"
+                        f"{convolution.weight.dtype}/{convolution.weight.device}"
+                    )
 
-            logical_shape = tuple(int(value) for value in convolution.weight.shape)
-            host_weight = np.ascontiguousarray(
-                convolution.weight.detach().to(device="cpu").numpy()
-            )
-            packed_host = pack_grouped_fz_host(host_weight, groups=channels)
-            packed_storage = torch.from_numpy(packed_host).to(
-                device=convolution.weight.device
-            )
-            wrapped = bridge.wrap_grouped_fz(
-                packed_storage,
-                list(logical_shape),
-                channels,
-            )
-            parameter = nn.Parameter(wrapped, requires_grad=False)
-            origin_format, storage_format, base_shape, storage_shape = (
-                bridge.describe_npu_storage(parameter)
-            )
-            descriptor = {
-                "origin_format": int(origin_format),
-                "storage_format": int(storage_format),
-                "base_shape": [int(value) for value in base_shape],
-                "storage_shape": [int(value) for value in storage_shape],
-                "physical_bytes": int(packed_host.nbytes),
-            }
-            expected_descriptor = {
-                "origin_format": 0,
-                "storage_format": 4,
-                "base_shape": list(logical_shape),
-                "storage_shape": list(packed_host.shape),
-                "physical_bytes": int(packed_host.nbytes),
-            }
-            if descriptor != expected_descriptor:
-                raise RuntimeError(
-                    "grouped-FZ descriptor changed while binding Parameter: "
-                    f"actual={descriptor} expected={expected_descriptor}"
+                logical_shape = tuple(
+                    int(value) for value in convolution.weight.shape
                 )
-            convolution.weight = parameter
-            rows.append(
-                {
-                    "module": (
-                        f"layers.{stage_index}.blocks.{block_index}."
-                        f"modulation.focal_layers.{focal_index}.0"
-                    ),
-                    "groups": channels,
-                    "kernel": list(kernel),
-                    "descriptor": descriptor,
+                host_weight = np.ascontiguousarray(
+                    convolution.weight.detach().to(device="cpu").numpy()
+                )
+                packed_host = pack_grouped_fz_host(
+                    host_weight, groups=channels
+                )
+                packed_storage = torch.from_numpy(packed_host).to(
+                    device=convolution.weight.device
+                )
+                wrapped = bridge.wrap_grouped_fz(
+                    packed_storage,
+                    list(logical_shape),
+                    channels,
+                )
+                parameter = nn.Parameter(wrapped, requires_grad=False)
+                origin_format, storage_format, base_shape, storage_shape = (
+                    bridge.describe_npu_storage(parameter)
+                )
+                descriptor = {
+                    "origin_format": int(origin_format),
+                    "storage_format": int(storage_format),
+                    "base_shape": [int(value) for value in base_shape],
+                    "storage_shape": [int(value) for value in storage_shape],
+                    "physical_bytes": int(packed_host.nbytes),
                 }
-            )
+                expected_descriptor = {
+                    "origin_format": 0,
+                    "storage_format": 4,
+                    "base_shape": list(logical_shape),
+                    "storage_shape": list(packed_host.shape),
+                    "physical_bytes": int(packed_host.nbytes),
+                }
+                if descriptor != expected_descriptor:
+                    raise RuntimeError(
+                        "grouped-FZ descriptor changed while binding Parameter: "
+                        f"actual={descriptor} expected={expected_descriptor}"
+                    )
+                convolution.weight = parameter
+                rows.append(
+                    {
+                        "module": (
+                            f"layers.{stage_index}.blocks.{block_index}."
+                            f"modulation.focal_layers.{focal_index}.0"
+                        ),
+                        "stage": stage_index,
+                        "groups": channels,
+                        "kernel": list(kernel),
+                        "descriptor": descriptor,
+                    }
+                )
 
-    if len(rows) != 9:
+    signature_counts: dict[str, int] = {}
+    for row in rows:
+        descriptor = row["descriptor"]
+        key = (
+            f"{descriptor['base_shape']}->{descriptor['storage_shape']}"
+        )
+        signature_counts[key] = signature_counts.get(key, 0) + 1
+    expected_signature_counts = {
+        "[384, 1, 5, 5]->[600, 1, 16, 16]": 9,
+        "[384, 1, 7, 7]->[1176, 1, 16, 16]": 9,
+        "[768, 1, 5, 5]->[1200, 1, 16, 16]": 2,
+        "[768, 1, 7, 7]->[2352, 1, 16, 16]": 2,
+    }
+    if signature_counts != expected_signature_counts:
         raise RuntimeError(
-            f"expected nine stage-2 7x7 focal weights, rewrote {len(rows)}"
+            "unexpected stage-2/3 grouped-FZ rewrite inventory: "
+            f"actual={signature_counts} expected={expected_signature_counts}"
         )
     return {
-        "requested": "eager_stage2_7x7_grouped_fz",
+        "requested": "eager_stage23_5x5_7x7_grouped_fz",
         "rewritten_count": len(rows),
+        "signature_counts": signature_counts,
         "extension_build_s": extension_build_s,
         "physical_bytes": sum(
             int(row["descriptor"]["physical_bytes"]) for row in rows
