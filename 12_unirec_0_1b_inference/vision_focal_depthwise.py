@@ -142,7 +142,6 @@ def rewrite_eager_stage2_7x7_grouped_fz(
     vision_encoder: nn.Module,
 ) -> dict[str, Any]:
     """Prepack the nine stage-2 384-channel 7x7 focal weights for eager NPU."""
-    torch.npu.config.allow_internal_format = True
     bridge, extension_build_s = _load_eager_grouped_fz_bridge()
     rows: list[dict[str, Any]] = []
     stage_index = 2
