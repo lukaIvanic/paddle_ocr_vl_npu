@@ -219,7 +219,8 @@ def _difference(left: torch.Tensor, right: torch.Tensor) -> dict[str, Any]:
 
 
 def _compact_comparison_reference(report: dict[str, Any]) -> dict[str, Any]:
-    kernel = report["parsed_profile"]["summary"]["runs"][0]["kernel_details"]
+    parsed_run = report["parsed_profile"]["summary"]["runs"][0]
+    kernel = parsed_run["kernel_details"]
     row_fields = ("name", "count", "duration_us")
 
     def compact_rows(name: str) -> list[dict[str, Any]]:
@@ -257,7 +258,21 @@ def _compact_comparison_reference(report: dict[str, Any]) -> dict[str, Any]:
         "correctness": report["correctness"],
         "profile_metric": report["profile_metric"],
         "parsed_profile": {
-            "summary": {"runs": [{"kernel_details": compact_kernel}]}
+            "summary": {
+                "runs": [
+                    {
+                        "step_trace_time": {
+                            "row_count": parsed_run["step_trace_time"][
+                                "row_count"
+                            ],
+                            "totals_us": parsed_run["step_trace_time"][
+                                "totals_us"
+                            ],
+                        },
+                        "kernel_details": compact_kernel,
+                    }
+                ]
+            }
         },
     }
 

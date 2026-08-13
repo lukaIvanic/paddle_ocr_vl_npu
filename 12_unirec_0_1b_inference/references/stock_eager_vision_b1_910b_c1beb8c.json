@@ -1,0 +1,1096 @@
+{
+  "status": "ok",
+  "device_name": "Ascend910B2",
+  "dtype": "float16",
+  "npu_jit_compile": false,
+  "input_shape": [
+    1,
+    3,
+    64,
+    960
+  ],
+  "execution": "stock_eager_model_forward_encoder",
+  "control_before": {
+    "device_event": {
+      "samples_ms": [
+        20.627939224243164,
+        20.78455924987793,
+        20.733779907226562,
+        20.640640258789062,
+        20.630720138549805,
+        20.550640106201172,
+        19.76609992980957,
+        19.709440231323242,
+        19.792940139770508,
+        19.764720916748047,
+        19.844619750976562,
+        19.7189998626709,
+        19.770000457763672,
+        19.827980041503906,
+        19.793399810791016,
+        19.672019958496094,
+        19.732460021972656,
+        19.691959381103516,
+        19.84748077392578,
+        19.8022403717041
+      ],
+      "min_ms": 19.672019958496094,
+      "median_ms": 19.79782009124756,
+      "mean_ms": 20.035132026672365,
+      "p90_ms": 20.649954223632815,
+      "max_ms": 20.78455924987793
+    },
+    "synchronized_wall": {
+      "samples_ms": [
+        21.694119088351727,
+        21.0000267252326,
+        20.922685973346233,
+        20.775463432073593,
+        20.76732274144888,
+        20.68494213744998,
+        19.903038162738085,
+        19.85206687822938,
+        19.943168852478266,
+        19.89602902904153,
+        19.977059215307236,
+        19.864697940647602,
+        19.916777964681387,
+        19.97501915320754,
+        19.943679217249155,
+        19.82798706740141,
+        19.885267596691847,
+        19.938618876039982,
+        20.003119949251413,
+        19.954708870500326
+      ],
+      "min_ms": 19.82798706740141,
+      "median_ms": 19.94919404387474,
+      "mean_ms": 20.23628994356841,
+      "p90_ms": 20.93042004853487,
+      "max_ms": 21.694119088351727
+    }
+  },
+  "profile_timing": {
+    "device_event_ms": 28.7916202545166,
+    "synchronized_forward_wall_ms": 29.18326621875167,
+    "profile_context_wall_s": 4.882282176986337
+  },
+  "control_after": {
+    "device_event": {
+      "samples_ms": [
+        22.538700103759766,
+        19.723440170288086,
+        19.48908042907715,
+        19.457500457763672,
+        19.78577995300293,
+        19.94342041015625,
+        19.702579498291016,
+        20.936800003051758,
+        19.854000091552734,
+        19.504060745239258,
+        19.563539505004883,
+        19.481380462646484,
+        19.36591911315918,
+        18.309419631958008,
+        18.41309928894043,
+        18.366939544677734,
+        18.40519905090332,
+        18.29167938232422,
+        19.434040069580078,
+        18.65846061706543
+      ],
+      "min_ms": 18.29167938232422,
+      "median_ms": 19.485230445861816,
+      "mean_ms": 19.46125192642212,
+      "p90_ms": 20.042758369445803,
+      "max_ms": 22.538700103759766
+    },
+    "synchronized_wall": {
+      "samples_ms": [
+        22.96620002016425,
+        19.892727956175804,
+        19.644163083285093,
+        19.623163621872663,
+        19.940469413995743,
+        20.098462235182524,
+        19.86905699595809,
+        21.094997879117727,
+        20.015530288219452,
+        19.676114898175,
+        19.7204751893878,
+        19.648924004286528,
+        19.55234305933118,
+        18.485893961042166,
+        18.589285667985678,
+        18.547894898802042,
+        18.5989155434072,
+        18.468213267624378,
+        21.12246910110116,
+        18.841079901903868
+      ],
+      "min_ms": 18.468213267624378,
+      "median_ms": 19.662519451230764,
+      "mean_ms": 19.719819049350917,
+      "p90_ms": 21.09774500131607,
+      "max_ms": 22.96620002016425
+    }
+  },
+  "profiler_overhead": {
+    "profiled_event_vs_control_before": 1.4542823463298933,
+    "profiled_event_vs_combined_control": 1.4658546045103156,
+    "control_after_vs_before": 0.9842109058499862
+  },
+  "correctness": {
+    "profiled_vs_control_before": {
+      "allclose_atol_5e_2_rtol_5e_2": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0
+    },
+    "control_after_vs_control_before": {
+      "allclose_atol_5e_2_rtol_5e_2": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0
+    }
+  },
+  "profile_metric": "pipe",
+  "parsed_profile": {
+    "summary": {
+      "runs": [
+        {
+          "step_trace_time": {
+            "row_count": 1,
+            "totals_us": {
+              "Bubble": 0.0,
+              "Communication": 0.0,
+              "Communication(Not Overlapped and Exclude Receive)": 0.0,
+              "Communication(Not Overlapped)": 0.0,
+              "Computing": 10138.919999999996,
+              "Free": 18652.74000000019,
+              "Overlapped": 0.0,
+              "Preparing": 847.75,
+              "Stage": 28791.5
+            }
+          },
+          "kernel_details": {
+            "row_count": 895,
+            "total_duration_us": 10138.919999999996,
+            "weighted_cube_utilization_pct": 74.40340313771067,
+            "top_kernel_types": [
+              {
+                "name": "TransData",
+                "count": 240,
+                "duration_us": 4614.139999999999
+              },
+              {
+                "name": "MemSet",
+                "count": 110,
+                "duration_us": 954.9399999999996
+              },
+              {
+                "name": "Mul",
+                "count": 75,
+                "duration_us": 827.0600000000001
+              },
+              {
+                "name": "Transpose",
+                "count": 38,
+                "duration_us": 598.5200000000001
+              },
+              {
+                "name": "Add",
+                "count": 90,
+                "duration_us": 584.52
+              },
+              {
+                "name": "Gelu",
+                "count": 77,
+                "duration_us": 543.8000000000003
+              },
+              {
+                "name": "MatMulV2",
+                "count": 61,
+                "duration_us": 521.46
+              },
+              {
+                "name": "Conv2D",
+                "count": 65,
+                "duration_us": 511.1400000000001
+              },
+              {
+                "name": "LayerNormV3",
+                "count": 33,
+                "duration_us": 505.78
+              },
+              {
+                "name": "ReduceMean",
+                "count": 30,
+                "duration_us": 339.82000000000005
+              },
+              {
+                "name": "Cast",
+                "count": 74,
+                "duration_us": 100.79999999999998
+              },
+              {
+                "name": "BNInfer",
+                "count": 2,
+                "duration_us": 36.94
+              }
+            ],
+            "top_shape_signatures": [
+              {
+                "name": "MemSet | N/A -> N/A",
+                "count": 110,
+                "duration_us": 954.9399999999996
+              },
+              {
+                "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\"",
+                "count": 9,
+                "duration_us": 795.6200000000001
+              },
+              {
+                "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\"",
+                "count": 9,
+                "duration_us": 465.0799999999999
+              },
+              {
+                "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\"",
+                "count": 2,
+                "duration_us": 338.52
+              },
+              {
+                "name": "LayerNormV3 | \"1,240,384;384;384\" -> \"1,240,384;1,240,1;1,240,1\"",
+                "count": 19,
+                "duration_us": 290.31999999999994
+              },
+              {
+                "name": "Mul | \"1,384,4,60;1,1,4,60\" -> \"1,384,4,60\"",
+                "count": 27,
+                "duration_us": 288.44
+              },
+              {
+                "name": "TransData | \"1,384,4,60\" -> \"1,24,4,60,16\"",
+                "count": 37,
+                "duration_us": 287.08
+              },
+              {
+                "name": "TransData | \"1,24,4,60,16\" -> \"1,384,4,60\"",
+                "count": 37,
+                "duration_us": 272.55999999999995
+              },
+              {
+                "name": "TransData | \"9,24,16,16\" -> \"216,1,16,16\"",
+                "count": 9,
+                "duration_us": 268.5
+              },
+              {
+                "name": "TransData | \"384,1,7,7\" -> \"49,24,16,16\"",
+                "count": 9,
+                "duration_us": 238.32
+              },
+              {
+                "name": "Gelu | \"1,384,4,60\" -> \"1,384,4,60\"",
+                "count": 27,
+                "duration_us": 211.99999999999997
+              },
+              {
+                "name": "TransData | \"25,48,16,16\" -> \"1200,1,16,16\"",
+                "count": 2,
+                "duration_us": 189.62
+              },
+              {
+                "name": "Add | \"1,384,4,60;1,384,4,60\" -> \"1,384,4,60\"",
+                "count": 27,
+                "duration_us": 181.28
+              },
+              {
+                "name": "Transpose | \"4,60,772;3\" -> \"772,4,60\"",
+                "count": 9,
+                "duration_us": 166.20000000000002
+              },
+              {
+                "name": "TransData | \"1,48,2,30,16\" -> \"1,768,2,30\"",
+                "count": 9,
+                "duration_us": 162.84
+              },
+              {
+                "name": "TransData | \"1,768,2,30\" -> \"1,48,2,30,16\"",
+                "count": 8,
+                "duration_us": 153.72
+              },
+              {
+                "name": "Mul | \"1,384,1,1;1,1,4,60\" -> \"1,384,4,60\"",
+                "count": 9,
+                "duration_us": 152.6
+              },
+              {
+                "name": "Add | \"1,240,384;1,240,384\" -> \"1,240,384\"",
+                "count": 18,
+                "duration_us": 123.74000000000001
+              },
+              {
+                "name": "ReduceMean | \"1,384,4,60;1\" -> \"1,384,1,60\"",
+                "count": 9,
+                "duration_us": 118.89999999999999
+              },
+              {
+                "name": "Transpose | \"384,4,60;3\" -> \"4,60,384\"",
+                "count": 9,
+                "duration_us": 118.12
+              },
+              {
+                "name": "TransData | \"1,96,16,240\" -> \"1,6,16,240,16\"",
+                "count": 9,
+                "duration_us": 109.64000000000001
+              },
+              {
+                "name": "TransData | \"49,12,16,16\" -> \"588,1,16,16\"",
+                "count": 2,
+                "duration_us": 102.68
+              },
+              {
+                "name": "TransData | \"384,384,1,1\" -> \"24,24,16,16\"",
+                "count": 9,
+                "duration_us": 99.83999999999999
+              },
+              {
+                "name": "TransData | \"9,48,16,16\" -> \"432,1,16,16\"",
+                "count": 2,
+                "duration_us": 89.96000000000001
+              },
+              {
+                "name": "TransData | \"1,6,16,240,16\" -> \"1,96,16,240\"",
+                "count": 9,
+                "duration_us": 86.35999999999999
+              },
+              {
+                "name": "TransData | \"384,1,3,3\" -> \"9,24,16,16\"",
+                "count": 9,
+                "duration_us": 83.88000000000001
+              },
+              {
+                "name": "MatMulV2 | \"240,384;1536,384;1536\" -> \"240,1536\"",
+                "count": 9,
+                "duration_us": 82.84
+              },
+              {
+                "name": "LayerNormV3 | \"1,3840,96;96;96\" -> \"1,3840,96;1,3840,1;1,3840,1\"",
+                "count": 4,
+                "duration_us": 81.22
+              },
+              {
+                "name": "Gelu | \"1,240,1536\" -> \"1,240,1536\"",
+                "count": 9,
+                "duration_us": 77.94
+              },
+              {
+                "name": "LayerNormV3 | \"1,960,192;192;192\" -> \"1,960,192;1,960,1;1,960,1\"",
+                "count": 5,
+                "duration_us": 76.84
+              },
+              {
+                "name": "MatMulV2 | \"240,384;772,384;772\" -> \"240,772\"",
+                "count": 9,
+                "duration_us": 75.08
+              },
+              {
+                "name": "TransData | \"384,1,5,5\" -> \"25,24,16,16\"",
+                "count": 9,
+                "duration_us": 74.99999999999999
+              },
+              {
+                "name": "MatMulV2 | \"240,1536;384,1536;384\" -> \"240,384\"",
+                "count": 9,
+                "duration_us": 71.89999999999999
+              },
+              {
+                "name": "ReduceMean | \"1,384,1,60;1\" -> \"1,384,1,1\"",
+                "count": 9,
+                "duration_us": 71.53999999999999
+              },
+              {
+                "name": "Conv2D | \"1,24,4,60,16;1176,1,16,16\" -> \"1,24,4,60,16\"",
+                "count": 9,
+                "duration_us": 71.5
+              },
+              {
+                "name": "Conv2D | \"1,24,4,60,16;24,24,16,16;384\" -> \"1,24,4,60,16\"",
+                "count": 9,
+                "duration_us": 71.16
+              },
+              {
+                "name": "Gelu | \"1,96,16,240\" -> \"1,96,16,240\"",
+                "count": 7,
+                "duration_us": 65.32
+              },
+              {
+                "name": "Mul | \"1,96,16,240;1,1,16,240\" -> \"1,96,16,240\"",
+                "count": 6,
+                "duration_us": 65.06
+              },
+              {
+                "name": "Add | \"1,384,4,60;\" -> \"1,384,4,60\"",
+                "count": 9,
+                "duration_us": 63.900000000000006
+              },
+              {
+                "name": "Mul | \"1,384,4,60;1,384,4,60\" -> \"1,384,4,60\"",
+                "count": 9,
+                "duration_us": 62.26
+              },
+              {
+                "name": "TransData | \"49,6,16,16\" -> \"294,1,16,16\"",
+                "count": 2,
+                "duration_us": 62.019999999999996
+              },
+              {
+                "name": "Conv2D | \"1,24,4,60,16;600,1,16,16\" -> \"1,24,4,60,16\"",
+                "count": 9,
+                "duration_us": 61.9
+              },
+              {
+                "name": "TransData | \"25,12,16,16\" -> \"300,1,16,16\"",
+                "count": 2,
+                "duration_us": 60.400000000000006
+              },
+              {
+                "name": "Mul | \"1,192,8,120;1,1,8,120\" -> \"1,192,8,120\"",
+                "count": 6,
+                "duration_us": 59.96
+              },
+              {
+                "name": "Conv2D | \"1,24,4,60,16;216,1,16,16\" -> \"1,24,4,60,16\"",
+                "count": 9,
+                "duration_us": 58.019999999999996
+              },
+              {
+                "name": "Mul | \"1,768,2,30;1,1,2,30\" -> \"1,768,2,30\"",
+                "count": 6,
+                "duration_us": 57.660000000000004
+              },
+              {
+                "name": "TransData | \"1,192,8,120\" -> \"1,12,8,120,16\"",
+                "count": 9,
+                "duration_us": 57.5
+              },
+              {
+                "name": "LayerNormV3 | \"1,60,768;768;768\" -> \"1,60,768;1,60,1;1,60,1\"",
+                "count": 5,
+                "duration_us": 57.39999999999999
+              },
+              {
+                "name": "TransData | \"1,12,8,120,16\" -> \"1,192,8,120\"",
+                "count": 9,
+                "duration_us": 57.14
+              },
+              {
+                "name": "Gelu | \"1,192,8,120\" -> \"1,192,8,120\"",
+                "count": 6,
+                "duration_us": 52.92
+              },
+              {
+                "name": "TransData | \"768,1,7,7\" -> \"49,48,16,16\"",
+                "count": 2,
+                "duration_us": 52.32
+              },
+              {
+                "name": "Cast | \"1,240,1\" -> \"1,240,1\"",
+                "count": 38,
+                "duration_us": 52.10000000000001
+              },
+              {
+                "name": "MatMulV2 | \"240,384;384,384;384\" -> \"240,384\"",
+                "count": 9,
+                "duration_us": 50.94
+              },
+              {
+                "name": "TransData | \"9,12,16,16\" -> \"108,1,16,16\"",
+                "count": 2,
+                "duration_us": 46.68
+              },
+              {
+                "name": "TransData | \"25,6,16,16\" -> \"150,1,16,16\"",
+                "count": 2,
+                "duration_us": 46.16
+              },
+              {
+                "name": "TransData | \"192,1,7,7\" -> \"49,12,16,16\"",
+                "count": 2,
+                "duration_us": 45.98
+              },
+              {
+                "name": "TransData | \"96,1,7,7\" -> \"49,6,16,16\"",
+                "count": 2,
+                "duration_us": 45.18
+              },
+              {
+                "name": "Add | \"1,192,8,120;1,192,8,120\" -> \"1,192,8,120\"",
+                "count": 6,
+                "duration_us": 45.02
+              },
+              {
+                "name": "Add | \"1,96,16,240;1,96,16,240\" -> \"1,96,16,240\"",
+                "count": 6,
+                "duration_us": 45.0
+              },
+              {
+                "name": "Gelu | \"1,768,2,30\" -> \"1,768,2,30\"",
+                "count": 6,
+                "duration_us": 43.56
+              },
+              {
+                "name": "Transpose | \"16,240,196;3\" -> \"196,16,240\"",
+                "count": 2,
+                "duration_us": 39.379999999999995
+              },
+              {
+                "name": "TransData | \"9,6,16,16\" -> \"54,1,16,16\"",
+                "count": 2,
+                "duration_us": 38.36
+              },
+              {
+                "name": "Mul | \"1,96,1,1;1,1,16,240\" -> \"1,96,16,240\"",
+                "count": 2,
+                "duration_us": 34.86
+              },
+              {
+                "name": "Mul | \"1,192,1,1;1,1,8,120\" -> \"1,192,8,120\"",
+                "count": 2,
+                "duration_us": 34.66
+              },
+              {
+                "name": "Mul | \"1,768,1,1;1,1,2,30\" -> \"1,768,2,30\"",
+                "count": 2,
+                "duration_us": 33.64
+              },
+              {
+                "name": "Transpose | \"96,16,240;3\" -> \"16,240,96\"",
+                "count": 2,
+                "duration_us": 33.379999999999995
+              },
+              {
+                "name": "Transpose | \"8,120,388;3\" -> \"388,8,120\"",
+                "count": 2,
+                "duration_us": 32.160000000000004
+              },
+              {
+                "name": "Transpose | \"768,2,30;3\" -> \"2,30,768\"",
+                "count": 2,
+                "duration_us": 31.200000000000003
+              },
+              {
+                "name": "TransData | \"768,768,1,1\" -> \"48,48,16,16\"",
+                "count": 2,
+                "duration_us": 29.759999999999998
+              },
+              {
+                "name": "ReduceMean | \"1,768,2,30;1\" -> \"1,768,1,30\"",
+                "count": 2,
+                "duration_us": 29.259999999999998
+              },
+              {
+                "name": "ReduceMean | \"1,192,8,120;1\" -> \"1,192,1,120\"",
+                "count": 2,
+                "duration_us": 28.66
+              },
+              {
+                "name": "Transpose | \"96,3840;2\" -> \"3840,96\"",
+                "count": 2,
+                "duration_us": 28.52
+              },
+              {
+                "name": "ReduceMean | \"1,96,1,240;1\" -> \"1,96,1,1\"",
+                "count": 2,
+                "duration_us": 28.240000000000002
+              },
+              {
+                "name": "Transpose | \"2,30,1540;3\" -> \"1540,2,30\"",
+                "count": 2,
+                "duration_us": 27.58
+              },
+              {
+                "name": "MatMulV2 | \"3840,96;384,96;384\" -> \"3840,384\"",
+                "count": 2,
+                "duration_us": 27.3
+              },
+              {
+                "name": "Transpose | \"192,8,120;3\" -> \"8,120,192\"",
+                "count": 2,
+                "duration_us": 27.22
+              },
+              {
+                "name": "Add | \"1,960,192;1,960,192\" -> \"1,960,192\"",
+                "count": 4,
+                "duration_us": 26.42
+              },
+              {
+                "name": "MatMulV2 | \"60,3072;768,3072;768\" -> \"60,768\"",
+                "count": 2,
+                "duration_us": 25.96
+              },
+              {
+                "name": "ReduceMean | \"1,96,16,240;1\" -> \"1,96,1,240\"",
+                "count": 2,
+                "duration_us": 25.82
+              },
+              {
+                "name": "ReduceMean | \"1,768,1,30;1\" -> \"1,768,1,1\"",
+                "count": 2,
+                "duration_us": 25.82
+              },
+              {
+                "name": "MatMulV2 | \"960,192;768,192;768\" -> \"960,768\"",
+                "count": 2,
+                "duration_us": 25.2
+              },
+              {
+                "name": "Add | \"1,768,2,30;1,768,2,30\" -> \"1,768,2,30\"",
+                "count": 6,
+                "duration_us": 24.439999999999998
+              },
+              {
+                "name": "Gelu | \"1,3840,384\" -> \"1,3840,384\"",
+                "count": 2,
+                "duration_us": 23.96
+              },
+              {
+                "name": "TransData | \"768,1,3,3\" -> \"9,48,16,16\"",
+                "count": 2,
+                "duration_us": 23.88
+              },
+              {
+                "name": "TransData | \"768,1,5,5\" -> \"25,48,16,16\"",
+                "count": 2,
+                "duration_us": 23.68
+              },
+              {
+                "name": "MatMulV2 | \"3840,96;196,96;196\" -> \"3840,196\"",
+                "count": 2,
+                "duration_us": 23.02
+              },
+              {
+                "name": "MatMulV2 | \"60,768;768,768;768\" -> \"60,768\"",
+                "count": 3,
+                "duration_us": 23.0
+              },
+              {
+                "name": "TransData | \"96,1,3,3\" -> \"9,6,16,16\"",
+                "count": 2,
+                "duration_us": 22.4
+              },
+              {
+                "name": "BNInfer | \"1,48,32,480;1,48,1,1;1,48,1,1;1,48,1,1;1,48,1,1\" -> \"1,48,32,480\"",
+                "count": 1,
+                "duration_us": 21.62
+              },
+              {
+                "name": "Add | \"1,3840,96;1,3840,96\" -> \"1,3840,96\"",
+                "count": 4,
+                "duration_us": 21.6
+              },
+              {
+                "name": "Gelu | \"1,960,768\" -> \"1,960,768\"",
+                "count": 2,
+                "duration_us": 21.52
+              },
+              {
+                "name": "TransData | \"768,384,2,2\" -> \"96,48,16,16\"",
+                "count": 1,
+                "duration_us": 20.8
+              },
+              {
+                "name": "MatMulV2 | \"960,768;192,768;192\" -> \"960,192\"",
+                "count": 2,
+                "duration_us": 20.52
+              },
+              {
+                "name": "Conv2D | \"1,6,16,240,16;294,1,16,16\" -> \"1,6,16,240,16\"",
+                "count": 2,
+                "duration_us": 19.7
+              },
+              {
+                "name": "Conv2D | \"1,12,8,120,16;108,1,16,16\" -> \"1,12,8,120,16\"",
+                "count": 2,
+                "duration_us": 18.96
+              },
+              {
+                "name": "Conv2D | \"1,48,2,30,16;48,48,16,16;768\" -> \"1,48,2,30,16\"",
+                "count": 2,
+                "duration_us": 18.72
+              },
+              {
+                "name": "Transpose | \"768,60;2\" -> \"60,768\"",
+                "count": 1,
+                "duration_us": 18.7
+              },
+              {
+                "name": "MatMulV2 | \"3840,384;96,384;96\" -> \"3840,96\"",
+                "count": 2,
+                "duration_us": 18.259999999999998
+              },
+              {
+                "name": "TransData | \"96,1,5,5\" -> \"25,6,16,16\"",
+                "count": 2,
+                "duration_us": 18.24
+              },
+              {
+                "name": "TransData | \"192,192,1,1\" -> \"12,12,16,16\"",
+                "count": 2,
+                "duration_us": 18.119999999999997
+              }
+            ],
+            "top_matmul_shape_signatures": [
+              {
+                "name": "MatMulV2 | \"240,384;1536,384;1536\" -> \"240,1536\" | ND;ND;ND -> ND",
+                "count": 9,
+                "duration_us": 82.84
+              },
+              {
+                "name": "MatMulV2 | \"240,384;772,384;772\" -> \"240,772\" | ND;ND;ND -> ND",
+                "count": 9,
+                "duration_us": 75.08
+              },
+              {
+                "name": "MatMulV2 | \"240,1536;384,1536;384\" -> \"240,384\" | ND;ND;ND -> ND",
+                "count": 9,
+                "duration_us": 71.89999999999999
+              },
+              {
+                "name": "MatMulV2 | \"240,384;384,384;384\" -> \"240,384\" | ND;ND;ND -> ND",
+                "count": 9,
+                "duration_us": 50.94
+              },
+              {
+                "name": "MatMulV2 | \"3840,96;384,96;384\" -> \"3840,384\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 27.3
+              },
+              {
+                "name": "MatMulV2 | \"60,3072;768,3072;768\" -> \"60,768\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 25.96
+              },
+              {
+                "name": "MatMulV2 | \"960,192;768,192;768\" -> \"960,768\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 25.2
+              },
+              {
+                "name": "MatMulV2 | \"3840,96;196,96;196\" -> \"3840,196\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 23.02
+              },
+              {
+                "name": "MatMulV2 | \"60,768;768,768;768\" -> \"60,768\" | ND;ND;ND -> ND",
+                "count": 3,
+                "duration_us": 23.0
+              },
+              {
+                "name": "MatMulV2 | \"960,768;192,768;192\" -> \"960,192\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 20.52
+              },
+              {
+                "name": "MatMulV2 | \"3840,384;96,384;96\" -> \"3840,96\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 18.259999999999998
+              },
+              {
+                "name": "MatMulV2 | \"960,192;388,192;388\" -> \"960,388\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 17.759999999999998
+              },
+              {
+                "name": "MatMulV2 | \"60,768;1540,768;1540\" -> \"60,1540\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 15.9
+              },
+              {
+                "name": "MatMulV2 | \"60,768;3072,768;3072\" -> \"60,3072\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 15.440000000000001
+              },
+              {
+                "name": "MatMulV2 | \"960,192;192,192;192\" -> \"960,192\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 14.219999999999999
+              },
+              {
+                "name": "MatMulV2 | \"3840,96;96,96;96\" -> \"3840,96\" | ND;ND;ND -> ND",
+                "count": 2,
+                "duration_us": 14.12
+              }
+            ],
+            "top_transdata_shape_signatures": [
+              {
+                "name": "MemSet | N/A -> N/A | N/A -> N/A",
+                "count": 110,
+                "duration_us": 954.9399999999996
+              },
+              {
+                "name": "TransData | \"49,24,16,16\" -> \"1176,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:384",
+                "count": 9,
+                "duration_us": 795.6200000000001
+              },
+              {
+                "name": "TransData | \"25,24,16,16\" -> \"600,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:384",
+                "count": 9,
+                "duration_us": 465.0799999999999
+              },
+              {
+                "name": "TransData | \"49,48,16,16\" -> \"2352,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:768",
+                "count": 2,
+                "duration_us": 338.52
+              },
+              {
+                "name": "TransData | \"9,24,16,16\" -> \"216,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:384",
+                "count": 9,
+                "duration_us": 268.5
+              },
+              {
+                "name": "TransData | \"384,1,7,7\" -> \"49,24,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 9,
+                "duration_us": 238.32
+              },
+              {
+                "name": "TransData | \"1,384,4,60\" -> \"1,24,4,60,16\" | NCHW -> NC1HWC0:384",
+                "count": 27,
+                "duration_us": 209.08000000000004
+              },
+              {
+                "name": "TransData | \"1,24,4,60,16\" -> \"1,384,4,60\" | NC1HWC0:384 -> NCHW",
+                "count": 27,
+                "duration_us": 191.11999999999998
+              },
+              {
+                "name": "TransData | \"25,48,16,16\" -> \"1200,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:768",
+                "count": 2,
+                "duration_us": 189.62
+              },
+              {
+                "name": "TransData | \"1,768,2,30\" -> \"1,48,2,30,16\" | NCHW -> NC1HWC0:768",
+                "count": 6,
+                "duration_us": 115.1
+              },
+              {
+                "name": "TransData | \"1,48,2,30,16\" -> \"1,768,2,30\" | NC1HWC0:768 -> NCHW",
+                "count": 6,
+                "duration_us": 108.66
+              },
+              {
+                "name": "TransData | \"49,12,16,16\" -> \"588,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:192",
+                "count": 2,
+                "duration_us": 102.68
+              },
+              {
+                "name": "TransData | \"384,384,1,1\" -> \"24,24,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 9,
+                "duration_us": 99.83999999999999
+              },
+              {
+                "name": "TransData | \"9,48,16,16\" -> \"432,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:768",
+                "count": 2,
+                "duration_us": 89.96000000000001
+              },
+              {
+                "name": "TransData | \"384,1,3,3\" -> \"9,24,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 9,
+                "duration_us": 83.88000000000001
+              },
+              {
+                "name": "TransData | \"1,24,4,60,16\" -> \"1,384,4,60\" | NC1HWC0:1 -> NCHW",
+                "count": 10,
+                "duration_us": 81.44
+              },
+              {
+                "name": "TransData | \"1,384,4,60\" -> \"1,24,4,60,16\" | NCHW -> NC1HWC0:1",
+                "count": 10,
+                "duration_us": 78.0
+              },
+              {
+                "name": "TransData | \"384,1,5,5\" -> \"25,24,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 9,
+                "duration_us": 74.99999999999999
+              },
+              {
+                "name": "TransData | \"1,96,16,240\" -> \"1,6,16,240,16\" | NCHW -> NC1HWC0:96",
+                "count": 6,
+                "duration_us": 68.98
+              },
+              {
+                "name": "TransData | \"49,6,16,16\" -> \"294,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:96",
+                "count": 2,
+                "duration_us": 62.019999999999996
+              },
+              {
+                "name": "TransData | \"25,12,16,16\" -> \"300,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:192",
+                "count": 2,
+                "duration_us": 60.400000000000006
+              },
+              {
+                "name": "TransData | \"1,6,16,240,16\" -> \"1,96,16,240\" | NC1HWC0:96 -> NCHW",
+                "count": 6,
+                "duration_us": 57.02000000000001
+              },
+              {
+                "name": "TransData | \"1,48,2,30,16\" -> \"1,768,2,30\" | NC1HWC0:1 -> NCHW",
+                "count": 3,
+                "duration_us": 54.17999999999999
+              },
+              {
+                "name": "TransData | \"768,1,7,7\" -> \"49,48,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 52.32
+              },
+              {
+                "name": "TransData | \"9,12,16,16\" -> \"108,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:192",
+                "count": 2,
+                "duration_us": 46.68
+              },
+              {
+                "name": "TransData | \"25,6,16,16\" -> \"150,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:96",
+                "count": 2,
+                "duration_us": 46.16
+              },
+              {
+                "name": "TransData | \"192,1,7,7\" -> \"49,12,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 45.98
+              },
+              {
+                "name": "TransData | \"96,1,7,7\" -> \"49,6,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 45.18
+              },
+              {
+                "name": "TransData | \"1,96,16,240\" -> \"1,6,16,240,16\" | NCHW -> NC1HWC0:1",
+                "count": 3,
+                "duration_us": 40.66
+              },
+              {
+                "name": "TransData | \"1,768,2,30\" -> \"1,48,2,30,16\" | NCHW -> NC1HWC0:1",
+                "count": 2,
+                "duration_us": 38.620000000000005
+              },
+              {
+                "name": "TransData | \"9,6,16,16\" -> \"54,1,16,16\" | FRACTAL_Z:1 -> FRACTAL_Z:96",
+                "count": 2,
+                "duration_us": 38.36
+              },
+              {
+                "name": "TransData | \"1,12,8,120,16\" -> \"1,192,8,120\" | NC1HWC0:192 -> NCHW",
+                "count": 6,
+                "duration_us": 37.620000000000005
+              },
+              {
+                "name": "TransData | \"1,192,8,120\" -> \"1,12,8,120,16\" | NCHW -> NC1HWC0:192",
+                "count": 6,
+                "duration_us": 36.5
+              },
+              {
+                "name": "TransData | \"768,768,1,1\" -> \"48,48,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 29.759999999999998
+              },
+              {
+                "name": "TransData | \"1,6,16,240,16\" -> \"1,96,16,240\" | NC1HWC0:1 -> NCHW",
+                "count": 3,
+                "duration_us": 29.34
+              },
+              {
+                "name": "TransData | \"768,1,3,3\" -> \"9,48,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 23.88
+              },
+              {
+                "name": "TransData | \"768,1,5,5\" -> \"25,48,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 23.68
+              },
+              {
+                "name": "TransData | \"96,1,3,3\" -> \"9,6,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 22.4
+              },
+              {
+                "name": "TransData | \"1,192,8,120\" -> \"1,12,8,120,16\" | NCHW -> NC1HWC0:1",
+                "count": 3,
+                "duration_us": 21.0
+              },
+              {
+                "name": "TransData | \"768,384,2,2\" -> \"96,48,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 1,
+                "duration_us": 20.8
+              },
+              {
+                "name": "TransData | \"1,12,8,120,16\" -> \"1,192,8,120\" | NC1HWC0:1 -> NCHW",
+                "count": 3,
+                "duration_us": 19.52
+              },
+              {
+                "name": "TransData | \"96,1,5,5\" -> \"25,6,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 18.24
+              },
+              {
+                "name": "TransData | \"192,192,1,1\" -> \"12,12,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 18.119999999999997
+              },
+              {
+                "name": "TransData | \"192,1,5,5\" -> \"25,12,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 17.78
+              },
+              {
+                "name": "TransData | \"96,96,1,1\" -> \"6,6,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 17.22
+              },
+              {
+                "name": "TransData | \"192,1,3,3\" -> \"9,12,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 2,
+                "duration_us": 17.2
+              },
+              {
+                "name": "TransData | \"1,3,64,960\" -> \"1,1,64,960,16\" | NCHW -> NC1HWC0:1",
+                "count": 1,
+                "duration_us": 14.12
+              },
+              {
+                "name": "TransData | \"384,192,2,2\" -> \"48,24,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 1,
+                "duration_us": 12.12
+              },
+              {
+                "name": "TransData | \"1,48,32,480\" -> \"1,3,32,480,16\" | NCHW -> NC1HWC0:1",
+                "count": 1,
+                "duration_us": 11.44
+              },
+              {
+                "name": "TransData | \"1,3,32,480,16\" -> \"1,48,32,480\" | NC1HWC0:1 -> NCHW",
+                "count": 1,
+                "duration_us": 10.32
+              },
+              {
+                "name": "TransData | \"192,96,2,2\" -> \"24,12,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 1,
+                "duration_us": 9.26
+              },
+              {
+                "name": "TransData | \"48,3,3,3\" -> \"9,3,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 1,
+                "duration_us": 8.48
+              },
+              {
+                "name": "TransData | \"96,48,3,3\" -> \"27,6,16,16\" | NCHW -> FRACTAL_Z:1",
+                "count": 1,
+                "duration_us": 8.36
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

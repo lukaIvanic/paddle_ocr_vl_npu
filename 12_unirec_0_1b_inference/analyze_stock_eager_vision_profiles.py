@@ -29,6 +29,16 @@ def _kernels(report: dict[str, Any]) -> dict[str, Any]:
     return runs[0]["kernel_details"]
 
 
+def _step_totals(report: dict[str, Any]) -> dict[str, float]:
+    runs = report["parsed_profile"]["summary"]["runs"]
+    if len(runs) != 1 or "step_trace_time" not in runs[0]:
+        raise ValueError("expected exactly one parsed step trace")
+    return {
+        str(name): float(value)
+        for name, value in runs[0]["step_trace_time"]["totals_us"].items()
+    }
+
+
 def _mapping(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return {str(row["name"]): row for row in rows}
 
@@ -88,6 +98,8 @@ def main() -> None:
 
     kernels310 = _kernels(npu310)
     kernels910 = _kernels(npu910)
+    steps310 = _step_totals(npu310)
+    steps910 = _step_totals(npu910)
     control310 = float(npu310["control_before"]["device_event"]["median_ms"])
     control910 = float(npu910["control_before"]["device_event"]["median_ms"])
     report = {
@@ -121,6 +133,19 @@ def main() -> None:
                 kernels910["weighted_cube_utilization_pct"]
             ),
         },
+        "step_trace_comparison": {
+            name: {
+                "npu310_us": float(steps310.get(name, 0.0)),
+                "npu910_us": float(steps910.get(name, 0.0)),
+                "ratio_310_over_910": (
+                    float(steps310.get(name, 0.0))
+                    / float(steps910.get(name, 0.0))
+                    if float(steps910.get(name, 0.0)) > 0.0
+                    else None
+                ),
+            }
+            for name in sorted(steps310.keys() | steps910.keys())
+        },
         "kernel_type_gaps": _compare_rows(
             kernels310["top_kernel_types"],
             kernels910["top_kernel_types"],
@@ -150,9 +175,24 @@ def main() -> None:
         f"control_ratio={report['control_before_median_ms']['ratio_310_over_910']:.3f} "
         f"kernel_ratio={report['kernel_totals']['duration_ratio_310_over_910']:.3f} "
         f"kernel_counts={report['kernel_totals']['npu310_count']}/{report['kernel_totals']['npu910_count']} "
-        f"cube_pct={report['kernel_totals']['npu310_cube_pct']:.2f}/{report['kernel_totals']['npu910_cube_pct']:.2f}",
+        f"cube_pct={report['kernel_totals']['npu310_cube_pct']:.2f}/{report['kernel_totals']['npu910_cube_pct']:.2f} "
+        f"profile_overhead={npu310['profiler_overhead']['profiled_event_vs_combined_control']:.3f}/{npu910['profiler_overhead']['profiled_event_vs_combined_control']:.3f} "
+        f"post_profile_ratio={npu310['profiler_overhead']['control_after_vs_before']:.3f}/{npu910['profiler_overhead']['control_after_vs_before']:.3f}",
         flush=True,
     )
+    for name in ("Stage", "Computing", "Free", "Preparing"):
+        row = report["step_trace_comparison"].get(name)
+        if row is None:
+            continue
+        ratio = row["ratio_310_over_910"]
+        ratio_text = f"{ratio:.3f}" if ratio is not None else "nan"
+        print(
+            "UNIREC_STOCK_EAGER_VISION_STEP_GAP "
+            f"name={name} "
+            f"times_ms={row['npu310_us'] / 1000.0:.3f}/{row['npu910_us'] / 1000.0:.3f} "
+            f"ratio={ratio_text}",
+            flush=True,
+        )
     for row in report["kernel_type_gaps"][:15]:
         ratio = row["duration_ratio_310_over_910"]
         ratio_text = f"{ratio:.3f}" if ratio is not None else "nan"
@@ -164,6 +204,21 @@ def main() -> None:
             f"ratio={ratio_text} added_ms={row['added_310_us'] / 1000.0:.3f}",
             flush=True,
         )
+    for category, prefix in (
+        ("exact_shape_gaps", "UNIREC_STOCK_EAGER_VISION_SHAPE_GAP"),
+        ("matmul_shape_gaps", "UNIREC_STOCK_EAGER_VISION_MATMUL_GAP"),
+        ("transdata_shape_gaps", "UNIREC_STOCK_EAGER_VISION_TRANSDATA_GAP"),
+    ):
+        for row in report[category][:10]:
+            ratio = row["duration_ratio_310_over_910"]
+            ratio_text = f"{ratio:.3f}" if ratio is not None else "nan"
+            print(
+                f"{prefix} name={json.dumps(row['name'])} "
+                f"counts={row['npu310_count']}/{row['npu910_count']} "
+                f"times_ms={row['npu310_duration_us'] / 1000.0:.3f}/{row['npu910_duration_us'] / 1000.0:.3f} "
+                f"ratio={ratio_text} added_ms={row['added_310_us'] / 1000.0:.3f}",
+                flush=True,
+            )
     print(f"OUTPUT_JSON={output}", flush=True)
 
 
