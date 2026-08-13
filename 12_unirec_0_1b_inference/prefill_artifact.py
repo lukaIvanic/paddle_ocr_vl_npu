@@ -100,6 +100,7 @@ class CrossKvArtifactWriter:
         self.attach_s = 0.0
         self.cross_kv_write_s = 0.0
         self.manifest_write_s = 0.0
+        self.prefill_device_stage_s: dict[str, float] = {}
         self.closed = False
 
     def _align(self) -> int:
@@ -189,6 +190,12 @@ class CrossKvArtifactWriter:
                     metadata["text_prefill_physical_source_tokens"]
                 )
                 self.cross_kv_bytes += int(array.nbytes)
+                for name, value in (
+                    metadata.get("prefill_device_stage_s") or {}
+                ).items():
+                    self.prefill_device_stage_s[name] = (
+                        self.prefill_device_stage_s.get(name, 0.0) + float(value)
+                    )
                 array = None
         finally:
             array = None
@@ -246,6 +253,7 @@ class CrossKvArtifactWriter:
                 "cross_kv_payload_bytes": self.cross_kv_bytes,
                 "cross_kv_file_bytes": file_bytes,
                 "shared_payload_bytes": self.shared_payload_bytes,
+                "prefill_device_stage_s": self.prefill_device_stage_s,
             },
             "coordinator_timing_s": {
                 "shared_memory_attach": self.attach_s,
@@ -290,6 +298,7 @@ class CrossKvDiscardSink:
         self.attach_s = 0.0
         self.descriptor_validation_s = 0.0
         self.finalize_s = 0.0
+        self.prefill_device_stage_s: dict[str, float] = {}
         self.closed = False
 
     def add_page(self, payload: dict[str, Any]) -> None:
@@ -348,6 +357,12 @@ class CrossKvDiscardSink:
                     metadata["text_prefill_physical_source_tokens"]
                 )
                 self.cross_kv_bytes += nbytes
+                for name, value in (
+                    metadata.get("prefill_device_stage_s") or {}
+                ).items():
+                    self.prefill_device_stage_s[name] = (
+                        self.prefill_device_stage_s.get(name, 0.0) + float(value)
+                    )
             self.descriptor_validation_s += time.perf_counter() - validation_started
         finally:
             lease.close()
@@ -378,6 +393,7 @@ class CrossKvDiscardSink:
                 "cross_kv_payload_bytes": self.cross_kv_bytes,
                 "cross_kv_file_bytes": 0,
                 "shared_payload_bytes": self.shared_payload_bytes,
+                "prefill_device_stage_s": self.prefill_device_stage_s,
             },
             "coordinator_timing_s": {
                 "shared_memory_attach": self.attach_s,

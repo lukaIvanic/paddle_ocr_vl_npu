@@ -125,6 +125,10 @@ class CrossKvArtifactTest(unittest.TestCase):
                         "text_prefill_real_source_tokens": 7,
                         "text_prefill_physical_source_tokens": 1024,
                         "actual_cross_attention_length": 7,
+                        "prefill_device_stage_s": {
+                            "compiled_full_vision_buckets": 0.125,
+                            "compiled_packed_text_prefill_s1024": 0.25,
+                        },
                     },
                 }
             ],
@@ -144,6 +148,13 @@ class CrossKvArtifactTest(unittest.TestCase):
                     expected.nbytes,
                 )
                 self.assertEqual(summary["artifact"]["cross_kv_file_bytes"], 0)
+                self.assertEqual(
+                    summary["artifact"]["prefill_device_stage_s"],
+                    {
+                        "compiled_full_vision_buckets": 0.125,
+                        "compiled_packed_text_prefill_s1024": 0.25,
+                    },
+                )
                 self.assertFalse((output_dir / "cross_kv.bin").exists())
         finally:
             try:
