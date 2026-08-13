@@ -50,6 +50,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmups", type=int, default=2)
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument(
+        "--stock-only",
+        action="store_true",
+        help="Compile and time only stock eager/compiled; skip all bucket graphs.",
+    )
+    parser.add_argument(
         "--focal-depthwise-rewrite",
         choices=VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES,
         default="native",
@@ -190,12 +195,14 @@ def main() -> None:
         )
         for batch_size in batch_sizes
     )
-    runtime = BucketedFullVisionRuntime(
-        runner,
-        specs=specs,
-        focal_depthwise_rewrite=args.focal_depthwise_rewrite,
-        weight_format=args.weight_format,
-    )
+    runtime = None
+    if not args.stock_only:
+        runtime = BucketedFullVisionRuntime(
+            runner,
+            specs=specs,
+            focal_depthwise_rewrite=args.focal_depthwise_rewrite,
+            weight_format=args.weight_format,
+        )
     from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
     stock_config = CompilerConfig()
@@ -215,15 +222,6 @@ def main() -> None:
                 device=args.device,
                 dtype=runner.dtype,
             )
-            host_masks = _make_host_masks(
-                [(spec.width, spec.height)] * spec.batch_size,
-                spec=spec,
-            )
-            masks = tuple(
-                torch.from_numpy(mask).to(args.device) for mask in host_masks
-            )
-            module = runtime.modules[spec.key]
-            compiled = runtime.compiled[spec.key]
             stock_module = _new_stock_encoder_module(runner, spec)
             stock_cache_dir = cache_dir / (
                 f"vision_stock_fixed_{spec.key}_float16_src{stock_source_hash}"
@@ -238,19 +236,37 @@ def main() -> None:
                 fullgraph=True,
             )
 
-            lanes: tuple[tuple[str, Callable[[], torch.Tensor]], ...] = (
+            lane_list: list[tuple[str, Callable[[], torch.Tensor]]] = [
                 ("stock_eager", lambda: runner.model.forward_encoder(pixels)),
                 ("stock_compiled", lambda: stock_compiled(pixels)),
-                ("bucket_module_eager", lambda: module(pixels, *masks)),
-                ("compiled", lambda: compiled(pixels, *masks)),
-            )
+            ]
+            if runtime is not None:
+                host_masks = _make_host_masks(
+                    [(spec.width, spec.height)] * spec.batch_size,
+                    spec=spec,
+                )
+                masks = tuple(
+                    torch.from_numpy(mask).to(args.device) for mask in host_masks
+                )
+                module = runtime.modules[spec.key]
+                compiled = runtime.compiled[spec.key]
+                lane_list.extend(
+                    (
+                        ("bucket_module_eager", lambda: module(pixels, *masks)),
+                        ("compiled", lambda: compiled(pixels, *masks)),
+                    )
+                )
+            lanes = tuple(lane_list)
 
-            bucket_first_call_started = time.perf_counter()
-            compiled_output = compiled(pixels, *masks)
-            synchronize_device(args.device)
-            bucket_compiled_first_call_wall_s = (
-                time.perf_counter() - bucket_first_call_started
-            )
+            bucket_compiled_first_call_wall_s = None
+            compiled_output = None
+            if runtime is not None:
+                bucket_first_call_started = time.perf_counter()
+                compiled_output = compiled(pixels, *masks)
+                synchronize_device(args.device)
+                bucket_compiled_first_call_wall_s = (
+                    time.perf_counter() - bucket_first_call_started
+                )
             stock_first_call_started = time.perf_counter()
             stock_compiled_output = stock_compiled(pixels)
             synchronize_device(args.device)
@@ -258,19 +274,25 @@ def main() -> None:
                 time.perf_counter() - stock_first_call_started
             )
             stock_output = lanes[0][1]()
-            bucket_eager_output = lanes[2][1]()
             synchronize_device(args.device)
             correctness = {
                 "stock_compiled_vs_stock_eager": _difference(
                     stock_compiled_output, stock_output
                 ),
-                "compiled_vs_bucket_module_eager": _difference(
-                    compiled_output, bucket_eager_output
-                ),
-                "bucket_module_eager_vs_stock_eager": _difference(
-                    bucket_eager_output, stock_output
-                ),
             }
+            if runtime is not None:
+                bucket_eager_output = lanes[2][1]()
+                synchronize_device(args.device)
+                correctness.update(
+                    {
+                        "compiled_vs_bucket_module_eager": _difference(
+                            compiled_output, bucket_eager_output
+                        ),
+                        "bucket_module_eager_vs_stock_eager": _difference(
+                            bucket_eager_output, stock_output
+                        ),
+                    }
+                )
 
             for _ in range(args.warmups):
                 for _name, function in lanes:
@@ -307,28 +329,38 @@ def main() -> None:
                         timing["stock_eager"]["median_ms"]
                         / timing["stock_compiled"]["median_ms"]
                     ),
-                    "compiled_vs_bucket_module_eager": (
-                        timing["bucket_module_eager"]["median_ms"]
-                        / timing["compiled"]["median_ms"]
-                    ),
-                    "compiled_vs_stock_eager": (
-                        timing["stock_eager"]["median_ms"]
-                        / timing["compiled"]["median_ms"]
-                    ),
                 },
             }
+            if runtime is not None:
+                row["speedup"].update(
+                    {
+                        "compiled_vs_bucket_module_eager": (
+                            timing["bucket_module_eager"]["median_ms"]
+                            / timing["compiled"]["median_ms"]
+                        ),
+                        "compiled_vs_stock_eager": (
+                            timing["stock_eager"]["median_ms"]
+                            / timing["compiled"]["median_ms"]
+                        ),
+                    }
+                )
             rows.append(row)
-            print(
+            message = (
                 "UNIREC_VISION_COMPILE_BATCH "
                 f"batch={spec.batch_size} "
                 f"stock_eager_ms={timing['stock_eager']['median_ms']:.3f} "
                 f"stock_compiled_ms={timing['stock_compiled']['median_ms']:.3f} "
-                f"bucket_eager_ms={timing['bucket_module_eager']['median_ms']:.3f} "
-                f"compiled_ms={timing['compiled']['median_ms']:.3f} "
-                f"compile_speedup={row['speedup']['compiled_vs_bucket_module_eager']:.3f} "
-                f"compiled_crops_s={timing['compiled']['crops_per_s']:.2f}",
-                flush=True,
+                f"stock_compile_speedup={row['speedup']['stock_compiled_vs_stock_eager']:.3f} "
+                f"stock_compiled_crops_s={timing['stock_compiled']['crops_per_s']:.2f}"
             )
+            if runtime is not None:
+                message += (
+                    f" bucket_eager_ms={timing['bucket_module_eager']['median_ms']:.3f}"
+                    f" compiled_ms={timing['compiled']['median_ms']:.3f}"
+                    f" compile_speedup={row['speedup']['compiled_vs_bucket_module_eager']:.3f}"
+                    f" compiled_crops_s={timing['compiled']['crops_per_s']:.2f}"
+                )
+            print(message, flush=True)
 
     baseline = rows[0]
     for row in rows:
@@ -339,12 +371,7 @@ def main() -> None:
                 * baseline["timing"][lane]["median_ms"]
                 / row["timing"][lane]["median_ms"]
             )
-            for lane in (
-                "stock_eager",
-                "stock_compiled",
-                "bucket_module_eager",
-                "compiled",
-            )
+            for lane in row["timing"]
         }
 
     allclose = all(
@@ -365,9 +392,12 @@ def main() -> None:
         "repeats": args.repeats,
         "focal_depthwise_rewrite": args.focal_depthwise_rewrite,
         "weight_format": args.weight_format,
-        "compile_api": runtime.compile_api,
+        "stock_only": args.stock_only,
+        "compile_api": runtime.compile_api if runtime is not None else None,
         "stock_compile_api": stock_compile_api,
-        "cache_inventory": runtime.cache_inventory(),
+        "cache_inventory": (
+            runtime.cache_inventory() if runtime is not None else None
+        ),
         "rows": rows,
         "measurement_scope": (
             "synchronized NPU events around vision encoder compute only; "
