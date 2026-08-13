@@ -57,7 +57,13 @@ if numba is not None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--artifact-dir", type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--artifact-dir", type=Path)
+    source.add_argument(
+        "--layout-result",
+        type=Path,
+        help="Current layout_detector_lab result.json; reconstruct its pages directly.",
+    )
     parser.add_argument("--openocr-root", type=Path, required=True)
     parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--warmup-crops", type=int, default=32)
@@ -123,6 +129,43 @@ def load_exact_crops(
                 f"accepted crops, artifact has {len(page['crops'])}"
             )
         crops.extend(accepted)
+    return crops
+
+
+def load_layout_result_crops(
+    layout_result: Path,
+    openocr_root: Path,
+    processor: UniRecImageProcessor,
+) -> list[np.ndarray]:
+    """Reconstruct accepted crops from a production-faithful layout lab run."""
+    sys.path.insert(0, str(openocr_root))
+    from tools.utils.opendoc_onnx_utils.utils import tokenize_figure_of_table
+
+    payload = json.loads(layout_result.read_text())
+    crops: list[np.ndarray] = []
+    pages = sorted(
+        payload["pages"],
+        key=lambda value: int(value["page_index"]),
+    )
+    for page in pages:
+        path = Path(page["image"])
+        rgb, _timing = _decode_rgb(path)
+        rebuilt, _frontend_timing = _prepare_frontend_payload(
+            page_index=int(page["page_index"]),
+            path=path,
+            rgb=np.ascontiguousarray(rgb),
+            layout_result=page["result"],
+            use_chart_recognition=True,
+            tokenize_figure_of_table=tokenize_figure_of_table,
+        )
+        for crop in rebuilt["crops"]:
+            image = crop["image_rgb"]
+            height, width = image.shape[:2]
+            if processor.estimate_encoder_token_count_for_image_size(
+                width,
+                height,
+            ) <= 512:
+                crops.append(image)
     return crops
 
 
@@ -273,6 +316,25 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
         np.subtract(chw, np.float32(1.0), out=chw)
         return chw[None]
 
+    def opencv_cubic_uint8_hwc(crop: np.ndarray) -> np.ndarray:
+        height, width = crop.shape[:2]
+        target_size = processor.get_processed_size(width, height)
+        return cv2.resize(crop, target_size, interpolation=cv2.INTER_CUBIC)
+
+    def kornia_rs_bicubic_uint8_hwc(crop: np.ndarray) -> np.ndarray:
+        from kornia_rs.image import Image as KorniaImage
+
+        height, width = crop.shape[:2]
+        target_width, target_height = processor.get_processed_size(
+            width,
+            height,
+        )
+        return KorniaImage.fromarray(crop).resize(
+            target_width,
+            target_height,
+            "bicubic",
+        ).data
+
     lanes = {
         "pillow_reference": pillow_reference,
         "pillow_inplace_hwc": pillow_inplace_hwc,
@@ -288,6 +350,8 @@ def build_lanes(processor: UniRecImageProcessor) -> dict[str, ArrayLane]:
         "pillow_opencv_blob": pillow_opencv_blob,
         "torchvision_uint8_bicubic": torchvision_uint8_bicubic,
         "opencv_cubic_chw": opencv_cubic_chw,
+        "opencv_cubic_uint8_hwc": opencv_cubic_uint8_hwc,
+        "kornia_rs_bicubic_uint8_hwc": kornia_rs_bicubic_uint8_hwc,
     }
     if numba is not None:
         lanes["pillow_no_convert_numba_fused"] = pillow_no_convert_numba_fused
@@ -368,11 +432,13 @@ def main() -> None:
     torch.set_num_interop_threads(1)
     processor = UniRecImageProcessor()
     load_started = time.perf_counter()
-    crops = load_exact_crops(
-        args.artifact_dir.expanduser().resolve(),
-        args.openocr_root.expanduser().resolve(),
-        processor,
-    )
+    openocr_root = args.openocr_root.expanduser().resolve()
+    if args.layout_result is not None:
+        source_path = args.layout_result.expanduser().resolve()
+        crops = load_layout_result_crops(source_path, openocr_root, processor)
+    else:
+        source_path = args.artifact_dir.expanduser().resolve()
+        crops = load_exact_crops(source_path, openocr_root, processor)
     if args.limit_crops is not None:
         crops = crops[: args.limit_crops]
     load_s = time.perf_counter() - load_started
@@ -404,6 +470,8 @@ def main() -> None:
             "pillow_no_convert_chw_fp16_lut",
             "pillow_no_convert_uint8_chw",
             "pillow_no_convert_uint8_hwc",
+            "opencv_cubic_uint8_hwc",
+            "kornia_rs_bicubic_uint8_hwc",
         }
         parity = (
             {
@@ -435,11 +503,17 @@ def main() -> None:
             if name in {
                 "pillow_no_convert_uint8_chw",
                 "pillow_no_convert_uint8_hwc",
+                "opencv_cubic_uint8_hwc",
+                "kornia_rs_bicubic_uint8_hwc",
             }:
 
                 def candidate_model_input(crop: np.ndarray) -> np.ndarray:
                     output = lane(crop)
-                    if name == "pillow_no_convert_uint8_hwc":
+                    if name in {
+                        "pillow_no_convert_uint8_hwc",
+                        "opencv_cubic_uint8_hwc",
+                        "kornia_rs_bicubic_uint8_hwc",
+                    }:
                         output = np.ascontiguousarray(
                             np.transpose(output, (2, 0, 1))
                         )[None]
@@ -466,7 +540,7 @@ def main() -> None:
         result["speedup_vs_reference"] = reference_s / float(result["median_s"])
     summary = {
         "status": "ok",
-        "artifact_dir": str(args.artifact_dir),
+        "source": str(source_path),
         "crop_count": len(crops),
         "processed_megapixels": processed_pixels / 1e6,
         "corpus_load_s": load_s,
