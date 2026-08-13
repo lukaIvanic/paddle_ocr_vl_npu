@@ -4,12 +4,20 @@
 
 #include <torch/extension.h>
 
-#include "torch_npu/csrc/core/NPUBridge.h"
+#include "torch_npu/csrc/core/NPUStorageImpl.h"
 
 namespace {
 
 constexpr int64_t kFractalZPrimaryFormat = 4;
 constexpr int64_t kFormatSubformatShift = 8;
+
+torch_npu::NPUStorageImpl* get_npu_storage(const at::Tensor& tensor) {
+  // The installed torch-npu package hides NPUBridge's symbols, but an NPU
+  // tensor's StorageImpl is concretely NPUStorageImpl. The device check at each
+  // call site makes this downcast equivalent to NPUBridge::GetNpuStorageImpl.
+  return static_cast<torch_npu::NPUStorageImpl*>(
+      tensor.storage().unsafeGetStorageImpl());
+}
 
 at::Tensor wrap_grouped_fz(
     at::Tensor packed,
@@ -37,7 +45,7 @@ at::Tensor wrap_grouped_fz(
   packed.unsafeGetTensorImpl()->empty_tensor_restride(
       c10::MemoryFormat::Contiguous);
 
-  auto* storage = torch_npu::NPUBridge::GetNpuStorageImpl(packed);
+  auto* storage = get_npu_storage(packed);
   TORCH_CHECK(storage != nullptr, "failed to obtain NPU storage descriptor");
   auto& descriptor = storage->npu_desc_;
   descriptor.base_sizes_ = logical_shape;
@@ -54,7 +62,7 @@ describe_npu_storage(const at::Tensor& tensor) {
   TORCH_CHECK(
       tensor.device().type() == c10::DeviceType::PrivateUse1,
       "descriptor inspection requires an NPU tensor");
-  const auto* storage = torch_npu::NPUBridge::GetNpuStorageImpl(tensor);
+  const auto* storage = get_npu_storage(tensor);
   TORCH_CHECK(storage != nullptr, "failed to obtain NPU storage descriptor");
   const auto& descriptor = storage->npu_desc_;
   return {

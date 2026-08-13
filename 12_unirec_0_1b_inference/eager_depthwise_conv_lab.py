@@ -237,7 +237,7 @@ def _load_grouped_fz_bridge() -> tuple[Any, float]:
     source = HERE / "grouped_fz_descriptor_bridge.cpp"
     started = time.perf_counter()
     bridge = load(
-        name="unirec_grouped_fz_descriptor_bridge_v1",
+        name="unirec_grouped_fz_descriptor_bridge_v2",
         sources=[str(source)],
         extra_include_paths=[str(torch_npu_root / "include")],
         extra_cflags=["-O2"],
