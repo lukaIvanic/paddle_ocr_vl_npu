@@ -144,17 +144,17 @@ def main() -> None:
     workload = workload_report(histogram, selected)
     output = args.output.expanduser().resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
+    print(
+        "UNIREC_EAGER_FALLBACK_WORKLOAD "
+        f"calls={workload['fallback_calls']} unique={workload['unique_shapes']} "
+        f"selected={workload['selected_shape_count']} "
+        f"call_coverage={workload['selected_call_fraction']:.3f} "
+        f"pixel_coverage={workload['selected_weighted_pixel_fraction']:.3f}",
+        flush=True,
+    )
     if args.list_only:
         report = {"status": "listed", "workload": workload}
         output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-        print(
-            "UNIREC_EAGER_FALLBACK_WORKLOAD "
-            f"calls={workload['fallback_calls']} unique={workload['unique_shapes']} "
-            f"selected={workload['selected_shape_count']} "
-            f"call_coverage={workload['selected_call_fraction']:.3f} "
-            f"pixel_coverage={workload['selected_weighted_pixel_fraction']:.3f}",
-            flush=True,
-        )
         return
 
     import torch
