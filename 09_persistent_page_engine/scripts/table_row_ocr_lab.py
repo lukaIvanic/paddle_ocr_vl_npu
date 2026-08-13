@@ -126,6 +126,15 @@ def parse_args() -> argparse.Namespace:
         default="combined_apply_pse_sentinel",
     )
     parser.add_argument(
+        "--decode-vocab-token-ids",
+        type=Path,
+        default=None,
+        help=(
+            "Optional native-token ID list for the existing compact decode "
+            "LM head and native-ID remap."
+        ),
+    )
+    parser.add_argument(
         "--token-selection",
         choices=TOKEN_SELECTION_CHOICES,
         default="greedy",
@@ -278,6 +287,7 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         dtype="fp16",
         decode_backend="torchair",
         decode_optimization=args.decode_optimization,
+        decode_vocab_token_ids=args.decode_vocab_token_ids,
         batch_size=args.decode_batch_size,
         cache_length=args.cache_length,
         max_new_tokens=args.cache_length,
