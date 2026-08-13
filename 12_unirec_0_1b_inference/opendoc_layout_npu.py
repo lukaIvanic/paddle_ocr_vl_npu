@@ -400,12 +400,28 @@ def prepare_layout_pixel_values_exact(
     return {"pixel_values": resized.to(dtype=torch.float32).div_(255.0)}
 
 
-def _layout_order_sequences_cumsum(order_logits: torch.Tensor) -> torch.Tensor:
+def _record_profile_elapsed(
+    timing_s: dict[str, float] | None,
+    name: str,
+    started: float,
+) -> None:
+    if timing_s is not None:
+        timing_s[name] = timing_s.get(name, 0.0) + time.perf_counter() - started
+
+
+def _layout_order_sequences_cumsum(
+    order_logits: torch.Tensor,
+    *,
+    timing_s: dict[str, float] | None = None,
+) -> torch.Tensor:
     """Compute the HF reading-order vote exactly without triangular copies."""
+    started = time.perf_counter()
     order_scores = torch.sigmoid(order_logits)
+    _record_profile_elapsed(timing_s, "box_order_sigmoid_s", started)
     batch_size, sequence_length, _ = order_scores.shape
 
     # For query j, the first term is sum(scores[i, j], i < j).
+    started = time.perf_counter()
     column_prefix = order_scores.cumsum(dim=1)
     earlier_votes = torch.cat(
         [
@@ -434,7 +450,9 @@ def _layout_order_sequences_cumsum(order_logits: torch.Tensor) -> torch.Tensor:
         device=order_scores.device,
     ).unsqueeze(0)
     later_votes = later_counts - (row_prefix[:, :, -1] - through_diagonal)
+    _record_profile_elapsed(timing_s, "box_order_votes_s", started)
 
+    started = time.perf_counter()
     order_pointers = torch.argsort(earlier_votes + later_votes, dim=1)
     order_sequences = torch.empty_like(order_pointers)
     ranks = torch.arange(
@@ -443,6 +461,7 @@ def _layout_order_sequences_cumsum(order_logits: torch.Tensor) -> torch.Tensor:
         dtype=order_pointers.dtype,
     ).expand(batch_size, -1)
     order_sequences.scatter_(1, order_pointers, ranks)
+    _record_profile_elapsed(timing_s, "box_order_rank_s", started)
     return order_sequences
 
 
@@ -451,12 +470,17 @@ def post_process_layout_object_detection_exact(
     *,
     threshold: float,
     target_sizes: list[tuple[int, int]] | torch.Tensor,
+    timing_s: dict[str, float] | None = None,
 ) -> list[dict[str, torch.Tensor]]:
     """Match the HF PP-DocLayoutV2 box decoder with less order work."""
     boxes = outputs.pred_boxes
     logits = outputs.logits
-    order_sequences = _layout_order_sequences_cumsum(outputs.order_logits)
+    order_sequences = _layout_order_sequences_cumsum(
+        outputs.order_logits,
+        timing_s=timing_s,
+    )
 
+    started = time.perf_counter()
     box_centers, box_dimensions = torch.split(boxes, 2, dim=-1)
     boxes = torch.cat(
         [
@@ -479,7 +503,9 @@ def post_process_layout_object_detection_exact(
         dim=1,
     ).to(boxes.device)
     boxes = boxes * scale_factor[:, None, :]
+    _record_profile_elapsed(timing_s, "box_xyxy_scale_s", started)
 
+    started = time.perf_counter()
     query_count = logits.shape[1]
     class_count = logits.shape[2]
     scores, flat_indices = torch.topk(
@@ -489,12 +515,17 @@ def post_process_layout_object_detection_exact(
     )
     labels = flat_indices % class_count
     query_indices = flat_indices // class_count
+    _record_profile_elapsed(timing_s, "box_class_topk_s", started)
+
+    started = time.perf_counter()
     boxes = boxes.gather(
         dim=1,
         index=query_indices.unsqueeze(-1).repeat(1, 1, boxes.shape[-1]),
     )
     order_sequences = order_sequences.gather(dim=1, index=query_indices)
+    _record_profile_elapsed(timing_s, "box_gather_s", started)
 
+    started = time.perf_counter()
     results: list[dict[str, torch.Tensor]] = []
     for score, label, box, order_sequence in zip(
         scores,
@@ -513,6 +544,7 @@ def post_process_layout_object_detection_exact(
                 "order_seq": selected_order,
             }
         )
+    _record_profile_elapsed(timing_s, "box_filter_sort_s", started)
     return results
 
 
@@ -898,6 +930,7 @@ class PPDocLayoutV2NpuAdapter:
             cpu_outputs,
             threshold=threshold,
             target_sizes=target_sizes,
+            timing_s=self.stage_s if self.profile_stages else None,
         )
         self._record_stage("box_decode_s", started)
 

@@ -444,10 +444,12 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
                 }
             )
 
+        timing_s = {}
         actual = module.post_process_layout_object_detection_exact(
             outputs,
             threshold=0.4,
             target_sizes=target_sizes,
+            timing_s=timing_s,
         )
         for expected, candidate in zip(reference, actual):
             for name in expected:
@@ -457,6 +459,19 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
                     atol=0.0,
                     rtol=0.0,
                 )
+        self.assertEqual(
+            set(timing_s),
+            {
+                "box_order_sigmoid_s",
+                "box_order_votes_s",
+                "box_order_rank_s",
+                "box_xyxy_scale_s",
+                "box_class_topk_s",
+                "box_gather_s",
+                "box_filter_sort_s",
+            },
+        )
+        self.assertTrue(all(value >= 0.0 for value in timing_s.values()))
 
     def test_depthwise_rewrites_are_exact_block_diagonal_convolutions(self) -> None:
         module = _load_layout_adapter()
