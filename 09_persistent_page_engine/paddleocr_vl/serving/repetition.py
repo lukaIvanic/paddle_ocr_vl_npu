@@ -58,22 +58,27 @@ class ExactCycleTracker:
 
         token_id = int(token_id)
         best: RepetitionEvidence | None = None
-        available_periods = min(self.max_period, len(self._tail))
-        for period in range(1, available_periods + 1):
-            if token_id == self._tail[-period]:
-                self._matching_runs[period] += 1
+        tail = self._tail
+        matching_runs = self._matching_runs
+        min_repeated_span = self.min_repeated_span
+        min_repeat_copies = self.min_repeat_copies
+        for period, previous_token in enumerate(tail, start=1):
+            if token_id == previous_token:
+                matching_run = matching_runs[period] + 1
+                matching_runs[period] = matching_run
             else:
-                self._matching_runs[period] = 0
-            repeated_span = self._matching_runs[period] + period
+                matching_run = 0
+                matching_runs[period] = 0
+            repeated_span = matching_run + period
             if (
-                repeated_span < self.min_repeated_span
-                or repeated_span < period * self.min_repeat_copies
+                repeated_span < min_repeated_span
+                or repeated_span < period * min_repeat_copies
             ):
                 continue
             evidence = RepetitionEvidence(
                 rule=(
-                    f"exact_cycle_{self.min_repeat_copies}copies_"
-                    f"{self.min_repeated_span}tokens_p{self.max_period}"
+                    f"exact_cycle_{min_repeat_copies}copies_"
+                    f"{min_repeated_span}tokens_p{self.max_period}"
                 ),
                 trigger_length=self._length + 1,
                 trim_length=self._length + 1 - repeated_span + period,
@@ -91,9 +96,9 @@ class ExactCycleTracker:
             ):
                 best = evidence
 
-        self._tail.append(token_id)
-        if len(self._tail) > self.max_period:
-            del self._tail[0]
+        tail.insert(0, token_id)
+        if len(tail) > self.max_period:
+            tail.pop()
         self._length += 1
         return best
 
