@@ -86,6 +86,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--draft-decode-vocab-token-ids", type=Path, required=True)
     parser.add_argument("--draft-cache-length", type=int, default=768)
     parser.add_argument("--draft-batch-size", type=int, default=8)
+    parser.add_argument(
+        "--draft-vision-packing",
+        choices=("greedy", "cohort"),
+        default="greedy",
+    )
     parser.add_argument("--draft-vision-pack-target", type=int, default=2304)
     parser.add_argument("--row-overlap-px", type=int, default=3)
     parser.add_argument(
@@ -184,6 +189,7 @@ def _draft_args(args: argparse.Namespace) -> SimpleNamespace:
         text_cache_dir=args.text_cache_dir,
         text_packed_cache_dir=args.text_packed_cache_dir,
         vision_buckets=args.vision_buckets,
+        vision_packing=args.draft_vision_packing,
         vision_pack_target=args.draft_vision_pack_target,
         min_pixels=args.min_pixels,
         max_pixels=args.max_pixels,
@@ -671,6 +677,8 @@ def main() -> None:
             "cold_request_id": args.cold_request_id,
             "measured_request_ids": [record["request_id"] for record in records],
             "draft_decode_optimization": args.draft_decode_optimization,
+            "draft_vision_packing": args.draft_vision_packing,
+            "draft_vision_pack_target": args.draft_vision_pack_target,
             "b1_decode_optimization": args.b1_decode_optimization,
             "verifier_optimization": args.verifier_optimization,
             "k_values": list(k_values),

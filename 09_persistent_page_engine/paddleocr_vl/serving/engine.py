@@ -1232,6 +1232,8 @@ class ContinuousRecognizer:
                     groups = self._iter_single_prefill_groups(requests)
                 elif self.vision_packing == "greedy":
                     groups = self._iter_packed_prefill_groups(requests)
+                elif self.vision_packing == "cohort":
+                    groups = self._iter_cohort_prefill_groups(requests)
                 else:
                     groups = self._iter_profiled_prefill_groups(requests)
                 group_source = iter(groups)
@@ -1632,6 +1634,25 @@ class ContinuousRecognizer:
             producer.join(timeout=30.0)
             if producer.is_alive():
                 raise RuntimeError("packed prefill source did not stop within 30 seconds")
+
+    def _iter_cohort_prefill_groups(
+        self,
+        requests: Iterable[RecognitionRequest],
+    ) -> Iterable[_PreparedPrefillGroup]:
+        """Pack each bounded request cohort before launching vision prefill."""
+
+        members: list[tuple[CpuPreparedRecognition, float]] = []
+        total = 0
+        for item in self._iter_cpu_prepared(requests):
+            tokens = int(item[0].pixel_values.shape[0])
+            if members and total + tokens > self.vision_pack_target:
+                yield self._prepared_group(members)
+                members = []
+                total = 0
+            members.append(item)
+            total += tokens
+        if members:
+            yield self._prepared_group(members)
 
     def _iter_profiled_prefill_groups(
         self,

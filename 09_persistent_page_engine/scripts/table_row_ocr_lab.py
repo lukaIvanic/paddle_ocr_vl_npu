@@ -301,7 +301,7 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         vision_buckets=parse_vision_buckets(args.vision_buckets),
         vision_torchair_cache_dir=args.vision_cache_dir.resolve(),
         vision_padding="bucket",
-        vision_packing="greedy",
+        vision_packing=getattr(args, "vision_packing", "greedy"),
         vision_pack_target=args.vision_pack_target,
         vision_router_lookahead=32,
         text_backend="torchair",
