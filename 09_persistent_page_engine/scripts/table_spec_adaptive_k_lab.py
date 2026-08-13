@@ -72,6 +72,16 @@ def parse_args() -> argparse.Namespace:
         "--verifier-optimization",
         default="combined_apply",
     )
+    parser.add_argument(
+        "--decode-optimization",
+        default="combined_apply_pse_sentinel",
+    )
+    parser.add_argument(
+        "--decode-vocab-token-ids",
+        type=Path,
+        default=None,
+        help="Optional native-token ID list for a compact B1 and verifier LM head.",
+    )
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--max-new-tokens", type=int, default=4096)
     parser.add_argument(
