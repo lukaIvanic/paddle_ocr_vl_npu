@@ -634,27 +634,32 @@ class TableSpeculativeDecodeRuntime:
             rope_deltas,
             *flat_cache,
         )
-        policy_mask = torch.tensor(
-            [
-                self.recognizer.token_selection in (
-                    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
-                    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
-                )
-                or int(current_token) in self.recognizer.table_cell_token_ids
-            ],
-            device=logits.device,
-            dtype=torch.bool,
-        )
-        sampled = select_token_ids(
-            logits[:, -1, :].float(),
-            mode=self.recognizer.token_selection,
-            preferred_token_id=self.recognizer.math_open_token_id,
-            alternate_preferred_token_id=self.recognizer.math_slash_token_id,
-            policy_mask=policy_mask,
-            legacy_policy_mask=torch.ones(
-                (1,), device=logits.device, dtype=torch.bool
-            ),
-        ).view(-1, 1)
+        if hasattr(self.recognizer.model, "decode_token_id_map"):
+            # A compact decode graph performs argmax and maps its result back
+            # to native vocabulary IDs inside the compiled stage.
+            sampled = logits.view(-1, 1)
+        else:
+            policy_mask = torch.tensor(
+                [
+                    self.recognizer.token_selection in (
+                        TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
+                        TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
+                    )
+                    or int(current_token) in self.recognizer.table_cell_token_ids
+                ],
+                device=logits.device,
+                dtype=torch.bool,
+            )
+            sampled = select_token_ids(
+                logits[:, -1, :].float(),
+                mode=self.recognizer.token_selection,
+                preferred_token_id=self.recognizer.math_open_token_id,
+                alternate_preferred_token_id=self.recognizer.math_slash_token_id,
+                policy_mask=policy_mask,
+                legacy_policy_mask=torch.ones(
+                    (1,), device=logits.device, dtype=torch.bool
+                ),
+            ).view(-1, 1)
         end.record()
         self.host_decode_target.copy_(sampled, non_blocking=True)
         done = self._event()
