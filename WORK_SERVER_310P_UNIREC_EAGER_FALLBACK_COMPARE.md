@@ -23,8 +23,7 @@ avoid layout, disk I/O, crop extraction, compilation, and page-pipeline noise.
 - Run in one process.  There are no forks, workers, or cross-process NPU events.
 - Do not run NPU profiling and do not prepare an OM/TorchAir cache.
 - Keep NPU JIT compilation disabled as set by the benchmark.
-- Reuse the `crops.jsonl` from the completed 1,651-page production prefill run.
-  Do not rerun layout or page preprocessing to create it.
+- Use the committed 13 KB shape workload.  No prior run artifact is needed.
 
 ## Resolve the inputs
 
@@ -41,23 +40,17 @@ Confirm that `npu-setup` did not select physical NPU 5 or 6.  If it did, stop
 and select another free device with the server's normal device-selection
 mechanism before continuing.
 
-Set `CROP_MANIFEST` to the exact completed full-run manifest.  If its path is
-not already known, list only the relevant candidates:
+The committed workload was extracted from the completed 1,651-page 910B2
+production manifest.  It contains all 496 eager fallback calls and all 90
+unique processed shapes.  Verify it directly:
 
 ```bash
-find "$REPO/tmp/12_unirec_0_1b_inference" -type f -name crops.jsonl -print | sort
-```
-
-The selected manifest must describe all 1,651 pages and yield this benchmark
-workload header: `calls=496 unique=90 selected=12`.  If no such manifest exists,
-stop and report the candidate paths.  Do not substitute a first-32 or first-128
-manifest.
-
-```bash
-export CROP_MANIFEST=/absolute/path/to/the/full1651/crops.jsonl
-test -f "$CROP_MANIFEST"
+export SHAPE_WORKLOAD="$REPO/12_unirec_0_1b_inference/references/eager_fallback_full1651_shape_workload.json"
+test -f "$SHAPE_WORKLOAD"
 test -x "$PYTHON_BIN"
 test -d "$MODEL"
+test "$(sha256sum "$SHAPE_WORKLOAD" | awk '{print $1}')" = \
+  16ace5f42bf2b6f733a076ed537e2b03690865f4ef4447c0118bd075888cfdcb
 ```
 
 ## Run the short timing probe
@@ -73,7 +66,7 @@ mkdir -p "$RUN_ROOT"
 nohup "$PYTHON_BIN" \
   "$REPO/12_unirec_0_1b_inference/benchmark_eager_fallback_shapes.py" \
   --model-path "$MODEL" \
-  --crop-manifest "$CROP_MANIFEST" \
+  --shape-workload "$SHAPE_WORKLOAD" \
   --output "$RUN_ROOT/result.json" \
   --device npu:0 \
   --max-shapes 12 \
@@ -123,7 +116,7 @@ encoder and production-wall fields directly against 4.376 s and 4.537 s.
 
 Return only:
 
-1. pulled commit, physical NPU, CANN, torch-npu, Python, and absolute manifest;
+1. pulled commit, physical NPU, CANN, torch-npu, and Python;
 2. exit code and absolute log/result paths;
 3. every `UNIREC_EAGER_FALLBACK_SHAPE` line and the final summary line;
 4. 310P selected weighted encoder divided by 4.376 s;

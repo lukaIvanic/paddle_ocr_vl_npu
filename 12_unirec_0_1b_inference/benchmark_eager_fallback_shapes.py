@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Benchmark production UniRec eager-fallback vision shapes on one NPU.
 
-The crop manifest supplies the exact processed-shape distribution from a
-completed production run.  Pixel contents do not affect the operator shapes,
-so the timed lane uses reusable synthetic compact uint8 HWC inputs and the
-same H2D/normalization helper plus ``model.forward_encoder`` call as
-``BucketedFullVisionRuntime._run_fallback``.
+A crop manifest or extracted workload supplies the exact processed-shape
+distribution from a completed production run.  Pixel contents do not affect
+the operator shapes, so the timed lane uses reusable synthetic compact uint8
+HWC inputs and the same H2D/normalization helper plus ``model.forward_encoder``
+call as ``BucketedFullVisionRuntime._run_fallback``.
 """
 
 from __future__ import annotations
@@ -24,7 +24,17 @@ import numpy as np
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-path", type=Path, required=True)
-    parser.add_argument("--crop-manifest", type=Path, required=True)
+    workload_source = parser.add_mutually_exclusive_group(required=True)
+    workload_source.add_argument(
+        "--crop-manifest",
+        type=Path,
+        help="Production crops.jsonl from which to derive eager fallback shapes.",
+    )
+    workload_source.add_argument(
+        "--shape-workload",
+        type=Path,
+        help="Pre-extracted workload JSON written by this benchmark's --list-only mode.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--dtype", choices=("float16",), default="float16")
@@ -68,6 +78,32 @@ def fallback_shape_histogram(path: Path) -> Counter[tuple[int, int]]:
             histogram[(width, height)] += 1
     if not histogram:
         raise ValueError(f"no eager fallback rows found in {path}")
+    return histogram
+
+
+def extracted_shape_histogram(path: Path) -> Counter[tuple[int, int]]:
+    payload = json.loads(path.expanduser().resolve().read_text(encoding="utf-8"))
+    workload = payload.get("workload", payload)
+    rows = workload.get("selected_shapes")
+    if not isinstance(rows, list) or not rows:
+        raise ValueError(f"no selected_shapes found in {path}")
+    histogram: Counter[tuple[int, int]] = Counter()
+    for index, row in enumerate(rows, start=1):
+        width = int(row["width"])
+        height = int(row["height"])
+        count = int(row["count"])
+        if width < 1 or height < 1 or count < 1:
+            raise ValueError(f"invalid shape row {index} in {path}: {row}")
+        shape = (width, height)
+        if shape in histogram:
+            raise ValueError(f"duplicate shape {shape} in {path}")
+        histogram[shape] = count
+    expected_calls = workload.get("fallback_calls")
+    expected_unique = workload.get("unique_shapes")
+    if expected_calls is not None and sum(histogram.values()) != int(expected_calls):
+        raise ValueError(f"fallback call count does not match {path}")
+    if expected_unique is not None and len(histogram) != int(expected_unique):
+        raise ValueError(f"unique shape count does not match {path}")
     return histogram
 
 
@@ -139,7 +175,11 @@ def workload_report(
 
 def main() -> None:
     args = parse_args()
-    histogram = fallback_shape_histogram(args.crop_manifest)
+    histogram = (
+        fallback_shape_histogram(args.crop_manifest)
+        if args.crop_manifest is not None
+        else extracted_shape_histogram(args.shape_workload)
+    )
     selected = select_shapes(histogram, args.max_shapes)
     workload = workload_report(histogram, selected)
     output = args.output.expanduser().resolve()
