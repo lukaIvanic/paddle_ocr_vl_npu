@@ -122,6 +122,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--decode-batch-size", type=int, default=8)
     parser.add_argument(
+        "--decode-optimization",
+        default="combined_apply_pse_sentinel",
+    )
+    parser.add_argument(
         "--token-selection",
         choices=TOKEN_SELECTION_CHOICES,
         default="greedy",
@@ -273,7 +277,7 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         model=str(args.model),
         dtype="fp16",
         decode_backend="torchair",
-        decode_optimization="combined_apply_pse_sentinel",
+        decode_optimization=args.decode_optimization,
         batch_size=args.decode_batch_size,
         cache_length=args.cache_length,
         max_new_tokens=args.cache_length,

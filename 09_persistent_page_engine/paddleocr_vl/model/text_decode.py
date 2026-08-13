@@ -258,6 +258,16 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         add_rms_norm=True,
         increfa_length_mode="pse_sentinel",
     ),
+    "combined_apply_pse_sentinel_high_precision": DecodeOptimizationConfig(
+        name="combined_apply_pse_sentinel_high_precision",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        add_rms_norm=True,
+        increfa_length_mode="pse_sentinel",
+        increfa_inner_precise=0,
+    ),
     "combined_apply_static_actual": DecodeOptimizationConfig(
         name="combined_apply_static_actual",
         hoist_mrope=True,
