@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
+import gc
 import json
 import os
 from pathlib import Path
@@ -312,12 +313,21 @@ def _timed_matcher(
     block_size: int,
 ) -> tuple[TableDraftMatcher, float, float]:
     started = time.perf_counter()
-    matcher = TableDraftMatcher(
-        draft,
-        tokenizer,
-        eos_token_id=eos_token_id,
-        block_size=block_size,
-    )
+    # The matcher index is acyclic. Cyclic-GC scans can otherwise add large,
+    # input-dependent pauses while this worker overlaps target NPU prefill.
+    gc_was_enabled = gc.isenabled()
+    if gc_was_enabled:
+        gc.disable()
+    try:
+        matcher = TableDraftMatcher(
+            draft,
+            tokenizer,
+            eos_token_id=eos_token_id,
+            block_size=block_size,
+        )
+    finally:
+        if gc_was_enabled:
+            gc.enable()
     return matcher, started, time.perf_counter()
 
 
