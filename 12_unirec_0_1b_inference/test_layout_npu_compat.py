@@ -9,6 +9,7 @@ import types
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 import numpy as np
 import torch
@@ -357,6 +358,33 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
         self.assertEqual(actual.shape, (1, 3, 800, 800))
         self.assertEqual(actual.dtype, torch.float32)
         self.assertEqual(actual.stride(), (1_920_000, 640_000, 800, 1))
+
+    def test_explicit_layout_preprocess_skips_cat_for_batch_one(self) -> None:
+        module = _load_layout_adapter()
+        image = np.arange(27, dtype=np.uint8).reshape(3, 3, 3)
+
+        with mock.patch.object(module.torch, "cat", wraps=module.torch.cat) as cat:
+            pixel_values = module.prepare_layout_resized_uint8_exact([image])[
+                "pixel_values"
+            ]
+
+        self.assertEqual(tuple(pixel_values.shape), (1, 3, 800, 800))
+        self.assertTrue(pixel_values.is_contiguous())
+        cat.assert_not_called()
+
+    def test_explicit_layout_preprocess_concatenates_larger_batches(self) -> None:
+        module = _load_layout_adapter()
+        first = np.zeros((3, 3, 3), dtype=np.uint8)
+        second = np.full((3, 3, 3), 255, dtype=np.uint8)
+
+        with mock.patch.object(module.torch, "cat", wraps=module.torch.cat) as cat:
+            pixel_values = module.prepare_layout_resized_uint8_exact(
+                [first, second]
+            )["pixel_values"]
+
+        self.assertEqual(tuple(pixel_values.shape), (2, 3, 800, 800))
+        self.assertTrue(pixel_values.is_contiguous())
+        cat.assert_called_once()
 
     def test_fast_layout_postprocess_matches_transformers_math(self) -> None:
         module = _load_layout_adapter()

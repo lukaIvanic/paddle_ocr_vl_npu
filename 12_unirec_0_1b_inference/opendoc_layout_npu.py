@@ -382,7 +382,14 @@ def prepare_layout_resized_uint8_exact(
         prepared.append(resized)
     if not prepared:
         raise ValueError("PP-DocLayoutV2 preprocessing requires at least one image")
-    return {"pixel_values": torch.cat(prepared, dim=0)}
+    # Production uses layout B1. Avoid copying the already contiguous 800x800
+    # tensor through torch.cat for that common case.
+    pixel_values = (
+        prepared[0]
+        if len(prepared) == 1
+        else torch.cat(prepared, dim=0)
+    )
+    return {"pixel_values": pixel_values}
 
 
 def prepare_layout_pixel_values_exact(
