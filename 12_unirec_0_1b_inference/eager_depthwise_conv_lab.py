@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import statistics
 import subprocess
 import sys
@@ -233,6 +234,18 @@ def _load_grouped_fz_bridge() -> tuple[Any, float]:
     from torch.utils.cpp_extension import load
 
     torch_npu_root = Path(torch_npu.__file__).resolve().parent
+    if shutil.which("ninja") is None:
+        interpreter_ninja = Path(sys.executable).resolve().parent / "ninja"
+        if interpreter_ninja.is_file() and os.access(interpreter_ninja, os.X_OK):
+            os.environ["PATH"] = (
+                f"{interpreter_ninja.parent}{os.pathsep}"
+                f"{os.environ.get('PATH', '')}"
+            )
+    if shutil.which("ninja") is None:
+        raise RuntimeError(
+            "ninja is required to build the grouped-FZ descriptor bridge; "
+            "put an existing ninja executable on PATH"
+        )
     library_dir = torch_npu_root / "lib"
     source = HERE / "grouped_fz_descriptor_bridge.cpp"
     started = time.perf_counter()
