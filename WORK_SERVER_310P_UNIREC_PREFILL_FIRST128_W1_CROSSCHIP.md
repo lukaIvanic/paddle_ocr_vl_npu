@@ -4,6 +4,9 @@ Pull the commit containing this brief and run this task only. This is the 310P
 half of an exact cross-chip page-path comparison. The 910B half uses the same
 arguments.
 
+This is deliberately **W1 only**. Do not start W2, W4, W8, decode, or the full
+1,651-page benchmark after it finishes.
+
 ## Fixed experiment contract
 
 - OmniDocBench offset 0, first 128 pages;
@@ -11,6 +14,7 @@ arguments.
 - one persistent CPU crop-resize thread;
 - all 128 pages once as an in-process warmup, then the same 128 measured;
 - compiled FP16 B1 optimized layout;
+- index-free FPN nearest-neighbor upsampling in the current layout source;
 - the five production compiled full-vision buckets;
 - `constant_grouped_all` plus `torchair_internal` vision weights;
 - compact uint8 HWC crop transfer and NPU normalization;
@@ -19,6 +23,8 @@ arguments.
 
 Do not change any flag, add profiling, or run decode. The purpose is the actual
 W1 page path and its existing stage timers, not another graph microbenchmark.
+The layout cache key includes the graph source, so an older cache parent is
+safe: the current source must resolve to its own graph-cache child.
 
 ## Restrictions
 
@@ -54,6 +60,7 @@ export OPENOCR_ROOT="${OPENOCR_ROOT:-$REPO/deps/OpenOCR_0d522801}"
 export IMAGES_DIR="${IMAGES_DIR:?reuse the existing OmniDocBench images directory}"
 export LAYOUT_CACHE="${LAYOUT_CACHE:?reuse the warmed optimized-layout cache parent}"
 export RECOGNITION_CACHE="${RECOGNITION_CACHE:-$REPO/.runtime_cache/12_unirec_0_1b_inference/vision_all45_internal_first128_$(git rev-parse --short HEAD)}"
+mkdir -p "$RECOGNITION_CACHE"
 
 launch_output="$(
   bash "$REPO/12_unirec_0_1b_inference/run_prefill_first128_w1_crosschip_background.sh" 2>&1
@@ -96,7 +103,8 @@ cat "$RUN_ROOT/report.log"
 Return:
 
 1. commit, physical NPU, CANN, torch, and torch_npu versions;
-2. all four `UNIREC_PREFILL_FIRST128_W1*` lines;
+2. all five `UNIREC_PREFILL_FIRST128_W1*` lines, including the matched 910B
+   ratios;
 3. process wall time;
 4. absolute `run.log`, `summary.json`, and recognition-cache paths.
 
@@ -107,3 +115,30 @@ mismatch and do not calculate a cross-chip ratio.
 
 If the run fails, return the first causal error and the last completed page.
 Do not retry with changed flags.
+
+## Fixed 910B2 reference
+
+The launcher calculates ratios against this already-completed, same-argument
+910B2 run at source commit `69eaf86` (the later commit only documented it):
+
+```text
+producer wall       15.334605 s
+throughput            8.347134 pages/s
+layout stage          4.003283 s
+input prepare         3.725054 s
+recognition prefill   4.274959 s
+cache D2H             0.639309 s
+shared pack           1.172008 s
+IPC delivery          0.601004 s
+RGB decode            1.042776 s
+```
+
+The 910B2 evidence is:
+
+```text
+/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/prefill_first128_w1_crosschip_69eaf86_20260813T181612/output/summary.json
+```
+
+Do not compare setup or warmup wall time across chips. Compare the measured
+`producer_wall_s` and its stage sums. Setup includes cache discovery/load, and
+the first complete 128-page pass is an excluded warmup.

@@ -34,6 +34,7 @@ resolve_inputs() {
   OPENOCR_ROOT="$(readlink -f "$OPENOCR_ROOT")"
   IMAGES_DIR="$(readlink -f "$IMAGES_DIR")"
   LAYOUT_CACHE="$(readlink -f "$LAYOUT_CACHE")"
+  mkdir -p "$RECOGNITION_CACHE"
   RECOGNITION_CACHE="$(readlink -f "$RECOGNITION_CACHE")"
 
   test -x "$PYTHON_BIN"
@@ -104,6 +105,13 @@ assert p["artifact"]["page_count"] == 128
 w = p["worker_summary"]
 s = w["stage_s"]
 v = w["vision_batching"]
+assert p["artifact"]["crop_count"] == 950
+assert p["artifact"]["rejected_crop_count"] == 6
+assert p["artifact"]["real_source_tokens"] == 61596
+assert v["compiled_real_rows"] == 950
+assert v["compiled_physical_rows"] == 1424
+assert v["fallback_rows"] == 1
+assert abs(v["compiled_slot_efficiency"] - 0.6671348314606742) < 1e-12
 print(
     "UNIREC_PREFILL_FIRST128_W1: PASS "
     f"wall={p['producer_wall_s']:.6f}s "
@@ -144,6 +152,20 @@ print(
     f"setup={p['setup_s']:.6f}s "
     f"warmup={p['warmup']['wall_s']:.6f}s "
     f"warmup_pages_s={p['warmup']['pages_per_s']:.6f}"
+)
+reference_wall_s = 15.334604742005467
+reference_pages_s = 8.347133959662797
+reference_layout_s = 4.0032829493284225
+reference_recognition_prefill_s = 4.274959344416855
+print(
+    "UNIREC_PREFILL_FIRST128_W1_VS_910B: "
+    f"wall_ratio_310p_over_910b={p['producer_wall_s'] / reference_wall_s:.6f} "
+    f"pages_s_ratio_910b_over_310p={reference_pages_s / p['throughput']['pages_per_s']:.6f} "
+    f"layout_ratio_310p_over_910b={s['worker_detector_call_sum_s'] / reference_layout_s:.6f} "
+    "recognition_prefill_ratio_310p_over_910b="
+    f"{s['worker_recognition_prefill_sum_s'] / reference_recognition_prefill_s:.6f} "
+    f"reference_910b_wall={reference_wall_s:.6f}s "
+    f"reference_910b_pages_s={reference_pages_s:.6f}"
 )
 PY
 }
