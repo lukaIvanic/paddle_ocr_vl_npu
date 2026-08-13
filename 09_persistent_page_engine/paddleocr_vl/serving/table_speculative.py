@@ -516,6 +516,7 @@ class TableSpeculativeDecodeRuntime:
         wrapper_rescue: bool = False,
         wrapper_rescue_top_k: int = 3,
         wrapper_rescue_formula_previous: bool = False,
+        record_device_timing: bool = True,
     ) -> None:
         if int(recognizer.batch_size) != 1:
             raise ValueError("table speculative decode currently requires B1")
@@ -539,6 +540,7 @@ class TableSpeculativeDecodeRuntime:
         self.wrapper_rescue = bool(wrapper_rescue)
         self.wrapper_rescue_top_k = int(wrapper_rescue_top_k)
         self.wrapper_rescue_formula_previous = bool(wrapper_rescue_formula_previous)
+        self.record_device_timing = bool(record_device_timing)
         if self.wrapper_rescue_top_k <= 0:
             raise ValueError("wrapper_rescue_top_k must be positive")
         self.verify = TextSpecVerifyRuntime(
@@ -576,11 +578,39 @@ class TableSpeculativeDecodeRuntime:
         self.host_probe_probabilities = torch.empty(
             (1, self.wrapper_rescue_top_k), dtype=torch.float32, pin_memory=True
         )
+        # Verification calls are serialized by their CPU dependency. Reuse
+        # events after the completion synchronization instead of allocating
+        # three new event objects for every call.
+        self._call_start_event = (
+            self._event(enable_timing=True) if self.record_device_timing else None
+        )
+        self._call_end_event = (
+            self._event(enable_timing=True) if self.record_device_timing else None
+        )
+        self._call_done_event = self._event(enable_timing=False)
 
-    def _event(self) -> Any:
+    def _event(self, *, enable_timing: bool = True) -> Any:
         import torch_npu
 
-        return torch_npu.npu.Event(enable_timing=True)
+        return torch_npu.npu.Event(enable_timing=enable_timing)
+
+    def _start_timing(self) -> None:
+        if self._call_start_event is not None:
+            self._call_start_event.record()
+
+    def _end_timing(self) -> None:
+        if self._call_end_event is not None:
+            self._call_end_event.record()
+
+    def _finish_call(self) -> float:
+        self._call_done_event.record()
+        self._call_done_event.synchronize()
+        if self._call_start_event is None or self._call_end_event is None:
+            return 0.0
+        return (
+            float(self._call_start_event.elapsed_time(self._call_end_event))
+            / 1000.0
+        )
 
     def _verify_call(
         self,
@@ -598,23 +628,19 @@ class TableSpeculativeDecodeRuntime:
                 dtype=torch.int64,
             )
         self.device_input.copy_(self.host_input, non_blocking=True)
-        start = self._event()
-        end = self._event()
-        start.record()
+        self._start_timing()
         targets = self.verify.fn(
             self.device_input,
             cache_position,
             rope_deltas,
             *flat_cache,
         )
-        end.record()
+        self._end_timing()
         self.host_targets.copy_(targets, non_blocking=True)
-        done = self._event()
-        done.record()
-        done.synchronize()
+        device_s = self._finish_call()
         return (
             [int(value) for value in self.host_targets[0].tolist()],
-            float(start.elapsed_time(end)) / 1000.0,
+            device_s,
         )
 
     def _decode_call(
@@ -625,9 +651,7 @@ class TableSpeculativeDecodeRuntime:
         flat_cache: tuple[torch.Tensor, ...],
     ) -> tuple[int, float]:
         self.decode_input.fill_(int(current_token))
-        start = self._event()
-        end = self._event()
-        start.record()
+        self._start_timing()
         logits = self.recognizer.decode_fn(
             self.decode_input,
             cache_position,
@@ -660,12 +684,10 @@ class TableSpeculativeDecodeRuntime:
                     (1,), device=logits.device, dtype=torch.bool
                 ),
             ).view(-1, 1)
-        end.record()
+        self._end_timing()
         self.host_decode_target.copy_(sampled, non_blocking=True)
-        done = self._event()
-        done.record()
-        done.synchronize()
-        return int(self.host_decode_target[0, 0]), float(start.elapsed_time(end)) / 1000.0
+        device_s = self._finish_call()
+        return int(self.host_decode_target[0, 0]), device_s
 
     def _probe_topk_call(
         self,
@@ -677,9 +699,7 @@ class TableSpeculativeDecodeRuntime:
         """Return live full-vocabulary softmax top-k for one decode position."""
 
         self.decode_input.fill_(int(current_token))
-        start = self._event()
-        end = self._event()
-        start.record()
+        self._start_timing()
         logits = self.recognizer.decode_fn(
             self.decode_input,
             cache_position,
@@ -693,13 +713,11 @@ class TableSpeculativeDecodeRuntime:
             dim=-1,
         )
         probabilities = torch.softmax(scores, dim=-1).gather(-1, top_ids)
-        end.record()
+        self._end_timing()
         self.host_probe_ids.copy_(top_ids, non_blocking=True)
         self.host_probe_logits.copy_(top_logits, non_blocking=True)
         self.host_probe_probabilities.copy_(probabilities, non_blocking=True)
-        done = self._event()
-        done.record()
-        done.synchronize()
+        device_s = self._finish_call()
         rows = [
             {
                 "rank": rank + 1,
@@ -709,7 +727,7 @@ class TableSpeculativeDecodeRuntime:
             }
             for rank in range(self.wrapper_rescue_top_k)
         ]
-        return rows, float(start.elapsed_time(end)) / 1000.0
+        return rows, device_s
 
     @torch.inference_mode()
     def decode(

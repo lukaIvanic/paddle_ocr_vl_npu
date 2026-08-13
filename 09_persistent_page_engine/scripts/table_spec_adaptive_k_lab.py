@@ -95,6 +95,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--text-buckets", default=fixed_lab.DEFAULT_TEXT_BUCKETS)
     parser.add_argument("--allow-compile", action="store_true")
     parser.add_argument(
+        "--per-call-device-timing",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Record verifier graph event time for every call. Disable for the "
+            "lowest production latency; completion synchronization remains."
+        ),
+    )
+    parser.add_argument(
         "--cell-boundary-math-open-draft-trust",
         action="store_true",
         help=(
@@ -298,6 +307,7 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
         initial_k: int,
         cache_roots: dict[int, Path],
         verifier_optimization: str = "combined_apply",
+        record_device_timing: bool = True,
         cell_boundary_math_open_draft_trust: bool = False,
         cell_boundary_slash_draft_trust: bool = False,
         in_cell_draft_script_open_trust: bool = False,
@@ -334,6 +344,7 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
                 cache_root=cache_roots[value].resolve(),
                 verifier_optimization=verifier_optimization,
                 wrapper_rescue=False,
+                record_device_timing=record_device_timing,
             )
             for value in k_values
         }
@@ -673,6 +684,7 @@ def main() -> None:
         initial_k=args.initial_k,
         cache_roots=cache_roots,
         verifier_optimization=args.verifier_optimization,
+        record_device_timing=args.per_call_device_timing,
         cell_boundary_math_open_draft_trust=(
             args.cell_boundary_math_open_draft_trust
         ),
@@ -793,6 +805,7 @@ def main() -> None:
             "initial_k": args.initial_k,
             "policy": "fully accepted call doubles K; rejected call halves K",
             "verifier_optimization": args.verifier_optimization,
+            "per_call_device_timing": bool(args.per_call_device_timing),
             "cache_length": args.cache_length,
             "targets": str(args.targets),
             "drafts": str(args.drafts),
