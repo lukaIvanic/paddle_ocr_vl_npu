@@ -1057,6 +1057,29 @@ class ContinuousRecognizer:
         )
 
     @torch.inference_mode()
+    def prefill_prepared_one(
+        self,
+        prepared: CpuPreparedRecognition,
+    ) -> PrefilledRecognition:
+        """Run one already-prepared crop through the normal NPU prefill path.
+
+        This is the ownership-safe handoff for callers that prepare a request
+        on a CPU worker while unrelated NPU work is running. The returned state
+        owns one cache lease; its consumer must eventually call
+        ``take_device_state`` and release it.
+        """
+
+        group = self._prepared_group([(prepared, 0.0)])
+        staged = self._stage_prefill_group(group)
+        inflight = self._enqueue_staged_prefill_group(staged)
+        finalized = self._finalize_prefill_group(inflight)
+        if len(finalized) != 1:
+            raise RuntimeError(
+                f"single-crop prefill produced {len(finalized)} states"
+            )
+        return finalized[0]
+
+    @torch.inference_mode()
     def prefill_one(self, request: RecognitionRequest) -> PrefilledRecognition:
         """Run the faithful crop frontend and prefill without entering decode.
 
@@ -1068,15 +1091,7 @@ class ContinuousRecognizer:
 
         submitted_at = time.perf_counter()
         prepared = self._prepare_cpu(request, submitted_at)
-        group = self._prepared_group([(prepared, 0.0)])
-        staged = self._stage_prefill_group(group)
-        inflight = self._enqueue_staged_prefill_group(staged)
-        finalized = self._finalize_prefill_group(inflight)
-        if len(finalized) != 1:
-            raise RuntimeError(
-                f"single-crop prefill produced {len(finalized)} states"
-            )
-        return finalized[0]
+        return self.prefill_prepared_one(prepared)
 
     def _ready_from_prefilled(
         self,
