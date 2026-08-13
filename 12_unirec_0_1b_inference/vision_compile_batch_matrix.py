@@ -246,7 +246,7 @@ def main() -> None:
     baseline = rows[0]
     for row in rows:
         batch_size = int(row["batch_size"])
-        row["batching_efficiency_vs_b1"] = {
+        row["throughput_speedup_vs_b1"] = {
             lane: (
                 batch_size
                 * baseline["timing"][lane]["median_ms"]
