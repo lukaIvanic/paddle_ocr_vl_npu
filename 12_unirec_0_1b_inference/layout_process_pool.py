@@ -810,21 +810,75 @@ def _prepare_full_vision_worker_page(
             "invalid UNIREC_RECOGNITION_INPUT_CONTRACT: "
             f"{recognition_input_contract!r}"
         )
+    recognition_resize_backend = os.environ.get(
+        "UNIREC_RECOGNITION_RESIZE_BACKEND",
+        "pillow",
+    )
+    if recognition_resize_backend not in {"pillow", "kornia_rs"}:
+        raise ValueError(
+            "invalid UNIREC_RECOGNITION_RESIZE_BACKEND: "
+            f"{recognition_resize_backend!r}"
+        )
+    kornia_image_type = None
+    if recognition_resize_backend == "kornia_rs":
+        from kornia_rs.image import Image as KorniaImage
+
+        kornia_image_type = KorniaImage
+
     def prepare_crop(crop: dict[str, Any]) -> tuple[np.ndarray, dict[str, float]]:
         detail_s: dict[str, float] = {}
-        operation_started = time.perf_counter()
-        image = Image.fromarray(crop["image_rgb"])
-        detail_s["recognition_pil_fromarray_s"] = (
-            time.perf_counter() - operation_started
-        )
         if recognition_input_contract == "compact_uint8_hwc":
-            pixel_values, processor_timing_s = (
-                _resize_recognition_compact_hwc_with_timing(
-                    image,
-                    processor=recognition_processor,
+            if recognition_resize_backend == "kornia_rs":
+                assert kornia_image_type is not None
+                image_rgb = crop["image_rgb"]
+                detail_s["recognition_pil_fromarray_s"] = 0.0
+                operation_started = time.perf_counter()
+                target_size = recognition_processor.get_processed_size(
+                    image_rgb.shape[1],
+                    image_rgb.shape[0],
                 )
-            )
+                target_size_s = time.perf_counter() - operation_started
+                operation_started = time.perf_counter()
+                pixel_values = kornia_image_type.fromarray(image_rgb).resize(
+                    target_size[0],
+                    target_size[1],
+                    "bicubic",
+                ).data
+                resize_s = time.perf_counter() - operation_started
+                processor_timing_s = {
+                    "recognition_processor_image_convert_rgb_s": 0.0,
+                    "recognition_processor_target_size_s": target_size_s,
+                    "recognition_processor_resize_s": resize_s,
+                    "recognition_processor_pil_to_uint8_hwc_s": 0.0,
+                }
+                expected = (target_size[1], target_size[0], 3)
+                if (
+                    pixel_values.dtype != np.uint8
+                    or tuple(pixel_values.shape) != expected
+                ):
+                    raise ValueError(
+                        "kornia-rs UniRec resize produced an invalid array: "
+                        f"{pixel_values.dtype} {pixel_values.shape}, "
+                        f"expected uint8 {expected}"
+                    )
+            else:
+                operation_started = time.perf_counter()
+                image = Image.fromarray(crop["image_rgb"])
+                detail_s["recognition_pil_fromarray_s"] = (
+                    time.perf_counter() - operation_started
+                )
+                pixel_values, processor_timing_s = (
+                    _resize_recognition_compact_hwc_with_timing(
+                        image,
+                        processor=recognition_processor,
+                    )
+                )
         else:
+            operation_started = time.perf_counter()
+            image = Image.fromarray(crop["image_rgb"])
+            detail_s["recognition_pil_fromarray_s"] = (
+                time.perf_counter() - operation_started
+            )
             inputs, processor_timing_s = (
                 recognition_processor.process_with_timing(image)
             )

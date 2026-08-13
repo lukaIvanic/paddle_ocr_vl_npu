@@ -170,6 +170,15 @@ def parse_args() -> argparse.Namespace:
         help="Persistent crop-resize threads inside each process worker.",
     )
     parser.add_argument(
+        "--recognition-resize-backend",
+        choices=("pillow", "kornia_rs"),
+        default="pillow",
+        help=(
+            "Resize compact uint8 recognition crops with the exact Pillow "
+            "reference or the faster close-parity kornia-rs bicubic path."
+        ),
+    )
+    parser.add_argument(
         "--vision-page-lookahead",
         type=int,
         default=4,
@@ -304,6 +313,9 @@ def main() -> None:
     os.environ["UNIREC_RECOGNITION_PREPROCESS_THREADS"] = str(
         args.recognition_preprocess_threads
     )
+    os.environ["UNIREC_RECOGNITION_RESIZE_BACKEND"] = (
+        args.recognition_resize_backend
+    )
 
     openocr_root = args.openocr_root.expanduser().resolve()
     model_path = args.model_path.expanduser().resolve()
@@ -437,6 +449,9 @@ def main() -> None:
                 "recognition_input_contract": args.recognition_input_contract,
                 "recognition_preprocess_threads": (
                     args.recognition_preprocess_threads
+                ),
+                "recognition_resize_backend": (
+                    args.recognition_resize_backend
                 ),
                 "vision_page_lookahead": args.vision_page_lookahead,
                 "use_chart_recognition": args.use_chart_recognition,
