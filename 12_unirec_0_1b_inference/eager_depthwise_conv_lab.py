@@ -294,7 +294,14 @@ def _run_lane(args: argparse.Namespace) -> None:
     group_repack = _aggregate(
         _matching_rows(transdata_rows, TARGET_GROUP_REPACK)
     )
-    convolution = _aggregate(_matching_rows(shape_rows, TARGET_CONV))
+    native_convolution = _aggregate(_matching_rows(shape_rows, TARGET_CONV))
+    any_convolution = _aggregate(
+        [
+            row
+            for row in shape_rows
+            if str(row.get("name", "")).startswith("Conv2D |")
+        ]
+    )
 
     before_event = float(control_before["device_event"]["median_ms"])
     after_event = float(control_after["device_event"]["median_ms"])
@@ -343,14 +350,17 @@ def _run_lane(args: argparse.Namespace) -> None:
         "target_operations": {
             "logical_weight_to_fz1": logical_to_fz1,
             "fz1_to_grouped_fz384": group_repack,
-            "conv2d": convolution,
+            "native_physical_conv2d": native_convolution,
+            "conv2d_any_physical_signature": any_convolution,
         },
         "parsed_profile": parsed,
     }
-    if group_repack["count"] != 1:
+    if args.lane == "native" and group_repack["count"] != 1:
         report["status"] = "target_repack_not_reproduced"
-    if convolution["count"] != 1:
+    if args.lane == "native" and native_convolution["count"] != 1:
         report["status"] = "target_conv_not_reproduced"
+    if any_convolution["count"] != 1:
+        report["status"] = "single_conv_not_observed"
 
     output_json = output_dir / "result.json"
     output_json.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -367,8 +377,10 @@ def _run_lane(args: argparse.Namespace) -> None:
         f"{logical_to_fz1['duration_us'] / 1000.0:.6f}ms "
         f"group_repack={group_repack['count']}/"
         f"{group_repack['duration_us'] / 1000.0:.6f}ms "
-        f"conv={convolution['count']}/"
-        f"{convolution['duration_us'] / 1000.0:.6f}ms",
+        f"native_conv={native_convolution['count']}/"
+        f"{native_convolution['duration_us'] / 1000.0:.6f}ms "
+        f"any_conv={any_convolution['count']}/"
+        f"{any_convolution['duration_us'] / 1000.0:.6f}ms",
         flush=True,
     )
     print(f"OUTPUT_JSON={output_json}", flush=True)
@@ -444,7 +456,7 @@ def _run_matrix(args: argparse.Namespace) -> None:
     if not comparison["native_vs_fractal_z_1"][
         "allclose_atol_5e_2_rtol_5e_2"
     ]:
-        comparison["status"] = "parity_failed"
+        comparison["status"] = "candidate_semantics_failed"
     summary_path = output_dir / "matrix_summary.json"
     summary_path.write_text(
         json.dumps(comparison, indent=2) + "\n", encoding="utf-8"
@@ -462,8 +474,9 @@ def _run_matrix(args: argparse.Namespace) -> None:
         flush=True,
     )
     print(f"MATRIX_SUMMARY_JSON={summary_path}", flush=True)
-    if comparison["status"] != "ok":
-        raise RuntimeError(comparison["status"])
+    # A numerically invalid candidate is an experiment result, not a harness
+    # failure. The per-lane structural gates still exit nonzero when profiling
+    # did not observe the intended operation.
 
 
 def main() -> None:
