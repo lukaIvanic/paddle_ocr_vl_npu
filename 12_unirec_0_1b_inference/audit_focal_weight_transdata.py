@@ -109,9 +109,10 @@ def main() -> None:
 
     total_us = sum(float(row["Duration(us)"]) for row in transdata)
     median_ms = float(lane["control_after"]["device_event"]["median_ms"])
+    rewrite_name = str(summary["config"]["vision_depthwise_rewrite"])
     print(
         "UNIREC_FOCAL_WEIGHT_TRANSDATA_AUDIT: PASS "
-        f"bucket={args.bucket} rewrite={lane['focal_depthwise_rewrite']} "
+        f"bucket={args.bucket} rewrite={rewrite_name} "
         f"rewritten={target_count} focal_weight_transdata=0 "
         f"total_transdata={len(transdata)} total_transdata_ms={total_us / 1000:.6f} "
         f"device_median_ms={median_ms:.6f} "
