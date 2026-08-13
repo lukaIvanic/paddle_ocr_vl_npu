@@ -218,6 +218,50 @@ def _difference(left: torch.Tensor, right: torch.Tensor) -> dict[str, Any]:
     }
 
 
+def _compact_comparison_reference(report: dict[str, Any]) -> dict[str, Any]:
+    kernel = report["parsed_profile"]["summary"]["runs"][0]["kernel_details"]
+    row_fields = ("name", "count", "duration_us")
+
+    def compact_rows(name: str) -> list[dict[str, Any]]:
+        return [
+            {field: row[field] for field in row_fields}
+            for row in kernel.get(name, [])
+        ]
+
+    compact_kernel = {
+        "row_count": kernel["row_count"],
+        "total_duration_us": kernel["total_duration_us"],
+        "weighted_cube_utilization_pct": kernel[
+            "weighted_cube_utilization_pct"
+        ],
+        "top_kernel_types": compact_rows("top_kernel_types"),
+        "top_shape_signatures": compact_rows("top_shape_signatures"),
+        "top_matmul_shape_signatures": compact_rows(
+            "top_matmul_shape_signatures"
+        ),
+        "top_transdata_shape_signatures": compact_rows(
+            "top_transdata_shape_signatures"
+        ),
+    }
+    return {
+        "status": report["status"],
+        "device_name": report["device_name"],
+        "dtype": report["dtype"],
+        "npu_jit_compile": report["npu_jit_compile"],
+        "input_shape": report["input_shape"],
+        "execution": report["execution"],
+        "control_before": report["control_before"],
+        "profile_timing": report["profile_timing"],
+        "control_after": report["control_after"],
+        "profiler_overhead": report["profiler_overhead"],
+        "correctness": report["correctness"],
+        "profile_metric": report["profile_metric"],
+        "parsed_profile": {
+            "summary": {"runs": [{"kernel_details": compact_kernel}]}
+        },
+    }
+
+
 def main() -> None:
     args = parse_args()
     devices = _physical_devices()
@@ -308,6 +352,11 @@ def main() -> None:
     }
     output_json = output_dir / "result.json"
     output_json.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    comparison_reference = output_dir / "comparison_reference.json"
+    comparison_reference.write_text(
+        json.dumps(_compact_comparison_reference(report), indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     run_summary = parsed["summary"]["runs"][0]
     kernels = run_summary.get("kernel_details", {})
@@ -332,6 +381,7 @@ def main() -> None:
             flush=True,
         )
     print(f"PROFILE_PARSE_JSON={profile_dir / 'profile_parse_summary.json'}")
+    print(f"COMPARISON_REFERENCE_JSON={comparison_reference}")
     print(f"OUTPUT_JSON={output_json}", flush=True)
     if not allclose:
         raise RuntimeError("profiled stock-eager output failed control parity")
