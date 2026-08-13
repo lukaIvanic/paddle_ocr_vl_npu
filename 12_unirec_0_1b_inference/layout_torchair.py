@@ -360,6 +360,58 @@ def _linear_2d(self, input_tensor):
     return output.reshape(*leading_shape, self.out_features)
 
 
+def _nearest_upsample2d_2x_exact(inputs: torch.Tensor) -> torch.Tensor:
+    """Duplicate each NCHW value into a 2x2 block without tensor indexing."""
+    batch, channels, height, width = inputs.shape
+    return (
+        inputs.reshape(batch, channels, height, 1, width, 1)
+        .expand(batch, channels, height, 2, width, 2)
+        .reshape(batch, channels, height * 2, width * 2)
+    )
+
+
+def _hybrid_encoder(self, inputs_embeds=None, **kwargs):
+    """Run the stock hybrid encoder with an index-free exact 2x upsample."""
+    feature_maps = inputs_embeds
+
+    if self.config.encoder_layers > 0:
+        for index, encoder_index in enumerate(self.encode_proj_layers):
+            feature_maps[encoder_index] = self.aifi[index](
+                feature_maps[encoder_index],
+                **kwargs,
+            )
+
+    fpn_feature_maps = [feature_maps[-1]]
+    for index, (lateral_conv, fpn_block) in enumerate(
+        zip(self.lateral_convs, self.fpn_blocks)
+    ):
+        backbone_feature_map = feature_maps[self.num_fpn_stages - index - 1]
+        top_fpn_feature_map = lateral_conv(fpn_feature_maps[-1])
+        fpn_feature_maps[-1] = top_fpn_feature_map
+        top_fpn_feature_map = _nearest_upsample2d_2x_exact(
+            top_fpn_feature_map
+        )
+        fused_feature_map = torch.concat(
+            [top_fpn_feature_map, backbone_feature_map],
+            dim=1,
+        )
+        fpn_feature_maps.append(fpn_block(fused_feature_map))
+
+    fpn_feature_maps.reverse()
+    pan_feature_maps = [fpn_feature_maps[0]]
+    for index, (downsample_conv, pan_block) in enumerate(
+        zip(self.downsample_convs, self.pan_blocks)
+    ):
+        downsampled_feature_map = downsample_conv(pan_feature_maps[-1])
+        fused_feature_map = torch.concat(
+            [downsampled_feature_map, fpn_feature_maps[index + 1]],
+            dim=1,
+        )
+        pan_feature_maps.append(pan_block(fused_feature_map))
+
+    return layout_mod.BaseModelOutput(last_hidden_state=pan_feature_maps)
+
+
 def _bind(instance: Any, method: Any) -> None:
     instance.forward = types.MethodType(method, instance)
 
@@ -396,6 +448,8 @@ def make_compile_compatible(model: nn.Module) -> None:
             _bind(module, _global_pointer)
         elif isinstance(module, layout_mod.PPDocLayoutV2SinePositionEmbedding):
             _bind(module, _sine_position)
+        elif isinstance(module, layout_mod.PPDocLayoutV2HybridEncoder):
+            _bind(module, _hybrid_encoder)
         elif isinstance(module, nn.Linear):
             _bind(module, _linear_2d)
 

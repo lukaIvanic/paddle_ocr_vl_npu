@@ -39,6 +39,10 @@ class _ReadingOrderEncoderClass(nn.Module):
     pass
 
 
+class _HybridEncoderClass(nn.Module):
+    pass
+
+
 def _load_layout_torchair():
     layout_module = types.ModuleType(
         "transformers.models.pp_doclayout_v2.modeling_pp_doclayout_v2"
@@ -50,7 +54,9 @@ def _load_layout_torchair():
     layout_module.PPDocLayoutV2ReadingOrderEncoder = _ReadingOrderEncoderClass
     layout_module.PPDocLayoutV2GlobalPointer = _GlobalPointerClass
     layout_module.PPDocLayoutV2SinePositionEmbedding = _SinePositionClass
+    layout_module.PPDocLayoutV2HybridEncoder = _HybridEncoderClass
     layout_module.PPDocLayoutV2ForObjectDetectionOutput = SimpleNamespace
+    layout_module.BaseModelOutput = SimpleNamespace
     def rejected_bidirectional_mask(**kwargs):
         del kwargs
         raise AssertionError("eager reading order must not call the HF mask helper")
@@ -217,6 +223,21 @@ class _ConvEvalNorm(nn.Module):
 
 
 class LayoutNpuCompatibilityTest(unittest.TestCase):
+    def test_index_free_nearest_upsample_is_bit_exact(self) -> None:
+        layout_torchair = _load_layout_torchair()
+        torch.manual_seed(20260813)
+        inputs = torch.randn(2, 7, 11, 13, dtype=torch.float16)
+
+        reference = torch.nn.functional.interpolate(
+            inputs,
+            scale_factor=2.0,
+            mode="nearest",
+        )
+        actual = layout_torchair._nearest_upsample2d_2x_exact(inputs)
+
+        torch.testing.assert_close(actual, reference, atol=0.0, rtol=0.0)
+        self.assertEqual(actual.stride(), reference.stride())
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.layout_torchair = _load_layout_torchair()
