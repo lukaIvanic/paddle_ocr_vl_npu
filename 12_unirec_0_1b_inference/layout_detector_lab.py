@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import torch
 
 from layout_page_input import decode_page_rgb, materialize_layout_rgb
 from opendoc_layout_npu import (
