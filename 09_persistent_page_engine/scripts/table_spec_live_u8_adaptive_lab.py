@@ -88,6 +88,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--draft-batch-size", type=int, default=8)
     parser.add_argument("--draft-vision-pack-target", type=int, default=2304)
     parser.add_argument("--row-overlap-px", type=int, default=3)
+    parser.add_argument(
+        "--target-cpu-delay-ms",
+        type=float,
+        default=0.0,
+        help=(
+            "Delay full-table CPU preparation so the row-draft frontend can "
+            "run first; the work still overlaps draft decoding."
+        ),
+    )
 
     parser.add_argument("--k-values", default="7,15,31,63")
     parser.add_argument("--initial-k", type=int, default=15)
@@ -301,7 +310,10 @@ def _timed_cpu_prepare(
     recognizer: Any,
     request: RecognitionRequest,
     submitted_at: float,
+    delay_s: float,
 ) -> tuple[Any, float, float, float]:
+    if delay_s > 0:
+        time.sleep(delay_s)
     started = time.perf_counter()
     cpu_started = time.thread_time()
     prepared = recognizer._prepare_cpu(request, submitted_at)
@@ -372,6 +384,7 @@ def _run_one(
         b1_recognizer,
         target_request,
         cpu_submitted,
+        max(0.0, float(args.target_cpu_delay_ms) / 1000.0),
     )
     draft_started = time.perf_counter()
     draft, draft_wall_s = _run_draft(
@@ -395,6 +408,8 @@ def _run_one(
     prefill_started = time.perf_counter()
     prefilled = b1_recognizer.prefill_prepared_one(prepared)
     prefill_finished = time.perf_counter()
+    target_prefill_timing_s = dict(prefilled.timing_s)
+    target_prefill_device_stage_s = dict(prefilled.device_stage_s)
     matcher_wait_started = time.perf_counter()
     matcher, matcher_started, matcher_finished, matcher_thread_s = (
         matcher_future.result()
@@ -449,6 +464,9 @@ def _run_one(
             **row_timing,
             "draft_recognition_wall": draft_wall_s,
             "target_cpu_prepare": cpu_prepare_s,
+            "target_cpu_prepare_scheduled_delay": (
+                max(0.0, float(args.target_cpu_delay_ms) / 1000.0)
+            ),
             "target_cpu_prepare_thread_cpu": cpu_prepare_thread_s,
             "target_cpu_prepare_consumer_wait": cpu_wait_s,
             "target_cpu_prepare_hidden_by_draft": cpu_hidden_s,
@@ -460,6 +478,10 @@ def _run_one(
             "target_verify_wall": verify_finished - verify_started,
             "overlap_hidden_total": cpu_hidden_s + matcher_hidden_s,
             "sequential_work_estimate": e2e_s + cpu_hidden_s + matcher_hidden_s,
+        },
+        "target_prefill": {
+            "timing_s": target_prefill_timing_s,
+            "device_stage_s": target_prefill_device_stage_s,
         },
         "draft": draft,
         "speculative": result.to_dict(),
@@ -657,6 +679,7 @@ def main() -> None:
             "latency_boundary": "in_memory_table_crop_to_verified_output",
             "source_page_load_and_bbox_crop_included": False,
             "target_cpu_overlap": "during_draft_recognition",
+            "target_cpu_delay_ms": float(args.target_cpu_delay_ms),
             "matcher_overlap": "during_target_npu_prefill",
             "npu_overlap": False,
         },
