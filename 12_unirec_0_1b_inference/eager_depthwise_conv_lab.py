@@ -300,7 +300,14 @@ def _run_lane(args: argparse.Namespace) -> None:
             "storage_shape": [int(value) for value in storage_shape],
             "physical_bytes": int(packed_host.nbytes),
         }
-    weight_format_after = int(torch_npu.get_npu_format(weight))
+    # torch_npu.get_npu_format wraps the integer in a fixed Python enum. That
+    # enum has primary FRACTAL_Z (4), but not group-encoded FRACTAL_Z:384
+    # (98308), even though the runtime descriptor accepts the encoded value.
+    weight_format_after = (
+        int(descriptor["storage_format"])
+        if descriptor is not None
+        else int(torch_npu.get_npu_format(weight))
+    )
 
     def run() -> torch.Tensor:
         return functional.conv2d(
