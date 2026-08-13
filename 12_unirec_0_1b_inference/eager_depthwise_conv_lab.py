@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
         "--lane",
-        choices=("matrix", "native", "fractal_z_1"),
+        choices=("matrix", "native", "fractal_z_1", "grouped_fz_384"),
         default="matrix",
     )
     parser.add_argument("--device", default="npu:0")
@@ -228,10 +228,35 @@ def _aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _load_grouped_fz_bridge() -> tuple[Any, float]:
+    import torch_npu
+    from torch.utils.cpp_extension import load
+
+    torch_npu_root = Path(torch_npu.__file__).resolve().parent
+    library_dir = torch_npu_root / "lib"
+    source = HERE / "grouped_fz_descriptor_bridge.cpp"
+    started = time.perf_counter()
+    bridge = load(
+        name="unirec_grouped_fz_descriptor_bridge_v1",
+        sources=[str(source)],
+        extra_include_paths=[str(torch_npu_root / "include")],
+        extra_cflags=["-O2"],
+        extra_ldflags=[
+            f"-L{library_dir}",
+            "-ltorch_npu",
+            f"-Wl,-rpath,{library_dir}",
+        ],
+        verbose=True,
+    )
+    return bridge, time.perf_counter() - started
+
+
 def _run_lane(args: argparse.Namespace) -> None:
     import torch
     import torch.nn.functional as functional
     import torch_npu
+
+    from vision_focal_depthwise import pack_grouped_fz_host
 
     devices = _physical_devices()
     output_dir = args.output_dir.expanduser().resolve()
@@ -239,7 +264,10 @@ def _run_lane(args: argparse.Namespace) -> None:
 
     # torch-npu 2.10 requires this before the first NPU allocation if an
     # internal-format tensor is requested explicitly.
-    torch.npu.config.allow_internal_format = args.lane == "fractal_z_1"
+    torch.npu.config.allow_internal_format = args.lane in {
+        "fractal_z_1",
+        "grouped_fz_384",
+    }
     torch_npu.npu.set_compile_mode(jit_compile=False)
     torch.manual_seed(20260813)
     host_input = torch.randn((1, 384, 4, 60), dtype=torch.float16)
@@ -247,8 +275,31 @@ def _run_lane(args: argparse.Namespace) -> None:
     inputs = host_input.to(args.device)
     weight = host_weight.to(args.device)
     weight_format_before = int(torch_npu.get_npu_format(weight))
+    extension_build_s = 0.0
+    descriptor = None
     if args.lane == "fractal_z_1":
         weight = torch_npu.npu_format_cast(weight, 4)
+    elif args.lane == "grouped_fz_384":
+        bridge, extension_build_s = _load_grouped_fz_bridge()
+        packed_host = pack_grouped_fz_host(
+            host_weight.numpy(), groups=384
+        )
+        packed_storage = torch.from_numpy(packed_host).to(args.device)
+        weight = bridge.wrap_grouped_fz(
+            packed_storage,
+            list(host_weight.shape),
+            384,
+        )
+        origin_format, storage_format, base_shape, storage_shape = (
+            bridge.describe_npu_storage(weight)
+        )
+        descriptor = {
+            "origin_format": int(origin_format),
+            "storage_format": int(storage_format),
+            "base_shape": [int(value) for value in base_shape],
+            "storage_shape": [int(value) for value in storage_shape],
+            "physical_bytes": int(packed_host.nbytes),
+        }
     weight_format_after = int(torch_npu.get_npu_format(weight))
 
     def run() -> torch.Tensor:
@@ -330,6 +381,8 @@ def _run_lane(args: argparse.Namespace) -> None:
             "after": weight_format_after,
             "requested": args.lane,
         },
+        "grouped_fz_descriptor": descriptor,
+        "extension_build_s": extension_build_s,
         "warmup_wall_ms": warmup_wall_ms,
         "control_before": control_before,
         "profile_timing": profile_timing,
@@ -359,6 +412,18 @@ def _run_lane(args: argparse.Namespace) -> None:
         report["status"] = "target_repack_not_reproduced"
     if args.lane == "native" and native_convolution["count"] != 1:
         report["status"] = "target_conv_not_reproduced"
+    if args.lane == "grouped_fz_384":
+        expected_descriptor = {
+            "origin_format": 0,
+            "storage_format": (384 << 8) | 4,
+            "base_shape": [384, 1, 7, 7],
+            "storage_shape": [1176, 1, 16, 16],
+            "physical_bytes": 1176 * 16 * 16 * 2,
+        }
+        if descriptor != expected_descriptor:
+            report["status"] = "grouped_descriptor_mismatch"
+        if logical_to_fz1["count"] != 0 or group_repack["count"] != 0:
+            report["status"] = "prepacked_weight_was_repacked"
     if any_convolution["count"] != 1:
         report["status"] = "single_conv_not_observed"
 
@@ -394,7 +459,7 @@ def _run_matrix(args: argparse.Namespace) -> None:
     output_dir = args.output_dir.expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=False)
     reports: dict[str, dict[str, Any]] = {}
-    for lane in ("native", "fractal_z_1"):
+    for lane in ("native", "fractal_z_1", "grouped_fz_384"):
         command = [
             sys.executable,
             str(Path(__file__).resolve()),
@@ -439,7 +504,13 @@ def _run_matrix(args: argparse.Namespace) -> None:
         map_location="cpu",
         weights_only=True,
     )
+    grouped_output = torch.load(
+        output_dir / "grouped_fz_384/output.pt",
+        map_location="cpu",
+        weights_only=True,
+    )
     delta = (native_output - fz1_output).abs()
+    grouped_delta = (native_output - grouped_output).abs()
     comparison = {
         "status": "ok",
         "native_replication_gate": True,
@@ -452,11 +523,25 @@ def _run_matrix(args: argparse.Namespace) -> None:
             "max_abs": float(delta.max().item()),
             "mean_abs": float(delta.mean().item()),
         },
+        "native_vs_grouped_fz_384": {
+            "exact": bool(torch.equal(native_output, grouped_output)),
+            "allclose_atol_5e_2_rtol_5e_2": bool(
+                torch.allclose(native_output, grouped_output, atol=5e-2, rtol=5e-2)
+            ),
+            "max_abs": float(grouped_delta.max().item()),
+            "mean_abs": float(grouped_delta.mean().item()),
+        },
     }
-    if not comparison["native_vs_fractal_z_1"][
+    comparison["fractal_z_1_expected_semantics_failure"] = not comparison[
+        "native_vs_fractal_z_1"
+    ]["allclose_atol_5e_2_rtol_5e_2"]
+    grouped = reports["grouped_fz_384"]
+    if not comparison["native_vs_grouped_fz_384"][
         "allclose_atol_5e_2_rtol_5e_2"
     ]:
-        comparison["status"] = "candidate_semantics_failed"
+        comparison["status"] = "grouped_candidate_semantics_failed"
+    if grouped["target_operations"]["fz1_to_grouped_fz384"]["count"] != 0:
+        comparison["status"] = "grouped_candidate_repacked"
     summary_path = output_dir / "matrix_summary.json"
     summary_path.write_text(
         json.dumps(comparison, indent=2) + "\n", encoding="utf-8"
@@ -470,7 +555,12 @@ def _run_matrix(args: argparse.Namespace) -> None:
         f"native_ms={native['control_before']['device_event']['median_ms']:.6f} "
         f"fz1_ms={fz1['control_before']['device_event']['median_ms']:.6f} "
         f"native_repack={native['target_operations']['fz1_to_grouped_fz384']['count']} "
-        f"fz1_repack={fz1['target_operations']['fz1_to_grouped_fz384']['count']}",
+        f"fz1_repack={fz1['target_operations']['fz1_to_grouped_fz384']['count']} "
+        f"grouped_ms={grouped['control_before']['device_event']['median_ms']:.6f} "
+        f"grouped_repack={grouped['target_operations']['fz1_to_grouped_fz384']['count']} "
+        f"grouped_exact={comparison['native_vs_grouped_fz_384']['exact']} "
+        f"grouped_max_abs={comparison['native_vs_grouped_fz_384']['max_abs']:.9g} "
+        f"grouped_mean_abs={comparison['native_vs_grouped_fz_384']['mean_abs']:.9g}",
         flush=True,
     )
     print(f"MATRIX_SUMMARY_JSON={summary_path}", flush=True)
