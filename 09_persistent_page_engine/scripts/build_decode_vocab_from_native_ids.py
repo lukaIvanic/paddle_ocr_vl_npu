@@ -17,7 +17,16 @@ from pathlib import Path
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument(
+        "--input",
+        type=Path,
+        action="append",
+        required=True,
+        help=(
+            "Detailed native-token JSONL input. Repeat this option to build "
+            "one vocabulary covering multiple generation routes."
+        ),
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--selected-size", type=int, default=16384)
     parser.add_argument("--full-vocab-size", type=int, default=103424)
@@ -31,14 +40,24 @@ def main() -> None:
 
     counts: Counter[int] = Counter()
     tables = 0
-    with args.input.expanduser().resolve().open(encoding="utf-8") as handle:
-        for line in handle:
-            if not line.strip():
-                continue
-            record = json.loads(line)
-            tables += 1
-            for row in record.get("rows") or ():
-                counts.update(int(value) for value in row.get("token_ids") or ())
+    source_tables: dict[str, int] = {}
+    resolved_inputs = [path.expanduser().resolve() for path in args.input]
+    for resolved in resolved_inputs:
+        input_tables = 0
+        with resolved.open(encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                record = json.loads(line)
+                tables += 1
+                input_tables += 1
+                for row in record.get("rows") or ():
+                    counts.update(
+                        int(value) for value in row.get("token_ids") or ()
+                    )
+        source_tables[str(resolved)] = (
+            source_tables.get(str(resolved), 0) + input_tables
+        )
     if not counts:
         raise ValueError("input contains no rows[*].token_ids")
     invalid = [
@@ -65,8 +84,13 @@ def main() -> None:
     digest_payload = json.dumps(selected, separators=(",", ":")).encode("utf-8")
     payload = {
         "format": "paddleocr_vl_decode_vocab_v1",
-        "source": str(args.input.expanduser().resolve()),
+        "source": (
+            str(resolved_inputs[0])
+            if len(resolved_inputs) == 1
+            else [str(path) for path in resolved_inputs]
+        ),
         "source_tables": tables,
+        "source_tables_by_path": source_tables,
         "native_generated_token_occurrences": sum(counts.values()),
         "native_unique_token_ids": len(counts),
         "full_vocab_size": args.full_vocab_size,
