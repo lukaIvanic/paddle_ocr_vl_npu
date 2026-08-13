@@ -78,6 +78,7 @@ worker_main() {
     run_lane grouped \
       --lane converter_grouped_fz \
       --reference-output "$RUN_ROOT/native/compiled_output.pt" \
+      --reference-result "$RUN_ROOT/native/result.json" \
       || status="$?"
   fi
   snapshot_oms "$RUN_ROOT/om_after_grouped.tsv"
@@ -85,6 +86,7 @@ worker_main() {
     run_lane grouped_warm \
       --lane converter_grouped_fz \
       --reference-output "$RUN_ROOT/native/compiled_output.pt" \
+      --reference-result "$RUN_ROOT/native/result.json" \
       || status="$?"
   fi
   snapshot_oms "$RUN_ROOT/om_after_warm.tsv"

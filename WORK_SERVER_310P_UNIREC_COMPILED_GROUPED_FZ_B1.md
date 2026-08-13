@@ -63,13 +63,18 @@ Paste these items only. Do not rerun profiling merely to format the report.
 1. Commit, physical NPU, CANN version, torch version, and torch_npu version.
 2. Both `UNIREC_COMPILED_GROUPED_FZ_VISION_B1` lines.
 3. Both `UNIREC_COMPILED_GROUPED_FZ_VISION_KERNELS` lines.
-4. From grouped `result.json`:
+4. The final warm-repeat
+   `UNIREC_COMPILED_GROUPED_FZ_BASELINE_VS_OPTIMIZED` line. Explicitly restate
+   it in plain language as: baseline native-compiled latency versus new
+   grouped-FZ optimized-and-compiled latency, milliseconds saved, and speedup.
+   Do not compare against eager or the earlier uncompiled grouped-FZ lane.
+5. From grouped `result.json`:
    - `status`
    - `compiled_first_call_s`
    - `control_after.device_event`
    - `parity.grouped_compiled_vs_native_compiled`
    - aggregate and per-signature `target_operations`
-5. OM count under `CACHE_ROOT`, before and after one optional warm-cache repeat.
+6. OM count under `CACHE_ROOT`, before and after the warm-cache repeat.
 
 Stop if compilation fails, output is not exact, either removed TransData family
 is nonzero, or the physical Conv2D count is not 22. Preserve the full `run.log`

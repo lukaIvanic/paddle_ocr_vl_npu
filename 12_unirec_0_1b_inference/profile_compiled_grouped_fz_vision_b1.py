@@ -50,6 +50,11 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help="Optional compiled CPU output from the native lane.",
     )
+    parser.add_argument(
+        "--reference-result",
+        type=Path,
+        help="Optional native-lane result.json for an explicit speed comparison.",
+    )
     parser.add_argument("--warmups", type=int, default=3)
     parser.add_argument("--control-repeats", type=int, default=20)
     parser.add_argument("--parser-topn", type=int, default=200)
@@ -72,6 +77,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("this compile gate requires an NPU")
     if args.lane == "native" and args.reference_output is not None:
         parser.error("reference-output is only valid for grouped-FZ lanes")
+    if args.lane == "native" and args.reference_result is not None:
+        parser.error("reference-result is only valid for grouped-FZ lanes")
     return args
 
 
@@ -254,6 +261,41 @@ def main() -> None:
             control_output.detach().cpu(), native_compiled
         )
 
+    baseline_comparison = None
+    if args.reference_result is not None:
+        native_report = json.loads(
+            args.reference_result.expanduser().resolve().read_text(
+                encoding="utf-8"
+            )
+        )
+        native_median_ms = float(
+            native_report["control_after"]["device_event"]["median_ms"]
+        )
+        optimized_median_ms = float(
+            control_after["device_event"]["median_ms"]
+        )
+        native_targets = native_report["target_operations"]
+        baseline_comparison = {
+            "baseline": "native_compiled",
+            "optimized": "converter_grouped_fz_compiled",
+            "baseline_median_ms": native_median_ms,
+            "optimized_median_ms": optimized_median_ms,
+            "saved_ms": native_median_ms - optimized_median_ms,
+            "speedup": native_median_ms / optimized_median_ms,
+            "baseline_logical_to_fz1_count": int(
+                native_targets["logical_weight_to_fz1"]["count"]
+            ),
+            "baseline_group_repack_count": int(
+                native_targets["fz1_to_grouped_fz"]["count"]
+            ),
+            "optimized_logical_to_fz1_count": int(
+                targets["logical_weight_to_fz1"]["count"]
+            ),
+            "optimized_group_repack_count": int(
+                targets["fz1_to_grouped_fz"]["count"]
+            ),
+        }
+
     status = "ok"
     if args.lane != "native":
         if rewrite["rewritten_count"] != 22:
@@ -291,6 +333,7 @@ def main() -> None:
         "rewrite": rewrite,
         "target_operations": targets,
         "parity": parity,
+        "baseline_comparison": baseline_comparison,
         "parsed_profile": parsed,
         "measurement_scope": (
             "one fixed-shape full UniRec vision encoder forward; no H2D, "
@@ -323,6 +366,24 @@ def main() -> None:
         f"{targets['physical_conv2d']['duration_us'] / 1000.0:.6f}ms",
         flush=True,
     )
+    if baseline_comparison is not None:
+        row = baseline_comparison
+        print(
+            "UNIREC_COMPILED_GROUPED_FZ_BASELINE_VS_OPTIMIZED "
+            f"baseline={row['baseline']} "
+            f"baseline_ms={row['baseline_median_ms']:.6f} "
+            f"optimized={row['optimized']} "
+            f"optimized_ms={row['optimized_median_ms']:.6f} "
+            f"saved_ms={row['saved_ms']:.6f} "
+            f"speedup={row['speedup']:.3f}x "
+            f"baseline_transdata="
+            f"{row['baseline_logical_to_fz1_count']}+"
+            f"{row['baseline_group_repack_count']} "
+            f"optimized_transdata="
+            f"{row['optimized_logical_to_fz1_count']}+"
+            f"{row['optimized_group_repack_count']}",
+            flush=True,
+        )
     print(f"OUTPUT_JSON={output_json}", flush=True)
     if status != "ok":
         raise RuntimeError(status)
