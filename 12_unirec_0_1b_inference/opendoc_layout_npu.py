@@ -342,17 +342,16 @@ def _layout_outputs_for_cpu_postprocess(outputs: Any) -> SimpleNamespace:
     )
 
 
-def prepare_layout_pixel_values_exact(
+def prepare_layout_resized_uint8_exact(
     images: list[np.ndarray],
 ) -> dict[str, torch.Tensor]:
-    """Produce the fixed PP-DocLayoutV2 input without generic HF dispatch.
+    """Resize fixed PP-DocLayoutV2 inputs without expanding them to float32.
 
     The checkpoint contract is a uint8 RGB input resized directly to 800x800
-    with torchvision bicubic interpolation and ``antialias=False``, followed
-    by float32 rescaling by 1/255.  Keeping this explicit avoids the generic
-    image-type, shape-grouping, kwargs-validation, and BatchFeature layers.
-    The initial CHW copy is required: the compiled graph consumes contiguous
-    BCHW strides, not a channels-last physical view.
+    with torchvision bicubic interpolation and ``antialias=False``.  The NPU
+    performs the subsequent float32 divide and model-dtype cast after copying
+    this tensor, reducing host-transfer bytes by 4x.  The initial CHW copy is
+    required because the compiled graph consumes contiguous BCHW strides.
     """
     from torchvision.transforms import InterpolationMode
     from torchvision.transforms.v2 import functional as tv_functional
@@ -380,10 +379,18 @@ def prepare_layout_pixel_values_exact(
             interpolation=InterpolationMode.BICUBIC,
             antialias=False,
         )
-        prepared.append(resized.to(dtype=torch.float32).div_(255.0))
+        prepared.append(resized)
     if not prepared:
         raise ValueError("PP-DocLayoutV2 preprocessing requires at least one image")
     return {"pixel_values": torch.cat(prepared, dim=0)}
+
+
+def prepare_layout_pixel_values_exact(
+    images: list[np.ndarray],
+) -> dict[str, torch.Tensor]:
+    """Produce the historical float32 input for parity checks and tools."""
+    resized = prepare_layout_resized_uint8_exact(images)["pixel_values"]
+    return {"pixel_values": resized.to(dtype=torch.float32).div_(255.0)}
 
 
 def _layout_order_sequences_cumsum(order_logits: torch.Tensor) -> torch.Tensor:
@@ -840,17 +847,15 @@ class PPDocLayoutV2NpuAdapter:
         self._record_stage("input_to_rgb_s", started)
 
         started = time.perf_counter()
-        inputs = prepare_layout_pixel_values_exact(rgbs)
+        inputs = prepare_layout_resized_uint8_exact(rgbs)
         self._record_stage("processor_preprocess_s", started)
 
         started = time.perf_counter()
-        moved = {
-            name: tensor.to(
-                device=self.device,
-                dtype=self.dtype if tensor.is_floating_point() else tensor.dtype,
-            )
-            for name, tensor in inputs.items()
-        }
+        device_pixels = inputs["pixel_values"].to(device=self.device)
+        device_pixels = device_pixels.to(dtype=torch.float32).div_(255.0)
+        if self.dtype != torch.float32:
+            device_pixels = device_pixels.to(dtype=self.dtype)
+        moved = {"pixel_values": device_pixels}
         torch.npu.synchronize()
         self._record_stage("inputs_h2d_s", started)
 

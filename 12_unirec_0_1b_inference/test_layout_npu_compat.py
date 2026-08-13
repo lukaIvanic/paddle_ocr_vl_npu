@@ -330,6 +330,9 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
 
         rng = np.random.default_rng(44)
         image = rng.integers(0, 256, (37, 53, 3), dtype=np.uint8)
+        resized_uint8 = module.prepare_layout_resized_uint8_exact([image])[
+            "pixel_values"
+        ]
         actual = module.prepare_layout_pixel_values_exact([image])["pixel_values"]
         reference = torch.from_numpy(image).permute(2, 0, 1).contiguous().unsqueeze(0)
         reference = tv_functional.resize(
@@ -340,6 +343,17 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
         ).to(torch.float32).div_(255.0)
 
         torch.testing.assert_close(actual, reference, atol=0.0, rtol=0.0)
+        torch.testing.assert_close(
+            resized_uint8.to(torch.float32).div_(255.0),
+            reference,
+            atol=0.0,
+            rtol=0.0,
+        )
+        self.assertEqual(resized_uint8.dtype, torch.uint8)
+        self.assertEqual(
+            resized_uint8.numel() * resized_uint8.element_size(),
+            1_920_000,
+        )
         self.assertEqual(actual.shape, (1, 3, 800, 800))
         self.assertEqual(actual.dtype, torch.float32)
         self.assertEqual(actual.stride(), (1_920_000, 640_000, 800, 1))
