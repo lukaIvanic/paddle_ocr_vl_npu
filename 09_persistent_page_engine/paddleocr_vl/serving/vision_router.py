@@ -233,6 +233,8 @@ class BatchedVisionGraphRuntime:
         model_dir: Path,
         dtype: torch.dtype,
         device: torch.device,
+        shapes: Sequence[tuple[int, int]] | None = None,
+        require_warm_cache: bool = True,
     ):
         expected_source = str(PINNED_910B2_PROFILE["vision_source_hash"])
         if vision_source_hash() != expected_source:
@@ -243,10 +245,23 @@ class BatchedVisionGraphRuntime:
         torchair, CompilerConfig = import_torchair()
         hidden_size = int(model.config.vision_config.hidden_size)
         head_dim = hidden_size // int(model.config.vision_config.num_attention_heads)
+        self.shapes = tuple(
+            (int(batch_size), int(sequence_length))
+            for batch_size, sequence_length in (
+                self.SHAPES if shapes is None else shapes
+            )
+        )
+        if not self.shapes or any(
+            batch_size <= 0 or sequence_length <= 0
+            for batch_size, sequence_length in self.shapes
+        ):
+            raise ValueError(f"invalid batched vision shapes: {self.shapes}")
+        if len(set(self.shapes)) != len(self.shapes):
+            raise ValueError(f"duplicate batched vision shapes: {self.shapes}")
         self.compiled: dict[tuple[int, int], Callable[..., torch.Tensor]] = {}
         per_shape: dict[str, Any] = {}
         setup_started = time.perf_counter()
-        for batch_size, sequence_length in self.SHAPES:
+        for batch_size, sequence_length in self.shapes:
             cache_dir = batched_vision_cache_dir(
                 batch_size=batch_size,
                 sequence_length=sequence_length,
@@ -255,11 +270,13 @@ class BatchedVisionGraphRuntime:
                 dtype=dtype,
                 device=device,
             )
-            if not cache_dir.is_dir() or not any(cache_dir.rglob("*")):
+            cache_was_warm = cache_dir.is_dir() and any(cache_dir.rglob("*"))
+            if require_warm_cache and not cache_was_warm:
                 raise RuntimeError(
-                    "profile-guided vision routing requires a warm batched graph: "
+                    "batched vision routing requires a warm graph: "
                     f"shape=b{batch_size}_s{sequence_length} cache={cache_dir}"
                 )
+            cache_dir.mkdir(parents=True, exist_ok=True)
             module = VisionPrefillStage(
                 model,
                 attention_impl="prompt_flash_attention",
@@ -302,6 +319,7 @@ class BatchedVisionGraphRuntime:
             self.compiled[(batch_size, sequence_length)] = compiled
             per_shape[f"b{batch_size}_s{sequence_length}"] = {
                 "cache_dir": str(cache_dir),
+                "cache_was_warm": bool(cache_was_warm),
                 "wrapper_s": warm_started - wrapper_started,
                 "first_call_s": time.perf_counter() - warm_started,
             }

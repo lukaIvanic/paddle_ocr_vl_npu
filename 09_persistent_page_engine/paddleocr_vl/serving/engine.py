@@ -73,6 +73,7 @@ from .runtime_defaults import (
     TEXT_PACKING_CHOICES,
     VISION_PACKING_CHOICES,
 )
+from ..model.text_batched_prefill import BatchedTextPrefillRuntime
 from ..model.text_packed_prefill import PackedTextPrefillRuntime
 from ..model.text_prefill import parse_text_buckets
 from .types import ContinuousDecodeResult, RecognitionRequest, RecognitionResult
@@ -521,6 +522,8 @@ class ContinuousRecognizer:
         vision_pack_target: int = DEFAULT_VISION_PACK_TARGET,
         vision_router_lookahead: int = DEFAULT_VISION_ROUTER_LOOKAHEAD,
         vision_batched_cache_dir: Path | None = None,
+        vision_batched_shapes: Iterable[tuple[int, int]] | None = None,
+        batched_prefill_require_warm_cache: bool = True,
         text_backend: str = DEFAULT_TEXT_BACKEND,
         text_buckets: str | Iterable[int] = OPTIMIZED_TEXT_BUCKETS,
         text_torchair_cache_dir: Path | None = None,
@@ -529,6 +532,8 @@ class ContinuousRecognizer:
         text_pack_buckets: str | Iterable[int] = DEFAULT_TEXT_PACK_BUCKETS,
         text_pack_max_members: int = DEFAULT_TEXT_PACK_MAX_MEMBERS,
         text_packed_cache_dir: Path | None = None,
+        text_batched_shape: tuple[int, int] | None = None,
+        text_batched_cache_dir: Path | None = None,
         preprocessor_min_pixels: int | None = None,
         preprocessor_max_pixels: int | None = None,
         vision_route_plan: dict[str, Any] | None = None,
@@ -672,7 +677,7 @@ class ContinuousRecognizer:
                 f"{VISION_PACKING_CHOICES}, got {vision_packing!r}"
             )
         if (
-            self.vision_packing != "off"
+            self.vision_packing in {"greedy", "cohort", "profile_guided"}
             and self.vision_pack_target not in self.vision_buckets
         ):
             raise ValueError(
@@ -681,6 +686,29 @@ class ContinuousRecognizer:
             )
         if self.vision_router_lookahead <= 0:
             raise ValueError("vision_router_lookahead must be positive")
+        self.vision_batched_shapes = tuple(
+            (int(batch), align_vision_seq_len(int(sequence), self.vision_seq_alignment))
+            for batch, sequence in (vision_batched_shapes or ())
+        )
+        self.batched_prefill_require_warm_cache = bool(
+            batched_prefill_require_warm_cache
+        )
+        if self.vision_packing == "fixed_batch":
+            if self.vision_backend != "torchair":
+                raise ValueError("fixed-batch vision routing requires TorchAir")
+            if self.vision_attention != "prompt_flash_attention":
+                raise ValueError(
+                    "fixed-batch vision routing requires prompt_flash_attention"
+                )
+            if vision_batched_cache_dir is None or not self.vision_batched_shapes:
+                raise ValueError(
+                    "fixed-batch vision routing requires cache_dir and shapes"
+                )
+            if any(batch != self.batch_size for batch, _ in self.vision_batched_shapes):
+                raise ValueError(
+                    "fixed-batch vision shapes must use recognizer batch size "
+                    f"{self.batch_size}: {self.vision_batched_shapes}"
+                )
         if self.vision_packing == "profile_guided":
             if self.vision_backend != "torchair":
                 raise ValueError("profile_guided vision routing requires TorchAir")
@@ -711,6 +739,11 @@ class ContinuousRecognizer:
         self.text_packing = str(text_packing)
         self.text_pack_buckets = parse_text_buckets(text_pack_buckets)
         self.text_pack_max_members = int(text_pack_max_members)
+        self.text_batched_shape = (
+            None
+            if text_batched_shape is None
+            else (int(text_batched_shape[0]), int(text_batched_shape[1]))
+        )
         if self.text_packing not in TEXT_PACKING_CHOICES:
             raise ValueError(
                 "text_packing must be one of "
@@ -720,6 +753,16 @@ class ContinuousRecognizer:
             raise ValueError("text_pack_max_members must be positive")
         if self.text_packing != "off" and self.text_backend != "torchair":
             raise ValueError("packed text prefill requires TorchAir text prefill")
+        if self.text_packing == "fixed_batch":
+            if text_batched_cache_dir is None or self.text_batched_shape is None:
+                raise ValueError(
+                    "fixed-batch text prefill requires cache_dir and shape"
+                )
+            if self.text_batched_shape[0] != self.batch_size:
+                raise ValueError(
+                    "fixed-batch text shape must use recognizer batch size "
+                    f"{self.batch_size}: {self.text_batched_shape}"
+                )
         if self.decode_backend not in DECODE_BACKEND_CHOICES:
             raise ValueError(
                 f"decode_backend must be one of {DECODE_BACKEND_CHOICES}, "
@@ -919,7 +962,25 @@ class ContinuousRecognizer:
                 model_dir=self.model_dir,
                 linear_weight_format=str(self.weight_format["effective_mode"]),
             )
-            if self.text_packing != "off"
+            if self.text_packing == "production_group"
+            else None
+        )
+        self.batched_text_prefill = (
+            BatchedTextPrefillRuntime(
+                self.model,
+                batch_size=self.text_batched_shape[0],
+                sequence_length=self.text_batched_shape[1],
+                cache_root=text_batched_cache_dir,
+                destination_cache_length=self.cache_length,
+                device=self.device,
+                dtype=self.dtype,
+                model_dir=self.model_dir,
+                linear_weight_format=str(self.weight_format["effective_mode"]),
+                require_warm_cache=self.batched_prefill_require_warm_cache,
+            )
+            if self.text_packing == "fixed_batch"
+            and self.text_batched_shape is not None
+            and text_batched_cache_dir is not None
             else None
         )
         synchronize(self.device)
@@ -931,8 +992,18 @@ class ContinuousRecognizer:
                 model_dir=self.model_dir,
                 dtype=self.dtype,
                 device=self.device,
+                shapes=(
+                    self.vision_batched_shapes
+                    if self.vision_packing == "fixed_batch"
+                    else None
+                ),
+                require_warm_cache=(
+                    self.batched_prefill_require_warm_cache
+                    if self.vision_packing == "fixed_batch"
+                    else True
+                ),
             )
-            if self.vision_packing == "profile_guided"
+            if self.vision_packing in {"fixed_batch", "profile_guided"}
             else None
         )
         self.prefill_transfer_stream = torch_npu.npu.Stream(device=self.device)
@@ -1265,6 +1336,8 @@ class ContinuousRecognizer:
                     groups = self._iter_packed_prefill_groups(requests)
                 elif self.vision_packing == "cohort":
                     groups = self._iter_cohort_prefill_groups(requests)
+                elif self.vision_packing == "fixed_batch":
+                    groups = self._iter_fixed_batch_prefill_groups(requests)
                 else:
                     groups = self._iter_profiled_prefill_groups(requests)
                 group_source = iter(groups)
@@ -1684,6 +1757,57 @@ class ContinuousRecognizer:
             total += tokens
         if members:
             yield self._prepared_group(members)
+
+    def _iter_fixed_batch_prefill_groups(
+        self,
+        requests: Iterable[RecognitionRequest],
+    ) -> Iterable[_PreparedPrefillGroup]:
+        """Route each complete decode cohort through one fixed BxS graph."""
+
+        members: list[tuple[CpuPreparedRecognition, float]] = []
+        for item in self._iter_cpu_prepared(requests):
+            members.append(item)
+            if len(members) < self.batch_size:
+                continue
+            lengths = [int(member.pixel_values.shape[0]) for member, _ in members]
+            max_length = max(lengths)
+            candidates = [
+                (batch, sequence)
+                for batch, sequence in self.vision_batched_shapes
+                if batch == self.batch_size and sequence >= max_length
+            ]
+            if not candidates:
+                raise ValueError(
+                    "fixed-batch vision cohort exceeds configured shapes: "
+                    f"lengths={lengths} shapes={self.vision_batched_shapes}"
+                )
+            batch_size, sequence_length = min(
+                candidates,
+                key=lambda shape: shape[1],
+            )
+            real_tokens = sum(lengths)
+            physical_tokens = batch_size * sequence_length
+            route = {
+                "execution": "compiled",
+                "real_vision_tokens": real_tokens,
+                "physical_vision_tokens": physical_tokens,
+                "padding_vision_tokens": physical_tokens - real_tokens,
+                "useful_token_fraction": real_tokens / physical_tokens,
+                "batch_size": batch_size,
+                "sequence_length": sequence_length,
+                "fixed_batch": True,
+            }
+            yield self._prepared_group(
+                members,
+                row_sizes=(1,) * batch_size,
+                profiled_route=route,
+            )
+            members = []
+        if members:
+            raise ValueError(
+                "fixed-batch vision requires complete cohorts: "
+                f"expected={self.batch_size} got={len(members)}"
+            )
 
     def _iter_profiled_prefill_groups(
         self,
@@ -2567,7 +2691,13 @@ class ContinuousRecognizer:
                 self.prefill_cache_pool.acquire,
             )
             cache = cache_lease.cache
-            member_padding = group_padding if index == len(group.members) - 1 else 0
+            member_padding = (
+                sequence_length - real_length
+                if batch_size > 1
+                else group_padding
+                if index == len(group.members) - 1
+                else 0
+            )
             vision_route = {
                 **pack_route,
                 "real_vision_tokens": real_length,
@@ -2606,12 +2736,119 @@ class ContinuousRecognizer:
         self._text_packing_stats.groups += 1
         self._text_packing_stats.crops += len(text_inputs)
         lengths = [int(item.inputs_embeds.shape[1]) for item in text_inputs]
-        pack_indices, fallback_indices = self._form_text_pack_indices(lengths)
+        pack_indices: list[tuple[int, ...]] = []
+        fallback_indices: tuple[int, ...] = ()
         next_tokens: list[torch.Tensor | None] = [None] * len(text_inputs)
         text_routes: list[dict[str, Any] | None] = [None] * len(text_inputs)
         text_packs: list[_TextPackTrace] = []
 
-        if self.packed_text_prefill is not None:
+        if self.batched_text_prefill is not None:
+            text_route = self.batched_text_prefill.route(lengths)
+            prefix = "group:text_batch"
+            prepared_text = device_timeline.measure(
+                f"{prefix}:text_prefill_input_prep",
+                lambda: self.batched_text_prefill.prepare(
+                    [item.inputs_embeds for item in text_inputs],
+                    [item.moved[1] for item in text_inputs],
+                    [item.moved[3] for item in text_inputs],
+                    route=text_route,
+                ),
+            )
+            batched_hidden = device_timeline.measure(
+                f"{prefix}:text_prefill",
+                lambda: self.batched_text_prefill.run_prepared(prepared_text),
+            )
+            redistributed_bytes = device_timeline.measure(
+                f"{prefix}:text_kv_redistribute",
+                lambda: self.batched_text_prefill.redistribute_cache(
+                    prepared_text,
+                    [item.cache for item in text_inputs],
+                ),
+            )
+            logits = device_timeline.measure(
+                f"{prefix}:prefill_lm_head",
+                lambda: self.model.lm_head(batched_hidden),
+            )
+            policy_mask = torch.tensor(
+                [self._is_table_prompt(item.prepared.prompt) for item in text_inputs],
+                device=logits.device,
+                dtype=torch.bool,
+            ).unsqueeze(-1)
+            batched_tokens = device_timeline.measure(
+                f"{prefix}:prefill_argmax",
+                lambda: (
+                    select_token_ids(
+                        logits.float(),
+                        mode=self.token_selection,
+                        preferred_token_id=self.math_open_token_id,
+                        alternate_preferred_token_id=self.math_slash_token_id,
+                        policy_mask=(
+                            torch.zeros_like(policy_mask)
+                            if self.token_selection
+                            == TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED
+                            else policy_mask
+                        ),
+                        legacy_policy_mask=policy_mask,
+                    )
+                    if self.token_selection in (
+                        TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
+                        TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
+                        TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP,
+                        TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
+                    )
+                    else torch.argmax(logits.float(), dim=-1)
+                ),
+            )
+            for member_index, item in enumerate(text_inputs):
+                real_tokens = lengths[member_index]
+                text_routes[member_index] = {
+                    **text_route,
+                    "real_text_tokens": real_tokens,
+                    "physical_text_tokens": int(text_route["sequence_length"]),
+                    "padding_text_tokens": (
+                        int(text_route["sequence_length"]) - real_tokens
+                    ),
+                    "useful_token_fraction": (
+                        real_tokens / int(text_route["sequence_length"])
+                    ),
+                    "packing": "fixed_batch",
+                    "pack_group_id": group.group_id,
+                    "text_pack_index": 0,
+                    "pack_real_text_tokens": int(text_route["real_text_tokens"]),
+                    "pack_physical_text_tokens": int(
+                        text_route["physical_text_tokens"]
+                    ),
+                    "private_cache_slot_index": int(item.cache_lease.slot_index),
+                    "private_cache_generation": int(item.cache_lease.generation),
+                }
+                next_tokens[member_index] = batched_tokens[
+                    member_index : member_index + 1
+                ]
+            stage_keys = {
+                stage: f"{prefix}:{stage}"
+                for stage in (
+                    "text_prefill_input_prep",
+                    "text_prefill",
+                    "text_kv_redistribute",
+                    "prefill_lm_head",
+                    "prefill_argmax",
+                )
+            }
+            text_packs.append(
+                _TextPackTrace(
+                    member_indices=tuple(range(len(text_inputs))),
+                    route=dict(text_route),
+                    stage_keys=stage_keys,
+                )
+            )
+            self._text_packing_stats.record_pack(
+                members=len(text_inputs),
+                real_tokens=int(text_route["real_text_tokens"]),
+                physical_tokens=int(text_route["physical_text_tokens"]),
+                redistributed_kv_bytes=int(redistributed_bytes),
+            )
+        elif self.packed_text_prefill is not None:
+            pack_indices, fallback_indices = self._form_text_pack_indices(lengths)
             for pack_index, indices in enumerate(pack_indices):
                 pack_lengths = [lengths[index] for index in indices]
                 text_route = self.packed_text_prefill.route(pack_lengths)
@@ -2739,6 +2976,8 @@ class ContinuousRecognizer:
                     physical_tokens=int(text_route["physical_text_tokens"]),
                     redistributed_kv_bytes=int(redistributed_bytes),
                 )
+        else:
+            fallback_indices = tuple(range(len(text_inputs)))
 
         self._text_packing_stats.fallback_crops += len(fallback_indices)
         for member_index in fallback_indices:

@@ -70,6 +70,12 @@ def parse_args() -> argparse.Namespace:
         help="Run this page through the complete pipeline before measured pages.",
     )
     parser.add_argument("--settle-s", type=float, default=1.0)
+    parser.add_argument(
+        "--measurement-passes",
+        type=int,
+        default=1,
+        help="Run every selected page this many times; only the final pass measures.",
+    )
 
     parser.add_argument(
         "--b1-decode-optimization",
@@ -78,6 +84,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--b1-decode-vocab-token-ids", type=Path, required=True)
     parser.add_argument("--b1-cache-length", type=int, default=4096)
     parser.add_argument("--b1-max-new-tokens", type=int, default=4096)
+    parser.add_argument("--b1-vision-buckets", default="4096")
 
     parser.add_argument(
         "--draft-decode-optimization",
@@ -92,6 +99,13 @@ def parse_args() -> argparse.Namespace:
         default="greedy",
     )
     parser.add_argument("--draft-vision-pack-target", type=int, default=2304)
+    parser.add_argument(
+        "--draft-prefill-layout",
+        choices=("packed_b1", "fixed_b8"),
+        default="packed_b1",
+    )
+    parser.add_argument("--draft-batched-vision-shapes", default="8x640,8x768")
+    parser.add_argument("--draft-batched-text-shape", default="8x256")
     parser.add_argument("--row-overlap-px", type=int, default=3)
     parser.add_argument(
         "--compact-uint8-preprocess",
@@ -146,7 +160,7 @@ def parse_args() -> argparse.Namespace:
         "--vision-buckets",
         default="256,384,512,640,768,1408,1920,2048,2304,2944,4096",
     )
-    parser.add_argument("--b1-text-buckets", default=fixed_lab.DEFAULT_TEXT_BUCKETS)
+    parser.add_argument("--b1-text-buckets", default="1152")
     parser.add_argument(
         "--decode-cache-dir",
         type=Path,
@@ -156,6 +170,14 @@ def parse_args() -> argparse.Namespace:
         "--vision-cache-dir",
         type=Path,
         default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_vision_torchair",
+    )
+    parser.add_argument(
+        "--vision-batched-cache-dir",
+        type=Path,
+        default=(
+            REPO_ROOT
+            / ".runtime_cache/09_persistent_page_engine_vision_batched_torchair"
+        ),
     )
     parser.add_argument(
         "--text-cache-dir",
@@ -170,12 +192,32 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--text-batched-cache-dir",
+        type=Path,
+        default=(
+            REPO_ROOT
+            / ".runtime_cache/09_persistent_page_engine_text_batched_torchair"
+        ),
+    )
+    parser.add_argument(
         "--k-cache-root",
         action="append",
         default=[],
         metavar="K=PATH",
     )
     return parser.parse_args()
+
+
+def _parse_shapes(value: str) -> tuple[tuple[int, int], ...]:
+    shapes: list[tuple[int, int]] = []
+    for piece in value.split(","):
+        batch_text, separator, sequence_text = piece.strip().lower().partition("x")
+        if not separator:
+            raise ValueError(f"invalid BxS shape: {piece!r}")
+        shapes.append((int(batch_text), int(sequence_text)))
+    if not shapes:
+        raise ValueError("at least one BxS shape is required")
+    return tuple(shapes)
 
 
 def _b1_args(args: argparse.Namespace) -> SimpleNamespace:
@@ -189,7 +231,7 @@ def _b1_args(args: argparse.Namespace) -> SimpleNamespace:
         decode_cache_dir=args.decode_cache_dir,
         vision_cache_dir=args.vision_cache_dir,
         text_cache_dir=args.text_cache_dir,
-        vision_buckets=args.vision_buckets,
+        vision_buckets=args.b1_vision_buckets,
         text_buckets=args.b1_text_buckets,
         min_pixels=args.min_pixels,
         max_pixels=args.max_pixels,
@@ -199,6 +241,7 @@ def _b1_args(args: argparse.Namespace) -> SimpleNamespace:
 
 
 def _draft_args(args: argparse.Namespace) -> SimpleNamespace:
+    fixed_b8 = args.draft_prefill_layout == "fixed_b8"
     return SimpleNamespace(
         model=args.model,
         decode_optimization=args.draft_decode_optimization,
@@ -211,8 +254,22 @@ def _draft_args(args: argparse.Namespace) -> SimpleNamespace:
         text_cache_dir=args.text_cache_dir,
         text_packed_cache_dir=args.text_packed_cache_dir,
         vision_buckets=args.vision_buckets,
-        vision_packing=args.draft_vision_packing,
+        vision_packing=("fixed_batch" if fixed_b8 else args.draft_vision_packing),
         vision_pack_target=args.draft_vision_pack_target,
+        vision_batched_cache_dir=(
+            args.vision_batched_cache_dir.resolve() if fixed_b8 else None
+        ),
+        vision_batched_shapes=(
+            _parse_shapes(args.draft_batched_vision_shapes) if fixed_b8 else None
+        ),
+        batched_prefill_require_warm_cache=not args.allow_compile,
+        text_packing=("fixed_batch" if fixed_b8 else "production_group"),
+        text_batched_shape=(
+            _parse_shapes(args.draft_batched_text_shape)[0] if fixed_b8 else None
+        ),
+        text_batched_cache_dir=(
+            args.text_batched_cache_dir.resolve() if fixed_b8 else None
+        ),
         min_pixels=args.min_pixels,
         max_pixels=args.max_pixels,
         compact_uint8_preprocess=args.compact_uint8_preprocess,
@@ -636,6 +693,9 @@ def main() -> None:
     output_path = args.output_dir / "tables.jsonl"
     output_path.write_text("", encoding="utf-8")
     records: list[dict[str, Any]] = []
+    warm_pass_records: list[dict[str, Any]] = []
+    if args.measurement_passes <= 0:
+        raise ValueError("measurement_passes must be positive")
     with ThreadPoolExecutor(
         max_workers=1,
         thread_name_prefix="table-spec-cpu-overlap",
@@ -665,43 +725,54 @@ def main() -> None:
         if args.settle_s > 0:
             time.sleep(args.settle_s)
 
-        for index, source in enumerate(selected, start=1):
-            payload = _run_one(
-                source=source,
-                raw_image=preloaded_crops[str(source["request_id"])],
-                crop_preload_wall_s=crop_preload_wall_s[
-                    str(source["request_id"])
-                ],
-                measured=True,
-                args=args,
-                b1_recognizer=b1_recognizer,
-                draft_recognizer=draft_recognizer,
-                runtime=runtime,
-                cpu_executor=cpu_executor,
-            )
-            records.append(payload)
-            with output_path.open("a", encoding="utf-8") as stream:
-                stream.write(json.dumps(payload, ensure_ascii=False) + "\n")
-            _write_json(args.output_dir / "run_progress.json", {
-                "setup_s": setup_s,
-                "cold": cold,
-                "tables": records,
-            })
-            timing = payload["timing_s"]
+        for pass_index in range(1, args.measurement_passes + 1):
+            measure_pass = pass_index == args.measurement_passes
             print(
-                "TABLE_SPEC_LIVE_RESULT "
-                f"table={index}/{len(selected)} id={payload['request_id']} "
-                f"e2e={timing['e2e_complete_wall']:.3f}s "
-                f"draft={timing['draft_recognition_wall']:.3f}s "
-                f"prefill={timing['target_npu_prefill_wall']:.3f}s "
-                f"verify={timing['target_verify_wall']:.3f}s "
-                f"cpu={timing['host_process_cpu_total']:.3f}s "
-                f"hidden={timing['overlap_hidden_total']:.3f}s "
-                f"exact={payload['exact_saved_reference']}",
+                "TABLE_SPEC_LIVE_PROGRESS "
+                f"pass={pass_index}/{args.measurement_passes} "
+                f"measured={measure_pass}",
                 flush=True,
             )
-            if args.settle_s > 0 and index < len(selected):
-                time.sleep(args.settle_s)
+            for index, source in enumerate(selected, start=1):
+                payload = _run_one(
+                    source=source,
+                    raw_image=preloaded_crops[str(source["request_id"])],
+                    crop_preload_wall_s=crop_preload_wall_s[
+                        str(source["request_id"])
+                    ],
+                    measured=measure_pass,
+                    args=args,
+                    b1_recognizer=b1_recognizer,
+                    draft_recognizer=draft_recognizer,
+                    runtime=runtime,
+                    cpu_executor=cpu_executor,
+                )
+                payload["measurement_pass"] = pass_index
+                (records if measure_pass else warm_pass_records).append(payload)
+                with output_path.open("a", encoding="utf-8") as stream:
+                    stream.write(json.dumps(payload, ensure_ascii=False) + "\n")
+                _write_json(args.output_dir / "run_progress.json", {
+                    "setup_s": setup_s,
+                    "cold": cold,
+                    "warm_pass_tables": warm_pass_records,
+                    "tables": records,
+                })
+                timing = payload["timing_s"]
+                print(
+                    "TABLE_SPEC_LIVE_RESULT "
+                    f"pass={pass_index}/{args.measurement_passes} "
+                    f"table={index}/{len(selected)} id={payload['request_id']} "
+                    f"e2e={timing['e2e_complete_wall']:.3f}s "
+                    f"draft={timing['draft_recognition_wall']:.3f}s "
+                    f"prefill={timing['target_npu_prefill_wall']:.3f}s "
+                    f"verify={timing['target_verify_wall']:.3f}s "
+                    f"cpu={timing['host_process_cpu_total']:.3f}s "
+                    f"hidden={timing['overlap_hidden_total']:.3f}s "
+                    f"exact={payload['exact_saved_reference']}",
+                    flush=True,
+                )
+                if args.settle_s > 0 and index < len(selected):
+                    time.sleep(args.settle_s)
 
     e2e_values = [record["timing_s"]["e2e_complete_wall"] for record in records]
     summary = {
@@ -715,6 +786,7 @@ def main() -> None:
         },
         "settings": {
             "cold_request_id": args.cold_request_id,
+            "measurement_passes": args.measurement_passes,
             "measured_request_ids": [record["request_id"] for record in records],
             "draft_decode_optimization": args.draft_decode_optimization,
             "draft_vision_packing": args.draft_vision_packing,
@@ -736,6 +808,7 @@ def main() -> None:
             "npu_overlap": False,
         },
         "cold": cold,
+        "warm_pass_tables": warm_pass_records,
         "measured_tables": len(records),
         "exact_saved_reference": sum(
             bool(record["exact_saved_reference"]) for record in records

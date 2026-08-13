@@ -10,12 +10,18 @@ DEFAULT_DECODE_BATCH_SIZE = 4
 DEFAULT_CACHE_LENGTH = 2048
 DEFAULT_MAX_NEW_TOKENS = 768
 DEFAULT_VISION_BACKEND = "torchair"
-VISION_PACKING_CHOICES = ("off", "greedy", "cohort", "profile_guided")
+VISION_PACKING_CHOICES = (
+    "off",
+    "greedy",
+    "cohort",
+    "fixed_batch",
+    "profile_guided",
+)
 DEFAULT_VISION_PACKING = "off"
 DEFAULT_VISION_PACK_TARGET = 1920
 DEFAULT_VISION_ROUTER_LOOKAHEAD = 32
 DEFAULT_TEXT_BACKEND = "torchair"
-TEXT_PACKING_CHOICES = ("off", "production_group")
+TEXT_PACKING_CHOICES = ("off", "production_group", "fixed_batch")
 DEFAULT_TEXT_PACKING = "off"
 DEFAULT_TEXT_PACK_BUCKETS = (128, 256, 512, 1024)
 DEFAULT_TEXT_PACK_MAX_MEMBERS = 32

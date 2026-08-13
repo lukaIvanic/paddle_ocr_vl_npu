@@ -304,11 +304,18 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         vision_packing=getattr(args, "vision_packing", "greedy"),
         vision_pack_target=args.vision_pack_target,
         vision_router_lookahead=32,
+        vision_batched_cache_dir=getattr(args, "vision_batched_cache_dir", None),
+        vision_batched_shapes=getattr(args, "vision_batched_shapes", None),
+        batched_prefill_require_warm_cache=getattr(
+            args,
+            "batched_prefill_require_warm_cache",
+            True,
+        ),
         text_backend="torchair",
         text_buckets=(min(1152, args.cache_length),),
         text_torchair_cache_dir=args.text_cache_dir.resolve(),
         text_padding="bucket",
-        text_packing="production_group",
+        text_packing=getattr(args, "text_packing", "production_group"),
         text_pack_buckets=tuple(
             bucket
             for bucket in (128, 256, 384, 512, 768, 1024)
@@ -316,6 +323,8 @@ def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
         ),
         text_pack_max_members=32,
         text_packed_cache_dir=args.text_packed_cache_dir.resolve(),
+        text_batched_shape=getattr(args, "text_batched_shape", None),
+        text_batched_cache_dir=getattr(args, "text_batched_cache_dir", None),
         preprocessor_min_pixels=args.min_pixels,
         preprocessor_max_pixels=args.max_pixels,
         compact_uint8_preprocess=getattr(
