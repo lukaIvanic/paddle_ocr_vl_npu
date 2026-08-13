@@ -27,7 +27,10 @@ from profile_stock_eager_vision_b1 import (
     _profile_once,
 )
 from vision_compile_batch_matrix import _new_stock_encoder_module
-from vision_focal_depthwise import rewrite_eager_stage23_5x5_7x7_grouped_fz
+from vision_focal_depthwise import (
+    rewrite_eager_stage23_5x5_7x7_grouped_fz,
+    rewrite_vision_focal_depthwise_convs,
+)
 from vision_full_batch import VisionBucketSpec
 
 
@@ -39,7 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="npu:0")
     parser.add_argument(
         "--lane",
-        choices=("native", "grouped_fz"),
+        choices=("native", "grouped_fz", "converter_grouped_fz"),
         required=True,
     )
     parser.add_argument(
@@ -68,7 +71,7 @@ def parse_args() -> argparse.Namespace:
     if not args.device.startswith("npu"):
         parser.error("this compile gate requires an NPU")
     if args.lane == "native" and args.reference_output is not None:
-        parser.error("reference-output is only valid for the grouped_fz lane")
+        parser.error("reference-output is only valid for grouped-FZ lanes")
     return args
 
 
@@ -152,13 +155,22 @@ def main() -> None:
             runner.model.encoder.vision_encoder
         )
         synchronize_device(args.device)
+    elif args.lane == "converter_grouped_fz":
+        rewrite = rewrite_vision_focal_depthwise_convs(
+            runner.model.encoder.vision_encoder,
+            requested="constant_grouped",
+        )
+        synchronize_device(args.device)
 
     spec = VisionBucketSpec(width=960, height=64, batch_size=1)
     module = _new_stock_encoder_module(runner, spec)
-    source_hash = _source_hash(args.lane, args.frozen_parameter)
+    frozen_parameter = bool(
+        args.frozen_parameter or args.lane == "converter_grouped_fz"
+    )
+    source_hash = _source_hash(args.lane, frozen_parameter)
     cache_dir = cache_root / (
         f"vision_stock_fixed_{spec.key}_float16_{args.lane}_"
-        f"frozen{int(args.frozen_parameter)}_src{source_hash}"
+        f"frozen{int(frozen_parameter)}_src{source_hash}"
     )
     cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -166,7 +178,7 @@ def main() -> None:
 
     config = CompilerConfig()
     config.mode.value = "max-autotune"
-    if args.frozen_parameter:
+    if frozen_parameter:
         config.experimental_config.frozen_parameter.value = True
     cache_compile, compile_api = import_torchair_cache_compile()
     registration_started = time.perf_counter()
@@ -243,7 +255,7 @@ def main() -> None:
         )
 
     status = "ok"
-    if args.lane == "grouped_fz":
+    if args.lane != "native":
         if rewrite["rewritten_count"] != 22:
             status = "rewrite_count_failed"
         if (
@@ -266,7 +278,7 @@ def main() -> None:
         "input_shape": [1, 3, 64, 960],
         "input": "deterministic_uniform_minus1_plus1",
         "compile_api": compile_api,
-        "frozen_parameter": bool(args.frozen_parameter),
+        "frozen_parameter": frozen_parameter,
         "cache_dir": str(cache_dir),
         "source_hash": source_hash,
         "setup_s": setup_s,
