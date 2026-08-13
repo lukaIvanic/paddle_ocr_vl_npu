@@ -583,6 +583,7 @@ class PPDocLayoutV2NpuAdapter:
                 self.model,
                 cache_root=Path(compile_cache_dir) / (
                     f"depthwise_{self.depthwise_rewrite}_"
+                    f"readingorder_{str(self.reading_order_dtype).removeprefix('torch.')}_"
                     f"frozenbn{int(self.fuse_frozen_bn)}_"
                     f"evalbn{int(self.fuse_eval_bn)}_"
                     f"precomputedfrozenbn{int(self.precompute_frozen_bn_affine)}_"

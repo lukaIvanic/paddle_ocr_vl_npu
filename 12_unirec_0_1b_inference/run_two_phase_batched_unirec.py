@@ -47,6 +47,12 @@ def parse_args() -> argparse.Namespace:
         default="float32",
     )
     parser.add_argument(
+        "--layout-reading-order-dtype",
+        choices=("float16", "float32"),
+        default=None,
+        help="Override only the layout model's learned reading-order head dtype",
+    )
+    parser.add_argument(
         "--layout-weight-format",
         choices=(
             "native",
@@ -281,6 +287,7 @@ def main() -> None:
         execution=args.layout_execution,
         warmup_paths=image_paths[: args.workers],
         layout_dtype=args.layout_dtype,
+        layout_reading_order_dtype=args.layout_reading_order_dtype,
         layout_weight_format=args.layout_weight_format,
         layout_depthwise_rewrite=args.layout_depthwise_rewrite,
         layout_preformat_frozen_bn_buffers=(
@@ -762,6 +769,9 @@ def main() -> None:
         "layout_batch_size": args.layout_batch_size,
         "layout_execution": args.layout_execution,
         "layout_dtype": args.layout_dtype,
+        "layout_reading_order_dtype": (
+            args.layout_reading_order_dtype or args.layout_dtype
+        ),
         "layout_weight_format": args.layout_weight_format,
         "layout_depthwise_rewrite": args.layout_depthwise_rewrite,
         "layout_preformat_frozen_bn_buffers": (

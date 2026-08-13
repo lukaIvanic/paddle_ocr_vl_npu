@@ -65,6 +65,7 @@ run_lane() {
     --warmup-pages 8
     --layout-execution torchair
     --layout-dtype float16
+    --layout-reading-order-dtype float32
     --layout-batch-size 1
     --layout-depthwise-rewrite group16
     --layout-weight-format torchair_internal

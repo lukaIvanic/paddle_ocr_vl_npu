@@ -1203,6 +1203,7 @@ def _worker_main(
     threshold: float,
     execution: str,
     layout_dtype: str,
+    layout_reading_order_dtype: str | None,
     layout_weight_format: str,
     layout_depthwise_rewrite: str,
     layout_preformat_frozen_bn_buffers: bool,
@@ -1234,6 +1235,7 @@ def _worker_main(
             model_path=model_path,
             device="npu:0",
             dtype=layout_dtype,
+            reading_order_dtype=layout_reading_order_dtype,
             threshold=threshold,
             profile_stages=False,
             execution=execution,
@@ -1394,6 +1396,9 @@ def _worker_main(
                 ),
                 "layout_batch_size": layout_batch_size,
                 "layout_dtype": layout_dtype,
+                "layout_reading_order_dtype": (
+                    layout_reading_order_dtype or layout_dtype
+                ),
                 "layout_weight_format": layout_weight_format,
                 "layout_depthwise_rewrite": layout_depthwise_rewrite,
                 "layout_preformat_frozen_bn_buffers": (
@@ -1642,6 +1647,7 @@ class DynamicLayoutProcessPool:
         execution: str,
         warmup_paths: list[Path],
         layout_dtype: str = "float32",
+        layout_reading_order_dtype: str | None = None,
         layout_weight_format: str = "native",
         layout_depthwise_rewrite: str = "native",
         layout_preformat_frozen_bn_buffers: bool = False,
@@ -1688,6 +1694,11 @@ class DynamicLayoutProcessPool:
         self.worker_count = worker_count
         self.layout_batch_size = int(layout_batch_size)
         self.layout_dtype = str(layout_dtype)
+        self.layout_reading_order_dtype = (
+            None
+            if layout_reading_order_dtype is None
+            else str(layout_reading_order_dtype)
+        )
         self.layout_weight_format = str(layout_weight_format)
         self.layout_depthwise_rewrite = str(layout_depthwise_rewrite)
         self.layout_preformat_frozen_bn_buffers = bool(
@@ -1719,6 +1730,7 @@ class DynamicLayoutProcessPool:
                     threshold,
                     execution,
                     self.layout_dtype,
+                    self.layout_reading_order_dtype,
                     self.layout_weight_format,
                     self.layout_depthwise_rewrite,
                     self.layout_preformat_frozen_bn_buffers,
