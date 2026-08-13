@@ -237,7 +237,7 @@ def _load_grouped_fz_bridge() -> tuple[Any, float]:
     source = HERE / "grouped_fz_descriptor_bridge.cpp"
     started = time.perf_counter()
     bridge = load(
-        name="unirec_grouped_fz_descriptor_bridge_v2",
+        name="unirec_grouped_fz_descriptor_bridge_v3",
         sources=[str(source)],
         extra_include_paths=[str(torch_npu_root / "include")],
         extra_cflags=["-O2"],
@@ -300,9 +300,6 @@ def _run_lane(args: argparse.Namespace) -> None:
             "storage_shape": [int(value) for value in storage_shape],
             "physical_bytes": int(packed_host.nbytes),
         }
-    # torch_npu.get_npu_format wraps the integer in a fixed Python enum. That
-    # enum has primary FRACTAL_Z (4), but not group-encoded FRACTAL_Z:384
-    # (98308), even though the runtime descriptor accepts the encoded value.
     weight_format_after = (
         int(descriptor["storage_format"])
         if descriptor is not None
@@ -422,7 +419,7 @@ def _run_lane(args: argparse.Namespace) -> None:
     if args.lane == "grouped_fz_384":
         expected_descriptor = {
             "origin_format": 0,
-            "storage_format": (384 << 8) | 4,
+            "storage_format": 4,
             "base_shape": [384, 1, 7, 7],
             "storage_shape": [1176, 1, 16, 16],
             "physical_bytes": 1176 * 16 * 16 * 2,

@@ -9,7 +9,6 @@
 namespace {
 
 constexpr int64_t kFractalZPrimaryFormat = 4;
-constexpr int64_t kFormatSubformatShift = 8;
 
 torch_npu::NPUStorageImpl* get_npu_storage(const at::Tensor& tensor) {
   // The installed torch-npu package hides NPUBridge's symbols, but an NPU
@@ -35,12 +34,12 @@ at::Tensor wrap_grouped_fz(
   TORCH_CHECK(packed.is_contiguous(), "packed storage must be contiguous");
 
   const std::vector<int64_t> storage_shape = packed.sizes().vec();
-  const int64_t encoded_format =
-      kFractalZPrimaryFormat | (groups << kFormatSubformatShift);
-
   // Match torch-npu's own create_tensor_with_format_and_shape sequence, but
   // retain the caller-provided physical storage shape. FormatHelper cannot do
   // this itself: its public FRACTAL_Z shape inference has no group parameter.
+  // Do not put the group in the aclFormat integer. TorchNPU's eager format
+  // validator rejects the GE-style encoded value (FRACTAL_Z | groups << 8)
+  // before Conv2D can inspect the already-correct physical storage shape.
   packed.unsafeGetTensorImpl()->set_sizes_contiguous(logical_shape);
   packed.unsafeGetTensorImpl()->empty_tensor_restride(
       c10::MemoryFormat::Contiguous);
@@ -52,7 +51,7 @@ at::Tensor wrap_grouped_fz(
   descriptor.base_strides_ = packed.strides().vec();
   descriptor.storage_sizes_ = storage_shape;
   descriptor.origin_format_ = ACL_FORMAT_NCHW;
-  descriptor.npu_format_ = static_cast<aclFormat>(encoded_format);
+  descriptor.npu_format_ = static_cast<aclFormat>(kFractalZPrimaryFormat);
 
   return packed;
 }
