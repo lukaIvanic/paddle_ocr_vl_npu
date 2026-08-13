@@ -215,7 +215,13 @@ def main() -> None:
         status = "grouped_target_count_failed"
 
     native_ms = float(native_after["device_event"]["median_ms"])
-    grouped_ms = float(grouped_before["device_event"]["median_ms"])
+    grouped_ms = float(grouped_after["device_event"]["median_ms"])
+    native_step = native_parsed["summary"]["runs"][0]["step_trace_time"][
+        "totals_us"
+    ]
+    grouped_step = grouped_parsed["summary"]["runs"][0]["step_trace_time"][
+        "totals_us"
+    ]
     report = {
         "status": status,
         "device_name": torch.npu.get_device_name(0),
@@ -246,9 +252,17 @@ def main() -> None:
         "parity": parity,
         "clean_latency_comparison": {
             "native_post_profile_median_ms": native_ms,
-            "grouped_pre_profile_median_ms": grouped_ms,
+            "grouped_post_profile_median_ms": grouped_ms,
             "speedup": native_ms / grouped_ms,
             "saved_ms": native_ms - grouped_ms,
+        },
+        "profile_step_comparison_ms": {
+            "native_computing": float(native_step["Computing"]) / 1000.0,
+            "grouped_computing": float(grouped_step["Computing"]) / 1000.0,
+            "native_free": float(native_step["Free"]) / 1000.0,
+            "grouped_free": float(grouped_step["Free"]) / 1000.0,
+            "native_stage": float(native_step["Stage"]) / 1000.0,
+            "grouped_stage": float(grouped_step["Stage"]) / 1000.0,
         },
     }
     output_json = output_dir / "result.json"
@@ -282,6 +296,16 @@ def main() -> None:
         f"{grouped_targets['fz1_to_grouped_fz384']['duration_us'] / 1000.0:.6f}ms "
         f"grouped_conv={grouped_targets['physical_conv2d']['count']}/"
         f"{grouped_targets['physical_conv2d']['duration_us'] / 1000.0:.6f}ms",
+        flush=True,
+    )
+    print(
+        "UNIREC_EAGER_GROUPED_FZ_VISION_PROFILE_STEP "
+        f"native_compute_ms={float(native_step['Computing']) / 1000.0:.6f} "
+        f"grouped_compute_ms={float(grouped_step['Computing']) / 1000.0:.6f} "
+        f"native_free_ms={float(native_step['Free']) / 1000.0:.6f} "
+        f"grouped_free_ms={float(grouped_step['Free']) / 1000.0:.6f} "
+        f"native_stage_ms={float(native_step['Stage']) / 1000.0:.6f} "
+        f"grouped_stage_ms={float(grouped_step['Stage']) / 1000.0:.6f}",
         flush=True,
     )
     print(f"OUTPUT_JSON={output_json}", flush=True)
