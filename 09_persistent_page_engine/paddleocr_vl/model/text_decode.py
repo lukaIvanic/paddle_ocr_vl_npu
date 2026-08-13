@@ -114,7 +114,9 @@ class DecodeOptimizationConfig:
     add_rms_norm: bool = False
     attention: str = "gqa"
     increfa_length_mode: str = "mask"
-    increfa_inner_precise: int = 1
+    # None preserves the torch-npu production default by omitting the keyword.
+    # Experimental precision lanes can explicitly select 0 (high precision).
+    increfa_inner_precise: int | None = None
     stage_aware_weight_prefetch: bool = False
     post_scatter_kv_prefetch: bool = False
     weight_prefetch_timing: str = "before_attention"
@@ -1974,6 +1976,11 @@ def _decode_attention(
             mask_for_attention = attention_mask
             call_num_heads = int(attention.num_heads)
             call_num_key_value_heads = num_key_value_heads
+        increfa_kwargs: dict[str, object] = {}
+        if optimization.increfa_inner_precise is not None:
+            increfa_kwargs["inner_precise"] = int(
+                optimization.increfa_inner_precise
+            )
         attention_output = torch_npu.npu_incre_flash_attention(
             query_for_attention.contiguous(),
             key_for_attention.contiguous(),
@@ -1989,7 +1996,7 @@ def _decode_attention(
             num_key_value_heads=call_num_key_value_heads,
             input_layout="BNSD",
             scale_value=float(attention.scaling),
-            inner_precise=int(optimization.increfa_inner_precise),
+            **increfa_kwargs,
         )
         if pseudo_b2:
             attention_output = attention_output.view(
