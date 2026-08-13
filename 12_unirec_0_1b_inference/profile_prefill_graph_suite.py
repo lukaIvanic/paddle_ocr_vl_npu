@@ -73,6 +73,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--warmup", type=int, default=2)
     parser.add_argument("--control-repeats", type=int, default=10)
     parser.add_argument("--profile-steps", type=int, default=1)
+    parser.add_argument(
+        "--skip-profiler",
+        action="store_true",
+        help=(
+            "Measure warmed graph replays without capturing or parsing an "
+            "NPU profile. Use this for low-wall-time latency A/B gates."
+        ),
+    )
     parser.add_argument("--parser-topn", type=int, default=50)
     parser.add_argument(
         "--lane", choices=("all", "layout", "vision"), default="all"
@@ -278,6 +286,7 @@ def _profile_lane(
     profile_steps: int,
     profile_metric: str,
     parser_topn: int,
+    skip_profiler: bool,
     first128_calls: int,
     input_contract: dict[str, Any],
 ) -> dict[str, Any]:
@@ -295,32 +304,35 @@ def _profile_lane(
 
     before = _measure_replays(run, device=device, repeats=control_repeats)
     profile_dir = lane_dir / f"profile_{profile_metric}"
-    profile_dir.mkdir(parents=True, exist_ok=False)
-    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
-    synchronize_device(device)
-    profile_started = time.perf_counter()
-    with npu_prof.profile(
-        activities=[
-            npu_prof.ProfilerActivity.CPU,
-            npu_prof.ProfilerActivity.NPU,
-        ],
-        schedule=schedule,
-        experimental_config=_profiler_config(profile_metric),
-        on_trace_ready=npu_prof.tensorboard_trace_handler(
-            str(profile_dir), analyse_flag=True
-        ),
-        record_shapes=True,
-        profile_memory=False,
-        with_stack=False,
-    ) as profiler:
-        with torch.profiler.record_function(f"unirec.prefill_graph.{name}"):
-            for _ in range(profile_steps):
-                run()
+    profile_wall_s = 0.0
+    parsed = None
+    if not skip_profiler:
+        profile_dir.mkdir(parents=True, exist_ok=False)
+        schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
         synchronize_device(device)
-        profiler.step()
-    profile_wall_s = time.perf_counter() - profile_started
+        profile_started = time.perf_counter()
+        with npu_prof.profile(
+            activities=[
+                npu_prof.ProfilerActivity.CPU,
+                npu_prof.ProfilerActivity.NPU,
+            ],
+            schedule=schedule,
+            experimental_config=_profiler_config(profile_metric),
+            on_trace_ready=npu_prof.tensorboard_trace_handler(
+                str(profile_dir), analyse_flag=True
+            ),
+            record_shapes=True,
+            profile_memory=False,
+            with_stack=False,
+        ) as profiler:
+            with torch.profiler.record_function(f"unirec.prefill_graph.{name}"):
+                for _ in range(profile_steps):
+                    run()
+            synchronize_device(device)
+            profiler.step()
+        profile_wall_s = time.perf_counter() - profile_started
+        parsed = _parse_profile(profile_dir, topn=parser_topn)
     after = _measure_replays(run, device=device, repeats=control_repeats)
-    parsed = _parse_profile(profile_dir, topn=parser_topn)
 
     steady_event_ms = (
         float(before["device_event"]["mean_ms"])
@@ -338,7 +350,7 @@ def _profile_lane(
         "profile_metric": profile_metric,
         "profile_steps": profile_steps,
         "profile_wall_s": profile_wall_s,
-        "profile_dir": str(profile_dir),
+        "profile_dir": str(profile_dir) if not skip_profiler else None,
         "parsed_profile": parsed,
     }
 
@@ -391,6 +403,7 @@ def _layout_lane(
         profile_steps=args.profile_steps,
         profile_metric=args.profile_metric,
         parser_topn=args.parser_topn,
+        skip_profiler=args.skip_profiler,
         first128_calls=FIRST128_LAYOUT_CALLS,
         input_contract={
             "pixel_values": [1, 3, 800, 800],
@@ -601,6 +614,7 @@ def _recognition_lanes(
             profile_steps=args.profile_steps,
             profile_metric=args.profile_metric,
             parser_topn=args.parser_topn,
+            skip_profiler=args.skip_profiler,
             first128_calls=FIRST128_VISION_CALLS[spec.key],
             input_contract={
                 "pixel_values": [
@@ -646,6 +660,7 @@ def _recognition_lanes(
                 profile_steps=args.profile_steps,
                 profile_metric=args.profile_metric,
                 parser_topn=args.parser_topn,
+                skip_profiler=args.skip_profiler,
                 first128_calls=FIRST128_TEXT_PREFILL_CALLS,
                 input_contract={
                     "encoder_hidden_states": [
@@ -733,6 +748,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "warmup": args.warmup,
             "control_repeats": args.control_repeats,
             "profile_steps": args.profile_steps,
+            "skip_profiler": args.skip_profiler,
             "profile_metric": args.profile_metric,
             "parser_topn": args.parser_topn,
             "lane": args.lane,
