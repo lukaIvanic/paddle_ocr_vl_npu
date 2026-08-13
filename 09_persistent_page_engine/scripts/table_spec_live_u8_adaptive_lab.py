@@ -215,6 +215,7 @@ def _prepare_rows(
     args: argparse.Namespace,
 ) -> tuple[list[RecognitionRequest], list[tuple[int, int, Any]], dict[str, Any]]:
     prepare_started = time.perf_counter()
+    prepare_cpu_started = time.thread_time()
     prepared, rotation_cw, source_size, split_s = row_lab.prepare_strategy_inputs(
         source,
         raw_image,
@@ -251,6 +252,7 @@ def _prepare_rows(
         )
     return requests, rows, {
         "row_prepare_wall_s": time.perf_counter() - prepare_started,
+        "row_prepare_thread_cpu_s": time.thread_time() - prepare_cpu_started,
         "split_cpu_s": float(split_s),
         "row_crop_cpu_s": row_crop_s,
         "row_draft_rotation_cw": int(rotation_cw),
@@ -299,10 +301,11 @@ def _timed_cpu_prepare(
     recognizer: Any,
     request: RecognitionRequest,
     submitted_at: float,
-) -> tuple[Any, float, float]:
+) -> tuple[Any, float, float, float]:
     started = time.perf_counter()
+    cpu_started = time.thread_time()
     prepared = recognizer._prepare_cpu(request, submitted_at)
-    return prepared, started, time.perf_counter()
+    return prepared, started, time.perf_counter(), time.thread_time() - cpu_started
 
 
 def _timed_matcher(
@@ -311,8 +314,9 @@ def _timed_matcher(
     *,
     eos_token_id: int,
     block_size: int,
-) -> tuple[TableDraftMatcher, float, float]:
+) -> tuple[TableDraftMatcher, float, float, float]:
     started = time.perf_counter()
+    cpu_started = time.thread_time()
     # The matcher index is acyclic. Cyclic-GC scans can otherwise add large,
     # input-dependent pauses while this worker overlaps target NPU prefill.
     gc_was_enabled = gc.isenabled()
@@ -328,7 +332,7 @@ def _timed_matcher(
     finally:
         if gc_was_enabled:
             gc.enable()
-    return matcher, started, time.perf_counter()
+    return matcher, started, time.perf_counter(), time.thread_time() - cpu_started
 
 
 def _intersection_seconds(
@@ -343,6 +347,8 @@ def _intersection_seconds(
 def _run_one(
     *,
     source: dict[str, Any],
+    raw_image: Any,
+    crop_preload_wall_s: float,
     measured: bool,
     args: argparse.Namespace,
     b1_recognizer: Any,
@@ -351,10 +357,9 @@ def _run_one(
     cpu_executor: ThreadPoolExecutor,
 ) -> dict[str, Any]:
     request_id = str(source["request_id"])
+    # The latency contract begins with an already-materialized table crop.
     e2e_started = time.perf_counter()
-    load_started = time.perf_counter()
-    raw_image = load_crop(source, args.images_dir)
-    source_load_s = time.perf_counter() - load_started
+    process_cpu_started = time.process_time()
     target_crop = _exact_target_crop_from_raw(source, raw_image)
     row_requests, row_crops, row_timing = _prepare_rows(
         source, raw_image, args
@@ -377,7 +382,7 @@ def _run_one(
     )
     draft_finished = time.perf_counter()
     cpu_wait_started = time.perf_counter()
-    prepared, cpu_started, cpu_finished = cpu_future.result()
+    prepared, cpu_started, cpu_finished, cpu_prepare_thread_s = cpu_future.result()
     cpu_wait_s = time.perf_counter() - cpu_wait_started
 
     matcher_future = cpu_executor.submit(
@@ -391,7 +396,9 @@ def _run_one(
     prefilled = b1_recognizer.prefill_prepared_one(prepared)
     prefill_finished = time.perf_counter()
     matcher_wait_started = time.perf_counter()
-    matcher, matcher_started, matcher_finished = matcher_future.result()
+    matcher, matcher_started, matcher_finished, matcher_thread_s = (
+        matcher_future.result()
+    )
     matcher_wait_s = time.perf_counter() - matcher_wait_started
     verify_started = time.perf_counter()
     result = runtime.decode(
@@ -401,10 +408,21 @@ def _run_one(
     )
     verify_finished = time.perf_counter()
     e2e_s = verify_finished - e2e_started
+    process_cpu_s = time.process_time() - process_cpu_started
 
     reference_tokens = fixed_lab.target_tokens(source)
     cpu_prepare_s = cpu_finished - cpu_started
     matcher_build_s = matcher_finished - matcher_started
+    explicit_cpu_wall_sum_s = (
+        float(row_timing["row_prepare_wall_s"])
+        + cpu_prepare_s
+        + matcher_build_s
+    )
+    explicit_cpu_thread_sum_s = (
+        float(row_timing["row_prepare_thread_cpu_s"])
+        + cpu_prepare_thread_s
+        + matcher_thread_s
+    )
     cpu_hidden_s = _intersection_seconds(
         cpu_started, cpu_finished, draft_started, draft_finished
     )
@@ -421,13 +439,21 @@ def _run_one(
         "saved_reference_tokens": len(reference_tokens),
         "timing_s": {
             "e2e_complete_wall": e2e_s,
-            "source_image_load_and_crop": source_load_s,
+            "table_crop_preload_wall_excluded": float(crop_preload_wall_s),
+            "host_process_cpu_total": process_cpu_s,
+            "host_process_cpu_per_e2e_wall": (
+                process_cpu_s / e2e_s if e2e_s > 0 else None
+            ),
+            "explicit_cpu_stage_wall_sum": explicit_cpu_wall_sum_s,
+            "explicit_cpu_stage_thread_sum": explicit_cpu_thread_sum_s,
             **row_timing,
             "draft_recognition_wall": draft_wall_s,
             "target_cpu_prepare": cpu_prepare_s,
+            "target_cpu_prepare_thread_cpu": cpu_prepare_thread_s,
             "target_cpu_prepare_consumer_wait": cpu_wait_s,
             "target_cpu_prepare_hidden_by_draft": cpu_hidden_s,
             "matcher_build": matcher_build_s,
+            "matcher_thread_cpu": matcher_thread_s,
             "matcher_consumer_wait": matcher_wait_s,
             "matcher_hidden_by_target_prefill": matcher_hidden_s,
             "target_npu_prefill_wall": prefill_finished - prefill_started,
@@ -469,6 +495,23 @@ def main() -> None:
     if args.cold_request_id not in by_id:
         raise KeyError(f"unknown cold request ID: {args.cold_request_id}")
     cold_source = by_id[args.cold_request_id]
+
+    preloaded_crops: dict[str, Any] = {}
+    crop_preload_wall_s: dict[str, float] = {}
+    preload_started = time.perf_counter()
+    for source in (cold_source, *selected):
+        request_id = str(source["request_id"])
+        if request_id in preloaded_crops:
+            continue
+        started = time.perf_counter()
+        preloaded_crops[request_id] = load_crop(source, args.images_dir)
+        crop_preload_wall_s[request_id] = time.perf_counter() - started
+    crop_preload_total_s = time.perf_counter() - preload_started
+    print(
+        "TABLE_SPEC_LIVE_PROGRESS crops=preloaded "
+        f"count={len(preloaded_crops)} wall_s={crop_preload_total_s:.3f}",
+        flush=True,
+    )
 
     k_values = adaptive_lab.parse_k_values(args.k_values)
     cache_roots = adaptive_lab.parse_k_cache_roots(
@@ -535,6 +578,8 @@ def main() -> None:
         )
         cold = _run_one(
             source=cold_source,
+            raw_image=preloaded_crops[args.cold_request_id],
+            crop_preload_wall_s=crop_preload_wall_s[args.cold_request_id],
             measured=False,
             args=args,
             b1_recognizer=b1_recognizer,
@@ -555,6 +600,10 @@ def main() -> None:
         for index, source in enumerate(selected, start=1):
             payload = _run_one(
                 source=source,
+                raw_image=preloaded_crops[str(source["request_id"])],
+                crop_preload_wall_s=crop_preload_wall_s[
+                    str(source["request_id"])
+                ],
                 measured=True,
                 args=args,
                 b1_recognizer=b1_recognizer,
@@ -578,6 +627,7 @@ def main() -> None:
                 f"draft={timing['draft_recognition_wall']:.3f}s "
                 f"prefill={timing['target_npu_prefill_wall']:.3f}s "
                 f"verify={timing['target_verify_wall']:.3f}s "
+                f"cpu={timing['host_process_cpu_total']:.3f}s "
                 f"hidden={timing['overlap_hidden_total']:.3f}s "
                 f"exact={payload['exact_saved_reference']}",
                 flush=True,
@@ -588,6 +638,7 @@ def main() -> None:
     e2e_values = [record["timing_s"]["e2e_complete_wall"] for record in records]
     summary = {
         "setup_s": setup_s,
+        "crop_preload_total_wall_excluded": crop_preload_total_s,
         "environment": {
             "ascend_rt_visible_devices": os.environ.get(
                 "ASCEND_RT_VISIBLE_DEVICES"
@@ -603,6 +654,8 @@ def main() -> None:
             "k_values": list(k_values),
             "initial_k": args.initial_k,
             "row_strategy": "uniform_8_snapped",
+            "latency_boundary": "in_memory_table_crop_to_verified_output",
+            "source_page_load_and_bbox_crop_included": False,
             "target_cpu_overlap": "during_draft_recognition",
             "matcher_overlap": "during_target_npu_prefill",
             "npu_overlap": False,
@@ -613,6 +666,18 @@ def main() -> None:
             bool(record["exact_saved_reference"]) for record in records
         ),
         "e2e_distribution_s": fixed_lab.distribution(e2e_values),
+        "host_process_cpu_distribution_s": fixed_lab.distribution([
+            record["timing_s"]["host_process_cpu_total"]
+            for record in records
+        ]),
+        "explicit_cpu_stage_wall_distribution_s": fixed_lab.distribution([
+            record["timing_s"]["explicit_cpu_stage_wall_sum"]
+            for record in records
+        ]),
+        "explicit_cpu_stage_thread_distribution_s": fixed_lab.distribution([
+            record["timing_s"]["explicit_cpu_stage_thread_sum"]
+            for record in records
+        ]),
         "tables": records,
     }
     _write_json(args.output_dir / "run_summary.json", summary)
