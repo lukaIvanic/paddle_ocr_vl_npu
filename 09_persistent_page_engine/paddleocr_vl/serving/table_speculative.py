@@ -582,6 +582,10 @@ class TableSpeculativeDecodeRuntime:
         self.host_targets = torch.empty(
             (1, self.query_length), dtype=torch.int64, pin_memory=True
         )
+        self.host_cache_position = torch.empty(
+            (1,), dtype=torch.int64, pin_memory=True
+        )
+        self.host_cache_position_numpy = self.host_cache_position.numpy()
         self.decode_input = torch.empty((1, 1), device=self.device, dtype=torch.int64)
         self.host_decode_target = torch.empty((1, 1), dtype=torch.int64, pin_memory=True)
         self.host_probe_ids = torch.empty(
@@ -606,6 +610,16 @@ class TableSpeculativeDecodeRuntime:
             self._event(enable_timing=False) if self.record_device_timing else None
         )
         self._call_stream = torch.npu.current_stream(self.device)
+
+    def _set_cache_position(
+        self,
+        position: int,
+        cache_position: torch.Tensor,
+    ) -> None:
+        """Update the device scalar without launching an NPU fill kernel."""
+
+        self.host_cache_position_numpy[0] = int(position)
+        cache_position.copy_(self.host_cache_position, non_blocking=True)
 
     def _event(self, *, enable_timing: bool = True) -> Any:
         import torch_npu
@@ -821,7 +835,7 @@ class TableSpeculativeDecodeRuntime:
                     and bool(proposal.tokens)
                     and position + self.query_length <= self.cache_length
                 )
-                cache_position.fill_(position)
+                self._set_cache_position(position, cache_position)
                 if not can_verify:
                     next_token, device_s = self._decode_call(
                         token_ids[-1],
@@ -875,7 +889,7 @@ class TableSpeculativeDecodeRuntime:
                     )
                 if rescue_candidate is not None:
                     probe_position = position + accepted_here
-                    cache_position.fill_(probe_position)
+                    self._set_cache_position(probe_position, cache_position)
                     probe_current_token = (
                         int(proposal_tokens[accepted_here - 1])
                         if accepted_here > 0

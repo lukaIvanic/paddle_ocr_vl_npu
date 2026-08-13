@@ -430,7 +430,7 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
                 proposal = matcher.propose(token_ids)
                 if effective_k is None or proposal is None or not proposal.tokens:
                     runtime = self.runtimes[min(self.k_values)]
-                    cache_position.fill_(position)
+                    runtime._set_cache_position(position, cache_position)
                     next_token, device_s = runtime._decode_call(
                         token_ids[-1], cache_position, rope_deltas, flat_cache
                     )
@@ -448,7 +448,7 @@ class AdaptiveKTableSpeculativeDecodeRuntime:
 
                 runtime = self.runtimes[effective_k]
                 proposal_tokens = proposal.tokens
-                cache_position.fill_(position)
+                runtime._set_cache_position(position, cache_position)
                 targets, device_s = runtime._verify_call(
                     token_ids[-1],
                     proposal_tokens,
