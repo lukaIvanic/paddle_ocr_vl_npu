@@ -106,7 +106,6 @@ def _reconstruct_crops(
     *,
     page_manifest: Path,
     selected_rows: list[dict[str, Any]],
-    crop_margin: Any,
     tokenize_figure_of_table: Any,
 ) -> dict[str, Image.Image]:
     page_rows = {
@@ -121,14 +120,12 @@ def _reconstruct_crops(
         page = page_rows[page_index]
         path = Path(page["image_path"])
         rgb, _timing = _decode_rgb(path)
-        bgr = np.ascontiguousarray(rgb[..., ::-1])
         payload, _frontend_timing = _prepare_frontend_payload(
             page_index=page_index,
             path=path,
-            bgr=bgr,
+            rgb=np.ascontiguousarray(rgb),
             layout_result=page["layout_results"],
             use_chart_recognition=True,
-            crop_margin=crop_margin,
             tokenize_figure_of_table=tokenize_figure_of_table,
         )
         for row in crop_rows:
@@ -155,7 +152,6 @@ def main() -> None:
     physical_devices = _physical_devices()
     sys.path.insert(0, str(args.openocr_root.expanduser().resolve()))
     from tools.utils.opendoc_onnx_utils.utils import (  # noqa: PLC0415
-        crop_margin,
         tokenize_figure_of_table,
     )
 
@@ -166,7 +162,6 @@ def main() -> None:
     images = _reconstruct_crops(
         page_manifest=args.page_manifest.expanduser().resolve(),
         selected_rows=selected_rows,
-        crop_margin=crop_margin,
         tokenize_figure_of_table=tokenize_figure_of_table,
     )
 

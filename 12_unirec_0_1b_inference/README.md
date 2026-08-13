@@ -270,16 +270,17 @@ reduce page quality.
 `layout_detector_lab.py` defaults to the strict `current_production` contract
 and isolates the exact optimized PP-DocLayoutV2 boundary used by the active full
 runner. The lab and production worker share the same PNG/non-PNG RGB decoder
-and contiguous BGR materializer. The strict contract selects compiled FP16 B1,
-FP16 reading order, `group16`, `torchair_internal` weights, preformatted
-FrozenBN buffers, and the 0.4 threshold. A conflicting model flag is rejected
-instead of silently creating a different lane. Use `--contract custom`
-explicitly for historical or experimental configurations. It runs sequential
-B1 pages and excludes recognition, crop construction, and page assembly. The
-report separates file read, image decode, RGB-to-BGR materialization, processor
-resize/normalize, input H2D, model forward, Hugging Face box decode, result D2H,
-Python result construction, overlap filtering, and reading-order labeling. One
-warmup page is excluded by default.
+and keeps its contiguous RGB page as the canonical layout/crop source. The
+strict contract selects compiled FP16 B1, FP16 reading order, `group16`,
+`torchair_internal` weights, preformatted FrozenBN buffers, and the 0.4
+threshold. A conflicting model flag is rejected instead of silently creating a
+different lane. Use `--contract custom` explicitly for historical or
+experimental configurations. It runs sequential B1 pages and excludes
+recognition, crop construction, and page assembly. The report separates file
+read, image decode, RGB materialization, processor resize/normalize, input H2D,
+model forward, Hugging Face box decode, result D2H, Python result construction,
+overlap filtering, and reading-order labeling. One warmup page is excluded by
+default.
 
 ```sh
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \

@@ -8,7 +8,7 @@ producer. It is not an eager proxy and it does not include recognition.
 
 - OmniDocBench offset 0, first 128 pages;
 - production Kornia-RS PNG / TorchVision non-PNG decode;
-- production contiguous RGB-to-BGR materialization;
+- production canonical contiguous RGB page with no full-page channel reversal;
 - production adapter, 0.4 threshold, and OpenDoc result ordering;
 - TorchAir static B1, FP16 model and FP16 reading-order head;
 - `group16`, `torchair_internal`, and preformatted FrozenBN buffers;

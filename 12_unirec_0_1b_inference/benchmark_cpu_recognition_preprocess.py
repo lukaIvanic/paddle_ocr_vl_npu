@@ -90,10 +90,7 @@ def load_exact_crops(
     processor: UniRecImageProcessor,
 ) -> list[np.ndarray]:
     sys.path.insert(0, str(openocr_root))
-    from tools.utils.opendoc_onnx_utils.utils import (
-        crop_margin,
-        tokenize_figure_of_table,
-    )
+    from tools.utils.opendoc_onnx_utils.utils import tokenize_figure_of_table
 
     pages = sorted(
         read_jsonl(artifact_dir / "pages.jsonl"),
@@ -103,14 +100,12 @@ def load_exact_crops(
     for page in pages:
         path = Path(page["image_path"])
         rgb, _timing = _decode_rgb(path)
-        bgr = np.ascontiguousarray(rgb[..., ::-1])
         rebuilt, _frontend_timing = _prepare_frontend_payload(
             page_index=int(page["page_index"]),
             path=path,
-            bgr=bgr,
+            rgb=np.ascontiguousarray(rgb),
             layout_result=page["layout_results"],
             use_chart_recognition=True,
-            crop_margin=crop_margin,
             tokenize_figure_of_table=tokenize_figure_of_table,
         )
         accepted = []

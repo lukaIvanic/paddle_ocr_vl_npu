@@ -463,6 +463,7 @@ class PPDocLayoutV2NpuAdapter:
         fuse_eval_bn: bool = False,
         precompute_frozen_bn_affine: bool = False,
         preformat_frozen_bn_buffers: bool = False,
+        input_color_order: str = "bgr",
     ) -> None:
         if dtype not in DTYPE_MAP:
             raise ValueError(f"Unsupported layout dtype: {dtype}")
@@ -483,6 +484,10 @@ class PPDocLayoutV2NpuAdapter:
         if depthwise_rewrite not in LAYOUT_DEPTHWISE_REWRITE_CHOICES:
             raise ValueError(
                 f"Unsupported layout depthwise rewrite: {depthwise_rewrite}"
+            )
+        if input_color_order not in {"bgr", "rgb"}:
+            raise ValueError(
+                f"Unsupported layout input color order: {input_color_order}"
             )
 
         import torch_npu  # noqa: F401
@@ -507,6 +512,7 @@ class PPDocLayoutV2NpuAdapter:
         self.fuse_eval_bn = bool(fuse_eval_bn)
         self.precompute_frozen_bn_affine = bool(precompute_frozen_bn_affine)
         self.preformat_frozen_bn_buffers = bool(preformat_frozen_bn_buffers)
+        self.input_color_order = str(input_color_order)
         frozen_bn_rewrite_count = sum(
             (
                 self.fuse_frozen_bn,
@@ -654,7 +660,7 @@ class PPDocLayoutV2NpuAdapter:
         for image in images:
             if image.ndim != 3 or image.shape[2] != 3:
                 raise ValueError(
-                    "OpenDoc layout input must be a BGR HxWx3 image, got "
+                    "OpenDoc layout input must be an HxWx3 image, got "
                     f"shape={image.shape}"
                 )
         real_page_count = len(images)
@@ -664,8 +670,14 @@ class PPDocLayoutV2NpuAdapter:
 
         total_started = time.perf_counter()
         started = time.perf_counter()
-        rgbs = [cv2.cvtColor(image, cv2.COLOR_BGR2RGB) for image in padded_images]
-        self._record_stage("bgr_to_rgb_s", started)
+        if self.input_color_order == "rgb":
+            rgbs = padded_images
+        else:
+            rgbs = [
+                cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                for image in padded_images
+            ]
+        self._record_stage("input_to_rgb_s", started)
 
         started = time.perf_counter()
         inputs = self.processor(images=rgbs, return_tensors="pt")

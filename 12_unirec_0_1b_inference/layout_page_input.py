@@ -51,6 +51,15 @@ def materialize_layout_bgr(rgb: np.ndarray) -> np.ndarray:
     return bgr
 
 
+def materialize_layout_rgb(rgb: np.ndarray) -> np.ndarray:
+    """Return the production RGB page, copying only a strided decoder view."""
+    _validate_rgb(rgb)
+    image = np.ascontiguousarray(rgb)
+    if not image.flags.c_contiguous or image.dtype != np.uint8:
+        raise RuntimeError("layout RGB materialization must be contiguous uint8")
+    return image
+
+
 def _validate_rgb(rgb: np.ndarray) -> None:
     if rgb.ndim != 3 or rgb.shape[2] != 3 or rgb.dtype != np.uint8:
         raise RuntimeError(f"unsupported decoded image: {rgb.shape} {rgb.dtype}")

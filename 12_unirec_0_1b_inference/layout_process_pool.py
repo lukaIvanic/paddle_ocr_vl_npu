@@ -28,6 +28,7 @@ from PIL import Image
 from layout_page_input import (
     decode_page_rgb as _decode_rgb,
     materialize_layout_bgr,
+    materialize_layout_rgb,
 )
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 
@@ -127,7 +128,15 @@ def _pack_frontend_payload_shared(
     """Move selected frontend arrays into one aligned shared arena."""
     entries: list[tuple[str, dict[str, Any] | None, np.ndarray]] = []
     if retain_images:
-        entries.append(("image_bgr_descriptor", None, result["image_bgr"]))
+        page_bgr = result.get("image_bgr")
+        if page_bgr is None:
+            page_rgb = result.get("page_rgb")
+            if page_rgb is None:
+                raise RuntimeError("retained frontend payload has no page image")
+            # Output assembly still consumes the historical BGR page contract.
+            # The optimized no-retain inference path never enters this branch.
+            page_bgr = materialize_layout_bgr(page_rgb)
+        entries.append(("image_bgr_descriptor", None, page_bgr))
     for crop in result["crops"]:
         height, width = crop["image_rgb"].shape[:2]
         crop["source_image_size"] = [int(width), int(height)]
@@ -155,6 +164,7 @@ def _pack_frontend_payload_shared(
         started = time.perf_counter()
         result["shared_memory"] = None
         result["image_bgr"] = None
+        result["page_rgb"] = None
         return result, time.perf_counter() - started, 0
     offsets = []
     total_bytes = 0
@@ -196,6 +206,7 @@ def _pack_frontend_payload_shared(
             target = result if owner is None else owner
             target[descriptor_name] = descriptor
         result["image_bgr"] = None
+        result["page_rgb"] = None
         for crop in result["crops"]:
             crop["image_rgb"] = None
             crop.pop("processed_pixel_values", None)
@@ -220,14 +231,34 @@ def _base_label(label: str) -> str:
     return parts[0] if len(parts) == 2 and parts[1].isdigit() else label
 
 
+def _crop_margin_rgb(image: np.ndarray) -> np.ndarray:
+    """OpenOCR crop_margin with RGB-aware grayscale and identical geometry."""
+    if image.ndim == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    else:
+        gray = image.copy()
+    if gray.dtype != np.uint8:
+        gray = gray.astype(np.uint8)
+    maximum = gray.max()
+    minimum = gray.min()
+    if maximum == minimum:
+        return image
+    data = ((gray - minimum) / (maximum - minimum) * 255).astype(np.uint8)
+    _, binary = cv2.threshold(data, 200, 255, cv2.THRESH_BINARY_INV)
+    coordinates = cv2.findNonZero(binary)
+    if coordinates is None:
+        return image
+    x, y, width, height = cv2.boundingRect(coordinates)
+    return image[y : y + height, x : x + width]
+
+
 def _prepare_frontend_payload(
     *,
     page_index: int,
     path: Path,
-    bgr: np.ndarray,
+    rgb: np.ndarray,
     layout_result: dict[str, Any],
     use_chart_recognition: bool,
-    crop_margin: Any,
     tokenize_figure_of_table: Any,
 ) -> tuple[dict[str, Any], dict[str, float]]:
     """Build the complete CPU page frontend result inside its owner process."""
@@ -240,7 +271,7 @@ def _prepare_frontend_payload(
     block_images: list[np.ndarray | None] = []
     for box in layout_result["boxes"]:
         x1, y1, x2, y2 = map(int, box["coordinate"])
-        cropped = bgr[y1:y2, x1:x2]
+        cropped = rgb[y1:y2, x1:x2]
         block_image = None if cropped.size == 0 else cropped
         block_images.append(block_image)
         blocks.append(
@@ -289,8 +320,8 @@ def _prepare_frontend_payload(
                 imgs_in_doc,
             )
         elif "formula" in label and label != "formula_number":
-            block_image = crop_margin(block_image)
-        crop_rgb = cv2.cvtColor(block_image, cv2.COLOR_BGR2RGB)
+            block_image = _crop_margin_rgb(block_image)
+        crop_rgb = np.ascontiguousarray(block_image)
         crops.append(
             {
                 "crop_index": len(crops),
@@ -302,12 +333,13 @@ def _prepare_frontend_payload(
         vlm_block_ids.append(block_index)
         drop_figures_set.update(drop_figures)
     crop_build_s = time.perf_counter() - started
-    height, width = bgr.shape[:2]
+    height, width = rgb.shape[:2]
     return (
         {
             "page_index": page_index,
             "image_path": str(path),
-            "image_bgr": bgr,
+            "image_bgr": None,
+            "page_rgb": rgb,
             "width": width,
             "height": height,
             "layout_results": layout_result,
@@ -703,7 +735,6 @@ def _prepare_full_vision_worker_page(
     runtime: Any,
     threshold: float,
     use_chart_recognition: bool,
-    crop_margin: Any,
     tokenize_figure_of_table: Any,
     recognition_processor: Any,
     recognition_preprocess_executor: ThreadPoolExecutor | None,
@@ -718,24 +749,26 @@ def _prepare_full_vision_worker_page(
     if predecoded is None:
         started = time.perf_counter()
         rgb, decode_timing = _decode_rgb(path)
-        bgr_started = time.perf_counter()
-        bgr = materialize_layout_bgr(rgb)
-        decode_timing["rgb_to_bgr_s"] = time.perf_counter() - bgr_started
+        materialize_started = time.perf_counter()
+        rgb = materialize_layout_rgb(rgb)
+        decode_timing["rgb_materialize_s"] = (
+            time.perf_counter() - materialize_started
+        )
+        decode_timing["rgb_to_bgr_s"] = 0.0
     else:
-        started, bgr, decode_timing = predecoded
+        started, rgb, decode_timing = predecoded
     if layout_result is None:
         detector_started = time.perf_counter()
-        layout_result = runtime([bgr], threshold=threshold)[0]
+        layout_result = runtime([rgb], threshold=threshold)[0]
         detector_s = time.perf_counter() - detector_started
     elif detector_s is None:
         raise ValueError("precomputed layout result requires detector timing")
     result, frontend_timing = _prepare_frontend_payload(
         page_index=page_index,
         path=path,
-        bgr=bgr,
+        rgb=rgb,
         layout_result=layout_result,
         use_chart_recognition=use_chart_recognition,
-        crop_margin=crop_margin,
         tokenize_figure_of_table=tokenize_figure_of_table,
     )
     result["started_at"] = started
@@ -831,6 +864,7 @@ def _prepare_full_vision_worker_page(
     result["frontend_timing_s"] = {
         "page_file_read_s": decode_timing["file_read_s"],
         "page_image_decode_s": decode_timing["direct_rgb_decode_s"],
+        "page_rgb_materialize_s": decode_timing["rgb_materialize_s"],
         "page_rgb_to_bgr_s": decode_timing["rgb_to_bgr_s"],
         "layout_s": detector_s,
         **frontend_timing,
@@ -874,7 +908,6 @@ def _run_full_vision_worker_group(
     runtime: Any,
     threshold: float,
     use_chart_recognition: bool,
-    crop_margin: Any,
     tokenize_figure_of_table: Any,
     recognition_processor: Any,
     recognition_preprocess_executor: ThreadPoolExecutor | None,
@@ -897,13 +930,16 @@ def _run_full_vision_worker_group(
             path = Path(task[2])
             page_started = time.perf_counter()
             rgb, decode_timing = _decode_rgb(path)
-            bgr_started = time.perf_counter()
-            bgr = materialize_layout_bgr(rgb)
-            decode_timing["rgb_to_bgr_s"] = time.perf_counter() - bgr_started
+            materialize_started = time.perf_counter()
+            rgb = materialize_layout_rgb(rgb)
+            decode_timing["rgb_materialize_s"] = (
+                time.perf_counter() - materialize_started
+            )
+            decode_timing["rgb_to_bgr_s"] = 0.0
             decoded_batch.append(
                 (
                     page_started,
-                    bgr,
+                    rgb,
                     decode_timing,
                 )
             )
@@ -929,7 +965,6 @@ def _run_full_vision_worker_group(
                 runtime=runtime,
                 threshold=threshold,
                 use_chart_recognition=use_chart_recognition,
-                crop_margin=crop_margin,
                 tokenize_figure_of_table=tokenize_figure_of_table,
                 recognition_processor=recognition_processor,
                 recognition_preprocess_executor=recognition_preprocess_executor,
@@ -1233,22 +1268,20 @@ def _worker_main(
             preformat_frozen_bn_buffers=(
                 layout_preformat_frozen_bn_buffers
             ),
+            input_color_order="rgb",
         )
         warmup_rgb, _ = _decode_rgb(Path(warmup_path))
-        runtime([warmup_rgb[..., ::-1]], threshold=threshold)
+        runtime([materialize_layout_rgb(warmup_rgb)], threshold=threshold)
         runtime.reset_timing()
-        crop_margin = None
         tokenize_figure_of_table = None
         if prepare_pages:
             if openocr_root is None:
                 raise RuntimeError("full frontend workers require OpenOCR root")
             sys.path.insert(0, openocr_root)
             from tools.utils.opendoc_onnx_utils.utils import (
-                crop_margin as openocr_crop_margin,
                 tokenize_figure_of_table as openocr_tokenize_figure_of_table,
             )
 
-            crop_margin = openocr_crop_margin
             tokenize_figure_of_table = openocr_tokenize_figure_of_table
             from modeling_optimized_unirec import UniRecImageProcessor
 
@@ -1391,6 +1424,7 @@ def _worker_main(
                 "layout_preformat_frozen_bn_buffers": (
                     layout_preformat_frozen_bn_buffers
                 ),
+                "layout_input_color_order": runtime.input_color_order,
                 "layout_depthwise_rewrite_summary": (
                     runtime.depthwise_rewrite_summary
                 ),
@@ -1441,7 +1475,6 @@ def _worker_main(
                     runtime=runtime,
                     threshold=threshold,
                     use_chart_recognition=use_chart_recognition,
-                    crop_margin=crop_margin,
                     tokenize_figure_of_table=tokenize_figure_of_table,
                     recognition_processor=recognition_processor,
                     recognition_preprocess_executor=(
@@ -1468,11 +1501,14 @@ def _worker_main(
             path = Path(path_string)
             started = time.perf_counter()
             rgb, decode_timing = _decode_rgb(path)
-            bgr_started = time.perf_counter()
-            bgr = materialize_layout_bgr(rgb)
-            decode_timing["rgb_to_bgr_s"] = time.perf_counter() - bgr_started
+            materialize_started = time.perf_counter()
+            rgb = materialize_layout_rgb(rgb)
+            decode_timing["rgb_materialize_s"] = (
+                time.perf_counter() - materialize_started
+            )
+            decode_timing["rgb_to_bgr_s"] = 0.0
             detector_started = time.perf_counter()
-            layout_result = runtime([bgr], threshold=threshold)[0]
+            layout_result = runtime([rgb], threshold=threshold)[0]
             detector_s = time.perf_counter() - detector_started
             frontend_timing: dict[str, float] = {}
             shared_pack_s = 0.0
@@ -1483,10 +1519,9 @@ def _worker_main(
                 result, frontend_timing = _prepare_frontend_payload(
                     page_index=page_index,
                     path=path,
-                    bgr=bgr,
+                    rgb=rgb,
                     layout_result=layout_result,
                     use_chart_recognition=use_chart_recognition,
-                    crop_margin=crop_margin,
                     tokenize_figure_of_table=tokenize_figure_of_table,
                 )
                 result["started_at"] = started
@@ -1522,6 +1557,7 @@ def _worker_main(
                 result["frontend_timing_s"] = {
                     "page_file_read_s": decode_timing["file_read_s"],
                     "page_image_decode_s": decode_timing["direct_rgb_decode_s"],
+                    "page_rgb_materialize_s": decode_timing["rgb_materialize_s"],
                     "page_rgb_to_bgr_s": decode_timing["rgb_to_bgr_s"],
                     "layout_s": detector_s,
                     **frontend_timing,
@@ -1796,6 +1832,9 @@ class DynamicLayoutProcessPool:
                 ),
                 "layout_batch_size": int(message.get("layout_batch_size", 1)),
                 "layout_dtype": str(message["layout_dtype"]),
+                "layout_input_color_order": str(
+                    message["layout_input_color_order"]
+                ),
                 "layout_weight_format": str(message["layout_weight_format"]),
                 "layout_depthwise_rewrite": str(
                     message["layout_depthwise_rewrite"]
@@ -1896,6 +1935,7 @@ class DynamicLayoutProcessPool:
         stage_s = {
             "worker_file_read_sum_s": 0.0,
             "worker_direct_rgb_decode_sum_s": 0.0,
+            "worker_rgb_materialize_sum_s": 0.0,
             "worker_rgb_to_bgr_sum_s": 0.0,
             "worker_detector_call_sum_s": 0.0,
             "worker_layout_crop_views_sum_s": 0.0,
@@ -1951,6 +1991,9 @@ class DynamicLayoutProcessPool:
             stage_s["worker_file_read_sum_s"] += float(timing["file_read_s"])
             stage_s["worker_direct_rgb_decode_sum_s"] += float(
                 timing["direct_rgb_decode_s"]
+            )
+            stage_s["worker_rgb_materialize_sum_s"] += float(
+                timing.get("rgb_materialize_s", 0.0)
             )
             stage_s["worker_rgb_to_bgr_sum_s"] += float(
                 timing.get("rgb_to_bgr_s", 0.0)
@@ -2077,6 +2120,7 @@ class DynamicLayoutProcessPool:
         stage_s = {
             "worker_file_read_sum_s": 0.0,
             "worker_direct_rgb_decode_sum_s": 0.0,
+            "worker_rgb_materialize_sum_s": 0.0,
             "worker_rgb_to_bgr_sum_s": 0.0,
             "worker_detector_call_sum_s": 0.0,
             "worker_layout_crop_views_sum_s": 0.0,
@@ -2141,6 +2185,7 @@ class DynamicLayoutProcessPool:
             for destination, source in (
                 ("worker_file_read_sum_s", "file_read_s"),
                 ("worker_direct_rgb_decode_sum_s", "direct_rgb_decode_s"),
+                ("worker_rgb_materialize_sum_s", "rgb_materialize_s"),
                 ("worker_rgb_to_bgr_sum_s", "rgb_to_bgr_s"),
                 ("worker_detector_call_sum_s", "detector_call_s"),
                 ("worker_layout_crop_views_sum_s", "layout_crop_views_s"),

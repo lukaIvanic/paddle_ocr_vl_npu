@@ -94,6 +94,7 @@ print(
     f"box_decode={total('hf_box_decode_s'):.6f}s "
     f"h2d={total('inputs_h2d_s'):.6f}s "
     f"outputs_d2h={total('outputs_d2h_s'):.6f}s "
+    f"rgb_materialize={total('page_rgb_materialize_s'):.6f}s "
     f"rgb_to_bgr={total('page_rgb_to_bgr_s'):.6f}s "
     f"image_decode={total('page_image_decode_s'):.6f}s"
 )

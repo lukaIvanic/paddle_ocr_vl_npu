@@ -21,7 +21,7 @@ from typing import Any
 
 import numpy as np
 
-from layout_page_input import decode_page_rgb, materialize_layout_bgr
+from layout_page_input import decode_page_rgb, materialize_layout_rgb
 from opendoc_layout_npu import (
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
@@ -41,6 +41,7 @@ CURRENT_PRODUCTION_CONTRACT = {
     "fuse_eval_bn": False,
     "precompute_frozen_bn_affine": False,
     "preformat_frozen_bn_buffers": True,
+    "input_color_order": "rgb",
 }
 
 CUSTOM_DEFAULTS = {
@@ -55,6 +56,7 @@ CUSTOM_DEFAULTS = {
     "fuse_eval_bn": False,
     "precompute_frozen_bn_affine": False,
     "preformat_frozen_bn_buffers": False,
+    "input_color_order": "bgr",
 }
 
 
@@ -148,6 +150,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Keep FrozenBN math but store its four buffers as NC1HWC0",
     )
+    parser.add_argument(
+        "--input-color-order",
+        choices=("bgr", "rgb"),
+        default=None,
+        help="Channel order of each HWC page passed to the layout adapter",
+    )
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int, default=32)
     parser.add_argument(
@@ -185,14 +193,26 @@ def _resolve_contract(
             setattr(args, name, value)
 
 
-def decode_page_bgr(path: Path) -> tuple[np.ndarray, dict[str, float]]:
+def decode_page_image(path: Path, *, color_order: str) -> tuple[np.ndarray, dict[str, float]]:
     rgb, timing = decode_page_rgb(path)
     started = time.perf_counter()
-    bgr = materialize_layout_bgr(rgb)
-    return bgr, {
+    if color_order == "rgb":
+        image = materialize_layout_rgb(rgb)
+        rgb_materialize_s = time.perf_counter() - started
+        rgb_to_bgr_s = 0.0
+    elif color_order == "bgr":
+        from layout_page_input import materialize_layout_bgr
+
+        image = materialize_layout_bgr(rgb)
+        rgb_to_bgr_s = time.perf_counter() - started
+        rgb_materialize_s = 0.0
+    else:
+        raise ValueError(f"unsupported layout input color order: {color_order}")
+    return image, {
         "page_file_read_s": timing["file_read_s"],
         "page_image_decode_s": timing["direct_rgb_decode_s"],
-        "page_rgb_to_bgr_s": time.perf_counter() - started,
+        "page_rgb_materialize_s": rgb_materialize_s,
+        "page_rgb_to_bgr_s": rgb_to_bgr_s,
     }
 
 
@@ -246,6 +266,7 @@ def summarize(records: list[dict[str, Any]], setup_s: float) -> dict[str, Any]:
         if name not in {
             "page_file_read_s",
             "page_image_decode_s",
+            "page_rgb_materialize_s",
             "page_rgb_to_bgr_s",
         }:
             stage["detector_share_pct"] = (
@@ -315,6 +336,7 @@ def main() -> None:
         fuse_eval_bn=args.fuse_eval_bn,
         precompute_frozen_bn_affine=args.precompute_frozen_bn_affine,
         preformat_frozen_bn_buffers=args.preformat_frozen_bn_buffers,
+        input_color_order=args.input_color_order,
     )
     print(
         f"LAYOUT_LAB phase=model_setup_end setup_s={detector.setup_s:.3f}",
@@ -328,9 +350,14 @@ def main() -> None:
             f"call={index + 1}/{args.warmup_pages}",
             flush=True,
         )
-        # Match the production worker warmup. Measured pages use the shared
-        # contiguous BGR materializer below, exactly as production does.
-        detector([warmup_rgb[..., ::-1]], threshold=args.threshold)
+        # Match the production worker warmup. The current production contract
+        # keeps the decoded page in RGB; custom BGR runs retain the old path.
+        warmup_image = (
+            materialize_layout_rgb(warmup_rgb)
+            if args.input_color_order == "rgb"
+            else warmup_rgb[..., ::-1]
+        )
+        detector([warmup_image], threshold=args.threshold)
         print(
             f"LAYOUT_LAB phase=warmup_call_end "
             f"call={index + 1}/{args.warmup_pages}",
@@ -341,7 +368,10 @@ def main() -> None:
     records: list[dict[str, Any]] = []
     for page_index, image_path in enumerate(image_paths):
         page_started = time.perf_counter()
-        image, decode_timing = decode_page_bgr(image_path)
+        image, decode_timing = decode_page_image(
+            image_path,
+            color_order=args.input_color_order,
+        )
         before = dict(detector.stage_s)
         result = detector([image], threshold=args.threshold)[0]
         stage_s = {
@@ -383,9 +413,8 @@ def main() -> None:
             "resolved_model_contract": resolved_contract,
             "page_input": {
                 "decoder": "shared_production_decode_page_rgb",
-                "bgr_materialization": (
-                    "shared_production_contiguous_channel_reverse"
-                ),
+                "color_order": args.input_color_order,
+                "materialization": "shared_production_contiguous_rgb",
             },
             "openocr_root": str(openocr_root),
             "model_path": str(args.model_path.expanduser().resolve()),

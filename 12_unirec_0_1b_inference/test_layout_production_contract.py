@@ -19,6 +19,7 @@ from layout_detector_lab import (  # noqa: E402
     parse_args,
 )
 from layout_page_input import materialize_layout_bgr  # noqa: E402
+from layout_page_input import materialize_layout_rgb  # noqa: E402
 
 
 class LayoutProductionContractTest(unittest.TestCase):
@@ -65,6 +66,12 @@ class LayoutProductionContractTest(unittest.TestCase):
         np.testing.assert_array_equal(bgr, rgb[..., ::-1])
         self.assertTrue(bgr.flags.c_contiguous)
         self.assertFalse(np.shares_memory(rgb, bgr))
+
+    def test_shared_rgb_materialization_reuses_contiguous_decoder_output(self) -> None:
+        rgb = np.zeros((4, 5, 3), dtype=np.uint8)
+        materialized = materialize_layout_rgb(rgb)
+        self.assertIs(materialized, rgb)
+        self.assertTrue(materialized.flags.c_contiguous)
 
 
 if __name__ == "__main__":
