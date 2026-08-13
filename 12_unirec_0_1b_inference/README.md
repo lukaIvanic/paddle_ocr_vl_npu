@@ -267,11 +267,16 @@ reduce page quality.
 
 ## Layout detector lab
 
-`layout_detector_lab.py` isolates the same eager PP-DocLayoutV2 NPU adapter
-used by the full runner. It runs sequential B1 pages and excludes recognition,
+`layout_detector_lab.py --contract current_production` isolates the exact
+optimized PP-DocLayoutV2 boundary used by the active full runner. The lab and
+production worker share the same PNG/non-PNG RGB decoder and contiguous BGR
+materializer. The strict contract selects compiled FP16 B1, FP16 reading order,
+`group16`, `torchair_internal` weights, preformatted FrozenBN buffers, and the
+0.4 threshold. A conflicting model flag is rejected instead of silently
+creating a different lane. It runs sequential B1 pages and excludes recognition,
 crop construction, and page assembly. The report separates file read, image
-decode, BGR-to-RGB conversion, processor resize/normalize, input H2D, model
-forward, Hugging Face box decode, result D2H, Python result construction,
+decode, RGB-to-BGR materialization, processor resize/normalize, input H2D,
+model forward, Hugging Face box decode, result D2H, Python result construction,
 overlap filtering, and reading-order labeling. One warmup page is excluded by
 default.
 
@@ -281,14 +286,17 @@ default.
   --openocr-root /workspace/repos/OpenOCR \
   --model-path /workspace/models/PP-DocLayoutV2_safetensors \
   --input /workspace/datasets/OmniDocBench/images \
-  --device npu:0 --dtype float32 --limit 32 \
+  --device npu:0 --contract current_production --limit 128 \
+  --compile-cache-dir \
+    .runtime_cache/12_unirec_0_1b_inference/layout_opt_group16_internal_buffers_b0c5c6e \
   --output tmp/12_unirec_0_1b_inference/layout_detector_lab/result.json
 ```
 
 The JSON contains per-page dimensions, box counts, stage times, aggregate
-totals, means, medians, p90 values, and detector pages/s. Device
-synchronization is enabled only in this profiling lane so asynchronous NPU work
-is charged to the stage that submitted it.
+totals, means, medians, p90 values, and detector pages/s. The adapter
+synchronizes H2D and model forward in production as well as in the lab.
+`profile_stages=True` adds only the substage clocks, so model math and the
+compiled graph remain the production path.
 
 ## Production vision lab
 

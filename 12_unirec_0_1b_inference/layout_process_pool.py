@@ -23,14 +23,15 @@ from typing import Any
 import numpy as np
 import torch
 import cv2
-from kornia_rs.image import Image as KorniaImage
 from PIL import Image
-from torchvision.io import ImageReadMode, decode_image
 
+from layout_page_input import (
+    decode_page_rgb as _decode_rgb,
+    materialize_layout_bgr,
+)
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
 
 
-PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 FULL_VISION_PAGE_COLLECT_TIMEOUT_S = 0.02
 RECOGNITION_CPU_DETAIL_TIMING_FIELDS = (
     "recognition_capacity_filter_s",
@@ -217,26 +218,6 @@ def _pack_frontend_payload_shared(
 def _base_label(label: str) -> str:
     parts = label.rsplit("_", 1)
     return parts[0] if len(parts) == 2 and parts[1].isdigit() else label
-
-
-def _decode_rgb(path: Path) -> tuple[np.ndarray, dict[str, float]]:
-    started = time.perf_counter()
-    encoded = path.read_bytes()
-    read_s = time.perf_counter() - started
-    started = time.perf_counter()
-    if encoded.startswith(PNG_SIGNATURE):
-        rgb = KorniaImage.decode(encoded, "RGB").data
-    else:
-        encoded_tensor = torch.frombuffer(bytearray(encoded), dtype=torch.uint8)
-        rgb = (
-            decode_image(encoded_tensor, mode=ImageReadMode.RGB)
-            .permute(1, 2, 0)
-            .numpy()
-        )
-    decode_s = time.perf_counter() - started
-    if rgb.ndim != 3 or rgb.shape[2] != 3 or rgb.dtype != np.uint8:
-        raise RuntimeError(f"unsupported decoded image: {rgb.shape} {rgb.dtype}")
-    return rgb, {"file_read_s": read_s, "direct_rgb_decode_s": decode_s}
 
 
 def _prepare_frontend_payload(
@@ -737,7 +718,7 @@ def _prepare_full_vision_worker_page(
     if predecoded is None:
         started = time.perf_counter()
         rgb, decode_timing = _decode_rgb(path)
-        bgr = np.ascontiguousarray(rgb[..., ::-1])
+        bgr = materialize_layout_bgr(rgb)
     else:
         started, bgr, decode_timing = predecoded
     if layout_result is None:
@@ -916,7 +897,7 @@ def _run_full_vision_worker_group(
             decoded_batch.append(
                 (
                     page_started,
-                    np.ascontiguousarray(rgb[..., ::-1]),
+                    materialize_layout_bgr(rgb),
                     decode_timing,
                 )
             )
@@ -1481,7 +1462,7 @@ def _worker_main(
             path = Path(path_string)
             started = time.perf_counter()
             rgb, decode_timing = _decode_rgb(path)
-            bgr = np.ascontiguousarray(rgb[..., ::-1])
+            bgr = materialize_layout_bgr(rgb)
             detector_started = time.perf_counter()
             layout_result = runtime([bgr], threshold=threshold)[0]
             detector_s = time.perf_counter() - detector_started

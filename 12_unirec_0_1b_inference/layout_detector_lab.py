@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Profile the production PP-DocLayoutV2 NPU detector one page at a time.
 
-The lab uses the same adapter, processor, model, threshold, BGR page contract,
-and OpenDoc image ordering as ``run_opendoc_batched_unirec.py``.  Recognition,
-crop construction, and output assembly are intentionally excluded.
+With ``--contract current_production``, the lab uses the exact production page
+decoder, BGR materialization, adapter, optimized model configuration, threshold,
+and OpenDoc image ordering. Recognition, crop construction, and output assembly
+are intentionally excluded.
 """
 
 from __future__ import annotations
@@ -17,9 +18,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-import cv2
 import numpy as np
 
+from layout_page_input import decode_page_rgb, materialize_layout_bgr
 from opendoc_layout_npu import (
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
@@ -27,8 +28,46 @@ from opendoc_layout_npu import (
 )
 
 
+CURRENT_PRODUCTION_CONTRACT = {
+    "execution": "torchair",
+    "dtype": "float16",
+    "reading_order_dtype": "float16",
+    "threshold": 0.4,
+    "weight_format": "torchair_internal",
+    "freeze_parameters": False,
+    "depthwise_rewrite": "group16",
+    "fuse_frozen_bn": False,
+    "fuse_eval_bn": False,
+    "precompute_frozen_bn_affine": False,
+    "preformat_frozen_bn_buffers": True,
+}
+
+CUSTOM_DEFAULTS = {
+    "execution": "eager",
+    "dtype": "float32",
+    "reading_order_dtype": None,
+    "threshold": 0.4,
+    "weight_format": "native",
+    "freeze_parameters": False,
+    "depthwise_rewrite": "native",
+    "fuse_frozen_bn": False,
+    "fuse_eval_bn": False,
+    "precompute_frozen_bn_affine": False,
+    "preformat_frozen_bn_buffers": False,
+}
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--contract",
+        choices=("custom", "current_production"),
+        default="custom",
+        help=(
+            "Select current_production to enforce the exact optimized W1/B1 "
+            "layout configuration used by the active prefill producer"
+        ),
+    )
     parser.add_argument("--openocr-root", type=Path, required=True)
     parser.add_argument(
         "--model-path",
@@ -45,7 +84,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--execution",
         choices=("eager", "torchair"),
-        default="eager",
+        default=None,
         help="Run the model eagerly or through the static fullgraph TorchAir path",
     )
     parser.add_argument(
@@ -58,7 +97,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dtype",
         choices=("float16", "float32"),
-        default="float32",
+        default=None,
     )
     parser.add_argument(
         "--reading-order-dtype",
@@ -66,41 +105,46 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Override only the learned reading-order head dtype",
     )
-    parser.add_argument("--threshold", type=float, default=0.4)
+    parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument(
         "--weight-format",
         choices=LAYOUT_WEIGHT_FORMAT_CHOICES,
-        default="native",
+        default=None,
     )
     parser.add_argument(
         "--freeze-parameters",
         action="store_true",
+        default=None,
         help="Let TorchAir treat model parameters as immutable graph data",
     )
     parser.add_argument(
         "--depthwise-rewrite",
         choices=LAYOUT_DEPTHWISE_REWRITE_CHOICES,
-        default="native",
+        default=None,
         help="Exact block-diagonal replacement for depthwise 5x5 convolutions",
     )
     parser.add_argument(
         "--fuse-frozen-bn",
         action="store_true",
+        default=None,
         help="Fold inference-only backbone FrozenBatchNorm2d into Conv2d",
     )
     parser.add_argument(
         "--fuse-eval-bn",
         action="store_true",
+        default=None,
         help="Fold evaluation FPN/PAN BatchNorm2d into Conv2d",
     )
     parser.add_argument(
         "--precompute-frozen-bn-affine",
         action="store_true",
+        default=None,
         help="Precompute exact FrozenBN scale/bias on NPU and store NC1HWC0",
     )
     parser.add_argument(
         "--preformat-frozen-bn-buffers",
         action="store_true",
+        default=None,
         help="Keep FrozenBN math but store its four buffers as NC1HWC0",
     )
     parser.add_argument("--offset", type=int, default=0)
@@ -111,20 +155,44 @@ def parse_args() -> argparse.Namespace:
         default=1,
         help="Warmup calls on the first selected page; excluded from results",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    _resolve_contract(parser, args)
+    return args
+
+
+def _resolve_contract(
+    parser: argparse.ArgumentParser,
+    args: argparse.Namespace,
+) -> None:
+    expected = (
+        CURRENT_PRODUCTION_CONTRACT
+        if args.contract == "current_production"
+        else CUSTOM_DEFAULTS
+    )
+    for name, value in expected.items():
+        supplied = getattr(args, name)
+        if (
+            args.contract == "current_production"
+            and supplied is not None
+            and supplied != value
+        ):
+            parser.error(
+                f"--contract current_production requires {name}={value!r}, "
+                f"got {supplied!r}"
+            )
+        if supplied is None:
+            setattr(args, name, value)
 
 
 def decode_page_bgr(path: Path) -> tuple[np.ndarray, dict[str, float]]:
-    read_started = time.perf_counter()
-    encoded = path.read_bytes()
-    read_s = time.perf_counter() - read_started
-
-    decode_started = time.perf_counter()
-    image = cv2.imdecode(np.frombuffer(encoded, np.uint8), cv2.IMREAD_COLOR)
-    decode_s = time.perf_counter() - decode_started
-    if image is None:
-        raise ValueError(f"Failed to decode image: {path}")
-    return image, {"page_file_read_s": read_s, "page_image_decode_s": decode_s}
+    rgb, timing = decode_page_rgb(path)
+    started = time.perf_counter()
+    bgr = materialize_layout_bgr(rgb)
+    return bgr, {
+        "page_file_read_s": timing["file_read_s"],
+        "page_image_decode_s": timing["direct_rgb_decode_s"],
+        "page_rgb_to_bgr_s": time.perf_counter() - started,
+    }
 
 
 def percentile(values: list[float], fraction: float) -> float:
@@ -247,14 +315,16 @@ def main() -> None:
         flush=True,
     )
 
-    warmup_image, _ = decode_page_bgr(image_paths[0])
+    warmup_rgb, _ = decode_page_rgb(image_paths[0])
     for index in range(args.warmup_pages):
         print(
             f"LAYOUT_LAB phase=warmup_call_begin "
             f"call={index + 1}/{args.warmup_pages}",
             flush=True,
         )
-        detector([warmup_image], threshold=args.threshold)
+        # Match the production worker warmup. Measured pages use the shared
+        # contiguous BGR materializer below, exactly as production does.
+        detector([warmup_rgb[..., ::-1]], threshold=args.threshold)
         print(
             f"LAYOUT_LAB phase=warmup_call_end "
             f"call={index + 1}/{args.warmup_pages}",
@@ -296,11 +366,22 @@ def main() -> None:
 
     report = {
         "config": {
+            "contract": args.contract,
+            "production_contract_verified": (
+                args.contract == "current_production"
+            ),
+            "page_input": {
+                "decoder": "shared_production_decode_page_rgb",
+                "bgr_materialization": (
+                    "shared_production_contiguous_channel_reverse"
+                ),
+            },
             "openocr_root": str(openocr_root),
             "model_path": str(args.model_path.expanduser().resolve()),
             "input": str(input_path),
             "device": args.device,
             "dtype": args.dtype,
+            "reading_order_dtype": args.reading_order_dtype,
             "execution": args.execution,
             "compile_cache_dir": str(args.compile_cache_dir.expanduser().resolve()),
             "threshold": args.threshold,
