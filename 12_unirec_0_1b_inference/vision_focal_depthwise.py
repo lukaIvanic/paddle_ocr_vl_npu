@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import os
 from pathlib import Path
+import shutil
+import sys
+import time
 from typing import Any
 
 import numpy as np
@@ -28,6 +32,7 @@ _CONSTANT_CONVERTER_REGISTERED = False
 _GROUPED_RUNTIME_FORMAT_PATCHED = False
 _NEXT_CONSTANT_WEIGHT_ID = 0
 _PREPACK_CONVERTER_REGISTERED = False
+_EAGER_GROUPED_FZ_BRIDGE: Any | None = None
 
 
 def grouped_fz_storage_shape(
@@ -91,6 +96,147 @@ def pack_grouped_fz_host(weight: np.ndarray, *, groups: int) -> np.ndarray:
                         kernel_w_index,
                     ]
     return packed
+
+
+def _load_eager_grouped_fz_bridge() -> tuple[Any, float]:
+    """Build or load the tiny TorchNPU storage-descriptor bridge."""
+    global _EAGER_GROUPED_FZ_BRIDGE
+    if _EAGER_GROUPED_FZ_BRIDGE is not None:
+        return _EAGER_GROUPED_FZ_BRIDGE, 0.0
+
+    import torch_npu
+    from torch.utils.cpp_extension import load
+
+    if shutil.which("ninja") is None:
+        interpreter_ninja = Path(sys.executable).resolve().parent / "ninja"
+        if interpreter_ninja.is_file() and os.access(interpreter_ninja, os.X_OK):
+            os.environ["PATH"] = (
+                f"{interpreter_ninja.parent}{os.pathsep}"
+                f"{os.environ.get('PATH', '')}"
+            )
+    if shutil.which("ninja") is None:
+        raise RuntimeError(
+            "ninja is required to build the grouped-FZ descriptor bridge; "
+            "put an existing ninja executable on PATH"
+        )
+
+    torch_npu_root = Path(torch_npu.__file__).resolve().parent
+    library_dir = torch_npu_root / "lib"
+    started = time.perf_counter()
+    _EAGER_GROUPED_FZ_BRIDGE = load(
+        name="unirec_grouped_fz_descriptor_bridge_v3",
+        sources=[str(Path(__file__).with_name("grouped_fz_descriptor_bridge.cpp"))],
+        extra_include_paths=[str(torch_npu_root / "include")],
+        extra_cflags=["-O2"],
+        extra_ldflags=[
+            f"-L{library_dir}",
+            "-ltorch_npu",
+            f"-Wl,-rpath,{library_dir}",
+        ],
+        verbose=True,
+    )
+    return _EAGER_GROUPED_FZ_BRIDGE, time.perf_counter() - started
+
+
+def rewrite_eager_stage2_7x7_grouped_fz(
+    vision_encoder: nn.Module,
+) -> dict[str, Any]:
+    """Prepack the nine stage-2 384-channel 7x7 focal weights for eager NPU."""
+    torch.npu.config.allow_internal_format = True
+    bridge, extension_build_s = _load_eager_grouped_fz_bridge()
+    rows: list[dict[str, Any]] = []
+    stage_index = 2
+    stage = vision_encoder.layers[stage_index]
+    for block_index, block in enumerate(stage.blocks):
+        for focal_index, focal_layer in enumerate(block.modulation.focal_layers):
+            convolution = focal_layer[0]
+            if not isinstance(convolution, nn.Conv2d):
+                raise TypeError(
+                    "eager grouped-FZ rewrite expected native Conv2d at "
+                    f"stage={stage_index} block={block_index} focal={focal_index}"
+                )
+            kernel = tuple(int(value) for value in convolution.kernel_size)
+            if kernel != (7, 7):
+                continue
+            channels = int(convolution.in_channels)
+            if not (
+                channels == 384
+                and convolution.out_channels == channels
+                and convolution.groups == channels
+                and tuple(convolution.stride) == (1, 1)
+                and tuple(convolution.dilation) == (1, 1)
+                and convolution.bias is None
+                and convolution.weight.dtype == torch.float16
+                and convolution.weight.device.type == "npu"
+            ):
+                raise ValueError(
+                    "unexpected stage-2 7x7 focal convolution contract: "
+                    f"{convolution} weight={convolution.weight.shape}/"
+                    f"{convolution.weight.dtype}/{convolution.weight.device}"
+                )
+
+            logical_shape = tuple(int(value) for value in convolution.weight.shape)
+            host_weight = np.ascontiguousarray(
+                convolution.weight.detach().to(device="cpu").numpy()
+            )
+            packed_host = pack_grouped_fz_host(host_weight, groups=channels)
+            packed_storage = torch.from_numpy(packed_host).to(
+                device=convolution.weight.device
+            )
+            wrapped = bridge.wrap_grouped_fz(
+                packed_storage,
+                list(logical_shape),
+                channels,
+            )
+            parameter = nn.Parameter(wrapped, requires_grad=False)
+            origin_format, storage_format, base_shape, storage_shape = (
+                bridge.describe_npu_storage(parameter)
+            )
+            descriptor = {
+                "origin_format": int(origin_format),
+                "storage_format": int(storage_format),
+                "base_shape": [int(value) for value in base_shape],
+                "storage_shape": [int(value) for value in storage_shape],
+                "physical_bytes": int(packed_host.nbytes),
+            }
+            expected_descriptor = {
+                "origin_format": 0,
+                "storage_format": 4,
+                "base_shape": list(logical_shape),
+                "storage_shape": list(packed_host.shape),
+                "physical_bytes": int(packed_host.nbytes),
+            }
+            if descriptor != expected_descriptor:
+                raise RuntimeError(
+                    "grouped-FZ descriptor changed while binding Parameter: "
+                    f"actual={descriptor} expected={expected_descriptor}"
+                )
+            convolution.weight = parameter
+            rows.append(
+                {
+                    "module": (
+                        f"layers.{stage_index}.blocks.{block_index}."
+                        f"modulation.focal_layers.{focal_index}.0"
+                    ),
+                    "groups": channels,
+                    "kernel": list(kernel),
+                    "descriptor": descriptor,
+                }
+            )
+
+    if len(rows) != 9:
+        raise RuntimeError(
+            f"expected nine stage-2 7x7 focal weights, rewrote {len(rows)}"
+        )
+    return {
+        "requested": "eager_stage2_7x7_grouped_fz",
+        "rewritten_count": len(rows),
+        "extension_build_s": extension_build_s,
+        "physical_bytes": sum(
+            int(row["descriptor"]["physical_bytes"]) for row in rows
+        ),
+        "modules": rows,
+    }
 
 
 @torch.library.custom_op("unirec::focal_group_prepack_v1", mutates_args=())
