@@ -13,6 +13,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import platform
 import statistics
 import sys
 import time
@@ -164,8 +166,19 @@ def parse_args() -> argparse.Namespace:
         default=1,
         help="Warmup calls on the first selected page; excluded from results",
     )
+    parser.add_argument(
+        "--torch-cpu-threads",
+        type=int,
+        default=0,
+        help=(
+            "Diagnostic override for PyTorch intra-op CPU threads; zero keeps "
+            "the production process default unchanged"
+        ),
+    )
     args = parser.parse_args()
     _resolve_contract(parser, args)
+    if args.torch_cpu_threads < 0:
+        parser.error("--torch-cpu-threads must be non-negative")
     return args
 
 
@@ -299,6 +312,9 @@ def main() -> None:
 
         torch_npu.npu.set_compile_mode(jit_compile=False)
 
+    if args.torch_cpu_threads:
+        torch.set_num_threads(args.torch_cpu_threads)
+
     openocr_root = args.openocr_root.expanduser().resolve()
     sys.path.insert(0, str(openocr_root))
     from tools.utils.utility import get_image_file_list
@@ -428,6 +444,17 @@ def main() -> None:
             "offset": args.offset,
             "limit": args.limit,
             "warmup_pages": args.warmup_pages,
+            "cpu_runtime": {
+                "architecture": platform.machine(),
+                "logical_cpu_count": os.cpu_count(),
+                "torch_intraop_threads": torch.get_num_threads(),
+                "torch_interop_threads": torch.get_num_interop_threads(),
+                "OMP_NUM_THREADS": os.environ.get("OMP_NUM_THREADS"),
+                "MKL_NUM_THREADS": os.environ.get("MKL_NUM_THREADS"),
+                "OPENBLAS_NUM_THREADS": os.environ.get(
+                    "OPENBLAS_NUM_THREADS"
+                ),
+            },
             "weight_format": args.weight_format,
             "weight_format_summary": detector.weight_format_summary,
             "freeze_parameters": args.freeze_parameters,

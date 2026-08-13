@@ -344,6 +344,8 @@ def _layout_outputs_for_cpu_postprocess(outputs: Any) -> SimpleNamespace:
 
 def prepare_layout_resized_uint8_exact(
     images: list[np.ndarray],
+    *,
+    timing_s: dict[str, float] | None = None,
 ) -> dict[str, torch.Tensor]:
     """Resize fixed PP-DocLayoutV2 inputs without expanding them to float32.
 
@@ -358,6 +360,7 @@ def prepare_layout_resized_uint8_exact(
 
     prepared: list[torch.Tensor] = []
     for image in images:
+        started = time.perf_counter()
         if (
             image.dtype != np.uint8
             or image.ndim != 3
@@ -367,27 +370,55 @@ def prepare_layout_resized_uint8_exact(
                 "PP-DocLayoutV2 preprocessing requires uint8 HWC RGB, got "
                 f"dtype={image.dtype} shape={image.shape}"
             )
-        channels_first = (
-            torch.from_numpy(image)
-            .permute(2, 0, 1)
-            .contiguous()
-            .unsqueeze(0)
+        _record_profile_elapsed(timing_s, "processor_validate_s", started)
+
+        started = time.perf_counter()
+        image_tensor = torch.from_numpy(image)
+        _record_profile_elapsed(
+            timing_s, "processor_numpy_to_tensor_s", started
         )
+
+        started = time.perf_counter()
+        channels_first = image_tensor.permute(2, 0, 1)
+        _record_profile_elapsed(
+            timing_s, "processor_hwc_to_chw_view_s", started
+        )
+
+        started = time.perf_counter()
+        channels_first = channels_first.contiguous()
+        _record_profile_elapsed(
+            timing_s, "processor_chw_contiguous_s", started
+        )
+
+        started = time.perf_counter()
+        channels_first = channels_first.unsqueeze(0)
+        _record_profile_elapsed(
+            timing_s, "processor_batch_view_s", started
+        )
+
+        started = time.perf_counter()
         resized = tv_functional.resize(
             channels_first,
             [800, 800],
             interpolation=InterpolationMode.BICUBIC,
             antialias=False,
         )
+        _record_profile_elapsed(
+            timing_s, "processor_bicubic_resize_s", started
+        )
         prepared.append(resized)
     if not prepared:
         raise ValueError("PP-DocLayoutV2 preprocessing requires at least one image")
     # Production uses layout B1. Avoid copying the already contiguous 800x800
     # tensor through torch.cat for that common case.
+    started = time.perf_counter()
     pixel_values = (
         prepared[0]
         if len(prepared) == 1
         else torch.cat(prepared, dim=0)
+    )
+    _record_profile_elapsed(
+        timing_s, "processor_batch_assemble_s", started
     )
     return {"pixel_values": pixel_values}
 
@@ -886,7 +917,10 @@ class PPDocLayoutV2NpuAdapter:
         self._record_stage("input_to_rgb_s", started)
 
         started = time.perf_counter()
-        inputs = prepare_layout_resized_uint8_exact(rgbs)
+        inputs = prepare_layout_resized_uint8_exact(
+            rgbs,
+            timing_s=self.stage_s if self.profile_stages else None,
+        )
         self._record_stage("processor_preprocess_s", started)
 
         started = time.perf_counter()
