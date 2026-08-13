@@ -270,17 +270,39 @@ reduce page quality.
 `layout_detector_lab.py` defaults to the strict `current_production` contract
 and isolates the exact optimized PP-DocLayoutV2 boundary used by the active full
 runner. The lab and production worker share the same PNG/non-PNG RGB decoder
-and keeps its contiguous RGB page as the canonical layout/crop source. The
+and keep its contiguous RGB page as the canonical layout/crop source. The
 strict contract selects compiled FP16 B1, FP16 reading order, `group16`,
 `torchair_internal` weights, preformatted FrozenBN buffers, and the 0.4
 threshold. A conflicting model flag is rejected instead of silently creating a
 different lane. Use `--contract custom` explicitly for historical or
 experimental configurations. It runs sequential B1 pages and excludes
 recognition, crop construction, and page assembly. The report separates file
-read, image decode, RGB materialization, processor resize/normalize, input H2D,
-model forward, Hugging Face box decode, result D2H, Python result construction,
-overlap filtering, and reading-order labeling. One warmup page is excluded by
-default.
+read, image decode, RGB materialization, exact uint8 bicubic resize, compact
+input H2D plus NPU rescale/cast, model forward, exact box decode, result D2H,
+Python result construction, overlap filtering, and reading-order labeling. One
+warmup page is excluded by default.
+
+The production adapter does not call the generic Hugging Face image-processing
+dispatcher. It expresses the checkpoint's fixed preprocessing directly, keeps
+the resized 800x800 input as uint8 for a 1.92 MB host transfer, then performs
+the exact FP32 divide and FP16 cast on NPU before the unchanged compiled graph.
+The CPU box decoder retains the Transformers selection semantics but calculates
+the 300-query reading-order votes with prefix sums instead of materializing two
+triangular 300x300 tensors.
+
+On Ascend 910B2 physical NPU 3, first-128 layout wall time improved from
+12.7624 s in the production-faithful pre-RGB baseline to 5.2425 s. Relative to
+the direct-RGB baseline, processor time fell from 2.1330 s to 0.8514 s, box
+decode from 1.2604 s to 0.6359 s, and input H2D from 0.3783 s to 0.1218 s.
+All 128 final result digests and all 988 boxes remained exact. The corresponding
+one-worker full-prefill run improved from 17.5043 s (7.3125 pages/s) to
+14.9744 s (8.5479 pages/s), with the same 950 accepted crops, 6 rejected crops,
+and validation pass. The final artifacts are:
+
+```text
+tmp/12_unirec_0_1b_inference/layout_production_lab_423e284_20260813T174247/result.json
+tmp/12_unirec_0_1b_inference/prefill_first128_w1_crosschip_a64ddca_20260813T174418/output/summary.json
+```
 
 ```sh
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
