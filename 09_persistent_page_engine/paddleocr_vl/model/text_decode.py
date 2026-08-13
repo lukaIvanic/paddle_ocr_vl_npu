@@ -114,6 +114,7 @@ class DecodeOptimizationConfig:
     add_rms_norm: bool = False
     attention: str = "gqa"
     increfa_length_mode: str = "mask"
+    increfa_inner_precise: int = 1
     stage_aware_weight_prefetch: bool = False
     post_scatter_kv_prefetch: bool = False
     weight_prefetch_timing: str = "before_attention"
@@ -464,6 +465,20 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rotary="npu_apply",
         rotary_factors="lookup",
         add_rms_norm=True,
+        stage_aware_weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=1,
+    ),
+    "combined_apply_complete_layer_prefetch1_rope_lut_high_precision": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch1_rope_lut_high_precision",
+        hoist_mrope=True,
+        packed_qkv=True,
+        rms_norm="npu",
+        rotary="npu_apply",
+        rotary_factors="lookup",
+        add_rms_norm=True,
+        increfa_inner_precise=0,
         stage_aware_weight_prefetch=True,
         post_scatter_kv_prefetch=True,
         weight_prefetch_timing="complete_layer_ahead",
@@ -1964,6 +1979,7 @@ def _decode_attention(
             num_key_value_heads=call_num_key_value_heads,
             input_layout="BNSD",
             scale_value=float(attention.scaling),
+            inner_precise=int(optimization.increfa_inner_precise),
         )
         if pseudo_b2:
             attention_output = attention_output.view(
@@ -2731,6 +2747,7 @@ def compile_text_decode_stage(
             "add_rms_norm": optimization.add_rms_norm,
             "attention": optimization.attention,
             "increfa_length_mode": optimization.increfa_length_mode,
+            "increfa_inner_precise": optimization.increfa_inner_precise,
             "stage_aware_weight_prefetch": (
                 optimization.stage_aware_weight_prefetch
             ),
