@@ -10,6 +10,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -321,6 +322,99 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
             tensor = getattr(copied, name)
             self.assertEqual(tensor.device.type, "cpu")
             self.assertFalse(tensor.requires_grad)
+
+    def test_explicit_layout_preprocess_is_contiguous_bchw(self) -> None:
+        module = _load_layout_adapter()
+        from torchvision.transforms import InterpolationMode
+        from torchvision.transforms.v2 import functional as tv_functional
+
+        rng = np.random.default_rng(44)
+        image = rng.integers(0, 256, (37, 53, 3), dtype=np.uint8)
+        actual = module.prepare_layout_pixel_values_exact([image])["pixel_values"]
+        reference = torch.from_numpy(image).permute(2, 0, 1).contiguous().unsqueeze(0)
+        reference = tv_functional.resize(
+            reference,
+            [800, 800],
+            interpolation=InterpolationMode.BICUBIC,
+            antialias=False,
+        ).to(torch.float32).div_(255.0)
+
+        torch.testing.assert_close(actual, reference, atol=0.0, rtol=0.0)
+        self.assertEqual(actual.shape, (1, 3, 800, 800))
+        self.assertEqual(actual.dtype, torch.float32)
+        self.assertEqual(actual.stride(), (1_920_000, 640_000, 800, 1))
+
+    def test_fast_layout_postprocess_matches_transformers_math(self) -> None:
+        module = _load_layout_adapter()
+        torch.manual_seed(45)
+        outputs = SimpleNamespace(
+            logits=torch.randn(2, 17, 5, dtype=torch.float16),
+            pred_boxes=torch.rand(2, 17, 4, dtype=torch.float16),
+            order_logits=torch.randn(2, 17, 17, dtype=torch.float16),
+        )
+        target_sizes = [(1536, 1024), (2200, 1700)]
+
+        order_scores = torch.sigmoid(outputs.order_logits)
+        order_votes = order_scores.triu(diagonal=1).sum(dim=1) + (
+            1.0 - order_scores.transpose(1, 2)
+        ).tril(diagonal=-1).sum(dim=1)
+        order_pointers = torch.argsort(order_votes, dim=1)
+        order_sequences = torch.empty_like(order_pointers)
+        ranks = torch.arange(17, dtype=order_pointers.dtype).expand(2, -1)
+        order_sequences.scatter_(1, order_pointers, ranks)
+
+        centers, dimensions = torch.split(outputs.pred_boxes, 2, dim=-1)
+        boxes = torch.cat(
+            [centers - 0.5 * dimensions, centers + 0.5 * dimensions],
+            dim=-1,
+        )
+        heights, widths = torch.as_tensor(target_sizes).unbind(1)
+        scale = torch.stack([widths, heights, widths, heights], dim=1)
+        boxes = boxes * scale[:, None, :]
+        scores, flat_indices = torch.topk(
+            torch.sigmoid(outputs.logits).flatten(1),
+            17,
+            dim=-1,
+        )
+        labels = flat_indices % 5
+        query_indices = flat_indices // 5
+        boxes = boxes.gather(
+            1,
+            query_indices.unsqueeze(-1).repeat(1, 1, 4),
+        )
+        order_sequences = order_sequences.gather(1, query_indices)
+        reference = []
+        for score, label, box, order in zip(
+            scores,
+            labels,
+            boxes,
+            order_sequences,
+        ):
+            keep = score >= 0.4
+            order = order[keep]
+            order, indices = torch.sort(order)
+            reference.append(
+                {
+                    "scores": score[keep][indices],
+                    "labels": label[keep][indices],
+                    "boxes": box[keep][indices],
+                    "order_seq": order,
+                }
+            )
+
+        actual = module.post_process_layout_object_detection_exact(
+            outputs,
+            threshold=0.4,
+            target_sizes=target_sizes,
+        )
+        for expected, candidate in zip(reference, actual):
+            for name in expected:
+                torch.testing.assert_close(
+                    candidate[name],
+                    expected[name],
+                    atol=0.0,
+                    rtol=0.0,
+                )
 
     def test_depthwise_rewrites_are_exact_block_diagonal_convolutions(self) -> None:
         module = _load_layout_adapter()

@@ -342,6 +342,166 @@ def _layout_outputs_for_cpu_postprocess(outputs: Any) -> SimpleNamespace:
     )
 
 
+def prepare_layout_pixel_values_exact(
+    images: list[np.ndarray],
+) -> dict[str, torch.Tensor]:
+    """Produce the fixed PP-DocLayoutV2 input without generic HF dispatch.
+
+    The checkpoint contract is a uint8 RGB input resized directly to 800x800
+    with torchvision bicubic interpolation and ``antialias=False``, followed
+    by float32 rescaling by 1/255.  Keeping this explicit avoids the generic
+    image-type, shape-grouping, kwargs-validation, and BatchFeature layers.
+    The initial CHW copy is required: the compiled graph consumes contiguous
+    BCHW strides, not a channels-last physical view.
+    """
+    from torchvision.transforms import InterpolationMode
+    from torchvision.transforms.v2 import functional as tv_functional
+
+    prepared: list[torch.Tensor] = []
+    for image in images:
+        if (
+            image.dtype != np.uint8
+            or image.ndim != 3
+            or image.shape[2] != 3
+        ):
+            raise ValueError(
+                "PP-DocLayoutV2 preprocessing requires uint8 HWC RGB, got "
+                f"dtype={image.dtype} shape={image.shape}"
+            )
+        channels_first = (
+            torch.from_numpy(image)
+            .permute(2, 0, 1)
+            .contiguous()
+            .unsqueeze(0)
+        )
+        resized = tv_functional.resize(
+            channels_first,
+            [800, 800],
+            interpolation=InterpolationMode.BICUBIC,
+            antialias=False,
+        )
+        prepared.append(resized.to(dtype=torch.float32).div_(255.0))
+    if not prepared:
+        raise ValueError("PP-DocLayoutV2 preprocessing requires at least one image")
+    return {"pixel_values": torch.cat(prepared, dim=0)}
+
+
+def _layout_order_sequences_cumsum(order_logits: torch.Tensor) -> torch.Tensor:
+    """Compute the HF reading-order vote exactly without triangular copies."""
+    order_scores = torch.sigmoid(order_logits)
+    batch_size, sequence_length, _ = order_scores.shape
+
+    # For query j, the first term is sum(scores[i, j], i < j).
+    column_prefix = order_scores.cumsum(dim=1)
+    earlier_votes = torch.cat(
+        [
+            torch.zeros(
+                (batch_size, 1),
+                dtype=order_scores.dtype,
+                device=order_scores.device,
+            ),
+            torch.diagonal(
+                column_prefix[:, :-1, 1:],
+                dim1=1,
+                dim2=2,
+            ),
+        ],
+        dim=1,
+    )
+
+    # The second term is sum(1 - scores[j, i], i > j).
+    row_prefix = order_scores.cumsum(dim=2)
+    through_diagonal = torch.diagonal(row_prefix, dim1=1, dim2=2)
+    later_counts = torch.arange(
+        sequence_length - 1,
+        -1,
+        -1,
+        dtype=order_scores.dtype,
+        device=order_scores.device,
+    ).unsqueeze(0)
+    later_votes = later_counts - (row_prefix[:, :, -1] - through_diagonal)
+
+    order_pointers = torch.argsort(earlier_votes + later_votes, dim=1)
+    order_sequences = torch.empty_like(order_pointers)
+    ranks = torch.arange(
+        sequence_length,
+        device=order_pointers.device,
+        dtype=order_pointers.dtype,
+    ).expand(batch_size, -1)
+    order_sequences.scatter_(1, order_pointers, ranks)
+    return order_sequences
+
+
+def post_process_layout_object_detection_exact(
+    outputs: Any,
+    *,
+    threshold: float,
+    target_sizes: list[tuple[int, int]] | torch.Tensor,
+) -> list[dict[str, torch.Tensor]]:
+    """Match the HF PP-DocLayoutV2 box decoder with less order work."""
+    boxes = outputs.pred_boxes
+    logits = outputs.logits
+    order_sequences = _layout_order_sequences_cumsum(outputs.order_logits)
+
+    box_centers, box_dimensions = torch.split(boxes, 2, dim=-1)
+    boxes = torch.cat(
+        [
+            box_centers - 0.5 * box_dimensions,
+            box_centers + 0.5 * box_dimensions,
+        ],
+        dim=-1,
+    )
+
+    if len(logits) != len(target_sizes):
+        raise ValueError(
+            "target size count must equal the layout logits batch size"
+        )
+    if isinstance(target_sizes, list):
+        image_heights, image_widths = torch.as_tensor(target_sizes).unbind(1)
+    else:
+        image_heights, image_widths = target_sizes.unbind(1)
+    scale_factor = torch.stack(
+        [image_widths, image_heights, image_widths, image_heights],
+        dim=1,
+    ).to(boxes.device)
+    boxes = boxes * scale_factor[:, None, :]
+
+    query_count = logits.shape[1]
+    class_count = logits.shape[2]
+    scores, flat_indices = torch.topk(
+        torch.sigmoid(logits).flatten(1),
+        query_count,
+        dim=-1,
+    )
+    labels = flat_indices % class_count
+    query_indices = flat_indices // class_count
+    boxes = boxes.gather(
+        dim=1,
+        index=query_indices.unsqueeze(-1).repeat(1, 1, boxes.shape[-1]),
+    )
+    order_sequences = order_sequences.gather(dim=1, index=query_indices)
+
+    results: list[dict[str, torch.Tensor]] = []
+    for score, label, box, order_sequence in zip(
+        scores,
+        labels,
+        boxes,
+        order_sequences,
+    ):
+        keep = score >= threshold
+        selected_order = order_sequence[keep]
+        selected_order, indices = torch.sort(selected_order)
+        results.append(
+            {
+                "scores": score[keep][indices],
+                "labels": label[keep][indices],
+                "boxes": box[keep][indices],
+                "order_seq": selected_order,
+            }
+        )
+    return results
+
+
 def filter_overlap_boxes_vectorized(
     layout_result: dict[str, list[dict[str, Any]]],
 ) -> dict[str, list[dict[str, Any]]]:
@@ -680,7 +840,7 @@ class PPDocLayoutV2NpuAdapter:
         self._record_stage("input_to_rgb_s", started)
 
         started = time.perf_counter()
-        inputs = self.processor(images=rgbs, return_tensors="pt")
+        inputs = prepare_layout_pixel_values_exact(rgbs)
         self._record_stage("processor_preprocess_s", started)
 
         started = time.perf_counter()
@@ -722,12 +882,12 @@ class PPDocLayoutV2NpuAdapter:
         self._record_stage("outputs_d2h_s", started)
 
         started = time.perf_counter()
-        prediction = self.processor.post_process_object_detection(
+        prediction = post_process_layout_object_detection_exact(
             cpu_outputs,
             threshold=threshold,
             target_sizes=target_sizes,
         )
-        self._record_stage("hf_box_decode_s", started)
+        self._record_stage("box_decode_s", started)
 
         started = time.perf_counter()
         cpu_predictions = []

@@ -91,7 +91,7 @@ print(
     f"detector={total('detector_total_s'):.6f}s "
     f"model_forward={total('model_forward_s'):.6f}s "
     f"processor={total('processor_preprocess_s'):.6f}s "
-    f"box_decode={total('hf_box_decode_s'):.6f}s "
+    f"box_decode={total('box_decode_s'):.6f}s "
     f"h2d={total('inputs_h2d_s'):.6f}s "
     f"outputs_d2h={total('outputs_d2h_s'):.6f}s "
     f"rgb_materialize={total('page_rgb_materialize_s'):.6f}s "
