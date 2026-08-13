@@ -267,18 +267,19 @@ reduce page quality.
 
 ## Layout detector lab
 
-`layout_detector_lab.py --contract current_production` isolates the exact
-optimized PP-DocLayoutV2 boundary used by the active full runner. The lab and
-production worker share the same PNG/non-PNG RGB decoder and contiguous BGR
-materializer. The strict contract selects compiled FP16 B1, FP16 reading order,
-`group16`, `torchair_internal` weights, preformatted FrozenBN buffers, and the
-0.4 threshold. A conflicting model flag is rejected instead of silently
-creating a different lane. It runs sequential B1 pages and excludes recognition,
-crop construction, and page assembly. The report separates file read, image
-decode, RGB-to-BGR materialization, processor resize/normalize, input H2D,
-model forward, Hugging Face box decode, result D2H, Python result construction,
-overlap filtering, and reading-order labeling. One warmup page is excluded by
-default.
+`layout_detector_lab.py` defaults to the strict `current_production` contract
+and isolates the exact optimized PP-DocLayoutV2 boundary used by the active full
+runner. The lab and production worker share the same PNG/non-PNG RGB decoder
+and contiguous BGR materializer. The strict contract selects compiled FP16 B1,
+FP16 reading order, `group16`, `torchair_internal` weights, preformatted
+FrozenBN buffers, and the 0.4 threshold. A conflicting model flag is rejected
+instead of silently creating a different lane. Use `--contract custom`
+explicitly for historical or experimental configurations. It runs sequential
+B1 pages and excludes recognition, crop construction, and page assembly. The
+report separates file read, image decode, RGB-to-BGR materialization, processor
+resize/normalize, input H2D, model forward, Hugging Face box decode, result D2H,
+Python result construction, overlap filtering, and reading-order labeling. One
+warmup page is excluded by default.
 
 ```sh
 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python \
@@ -297,6 +298,12 @@ totals, means, medians, p90 values, and detector pages/s. The adapter
 synchronizes H2D and model forward in production as well as in the lab.
 `profile_stages=True` adds only the substage clocks, so model math and the
 compiled graph remain the production path.
+
+For an owned background run with per-page progress and a compact validated
+report, export `PYTHON_BIN`, `LAYOUT_MODEL`, `OPENOCR_ROOT`, `IMAGES_DIR`, and
+the warmed production `LAYOUT_CACHE`, then run
+`run_layout_production_lab_background.sh`. The launcher rejects physical NPU 5
+and 6.
 
 ## Production vision lab
 

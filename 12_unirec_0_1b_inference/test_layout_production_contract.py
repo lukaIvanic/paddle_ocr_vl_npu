@@ -5,6 +5,7 @@ import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 
@@ -15,11 +16,28 @@ sys.path.insert(0, str(HERE))
 from layout_detector_lab import (  # noqa: E402
     CURRENT_PRODUCTION_CONTRACT,
     _resolve_contract,
+    parse_args,
 )
 from layout_page_input import materialize_layout_bgr  # noqa: E402
 
 
 class LayoutProductionContractTest(unittest.TestCase):
+    def test_production_contract_is_the_lab_default(self) -> None:
+        argv = [
+            "layout_detector_lab.py",
+            "--openocr-root",
+            "/tmp/openocr",
+            "--output",
+            "/tmp/result.json",
+        ]
+        with patch.object(sys, "argv", argv):
+            args = parse_args()
+        self.assertEqual(args.contract, "current_production")
+        self.assertEqual(
+            {name: getattr(args, name) for name in CURRENT_PRODUCTION_CONTRACT},
+            CURRENT_PRODUCTION_CONTRACT,
+        )
+
     def test_production_contract_fills_every_model_setting(self) -> None:
         args = SimpleNamespace(
             contract="current_production",

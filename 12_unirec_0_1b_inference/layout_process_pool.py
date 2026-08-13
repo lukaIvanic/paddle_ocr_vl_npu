@@ -718,7 +718,9 @@ def _prepare_full_vision_worker_page(
     if predecoded is None:
         started = time.perf_counter()
         rgb, decode_timing = _decode_rgb(path)
+        bgr_started = time.perf_counter()
         bgr = materialize_layout_bgr(rgb)
+        decode_timing["rgb_to_bgr_s"] = time.perf_counter() - bgr_started
     else:
         started, bgr, decode_timing = predecoded
     if layout_result is None:
@@ -829,6 +831,7 @@ def _prepare_full_vision_worker_page(
     result["frontend_timing_s"] = {
         "page_file_read_s": decode_timing["file_read_s"],
         "page_image_decode_s": decode_timing["direct_rgb_decode_s"],
+        "page_rgb_to_bgr_s": decode_timing["rgb_to_bgr_s"],
         "layout_s": detector_s,
         **frontend_timing,
         "recognition_input_prepare_worker_s": recognition_prepare_s,
@@ -894,10 +897,13 @@ def _run_full_vision_worker_group(
             path = Path(task[2])
             page_started = time.perf_counter()
             rgb, decode_timing = _decode_rgb(path)
+            bgr_started = time.perf_counter()
+            bgr = materialize_layout_bgr(rgb)
+            decode_timing["rgb_to_bgr_s"] = time.perf_counter() - bgr_started
             decoded_batch.append(
                 (
                     page_started,
-                    materialize_layout_bgr(rgb),
+                    bgr,
                     decode_timing,
                 )
             )
@@ -1462,7 +1468,9 @@ def _worker_main(
             path = Path(path_string)
             started = time.perf_counter()
             rgb, decode_timing = _decode_rgb(path)
+            bgr_started = time.perf_counter()
             bgr = materialize_layout_bgr(rgb)
+            decode_timing["rgb_to_bgr_s"] = time.perf_counter() - bgr_started
             detector_started = time.perf_counter()
             layout_result = runtime([bgr], threshold=threshold)[0]
             detector_s = time.perf_counter() - detector_started
@@ -1514,6 +1522,7 @@ def _worker_main(
                 result["frontend_timing_s"] = {
                     "page_file_read_s": decode_timing["file_read_s"],
                     "page_image_decode_s": decode_timing["direct_rgb_decode_s"],
+                    "page_rgb_to_bgr_s": decode_timing["rgb_to_bgr_s"],
                     "layout_s": detector_s,
                     **frontend_timing,
                     "recognition_input_prepare_worker_s": recognition_prepare_s,
@@ -1887,6 +1896,7 @@ class DynamicLayoutProcessPool:
         stage_s = {
             "worker_file_read_sum_s": 0.0,
             "worker_direct_rgb_decode_sum_s": 0.0,
+            "worker_rgb_to_bgr_sum_s": 0.0,
             "worker_detector_call_sum_s": 0.0,
             "worker_layout_crop_views_sum_s": 0.0,
             "worker_document_image_index_sum_s": 0.0,
@@ -1941,6 +1951,9 @@ class DynamicLayoutProcessPool:
             stage_s["worker_file_read_sum_s"] += float(timing["file_read_s"])
             stage_s["worker_direct_rgb_decode_sum_s"] += float(
                 timing["direct_rgb_decode_s"]
+            )
+            stage_s["worker_rgb_to_bgr_sum_s"] += float(
+                timing.get("rgb_to_bgr_s", 0.0)
             )
             stage_s["worker_detector_call_sum_s"] += float(
                 timing["detector_call_s"]
@@ -2064,6 +2077,7 @@ class DynamicLayoutProcessPool:
         stage_s = {
             "worker_file_read_sum_s": 0.0,
             "worker_direct_rgb_decode_sum_s": 0.0,
+            "worker_rgb_to_bgr_sum_s": 0.0,
             "worker_detector_call_sum_s": 0.0,
             "worker_layout_crop_views_sum_s": 0.0,
             "worker_document_image_index_sum_s": 0.0,
@@ -2127,6 +2141,7 @@ class DynamicLayoutProcessPool:
             for destination, source in (
                 ("worker_file_read_sum_s", "file_read_s"),
                 ("worker_direct_rgb_decode_sum_s", "direct_rgb_decode_s"),
+                ("worker_rgb_to_bgr_sum_s", "rgb_to_bgr_s"),
                 ("worker_detector_call_sum_s", "detector_call_s"),
                 ("worker_layout_crop_views_sum_s", "layout_crop_views_s"),
                 ("worker_document_image_index_sum_s", "document_image_index_s"),

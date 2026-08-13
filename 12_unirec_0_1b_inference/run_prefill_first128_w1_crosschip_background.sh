@@ -120,6 +120,7 @@ print(
     "UNIREC_PREFILL_FIRST128_W1_STAGES: "
     f"file_read={s['worker_file_read_sum_s']:.6f}s "
     f"rgb_decode={s['worker_direct_rgb_decode_sum_s']:.6f}s "
+    f"rgb_to_bgr={s['worker_rgb_to_bgr_sum_s']:.6f}s "
     f"layout={s['worker_detector_call_sum_s']:.6f}s "
     f"crop_build={s['worker_recognition_crop_build_sum_s']:.6f}s "
     f"input_prepare={s['worker_recognition_input_prepare_sum_s']:.6f}s "

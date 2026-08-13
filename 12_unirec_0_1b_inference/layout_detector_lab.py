@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Profile the production PP-DocLayoutV2 NPU detector one page at a time.
 
-With ``--contract current_production``, the lab uses the exact production page
+The default ``current_production`` contract uses the exact production page
 decoder, BGR materialization, adapter, optimized model configuration, threshold,
 and OpenDoc image ordering. Recognition, crop construction, and output assembly
-are intentionally excluded.
+are intentionally excluded. Select ``--contract custom`` explicitly for a
+historical or experimental model configuration.
 """
 
 from __future__ import annotations
@@ -62,7 +63,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--contract",
         choices=("custom", "current_production"),
-        default="custom",
+        default="current_production",
         help=(
             "Select current_production to enforce the exact optimized W1/B1 "
             "layout configuration used by the active prefill producer"
@@ -242,7 +243,11 @@ def summarize(records: list[dict[str, Any]], setup_s: float) -> dict[str, Any]:
             if measured_wall_s
             else 0.0
         )
-        if name not in {"page_file_read_s", "page_image_decode_s"}:
+        if name not in {
+            "page_file_read_s",
+            "page_image_decode_s",
+            "page_rgb_to_bgr_s",
+        }:
             stage["detector_share_pct"] = (
                 100.0 * float(stage["total_s"]) / detector_total_s
                 if detector_total_s
@@ -286,7 +291,8 @@ def main() -> None:
         raise ValueError(f"No images found under {input_path}")
 
     print(
-        f"LAYOUT_LAB setup pages={len(image_paths)} dtype={args.dtype} "
+        f"LAYOUT_LAB setup contract={args.contract} "
+        f"pages={len(image_paths)} dtype={args.dtype} "
         f"reading_order_dtype={args.reading_order_dtype or args.dtype} "
         f"device={args.device} execution={args.execution}",
         flush=True,
@@ -364,12 +370,17 @@ def main() -> None:
             flush=True,
         )
 
+    resolved_contract = {
+        name: getattr(args, name) for name in CURRENT_PRODUCTION_CONTRACT
+    }
     report = {
         "config": {
             "contract": args.contract,
             "production_contract_verified": (
                 args.contract == "current_production"
+                and resolved_contract == CURRENT_PRODUCTION_CONTRACT
             ),
+            "resolved_model_contract": resolved_contract,
             "page_input": {
                 "decoder": "shared_production_decode_page_rgb",
                 "bgr_materialization": (
