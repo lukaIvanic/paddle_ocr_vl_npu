@@ -85,8 +85,9 @@ def _preceding_match(
     draft: list[int],
     continuation: int,
     maximum: int,
+    known_match: int = 0,
 ) -> int:
-    matched = 0
+    matched = int(known_match)
     while (
         matched < maximum
         and matched < len(prefix)
@@ -352,6 +353,7 @@ class TableDraftMatcher:
             newline_token=self.newline_token,
         )
         self.index = _continuation_index(self.draft, self.maximum_anchor)
+        self._anchor_lengths_desc = tuple(sorted(self.index, reverse=True))
         self.cursor = 0
         self.structure = TargetStructure()
         self._started = False
@@ -413,38 +415,50 @@ class TableDraftMatcher:
                 0,
             )
 
-        usable = [length for length in self.index if length <= len(prefix)]
-        for indexed_anchor in sorted(usable, reverse=True):
+        for indexed_anchor in self._anchor_lengths_desc:
+            if indexed_anchor > len(prefix):
+                continue
             continuations = self.index[indexed_anchor].get(
                 tuple(prefix[-indexed_anchor:]),
                 (),
             )
-            best: tuple[tuple[float, float, int, int], DraftProposal] | None = None
+            best_score: tuple[float, float, int, int] | None = None
+            best_continuation: int | None = None
+            best_anchor = 0
             for continuation in continuations:
                 if continuation >= len(self.draft):
-                    continue
-                tokens = tuple(
-                    self.draft[continuation : continuation + self.block_size]
-                )
-                if not tokens:
                     continue
                 anchor = _preceding_match(
                     prefix,
                     self.draft,
                     continuation,
                     self.maximum_anchor,
+                    indexed_anchor,
                 )
+                if best_score is not None and anchor < best_anchor:
+                    continue
                 score = (
                     float(anchor),
-                    self._column_score(tokens[0], self.metadata[continuation]),
+                    self._column_score(
+                        self.draft[continuation], self.metadata[continuation]
+                    ),
                     int(continuation >= self.cursor),
                     -abs(continuation - self.cursor),
                 )
-                proposal = DraftProposal(continuation, tokens, anchor)
-                if best is None or score > best[0]:
-                    best = (score, proposal)
-            if best is not None:
-                return best[1]
+                if best_score is None or score > best_score:
+                    best_score = score
+                    best_continuation = continuation
+                    best_anchor = anchor
+            if best_continuation is not None:
+                return DraftProposal(
+                    best_continuation,
+                    tuple(
+                        self.draft[
+                            best_continuation : best_continuation + self.block_size
+                        ]
+                    ),
+                    best_anchor,
+                )
         return None
 
     def commit(
