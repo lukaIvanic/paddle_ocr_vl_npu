@@ -92,6 +92,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--draft-decode-vocab-token-ids", type=Path, required=True)
     parser.add_argument("--draft-cache-length", type=int, default=768)
+    parser.add_argument(
+        "--draft-row-count",
+        type=int,
+        default=8,
+        help="Number of snapped horizontal row drafts (U).",
+    )
     parser.add_argument("--draft-batch-size", type=int, default=8)
     parser.add_argument(
         "--draft-vision-packing",
@@ -310,17 +316,20 @@ def _prepare_rows(
     raw_image: Any,
     args: argparse.Namespace,
 ) -> tuple[list[RecognitionRequest], list[tuple[int, int, Any]], dict[str, Any]]:
+    if args.draft_row_count <= 0:
+        raise ValueError("draft_row_count must be positive")
+    strategy_name = f"uniform_{args.draft_row_count}_snapped"
     prepare_started = time.perf_counter()
     prepare_cpu_started = time.thread_time()
     prepared, rotation_cw, source_size, split_s = row_lab.prepare_strategy_inputs(
         source,
         raw_image,
-        ("uniform_8_snapped",),
+        (strategy_name,),
         resize_full_table_before_split=True,
         min_pixels=args.min_pixels,
         max_pixels=args.max_pixels,
     )
-    strategy = prepared["uniform_8_snapped"]
+    strategy = prepared[strategy_name]
     crop_started = time.perf_counter()
     rows = row_lab.crop_rows(
         strategy["image"],
@@ -337,7 +346,7 @@ def _prepare_rows(
         requests.append(
             RecognitionRequest(
                 request_id=(
-                    f"{source['request_id']}:uniform_8_snapped:row_{row_index:04d}"
+                    f"{source['request_id']}:{strategy_name}:row_{row_index:04d}"
                 ),
                 crop=row_image,
                 prompt="Table Recognition:",
@@ -364,7 +373,10 @@ def _run_draft(
     source: dict[str, Any],
     requests: list[RecognitionRequest],
     rows: list[tuple[int, int, Any]],
+    *,
+    draft_row_count: int,
 ) -> tuple[dict[str, Any], float]:
+    strategy_name = f"uniform_{draft_row_count}_snapped"
     row_results: list[dict[str, Any]] = []
 
     def emit(result: Any) -> None:
@@ -378,14 +390,14 @@ def _run_draft(
     started = time.perf_counter()
     schedule = recognizer.run(
         requests,
-        schedule_id=f"live-u8:{source['request_id']}",
+        schedule_id=f"live-u{draft_row_count}:{source['request_id']}",
         emit_result=emit,
     )
     wall_s = time.perf_counter() - started
     row_results.sort(key=lambda item: int(item["row_index"]))
     return {
         "request_id": str(source["request_id"]),
-        "strategy": "uniform_8_snapped",
+        "strategy": strategy_name,
         "page_name": source["page_name"],
         "rows": row_results,
         "schedule": asdict(schedule),
@@ -490,6 +502,7 @@ def _run_one(
         source,
         row_requests,
         row_crops,
+        draft_row_count=args.draft_row_count,
     )
     draft_finished = time.perf_counter()
     cpu_wait_started = time.perf_counter()
@@ -795,7 +808,8 @@ def main() -> None:
             "verifier_optimization": args.verifier_optimization,
             "k_values": list(k_values),
             "initial_k": args.initial_k,
-            "row_strategy": "uniform_8_snapped",
+            "draft_row_count": int(args.draft_row_count),
+            "row_strategy": f"uniform_{args.draft_row_count}_snapped",
             "latency_boundary": "in_memory_table_crop_to_verified_output",
             "source_page_load_and_bbox_crop_included": False,
             "target_cpu_overlap": (
