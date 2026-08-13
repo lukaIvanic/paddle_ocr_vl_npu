@@ -561,6 +561,7 @@ class TableSpeculativeDecodeRuntime:
         self.host_input = torch.empty(
             (1, self.query_length), dtype=torch.int64, pin_memory=True
         )
+        self.host_input_numpy = self.host_input.numpy()
         self.device_input = torch.empty(
             (1, self.query_length), device=self.device, dtype=torch.int64
         )
@@ -587,7 +588,10 @@ class TableSpeculativeDecodeRuntime:
         self._call_end_event = (
             self._event(enable_timing=True) if self.record_device_timing else None
         )
-        self._call_done_event = self._event(enable_timing=False)
+        self._call_done_event = (
+            self._event(enable_timing=False) if self.record_device_timing else None
+        )
+        self._call_stream = torch.npu.current_stream(self.device)
 
     def _event(self, *, enable_timing: bool = True) -> Any:
         import torch_npu
@@ -603,6 +607,12 @@ class TableSpeculativeDecodeRuntime:
             self._call_end_event.record()
 
     def _finish_call(self) -> float:
+        if not self.record_device_timing:
+            # The result D2H copy is enqueued on this stream immediately after
+            # the graph. Its completion is the only production dependency.
+            self._call_stream.synchronize()
+            return 0.0
+        assert self._call_done_event is not None
         self._call_done_event.record()
         self._call_done_event.synchronize()
         if self._call_start_event is None or self._call_end_event is None:
@@ -620,13 +630,10 @@ class TableSpeculativeDecodeRuntime:
         rope_deltas: torch.Tensor,
         flat_cache: tuple[torch.Tensor, ...],
     ) -> tuple[list[int], float]:
-        self.host_input.fill_(self.eos_token_id)
-        self.host_input[0, 0] = int(current_token)
+        self.host_input_numpy.fill(self.eos_token_id)
+        self.host_input_numpy[0, 0] = int(current_token)
         if proposal:
-            self.host_input[0, 1 : len(proposal) + 1] = torch.tensor(
-                proposal,
-                dtype=torch.int64,
-            )
+            self.host_input_numpy[0, 1 : len(proposal) + 1] = proposal
         self.device_input.copy_(self.host_input, non_blocking=True)
         self._start_timing()
         targets = self.verify.fn(
