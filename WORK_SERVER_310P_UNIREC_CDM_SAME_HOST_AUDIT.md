@@ -44,7 +44,7 @@ Wait for `exit_code.txt`. Return:
 3. the `comparisons` and `scores` objects from `same_host_audit.json`;
 4. evaluator commit and dirty status from `candidate_runtime_fingerprint.json`;
 5. platform machine, Python version, package versions, runtime tool versions,
-   TeX-resource hashes, and the runtime-fingerprint difference paths;
+   TeX-resource hashes, and `runtime_fingerprints.focused_comparison`;
 6. absolute `AUDIT_ROOT` and `RUN_LOG`.
 
 Do not rerun inference. Do not modify the evaluator, install packages, or

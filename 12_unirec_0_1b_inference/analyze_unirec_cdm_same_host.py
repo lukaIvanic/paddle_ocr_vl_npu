@@ -105,6 +105,73 @@ def fingerprint_differences(left: Any, right: Any, prefix: str = "") -> list[dic
     return [{"path": prefix, "reference": left, "candidate": right}]
 
 
+def map_differences(left: dict[str, Any], right: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {"name": name, "reference": left.get(name), "candidate": right.get(name)}
+        for name in sorted(set(left) | set(right))
+        if left.get(name) != right.get(name)
+    ]
+
+
+def runtime_comparison(reference: dict[str, Any], candidate: dict[str, Any]) -> dict[str, Any]:
+    reference_sources = {
+        name: None if value is None else value.get("sha256")
+        for name, value in reference.get("evaluator_files", {}).items()
+    }
+    candidate_sources = {
+        name: None if value is None else value.get("sha256")
+        for name, value in candidate.get("evaluator_files", {}).items()
+    }
+    reference_resources = {
+        name: value.get("sha256") for name, value in reference.get("tex_resources", {}).items()
+    }
+    candidate_resources = {
+        name: value.get("sha256") for name, value in candidate.get("tex_resources", {}).items()
+    }
+    version_names = ("pdflatex", "kpsewhich", "imagemagick", "ghostscript")
+    reference_versions = {
+        name: reference.get("runtime_versions", {}).get(name, {}).get("stdout")
+        for name in version_names
+    }
+    candidate_versions = {
+        name: candidate.get("runtime_versions", {}).get(name, {}).get("stdout")
+        for name in version_names
+    }
+    reference_binaries = {
+        name: value.get("sha256") for name, value in reference.get("runtime_tools", {}).items()
+    }
+    candidate_binaries = {
+        name: value.get("sha256") for name, value in candidate.get("runtime_tools", {}).items()
+    }
+    reference_commit = reference.get("evaluator_git", {}).get("commit", {}).get("stdout", "").strip()
+    candidate_commit = candidate.get("evaluator_git", {}).get("commit", {}).get("stdout", "").strip()
+    return {
+        "platform_machine": {
+            "reference": reference.get("platform", {}).get("machine"),
+            "candidate": candidate.get("platform", {}).get("machine"),
+        },
+        "python_version": {
+            "reference": reference.get("platform", {}).get("python_version"),
+            "candidate": candidate.get("platform", {}).get("python_version"),
+        },
+        "evaluator_commit": {
+            "reference": reference_commit,
+            "candidate": candidate_commit,
+            "exact": reference_commit == candidate_commit,
+        },
+        "evaluator_source_hash_differences": map_differences(reference_sources, candidate_sources),
+        "python_package_differences": map_differences(
+            reference.get("python_packages", {}), candidate.get("python_packages", {})
+        ),
+        "tex_resource_hash_differences": map_differences(reference_resources, candidate_resources),
+        "runtime_version_differences": map_differences(reference_versions, candidate_versions),
+        "runtime_binary_hash_differences": map_differences(reference_binaries, candidate_binaries),
+        "environment_differences": map_differences(
+            reference.get("environment", {}), candidate.get("environment", {})
+        ),
+    }
+
+
 def main() -> None:
     parsed = args()
     output = parsed.output_dir.resolve()
@@ -161,6 +228,11 @@ def main() -> None:
         if reference_fingerprint is None
         else fingerprint_differences(reference_fingerprint, candidate_fingerprint)
     )
+    focused_runtime_comparison = (
+        None
+        if reference_fingerprint is None
+        else runtime_comparison(reference_fingerprint, candidate_fingerprint)
+    )
     report = {
         "status": "pass",
         "classification": classification,
@@ -184,6 +256,7 @@ def main() -> None:
             ),
             "difference_count": len(environment_differences),
             "differences": environment_differences,
+            "focused_comparison": focused_runtime_comparison,
         },
         "worst_30_same_host_pages": page_rows[:30],
     }

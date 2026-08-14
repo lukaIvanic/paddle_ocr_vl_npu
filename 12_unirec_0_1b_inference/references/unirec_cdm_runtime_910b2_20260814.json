@@ -1,0 +1,470 @@
+{
+  "environment": {
+    "CDM_KPSEWHICH": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+    "CDM_PDFLATEX": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdflatex",
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "LC_CTYPE": "C.UTF-8",
+    "PATH": "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin:/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+  },
+  "evaluator_files": {
+    "src/metrics/cal_metric.py": {
+      "bytes": 26141,
+      "sha256": "8cad72aa277581f7c2b63e7fc22ca4992992f407be2933353e66268b1b79246b"
+    },
+    "src/metrics/cdm/cdm.py": {
+      "bytes": 13327,
+      "sha256": "6e07d3e8271740295d8f4e874f7a55942379327e12d74c56db5f1cb41fd2bbf7"
+    },
+    "src/metrics/cdm/modules/latex2bbox_color.py": {
+      "bytes": 25281,
+      "sha256": "df6f61f2d89f7fe12d317b3987fea9cfb3484472522852a0c5f6a56953b42daf"
+    },
+    "src/metrics/cdm/modules/latex_processor.py": {
+      "bytes": 28269,
+      "sha256": "87bdd03e674b970ba96e966f6bfd352f968b3dd4f8625e3bf7c32a2d8599f209"
+    },
+    "src/metrics/cdm/modules/ransac.py": {
+      "bytes": 1882,
+      "sha256": "2ea2d0bfa06ff150a108a959a060782beb30efc4aecb25c19cc25967378ebde0"
+    },
+    "src/metrics/cdm/modules/texlive_env.py": {
+      "bytes": 11727,
+      "sha256": "59395404645c6658953299c92cbecc4d0423aa7b3a324a89bfee15fcb2d2a876"
+    },
+    "src/metrics/cdm/modules/visual_matcher.py": {
+      "bytes": 7123,
+      "sha256": "6c51325e6d7ad7047d85db0c653f6fa730ae717e219cb18253c0473a825c3257"
+    },
+    "src/metrics/cdm_metric.py": {
+      "bytes": 3832,
+      "sha256": "13bb3282c3967d2851023c4367b71a0af668f49a2c34972a10370a17be16602c"
+    }
+  },
+  "evaluator_git": {
+    "commit": {
+      "argv": [
+        "git",
+        "-C",
+        "/workspace/repos/OmniDocBench_eval",
+        "rev-parse",
+        "HEAD"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "2b161d010d2e3aff77a0edef359ea3a6411d23cd\n"
+    },
+    "diff": {
+      "argv": [
+        "git",
+        "-C",
+        "/workspace/repos/OmniDocBench_eval",
+        "diff",
+        "--binary"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout_bytes": 538158,
+      "stdout_preview": "diff --git a/result/end2end_quick_match_display_formula_per_page_edit.json b/result/end2end_quick_match_display_formula_per_page_edit.json\nindex 3fe0a2c..71b8723 100644\n--- a/result/end2end_quick_match_display_formula_per_page_edit.json\n+++ b/result/end2end_quick_match_display_formula_per_page_edit.json\n@@ -1,4 +1,4 @@\n {\n-    \"docstructbench_llm-raw-scihub-o.O-j.physletb.2004.06.101.pdf_3.jpg\": 0.43564356435643564,\n-    \"jiaocaineedrop_Evans_PDE_Solution_Chapter_6_Second-Order_Elliptic_Equations.pdf_5.jpg\": 0.5501543209876543\n+    \"docstructbench_llm-raw-scihub-o.O-j.physletb.2004.06.101.pdf_3.jpg\": 0.3007662835249042,\n+    \"jiaocaineedrop_Evans_PDE_Solution_Chapter_6_Second-Order_Elliptic_Equations.pdf_5.jpg\": 0.17250324254215305\n }\n\\ No newline at end of file\ndiff --git a/result/end2end_quick_match_display_formula_result.json b/result/end2end_quick_match_display_formula_result.json\nindex 59e36ec..f553523 100644\n--- a/result/end2end_quick_match_display_formula_result.json\n+++ b/result/end2end_quick_match_display_formula_result.json\n@@ -5,31 +5,31 @@\n         ],\n         \"gt\": \"$$\\n\\\\left[ U ( x ), \\\\Pi^{U} ( y ) \\\\right]=\\\\delta( x-y )，\\n$$\",\n         \"pred_idx\": [\n-            1,\n-            2\n+            1\n         ],\n-        \"pred\": \"\\\\[H\\\\]\\\\[[U(x),\\\\Pi^U(y)]=\\\\delta(x-y),\\\\]\",\n-        \"edit\": 0.425531914893617,\n+        \"pred\": \"\\\\[ [U(x), \\\\Pi^U(y)] = \\\\delta(x - y), \\\\]\",\n         \"gt_position\": [\n             2\n         ],\n-        \"pred_position\": 138,\n-        \"norm_gt\": \"$$\\n\\\\left[u(x),\\\\pi^{u}(y)\\\\right]=\\\\delta(x-y)，\\n$$\",\n-        \"norm_pred\": \"h[u(x),\\\\pi^u(y)]=\\\\delta(x-y),\",\n+        \"pred_position\": 187,\n+        \"norm_gt\": \"[u(x),\\\\pi^u(y)]=\\\\delta(x-y)，\",\n+        \"norm_pred\": \"[u(x),\\\\pi^u(y)]=\\\\delta(x-y),\",\n         \"gt_category_type\": \"equation_isolated\",\n-        \"pred_category_type\": \"equation_inline\",\n+        \"pred_category_type\": \"equation_isolated\",\n         \"gt_attribute\": [\n             {\n                 \"formula_type\": \"print",
+      "stdout_sha256": "44cdf5bb4c10eea3fed36383310243b2a7307e2a8cb95c8fc6d840a09743780e"
+    },
+    "status": {
+      "argv": [
+        "git",
+        "-C",
+        "/workspace/repos/OmniDocBench_eval",
+        "status",
+        "--porcelain=v1"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": " M result/end2end_quick_match_display_formula_per_page_edit.json\n M result/end2end_quick_match_display_formula_result.json\n M result/end2end_quick_match_metric_result.json\n M result/end2end_quick_match_reading_order_per_page_edit.json\n M result/end2end_quick_match_reading_order_result.json\n M result/end2end_quick_match_table_per_page_edit.json\n M result/end2end_quick_match_table_result.json\n M result/end2end_quick_match_text_block_per_page_edit.json\n M result/end2end_quick_match_text_block_result.json\n"
+    }
+  },
+  "evaluator_root": "/workspace/repos/OmniDocBench_eval",
+  "platform": {
+    "machine": "aarch64",
+    "platform": "Linux-5.10.0-136.12.0.86.r1526_92.hce2.aarch64-aarch64-with-glibc2.35",
+    "processor": "aarch64",
+    "python_executable": "/workspace/venvs/omnidocbench_py310/bin/python",
+    "python_version": "3.10.12 (main, Mar  3 2026, 11:56:32) [GCC 11.4.0]",
+    "uname": [
+      "Linux",
+      "liteserver-c001-4",
+      "5.10.0-136.12.0.86.r1526_92.hce2.aarch64",
+      "#1 SMP Tue Mar 26 03:00:47 UTC 2024",
+      "aarch64",
+      "aarch64"
+    ]
+  },
+  "python_packages": {
+    "Pillow": "10.4.0",
+    "latex2text": null,
+    "numpy": "1.24.4",
+    "opencv-python": null,
+    "opencv-python-headless": null,
+    "pylatexenc": "2.10",
+    "python-Levenshtein": null,
+    "scipy": "1.10.1"
+  },
+  "runtime_paths": {
+    "ghostscript": "/usr/bin/gs",
+    "imagemagick": "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/magick",
+    "kpsewhich": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+    "pdflatex": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdflatex"
+  },
+  "runtime_tools": {
+    "ghostscript": {
+      "bytes": 10168,
+      "exists": true,
+      "ldd": {
+        "argv": [
+          "ldd",
+          "/usr/bin/gs"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "\tlinux-vdso.so.1 (0x0000ffff87eb7000)\n\tlibgs.so.9 => /lib/aarch64-linux-gnu/libgs.so.9 (0x0000ffff866d0000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff86520000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffff87e7e000)\n\tlibtiff.so.5 => /lib/aarch64-linux-gnu/libtiff.so.5 (0x0000ffff86490000)\n\tlibcups.so.2 => /lib/aarch64-linux-gnu/libcups.so.2 (0x0000ffff863e0000)\n\tlibijs-0.35.so => /lib/aarch64-linux-gnu/libijs-0.35.so (0x0000ffff863c0000)\n\tlibpng16.so.16 => /lib/aarch64-linux-gnu/libpng16.so.16 (0x0000ffff86370000)\n\tlibjbig2dec.so.0 => /lib/aarch64-linux-gnu/libjbig2dec.so.0 (0x0000ffff86340000)\n\tlibjpeg.so.8 => /lib/aarch64-linux-gnu/libjpeg.so.8 (0x0000ffff862e0000)\n\tlibz.so.1 => /lib/aarch64-linux-gnu/libz.so.1 (0x0000ffff862b0000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff86210000)\n\tlibidn.so.12 => /lib/aarch64-linux-gnu/libidn.so.12 (0x0000ffff861c0000)\n\tlibpaper.so.1 => /lib/aarch64-linux-gnu/libpaper.so.1 (0x0000ffff861a0000)\n\tlibfontconfig.so.1 => /lib/aarch64-linux-gnu/libfontconfig.so.1 (0x0000ffff86140000)\n\tlibfreetype.so.6 => /lib/aarch64-linux-gnu/libfreetype.so.6 (0x0000ffff86070000)\n\tlibopenjp2.so.7 => /lib/aarch64-linux-gnu/libopenjp2.so.7 (0x0000ffff86000000)\n\tlibstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff85dd0000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff85da0000)\n\tlibwebp.so.7 => /lib/aarch64-linux-gnu/libwebp.so.7 (0x0000ffff85d40000)\n\tlibzstd.so.1 => /lib/aarch64-linux-gnu/libzstd.so.1 (0x0000ffff85c70000)\n\tliblzma.so.5 => /lib/aarch64-linux-gnu/liblzma.so.5 (0x0000ffff85c30000)\n\tlibjbig.so.0 => /lib/aarch64-linux-gnu/libjbig.so.0 (0x0000ffff85c10000)\n\tlibdeflate.so.0 => /lib/aarch64-linux-gnu/libdeflate.so.0 (0x0000ffff85be0000)\n\tlibgssapi_krb5.so.2 => /lib/aarch64-linux-gnu/libgssapi_krb5.so.2 (0x0000ffff85b80000)\n\tlibavahi-common.so.3 => /lib/aarch64-linux-gnu/libavahi-common.so.3 (0x0000ffff85b60000)\n\tlibavahi-client.so.3 => /lib/aarch64-linux-gnu/libavahi-client.so.3 (0x0000ffff85b30000)\n\tlibgnutls.so.30 => /lib/aarch64-linux-gnu/libgnutls.so.30 (0x0000ffff85920000)\n\tlibexpat.so.1 => /lib/aarch64-linux-gnu/libexpat.so.1 (0x0000ffff858e0000)\n\tlibuuid.so.1 => /lib/aarch64-linux-gnu/libuuid.so.1 (0x0000ffff858c0000)\n\tlibbrotlidec.so.1 => /lib/aarch64-linux-gnu/libbrotlidec.so.1 (0x0000ffff858a0000)\n\tlibkrb5.so.3 => /lib/aarch64-linux-gnu/libkrb5.so.3 (0x0000ffff857c0000)\n\tlibk5crypto.so.3 => /lib/aarch64-linux-gnu/libk5crypto.so.3 (0x0000ffff85780000)\n\tlibcom_err.so.2 => /lib/aarch64-linux-gnu/libcom_err.so.2 (0x0000ffff85760000)\n\tlibkrb5support.so.0 => /lib/aarch64-linux-gnu/libkrb5support.so.0 (0x0000ffff85740000)\n\tlibdbus-1.so.3 => /lib/aarch64-linux-gnu/libdbus-1.so.3 (0x0000ffff856e0000)\n\tlibp11-kit.so.0 => /lib/aarch64-linux-gnu/libp11-kit.so.0 (0x0000ffff85590000)\n\tlibidn2.so.0 => /lib/aarch64-linux-gnu/libidn2.so.0 (0x0000ffff85560000)\n\tlibunistring.so.2 => /lib/aarch64-linux-gnu/libunistring.so.2 (0x0000ffff853a0000)\n\tlibtasn1.so.6 => /lib/aarch64-linux-gnu/libtasn1.so.6 (0x0000ffff85370000)\n\tlibnettle.so.8 => /lib/aarch64-linux-gnu/libnettle.so.8 (0x0000ffff85310000)\n\tlibhogweed.so.6 => /lib/aarch64-linux-gnu/libhogweed.so.6 (0x0000ffff852b0000)\n\tlibgmp.so.10 => /lib/aarch64-linux-gnu/libgmp.so.10 (0x0000ffff85220000)\n\tlibbrotlicommon.so.1 => /lib/aarch64-linux-gnu/libbrotlicommon.so.1 (0x0000ffff851e0000)\n\tlibkeyutils.so.1 => /lib/aarch64-linux-gnu/libkeyutils.so.1 (0x0000ffff851c0000)\n\tlibresolv.so.2 => /lib/aarch64-linux-gnu/libresolv.so.2 (0x0000ffff85190000)\n\tlibsystemd.so.0 => /lib/aarch64-linux-gnu/libsystemd.so.0 (0x0000ffff850b0000)\n\tlibffi.so.8 => /lib/aarch64-linux-gnu/libffi.so.8 (0x0000ffff85090000)\n\tliblz4.so.1 => /lib/aarch64-linux-gnu/liblz4.so.1 (0x0000ffff85060000)\n\tlibcap.so.2 => /lib/aarch64-linux-gnu/libcap.so.2 (0x0000ffff85040000)\n\tlibgcrypt.so.20 => /lib/aarch64-linux-gnu/libgcrypt.so.20 (0x0000ffff84f50000)\n\tlibgpg-error.so.0 => /lib/aarch64-linux-gnu/libgpg-error.so.0 (0x0000ffff84f10000)\n"
+      },
+      "requested": "/usr/bin/gs",
+      "resolved": "/usr/bin/gs",
+      "sha256": "b7ac4c81f1edc0daab9f59e2d733a8464b7d88f25cf04f450d5d92cc40272473"
+    },
+    "imagemagick": {
+      "bytes": 36792,
+      "exists": true,
+      "ldd": {
+        "argv": [
+          "ldd",
+          "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/magick"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "\tlinux-vdso.so.1 (0x0000ffff9db7c000)\n\tlibMagickCore-7.Q16HDRI.so.10 => /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/lib/libMagickCore-7.Q16HDRI.so.10 (0x0000ffff9d690000)\n\tlibMagickWand-7.Q16HDRI.so.10 => /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/lib/libMagickWand-7.Q16HDRI.so.10 (0x0000ffff9d550000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff9d3a0000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffff9db43000)\n\tlibjbig.so.0 => /lib/aarch64-linux-gnu/libjbig.so.0 (0x0000ffff9d380000)\n\tlibtiff.so.5 => /lib/aarch64-linux-gnu/libtiff.so.5 (0x0000ffff9d2f0000)\n\tlibjpeg.so.8 => /lib/aarch64-linux-gnu/libjpeg.so.8 (0x0000ffff9d290000)\n\tlibpng16.so.16 => /lib/aarch64-linux-gnu/libpng16.so.16 (0x0000ffff9d240000)\n\tlibfontconfig.so.1 => /lib/aarch64-linux-gnu/libfontconfig.so.1 (0x0000ffff9d1e0000)\n\tlibfreetype.so.6 => /lib/aarch64-linux-gnu/libfreetype.so.6 (0x0000ffff9d110000)\n\tlibXext.so.6 => /lib/aarch64-linux-gnu/libXext.so.6 (0x0000ffff9d0e0000)\n\tlibX11.so.6 => /lib/aarch64-linux-gnu/libX11.so.6 (0x0000ffff9cf90000)\n\tliblzma.so.5 => /lib/aarch64-linux-gnu/liblzma.so.5 (0x0000ffff9cf50000)\n\tlibpangocairo-1.0.so.0 => /lib/aarch64-linux-gnu/libpangocairo-1.0.so.0 (0x0000ffff9cf30000)\n\tlibpango-1.0.so.0 => /lib/aarch64-linux-gnu/libpango-1.0.so.0 (0x0000ffff9ceb0000)\n\tlibgobject-2.0.so.0 => /lib/aarch64-linux-gnu/libgobject-2.0.so.0 (0x0000ffff9ce30000)\n\tlibcairo.so.2 => /lib/aarch64-linux-gnu/libcairo.so.2 (0x0000ffff9cd00000)\n\tlibxml2.so.2 => /lib/aarch64-linux-gnu/libxml2.so.2 (0x0000ffff9cb10000)\n\tlibz.so.1 => /lib/aarch64-linux-gnu/libz.so.1 (0x0000ffff9cae0000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff9ca40000)\n\tlibgomp.so.1 => /lib/aarch64-linux-gnu/libgomp.so.1 (0x0000ffff9c9e0000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff9c9b0000)\n\tlibwebp.so.7 => /lib/aarch64-linux-gnu/libwebp.so.7 (0x0000ffff9c950000)\n\tlibzstd.so.1 => /lib/aarch64-linux-gnu/libzstd.so.1 (0x0000ffff9c880000)\n\tlibdeflate.so.0 => /lib/aarch64-linux-gnu/libdeflate.so.0 (0x0000ffff9c850000)\n\tlibexpat.so.1 => /lib/aarch64-linux-gnu/libexpat.so.1 (0x0000ffff9c810000)\n\tlibuuid.so.1 => /lib/aarch64-linux-gnu/libuuid.so.1 (0x0000ffff9c7f0000)\n\tlibbrotlidec.so.1 => /lib/aarch64-linux-gnu/libbrotlidec.so.1 (0x0000ffff9c7d0000)\n\tlibxcb.so.1 => /lib/aarch64-linux-gnu/libxcb.so.1 (0x0000ffff9c790000)\n\tlibpangoft2-1.0.so.0 => /lib/aarch64-linux-gnu/libpangoft2-1.0.so.0 (0x0000ffff9c760000)\n\tlibglib-2.0.so.0 => /lib/aarch64-linux-gnu/libglib-2.0.so.0 (0x0000ffff9c610000)\n\tlibharfbuzz.so.0 => /lib/aarch64-linux-gnu/libharfbuzz.so.0 (0x0000ffff9c530000)\n\tlibgio-2.0.so.0 => /lib/aarch64-linux-gnu/libgio-2.0.so.0 (0x0000ffff9c330000)\n\tlibfribidi.so.0 => /lib/aarch64-linux-gnu/libfribidi.so.0 (0x0000ffff9c300000)\n\tlibthai.so.0 => /lib/aarch64-linux-gnu/libthai.so.0 (0x0000ffff9c2e0000)\n\tlibffi.so.8 => /lib/aarch64-linux-gnu/libffi.so.8 (0x0000ffff9c2c0000)\n\tlibpixman-1.so.0 => /lib/aarch64-linux-gnu/libpixman-1.so.0 (0x0000ffff9c240000)\n\tlibxcb-shm.so.0 => /lib/aarch64-linux-gnu/libxcb-shm.so.0 (0x0000ffff9c220000)\n\tlibxcb-render.so.0 => /lib/aarch64-linux-gnu/libxcb-render.so.0 (0x0000ffff9c200000)\n\tlibXrender.so.1 => /lib/aarch64-linux-gnu/libXrender.so.1 (0x0000ffff9c1e0000)\n\tlibicuuc.so.70 => /lib/aarch64-linux-gnu/libicuuc.so.70 (0x0000ffff9bfd0000)\n\tlibbrotlicommon.so.1 => /lib/aarch64-linux-gnu/libbrotlicommon.so.1 (0x0000ffff9bf90000)\n\tlibXau.so.6 => /lib/aarch64-linux-gnu/libXau.so.6 (0x0000ffff9bf70000)\n\tlibXdmcp.so.6 => /lib/aarch64-linux-gnu/libXdmcp.so.6 (0x0000ffff9bf50000)\n\tlibpcre.so.3 => /lib/aarch64-linux-gnu/libpcre.so.3 (0x0000ffff9bed0000)\n\tlibgraphite2.so.3 => /lib/aarch64-linux-gnu/libgraphite2.so.3 (0x0000ffff9bea0000)\n\tlibgmodule-2.0.so.0 => /lib/aarch64-linux-gnu/libgmodule-2.0.so.0 (0x0000ffff9be80000)\n\tlibmount.so.1 => /lib/aarch64-linux-gnu/libmount.so.1 (0x0000ffff9be20000)\n\tlibselinux.so.1 => /lib/aarch64-linux-gnu/libselinux.so.1 (0x0000ffff9bde0000)\n\tlibdatrie.so.1 => /lib/aarch64-linux-gnu/libdatrie.so.1 (0x0000ffff9bdc0000)\n\tlibicudata.so.70 => /lib/aarch64-linux-gnu/libicudata.so.70 (0x0000ffff9a190000)\n\tlibstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000ffff99f60000)\n\tlibbsd.so.0 => /lib/aarch64-linux-gnu/libbsd.so.0 (0x0000ffff99f30000)\n\tlibblkid.so.1 => /lib/aarch64-linux-gnu/libblkid.so.1 (0x0000ffff99ee0000)\n\tlibpcre2-8.so.0 => /lib/aarch64-linux-gnu/libpcre2-8.so.0 (0x0000ffff99e40000)\n\tlibmd.so.0 => /lib/aarch64-linux-gnu/libmd.so.0 (0x0000ffff99e20000)\n"
+      },
+      "requested": "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/magick",
+      "resolved": "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/magick",
+      "sha256": "21d3fcb24d59c5b2df3196e095b3111da07f112be84a200452af47bef6cbb4c8"
+    },
+    "kpsewhich": {
+      "bytes": 102024,
+      "exists": true,
+      "ldd": {
+        "argv": [
+          "ldd",
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "\tlinux-vdso.so.1 (0x0000ffffa0f1d000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffffa0cf0000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffffa0ee4000)\n"
+      },
+      "requested": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+      "sha256": "955ada28966f3f678b21d854d4bed01b36b27f2876e73b742944bea2ae8973ef"
+    },
+    "pdflatex": {
+      "bytes": 3039008,
+      "exists": true,
+      "ldd": {
+        "argv": [
+          "ldd",
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdftex"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "\tlinux-vdso.so.1 (0x0000ffff9a7be000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff9a350000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff9a1a0000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffff9a785000)\n"
+      },
+      "requested": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdflatex",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdftex",
+      "sha256": "36e298be8882acbb04c43717dffd7f0dc68a0882684929af7c38503ae0255150"
+    }
+  },
+  "runtime_versions": {
+    "fc_match_monospace": {
+      "argv": [
+        "fc-match",
+        "monospace"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "DejaVuSansMono.ttf: \"DejaVu Sans Mono\" \"Book\"\n"
+    },
+    "fc_match_sans": {
+      "argv": [
+        "fc-match",
+        "sans"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "DejaVuSans.ttf: \"DejaVu Sans\" \"Book\"\n"
+    },
+    "fc_match_serif": {
+      "argv": [
+        "fc-match",
+        "serif"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "DejaVuSerif.ttf: \"DejaVu Serif\" \"Book\"\n"
+    },
+    "ghostscript": {
+      "argv": [
+        "/usr/bin/gs",
+        "--version"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "9.55.0\n"
+    },
+    "imagemagick": {
+      "argv": [
+        "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/magick",
+        "-version"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "Version: ImageMagick 7.1.1-47 Q16-HDRI aarch64 c8f4e8cb7:20250329 https://imagemagick.org\nCopyright: (C) 1999 ImageMagick Studio LLC\nLicense: https://imagemagick.org/script/license.php\nFeatures: Cipher DPC HDRI OpenMP(4.5) \nDelegates (built-in): fontconfig freetype jbig jng jpeg lzma pangocairo png tiff x xml zlib\nCompiler: gcc (11.4)\n"
+    },
+    "imagemagick_configure": {
+      "argv": [
+        "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/magick",
+        "-list",
+        "configure"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "\nPath: /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/lib/ImageMagick-7.1.1//config-Q16HDRI/configure.xml\n\nName                  Value\n-------------------------------------------------------------------------------\nCC                    gcc\nCFLAGS                -I/usr/include/libxml2 -I/usr/include/aarch64-linux-gnu -I/usr/include/libpng16 -pthread -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/fribidi -I/usr/include/harfbuzz -I/usr/include/cairo -I/usr/include/glib-2.0 -I/usr/lib/aarch64-linux-gnu/glib-2.0/include -I/usr/include/pixman-1 -I/usr/include/uuid -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/uuid -I/usr/include/freetype2 -I/usr/include/libpng16 -fopenmp -Wall -g -O2 -fexceptions -pthread -DMAGICKCORE_HDRI_ENABLE=1 -DMAGICKCORE_QUANTUM_DEPTH=16 -DMAGICKCORE_CHANNEL_MASK_DEPTH=32\nCHANNEL_MASK_DEPTH    32\nCODER_PATH            /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/lib/ImageMagick-7.1.1/modules-Q16HDRI/coders\nCONFIGURE             ./configure  '--prefix=/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47'\nCONFIGURE_PATH        /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/etc/ImageMagick-7/\nCOPYRIGHT             Copyright (C) 1999 ImageMagick Studio LLC\nCPPFLAGS              -I/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/include/ImageMagick-7\nCXX                   g++\nCXXFLAGS              -g -O2 -pthread\nDEFS                  -DHAVE_CONFIG_H\nDELEGATES             fontconfig freetype jbig jng jpeg lzma pangocairo png ps tiff x xml zlib\nDISTCHECK_CONFIG_FLAGS  --disable-deprecated  --with-quantum-depth=16  --with-jemalloc=no  --with-umem=no  --with-autotrace=no  --with-dps=no  --with-fftw=no  --with-flif=no  --with-fpx=no  --with-gslib=no  --with-fontpath=  --with-rsvg=no  --with-uhdr=no  --with-wmf=no  --with-perl=no \nDOCUMENTATION_PATH    /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/share/doc/ImageMagick-7\nEXEC-PREFIX           /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47\nEXECUTABLE_PATH       /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin\nFEATURES              Channel-masks(32-bit) Cipher DPC HDRI OpenMP\nFILTER_PATH           /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/lib/ImageMagick-7.1.1/modules-Q16HDRI/filters\nGIT_REVISION          21316\nHOST                  aarch64-unknown-linux-gnu\nINCLUDE_PATH          /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/include/ImageMagick-7\nLDFLAGS               -L/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/lib \nLIB_VERSION           0x711\nLIB_VERSION_NUMBER    7,1,1,47\nLIBRARY_ABSOLUTE_PATH /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/lib/ImageMagick-7.1.1\nLIBS                   -ljbig   -ltiff -lfreetype  -ljpeg    -lpng16 -lz      -lfontconfig -lfreetype      -lXext    -lSM -lICE -lX11  -llzma    -lpangocairo-1.0 -lpango-1.0 -lgobject-2.0 -lglib-2.0 -lharfbuzz -lcairo   -lxml2  -lz     -lm    -lpthread    -lgomp\nNAME                  ImageMagick\nPCFLAGS               -fopenmp -DMAGICKCORE_HDRI_ENABLE=1 -DMAGICKCORE_QUANTUM_DEPTH=16 -DMAGICKCORE_CHANNEL_MASK_DEPTH=32\nPREFIX                /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47\nQuantumDepth          16\nRELEASE_DATE          2025-03-29\nSECURITY_POLICY       open\nSHARE_PATH            /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/share/ImageMagick-7\nSHAREARCH_PATH        /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/lib/ImageMagick-7.1.1/config-Q16HDRI\nTARGET_CPU            aarch64\nTARGET_OS             linux-gnu\nTARGET_VENDOR         unknown\nVERSION               7.1.1\nWEBSITE               https://imagemagick.org\n\nPath: [built-in]\n\nName                  Value\n-------------------------------------------------------------------------------\nDELEGATES             fontconfig freetype jbig jng jpeg lzma pangocairo png tiff x xml zlib\nFEATURES              Cipher DPC HDRI OpenMP(4.5) \nMAGICK_TEMPORARY_PATH /tmp\nNAME                  ImageMagick\nQuantumDepth          Q16\n"
+    },
+    "imagemagick_delegates": {
+      "argv": [
+        "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/magick",
+        "-list",
+        "delegate"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "\nPath: /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/etc/ImageMagick-7/delegates.xml\n\nDelegate                Command\n-------------------------------------------------------------------------------\n    blender =>          \"blender' -b '%i' -F PNG -o '%o''\\n'magick' -concatenate '%o*.png' '%o\"\n        bpg =>          \"bpgdec' -b 16 -o '%o.png' '%i'; /usr/bin/mv '%o.png' '%o\"\n  clipboard =>          \"xclip' -selection clipboard -o > '%o\"\n dng:decode =>          \"/usr/bin/mkdir '%u-config';/usr/bin/mv '%i' '%i.%e'; 'darktable-cli' --import '%i.%e' '%u.tif' --core --configdir '%u-config' > '%u';/usr/bin/rm -r '%u-config\"\n        doc =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n       docx =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n        dot =>          \"dot' -Tsvg '%i' -o '%o\"\n        dvi =>          \"dvips' -sstdout=%%stderr -o '%o' '%i\"\n        emf =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n        eps<=>pdf        \"gs' -sstdout=%%stderr -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 '-sDEVICE=pdfwrite' '-sOutputFile=%o' '-f%i\"\n        eps<=>ps         \"gs' -sstdout=%%stderr -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 '-sDEVICE=ps2write' '-sOutputFile=%o' '-f%i\"\n       epub =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n        hpg =>          \"hp2xx' -sstdout=%%stderr -m eps -f `basename '%o'` '%i';     /usr/bin/mv -f `basename '%o'` '%o\"\n       hpgl =>          \"hp2xx' -sstdout=%%stderr -m eps -f `basename '%o'` '%i';     /usr/bin/mv -f `basename '%o'` '%o\"\n        htm =>          \"html2ps' -U -o '%o' '%i\"\n       html =>          \"html2ps' -U -o '%o' '%i\"\nhttp:decode =>          \"curl' -s -L -o '%u.dat' 'http:%M\"\nhttps:decode =>          \"curl' -s -L -o '%u.dat' 'https:%M\"\n       ilbm =>          \"ilbmtoppm' '%i' > '%o\"\n        jpg<= lep        \"lepton' '%i' '%o\"\n        jxr =>          \"/usr/bin/mv '%i' '%i.jxr'; 'JxrDecApp' -i '%i.jxr' -o '%o.tiff'; /usr/bin/mv '%i.jxr' '%i'; /usr/bin/mv '%o.tiff' '%o\"\n        lep =>          \"lepton' '%i' '%o\"\n       miff<= show       \"magick' display -immutable -delay 0 -title '%M' '%i\"\n        odg =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n        odt =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n        pdf<=>eps        \"gs' -sstdout=%%stderr -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 '-sDEVICE=eps2write' '-sPDFPassword=%a' '-sOutputFile=%o' '-f%i\"\n        pdf<=>ps         \"gs' -sstdout=%%stderr -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 '-sDEVICE=ps2write' '-sPDFPassword=%a' '-sOutputFile=%o' '-f%i\"\n        png<= bpg        \"bpgenc' -b 12 -q '%~' -o '%o' '%i\"\n        png<= clipboard  \"xclip' -selection clipboard -t image/png '%i\"\n        png<= webp       \"cwebp' -quiet -q %Q '%i' -o '%o\"\n        pnm<= trace      \"potrace' --svg --output '%o' '%i\"\n        pnm<= ilbm       \"ppmtoilbm' -24if '%i' > '%o\"\n        ppt =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n       pptx =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n         ps<= prt        \"lpr' '%i\"\n         ps<=>eps        \"gs' -sstdout=%%stderr -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 '-sDEVICE=eps2write' '-sOutputFile=%o' '-f%i\"\n         ps<=>pdf        \"gs' -sstdout=%%stderr -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 '-sDEVICE=pdfwrite' '-sOutputFile=%o' '-f%i\"\n         ps<= print      \"@LPRDelegateDefault@ '%i\"\n      shtml =>          \"html2ps' -U -o '%o' '%i\"\n        sid =>          \"mrsidgeodecode' -if sid -i '%i' -of tif -o '%o' > '%u\"\n        svg =>          \"rsvg-convert' --dpi-x %x --dpi-y %y -o '%o' '%i\"\n       tiff<= jxr        \"/usr/bin/mv '%i' '%i.tiff'; 'JxrEncApp' -i '%i.tiff' -o '%o.jxr'; /usr/bin/mv '%i.tiff' '%i'; /usr/bin/mv '%o.jxr' '%o\"\n       tiff<= wdp        \"/usr/bin/mv '%i' '%i.tiff'; 'JxrEncApp' -i '%i.tiff' -o '%o.jxr'; /usr/bin/mv '%i.tiff' '%i'; /usr/bin/mv '%o.jxr' '%o\"\n       tiff<= text       \"tesseract' '%i' '%u'; /usr/bin/mv '%u.txt' '%o\"\n       tiff<= launch     \"gimp' '%i\"\nvideo:decode =>          \"ffmpeg' -nostdin -loglevel error -i '%s' -an -f rawvideo -y %s '%s\"\n        vsd =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n       vsdx =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n        wdp =>          \"/usr/bin/mv '%i' '%i.jxr'; 'JxrDecApp' -i '%i.jxr' -o '%o.tiff'; /usr/bin/mv '%i.jxr' '%i'; /usr/bin/mv '%o.tiff' '%o\"\n       webp =>          \"dwebp' -pam '%i' -o '%o\"\n        wmf =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n        xls =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n       xlsx =>          \"libreoffice' --convert-to pdf --outdir `dirname '%i'` '%i' 2> '%u'; /usr/bin/mv '%i.pdf' '%o\"\n"
+    },
+    "imagemagick_policy": {
+      "argv": [
+        "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/magick",
+        "-list",
+        "policy"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "\nPath: /workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/etc/ImageMagick-7/policy.xml\n  Policy: Undefined\n    rights: None \n\nPath: [built-in]\n  Policy: Undefined\n    rights: None \n"
+    },
+    "kpsewhich": {
+      "argv": [
+        "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+        "--version"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "kpathsea version 6.4.1\nCopyright 2023 Karl Berry & Olaf Weber.\nLicense LGPLv2.1+: GNU Lesser GPL version 2.1 or later <https://gnu.org/licenses/lgpl.html>\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n\n"
+    },
+    "locale": {
+      "argv": [
+        "locale"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "LANG=C.UTF-8\nLANGUAGE=\nLC_CTYPE=\"C.UTF-8\"\nLC_NUMERIC=\"C.UTF-8\"\nLC_TIME=\"C.UTF-8\"\nLC_COLLATE=\"C.UTF-8\"\nLC_MONETARY=\"C.UTF-8\"\nLC_MESSAGES=\"C.UTF-8\"\nLC_PAPER=\"C.UTF-8\"\nLC_NAME=\"C.UTF-8\"\nLC_ADDRESS=\"C.UTF-8\"\nLC_TELEPHONE=\"C.UTF-8\"\nLC_MEASUREMENT=\"C.UTF-8\"\nLC_IDENTIFICATION=\"C.UTF-8\"\nLC_ALL=C.UTF-8\n"
+    },
+    "pdflatex": {
+      "argv": [
+        "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdflatex",
+        "--version"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "pdfTeX 3.141592653-2.6-1.40.28 (TeX Live 2025)\nkpathsea version 6.4.1\nCopyright 2025 Han The Thanh (pdfTeX) et al.\nThere is NO warranty.  Redistribution of this software is\ncovered by the terms of both the pdfTeX copyright and\nthe Lesser GNU General Public License.\nFor more information about these matters, see the file\nnamed COPYING and the pdfTeX source.\nPrimary author of pdfTeX: Han The Thanh (pdfTeX) et al.\nCompiled with libpng 1.6.46; using libpng 1.6.46\nCompiled with zlib 1.3.1; using zlib 1.3.1\nCompiled with xpdf version 4.04\n"
+    },
+    "pip_freeze": {
+      "argv": [
+        "/workspace/venvs/omnidocbench_py310/bin/python",
+        "-m",
+        "pip",
+        "freeze"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "aiohappyeyeballs==2.7.1\naiohttp==3.14.1\naiosignal==1.4.0\nanyio==4.14.1\napted==1.0.3\nasync-timeout==5.0.1\nattrs==26.1.0\nbeautifulsoup4==4.11.1\ncertifi==2026.6.17\ncharset-normalizer==3.4.7\nclick==8.4.2\ncontourpy==1.3.2\ncycler==0.12.1\ndatasets==5.0.0\ndill==0.4.1\nevaluate==0.4.3\nexceptiongroup==1.3.1\nfilelock==3.29.5\nfonttools==4.63.0\nfrozenlist==1.8.0\nfsspec==2026.4.0\nfunc_timeout==4.3.5\nh11==0.16.0\nhf-xet==1.5.1\nhf_transfer==0.1.9\nhttpcore==1.0.9\nhttpx==0.28.1\nhuggingface_hub==1.22.0\nidna==3.18\niniconfig==2.3.0\njoblib==1.5.3\nkiwisolver==1.5.0\nLevenshtein==0.25.1\nloguru==0.7.2\nlxml==4.9.1\nmatplotlib==3.7.5\nmultidict==6.7.1\nmultiprocess==0.70.19\nnltk==3.9.1\nnumpy==1.24.4\n-e git+https://github.com/opendatalab/OmniDocBench.git@2b161d010d2e3aff77a0edef359ea3a6411d23cd#egg=omnidocbench_eval\npackaging==26.2\npandas==2.0.3\npillow==10.4.0\npluggy==1.6.0\npropcache==0.5.2\npyarrow==24.0.0\nPygments==2.20.0\npylatexenc==2.10\npyparsing==3.3.2\npytest==9.1.1\npython-dateutil==2.9.0.post0\npytz==2026.2\nPyYAML==6.0.2\nRapidFuzz==3.14.5\nregex==2026.6.28\nrequests==2.34.2\nscipy==1.10.1\nsix==1.17.0\nsoupsieve==2.8.4\ntabulate==0.9.0\ntomli==2.4.1\ntqdm==4.67.1\ntyping_extensions==4.16.0\ntzdata==2026.2\nurllib3==2.7.0\nxxhash==3.8.0\nyarl==1.24.2\n"
+    }
+  },
+  "schema": 1,
+  "tex_resources": {
+    "CJK.sty": {
+      "bytes": 33241,
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "CJK.sty"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/CJK.sty\n"
+      },
+      "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/CJK.sty",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/CJK.sty",
+      "sha256": "25ea84e881c2fba7f86adfc747b5064ddcd9821c6cade7b5112187566468915a"
+    },
+    "amsmath.sty": {
+      "bytes": 88471,
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "amsmath.sty"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/amsmath/amsmath.sty\n"
+      },
+      "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/amsmath/amsmath.sty",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/amsmath/amsmath.sty",
+      "sha256": "4c0bfd7d67ea18214810a21244f8426da40d04af5bb90ed201b85cc5e211d321"
+    },
+    "article.cls": {
+      "bytes": 20144,
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "article.cls"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/base/article.cls\n"
+      },
+      "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/base/article.cls",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/base/article.cls",
+      "sha256": "f9c8770a909e5b6526eb72284e457cd379b9bedbf3b508a96bd7f922d4cb24ec"
+    },
+    "c70gkai.fd": {
+      "bytes": 542,
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "c70gkai.fd"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/UTF8/c70gkai.fd\n"
+      },
+      "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/UTF8/c70gkai.fd",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/UTF8/c70gkai.fd",
+      "sha256": "ca6b2a3acc180b7c43617d015c986fd0ac833ce5d863d0a1964e90c51024ce6e"
+    },
+    "cmex10.tfm": {
+      "bytes": 992,
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "cmex10.tfm"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmex10.tfm\n"
+      },
+      "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmex10.tfm",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmex10.tfm",
+      "sha256": "0890bccea1dd4d27f001ac30e86c63af35bc803e0557c35aafb1903c8d208e92"
+    },
+    "cmr10.tfm": {
+      "bytes": 1296,
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "cmr10.tfm"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmr10.tfm\n"
+      },
+      "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmr10.tfm",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmr10.tfm",
+      "sha256": "87f2d8981927644cbecaf3d639e96e348ea4e7be49d8804468bd8ba9ff3f5244"
+    },
+    "cmsy10.tfm": {
+      "bytes": 1124,
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "cmsy10.tfm"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm\n"
+      },
+      "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm",
+      "sha256": "0ca13d421ac7133271aed7c935099ecf3d1d08ac9e15f81acb34a16564ab8a46"
+    },
+    "geometry.sty": {
+      "bytes": 41601,
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "geometry.sty"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/geometry/geometry.sty\n"
+      },
+      "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/geometry/geometry.sty",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/geometry/geometry.sty",
+      "sha256": "d5d36ad74051ad36288242b51438e2d9a5db2bd6c063b9b5704d0931fbc9f439"
+    },
+    "gkai00.tfm": {
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "gkai00.tfm"
+        ],
+        "returncode": 1,
+        "stderr": "",
+        "stdout": ""
+      },
+      "path": null
+    },
+    "gkai01.tfm": {
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "gkai01.tfm"
+        ],
+        "returncode": 1,
+        "stderr": "",
+        "stdout": ""
+      },
+      "path": null
+    },
+    "xcolor.sty": {
+      "bytes": 55384,
+      "lookup": {
+        "argv": [
+          "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+          "xcolor.sty"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/xcolor/xcolor.sty\n"
+      },
+      "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/xcolor/xcolor.sty",
+      "resolved": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/xcolor/xcolor.sty",
+      "sha256": "478888f8e8f00345fd645b6cdd6fa7db1e9efdd6f585b25c89bb3665d9029295"
+    }
+  },
+  "tex_runtime": {
+    "cjk_font": "gkai",
+    "cjk_font_fd": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/UTF8/c70gkai.fd",
+    "cjk_sty": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/CJK.sty",
+    "kpsewhich": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+    "kpsewhich_texmfroot": "/workspace/.tools/omnidocbench_eval/texlive/2025",
+    "pdflatex": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdflatex",
+    "pdflatex_version": "pdfTeX 3.141592653-2.6-1.40.28 (TeX Live 2025)",
+    "texlive_bin_dir": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux",
+    "texlive_root": "/workspace/.tools/omnidocbench_eval/texlive/2025",
+    "texmfcnf": "/workspace/.tools/omnidocbench_eval/texlive/2025:/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/web2c"
+  }
+}

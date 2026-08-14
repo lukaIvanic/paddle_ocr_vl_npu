@@ -17,7 +17,7 @@ from typing import Any
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent
+REPO_ROOT = Path(os.environ.get("UNIREC_REPO_ROOT", SCRIPT_DIR.parent)).resolve()
 sys.path.insert(0, str(REPO_ROOT / "09_persistent_page_engine/scripts"))
 from run_cdm_from_matched_formulas import _configure_cdm_runtime  # noqa: E402
 
@@ -105,10 +105,15 @@ def executable(path: str) -> dict[str, Any]:
 
 
 def git_fingerprint(root: Path) -> dict[str, Any]:
+    diff = command(["git", "-C", str(root), "diff", "--binary"])
+    diff_stdout = str(diff.pop("stdout", ""))
+    diff["stdout_bytes"] = len(diff_stdout.encode("utf-8"))
+    diff["stdout_sha256"] = hashlib.sha256(diff_stdout.encode("utf-8")).hexdigest()
+    diff["stdout_preview"] = diff_stdout[:2000]
     return {
         "commit": command(["git", "-C", str(root), "rev-parse", "HEAD"]),
         "status": command(["git", "-C", str(root), "status", "--porcelain=v1"]),
-        "diff": command(["git", "-C", str(root), "diff", "--binary"]),
+        "diff": diff,
     }
 
 
