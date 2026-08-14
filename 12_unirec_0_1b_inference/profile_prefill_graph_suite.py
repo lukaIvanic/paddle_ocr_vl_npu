@@ -769,6 +769,7 @@ def _environment(physical_devices: list[int]) -> dict[str, Any]:
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
     torch.set_num_threads(args.torch_cpu_threads)
+    torch.set_num_interop_threads(args.torch_cpu_threads)
     physical_devices = _physical_devices()
     import torch_npu
 
@@ -821,6 +822,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             "control_repeats": args.control_repeats,
             "profile_steps": args.profile_steps,
             "torch_cpu_threads": args.torch_cpu_threads,
+            "torch_intraop_threads": torch.get_num_threads(),
+            "torch_interop_threads": torch.get_num_interop_threads(),
             "skip_profiler": args.skip_profiler,
             "profile_metric": args.profile_metric,
             "parser_topn": args.parser_topn,

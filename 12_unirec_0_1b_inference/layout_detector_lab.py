@@ -315,6 +315,7 @@ def main() -> None:
 
     if args.torch_cpu_threads:
         torch.set_num_threads(args.torch_cpu_threads)
+        torch.set_num_interop_threads(args.torch_cpu_threads)
 
     openocr_root = args.openocr_root.expanduser().resolve()
     sys.path.insert(0, str(openocr_root))
