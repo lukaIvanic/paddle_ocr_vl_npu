@@ -171,6 +171,11 @@ def custom_lane(
             device=args.device,
             dtype=args.dtype,
         )
+        events.put(("ready", "custom", {"setup_s": runner.model_load_s}))
+        print(
+            f"CUSTOM_READY setup_s={runner.model_load_s:.3f}",
+            flush=True,
+        )
         wall_started = time.perf_counter()
         with output_path.open("a", encoding="utf-8") as handle:
             for index, item in enumerate(items, start=1):
@@ -301,27 +306,38 @@ def main() -> None:
     item_by_id = {item["request_id"]: item for item in items}
     run_started = time.perf_counter()
     with ThreadPoolExecutor(max_workers=2, thread_name_prefix="unirec_compare") as pool:
+        custom_future = pool.submit(
+            custom_lane,
+            args=args,
+            items=items,
+            output_path=custom_path,
+            events=event_queue,
+        )
+        event_type, lane, payload = event_queue.get()
+        if event_type == "error":
+            raise RuntimeError(f"{lane} lane failed: {payload}")
+        if event_type != "ready" or lane != "custom":
+            raise RuntimeError(
+                f"expected custom-ready event, got {event_type=} {lane=}"
+            )
+        official_future = pool.submit(
+            official_lane,
+            args=args,
+            items=items,
+            output_path=official_path,
+            events=event_queue,
+        )
         futures = {
-            "official": pool.submit(
-                official_lane,
-                args=args,
-                items=items,
-                output_path=official_path,
-                events=event_queue,
-            ),
-            "custom": pool.submit(
-                custom_lane,
-                args=args,
-                items=items,
-                output_path=custom_path,
-                events=event_queue,
-            ),
+            "official": official_future,
+            "custom": custom_future,
         }
         with comparison_path.open("a", encoding="utf-8") as comparison_handle:
             while len(done) < 2:
                 event_type, lane, payload = event_queue.get()
                 if event_type == "error":
                     raise RuntimeError(f"{lane} lane failed: {payload}")
+                if event_type == "ready":
+                    continue
                 if event_type == "done":
                     done[lane] = payload
                     print(
