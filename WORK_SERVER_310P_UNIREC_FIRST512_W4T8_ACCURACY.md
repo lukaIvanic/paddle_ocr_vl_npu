@@ -84,6 +84,12 @@ export CDM_WORKERS="${CDM_WORKERS:-64}"
 bash 12_unirec_0_1b_inference/run_310p_first512_w4t8_accuracy_background.sh
 ```
 
+The launcher selects and validates the frozen OmniDocBench v1.6 CDM runtime
+before it starts inference. It rejects ambient TeX, missing CJK/xcolor
+resources, or wrong ImageMagick/Ghostscript versions. It evaluates with a clean
+detached clone of the required evaluator commit, without modifying the existing
+checkout.
+
 The launcher prints `RUN_ROOT`, `RUN_LOG`, and `PID`. Immediately send Luka the
 absolute `RUN_LOG`, then follow it with:
 

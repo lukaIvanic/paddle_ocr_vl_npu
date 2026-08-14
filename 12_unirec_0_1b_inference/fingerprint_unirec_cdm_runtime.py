@@ -160,7 +160,14 @@ def main() -> None:
         key: value
         for key, value in sorted(os.environ.items())
         if key.startswith(("CDM_", "TEX", "MAGICK", "GS_", "LC_"))
-        or key in {"LANG", "PATH", "LD_LIBRARY_PATH", "OMNIDOCBENCH_TOOL_ROOT"}
+        or key
+        in {
+            "LANG",
+            "PATH",
+            "LD_LIBRARY_PATH",
+            "OMNIDOCBENCH_EVAL_TOOLS_ROOT",
+            "OMNIDOCBENCH_TOOL_ROOT",
+        }
     }
     tools = {name: executable(path) for name, path in runtime.items()}
     versions = {

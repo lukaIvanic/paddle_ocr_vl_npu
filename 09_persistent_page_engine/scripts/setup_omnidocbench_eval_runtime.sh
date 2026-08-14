@@ -90,6 +90,7 @@ pdflatex --version | head -n 2
 kpsewhich --version | head -n 2
 kpsewhich CJK.sty
 kpsewhich c70gkai.fd
+kpsewhich xcolor.sty
 magick --version | head -n 2
 gs --version
 "$OMNIDOCBENCH_EVAL_PYTHON" \

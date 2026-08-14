@@ -77,6 +77,12 @@ export CDM_WORKERS="${CDM_WORKERS:-64}"
 bash 12_unirec_0_1b_inference/run_310p_full1651_w4t8_accuracy_background.sh
 ```
 
+The launcher selects the frozen OmniDocBench v1.6 runtime installed under the
+repository cache and validates it before NPU inference starts. It rejects
+ambient TeX, missing CJK/xcolor resources, or wrong ImageMagick/Ghostscript
+versions. It evaluates with a clean detached clone of the required evaluator
+commit, without modifying the existing checkout.
+
 The launcher prints `RUN_ROOT`, `RUN_LOG`, and `PID`. Send Luka the absolute
 `RUN_LOG` immediately and follow it with `tail -f`. Do not restart a quiet
 worker while its heartbeat and owned process are alive.

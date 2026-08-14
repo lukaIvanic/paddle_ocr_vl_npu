@@ -6,6 +6,9 @@ REPO="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 RUNNER="$SCRIPT_DIR/run_two_phase_batched_unirec.py"
 PREP="$SCRIPT_DIR/prepare_unirec_subset_eval.py"
 SUMMARIZER="$SCRIPT_DIR/summarize_completed_unirec_eval.py"
+EVAL_ENV="$REPO/09_persistent_page_engine/scripts/omnidocbench_eval_env.sh"
+CDM_RUNNER="$REPO/09_persistent_page_engine/scripts/run_cdm_from_matched_formulas.py"
+EVALUATOR_COMMIT=2b161d010d2e3aff77a0edef359ea3a6411d23cd
 
 absolute_executable_path() {
   local value="$1"
@@ -56,6 +59,15 @@ resolve_inputs() {
   EVALUATOR_ROOT="$(readlink -f "$EVALUATOR_ROOT")"
   EVAL_PYTHON="$(absolute_executable_path "$EVAL_PYTHON")"
 
+  export OMNIDOCBENCH_EVAL_PYTHON="$EVAL_PYTHON"
+  export OMNIDOCBENCH_EVALUATOR_ROOT="$EVALUATOR_ROOT"
+  # Select the repository-local frozen runtime on 310P and the workspace-local
+  # frozen runtime on 910B. Never inherit ambient TeX/ImageMagick silently.
+  # shellcheck source=../09_persistent_page_engine/scripts/omnidocbench_eval_env.sh
+  source "$EVAL_ENV"
+  EVAL_PYTHON="$OMNIDOCBENCH_EVAL_PYTHON"
+  EVALUATOR_ROOT="$OMNIDOCBENCH_EVALUATOR_ROOT"
+
   test -x "$PYTHON_BIN"
   test -x "$EVAL_PYTHON"
   test -f "$MODEL/model.pth"
@@ -65,14 +77,26 @@ resolve_inputs() {
   test -f "$DATASET_JSON"
   test -d "$COMPILE_CACHE"
   test -f "$EVALUATOR_ROOT/pdf_validation.py"
-  test "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)" = \
-    2b161d010d2e3aff77a0edef359ea3a6411d23cd
+  test "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)" = "$EVALUATOR_COMMIT"
   test -f "$RUNNER"
   test -f "$PREP"
   test -f "$SUMMARIZER"
+  test -f "$CDM_RUNNER"
   "$PYTHON_BIN" -c 'import kornia_rs, torch, torch_npu'
   PYTHONPATH="$EVALUATOR_ROOT" "$EVAL_PYTHON" -c \
     'import Levenshtein; import src.metrics.cal_metric'
+  PYTHONPATH="$(dirname "$CDM_RUNNER")" "$EVAL_PYTHON" -c \
+    'from run_cdm_from_matched_formulas import _configure_cdm_runtime; print(_configure_cdm_runtime())'
+}
+
+prepare_clean_evaluator() {
+  local source_root="$EVALUATOR_ROOT"
+  local canonical_root="$RUN_ROOT/evaluator_clean"
+  git clone --quiet --no-checkout "$source_root" "$canonical_root"
+  git -C "$canonical_root" checkout --quiet --detach "$EVALUATOR_COMMIT"
+  test -z "$(git -C "$canonical_root" status --porcelain=v1 --untracked-files=all)"
+  EVALUATOR_ROOT="$canonical_root"
+  export OMNIDOCBENCH_EVALUATOR_ROOT="$canonical_root"
 }
 
 run_inference() {
@@ -149,7 +173,7 @@ run_evaluation() {
 
   mkdir -p "$evaluation/cdm"
   PYTHONUNBUFFERED=1 "$EVAL_PYTHON" \
-    "$REPO/09_persistent_page_engine/scripts/run_cdm_from_matched_formulas.py" \
+    "$CDM_RUNNER" \
     --input "$evaluation/work/result/predictions_quick_match_display_formula_result.json" \
     --output-dir "$evaluation/cdm" \
     --evaluator-root "$EVALUATOR_ROOT" \
@@ -224,10 +248,13 @@ PY
 worker_main() {
   RUN_ROOT="$1"
   resolve_inputs
+  prepare_clean_evaluator
   {
     printf 'project_commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
     printf 'physical_npu=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
     printf 'cdm_workers=%s\n' "$CDM_WORKERS"
+    printf 'evaluator_root=%s\nevaluator_commit=%s\n' \
+      "$EVALUATOR_ROOT" "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)"
     printf 'cann_home=%s\n' "${ASCEND_HOME_PATH:-unavailable}"
     if [[ -f "${ASCEND_HOME_PATH:-}/opp/version.info" ]]; then
       grep -E '^(Version|version_dir|timestamp)=' \
@@ -282,6 +309,9 @@ launch_main() {
     OPENOCR_ROOT="$OPENOCR_ROOT" IMAGES_DIR="$IMAGES_DIR" \
     DATASET_JSON="$DATASET_JSON" COMPILE_CACHE="$COMPILE_CACHE" \
     EVALUATOR_ROOT="$EVALUATOR_ROOT" EVAL_PYTHON="$EVAL_PYTHON" \
+    OMNIDOCBENCH_EVAL_TOOLS_ROOT="$OMNIDOCBENCH_EVAL_TOOLS_ROOT" \
+    OMNIDOCBENCH_TOOL_ROOT="$OMNIDOCBENCH_TOOL_ROOT" \
+    CDM_PDFLATEX="$CDM_PDFLATEX" CDM_KPSEWHICH="$CDM_KPSEWHICH" \
     CDM_WORKERS="$CDM_WORKERS" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
