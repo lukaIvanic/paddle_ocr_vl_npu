@@ -584,6 +584,7 @@ def _prefill_worker_pages_bucketed(
         physical_tokens = 0
         pack_count = 0
         fallback_count = 0
+        packed_prefill_rejected_crop_ids: set[int] = set()
         bucket_rows: dict[str, int] = {}
         for crop in result["crops"]:
             item = encoded_by_source[crop_source_indices[id(crop)]]
@@ -595,10 +596,11 @@ def _prefill_worker_pages_bucketed(
             bucket=PACKED_TEXT_PREFILL_BUCKET,
         ):
             if not use_packed_graph:
-                raise RuntimeError(
-                    "bucketed full-vision worker encountered an encoded crop "
-                    "larger than the packed text-prefill bucket"
-                )
+                for crop in group:
+                    packed_prefill_rejected_crop_ids.add(id(crop))
+                    encoded_by_source.pop(crop_source_indices[id(crop)])
+                fallback_count += len(group)
+                continue
             encoded_group = []
             for crop in group:
                 source_index = crop_source_indices[id(crop)]
@@ -662,6 +664,21 @@ def _prefill_worker_pages_bucketed(
                         crop_source_indices[id(crop)]
                     ],
                 }
+        if packed_prefill_rejected_crop_ids:
+            retained_pairs = [
+                (crop, block_id)
+                for crop, block_id in zip(
+                    result["crops"], result["vlm_block_ids"]
+                )
+                if id(crop) not in packed_prefill_rejected_crop_ids
+            ]
+            result["crops"] = [crop for crop, _block_id in retained_pairs]
+            result["vlm_block_ids"] = [
+                block_id for _crop, block_id in retained_pairs
+            ]
+            result["cross_capacity_rejected_crops"] = int(
+                result.get("cross_capacity_rejected_crops", 0)
+            ) + len(packed_prefill_rejected_crop_ids)
         page_crop_count = len(result["crops"])
         page_vision_s = vision_share_per_crop * page_crop_count
         page_timings.append(
