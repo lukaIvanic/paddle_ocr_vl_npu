@@ -149,6 +149,12 @@ Reading Edit:   0.140
 The 90.57 figure in OpenOCR's document is the older OmniDocBench v1.5 result.
 The installed 1,651-page dataset is v1.6.
 
+For the exact optimized W4/T8 full-1651 inference command, fixed model/cache
+settings, canonical evaluator runtime, known-good commits, expected artifacts,
+and the validated 910B2/310P scores, use
+[`KNOWN_GOOD_FULL1651_W4T8.md`](KNOWN_GOOD_FULL1651_W4T8.md). Treat that file as
+the reproducibility anchor before changing UniRec performance code.
+
 The source-pipeline adapter remains available for environments where the
 Paddle predictor loads correctly. It preserves OpenOCR's pipeline and places
 only UniRec on the NPU:
