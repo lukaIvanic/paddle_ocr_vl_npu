@@ -51,6 +51,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-length", type=int, default=1024)
     parser.add_argument("--device", default="npu:0")
     parser.add_argument(
+        "--lane",
+        choices=("parallel", "official", "custom"),
+        default="parallel",
+    )
+    parser.add_argument(
         "--dtype",
         choices=("float16", "bfloat16", "float32"),
         default="float16",
@@ -297,6 +302,47 @@ def main() -> None:
         f"max_length={args.max_length} output_dir={output_dir}",
         flush=True,
     )
+
+    if args.lane != "parallel":
+        class DiscardEvents:
+            @staticmethod
+            def put(_event: Any) -> None:
+                return None
+
+        lane_started = time.perf_counter()
+        if args.lane == "official":
+            lane_result = official_lane(
+                args=args,
+                items=items,
+                output_path=official_path,
+                events=DiscardEvents(),
+            )
+            lane_jsonl = official_path
+        else:
+            lane_result = custom_lane(
+                args=args,
+                items=items,
+                output_path=custom_path,
+                events=DiscardEvents(),
+            )
+            lane_jsonl = custom_path
+        summary = {
+            "status": "ok",
+            "lane": args.lane,
+            "count": len(items),
+            "random_seed": args.random_seed,
+            "label_family": args.label_family,
+            "max_length": args.max_length,
+            "wall_s": time.perf_counter() - lane_started,
+            "lane_result": lane_result,
+            "jsonl": str(lane_jsonl),
+        }
+        (output_dir / "summary.json").write_text(
+            json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print("CROP_LANE_SUMMARY " + json.dumps(summary), flush=True)
+        return
 
     process_context = multiprocessing.get_context("spawn")
     event_queue = process_context.Queue()
