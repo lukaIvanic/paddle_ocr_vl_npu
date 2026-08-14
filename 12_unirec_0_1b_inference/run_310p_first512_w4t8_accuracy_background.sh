@@ -118,9 +118,14 @@ run_evaluation() {
     --fallback-latex-timeout-sec 30
   printf '%s\n' "$SECONDS" >"$evaluation/eval_wall_s.txt"
 
-  local cdm_workers
-  cdm_workers="$(nproc)"
-  test "$cdm_workers" -le 96 || cdm_workers=96
+  # The 310P container reports nproc=1 even though the evaluator can launch
+  # multiple isolated CDM workers. Keep this explicit so a successful
+  # inference run never falls into an accidental single-worker formula eval.
+  local cdm_workers="${CDM_WORKERS:-64}"
+  if ! [[ "$cdm_workers" =~ ^[1-9][0-9]*$ ]]; then
+    printf 'INVALID_CDM_WORKERS=%s\n' "$cdm_workers" >&2
+    exit 1
+  fi
   mkdir -p "$evaluation/cdm"
   PYTHONUNBUFFERED=1 "$EVAL_PYTHON" \
     "$REPO/09_persistent_page_engine/scripts/run_cdm_from_matched_formulas.py" \

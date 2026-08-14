@@ -77,6 +77,9 @@ export DATASET_JSON="${DATASET_JSON:?set the full OmniDocBench.json}"
 export COMPILE_CACHE="${COMPILE_CACHE:?set the existing production cache parent}"
 export EVALUATOR_ROOT="${EVALUATOR_ROOT:?set OmniDocBench evaluator checkout}"
 export EVAL_PYTHON="${EVAL_PYTHON:?set the existing CDM-capable evaluator Python}"
+# Do not derive this from nproc: this container reports nproc=1 despite
+# supporting the passed process-isolated evaluator lane.
+export CDM_WORKERS="${CDM_WORKERS:-64}"
 
 bash 12_unirec_0_1b_inference/run_310p_first512_w4t8_accuracy_background.sh
 ```
