@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Profile the fixed graphs used by the UniRec prefill-only producer.
+"""Profile the fixed forwards used by the UniRec prefill-only producer.
 
 The suite measures graph replay with NPU events before and after profiling, then
 captures one already-warmed replay window with ``torch_npu.profiler``.  It uses
@@ -124,7 +124,22 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--layout-execution",
+        choices=("eager", "torchair"),
+        default="torchair",
+        help="Profile the faithful eager model or its static TorchAir graph.",
+    )
+    parser.add_argument(
         "--layout-dtype", choices=("float16", "float32"), default="float32"
+    )
+    parser.add_argument(
+        "--layout-reading-order-dtype",
+        choices=("float16", "float32"),
+        default=None,
+        help=(
+            "Override only the learned reading-order module dtype. By default "
+            "it follows --layout-dtype."
+        ),
     )
     parser.add_argument(
         "--layout-depthwise-rewrite",
@@ -359,13 +374,17 @@ def _layout_lane(
     args: argparse.Namespace,
     output_root: Path,
 ) -> dict[str, Any]:
+    reading_order_dtype = (
+        args.layout_reading_order_dtype or args.layout_dtype
+    )
     detector = PPDocLayoutV2NpuAdapter(
         model_path=args.layout_model.expanduser().resolve(),
         device=args.device,
         dtype=args.layout_dtype,
+        reading_order_dtype=reading_order_dtype,
         threshold=0.4,
         profile_stages=False,
-        execution="torchair",
+        execution=args.layout_execution,
         compile_cache_dir=args.layout_cache_dir.expanduser().resolve(),
         batch_size=1,
         depthwise_rewrite=args.layout_depthwise_rewrite,
@@ -379,8 +398,6 @@ def _layout_lane(
             args.layout_preformat_frozen_bn_buffers
         ),
     )
-    if detector.compiled_runtime is None:
-        raise RuntimeError("layout profiler requires the compiled runtime")
     pixel_values = torch.zeros(
         (1, 3, 800, 800),
         dtype={"float16": torch.float16, "float32": torch.float32}[
@@ -388,9 +405,19 @@ def _layout_lane(
         ],
         device=args.device,
     )
-    run = lambda: detector.compiled_runtime(pixel_values)
+    if args.layout_execution == "torchair":
+        if detector.compiled_runtime is None:
+            raise RuntimeError("compiled layout profiler has no compiled runtime")
+        run = lambda: detector.compiled_runtime(pixel_values)
+        execution_contract = "compiled_fullgraph"
+    else:
+        if detector.compiled_runtime is not None:
+            raise RuntimeError("eager layout profiler unexpectedly compiled a graph")
+        run = lambda: detector.model(pixel_values=pixel_values)
+        execution_contract = "raw_eager_model_forward"
     result = _profile_lane(
-        f"layout_b1_800x800_{args.layout_dtype}_{args.layout_depthwise_rewrite}_"
+        f"layout_b1_800x800_{args.layout_execution}_{args.layout_dtype}_"
+        f"readingorder_{reading_order_dtype}_{args.layout_depthwise_rewrite}_"
         f"{args.layout_weight_format}_frozenbn{int(args.layout_fuse_frozen_bn)}_"
         f"evalbn{int(args.layout_fuse_eval_bn)}_"
         f"precomputedfrozenbn{int(args.layout_precompute_frozen_bn_affine)}_"
@@ -408,6 +435,7 @@ def _layout_lane(
         input_contract={
             "pixel_values": [1, 3, 800, 800],
             "dtype": args.layout_dtype,
+            "reading_order_dtype": reading_order_dtype,
             "depthwise_rewrite": args.layout_depthwise_rewrite,
             "weight_format": args.layout_weight_format,
             "fuse_frozen_bn": args.layout_fuse_frozen_bn,
@@ -418,7 +446,7 @@ def _layout_lane(
             "preformat_frozen_bn_buffers": (
                 args.layout_preformat_frozen_bn_buffers
             ),
-            "execution": "compiled_fullgraph",
+            "execution": execution_contract,
         },
     )
     del pixel_values, detector
@@ -766,6 +794,10 @@ def main(argv: Sequence[str] | None = None) -> None:
                 else None
             ),
             "layout_dtype": args.layout_dtype,
+            "layout_reading_order_dtype": (
+                args.layout_reading_order_dtype or args.layout_dtype
+            ),
+            "layout_execution": args.layout_execution,
             "layout_depthwise_rewrite": args.layout_depthwise_rewrite,
             "layout_weight_format": args.layout_weight_format,
             "layout_fuse_frozen_bn": args.layout_fuse_frozen_bn,
