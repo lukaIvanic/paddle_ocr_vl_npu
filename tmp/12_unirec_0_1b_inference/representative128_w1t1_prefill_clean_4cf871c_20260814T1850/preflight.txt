@@ -1,0 +1,10 @@
+source_commit=4cf871c9433b6120a0741cd42d1021243e3d482b
+chip=Ascend-910B2
+physical_device=7
+python=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python
+torch=2.10.0+cpu
+torch_npu=2.10.0
+model=/workspace/models/unirec-0.1b
+layout_model=/workspace/models/PP-DocLayoutV2_safetensors
+compile_cache=/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf
+note=This clean twin ran immediately after the complete traced run in a new foreground Python process on the same physical NPU and runtime. Its complete machine-readable result is run_summary.json; terminal stdout was not separately redirected.

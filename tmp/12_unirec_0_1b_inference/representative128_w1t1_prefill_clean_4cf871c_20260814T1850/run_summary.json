@@ -1,0 +1,1142 @@
+{
+  "status": "ok",
+  "execution": "production_two_phase_prefill_only",
+  "physical_devices": [
+    7
+  ],
+  "page_count": 128,
+  "offset": 0,
+  "workers": 1,
+  "recognition_preprocess_threads": 1,
+  "layout_batch_size": 2,
+  "layout_execution": "eager",
+  "layout_dtype": "float32",
+  "layout_reading_order_dtype": "float32",
+  "layout_threshold": 0.5,
+  "vision_page_lookahead": 4,
+  "vision_focal_depthwise_rewrite": "native",
+  "vision_weight_format": "native",
+  "cross_cache_length": 1320,
+  "self_cache_length": 2048,
+  "prefill_trace_enabled": false,
+  "retained_bank": {
+    "crop_count": 2487,
+    "cross_kv_bytes": 3328745472,
+    "rejected_crop_count": 0,
+    "real_source_tokens": 180596,
+    "physical_source_tokens": 273240,
+    "shared_payload_bytes": 3328745472,
+    "storage": "page_scoped_posix_shared_memory_cross_kv_only",
+    "retained_images": false,
+    "disk_bytes": 0
+  },
+  "timing_s": {
+    "prefill_worker_setup": 91.58145393012092,
+    "prefill_warmup": 1.130051635671407,
+    "prefill_phase": 36.973793705925345,
+    "prefill_worker_shutdown": 9.863715321291238,
+    "lifecycle": 139.56058771023527
+  },
+  "throughput": {
+    "prefill_pages_per_s": 3.461911455937154
+  },
+  "prefill_worker_setup_diagnostics": [
+    {
+      "worker": 0,
+      "prefix_graph_warmup": {
+        "execution": "compiled_masked_full_encoder_buckets",
+        "shape_count": 5,
+        "wall_s": 69.91533864988014,
+        "graphs": {
+          "960x64_b16": {
+            "pass_wall_s": [
+              18.008009078912437
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x64_b16_float16_src03a96f1fc5be"
+          },
+          "512x256_b16": {
+            "pass_wall_s": [
+              13.233314340002835
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x256_b16_float16_src03a96f1fc5be"
+          },
+          "960x256_b4": {
+            "pass_wall_s": [
+              12.265379969030619
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x256_b4_float16_src03a96f1fc5be"
+          },
+          "512x512_b8": {
+            "pass_wall_s": [
+              13.042704778723419
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x512_b8_float16_src03a96f1fc5be"
+          },
+          "960x512_b4": {
+            "pass_wall_s": [
+              13.356943380087614
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x512_b4_float16_src03a96f1fc5be"
+          }
+        }
+      },
+      "recognition_preprocess_threads": 1,
+      "layout_batch_size": 2,
+      "layout_dtype": "float32",
+      "layout_input_color_order": "rgb",
+      "layout_weight_format": "native",
+      "layout_depthwise_rewrite": "native",
+      "layout_preformat_frozen_bn_buffers": false,
+      "layout_depthwise_rewrite_summary": {
+        "requested": "native",
+        "target_count": 24,
+        "rewritten_count": 0,
+        "modules": [
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.0.layers.0.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.0.layers.1.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.0.layers.2.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.0.layers.3.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.0.layers.4.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.0.layers.5.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.1.layers.0.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.1.layers.1.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.1.layers.2.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.1.layers.3.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.1.layers.4.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.1.layers.5.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.2.layers.0.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.2.layers.1.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.2.layers.2.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.2.layers.3.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.2.layers.4.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.2.blocks.2.layers.5.conv2.convolution",
+            "channels": 192,
+            "original_groups": 192,
+            "groups": 192,
+            "group_width": 1,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.3.blocks.0.layers.0.conv2.convolution",
+            "channels": 384,
+            "original_groups": 384,
+            "groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.3.blocks.0.layers.1.conv2.convolution",
+            "channels": 384,
+            "original_groups": 384,
+            "groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.3.blocks.0.layers.2.conv2.convolution",
+            "channels": 384,
+            "original_groups": 384,
+            "groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.3.blocks.0.layers.3.conv2.convolution",
+            "channels": 384,
+            "original_groups": 384,
+            "groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.3.blocks.0.layers.4.conv2.convolution",
+            "channels": 384,
+            "original_groups": 384,
+            "groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "model.backbone.model.encoder.stages.3.blocks.0.layers.5.conv2.convolution",
+            "channels": 384,
+            "original_groups": 384,
+            "groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          }
+        ]
+      },
+      "layout_weight_format_summary": {
+        "requested": "native",
+        "before_histogram": {
+          "conv2d": {
+            "0": 96
+          },
+          "depthwise_conv2d": {
+            "0": 27
+          },
+          "linear": {
+            "2": 138
+          }
+        },
+        "after_histogram": {
+          "conv2d": {
+            "0": 96
+          },
+          "depthwise_conv2d": {
+            "0": 27
+          },
+          "linear": {
+            "2": 138
+          }
+        },
+        "depthwise_fz_converted_count": 0,
+        "depthwise_fz_modules": []
+      },
+      "layout_frozen_bn_buffer_format_summary": {
+        "converted_count": 0,
+        "modules": []
+      },
+      "vision_focal_depthwise_rewrite": "native",
+      "vision_weight_format": "native",
+      "vision_focal_depthwise_rewrite_summary": {
+        "requested": "native",
+        "target_count": 22,
+        "rewritten_count": 0,
+        "constant_weight_digest": "",
+        "modules": [
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ]
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ]
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ]
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ]
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ]
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ]
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ]
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ]
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ]
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.1.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_shape": [
+              768,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.2.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_shape": [
+              768,
+              1,
+              7,
+              7
+            ]
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.1.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_shape": [
+              768,
+              1,
+              5,
+              5
+            ]
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.2.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_shape": [
+              768,
+              1,
+              7,
+              7
+            ]
+          }
+        ]
+      },
+      "vision_weight_format_summary": {
+        "requested": "native",
+        "tracked_count": 125,
+        "before_histogram": {
+          "0": 65,
+          "2": 60
+        },
+        "after_histogram": {
+          "0": 65,
+          "2": 60
+        },
+        "focal_prepack_count": 0,
+        "focal_prepack_modules": []
+      }
+    }
+  ],
+  "prefill_warmup_summary": {
+    "label": "two_phase_warmup",
+    "worker_count": 1,
+    "page_count": 8,
+    "wall_s": 1.1203623013570905,
+    "pages_per_s": 7.140547294664977,
+    "worker_page_counts": [
+      8
+    ],
+    "worker_busy_s": [
+      1.1156789823435247
+    ],
+    "stage_s": {
+      "worker_file_read_sum_s": 0.002700856886804104,
+      "worker_direct_rgb_decode_sum_s": 0.05187845043838024,
+      "worker_rgb_materialize_sum_s": 4.578940570354462e-05,
+      "worker_rgb_to_bgr_sum_s": 0.0,
+      "worker_detector_call_sum_s": 0.3498304351232946,
+      "worker_layout_crop_views_sum_s": 0.0002390439622104168,
+      "worker_document_image_index_sum_s": 0.00010492093861103058,
+      "worker_recognition_crop_build_sum_s": 0.10401438968256116,
+      "worker_recognition_input_prepare_sum_s": 0.2091134642250836,
+      "worker_recognition_prefill_sum_s": 0.33870156574994326,
+      "worker_recognition_prefill_cache_d2h_sum_s": 0.025247869081795216,
+      "worker_recognition_page_collect_sum_s": 0.0003249766305088997,
+      "worker_shared_pack_sum_s": 0.04981438536196947,
+      "worker_recognition_capacity_filter_sum_s": 0.00039080623537302017,
+      "worker_recognition_pil_fromarray_sum_s": 0.02778258267790079,
+      "worker_recognition_processor_image_convert_rgb_sum_s": 2.5739893317222595e-05,
+      "worker_recognition_processor_target_size_sum_s": 0.00037404196336865425,
+      "worker_recognition_processor_resize_sum_s": 0.16605849657207727,
+      "worker_recognition_processor_pil_to_uint8_hwc_sum_s": 0.013001548126339912,
+      "worker_recognition_processor_pil_to_float_array_sum_s": 0.0,
+      "worker_recognition_processor_rescale_sum_s": 0.0,
+      "worker_recognition_processor_normalize_sum_s": 0.0,
+      "worker_recognition_processor_transpose_sum_s": 0.0,
+      "worker_recognition_processor_tensor_view_sum_s": 0.0,
+      "worker_recognition_tensor_numpy_view_sum_s": 0.0,
+      "worker_recognition_contiguous_chw_copy_sum_s": 0.0
+    },
+    "ipc_delivery_sum_s": 0.007379516027867794,
+    "ipc_delivery_mean_s": 0.0009224395034834743,
+    "ipc_delivery_max_s": 0.0015456057153642178,
+    "shared_payload_bytes": 56696832,
+    "scheduling": "dynamic_shared_filepath_queue",
+    "layout_batch_size": 2,
+    "layout_batching": {
+      "calls": 4,
+      "real_rows": 8,
+      "physical_rows": 8,
+      "slot_efficiency": 1.0
+    },
+    "full_page_frontend": true,
+    "retained_shared_images": false,
+    "recognition_full_vision_buckets": true,
+    "recognition_page_lookahead": 4,
+    "trace_prefill_iterations": false,
+    "vision_batching": {
+      "page_groups": 2,
+      "pages": 8,
+      "crops": 46,
+      "page_group_size_histogram": {
+        "4": 2
+      },
+      "bucket_real_rows": {
+        "960x64_b16": 38,
+        "960x256_b4": 6,
+        "960x512_b4": 1,
+        "512x256_b16": 1
+      },
+      "bucket_calls": {
+        "960x64_b16": 3,
+        "960x256_b4": 2,
+        "960x512_b4": 1,
+        "512x256_b16": 1
+      },
+      "bucket_physical_rows": {
+        "960x64_b16": 48,
+        "960x256_b4": 8,
+        "960x512_b4": 4,
+        "512x256_b16": 16
+      },
+      "fallback_rows": 0,
+      "max_npu_memory_before_bytes": 980673024,
+      "max_npu_memory_after_bytes": 980673024,
+      "max_npu_peak_memory_bytes": 1029284352,
+      "max_npu_peak_increment_bytes": 48613376,
+      "compiled_real_rows": 46,
+      "compiled_physical_rows": 76,
+      "compiled_padding_rows": 30,
+      "compiled_slot_efficiency": 0.6052631578947368
+    }
+  },
+  "prefill_phase_summary": {
+    "label": "two_phase_measured_prefill",
+    "worker_count": 1,
+    "page_count": 128,
+    "wall_s": 36.97372020408511,
+    "pages_per_s": 3.461918338037774,
+    "worker_page_counts": [
+      128
+    ],
+    "worker_busy_s": [
+      36.872968110721565
+    ],
+    "stage_s": {
+      "worker_file_read_sum_s": 0.11722325487062335,
+      "worker_direct_rgb_decode_sum_s": 4.491838900372386,
+      "worker_rgb_materialize_sum_s": 0.0008400646038353443,
+      "worker_rgb_to_bgr_sum_s": 0.0,
+      "worker_detector_call_sum_s": 6.270237369928509,
+      "worker_layout_crop_views_sum_s": 0.010156694334000349,
+      "worker_document_image_index_sum_s": 0.0036527388729155064,
+      "worker_recognition_crop_build_sum_s": 0.8153650090098381,
+      "worker_recognition_input_prepare_sum_s": 9.674740293528885,
+      "worker_recognition_prefill_sum_s": 11.811748358421024,
+      "worker_recognition_prefill_cache_d2h_sum_s": 1.4174314076080918,
+      "worker_recognition_page_collect_sum_s": 0.009032612666487694,
+      "worker_shared_pack_sum_s": 3.153265453875065,
+      "worker_recognition_capacity_filter_sum_s": 0.013254096731543541,
+      "worker_recognition_pil_fromarray_sum_s": 1.345994968432933,
+      "worker_recognition_processor_image_convert_rgb_sum_s": 0.0011980137787759304,
+      "worker_recognition_processor_target_size_sum_s": 0.017388565000146627,
+      "worker_recognition_processor_resize_sum_s": 7.530610811896622,
+      "worker_recognition_processor_pil_to_uint8_hwc_sum_s": 0.6827756264247,
+      "worker_recognition_processor_pil_to_float_array_sum_s": 0.0,
+      "worker_recognition_processor_rescale_sum_s": 0.0,
+      "worker_recognition_processor_normalize_sum_s": 0.0,
+      "worker_recognition_processor_transpose_sum_s": 0.0,
+      "worker_recognition_processor_tensor_view_sum_s": 0.0,
+      "worker_recognition_tensor_numpy_view_sum_s": 0.0,
+      "worker_recognition_contiguous_chw_copy_sum_s": 0.0
+    },
+    "ipc_delivery_sum_s": 0.20803242875263095,
+    "ipc_delivery_mean_s": 0.0016252533496299293,
+    "ipc_delivery_max_s": 0.006182795390486717,
+    "shared_payload_bytes": 3328745472,
+    "scheduling": "dynamic_shared_filepath_queue",
+    "layout_batch_size": 2,
+    "layout_batching": {
+      "calls": 64,
+      "real_rows": 128,
+      "physical_rows": 128,
+      "slot_efficiency": 1.0
+    },
+    "full_page_frontend": true,
+    "retained_shared_images": false,
+    "recognition_full_vision_buckets": true,
+    "recognition_page_lookahead": 4,
+    "trace_prefill_iterations": false,
+    "vision_batching": {
+      "page_groups": 32,
+      "pages": 128,
+      "crops": 2487,
+      "page_group_size_histogram": {
+        "4": 32
+      },
+      "bucket_real_rows": {
+        "960x64_b16": 1662,
+        "960x256_b4": 251,
+        "960x512_b4": 73,
+        "512x256_b16": 341,
+        "fallback_eager": 62,
+        "512x512_b8": 98
+      },
+      "bucket_calls": {
+        "960x64_b16": 118,
+        "960x256_b4": 74,
+        "960x512_b4": 29,
+        "512x256_b16": 39,
+        "512x512_b8": 16
+      },
+      "bucket_physical_rows": {
+        "960x64_b16": 1888,
+        "960x256_b4": 296,
+        "960x512_b4": 116,
+        "512x256_b16": 624,
+        "512x512_b8": 128
+      },
+      "fallback_rows": 62,
+      "max_npu_memory_before_bytes": 980673024,
+      "max_npu_memory_after_bytes": 980673024,
+      "max_npu_peak_memory_bytes": 1183340032,
+      "max_npu_peak_increment_bytes": 202667008,
+      "compiled_real_rows": 2487,
+      "compiled_physical_rows": 3052,
+      "compiled_padding_rows": 565,
+      "compiled_slot_efficiency": 0.814875491480996
+    }
+  },
+  "prefill_trace": null,
+  "max_rss_mib": 283.5546875
+}

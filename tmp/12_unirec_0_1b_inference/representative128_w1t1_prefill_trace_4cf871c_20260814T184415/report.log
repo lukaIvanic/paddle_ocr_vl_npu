@@ -1,0 +1,35 @@
+UNIREC_REP128_W1T1_PREFILL_TRACE PASS wall_s=38.078165 pages_s=3.361506 crops=2487 rejected=0 events=3623
+UNIREC_PREFILL_TRACE PASS pages=128 events=3623 workers=1 threads=1
+UNIREC_PREFILL_TRACE_STAGE name=layout_batch_call.wall_s count=64 sum_s=6.263209 mean_ms=97.863 p50_ms=94.990 p90_ms=115.429 p95_ms=123.581 p99_ms=138.513 max_ms=148.296
+UNIREC_PREFILL_TRACE_STAGE name=layout_batch_call.stage_s.processor_preprocess_s count=64 sum_s=1.182839 mean_ms=18.482 p50_ms=16.300 p90_ms=25.772 p95_ms=35.756 p99_ms=46.389 max_ms=51.911
+UNIREC_PREFILL_TRACE_STAGE name=layout_batch_call.stage_s.inputs_h2d_s count=64 sum_s=0.106873 mean_ms=1.670 p50_ms=1.780 p90_ms=1.968 p95_ms=1.991 p99_ms=2.089 max_ms=2.232
+UNIREC_PREFILL_TRACE_STAGE name=layout_batch_call.stage_s.model_forward_s count=64 sum_s=4.140389 mean_ms=64.694 p50_ms=64.640 p90_ms=69.442 p95_ms=73.944 p99_ms=92.871 max_ms=95.892
+UNIREC_PREFILL_TRACE_STAGE name=layout_batch_call.stage_s.outputs_d2h_s count=64 sum_s=0.099086 mean_ms=1.548 p50_ms=1.081 p90_ms=3.916 p95_ms=4.764 p99_ms=5.339 max_ms=5.473
+UNIREC_PREFILL_TRACE_STAGE name=layout_batch_call.stage_s.box_decode_s count=64 sum_s=0.392224 mean_ms=6.128 p50_ms=6.147 p90_ms=6.695 p95_ms=6.904 p99_ms=7.578 max_ms=8.267
+UNIREC_PREFILL_TRACE_STAGE name=recognition_crop_preprocess.wall_s count=2487 sum_s=9.473517 mean_ms=3.809 p50_ms=1.639 p90_ms=7.171 p95_ms=13.093 p99_ms=47.847 max_ms=90.384
+UNIREC_PREFILL_TRACE_STAGE name=recognition_crop_preprocess.stage_s.recognition_processor_resize_s count=2487 sum_s=7.485367 mean_ms=3.010 p50_ms=1.261 p90_ms=5.745 p95_ms=10.595 p99_ms=38.613 max_ms=72.404
+UNIREC_PREFILL_TRACE_STAGE name=vision_bucket_call.host_stage_s.host_canvas_pack_s count=276 sum_s=0.785464 mean_ms=2.846 p50_ms=2.904 p90_ms=4.495 p95_ms=4.967 p99_ms=5.749 max_ms=6.903
+UNIREC_PREFILL_TRACE_STAGE name=vision_bucket_call.device_stage_s.input_h2d_normalize_s count=276 sum_s=1.151594 mean_ms=4.172 p50_ms=3.662 p90_ms=5.389 p95_ms=6.138 p99_ms=7.363 max_ms=13.228
+UNIREC_PREFILL_TRACE_STAGE name=vision_bucket_call.device_stage_s.graph_s count=276 sum_s=4.519444 mean_ms=16.375 p50_ms=14.872 p90_ms=20.011 p95_ms=20.315 p99_ms=20.541 max_ms=20.704
+UNIREC_PREFILL_TRACE_STAGE name=vision_bucket_call.device_stage_s.output_compact_s count=276 sum_s=0.004290 mean_ms=0.016 p50_ms=0.009 p90_ms=0.025 p95_ms=0.027 p99_ms=0.029 max_ms=1.028
+UNIREC_PREFILL_TRACE_STAGE name=vision_fallback_call.device_stage_s.graph_s count=62 sum_s=1.690876 mean_ms=27.272 p50_ms=23.745 p90_ms=31.948 p95_ms=33.154 p99_ms=65.966 max_ms=83.395
+UNIREC_PREFILL_TRACE_STAGE name=text_prefill_pack.wall_s count=207 sum_s=3.294587 mean_ms=15.916 p50_ms=13.421 p90_ms=32.440 p95_ms=37.192 p99_ms=56.186 max_ms=81.649
+UNIREC_PREFILL_TRACE_STAGE name=cross_kv_d2h.wall_s count=207 sum_s=1.485333 mean_ms=7.176 p50_ms=6.790 p90_ms=12.128 p95_ms=14.401 p99_ms=18.171 max_ms=22.044
+UNIREC_PREFILL_TRACE_STAGE name=page_shared_pack.wall_s count=128 sum_s=3.247554 mean_ms=25.372 p50_ms=17.502 p90_ms=39.851 p95_ms=91.273 p99_ms=137.183 max_ms=272.704
+UNIREC_PREFILL_TRACE_STAGE name=coordinator_ipc_delivery.wall_s count=128 sum_s=0.541982 mean_ms=4.234 p50_ms=2.159 p90_ms=4.671 p95_ms=6.686 p99_ms=10.004 max_ms=205.339
+UNIREC_PREFILL_TRACE_STAGE name=worker_page_group.wall_s count=32 sum_s=37.919960 mean_ms=1184.999 p50_ms=915.071 p90_ms=2463.205 p95_ms=2734.737 p99_ms=3712.806 max_ms=4070.071
+UNIREC_PREFILL_TRACE_STAGE name=text_prefill_pack.device_stage_s.compiled_packed_text_prefill_s1024 count=207 sum_s=1.273272 mean_ms=6.151 p50_ms=5.141 p90_ms=12.047 p95_ms=14.851 p99_ms=24.083 max_ms=33.271
+UNIREC_PREFILL_TRACE_SHAPES name=crop_processed distinct=119 top=960x64:289,64x64:251,192x64:137,384x64:137,128x64:129,448x64:121,256x64:118,320x64:112,640x64:93,960x128:72,512x64:68,576x64:64,448x128:57,384x128:48,704x64:41,448x192:38
+UNIREC_PREFILL_TRACE_SHAPES name=crop_source distinct=2379 top=58x28:6,41x24:4,54x51:4,57x31:4,114x32:3,165x51:3,166x51:3,207x43:3,337x186:3,504x98:3,505x98:3,59x28:3,671x80:3,1056x592:2,1128x82:2,1202x124:2
+UNIREC_PREFILL_TRACE_SHAPES name=crop_transform distinct=2379 top=58x28->64x64:6,41x24->64x64:4,54x51->64x64:4,57x31->64x64:4,114x32->64x64:3,165x51->128x64:3,166x51->128x64:3,207x43->192x64:3,337x186->320x128:3,504x98->448x64:3,505x98->448x64:3,59x28->64x64:3,671x80->640x64:3,1056x592->960x512:2,1128x82->960x64:2,1202x124->960x64:2
+UNIREC_PREFILL_TRACE_SHAPES name=cross_kv_source_length distinct=72 top=60:307,4:251,24:142,12:141,8:130,40:128,16:121,28:121,20:113,120:106,48:90,56:88,32:75,36:65,80:42,44:41
+UNIREC_PREFILL_TRACE_SHAPES name=layout_physical_input distinct=1 top=2x3x800x800:64
+UNIREC_PREFILL_TRACE_SHAPES name=layout_real_rows distinct=1 top=2:64
+UNIREC_PREFILL_TRACE_SHAPES name=text_member_source_tokens distinct=72 top=60:307,4:251,24:142,12:141,8:130,40:128,16:121,28:121,20:113,120:106,48:90,56:88,32:75,36:65,80:42,44:41
+UNIREC_PREFILL_TRACE_SHAPES name=text_pack_members distinct=35 top=3:17,4:17,7:14,2:13,18:12,13:11,16:11,11:10,1:9,5:9,8:9,10:7,12:7,15:7,17:6,9:5
+UNIREC_PREFILL_TRACE_SHAPES name=text_pack_real_tokens distinct=137 top=1320:6,1260:5,1304:5,1080:4,1244:4,1296:4,1308:4,1156:3,1196:3,1216:3,1264:3,1272:3,1292:3,280:3,656:3,748:3
+UNIREC_PREFILL_TRACE_SHAPES name=vision_bucket distinct=6 top=960x64_b16:118,960x256_b4:74,fallback_eager:62,512x256_b16:39,960x512_b4:29,512x512_b8:16
+UNIREC_PREFILL_TRACE_SHAPES name=vision_member_processed distinct=119 top=960x64:289,64x64:251,192x64:137,384x64:137,128x64:129,448x64:121,256x64:118,320x64:112,640x64:93,960x128:72,512x64:68,576x64:64,448x128:57,384x128:48,704x64:41,448x192:38
+UNIREC_PREFILL_TRACE_SHAPES name=vision_physical_input distinct=35 top=16x3x64x960:118,4x3x256x960:74,16x3x256x512:39,4x3x512x960:29,8x3x512x512:16,1x3x704x960:10,1x3x576x960:9,1x3x640x960:7,1x3x832x960:3,1x3x896x960:3,1x3x1024x64:2,1x3x1088x960:2,1x3x1152x960:2,1x3x576x448:2,1x3x640x384:2,1x3x1024x960:1
+UNIREC_PREFILL_TRACE_SHAPES name=vision_real_rows distinct=16 top=16:104,1:89,4:64,2:26,3:13,8:9,6:7,7:6,15:4,10:3,13:3,11:2,12:2,14:2,5:2,9:2
+UNIREC_PREFILL_TRACE_ARTIFACTS iterations=/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/representative128_w1t1_prefill_trace_4cf871c_20260814T184415/output/prefill_iterations.jsonl pages=/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/representative128_w1t1_prefill_trace_4cf871c_20260814T184415/output/prefill_pages.jsonl distributions=/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/representative128_w1t1_prefill_trace_4cf871c_20260814T184415/output/prefill_distributions.json

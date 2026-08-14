@@ -17,6 +17,16 @@ resolve_inputs() {
   : "${COMPILE_CACHE:?export the warmed production compile-cache parent}"
   : "${ASCEND_RT_VISIBLE_DEVICES:?source npu-setup before launching}"
 
+  UNIREC_PREFILL_MODE="${UNIREC_PREFILL_MODE:-trace}"
+  case "$UNIREC_PREFILL_MODE" in
+    trace|clean) ;;
+    *)
+      printf 'INVALID_UNIREC_PREFILL_MODE=%s expected=trace_or_clean\n' \
+        "$UNIREC_PREFILL_MODE" >&2
+      exit 1
+      ;;
+  esac
+
   case ",${ASCEND_RT_VISIBLE_DEVICES}," in
     *,5,*|*,6,*) printf 'REJECTED_PHYSICAL_DEVICE_5_OR_6\n' >&2; exit 1 ;;
   esac
@@ -88,17 +98,45 @@ run_trace() {
     --max-length 2048
     --decode-batch-size 128
     --compile-cache-dir "$COMPILE_CACHE"
-    --prefill-trace
     --stop-after-prefill
     --progress-every-pages 1
     --progress-heartbeat-s 15
   )
+  if [[ "$UNIREC_PREFILL_MODE" == trace ]]; then
+    command+=(--prefill-trace)
+  fi
   printf '%q ' "${command[@]}" >"$RUN_ROOT/command.sh"
   printf '\n' >>"$RUN_ROOT/command.sh"
   "${command[@]}"
 }
 
 report_result() {
+  if [[ "$UNIREC_PREFILL_MODE" == clean ]]; then
+    RUN_SUMMARY="$RUN_ROOT/output/run_summary.json" \
+      "$PYTHON_BIN" - <<'PY'
+import json
+import os
+from pathlib import Path
+
+run = json.loads(Path(os.environ["RUN_SUMMARY"]).read_text())
+assert run["status"] == "ok"
+assert run["execution"] == "production_two_phase_prefill_only"
+assert run["prefill_trace_enabled"] is False
+assert (run["page_count"], run["workers"]) == (128, 1)
+assert run["recognition_preprocess_threads"] == 1
+assert run["layout_batch_size"] == 2
+assert run["cross_cache_length"] == 1320
+assert run["self_cache_length"] == 2048
+print(
+    "UNIREC_REP128_W1T1_PREFILL_CLEAN PASS "
+    f"wall_s={run['timing_s']['prefill_phase']:.6f} "
+    f"pages_s={run['throughput']['prefill_pages_per_s']:.6f} "
+    f"crops={run['retained_bank']['crop_count']} "
+    f"rejected={run['retained_bank']['rejected_crop_count']}"
+)
+PY
+    return
+  fi
   RUN_SUMMARY="$RUN_ROOT/output/run_summary.json" \
     TRACE_SUMMARY="$RUN_ROOT/output/prefill_distributions.json" \
     "$PYTHON_BIN" - <<'PY'
@@ -172,7 +210,7 @@ launch_main() {
   local commit_short timestamp
   commit_short="$(git -C "$REPO" rev-parse --short HEAD)"
   timestamp="$(date +%Y%m%dT%H%M%S)"
-  RUN_ROOT="${RUN_ROOT:-$REPO/tmp/12_unirec_0_1b_inference/representative128_w1t1_prefill_trace_${commit_short}_${timestamp}}"
+  RUN_ROOT="${RUN_ROOT:-$REPO/tmp/12_unirec_0_1b_inference/representative128_w1t1_prefill_${UNIREC_PREFILL_MODE}_${commit_short}_${timestamp}}"
   RUN_ROOT="$(realpath -m "$RUN_ROOT")"
   test ! -e "$RUN_ROOT"
   mkdir -p "$RUN_ROOT"
@@ -186,6 +224,7 @@ launch_main() {
     IMAGES_DIR="$IMAGES_DIR" \
     COMPILE_CACHE="$COMPILE_CACHE" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
+    UNIREC_PREFILL_MODE="$UNIREC_PREFILL_MODE" \
     bash "$0" --worker "$RUN_ROOT" \
     >"$RUN_ROOT/run.log" 2>&1 < /dev/null &
   local pid="$!"
