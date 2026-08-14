@@ -10,21 +10,25 @@ CACHE_ROOT="$TOOLS_ROOT/cache/downloads"
 BUILD_ROOT="$TOOLS_ROOT/build"
 BUILD_JOBS="${OMNIDOCBENCH_BUILD_JOBS:-16}"
 
-TEXLIVE_INSTALLER_URL="https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2025/tlnet-final/install-tl-unx.tar.gz"
-TEXLIVE_REPOSITORY_URL="https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2025/tlnet-final"
+TEXLIVE_REPOSITORY_URL="${OMNIDOCBENCH_TEXLIVE_REPOSITORY_URL:-https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2025/tlnet-final}"
+TEXLIVE_INSTALLER_URL="${TEXLIVE_REPOSITORY_URL}/install-tl-unx.tar.gz"
 TEXLIVE_INSTALLER_SHA256="311df9f1477fd90c520159d1feddc2d6270f010d8349d1f6bdb9461a93b48a5c"
 IMAGEMAGICK_TAG="7.1.1-47"
 IMAGEMAGICK_COMMIT="82572afc879b439cbf8c9c6f3a9ac7626adf98fb"
 
 mkdir -p "$CACHE_ROOT" "$BUILD_ROOT" "$HF_HOME" "$XDG_CACHE_HOME" "$MPLCONFIGDIR"
 
-echo "[1/5] Installing Ubuntu build/runtime packages (no apt upgrade)"
-apt-get update
-apt-get install -y --no-install-recommends \
-  build-essential ca-certificates fontconfig ghostscript git \
-  libcairo2-dev libfontconfig1 libfontconfig-dev libfreetype6-dev \
-  libjbig-dev libjpeg-dev liblzma-dev libpango1.0-dev libpng-dev \
-  libtiff-dev libx11-dev perl pkg-config uuid-dev wget xz-utils zlib1g-dev
+if [[ "${OMNIDOCBENCH_SKIP_APT:-0}" == 1 ]]; then
+  echo "[1/5] Reusing existing OS packages (apt skipped after exact-tool preflight)"
+else
+  echo "[1/5] Installing Ubuntu build/runtime packages (no apt upgrade)"
+  apt-get update
+  apt-get install -y --no-install-recommends \
+    build-essential ca-certificates fontconfig ghostscript git \
+    libcairo2-dev libfontconfig1 libfontconfig-dev libfreetype6-dev \
+    libjbig-dev libjpeg-dev liblzma-dev libpango1.0-dev libpng-dev \
+    libtiff-dev libx11-dev perl pkg-config uuid-dev wget xz-utils zlib1g-dev
+fi
 
 echo "[2/5] Installing ImageMagick ${IMAGEMAGICK_TAG} at ${OMNIDOCBENCH_IMAGEMAGICK_ROOT}"
 if [[ ! -x "$OMNIDOCBENCH_IMAGEMAGICK_ROOT/bin/magick" ]]; then
@@ -44,7 +48,8 @@ echo "[3/5] Installing the frozen TeX Live 2025 CDM package set"
 if [[ ! -x "$OMNIDOCBENCH_PDFLATEX" ]]; then
   INSTALLER="$CACHE_ROOT/install-tl-unx-2025.tar.gz"
   if [[ ! -f "$INSTALLER" ]]; then
-    wget -O "$INSTALLER.part" "$TEXLIVE_INSTALLER_URL"
+    wget --timeout=30 --tries=3 --progress=dot:giga \
+      -O "$INSTALLER.part" "$TEXLIVE_INSTALLER_URL"
     mv "$INSTALLER.part" "$INSTALLER"
   fi
   echo "$TEXLIVE_INSTALLER_SHA256  $INSTALLER" | sha256sum -c -
