@@ -40,6 +40,7 @@ from opendoc_layout_npu import (  # noqa: E402
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
     PPDocLayoutV2NpuAdapter,
+    prepare_layout_resized_uint8_exact,
 )
 from vision_full_batch import (  # noqa: E402
     DEFAULT_VISION_BUCKETS,
@@ -66,6 +67,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-path", type=Path, required=True)
     parser.add_argument("--layout-model", type=Path, required=True)
+    parser.add_argument(
+        "--layout-input-image",
+        type=Path,
+        help=(
+            "Real page used to construct the exact production 800x800 input. "
+            "This is required for representative eager reading-order work."
+        ),
+    )
     parser.add_argument("--layout-cache-dir", type=Path, required=True)
     parser.add_argument("--recognition-cache-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -409,13 +418,30 @@ def _layout_lane(
             args.layout_preformat_frozen_bn_buffers
         ),
     )
-    pixel_values = torch.zeros(
-        (1, 3, 800, 800),
-        dtype={"float16": torch.float16, "float32": torch.float32}[
-            args.layout_dtype
-        ],
-        device=args.device,
-    )
+    if args.layout_input_image is not None:
+        from layout_page_input import decode_page_rgb, materialize_layout_rgb
+
+        input_image = args.layout_input_image.expanduser().resolve()
+        rgb, _ = decode_page_rgb(input_image)
+        layout_rgb = materialize_layout_rgb(rgb)
+        host_pixels = prepare_layout_resized_uint8_exact([layout_rgb])[
+            "pixel_values"
+        ]
+        pixel_values = host_pixels.to(device=args.device)
+        pixel_values = pixel_values.to(dtype=torch.float32).div_(255.0)
+        if args.layout_dtype != "float32":
+            pixel_values = pixel_values.to(dtype=torch.float16)
+        synchronize_device(args.device)
+        input_source = str(input_image)
+    else:
+        pixel_values = torch.zeros(
+            (1, 3, 800, 800),
+            dtype={"float16": torch.float16, "float32": torch.float32}[
+                args.layout_dtype
+            ],
+            device=args.device,
+        )
+        input_source = "synthetic_zeros"
     if args.layout_execution == "torchair":
         if detector.compiled_runtime is None:
             raise RuntimeError("compiled layout profiler has no compiled runtime")
@@ -445,6 +471,7 @@ def _layout_lane(
         first128_calls=FIRST128_LAYOUT_CALLS,
         input_contract={
             "pixel_values": [1, 3, 800, 800],
+            "source": input_source,
             "dtype": args.layout_dtype,
             "reading_order_dtype": reading_order_dtype,
             "depthwise_rewrite": args.layout_depthwise_rewrite,
@@ -780,6 +807,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         "config": {
             "model_path": str(args.model_path.expanduser().resolve()),
             "layout_model": str(args.layout_model.expanduser().resolve()),
+            "layout_input_image": (
+                str(args.layout_input_image.expanduser().resolve())
+                if args.layout_input_image is not None
+                else None
+            ),
             "layout_cache_dir": str(args.layout_cache_dir.expanduser().resolve()),
             "recognition_cache_dir": str(
                 args.recognition_cache_dir.expanduser().resolve()
