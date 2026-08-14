@@ -74,6 +74,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--control-repeats", type=int, default=10)
     parser.add_argument("--profile-steps", type=int, default=1)
     parser.add_argument(
+        "--torch-cpu-threads",
+        type=int,
+        default=1,
+        help=(
+            "PyTorch intra-op CPU threads used while launching the NPU "
+            "forward. One matches the representative W1/T1 layout lab."
+        ),
+    )
+    parser.add_argument(
         "--skip-profiler",
         action="store_true",
         help=(
@@ -171,6 +180,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--control-repeats must be positive")
     if args.profile_steps < 1:
         parser.error("--profile-steps must be positive")
+    if args.torch_cpu_threads < 1:
+        parser.error("--torch-cpu-threads must be positive")
     if args.parser_topn < 1:
         parser.error("--parser-topn must be positive")
     return args
@@ -730,6 +741,7 @@ def _environment(physical_devices: list[int]) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
+    torch.set_num_threads(args.torch_cpu_threads)
     physical_devices = _physical_devices()
     import torch_npu
 
@@ -776,6 +788,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "warmup": args.warmup,
             "control_repeats": args.control_repeats,
             "profile_steps": args.profile_steps,
+            "torch_cpu_threads": args.torch_cpu_threads,
             "skip_profiler": args.skip_profiler,
             "profile_metric": args.profile_metric,
             "parser_topn": args.parser_topn,
