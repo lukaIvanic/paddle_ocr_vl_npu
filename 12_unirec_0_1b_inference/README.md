@@ -155,6 +155,35 @@ and the validated 910B2/310P scores, use
 [`KNOWN_GOOD_FULL1651_W4T8.md`](KNOWN_GOOD_FULL1651_W4T8.md). Treat that file as
 the reproducibility anchor before changing UniRec performance code.
 
+## Representative 128-page performance set
+
+Use the committed `representative-128-v1` set for short tests intended to
+predict the complete 1,651-page workload. It is sampled from the validated
+accuracy-safe full-run trace instead of from one contiguous dataset offset. The
+selection preserves composite difficulty strata, recognition-label mix,
+language mix, source families, crop count, encoder and decoder work, and the
+cross-KV length tails.
+
+- Machine-readable manifest and full-distribution comparison:
+  [`references/unirec_representative_128_v1.json`](references/unirec_representative_128_v1.json)
+- Plain ordered image list:
+  [`references/unirec_representative_128_v1.txt`](references/unirec_representative_128_v1.txt)
+- Deterministic selector:
+  [`select_representative_pages.py`](select_representative_pages.py)
+
+Materialize an image-only input directory from the manifest:
+
+```sh
+python3 12_unirec_0_1b_inference/materialize_page_subset.py \
+  --manifest 12_unirec_0_1b_inference/references/unirec_representative_128_v1.json \
+  --images-dir /workspace/datasets/OmniDocBench/images \
+  --output-dir tmp/12_unirec_0_1b_inference/representative_128_v1_images
+```
+
+Pass that directory as the runner input with `--offset 0 --limit 128`. Keep the
+historical difficult-offset sets for stress and tail testing; this set has a
+different purpose and should be the default for estimating full-run speed.
+
 The source-pipeline adapter remains available for environments where the
 Paddle predictor loads correctly. It preserves OpenOCR's pipeline and places
 only UniRec on the NPU:
