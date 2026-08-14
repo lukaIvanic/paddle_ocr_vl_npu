@@ -389,6 +389,78 @@ def _iter_worker_prefill_groups(
         yield True, current
 
 
+def _copy_cross_kv_group_to_host(
+    items: list[Any],
+) -> tuple[list[tuple[np.ndarray, int, float]], float]:
+    """Copy exact real-length cross-KV, optionally once per packed cohort."""
+    mode = os.environ.get("UNIREC_CROSS_KV_D2H_MODE", "per_crop")
+    if mode not in {"per_crop", "packed_cohort"}:
+        raise RuntimeError(f"invalid UNIREC_CROSS_KV_D2H_MODE: {mode!r}")
+    lengths = [
+        int(item.kv_cache.actual_cross_attention_length or 0) for item in items
+    ]
+    if any(length <= 0 for length in lengths):
+        raise RuntimeError("worker prefill produced an empty cross cache")
+
+    started = time.perf_counter()
+    if mode == "per_crop" or len(items) == 1:
+        outputs = []
+        for item, actual_length in zip(items, lengths):
+            item_started = time.perf_counter()
+            cache = item.kv_cache
+            packed_cache = torch.stack(
+                tuple(
+                    tensor[:, :, :actual_length, :]
+                    for tensor in (
+                        *cache.cross_key_cache,
+                        *cache.cross_value_cache,
+                    )
+                ),
+                dim=0,
+            ).contiguous()
+            packed_host = packed_cache.cpu().numpy()
+            outputs.append(
+                (
+                    packed_host,
+                    actual_length,
+                    time.perf_counter() - item_started,
+                )
+            )
+        return outputs, time.perf_counter() - started
+
+    flat_segments = []
+    shapes = []
+    numels = []
+    for item, actual_length in zip(items, lengths):
+        cache = item.kv_cache
+        tensors = (*cache.cross_key_cache, *cache.cross_value_cache)
+        slices = tuple(
+            tensor[:, :, :actual_length, :] for tensor in tensors
+        )
+        shape = (len(slices), *slices[0].shape)
+        shapes.append(shape)
+        numels.append(int(np.prod(shape, dtype=np.int64)))
+        flat_segments.extend(tensor.reshape(-1) for tensor in slices)
+    packed_host_flat = torch.cat(tuple(flat_segments), dim=0).cpu().numpy()
+    elapsed = time.perf_counter() - started
+    total_numel = sum(numels)
+    outputs = []
+    offset = 0
+    accounted_s = 0.0
+    for index, (actual_length, shape, numel) in enumerate(
+        zip(lengths, shapes, numels)
+    ):
+        packed_host = packed_host_flat[offset : offset + numel].reshape(shape)
+        if index == len(numels) - 1:
+            item_s = elapsed - accounted_s
+        else:
+            item_s = elapsed * numel / total_numel
+            accounted_s += item_s
+        outputs.append((packed_host, actual_length, item_s))
+        offset += numel
+    return outputs, elapsed
+
+
 def _prefill_worker_page(
     result: dict[str, Any],
     *,
@@ -441,25 +513,11 @@ def _prefill_worker_page(
                 )
             ]
             fallback_count += 1
-        for crop, item in zip(group, items):
-            cache = item.kv_cache
-            actual_length = int(cache.actual_cross_attention_length or 0)
-            if actual_length <= 0:
-                raise RuntimeError("worker prefill produced an empty cross cache")
-            d2h_started = time.perf_counter()
-            packed_cache = torch.stack(
-                tuple(
-                    tensor[:, :, :actual_length, :]
-                    for tensor in (
-                        *cache.cross_key_cache,
-                        *cache.cross_value_cache,
-                    )
-                ),
-                dim=0,
-            ).contiguous()
-            packed_host = packed_cache.cpu().numpy()
-            item_d2h_s = time.perf_counter() - d2h_started
-            cache_d2h_s += item_d2h_s
+        host_exports, group_d2h_s = _copy_cross_kv_group_to_host(items)
+        cache_d2h_s += group_d2h_s
+        for crop, item, (packed_host, actual_length, item_d2h_s) in zip(
+            group, items, host_exports
+        ):
             member_real = int(
                 item.text_prefill_real_source_tokens or actual_length
             )
@@ -495,6 +553,7 @@ def _prefill_worker_pages_bucketed(
     runner: Any,
     vision_runtime: Any,
     profile_device_stages: bool = False,
+    trace_prefill_iterations: bool = False,
 ) -> list[dict[str, Any]]:
     """Batch full vision across pages, then keep text packs page-local."""
     from text_packed_prefill import PACKED_TEXT_PREFILL_BUCKET
@@ -546,10 +605,26 @@ def _prefill_worker_pages_bucketed(
     synchronize_started = time.perf_counter()
     torch.npu.synchronize()
     vision_started = time.perf_counter()
+    if trace_prefill_iterations:
+        vision_runtime.drain_trace_events()
     encoded = vision_runtime.encode(flat_inputs)
     torch.npu.synchronize()
     vision_s = time.perf_counter() - vision_started
     synchronization_s = vision_started - synchronize_started
+    if trace_prefill_iterations:
+        results[0].setdefault("prefill_trace_events", []).extend(
+            vision_runtime.drain_trace_events()
+        )
+        results[0]["prefill_trace_events"].append(
+            {
+                "event": "vision_page_group",
+                "page_indices": [int(result["page_index"]) for result in results],
+                "page_images": [Path(result["image_path"]).name for result in results],
+                "crop_count": len(flat_inputs),
+                "initial_sync_s": synchronization_s,
+                "wall_s": vision_s,
+            }
+        )
     group_bucket_calls = {
         key: int(value) - int(bucket_calls_before.get(key, 0))
         for key, value in vision_runtime.stats["bucket_calls"].items()
@@ -614,27 +689,99 @@ def _prefill_worker_pages_bucketed(
                 decode_ready=False,
             )
             pack_count += 1
-            for crop, item in zip(group, items):
-                cache = item.kv_cache
-                actual_length = int(cache.actual_cross_attention_length or 0)
-                if actual_length <= 0:
-                    raise RuntimeError(
-                        "bucketed worker prefill produced an empty cross cache"
-                    )
-                d2h_started = time.perf_counter()
-                packed_cache = torch.stack(
-                    tuple(
-                        tensor[:, :, :actual_length, :]
-                        for tensor in (
-                            *cache.cross_key_cache,
-                            *cache.cross_value_cache,
-                        )
-                    ),
-                    dim=0,
-                ).contiguous()
-                packed_host = packed_cache.cpu().numpy()
-                item_d2h_s = time.perf_counter() - d2h_started
-                cache_d2h_s += item_d2h_s
+            if trace_prefill_iterations:
+                device_stage_names = sorted(
+                    {
+                        name
+                        for item in items
+                        for name in (item.prefill_device_stage_s or {})
+                    }
+                )
+                result.setdefault("prefill_trace_events", []).append(
+                    {
+                        "event": "text_prefill_pack",
+                        "page_index": int(result["page_index"]),
+                        "page_image": Path(result["image_path"]).name,
+                        "member_count": len(group),
+                        "members": [
+                            {
+                                "crop_index": int(crop["crop_index"]),
+                                "label": str(crop["label"]),
+                                "source_image_size": [
+                                    int(crop["image_rgb"].shape[1]),
+                                    int(crop["image_rgb"].shape[0]),
+                                ],
+                                "processed_tensor_shape": list(
+                                    crop["processed_pixel_values"].shape
+                                ),
+                                "source_tokens": int(
+                                    item.text_prefill_real_source_tokens
+                                    or item.kv_cache.actual_cross_attention_length
+                                    or 0
+                                ),
+                            }
+                            for crop, item in zip(group, items)
+                        ],
+                        "real_source_tokens": sum(
+                            int(item.text_prefill_real_source_tokens or 0)
+                            for item in items
+                        ),
+                        "physical_source_tokens": sum(
+                            int(item.text_prefill_physical_source_tokens or 0)
+                            for item in items
+                        ),
+                        "source_bucket": PACKED_TEXT_PREFILL_BUCKET,
+                        "slot_efficiency": (
+                            sum(
+                                int(item.text_prefill_real_source_tokens or 0)
+                                for item in items
+                            )
+                            / PACKED_TEXT_PREFILL_BUCKET
+                        ),
+                        "wall_s": sum(float(item.prefill_s) for item in items),
+                        "device_stage_s": {
+                            name: sum(
+                                float(
+                                    (item.prefill_device_stage_s or {}).get(
+                                        name, 0.0
+                                    )
+                                )
+                                for item in items
+                            )
+                            for name in device_stage_names
+                        },
+                    }
+                )
+            host_exports, group_d2h_s = _copy_cross_kv_group_to_host(items)
+            cache_d2h_s += group_d2h_s
+            if trace_prefill_iterations:
+                result["prefill_trace_events"].append(
+                    {
+                        "event": "cross_kv_d2h",
+                        "page_index": int(result["page_index"]),
+                        "page_image": Path(result["image_path"]).name,
+                        "member_count": len(group),
+                        "source_lengths": [
+                            int(actual_length)
+                            for _array, actual_length, _item_s in host_exports
+                        ],
+                        "output_shapes": [
+                            list(array.shape)
+                            for array, _actual_length, _item_s in host_exports
+                        ],
+                        "output_bytes": sum(
+                            int(array.nbytes)
+                            for array, _actual_length, _item_s in host_exports
+                        ),
+                        "transfer_mode": os.environ.get(
+                            "UNIREC_CROSS_KV_D2H_MODE", "per_crop"
+                        ),
+                        "wall_s": group_d2h_s,
+                    }
+                )
+            for crop, item, (packed_host, actual_length, item_d2h_s) in zip(
+                group, items, host_exports
+            ):
                 member_real = int(
                     item.text_prefill_real_source_tokens or actual_length
                 )
@@ -759,6 +906,7 @@ def _prepare_full_vision_worker_page(
     predecoded: tuple[float, np.ndarray, dict[str, float]] | None = None,
     layout_result: dict[str, Any] | None = None,
     detector_s: float | None = None,
+    trace_prefill_iterations: bool = False,
 ) -> dict[str, Any]:
     """Run the CPU/layout half of one page before cross-page vision batching."""
     run_id, page_index, path_string = task
@@ -815,6 +963,8 @@ def _prepare_full_vision_worker_page(
         time.perf_counter() - capacity_filter_started
     )
     result["cross_capacity_rejected_crops"] = rejected_crops
+    if trace_prefill_iterations:
+        result["prefill_trace_events"] = []
     recognition_input_contract = os.environ.get(
         "UNIREC_RECOGNITION_INPUT_CONTRACT",
         "compact_uint8_hwc",
@@ -842,7 +992,10 @@ def _prepare_full_vision_worker_page(
 
         kornia_image_type = KorniaImage
 
-    def prepare_crop(crop: dict[str, Any]) -> tuple[np.ndarray, dict[str, float]]:
+    def prepare_crop(
+        crop: dict[str, Any],
+    ) -> tuple[np.ndarray, dict[str, float], float]:
+        prepare_started = time.perf_counter()
         detail_s: dict[str, float] = {}
         if recognition_input_contract == "compact_uint8_hwc":
             if recognition_resize_backend == "kornia_rs":
@@ -915,7 +1068,7 @@ def _prepare_full_vision_worker_page(
         detail_s.update(
             {name: float(value) for name, value in processor_timing_s.items()}
         )
-        return pixel_values, detail_s
+        return pixel_values, detail_s, time.perf_counter() - prepare_started
 
     if recognition_preprocess_executor is None:
         prepared_crops = map(prepare_crop, result["crops"])
@@ -924,13 +1077,49 @@ def _prepare_full_vision_worker_page(
             prepare_crop,
             result["crops"],
         )
-    for crop, (pixel_values, detail_s) in zip(
+    for crop, (pixel_values, detail_s, crop_prepare_wall_s) in zip(
         result["crops"],
         prepared_crops,
     ):
         for name, value in detail_s.items():
             recognition_detail_s[name] += float(value)
         crop["processed_pixel_values"] = pixel_values
+        if trace_prefill_iterations:
+            source_height, source_width = crop["image_rgb"].shape[:2]
+            if pixel_values.ndim == 3:
+                processed_height, processed_width = pixel_values.shape[:2]
+            elif pixel_values.ndim == 4:
+                processed_height, processed_width = pixel_values.shape[-2:]
+            else:
+                raise ValueError(
+                    "unexpected traced recognition input shape: "
+                    f"{pixel_values.shape}"
+                )
+            result["prefill_trace_events"].append(
+                {
+                    "event": "recognition_crop_preprocess",
+                    "page_index": int(page_index),
+                    "page_image": path.name,
+                    "crop_index": int(crop["crop_index"]),
+                    "label": str(crop["label"]),
+                    "source_image_size": [source_width, source_height],
+                    "processed_image_size": [
+                        int(processed_width),
+                        int(processed_height),
+                    ],
+                    "processed_tensor_shape": list(pixel_values.shape),
+                    "encoder_tokens": int(
+                        recognition_processor.estimate_encoder_token_count_from_processed_size(
+                            processed_width=int(processed_width),
+                            processed_height=int(processed_height),
+                        )
+                    ),
+                    "stage_s": {
+                        name: float(value) for name, value in detail_s.items()
+                    },
+                    "wall_s": crop_prepare_wall_s,
+                }
+            )
     recognition_prepare_s = time.perf_counter() - recognition_prepare_started
     result["frontend_timing_s"] = {
         "page_file_read_s": decode_timing["file_read_s"],
@@ -988,6 +1177,7 @@ def _run_full_vision_worker_group(
     page_lookahead: int,
     empty_cache_after_page: bool,
     profile_prefill_device_stages: bool,
+    trace_prefill_iterations: bool,
     retain_shared_images: bool,
     result_queue: Any,
 ) -> None:
@@ -1015,17 +1205,30 @@ def _run_full_vision_worker_group(
                 )
             )
         detector_started = time.perf_counter()
+        layout_stage_before = (
+            dict(runtime.stage_s) if trace_prefill_iterations else {}
+        )
         layout_results = runtime(
             [decoded[1] for decoded in decoded_batch],
             threshold=threshold,
         )
         detector_batch_s = time.perf_counter() - detector_started
+        layout_stage_s = (
+            {
+                name: float(seconds)
+                - float(layout_stage_before.get(name, 0.0))
+                for name, seconds in runtime.stage_s.items()
+            }
+            if trace_prefill_iterations
+            else {}
+        )
         if len(layout_results) != len(batch_tasks):
             raise RuntimeError(
                 "layout batch result count mismatch: "
                 f"{len(layout_results)} != {len(batch_tasks)}"
             )
         detector_page_s = detector_batch_s / len(batch_tasks)
+        batch_contexts = []
         for task, predecoded, layout_result in zip(
             batch_tasks,
             decoded_batch,
@@ -1043,10 +1246,39 @@ def _run_full_vision_worker_group(
                 predecoded=predecoded,
                 layout_result=layout_result,
                 detector_s=detector_page_s,
+                trace_prefill_iterations=trace_prefill_iterations,
             )
             context["layout_batch_real_size"] = len(batch_tasks)
             context["layout_batch_physical_size"] = layout_batch_size
             contexts.append(context)
+            batch_contexts.append(context)
+        if trace_prefill_iterations and batch_contexts:
+            batch_contexts[0]["result"]["prefill_trace_events"].append(
+                {
+                    "event": "layout_batch_call",
+                    "page_indices": [int(task[1]) for task in batch_tasks],
+                    "page_images": [Path(task[2]).name for task in batch_tasks],
+                    "source_image_shapes": [
+                        [
+                            int(decoded[1].shape[0]),
+                            int(decoded[1].shape[1]),
+                            int(decoded[1].shape[2]),
+                        ]
+                        for decoded in decoded_batch
+                    ],
+                    "real_rows": len(batch_tasks),
+                    "physical_rows": layout_batch_size,
+                    "slot_efficiency": len(batch_tasks) / layout_batch_size,
+                    "physical_input_shape": [
+                        layout_batch_size,
+                        3,
+                        800,
+                        800,
+                    ],
+                    "wall_s": detector_batch_s,
+                    "stage_s": layout_stage_s,
+                }
+            )
     results = [context["result"] for context in contexts]
     memory_device = torch.device(recognition_runner.device)
     torch.npu.reset_peak_memory_stats(memory_device)
@@ -1056,6 +1288,7 @@ def _run_full_vision_worker_group(
         runner=recognition_runner,
         vision_runtime=full_vision_runtime,
         profile_device_stages=profile_prefill_device_stages,
+        trace_prefill_iterations=trace_prefill_iterations,
     )
     npu_memory_after_bytes = int(torch.npu.memory_allocated(memory_device))
     npu_peak_memory_bytes = int(torch.npu.max_memory_allocated(memory_device))
@@ -1136,6 +1369,17 @@ def _run_full_vision_worker_group(
                 )
             )
             result["frontend_timing_s"]["process_shared_pack_s"] = shared_pack_s
+            if trace_prefill_iterations:
+                result["prefill_trace_events"].append(
+                    {
+                        "event": "page_shared_pack",
+                        "page_index": int(result["page_index"]),
+                        "page_image": Path(result["image_path"]).name,
+                        "crop_count": len(result["crops"]),
+                        "output_bytes": int(shared_payload_bytes),
+                        "wall_s": shared_pack_s,
+                    }
+                )
             context["result"] = result
             context["prefill_timing"] = prefill_timing
             context["shared_pack_s"] = shared_pack_s
@@ -1147,6 +1391,22 @@ def _run_full_vision_worker_group(
         raise
 
     group_wall_s = time.perf_counter() - group_started
+    if trace_prefill_iterations and packed_contexts:
+        packed_contexts[0]["result"]["prefill_trace_events"].append(
+            {
+                "event": "worker_page_group",
+                "page_indices": [
+                    int(context["page_index"]) for context in packed_contexts
+                ],
+                "page_images": [
+                    Path(context["path"]).name for context in packed_contexts
+                ],
+                "page_count": len(packed_contexts),
+                "crop_count": group_crop_count,
+                "lookahead_collect_s": collect_s,
+                "wall_s": group_wall_s,
+            }
+        )
     work_estimates = []
     for context in packed_contexts:
         prefill_timing = context["prefill_timing"]
@@ -1316,6 +1576,7 @@ def _worker_main(
     recognition_page_lookahead: int,
     empty_cache_after_page: bool,
     profile_prefill_device_stages: bool,
+    trace_prefill_iterations: bool,
     retain_shared_images: bool,
     task_queue: Any,
     result_queue: Any,
@@ -1330,7 +1591,7 @@ def _worker_main(
             dtype=layout_dtype,
             reading_order_dtype=layout_reading_order_dtype,
             threshold=threshold,
-            profile_stages=False,
+            profile_stages=trace_prefill_iterations,
             execution=execution,
             compile_cache_dir=cache_dir,
             batch_size=layout_batch_size,
@@ -1410,6 +1671,7 @@ def _worker_main(
 
                 full_vision_runtime = BucketedFullVisionRuntime(
                     recognition_runner,
+                    trace_iterations=trace_prefill_iterations,
                     focal_depthwise_rewrite=(
                         recognition_vision_focal_depthwise_rewrite
                     ),
@@ -1559,6 +1821,7 @@ def _worker_main(
                     profile_prefill_device_stages=(
                         profile_prefill_device_stages
                     ),
+                    trace_prefill_iterations=trace_prefill_iterations,
                     retain_shared_images=retain_shared_images,
                     result_queue=result_queue,
                 )
@@ -1763,6 +2026,7 @@ class DynamicLayoutProcessPool:
         recognition_page_lookahead: int = 1,
         empty_cache_after_page: bool = False,
         profile_prefill_device_stages: bool = False,
+        trace_prefill_iterations: bool = False,
         retain_shared_images: bool = True,
         timeout_s: float = 1800.0,
         progress_every_pages: int = 0,
@@ -1810,6 +2074,7 @@ class DynamicLayoutProcessPool:
             recognition_vision_weight_format
         )
         self.recognition_page_lookahead = recognition_page_lookahead
+        self.trace_prefill_iterations = bool(trace_prefill_iterations)
         self.retain_shared_images = bool(retain_shared_images)
         self.timeout_s = timeout_s
         self.progress_every_pages = int(progress_every_pages)
@@ -1859,6 +2124,7 @@ class DynamicLayoutProcessPool:
                     recognition_page_lookahead,
                     empty_cache_after_page,
                     profile_prefill_device_stages,
+                    self.trace_prefill_iterations,
                     self.retain_shared_images,
                     self.task_queue,
                     self.result_queue,
@@ -2056,6 +2322,15 @@ class DynamicLayoutProcessPool:
             worker_pages[worker_index] += 1
             timing = message["timing"]
             ipc_delivery_s = time.perf_counter() - float(message["ready_at"])
+            if self.trace_prefill_iterations:
+                message["result"].setdefault("prefill_trace_events", []).append(
+                    {
+                        "event": "coordinator_ipc_delivery",
+                        "page_index": page_index,
+                        "page_image": Path(message["path"]).name,
+                        "wall_s": ipc_delivery_s,
+                    }
+                )
             ipc_delivery_sum_s += ipc_delivery_s
             ipc_delivery_max_s = max(ipc_delivery_max_s, ipc_delivery_s)
             worker_busy_s[worker_index] += float(timing["worker_page_s"])
@@ -2157,6 +2432,7 @@ class DynamicLayoutProcessPool:
                 self.recognition_full_vision_buckets
             ),
             "recognition_page_lookahead": self.recognition_page_lookahead,
+            "trace_prefill_iterations": self.trace_prefill_iterations,
             "vision_batching": _finish_worker_vision_batch_summary(
                 vision_batch_summary
             ),
@@ -2251,6 +2527,15 @@ class DynamicLayoutProcessPool:
                 }
             )
             ipc_delivery_s = time.perf_counter() - float(message["ready_at"])
+            if self.trace_prefill_iterations:
+                message["result"].setdefault("prefill_trace_events", []).append(
+                    {
+                        "event": "coordinator_ipc_delivery",
+                        "page_index": int(message["page_index"]),
+                        "page_image": Path(message["path"]).name,
+                        "wall_s": ipc_delivery_s,
+                    }
+                )
             ipc_delivery_sum_s += ipc_delivery_s
             ipc_delivery_max_s = max(ipc_delivery_max_s, ipc_delivery_s)
             for destination, source in (
@@ -2359,6 +2644,7 @@ class DynamicLayoutProcessPool:
                 self.recognition_full_vision_buckets
             ),
             "recognition_page_lookahead": self.recognition_page_lookahead,
+            "trace_prefill_iterations": self.trace_prefill_iterations,
             "vision_batching": _finish_worker_vision_batch_summary(
                 vision_batch_summary
             ),

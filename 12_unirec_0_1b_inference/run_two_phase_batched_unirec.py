@@ -143,6 +143,23 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--prefill-device-timing", action="store_true")
+    parser.add_argument(
+        "--prefill-trace",
+        action="store_true",
+        help=(
+            "Write raw production-prefill iteration/page JSONL plus timing "
+            "and shape distributions. Vision time remains attached to its "
+            "real batch calls."
+        ),
+    )
+    parser.add_argument(
+        "--stop-after-prefill",
+        action="store_true",
+        help=(
+            "Retain the complete production cross-KV bank, write the prefill "
+            "summary, release it, and exit before coordinator decode setup."
+        ),
+    )
     parser.add_argument("--progress-every-pages", type=int, default=0)
     parser.add_argument("--progress-heartbeat-s", type=float, default=0.0)
     args = parser.parse_args()
@@ -307,7 +324,10 @@ def main() -> None:
         ),
         recognition_vision_weight_format=args.vision_weight_format,
         recognition_page_lookahead=args.vision_page_lookahead,
-        profile_prefill_device_stages=args.prefill_device_timing,
+        profile_prefill_device_stages=(
+            args.prefill_device_timing or args.prefill_trace
+        ),
+        trace_prefill_iterations=args.prefill_trace,
         retain_shared_images=False,
         progress_every_pages=args.progress_every_pages,
         progress_heartbeat_s=args.progress_heartbeat_s,
@@ -366,6 +386,92 @@ def main() -> None:
         shutdown_started = time.perf_counter()
         pool.close()
         prefill_worker_shutdown_s = time.perf_counter() - shutdown_started
+
+    prefill_trace_summary = None
+    if args.prefill_trace:
+        from prefill_trace import write_prefill_trace
+
+        prefill_trace_summary = write_prefill_trace(
+            output_dir,
+            retained_payloads,
+            config={
+                "execution": "production_two_phase_prefill",
+                "workers": args.workers,
+                "recognition_preprocess_threads": (
+                    args.recognition_preprocess_threads
+                ),
+                "layout_batch_size": args.layout_batch_size,
+                "layout_threshold": args.layout_threshold,
+                "vision_page_lookahead": args.vision_page_lookahead,
+                "cross_cache_length": args.cross_cache_length,
+                "self_cache_length": args.self_cache_length,
+                "page_count": len(image_paths),
+                "input": str(input_path),
+                "offset": args.offset,
+            },
+        )
+
+    if args.stop_after_prefill:
+        retained = payload_totals(retained_payloads)
+        summary = {
+            "status": "ok",
+            "execution": "production_two_phase_prefill_only",
+            "physical_devices": devices,
+            "page_count": len(image_paths),
+            "offset": args.offset,
+            "workers": args.workers,
+            "recognition_preprocess_threads": (
+                args.recognition_preprocess_threads
+            ),
+            "layout_batch_size": args.layout_batch_size,
+            "layout_execution": args.layout_execution,
+            "layout_dtype": args.layout_dtype,
+            "layout_reading_order_dtype": (
+                args.layout_reading_order_dtype or args.layout_dtype
+            ),
+            "layout_threshold": args.layout_threshold,
+            "vision_page_lookahead": args.vision_page_lookahead,
+            "vision_focal_depthwise_rewrite": (
+                args.vision_focal_depthwise_rewrite
+            ),
+            "vision_weight_format": args.vision_weight_format,
+            "cross_cache_length": args.cross_cache_length,
+            "self_cache_length": args.self_cache_length,
+            "prefill_trace_enabled": args.prefill_trace,
+            "retained_bank": {
+                **retained,
+                "shared_payload_bytes": prefill_summary["shared_payload_bytes"],
+                "storage": "page_scoped_posix_shared_memory_cross_kv_only",
+                "retained_images": False,
+                "disk_bytes": 0,
+            },
+            "timing_s": {
+                "prefill_worker_setup": prefill_worker_setup_s,
+                "prefill_warmup": warmup_wall_s,
+                "prefill_phase": prefill_phase_wall_s,
+                "prefill_worker_shutdown": prefill_worker_shutdown_s,
+                "lifecycle": time.perf_counter() - lifecycle_started,
+            },
+            "throughput": {
+                "prefill_pages_per_s": len(image_paths) / prefill_phase_wall_s,
+            },
+            "prefill_worker_setup_diagnostics": pool.worker_setup_diagnostics,
+            "prefill_warmup_summary": warmup_summary,
+            "prefill_phase_summary": prefill_summary,
+            "prefill_trace": prefill_trace_summary,
+            "max_rss_mib": (
+                resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+            ),
+        }
+        atomic_write_json(output_dir / "run_summary.json", summary)
+        for payload in retained_payloads:
+            release_unopened_payload(payload)
+        print(
+            "UNIREC_TWO_PHASE_PREFILL_ONLY_END "
+            + json.dumps(summary, ensure_ascii=False),
+            flush=True,
+        )
+        return
 
     # Import the coordinator model only after every prefill worker is gone.
     print(
@@ -784,7 +890,7 @@ def main() -> None:
         "recognition_preprocess_threads": args.recognition_preprocess_threads,
         "use_chart_recognition": args.use_chart_recognition,
         "vision_prefill_mode": "compiled_full_buckets",
-        "text_prefill_mode": "compiled_packed_s1024",
+        "text_prefill_mode": "compiled_packed_s1320",
         "decode_mode": "compiled_ifa",
         "decode_scheduling": "continuous",
         "decode_batch_size": args.decode_batch_size,
@@ -845,6 +951,7 @@ def main() -> None:
         "prefill_worker_setup_diagnostics": pool.worker_setup_diagnostics,
         "prefill_warmup_summary": warmup_summary,
         "prefill_phase_summary": prefill_summary,
+        "prefill_trace": prefill_trace_summary,
         "decode_graph_warmup": decode_graph_warmup,
         "decode": continuous_decode,
         "prefill_device_stage_s": metrics.prefill_device_stage_s,

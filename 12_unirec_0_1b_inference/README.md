@@ -184,6 +184,28 @@ Pass that directory as the runner input with `--offset 0 --limit 128`. Keep the
 historical difficult-offset sets for stress and tail testing; this set has a
 different purpose and should be the default for estimating full-run speed.
 
+For production-faithful sequential prefill analysis, launch the committed
+W1/T1 trace wrapper after exporting the same environment variables used by the
+known-good full run:
+
+```sh
+bash 12_unirec_0_1b_inference/run_representative128_w1t1_prefill_trace_background.sh
+```
+
+The wrapper uses the production two-phase runner, retains the complete CPU
+cross-KV bank, and exits before coordinator decode setup. It keeps layout B2,
+four-page vision lookahead, compact uint8 recognition inputs, compiled full
+vision buckets, packed S1320 text prefill, cross-KV 1320, and the accuracy-safe
+threshold and native-weight settings. Only page workers and recognition resize
+threads change to W1/T1.
+
+The trace writes `prefill_iterations.jsonl`, `prefill_pages.jsonl`, and
+`prefill_distributions.json`. Vision duration belongs to the real bucket call
+that produced it; it is not divided among crops. The distribution report
+contains count, sum, mean, p50, p75, p90, p95, p99, and maximum values plus
+histograms for source/processed crop shapes, vision buckets, physical graph
+shapes, text-pack occupancy, and cross-KV lengths.
+
 The source-pipeline adapter remains available for environments where the
 Paddle predictor loads correctly. It preserves OpenOCR's pipeline and places
 only UniRec on the NPU:

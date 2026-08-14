@@ -482,6 +482,7 @@ class BucketedFullVisionRuntime:
         *,
         specs: Sequence[VisionBucketSpec] = DEFAULT_VISION_BUCKETS,
         diagnostic_graph_log: bool = False,
+        trace_iterations: bool = False,
         focal_depthwise_rewrite: str = "native",
         weight_format: str = "native",
     ) -> None:
@@ -492,6 +493,10 @@ class BucketedFullVisionRuntime:
         self.runner = runner
         self.specs = tuple(specs)
         self.diagnostic_graph_log = bool(diagnostic_graph_log)
+        self.trace_iterations = bool(trace_iterations)
+        self._pending_trace_events: list[
+            tuple[dict[str, Any], dict[str, tuple[Any, Any]]]
+        ] = []
         self.focal_depthwise_rewrite = str(focal_depthwise_rewrite)
         self.focal_depthwise_rewrite_summary = (
             rewrite_vision_focal_depthwise_convs(
@@ -620,6 +625,61 @@ class BucketedFullVisionRuntime:
             "output_compact_s": 0.0,
             "first_call_wall_s": {},
         }
+
+    def _trace_begin(self) -> Any | None:
+        if not self.trace_iterations:
+            return None
+        import torch_npu
+
+        event = torch_npu.npu.Event(enable_timing=True)
+        event.record()
+        return event
+
+    def _trace_end(self, start: Any | None) -> tuple[Any, Any] | None:
+        if start is None:
+            return None
+        import torch_npu
+
+        end = torch_npu.npu.Event(enable_timing=True)
+        end.record()
+        return start, end
+
+    def _queue_trace_event(
+        self,
+        record: dict[str, Any],
+        markers: dict[str, tuple[Any, Any] | None],
+    ) -> None:
+        if not self.trace_iterations:
+            return
+        self._pending_trace_events.append(
+            (
+                record,
+                {
+                    name: marker
+                    for name, marker in markers.items()
+                    if marker is not None
+                },
+            )
+        )
+
+    def drain_trace_events(self) -> list[dict[str, Any]]:
+        """Resolve queued device markers after the enclosing encode sync."""
+        pending = self._pending_trace_events
+        self._pending_trace_events = []
+        if not pending:
+            return []
+        last_markers = pending[-1][1]
+        if last_markers:
+            tuple(last_markers.values())[-1][1].synchronize()
+        output = []
+        for record, markers in pending:
+            record = dict(record)
+            record["device_stage_s"] = {
+                name: float(start.elapsed_time(end)) / 1000.0
+                for name, (start, end) in markers.items()
+            }
+            output.append(record)
+        return output
 
     @staticmethod
     def _cache_snapshot(cache_dir: Path) -> dict[str, Any]:
@@ -766,6 +826,7 @@ class BucketedFullVisionRuntime:
                 f"bucket {spec.key} cannot mix input contracts: {contracts}"
             )
         compact_input = contracts == {"compact_uint8_hwc"}
+        host_pack_started = time.perf_counter()
         if compact_input:
             host_pixels = np.zeros(
                 (spec.batch_size, spec.height, spec.width, 3),
@@ -812,8 +873,10 @@ class BucketedFullVisionRuntime:
                 ] = pixels[0]
             dimensions.append((item.processed_width, item.processed_height))
         host_masks = _make_host_masks(dimensions, spec=spec)
+        host_canvas_pack_s = time.perf_counter() - host_pack_started
 
         transfer_started = time.perf_counter()
+        transfer_marker = self._trace_begin()
         with torch.inference_mode(False):
             if compact_input:
                 pixel_values = _compact_uint8_hwc_to_device(
@@ -836,7 +899,9 @@ class BucketedFullVisionRuntime:
                 torch.from_numpy(mask).to(self.runner.device)
                 for mask in host_masks
             )
-        self.stats["batch_h2d_s"] += time.perf_counter() - transfer_started
+        transfer_device_marker = self._trace_end(transfer_marker)
+        transfer_host_s = time.perf_counter() - transfer_started
+        self.stats["batch_h2d_s"] += transfer_host_s
         self._diagnostic_log(
             "bucket_inputs_ready",
             bucket=spec.key,
@@ -846,6 +911,7 @@ class BucketedFullVisionRuntime:
 
         first_call = self.stats["bucket_calls"][spec.key] == 0
         started = time.perf_counter()
+        graph_marker = self._trace_begin()
         # Warmup uses inference mode. Keep the production call under the same
         # Dynamo guard so the first real crop batch loads that graph instead of
         # compiling a second grad-enabled specialization in the timed window.
@@ -858,6 +924,8 @@ class BucketedFullVisionRuntime:
         )
         with torch.inference_mode():
             output = self.compiled[spec.key](pixel_values, *masks)
+        graph_device_marker = self._trace_end(graph_marker)
+        graph_submit_s = time.perf_counter() - started
         self._diagnostic_log(
             "bucket_graph_submit_end",
             bucket=spec.key,
@@ -891,6 +959,7 @@ class BucketedFullVisionRuntime:
         self.stats[input_row_key] += len(items)
 
         compact_started = time.perf_counter()
+        compact_marker = self._trace_begin()
         grid = output.reshape(
             spec.batch_size,
             spec.height // 32,
@@ -912,7 +981,53 @@ class BucketedFullVisionRuntime:
                     bucket_key=spec.key,
                 )
             )
-        self.stats["output_compact_s"] += time.perf_counter() - compact_started
+        compact_device_marker = self._trace_end(compact_marker)
+        compact_host_s = time.perf_counter() - compact_started
+        self.stats["output_compact_s"] += compact_host_s
+        self._queue_trace_event(
+            {
+                "event": "vision_bucket_call",
+                "bucket": spec.key,
+                "real_rows": len(items),
+                "physical_rows": spec.batch_size,
+                "slot_efficiency": len(items) / spec.batch_size,
+                "physical_input_shape": [
+                    spec.batch_size,
+                    3,
+                    spec.height,
+                    spec.width,
+                ],
+                "members": [
+                    {
+                        "request_id": item.image_source,
+                        "source_index": item.source_index,
+                        "original_image_size": list(item.original_image_size),
+                        "processed_image_size": [
+                            item.processed_width,
+                            item.processed_height,
+                        ],
+                        "encoder_tokens": int(
+                            self.runner.processor.estimate_encoder_token_count_from_processed_size(
+                                processed_width=item.processed_width,
+                                processed_height=item.processed_height,
+                            )
+                        ),
+                    }
+                    for item in items
+                ],
+                "host_stage_s": {
+                    "host_canvas_pack_s": host_canvas_pack_s,
+                    "input_h2d_submit_s": transfer_host_s,
+                    "graph_submit_s": graph_submit_s,
+                    "output_compact_submit_s": compact_host_s,
+                },
+            },
+            {
+                "input_h2d_normalize_s": transfer_device_marker,
+                "graph_s": graph_device_marker,
+                "output_compact_s": compact_device_marker,
+            },
+        )
         self._diagnostic_log(
             "bucket_call_end",
             bucket=spec.key,
@@ -937,6 +1052,7 @@ class BucketedFullVisionRuntime:
         )
         compact_input = item.input_contract == "compact_uint8_hwc"
         transfer_started = time.perf_counter()
+        transfer_marker = self._trace_begin()
         with torch.inference_mode(False):
             if compact_input:
                 pixel_values = _compact_uint8_hwc_to_device(
@@ -949,7 +1065,9 @@ class BucketedFullVisionRuntime:
                     self.runner.device,
                     dtype=self.runner.dtype,
                 )
-        self.stats["batch_h2d_s"] += time.perf_counter() - transfer_started
+        transfer_device_marker = self._trace_end(transfer_marker)
+        transfer_host_s = time.perf_counter() - transfer_started
+        self.stats["batch_h2d_s"] += transfer_host_s
         self._diagnostic_log(
             "fallback_inputs_ready",
             fallback_call=diagnostic_call,
@@ -958,6 +1076,7 @@ class BucketedFullVisionRuntime:
             h2d_wall_s=time.perf_counter() - transfer_started,
         )
         started = time.perf_counter()
+        graph_marker = self._trace_begin()
         self._diagnostic_log(
             "fallback_eager_call_begin",
             fallback_call=diagnostic_call,
@@ -966,6 +1085,8 @@ class BucketedFullVisionRuntime:
         )
         with torch.inference_mode():
             hidden = self.runner.model.forward_encoder(pixel_values)
+        graph_device_marker = self._trace_end(graph_marker)
+        graph_submit_s = time.perf_counter() - started
         self._diagnostic_log(
             "fallback_eager_submit_end",
             fallback_call=diagnostic_call,
@@ -983,6 +1104,36 @@ class BucketedFullVisionRuntime:
             hidden_states=hidden,
             prep=self._prep_metadata(item),
             bucket_key=None,
+        )
+        self._queue_trace_event(
+            {
+                "event": "vision_fallback_call",
+                "bucket": "fallback_eager",
+                "real_rows": 1,
+                "physical_rows": 1,
+                "slot_efficiency": 1.0,
+                "physical_input_shape": list(pixel_values.shape),
+                "members": [
+                    {
+                        "request_id": item.image_source,
+                        "source_index": item.source_index,
+                        "original_image_size": list(item.original_image_size),
+                        "processed_image_size": [
+                            item.processed_width,
+                            item.processed_height,
+                        ],
+                        "encoder_tokens": int(hidden.shape[1]),
+                    }
+                ],
+                "host_stage_s": {
+                    "input_h2d_submit_s": transfer_host_s,
+                    "graph_submit_s": graph_submit_s,
+                },
+            },
+            {
+                "input_h2d_normalize_s": transfer_device_marker,
+                "graph_s": graph_device_marker,
+            },
         )
         self._diagnostic_log(
             "fallback_call_end",
