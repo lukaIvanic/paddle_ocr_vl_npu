@@ -21,19 +21,22 @@ log can be followed directly.
 
 ## 910B2 reference
 
-Source commit `78a65bc`, physical Ascend 910B2 NPU 7:
+Rehearsed with this launcher at source commit `470d8a6` on physical Ascend
+910B2 NPU 7. Artifact:
+`tmp/12_unirec_0_1b_inference/310p_full1651_w4t8_eval_470d8a6_20260814T112253/`.
 
 ```text
 pages=1651 crops=32109 rejected=0
-lifecycle_s=391.501348
-inference_process_wall_s=402
-prefill_s=106.877412
-decode_including_ingress_s=153.953668
-sequential_core_s=260.989115
-sequential_core_pg_s=6.325934
-decode_raw_tok_s=20717.469
-decode_effective_tok_s=18812.480
-decode_slot_efficiency=0.908049
+lifecycle_s=401.011678
+cold_process_wall_s=410
+cold_process_pg_s=4.026829
+prefill_s=110.589166
+decode_including_ingress_s=154.873149
+sequential_core_s=265.622331
+warmed_pipeline_pg_s=6.215592
+decode_raw_tok_s=20408.201
+decode_effective_tok_s=18531.634
+decode_slot_efficiency=0.908048
 removed_image_tags=1545
 text_edit=0.054328
 page_cdm=0.921792
@@ -87,10 +90,16 @@ Wait for `exit_code.txt`. A pass requires exit code zero and
 2. project/evaluator commits, physical NPU, CANN and torch_npu versions;
 3. `output/run_summary.json`, `evaluation_image_tags_stripped/transform_summary.json`,
    and `evaluation_image_tags_stripped/full_eval_summary.json`;
-4. process wall, lifecycle, prefill, decode, sequential-core pages/s, token/s,
-   crop count, and accuracy components;
+4. cold process wall/pages/s, lifecycle, prefill, decode, warmed pipeline
+   pages/s, token/s, crop count, and accuracy components;
 5. ratios/deltas against the 910B2 reference above.
 
 If inference OOMs or evaluation fails, preserve the run root and exact traceback.
 Do not lower B128, shrink either cache, change the threshold, skip pages, or
 substitute sample CDM for page CDM.
+
+Treat `warmed_pipeline_pg_s` as the production pipeline throughput. It covers
+the measured sequential prefill and decode/output phases after warmup. Report
+`cold_process_wall_s` and `cold_process_pg_s` separately as one-shot operational
+metrics; they also include Python/model/worker startup, graph warmup, and worker
+shutdown. Neither timing includes the later accuracy evaluation.

@@ -115,10 +115,14 @@ run_inference() {
   )
   printf '%q ' "${command[@]}" >"$RUN_ROOT/command.sh"
   printf '\n' >>"$RUN_ROOT/command.sh"
-  local started="$SECONDS"
+  local started_ns ended_ns
+  started_ns="$(date +%s%N)"
   printf 'UNIREC_310P_FULL1651_INFERENCE_BEGIN\n'
   "${command[@]}"
-  printf '%s\n' "$((SECONDS - started))" >"$RUN_ROOT/inference_process_wall_s.txt"
+  ended_ns="$(date +%s%N)"
+  "$EVAL_PYTHON" -c \
+    'import sys; print(f"{(int(sys.argv[2]) - int(sys.argv[1])) / 1e9:.6f}")' \
+    "$started_ns" "$ended_ns" >"$RUN_ROOT/inference_process_wall_s.txt"
   printf 'UNIREC_310P_FULL1651_INFERENCE_END\n'
 }
 
@@ -189,16 +193,20 @@ assert stage["metrics"]["table"]["TEDS"]["timeout_case_count"] == 0
 assert score["cdm_debug"]["timeout_case_count"] == 0
 t = run["timing_s"]
 q = run["throughput"]
+inference_process_wall_s = float(
+    (root / "inference_process_wall_s.txt").read_text()
+)
 slot_eff = run["decode"]["effective_decode_tokens"] / run["decode"]["raw_decode_token_slots"]
 print(
     "UNIREC_310P_FULL1651_W4T8_EVAL: PASS "
     f"pages=1651 crops={run['crop_count']} "
-    f"inference_process_wall_s={(root / 'inference_process_wall_s.txt').read_text().strip()} "
+    f"cold_process_wall_s={inference_process_wall_s:.6f} "
+    f"cold_process_pg_s={1651 / inference_process_wall_s:.6f} "
     f"lifecycle_s={t['lifecycle']:.6f} "
     f"prefill_s={t['prefill_phase']:.6f} "
     f"decode_s={t['decode_inference_including_ingress']:.6f} "
     f"sequential_core_s={t['sequential_core_prefill_plus_decode']:.6f} "
-    f"pg_s={q['sequential_core_pages_per_s']:.6f} "
+    f"warmed_pipeline_pg_s={q['sequential_core_pages_per_s']:.6f} "
     f"raw_tok_s={q['decode_raw_token_slots_per_s']:.3f} "
     f"effective_tok_s={q['decode_effective_tokens_per_s']:.3f} "
     f"slot_eff={slot_eff:.6f} "
@@ -220,7 +228,13 @@ worker_main() {
     printf 'project_commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
     printf 'physical_npu=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
     printf 'cdm_workers=%s\n' "$CDM_WORKERS"
-    "$PYTHON_BIN" -c 'import torch, torch_npu; print(torch.__version__, torch_npu.__version__)'
+    printf 'cann_home=%s\n' "${ASCEND_HOME_PATH:-unavailable}"
+    if [[ -f "${ASCEND_HOME_PATH:-}/opp/version.info" ]]; then
+      grep -E '^(Version|version_dir|timestamp)=' \
+        "$ASCEND_HOME_PATH/opp/version.info"
+    fi
+    "$PYTHON_BIN" -c \
+      'import torch, torch_npu; print(f"torch={torch.__version__} torch_npu={torch_npu.__version__}")'
     df -h /dev/shm
     grep -E '^(MemTotal|MemAvailable):' /proc/meminfo
   } >"$RUN_ROOT/preflight.log" 2>&1
