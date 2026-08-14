@@ -217,6 +217,20 @@ def formula_row(
 ) -> dict[str, Any]:
     ref_score = None if reference is None else sample_score(reference)
     cand_score = None if candidate is None else sample_score(candidate)
+    both_present = reference is not None and candidate is not None
+    raw_prediction_exact = (
+        both_present and reference.get("pred") == candidate.get("pred")
+    )
+    gt_cdm_input_exact = (
+        both_present and reference.get("gt_cdm") == candidate.get("gt_cdm")
+    )
+    pred_cdm_input_exact = (
+        both_present and reference.get("pred_cdm") == candidate.get("pred_cdm")
+    )
+    cdm_inputs_exact = gt_cdm_input_exact and pred_cdm_input_exact
+    cdm_score_exact = (
+        both_present and abs(float(cand_score) - float(ref_score)) <= 1e-12
+    )
     return {
         "image_name": key[0],
         "gt_idx": json.loads(key[1]),
@@ -234,10 +248,15 @@ def formula_row(
             and reference.get("gt_idx") == candidate.get("gt_idx")
         ),
         "normalized_prediction_exact": (
-            reference is not None
-            and candidate is not None
+            both_present
             and reference.get("norm_pred") == candidate.get("norm_pred")
         ),
+        "raw_prediction_exact": raw_prediction_exact,
+        "gt_cdm_input_exact": gt_cdm_input_exact,
+        "pred_cdm_input_exact": pred_cdm_input_exact,
+        "cdm_inputs_exact": cdm_inputs_exact,
+        "cdm_score_exact": cdm_score_exact,
+        "cdm_score_changed_with_exact_inputs": cdm_inputs_exact and not cdm_score_exact,
         "reference_pred_idx": None if reference is None else reference.get("pred_idx"),
         "candidate_pred_idx": None if candidate is None else candidate.get("pred_idx"),
         "reference_prediction": None if reference is None else reference.get("pred"),
@@ -247,6 +266,18 @@ def formula_row(
         ),
         "candidate_normalized_prediction": (
             None if candidate is None else candidate.get("norm_pred")
+        ),
+        "reference_gt_cdm_input": (
+            None if reference is None else reference.get("gt_cdm")
+        ),
+        "candidate_gt_cdm_input": (
+            None if candidate is None else candidate.get("gt_cdm")
+        ),
+        "reference_pred_cdm_input": (
+            None if reference is None else reference.get("pred_cdm")
+        ),
+        "candidate_pred_cdm_input": (
+            None if candidate is None else candidate.get("pred_cdm")
         ),
         "ground_truth": (
             reference.get("gt") if reference is not None else candidate.get("gt")
@@ -270,11 +301,13 @@ def markdown_report(summary: dict[str, Any], page_rows: list[dict[str, Any]]) ->
         f"- Formula samples: `{summary['reference']['formula_samples']}` / `{summary['candidate']['formula_samples']}`",
         f"- Page outcomes better / equal / worse: `{summary['page_outcomes']['better']}` / `{summary['page_outcomes']['equal']}` / `{summary['page_outcomes']['worse']}`",
         f"- Exact stripped page Markdown: `{summary['stripped_prediction_markdown']['exact_count']}` / `{summary['stripped_prediction_markdown']['reference_count']}`",
+        f"- CDM scores changed despite byte-identical CDM inputs: `{summary['formula_alignment']['cdm_score_changed_with_exact_inputs']}`",
+        f"- Classification: `{summary['classification']}`",
         "",
         "## Largest page-CDM regressions",
         "",
-        "| Rank | Page | Formulas ref/candidate | 910B2 | Candidate | Delta | Overall points | Formula text exact | Match topology exact | Markdown exact |",
-        "|---:|---|---:|---:|---:|---:|---:|---:|---:|:---:|",
+        "| Rank | Page | Formulas ref/candidate | 910B2 | Candidate | Delta | Overall points | CDM inputs exact | Score changed despite exact input | Match topology exact | Markdown exact |",
+        "|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|:---:|",
     ]
     for rank, row in enumerate(page_rows, start=1):
         lines.append(
@@ -284,7 +317,8 @@ def markdown_report(summary: dict[str, Any], page_rows: list[dict[str, Any]]) ->
             f"{row['reference_page_cdm']:.6f} | {row['candidate_page_cdm']:.6f} | "
             f"{row['cdm_delta_candidate_minus_reference']:+.6f} | "
             f"{row['overall_percentage_points_delta']:+.4f} | "
-            f"{row['normalized_prediction_exact_count']}/{row['aligned_formula_count']} | "
+            f"{row['cdm_inputs_exact_count']}/{row['aligned_formula_count']} | "
+            f"{row['cdm_score_changed_with_exact_inputs_count']} | "
             f"{row['match_topology_exact_count']}/{row['aligned_formula_count']} | "
             f"{'yes' if row['stripped_markdown_exact'] else 'no'} |"
         )
@@ -402,6 +436,16 @@ def main() -> None:
                 "normalized_prediction_exact_count": sum(
                     row["normalized_prediction_exact"] for row in aligned_page_formulas
                 ),
+                "raw_prediction_exact_count": sum(
+                    row["raw_prediction_exact"] for row in aligned_page_formulas
+                ),
+                "cdm_inputs_exact_count": sum(
+                    row["cdm_inputs_exact"] for row in aligned_page_formulas
+                ),
+                "cdm_score_changed_with_exact_inputs_count": sum(
+                    row["cdm_score_changed_with_exact_inputs"]
+                    for row in aligned_page_formulas
+                ),
                 "match_topology_exact_count": sum(
                     row["match_topology_exact"] for row in aligned_page_formulas
                 ),
@@ -437,6 +481,28 @@ def main() -> None:
         "normalized_prediction_changed": sum(
             not row["normalized_prediction_exact"] for row in aligned_formula_rows
         ),
+        "raw_prediction_exact": sum(
+            row["raw_prediction_exact"] for row in aligned_formula_rows
+        ),
+        "raw_prediction_changed": sum(
+            not row["raw_prediction_exact"] for row in aligned_formula_rows
+        ),
+        "gt_cdm_input_exact": sum(
+            row["gt_cdm_input_exact"] for row in aligned_formula_rows
+        ),
+        "pred_cdm_input_exact": sum(
+            row["pred_cdm_input_exact"] for row in aligned_formula_rows
+        ),
+        "cdm_inputs_exact": sum(
+            row["cdm_inputs_exact"] for row in aligned_formula_rows
+        ),
+        "cdm_inputs_changed": sum(
+            not row["cdm_inputs_exact"] for row in aligned_formula_rows
+        ),
+        "cdm_score_changed_with_exact_inputs": sum(
+            row["cdm_score_changed_with_exact_inputs"]
+            for row in aligned_formula_rows
+        ),
         "cdm_exact": sum(
             abs(row["cdm_delta_candidate_minus_reference"]) <= epsilon
             for row in aligned_formula_rows
@@ -447,9 +513,19 @@ def main() -> None:
         ),
     }
 
+    if formula_alignment["cdm_score_changed_with_exact_inputs"]:
+        classification = "CDM_RUNTIME_DRIFT_OR_NONDETERMINISM"
+    elif formula_alignment["cdm_inputs_changed"]:
+        classification = "CDM_INPUT_DIFFERENCE"
+    elif formula_alignment["cdm_changed"]:
+        classification = "CDM_SCORE_DIFFERENCE_WITH_UNCLASSIFIED_CAUSE"
+    else:
+        classification = "CDM_EXACT_REPRODUCTION"
+
     trace_path = candidate_root / "output/recognition_trace.jsonl"
     summary = {
         "status": "pass",
+        "classification": classification,
         "reference": {
             "chip": "Ascend 910B2",
             "source_commit": "470d8a6",
@@ -538,6 +614,9 @@ def main() -> None:
         f"formula_samples={len(reference_samples)}/{len(candidate_samples)} "
         f"md_exact={prediction_md_summary['exact_count']}/"
         f"{prediction_md_summary['reference_count']} "
+        f"cdm_exact_input_score_changes="
+        f"{formula_alignment['cdm_score_changed_with_exact_inputs']} "
+        f"classification={classification} "
         f"output_dir={output_dir}"
     )
 

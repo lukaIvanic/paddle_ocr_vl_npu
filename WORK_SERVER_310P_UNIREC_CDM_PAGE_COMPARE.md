@@ -77,7 +77,8 @@ The output directory contains:
 - `report.md`: the 30 largest page-CDM regressions;
 - `page_cdm_comparison.jsonl`: every formula page, sorted worst delta first;
 - `formula_cdm_comparison.jsonl`: union of every aligned formula sample, with
-  both predictions, CDM scores, matching indices, and normalized text;
+  both predictions, exact `gt_cdm`/`pred_cdm` scorer inputs, CDM scores,
+  matching indices, and normalized text;
 - `stripped_prediction_markdown_digests.jsonl`: all 1,651 evaluator Markdown
   comparisons;
 - `raw_output_markdown_digests.jsonl`: all 1,651 raw page Markdown comparisons;
@@ -94,8 +95,9 @@ Return:
 3. the complete `summary.json`;
 4. the first 30 rows of `report.md`;
 5. counts of pages that are better/equal/worse, normalized formula predictions
-   that match exactly, formula match-topology changes, and stripped Markdown
-   pages that match exactly;
+   that match exactly, byte-identical CDM inputs, CDM scores that changed
+   despite identical inputs, formula match-topology changes, and stripped
+   Markdown pages that match exactly;
 6. the five largest page regressions with their candidate/reference formula
    predictions from `formula_cdm_comparison.jsonl`;
 7. a concise classification of the gap: changed recognition output, changed
@@ -103,3 +105,9 @@ Return:
 
 Do not propose or implement a fix yet. Preserve the comparison directory so we
 can inspect any individual page without rerunning evaluation.
+
+If this brief was already run from commit `2002ca2`, pull the later correction
+and rerun only the comparator command into the same output directory. This does
+not rerun CDM. The corrected report distinguishes normalized-text equality from
+byte-identical `gt_cdm` and `pred_cdm` inputs. Only the latter can establish
+cross-runtime CDM score drift.
