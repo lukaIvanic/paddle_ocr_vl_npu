@@ -9,9 +9,8 @@ a third record as soon as both lanes have completed the same crop.
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor
 import json
-import queue
+import multiprocessing
 import random
 import re
 import sys
@@ -96,7 +95,7 @@ def official_lane(
     args: argparse.Namespace,
     items: list[dict[str, Any]],
     output_path: Path,
-    events: queue.Queue[tuple[str, str, Any]],
+    events: Any,
 ) -> dict[str, Any]:
     try:
         sys.path.insert(0, str(args.openocr_root.expanduser().resolve()))
@@ -159,7 +158,7 @@ def custom_lane(
     args: argparse.Namespace,
     items: list[dict[str, Any]],
     output_path: Path,
-    events: queue.Queue[tuple[str, str, Any]],
+    events: Any,
 ) -> dict[str, Any]:
     try:
         if args.device.startswith("npu"):
@@ -299,38 +298,50 @@ def main() -> None:
         flush=True,
     )
 
-    event_queue: queue.Queue[tuple[str, str, Any]] = queue.Queue()
+    process_context = multiprocessing.get_context("spawn")
+    event_queue = process_context.Queue()
     pending: dict[str, dict[str, dict[str, Any]]] = {}
     done: dict[str, dict[str, Any]] = {}
     comparisons: list[dict[str, Any]] = []
     item_by_id = {item["request_id"]: item for item in items}
     run_started = time.perf_counter()
-    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="unirec_compare") as pool:
-        custom_future = pool.submit(
-            custom_lane,
-            args=args,
-            items=items,
-            output_path=custom_path,
-            events=event_queue,
+    custom_process = process_context.Process(
+        target=custom_lane,
+        kwargs={
+            "args": args,
+            "items": items,
+            "output_path": custom_path,
+            "events": event_queue,
+        },
+        name="unirec_custom_npu",
+    )
+    custom_process.start()
+    event_type, lane, payload = event_queue.get()
+    if event_type == "error":
+        custom_process.join()
+        raise RuntimeError(f"{lane} lane failed: {payload}")
+    if event_type != "ready" or lane != "custom":
+        custom_process.terminate()
+        custom_process.join()
+        raise RuntimeError(
+            f"expected custom-ready event, got {event_type=} {lane=}"
         )
-        event_type, lane, payload = event_queue.get()
-        if event_type == "error":
-            raise RuntimeError(f"{lane} lane failed: {payload}")
-        if event_type != "ready" or lane != "custom":
-            raise RuntimeError(
-                f"expected custom-ready event, got {event_type=} {lane=}"
-            )
-        official_future = pool.submit(
-            official_lane,
-            args=args,
-            items=items,
-            output_path=official_path,
-            events=event_queue,
-        )
-        futures = {
-            "official": official_future,
-            "custom": custom_future,
-        }
+    official_process = process_context.Process(
+        target=official_lane,
+        kwargs={
+            "args": args,
+            "items": items,
+            "output_path": official_path,
+            "events": event_queue,
+        },
+        name="unirec_official_cpu",
+    )
+    official_process.start()
+    processes = {
+        "official": official_process,
+        "custom": custom_process,
+    }
+    try:
         with comparison_path.open("a", encoding="utf-8") as comparison_handle:
             while len(done) < 2:
                 event_type, lane, payload = event_queue.get()
@@ -391,8 +402,21 @@ def main() -> None:
                     f"custom_tokens={custom['token_count']}",
                     flush=True,
                 )
-        for future in futures.values():
-            future.result()
+    except BaseException:
+        for process in processes.values():
+            if process.is_alive():
+                process.terminate()
+        raise
+    finally:
+        for process in processes.values():
+            process.join()
+    failed_processes = {
+        lane: process.exitcode
+        for lane, process in processes.items()
+        if process.exitcode != 0
+    }
+    if failed_processes:
+        raise RuntimeError(f"lane processes failed: {failed_processes}")
 
     summary = {
         "status": "ok",
