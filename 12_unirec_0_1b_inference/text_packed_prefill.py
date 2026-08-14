@@ -1,4 +1,4 @@
-"""Static B1 S1024 packed cross-KV projection for UniRec."""
+"""Static B1 S1320 packed cross-KV projection for UniRec."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from torch import nn
 
 
-PACKED_TEXT_PREFILL_BUCKET = 1024
+PACKED_TEXT_PREFILL_BUCKET = 1320
 
 
 def _import_cache_compile() -> tuple[Any, str]:
@@ -67,7 +67,7 @@ class PackedUniRecTextPrefillOutput:
 
 
 class PackedUniRecTextPrefillRuntime:
-    """Greedy-pack-ready S1024 graph plus eager segment redistribution."""
+    """Greedy-pack-ready S1320 graph plus eager segment redistribution."""
 
     def __init__(
         self,
@@ -102,7 +102,7 @@ class PackedUniRecTextPrefillRuntime:
             fullgraph=True,
         )
         self.metadata = {
-            "execution": "compiled_packed_s1024",
+            "execution": f"compiled_packed_s{self.bucket}",
             "batch_size": 1,
             "source_bucket": self.bucket,
             "dynamic": False,
