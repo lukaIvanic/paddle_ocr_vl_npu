@@ -7,6 +7,18 @@ RUNNER="$SCRIPT_DIR/run_two_phase_batched_unirec.py"
 PREP="$SCRIPT_DIR/prepare_unirec_subset_eval.py"
 SUMMARIZER="$SCRIPT_DIR/summarize_completed_unirec_eval.py"
 
+absolute_executable_path() {
+  local value="$1"
+  if [[ "$value" != */* ]]; then
+    command -v "$value"
+    return
+  fi
+  local directory basename
+  directory="$(dirname "$value")"
+  basename="$(basename "$value")"
+  printf '%s/%s\n' "$(cd "$directory" && pwd -P)" "$basename"
+}
+
 resolve_inputs() {
   : "${PYTHON_BIN:?export the validated 310P inference Python}"
   : "${MODEL:?export the UniRec model directory}"
@@ -32,7 +44,9 @@ resolve_inputs() {
     exit 1
   fi
 
-  PYTHON_BIN="$(readlink -f "$PYTHON_BIN")"
+  # Preserve the final venv launcher symlink. Dereferencing it with readlink -f
+  # silently runs the base interpreter without the venv's site-packages.
+  PYTHON_BIN="$(absolute_executable_path "$PYTHON_BIN")"
   MODEL="$(readlink -f "$MODEL")"
   LAYOUT_MODEL="$(readlink -f "$LAYOUT_MODEL")"
   OPENOCR_ROOT="$(readlink -f "$OPENOCR_ROOT")"
@@ -40,7 +54,7 @@ resolve_inputs() {
   DATASET_JSON="$(readlink -f "$DATASET_JSON")"
   COMPILE_CACHE="$(readlink -f "$COMPILE_CACHE")"
   EVALUATOR_ROOT="$(readlink -f "$EVALUATOR_ROOT")"
-  EVAL_PYTHON="$(readlink -f "$EVAL_PYTHON")"
+  EVAL_PYTHON="$(absolute_executable_path "$EVAL_PYTHON")"
 
   test -x "$PYTHON_BIN"
   test -x "$EVAL_PYTHON"
@@ -56,6 +70,9 @@ resolve_inputs() {
   test -f "$RUNNER"
   test -f "$PREP"
   test -f "$SUMMARIZER"
+  "$PYTHON_BIN" -c 'import kornia_rs, torch, torch_npu'
+  PYTHONPATH="$EVALUATOR_ROOT" "$EVAL_PYTHON" -c \
+    'import Levenshtein; import src.metrics.cal_metric'
 }
 
 run_inference() {
@@ -215,7 +232,10 @@ worker_main() {
 worker_entry() {
   local run_root="$1" status=0 started="$SECONDS"
   set +e
-  worker_main "$run_root"
+  (
+    set -e
+    worker_main "$run_root"
+  )
   status="$?"
   set -e
   printf '%s\n' "$status" >"$run_root/exit_code.txt"
