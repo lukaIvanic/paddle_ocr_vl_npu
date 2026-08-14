@@ -205,6 +205,7 @@ def main() -> None:
             crop.copy(),
             max_length=args.max_length,
             decode_mode="eager",
+            compile_backend="torchair",
             image_source=request_id,
         )
         custom_wall_s = time.perf_counter() - custom_started
