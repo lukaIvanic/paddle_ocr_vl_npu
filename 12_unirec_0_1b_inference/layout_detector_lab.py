@@ -26,6 +26,7 @@ import torch
 
 from layout_page_input import decode_page_rgb, materialize_layout_rgb
 from opendoc_layout_npu import (
+    DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
     PPDocLayoutV2NpuAdapter,
@@ -39,7 +40,7 @@ CURRENT_PRODUCTION_CONTRACT = {
     "threshold": 0.4,
     "weight_format": "torchair_internal",
     "freeze_parameters": False,
-    "depthwise_rewrite": "native",
+    "depthwise_rewrite": DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
     "fuse_frozen_bn": False,
     "fuse_eval_bn": False,
     "precompute_frozen_bn_affine": False,

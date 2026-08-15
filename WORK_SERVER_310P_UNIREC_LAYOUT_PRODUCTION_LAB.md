@@ -11,8 +11,8 @@ producer. It is not an eager proxy and it does not include recognition.
 - production canonical contiguous RGB page with no full-page channel reversal;
 - production adapter, 0.4 threshold, and OpenDoc result ordering;
 - TorchAir static B1, FP16 model and FP16 reading-order head;
-- native depthwise Conv2D, `torchair_internal`, and preformatted FrozenBN
-  buffers;
+- prepacked `constant_grouped` depthwise Conv2D, `torchair_internal`, and
+  preformatted FrozenBN buffers;
 - one excluded warmup call, then 128 measured pages;
 - exact synchronized model-forward time plus surrounding layout stage times.
 

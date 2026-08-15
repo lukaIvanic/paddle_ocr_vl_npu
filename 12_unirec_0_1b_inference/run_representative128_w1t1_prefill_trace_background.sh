@@ -77,7 +77,7 @@ run_trace() {
     --layout-dtype float32
     --layout-reading-order-dtype float32
     --layout-weight-format native
-    --layout-depthwise-rewrite native
+    --layout-depthwise-rewrite constant_grouped
     --layout-threshold 0.5
     --input "$representative_input"
     --output-dir "$output"

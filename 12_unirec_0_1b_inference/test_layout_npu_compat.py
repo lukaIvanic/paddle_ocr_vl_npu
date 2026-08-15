@@ -573,13 +573,18 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
             )
         )
 
-    def test_adapter_defaults_to_torchair_internal_weights(self) -> None:
+    def test_adapter_defaults_to_adopted_layout_optimizations(self) -> None:
         module = _load_layout_adapter()
-        default = inspect.signature(
-            module.PPDocLayoutV2NpuAdapter
-        ).parameters["weight_format"].default
-        self.assertEqual(default, module.DEFAULT_LAYOUT_WEIGHT_FORMAT)
-        self.assertEqual(default, "torchair_internal")
+        signature = inspect.signature(module.PPDocLayoutV2NpuAdapter)
+        weight_default = signature.parameters["weight_format"].default
+        depthwise_default = signature.parameters["depthwise_rewrite"].default
+        self.assertEqual(weight_default, module.DEFAULT_LAYOUT_WEIGHT_FORMAT)
+        self.assertEqual(weight_default, "torchair_internal")
+        self.assertEqual(
+            depthwise_default,
+            module.DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
+        )
+        self.assertEqual(depthwise_default, "constant_grouped")
         self.assertEqual(
             module.LAYOUT_WEIGHT_FORMAT_CHOICES,
             ("native", "torchair_internal"),

@@ -38,6 +38,7 @@ class LayoutProductionContractTest(unittest.TestCase):
             {name: getattr(args, name) for name in CURRENT_PRODUCTION_CONTRACT},
             CURRENT_PRODUCTION_CONTRACT,
         )
+        self.assertEqual(args.depthwise_rewrite, "constant_grouped")
 
     def test_production_contract_fills_every_model_setting(self) -> None:
         args = SimpleNamespace(

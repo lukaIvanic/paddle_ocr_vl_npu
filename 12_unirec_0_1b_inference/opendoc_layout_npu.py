@@ -33,6 +33,7 @@ LAYOUT_DEPTHWISE_REWRITE_CHOICES = (
     "native",
     "constant_grouped",
 )
+DEFAULT_LAYOUT_DEPTHWISE_REWRITE = "constant_grouped"
 
 
 class _PrecomputedLayoutAffine2d(torch.nn.Module):
@@ -687,7 +688,7 @@ class PPDocLayoutV2NpuAdapter:
         batch_size: int = 1,
         weight_format: str = DEFAULT_LAYOUT_WEIGHT_FORMAT,
         freeze_parameters: bool = False,
-        depthwise_rewrite: str = "native",
+        depthwise_rewrite: str = DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
         fuse_frozen_bn: bool = False,
         fuse_eval_bn: bool = False,
         precompute_frozen_bn_affine: bool = False,

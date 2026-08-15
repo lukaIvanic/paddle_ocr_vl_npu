@@ -27,6 +27,7 @@ from typing import Any
 import numpy as np
 
 from opendoc_layout_npu import (
+    DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
     DEFAULT_LAYOUT_WEIGHT_FORMAT,
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
@@ -66,7 +67,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--layout-depthwise-rewrite",
         choices=LAYOUT_DEPTHWISE_REWRITE_CHOICES,
-        default="native",
+        default=DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
     )
     parser.add_argument(
         "--layout-preformat-frozen-bn-buffers",

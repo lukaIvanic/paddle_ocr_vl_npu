@@ -328,8 +328,9 @@ reduce page quality.
 and isolates the exact optimized PP-DocLayoutV2 boundary used by the active full
 runner. The lab and production worker share the same PNG/non-PNG RGB decoder
 and keep its contiguous RGB page as the canonical layout/crop source. The
-strict contract selects compiled FP16 B1, FP16 reading order, native depthwise
-Conv2D, `torchair_internal` weights, preformatted FrozenBN buffers, and the 0.4
+strict contract selects compiled FP16 B1, FP16 reading order, prepacked
+`constant_grouped` depthwise Conv2D, `torchair_internal` weights, preformatted
+FrozenBN buffers, and the 0.4
 threshold. A conflicting model flag is rejected instead of silently creating a
 different lane. Use `--contract custom` explicitly for historical or
 experimental configurations. It runs sequential B1 pages and excludes
@@ -346,6 +347,13 @@ the exact FP32 divide and FP16 cast on NPU before the unchanged compiled graph.
 The CPU box decoder retains the Transformers selection semantics but calculates
 the 300-query reading-order votes with prefix sums instead of materializing two
 triangular 300x300 tensors.
+
+The layout depthwise default is `constant_grouped`. It pre-packs all 27 native
+depthwise filters into the exact grouped-FZ storage consumed by Conv2D. On 310P,
+the adoption profile improved the compiled FP16-body/FP32-reading-order forward
+from 34.48 to 28.06 ms, reduced TransData from 846 calls / 8.84 ms to 792 calls /
+2.35 ms, removed all 27 logical weight-to-FZ and 27 FZ-to-grouped-FZ repacks,
+and passed the layout-output parity gate.
 
 On Ascend 910B2 physical NPU 3, first-128 layout wall time improved from
 12.7624 s in the production-faithful pre-RGB baseline to 5.2425 s. Relative to

@@ -121,7 +121,7 @@ run_full_optimized() {
     --layout-execution torchair
     --layout-dtype float16
     --layout-batch-size 1
-    --layout-depthwise-rewrite native
+    --layout-depthwise-rewrite constant_grouped
     --layout-weight-format torchair_internal
     --layout-preformat-frozen-bn-buffers
     --layout-cache-dir "$LAYOUT_CACHE"

@@ -92,7 +92,7 @@ run_inference() {
     --layout-dtype float32
     --layout-reading-order-dtype float32
     --layout-weight-format native
-    --layout-depthwise-rewrite native
+    --layout-depthwise-rewrite constant_grouped
     --layout-threshold 0.5
     --input "$IMAGES_DIR"
     --output-dir "$output"

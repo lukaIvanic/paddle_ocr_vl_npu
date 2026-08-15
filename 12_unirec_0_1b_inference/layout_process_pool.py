@@ -31,6 +31,7 @@ from layout_page_input import (
     materialize_layout_rgb,
 )
 from opendoc_layout_npu import (
+    DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
     DEFAULT_LAYOUT_WEIGHT_FORMAT,
     PPDocLayoutV2NpuAdapter,
 )
@@ -2012,7 +2013,7 @@ class DynamicLayoutProcessPool:
         layout_dtype: str = "float32",
         layout_reading_order_dtype: str | None = None,
         layout_weight_format: str = DEFAULT_LAYOUT_WEIGHT_FORMAT,
-        layout_depthwise_rewrite: str = "native",
+        layout_depthwise_rewrite: str = DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
         layout_preformat_frozen_bn_buffers: bool = False,
         layout_batch_size: int = 1,
         openocr_root: Path | None = None,
