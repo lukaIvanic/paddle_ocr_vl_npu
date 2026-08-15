@@ -8,8 +8,8 @@ decode, or the page pipeline.
 The candidate packs the 22 stage-2/3 5x5 and 7x7 depthwise filters once on the
 CPU into their grouped `FRACTAL_Z:<groups>` physical layout. TorchAir receives
 the packed tensors as frozen graph inputs. The Conv operators consume them
-directly. This is the exact solution to test on 310P; do not substitute the
-older `group16`, `aligned_spatial`, or `group16_internal` lanes.
+directly. This is the exact solution to test on 310P; do not substitute an
+obsolete block-expanded or aligned-spatial lane.
 
 ## 910B2 reference
 

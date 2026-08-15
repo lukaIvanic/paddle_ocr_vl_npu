@@ -38,8 +38,8 @@ layout-output comparison.
 - Run in the background and immediately give Luka the absolute `RUN_LOG` and
   printed `tail -f` command.
 - Do not rerun native, eager, FP32, prefill, recognition, decode, or evaluation.
-- Do not enable `group16` or FrozenBN buffer formatting. This task changes only
-  `weight_format=native` to `weight_format=torchair_internal`.
+- Do not enable a depthwise rewrite or FrozenBN buffer formatting. This task
+  changes only `weight_format=native` to `weight_format=torchair_internal`.
 - Preserve numerical differences. Do not apply an arbitrary tolerance and do
   not call a digest difference a failure.
 

@@ -66,7 +66,7 @@ run_first128() {
     --layout-execution torchair
     --layout-dtype float16
     --layout-batch-size 1
-    --layout-depthwise-rewrite group16
+    --layout-depthwise-rewrite native
     --layout-weight-format torchair_internal
     --layout-preformat-frozen-bn-buffers
     --layout-cache-dir "$LAYOUT_CACHE"

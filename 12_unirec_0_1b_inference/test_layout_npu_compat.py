@@ -496,31 +496,26 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
         )
         self.assertTrue(all(value >= 0.0 for value in timing_s.values()))
 
-    def test_depthwise_rewrites_are_exact_block_diagonal_convolutions(self) -> None:
+    def test_native_depthwise_rewrite_is_a_noop(self) -> None:
         module = _load_layout_adapter()
-        torch.manual_seed(17)
-        inputs = torch.randn(1, 64, 8, 8)
-        reference_conv = nn.Conv2d(
-            64, 64, kernel_size=5, padding=2, groups=64, bias=True
+        candidate = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=5, padding=2, groups=64, bias=True)
         ).eval()
-        with torch.inference_mode():
-            reference = reference_conv(inputs)
-
-        for requested in ("group16", "group32", "group64", "dense"):
-            candidate = nn.Sequential(
-                nn.Conv2d(64, 64, kernel_size=5, padding=2, groups=64, bias=True)
-            ).eval()
-            candidate[0].load_state_dict(reference_conv.state_dict())
-            summary = module._rewrite_layout_depthwise_convs(
-                candidate,
-                requested=requested,
-            )
-            with torch.inference_mode():
-                actual = candidate(inputs)
-            torch.testing.assert_close(actual, reference, atol=1e-5, rtol=1e-5)
-            self.assertEqual(summary["target_count"], 1)
-            self.assertEqual(summary["rewritten_count"], 1)
-            self.assertEqual(candidate[0].groups, 64 // summary["modules"][0]["group_width"])
+        original = candidate[0]
+        summary = module._rewrite_layout_depthwise_convs(
+            candidate,
+            requested="native",
+        )
+        self.assertIs(candidate[0], original)
+        self.assertEqual(
+            summary,
+            {
+                "requested": "native",
+                "target_count": 0,
+                "rewritten_count": 0,
+                "modules": [],
+            },
+        )
 
     def test_constant_grouped_rewrites_all_native_layout_depthwise_convs(self) -> None:
         module = _load_layout_adapter()
@@ -585,6 +580,14 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
         ).parameters["weight_format"].default
         self.assertEqual(default, module.DEFAULT_LAYOUT_WEIGHT_FORMAT)
         self.assertEqual(default, "torchair_internal")
+        self.assertEqual(
+            module.LAYOUT_WEIGHT_FORMAT_CHOICES,
+            ("native", "torchair_internal"),
+        )
+        self.assertEqual(
+            module.LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+            ("native", "constant_grouped"),
+        )
 
     def test_frozen_batch_norm_folding_matches_unfused_module(self) -> None:
         module = _load_layout_adapter()

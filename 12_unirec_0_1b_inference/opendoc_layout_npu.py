@@ -25,19 +25,13 @@ DTYPE_MAP = {
 
 LAYOUT_WEIGHT_FORMAT_CHOICES = (
     "native",
-    "depthwise_fz",
     "torchair_internal",
-    "torchair_internal_depthwise_fz",
 )
 DEFAULT_LAYOUT_WEIGHT_FORMAT = "torchair_internal"
 
 LAYOUT_DEPTHWISE_REWRITE_CHOICES = (
     "native",
     "constant_grouped",
-    "group16",
-    "group32",
-    "group64",
-    "dense",
 )
 
 
@@ -59,6 +53,13 @@ def _rewrite_layout_depthwise_convs(
     """Rewrite native layout depthwise filters without changing their math."""
     if requested not in LAYOUT_DEPTHWISE_REWRITE_CHOICES:
         raise ValueError(f"Unsupported layout depthwise rewrite: {requested}")
+    if requested == "native":
+        return {
+            "requested": requested,
+            "target_count": 0,
+            "rewritten_count": 0,
+            "modules": [],
+        }
     rewritten: list[dict[str, Any]] = []
     for name, module in list(model.named_modules()):
         if not isinstance(module, torch.nn.Conv2d):
@@ -69,90 +70,43 @@ def _rewrite_layout_depthwise_convs(
             and module.out_channels == channels
             and tuple(module.weight.shape[:2]) == (channels, 1)
         )
-        is_group_width_target = (
-            tuple(module.kernel_size) == (5, 5)
-            and is_native_depthwise
-            and tuple(module.weight.shape) == (channels, 1, 5, 5)
-        )
-        if requested == "constant_grouped":
-            is_target = is_native_depthwise and module.bias is None
-        else:
-            is_target = is_group_width_target
+        is_target = is_native_depthwise and module.bias is None
         if not is_target:
             continue
-        if requested == "constant_grouped":
-            replacement = ConstantDepthwiseConv2d(
-                module,
-                prepack_grouped=True,
-            )
-            parent_name, _, child_name = name.rpartition(".")
-            parent = model.get_submodule(parent_name) if parent_name else model
-            parent._modules[child_name] = replacement
-            rewritten.append(
-                {
-                    "module": name,
-                    "channels": channels,
-                    "kernel": [int(value) for value in module.kernel_size],
-                    "stride": [int(value) for value in module.stride],
-                    "padding": [int(value) for value in module.padding],
-                    "original_groups": int(module.groups),
-                    "groups": channels,
-                    "group_width": 1,
-                    "weight_id": replacement.weight_id,
-                    "weight_shape": [
-                        int(value) for value in module.weight.shape
-                    ],
-                    "weight_storage_shape": [
-                        int(value)
-                        for value in replacement.packed_weight.shape
-                    ],
-                    "weight_binding": (
-                        "frozen_prepacked_fractal_z_grouped"
-                    ),
-                }
-            )
-            continue
-        if requested == "native":
-            group_width = 1
-        elif requested == "dense":
-            group_width = channels
-        else:
-            group_width = int(requested.removeprefix("group"))
-        if channels % group_width:
-            raise ValueError(
-                f"depthwise rewrite width does not divide channels: "
-                f"module={name} channels={channels} group_width={group_width}"
-            )
-        original_groups = int(module.groups)
-        if group_width > 1:
-            original = module.weight.detach()
-            expanded = original.new_zeros((channels, group_width, 5, 5))
-            indices = torch.arange(channels, device=original.device)
-            expanded[indices, indices.remainder(group_width)] = original[:, 0]
-            module.weight = torch.nn.Parameter(expanded, requires_grad=False)
-            module.groups = channels // group_width
+        replacement = ConstantDepthwiseConv2d(
+            module,
+            prepack_grouped=True,
+        )
+        parent_name, _, child_name = name.rpartition(".")
+        parent = model.get_submodule(parent_name) if parent_name else model
+        parent._modules[child_name] = replacement
         rewritten.append(
             {
                 "module": name,
                 "channels": channels,
-                "original_groups": original_groups,
-                "groups": int(module.groups),
-                "group_width": group_width,
-                "weight_shape": [int(value) for value in module.weight.shape],
+                "kernel": [int(value) for value in module.kernel_size],
+                "stride": [int(value) for value in module.stride],
+                "padding": [int(value) for value in module.padding],
+                "original_groups": int(module.groups),
+                "groups": channels,
+                "group_width": 1,
+                "weight_id": replacement.weight_id,
+                "weight_shape": [
+                    int(value) for value in module.weight.shape
+                ],
+                "weight_storage_shape": [
+                    int(value) for value in replacement.packed_weight.shape
+                ],
+                "weight_binding": "frozen_prepacked_fractal_z_grouped",
             }
         )
     summary = {
         "requested": requested,
         "target_count": len(rewritten),
-        "rewritten_count": (
-            len(rewritten)
-            if requested == "constant_grouped"
-            else sum(row["group_width"] > 1 for row in rewritten)
-        ),
+        "rewritten_count": len(rewritten),
         "modules": rewritten,
     }
-    if requested == "constant_grouped":
-        register_focal_depthwise_constant_converter()
+    register_focal_depthwise_constant_converter()
     return summary
 
 
@@ -351,33 +305,17 @@ def _prepare_layout_weight_formats(
         return {kind: dict(sorted(values.items())) for kind, values in sorted(result.items())}
 
     before = histogram()
-    if requested in {"torchair_internal", "torchair_internal_depthwise_fz"}:
+    if requested == "torchair_internal":
         try:
             from torch_npu.dynamo.torchair import use_internal_format_weight
         except ImportError:
             from torchair import use_internal_format_weight
         use_internal_format_weight(model)
 
-    depthwise_converted: list[str] = []
-    if requested in {"depthwise_fz", "torchair_internal_depthwise_fz"}:
-        for name, kind, module in tracked:
-            if kind != "depthwise_conv2d" or module.weight.dtype != torch.float16:
-                continue
-            module.weight.data = torch_npu.npu_format_cast(module.weight.data, 4)
-            after_code = int(torch_npu.get_npu_format(module.weight))
-            if after_code != 4:
-                raise RuntimeError(
-                    "depthwise layout weight did not become FRACTAL_Z: "
-                    f"module={name} format={after_code}"
-                )
-            depthwise_converted.append(name)
-
     return {
         "requested": requested,
         "before_histogram": before,
         "after_histogram": histogram(),
-        "depthwise_fz_converted_count": len(depthwise_converted),
-        "depthwise_fz_modules": depthwise_converted,
     }
 
 

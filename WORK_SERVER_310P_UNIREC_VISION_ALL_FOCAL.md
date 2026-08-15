@@ -11,7 +11,7 @@ The candidate combines two compatible optimizations:
    filters in stages 0–3.
 2. `torchair_internal` preformats the remaining ordinary Conv/Linear weights.
 
-Do not rerun native, `group16_internal`, or the earlier 22-filter
+Do not rerun native, an obsolete block-expanded lane, or the earlier 22-filter
 `constant_grouped` lane. Use their completed profiles as controls.
 
 ## Evidence and target
@@ -20,7 +20,7 @@ Previous 310P results for the same bucket:
 
 ```text
 native:             about 73.97 ms
-group16_internal:   55.48 ms
+old block-expanded: 55.48 ms
 constant_grouped:   58.8 ms; TransData 12 ms / 294 calls
 ```
 

@@ -39,7 +39,7 @@ CURRENT_PRODUCTION_CONTRACT = {
     "threshold": 0.4,
     "weight_format": "torchair_internal",
     "freeze_parameters": False,
-    "depthwise_rewrite": "group16",
+    "depthwise_rewrite": "native",
     "fuse_frozen_bn": False,
     "fuse_eval_bn": False,
     "precompute_frozen_bn_affine": False,
@@ -127,7 +127,7 @@ def parse_args() -> argparse.Namespace:
         "--depthwise-rewrite",
         choices=LAYOUT_DEPTHWISE_REWRITE_CHOICES,
         default=None,
-        help="Exact block-diagonal replacement for depthwise 5x5 convolutions",
+        help="Select native depthwise Conv2D or frozen grouped-FZ weights",
     )
     parser.add_argument(
         "--fuse-frozen-bn",

@@ -13,8 +13,8 @@ Do not run decode, page assembly, evaluation, W4/W8, or the full benchmark.
 ## Exact production contract
 
 - compiled FP16 PP-DocLayoutV2, B1 per process;
-- current index-free layout source, `group16`, `torchair_internal` weights, and
-  preformatted FrozenBN buffers;
+- current index-free layout source, native depthwise Conv2D,
+  `torchair_internal` weights, and preformatted FrozenBN buffers;
 - five compiled FP16 full-vision buckets;
 - `constant_grouped_all` focal rewrite and `torchair_internal` vision weights;
 - kornia-rs bicubic recognition resize;
@@ -132,7 +132,7 @@ common=(
   --layout-execution torchair
   --layout-dtype float16
   --layout-batch-size 1
-  --layout-depthwise-rewrite group16
+  --layout-depthwise-rewrite native
   --layout-weight-format torchair_internal
   --layout-preformat-frozen-bn-buffers
   --layout-cache-dir "$LAYOUT_CACHE"

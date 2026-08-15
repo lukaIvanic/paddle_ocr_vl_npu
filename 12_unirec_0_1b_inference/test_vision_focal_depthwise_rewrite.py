@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import copy
 import sys
 import unittest
 from unittest import mock
@@ -152,30 +151,6 @@ class VisionFocalDepthwiseRewriteTest(unittest.TestCase):
             actual = rewritten(inputs)
             torch.testing.assert_close(actual, expected, atol=1e-6, rtol=1e-5)
             self.assertEqual(rewritten.weight.shape[-2] * rewritten.weight.shape[-1] % 16, 0)
-
-    def test_group16_rewrite_is_exact_and_targets_only_stage2_and_stage3(self) -> None:
-        torch.manual_seed(11)
-        vision = _fake_vision_encoder()
-        original = copy.deepcopy(
-            vision.layers[2].blocks[0].modulation.focal_layers[2][0]
-        )
-        summary = rewrite_vision_focal_depthwise_convs(
-            vision,
-            requested="group16",
-        )
-        self.assertEqual(summary["target_count"], 22)
-        self.assertEqual(summary["rewritten_count"], 22)
-        self.assertEqual({row["stage"] for row in summary["modules"]}, {2, 3})
-        rewritten = vision.layers[2].blocks[0].modulation.focal_layers[2][0]
-        self.assertEqual(rewritten.groups, 24)
-        self.assertEqual(tuple(rewritten.weight.shape), (384, 16, 7, 7))
-        inputs = torch.randn(1, 384, 7, 9)
-        torch.testing.assert_close(
-            rewritten(inputs),
-            original(inputs),
-            atol=1e-6,
-            rtol=1e-5,
-        )
 
     def test_native_lane_records_targets_without_mutation(self) -> None:
         vision = _fake_vision_encoder()

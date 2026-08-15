@@ -170,7 +170,7 @@ worker_main() {
   run_lane candidate \
     --offset 0 --limit 1651 --workers 8 --warmup-pages 8 --warmup-repeats 1 \
     --layout-execution torchair --layout-dtype float16 --layout-batch-size 1 \
-    --layout-depthwise-rewrite group16 \
+    --layout-depthwise-rewrite native \
     --layout-weight-format torchair_internal \
     --layout-preformat-frozen-bn-buffers \
     --layout-cache-dir "$LAYOUT_CACHE" \

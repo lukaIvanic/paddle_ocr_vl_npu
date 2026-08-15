@@ -328,8 +328,8 @@ reduce page quality.
 and isolates the exact optimized PP-DocLayoutV2 boundary used by the active full
 runner. The lab and production worker share the same PNG/non-PNG RGB decoder
 and keep its contiguous RGB page as the canonical layout/crop source. The
-strict contract selects compiled FP16 B1, FP16 reading order, `group16`,
-`torchair_internal` weights, preformatted FrozenBN buffers, and the 0.4
+strict contract selects compiled FP16 B1, FP16 reading order, native depthwise
+Conv2D, `torchair_internal` weights, preformatted FrozenBN buffers, and the 0.4
 threshold. A conflicting model flag is rejected instead of silently creating a
 different lane. Use `--contract custom` explicitly for historical or
 experimental configurations. It runs sequential B1 pages and excludes
@@ -385,8 +385,7 @@ tmp/12_unirec_0_1b_inference/prefill_first128_w1_crosschip_69eaf86_20260813T1816
   --model-path /workspace/models/PP-DocLayoutV2_safetensors \
   --input /workspace/datasets/OmniDocBench/images \
   --device npu:0 --contract current_production --limit 128 \
-  --compile-cache-dir \
-    .runtime_cache/12_unirec_0_1b_inference/layout_opt_group16_internal_buffers_b0c5c6e \
+  --compile-cache-dir .runtime_cache/12_unirec_0_1b_inference/layout_current \
   --output tmp/12_unirec_0_1b_inference/layout_detector_lab/result.json
 ```
 

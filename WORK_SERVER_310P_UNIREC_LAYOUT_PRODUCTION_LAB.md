@@ -11,7 +11,8 @@ producer. It is not an eager proxy and it does not include recognition.
 - production canonical contiguous RGB page with no full-page channel reversal;
 - production adapter, 0.4 threshold, and OpenDoc result ordering;
 - TorchAir static B1, FP16 model and FP16 reading-order head;
-- `group16`, `torchair_internal`, and preformatted FrozenBN buffers;
+- native depthwise Conv2D, `torchair_internal`, and preformatted FrozenBN
+  buffers;
 - one excluded warmup call, then 128 measured pages;
 - exact synchronized model-forward time plus surrounding layout stage times.
 
@@ -38,7 +39,7 @@ export PYTHON_BIN="${PYTHON_BIN:-$REPO/venv/bin/python}"
 export LAYOUT_MODEL="${LAYOUT_MODEL:-$REPO/models/PP-DocLayoutV2_safetensors}"
 export OPENOCR_ROOT="${OPENOCR_ROOT:-$REPO/deps/OpenOCR_0d522801}"
 export IMAGES_DIR="${IMAGES_DIR:?reuse the existing OmniDocBench images directory}"
-export LAYOUT_CACHE="${LAYOUT_CACHE:?reuse the warmed group16 internal buffer cache parent}"
+export LAYOUT_CACHE="${LAYOUT_CACHE:?reuse the warmed current layout cache parent}"
 
 launch_output="$(
   bash "$REPO/12_unirec_0_1b_inference/run_layout_production_lab_background.sh" 2>&1

@@ -47,7 +47,7 @@ from isolated graphs or from the 910B2 result.
 - Use one genuinely free physical 310P. Never use physical NPU 5 or 6.
 - Do not stop another user's process.
 - Reuse the exact successful native five-graph recognition cache.
-- Reuse the exact successful `group16 + torchair_internal + preformatted
+- Reuse the exact successful current `torchair_internal + preformatted
   FrozenBN` layout cache parent.
 - Give the optimized vision lane its own cache path. The launcher seeds it with
   one worker before W8 starts.

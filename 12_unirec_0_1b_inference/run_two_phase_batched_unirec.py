@@ -97,7 +97,6 @@ def parse_args() -> argparse.Namespace:
             "constant",
             "constant_grouped",
             "constant_grouped_all",
-            "group16",
             "aligned_spatial",
         ),
         default="native",

@@ -67,7 +67,7 @@ run_lane() {
     --layout-dtype float16
     --layout-reading-order-dtype float32
     --layout-batch-size 1
-    --layout-depthwise-rewrite group16
+    --layout-depthwise-rewrite native
     --layout-weight-format torchair_internal
     --layout-preformat-frozen-bn-buffers
     --layout-cache-dir "$LAYOUT_CACHE"

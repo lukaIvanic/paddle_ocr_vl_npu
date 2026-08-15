@@ -22,7 +22,6 @@ VISION_FOCAL_DEPTHWISE_REWRITE_CHOICES = (
     "constant",
     "constant_grouped",
     "constant_grouped_all",
-    "group16",
     "aligned_spatial",
 )
 
@@ -836,34 +835,6 @@ def rewrite_vision_focal_depthwise_convs(
                                 in {"constant_grouped", "constant_grouped_all"}
                                 else "ge_const_not_runtime_input"
                             ),
-                        }
-                    )
-                elif requested == "group16":
-                    group_width = 16
-                    if channels % group_width:
-                        raise ValueError(
-                            f"group16 does not divide focal channels: {channels}"
-                        )
-                    original = convolution.weight.detach()
-                    expanded = original.new_zeros(
-                        (channels, group_width, kernel[0], kernel[1])
-                    )
-                    indices = torch.arange(channels, device=original.device)
-                    expanded[
-                        indices,
-                        indices.remainder(group_width),
-                    ] = original[:, 0]
-                    convolution.weight = nn.Parameter(
-                        expanded,
-                        requires_grad=False,
-                    )
-                    convolution.groups = channels // group_width
-                    row.update(
-                        {
-                            "target_kernel": list(kernel),
-                            "target_groups": int(convolution.groups),
-                            "group_width": group_width,
-                            "weight_shape": list(convolution.weight.shape),
                         }
                     )
                 elif requested == "aligned_spatial":

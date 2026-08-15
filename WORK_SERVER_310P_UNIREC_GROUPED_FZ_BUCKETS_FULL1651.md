@@ -18,7 +18,7 @@ Use only:
 - the already validated optimized 310P layout configuration for the full run.
 
 Do not substitute `constant_grouped_all`, `torchair_internal` vision weights,
-the older `group16_internal` vision lane, eager vision, or an ONNX model. Do not
+an obsolete block-expanded vision lane, eager vision, or an ONNX model. Do not
 search for stock OpenOCR or ONNX assets. Reuse the exact paths and caches from
 the last successful UniRec production-prefill run on this server. If one cannot
 be resolved, stop and name only the missing variable.

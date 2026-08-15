@@ -43,7 +43,7 @@ it with the new raw kernel CSV. It does not depend on truncated top-N tables.
 - Run in the background. Immediately give Luka the absolute `RUN_LOG` and the
   printed `tail -f` command.
 - Do not rerun eager, FP32, prefill, recognition, decode, or evaluation.
-- Do not enable group16 or any FrozenBN formatting.
+- Do not substitute another depthwise rewrite or enable FrozenBN formatting.
 - Do not loosen or reinterpret the structural gate. The analyzer itself checks
   the 27-module rewrite inventory, both target TransData stages, and layout
   boxes.
