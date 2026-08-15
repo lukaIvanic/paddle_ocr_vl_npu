@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import copy
 import importlib.util
+import inspect
 import sys
 import types
 import unittest
@@ -519,6 +521,70 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
             self.assertEqual(summary["target_count"], 1)
             self.assertEqual(summary["rewritten_count"], 1)
             self.assertEqual(candidate[0].groups, 64 // summary["modules"][0]["group_width"])
+
+    def test_constant_grouped_rewrites_all_native_layout_depthwise_convs(self) -> None:
+        module = _load_layout_adapter()
+        torch.manual_seed(23)
+        candidate = nn.Sequential(
+            nn.Conv2d(
+                16,
+                16,
+                kernel_size=3,
+                stride=2,
+                padding=1,
+                groups=16,
+                bias=False,
+            ),
+            nn.Conv2d(
+                16,
+                16,
+                kernel_size=5,
+                padding=2,
+                groups=16,
+                bias=False,
+            ),
+        ).eval()
+        reference = copy.deepcopy(candidate)
+        inputs = torch.randn(2, 16, 17, 19)
+
+        with mock.patch.object(
+            module,
+            "register_focal_depthwise_constant_converter",
+        ):
+            summary = module._rewrite_layout_depthwise_convs(
+                candidate,
+                requested="constant_grouped",
+            )
+
+        with torch.inference_mode():
+            expected = reference(inputs)
+            actual = candidate(inputs)
+        torch.testing.assert_close(actual, expected, atol=0.0, rtol=0.0)
+        self.assertEqual(summary["target_count"], 2)
+        self.assertEqual(summary["rewritten_count"], 2)
+        self.assertEqual(
+            [row["kernel"] for row in summary["modules"]],
+            [[3, 3], [5, 5]],
+        )
+        self.assertEqual(
+            [row["stride"] for row in summary["modules"]],
+            [[2, 2], [1, 1]],
+        )
+        self.assertTrue(
+            all(
+                row["weight_binding"]
+                == "frozen_prepacked_fractal_z_grouped"
+                for row in summary["modules"]
+            )
+        )
+
+    def test_adapter_defaults_to_torchair_internal_weights(self) -> None:
+        module = _load_layout_adapter()
+        default = inspect.signature(
+            module.PPDocLayoutV2NpuAdapter
+        ).parameters["weight_format"].default
+        self.assertEqual(default, module.DEFAULT_LAYOUT_WEIGHT_FORMAT)
+        self.assertEqual(default, "torchair_internal")
 
     def test_frozen_batch_norm_folding_matches_unfused_module(self) -> None:
         module = _load_layout_adapter()

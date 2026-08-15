@@ -290,9 +290,9 @@ def _focal_depthwise_const(
         inputs,
         row["device_weight"],
         bias=None,
-        stride=1,
-        padding=int(row["padding"]),
-        dilation=1,
+        stride=row["stride"],
+        padding=row["padding"],
+        dilation=row["dilation"],
         groups=int(row["groups"]),
     )
 
@@ -302,8 +302,8 @@ def _focal_depthwise_const_fake(
     inputs: torch.Tensor,
     weight_id: int,
 ) -> torch.Tensor:
-    del weight_id
-    return torch.empty_like(inputs)
+    row = _CONSTANT_WEIGHTS[int(weight_id)]
+    return inputs.new_empty(_constant_depthwise_output_shape(inputs, row))
 
 
 @torch.library.custom_op(
@@ -321,9 +321,9 @@ def _focal_depthwise_prepacked(
         inputs,
         row["device_weight"],
         bias=None,
-        stride=1,
-        padding=int(row["padding"]),
-        dilation=1,
+        stride=row["stride"],
+        padding=row["padding"],
+        dilation=row["dilation"],
         groups=int(row["groups"]),
     )
 
@@ -334,8 +334,32 @@ def _focal_depthwise_prepacked_fake(
     packed_weight: torch.Tensor,
     weight_id: int,
 ) -> torch.Tensor:
-    del packed_weight, weight_id
-    return torch.empty_like(inputs)
+    del packed_weight
+    row = _CONSTANT_WEIGHTS[int(weight_id)]
+    return inputs.new_empty(_constant_depthwise_output_shape(inputs, row))
+
+
+def _constant_depthwise_output_shape(
+    inputs: torch.Tensor,
+    row: dict[str, Any],
+) -> tuple[Any, int, Any, Any]:
+    input_h, input_w = inputs.shape[-2], inputs.shape[-1]
+    kernel_h, kernel_w = (int(value) for value in row["kernel"])
+    stride_h, stride_w = (int(value) for value in row["stride"])
+    padding_h, padding_w = (int(value) for value in row["padding"])
+    dilation_h, dilation_w = (int(value) for value in row["dilation"])
+    output_h = (
+        input_h + 2 * padding_h - dilation_h * (kernel_h - 1) - 1
+    ) // stride_h + 1
+    output_w = (
+        input_w + 2 * padding_w - dilation_w * (kernel_w - 1) - 1
+    ) // stride_w + 1
+    return (
+        inputs.shape[0],
+        int(row["groups"]),
+        output_h,
+        output_w,
+    )
 
 
 def _import_torchair() -> Any:
@@ -442,15 +466,22 @@ def register_focal_depthwise_constant_converter() -> None:
             weight.desc.attr["origin_format_is_set"].b = True
             specific_output_layout(weight, indices=0, layout="FRACTAL_Z")
             weight.node.attr["_enable_storage_format_spread"].b = False
-        padding = int(row["padding"])
+        stride_h, stride_w = row["stride"]
+        padding_h, padding_w = row["padding"]
+        dilation_h, dilation_w = row["dilation"]
         output = ge.Conv2D(
             inputs,
             weight,
             None,
             None,
-            strides=[1, 1, 1, 1],
-            pads=[padding, padding, padding, padding],
-            dilations=[1, 1, 1, 1],
+            strides=[1, 1, int(stride_h), int(stride_w)],
+            pads=[
+                int(padding_h),
+                int(padding_h),
+                int(padding_w),
+                int(padding_w),
+            ],
+            dilations=[1, 1, int(dilation_h), int(dilation_w)],
             groups=int(row["groups"]),
             data_format="NCHW",
         )
@@ -478,15 +509,22 @@ def register_focal_depthwise_constant_converter() -> None:
     ) -> Any:
         del meta_outputs
         row = _CONSTANT_WEIGHTS[int(weight_id)]
-        padding = int(row["padding"])
+        stride_h, stride_w = row["stride"]
+        padding_h, padding_w = row["padding"]
+        dilation_h, dilation_w = row["dilation"]
         output = ge.Conv2D(
             inputs,
             packed_weight,
             None,
             None,
-            strides=[1, 1, 1, 1],
-            pads=[padding, padding, padding, padding],
-            dilations=[1, 1, 1, 1],
+            strides=[1, 1, int(stride_h), int(stride_w)],
+            pads=[
+                int(padding_h),
+                int(padding_h),
+                int(padding_w),
+                int(padding_w),
+            ],
+            dilations=[1, 1, int(dilation_h), int(dilation_w)],
             groups=int(row["groups"]),
             data_format="NCHW",
         )
@@ -563,34 +601,38 @@ def focal_group_prepack(
     return _focal_group_prepack(weight, int(groups))
 
 
-class ConstantFocalDepthwiseConv(nn.Module):
-    """Native depthwise Conv2d whose immutable weight is embedded in the OM."""
+class ConstantDepthwiseConv2d(nn.Module):
+    """Depthwise Conv2d backed by an immutable optional grouped-FZ weight."""
 
     def __init__(
         self,
         source: nn.Conv2d,
         *,
-        weight_id: int,
+        weight_id: int | None = None,
         prepack_grouped: bool = False,
+        host_dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
+        global _NEXT_CONSTANT_WEIGHT_ID
         kernel = tuple(int(value) for value in source.kernel_size)
         channels = int(source.in_channels)
         if not (
-            kernel in {(3, 3), (5, 5), (7, 7)}
-            and source.out_channels == channels
+            source.out_channels == channels
             and source.groups == channels
-            and tuple(source.stride) == (1, 1)
-            and tuple(source.dilation) == (1, 1)
+            and tuple(source.weight.shape) == (channels, 1, *kernel)
             and source.bias is None
+            and source.padding_mode == "zeros"
         ):
             raise ValueError(
-                "constant focal rewrite requires a bias-free 3x3/5x5/7x7 "
-                "depthwise convolution"
+                "constant grouped rewrite requires a bias-free native "
+                "depthwise convolution with zero padding"
             )
+        if weight_id is None:
+            weight_id = _NEXT_CONSTANT_WEIGHT_ID
+            _NEXT_CONSTANT_WEIGHT_ID += 1
         weight = source.weight.detach().contiguous()
         host_weight = np.ascontiguousarray(
-            weight.to(device="cpu", dtype=torch.float16).numpy()
+            weight.to(device="cpu", dtype=host_dtype).numpy()
         )
         if prepack_grouped:
             host_weight = pack_grouped_fz_host(host_weight, groups=channels)
@@ -598,7 +640,10 @@ class ConstantFocalDepthwiseConv(nn.Module):
             "device_weight": weight,
             "host_weight": host_weight,
             "groups": channels,
-            "padding": kernel[0] // 2,
+            "kernel": kernel,
+            "stride": tuple(int(value) for value in source.stride),
+            "padding": tuple(int(value) for value in source.padding),
+            "dilation": tuple(int(value) for value in source.dilation),
             "shape": tuple(int(value) for value in weight.shape),
             "storage_shape": tuple(int(value) for value in host_weight.shape),
             "prepacked_grouped": bool(prepack_grouped),
@@ -612,6 +657,15 @@ class ConstantFocalDepthwiseConv(nn.Module):
         self.weight_id = int(weight_id)
         self.groups = channels
         self.kernel_size = kernel
+        self.stride = tuple(int(value) for value in source.stride)
+        self.padding = tuple(int(value) for value in source.padding)
+        self.dilation = tuple(int(value) for value in source.dilation)
+
+    def _apply(self, fn: Any, recurse: bool = True) -> nn.Module:
+        super()._apply(fn, recurse=recurse)
+        row = _CONSTANT_WEIGHTS[self.weight_id]
+        row["device_weight"] = fn(row["device_weight"])
+        return self
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         if self.prepack_grouped:
@@ -621,6 +675,34 @@ class ConstantFocalDepthwiseConv(nn.Module):
                 self.weight_id,
             )
         return _focal_depthwise_const(inputs, self.weight_id)
+
+
+class ConstantFocalDepthwiseConv(ConstantDepthwiseConv2d):
+    """Focal depthwise Conv2d whose immutable weight is embedded in the OM."""
+
+    def __init__(
+        self,
+        source: nn.Conv2d,
+        *,
+        weight_id: int,
+        prepack_grouped: bool = False,
+    ) -> None:
+        kernel = tuple(int(value) for value in source.kernel_size)
+        if not (
+            kernel in {(3, 3), (5, 5), (7, 7)}
+            and tuple(source.stride) == (1, 1)
+            and tuple(source.dilation) == (1, 1)
+        ):
+            raise ValueError(
+                "constant focal rewrite requires a 3x3/5x5/7x7 "
+                "stride-1 dilation-1 convolution"
+            )
+        super().__init__(
+            source,
+            weight_id=weight_id,
+            prepack_grouped=prepack_grouped,
+            host_dtype=torch.float16,
+        )
 
 
 class AlignedSpatialDepthwiseConv(nn.Module):

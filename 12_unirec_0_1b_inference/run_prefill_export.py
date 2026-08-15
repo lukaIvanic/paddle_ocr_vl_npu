@@ -13,6 +13,11 @@ from pathlib import Path
 from typing import Any
 
 from layout_process_pool import DynamicLayoutProcessPool, SharedPageLease
+from opendoc_layout_npu import (
+    DEFAULT_LAYOUT_WEIGHT_FORMAT,
+    LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+    LAYOUT_WEIGHT_FORMAT_CHOICES,
+)
 from prefill_artifact import (
     CrossKvArtifactWriter,
     CrossKvDiscardSink,
@@ -78,17 +83,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--layout-weight-format",
-        choices=(
-            "native",
-            "depthwise_fz",
-            "torchair_internal",
-            "torchair_internal_depthwise_fz",
-        ),
-        default="native",
+        choices=LAYOUT_WEIGHT_FORMAT_CHOICES,
+        default=DEFAULT_LAYOUT_WEIGHT_FORMAT,
     )
     parser.add_argument(
         "--layout-depthwise-rewrite",
-        choices=("native", "group16", "group32", "group64", "dense"),
+        choices=LAYOUT_DEPTHWISE_REWRITE_CHOICES,
         default="native",
     )
     parser.add_argument(

@@ -37,6 +37,7 @@ from modeling_optimized_unirec import (  # noqa: E402
     synchronize_device,
 )
 from opendoc_layout_npu import (  # noqa: E402
+    DEFAULT_LAYOUT_WEIGHT_FORMAT,
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
     PPDocLayoutV2NpuAdapter,
@@ -167,7 +168,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--layout-weight-format",
         choices=LAYOUT_WEIGHT_FORMAT_CHOICES,
-        default="native",
+        default=DEFAULT_LAYOUT_WEIGHT_FORMAT,
     )
     parser.add_argument("--layout-fuse-frozen-bn", action="store_true")
     parser.add_argument("--layout-fuse-eval-bn", action="store_true")

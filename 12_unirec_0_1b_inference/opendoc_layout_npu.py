@@ -12,6 +12,11 @@ import cv2
 import numpy as np
 import torch
 
+from vision_focal_depthwise import (
+    ConstantDepthwiseConv2d,
+    register_focal_depthwise_constant_converter,
+)
+
 
 DTYPE_MAP = {
     "float16": torch.float16,
@@ -24,9 +29,11 @@ LAYOUT_WEIGHT_FORMAT_CHOICES = (
     "torchair_internal",
     "torchair_internal_depthwise_fz",
 )
+DEFAULT_LAYOUT_WEIGHT_FORMAT = "torchair_internal"
 
 LAYOUT_DEPTHWISE_REWRITE_CHOICES = (
     "native",
+    "constant_grouped",
     "group16",
     "group32",
     "group64",
@@ -49,21 +56,61 @@ def _rewrite_layout_depthwise_convs(
     *,
     requested: str,
 ) -> dict[str, Any]:
-    """Rewrite depthwise 5x5 filters as exact block-diagonal grouped filters."""
+    """Rewrite native layout depthwise filters without changing their math."""
     if requested not in LAYOUT_DEPTHWISE_REWRITE_CHOICES:
         raise ValueError(f"Unsupported layout depthwise rewrite: {requested}")
     rewritten: list[dict[str, Any]] = []
-    for name, module in model.named_modules():
+    for name, module in list(model.named_modules()):
         if not isinstance(module, torch.nn.Conv2d):
             continue
         channels = int(module.in_channels)
-        is_target = (
-            tuple(module.kernel_size) == (5, 5)
-            and module.groups == channels
+        is_native_depthwise = (
+            module.groups == channels
             and module.out_channels == channels
+            and tuple(module.weight.shape[:2]) == (channels, 1)
+        )
+        is_group_width_target = (
+            tuple(module.kernel_size) == (5, 5)
+            and is_native_depthwise
             and tuple(module.weight.shape) == (channels, 1, 5, 5)
         )
+        if requested == "constant_grouped":
+            is_target = is_native_depthwise and module.bias is None
+        else:
+            is_target = is_group_width_target
         if not is_target:
+            continue
+        if requested == "constant_grouped":
+            replacement = ConstantDepthwiseConv2d(
+                module,
+                prepack_grouped=True,
+            )
+            parent_name, _, child_name = name.rpartition(".")
+            parent = model.get_submodule(parent_name) if parent_name else model
+            parent._modules[child_name] = replacement
+            rewritten.append(
+                {
+                    "module": name,
+                    "channels": channels,
+                    "kernel": [int(value) for value in module.kernel_size],
+                    "stride": [int(value) for value in module.stride],
+                    "padding": [int(value) for value in module.padding],
+                    "original_groups": int(module.groups),
+                    "groups": channels,
+                    "group_width": 1,
+                    "weight_id": replacement.weight_id,
+                    "weight_shape": [
+                        int(value) for value in module.weight.shape
+                    ],
+                    "weight_storage_shape": [
+                        int(value)
+                        for value in replacement.packed_weight.shape
+                    ],
+                    "weight_binding": (
+                        "frozen_prepacked_fractal_z_grouped"
+                    ),
+                }
+            )
             continue
         if requested == "native":
             group_width = 1
@@ -94,12 +141,19 @@ def _rewrite_layout_depthwise_convs(
                 "weight_shape": [int(value) for value in module.weight.shape],
             }
         )
-    return {
+    summary = {
         "requested": requested,
         "target_count": len(rewritten),
-        "rewritten_count": sum(row["group_width"] > 1 for row in rewritten),
+        "rewritten_count": (
+            len(rewritten)
+            if requested == "constant_grouped"
+            else sum(row["group_width"] > 1 for row in rewritten)
+        ),
         "modules": rewritten,
     }
+    if requested == "constant_grouped":
+        register_focal_depthwise_constant_converter()
+    return summary
 
 
 def _fuse_layout_frozen_batch_norms(model: torch.nn.Module) -> dict[str, Any]:
@@ -693,7 +747,7 @@ class PPDocLayoutV2NpuAdapter:
         execution: str = "eager",
         compile_cache_dir: str | Path | None = None,
         batch_size: int = 1,
-        weight_format: str = "native",
+        weight_format: str = DEFAULT_LAYOUT_WEIGHT_FORMAT,
         freeze_parameters: bool = False,
         depthwise_rewrite: str = "native",
         fuse_frozen_bn: bool = False,
@@ -785,12 +839,24 @@ class PPDocLayoutV2NpuAdapter:
             if self.fuse_eval_bn
             else {"fused_count": 0, "modules": []}
         )
-        self.depthwise_rewrite_summary = _rewrite_layout_depthwise_convs(
-            self.model,
-            requested=self.depthwise_rewrite,
+        defer_constant_grouped = self.depthwise_rewrite == "constant_grouped"
+        self.depthwise_rewrite_summary = (
+            {
+                "requested": self.depthwise_rewrite,
+                "target_count": 0,
+                "rewritten_count": 0,
+                "modules": [],
+                "deferred_until_after_device_transfer": True,
+            }
+            if defer_constant_grouped
+            else _rewrite_layout_depthwise_convs(
+                self.model,
+                requested=self.depthwise_rewrite,
+            )
         )
         if (
             self.weight_format != "native"
+            or defer_constant_grouped
             or self.precompute_frozen_bn_affine
             or self.preformat_frozen_bn_buffers
         ):
@@ -799,6 +865,11 @@ class PPDocLayoutV2NpuAdapter:
         self.model.eval().to(device=self.device, dtype=self.dtype)
         if self.reading_order_dtype != self.dtype:
             self.model.reading_order.to(dtype=self.reading_order_dtype)
+        if defer_constant_grouped:
+            self.depthwise_rewrite_summary = _rewrite_layout_depthwise_convs(
+                self.model,
+                requested=self.depthwise_rewrite,
+            )
         self.frozen_bn_affine_summary = (
             _precompute_layout_frozen_bn_affines(
                 self.model,
@@ -826,6 +897,7 @@ class PPDocLayoutV2NpuAdapter:
                 self.model,
                 cache_root=Path(compile_cache_dir) / (
                     f"depthwise_{self.depthwise_rewrite}_"
+                    f"weightformat_{self.weight_format}_"
                     f"readingorder_{str(self.reading_order_dtype).removeprefix('torch.')}_"
                     f"frozenbn{int(self.fuse_frozen_bn)}_"
                     f"evalbn{int(self.fuse_eval_bn)}_"

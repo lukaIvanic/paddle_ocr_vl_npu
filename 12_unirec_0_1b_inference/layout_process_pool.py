@@ -30,7 +30,10 @@ from layout_page_input import (
     materialize_layout_bgr,
     materialize_layout_rgb,
 )
-from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
+from opendoc_layout_npu import (
+    DEFAULT_LAYOUT_WEIGHT_FORMAT,
+    PPDocLayoutV2NpuAdapter,
+)
 
 
 FULL_VISION_PAGE_COLLECT_TIMEOUT_S = 0.02
@@ -2008,7 +2011,7 @@ class DynamicLayoutProcessPool:
         warmup_paths: list[Path],
         layout_dtype: str = "float32",
         layout_reading_order_dtype: str | None = None,
-        layout_weight_format: str = "native",
+        layout_weight_format: str = DEFAULT_LAYOUT_WEIGHT_FORMAT,
         layout_depthwise_rewrite: str = "native",
         layout_preformat_frozen_bn_buffers: bool = False,
         layout_batch_size: int = 1,

@@ -26,6 +26,12 @@ from typing import Any
 
 import numpy as np
 
+from opendoc_layout_npu import (
+    DEFAULT_LAYOUT_WEIGHT_FORMAT,
+    LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+    LAYOUT_WEIGHT_FORMAT_CHOICES,
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -54,18 +60,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--layout-weight-format",
-        choices=(
-            "native",
-            "depthwise_fz",
-            "all_conv_fz",
-            "linear_nz",
-            "torchair_internal",
-        ),
-        default="native",
+        choices=LAYOUT_WEIGHT_FORMAT_CHOICES,
+        default=DEFAULT_LAYOUT_WEIGHT_FORMAT,
     )
     parser.add_argument(
         "--layout-depthwise-rewrite",
-        choices=("native", "group16", "group32", "dense"),
+        choices=LAYOUT_DEPTHWISE_REWRITE_CHOICES,
         default="native",
     )
     parser.add_argument(
