@@ -37,10 +37,9 @@ from modeling_optimized_unirec import (  # noqa: E402
     synchronize_device,
 )
 from opendoc_layout_npu import (  # noqa: E402
-    DEFAULT_LAYOUT_COGVIEW_ATTENTION_IMPL,
     DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
     DEFAULT_LAYOUT_WEIGHT_FORMAT,
-    LAYOUT_COGVIEW_ATTENTION_IMPL_CHOICES,
+    LAYOUT_COGVIEW_ATTENTION,
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
     PPDocLayoutV2NpuAdapter,
@@ -179,11 +178,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--layout-preformat-frozen-bn-buffers", action="store_true"
-    )
-    parser.add_argument(
-        "--layout-cogview-attention-impl",
-        choices=LAYOUT_COGVIEW_ATTENTION_IMPL_CHOICES,
-        default=DEFAULT_LAYOUT_COGVIEW_ATTENTION_IMPL,
     )
     parser.add_argument(
         "--profile-metric",
@@ -424,7 +418,6 @@ def _layout_lane(
         preformat_frozen_bn_buffers=(
             args.layout_preformat_frozen_bn_buffers
         ),
-        cogview_attention_impl=args.layout_cogview_attention_impl,
     )
     if args.layout_input_image is not None:
         from layout_page_input import decode_page_rgb, materialize_layout_rgb
@@ -466,7 +459,7 @@ def _layout_lane(
         f"{args.layout_weight_format}_frozenbn{int(args.layout_fuse_frozen_bn)}_"
         f"precomputedfrozenbn{int(args.layout_precompute_frozen_bn_affine)}_"
         f"formattedfrozenbnbuffers{int(args.layout_preformat_frozen_bn_buffers)}_"
-        f"cogview_{args.layout_cogview_attention_impl}",
+        f"cogview_{LAYOUT_COGVIEW_ATTENTION}",
         run,
         output_root=output_root,
         device=args.device,
@@ -491,7 +484,7 @@ def _layout_lane(
             "preformat_frozen_bn_buffers": (
                 args.layout_preformat_frozen_bn_buffers
             ),
-            "cogview_attention_impl": args.layout_cogview_attention_impl,
+            "cogview_attention_impl": LAYOUT_COGVIEW_ATTENTION,
             "execution": execution_contract,
         },
     )
@@ -863,9 +856,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "layout_preformat_frozen_bn_buffers": (
                 args.layout_preformat_frozen_bn_buffers
             ),
-            "layout_cogview_attention_impl": (
-                args.layout_cogview_attention_impl
-            ),
+            "layout_cogview_attention_impl": LAYOUT_COGVIEW_ATTENTION,
         },
         "first128_workload": {
             "layout_calls": FIRST128_LAYOUT_CALLS,

@@ -14,12 +14,6 @@ import torch.nn.functional as F
 from transformers.models.pp_doclayout_v2 import modeling_pp_doclayout_v2 as layout_mod
 
 
-COGVIEW_ATTENTION_IMPL_CHOICES = (
-    "stabilized",
-    "direct_softmax",
-)
-
-
 def _generate_anchors(self, spatial_shapes=None, grid_size=0.05, device="cpu", dtype=torch.float32):
     if spatial_shapes is None:
         spatial_shapes = [
@@ -251,18 +245,12 @@ def _object_detection_forward(
     )
 
 
-def _cogview_attention_stabilized(attention_scores, alpha=32):
-    scaled = attention_scores / alpha
-    maximum = torch.max(scaled, dim=-1, keepdim=True).values
-    return torch.softmax((scaled - maximum) * alpha, dim=-1)
-
-
-def _cogview_attention_direct_softmax(attention_scores):
+def _cogview_attention_softmax(attention_scores):
     """Use Softmax's own stable maximum subtraction.
 
-    For positive ``alpha``, the stabilized expression above is algebraically
-    equivalent to ``softmax(attention_scores)``. Keep this as an explicit
-    diagnostic lane until NPU output parity is validated on both target chips.
+    The upstream ``softmax((scores / 32 - max(scores / 32)) * 32)`` is
+    algebraically equivalent but lowers to six expensive ArgMaxWithValue
+    kernels on 310P. Direct Softmax passed structural parity on 910B2 and 310P.
     """
     return torch.softmax(attention_scores, dim=-1)
 
@@ -331,10 +319,7 @@ def _reading_order_attention(
         scores = scores + rel_pos / math.sqrt(head_dim)
     if attention_mask is not None:
         scores = scores + attention_mask
-    if self._unirec_cogview_direct_softmax:
-        probabilities = _cogview_attention_direct_softmax(scores)
-    else:
-        probabilities = _cogview_attention_stabilized(scores)
+    probabilities = _cogview_attention_softmax(scores)
     probabilities = self.dropout(probabilities)
     context = torch.bmm(
         probabilities.reshape(batch_size * num_heads, sequence_length, sequence_length),
@@ -448,17 +433,8 @@ def make_eager_npu_compatible(model: nn.Module) -> None:
     _bind(model.reading_order, _reading_order)
 
 
-def make_compile_compatible(
-    model: nn.Module,
-    *,
-    cogview_attention_impl: str = "stabilized",
-) -> None:
+def make_compile_compatible(model: nn.Module) -> None:
     """Apply algebraically equivalent rewrites only to this layout model."""
-    if cogview_attention_impl not in COGVIEW_ATTENTION_IMPL_CHOICES:
-        raise ValueError(
-            "Unsupported CogView attention implementation: "
-            f"{cogview_attention_impl}"
-        )
     layout_mod.torch_compilable_check = lambda *args, **kwargs: None
     make_eager_npu_compatible(model)
     _bind(model, _object_detection_forward)
@@ -471,9 +447,6 @@ def make_compile_compatible(
                 module,
             )
         elif isinstance(module, layout_mod.PPDocLayoutV2ReadingOrderSelfAttention):
-            module._unirec_cogview_direct_softmax = (
-                cogview_attention_impl == "direct_softmax"
-            )
             _bind(module, _reading_order_attention)
         elif isinstance(module, layout_mod.PPDocLayoutV2GlobalPointer):
             _bind(module, _global_pointer)
@@ -513,14 +486,10 @@ class LayoutFullGraphRuntime:
         device: torch.device,
         batch_size: int = 1,
         freeze_parameters: bool = False,
-        cogview_attention_impl: str = "stabilized",
     ) -> None:
         if batch_size < 1:
             raise ValueError("layout batch size must be >= 1")
-        make_compile_compatible(
-            model,
-            cogview_attention_impl=cogview_attention_impl,
-        )
+        make_compile_compatible(model)
         self.batch_size = int(batch_size)
         self.stage = LayoutFullGraph(model).eval()
         source_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12]
