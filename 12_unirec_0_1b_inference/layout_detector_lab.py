@@ -44,7 +44,6 @@ CURRENT_PRODUCTION_CONTRACT = {
     "freeze_parameters": False,
     "depthwise_rewrite": DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
     "fuse_frozen_bn": False,
-    "fuse_eval_bn": False,
     "precompute_frozen_bn_affine": False,
     "preformat_frozen_bn_buffers": True,
     "cogview_attention_impl": DEFAULT_LAYOUT_COGVIEW_ATTENTION_IMPL,
@@ -60,7 +59,6 @@ CUSTOM_DEFAULTS = {
     "freeze_parameters": False,
     "depthwise_rewrite": "native",
     "fuse_frozen_bn": False,
-    "fuse_eval_bn": False,
     "precompute_frozen_bn_affine": False,
     "preformat_frozen_bn_buffers": False,
     "cogview_attention_impl": DEFAULT_LAYOUT_COGVIEW_ATTENTION_IMPL,
@@ -139,12 +137,6 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         default=None,
         help="Fold inference-only backbone FrozenBatchNorm2d into Conv2d",
-    )
-    parser.add_argument(
-        "--fuse-eval-bn",
-        action="store_true",
-        default=None,
-        help="Fold evaluation FPN/PAN BatchNorm2d into Conv2d",
     )
     parser.add_argument(
         "--precompute-frozen-bn-affine",
@@ -362,7 +354,6 @@ def main() -> None:
         freeze_parameters=args.freeze_parameters,
         depthwise_rewrite=args.depthwise_rewrite,
         fuse_frozen_bn=args.fuse_frozen_bn,
-        fuse_eval_bn=args.fuse_eval_bn,
         precompute_frozen_bn_affine=args.precompute_frozen_bn_affine,
         preformat_frozen_bn_buffers=args.preformat_frozen_bn_buffers,
         cogview_attention_impl=args.cogview_attention_impl,
@@ -476,8 +467,6 @@ def main() -> None:
             "depthwise_rewrite_summary": detector.depthwise_rewrite_summary,
             "fuse_frozen_bn": args.fuse_frozen_bn,
             "frozen_bn_fusion_summary": detector.frozen_bn_fusion_summary,
-            "fuse_eval_bn": args.fuse_eval_bn,
-            "eval_bn_fusion_summary": detector.eval_bn_fusion_summary,
             "precompute_frozen_bn_affine": args.precompute_frozen_bn_affine,
             "frozen_bn_affine_summary": detector.frozen_bn_affine_summary,
             "preformat_frozen_bn_buffers": args.preformat_frozen_bn_buffers,
