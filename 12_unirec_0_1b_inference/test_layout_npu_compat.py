@@ -177,6 +177,7 @@ class _Model(nn.Module):
         super().__init__()
         self.model = _AnchorOwner()
         self.reading_order = _ReadingOrder()
+        self.reading_order_attention = _ReadingOrderSelfAttentionClass()
 
     def forward(self, *args, **kwargs):
         del args, kwargs
@@ -324,6 +325,32 @@ class LayoutNpuCompatibilityTest(unittest.TestCase):
             model.reading_order.encoder._cal_1d_pos_emb.__func__,
             self.layout_torchair._reading_order_cal_1d_pos_emb,
         )
+        self.assertFalse(
+            model.reading_order_attention._unirec_cogview_direct_softmax
+        )
+
+    def test_direct_cogview_softmax_is_selectable_and_numerically_close(self) -> None:
+        model = _Model()
+        self.layout_torchair.make_compile_compatible(
+            model,
+            cogview_attention_impl="direct_softmax",
+        )
+        self.assertTrue(
+            model.reading_order_attention._unirec_cogview_direct_softmax
+        )
+
+        torch.manual_seed(20260815)
+        scores = torch.randn(1, 8, 37, 37, dtype=torch.float32) * 4
+        stabilized = self.layout_torchair._cogview_attention_stabilized(scores)
+        direct = self.layout_torchair._cogview_attention_direct_softmax(scores)
+        torch.testing.assert_close(direct, stabilized, atol=2e-7, rtol=2e-6)
+
+    def test_unknown_cogview_attention_implementation_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "CogView attention"):
+            self.layout_torchair.make_compile_compatible(
+                _Model(),
+                cogview_attention_impl="unknown",
+            )
 
     def test_adapter_installs_the_eager_bundle(self) -> None:
         source = (ROOT / "opendoc_layout_npu.py").read_text(encoding="utf-8")

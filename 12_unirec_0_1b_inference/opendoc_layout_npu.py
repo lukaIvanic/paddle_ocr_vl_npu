@@ -35,6 +35,12 @@ LAYOUT_DEPTHWISE_REWRITE_CHOICES = (
 )
 DEFAULT_LAYOUT_DEPTHWISE_REWRITE = "constant_grouped"
 
+LAYOUT_COGVIEW_ATTENTION_IMPL_CHOICES = (
+    "stabilized",
+    "direct_softmax",
+)
+DEFAULT_LAYOUT_COGVIEW_ATTENTION_IMPL = "stabilized"
+
 
 class _PrecomputedLayoutAffine2d(torch.nn.Module):
     def __init__(self, scale: torch.Tensor, bias: torch.Tensor) -> None:
@@ -693,6 +699,7 @@ class PPDocLayoutV2NpuAdapter:
         fuse_eval_bn: bool = False,
         precompute_frozen_bn_affine: bool = False,
         preformat_frozen_bn_buffers: bool = False,
+        cogview_attention_impl: str = DEFAULT_LAYOUT_COGVIEW_ATTENTION_IMPL,
         input_color_order: str = "bgr",
     ) -> None:
         if dtype not in DTYPE_MAP:
@@ -714,6 +721,11 @@ class PPDocLayoutV2NpuAdapter:
         if depthwise_rewrite not in LAYOUT_DEPTHWISE_REWRITE_CHOICES:
             raise ValueError(
                 f"Unsupported layout depthwise rewrite: {depthwise_rewrite}"
+            )
+        if cogview_attention_impl not in LAYOUT_COGVIEW_ATTENTION_IMPL_CHOICES:
+            raise ValueError(
+                "Unsupported layout CogView attention implementation: "
+                f"{cogview_attention_impl}"
             )
         if input_color_order not in {"bgr", "rgb"}:
             raise ValueError(
@@ -742,6 +754,7 @@ class PPDocLayoutV2NpuAdapter:
         self.fuse_eval_bn = bool(fuse_eval_bn)
         self.precompute_frozen_bn_affine = bool(precompute_frozen_bn_affine)
         self.preformat_frozen_bn_buffers = bool(preformat_frozen_bn_buffers)
+        self.cogview_attention_impl = str(cogview_attention_impl)
         self.input_color_order = str(input_color_order)
         frozen_bn_rewrite_count = sum(
             (
@@ -841,12 +854,14 @@ class PPDocLayoutV2NpuAdapter:
                     f"frozenbn{int(self.fuse_frozen_bn)}_"
                     f"evalbn{int(self.fuse_eval_bn)}_"
                     f"precomputedfrozenbn{int(self.precompute_frozen_bn_affine)}_"
-                    f"formattedfrozenbnbuffers{int(self.preformat_frozen_bn_buffers)}"
+                    f"formattedfrozenbnbuffers{int(self.preformat_frozen_bn_buffers)}_"
+                    f"cogview_{self.cogview_attention_impl}"
                 ),
                 dtype=self.dtype,
                 device=self.device,
                 batch_size=self.batch_size,
                 freeze_parameters=self.freeze_parameters,
+                cogview_attention_impl=self.cogview_attention_impl,
             )
         self.setup_s = time.perf_counter() - started
         self.page_count = 0

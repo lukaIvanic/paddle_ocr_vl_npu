@@ -26,7 +26,9 @@ import torch
 
 from layout_page_input import decode_page_rgb, materialize_layout_rgb
 from opendoc_layout_npu import (
+    DEFAULT_LAYOUT_COGVIEW_ATTENTION_IMPL,
     DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
+    LAYOUT_COGVIEW_ATTENTION_IMPL_CHOICES,
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
     PPDocLayoutV2NpuAdapter,
@@ -45,6 +47,7 @@ CURRENT_PRODUCTION_CONTRACT = {
     "fuse_eval_bn": False,
     "precompute_frozen_bn_affine": False,
     "preformat_frozen_bn_buffers": True,
+    "cogview_attention_impl": DEFAULT_LAYOUT_COGVIEW_ATTENTION_IMPL,
     "input_color_order": "rgb",
 }
 
@@ -60,6 +63,7 @@ CUSTOM_DEFAULTS = {
     "fuse_eval_bn": False,
     "precompute_frozen_bn_affine": False,
     "preformat_frozen_bn_buffers": False,
+    "cogview_attention_impl": DEFAULT_LAYOUT_COGVIEW_ATTENTION_IMPL,
     "input_color_order": "bgr",
 }
 
@@ -153,6 +157,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         default=None,
         help="Keep FrozenBN math but store its four buffers as NC1HWC0",
+    )
+    parser.add_argument(
+        "--cogview-attention-impl",
+        choices=LAYOUT_COGVIEW_ATTENTION_IMPL_CHOICES,
+        default=None,
+        help="Select stabilized CogView attention or direct stable Softmax",
     )
     parser.add_argument(
         "--input-color-order",
@@ -355,6 +365,7 @@ def main() -> None:
         fuse_eval_bn=args.fuse_eval_bn,
         precompute_frozen_bn_affine=args.precompute_frozen_bn_affine,
         preformat_frozen_bn_buffers=args.preformat_frozen_bn_buffers,
+        cogview_attention_impl=args.cogview_attention_impl,
         input_color_order=args.input_color_order,
     )
     print(
@@ -470,6 +481,7 @@ def main() -> None:
             "precompute_frozen_bn_affine": args.precompute_frozen_bn_affine,
             "frozen_bn_affine_summary": detector.frozen_bn_affine_summary,
             "preformat_frozen_bn_buffers": args.preformat_frozen_bn_buffers,
+            "cogview_attention_impl": args.cogview_attention_impl,
             "frozen_bn_buffer_format_summary": (
                 detector.frozen_bn_buffer_format_summary
             ),
