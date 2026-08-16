@@ -43,15 +43,18 @@ record_roots() {
 inspect_headers() {
   : >"$RUN_ROOT/header_hits.txt"
   local root candidate
-  while IFS= read -r root; do
-    for candidate in \
-      "$root/include/aclnnop/aclnn_multi_scale_deformable_attn_function.h" \
-      "$root/aarch64-linux/include/aclnnop/aclnn_multi_scale_deformable_attn_function.h" \
-      "$root/include/aclnnop/aclnn_multi_scale_deformable_attn.h" \
-      "$root/aarch64-linux/include/aclnnop/aclnn_multi_scale_deformable_attn.h"; do
-      [[ -f "$candidate" ]] && printf '%s\n' "$candidate"
-    done
-  done <"$RUN_ROOT/toolkit_roots.txt" | sort -u >"$RUN_ROOT/header_hits.txt"
+  {
+    while IFS= read -r root; do
+      for candidate in \
+        "$root/include/aclnnop/aclnn_multi_scale_deformable_attn_function.h" \
+        "$root/aarch64-linux/include/aclnnop/aclnn_multi_scale_deformable_attn_function.h" \
+        "$root/include/aclnnop/aclnn_multi_scale_deformable_attn.h" \
+        "$root/aarch64-linux/include/aclnnop/aclnn_multi_scale_deformable_attn.h"; do
+        [[ -f "$candidate" ]] && printf '%s\n' "$candidate" || true
+      done
+    done <"$RUN_ROOT/toolkit_roots.txt"
+    true
+  } | sort -u >"$RUN_ROOT/header_hits.txt"
 }
 
 inspect_symbols() {
@@ -61,54 +64,60 @@ inspect_symbols() {
     printf 'NM_NOT_INSTALLED\n' >"$RUN_ROOT/symbol_hits.txt"
     return
   fi
-  while IFS= read -r root; do
-    for library in \
-      "$root/aarch64-linux/lib64/libopapi.so" \
-      "$root/aarch64-linux/lib64/libopapi_nn.so" \
-      "$root/lib64/libopapi.so" \
-      "$root/lib64/libopapi_nn.so"; do
-      [[ -f "$library" ]] || continue
-      nm -D "$library" 2>/dev/null \
-        | grep -E 'aclnnMultiScaleDeformableAttn(Function)?(GetWorkspaceSize)?$' \
-        | sed "s#^#$library #" || true
-    done
-  done <"$RUN_ROOT/toolkit_roots.txt" \
-    | sort -u >"$RUN_ROOT/symbol_hits.txt"
+  {
+    while IFS= read -r root; do
+      for library in \
+        "$root/aarch64-linux/lib64/libopapi.so" \
+        "$root/aarch64-linux/lib64/libopapi_nn.so" \
+        "$root/lib64/libopapi.so" \
+        "$root/lib64/libopapi_nn.so"; do
+        [[ -f "$library" ]] || continue
+        nm -D "$library" 2>/dev/null \
+          | grep -E 'aclnnMultiScaleDeformableAttn(Function)?(GetWorkspaceSize)?$' \
+          | sed "s#^#$library #" || true
+      done
+    done <"$RUN_ROOT/toolkit_roots.txt"
+    true
+  } | sort -u >"$RUN_ROOT/symbol_hits.txt"
 }
 
 inspect_operator_packages() {
   : >"$RUN_ROOT/operator_metadata_hits.txt"
   : >"$RUN_ROOT/operator_metadata_310p_hits.txt"
   local toolkit_root opp_root
-  while IFS= read -r toolkit_root; do
-    for opp_root in \
-      "$toolkit_root/opp" \
-      "$toolkit_root/aarch64-linux/opp"; do
-      [[ -d "$opp_root" ]] || continue
-      find "$opp_root" -type f \
-        \( -iname '*multi*scale*deform*attn*' \
-           -o -name 'binary_info_config.json' \) \
-        -print 2>/dev/null
-    done
-    case "$toolkit_root" in
-      */opp|*/opp/*)
-        find "$toolkit_root" -type f \
+  {
+    while IFS= read -r toolkit_root; do
+      for opp_root in \
+        "$toolkit_root/opp" \
+        "$toolkit_root/aarch64-linux/opp"; do
+        [[ -d "$opp_root" ]] || continue
+        find "$opp_root" -type f \
           \( -iname '*multi*scale*deform*attn*' \
              -o -name 'binary_info_config.json' \) \
-          -print 2>/dev/null
-        ;;
-    esac
-  done <"$RUN_ROOT/toolkit_roots.txt" \
-    | sort -u >"$RUN_ROOT/operator_metadata_candidates.txt"
+          -print 2>/dev/null || true
+      done
+      case "$toolkit_root" in
+        */opp|*/opp/*)
+          find "$toolkit_root" -type f \
+            \( -iname '*multi*scale*deform*attn*' \
+               -o -name 'binary_info_config.json' \) \
+            -print 2>/dev/null || true
+          ;;
+      esac
+    done <"$RUN_ROOT/toolkit_roots.txt"
+    true
+  } | sort -u >"$RUN_ROOT/operator_metadata_candidates.txt"
 
-  while IFS= read -r candidate; do
-    if [[ "$candidate" == *[Mm]ulti*[Ss]cale*[Dd]eform* ]]; then
-      printf '%s\n' "$candidate"
-    elif grep -q -E 'MultiScaleDeformableAttn(Function)?' "$candidate" 2>/dev/null; then
-      printf '%s\n' "$candidate"
-    fi
-  done <"$RUN_ROOT/operator_metadata_candidates.txt" \
-    | sort -u >"$RUN_ROOT/operator_metadata_hits.txt"
+  {
+    while IFS= read -r candidate; do
+      if [[ "$candidate" == *[Mm]ulti*[Ss]cale*[Dd]eform* ]]; then
+        printf '%s\n' "$candidate"
+      elif grep -q -E 'MultiScaleDeformableAttn(Function)?' "$candidate" 2>/dev/null; then
+        printf '%s\n' "$candidate"
+      fi
+    done <"$RUN_ROOT/operator_metadata_candidates.txt"
+    true
+  } | sort -u >"$RUN_ROOT/operator_metadata_hits.txt"
 
   grep -Ei 'ascend310p|310p' "$RUN_ROOT/operator_metadata_hits.txt" \
     >"$RUN_ROOT/operator_metadata_310p_hits.txt" || true
