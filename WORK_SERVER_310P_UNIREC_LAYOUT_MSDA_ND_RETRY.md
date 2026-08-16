@@ -37,13 +37,15 @@ internal output     [1,256,300]      -> logical [1,300,256] FP16
 This makes the 310P tiler read `numQueries=300` from internal weight dimension
 3, as intended. Do not pad the feature-level dimension from 3 to 32.
 
-The following retry also fixes the next graph-construction failure. Huawei's
+The following retry targets the next graph-construction failure. Huawei's
 shared GE infer-shape implementation reads the transposed location's dimension
 5 (`2`, the coordinate pair) as the query count and produces the bogus internal
 shape `[1,2,32]`. The tiler itself uses the correct attention-weight dimensions.
-The converter now attaches TorchAir's standard `_inference_rule` attribute with
-the authoritative internal output shape `[1,256,300]` and FP32 dtype before the
-output transpose. This is graph metadata only; it adds no runtime operation.
+TorchAir's `_inference_rule` attribute did not override the already-registered
+CANN host function. The binding extension now registers a corrected host infer
+callback for the same operator. It returns internal `[B,H*D,Q]` for the 310P
+layout and preserves logical `[B,Q,H*D]` inference for the public layout. This
+changes graph construction only and adds no runtime operation.
 
 This is derived from the public Ascend operator sources, not a guessed layout:
 
@@ -64,7 +66,8 @@ from the successful binding environment. The runner now preserves its path.
 
 - Pull only. Do not edit, commit, branch, or push.
 - Never use physical NPU 5 or 6.
-- Reuse the already-built, successful binding extension SO.
+- Rebuild the small host binding once. This revision adds the corrected CANN
+  host infer callback to that library; the old SO does not contain it.
 - Use a fresh candidate graph cache.
 - Run only the one-page candidate compile probe below. Do not rerun the
   baseline, profiling, recognition, or evaluation.
@@ -94,15 +97,10 @@ export MODEL="${MODEL:-$REPO/models/unirec-0.1b}"
 export LAYOUT_MODEL="${LAYOUT_MODEL:-$REPO/models/PP-DocLayoutV2_safetensors}"
 export OPENOCR_ROOT="${OPENOCR_ROOT:-$REPO/deps/OpenOCR_0d522801}"
 export IMAGES_DIR="${IMAGES_DIR:?set the existing OmniDocBench images directory}"
-export MSDA_BINDING_RUN_ROOT="${MSDA_BINDING_RUN_ROOT:?set the successful binding run root}"
-test "$(tr -d '[:space:]' <"$MSDA_BINDING_RUN_ROOT/exit_code.txt")" = 0
-export MSDA_EXTENSION_SO
-MSDA_EXTENSION_SO="$(tr -d '[:space:]' <"$MSDA_BINDING_RUN_ROOT/extension_so.txt")"
-test -f "$MSDA_EXTENSION_SO"
-
 export MSDA_RUN_MODE=candidate_compile_probe
 export MSDA_FORWARD_LIMIT=1
 export MSDA_WARMUP_PAGES=2
+export MSDA_REBUILD_EXTENSION=1
 bash 12_unirec_0_1b_inference/run_310p_layout_msda_real_background.sh
 ```
 
@@ -115,9 +113,12 @@ If it passes, return:
 
 1. the final `LAYOUT_LAB done` line and measured forward time;
 2. confirmation that both warmup calls completed;
-3. physical NPU, commit, exact `python=` path, torch, and torch-npu;
-4. absolute run root, cache root, log, output JSON, and exit-code file;
-5. confirmation that the owned process exited and its NPU was released.
+3. the `UNIREC_LAYOUT_MSDA_HOST_INFER_OVERRIDE_ACTIVE` line, which must report
+   internal output `[1,256,300]`;
+4. physical NPU, commit, exact `python=` path, torch, and torch-npu;
+5. absolute run root, cache root, extension build log, extension SO, output
+   JSON, and exit-code file;
+6. confirmation that the owned process exited and its NPU was released.
 
 If it fails, return instead:
 

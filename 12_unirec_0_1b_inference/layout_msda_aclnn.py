@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-import json
 from pathlib import Path
 from typing import Any
 
@@ -23,24 +22,6 @@ _CONVERTER_USES_310P_INTERNAL_LAYOUT = False
 
 def _uses_310p_internal_layout(device_name: str) -> bool:
     return "310P" in device_name.upper()
-
-
-def _static_inference_rule(
-    *,
-    input_count: int,
-    output_shape: list[int],
-    output_dtype: int,
-) -> str:
-    return json.dumps(
-        {
-            "shape": {
-                "inputs": [None] * int(input_count),
-                "outputs": [[str(int(dim)) for dim in output_shape]],
-            },
-            "dtype": [int(output_dtype)],
-        },
-        indent=2,
-    )
 
 
 def load_layout_msda_extension(path: str | Path) -> Path:
@@ -185,20 +166,6 @@ def register_layout_msda_converter() -> None:
                 )
             )
             output.desc.shape.dim[:] = internal_shape
-            # Huawei's shared registered infer-shape function incorrectly reads
-            # the 310P transposed location's coordinate dimension as Q. The
-            # kernel tiler reads the correct Q from attention-weight dimension
-            # 3, but GE otherwise replaces this descriptor with [B,2,D]. An
-            # explicit TorchAir inference rule is authoritative at graph build
-            # time and is the same mechanism TorchAir generates automatically
-            # when this custom op is the converter's final output on 910B.
-            ge_module.attr.Str(
-                _static_inference_rule(
-                    input_count=5,
-                    output_shape=internal_shape,
-                    output_dtype=int(ge_data_type.DT_FLOAT),
-                )
-            ).merge_to(output.node.attr["_inference_rule"])
             output = ge_apis_module.Transpose(output, [0, 2, 1])
             output = ge_apis_module.Cast(
                 output,

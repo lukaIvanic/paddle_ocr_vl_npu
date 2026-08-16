@@ -6,6 +6,7 @@ REPO="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 LAYOUT_LAB="$SCRIPT_DIR/layout_detector_lab.py"
 PROFILE_RUNNER="$SCRIPT_DIR/profile_prefill_graph_suite.py"
 ANALYZER="$SCRIPT_DIR/compare_layout_msda_ab.py"
+EXTENSION_ROOT="$SCRIPT_DIR/custom_ops/layout_msda_aclnn/pytorch_extension"
 
 reject_bad_device() {
   : "${ASCEND_RT_VISIBLE_DEVICES:?source npu-setup before launching}"
@@ -25,7 +26,6 @@ resolve_inputs() {
   : "${LAYOUT_MODEL:?export the PP-DocLayoutV2 model directory}"
   : "${OPENOCR_ROOT:?export the matching OpenOCR checkout}"
   : "${IMAGES_DIR:?export the OmniDocBench image directory}"
-  : "${MSDA_EXTENSION_SO:?export the completed binding probe extension SO}"
   : "${LAYOUT_CACHE_ROOT:?export the unique layout A/B cache root}"
   reject_bad_device
 
@@ -38,8 +38,42 @@ resolve_inputs() {
   LAYOUT_MODEL="$(readlink -f "$LAYOUT_MODEL")"
   OPENOCR_ROOT="$(readlink -f "$OPENOCR_ROOT")"
   IMAGES_DIR="$(readlink -f "$IMAGES_DIR")"
-  MSDA_EXTENSION_SO="$(readlink -f "$MSDA_EXTENSION_SO")"
   LAYOUT_CACHE_ROOT="$(readlink -m "$LAYOUT_CACHE_ROOT")"
+  MSDA_REBUILD_EXTENSION="${MSDA_REBUILD_EXTENSION:-0}"
+  case "$MSDA_REBUILD_EXTENSION" in
+    0)
+      : "${MSDA_EXTENSION_SO:?export the completed binding probe extension SO}"
+      MSDA_EXTENSION_SO="$(readlink -f "$MSDA_EXTENSION_SO")"
+      ;;
+    1)
+      test -f "$EXTENSION_ROOT/setup.py"
+      mkdir -p "$RUN_ROOT/extension" "$RUN_ROOT/extension_build"
+      printf 'UNIREC_LAYOUT_MSDA_REAL_PHASE_BEGIN phase=extension_build\n'
+      (
+        cd "$EXTENSION_ROOT"
+        MAX_JOBS=1 USE_NINJA=0 "$PYTHON_BIN" setup.py build_ext \
+          --build-lib "$RUN_ROOT/extension" \
+          --build-temp "$RUN_ROOT/extension_build"
+      ) 2>&1 | tee "$RUN_ROOT/extension_build.log"
+      mapfile -t extension_sos < <(
+        find "$RUN_ROOT/extension" -type f -name '_C*.so' -print | sort
+      )
+      if [[ "${#extension_sos[@]}" != 1 ]]; then
+        printf 'ERROR expected one rebuilt extension, found %s\n' \
+          "${#extension_sos[@]}" >&2
+        return 2
+      fi
+      MSDA_EXTENSION_SO="${extension_sos[0]}"
+      printf '%s\n' "$MSDA_EXTENSION_SO" >"$RUN_ROOT/extension_so.txt"
+      printf 'UNIREC_LAYOUT_MSDA_REAL_PHASE_END phase=extension_build so=%s\n' \
+        "$MSDA_EXTENSION_SO"
+      ;;
+    *)
+      printf 'ERROR MSDA_REBUILD_EXTENSION must be 0 or 1, got %s\n' \
+        "$MSDA_REBUILD_EXTENSION" >&2
+      return 2
+      ;;
+  esac
   MSDA_RUN_MODE="${MSDA_RUN_MODE:-full_ab}"
   case "$MSDA_RUN_MODE" in
     full_ab)
@@ -172,6 +206,7 @@ worker_main() {
     printf 'layout_model=%s\n' "$LAYOUT_MODEL"
     printf 'images=%s\n' "$IMAGES_DIR"
     printf 'msda_extension_so=%s\n' "$MSDA_EXTENSION_SO"
+    printf 'msda_rebuild_extension=%s\n' "$MSDA_REBUILD_EXTENSION"
     printf 'layout_cache_root=%s\n' "$LAYOUT_CACHE_ROOT"
     printf 'layout_profile_input=%s\n' "$LAYOUT_INPUT_IMAGE"
     printf 'msda_run_mode=%s\n' "$MSDA_RUN_MODE"
@@ -226,7 +261,10 @@ launch_main() {
   : "${LAYOUT_MODEL:?export the PP-DocLayoutV2 model directory}"
   : "${OPENOCR_ROOT:?export the matching OpenOCR checkout}"
   : "${IMAGES_DIR:?export the OmniDocBench image directory}"
-  : "${MSDA_EXTENSION_SO:?export the completed binding probe extension SO}"
+  MSDA_REBUILD_EXTENSION="${MSDA_REBUILD_EXTENSION:-0}"
+  if [[ "$MSDA_REBUILD_EXTENSION" != 1 ]]; then
+    : "${MSDA_EXTENSION_SO:?export the completed binding probe extension SO}"
+  fi
 
   local commit_short timestamp
   commit_short="$(git -C "$REPO" rev-parse --short HEAD)"
@@ -245,7 +283,8 @@ launch_main() {
     LAYOUT_MODEL="$LAYOUT_MODEL" \
     OPENOCR_ROOT="$OPENOCR_ROOT" \
     IMAGES_DIR="$IMAGES_DIR" \
-    MSDA_EXTENSION_SO="$MSDA_EXTENSION_SO" \
+    MSDA_EXTENSION_SO="${MSDA_EXTENSION_SO:-}" \
+    MSDA_REBUILD_EXTENSION="$MSDA_REBUILD_EXTENSION" \
     LAYOUT_CACHE_ROOT="$LAYOUT_CACHE_ROOT" \
     MSDA_RUN_MODE="${MSDA_RUN_MODE:-full_ab}" \
     MSDA_FORWARD_LIMIT="${MSDA_FORWARD_LIMIT:-}" \
