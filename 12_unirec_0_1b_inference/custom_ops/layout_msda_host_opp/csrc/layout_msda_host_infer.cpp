@@ -4,7 +4,26 @@
 
 #include "register/op_impl_registry.h"
 
+#ifndef UNIREC_MSDA_LIBRARY_ROLE
+#define UNIREC_MSDA_LIBRARY_ROLE "unknown"
+#endif
+
 namespace {
+
+__attribute__((constructor)) void report_layout_msda_host_library_load()
+{
+    std::fprintf(
+        stderr,
+        "UNIREC_LAYOUT_MSDA_HOST_OPP_LOADED role=%s\n",
+        UNIREC_MSDA_LIBRARY_ROLE);
+    const char *marker = std::getenv("UNIREC_LAYOUT_MSDA_HOST_INFER_MARKER");
+    if (marker != nullptr && marker[0] != '\0') {
+        if (std::FILE *file = std::fopen(marker, "a")) {
+            std::fprintf(file, "library_loaded role=%s\n", UNIREC_MSDA_LIBRARY_ROLE);
+            std::fclose(file);
+        }
+    }
+}
 
 ge::graphStatus infer_layout_msda_output(gert::InferShapeContext *context)
 {
