@@ -55,6 +55,9 @@ def register_layout_msda_converter() -> None:
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
     )
     ge_module = importlib.import_module(f"{torchair.__name__}.ge")
+    ge_apis_module = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.ge_apis"
+    )
     register_converter = converter_module.register_fx_node_ge_converter
     ge_custom_op = ge_module.custom_op
 
@@ -99,7 +102,7 @@ def register_layout_msda_converter() -> None:
             raise NotImplementedError(
                 "layout MSDA only lowers prod(dim=1, keepdim=False, dtype=None)"
             )
-        return ge_module.ReduceProdD(inputs, axes=[1], keep_dims=False)
+        return ge_apis_module.ReduceProdD(inputs, axes=[1], keep_dims=False)
 
     _CONVERTER_REGISTERED = True
 
