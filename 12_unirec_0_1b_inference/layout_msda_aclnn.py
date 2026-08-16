@@ -75,6 +75,12 @@ def _pin_ge_output_shape_without_host_infer(
     ge_attr.Bool(True).merge_to(
         output.node.attr["_disable_call_shape_inference"]
     )
+    print(
+        "UNIREC_LAYOUT_MSDA_NODE_SHAPE_PIN "
+        f"node={output.node.name} shape={concrete_shape} "
+        "disable_host_infer=true",
+        flush=True,
+    )
 
 
 def register_layout_msda_converter() -> None:
