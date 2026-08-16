@@ -20,7 +20,11 @@ reject_bad_device() {
 
 resolve_python() {
   : "${PYTHON_BIN:?export the existing UniRec Python interpreter}"
-  PYTHON_BIN="$(readlink -f "$PYTHON_BIN")"
+  if [[ "$PYTHON_BIN" == */* ]]; then
+    PYTHON_BIN="$(cd "$(dirname "$PYTHON_BIN")" && pwd -P)/$(basename "$PYTHON_BIN")"
+  else
+    PYTHON_BIN="$(command -v "$PYTHON_BIN")"
+  fi
   test -x "$PYTHON_BIN"
   test -f "$EXTENSION_ROOT/setup.py"
   test -f "$PROBE"

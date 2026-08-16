@@ -29,7 +29,11 @@ resolve_inputs() {
   : "${LAYOUT_CACHE_ROOT:?export the unique layout A/B cache root}"
   reject_bad_device
 
-  PYTHON_BIN="$(readlink -f "$PYTHON_BIN")"
+  if [[ "$PYTHON_BIN" == */* ]]; then
+    PYTHON_BIN="$(cd "$(dirname "$PYTHON_BIN")" && pwd -P)/$(basename "$PYTHON_BIN")"
+  else
+    PYTHON_BIN="$(command -v "$PYTHON_BIN")"
+  fi
   MODEL="$(readlink -f "$MODEL")"
   LAYOUT_MODEL="$(readlink -f "$LAYOUT_MODEL")"
   OPENOCR_ROOT="$(readlink -f "$OPENOCR_ROOT")"

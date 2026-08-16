@@ -54,6 +54,9 @@ def register_layout_msda_converter() -> None:
     converter_module = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
     )
+    converter_utils = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.ge_converter.converter_utils"
+    )
     ge_module = importlib.import_module(f"{torchair.__name__}.ge")
     ge_apis_module = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.ge_apis"
@@ -64,6 +67,8 @@ def register_layout_msda_converter() -> None:
     ge_data_type = ge_graph_module.DataType
     register_converter = converter_module.register_fx_node_ge_converter
     ge_custom_op = ge_module.custom_op
+    specific_input_layout = converter_utils.specific_op_input_layout
+    specific_output_layout = converter_utils.specific_op_output_layout
 
     @register_converter(torch.ops.unirec_layout.msda_aclnn.default)
     def _convert_layout_msda(
@@ -83,7 +88,7 @@ def register_layout_msda_converter() -> None:
             value_level_start_index,
             dst_type=ge_data_type.DT_INT32,
         )
-        return ge_custom_op(
+        output = ge_custom_op(
             GE_OP_NAME,
             inputs={
                 "value": value,
@@ -94,6 +99,17 @@ def register_layout_msda_converter() -> None:
             },
             outputs=["output"],
         )
+        # CANN declares every MSDA tensor as ND. Without these annotations,
+        # TorchAir can assign NCHW to low-rank metadata tensors. The 310P TBE
+        # compiler rejects that descriptor even though the eager ACLNN call
+        # accepts the same logical values.
+        specific_input_layout(
+            output,
+            indices=[0, 1, 2, 3, 4],
+            layout="ND",
+        )
+        specific_output_layout(output, indices=0, layout="ND")
+        return output
 
     # The stock layout model computes level_start_index from its three-row
     # spatial-shape tensor with prod(dim=1). That result was dead in the old
