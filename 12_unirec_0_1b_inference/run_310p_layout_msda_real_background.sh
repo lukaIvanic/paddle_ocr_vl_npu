@@ -40,6 +40,20 @@ resolve_inputs() {
   IMAGES_DIR="$(readlink -f "$IMAGES_DIR")"
   MSDA_EXTENSION_SO="$(readlink -f "$MSDA_EXTENSION_SO")"
   LAYOUT_CACHE_ROOT="$(readlink -m "$LAYOUT_CACHE_ROOT")"
+  MSDA_RUN_MODE="${MSDA_RUN_MODE:-full_ab}"
+  case "$MSDA_RUN_MODE" in
+    full_ab)
+      MSDA_FORWARD_LIMIT="${MSDA_FORWARD_LIMIT:-128}"
+      ;;
+    candidate_compile_probe)
+      MSDA_FORWARD_LIMIT="${MSDA_FORWARD_LIMIT:-1}"
+      ;;
+    *)
+      printf 'ERROR unsupported MSDA_RUN_MODE=%s\n' "$MSDA_RUN_MODE" >&2
+      exit 2
+      ;;
+  esac
+  MSDA_WARMUP_PAGES="${MSDA_WARMUP_PAGES:-2}"
 
   test -x "$PYTHON_BIN"
   test -f "$MODEL/model.pth"
@@ -62,7 +76,10 @@ resolve_inputs() {
     exit 2
   fi
   LAYOUT_INPUT_IMAGE="${layout_images[0]}"
-  mkdir -p "$LAYOUT_CACHE_ROOT/baseline" "$LAYOUT_CACHE_ROOT/candidate"
+  mkdir -p "$LAYOUT_CACHE_ROOT/candidate"
+  if [[ "$MSDA_RUN_MODE" == full_ab ]]; then
+    mkdir -p "$LAYOUT_CACHE_ROOT/baseline"
+  fi
 }
 
 run_phase() {
@@ -95,8 +112,8 @@ run_forward() {
     --execution torchair
     --compile-cache-dir "$cache"
     --offset 0
-    --limit 128
-    --warmup-pages 2
+    --limit "$MSDA_FORWARD_LIMIT"
+    --warmup-pages "$MSDA_WARMUP_PAGES"
     --torch-cpu-threads 1
   )
   if [[ "$name" == candidate ]]; then
@@ -157,26 +174,34 @@ worker_main() {
     printf 'msda_extension_so=%s\n' "$MSDA_EXTENSION_SO"
     printf 'layout_cache_root=%s\n' "$LAYOUT_CACHE_ROOT"
     printf 'layout_profile_input=%s\n' "$LAYOUT_INPUT_IMAGE"
+    printf 'msda_run_mode=%s\n' "$MSDA_RUN_MODE"
+    printf 'msda_forward_limit=%s\n' "$MSDA_FORWARD_LIMIT"
+    printf 'msda_warmup_pages=%s\n' "$MSDA_WARMUP_PAGES"
     "$PYTHON_BIN" -c \
       'import torch,torch_npu; print("torch="+torch.__version__); print("torch_npu="+torch_npu.__version__)'
     npu-smi info
   } | tee "$RUN_ROOT/environment.txt"
 
-  run_forward baseline current_production "$LAYOUT_CACHE_ROOT/baseline"
-  run_forward \
-    candidate current_production_msda_aclnn "$LAYOUT_CACHE_ROOT/candidate"
-  run_profile baseline decomposed "$LAYOUT_CACHE_ROOT/baseline"
-  run_profile candidate aclnn "$LAYOUT_CACHE_ROOT/candidate"
+  if [[ "$MSDA_RUN_MODE" == candidate_compile_probe ]]; then
+    run_forward \
+      candidate current_production_msda_aclnn "$LAYOUT_CACHE_ROOT/candidate"
+  else
+    run_forward baseline current_production "$LAYOUT_CACHE_ROOT/baseline"
+    run_forward \
+      candidate current_production_msda_aclnn "$LAYOUT_CACHE_ROOT/candidate"
+    run_profile baseline decomposed "$LAYOUT_CACHE_ROOT/baseline"
+    run_profile candidate aclnn "$LAYOUT_CACHE_ROOT/candidate"
 
-  run_phase analyze "$RUN_ROOT/analyze.log" \
-    "$PYTHON_BIN" "$ANALYZER" \
-      --baseline-forward "$RUN_ROOT/forward_baseline.json" \
-      --candidate-forward "$RUN_ROOT/forward_candidate.json" \
-      --baseline-profile \
-        "$RUN_ROOT/profile_baseline/profile_suite_summary.json" \
-      --candidate-profile \
-        "$RUN_ROOT/profile_candidate/profile_suite_summary.json" \
-      --output "$RUN_ROOT/comparison_summary.json"
+    run_phase analyze "$RUN_ROOT/analyze.log" \
+      "$PYTHON_BIN" "$ANALYZER" \
+        --baseline-forward "$RUN_ROOT/forward_baseline.json" \
+        --candidate-forward "$RUN_ROOT/forward_candidate.json" \
+        --baseline-profile \
+          "$RUN_ROOT/profile_baseline/profile_suite_summary.json" \
+        --candidate-profile \
+          "$RUN_ROOT/profile_candidate/profile_suite_summary.json" \
+        --output "$RUN_ROOT/comparison_summary.json"
+  fi
   npu-smi info >"$RUN_ROOT/npu_after.txt" 2>&1 || true
 }
 
@@ -222,6 +247,9 @@ launch_main() {
     IMAGES_DIR="$IMAGES_DIR" \
     MSDA_EXTENSION_SO="$MSDA_EXTENSION_SO" \
     LAYOUT_CACHE_ROOT="$LAYOUT_CACHE_ROOT" \
+    MSDA_RUN_MODE="${MSDA_RUN_MODE:-full_ab}" \
+    MSDA_FORWARD_LIMIT="${MSDA_FORWARD_LIMIT:-}" \
+    MSDA_WARMUP_PAGES="${MSDA_WARMUP_PAGES:-}" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     OMP_NUM_THREADS=1 \
     MKL_NUM_THREADS=1 \
