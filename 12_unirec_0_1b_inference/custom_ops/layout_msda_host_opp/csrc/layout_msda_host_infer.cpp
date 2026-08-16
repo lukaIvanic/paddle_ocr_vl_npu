@@ -72,44 +72,65 @@ ge::graphStatus infer_layout_msda_dtype(gert::InferDataTypeContext *context)
     return ge::GRAPH_SUCCESS;
 }
 
+} // namespace
+
 #if defined(OP_TILING_LIB)
-const bool layout_msda_host_opp_installed = []() {
-    // This library is loaded by GE's compiler process through the user OPP.
-    // A duplicate OpImplRegisterV2 does not replace CANN's built-in callback.
-    // Mutate only the two broken infer pointers in that process and preserve
-    // the installed tiler, workspace, and kernel callbacks.
+extern "C" __attribute__((visibility("default")))
+int unirec_layout_msda_install_resident_host_infer(const char *trigger)
+{
+    // Change only the two broken infer pointers. Preserve CANN's stock tiler,
+    // workspace, and kernel callbacks.
     auto &functions = gert::OpImplRegistry::GetInstance().CreateOrGetOpImpl(
         "MultiScaleDeformableAttnFunction");
     functions.infer_shape = infer_layout_msda_output;
     functions.infer_datatype = infer_layout_msda_dtype;
 
+    static std::atomic<size_t> refresh_count{0};
+    const size_t count = refresh_count.fetch_add(1) + 1;
+    const char *safe_trigger = trigger == nullptr ? "unknown" : trigger;
     std::fprintf(
         stderr,
-        "UNIREC_LAYOUT_MSDA_HOST_OPP_OVERRIDE_INSTALLED role=%s\n",
-        UNIREC_MSDA_LIBRARY_ROLE);
+        "UNIREC_LAYOUT_MSDA_HOST_OPP_OVERRIDE_INSTALLED "
+        "trigger=%s count=%zu\n",
+        safe_trigger,
+        count);
     const char *marker = std::getenv("UNIREC_LAYOUT_MSDA_HOST_INFER_MARKER");
     if (marker != nullptr && marker[0] != '\0') {
         if (std::FILE *file = std::fopen(marker, "a")) {
             std::fprintf(
                 file,
-                "override_installed role=%s\n",
-                UNIREC_MSDA_LIBRARY_ROLE);
+                "override_installed trigger=%s count=%zu\n",
+                safe_trigger,
+                count);
             std::fclose(file);
         }
     }
-    return true;
+    return 0;
+}
+
+namespace {
+const bool layout_msda_host_opp_installed = []() {
+    return unirec_layout_msda_install_resident_host_infer(
+               "tiling_initial") == 0;
 }();
+} // namespace
 #else
-// GE loads and unloads the proto library repeatedly while constructing a
-// graph. Never publish a callback pointer into that short-lived DSO. The
-// op-tiling library above remains resident for the compiler lifetime.
-const bool layout_msda_host_proto_observed = []() {
+extern "C" int unirec_layout_msda_install_resident_host_infer(
+    const char *trigger);
+
+namespace {
+// The proto library is loaded later and repeatedly on 310P. Refresh the
+// registry from the NODELETE tiling DSO every time, so CANN's later built-in
+// registration cannot win. The published callback still points into the
+// resident tiling DSO, never into this short-lived proto DSO.
+const bool layout_msda_host_proto_refreshed = []() {
+    const int status = unirec_layout_msda_install_resident_host_infer(
+        "proto_refresh");
     std::fprintf(
         stderr,
-        "UNIREC_LAYOUT_MSDA_HOST_OPP_LOADED_NO_OVERRIDE role=%s\n",
-        UNIREC_MSDA_LIBRARY_ROLE);
-    return true;
+        "UNIREC_LAYOUT_MSDA_HOST_OPP_REFRESH_FROM_PROTO status=%d\n",
+        status);
+    return status == 0;
 }();
-#endif
-
 } // namespace
+#endif

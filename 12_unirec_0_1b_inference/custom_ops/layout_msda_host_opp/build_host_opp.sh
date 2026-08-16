@@ -33,6 +33,8 @@ mkdir -p "$TILING_LIB_DIR" "$PROTO_LIB_DIR"
 
 build_host_library() {
   local target="$1" role="$2" kind_define="$3"
+  shift 3
+  local -a extra_link_args=("$@")
   g++ -std=c++17 -O2 -fPIC -shared \
     "$SOURCE" \
     -I"$CANN_INCLUDE" \
@@ -43,12 +45,20 @@ build_host_library() {
     -Wl,--no-as-needed \
     -lopp_registry -lexe_graph -lregister -lgraph -lgraph_base -lplatform \
     -lascendalog -lerror_manager -lmmpa -lc_sec \
+    "${extra_link_args[@]}" \
     -Wl,--as-needed \
     -o "$target"
 }
 
-build_host_library "$TILING_TARGET" tiling OP_TILING_LIB
-build_host_library "$PROTO_TARGET" proto OP_PROTO_LIB
+build_host_library \
+  "$TILING_TARGET" tiling OP_TILING_LIB \
+  -Wl,-z,nodelete
+build_host_library \
+  "$PROTO_TARGET" proto OP_PROTO_LIB \
+  -L"$TILING_LIB_DIR" \
+  -Wl,--no-as-needed \
+  -lcust_opmaster_rt2.0 \
+  -Wl,-rpath,"$TILING_LIB_DIR"
 
 ln -sfn "lib/linux/$ARCH/$(basename "$TILING_TARGET")" \
   "$TILING_ROOT/liboptiling.so"
