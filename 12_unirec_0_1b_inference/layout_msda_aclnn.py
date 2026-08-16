@@ -16,6 +16,12 @@ EXPECTED_MODULE_COUNT = 6
 
 _LOADED_EXTENSION: Path | None = None
 _CONVERTER_REGISTERED = False
+_CONVERTER_DEVICE_NAME: str | None = None
+_CONVERTER_USES_310P_INTERNAL_LAYOUT = False
+
+
+def _uses_310p_internal_layout(device_name: str) -> bool:
+    return "310P" in device_name.upper()
 
 
 def load_layout_msda_extension(path: str | Path) -> Path:
@@ -47,9 +53,13 @@ def _import_torchair() -> Any:
 
 def register_layout_msda_converter() -> None:
     """Lower the custom torch identity to the installed GE MSDA operator."""
+    global _CONVERTER_DEVICE_NAME
     global _CONVERTER_REGISTERED
+    global _CONVERTER_USES_310P_INTERNAL_LAYOUT
     if _CONVERTER_REGISTERED:
         return
+    device_name = torch.npu.get_device_name()
+    use_310p_internal_layout = _uses_310p_internal_layout(device_name)
     torchair = _import_torchair()
     converter_module = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
@@ -79,7 +89,8 @@ def register_layout_msda_converter() -> None:
         attention_weights: Any,
         meta_outputs: Any = None,
     ) -> Any:
-        del meta_outputs
+        if meta_outputs is None:
+            raise RuntimeError("layout MSDA converter requires output metadata")
         value_spatial_shapes = ge_apis_module.Cast(
             value_spatial_shapes,
             dst_type=ge_data_type.DT_INT32,
@@ -88,6 +99,39 @@ def register_layout_msda_converter() -> None:
             value_level_start_index,
             dst_type=ge_data_type.DT_INT32,
         )
+
+        # The public ACLNN API accepts the logical PyTorch shapes on every SoC,
+        # but its 310P implementation transposes and promotes the three floating
+        # inputs before it calls this lower-level GE operator. A direct custom
+        # GE node bypasses that wrapper, so reproduce its exact 310P contract:
+        #   value   [B,K,H,D]     -> [B,H,K,D]
+        #   loc     [B,Q,H,L,P,2] -> [L,B,H,Q,P,2]
+        #   weights [B,Q,H,L,P]   -> [L,B,H,Q,P]
+        # and run the internal kernel in FP32. The internal result is
+        # [B,H*D,Q], which is transposed and cast back below.
+        if use_310p_internal_layout:
+            batch = value.symsize[0]
+            queries = sampling_locations.symsize[1]
+            channels = value.symsize[2] * value.symsize[3]
+            value = ge_apis_module.Transpose(value, [0, 2, 1, 3])
+            sampling_locations = ge_apis_module.Transpose(
+                sampling_locations,
+                [3, 0, 2, 1, 4, 5],
+            )
+            attention_weights = ge_apis_module.Transpose(
+                attention_weights,
+                [3, 0, 2, 1, 4],
+            )
+            value = ge_apis_module.Cast(value, dst_type=ge_data_type.DT_FLOAT)
+            sampling_locations = ge_apis_module.Cast(
+                sampling_locations,
+                dst_type=ge_data_type.DT_FLOAT,
+            )
+            attention_weights = ge_apis_module.Cast(
+                attention_weights,
+                dst_type=ge_data_type.DT_FLOAT,
+            )
+
         output = ge_custom_op(
             GE_OP_NAME,
             inputs={
@@ -99,16 +143,28 @@ def register_layout_msda_converter() -> None:
             },
             outputs=["output"],
         )
-        # CANN declares every MSDA tensor as ND. Without these annotations,
-        # TorchAir can assign NCHW to low-rank metadata tensors. The 310P TBE
-        # compiler rejects that descriptor even though the eager ACLNN call
-        # accepts the same logical values.
+        # CANN declares every internal MSDA tensor as ND. Without these
+        # annotations TorchAir can assign NCHW to low-rank metadata tensors.
         specific_input_layout(
             output,
             indices=[0, 1, 2, 3, 4],
             layout="ND",
         )
         specific_output_layout(output, indices=0, layout="ND")
+
+        if use_310p_internal_layout:
+            # The generic GE infer-shape function does not encode the 310P
+            # ACLNN wrapper's distinct [B,H*D,Q] internal output contract.
+            # Supply that static descriptor before consuming it with the
+            # wrapper-equivalent output transpose.
+            internal_shape = [batch, channels, queries]
+            output.desc.shape.dim[:] = internal_shape
+            output._symsize = internal_shape
+            output = ge_apis_module.Transpose(output, [0, 2, 1])
+            output = ge_apis_module.Cast(
+                output,
+                dst_type=meta_outputs.dtype,
+            )
         return output
 
     # The stock layout model computes level_start_index from its three-row
@@ -138,6 +194,8 @@ def register_layout_msda_converter() -> None:
         )
         return ge_apis_module.Cast(product_i32, dst_type=ge_data_type.DT_INT64)
 
+    _CONVERTER_DEVICE_NAME = device_name
+    _CONVERTER_USES_310P_INTERNAL_LAYOUT = use_310p_internal_layout
     _CONVERTER_REGISTERED = True
 
 
@@ -217,6 +275,10 @@ def rewrite_layout_msda(
         "modules": rewritten,
         "extension_so": str(resolved_extension),
         "converter_registered": bool(register_converter),
+        "converter_device_name": _CONVERTER_DEVICE_NAME,
+        "converter_uses_310p_internal_layout": (
+            _CONVERTER_USES_310P_INTERNAL_LAYOUT
+        ),
         "ge_op": GE_OP_NAME,
         "torch_op": PYTORCH_OP_NAME,
     }

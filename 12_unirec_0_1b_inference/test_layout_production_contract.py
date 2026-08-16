@@ -20,9 +20,15 @@ from layout_detector_lab import (  # noqa: E402
 )
 from layout_page_input import materialize_layout_bgr  # noqa: E402
 from layout_page_input import materialize_layout_rgb  # noqa: E402
+from layout_msda_aclnn import _uses_310p_internal_layout  # noqa: E402
 
 
 class LayoutProductionContractTest(unittest.TestCase):
+    def test_msda_internal_layout_is_310p_only(self) -> None:
+        self.assertTrue(_uses_310p_internal_layout("Ascend310P3"))
+        self.assertTrue(_uses_310p_internal_layout("ascend310p"))
+        self.assertFalse(_uses_310p_internal_layout("Ascend910B2"))
+
     def test_production_contract_is_the_lab_default(self) -> None:
         argv = [
             "layout_detector_lab.py",

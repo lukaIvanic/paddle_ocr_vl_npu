@@ -1,7 +1,8 @@
-# 310P UniRec native-MSDA ND-layout retry
+# 310P UniRec native-MSDA internal-layout retry
 
 Retry only the failed native-MSDA TorchAir candidate. Do not rerun the
-decomposed baseline yet.
+decomposed baseline yet. This revision follows the second failed probe, which
+correctly exposed `numQueries=3` inside the 310P tiler.
 
 ## Why the prior conclusion is not established
 
@@ -16,6 +17,35 @@ cannot compile native MSDA.
 The current converter explicitly annotates all five inputs and the output as
 `ND`. A fresh 910B2 TorchAir graph compiled and ran with this change. Both
 warmups completed and the one-page measured forward was 12.13 ms.
+
+The second 310P failure is not evidence that the model has three queries. The
+model has 300. Huawei's ACLNN wrapper always transforms the logical API tensors
+before calling the lower-level graph operator on 310P. Our direct TorchAir
+custom node had bypassed those hidden transforms, so the tiler read the three
+feature levels as the query dimension.
+
+The converter now reproduces Huawei's 310P ACLNN path exactly:
+
+```text
+logical value       [1,13125,8,32]  -> internal [1,8,13125,32]
+logical locations   [1,300,8,3,4,2] -> internal [3,1,8,300,4,2]
+logical weights     [1,300,8,3,4]   -> internal [3,1,8,300,4]
+floating dtype      FP16            -> internal FP32
+internal output     [1,256,300]      -> logical [1,300,256] FP16
+```
+
+This makes the 310P tiler read `numQueries=300` from internal weight dimension
+3, as intended. Do not pad the feature-level dimension from 3 to 32.
+
+This is derived from the public Ascend operator sources, not a guessed layout:
+
+- `op_api/aclnn_multi_scale_deformable_attn_function.cpp` applies the 310P
+  input transposes, FP32 casts, output transpose, and output cast;
+- `op_host/multi_scale_deformable_attn_function_tiling.cpp` reads 310P
+  `numQueries` from attention-weight dimension 3 and enforces `>= 32`.
+
+Source tree:
+`https://github.com/hicann/ops-nn/tree/master/vfusion/multi_scale_deformable_attn_function`
 
 The runner also no longer applies `readlink -f` to `PYTHON_BIN`. That operation
 resolved the venv launcher to `/usr/local/.../python3.12` and could detach the
