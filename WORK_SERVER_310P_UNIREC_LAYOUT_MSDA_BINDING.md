@@ -23,6 +23,17 @@ output             [1, 300, 256]
 Each native result is compared with the exact three-GridSample PyTorch
 decomposition. Warm event and wall latency are measured for both paths.
 
+The 910B2 control passed at commit `afeeae2`:
+
+| Dtype | Max abs | Mean abs | Native event | Reference event | Speedup |
+|---|---:|---:|---:|---:|---:|
+| FP16 | 0.0009766 | 0.0000581 | 0.1173 ms | 0.5285 ms | 4.51x |
+| FP32 | 0.00000346 | 0.0000000394 | 0.1187 ms | 0.5330 ms | 4.49x |
+
+The clean 910B2 process took 86 seconds, including the one-time host C++
+extension build. Treat roughly two minutes as the expected wall-time budget on
+310P. If it takes materially longer, inspect the current phase in `run.log`.
+
 ## Restrictions
 
 - Pull only. Do not edit tracked files, create a branch, commit, or push.
