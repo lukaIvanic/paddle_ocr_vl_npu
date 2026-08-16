@@ -72,6 +72,7 @@ ge::graphStatus infer_layout_msda_dtype(gert::InferDataTypeContext *context)
     return ge::GRAPH_SUCCESS;
 }
 
+#if defined(OP_TILING_LIB)
 const bool layout_msda_host_opp_installed = []() {
     // This library is loaded by GE's compiler process through the user OPP.
     // A duplicate OpImplRegisterV2 does not replace CANN's built-in callback.
@@ -98,5 +99,17 @@ const bool layout_msda_host_opp_installed = []() {
     }
     return true;
 }();
+#else
+// GE loads and unloads the proto library repeatedly while constructing a
+// graph. Never publish a callback pointer into that short-lived DSO. The
+// op-tiling library above remains resident for the compiler lifetime.
+const bool layout_msda_host_proto_observed = []() {
+    std::fprintf(
+        stderr,
+        "UNIREC_LAYOUT_MSDA_HOST_OPP_LOADED_NO_OVERRIDE role=%s\n",
+        UNIREC_MSDA_LIBRARY_ROLE);
+    return true;
+}();
+#endif
 
 } // namespace
