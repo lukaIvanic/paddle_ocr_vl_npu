@@ -114,9 +114,6 @@ def register_layout_msda_converter() -> None:
         # and run the internal kernel in FP32. The internal result is
         # [B,H*D,Q], which is transposed and cast back below.
         if use_310p_internal_layout:
-            batch = value.symsize[0]
-            queries = sampling_locations.symsize[1]
-            channels = value.symsize[2] * value.symsize[3]
             value = ge_apis_module.Transpose(value, [0, 2, 1, 3])
             sampling_locations = ge_apis_module.Transpose(
                 sampling_locations,
@@ -157,19 +154,9 @@ def register_layout_msda_converter() -> None:
         specific_output_layout(output, indices=0, layout="ND")
 
         if use_310p_internal_layout:
-            # The generic GE infer-shape function does not encode the 310P
-            # ACLNN wrapper's distinct [B,H*D,Q] internal output contract.
-            # Supply that static descriptor before consuming it with the
-            # wrapper-equivalent output transpose.
-            internal_shape = [int(batch), int(channels), int(queries)]
-            output.set_meta(
-                torch.empty(
-                    tuple(internal_shape),
-                    dtype=torch.float32,
-                    device="meta",
-                )
-            )
-            output.desc.shape.dim[:] = internal_shape
+            # Keep the custom node intermediate. This makes GE invoke the
+            # corrected host infer callback registered by the extension,
+            # which supplies the 310P internal [B,H*D,Q] contract.
             output = ge_apis_module.Transpose(output, [0, 2, 1])
             output = ge_apis_module.Cast(
                 output,
@@ -180,8 +167,6 @@ def register_layout_msda_converter() -> None:
             # CANN must invoke a registered host infer callback, matching the
             # graph topology of the 310P wrapper path. A same-dtype Cast is
             # expected to disappear after graph construction.
-            output.set_meta(meta_outputs)
-            output.desc.shape.dim[:] = [int(dim) for dim in meta_outputs.size()]
             output = ge_apis_module.Cast(
                 output,
                 dst_type=meta_outputs.dtype,
