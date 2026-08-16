@@ -2,6 +2,17 @@
 
 Run only this fast support check. Do not install or compile anything yet.
 
+Use commit `05e8709` or newer. The 910B2 control at `05e8709` completed with
+exit code 0 and reported:
+
+```text
+UNIREC_LAYOUT_MSDA_RUNTIME status=no_python_wrapper mx_driving=false
+UNIREC_LAYOUT_MSDA_PREFLIGHT verdict=NEEDS_BINDING_RUNTIME_PROBE headers=3 symbols=8 metadata=6 metadata_310p=0 runtime=no_python_wrapper
+```
+
+That control proves the runner and empty-result handling work. It does not
+predict the 310P verdict; the point of this task is to measure that verdict.
+
 The current PP-DocLayoutV2 path decomposes each multi-scale deformable-attention
 call into three GridSample calls plus repeated Cast and Transpose operations.
 CANN 9.0 on the 910B machine contains
