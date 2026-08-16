@@ -198,6 +198,7 @@ run_profile() {
 worker_main() {
   RUN_ROOT="$1"
   resolve_inputs
+  export UNIREC_LAYOUT_MSDA_HOST_INFER_MARKER="$RUN_ROOT/host_infer_marker.txt"
   {
     printf 'commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
     printf 'physical_device=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"

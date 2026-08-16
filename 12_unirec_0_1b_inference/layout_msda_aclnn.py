@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import os
 from pathlib import Path
 from typing import Any
 
@@ -60,6 +61,9 @@ def register_layout_msda_converter() -> None:
         return
     device_name = torch.npu.get_device_name()
     use_310p_internal_layout = _uses_310p_internal_layout(device_name)
+    force_host_infer_probe = (
+        os.environ.get("UNIREC_LAYOUT_MSDA_FORCE_HOST_INFER_PROBE") == "1"
+    )
     torchair = _import_torchair()
     converter_module = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
@@ -167,6 +171,17 @@ def register_layout_msda_converter() -> None:
             )
             output.desc.shape.dim[:] = internal_shape
             output = ge_apis_module.Transpose(output, [0, 2, 1])
+            output = ge_apis_module.Cast(
+                output,
+                dst_type=meta_outputs.dtype,
+            )
+        elif force_host_infer_probe:
+            # Diagnostic only: make the custom node intermediate on 910B so
+            # CANN must invoke a registered host infer callback, matching the
+            # graph topology of the 310P wrapper path. A same-dtype Cast is
+            # expected to disappear after graph construction.
+            output.set_meta(meta_outputs)
+            output.desc.shape.dim[:] = [int(dim) for dim in meta_outputs.size()]
             output = ge_apis_module.Cast(
                 output,
                 dst_type=meta_outputs.dtype,

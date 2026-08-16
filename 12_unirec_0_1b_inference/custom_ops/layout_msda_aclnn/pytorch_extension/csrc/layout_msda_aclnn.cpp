@@ -1,5 +1,6 @@
 #include <atomic>
 #include <cstdio>
+#include <cstdlib>
 
 #include <torch/extension.h>
 #include <torch/library.h>
@@ -47,6 +48,20 @@ ge::graphStatus infer_layout_msda_output(gert::InferShapeContext *context)
             static_cast<long>(output_shape->GetDim(0)),
             static_cast<long>(output_shape->GetDim(1)),
             static_cast<long>(output_shape->GetDim(2)));
+        const char *marker = std::getenv(
+            "UNIREC_LAYOUT_MSDA_HOST_INFER_MARKER");
+        if (marker != nullptr && marker[0] != '\0') {
+            if (std::FILE *file = std::fopen(marker, "a")) {
+                std::fprintf(
+                    file,
+                    "location_dim1=%ld output=[%ld,%ld,%ld]\n",
+                    static_cast<long>(location_shape->GetDim(1)),
+                    static_cast<long>(output_shape->GetDim(0)),
+                    static_cast<long>(output_shape->GetDim(1)),
+                    static_cast<long>(output_shape->GetDim(2)));
+                std::fclose(file);
+            }
+        }
     }
     return ge::GRAPH_SUCCESS;
 }

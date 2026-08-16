@@ -114,7 +114,8 @@ If it passes, return:
 1. the final `LAYOUT_LAB done` line and measured forward time;
 2. confirmation that both warmup calls completed;
 3. the `UNIREC_LAYOUT_MSDA_HOST_INFER_OVERRIDE_ACTIVE` line, which must report
-   internal output `[1,256,300]`;
+   internal output `[1,256,300]`, and the matching
+   `host_infer_marker.txt` contents;
 4. physical NPU, commit, exact `python=` path, torch, and torch-npu;
 5. absolute run root, cache root, extension build log, extension SO, output
    JSON, and exit-code file;
