@@ -58,6 +58,10 @@ def register_layout_msda_converter() -> None:
     ge_apis_module = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.ge_apis"
     )
+    ge_graph_module = importlib.import_module(
+        f"{torchair.__name__}.ge._ge_graph"
+    )
+    ge_data_type = ge_graph_module.DataType
     register_converter = converter_module.register_fx_node_ge_converter
     ge_custom_op = ge_module.custom_op
 
@@ -71,6 +75,14 @@ def register_layout_msda_converter() -> None:
         meta_outputs: Any = None,
     ) -> Any:
         del meta_outputs
+        value_spatial_shapes = ge_apis_module.Cast(
+            value_spatial_shapes,
+            dst_type=ge_data_type.DT_INT32,
+        )
+        value_level_start_index = ge_apis_module.Cast(
+            value_level_start_index,
+            dst_type=ge_data_type.DT_INT32,
+        )
         return ge_custom_op(
             GE_OP_NAME,
             inputs={
@@ -102,7 +114,13 @@ def register_layout_msda_converter() -> None:
             raise NotImplementedError(
                 "layout MSDA only lowers prod(dim=1, keepdim=False, dtype=None)"
             )
-        return ge_apis_module.ReduceProdD(inputs, axes=[1], keep_dims=False)
+        inputs_i32 = ge_apis_module.Cast(inputs, dst_type=ge_data_type.DT_INT32)
+        product_i32 = ge_apis_module.ReduceProdD(
+            inputs_i32,
+            axes=[1],
+            keep_dims=False,
+        )
+        return ge_apis_module.Cast(product_i32, dst_type=ge_data_type.DT_INT64)
 
     _CONVERTER_REGISTERED = True
 
