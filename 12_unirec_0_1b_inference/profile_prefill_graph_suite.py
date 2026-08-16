@@ -38,9 +38,11 @@ from modeling_optimized_unirec import (  # noqa: E402
 )
 from opendoc_layout_npu import (  # noqa: E402
     DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
+    DEFAULT_LAYOUT_MSDA_IMPLEMENTATION,
     DEFAULT_LAYOUT_WEIGHT_FORMAT,
     LAYOUT_COGVIEW_ATTENTION,
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+    LAYOUT_MSDA_IMPLEMENTATION_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
     PPDocLayoutV2NpuAdapter,
     prepare_layout_resized_uint8_exact,
@@ -180,6 +182,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--layout-preformat-frozen-bn-buffers", action="store_true"
     )
     parser.add_argument(
+        "--layout-msda-implementation",
+        choices=LAYOUT_MSDA_IMPLEMENTATION_CHOICES,
+        default=DEFAULT_LAYOUT_MSDA_IMPLEMENTATION,
+    )
+    parser.add_argument("--layout-msda-extension-so", type=Path)
+    parser.add_argument(
         "--profile-metric",
         choices=("pipe", "memory", "l2", "memory_access"),
         default="pipe",
@@ -195,6 +203,23 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         parser.error("--torch-cpu-threads must be positive")
     if args.parser_topn < 1:
         parser.error("--parser-topn must be positive")
+    if args.layout_msda_implementation == "aclnn":
+        if args.layout_msda_extension_so is None:
+            parser.error(
+                "ACLNN layout MSDA requires --layout-msda-extension-so"
+            )
+        args.layout_msda_extension_so = (
+            args.layout_msda_extension_so.expanduser().resolve()
+        )
+        if not args.layout_msda_extension_so.is_file():
+            parser.error(
+                "--layout-msda-extension-so does not exist: "
+                f"{args.layout_msda_extension_so}"
+            )
+    elif args.layout_msda_extension_so is not None:
+        parser.error(
+            "--layout-msda-extension-so is only valid with ACLNN layout MSDA"
+        )
     return args
 
 
@@ -418,6 +443,8 @@ def _layout_lane(
         preformat_frozen_bn_buffers=(
             args.layout_preformat_frozen_bn_buffers
         ),
+        msda_implementation=args.layout_msda_implementation,
+        msda_extension_so=args.layout_msda_extension_so,
     )
     if args.layout_input_image is not None:
         from layout_page_input import decode_page_rgb, materialize_layout_rgb
@@ -459,6 +486,7 @@ def _layout_lane(
         f"{args.layout_weight_format}_frozenbn{int(args.layout_fuse_frozen_bn)}_"
         f"precomputedfrozenbn{int(args.layout_precompute_frozen_bn_affine)}_"
         f"formattedfrozenbnbuffers{int(args.layout_preformat_frozen_bn_buffers)}_"
+        f"msda_{args.layout_msda_implementation}_"
         f"cogview_{LAYOUT_COGVIEW_ATTENTION}",
         run,
         output_root=output_root,
@@ -484,6 +512,13 @@ def _layout_lane(
             "preformat_frozen_bn_buffers": (
                 args.layout_preformat_frozen_bn_buffers
             ),
+            "msda_implementation": args.layout_msda_implementation,
+            "msda_extension_so": (
+                None
+                if args.layout_msda_extension_so is None
+                else str(args.layout_msda_extension_so)
+            ),
+            "msda_rewrite_summary": detector.msda_rewrite_summary,
             "cogview_attention_impl": LAYOUT_COGVIEW_ATTENTION,
             "execution": execution_contract,
         },
@@ -855,6 +890,12 @@ def main(argv: Sequence[str] | None = None) -> None:
             ),
             "layout_preformat_frozen_bn_buffers": (
                 args.layout_preformat_frozen_bn_buffers
+            ),
+            "layout_msda_implementation": args.layout_msda_implementation,
+            "layout_msda_extension_so": (
+                None
+                if args.layout_msda_extension_so is None
+                else str(args.layout_msda_extension_so)
             ),
             "layout_cogview_attention_impl": LAYOUT_COGVIEW_ATTENTION,
         },
