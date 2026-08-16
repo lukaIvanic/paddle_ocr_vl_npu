@@ -37,6 +37,14 @@ internal output     [1,256,300]      -> logical [1,300,256] FP16
 This makes the 310P tiler read `numQueries=300` from internal weight dimension
 3, as intended. Do not pad the feature-level dimension from 3 to 32.
 
+The following retry also fixes the next graph-construction failure. Huawei's
+shared GE infer-shape implementation reads the transposed location's dimension
+5 (`2`, the coordinate pair) as the query count and produces the bogus internal
+shape `[1,2,32]`. The tiler itself uses the correct attention-weight dimensions.
+The converter now attaches TorchAir's standard `_inference_rule` attribute with
+the authoritative internal output shape `[1,256,300]` and FP32 dtype before the
+output transpose. This is graph metadata only; it adds no runtime operation.
+
 This is derived from the public Ascend operator sources, not a guessed layout:
 
 - `op_api/aclnn_multi_scale_deformable_attn_function.cpp` applies the 310P

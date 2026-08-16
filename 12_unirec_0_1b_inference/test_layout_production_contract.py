@@ -20,6 +20,7 @@ from layout_detector_lab import (  # noqa: E402
 )
 from layout_page_input import materialize_layout_bgr  # noqa: E402
 from layout_page_input import materialize_layout_rgb  # noqa: E402
+from layout_msda_aclnn import _static_inference_rule  # noqa: E402
 from layout_msda_aclnn import _uses_310p_internal_layout  # noqa: E402
 
 
@@ -28,6 +29,36 @@ class LayoutProductionContractTest(unittest.TestCase):
         self.assertTrue(_uses_310p_internal_layout("Ascend310P3"))
         self.assertTrue(_uses_310p_internal_layout("ascend310p"))
         self.assertFalse(_uses_310p_internal_layout("Ascend910B2"))
+
+    def test_msda_static_inference_rule_declares_internal_output(self) -> None:
+        self.assertEqual(
+            _static_inference_rule(
+                input_count=5,
+                output_shape=[1, 256, 300],
+                output_dtype=1,
+            ),
+            """{
+  "shape": {
+    "inputs": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "outputs": [
+      [
+        "1",
+        "256",
+        "300"
+      ]
+    ]
+  },
+  "dtype": [
+    1
+  ]
+}""",
+        )
 
     def test_production_contract_is_the_lab_default(self) -> None:
         argv = [
