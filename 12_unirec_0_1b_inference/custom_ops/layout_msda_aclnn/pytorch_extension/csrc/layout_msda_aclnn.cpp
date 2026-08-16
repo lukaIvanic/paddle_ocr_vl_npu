@@ -1,15 +1,13 @@
 #include <atomic>
 #include <cstdio>
 #include <cstdlib>
-#include <memory>
 #include <mutex>
-#include <vector>
 
 #include <torch/extension.h>
 #include <torch/library.h>
 
 #include "npu_cpp_extension.h"
-#include "register/op_impl_registry.h"
+#include "op_impl_registry_base_compat.h"
 
 namespace {
 
@@ -75,12 +73,6 @@ ge::graphStatus infer_layout_msda_dtype(gert::InferDataTypeContext *context)
     return ge::GRAPH_SUCCESS;
 }
 
-std::vector<std::unique_ptr<gert::OpImplRegisterV2>> &host_registrations()
-{
-    static std::vector<std::unique_ptr<gert::OpImplRegisterV2>> registrations;
-    return registrations;
-}
-
 std::mutex &host_registration_mutex()
 {
     static std::mutex mutex;
@@ -93,15 +85,16 @@ extern "C" __attribute__((visibility("default")))
 int unirec_layout_msda_refresh_host_infer()
 {
     std::lock_guard<std::mutex> guard(host_registration_mutex());
-    auto registration = std::make_unique<gert::OpImplRegisterV2>(
+    auto &functions = gert::OpImplRegistry::GetInstance().CreateOrGetOpImpl(
         "MultiScaleDeformableAttnFunction");
-    registration->InferShape(infer_layout_msda_output)
-        .InferDataType(infer_layout_msda_dtype);
-    host_registrations().push_back(std::move(registration));
+    functions.infer_shape = infer_layout_msda_output;
+    functions.infer_datatype = infer_layout_msda_dtype;
+    static std::atomic<size_t> refresh_count{0};
+    const size_t count = refresh_count.fetch_add(1) + 1;
     std::fprintf(
         stderr,
         "UNIREC_LAYOUT_MSDA_HOST_INFER_REFRESH_REGISTERED count=%zu\n",
-        host_registrations().size());
+        count);
     return 0;
 }
 
