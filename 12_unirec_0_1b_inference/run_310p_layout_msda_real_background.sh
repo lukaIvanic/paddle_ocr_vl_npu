@@ -7,6 +7,7 @@ LAYOUT_LAB="$SCRIPT_DIR/layout_detector_lab.py"
 PROFILE_RUNNER="$SCRIPT_DIR/profile_prefill_graph_suite.py"
 ANALYZER="$SCRIPT_DIR/compare_layout_msda_ab.py"
 EXTENSION_ROOT="$SCRIPT_DIR/custom_ops/layout_msda_aclnn/pytorch_extension"
+HOST_OPP_BUILDER="$SCRIPT_DIR/custom_ops/layout_msda_host_opp/build_host_opp.sh"
 
 reject_bad_device() {
   : "${ASCEND_RT_VISIBLE_DEVICES:?source npu-setup before launching}"
@@ -95,6 +96,7 @@ resolve_inputs() {
   test -f "$OPENOCR_ROOT/tools/infer_doc_onnx.py"
   test -d "$IMAGES_DIR"
   test -f "$MSDA_EXTENSION_SO"
+  test -x "$HOST_OPP_BUILDER"
   test -f "$LAYOUT_LAB"
   test -f "$PROFILE_RUNNER"
   test -f "$ANALYZER"
@@ -199,6 +201,14 @@ worker_main() {
   RUN_ROOT="$1"
   resolve_inputs
   export UNIREC_LAYOUT_MSDA_HOST_INFER_MARKER="$RUN_ROOT/host_infer_marker.txt"
+  printf 'UNIREC_LAYOUT_MSDA_REAL_PHASE_BEGIN phase=host_opp_build\n'
+  "$HOST_OPP_BUILDER" "$RUN_ROOT/host_opp" \
+    > >(tee "$RUN_ROOT/host_opp_build.log") 2>&1
+  HOST_OPP_VENDOR_ROOT="$RUN_ROOT/host_opp/vendors/unirec_layout_msda"
+  test -d "$HOST_OPP_VENDOR_ROOT"
+  export ASCEND_CUSTOM_OPP_PATH="$HOST_OPP_VENDOR_ROOT${ASCEND_CUSTOM_OPP_PATH:+:$ASCEND_CUSTOM_OPP_PATH}"
+  printf 'UNIREC_LAYOUT_MSDA_REAL_PHASE_END phase=host_opp_build vendor=%s\n' \
+    "$HOST_OPP_VENDOR_ROOT"
   {
     printf 'commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
     printf 'physical_device=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
@@ -209,6 +219,8 @@ worker_main() {
     printf 'msda_extension_so=%s\n' "$MSDA_EXTENSION_SO"
     printf 'msda_rebuild_extension=%s\n' "$MSDA_REBUILD_EXTENSION"
     printf 'layout_cache_root=%s\n' "$LAYOUT_CACHE_ROOT"
+    printf 'host_opp_vendor_root=%s\n' "$HOST_OPP_VENDOR_ROOT"
+    printf 'ascend_custom_opp_path=%s\n' "$ASCEND_CUSTOM_OPP_PATH"
     printf 'layout_profile_input=%s\n' "$LAYOUT_INPUT_IMAGE"
     printf 'msda_run_mode=%s\n' "$MSDA_RUN_MODE"
     printf 'msda_forward_limit=%s\n' "$MSDA_FORWARD_LIMIT"

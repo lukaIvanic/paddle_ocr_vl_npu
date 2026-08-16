@@ -18,6 +18,10 @@ CANN_LIB="$ASCEND_HOME_PATH/lib64"
 test -f "$CANN_INCLUDE/register/op_impl_registry.h"
 test -f "$CANN_LIB/libexe_graph.so"
 test -f "$CANN_LIB/libregister.so"
+test -f "$CANN_LIB/libopp_registry.so"
+
+REGISTRY_COMPAT_INCLUDE="$SCRIPT_DIR/../../layout_msda_aclnn/pytorch_extension/csrc"
+test -f "$REGISTRY_COMPAT_INCLUDE/op_impl_registry_base_compat.h"
 
 VENDOR_ROOT="$OUTPUT_ROOT/vendors/unirec_layout_msda"
 TILING_ROOT="$VENDOR_ROOT/op_impl/ai_core/tbe/op_tiling"
@@ -32,11 +36,12 @@ build_host_library() {
   g++ -std=c++17 -O2 -fPIC -shared \
     "$SOURCE" \
     -I"$CANN_INCLUDE" \
+    -I"$REGISTRY_COMPAT_INCLUDE" \
     -D"UNIREC_MSDA_LIBRARY_ROLE=\"$role\"" \
     -D"$kind_define" \
     -L"$CANN_LIB" \
     -Wl,--no-as-needed \
-    -lexe_graph -lregister -lgraph -lgraph_base -lplatform \
+    -lopp_registry -lexe_graph -lregister -lgraph -lgraph_base -lplatform \
     -lascendalog -lerror_manager -lmmpa -lc_sec \
     -Wl,--as-needed \
     -o "$target"

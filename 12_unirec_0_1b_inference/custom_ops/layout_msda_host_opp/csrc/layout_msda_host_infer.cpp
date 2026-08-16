@@ -3,27 +3,13 @@
 #include <cstdlib>
 
 #include "register/op_impl_registry.h"
+#include "op_impl_registry_base_compat.h"
 
 #ifndef UNIREC_MSDA_LIBRARY_ROLE
 #define UNIREC_MSDA_LIBRARY_ROLE "unknown"
 #endif
 
 namespace {
-
-__attribute__((constructor)) void report_layout_msda_host_library_load()
-{
-    std::fprintf(
-        stderr,
-        "UNIREC_LAYOUT_MSDA_HOST_OPP_LOADED role=%s\n",
-        UNIREC_MSDA_LIBRARY_ROLE);
-    const char *marker = std::getenv("UNIREC_LAYOUT_MSDA_HOST_INFER_MARKER");
-    if (marker != nullptr && marker[0] != '\0') {
-        if (std::FILE *file = std::fopen(marker, "a")) {
-            std::fprintf(file, "library_loaded role=%s\n", UNIREC_MSDA_LIBRARY_ROLE);
-            std::fclose(file);
-        }
-    }
-}
 
 ge::graphStatus infer_layout_msda_output(gert::InferShapeContext *context)
 {
@@ -86,11 +72,30 @@ ge::graphStatus infer_layout_msda_dtype(gert::InferDataTypeContext *context)
     return ge::GRAPH_SUCCESS;
 }
 
-const bool layout_msda_host_opp_registered = []() {
-    static gert::OpImplRegisterV2 registration(
+const bool layout_msda_host_opp_installed = []() {
+    // This library is loaded by GE's compiler process through the user OPP.
+    // A duplicate OpImplRegisterV2 does not replace CANN's built-in callback.
+    // Mutate only the two broken infer pointers in that process and preserve
+    // the installed tiler, workspace, and kernel callbacks.
+    auto &functions = gert::OpImplRegistry::GetInstance().CreateOrGetOpImpl(
         "MultiScaleDeformableAttnFunction");
-    registration.InferShape(infer_layout_msda_output)
-        .InferDataType(infer_layout_msda_dtype);
+    functions.infer_shape = infer_layout_msda_output;
+    functions.infer_datatype = infer_layout_msda_dtype;
+
+    std::fprintf(
+        stderr,
+        "UNIREC_LAYOUT_MSDA_HOST_OPP_OVERRIDE_INSTALLED role=%s\n",
+        UNIREC_MSDA_LIBRARY_ROLE);
+    const char *marker = std::getenv("UNIREC_LAYOUT_MSDA_HOST_INFER_MARKER");
+    if (marker != nullptr && marker[0] != '\0') {
+        if (std::FILE *file = std::fopen(marker, "a")) {
+            std::fprintf(
+                file,
+                "override_installed role=%s\n",
+                UNIREC_MSDA_LIBRARY_ROLE);
+            std::fclose(file);
+        }
+    }
     return true;
 }();
 
