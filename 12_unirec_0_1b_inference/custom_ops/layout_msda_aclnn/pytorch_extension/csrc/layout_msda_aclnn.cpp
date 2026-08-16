@@ -1,6 +1,9 @@
 #include <atomic>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
+#include <mutex>
+#include <vector>
 
 #include <torch/extension.h>
 #include <torch/library.h>
@@ -72,15 +75,35 @@ ge::graphStatus infer_layout_msda_dtype(gert::InferDataTypeContext *context)
     return ge::GRAPH_SUCCESS;
 }
 
-const bool layout_msda_host_infer_override_registered = []() {
-    static gert::OpImplRegisterV2 registration(
-        "MultiScaleDeformableAttnFunction");
-    registration.InferShape(infer_layout_msda_output)
-        .InferDataType(infer_layout_msda_dtype);
-    return true;
-}();
+std::vector<std::unique_ptr<gert::OpImplRegisterV2>> &host_registrations()
+{
+    static std::vector<std::unique_ptr<gert::OpImplRegisterV2>> registrations;
+    return registrations;
+}
+
+std::mutex &host_registration_mutex()
+{
+    static std::mutex mutex;
+    return mutex;
+}
 
 } // namespace
+
+extern "C" __attribute__((visibility("default")))
+int unirec_layout_msda_refresh_host_infer()
+{
+    std::lock_guard<std::mutex> guard(host_registration_mutex());
+    auto registration = std::make_unique<gert::OpImplRegisterV2>(
+        "MultiScaleDeformableAttnFunction");
+    registration->InferShape(infer_layout_msda_output)
+        .InferDataType(infer_layout_msda_dtype);
+    host_registrations().push_back(std::move(registration));
+    std::fprintf(
+        stderr,
+        "UNIREC_LAYOUT_MSDA_HOST_INFER_REFRESH_REGISTERED count=%zu\n",
+        host_registrations().size());
+    return 0;
+}
 
 namespace unirec_layout {
 namespace {
