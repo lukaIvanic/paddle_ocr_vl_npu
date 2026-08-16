@@ -52,6 +52,31 @@ def _import_torchair() -> Any:
         return importlib.import_module("torchair")
 
 
+def _pin_ge_output_shape_without_host_infer(
+    output: Any,
+    shape: tuple[int, ...],
+    *,
+    ge_attr: Any,
+) -> None:
+    """Publish a static GE output descriptor and skip CANN's host infer.
+
+    CANN's 310P MSDA wrapper uses the internal output contract [B,H*D,Q],
+    but the registered graph infer callback reads the transposed locations as
+    if they were still public-layout tensors.  Pinning the descriptor is not
+    sufficient by itself because InferShapePass calls that callback again and
+    overwrites it.  This reserved GE attribute makes the node's supplied
+    descriptor authoritative while leaving the stock tiler and device kernel
+    untouched.
+    """
+    concrete_shape = [int(dim) for dim in shape]
+    output.desc.shape.dim[:] = concrete_shape
+    if hasattr(output.desc, "origin_shape"):
+        output.desc.origin_shape.dim[:] = concrete_shape
+    ge_attr.Bool(True).merge_to(
+        output.node.attr["_disable_call_shape_inference"]
+    )
+
+
 def register_layout_msda_converter() -> None:
     """Lower the custom torch identity to the installed GE MSDA operator."""
     global _CONVERTER_DEVICE_NAME
@@ -72,6 +97,7 @@ def register_layout_msda_converter() -> None:
         f"{torchair.__name__}._ge_concrete_graph.ge_converter.converter_utils"
     )
     ge_module = importlib.import_module(f"{torchair.__name__}.ge")
+    ge_attr = importlib.import_module(f"{torchair.__name__}.ge.attr")
     ge_apis_module = importlib.import_module(
         f"{torchair.__name__}._ge_concrete_graph.ge_apis"
     )
@@ -154,18 +180,29 @@ def register_layout_msda_converter() -> None:
         specific_output_layout(output, indices=0, layout="ND")
 
         if use_310p_internal_layout:
-            # Keep the custom node intermediate. This makes GE invoke the
-            # corrected host infer callback installed in GE's compiler process
-            # by the user OPP, which supplies [B,H*D,Q].
+            logical_shape = tuple(int(dim) for dim in meta_outputs.shape)
+            if len(logical_shape) != 3:
+                raise RuntimeError(
+                    "layout MSDA expected rank-3 output metadata, got "
+                    f"{logical_shape}"
+                )
+            _pin_ge_output_shape_without_host_infer(
+                output,
+                (logical_shape[0], logical_shape[2], logical_shape[1]),
+                ge_attr=ge_attr,
+            )
             output = ge_apis_module.Transpose(output, [0, 2, 1])
             output = ge_apis_module.Cast(
                 output,
                 dst_type=meta_outputs.dtype,
             )
         elif force_host_infer_probe:
-            # Diagnostic only: make the custom node intermediate on 910B so
-            # GE must invoke the user-OPP host infer callback, matching the
-            # 310P wrapper topology. A same-dtype Cast should disappear.
+            logical_shape = tuple(int(dim) for dim in meta_outputs.shape)
+            _pin_ge_output_shape_without_host_infer(
+                output,
+                logical_shape,
+                ge_attr=ge_attr,
+            )
             output = ge_apis_module.Cast(
                 output,
                 dst_type=meta_outputs.dtype,

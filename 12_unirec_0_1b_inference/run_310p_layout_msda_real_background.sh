@@ -89,6 +89,15 @@ resolve_inputs() {
       ;;
   esac
   MSDA_WARMUP_PAGES="${MSDA_WARMUP_PAGES:-2}"
+  MSDA_HOST_OPP_MODE="${MSDA_HOST_OPP_MODE:-override}"
+  case "$MSDA_HOST_OPP_MODE" in
+    none|override) ;;
+    *)
+      printf 'ERROR MSDA_HOST_OPP_MODE must be none or override, got %s\n' \
+        "$MSDA_HOST_OPP_MODE" >&2
+      return 2
+      ;;
+  esac
 
   test -x "$PYTHON_BIN"
   test -f "$MODEL/model.pth"
@@ -201,14 +210,19 @@ worker_main() {
   RUN_ROOT="$1"
   resolve_inputs
   export UNIREC_LAYOUT_MSDA_HOST_INFER_MARKER="$RUN_ROOT/host_infer_marker.txt"
-  printf 'UNIREC_LAYOUT_MSDA_REAL_PHASE_BEGIN phase=host_opp_build\n'
-  "$HOST_OPP_BUILDER" "$RUN_ROOT/host_opp" \
-    > >(tee "$RUN_ROOT/host_opp_build.log") 2>&1
-  HOST_OPP_VENDOR_ROOT="$RUN_ROOT/host_opp/vendors/unirec_layout_msda"
-  test -d "$HOST_OPP_VENDOR_ROOT"
-  export ASCEND_CUSTOM_OPP_PATH="$HOST_OPP_VENDOR_ROOT${ASCEND_CUSTOM_OPP_PATH:+:$ASCEND_CUSTOM_OPP_PATH}"
-  printf 'UNIREC_LAYOUT_MSDA_REAL_PHASE_END phase=host_opp_build vendor=%s\n' \
-    "$HOST_OPP_VENDOR_ROOT"
+  HOST_OPP_VENDOR_ROOT=""
+  if [[ "$MSDA_HOST_OPP_MODE" == override ]]; then
+    printf 'UNIREC_LAYOUT_MSDA_REAL_PHASE_BEGIN phase=host_opp_build\n'
+    "$HOST_OPP_BUILDER" "$RUN_ROOT/host_opp" \
+      > >(tee "$RUN_ROOT/host_opp_build.log") 2>&1
+    HOST_OPP_VENDOR_ROOT="$RUN_ROOT/host_opp/vendors/unirec_layout_msda"
+    test -d "$HOST_OPP_VENDOR_ROOT"
+    export ASCEND_CUSTOM_OPP_PATH="$HOST_OPP_VENDOR_ROOT${ASCEND_CUSTOM_OPP_PATH:+:$ASCEND_CUSTOM_OPP_PATH}"
+    printf 'UNIREC_LAYOUT_MSDA_REAL_PHASE_END phase=host_opp_build vendor=%s\n' \
+      "$HOST_OPP_VENDOR_ROOT"
+  else
+    printf 'UNIREC_LAYOUT_MSDA_REAL_PHASE_SKIP phase=host_opp_build mode=none\n'
+  fi
   {
     printf 'commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
     printf 'physical_device=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
@@ -225,6 +239,7 @@ worker_main() {
     printf 'msda_run_mode=%s\n' "$MSDA_RUN_MODE"
     printf 'msda_forward_limit=%s\n' "$MSDA_FORWARD_LIMIT"
     printf 'msda_warmup_pages=%s\n' "$MSDA_WARMUP_PAGES"
+    printf 'msda_host_opp_mode=%s\n' "$MSDA_HOST_OPP_MODE"
     "$PYTHON_BIN" -c \
       'import torch,torch_npu; print("torch="+torch.__version__); print("torch_npu="+torch_npu.__version__)'
     npu-smi info
@@ -302,6 +317,7 @@ launch_main() {
     MSDA_RUN_MODE="${MSDA_RUN_MODE:-full_ab}" \
     MSDA_FORWARD_LIMIT="${MSDA_FORWARD_LIMIT:-}" \
     MSDA_WARMUP_PAGES="${MSDA_WARMUP_PAGES:-}" \
+    MSDA_HOST_OPP_MODE="${MSDA_HOST_OPP_MODE:-override}" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     OMP_NUM_THREADS=1 \
     MKL_NUM_THREADS=1 \
