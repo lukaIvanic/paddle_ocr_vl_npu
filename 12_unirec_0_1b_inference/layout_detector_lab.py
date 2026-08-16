@@ -27,8 +27,10 @@ import torch
 from layout_page_input import decode_page_rgb, materialize_layout_rgb
 from opendoc_layout_npu import (
     DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
+    DEFAULT_LAYOUT_MSDA_IMPLEMENTATION,
     LAYOUT_COGVIEW_ATTENTION,
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+    LAYOUT_MSDA_IMPLEMENTATION_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
     PPDocLayoutV2NpuAdapter,
 )
@@ -45,7 +47,13 @@ CURRENT_PRODUCTION_CONTRACT = {
     "fuse_frozen_bn": False,
     "precompute_frozen_bn_affine": False,
     "preformat_frozen_bn_buffers": True,
+    "msda_implementation": DEFAULT_LAYOUT_MSDA_IMPLEMENTATION,
     "input_color_order": "rgb",
+}
+
+CURRENT_PRODUCTION_MSDA_ACLNN_CONTRACT = {
+    **CURRENT_PRODUCTION_CONTRACT,
+    "msda_implementation": "aclnn",
 }
 
 CUSTOM_DEFAULTS = {
@@ -59,7 +67,13 @@ CUSTOM_DEFAULTS = {
     "fuse_frozen_bn": False,
     "precompute_frozen_bn_affine": False,
     "preformat_frozen_bn_buffers": False,
+    "msda_implementation": "decomposed",
     "input_color_order": "bgr",
+}
+
+PRODUCTION_CONTRACTS = {
+    "current_production": CURRENT_PRODUCTION_CONTRACT,
+    "current_production_msda_aclnn": CURRENT_PRODUCTION_MSDA_ACLNN_CONTRACT,
 }
 
 
@@ -67,7 +81,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--contract",
-        choices=("custom", "current_production"),
+        choices=("custom", *PRODUCTION_CONTRACTS),
         default="current_production",
         help=(
             "Select current_production to enforce the exact optimized W1/B1 "
@@ -148,6 +162,18 @@ def parse_args() -> argparse.Namespace:
         help="Keep FrozenBN math but store its four buffers as NC1HWC0",
     )
     parser.add_argument(
+        "--msda-implementation",
+        choices=LAYOUT_MSDA_IMPLEMENTATION_CHOICES,
+        default=None,
+        help="Use the decomposed or installed native ACLNN MSDA path",
+    )
+    parser.add_argument(
+        "--msda-extension-so",
+        type=Path,
+        default=None,
+        help="Built host binding shared object required by ACLNN MSDA",
+    )
+    parser.add_argument(
         "--input-color-order",
         choices=("bgr", "rgb"),
         default=None,
@@ -174,6 +200,16 @@ def parse_args() -> argparse.Namespace:
     _resolve_contract(parser, args)
     if args.torch_cpu_threads < 0:
         parser.error("--torch-cpu-threads must be non-negative")
+    if args.msda_implementation == "aclnn":
+        if args.msda_extension_so is None:
+            parser.error("ACLNN MSDA requires --msda-extension-so")
+        args.msda_extension_so = args.msda_extension_so.expanduser().resolve()
+        if not args.msda_extension_so.is_file():
+            parser.error(
+                f"--msda-extension-so does not exist: {args.msda_extension_so}"
+            )
+    elif args.msda_extension_so is not None:
+        parser.error("--msda-extension-so is only valid with ACLNN MSDA")
     return args
 
 
@@ -181,15 +217,11 @@ def _resolve_contract(
     parser: argparse.ArgumentParser,
     args: argparse.Namespace,
 ) -> None:
-    expected = (
-        CURRENT_PRODUCTION_CONTRACT
-        if args.contract == "current_production"
-        else CUSTOM_DEFAULTS
-    )
+    expected = PRODUCTION_CONTRACTS.get(args.contract, CUSTOM_DEFAULTS)
     for name, value in expected.items():
         supplied = getattr(args, name)
         if (
-            args.contract == "current_production"
+            args.contract in PRODUCTION_CONTRACTS
             and supplied is not None
             and supplied != value
         ):
@@ -347,6 +379,8 @@ def main() -> None:
         fuse_frozen_bn=args.fuse_frozen_bn,
         precompute_frozen_bn_affine=args.precompute_frozen_bn_affine,
         preformat_frozen_bn_buffers=args.preformat_frozen_bn_buffers,
+        msda_implementation=args.msda_implementation,
+        msda_extension_so=args.msda_extension_so,
         input_color_order=args.input_color_order,
     )
     print(
@@ -411,15 +445,19 @@ def main() -> None:
             flush=True,
         )
 
+    expected_contract = PRODUCTION_CONTRACTS.get(
+        args.contract,
+        CUSTOM_DEFAULTS,
+    )
     resolved_contract = {
-        name: getattr(args, name) for name in CURRENT_PRODUCTION_CONTRACT
+        name: getattr(args, name) for name in expected_contract
     }
     report = {
         "config": {
             "contract": args.contract,
             "production_contract_verified": (
-                args.contract == "current_production"
-                and resolved_contract == CURRENT_PRODUCTION_CONTRACT
+                args.contract in PRODUCTION_CONTRACTS
+                and resolved_contract == expected_contract
             ),
             "resolved_model_contract": resolved_contract,
             "page_input": {
@@ -460,6 +498,13 @@ def main() -> None:
             "precompute_frozen_bn_affine": args.precompute_frozen_bn_affine,
             "frozen_bn_affine_summary": detector.frozen_bn_affine_summary,
             "preformat_frozen_bn_buffers": args.preformat_frozen_bn_buffers,
+            "msda_implementation": args.msda_implementation,
+            "msda_extension_so": (
+                None
+                if args.msda_extension_so is None
+                else str(args.msda_extension_so)
+            ),
+            "msda_rewrite_summary": detector.msda_rewrite_summary,
             "cogview_attention_impl": LAYOUT_COGVIEW_ATTENTION,
             "frozen_bn_buffer_format_summary": (
                 detector.frozen_bn_buffer_format_summary

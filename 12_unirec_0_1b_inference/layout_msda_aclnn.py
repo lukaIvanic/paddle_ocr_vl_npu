@@ -1,0 +1,164 @@
+"""Native ACLNN multi-scale deformable attention for PP-DocLayoutV2."""
+
+from __future__ import annotations
+
+import importlib
+from pathlib import Path
+from typing import Any
+
+import torch
+import torch.nn as nn
+
+
+GE_OP_NAME = "MultiScaleDeformableAttnFunction"
+PYTORCH_OP_NAME = "unirec_layout::msda_aclnn"
+EXPECTED_MODULE_COUNT = 6
+
+_LOADED_EXTENSION: Path | None = None
+_CONVERTER_REGISTERED = False
+
+
+def load_layout_msda_extension(path: str | Path) -> Path:
+    """Load the small host binding around the installed ACLNN operator."""
+    global _LOADED_EXTENSION
+    resolved = Path(path).expanduser().resolve()
+    if not resolved.is_file():
+        raise FileNotFoundError(resolved)
+    if _LOADED_EXTENSION is not None:
+        if _LOADED_EXTENSION != resolved:
+            raise RuntimeError(
+                "layout MSDA extension already loaded from "
+                f"{_LOADED_EXTENSION}, cannot replace it with {resolved}"
+            )
+        return resolved
+    torch.ops.load_library(str(resolved))
+    if not hasattr(torch.ops.unirec_layout, "msda_aclnn"):
+        raise RuntimeError("layout MSDA extension did not register its torch op")
+    _LOADED_EXTENSION = resolved
+    return resolved
+
+
+def _import_torchair() -> Any:
+    try:
+        return importlib.import_module("torch_npu.dynamo.torchair")
+    except ImportError:
+        return importlib.import_module("torchair")
+
+
+def register_layout_msda_converter() -> None:
+    """Lower the custom torch identity to the installed GE MSDA operator."""
+    global _CONVERTER_REGISTERED
+    if _CONVERTER_REGISTERED:
+        return
+    torchair = _import_torchair()
+    converter_module = importlib.import_module(
+        f"{torchair.__name__}._ge_concrete_graph.fx2ge_converter"
+    )
+    ge_module = importlib.import_module(f"{torchair.__name__}.ge")
+    register_converter = converter_module.register_fx_node_ge_converter
+    ge_custom_op = ge_module.custom_op
+
+    @register_converter(torch.ops.unirec_layout.msda_aclnn.default)
+    def _convert_layout_msda(
+        value: Any,
+        value_spatial_shapes: Any,
+        value_level_start_index: Any,
+        sampling_locations: Any,
+        attention_weights: Any,
+        meta_outputs: Any = None,
+    ) -> Any:
+        del meta_outputs
+        return ge_custom_op(
+            GE_OP_NAME,
+            inputs={
+                "value": value,
+                "value_spatial_shapes": value_spatial_shapes,
+                "value_level_start_index": value_level_start_index,
+                "sampling_locations": sampling_locations,
+                "attention_weights": attention_weights,
+            },
+            outputs=["output"],
+        )
+
+    _CONVERTER_REGISTERED = True
+
+
+class LayoutMsdaAclnn(nn.Module):
+    """Match Transformers' MSDA module signature with one installed ACLNN op."""
+
+    def forward(
+        self,
+        value: torch.Tensor,
+        value_spatial_shapes: torch.Tensor,
+        value_spatial_shapes_list: list[tuple[int, int]],
+        level_start_index: torch.Tensor,
+        sampling_locations: torch.Tensor,
+        attention_weights: torch.Tensor,
+        im2col_step: int,
+    ) -> torch.Tensor:
+        del value_spatial_shapes_list, im2col_step
+        return torch.ops.unirec_layout.msda_aclnn(
+            value,
+            value_spatial_shapes,
+            level_start_index,
+            sampling_locations,
+            attention_weights,
+        )
+
+
+def rewrite_layout_msda(
+    model: nn.Module,
+    *,
+    implementation: str,
+    extension_so: str | Path | None,
+    register_converter: bool,
+) -> dict[str, Any]:
+    """Replace all six parameter-free decompositions with the ACLNN call."""
+    if implementation == "decomposed":
+        if extension_so is not None:
+            raise ValueError(
+                "msda_extension_so is only valid with implementation='aclnn'"
+            )
+        return {
+            "implementation": implementation,
+            "target_count": 0,
+            "rewritten_count": 0,
+            "modules": [],
+            "extension_so": None,
+            "converter_registered": False,
+        }
+    if implementation != "aclnn":
+        raise ValueError(f"unsupported layout MSDA implementation: {implementation}")
+    if extension_so is None:
+        raise ValueError("implementation='aclnn' requires msda_extension_so")
+    resolved_extension = load_layout_msda_extension(extension_so)
+    if register_converter:
+        register_layout_msda_converter()
+
+    from transformers.models.pp_doclayout_v2 import (
+        modeling_pp_doclayout_v2 as layout_mod,
+    )
+
+    rewritten: list[str] = []
+    for name, module in list(model.named_modules()):
+        if not isinstance(module, layout_mod.MultiScaleDeformableAttention):
+            continue
+        parent_name, _, child_name = name.rpartition(".")
+        parent = model.get_submodule(parent_name) if parent_name else model
+        parent._modules[child_name] = LayoutMsdaAclnn()
+        rewritten.append(name)
+    if len(rewritten) != EXPECTED_MODULE_COUNT:
+        raise RuntimeError(
+            "unexpected PP-DocLayoutV2 MSDA module count: "
+            f"expected {EXPECTED_MODULE_COUNT}, rewrote {len(rewritten)}"
+        )
+    return {
+        "implementation": implementation,
+        "target_count": EXPECTED_MODULE_COUNT,
+        "rewritten_count": len(rewritten),
+        "modules": rewritten,
+        "extension_so": str(resolved_extension),
+        "converter_registered": bool(register_converter),
+        "ge_op": GE_OP_NAME,
+        "torch_op": PYTORCH_OP_NAME,
+    }

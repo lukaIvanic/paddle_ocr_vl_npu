@@ -35,6 +35,11 @@ LAYOUT_DEPTHWISE_REWRITE_CHOICES = (
 )
 DEFAULT_LAYOUT_DEPTHWISE_REWRITE = "constant_grouped"
 LAYOUT_COGVIEW_ATTENTION = "direct_softmax"
+LAYOUT_MSDA_IMPLEMENTATION_CHOICES = (
+    "decomposed",
+    "aclnn",
+)
+DEFAULT_LAYOUT_MSDA_IMPLEMENTATION = "decomposed"
 
 class _PrecomputedLayoutAffine2d(torch.nn.Module):
     def __init__(self, scale: torch.Tensor, bias: torch.Tensor) -> None:
@@ -644,6 +649,8 @@ class PPDocLayoutV2NpuAdapter:
         fuse_frozen_bn: bool = False,
         precompute_frozen_bn_affine: bool = False,
         preformat_frozen_bn_buffers: bool = False,
+        msda_implementation: str = DEFAULT_LAYOUT_MSDA_IMPLEMENTATION,
+        msda_extension_so: str | Path | None = None,
         input_color_order: str = "bgr",
     ) -> None:
         if dtype not in DTYPE_MAP:
@@ -670,6 +677,10 @@ class PPDocLayoutV2NpuAdapter:
             raise ValueError(
                 f"Unsupported layout input color order: {input_color_order}"
             )
+        if msda_implementation not in LAYOUT_MSDA_IMPLEMENTATION_CHOICES:
+            raise ValueError(
+                f"Unsupported layout MSDA implementation: {msda_implementation}"
+            )
 
         import torch_npu  # noqa: F401
         from transformers import AutoImageProcessor, AutoModelForObjectDetection
@@ -692,6 +703,12 @@ class PPDocLayoutV2NpuAdapter:
         self.fuse_frozen_bn = bool(fuse_frozen_bn)
         self.precompute_frozen_bn_affine = bool(precompute_frozen_bn_affine)
         self.preformat_frozen_bn_buffers = bool(preformat_frozen_bn_buffers)
+        self.msda_implementation = str(msda_implementation)
+        self.msda_extension_so = (
+            None
+            if msda_extension_so is None
+            else Path(msda_extension_so).expanduser().resolve()
+        )
         self.input_color_order = str(input_color_order)
         frozen_bn_rewrite_count = sum(
             (
@@ -718,6 +735,14 @@ class PPDocLayoutV2NpuAdapter:
         from layout_torchair import make_eager_npu_compatible
 
         make_eager_npu_compatible(self.model)
+        from layout_msda_aclnn import rewrite_layout_msda
+
+        self.msda_rewrite_summary = rewrite_layout_msda(
+            self.model,
+            implementation=self.msda_implementation,
+            extension_so=self.msda_extension_so,
+            register_converter=execution == "torchair",
+        )
         self.frozen_bn_fusion_summary = (
             _fuse_layout_frozen_batch_norms(self.model)
             if self.fuse_frozen_bn
@@ -786,6 +811,7 @@ class PPDocLayoutV2NpuAdapter:
                     f"frozenbn{int(self.fuse_frozen_bn)}_"
                     f"precomputedfrozenbn{int(self.precompute_frozen_bn_affine)}_"
                     f"formattedfrozenbnbuffers{int(self.preformat_frozen_bn_buffers)}_"
+                    f"msda_{self.msda_implementation}_"
                     f"cogview_{LAYOUT_COGVIEW_ATTENTION}"
                 ),
                 dtype=self.dtype,
