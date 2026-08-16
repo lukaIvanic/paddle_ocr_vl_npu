@@ -42,10 +42,28 @@ shared GE infer-shape implementation reads the transposed location's dimension
 5 (`2`, the coordinate pair) as the query count and produces the bogus internal
 shape `[1,2,32]`. The tiler itself uses the correct attention-weight dimensions.
 TorchAir's `_inference_rule` attribute did not override the already-registered
-CANN host function. The binding extension now registers a corrected host infer
-callback for the same operator. It returns internal `[B,H*D,Q]` for the 310P
-layout and preserves logical `[B,Q,H*D]` inference for the public layout. This
-changes graph construction only and adds no runtime operation.
+CANN host function. Replacing the registry pointer from the Python extension
+also failed because GE performs this inference in a separate compiler process.
+The runner now builds a small user OPP, puts it on
+`ASCEND_CUSTOM_OPP_PATH`, and replaces only the broken infer-shape and
+infer-dtype pointers inside that compiler process. It preserves CANN's stock
+tiler, workspace logic, and installed kernel. This changes graph construction
+only and adds no runtime operation.
+
+The callback is installed only by the resident op-tiling DSO. The proto DSO is
+loaded and unloaded repeatedly; publishing a callback from it would leave a
+dangling function pointer. Therefore these lines are expected:
+
+```text
+UNIREC_LAYOUT_MSDA_HOST_OPP_OVERRIDE_INSTALLED role=tiling
+UNIREC_LAYOUT_MSDA_HOST_OPP_LOADED_NO_OVERRIDE role=proto
+```
+
+A fresh-cache 910B2 control on physical NPU 7 proved that GE invoked the user
+OPP callback. It reported
+`location_dim1=300 output=[1,300,256]`, completed both warmups, preserved digest
+`e0e3510c8327`, and measured 12.06 ms for the one-page model forward. The 310P
+retry must analogously report internal output `[1,256,300]`.
 
 This is derived from the public Ascend operator sources, not a guessed layout:
 
@@ -66,8 +84,8 @@ from the successful binding environment. The runner now preserves its path.
 
 - Pull only. Do not edit, commit, branch, or push.
 - Never use physical NPU 5 or 6.
-- Rebuild the small host binding once. This revision adds the corrected CANN
-  host infer callback to that library; the old SO does not contain it.
+- Rebuild the small torch binding once. The runner separately builds and loads
+  the compiler-process user OPP automatically.
 - Use a fresh candidate graph cache.
 - Run only the one-page candidate compile probe below. Do not rerun the
   baseline, profiling, recognition, or evaluation.
@@ -113,12 +131,13 @@ If it passes, return:
 
 1. the final `LAYOUT_LAB done` line and measured forward time;
 2. confirmation that both warmup calls completed;
-3. the `UNIREC_LAYOUT_MSDA_HOST_INFER_OVERRIDE_ACTIVE` line, which must report
-   internal output `[1,256,300]`, and the matching
-   `host_infer_marker.txt` contents;
+3. `UNIREC_LAYOUT_MSDA_HOST_OPP_OVERRIDE_INSTALLED role=tiling` and the
+   `UNIREC_LAYOUT_MSDA_HOST_OPP_ACTIVE` line, which must report
+   `location_dim1=1 output=[1,256,300]`; the marker file must contain both
+   `override_installed role=tiling` and that output shape;
 4. physical NPU, commit, exact `python=` path, torch, and torch-npu;
-5. absolute run root, cache root, extension build log, extension SO, output
-   JSON, and exit-code file;
+5. absolute run root, cache root, host OPP build log/vendor root, extension
+   build log/SO, output JSON, and exit-code file;
 6. confirmation that the owned process exited and its NPU was released.
 
 If it fails, return instead:

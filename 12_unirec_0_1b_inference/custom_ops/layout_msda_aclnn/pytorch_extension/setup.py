@@ -37,10 +37,6 @@ setup(
                 f"-I{TORCH_NPU_ROOT / 'include/third_party/op-plugin/op_plugin/include'}",
                 f"-I{ASCEND_HOME / 'include'}",
             ],
-            extra_link_args=[
-                f"-L{ASCEND_HOME / 'lib64'}",
-                "-lopp_registry",
-            ],
         )
     ],
     cmdclass={

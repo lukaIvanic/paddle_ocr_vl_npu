@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import ctypes
 import importlib
 import os
 from pathlib import Path
@@ -20,8 +19,6 @@ _LOADED_EXTENSION: Path | None = None
 _CONVERTER_REGISTERED = False
 _CONVERTER_DEVICE_NAME: str | None = None
 _CONVERTER_USES_310P_INTERNAL_LAYOUT = False
-_HOST_INFER_REFRESH: Any | None = None
-_HOST_INFER_REFRESHED = False
 
 
 def _uses_310p_internal_layout(device_name: str) -> bool:
@@ -31,7 +28,6 @@ def _uses_310p_internal_layout(device_name: str) -> bool:
 def load_layout_msda_extension(path: str | Path) -> Path:
     """Load the small host binding around the installed ACLNN operator."""
     global _LOADED_EXTENSION
-    global _HOST_INFER_REFRESH
     resolved = Path(path).expanduser().resolve()
     if not resolved.is_file():
         raise FileNotFoundError(resolved)
@@ -45,31 +41,8 @@ def load_layout_msda_extension(path: str | Path) -> Path:
     torch.ops.load_library(str(resolved))
     if not hasattr(torch.ops.unirec_layout, "msda_aclnn"):
         raise RuntimeError("layout MSDA extension did not register its torch op")
-    host_library = ctypes.CDLL(str(resolved))
-    try:
-        refresh = host_library.unirec_layout_msda_refresh_host_infer
-    except AttributeError as exc:
-        raise RuntimeError(
-            "layout MSDA extension lacks the host-infer refresh entrypoint"
-        ) from exc
-    refresh.argtypes = []
-    refresh.restype = ctypes.c_int
-    _HOST_INFER_REFRESH = refresh
     _LOADED_EXTENSION = resolved
     return resolved
-
-
-def _refresh_layout_msda_host_infer() -> None:
-    """Register the corrected callback after CANN loads its stock callback."""
-    global _HOST_INFER_REFRESHED
-    if _HOST_INFER_REFRESHED:
-        return
-    if _HOST_INFER_REFRESH is None:
-        raise RuntimeError("layout MSDA extension is not loaded")
-    status = int(_HOST_INFER_REFRESH())
-    if status != 0:
-        raise RuntimeError(f"layout MSDA host-infer refresh failed: {status}")
-    _HOST_INFER_REFRESHED = True
 
 
 def _import_torchair() -> Any:
@@ -181,21 +154,18 @@ def register_layout_msda_converter() -> None:
         specific_output_layout(output, indices=0, layout="ND")
 
         if use_310p_internal_layout:
-            _refresh_layout_msda_host_infer()
             # Keep the custom node intermediate. This makes GE invoke the
-            # corrected host infer callback registered by the extension,
-            # which supplies the 310P internal [B,H*D,Q] contract.
+            # corrected host infer callback installed in GE's compiler process
+            # by the user OPP, which supplies [B,H*D,Q].
             output = ge_apis_module.Transpose(output, [0, 2, 1])
             output = ge_apis_module.Cast(
                 output,
                 dst_type=meta_outputs.dtype,
             )
         elif force_host_infer_probe:
-            _refresh_layout_msda_host_infer()
             # Diagnostic only: make the custom node intermediate on 910B so
-            # CANN must invoke a registered host infer callback, matching the
-            # graph topology of the 310P wrapper path. A same-dtype Cast is
-            # expected to disappear after graph construction.
+            # GE must invoke the user-OPP host infer callback, matching the
+            # 310P wrapper topology. A same-dtype Cast should disappear.
             output = ge_apis_module.Cast(
                 output,
                 dst_type=meta_outputs.dtype,
