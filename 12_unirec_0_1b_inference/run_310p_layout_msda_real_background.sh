@@ -234,7 +234,7 @@ worker_main() {
     printf 'msda_rebuild_extension=%s\n' "$MSDA_REBUILD_EXTENSION"
     printf 'layout_cache_root=%s\n' "$LAYOUT_CACHE_ROOT"
     printf 'host_opp_vendor_root=%s\n' "$HOST_OPP_VENDOR_ROOT"
-    printf 'ascend_custom_opp_path=%s\n' "$ASCEND_CUSTOM_OPP_PATH"
+    printf 'ascend_custom_opp_path=%s\n' "${ASCEND_CUSTOM_OPP_PATH:-}"
     printf 'layout_profile_input=%s\n' "$LAYOUT_INPUT_IMAGE"
     printf 'msda_run_mode=%s\n' "$MSDA_RUN_MODE"
     printf 'msda_forward_limit=%s\n' "$MSDA_FORWARD_LIMIT"
