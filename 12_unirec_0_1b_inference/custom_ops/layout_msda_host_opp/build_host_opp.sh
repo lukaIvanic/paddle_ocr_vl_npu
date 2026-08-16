@@ -20,7 +20,7 @@ test -f "$CANN_LIB/libexe_graph.so"
 test -f "$CANN_LIB/libregister.so"
 test -f "$CANN_LIB/libopp_registry.so"
 
-REGISTRY_COMPAT_INCLUDE="$SCRIPT_DIR/../../layout_msda_aclnn/pytorch_extension/csrc"
+REGISTRY_COMPAT_INCLUDE="$SCRIPT_DIR/../layout_msda_aclnn/pytorch_extension/csrc"
 test -f "$REGISTRY_COMPAT_INCLUDE/op_impl_registry_base_compat.h"
 
 VENDOR_ROOT="$OUTPUT_ROOT/vendors/unirec_layout_msda"
