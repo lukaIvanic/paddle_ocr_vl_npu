@@ -180,7 +180,7 @@ def register_layout_msda_converter() -> None:
         specific_output_layout(output, indices=0, layout="ND")
 
         if use_310p_internal_layout:
-            logical_shape = tuple(int(dim) for dim in meta_outputs.shape)
+            logical_shape = tuple(int(dim) for dim in meta_outputs.size)
             if len(logical_shape) != 3:
                 raise RuntimeError(
                     "layout MSDA expected rank-3 output metadata, got "
@@ -197,7 +197,7 @@ def register_layout_msda_converter() -> None:
                 dst_type=meta_outputs.dtype,
             )
         elif force_host_infer_probe:
-            logical_shape = tuple(int(dim) for dim in meta_outputs.shape)
+            logical_shape = tuple(int(dim) for dim in meta_outputs.size)
             _pin_ge_output_shape_without_host_infer(
                 output,
                 logical_shape,
