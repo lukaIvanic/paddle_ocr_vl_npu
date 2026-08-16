@@ -80,6 +80,27 @@ def register_layout_msda_converter() -> None:
             outputs=["output"],
         )
 
+    # The stock layout model computes level_start_index from its three-row
+    # spatial-shape tensor with prod(dim=1). That result was dead in the old
+    # GridSample decomposition, but the native operator consumes it. TorchAir
+    # 2.10 ships only a NotImplemented stub for aten.prod.dim_int, so replace
+    # that stub for this exact live contract while the ACLNN lane is active.
+    @register_converter(torch.ops.aten.prod.dim_int)
+    def _convert_layout_spatial_prod(
+        inputs: Any,
+        dim: int,
+        keepdim: bool = False,
+        *,
+        dtype: int | None = None,
+        meta_outputs: Any = None,
+    ) -> Any:
+        del meta_outputs
+        if int(dim) != 1 or bool(keepdim) or dtype is not None:
+            raise NotImplementedError(
+                "layout MSDA only lowers prod(dim=1, keepdim=False, dtype=None)"
+            )
+        return ge_module.ReduceProdD(inputs, axes=[1], keep_dims=False)
+
     _CONVERTER_REGISTERED = True
 
 
