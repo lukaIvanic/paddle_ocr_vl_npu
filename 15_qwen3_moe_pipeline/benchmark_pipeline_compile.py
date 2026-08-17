@@ -27,6 +27,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--decode-steps", type=int, default=20)
     parser.add_argument("--stage-timing-steps", type=int, default=5)
     parser.add_argument(
+        "--token-handoff",
+        choices=("host", "direct"),
+        default="host",
+        help="Return the sampled B1 token through a host scalar or direct NPU copy.",
+    )
+    parser.add_argument(
         "--compile-cache-dir",
         type=Path,
         default=Path(".runtime_cache/15_qwen3_moe_pipeline"),
@@ -94,6 +100,7 @@ def pipeline_step(
     *,
     stage0_device: torch.device,
     stage1_device: torch.device,
+    token_handoff: str,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     stage0_position = torch.tensor(
         [position], dtype=torch.int64, device=stage0_device
@@ -111,7 +118,14 @@ def pipeline_step(
         stage1_cache.value_caches,
     )
     next_token_stage1 = logits.argmax(dim=-1, keepdim=True)
-    return next_token_stage1.to(stage0_device), logits
+    if token_handoff == "host":
+        next_token_id = int(next_token_stage1.item())
+        next_token_stage0 = torch.tensor(
+            [[next_token_id]], dtype=torch.int64, device=stage0_device
+        )
+    else:
+        next_token_stage0 = next_token_stage1.to(stage0_device)
+    return next_token_stage0, logits
 
 
 def main() -> None:
@@ -228,6 +242,7 @@ def main() -> None:
             stage1_cache,
             stage0_device=stage0_device,
             stage1_device=stage1_device,
+            token_handoff=args.token_handoff,
         )
     synchronize(stage0_device, stage1_device)
     stats_after_prompt = dynamo_stats()
@@ -250,6 +265,7 @@ def main() -> None:
             stage1_cache,
             stage0_device=stage0_device,
             stage1_device=stage1_device,
+            token_handoff=args.token_handoff,
         )
         synchronize(stage0_device, stage1_device)
         parity_step_times.append(time.perf_counter() - started)
@@ -272,6 +288,7 @@ def main() -> None:
             stage1_cache,
             stage0_device=stage0_device,
             stage1_device=stage1_device,
+            token_handoff=args.token_handoff,
         )
         position += 1
     synchronize(stage0_device, stage1_device)
@@ -286,6 +303,7 @@ def main() -> None:
             stage1_cache,
             stage0_device=stage0_device,
             stage1_device=stage1_device,
+            token_handoff=args.token_handoff,
         )
         position += 1
     synchronize(stage0_device, stage1_device)
@@ -330,7 +348,13 @@ def main() -> None:
         argmax_sec = time.perf_counter() - stage_started
 
         stage_started = time.perf_counter()
-        current_input = next_token_stage1.to(stage0_device)
+        if args.token_handoff == "host":
+            next_token_id = int(next_token_stage1.item())
+            current_input = torch.tensor(
+                [[next_token_id]], dtype=torch.int64, device=stage0_device
+            )
+        else:
+            current_input = next_token_stage1.to(stage0_device)
         synchronize(stage0_device)
         token_copy_sec = time.perf_counter() - stage_started
         total_sec = time.perf_counter() - total_started
@@ -361,6 +385,7 @@ def main() -> None:
         "dtype": "bfloat16",
         "batch_size": 1,
         "pipeline_parallel_size": 2,
+        "token_handoff": args.token_handoff,
         "cache_length": cache_length,
         "compile_contract": {
             "fullgraph": True,
