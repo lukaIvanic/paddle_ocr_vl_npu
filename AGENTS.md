@@ -79,7 +79,7 @@ was reached. **09 is the active PaddleOCR-VL engine**; 01–08 are historical an
   Has its own `README.md`; read it before interpreting its throughput or parity.
 - `09_persistent_page_engine/`: **active.** The persistent page engine. Has its
   own `README.md`, which is authoritative over anything said here.
-- `10_qwen3_8b_inference/`: custom dense Qwen3-8B inference on Ascend NPU.
+- `10_qwen3_8b_inference/`: selected optimized Qwen3-0.6B B1 decode path on Ascend NPU.
 - `11_mineru_2_5_pro_inference/`: custom MinerU2.5-Pro inference and official
   comparison lanes.
 - `12_unirec_0_1b_inference/`: custom UniRec-0.1B inference and OpenDoc lanes.

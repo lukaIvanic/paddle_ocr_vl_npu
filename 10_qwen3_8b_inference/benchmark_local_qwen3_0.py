@@ -31,8 +31,6 @@ warnings.filterwarnings(
 
 import torch
 
-from local_modeling_qwen3_0 import DECODE_OPTIMIZATION_PRESETS
-
 try:
     import torch_npu
     import torch_npu.profiler as npu_prof
@@ -49,37 +47,16 @@ def require_torch_npu() -> None:
         raise RuntimeError("torch_npu is required for NPU benchmark/profiling runs")
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Benchmark local Qwen 3.0 prefill and decode.")
+    parser = argparse.ArgumentParser(
+        description="Benchmark the optimized compiled Qwen3-0.6B decoder."
+    )
     parser.add_argument("--model-dir", required=True)
     parser.add_argument("--prompt", default="Write a tiny Python function that adds two numbers.")
     parser.add_argument("--prefill-tokens", type=int, default=512)
     parser.add_argument("--decode-steps", type=int, default=64)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--static-kv-cache-len", type=int, default=65536)
-    parser.add_argument("--dtype", choices=("float16", "float32"), default="float16")
     parser.add_argument("--device", default="npu:0")
-    parser.add_argument("--compile-decode", action="store_true")
-    parser.add_argument(
-        "--compile-decode-dynamic",
-        action=argparse.BooleanOptionalAction,
-        default=None,
-    )
-    parser.add_argument("--npugraph-decode", action="store_true")
-    parser.add_argument(
-        "--decode-increfa-mode",
-        choices=("auto", "mask", "actual_seq_lengths"),
-        default="auto",
-    )
-    parser.add_argument(
-        "--decode-optimization",
-        choices=("auto", *DECODE_OPTIMIZATION_PRESETS),
-        default="auto",
-    )
-    parser.add_argument(
-        "--decode-linear-weight-format",
-        choices=("unchanged", "lm_head_fractal_nz", "fractal_nz"),
-        default="unchanged",
-    )
     parser.add_argument("--prefill-warmups", type=int, default=1)
     parser.add_argument("--prefill-repeats", type=int, default=3)
     parser.add_argument("--decode-warmups", type=int, default=1)
@@ -281,7 +258,6 @@ def prepare_decode_state(runner: LocalQwen30Runner, input_ids: torch.Tensor):
     with torch.inference_mode():
         key_caches, value_caches = runner.model.prefill(input_ids, static_kv_cache_len=runner.static_kv_cache_len)
         decode_input = runner.make_initial_decode_input(input_ids)
-    runner.mark_static_decode_state(key_caches, value_caches)
     return decode_input, key_caches, value_caches
 
 
@@ -306,154 +282,14 @@ def run_decode_loop(
                 device=input_ids.device,
                 dtype=torch.long,
             )
-            actual_seq_length = decode_position + 1 if runner.decode_increfa_mode == "actual_seq_lengths" else None
             next_id, key_caches, value_caches = decode_one(
                 next_id,
                 cache_position,
                 key_caches,
                 value_caches,
-                actual_seq_length=actual_seq_length,
             )
             generated.append(next_id)
         return torch.cat(generated, dim=-1)
-
-
-class NPUGraphDecodeRunner:
-    def __init__(
-        self,
-        runner: LocalQwen30Runner,
-        input_ids: torch.Tensor,
-        next_id: torch.Tensor,
-        key_caches: tuple[torch.Tensor, ...],
-        value_caches: tuple[torch.Tensor, ...],
-        *,
-        decode_steps: int,
-    ):
-        require_torch_npu()
-        if runner.decode_increfa_mode != "mask":
-            raise ValueError("NPUGraph decode currently supports only decode_increfa_mode='mask'")
-        self.runner = runner
-        self.decode_steps = int(decode_steps)
-        self.static_input_ids = next_id.clone()
-        self.static_cache_position = torch.empty((1,), device=input_ids.device, dtype=torch.long)
-        self.decode_positions = torch.arange(
-            input_ids.shape[1] - 1,
-            input_ids.shape[1] - 1 + decode_steps,
-            device=input_ids.device,
-            dtype=torch.long,
-        )
-        self.initial_next_id = next_id.clone()
-        self.key_caches = key_caches
-        self.value_caches = value_caches
-        self.graph = torch_npu.npu.NPUGraph()
-        self.output_next_id = None
-        self.output_key_caches = None
-        self.output_value_caches = None
-        self.capture_sec = self.capture()
-
-    def capture(self) -> float:
-        self.static_cache_position.copy_(self.decode_positions[:1])
-        side_stream = torch.npu.Stream(device=self.static_input_ids.device)
-        sync()
-        started = time.perf_counter()
-        with torch.npu.stream(side_stream):
-            with torch.inference_mode():
-                self.graph.capture_begin()
-                self.output_next_id = self.runner.model.decode(
-                    self.static_input_ids,
-                    self.static_cache_position,
-                    self.key_caches,
-                    self.value_caches,
-                    None,
-                )
-                self.graph.capture_end()
-        sync()
-        return time.perf_counter() - started
-
-    def run_loop(self) -> torch.Tensor:
-        if self.output_next_id is None:
-            raise RuntimeError("NPUGraph decode has not been captured")
-        next_id = self.initial_next_id
-        generated = torch.empty(
-            (next_id.shape[0], self.decode_steps),
-            device=next_id.device,
-            dtype=next_id.dtype,
-        )
-        for step in range(self.decode_steps):
-            self.static_input_ids.copy_(next_id)
-            self.static_cache_position.copy_(self.decode_positions[step : step + 1])
-            self.graph.replay()
-            next_id = self.output_next_id
-            generated[:, step : step + 1].copy_(next_id)
-        return generated
-
-
-def prepare_npugraph_decode_runner(
-    runner: LocalQwen30Runner,
-    input_ids: torch.Tensor,
-    *,
-    decode_steps: int,
-) -> NPUGraphDecodeRunner:
-    next_id, key_caches, value_caches = prepare_decode_state(runner, input_ids)
-    return NPUGraphDecodeRunner(
-        runner,
-        input_ids,
-        next_id,
-        key_caches,
-        value_caches,
-        decode_steps=decode_steps,
-    )
-
-
-def benchmark_decode_npugraph(
-    runner: LocalQwen30Runner,
-    input_ids: torch.Tensor,
-    *,
-    warmups: int,
-    repeats: int,
-    decode_steps: int,
-    log: StageLogger,
-) -> dict:
-    log.log(f"checking NPUGraph decode correctness: steps={decode_steps}")
-    ref_next_id, ref_key_caches, ref_value_caches = prepare_decode_state(runner, input_ids)
-    reference = run_decode_loop(
-        runner,
-        input_ids,
-        ref_next_id,
-        ref_key_caches,
-        ref_value_caches,
-        decode_steps=decode_steps,
-    )
-    check_runner = prepare_npugraph_decode_runner(runner, input_ids, decode_steps=decode_steps)
-    candidate = check_runner.run_loop()
-    sync()
-    token_mismatch_count = int((candidate != reference).sum().item())
-    if token_mismatch_count:
-        raise RuntimeError(f"NPUGraph decode output mismatch: token_mismatch_count={token_mismatch_count}")
-
-    log.log(f"warming up NPUGraph decode: runs={warmups} steps={decode_steps}")
-    capture_timings = []
-    for _ in range(warmups):
-        graph_runner = prepare_npugraph_decode_runner(runner, input_ids, decode_steps=decode_steps)
-        capture_timings.append(graph_runner.capture_sec)
-        time_call(graph_runner.run_loop)
-    log.log(f"timing NPUGraph decode: repeats={repeats} steps={decode_steps}")
-    timings = []
-    for _ in range(repeats):
-        graph_runner = prepare_npugraph_decode_runner(runner, input_ids, decode_steps=decode_steps)
-        capture_timings.append(graph_runner.capture_sec)
-        timings.append(time_call(graph_runner.run_loop))
-    summary = summarize_seconds(
-        timings,
-        tokens=int(input_ids.shape[0]) * decode_steps,
-        batches=decode_steps,
-    )
-    summary["npugraph_capture_sec_mean"] = mean(capture_timings) if capture_timings else 0.0
-    summary["npugraph_capture_sec_min"] = min(capture_timings) if capture_timings else 0.0
-    summary["npugraph_capture_sec_max"] = max(capture_timings) if capture_timings else 0.0
-    summary["npugraph_eager_exact_match"] = True
-    summary["npugraph_eager_token_mismatch_count"] = token_mismatch_count
-    return summary
 
 
 def benchmark_prefill(
@@ -485,116 +321,55 @@ def benchmark_decode(
     decode_steps: int,
     log: StageLogger,
 ) -> dict:
-    compile_first_call_sec = None
-    parity = None
-    baseline_parity = None
-    if runner.decode_optimization != "baseline":
-        log.log(
-            "checking optimized eager decode against baseline eager decode: "
-            f"steps={decode_steps}"
+    log.log(f"checking compiled/eager decode parity: steps={decode_steps}")
+    eager_next_id, eager_key_caches, eager_value_caches = prepare_decode_state(
+        runner, input_ids
+    )
+    compiled_next_id, compiled_key_caches, compiled_value_caches = (
+        prepare_decode_state(runner, input_ids)
+    )
+    eager_tokens = run_decode_loop(
+        runner,
+        input_ids,
+        eager_next_id,
+        eager_key_caches,
+        eager_value_caches,
+        decode_steps=decode_steps,
+        decode_one=runner.decode_one_eager,
+    )
+    sync()
+    started = time.perf_counter()
+    compiled_tokens = run_decode_loop(
+        runner,
+        input_ids,
+        compiled_next_id,
+        compiled_key_caches,
+        compiled_value_caches,
+        decode_steps=decode_steps,
+    )
+    sync()
+    compile_first_call_sec = time.perf_counter() - started
+    token_mismatch_count = int((compiled_tokens != eager_tokens).sum().item())
+    kv_max_abs = 0.0
+    for eager_cache, compiled_cache in zip(
+        (*eager_key_caches, *eager_value_caches),
+        (*compiled_key_caches, *compiled_value_caches),
+    ):
+        kv_max_abs = max(
+            kv_max_abs,
+            float((compiled_cache.float() - eager_cache.float()).abs().max().item()),
         )
-        baseline_next_id, baseline_key_caches, baseline_value_caches = (
-            prepare_decode_state(runner, input_ids)
+    parity = {
+        "steps": int(decode_steps),
+        "token_mismatch_count": token_mismatch_count,
+        "token_exact_match": token_mismatch_count == 0,
+        "kv_max_abs": kv_max_abs,
+    }
+    if token_mismatch_count:
+        raise RuntimeError(
+            "compiled decode token mismatch: "
+            f"token_mismatch_count={token_mismatch_count}"
         )
-        optimized_next_id, optimized_key_caches, optimized_value_caches = (
-            prepare_decode_state(runner, input_ids)
-        )
-        baseline_tokens = run_decode_loop(
-            runner,
-            input_ids,
-            baseline_next_id,
-            baseline_key_caches,
-            baseline_value_caches,
-            decode_steps=decode_steps,
-            decode_one=runner.decode_one_baseline,
-        )
-        optimized_tokens = run_decode_loop(
-            runner,
-            input_ids,
-            optimized_next_id,
-            optimized_key_caches,
-            optimized_value_caches,
-            decode_steps=decode_steps,
-            decode_one=runner.decode_one_eager,
-        )
-        sync()
-        token_mismatch_count = int(
-            (optimized_tokens != baseline_tokens).sum().item()
-        )
-        kv_max_abs = 0.0
-        for baseline_cache, optimized_cache in zip(
-            (*baseline_key_caches, *baseline_value_caches),
-            (*optimized_key_caches, *optimized_value_caches),
-        ):
-            kv_max_abs = max(
-                kv_max_abs,
-                float(
-                    (
-                        optimized_cache.float() - baseline_cache.float()
-                    ).abs().max().item()
-                ),
-            )
-        baseline_parity = {
-            "steps": int(decode_steps),
-            "token_mismatch_count": token_mismatch_count,
-            "token_exact_match": token_mismatch_count == 0,
-            "kv_max_abs": kv_max_abs,
-        }
-        if token_mismatch_count:
-            raise RuntimeError(
-                "optimized decode token mismatch versus baseline: "
-                f"token_mismatch_count={token_mismatch_count}"
-            )
-    if runner.compile_decode:
-        log.log(f"checking compiled/eager decode parity: steps={decode_steps}")
-        eager_next_id, eager_key_caches, eager_value_caches = prepare_decode_state(
-            runner, input_ids
-        )
-        compiled_next_id, compiled_key_caches, compiled_value_caches = (
-            prepare_decode_state(runner, input_ids)
-        )
-        eager_tokens = run_decode_loop(
-            runner,
-            input_ids,
-            eager_next_id,
-            eager_key_caches,
-            eager_value_caches,
-            decode_steps=decode_steps,
-            decode_one=runner.decode_one_eager,
-        )
-        sync()
-        started = time.perf_counter()
-        compiled_tokens = run_decode_loop(
-            runner,
-            input_ids,
-            compiled_next_id,
-            compiled_key_caches,
-            compiled_value_caches,
-            decode_steps=decode_steps,
-        )
-        sync()
-        compile_first_call_sec = time.perf_counter() - started
-        token_mismatch_count = int((compiled_tokens != eager_tokens).sum().item())
-        kv_max_abs = 0.0
-        for eager_cache, compiled_cache in zip(
-            (*eager_key_caches, *eager_value_caches),
-            (*compiled_key_caches, *compiled_value_caches),
-        ):
-            kv_max_abs = max(
-                kv_max_abs,
-                float((compiled_cache.float() - eager_cache.float()).abs().max().item()),
-            )
-        parity = {
-            "steps": int(decode_steps),
-            "token_mismatch_count": token_mismatch_count,
-            "token_exact_match": token_mismatch_count == 0,
-            "kv_max_abs": kv_max_abs,
-        }
-        if token_mismatch_count:
-            raise RuntimeError(
-                "compiled decode token mismatch: "
-                f"token_mismatch_count={token_mismatch_count}"
-            )
 
     log.log(f"warming up decode: runs={warmups} steps={decode_steps}")
     warmup_timings = []
@@ -634,10 +409,7 @@ def benchmark_decode(
         batches=decode_steps,
     )
     summary["compile_decode_first_call_sec"] = compile_first_call_sec
-    if parity is not None:
-        summary["compiled_eager_parity"] = parity
-    if baseline_parity is not None:
-        summary["optimized_baseline_parity"] = baseline_parity
+    summary["compiled_eager_parity"] = parity
     return summary
 
 
@@ -985,12 +757,6 @@ def print_timing(label: str, summary: dict) -> None:
     )
     if summary.get("compile_decode_first_call_sec") is not None:
         print(f"{label}: compile_first_call={summary['compile_decode_first_call_sec']:.6f}s")
-    if summary.get("npugraph_capture_sec_mean") is not None:
-        print(
-            f"{label}: npugraph_capture_mean={summary['npugraph_capture_sec_mean']:.6f}s "
-            f"min={summary['npugraph_capture_sec_min']:.6f}s "
-            f"max={summary['npugraph_capture_sec_max']:.6f}s"
-        )
 
 
 def print_profile(label: str, summary: dict) -> None:
@@ -1040,16 +806,12 @@ def main() -> None:
     from run_local_qwen3_0 import LocalQwen30Runner
 
     log = StageLogger(enabled=args.verbose)
-    dtype = {"float16": torch.float16, "float32": torch.float32}[args.dtype]
     device = torch.device(args.device)
-    if device.type == "npu":
-        require_torch_npu()
-        if args.decode_linear_weight_format != "unchanged":
-            torch.npu.config.allow_internal_format = True
-        torch.npu.set_device(device)
-        torch.npu.set_compile_mode(jit_compile=False)
-    if args.npugraph_decode and args.compile_decode:
-        raise ValueError("--npugraph-decode and --compile-decode are mutually exclusive")
+    if device.type != "npu":
+        raise ValueError("The optimized Experiment 10 benchmark requires an Ascend NPU")
+    require_torch_npu()
+    torch.npu.set_device(device)
+    torch.npu.set_compile_mode(jit_compile=False)
     if args.prefill_tokens + args.decode_steps > args.static_kv_cache_len:
         raise ValueError(
             "prefill_tokens + decode_steps exceeds static_kv_cache_len "
@@ -1062,12 +824,6 @@ def main() -> None:
             lambda: LocalQwen30Runner(
                 args.model_dir,
                 device=device,
-                dtype=dtype,
-                compile_decode=args.compile_decode,
-                compile_decode_dynamic=args.compile_decode_dynamic,
-                decode_increfa_mode=args.decode_increfa_mode,
-                decode_optimization=args.decode_optimization,
-                decode_linear_weight_format=args.decode_linear_weight_format,
                 static_kv_cache_len=args.static_kv_cache_len,
             ),
             suppressed_substrings=(
@@ -1077,10 +833,6 @@ def main() -> None:
         )
     memory_snapshots = {"after_load": npu_memory_snapshot("after_load")}
     print_memory_snapshot(memory_snapshots["after_load"])
-    if args.npugraph_decode and runner.compile_decode_dynamic:
-        raise ValueError("--npugraph-decode and dynamic decode are mutually exclusive")
-    if args.npugraph_decode and runner.decode_increfa_mode != "mask":
-        raise ValueError("--npugraph-decode currently requires decode_increfa_mode mask")
     log.log("building benchmark input ids")
     if args.batch_size < 1:
         raise ValueError(f"batch_size must be positive, got {args.batch_size}")
@@ -1095,18 +847,12 @@ def main() -> None:
     result = {
         "model_dir": str(args.model_dir),
         "device": args.device,
-        "dtype": args.dtype,
-        "compile_decode": bool(args.compile_decode),
-        "compile_decode_dynamic": bool(runner.compile_decode_dynamic),
-        "compile_decode_dynamic_requested": args.compile_decode_dynamic,
-        "npugraph_decode": bool(args.npugraph_decode),
-        "decode_increfa_mode": runner.decode_increfa_mode,
-        "decode_increfa_mode_requested": args.decode_increfa_mode,
-        "decode_optimization": runner.decode_optimization,
-        "decode_optimization_requested": args.decode_optimization,
+        "dtype": "float16",
+        "compile_decode": True,
+        "compile_decode_dynamic": False,
+        "decode_increfa_mode": "mask",
+        "decode_optimization": "qwen3_0_6b_optimized_static_decode",
         "decode_optimization_metadata": runner.decode_optimization_metadata,
-        "decode_linear_weight_format": args.decode_linear_weight_format,
-        "decode_linear_weight_metadata": runner.decode_linear_weight_metadata,
         "batch_size": int(args.batch_size),
         "prefill_tokens": int(args.prefill_tokens),
         "decode_steps": int(args.decode_steps),
@@ -1127,24 +873,14 @@ def main() -> None:
 
     log.log("running decode benchmark")
     reset_dynamo_counters()
-    if args.npugraph_decode:
-        result["decode"] = benchmark_decode_npugraph(
-            runner,
-            input_ids,
-            warmups=args.decode_warmups,
-            repeats=args.decode_repeats,
-            decode_steps=args.decode_steps,
-            log=log,
-        )
-    else:
-        result["decode"] = benchmark_decode(
-            runner,
-            input_ids,
-            warmups=args.decode_warmups,
-            repeats=args.decode_repeats,
-            decode_steps=args.decode_steps,
-            log=log,
-        )
+    result["decode"] = benchmark_decode(
+        runner,
+        input_ids,
+        warmups=args.decode_warmups,
+        repeats=args.decode_repeats,
+        decode_steps=args.decode_steps,
+        log=log,
+    )
     result["dynamo_counters_after_decode"] = dynamo_counters_snapshot()
     memory_snapshots["after_decode_benchmark"] = npu_memory_snapshot("after_decode_benchmark")
     print_timing("decode", result["decode"])
@@ -1165,19 +901,15 @@ def main() -> None:
         print_profile("prefill", profiles["prefill"])
     if args.profile in ("decode", "both"):
         log.log("preparing decode profiler state")
-        if args.npugraph_decode:
-            graph_runner = prepare_npugraph_decode_runner(runner, input_ids, decode_steps=args.decode_steps)
-            decode_profile_fn = graph_runner.run_loop
-        else:
-            next_id, key_caches, value_caches = prepare_decode_state(runner, input_ids)
-            decode_profile_fn = lambda: run_decode_loop(
-                runner,
-                input_ids,
-                next_id,
-                key_caches,
-                value_caches,
-                decode_steps=args.decode_steps,
-            )
+        next_id, key_caches, value_caches = prepare_decode_state(runner, input_ids)
+        decode_profile_fn = lambda: run_decode_loop(
+            runner,
+            input_ids,
+            next_id,
+            key_caches,
+            value_caches,
+            decode_steps=args.decode_steps,
+        )
         log.log("running decode profiler")
         profiles["decode"] = profile_once(
             "decode",

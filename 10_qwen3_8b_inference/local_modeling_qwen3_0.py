@@ -16,190 +16,6 @@ except Exception:
     pass
 
 
-FRACTAL_NZ = 29
-
-
-@dataclass(frozen=True)
-class DecodeOptimizationConfig:
-    name: str
-    npu_rms_norm: bool = False
-    fused_add_rms_norm: bool = False
-    packed_qkv: bool = False
-    npu_rotary: bool = False
-    rope_lookup: bool = False
-    weight_prefetch: bool = False
-    post_scatter_kv_prefetch: bool = False
-    weight_prefetch_timing: str = "before_attention"
-    complete_layer_prefetch_ahead: int = 0
-    packed_mlp: bool = False
-    npu_swiglu: bool = False
-    batched_qk_rms_norm: bool = False
-    qk_add_rms_norm: bool = False
-    qk_add_rms_zero_bank: bool = False
-
-
-DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
-    "baseline": DecodeOptimizationConfig(name="baseline"),
-    "npu_rms_norm": DecodeOptimizationConfig(
-        name="npu_rms_norm",
-        npu_rms_norm=True,
-    ),
-    "combined_apply": DecodeOptimizationConfig(
-        name="combined_apply",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-    ),
-    "combined_apply_rope_lut": DecodeOptimizationConfig(
-        name="combined_apply_rope_lut",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        rope_lookup=True,
-    ),
-    "combined_apply_prefetch_rope_lut": DecodeOptimizationConfig(
-        name="combined_apply_prefetch_rope_lut",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        rope_lookup=True,
-        weight_prefetch=True,
-    ),
-    "combined_apply_packed_mlp": DecodeOptimizationConfig(
-        name="combined_apply_packed_mlp",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        packed_mlp=True,
-    ),
-    "combined_apply_packed_mlp_swiglu": DecodeOptimizationConfig(
-        name="combined_apply_packed_mlp_swiglu",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        packed_mlp=True,
-        npu_swiglu=True,
-    ),
-    "combined_apply_packed_mlp_prefetch": DecodeOptimizationConfig(
-        name="combined_apply_packed_mlp_prefetch",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        rope_lookup=True,
-        weight_prefetch=True,
-        packed_mlp=True,
-    ),
-    "combined_apply_kv_then_mlp_prefetch_rope_lut": DecodeOptimizationConfig(
-        name="combined_apply_kv_then_mlp_prefetch_rope_lut",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        rope_lookup=True,
-        weight_prefetch=True,
-        post_scatter_kv_prefetch=True,
-        weight_prefetch_timing="after_attention",
-    ),
-    "combined_apply_complete_layer_prefetch1_rope_lut": DecodeOptimizationConfig(
-        name="combined_apply_complete_layer_prefetch1_rope_lut",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        rope_lookup=True,
-        weight_prefetch=True,
-        post_scatter_kv_prefetch=True,
-        weight_prefetch_timing="complete_layer_ahead",
-        complete_layer_prefetch_ahead=1,
-    ),
-    "combined_apply_complete_layer_prefetch2_rope_lut": DecodeOptimizationConfig(
-        name="combined_apply_complete_layer_prefetch2_rope_lut",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        rope_lookup=True,
-        weight_prefetch=True,
-        post_scatter_kv_prefetch=True,
-        weight_prefetch_timing="complete_layer_ahead",
-        complete_layer_prefetch_ahead=2,
-    ),
-    "combined_apply_complete_layer_prefetch1_packed_mlp_rope_lut": DecodeOptimizationConfig(
-        name="combined_apply_complete_layer_prefetch1_packed_mlp_rope_lut",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        rope_lookup=True,
-        weight_prefetch=True,
-        post_scatter_kv_prefetch=True,
-        weight_prefetch_timing="complete_layer_ahead",
-        complete_layer_prefetch_ahead=1,
-        packed_mlp=True,
-    ),
-    "combined_apply_complete_layer_prefetch1_batched_qk_norm_rope_lut": DecodeOptimizationConfig(
-        name="combined_apply_complete_layer_prefetch1_batched_qk_norm_rope_lut",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        rope_lookup=True,
-        weight_prefetch=True,
-        post_scatter_kv_prefetch=True,
-        weight_prefetch_timing="complete_layer_ahead",
-        complete_layer_prefetch_ahead=1,
-        batched_qk_rms_norm=True,
-    ),
-    "combined_apply_complete_layer_prefetch1_qk_add_rms_norm_rope_lut": DecodeOptimizationConfig(
-        name="combined_apply_complete_layer_prefetch1_qk_add_rms_norm_rope_lut",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        rope_lookup=True,
-        weight_prefetch=True,
-        post_scatter_kv_prefetch=True,
-        weight_prefetch_timing="complete_layer_ahead",
-        complete_layer_prefetch_ahead=1,
-        qk_add_rms_norm=True,
-    ),
-    "combined_apply_complete_layer_prefetch1_qk_add_rms_zero_bank_rope_lut": DecodeOptimizationConfig(
-        name="combined_apply_complete_layer_prefetch1_qk_add_rms_zero_bank_rope_lut",
-        npu_rms_norm=True,
-        fused_add_rms_norm=True,
-        packed_qkv=True,
-        npu_rotary=True,
-        rope_lookup=True,
-        weight_prefetch=True,
-        post_scatter_kv_prefetch=True,
-        weight_prefetch_timing="complete_layer_ahead",
-        complete_layer_prefetch_ahead=1,
-        qk_add_rms_norm=True,
-        qk_add_rms_zero_bank=True,
-    ),
-}
-
-
-def resolve_decode_optimization(
-    name: str | DecodeOptimizationConfig,
-) -> DecodeOptimizationConfig:
-    if isinstance(name, DecodeOptimizationConfig):
-        return name
-    try:
-        return DECODE_OPTIMIZATION_PRESETS[str(name)]
-    except KeyError as exc:
-        raise ValueError(
-            f"Unsupported decode optimization {name!r}; expected "
-            f"{tuple(DECODE_OPTIMIZATION_PRESETS)}"
-        ) from exc
-
-
 @dataclass(frozen=True)
 class LocalQwen3Config:
     vocab_size: int
@@ -356,9 +172,8 @@ def _packed_linear(modules: tuple[nn.Linear, ...]) -> nn.Linear:
 def _decode_rms_norm(
     norm: LocalQwen3RMSNorm,
     hidden_states: torch.Tensor,
-    optimization: DecodeOptimizationConfig,
 ) -> torch.Tensor:
-    if not optimization.npu_rms_norm or hidden_states.device.type != "npu":
+    if hidden_states.device.type != "npu":
         return norm(hidden_states)
     return torch_npu.npu_rms_norm(
         hidden_states,
@@ -426,43 +241,16 @@ class LocalQwen3MLP(nn.Module):
     def forward_decode(
         self,
         hidden_states: torch.Tensor,
-        optimization: DecodeOptimizationConfig,
     ) -> torch.Tensor:
-        if optimization.packed_mlp:
-            gate_up = linear_tokenwise(self.decode_gate_up_proj, hidden_states)
-            if optimization.npu_swiglu and gate_up.device.type == "npu":
-                activated = torch_npu.npu_swiglu(gate_up, dim=-1)
-            else:
-                gate, up = gate_up.chunk(2, dim=-1)
-                activated = F.silu(gate) * up
-            output = linear_tokenwise(self.down_proj, activated)
-        else:
-            output = self(hidden_states)
-        if (
-            optimization.weight_prefetch
-            and optimization.weight_prefetch_timing != "complete_layer_ahead"
-            and output.device.type == "npu"
-        ):
-            for weight in self._decode_prefetch_next_attention:
-                torch_npu.npu_prefetch(
-                    weight,
-                    output,
-                    int(weight.numel() * weight.element_size()),
-                )
-        return output
+        return self(hidden_states)
 
 
 class LocalQwen3Attention(nn.Module):
     def __init__(
         self,
         config: LocalQwen3Config,
-        *,
-        decode_increfa_mode: str,
     ):
         super().__init__()
-        if decode_increfa_mode not in {"mask", "actual_seq_lengths"}:
-            raise ValueError(f"Unsupported decode_increfa_mode={decode_increfa_mode!r}")
-        self.decode_increfa_mode = decode_increfa_mode
         self.num_heads = config.num_attention_heads
         self.num_key_value_heads = config.num_key_value_heads
         self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
@@ -495,64 +283,15 @@ class LocalQwen3Attention(nn.Module):
     def project_qkv_decode(
         self,
         hidden_states: torch.Tensor,
-        optimization: DecodeOptimizationConfig,
-        qk_norm_zero: tuple[torch.Tensor, torch.Tensor] | None = None,
+        qk_norm_zero: tuple[torch.Tensor, torch.Tensor],
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch, sequence_length, _hidden = hidden_states.shape
-        if optimization.packed_qkv:
-            packed = linear_tokenwise(self.decode_qkv_proj, hidden_states)
-            query_size = self.num_heads * self.head_dim
-            kv_size = self.num_key_value_heads * self.head_dim
-            if optimization.batched_qk_rms_norm:
-                qk_states, value_states = packed.split(
-                    (query_size + kv_size, kv_size),
-                    dim=-1,
-                )
-                qk_states = qk_states.view(
-                    batch,
-                    sequence_length,
-                    self.num_heads + self.num_key_value_heads,
-                    self.head_dim,
-                )
-                if qk_states.device.type == "npu":
-                    qk_states = torch_npu.npu_rms_norm(
-                        qk_states,
-                        self.decode_qk_unit_weight,
-                        self.q_norm.variance_epsilon,
-                    )[0]
-                else:
-                    input_dtype = qk_states.dtype
-                    qk_float = qk_states.float()
-                    variance = qk_float.pow(2).mean(dim=-1, keepdim=True)
-                    qk_states = (
-                        qk_float
-                        * torch.rsqrt(
-                            variance + self.q_norm.variance_epsilon
-                        )
-                    ).to(input_dtype)
-                qk_states = qk_states * self.decode_qk_norm_weight
-                query_states, key_states = qk_states.split(
-                    (self.num_heads, self.num_key_value_heads),
-                    dim=2,
-                )
-                value_states = value_states.view(
-                    batch,
-                    sequence_length,
-                    self.num_key_value_heads,
-                    self.head_dim,
-                )
-                return (
-                    query_states.transpose(1, 2),
-                    key_states.transpose(1, 2),
-                    value_states.transpose(1, 2),
-                )
-            query_states, key_states, value_states = packed.split(
-                (query_size, kv_size, kv_size), dim=-1
-            )
-        else:
-            query_states = linear_tokenwise(self.q_proj, hidden_states)
-            key_states = linear_tokenwise(self.k_proj, hidden_states)
-            value_states = linear_tokenwise(self.v_proj, hidden_states)
+        packed = linear_tokenwise(self.decode_qkv_proj, hidden_states)
+        query_size = self.num_heads * self.head_dim
+        kv_size = self.num_key_value_heads * self.head_dim
+        query_states, key_states, value_states = packed.split(
+            (query_size, kv_size, kv_size), dim=-1
+        )
         query_states = query_states.view(
             batch, sequence_length, self.num_heads, self.head_dim
         )
@@ -562,39 +301,19 @@ class LocalQwen3Attention(nn.Module):
         value_states = value_states.view(
             batch, sequence_length, self.num_key_value_heads, self.head_dim
         )
-        if optimization.qk_add_rms_norm and query_states.device.type == "npu":
-            # TorchAir may alias the summed output of AddRmsNorm onto its
-            # residual input. A persistent zero buffer would therefore stop
-            # being zero after the first compiled decode step. Build graph-local
-            # zero tensors so every invocation preserves plain RMSNorm semantics.
-            if qk_norm_zero is None:
-                query_zero = torch.zeros_like(query_states)
-                key_zero = torch.zeros_like(key_states)
-            else:
-                query_zero, key_zero = qk_norm_zero
-            query_states = torch_npu.npu_add_rms_norm(
-                query_states,
-                query_zero,
-                self.q_norm.weight,
-                self.q_norm.variance_epsilon,
-            )[0]
-            key_states = torch_npu.npu_add_rms_norm(
-                key_states,
-                key_zero,
-                self.k_norm.weight,
-                self.k_norm.variance_epsilon,
-            )[0]
-        else:
-            query_states = _decode_rms_norm(
-                self.q_norm,
-                query_states,
-                optimization,
-            )
-            key_states = _decode_rms_norm(
-                self.k_norm,
-                key_states,
-                optimization,
-            )
+        query_zero, key_zero = qk_norm_zero
+        query_states = torch_npu.npu_add_rms_norm(
+            query_states,
+            query_zero,
+            self.q_norm.weight,
+            self.q_norm.variance_epsilon,
+        )[0]
+        key_states = torch_npu.npu_add_rms_norm(
+            key_states,
+            key_zero,
+            self.k_norm.weight,
+            self.k_norm.variance_epsilon,
+        )[0]
         query_states = query_states.transpose(1, 2)
         key_states = key_states.transpose(1, 2)
         return query_states, key_states, value_states.transpose(1, 2)
@@ -631,100 +350,59 @@ class LocalQwen3Attention(nn.Module):
         key_cache: torch.Tensor,
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
-        attention_mask: torch.Tensor | None,
-        actual_seq_length: int | None,
-        optimization: DecodeOptimizationConfig,
-        qk_norm_zero: tuple[torch.Tensor, torch.Tensor] | None = None,
+        attention_mask: torch.Tensor,
+        qk_norm_zero: tuple[torch.Tensor, torch.Tensor],
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        if (
-            optimization.weight_prefetch
-            and optimization.weight_prefetch_timing == "before_attention"
-            and hidden_states.device.type == "npu"
-        ):
-            for weight in self._decode_prefetch_current_mlp:
-                torch_npu.npu_prefetch(
-                    weight,
-                    hidden_states,
-                    int(weight.numel() * weight.element_size()),
-                )
         query_states, key_states, value_states = self.project_qkv_decode(
             hidden_states,
-            optimization,
             qk_norm_zero,
         )
-        if optimization.npu_rotary and query_states.device.type == "npu":
-            query_bsnd = query_states.transpose(1, 2).contiguous()
-            key_bsnd = key_states.transpose(1, 2).contiguous()
-            query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
-                query_bsnd,
-                key_bsnd,
-                cos.unsqueeze(1),
-                sin.unsqueeze(1),
-                layout="BSND",
-                rotary_mode="half",
-            )
-            query_states = query_bsnd.transpose(1, 2)
-            key_states = key_bsnd.transpose(1, 2)
-        else:
-            query_states, key_states = apply_rotary_pos_emb(
-                query_states,
-                key_states,
-                cos,
-                sin,
-            )
+        query_bsnd = query_states.transpose(1, 2).contiguous()
+        key_bsnd = key_states.transpose(1, 2).contiguous()
+        query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
+            query_bsnd,
+            key_bsnd,
+            cos.unsqueeze(1),
+            sin.unsqueeze(1),
+            layout="BSND",
+            rotary_mode="half",
+        )
+        query_states = query_bsnd.transpose(1, 2)
+        key_states = key_bsnd.transpose(1, 2)
 
         scatter_update_tensor_(key_cache, cache_position, key_states)
         scatter_update_tensor_(value_cache, cache_position, value_states)
 
-        if optimization.post_scatter_kv_prefetch:
-            torch_npu.npu_prefetch(
-                key_cache,
-                key_states,
-                int(key_cache.numel() * key_cache.element_size()),
-            )
-            torch_npu.npu_prefetch(
-                value_cache,
-                value_states,
-                int(value_cache.numel() * value_cache.element_size()),
-            )
+        torch_npu.npu_prefetch(
+            key_cache,
+            key_states,
+            int(key_cache.numel() * key_cache.element_size()),
+        )
+        torch_npu.npu_prefetch(
+            value_cache,
+            value_states,
+            int(value_cache.numel() * value_cache.element_size()),
+        )
 
-        if self.decode_increfa_mode == "actual_seq_lengths":
-            if actual_seq_length is None:
-                raise ValueError("decode_increfa_mode='actual_seq_lengths' requires actual_seq_length")
-            increfa_mask = None
-            actual_seq_lengths = [actual_seq_length]
-        else:
-            increfa_mask = attention_mask
-            actual_seq_lengths = None
         attn_output = torch_npu.npu_incre_flash_attention(
             query_states.contiguous(),
             key_cache.contiguous(),
             value_cache.contiguous(),
-            atten_mask=None if increfa_mask is None else increfa_mask.contiguous(),
-            actual_seq_lengths=actual_seq_lengths,
+            atten_mask=attention_mask.contiguous(),
+            actual_seq_lengths=None,
             num_heads=int(self.num_heads),
             num_key_value_heads=int(self.num_key_value_heads),
             input_layout="BNSD",
             scale_value=float(self.scaling),
         ).transpose(1, 2).contiguous()
         attn_output = attn_output.reshape(hidden_states.shape[0], 1, self.num_heads * self.head_dim)
-        if (
-            optimization.weight_prefetch
-            and optimization.weight_prefetch_timing == "after_attention"
-        ):
-            for weight in self._decode_prefetch_current_mlp:
-                torch_npu.npu_prefetch(
-                    weight,
-                    attn_output,
-                    int(weight.numel() * weight.element_size()),
-                )
         return linear_tokenwise(self.o_proj, attn_output), key_cache, value_cache
 
 
 class LocalQwen3DecoderLayer(nn.Module):
-    def __init__(self, config: LocalQwen3Config, *, decode_increfa_mode: str):
+    def __init__(self, config: LocalQwen3Config):
         super().__init__()
-        self.self_attn = LocalQwen3Attention(config, decode_increfa_mode=decode_increfa_mode)
+        self.self_attn = LocalQwen3Attention(config)
         self.mlp = LocalQwen3MLP(config)
         self.input_layernorm = LocalQwen3RMSNorm(config.hidden_size, config.rms_norm_eps)
         self.post_attention_layernorm = LocalQwen3RMSNorm(config.hidden_size, config.rms_norm_eps)
@@ -751,47 +429,6 @@ class LocalQwen3DecoderLayer(nn.Module):
         hidden_states = hidden_states + self.mlp(self.post_attention_layernorm(hidden_states))
         return hidden_states
 
-    def forward_decode(
-        self,
-        hidden_states: torch.Tensor,
-        cos: torch.Tensor,
-        sin: torch.Tensor,
-        key_cache: torch.Tensor,
-        value_cache: torch.Tensor,
-        cache_position: torch.Tensor,
-        attention_mask: torch.Tensor | None,
-        actual_seq_length: int | None,
-        optimization: DecodeOptimizationConfig,
-        qk_norm_zero: tuple[torch.Tensor, torch.Tensor] | None = None,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        residual = hidden_states
-        attn_output, key_cache, value_cache = self.self_attn.forward_decode(
-            _decode_rms_norm(
-                self.input_layernorm,
-                hidden_states,
-                optimization,
-            ),
-            cos,
-            sin,
-            key_cache,
-            value_cache,
-            cache_position,
-            attention_mask,
-            actual_seq_length,
-            optimization,
-            qk_norm_zero,
-        )
-        hidden_states = residual + attn_output
-        hidden_states = hidden_states + self.mlp.forward_decode(
-            _decode_rms_norm(
-                self.post_attention_layernorm,
-                hidden_states,
-                optimization,
-            ),
-            optimization,
-        )
-        return hidden_states, key_cache, value_cache
-
     def forward_decode_fused_residual(
         self,
         hidden_states: torch.Tensor,
@@ -801,10 +438,8 @@ class LocalQwen3DecoderLayer(nn.Module):
         key_cache: torch.Tensor,
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
-        attention_mask: torch.Tensor | None,
-        actual_seq_length: int | None,
-        optimization: DecodeOptimizationConfig,
-        qk_norm_zero: tuple[torch.Tensor, torch.Tensor] | None = None,
+        attention_mask: torch.Tensor,
+        qk_norm_zero: tuple[torch.Tensor, torch.Tensor],
     ) -> tuple[
         torch.Tensor,
         torch.Tensor,
@@ -815,7 +450,6 @@ class LocalQwen3DecoderLayer(nn.Module):
             attention_input = _decode_rms_norm(
                 self.input_layernorm,
                 hidden_states,
-                optimization,
             )
             residual = hidden_states
         else:
@@ -832,8 +466,6 @@ class LocalQwen3DecoderLayer(nn.Module):
             value_cache,
             cache_position,
             attention_mask,
-            actual_seq_length,
-            optimization,
             qk_norm_zero,
         )
         mlp_input, residual = _decode_add_rms_norm(
@@ -841,30 +473,18 @@ class LocalQwen3DecoderLayer(nn.Module):
             residual,
             self.post_attention_layernorm,
         )
-        hidden_states = self.mlp.forward_decode(mlp_input, optimization)
+        hidden_states = self.mlp.forward_decode(mlp_input)
         return hidden_states, residual, key_cache, value_cache
 
 
 class LocalQwen3ForCausalLM(nn.Module):
-    def __init__(
-        self,
-        config: LocalQwen3Config,
-        *,
-        decode_increfa_mode: str = "mask",
-        decode_optimization: str = "baseline",
-    ):
+    def __init__(self, config: LocalQwen3Config):
         super().__init__()
-        if decode_increfa_mode not in {"mask", "actual_seq_lengths"}:
-            raise ValueError(f"Unsupported decode_increfa_mode={decode_increfa_mode!r}")
         self.config = config
-        self.decode_increfa_mode = decode_increfa_mode
-        self.decode_optimization = resolve_decode_optimization(
-            decode_optimization
-        )
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size)
         self.layers = nn.ModuleList(
             [
-                LocalQwen3DecoderLayer(config, decode_increfa_mode=decode_increfa_mode)
+                LocalQwen3DecoderLayer(config)
                 for _ in range(config.num_hidden_layers)
             ]
         )
@@ -880,177 +500,53 @@ class LocalQwen3ForCausalLM(nn.Module):
             self.lm_head.weight = self.embed_tokens.weight
 
     def prepare_decode_optimizations(self, *, cache_length: int) -> dict[str, object]:
-        optimization = self.decode_optimization
         packed_qkv_count = 0
-        packed_mlp_count = 0
-        if optimization.packed_qkv:
-            for layer in self.layers:
-                attention = layer.self_attn
-                if not hasattr(attention, "decode_qkv_proj"):
-                    attention.decode_qkv_proj = _packed_linear(
-                        (
-                            attention.q_proj,
-                            attention.k_proj,
-                            attention.v_proj,
-                        )
-                    )
-                    packed_qkv_count += 1
-        if optimization.packed_mlp:
-            for layer in self.layers:
-                mlp = layer.mlp
-                if not hasattr(mlp, "decode_gate_up_proj"):
-                    mlp.decode_gate_up_proj = _packed_linear(
-                        (mlp.gate_proj, mlp.up_proj)
-                    )
-                    packed_mlp_count += 1
-        batched_qk_norm_count = 0
-        if optimization.batched_qk_rms_norm:
-            if optimization.qk_add_rms_norm:
-                raise ValueError(
-                    "batched Q/K RMSNorm and Q/K add-RMSNorm are mutually exclusive"
-                )
-            if not optimization.packed_qkv:
-                raise ValueError("batched Q/K RMSNorm requires packed QKV")
-            for layer in self.layers:
-                attention = layer.self_attn
-                if not hasattr(attention, "decode_qk_norm_weight"):
-                    q_weight = attention.q_norm.weight.detach().view(1, -1)
-                    k_weight = attention.k_norm.weight.detach().view(1, -1)
-                    attention.register_buffer(
-                        "decode_qk_norm_weight",
-                        torch.cat(
-                            (
-                                q_weight.expand(attention.num_heads, -1),
-                                k_weight.expand(
-                                    attention.num_key_value_heads, -1
-                                ),
-                            ),
-                            dim=0,
-                        ).view(
-                            1,
-                            1,
-                            attention.num_heads
-                            + attention.num_key_value_heads,
-                            attention.head_dim,
-                        ).contiguous(),
-                        persistent=False,
-                    )
-                    attention.register_buffer(
-                        "decode_qk_unit_weight",
-                        torch.ones_like(attention.q_norm.weight),
-                        persistent=False,
-                    )
-                    batched_qk_norm_count += 1
-        qk_add_rms_norm_count = 0
-        if optimization.qk_add_rms_norm:
-            qk_add_rms_norm_count = len(self.layers)
-        if optimization.qk_add_rms_zero_bank and not optimization.qk_add_rms_norm:
-            raise ValueError("Q/K add-RMS zero bank requires Q/K add-RMSNorm")
-        if optimization.rope_lookup:
-            positions = torch.arange(
-                int(cache_length),
-                device=self.rotary_emb.inv_freq.device,
-                dtype=torch.float32,
-            ).view(-1, 1)
-            freqs = positions * self.rotary_emb.inv_freq.float().view(1, -1)
-            emb = torch.cat((freqs, freqs), dim=-1)
-            self.rotary_emb.decode_factor_lut = torch.stack(
-                (emb.cos(), emb.sin()),
-                dim=0,
-            ).to(dtype=self.embed_tokens.weight.dtype)
-        if optimization.weight_prefetch:
-            output_head = getattr(self, "decode_lm_head", self.lm_head)
+        for layer in self.layers:
+            attention = layer.self_attn
+            attention.decode_qkv_proj = _packed_linear(
+                (attention.q_proj, attention.k_proj, attention.v_proj)
+            )
+            packed_qkv_count += 1
 
-            def complete_layer_weights(
-                layer: LocalQwen3DecoderLayer,
-            ) -> tuple[torch.Tensor, ...]:
-                attention_weights = (
-                    (layer.self_attn.decode_qkv_proj.weight,)
-                    if optimization.packed_qkv
-                    else (
-                        layer.self_attn.q_proj.weight,
-                        layer.self_attn.k_proj.weight,
-                        layer.self_attn.v_proj.weight,
-                    )
-                )
-                mlp_weights = (
-                    (layer.mlp.decode_gate_up_proj.weight,)
-                    if optimization.packed_mlp
-                    else (
-                        layer.mlp.gate_proj.weight,
-                        layer.mlp.up_proj.weight,
-                    )
-                )
-                return (
-                    *attention_weights,
-                    layer.self_attn.o_proj.weight,
-                    *mlp_weights,
-                    layer.mlp.down_proj.weight,
-                )
+        positions = torch.arange(
+            int(cache_length),
+            device=self.rotary_emb.inv_freq.device,
+            dtype=torch.float32,
+        ).view(-1, 1)
+        freqs = positions * self.rotary_emb.inv_freq.float().view(1, -1)
+        emb = torch.cat((freqs, freqs), dim=-1)
+        self.rotary_emb.decode_factor_lut = torch.stack(
+            (emb.cos(), emb.sin()),
+            dim=0,
+        ).to(dtype=self.embed_tokens.weight.dtype)
 
-            for index, layer in enumerate(self.layers):
-                layer.self_attn._decode_prefetch_current_mlp = (
-                    *(
-                        (layer.mlp.decode_gate_up_proj.weight,)
-                        if optimization.packed_mlp
-                        else (
-                            layer.mlp.gate_proj.weight,
-                            layer.mlp.up_proj.weight,
-                        )
-                    ),
-                    layer.mlp.down_proj.weight,
+        def complete_layer_weights(
+            layer: LocalQwen3DecoderLayer,
+        ) -> tuple[torch.Tensor, ...]:
+            return (
+                layer.self_attn.decode_qkv_proj.weight,
+                layer.self_attn.o_proj.weight,
+                layer.mlp.gate_proj.weight,
+                layer.mlp.up_proj.weight,
+                layer.mlp.down_proj.weight,
+            )
+
+        for index, layer in enumerate(self.layers):
+            future_index = index + 1
+            if future_index < len(self.layers):
+                layer._decode_prefetch_future_layer = complete_layer_weights(
+                    self.layers[future_index]
                 )
-                if index + 1 < len(self.layers):
-                    next_attention = self.layers[index + 1].self_attn
-                    next_qkv = (
-                        next_attention.decode_qkv_proj.weight,
-                    ) if optimization.packed_qkv else (
-                        next_attention.q_proj.weight,
-                        next_attention.k_proj.weight,
-                        next_attention.v_proj.weight,
-                    )
-                    layer.mlp._decode_prefetch_next_attention = (
-                        *next_qkv,
-                        next_attention.o_proj.weight,
-                    )
-                else:
-                    layer.mlp._decode_prefetch_next_attention = (
-                        output_head.weight,
-                    )
-                future_weights: list[torch.Tensor] = []
-                for offset in range(
-                    1, optimization.complete_layer_prefetch_ahead + 1
-                ):
-                    future_index = index + offset
-                    if future_index < len(self.layers):
-                        future_weights.extend(
-                            complete_layer_weights(self.layers[future_index])
-                        )
-                if index + 1 >= len(self.layers):
-                    future_weights.append(output_head.weight)
-                layer._decode_prefetch_future_layers = tuple(future_weights)
+            else:
+                layer._decode_prefetch_future_layer = (self.lm_head.weight,)
         return {
-            "name": optimization.name,
+            "name": "qwen3_0_6b_optimized_static_decode",
             "packed_qkv_count": packed_qkv_count,
-            "packed_mlp_count": packed_mlp_count,
-            "npu_swiglu": optimization.npu_swiglu,
-            "batched_qk_rms_norm": optimization.batched_qk_rms_norm,
-            "batched_qk_norm_count": batched_qk_norm_count,
-            "qk_add_rms_norm": optimization.qk_add_rms_norm,
-            "qk_add_rms_norm_count": qk_add_rms_norm_count,
-            "qk_add_rms_zero_bank": optimization.qk_add_rms_zero_bank,
-            "rope_lookup": optimization.rope_lookup,
-            "rope_lookup_shape": (
-                None
-                if self.rotary_emb.decode_factor_lut is None
-                else list(self.rotary_emb.decode_factor_lut.shape)
-            ),
-            "weight_prefetch": optimization.weight_prefetch,
-            "post_scatter_kv_prefetch": optimization.post_scatter_kv_prefetch,
-            "weight_prefetch_timing": optimization.weight_prefetch_timing,
-            "complete_layer_prefetch_ahead": (
-                optimization.complete_layer_prefetch_ahead
-            ),
+            "qk_add_rms_norm_count": len(self.layers),
+            "qk_add_rms_zero_bank": True,
+            "rope_lookup_shape": list(self.rotary_emb.decode_factor_lut.shape),
+            "post_scatter_kv_prefetch": True,
+            "complete_layer_prefetch_ahead": 1,
         }
 
     def make_causal_mask(self, input_ids: torch.Tensor) -> torch.Tensor:
@@ -1103,133 +599,81 @@ class LocalQwen3ForCausalLM(nn.Module):
         cache_position: torch.Tensor,
         key_caches: tuple[torch.Tensor, ...],
         value_caches: tuple[torch.Tensor, ...],
-        actual_seq_length: int | None = None,
     ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
-        optimization = self.decode_optimization
         hidden_states = self.embed_tokens(input_ids)
-        qk_norm_zero_layers = None
-        if (
-            optimization.qk_add_rms_norm
-            and optimization.qk_add_rms_zero_bank
-            and hidden_states.device.type == "npu"
-        ):
-            # TorchAir lowers npu_add_rms_norm to an in-place residual update.
-            # Build fresh graph-local banks and unbind them once, so each layer
-            # gets direct disjoint Q/K views. This avoids the per-layer Gather
-            # and StridedSlice kernels produced by indexing one combined bank.
-            query_zero_bank = hidden_states.new_zeros(
-                (
-                    len(self.layers),
-                    hidden_states.shape[0],
-                    hidden_states.shape[1],
-                    self.config.num_attention_heads,
-                    self.config.head_dim,
-                )
+        # TorchAir lowers npu_add_rms_norm to an in-place residual update.
+        # Fresh graph-local banks preserve zero-residual Q/K RMSNorm semantics.
+        query_zero_bank = hidden_states.new_zeros(
+            (
+                len(self.layers),
+                hidden_states.shape[0],
+                hidden_states.shape[1],
+                self.config.num_attention_heads,
+                self.config.head_dim,
             )
-            key_zero_bank = hidden_states.new_zeros(
-                (
-                    len(self.layers),
-                    hidden_states.shape[0],
-                    hidden_states.shape[1],
-                    self.config.num_key_value_heads,
-                    self.config.head_dim,
-                )
+        )
+        key_zero_bank = hidden_states.new_zeros(
+            (
+                len(self.layers),
+                hidden_states.shape[0],
+                hidden_states.shape[1],
+                self.config.num_key_value_heads,
+                self.config.head_dim,
             )
-            qk_norm_zero_layers = tuple(
-                zip(
-                    query_zero_bank.unbind(dim=0),
-                    key_zero_bank.unbind(dim=0),
-                )
+        )
+        qk_norm_zero_layers = tuple(
+            zip(
+                query_zero_bank.unbind(dim=0),
+                key_zero_bank.unbind(dim=0),
             )
-        if optimization.rope_lookup:
-            selected = torch.index_select(
-                self.rotary_emb.decode_factor_lut,
-                1,
-                position_ids.reshape(-1).to(dtype=torch.int64),
-            )
-            cos, sin = selected.unbind(dim=0)
-            cos = cos.view(input_ids.shape[0], 1, self.config.head_dim)
-            sin = sin.view(input_ids.shape[0], 1, self.config.head_dim)
-        else:
-            cos, sin = self.rotary_emb(
-                position_ids,
-                dtype=hidden_states.dtype,
-                device=hidden_states.device,
-            )
-        attention_mask = None
-        if self.decode_increfa_mode == "mask":
-            attention_mask = build_static_decode_mask(cache_position, key_caches[0].shape[2])
+        )
+
+        selected = torch.index_select(
+            self.rotary_emb.decode_factor_lut,
+            1,
+            position_ids.reshape(-1).to(dtype=torch.int64),
+        )
+        cos, sin = selected.unbind(dim=0)
+        cos = cos.view(input_ids.shape[0], 1, self.config.head_dim)
+        sin = sin.view(input_ids.shape[0], 1, self.config.head_dim)
+        attention_mask = build_static_decode_mask(
+            cache_position,
+            key_caches[0].shape[2],
+        )
         next_key_caches = []
         next_value_caches = []
-        if optimization.fused_add_rms_norm:
-            residual: torch.Tensor | None = None
-            for layer_idx, layer in enumerate(self.layers):
-                if (
-                    optimization.complete_layer_prefetch_ahead
-                    and hidden_states.device.type == "npu"
-                ):
-                    for weight in layer._decode_prefetch_future_layers:
-                        torch_npu.npu_prefetch(
-                            weight,
-                            hidden_states,
-                            int(weight.numel() * weight.element_size()),
-                        )
-                (
+        residual: torch.Tensor | None = None
+        for layer_idx, layer in enumerate(self.layers):
+            for weight in layer._decode_prefetch_future_layer:
+                torch_npu.npu_prefetch(
+                    weight,
                     hidden_states,
-                    residual,
-                    layer_key_cache,
-                    layer_value_cache,
-                ) = layer.forward_decode_fused_residual(
-                    hidden_states,
-                    residual,
-                    cos,
-                    sin,
-                    key_caches[layer_idx],
-                    value_caches[layer_idx],
-                    cache_position,
-                    attention_mask,
-                    actual_seq_length,
-                    optimization,
-                    (
-                        None
-                        if qk_norm_zero_layers is None
-                        else qk_norm_zero_layers[layer_idx]
-                    ),
+                    int(weight.numel() * weight.element_size()),
                 )
-                next_key_caches.append(layer_key_cache)
-                next_value_caches.append(layer_value_cache)
-            hidden_states, _residual = _decode_add_rms_norm(
+            (
                 hidden_states,
                 residual,
-                self.norm,
-            )
-        else:
-            for layer_idx, layer in enumerate(self.layers):
-                hidden_states, layer_key_cache, layer_value_cache = layer.forward_decode(
-                    hidden_states,
-                    cos,
-                    sin,
-                    key_caches[layer_idx],
-                    value_caches[layer_idx],
-                    cache_position,
-                    attention_mask,
-                    actual_seq_length,
-                    optimization,
-                    (
-                        None
-                        if qk_norm_zero_layers is None
-                        else qk_norm_zero_layers[layer_idx]
-                    ),
-                )
-                next_key_caches.append(layer_key_cache)
-                next_value_caches.append(layer_value_cache)
-            hidden_states = _decode_rms_norm(
-                self.norm,
+                layer_key_cache,
+                layer_value_cache,
+            ) = layer.forward_decode_fused_residual(
                 hidden_states,
-                optimization,
+                residual,
+                cos,
+                sin,
+                key_caches[layer_idx],
+                value_caches[layer_idx],
+                cache_position,
+                attention_mask,
+                qk_norm_zero_layers[layer_idx],
             )
-        output_head = getattr(self, "decode_lm_head", self.lm_head)
-        logits = linear_tokenwise(output_head, hidden_states)
+            next_key_caches.append(layer_key_cache)
+            next_value_caches.append(layer_value_cache)
+        hidden_states, _residual = _decode_add_rms_norm(
+            hidden_states,
+            residual,
+            self.norm,
+        )
+        logits = linear_tokenwise(self.lm_head, hidden_states)
         return logits, tuple(next_key_caches), tuple(next_value_caches)
 
     def decode(
@@ -1238,7 +682,6 @@ class LocalQwen3ForCausalLM(nn.Module):
         cache_position: torch.Tensor,
         key_caches: tuple[torch.Tensor, ...],
         value_caches: tuple[torch.Tensor, ...],
-        actual_seq_length: int | None = None,
     ) -> torch.Tensor:
         position_ids = cache_position.reshape(-1, 1)
         logits, _key_caches, _value_caches = self.forward_decode(
@@ -1247,132 +690,5 @@ class LocalQwen3ForCausalLM(nn.Module):
             cache_position,
             key_caches,
             value_caches,
-            actual_seq_length,
         )
         return logits[:, -1, :].argmax(dim=-1, keepdim=True)
-
-
-def prepare_decode_lm_head_copy(
-    model: LocalQwen3ForCausalLM,
-) -> nn.Linear:
-    """Create an independent decode head when the checkpoint ties embeddings."""
-    if hasattr(model, "decode_lm_head"):
-        return model.decode_lm_head
-    decode_lm_head = nn.Linear(
-        model.config.hidden_size,
-        model.config.vocab_size,
-        bias=False,
-        device=model.lm_head.weight.device,
-        dtype=model.lm_head.weight.dtype,
-    )
-    with torch.no_grad():
-        decode_lm_head.weight.copy_(model.lm_head.weight)
-    decode_lm_head.requires_grad_(False)
-    model.decode_lm_head = decode_lm_head
-    return decode_lm_head
-
-
-def _cast_linear_modules_to_nz(
-    modules: list[tuple[str, nn.Linear]],
-) -> dict[str, object]:
-    before: dict[str, int] = {}
-    after: dict[str, int] = {}
-    converted: list[str] = []
-    for name, module in modules:
-        before_format = int(torch_npu.get_npu_format(module.weight))
-        before[name] = before_format
-        if before_format != FRACTAL_NZ:
-            module.weight.data = torch_npu.npu_format_cast(
-                module.weight.data,
-                FRACTAL_NZ,
-            )
-            converted.append(name)
-        after_format = int(torch_npu.get_npu_format(module.weight))
-        after[name] = after_format
-        if after_format != FRACTAL_NZ:
-            raise RuntimeError(
-                "decode Linear weight did not retain FRACTAL_NZ: "
-                f"module={name} before={before_format} after={after_format}"
-            )
-    return {
-        "target_format": "FRACTAL_NZ",
-        "target_format_code": FRACTAL_NZ,
-        "linear_count": len(modules),
-        "converted_count": len(converted),
-        "already_nz_count": len(modules) - len(converted),
-        "all_after_are_nz": all(value == FRACTAL_NZ for value in after.values()),
-        "before_format_histogram": {
-            str(code): list(before.values()).count(code)
-            for code in sorted(set(before.values()))
-        },
-        "after_format_histogram": {
-            str(code): list(after.values()).count(code)
-            for code in sorted(set(after.values()))
-        },
-        "converted_modules_sample": converted[:16],
-    }
-
-
-def cast_decode_lm_head_to_nz(
-    model: LocalQwen3ForCausalLM,
-) -> dict[str, object]:
-    """Convert only an independent decode LM head to FRACTAL_NZ."""
-    decode_lm_head = prepare_decode_lm_head_copy(model)
-    return _cast_linear_modules_to_nz(
-        [("decode_lm_head", decode_lm_head)]
-    )
-
-
-def cast_decode_linear_weights_to_nz(
-    model: LocalQwen3ForCausalLM,
-) -> dict[str, object]:
-    """Convert only the linears consumed by one-token decode to FRACTAL_NZ."""
-    modules: list[tuple[str, nn.Linear]] = []
-    optimization = model.decode_optimization
-    for layer_index, layer in enumerate(model.layers):
-        attention = layer.self_attn
-        if optimization.packed_qkv:
-            modules.append(
-                (
-                    f"layers.{layer_index}.self_attn.decode_qkv_proj",
-                    attention.decode_qkv_proj,
-                )
-            )
-        else:
-            modules.extend(
-                (
-                    (f"layers.{layer_index}.self_attn.q_proj", attention.q_proj),
-                    (f"layers.{layer_index}.self_attn.k_proj", attention.k_proj),
-                    (f"layers.{layer_index}.self_attn.v_proj", attention.v_proj),
-                )
-            )
-        modules.append(
-            (f"layers.{layer_index}.self_attn.o_proj", attention.o_proj)
-        )
-        if optimization.packed_mlp:
-            modules.append(
-                (
-                    f"layers.{layer_index}.mlp.decode_gate_up_proj",
-                    layer.mlp.decode_gate_up_proj,
-                )
-            )
-        else:
-            modules.extend(
-                (
-                    (f"layers.{layer_index}.mlp.gate_proj", layer.mlp.gate_proj),
-                    (f"layers.{layer_index}.mlp.up_proj", layer.mlp.up_proj),
-                )
-            )
-        modules.append(
-            (f"layers.{layer_index}.mlp.down_proj", layer.mlp.down_proj)
-        )
-    output_head = (
-        prepare_decode_lm_head_copy(model)
-        if model.config.tie_word_embeddings
-        else model.lm_head
-    )
-    output_head_name = (
-        "decode_lm_head" if output_head is not model.lm_head else "lm_head"
-    )
-    modules.append((output_head_name, output_head))
-    return _cast_linear_modules_to_nz(modules)
