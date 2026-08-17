@@ -468,13 +468,14 @@ class Qwen3SparseMoeBlock(nn.Module):
                 )
             require_torch_npu()
             routing_weights, selected_experts, _row_idx = (
-                torch_npu.npu_moe_gating_top_k_softmax_v2(
+                torch_npu.npu_moe_gating_top_k_softmax(
                     router_logits,
-                    k=self.top_k,
-                    finished=None,
-                    renorm=1,
-                    output_softmax=False,
+                    None,
+                    self.top_k,
                 )
+            )
+            routing_weights = routing_weights / routing_weights.sum(
+                dim=-1, keepdim=True
             )
         else:
             router_probs = torch.softmax(
