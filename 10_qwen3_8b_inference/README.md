@@ -23,12 +23,21 @@ Prefill deliberately produces KV state only. Generation re-feeds the final
 prompt token through decode to obtain the first output token, so the first and
 all subsequent decode iterations use one identical static graph contract.
 
-The default compiled decode path is the validated B1 preset:
+The default compiled decode path is model-aware. Qwen3-8B retains its validated
+dynamic B1 preset:
 
 - dynamic TorchAir decode with `actual_seq_lengths`;
 - native NPU RMSNorm and fused residual-add plus RMSNorm;
 - one packed QKV projection per layer;
 - native NPU rotary embedding;
+- unchanged ND Linear weights.
+
+Qwen3-0.6B instead defaults to the faster fixed-shape KV path validated below:
+
+- static TorchAir decode with a boolean KV mask;
+- packed QKV, NPU RoPE lookup, and fused residual-add plus RMSNorm;
+- post-scatter K/V prefetch;
+- complete next-layer weight prefetch one layer ahead;
 - unchanged ND Linear weights.
 
 `--decode-optimization baseline --decode-linear-weight-format unchanged`
@@ -75,9 +84,8 @@ $PYTHON ./run_local_qwen3_0.py \
   --static-kv-cache-len 4096
 ```
 
-The command uses `combined_apply`, dynamic compilation, and
-`actual_seq_lengths` by default. Use `--no-compile-decode-dynamic` or
-`--decode-increfa-mode mask` only for an explicit ablation.
+The command selects the model-specific default. Explicit flags still override
+the automatic selection.
 
 Minimal fixed-shape static-graph validation (64 prompt tokens, 64 decode
 iterations, KV length 128):
@@ -102,7 +110,7 @@ compiled lanes from independent prefills. It requires exact generated-token
 parity and records the final KV-cache maximum absolute difference before
 reporting warmed replay throughput.
 
-Explicit equivalent of the default compiled decode contract:
+Explicit equivalent of the Qwen3-8B default compiled decode contract:
 
 ```bash
 $PYTHON ./run_local_qwen3_0.py \
@@ -236,6 +244,60 @@ $PYTHON ./benchmark_local_qwen3_0.py \
 - `--compile-decode-dynamic --decode-increfa-mode actual_seq_lengths` avoids attending over the full static KV cache during decode.
 
 ## Ascend 910B2 B1 Decode Result
+
+### Qwen3-0.6B
+
+Measured on physical Ascend 910B2 with FP16, B1, 64 decode steps, and a
+KV4096 static cache. The selected path uses the real 151,936-row Qwen LM head.
+It matched the baseline greedy tokens for all 64 steps. Compiled and eager
+execution also had exact tokens and zero KV-cache difference.
+
+| Decode implementation | Prefix position | Tokens/s |
+|---|---:|---:|
+| Old dynamic-length baseline | 512 | 151.74 |
+| Static mask plus NPU RMSNorm | 512 | 256.59 |
+| Packed QKV and fused add-RMS | 512 | 378.11 |
+| Earlier stage-aware prefetch | 512 | 401.52 |
+| **Paddle one-layer-ahead schedule (default)** | **512** | **421.09** |
+| **Paddle one-layer-ahead schedule (default)** | **2048** | **419.32** |
+| Paddle K/V-then-MLP schedule | 512 | 417.87 |
+| One-layer-ahead plus FRACTAL_NZ | 512 | 403.30 |
+| Two-layer-ahead prefetch | 512 | 388.27 |
+| One-layer-ahead plus packed MLP | 512 | 409.81 |
+
+The selected KV4096 result is 61% faster than the previous saved 260.24 tok/s
+KV64 maximum. FRACTAL_NZ and packed MLP remain explicit ablations because both
+regressed Qwen3-0.6B.
+
+Run the selected contract explicitly:
+
+```bash
+$PYTHON ./benchmark_local_qwen3_0.py \
+  --model-dir /workspace/models/Qwen3-0.6B \
+  --dtype float16 \
+  --device npu:0 \
+  --compile-decode \
+  --no-compile-decode-dynamic \
+  --decode-increfa-mode mask \
+  --decode-optimization combined_apply_complete_layer_prefetch1_rope_lut \
+  --decode-linear-weight-format unchanged \
+  --prefill-tokens 2048 \
+  --decode-steps 64 \
+  --static-kv-cache-len 4096 \
+  --prefill-warmups 0 \
+  --prefill-repeats 0 \
+  --decode-warmups 1 \
+  --decode-repeats 3
+```
+
+The remaining profile is 41.2% MatMul, 27.5% IncreFlashAttention, and 14.5%
+RMSNorm by summed device-kernel time. Qwen3's per-head Q/K RMSNorm accounts for
+56 extra normalization calls per token; the PaddleOCR-VL text decoder does not
+have those Q/K norms. The Paddle ~899 tok/s KV4096 lab result also uses 18
+decoder layers, two KV heads, and a 16,384-row decode head, versus Qwen3-0.6B's
+28 layers, eight KV heads, and 151,936-row head.
+
+### Qwen3-8B
 
 Measured on physical Ascend 910B2 NPU 7 with FP16, one 512-token prefix,
 64 decode steps, and KV capacity 4096. Every optimized lane matched the

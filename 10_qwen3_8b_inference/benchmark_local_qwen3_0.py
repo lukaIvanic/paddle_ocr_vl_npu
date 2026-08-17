@@ -62,18 +62,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--compile-decode-dynamic",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=None,
     )
     parser.add_argument("--npugraph-decode", action="store_true")
     parser.add_argument(
         "--decode-increfa-mode",
-        choices=("mask", "actual_seq_lengths"),
-        default="actual_seq_lengths",
+        choices=("auto", "mask", "actual_seq_lengths"),
+        default="auto",
     )
     parser.add_argument(
         "--decode-optimization",
-        choices=tuple(DECODE_OPTIMIZATION_PRESETS),
-        default="combined_apply",
+        choices=("auto", *DECODE_OPTIMIZATION_PRESETS),
+        default="auto",
     )
     parser.add_argument(
         "--decode-linear-weight-format",
@@ -1050,10 +1050,6 @@ def main() -> None:
         torch.npu.set_compile_mode(jit_compile=False)
     if args.npugraph_decode and args.compile_decode:
         raise ValueError("--npugraph-decode and --compile-decode are mutually exclusive")
-    if args.npugraph_decode and args.compile_decode_dynamic:
-        raise ValueError("--npugraph-decode and --compile-decode-dynamic are mutually exclusive")
-    if args.npugraph_decode and args.decode_increfa_mode != "mask":
-        raise ValueError("--npugraph-decode currently requires --decode-increfa-mode mask")
     if args.prefill_tokens + args.decode_steps > args.static_kv_cache_len:
         raise ValueError(
             "prefill_tokens + decode_steps exceeds static_kv_cache_len "
@@ -1081,6 +1077,10 @@ def main() -> None:
         )
     memory_snapshots = {"after_load": npu_memory_snapshot("after_load")}
     print_memory_snapshot(memory_snapshots["after_load"])
+    if args.npugraph_decode and runner.compile_decode_dynamic:
+        raise ValueError("--npugraph-decode and dynamic decode are mutually exclusive")
+    if args.npugraph_decode and runner.decode_increfa_mode != "mask":
+        raise ValueError("--npugraph-decode currently requires decode_increfa_mode mask")
     log.log("building benchmark input ids")
     if args.batch_size < 1:
         raise ValueError(f"batch_size must be positive, got {args.batch_size}")
@@ -1097,10 +1097,13 @@ def main() -> None:
         "device": args.device,
         "dtype": args.dtype,
         "compile_decode": bool(args.compile_decode),
-        "compile_decode_dynamic": bool(args.compile_decode_dynamic),
+        "compile_decode_dynamic": bool(runner.compile_decode_dynamic),
+        "compile_decode_dynamic_requested": args.compile_decode_dynamic,
         "npugraph_decode": bool(args.npugraph_decode),
-        "decode_increfa_mode": args.decode_increfa_mode,
-        "decode_optimization": args.decode_optimization,
+        "decode_increfa_mode": runner.decode_increfa_mode,
+        "decode_increfa_mode_requested": args.decode_increfa_mode,
+        "decode_optimization": runner.decode_optimization,
+        "decode_optimization_requested": args.decode_optimization,
         "decode_optimization_metadata": runner.decode_optimization_metadata,
         "decode_linear_weight_format": args.decode_linear_weight_format,
         "decode_linear_weight_metadata": runner.decode_linear_weight_metadata,

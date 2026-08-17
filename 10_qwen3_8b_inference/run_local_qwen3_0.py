@@ -32,18 +32,38 @@ class LocalQwen30Runner:
         device: torch.device,
         dtype: torch.dtype = torch.float16,
         compile_decode: bool = False,
-        compile_decode_dynamic: bool = True,
-        decode_increfa_mode: str = "actual_seq_lengths",
-        decode_optimization: str = "combined_apply",
+        compile_decode_dynamic: bool | None = None,
+        decode_increfa_mode: str = "auto",
+        decode_optimization: str = "auto",
         decode_linear_weight_format: str = "unchanged",
         static_kv_cache_len: int = 65536,
     ):
-        if decode_increfa_mode not in {"mask", "actual_seq_lengths"}:
-            raise ValueError(f"Unsupported decode_increfa_mode={decode_increfa_mode!r}")
         self.model_dir = Path(model_dir)
         self.device = device
         self.dtype = dtype
         self.compile_decode = compile_decode
+        self.config = LocalQwen3Config.from_model_dir(self.model_dir)
+        is_qwen3_0_6b = (
+            self.config.hidden_size == 1024
+            and self.config.intermediate_size == 3072
+            and self.config.num_hidden_layers == 28
+            and self.config.num_attention_heads == 16
+            and self.config.num_key_value_heads == 8
+        )
+        if compile_decode_dynamic is None:
+            compile_decode_dynamic = not is_qwen3_0_6b
+        if decode_increfa_mode == "auto":
+            decode_increfa_mode = (
+                "mask" if is_qwen3_0_6b else "actual_seq_lengths"
+            )
+        if decode_optimization == "auto":
+            decode_optimization = (
+                "combined_apply_complete_layer_prefetch1_rope_lut"
+                if is_qwen3_0_6b
+                else "combined_apply"
+            )
+        if decode_increfa_mode not in {"mask", "actual_seq_lengths"}:
+            raise ValueError(f"Unsupported decode_increfa_mode={decode_increfa_mode!r}")
         self.compile_decode_dynamic = compile_decode_dynamic
         self.decode_increfa_mode = decode_increfa_mode
         if decode_optimization not in DECODE_OPTIMIZATION_PRESETS:
@@ -65,7 +85,6 @@ class LocalQwen30Runner:
         self.decode_linear_weight_format = decode_linear_weight_format
         self.static_kv_cache_len = int(static_kv_cache_len)
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir)
-        self.config = LocalQwen3Config.from_model_dir(self.model_dir)
         self.model = self.load_model()
         if (
             self.decode_linear_weight_format != "unchanged"
@@ -325,17 +344,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--compile-decode-dynamic",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=None,
     )
     parser.add_argument(
         "--decode-increfa-mode",
-        choices=("mask", "actual_seq_lengths"),
-        default="actual_seq_lengths",
+        choices=("auto", "mask", "actual_seq_lengths"),
+        default="auto",
     )
     parser.add_argument(
         "--decode-optimization",
-        choices=tuple(DECODE_OPTIMIZATION_PRESETS),
-        default="combined_apply",
+        choices=("auto", *DECODE_OPTIMIZATION_PRESETS),
+        default="auto",
     )
     parser.add_argument(
         "--decode-linear-weight-format",
