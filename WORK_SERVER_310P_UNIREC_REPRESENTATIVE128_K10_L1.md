@@ -6,6 +6,9 @@ Compile and measure the same K10 page-local vision-bucket prototype that is
 being tested on 910B2. Run one traced lane and one clean warmed lane on the
 fixed representative-128 manifest.
 
+The cache-persistence production fix is commit `5710ab3` or later. Do not run
+this handoff from an earlier commit.
+
 This is one experiment, not an A/B matrix. Use:
 
 - one process worker and one recognition-preprocess thread (`W1/T1`);
@@ -159,6 +162,23 @@ find "$COMPILE_CACHE" \
 ```
 
 ## Reference expectations
+
+The 910B2 production-slot gate at `5710ab3` passed for two bucket variants in
+one process and a fresh-process reload:
+
+```text
+448x64_b1 cold first call 33.9447 s; reload 0.6028 s
+448x64_b4 cold first call 30.6936 s; reload 0.5671 s
+compiled_module files: 2
+OM files after reload: 2
+new OMs during reload: 0
+correctness warnings: 0
+```
+
+Both cold bucket slots logged `Saving cache`; both fresh-process calls logged
+`Loading cache`. Steady graph latency remained approximately 9--11 ms. This is
+the behavior the ten-bucket 310P run must reproduce structurally, although its
+absolute load and graph times will differ.
 
 The fixed CPU replay for this exact K10 planner predicts:
 
