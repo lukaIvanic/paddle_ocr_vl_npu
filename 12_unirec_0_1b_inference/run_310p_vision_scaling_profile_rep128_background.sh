@@ -247,6 +247,8 @@ validate_matrix(
     rewrite="constant_grouped_all",
     weight="torchair_internal",
 )
+for row in o310["rows"]:
+    assert row["cross_lane_reference"]["reference"] != "not_requested"
 assert candidate["status"] == "ok"
 assert candidate["page_count"] == 128
 assert candidate["workers"] == 1
@@ -339,6 +341,7 @@ report = {
 
 for batch in (1, 4, 16):
     row = matrix_comparison[str(batch)]
+    cross = row["310p_optimized"]["cross_lane_reference"]
     print(
         "UNIREC_310P_VISION_512X256_BATCH "
         f"batch={batch} "
@@ -348,7 +351,10 @@ for batch in (1, 4, 16):
         f"optimized_crops_s={row['310p_optimized']['crops_per_s']:.6f} "
         f"optimized_mpix_s={row['310p_optimized']['mpix_per_s']:.6f} "
         f"native_slowdown_vs_910b={row['native_310p_slowdown_vs_910b']:.6f}x "
-        f"optimized_slowdown_vs_910b={row['optimized_310p_slowdown_vs_910b']:.6f}x"
+        f"optimized_slowdown_vs_910b={row['optimized_310p_slowdown_vs_910b']:.6f}x "
+        f"cross_exact={str(cross['exact']).lower()} "
+        f"cross_max_abs={cross['max_abs']:.9g} "
+        f"cross_mean_abs={cross['mean_abs']:.9g}"
     )
 print(
     "UNIREC_310P_VISION_REP128: PASS "
