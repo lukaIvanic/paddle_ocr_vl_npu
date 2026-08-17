@@ -6,8 +6,8 @@ Compile and measure the same K10 page-local vision-bucket prototype that is
 being tested on 910B2. Run one traced lane and one clean warmed lane on the
 fixed representative-128 manifest.
 
-The cache-persistence production fix is commit `5710ab3` or later. Do not run
-this handoff from an earlier commit.
+The cache-persistence and eager-fallback warmup fixes require commit `fd24c1b`
+or later. Do not run this handoff from an earlier commit.
 
 This is one experiment, not an A/B matrix. Use:
 
@@ -103,6 +103,12 @@ not clean.
 The launcher prints an absolute `RUN_ROOT`, `RUN_LOG`, PID, and `tail -f`
 command. Report those immediately so Luka can follow the log. Do not wait for
 the full run before reporting the path.
+
+If the earlier uncorrected K10 run already completed, preserve its output and
+cache directories. Pull `fd24c1b` or later and launch this handoff again with
+the same cache roots. The fallback-warmup change does not change the ten bucket
+cache keys, so this correction rerun must load the existing compiled modules
+and OMs rather than compile them again.
 
 The log prints one begin/end record for each compiled graph:
 
@@ -200,6 +206,19 @@ compiled-module files:      10
 OM files after restart:     10
 new OMs during restart:      0
 exit code:                   0
+```
+
+That first gate did not warm the eager fallback and its measured phase included
+one 14.848-second first-use call. Commit `fd24c1b` moved this work into setup and
+recorded two synchronized passes on physical 910B2 NPU 7:
+
+```text
+eager fallback cold first use: 17.262169 s
+eager fallback warm replay:     0.030200 s
+corrected clean prefill:        48.768068 s, 2.624668 pages/s
+previous contaminated prefill: 71.078763 s, 1.800819 pages/s
+cache inventory:               10 compiled modules, 10 OMs
+exit code:                      0
 ```
 
 The normalized 910B2 trace-stage evidence is:

@@ -8,6 +8,7 @@ MATERIALIZER="$SCRIPT_DIR/materialize_page_subset.py"
 MANIFEST="$SCRIPT_DIR/references/unirec_representative_128_v1.json"
 CHIP_LABEL="${UNIREC_K10_CHIP_LABEL:-910B2}"
 ALLOWED_DEVICES="${UNIREC_K10_ALLOWED_DEVICES:-}"
+RECOGNITION_THREADS="${UNIREC_K10_THREADS:-1}"
 
 resolve_inputs() {
   : "${PYTHON_BIN:?export the validated UniRec inference Python}"
@@ -18,6 +19,9 @@ resolve_inputs() {
   : "${COMPILE_CACHE:?export the recognition compile-cache parent}"
   : "${LAYOUT_CACHE_ROOT:?export the layout compile-cache directory}"
   : "${ASCEND_RT_VISIBLE_DEVICES:?select one free physical NPU}"
+  case "$RECOGNITION_THREADS" in
+    ''|*[!0-9]*|0) printf 'UNIREC_K10_INVALID_THREADS=%s\n' "$RECOGNITION_THREADS" >&2; exit 1 ;;
+  esac
   if [[ "$ASCEND_RT_VISIBLE_DEVICES" == *,* ]]; then
     printf 'UNIREC_K10_REQUIRES_ONE_NPU=%s\n' \
       "$ASCEND_RT_VISIBLE_DEVICES" >&2
@@ -95,7 +99,7 @@ run_lane() {
     --vision-bucket-preset 310p_k10_l1
     --vision-focal-depthwise-rewrite constant_grouped_all
     --vision-weight-format torchair_internal
-    --recognition-preprocess-threads 1
+    --recognition-preprocess-threads "$RECOGNITION_THREADS"
     --recognition-input-contract compact_uint8_hwc
     --cross-cache-length 1320
     --self-cache-length 2048
@@ -120,6 +124,7 @@ run_lane() {
 report_clean_only() {
   CLEAN_SUMMARY="$RUN_ROOT/clean/output/run_summary.json" \
   CHIP_LABEL="$CHIP_LABEL" \
+  EXPECTED_THREADS="$RECOGNITION_THREADS" \
     "$PYTHON_BIN" - <<'PY' | tee "$RUN_ROOT/report.log"
 import json
 import os
@@ -129,7 +134,7 @@ run = json.loads(Path(os.environ["CLEAN_SUMMARY"]).read_text())
 assert run["status"] == "ok"
 assert run["execution"] == "production_two_phase_prefill_only"
 assert (run["page_count"], run["workers"]) == (128, 1)
-assert run["recognition_preprocess_threads"] == 1
+assert run["recognition_preprocess_threads"] == int(os.environ["EXPECTED_THREADS"])
 assert run["layout_batch_size"] == 1
 assert run["vision_page_lookahead"] == 1
 assert run["vision_bucket_preset"] == "310p_k10_l1"
@@ -159,6 +164,7 @@ print(
     f"{prefix}_CLEAN_ONLY_RESULT PASS "
     f"clean_wall_s={run['timing_s']['prefill_phase']:.6f} "
     f"clean_pages_s={run['throughput']['prefill_pages_per_s']:.6f} "
+    f"threads={run['recognition_preprocess_threads']} "
     f"clean_layout_s={run['prefill_phase_summary']['stage_s']['worker_detector_call_sum_s']:.6f} "
     f"crops={run['retained_bank']['crop_count']} "
     f"real_source_tokens={run['retained_bank']['real_source_tokens']}"
@@ -179,6 +185,7 @@ report_result() {
   TRACE_ITERATIONS="$RUN_ROOT/trace/output/prefill_iterations.jsonl" \
   CLEAN_SUMMARY="$RUN_ROOT/clean/output/run_summary.json" \
   CHIP_LABEL="$CHIP_LABEL" \
+  EXPECTED_THREADS="$RECOGNITION_THREADS" \
     "$PYTHON_BIN" - <<'PY' | tee "$RUN_ROOT/report.log"
 import json
 import os
@@ -196,7 +203,7 @@ for run, traced in ((trace_run, True), (clean_run, False)):
     assert run["status"] == "ok"
     assert run["execution"] == "production_two_phase_prefill_only"
     assert (run["page_count"], run["workers"]) == (128, 1)
-    assert run["recognition_preprocess_threads"] == 1
+    assert run["recognition_preprocess_threads"] == int(os.environ["EXPECTED_THREADS"])
     assert run["layout_batch_size"] == 1
     assert run["vision_page_lookahead"] == 1
     assert run["vision_bucket_preset"] == "310p_k10_l1"
@@ -262,6 +269,7 @@ print(
     f"clean_wall_s={clean_run['timing_s']['prefill_phase']:.6f} "
     f"clean_pages_s={clean_run['throughput']['prefill_pages_per_s']:.6f} "
     f"trace_wall_s={trace_run['timing_s']['prefill_phase']:.6f} "
+    f"threads={trace_run['recognition_preprocess_threads']} "
     f"bucket_graph_s={bucket_graph['sum_s']:.6f} "
     f"fallback_graph_s={fallback_graph['sum_s']:.6f} "
     f"vision_graph_s={bucket_graph['sum_s'] + fallback_graph['sum_s']:.6f} "
@@ -270,6 +278,29 @@ print(
     f"crops={clean_run['retained_bank']['crop_count']}"
 )
 print(f"{prefix}_BUCKET_CALLS " + json.dumps(bucket_calls, sort_keys=True))
+stage_rows = distributions["stage_distributions"]
+text_device_rows = [
+    row
+    for name, row in stage_rows.items()
+    if name.startswith(
+        "text_prefill_pack.device_stage_s.compiled_packed_text_prefill_s"
+    )
+]
+assert len(text_device_rows) == 1
+print(
+    f"{prefix}_STAGES "
+    f"layout_s={stage_rows['layout_batch_call.wall_s']['sum_s']:.6f} "
+    f"layout_model_forward_s={stage_rows['layout_batch_call.stage_s.model_forward_s']['sum_s']:.6f} "
+    f"layout_model_forward_mean_ms={stage_rows['layout_batch_call.stage_s.model_forward_s']['mean_ms']:.6f} "
+    f"layout_processor_s={stage_rows['layout_batch_call.stage_s.processor_preprocess_s']['sum_s']:.6f} "
+    f"vision_bucket_s={bucket_graph['sum_s']:.6f} "
+    f"vision_fallback_s={fallback_graph['sum_s']:.6f} "
+    f"vision_total_s={bucket_graph['sum_s'] + fallback_graph['sum_s']:.6f} "
+    f"crop_preprocess_s={stage_rows['recognition_crop_preprocess.wall_s']['sum_s']:.6f} "
+    f"text_pack_wall_s={stage_rows['text_prefill_pack.wall_s']['sum_s']:.6f} "
+    f"text_device_s={text_device_rows[0]['sum_s']:.6f} "
+    f"shared_pack_s={stage_rows['page_shared_pack.wall_s']['sum_s']:.6f}"
+)
 print(
     f"{prefix}_FALLBACK_WARMUP "
     f"input_shape={fallback_warmups['clean']['input_shape']} "
@@ -361,6 +392,7 @@ launch_main() {
     UNIREC_K10_CHIP_LABEL="$CHIP_LABEL" \
     UNIREC_K10_ALLOWED_DEVICES="$ALLOWED_DEVICES" \
     UNIREC_K10_RUN_MODE="${UNIREC_K10_RUN_MODE:-both}" \
+    UNIREC_K10_THREADS="$RECOGNITION_THREADS" \
     bash "$0" --worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 < /dev/null &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"
   printf 'RUN_ROOT=%s\nRUN_LOG=%s\nPID=%s\nTAIL_COMMAND=tail -f %q\n' \
