@@ -11,8 +11,12 @@ export GLOO_SOCKET_IFNAME="${GLOO_SOCKET_IFNAME:-enp67s0f5}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TORCHRUN_BIN="${TORCHRUN_BIN:-/usr/local/python3.12.13/bin/torchrun}"
+MASTER_ADDR="${MASTER_ADDR:-127.0.0.1}"
+PROBE_MASTER_PORT="${PROBE_MASTER_PORT:-29514}"
+BENCH_MASTER_PORT="${BENCH_MASTER_PORT:-29515}"
 
-"${TORCHRUN_BIN}" --standalone --nnodes=1 --nproc-per-node=2 \
+"${TORCHRUN_BIN}" --nnodes=1 --nproc-per-node=2 \
+  --master-addr="${MASTER_ADDR}" --master-port="${PROBE_MASTER_PORT}" \
   "${SCRIPT_DIR}/probe_torchair_tp.py"
 
 benchmark_args=(
@@ -28,6 +32,7 @@ if [[ -n "${JSON_OUT:-}" ]]; then
   benchmark_args+=(--json-out "${JSON_OUT}")
 fi
 
-"${TORCHRUN_BIN}" --standalone --nnodes=1 --nproc-per-node=2 \
+"${TORCHRUN_BIN}" --nnodes=1 --nproc-per-node=2 \
+  --master-addr="${MASTER_ADDR}" --master-port="${BENCH_MASTER_PORT}" \
   "${SCRIPT_DIR}/benchmark_qwen3_32b_tp2.py" \
   "${benchmark_args[@]}"

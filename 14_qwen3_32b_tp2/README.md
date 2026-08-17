@@ -54,7 +54,8 @@ forms:
 
 ```sh
 /usr/local/python3.12.13/bin/torchrun \
-  --standalone --nnodes=1 --nproc-per-node=2 \
+  --nnodes=1 --nproc-per-node=2 \
+  --master-addr=127.0.0.1 --master-port=29514 \
   probe_torchair_tp.py
 ```
 
@@ -78,3 +79,28 @@ bash run_910b2_tp2.sh
 prefix position is 512, as in the selected Experiment 10 B1 benchmark. The
 cache starts as zeros because prefill and text correctness are intentionally
 outside this bring-up rung.
+
+## Verified 910B2 result
+
+Verified on 2026-08-17 at commit `7cd0f82`, with two Ascend 910B2 NPUs and the
+official Qwen3-32B BF16 checkpoint:
+
+| Lane | Shape | TPOT | Decode rate |
+|---|---:|---:|---:|
+| Custom raw eager | B1, static KV capacity 4096, position 512 | 121.80 ms | 8.21 tok/s |
+| Custom TorchAir fullgraph | B1, static KV capacity 4096, position 512 | 31.73 ms | 31.52 tok/s |
+| vLLM-Ascend v0.23 | B1, 20 sequential 128-in/128-out requests | 32.49 ms median; 34.81 ms mean | 26.21 output tok/s |
+
+The custom graph's compile plus first call took 56.30 seconds. After compile it
+owned 31.10 GiB per rank and left about 28.27 GiB free per rank. The vLLM lane
+is a serving-shaped anchor, not an identical attention-layout comparison:
+vLLM uses paged KV and includes HTTP/scheduler work, while the custom lane uses
+one offline contiguous static cache. The close TPOT values show that the custom
+baseline is in the expected performance range; they are not an accuracy or
+strict apples-to-apples speed claim.
+
+Raw evidence is in `references/`:
+
+- `qwen3_32b_tp2_b1_kv4096_raw_eager_910b2.json`
+- `qwen3_32b_tp2_b1_kv4096_torchair_910b2.json`
+- `qwen3_32b_vllm_ascend_tp2_b1_i128_o128_n20_910b2.json`

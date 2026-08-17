@@ -1,0 +1,36 @@
+{
+  "backend": "torchair",
+  "batch_size": 1,
+  "cache_length": 4096,
+  "compile_first_call_sec": 56.29509735107422,
+  "contracts": {
+    "down_proj": "row_parallel_all_reduce",
+    "embedding": "vocab_parallel_all_reduce",
+    "gate_up": "packed_column_parallel",
+    "kv_cache": "contiguous_static_per_rank",
+    "kv_heads_per_rank": 4,
+    "kv_heads_replicated": false,
+    "lm_head": "vocab_parallel_local_argmax_pair_all_gather",
+    "o_proj": "row_parallel_all_reduce",
+    "paged_attention": false,
+    "q_heads_per_rank": 32,
+    "qkv": "packed_column_parallel"
+  },
+  "decode_elapsed_sec": 1.0152639150619507,
+  "decode_steps": 32,
+  "decode_tok_s": 31.518898214802977,
+  "dtype": "bfloat16",
+  "final_token_id": 582,
+  "full_model_layers": 64,
+  "layers": 64,
+  "mean_tpot_ms": 31.72699734568596,
+  "model": "Qwen/Qwen3-32B",
+  "prefix_length": 512,
+  "rank0_memory": {
+    "allocated_gib": 31.095062732696533,
+    "free_gib": 28.27230453491211,
+    "reserved_gib": 31.67578125,
+    "total_gib": 60.95703125
+  },
+  "tensor_parallel_size": 2
+}
