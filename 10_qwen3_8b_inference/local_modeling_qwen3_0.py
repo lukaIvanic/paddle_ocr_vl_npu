@@ -547,8 +547,12 @@ class LocalQwen3Attention(nn.Module):
             batch, sequence_length, self.num_key_value_heads, self.head_dim
         )
         if optimization.qk_add_rms_norm and query_states.device.type == "npu":
-            query_zero = self.decode_q_norm_zero.expand_as(query_states)
-            key_zero = self.decode_k_norm_zero.expand_as(key_states)
+            # TorchAir may alias the summed output of AddRmsNorm onto its
+            # residual input. A persistent zero buffer would therefore stop
+            # being zero after the first compiled decode step. Build graph-local
+            # zero tensors so every invocation preserves plain RMSNorm semantics.
+            query_zero = torch.zeros_like(query_states)
+            key_zero = torch.zeros_like(key_states)
             query_states = torch_npu.npu_add_rms_norm(
                 query_states,
                 query_zero,
@@ -914,34 +918,7 @@ class LocalQwen3ForCausalLM(nn.Module):
                     batched_qk_norm_count += 1
         qk_add_rms_norm_count = 0
         if optimization.qk_add_rms_norm:
-            for layer in self.layers:
-                attention = layer.self_attn
-                if not hasattr(attention, "decode_q_norm_zero"):
-                    attention.register_buffer(
-                        "decode_q_norm_zero",
-                        torch.zeros(
-                            1,
-                            1,
-                            attention.num_heads,
-                            attention.head_dim,
-                            device=attention.q_norm.weight.device,
-                            dtype=attention.q_norm.weight.dtype,
-                        ),
-                        persistent=False,
-                    )
-                    attention.register_buffer(
-                        "decode_k_norm_zero",
-                        torch.zeros(
-                            1,
-                            1,
-                            attention.num_key_value_heads,
-                            attention.head_dim,
-                            device=attention.k_norm.weight.device,
-                            dtype=attention.k_norm.weight.dtype,
-                        ),
-                        persistent=False,
-                    )
-                    qk_add_rms_norm_count += 1
+            qk_add_rms_norm_count = len(self.layers)
         if optimization.rope_lookup:
             positions = torch.arange(
                 int(cache_length),
