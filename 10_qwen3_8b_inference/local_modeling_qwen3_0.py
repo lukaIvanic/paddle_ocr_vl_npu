@@ -496,7 +496,7 @@ class LocalQwen3Attention(nn.Module):
         self,
         hidden_states: torch.Tensor,
         optimization: DecodeOptimizationConfig,
-        qk_norm_zero: torch.Tensor | None = None,
+        qk_norm_zero: tuple[torch.Tensor, torch.Tensor] | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch, sequence_length, _hidden = hidden_states.shape
         if optimization.packed_qkv:
@@ -571,8 +571,7 @@ class LocalQwen3Attention(nn.Module):
                 query_zero = torch.zeros_like(query_states)
                 key_zero = torch.zeros_like(key_states)
             else:
-                query_zero = qk_norm_zero[:, :, : self.num_heads, :]
-                key_zero = qk_norm_zero[:, :, self.num_heads :, :]
+                query_zero, key_zero = qk_norm_zero
             query_states = torch_npu.npu_add_rms_norm(
                 query_states,
                 query_zero,
@@ -635,7 +634,7 @@ class LocalQwen3Attention(nn.Module):
         attention_mask: torch.Tensor | None,
         actual_seq_length: int | None,
         optimization: DecodeOptimizationConfig,
-        qk_norm_zero: torch.Tensor | None = None,
+        qk_norm_zero: tuple[torch.Tensor, torch.Tensor] | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         if (
             optimization.weight_prefetch
@@ -763,7 +762,7 @@ class LocalQwen3DecoderLayer(nn.Module):
         attention_mask: torch.Tensor | None,
         actual_seq_length: int | None,
         optimization: DecodeOptimizationConfig,
-        qk_norm_zero: torch.Tensor | None = None,
+        qk_norm_zero: tuple[torch.Tensor, torch.Tensor] | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         residual = hidden_states
         attn_output, key_cache, value_cache = self.self_attn.forward_decode(
@@ -805,7 +804,7 @@ class LocalQwen3DecoderLayer(nn.Module):
         attention_mask: torch.Tensor | None,
         actual_seq_length: int | None,
         optimization: DecodeOptimizationConfig,
-        qk_norm_zero: torch.Tensor | None = None,
+        qk_norm_zero: tuple[torch.Tensor, torch.Tensor] | None = None,
     ) -> tuple[
         torch.Tensor,
         torch.Tensor,
@@ -1108,24 +1107,38 @@ class LocalQwen3ForCausalLM(nn.Module):
     ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
         optimization = self.decode_optimization
         hidden_states = self.embed_tokens(input_ids)
-        qk_norm_zero_bank = None
+        qk_norm_zero_layers = None
         if (
             optimization.qk_add_rms_norm
             and optimization.qk_add_rms_zero_bank
             and hidden_states.device.type == "npu"
         ):
             # TorchAir lowers npu_add_rms_norm to an in-place residual update.
-            # Build one fresh graph-local bank and give every layer disjoint Q/K
-            # slices. This preserves zero-residual RMSNorm semantics while
-            # replacing two zeros_like launches per layer with one allocation.
-            qk_norm_zero_bank = hidden_states.new_zeros(
+            # Build fresh graph-local banks and unbind them once, so each layer
+            # gets direct disjoint Q/K views. This avoids the per-layer Gather
+            # and StridedSlice kernels produced by indexing one combined bank.
+            query_zero_bank = hidden_states.new_zeros(
                 (
                     len(self.layers),
                     hidden_states.shape[0],
                     hidden_states.shape[1],
-                    self.config.num_attention_heads
-                    + self.config.num_key_value_heads,
+                    self.config.num_attention_heads,
                     self.config.head_dim,
+                )
+            )
+            key_zero_bank = hidden_states.new_zeros(
+                (
+                    len(self.layers),
+                    hidden_states.shape[0],
+                    hidden_states.shape[1],
+                    self.config.num_key_value_heads,
+                    self.config.head_dim,
+                )
+            )
+            qk_norm_zero_layers = tuple(
+                zip(
+                    query_zero_bank.unbind(dim=0),
+                    key_zero_bank.unbind(dim=0),
                 )
             )
         if optimization.rope_lookup:
@@ -1179,8 +1192,8 @@ class LocalQwen3ForCausalLM(nn.Module):
                     optimization,
                     (
                         None
-                        if qk_norm_zero_bank is None
-                        else qk_norm_zero_bank[layer_idx]
+                        if qk_norm_zero_layers is None
+                        else qk_norm_zero_layers[layer_idx]
                     ),
                 )
                 next_key_caches.append(layer_key_cache)
@@ -1204,8 +1217,8 @@ class LocalQwen3ForCausalLM(nn.Module):
                     optimization,
                     (
                         None
-                        if qk_norm_zero_bank is None
-                        else qk_norm_zero_bank[layer_idx]
+                        if qk_norm_zero_layers is None
+                        else qk_norm_zero_layers[layer_idx]
                     ),
                 )
                 next_key_caches.append(layer_key_cache)
