@@ -1,0 +1,25 @@
+{
+  "generated_text": " Paris. The capital of the United Kingdom",
+  "generated_token_ids": [
+    12095,
+    13,
+    576,
+    6722,
+    315,
+    279,
+    3639,
+    15072
+  ],
+  "ignore_eos": true,
+  "model": "Qwen/Qwen3-30B-A3B",
+  "prompt": "The capital of France is",
+  "prompt_token_ids": [
+    785,
+    6722,
+    315,
+    9625,
+    374
+  ],
+  "temperature": 0.0,
+  "tensor_parallel_size": 2
+}

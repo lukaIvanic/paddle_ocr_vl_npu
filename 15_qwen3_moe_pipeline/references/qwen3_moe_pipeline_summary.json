@@ -1,0 +1,95 @@
+{
+  "capture_path": "/results/qwen3_moe_stage2_capture.pt",
+  "capture_size_bytes": 2807381,
+  "final_memory": {
+    "stage0": {
+      "allocated_gib": 28.447702407836914,
+      "device": "npu:0",
+      "free_gib": 30.612060546875,
+      "reserved_gib": 29.970703125,
+      "total_gib": 60.95703125
+    },
+    "stage1": {
+      "allocated_gib": 28.448018074035645,
+      "device": "npu:1",
+      "free_gib": 31.165836334228516,
+      "reserved_gib": 29.4140625,
+      "total_gib": 60.95703125
+    }
+  },
+  "generated_text": " Paris. The capital of the United Kingdom",
+  "generated_token_ids": [
+    12095,
+    13,
+    576,
+    6722,
+    315,
+    279,
+    3639,
+    15072
+  ],
+  "mean_step_sec": 0.08972083602566272,
+  "model": "Qwen/Qwen3-30B-A3B",
+  "prompt": "The capital of France is",
+  "prompt_token_ids": [
+    785,
+    6722,
+    315,
+    9625,
+    374
+  ],
+  "reference_token_match": true,
+  "split_layer": 24,
+  "stage0": {
+    "allocated_memory": {
+      "allocated_gib": 28.435832977294922,
+      "device": "npu:0",
+      "free_gib": 31.973957061767578,
+      "reserved_gib": 28.626953125,
+      "total_gib": 60.95703125
+    },
+    "device": "npu:0",
+    "layer_end": 24,
+    "layer_start": 0,
+    "load_elapsed_sec": 25.953691511880606,
+    "loaded_memory": {
+      "allocated_gib": 28.43595552444458,
+      "device": "npu:0",
+      "free_gib": 30.63817596435547,
+      "reserved_gib": 29.9609375,
+      "total_gib": 60.95703125
+    },
+    "name": "stage0"
+  },
+  "stage1": {
+    "allocated_memory": {
+      "allocated_gib": 28.435837268829346,
+      "device": "npu:1",
+      "free_gib": 31.971485137939453,
+      "reserved_gib": 28.626953125,
+      "total_gib": 60.95703125
+    },
+    "device": "npu:1",
+    "layer_end": 48,
+    "layer_start": 24,
+    "load_elapsed_sec": 32.2208588658832,
+    "loaded_memory": {
+      "allocated_gib": 28.435959815979004,
+      "device": "npu:1",
+      "free_gib": 31.19342041015625,
+      "reserved_gib": 29.40234375,
+      "total_gib": 60.95703125
+    },
+    "name": "stage1"
+  },
+  "step_times_sec": [
+    0.09300867095589638,
+    0.09004381997510791,
+    0.0891661960631609,
+    0.08890321105718613,
+    0.08937468891963363,
+    0.08910587383434176,
+    0.08903206326067448,
+    0.08913216413930058
+  ]
+}

@@ -61,7 +61,7 @@ Known implementation surfaces:
 
 Each numbered directory is a rung, kept as evidence for how the current design
 was reached. **09 is the active PaddleOCR-VL engine**; 01–08 are historical and
-10–13 are self-contained sibling model/runtime investigations.
+10–15 are self-contained sibling model/runtime investigations.
 
 - `01_transformers_recognition_baseline/`: minimal Transformers recognizer smoke.
 - `02_local_eager_recognition/`: the recognizer reimplemented in local PyTorch
@@ -85,6 +85,10 @@ was reached. **09 is the active PaddleOCR-VL engine**; 01–08 are historical an
 - `12_unirec_0_1b_inference/`: custom UniRec-0.1B inference and OpenDoc lanes.
 - `13_qwen3_reranker/`: custom Qwen3-Reranker-8B scoring, fixed-shape compiled
   forward benchmarks, PromptFA, and W8A8 experiments.
+- `14_qwen3_32b_tp2_inference/`: custom dense Qwen3-32B TP2 B1 decode and
+  vLLM-Ascend comparison lane.
+- `15_qwen3_moe_pipeline/`: correctness-first Qwen3-30B-A3B two-stage pipeline,
+  vLLM token parity, and captured second-half replay for MoE optimization.
 
 Supporting artifacts:
 

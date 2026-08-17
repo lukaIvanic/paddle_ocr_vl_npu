@@ -29,6 +29,28 @@ The selected-expert control follows the Transformers Qwen3-MoE contract:
 
 This is deliberately separate from future grouped-matmul/fused-MoE paths.
 
+## Verified 910B2 result
+
+Verified on 2026-08-17 with the real BF16 `Qwen3-30B-A3B` checkpoint at commit
+`14bd67f`:
+
+- the custom two-NPU pipeline matched all eight greedy token IDs from an
+  independent vLLM-Ascend TP2 run;
+- both paths generated
+  ` Paris. The capital of the United Kingdom` with token IDs
+  `[12095, 13, 576, 6722, 315, 279, 3639, 15072]`;
+- the uncompiled custom pipeline averaged 89.72 ms per generated token after
+  model load, or 11.15 tokens/s;
+- the captured second half reproduced every token, every top-10 token set, and
+  all 24 layers of selected expert IDs;
+- replayed logits were bit-identical to the full custom pipeline, with maximum
+  absolute difference 0.0;
+- after its first-use step, the uncompiled second-half replay averaged 34.63 ms
+  per token, or 28.87 tokens/s.
+
+The speed numbers are raw-eager development measurements. They are not a
+compiled serving result. The checked JSON artifacts are in `references/`.
+
 ## Development replay package
 
 The full pipeline processes the prompt token-by-token, avoiding a separate
@@ -79,6 +101,11 @@ python3 replay_stage2.py \
   --capture /results/qwen3_moe_stage2_capture.pt \
   --summary-out /results/qwen3_moe_stage2_replay_summary.json
 ```
+
+The verified development capture is stored at
+`references/qwen3_moe_stage2_capture.pt`. It contains no model weights. It
+contains only the valid prefix KV state, layer-24 boundary states, router
+decisions, and expected logits needed by `replay_stage2.py`.
 
 The first remote run must proceed in rungs: CPU unit test, one real MoE layer,
 one complete stage, full pipeline without an external reference, then vLLM
