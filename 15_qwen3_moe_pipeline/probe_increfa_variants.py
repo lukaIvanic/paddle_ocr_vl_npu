@@ -21,6 +21,11 @@ VARIANTS = (
     "increfa_bsnd_mask",
     "fia_v1_bnsd_mask",
     "fia_v2_bnsd_mask",
+    "increfa_bnsd_mask4d",
+    "increfa_bnsd_mask4d_inner0",
+    "increfa_pseudo_b2_mask",
+    "increfa_pseudo_b4_mask",
+    "increfa_bnsd_fp16_mask4d",
 )
 
 
@@ -98,6 +103,41 @@ class AttentionVariant(nn.Module):
                 input_layout="BNSD", softmax_scale=self.scale,
                 sparse_mode=0, inner_precise=1,
             )[0]
+        if self.variant in (
+            "increfa_bnsd_mask4d",
+            "increfa_bnsd_fp16_mask4d",
+        ):
+            return torch_npu.npu_incre_flash_attention(
+                query, key, value, atten_mask=mask,
+                num_heads=32, num_key_value_heads=4, input_layout="BNSD",
+                scale_value=self.scale, inner_precise=1,
+            )
+        if self.variant == "increfa_bnsd_mask4d_inner0":
+            return torch_npu.npu_incre_flash_attention(
+                query, key, value, atten_mask=mask,
+                num_heads=32, num_key_value_heads=4, input_layout="BNSD",
+                scale_value=self.scale, inner_precise=0,
+            )
+        if self.variant == "increfa_pseudo_b2_mask":
+            output = torch_npu.npu_incre_flash_attention(
+                query.view(2, 16, 1, 128),
+                key.view(2, 2, self.cache_length, 128),
+                value.view(2, 2, self.cache_length, 128),
+                atten_mask=mask,
+                num_heads=16, num_key_value_heads=2, input_layout="BNSD",
+                scale_value=self.scale, inner_precise=1,
+            )
+            return output.view(1, 32, 1, 128)
+        if self.variant == "increfa_pseudo_b4_mask":
+            output = torch_npu.npu_incre_flash_attention(
+                query.view(4, 8, 1, 128),
+                key.view(4, 1, self.cache_length, 128),
+                value.view(4, 1, self.cache_length, 128),
+                atten_mask=mask,
+                num_heads=8, num_key_value_heads=1, input_layout="BNSD",
+                scale_value=self.scale, inner_precise=1,
+            )
+            return output.view(1, 32, 1, 128)
         raise ValueError(f"Unsupported variant: {self.variant}")
 
     def forward(
@@ -156,15 +196,34 @@ def main() -> None:
     )
     synchronize(device)
 
+    four_dimensional_mask = args.variant in (
+        "increfa_bnsd_mask4d",
+        "increfa_bnsd_mask4d_inner0",
+        "increfa_pseudo_b2_mask",
+        "increfa_pseudo_b4_mask",
+        "increfa_bnsd_fp16_mask4d",
+    )
+    mask_inputs = (
+        mask.view(args.layers, 1, 1, 1, args.cache_length)
+        if four_dimensional_mask
+        else mask
+    )
     if args.variant == "increfa_bsnd_mask":
         inputs = (
             query_bnsd.transpose(2, 3).contiguous(),
             key_bnsd.transpose(2, 3).contiguous(),
             value_bnsd.transpose(2, 3).contiguous(),
-            mask,
+            mask_inputs,
+        )
+    elif args.variant == "increfa_bnsd_fp16_mask4d":
+        inputs = (
+            query_bnsd.to(dtype=torch.float16),
+            key_bnsd.to(dtype=torch.float16),
+            value_bnsd.to(dtype=torch.float16),
+            mask_inputs,
         )
     else:
-        inputs = (query_bnsd, key_bnsd, value_bnsd, mask)
+        inputs = (query_bnsd, key_bnsd, value_bnsd, mask_inputs)
 
     module = AttentionVariant(args.variant, args.cache_length, args.layers).to(device).eval()
     args.compile_cache_dir.mkdir(parents=True, exist_ok=True)
