@@ -42,6 +42,15 @@ def load_tp_stage_checkpoint(
     )
 
     with SafeTensorIndex(model_dir) as checkpoint, torch.no_grad():
+        if stage.embed_tokens is not None:
+            copy_parameter(
+                stage.embed_tokens.weight,
+                checkpoint.tensor("model.embed_tokens.weight")[
+                    vocab_start:vocab_end
+                ],
+                device=device,
+            )
+            log("loaded vocabulary-sharded token embedding")
         for local_index, layer in enumerate(stage.layers):
             global_index = stage.layer_start + local_index
             prefix = f"model.layers.{global_index}"

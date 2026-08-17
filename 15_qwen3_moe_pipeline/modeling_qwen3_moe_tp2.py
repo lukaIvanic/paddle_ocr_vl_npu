@@ -285,6 +285,7 @@ class Qwen3MoeTPStage(nn.Module):
         layer_start: int,
         layer_end: int,
         with_lm_head: bool,
+        with_embedding: bool = False,
     ):
         super().__init__()
         config.validate_qwen3_30b_a3b()
@@ -312,6 +313,12 @@ class Qwen3MoeTPStage(nn.Module):
             config.vocab_size, tp_rank, tp_size
         )
         self.vocab_start = vocab_start
+        self.vocab_end = vocab_end
+        self.embed_tokens = (
+            nn.Embedding(vocab_end - vocab_start, config.hidden_size)
+            if with_embedding
+            else None
+        )
         self.lm_head = (
             nn.Linear(config.hidden_size, vocab_end - vocab_start, bias=False)
             if with_lm_head
@@ -420,6 +427,34 @@ class Qwen3MoeTPStage(nn.Module):
             hidden_states, self.norm.weight, self.norm.variance_epsilon
         )
         return linear_tokenwise(self.lm_head, hidden_states)[:, -1, :]
+
+    def decode_input_ids_local_output(
+        self,
+        input_ids: torch.Tensor,
+        cache_position: torch.Tensor,
+        key_caches: tuple[torch.Tensor, ...],
+        value_caches: tuple[torch.Tensor, ...],
+    ) -> torch.Tensor:
+        if self.embed_tokens is None:
+            raise RuntimeError("This TP stage has no token embedding")
+        local_ids = input_ids - int(self.vocab_start)
+        local_mask = (local_ids >= 0) & (
+            local_ids < self.embed_tokens.num_embeddings
+        )
+        safe_local_ids = local_ids.clamp(
+            min=0, max=self.embed_tokens.num_embeddings - 1
+        )
+        hidden_states = self.embed_tokens(safe_local_ids)
+        hidden_states = hidden_states * local_mask.unsqueeze(-1).to(
+            dtype=hidden_states.dtype
+        )
+        hidden_states = tp_all_reduce_sum(hidden_states, self.tp_size)
+        return self.decode_local_output(
+            hidden_states,
+            cache_position,
+            key_caches,
+            value_caches,
+        )
 
     def decode_debug(
         self,
