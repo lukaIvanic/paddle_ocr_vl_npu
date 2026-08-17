@@ -140,8 +140,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--max-length must be in [1, --self-cache-length]")
     if args.offset_crops < 0 or args.limit_crops < 0:
         parser.error("crop offset and limit must be non-negative")
-    if args.decode_warmup_passes < 1:
-        parser.error("--decode-warmup-passes must be positive")
+    if args.decode_warmup_passes < 0:
+        parser.error("--decode-warmup-passes must be non-negative")
     if args.decode_admission_prefetch_depth < 0:
         parser.error("--decode-admission-prefetch-depth must be non-negative")
     if args.progress_every < 1:

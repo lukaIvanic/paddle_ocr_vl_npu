@@ -21,6 +21,7 @@ resolve_inputs() {
   : "${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:?reuse the passed decode-cache gate parent}"
   : "${PRIOR_RUN_ROOT:?export the completed 310P decode diagnostic run root}"
   : "${CPUSET:=0-63}"
+  : "${DECODE_WARMUP_PASSES:=2}"
   PYTHON_BIN="$(absolute_executable_path "$PYTHON_BIN")"
   MODEL="$(readlink -f "$MODEL")"
   COMPILE_CACHE="$(readlink -f "$COMPILE_CACHE")"
@@ -33,6 +34,7 @@ resolve_inputs() {
   test -d "$COMPILE_CACHE"
   test -f "$PRIOR_RUN_ROOT/clean.json"
   test -f "$REFERENCE"
+  [[ "$DECODE_WARMUP_PASSES" =~ ^[0-9]+$ ]]
   ARTIFACT_DIR="${ARTIFACT_DIR:-$(jq -r '.config.artifact_dir' "$PRIOR_RUN_ROOT/clean.json")}"
   ARTIFACT_DIR="$(readlink -f "$ARTIFACT_DIR")"
   test -f "$ARTIFACT_DIR/summary.json"
@@ -57,7 +59,8 @@ worker_main() {
     --artifact-dir "$ARTIFACT_DIR" --model-path "$MODEL" --device npu:0 \
     --dtype float16 --batch-size 128 --self-cache-length 2048 \
     --cross-cache-length 1320 --max-length 2048 --limit-crops 256 \
-    --decode-warmup-passes 2 --decode-admission-prefetch-depth 0 \
+    --decode-warmup-passes "$DECODE_WARMUP_PASSES" \
+    --decode-admission-prefetch-depth 0 \
     --compile-cache-dir "$COMPILE_CACHE" --progress-every 16 \
     --reference-trace "$REFERENCE" \
     --completion-trace-jsonl "$run_root/completions.jsonl" \
@@ -98,6 +101,7 @@ launch_main() {
   nohup env PYTHONUNBUFFERED=1 PYTHON_BIN="$PYTHON_BIN" MODEL="$MODEL" \
     COMPILE_CACHE="$COMPILE_CACHE" PRIOR_RUN_ROOT="$PRIOR_RUN_ROOT" \
     ARTIFACT_DIR="$ARTIFACT_DIR" CPUSET="$CPUSET" \
+    DECODE_WARMUP_PASSES="$DECODE_WARMUP_PASSES" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE" \
     bash "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
