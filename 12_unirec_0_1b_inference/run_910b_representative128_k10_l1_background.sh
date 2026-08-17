@@ -64,6 +64,10 @@ resolve_inputs() {
 run_lane() {
   local lane="$1" input="$RUN_ROOT/representative_128_v1_images"
   local output="$RUN_ROOT/$lane/output"
+  local graph_diagnostic=0
+  if [[ "$lane" == trace ]]; then
+    graph_diagnostic=1
+  fi
   mkdir -p "$output"
   local command=(
     "$PYTHON_BIN" "$RUNNER"
@@ -108,8 +112,38 @@ run_lane() {
   printf '%q ' "${command[@]}" >"$RUN_ROOT/$lane/command.sh"
   printf '\n' >>"$RUN_ROOT/$lane/command.sh"
   printf 'UNIREC_K10_LANE_BEGIN lane=%s\n' "$lane"
-  "${command[@]}" 2>&1 | tee "$RUN_ROOT/$lane/run.log"
+  UNIREC_VISION_DIAGNOSTIC_GRAPH_LOG="$graph_diagnostic" \
+    "${command[@]}" 2>&1 | tee "$RUN_ROOT/$lane/run.log"
   printf 'UNIREC_K10_LANE_END lane=%s\n' "$lane"
+}
+
+report_clean_only() {
+  CLEAN_SUMMARY="$RUN_ROOT/clean/output/run_summary.json" \
+  CHIP_LABEL="$CHIP_LABEL" \
+    "$PYTHON_BIN" - <<'PY' | tee "$RUN_ROOT/report.log"
+import json
+import os
+from pathlib import Path
+
+run = json.loads(Path(os.environ["CLEAN_SUMMARY"]).read_text())
+assert run["status"] == "ok"
+assert run["execution"] == "production_two_phase_prefill_only"
+assert (run["page_count"], run["workers"]) == (128, 1)
+assert run["recognition_preprocess_threads"] == 1
+assert run["layout_batch_size"] == 1
+assert run["vision_page_lookahead"] == 1
+assert run["vision_bucket_preset"] == "310p_k10_l1"
+assert run["prefill_trace_enabled"] is False
+prefix = "UNIREC_" + os.environ["CHIP_LABEL"].upper().replace("-", "_") + "_K10_L1"
+print(
+    f"{prefix}_CLEAN_ONLY_RESULT PASS "
+    f"clean_wall_s={run['timing_s']['prefill_phase']:.6f} "
+    f"clean_pages_s={run['throughput']['prefill_pages_per_s']:.6f} "
+    f"clean_layout_s={run['prefill_phase_summary']['stage_s']['worker_detector_call_sum_s']:.6f} "
+    f"crops={run['retained_bank']['crop_count']} "
+    f"real_source_tokens={run['retained_bank']['real_source_tokens']}"
+)
+PY
 }
 
 report_result() {
@@ -211,10 +245,21 @@ worker_main() {
     --manifest "$MANIFEST" \
     --images-dir "$IMAGES_DIR" \
     --output-dir "$RUN_ROOT/representative_128_v1_images"
-  export UNIREC_VISION_DIAGNOSTIC_GRAPH_LOG=1
-  run_lane trace
-  run_lane clean
-  report_result
+  case "${UNIREC_K10_RUN_MODE:-both}" in
+    both)
+      run_lane trace
+      run_lane clean
+      report_result
+      ;;
+    clean_only)
+      run_lane clean
+      report_clean_only
+      ;;
+    *)
+      printf 'UNIREC_K10_INVALID_RUN_MODE=%s\n' "$UNIREC_K10_RUN_MODE" >&2
+      return 1
+      ;;
+  esac
   npu-smi info >"$RUN_ROOT/npu_after.log" 2>&1 || true
 }
 
@@ -256,6 +301,7 @@ launch_main() {
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     UNIREC_K10_CHIP_LABEL="$CHIP_LABEL" \
     UNIREC_K10_ALLOWED_DEVICES="$ALLOWED_DEVICES" \
+    UNIREC_K10_RUN_MODE="${UNIREC_K10_RUN_MODE:-both}" \
     bash "$0" --worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 < /dev/null &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"
   printf 'RUN_ROOT=%s\nRUN_LOG=%s\nPID=%s\nTAIL_COMMAND=tail -f %q\n' \

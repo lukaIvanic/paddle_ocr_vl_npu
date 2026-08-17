@@ -80,8 +80,14 @@ Do not search for ONNX exports; this experiment does not use one.
 cd "$REPO"
 export UNIREC_K10_CHIP_LABEL=310P
 export UNIREC_K10_ALLOWED_DEVICES=0,1,2,3
+export UNIREC_K10_RUN_MODE=both
 bash 12_unirec_0_1b_inference/run_910b_representative128_k10_l1_background.sh
 ```
+
+The runner enables verbose graph diagnostics only for the trace lane. It
+explicitly disables them for the clean lane. Confirm that the clean lane does
+not print per-workload `bucket_call_begin` records; otherwise its throughput is
+not clean.
 
 The launcher prints an absolute `RUN_ROOT`, `RUN_LOG`, PID, and `tail -f`
 command. Report those immediately so Luka can follow the log. Do not wait for
