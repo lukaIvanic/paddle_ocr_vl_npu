@@ -36,6 +36,7 @@ Qwen3-0.6B instead defaults to the faster fixed-shape KV path validated below:
 
 - static TorchAir decode with a boolean KV mask;
 - packed QKV, NPU RoPE lookup, and fused residual-add plus RMSNorm;
+- Q/K normalization through add-RMSNorm with graph-local zero residuals;
 - post-scatter K/V prefetch;
 - complete next-layer weight prefetch one layer ahead;
 - unchanged ND Linear weights.
@@ -258,15 +259,17 @@ execution also had exact tokens and zero KV-cache difference.
 | Static mask plus NPU RMSNorm | 512 | 256.59 |
 | Packed QKV and fused add-RMS | 512 | 378.11 |
 | Earlier stage-aware prefetch | 512 | 401.52 |
-| **Paddle one-layer-ahead schedule (default)** | **512** | **421.09** |
-| **Paddle one-layer-ahead schedule (default)** | **2048** | **419.32** |
+| Paddle one-layer-ahead schedule | 512 | 421.09 |
+| Paddle one-layer-ahead schedule | 2048 | 419.32 |
 | Batched Q/K RMSNorm stock-op probe | 512 | 421.18 |
+| **Q/K through add-RMSNorm (default)** | **512** | **443.24** |
+| **Q/K through add-RMSNorm (default)** | **2048** | **440.46** |
 | Paddle K/V-then-MLP schedule | 512 | 417.87 |
 | One-layer-ahead plus FRACTAL_NZ | 512 | 403.30 |
 | Two-layer-ahead prefetch | 512 | 388.27 |
 | One-layer-ahead plus packed MLP | 512 | 409.81 |
 
-The selected KV4096 result is 61% faster than the previous saved 260.24 tok/s
+The selected KV4096 result is 69-70% faster than the previous saved 260.24 tok/s
 KV64 maximum. FRACTAL_NZ and packed MLP remain explicit ablations because both
 regressed Qwen3-0.6B.
 
@@ -276,6 +279,14 @@ combined learned-gamma multiply and second split added about 93 microseconds,
 leaving end-to-end throughput unchanged. It remains an explicit preset rather
 than the default; a useful next step requires fusing normalization, learned
 gamma, split, and preferably RoPE into one Qwen-specific kernel.
+
+The successful add-RMSNorm lane retains the separate learned Q and K gamma
+weights and supplies a zero residual to `npu_add_rms_norm`. A persistent zero
+buffer is invalid under TorchAir because the compiled InplaceAddRmsNorm lowering
+aliases the summed output onto that residual; it caused 60/64 token mismatches
+after the first step. Graph-local `zeros_like` inputs preserve semantics. They
+cost about 59 microseconds per token, but the complete normalization path still
+saves about 109 microseconds per token and improves throughput by 5.3%.
 
 Run the selected contract explicitly:
 
@@ -287,7 +298,7 @@ $PYTHON ./benchmark_local_qwen3_0.py \
   --compile-decode \
   --no-compile-decode-dynamic \
   --decode-increfa-mode mask \
-  --decode-optimization combined_apply_complete_layer_prefetch1_rope_lut \
+  --decode-optimization combined_apply_complete_layer_prefetch1_qk_add_rms_norm_rope_lut \
   --decode-linear-weight-format unchanged \
   --prefill-tokens 2048 \
   --decode-steps 64 \
@@ -298,12 +309,11 @@ $PYTHON ./benchmark_local_qwen3_0.py \
   --decode-repeats 3
 ```
 
-The remaining profile is 41.2% MatMul, 27.5% IncreFlashAttention, and 14.5%
-RMSNorm by summed device-kernel time. Qwen3's per-head Q/K RMSNorm accounts for
-56 extra normalization calls per token; the PaddleOCR-VL text decoder does not
-have those Q/K norms. The Paddle ~899 tok/s KV4096 lab result also uses 18
-decoder layers, two KV heads, and a 16,384-row decode head, versus Qwen3-0.6B's
-28 layers, eight KV heads, and 151,936-row head.
+The remaining profile is 42.7% MatMul, 28.6% IncreFlashAttention, 11.8%
+InplaceAddRmsNorm, and 2.6% graph-local zero creation by summed device-kernel
+time. The Paddle ~899 tok/s KV4096 lab result also uses 18 decoder layers, two
+KV heads, and a 16,384-row decode head, versus Qwen3-0.6B's 28 layers, eight KV
+heads, and 151,936-row head.
 
 ### Qwen3-8B
 

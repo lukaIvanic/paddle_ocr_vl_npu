@@ -58,7 +58,7 @@ class LocalQwen30Runner:
             )
         if decode_optimization == "auto":
             decode_optimization = (
-                "combined_apply_complete_layer_prefetch1_rope_lut"
+                "combined_apply_complete_layer_prefetch1_qk_add_rms_norm_rope_lut"
                 if is_qwen3_0_6b
                 else "combined_apply"
             )
