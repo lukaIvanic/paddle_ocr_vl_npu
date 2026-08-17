@@ -26,6 +26,11 @@ The eight-thread setting applies only to recognition crop preprocessing. The
 launcher pins OpenMP, MKL, OpenBLAS, and NumExpr to one thread each. Do not
 change those pins and do not let `nproc` select a thread count.
 
+Do not use `nproc` to decide whether eight CPUs are available. GNU `nproc`
+honors `OMP_NUM_THREADS=1` and can therefore print `1` even when the process has
+many CPUs available. The runner uses `len(os.sched_getaffinity(0))` as the
+authoritative check and refuses W1/T8 if fewer than eight CPUs are allowed.
+
 ## Work-server rules
 
 - Pull only. Do not edit tracked files, create a branch, commit, or push.
@@ -68,6 +73,8 @@ test -f "$OPENOCR_ROOT/tools/infer_doc_onnx.py"
 test -d "$IMAGES_DIR"
 test -d "$COMPILE_CACHE"
 test -d "$LAYOUT_CACHE_ROOT"
+"$PYTHON_BIN" -c \
+  'import os; a=sorted(os.sched_getaffinity(0)); print("CPU_AFFINITY", len(a), a)'
 ```
 
 ## Launch in background
@@ -88,7 +95,8 @@ exactly one `compiled_module` and one OM before and after the process restart.
 
 Wait for `exit_code.txt`; success requires zero. Paste back:
 
-1. commit, physical NPU, CANN, torch, and torch-npu versions;
+1. commit, physical NPU, CANN, torch, torch-npu, and the complete
+   `CPU_AFFINITY` line;
 2. complete `UNIREC_310P_K10_L1_RESULT` line; it must say `threads=8`;
 3. complete `UNIREC_310P_K10_L1_STAGES`, `BUCKET_CALLS`, `LAYOUT`,
    `FALLBACK_WARMUP`, and `CACHE` lines;

@@ -56,6 +56,15 @@ resolve_inputs() {
   export PYTHON_BIN MODEL LAYOUT_MODEL OPENOCR_ROOT IMAGES_DIR
   export COMPILE_CACHE LAYOUT_CACHE_ROOT
   test -x "$PYTHON_BIN"
+  CPU_AFFINITY_COUNT="$(
+    "$PYTHON_BIN" -c 'import os; print(len(os.sched_getaffinity(0)))'
+  )"
+  if (( CPU_AFFINITY_COUNT < RECOGNITION_THREADS )); then
+    printf 'UNIREC_K10_INSUFFICIENT_CPU_AFFINITY threads=%s affinity=%s\n' \
+      "$RECOGNITION_THREADS" "$CPU_AFFINITY_COUNT" >&2
+    exit 1
+  fi
+  export CPU_AFFINITY_COUNT
   test -f "$MODEL/model.pth"
   test -d "$LAYOUT_MODEL"
   test -f "$OPENOCR_ROOT/tools/infer_doc_onnx.py"
@@ -325,6 +334,8 @@ worker_main() {
   {
     printf 'commit=%s\nphysical_device=%s\npython=%s\n' \
       "$(git -C "$REPO" rev-parse HEAD)" "$ASCEND_RT_VISIBLE_DEVICES" "$PYTHON_BIN"
+    printf 'recognition_threads=%s\ncpu_affinity_count=%s\n' \
+      "$RECOGNITION_THREADS" "$CPU_AFFINITY_COUNT"
     printf 'model=%s\nlayout_model=%s\ncompile_cache=%s\nlayout_cache=%s\n' \
       "$MODEL" "$LAYOUT_MODEL" "$COMPILE_CACHE" "$LAYOUT_CACHE_ROOT"
     "$PYTHON_BIN" -c \
@@ -393,6 +404,7 @@ launch_main() {
     UNIREC_K10_ALLOWED_DEVICES="$ALLOWED_DEVICES" \
     UNIREC_K10_RUN_MODE="${UNIREC_K10_RUN_MODE:-both}" \
     UNIREC_K10_THREADS="$RECOGNITION_THREADS" \
+    CPU_AFFINITY_COUNT="$CPU_AFFINITY_COUNT" \
     bash "$0" --worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 < /dev/null &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"
   printf 'RUN_ROOT=%s\nRUN_LOG=%s\nPID=%s\nTAIL_COMMAND=tail -f %q\n' \
