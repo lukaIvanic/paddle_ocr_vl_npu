@@ -117,7 +117,7 @@ def load_pipeline_stage(
                 device=device,
             )
 
-            grouped_matmul = layer.mlp.expert_impl == "grouped_matmul"
+            grouped_matmul = layer.mlp.expert_impl.startswith("grouped_matmul")
             gate_up_shape = (
                 (
                     config.num_experts,

@@ -222,6 +222,56 @@ def selected_expert_grouped_matmul(
     return (source_order_output * routing_weights.unsqueeze(-1)).sum(dim=1)
 
 
+def selected_expert_grouped_matmul_b1(
+    hidden_states: torch.Tensor,
+    selected_experts: torch.Tensor,
+    routing_weights: torch.Tensor,
+    gate_up_proj: torch.Tensor,
+    down_proj: torch.Tensor,
+) -> torch.Tensor:
+    """B1-specialized GMM path without generic token permutation routing."""
+    require_torch_npu()
+    tokens, hidden_size = hidden_states.shape
+    if tokens != 1:
+        raise ValueError("grouped_matmul_b1 requires exactly one token")
+    top_k = selected_experts.shape[1]
+    intermediate_size = gate_up_proj.shape[2] // 2
+    sorted_experts, sort_order = torch.sort(selected_experts.reshape(-1))
+    sorted_weights = torch.index_select(
+        routing_weights.reshape(-1), 0, sort_order
+    )
+    expanded_hidden = hidden_states.expand(top_k, hidden_size).contiguous()
+    expert_axis = torch.arange(
+        gate_up_proj.shape[0], dtype=torch.int64, device=hidden_states.device
+    )
+    group_sizes = (
+        sorted_experts.to(dtype=torch.int64).view(top_k, 1)
+        == expert_axis.view(1, -1)
+    ).sum(dim=0, dtype=torch.int64)
+    group_list = torch.cumsum(group_sizes, dim=0)
+    gate_up = torch_npu.npu_grouped_matmul(
+        [expanded_hidden],
+        [gate_up_proj],
+        group_list=group_list,
+        split_item=3,
+        group_type=0,
+        group_list_type=0,
+    )[0]
+    gate, up = gate_up.split(intermediate_size, dim=-1)
+    intermediate = F.silu(gate) * up
+    expert_output = torch_npu.npu_grouped_matmul(
+        [intermediate],
+        [down_proj],
+        group_list=group_list,
+        split_item=3,
+        group_type=0,
+        group_list_type=0,
+    )[0]
+    return (expert_output * sorted_weights.unsqueeze(-1)).sum(
+        dim=0, keepdim=True
+    )
+
+
 class Qwen3MoeRMSNorm(nn.Module):
     def __init__(self, hidden_size: int, eps: float):
         super().__init__()
@@ -311,7 +361,11 @@ class Qwen3MoeAttention(nn.Module):
 class Qwen3SparseMoeBlock(nn.Module):
     def __init__(self, config: Qwen3MoeConfig, *, expert_impl: str):
         super().__init__()
-        if expert_impl not in ("selected_bmm", "grouped_matmul"):
+        if expert_impl not in (
+            "selected_bmm",
+            "grouped_matmul",
+            "grouped_matmul_b1",
+        ):
             raise ValueError(f"Unsupported expert implementation: {expert_impl}")
         self.expert_impl = expert_impl
         self.hidden_size = config.hidden_size
@@ -367,11 +421,11 @@ class Qwen3SparseMoeBlock(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         _router_logits, routing_weights, selected_experts = self.route(hidden_states)
         flat_hidden = hidden_states.reshape(-1, self.hidden_size)
-        expert_fn = (
-            selected_expert_bmm
-            if self.expert_impl == "selected_bmm"
-            else selected_expert_grouped_matmul
-        )
+        expert_fn = {
+            "selected_bmm": selected_expert_bmm,
+            "grouped_matmul": selected_expert_grouped_matmul,
+            "grouped_matmul_b1": selected_expert_grouped_matmul_b1,
+        }[self.expert_impl]
         output = expert_fn(
             flat_hidden,
             selected_experts,

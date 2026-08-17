@@ -29,7 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layers", type=int, default=24)
     parser.add_argument(
         "--expert-impl",
-        choices=("selected_bmm", "grouped_matmul"),
+        choices=("selected_bmm", "grouped_matmul", "grouped_matmul_b1"),
         default="selected_bmm",
     )
     parser.add_argument(
