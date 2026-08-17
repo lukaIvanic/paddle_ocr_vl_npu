@@ -77,7 +77,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--decode-linear-weight-format",
-        choices=("unchanged", "fractal_nz"),
+        choices=("unchanged", "lm_head_fractal_nz", "fractal_nz"),
         default="unchanged",
     )
     parser.add_argument("--prefill-warmups", type=int, default=1)
@@ -1044,7 +1044,7 @@ def main() -> None:
     device = torch.device(args.device)
     if device.type == "npu":
         require_torch_npu()
-        if args.decode_linear_weight_format == "fractal_nz":
+        if args.decode_linear_weight_format != "unchanged":
             torch.npu.config.allow_internal_format = True
         torch.npu.set_device(device)
         torch.npu.set_compile_mode(jit_compile=False)

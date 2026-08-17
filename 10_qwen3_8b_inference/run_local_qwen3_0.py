@@ -17,6 +17,7 @@ from local_modeling_qwen3_0 import (
     DECODE_OPTIMIZATION_PRESETS,
     LocalQwen3Config,
     LocalQwen3ForCausalLM,
+    cast_decode_lm_head_to_nz,
     cast_decode_linear_weights_to_nz,
     resolve_decode_optimization,
 )
@@ -49,10 +50,15 @@ class LocalQwen30Runner:
                 f"Unsupported decode_optimization={decode_optimization!r}; "
                 f"expected {tuple(DECODE_OPTIMIZATION_PRESETS)}"
             )
-        if decode_linear_weight_format not in {"unchanged", "fractal_nz"}:
+        if decode_linear_weight_format not in {
+            "unchanged",
+            "lm_head_fractal_nz",
+            "fractal_nz",
+        }:
             raise ValueError(
-                "decode_linear_weight_format must be 'unchanged' or "
-                f"'fractal_nz', got {decode_linear_weight_format!r}"
+                "decode_linear_weight_format must be 'unchanged', "
+                f"'lm_head_fractal_nz', or 'fractal_nz', got "
+                f"{decode_linear_weight_format!r}"
             )
         self.decode_optimization = decode_optimization
         self.decode_linear_weight_format = decode_linear_weight_format
@@ -69,7 +75,13 @@ class LocalQwen30Runner:
             "requested": self.decode_linear_weight_format,
             "effective": "unchanged",
         }
-        if self.decode_linear_weight_format == "fractal_nz":
+        if self.decode_linear_weight_format == "lm_head_fractal_nz":
+            self.decode_linear_weight_metadata = {
+                "requested": self.decode_linear_weight_format,
+                "effective": "lm_head_fractal_nz",
+                **cast_decode_lm_head_to_nz(self.model),
+            }
+        elif self.decode_linear_weight_format == "fractal_nz":
             self.decode_linear_weight_metadata = {
                 "requested": self.decode_linear_weight_format,
                 "effective": "fractal_nz",
@@ -321,7 +333,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--decode-linear-weight-format",
-        choices=("unchanged", "fractal_nz"),
+        choices=("unchanged", "lm_head_fractal_nz", "fractal_nz"),
         default="unchanged",
     )
     return parser.parse_args()
@@ -331,7 +343,7 @@ def main() -> None:
     dtype = {"float16": torch.float16, "float32": torch.float32}[args.dtype]
     device = torch.device(args.device)
     if device.type == "npu":
-        if args.decode_linear_weight_format == "fractal_nz":
+        if args.decode_linear_weight_format != "unchanged":
             torch.npu.config.allow_internal_format = True
         torch.npu.set_device(device)
         torch.npu.set_compile_mode(jit_compile=False)

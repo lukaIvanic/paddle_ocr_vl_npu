@@ -28,6 +28,8 @@ class DecodeOptimizationConfig:
     npu_rotary: bool = False
     rope_lookup: bool = False
     weight_prefetch: bool = False
+    packed_mlp: bool = False
+    npu_swiglu: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -59,6 +61,23 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         npu_rotary=True,
         rope_lookup=True,
         weight_prefetch=True,
+    ),
+    "combined_apply_packed_mlp": DecodeOptimizationConfig(
+        name="combined_apply_packed_mlp",
+        npu_rms_norm=True,
+        fused_add_rms_norm=True,
+        packed_qkv=True,
+        npu_rotary=True,
+        packed_mlp=True,
+    ),
+    "combined_apply_packed_mlp_swiglu": DecodeOptimizationConfig(
+        name="combined_apply_packed_mlp_swiglu",
+        npu_rms_norm=True,
+        fused_add_rms_norm=True,
+        packed_qkv=True,
+        npu_rotary=True,
+        packed_mlp=True,
+        npu_swiglu=True,
     ),
 }
 
@@ -305,7 +324,16 @@ class LocalQwen3MLP(nn.Module):
         hidden_states: torch.Tensor,
         optimization: DecodeOptimizationConfig,
     ) -> torch.Tensor:
-        output = self(hidden_states)
+        if optimization.packed_mlp:
+            gate_up = linear_tokenwise(self.decode_gate_up_proj, hidden_states)
+            if optimization.npu_swiglu and gate_up.device.type == "npu":
+                activated = torch_npu.npu_swiglu(gate_up, dim=-1)
+            else:
+                gate, up = gate_up.chunk(2, dim=-1)
+                activated = F.silu(gate) * up
+            output = linear_tokenwise(self.down_proj, activated)
+        else:
+            output = self(hidden_states)
         if optimization.weight_prefetch and output.device.type == "npu":
             for weight in self._decode_prefetch_next_attention:
                 torch_npu.npu_prefetch(
@@ -646,6 +674,7 @@ class LocalQwen3ForCausalLM(nn.Module):
     def prepare_decode_optimizations(self, *, cache_length: int) -> dict[str, object]:
         optimization = self.decode_optimization
         packed_qkv_count = 0
+        packed_mlp_count = 0
         if optimization.packed_qkv:
             for layer in self.layers:
                 attention = layer.self_attn
@@ -658,6 +687,14 @@ class LocalQwen3ForCausalLM(nn.Module):
                         )
                     )
                     packed_qkv_count += 1
+        if optimization.packed_mlp:
+            for layer in self.layers:
+                mlp = layer.mlp
+                if not hasattr(mlp, "decode_gate_up_proj"):
+                    mlp.decode_gate_up_proj = _packed_linear(
+                        (mlp.gate_proj, mlp.up_proj)
+                    )
+                    packed_mlp_count += 1
         if optimization.rope_lookup:
             positions = torch.arange(
                 int(cache_length),
@@ -673,8 +710,14 @@ class LocalQwen3ForCausalLM(nn.Module):
         if optimization.weight_prefetch:
             for index, layer in enumerate(self.layers):
                 layer.self_attn._decode_prefetch_current_mlp = (
-                    layer.mlp.gate_proj.weight,
-                    layer.mlp.up_proj.weight,
+                    *(
+                        (layer.mlp.decode_gate_up_proj.weight,)
+                        if optimization.packed_mlp
+                        else (
+                            layer.mlp.gate_proj.weight,
+                            layer.mlp.up_proj.weight,
+                        )
+                    ),
                     layer.mlp.down_proj.weight,
                 )
                 if index + 1 < len(self.layers):
@@ -697,6 +740,8 @@ class LocalQwen3ForCausalLM(nn.Module):
         return {
             "name": optimization.name,
             "packed_qkv_count": packed_qkv_count,
+            "packed_mlp_count": packed_mlp_count,
+            "npu_swiglu": optimization.npu_swiglu,
             "rope_lookup": optimization.rope_lookup,
             "rope_lookup_shape": (
                 None
@@ -827,7 +872,8 @@ class LocalQwen3ForCausalLM(nn.Module):
                 hidden_states,
                 optimization,
             )
-        logits = linear_tokenwise(self.lm_head, hidden_states)
+        output_head = getattr(self, "decode_lm_head", self.lm_head)
+        logits = linear_tokenwise(output_head, hidden_states)
         return logits, tuple(next_key_caches), tuple(next_value_caches)
 
     def decode(
@@ -850,42 +896,29 @@ class LocalQwen3ForCausalLM(nn.Module):
         return logits[:, -1, :].argmax(dim=-1, keepdim=True)
 
 
-def cast_decode_linear_weights_to_nz(
+def prepare_decode_lm_head_copy(
     model: LocalQwen3ForCausalLM,
+) -> nn.Linear:
+    """Create an independent decode head when the checkpoint ties embeddings."""
+    if hasattr(model, "decode_lm_head"):
+        return model.decode_lm_head
+    decode_lm_head = nn.Linear(
+        model.config.hidden_size,
+        model.config.vocab_size,
+        bias=False,
+        device=model.lm_head.weight.device,
+        dtype=model.lm_head.weight.dtype,
+    )
+    with torch.no_grad():
+        decode_lm_head.weight.copy_(model.lm_head.weight)
+    decode_lm_head.requires_grad_(False)
+    model.decode_lm_head = decode_lm_head
+    return decode_lm_head
+
+
+def _cast_linear_modules_to_nz(
+    modules: list[tuple[str, nn.Linear]],
 ) -> dict[str, object]:
-    """Convert only the linears consumed by one-token decode to FRACTAL_NZ."""
-    if model.config.tie_word_embeddings:
-        raise ValueError(
-            "FRACTAL_NZ decode currently requires an untied Qwen3 LM head"
-        )
-    modules: list[tuple[str, nn.Linear]] = []
-    optimization = model.decode_optimization
-    for layer_index, layer in enumerate(model.layers):
-        attention = layer.self_attn
-        if optimization.packed_qkv:
-            modules.append(
-                (
-                    f"layers.{layer_index}.self_attn.decode_qkv_proj",
-                    attention.decode_qkv_proj,
-                )
-            )
-        else:
-            modules.extend(
-                (
-                    (f"layers.{layer_index}.self_attn.q_proj", attention.q_proj),
-                    (f"layers.{layer_index}.self_attn.k_proj", attention.k_proj),
-                    (f"layers.{layer_index}.self_attn.v_proj", attention.v_proj),
-                )
-            )
-        modules.extend(
-            (
-                (f"layers.{layer_index}.self_attn.o_proj", attention.o_proj),
-                (f"layers.{layer_index}.mlp.gate_proj", layer.mlp.gate_proj),
-                (f"layers.{layer_index}.mlp.up_proj", layer.mlp.up_proj),
-                (f"layers.{layer_index}.mlp.down_proj", layer.mlp.down_proj),
-            )
-        )
-    modules.append(("lm_head", model.lm_head))
     before: dict[str, int] = {}
     after: dict[str, int] = {}
     converted: list[str] = []
@@ -922,3 +955,68 @@ def cast_decode_linear_weights_to_nz(
         },
         "converted_modules_sample": converted[:16],
     }
+
+
+def cast_decode_lm_head_to_nz(
+    model: LocalQwen3ForCausalLM,
+) -> dict[str, object]:
+    """Convert only an independent decode LM head to FRACTAL_NZ."""
+    decode_lm_head = prepare_decode_lm_head_copy(model)
+    return _cast_linear_modules_to_nz(
+        [("decode_lm_head", decode_lm_head)]
+    )
+
+
+def cast_decode_linear_weights_to_nz(
+    model: LocalQwen3ForCausalLM,
+) -> dict[str, object]:
+    """Convert only the linears consumed by one-token decode to FRACTAL_NZ."""
+    modules: list[tuple[str, nn.Linear]] = []
+    optimization = model.decode_optimization
+    for layer_index, layer in enumerate(model.layers):
+        attention = layer.self_attn
+        if optimization.packed_qkv:
+            modules.append(
+                (
+                    f"layers.{layer_index}.self_attn.decode_qkv_proj",
+                    attention.decode_qkv_proj,
+                )
+            )
+        else:
+            modules.extend(
+                (
+                    (f"layers.{layer_index}.self_attn.q_proj", attention.q_proj),
+                    (f"layers.{layer_index}.self_attn.k_proj", attention.k_proj),
+                    (f"layers.{layer_index}.self_attn.v_proj", attention.v_proj),
+                )
+            )
+        modules.append(
+            (f"layers.{layer_index}.self_attn.o_proj", attention.o_proj)
+        )
+        if optimization.packed_mlp:
+            modules.append(
+                (
+                    f"layers.{layer_index}.mlp.decode_gate_up_proj",
+                    layer.mlp.decode_gate_up_proj,
+                )
+            )
+        else:
+            modules.extend(
+                (
+                    (f"layers.{layer_index}.mlp.gate_proj", layer.mlp.gate_proj),
+                    (f"layers.{layer_index}.mlp.up_proj", layer.mlp.up_proj),
+                )
+            )
+        modules.append(
+            (f"layers.{layer_index}.mlp.down_proj", layer.mlp.down_proj)
+        )
+    output_head = (
+        prepare_decode_lm_head_copy(model)
+        if model.config.tie_word_embeddings
+        else model.lm_head
+    )
+    output_head_name = (
+        "decode_lm_head" if output_head is not model.lm_head else "lm_head"
+    )
+    modules.append((output_head_name, output_head))
+    return _cast_linear_modules_to_nz(modules)
