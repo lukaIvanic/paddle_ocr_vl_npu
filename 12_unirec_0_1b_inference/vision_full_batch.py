@@ -1460,10 +1460,15 @@ class BucketedFullVisionRuntime:
             spec.key for spec in self.specs if spec.accepts(width, height)
         ]
         if accepting:
-            raise ValueError(
-                "eager fallback warmup shape is covered by compiled buckets: "
-                f"{width}x{height} -> {accepting}"
-            )
+            report = {
+                "execution": "skipped_compiled_bucket_coverage",
+                "input_shape": [1, 3, int(height), int(width)],
+                "processed_image_size": [int(width), int(height)],
+                "accepting_buckets": accepting,
+                "pass_wall_s": [],
+            }
+            self._diagnostic_log("warmup_fallback_skipped", **report)
+            return report
         device = torch.device(self.runner.device)
         input_shape = [1, 3, int(height), int(width)]
         self._diagnostic_log(
