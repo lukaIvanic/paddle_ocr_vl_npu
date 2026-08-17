@@ -351,6 +351,8 @@ class Qwen3MoeAttention(nn.Module):
         self.o_proj = nn.Linear(self.q_size, config.hidden_size, bias=False)
         self.q_norm = Qwen3MoeRMSNorm(config.head_dim, config.rms_norm_eps)
         self.k_norm = Qwen3MoeRMSNorm(config.head_dim, config.rms_norm_eps)
+        self.register_buffer("q_norm_zero", None, persistent=False)
+        self.register_buffer("k_norm_zero", None, persistent=False)
 
     def forward_decode(
         self,
@@ -377,12 +379,20 @@ class Qwen3MoeAttention(nn.Module):
         value_states = value_states.view(
             batch_size, sequence_length, self.num_key_value_heads, self.head_dim
         )
-        query_states = npu_rms_norm(
-            query_states, self.q_norm.weight, self.q_norm.variance_epsilon
-        )
-        key_states = npu_rms_norm(
-            key_states, self.k_norm.weight, self.k_norm.variance_epsilon
-        )
+        if self.q_norm_zero is None or self.k_norm_zero is None:
+            raise RuntimeError("prepare_decode() must initialize Q/K norm zeros")
+        query_states = torch_npu.npu_add_rms_norm(
+            query_states,
+            self.q_norm_zero,
+            self.q_norm.weight,
+            self.q_norm.variance_epsilon,
+        )[0]
+        key_states = torch_npu.npu_add_rms_norm(
+            key_states,
+            self.k_norm_zero,
+            self.k_norm.weight,
+            self.k_norm.variance_epsilon,
+        )[0]
         query_states, key_states = torch_npu.npu_apply_rotary_pos_emb(
             query_states,
             key_states,
@@ -688,6 +698,23 @@ class Qwen3MoePipelineStage(nn.Module):
         self.decode_factor_lut = torch.stack((emb.cos(), emb.sin()), dim=0).to(
             dtype=parameter.dtype
         )
+        for layer in self.layers:
+            layer.self_attn.q_norm_zero = torch.zeros(
+                1,
+                1,
+                self.config.num_attention_heads,
+                self.config.head_dim,
+                dtype=parameter.dtype,
+                device=parameter.device,
+            )
+            layer.self_attn.k_norm_zero = torch.zeros(
+                1,
+                1,
+                self.config.num_key_value_heads,
+                self.config.head_dim,
+                dtype=parameter.dtype,
+                device=parameter.device,
+            )
 
     def make_cache(self, *, cache_length: int) -> Qwen3MoeStageCache:
         parameter = next(self.parameters())
