@@ -1,0 +1,297 @@
+{
+  "chip": "Ascend 910B2",
+  "dtype": "bfloat16",
+  "layers": 24,
+  "load_sec": 19.37968635559082,
+  "model": "Qwen/Qwen3-30B-A3B",
+  "router_debug": {
+    "expected_token_id": 12095,
+    "indices_cross_rank_exact": true,
+    "indices_match_capture": false,
+    "layer_differences": [
+      {
+        "actual_only": [],
+        "expected_only": [],
+        "global_layer": 32,
+        "membership_overlap": 8,
+        "ordered_actual": [
+          38,
+          32,
+          56,
+          103,
+          127,
+          100,
+          64,
+          72
+        ],
+        "ordered_expected": [
+          38,
+          32,
+          103,
+          56,
+          127,
+          100,
+          64,
+          72
+        ],
+        "same_membership": true
+      },
+      {
+        "actual_only": [],
+        "expected_only": [],
+        "global_layer": 34,
+        "membership_overlap": 8,
+        "ordered_actual": [
+          98,
+          69,
+          14,
+          51,
+          80,
+          94,
+          47,
+          26
+        ],
+        "ordered_expected": [
+          98,
+          14,
+          69,
+          51,
+          80,
+          94,
+          47,
+          26
+        ],
+        "same_membership": true
+      },
+      {
+        "actual_only": [],
+        "expected_only": [],
+        "global_layer": 36,
+        "membership_overlap": 8,
+        "ordered_actual": [
+          53,
+          73,
+          9,
+          56,
+          2,
+          46,
+          65,
+          34
+        ],
+        "ordered_expected": [
+          53,
+          73,
+          9,
+          56,
+          2,
+          46,
+          34,
+          65
+        ],
+        "same_membership": true
+      },
+      {
+        "actual_only": [
+          89
+        ],
+        "expected_only": [
+          110
+        ],
+        "global_layer": 38,
+        "membership_overlap": 7,
+        "ordered_actual": [
+          57,
+          38,
+          79,
+          80,
+          53,
+          21,
+          3,
+          89
+        ],
+        "ordered_expected": [
+          57,
+          38,
+          79,
+          80,
+          53,
+          21,
+          3,
+          110
+        ],
+        "same_membership": false
+      },
+      {
+        "actual_only": [
+          93
+        ],
+        "expected_only": [
+          106
+        ],
+        "global_layer": 39,
+        "membership_overlap": 7,
+        "ordered_actual": [
+          59,
+          40,
+          61,
+          89,
+          60,
+          6,
+          31,
+          93
+        ],
+        "ordered_expected": [
+          59,
+          40,
+          89,
+          61,
+          60,
+          6,
+          31,
+          106
+        ],
+        "same_membership": false
+      },
+      {
+        "actual_only": [],
+        "expected_only": [],
+        "global_layer": 42,
+        "membership_overlap": 8,
+        "ordered_actual": [
+          115,
+          125,
+          73,
+          37,
+          24,
+          32,
+          59,
+          3
+        ],
+        "ordered_expected": [
+          115,
+          73,
+          37,
+          125,
+          24,
+          32,
+          3,
+          59
+        ],
+        "same_membership": true
+      },
+      {
+        "actual_only": [],
+        "expected_only": [],
+        "global_layer": 43,
+        "membership_overlap": 8,
+        "ordered_actual": [
+          5,
+          68,
+          8,
+          36,
+          46,
+          4,
+          81,
+          26
+        ],
+        "ordered_expected": [
+          5,
+          68,
+          8,
+          36,
+          81,
+          4,
+          26,
+          46
+        ],
+        "same_membership": true
+      },
+      {
+        "actual_only": [],
+        "expected_only": [],
+        "global_layer": 46,
+        "membership_overlap": 8,
+        "ordered_actual": [
+          124,
+          117,
+          55,
+          82,
+          127,
+          67,
+          49,
+          101
+        ],
+        "ordered_expected": [
+          124,
+          117,
+          55,
+          82,
+          127,
+          67,
+          101,
+          49
+        ],
+        "same_membership": true
+      },
+      {
+        "actual_only": [],
+        "expected_only": [],
+        "global_layer": 47,
+        "membership_overlap": 8,
+        "ordered_actual": [
+          86,
+          34,
+          90,
+          117,
+          32,
+          27,
+          58,
+          57
+        ],
+        "ordered_expected": [
+          34,
+          86,
+          90,
+          117,
+          32,
+          27,
+          58,
+          57
+        ],
+        "same_membership": true
+      }
+    ],
+    "logit_max_abs": 0.46875,
+    "logit_mean_abs": 0.0784577876329422,
+    "membership_changed_global_layers": [
+      38,
+      39
+    ],
+    "mismatched_global_layers": [
+      32,
+      34,
+      36,
+      38,
+      39,
+      42,
+      43,
+      46,
+      47
+    ],
+    "order_only_global_layers": [
+      32,
+      34,
+      36,
+      42,
+      43,
+      46,
+      47
+    ],
+    "ordered_slot_mismatch_count": 22,
+    "token_id": 12095,
+    "weights_cross_rank_exact": true,
+    "weights_vs_capture_max_abs": 0.0078125,
+    "weights_vs_capture_mean_abs": 0.001239776611328125
+  },
+  "tensor_parallel_size": 2
+}

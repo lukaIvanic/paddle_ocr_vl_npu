@@ -1,0 +1,150 @@
+{
+  "batch_size": 1,
+  "benchmark": {
+    "decode_steps": 200,
+    "elapsed_sec": 2.6017875191755593,
+    "mean_tpot_ms": 13.008937595877796,
+    "tok_s": 76.87022807434134,
+    "warmup_steps": 2
+  },
+  "cache_length": 4096,
+  "chip": "Ascend 910B2",
+  "dtype": "bfloat16",
+  "model": "Qwen/Qwen3-30B-A3B",
+  "no_recompilations_after_prompt": true,
+  "parity": {
+    "expected_token_ids": [
+      12095,
+      13,
+      576,
+      6722,
+      315,
+      279,
+      3639,
+      15072
+    ],
+    "generated_token_ids": [
+      12095,
+      13,
+      576,
+      6722,
+      315,
+      279,
+      3639,
+      15072
+    ],
+    "passed": true
+  },
+  "pipeline_parallel_size": 2,
+  "rank0": {
+    "compile_contract": {
+      "cache_dir": "/tmp/pp2_k4096_cache_e77df1e/distributed_stage0_l24_b1_kv4096_bf16_src019a9ad80ff9",
+      "cache_was_warm": false,
+      "dynamic": false,
+      "dynamo_after_prompt": {
+        "calls_captured": 1983,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "dynamo_final": {
+        "calls_captured": 1983,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "first_call_sec": 95.52141340402886,
+      "fullgraph": true,
+      "ge_cache": true,
+      "no_recompilations_after_prompt": true,
+      "unique_graph_delta_after_prompt": 0,
+      "wrapper_sec": 0.0006974022835493088
+    },
+    "device": "npu:0",
+    "memory": {
+      "allocated_gib": 28.69615936279297,
+      "device": "npu:0",
+      "free_gib": 30.178802490234375,
+      "reserved_gib": 29.9609375,
+      "total_gib": 60.95703125
+    },
+    "rank": 0,
+    "stage": {
+      "allocated_memory": {
+        "allocated_gib": 28.435832977294922,
+        "device": "npu:0",
+        "free_gib": 31.97308349609375,
+        "reserved_gib": 28.626953125,
+        "total_gib": 60.95703125
+      },
+      "device": "npu:0",
+      "layer_end": 24,
+      "layer_start": 0,
+      "load_elapsed_sec": 34.47684048814699,
+      "loaded_memory": {
+        "allocated_gib": 28.43778657913208,
+        "device": "npu:0",
+        "free_gib": 30.63727569580078,
+        "reserved_gib": 29.9609375,
+        "total_gib": 60.95703125
+      },
+      "name": "distributed-stage0"
+    }
+  },
+  "rank1": {
+    "compile_contract": {
+      "cache_dir": "/tmp/pp2_k4096_cache_e77df1e/distributed_stage1_l24_b1_kv4096_bf16_src019a9ad80ff9",
+      "cache_was_warm": false,
+      "dynamic": false,
+      "dynamo_after_prompt": {
+        "calls_captured": 1988,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "dynamo_final": {
+        "calls_captured": 1988,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "first_call_sec": 95.52132048085332,
+      "fullgraph": true,
+      "ge_cache": true,
+      "no_recompilations_after_prompt": true,
+      "unique_graph_delta_after_prompt": 0,
+      "wrapper_sec": 0.0007381532341241837
+    },
+    "device": "npu:1",
+    "memory": {
+      "allocated_gib": 28.69641399383545,
+      "device": "npu:1",
+      "free_gib": 30.734325408935547,
+      "reserved_gib": 29.40234375,
+      "total_gib": 60.95703125
+    },
+    "rank": 1,
+    "stage": {
+      "allocated_memory": {
+        "allocated_gib": 28.435837268829346,
+        "device": "npu:1",
+        "free_gib": 31.970108032226562,
+        "reserved_gib": 28.626953125,
+        "total_gib": 60.95703125
+      },
+      "device": "npu:1",
+      "layer_end": 48,
+      "layer_start": 24,
+      "load_elapsed_sec": 36.215070210862905,
+      "loaded_memory": {
+        "allocated_gib": 28.437790870666504,
+        "device": "npu:1",
+        "free_gib": 31.19207763671875,
+        "reserved_gib": 29.40234375,
+        "total_gib": 60.95703125
+      },
+      "name": "distributed-stage1"
+    }
+  },
+  "transport": "two_process_hccl_send_recv"
+}

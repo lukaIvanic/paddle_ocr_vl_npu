@@ -1,4 +1,4 @@
-# Experiment 15: Qwen3-30B-A3B pipeline and stage replay
+# Experiment 15: Qwen3-30B-A3B PP2, TP2, and stage replay
 
 This experiment establishes a correctness-first custom Qwen3-30B-A3B decode
 lane before optimizing MoE execution.
@@ -63,7 +63,7 @@ Verified on 2026-08-17 on two Ascend 910B2 devices:
 - the independently replayed second half improved from 21.12 to 153.43
   tokens/s in the clean cold-cache run, a 7.27x speedup;
 - the complete two-process HCCL pipeline sustained 86.07 tokens/s over 64
-  measured tokens, or 11.62 ms TPOT;
+  measured tokens at the capture's KV256 capacity, or 11.62 ms TPOT;
 - the first eight greedy tokens still matched the captured eager pipeline and
   vLLM reference exactly;
 - both ranks loaded the second run from the persistent disk graph cache.
@@ -74,6 +74,47 @@ the observed eight-step maximum absolute difference was 0.8125, and top-10
 ordering changed on seven steps. The greedy token remained identical on all
 eight checked steps. See [NPU_MOE_OPERATOR_NOTES.md](NPU_MOE_OPERATOR_NOTES.md)
 for the next operator optimization lane and its constraints.
+
+## Verified PP2 versus TP2 at B1/KV4096
+
+The complete tensor-parallel path shards every layer across both NPUs:
+
+- 16 query heads and 2 KV heads per rank;
+- 384 intermediate dimensions from every expert per rank;
+- row-parallel attention output and expert down projections;
+- vocabulary-parallel token embedding and LM head;
+- replicated FP32 router softmax and top-8 selection.
+
+The static graph contains one embedding all-reduce and two all-reduces per
+layer, for 97 in-graph collectives per token. The LM head exchanges only the
+local maximum value and global token ID outside the graph during the measured
+greedy loop.
+
+Verified on two Ascend 910B2 devices with BF16 weights, B1, KV4096, two warmup
+tokens, and 200 measured tokens:
+
+| mode | tokens/s | mean TPOT |
+| --- | ---: | ---: |
+| PP2, two serial 24-layer stages | 76.87 | 13.01 ms |
+| TP2, all 48 layers sharded | 94.74 | 10.55 ms |
+
+TP2 was 23.25% faster and reduced TPOT by 18.86%. Both paths matched all eight
+captured greedy token IDs, used one static graph per rank, and produced no
+recompilations after setup. TP2 keeps both NPUs active while each layer reads
+and computes its weight shard. PP2 executes its two model halves serially for
+B1, so it cannot overlap the two stages.
+
+TP arithmetic is not bit-identical to the unsharded pipeline. On the first
+captured stage-2 token, 190 of 192 selected-expert memberships matched. Seven
+layers selected the same eight experts in a different score order. Layers 38
+and 39 each changed only the eighth expert at the top-8 cutoff. Both TP ranks
+made identical routing decisions, and the final greedy token remained exact.
+
+The exact evidence is in:
+
+- `references/qwen3_moe_full_tp2_k4096.json`;
+- `references/qwen3_moe_pp2_k4096.json`;
+- `references/qwen3_moe_stage2_tp2_router_membership.json`.
 
 ## Development replay package
 
@@ -134,10 +175,25 @@ torchrun --nnodes=1 --nproc-per-node=2 \
   benchmark_pipeline_compile_distributed.py \
   --model-dir /models/Qwen3-30B-A3B \
   --capture /results/qwen3_moe_stage2_capture.pt \
+  --cache-length 4096 \
   --warmup-steps 2 \
-  --decode-steps 64 \
+  --decode-steps 200 \
   --compile-cache-dir /results/qwen3_moe_compile_cache \
   --summary-out /results/qwen3_moe_pipeline_compile_distributed_warm.json
+```
+
+Compile and benchmark the complete TP2 model:
+
+```sh
+torchrun --nnodes=1 --nproc-per-node=2 \
+  --master-addr=127.0.0.1 --master-port=29580 \
+  benchmark_full_tp2.py \
+  --model-dir /models/Qwen3-30B-A3B \
+  --capture references/qwen3_moe_stage2_capture.pt \
+  --cache-length 4096 \
+  --warmup-steps 2 \
+  --decode-steps 200 \
+  --summary-out /results/qwen3_moe_full_tp2_k4096.json
 ```
 
 Do not run both cached stage executors in one process by switching the current
