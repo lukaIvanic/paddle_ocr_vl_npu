@@ -26,6 +26,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--model-dir", required=True)
     parser.add_argument("--capture", required=True)
+    parser.add_argument(
+        "--cache-length",
+        type=int,
+        help="Static KV capacity. Default: use the capture capacity.",
+    )
     parser.add_argument("--warmup-steps", type=int, default=2)
     parser.add_argument("--decode-steps", type=int, default=20)
     parser.add_argument(
@@ -100,7 +105,11 @@ def main() -> None:
         raise ValueError(f"Unsupported capture format: {capture['format']}")
     config = Qwen3MoeConfig.from_model_dir(args.model_dir)
     config.validate_qwen3_30b_a3b()
-    cache_length = int(capture["cache_length"])
+    cache_length = (
+        int(args.cache_length)
+        if args.cache_length is not None
+        else int(capture["cache_length"])
+    )
     prompt_token_ids = list(capture["prompt_token_ids"])
     expected_token_ids = list(capture["generated_token_ids"])
     total_steps = (
