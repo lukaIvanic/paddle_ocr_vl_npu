@@ -21,9 +21,11 @@ This is one experiment, not an A/B matrix. Use:
 - cross-KV 1320 and self-KV 2048;
 - prefill only.
 
-The runner compiles every corrected cache-stable K10 graph once, then runs trace
-and clean lanes. Cold compile/cache-load/setup time is recorded but excluded
-from measured prefill wall time.
+The runner warms every corrected cache-stable K10 graph, then makes two
+synchronized calls through one representative eager fallback shape before it
+runs the measured lane. The first fallback call records exact cold first-use/JIT
+time; the second records warm replay time. All graph and eager-fallback setup is
+excluded from measured prefill wall time.
 
 This revision replaces the old dynamically generated per-bucket `forward`
 methods. Those methods left only GE OMs and never persisted TorchAir's upper
@@ -141,16 +143,18 @@ Paste back:
 2. absolute `RUN_ROOT` and `RUN_LOG`;
 3. all ten first-lane graph warmup durations, OM counts, and
    `compiled_module_count` values;
-4. clean-lane first-open time and final OM/`compiled_module` inventory for each
+4. the complete `UNIREC_310P_K10_L1_FALLBACK_WARMUP` line, including both
+   synchronized cold-first-use and warm-replay times;
+5. clean-lane first-open time and final OM/`compiled_module` inventory for each
    graph; confirm no new OM appeared across the process restart;
-5. the complete `UNIREC_310P_K10_L1_RESULT`, `BUCKET_CALLS`, and `LAYOUT`
+6. the complete `UNIREC_310P_K10_L1_RESULT`, `BUCKET_CALLS`, and `LAYOUT`
    lines;
-6. trace and clean retained crop counts and source-token totals;
-7. trace stage sums for layout, vision bucket graph, vision fallback graph,
+7. trace and clean retained crop counts and source-token totals;
+8. trace stage sums for layout, vision bucket graph, vision fallback graph,
    crop preprocessing, text-prefill pack, and text-prefill device;
-8. peak HBM from the run summary or observed `npu-smi` sampling;
-9. `exit_code.txt`, total process wall time, and final NPU state;
-10. any warning, crash, fallback, cache anomaly, or mismatch.
+9. peak HBM from the run summary or observed `npu-smi` sampling;
+10. `exit_code.txt`, total process wall time, and final NPU state;
+11. any warning, crash, fallback, cache anomaly, or mismatch.
 
 Also run this final inventory command and paste its complete output:
 

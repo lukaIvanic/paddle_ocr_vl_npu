@@ -139,6 +139,10 @@ cache_inventory = {}
 graph_rows = run["prefill_worker_setup_diagnostics"][0][
     "prefix_graph_warmup"
 ]["graphs"]
+fallback_warmup = run["prefill_worker_setup_diagnostics"][0][
+    "prefix_graph_warmup"
+]["fallback_eager"]
+assert len(fallback_warmup["pass_wall_s"]) == 2
 for bucket, row in graph_rows.items():
     cache_dir = Path(row["cache_dir"])
     compiled_modules = sorted(cache_dir.rglob("compiled_module"))
@@ -158,6 +162,12 @@ print(
     f"clean_layout_s={run['prefill_phase_summary']['stage_s']['worker_detector_call_sum_s']:.6f} "
     f"crops={run['retained_bank']['crop_count']} "
     f"real_source_tokens={run['retained_bank']['real_source_tokens']}"
+)
+print(
+    f"{prefix}_FALLBACK_WARMUP "
+    f"input_shape={fallback_warmup['input_shape']} "
+    f"cold_first_use_s={fallback_warmup['cold_first_use_wall_s']:.6f} "
+    f"warm_replay_s={fallback_warmup['warm_replay_wall_s']:.6f}"
 )
 print(f"{prefix}_CACHE " + json.dumps(cache_inventory, sort_keys=True))
 PY
@@ -207,6 +217,7 @@ bucket_calls = {}
 chip_label = os.environ["CHIP_LABEL"]
 prefix = "UNIREC_" + chip_label.upper().replace("-", "_") + "_K10_L1"
 cache_inventory = {}
+fallback_warmups = {}
 graph_rows = trace_run["prefill_worker_setup_diagnostics"][0][
     "prefix_graph_warmup"
 ]["graphs"]
@@ -222,6 +233,12 @@ for bucket, row in graph_rows.items():
         "om_count": 1,
         "om_bytes": om_files[0].stat().st_size,
     }
+for lane, run in (("trace", trace_run), ("clean", clean_run)):
+    fallback = run["prefill_worker_setup_diagnostics"][0][
+        "prefix_graph_warmup"
+    ]["fallback_eager"]
+    assert len(fallback["pass_wall_s"]) == 2
+    fallback_warmups[lane] = fallback
 with Path(os.environ["TRACE_ITERATIONS"]).open() as handle:
     for line in handle:
         event = json.loads(line)
@@ -253,6 +270,14 @@ print(
     f"crops={clean_run['retained_bank']['crop_count']}"
 )
 print(f"{prefix}_BUCKET_CALLS " + json.dumps(bucket_calls, sort_keys=True))
+print(
+    f"{prefix}_FALLBACK_WARMUP "
+    f"input_shape={fallback_warmups['clean']['input_shape']} "
+    f"trace_cold_first_use_s={fallback_warmups['trace']['cold_first_use_wall_s']:.6f} "
+    f"trace_warm_replay_s={fallback_warmups['trace']['warm_replay_wall_s']:.6f} "
+    f"clean_cold_first_use_s={fallback_warmups['clean']['cold_first_use_wall_s']:.6f} "
+    f"clean_warm_replay_s={fallback_warmups['clean']['warm_replay_wall_s']:.6f}"
+)
 print(f"{prefix}_CACHE " + json.dumps(cache_inventory, sort_keys=True))
 print(
     f"{prefix}_LAYOUT "

@@ -1326,6 +1326,81 @@ class BucketedFullVisionRuntime:
         )
         return report
 
+    def warmup_eager_fallback(
+        self,
+        *,
+        width: int = 384,
+        height: int = 640,
+        passes: int = 2,
+    ) -> dict[str, Any]:
+        """Pay and record eager-encoder first use outside measured prefill."""
+        if passes < 2:
+            raise ValueError(
+                "eager fallback warmup needs cold and replay passes"
+            )
+        if width < 1 or height < 1 or width % 32 or height % 32:
+            raise ValueError(
+                "eager fallback warmup shape must be positive and 32-aligned"
+            )
+        accepting = [
+            spec.key for spec in self.specs if spec.accepts(width, height)
+        ]
+        if accepting:
+            raise ValueError(
+                "eager fallback warmup shape is covered by compiled buckets: "
+                f"{width}x{height} -> {accepting}"
+            )
+        device = torch.device(self.runner.device)
+        input_shape = [1, 3, int(height), int(width)]
+        self._diagnostic_log(
+            "warmup_fallback_begin",
+            input_shape=input_shape,
+            passes=passes,
+        )
+        with torch.inference_mode(False):
+            pixels = torch.zeros(
+                tuple(input_shape),
+                dtype=self.runner.dtype,
+                device=device,
+            )
+        pass_wall_s = []
+        output_shape: list[int] | None = None
+        for pass_index in range(passes):
+            self._diagnostic_log(
+                "warmup_fallback_call_begin",
+                input_shape=input_shape,
+                pass_index=pass_index,
+                pass_count=passes,
+            )
+            started = time.perf_counter()
+            with torch.inference_mode():
+                hidden = self.runner.model.forward_encoder(pixels)
+            synchronize_device(self.runner.device)
+            elapsed = time.perf_counter() - started
+            pass_wall_s.append(elapsed)
+            output_shape = [int(value) for value in hidden.shape]
+            self._diagnostic_log(
+                "warmup_fallback_call_end",
+                input_shape=input_shape,
+                output_shape=output_shape,
+                pass_index=pass_index,
+                pass_count=passes,
+                synchronized_wall_s=elapsed,
+            )
+            del hidden
+        del pixels
+        report = {
+            "execution": "eager_full_encoder_fallback",
+            "input_shape": input_shape,
+            "processed_image_size": [int(width), int(height)],
+            "output_shape": output_shape,
+            "pass_wall_s": pass_wall_s,
+            "cold_first_use_wall_s": pass_wall_s[0],
+            "warm_replay_wall_s": pass_wall_s[-1],
+        }
+        self._diagnostic_log("warmup_fallback_end", **report)
+        return report
+
     def summary(self) -> dict[str, Any]:
         return {
             "spatial_execution": "compiled_masked_full_encoder_buckets",

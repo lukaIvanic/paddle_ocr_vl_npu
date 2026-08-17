@@ -47,6 +47,25 @@ class VisionBucketPresetTest(unittest.TestCase):
             )
         )
 
+    def test_worker_setup_warms_eager_fallback_twice(self) -> None:
+        source = Path(__file__).with_name("layout_process_pool.py").read_text()
+        tree = ast.parse(source)
+        calls = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "warmup_eager_fallback"
+        ]
+        self.assertEqual(len(calls), 1)
+        passes = next(
+            keyword.value
+            for keyword in calls[0].keywords
+            if keyword.arg == "passes"
+        )
+        self.assertIsInstance(passes, ast.Constant)
+        self.assertEqual(passes.value, 2)
+
     def test_k10_has_ten_unique_graph_variants(self) -> None:
         specs = resolve_vision_bucket_specs("310p_k10_l1")
         self.assertEqual(len(specs), 10)

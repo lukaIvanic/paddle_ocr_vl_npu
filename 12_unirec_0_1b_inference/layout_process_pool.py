@@ -1697,12 +1697,16 @@ def _worker_main(
                 vision_atlas_runtime = None
                 warmup_started = time.perf_counter()
                 warmup_report = full_vision_runtime.warmup_all(passes=1)
+                fallback_warmup_report = (
+                    full_vision_runtime.warmup_eager_fallback(passes=2)
+                )
                 warmup_wall_s = time.perf_counter() - warmup_started
                 prefix_graph_warmup = {
                     "execution": "compiled_masked_full_encoder_buckets",
                     "shape_count": len(warmup_report),
                     "wall_s": warmup_wall_s,
                     "graphs": warmup_report,
+                    "fallback_eager": fallback_warmup_report,
                 }
             elif recognition_prefix_shapes_manifest is None:
                 full_vision_runtime = None
