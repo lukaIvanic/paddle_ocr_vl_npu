@@ -260,6 +260,7 @@ execution also had exact tokens and zero KV-cache difference.
 | Earlier stage-aware prefetch | 512 | 401.52 |
 | **Paddle one-layer-ahead schedule (default)** | **512** | **421.09** |
 | **Paddle one-layer-ahead schedule (default)** | **2048** | **419.32** |
+| Batched Q/K RMSNorm stock-op probe | 512 | 421.18 |
 | Paddle K/V-then-MLP schedule | 512 | 417.87 |
 | One-layer-ahead plus FRACTAL_NZ | 512 | 403.30 |
 | Two-layer-ahead prefetch | 512 | 388.27 |
@@ -268,6 +269,13 @@ execution also had exact tokens and zero KV-cache difference.
 The selected KV4096 result is 61% faster than the previous saved 260.24 tok/s
 KV64 maximum. FRACTAL_NZ and packed MLP remain explicit ablations because both
 regressed Qwen3-0.6B.
+
+The batched Q/K RMSNorm probe reduced standalone RMSNorm from 57 to 29 kernels
+per token and saved about 111 microseconds of RMSNorm kernel time. The required
+combined learned-gamma multiply and second split added about 93 microseconds,
+leaving end-to-end throughput unchanged. It remains an explicit preset rather
+than the default; a useful next step requires fusing normalization, learned
+gamma, split, and preferably RoPE into one Qwen-specific kernel.
 
 Run the selected contract explicitly:
 
