@@ -56,7 +56,8 @@ def import_cache_compile():
 
 def synchronize(*devices: torch.device) -> None:
     for device in devices:
-        torch.npu.synchronize(device)
+        with torch.npu.device(device):
+            torch.npu.synchronize()
 
 
 def dynamo_stats() -> dict[str, int]:
@@ -102,6 +103,7 @@ def pipeline_step(
     stage1_device: torch.device,
     token_handoff: str,
 ) -> tuple[torch.Tensor, torch.Tensor]:
+    torch.npu.set_device(stage0_device)
     stage0_position = torch.tensor(
         [position], dtype=torch.int64, device=stage0_device
     )
@@ -111,6 +113,7 @@ def pipeline_step(
         stage0_cache.key_caches,
         stage0_cache.value_caches,
     )
+    torch.npu.set_device(stage1_device)
     logits = stage1_decode(
         boundary.to(stage1_device),
         stage0_position.to(stage1_device),
@@ -120,10 +123,12 @@ def pipeline_step(
     next_token_stage1 = logits.argmax(dim=-1, keepdim=True)
     if token_handoff == "host":
         next_token_id = int(next_token_stage1.item())
+        torch.npu.set_device(stage0_device)
         next_token_stage0 = torch.tensor(
             [[next_token_id]], dtype=torch.int64, device=stage0_device
         )
     else:
+        torch.npu.set_device(stage0_device)
         next_token_stage0 = next_token_stage1.to(stage0_device)
     return next_token_stage0, logits
 
@@ -195,10 +200,12 @@ def main() -> None:
     )
     torch._dynamo.reset()
     torch._dynamo.utils.counters.clear()
+    torch.npu.set_device(stage0_device)
     stage0_decode, stage0_wrapper_sec, stage0_cache_warm = compile_static(
         stage0.decode_static_input_ids,
         cache_dir=stage0_cache_dir,
     )
+    torch.npu.set_device(stage1_device)
     stage1_decode, stage1_wrapper_sec, stage1_cache_warm = compile_static(
         stage1.decode_static_output,
         cache_dir=stage1_cache_dir,
@@ -209,6 +216,7 @@ def main() -> None:
         [[prompt_token_ids[0]]], dtype=torch.int64, device=stage0_device
     )
     synchronize(stage0_device, stage1_device)
+    torch.npu.set_device(stage0_device)
     stage0_first_started = time.perf_counter()
     first_position = torch.tensor([0], dtype=torch.int64, device=stage0_device)
     first_boundary = stage0_decode(
@@ -219,6 +227,7 @@ def main() -> None:
     )
     synchronize(stage0_device)
     stage0_first_call_sec = time.perf_counter() - stage0_first_started
+    torch.npu.set_device(stage1_device)
     stage1_first_started = time.perf_counter()
     stage1_decode(
         first_boundary.to(stage1_device),
@@ -316,6 +325,7 @@ def main() -> None:
         )
         synchronize(stage0_device, stage1_device)
         total_started = time.perf_counter()
+        torch.npu.set_device(stage0_device)
         stage_started = time.perf_counter()
         boundary = stage0_decode(
             current_input,
@@ -326,6 +336,7 @@ def main() -> None:
         synchronize(stage0_device)
         stage0_sec = time.perf_counter() - stage_started
 
+        torch.npu.set_device(stage1_device)
         stage_started = time.perf_counter()
         boundary_stage1 = boundary.to(stage1_device)
         stage1_position = stage0_position.to(stage1_device)
@@ -350,10 +361,12 @@ def main() -> None:
         stage_started = time.perf_counter()
         if args.token_handoff == "host":
             next_token_id = int(next_token_stage1.item())
+            torch.npu.set_device(stage0_device)
             current_input = torch.tensor(
                 [[next_token_id]], dtype=torch.int64, device=stage0_device
             )
         else:
+            torch.npu.set_device(stage0_device)
             current_input = next_token_stage1.to(stage0_device)
         synchronize(stage0_device)
         token_copy_sec = time.perf_counter() - stage_started
