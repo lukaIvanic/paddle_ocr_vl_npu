@@ -105,6 +105,15 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--progress-every", type=int, default=1000)
     parser.add_argument(
+        "--step-trace-jsonl",
+        type=Path,
+        help=(
+            "Optional per-iteration production decode trace. This adds only "
+            "host timestamp and buffered JSONL overhead; use a separate clean "
+            "run for headline throughput."
+        ),
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=Path(
@@ -166,6 +175,104 @@ def distribution(values: Iterable[int]) -> dict[str, Any]:
         "p95": _percentile(resolved, 95),
         "p99": _percentile(resolved, 99),
         "max": int(max(resolved)),
+    }
+
+
+def float_distribution(values: Iterable[float]) -> dict[str, Any]:
+    resolved = np.asarray([float(value) for value in values], dtype=np.float64)
+    if resolved.size == 0:
+        return {"count": 0}
+    return {
+        "count": int(resolved.size),
+        "sum": float(resolved.sum()),
+        "min": float(resolved.min()),
+        "mean": float(resolved.mean()),
+        "p50": float(np.percentile(resolved, 50)),
+        "p90": float(np.percentile(resolved, 90)),
+        "p95": float(np.percentile(resolved, 95)),
+        "p99": float(np.percentile(resolved, 99)),
+        "max": float(resolved.max()),
+    }
+
+
+def _position_bucket(position: int | None) -> str:
+    value = int(position or 0)
+    lower = 0
+    for upper in (32, 64, 128, 256, 512, 1024, 1536, 2048):
+        if value <= upper:
+            return f"{lower:04d}-{upper:04d}"
+        lower = upper + 1
+    return "2049+"
+
+
+def summarize_step_trace(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    if not rows:
+        return {"enabled": False, "count": 0}
+    timing_fields = (
+        "input_build_s",
+        "graph_submit_s",
+        "token_select_d2h_wait_s",
+        "decode_step_s",
+        "scheduler_s",
+        "iteration_wall_s",
+    )
+
+    def summarize_group(group: list[dict[str, Any]]) -> dict[str, Any]:
+        return {
+            "count": len(group),
+            "active_count": float_distribution(
+                float(row["active_count"]) for row in group
+            ),
+            **{
+                field: float_distribution(float(row[field]) for row in group)
+                for field in timing_fields
+            },
+        }
+
+    by_position: dict[str, list[dict[str, Any]]] = {}
+    by_active: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_position.setdefault(
+            _position_bucket(row.get("cache_position_max")), []
+        ).append(row)
+        active_count = int(row["active_count"])
+        active_bucket = (
+            "001-032"
+            if active_count <= 32
+            else "033-064"
+            if active_count <= 64
+            else "065-096"
+            if active_count <= 96
+            else "097-128"
+        )
+        by_active.setdefault(active_bucket, []).append(row)
+    return {
+        "enabled": True,
+        "count": len(rows),
+        "overall": summarize_group(rows),
+        "by_cache_position_max": {
+            key: summarize_group(value)
+            for key, value in sorted(by_position.items())
+        },
+        "by_active_count": {
+            key: summarize_group(value)
+            for key, value in sorted(by_active.items())
+        },
+        "slowest_decode_steps": sorted(
+            rows,
+            key=lambda row: float(row["decode_step_s"]),
+            reverse=True,
+        )[:20],
+        "slowest_scheduler_steps": sorted(
+            rows,
+            key=lambda row: float(row["scheduler_s"]),
+            reverse=True,
+        )[:20],
+        "interpretation": (
+            "graph_submit_s is asynchronous host submission. "
+            "token_select_d2h_wait_s contains the queued graph execution, "
+            "argmax, token D2H, and the mandatory host synchronization."
+        ),
     }
 
 
@@ -479,14 +586,6 @@ def main() -> None:
         compile_backend="torchair",
         admission_prefetch_depth=args.decode_admission_prefetch_depth,
     )
-    warmup = warm_production_decode_graph(
-        runner=runner,
-        decoder=decoder,
-        batch_size=args.batch_size,
-        cross_cache_length=args.cross_cache_length,
-        passes=args.decode_warmup_passes,
-    )
-
     def source() -> Iterable[Any]:
         for crop in artifact.crops:
             metadata = crop.row["prefill"]
@@ -519,6 +618,27 @@ def main() -> None:
             )
 
     completed: list[Any] = []
+    step_trace_rows: list[dict[str, Any]] = []
+    step_trace_handle = None
+    step_trace_path = (
+        args.step_trace_jsonl.expanduser().resolve()
+        if args.step_trace_jsonl is not None
+        else None
+    )
+    if step_trace_path is not None:
+        step_trace_path.parent.mkdir(parents=True, exist_ok=True)
+        step_trace_handle = step_trace_path.open("w", encoding="utf-8")
+
+    def on_step(row: dict[str, Any]) -> None:
+        step_trace_rows.append(row)
+        if step_trace_handle is not None:
+            step_trace_handle.write(
+                json.dumps(row, ensure_ascii=False, separators=(",", ":"))
+                + "\n"
+            )
+            if int(row["iteration"]) % 100 == 0:
+                step_trace_handle.flush()
+
     progress_started = time.perf_counter()
 
     def on_complete(item: Any) -> None:
@@ -533,8 +653,19 @@ def main() -> None:
             )
 
     decode_wall_started = time.perf_counter()
-    decode = decoder.run(source(), on_complete=on_complete)
+    try:
+        decode = decoder.run(
+            source(),
+            on_complete=on_complete,
+            graph_warmup_passes=args.decode_warmup_passes,
+            on_step=on_step if step_trace_path is not None else None,
+        )
+    finally:
+        if step_trace_handle is not None:
+            step_trace_handle.close()
     decode_wall_s = time.perf_counter() - decode_wall_started
+    warmup = decode["production_graph_warmup"]
+    decode_wall_excluding_warmup_s = decode_wall_s - float(warmup["wall_s"])
     reference = load_reference_trace(args.reference_trace)
     validation = compare_completions(completed, reference)
     generated_lengths = [
@@ -603,12 +734,15 @@ def main() -> None:
             "ge_tuning": [],
             "decode_admission_prefetch_depth": args.decode_admission_prefetch_depth,
             "over_capacity": args.over_capacity,
+            "step_trace_jsonl": (
+                str(step_trace_path) if step_trace_path is not None else None
+            ),
         },
         "setup_s": {
             "artifact_load_including_optional_prefault": artifact_load_s,
             "artifact_prefault": artifact.prefault_s,
             "model_load": model_load_s,
-            "graph_warmup": sum(warmup["pass_wall_s"]),
+            "graph_warmup": float(warmup["wall_s"]),
         },
         "warmup": warmup,
         "workload": {
@@ -622,7 +756,9 @@ def main() -> None:
             "generated_length": distribution(generated_lengths),
         },
         "decode_wall_s": decode_wall_s,
+        "decode_wall_excluding_warmup_s": decode_wall_excluding_warmup_s,
         "decode": decode,
+        "step_trace": summarize_step_trace(step_trace_rows),
         "slot_efficiency": (
             decode["effective_decode_tokens"] / decode["raw_decode_token_slots"]
             if decode["raw_decode_token_slots"]

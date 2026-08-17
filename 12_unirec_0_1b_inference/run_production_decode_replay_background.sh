@@ -34,6 +34,7 @@ resolve_inputs() {
   : "${PREFAULT_ARTIFACT:=1}"
   : "${REFERENCE_TRACE:=}"
   : "${REFERENCE_RUN_SUMMARY:=}"
+  : "${STEP_TRACE:=0}"
   case ",${ASCEND_RT_VISIBLE_DEVICES}," in
     *,5,*|*,6,*) printf 'REJECTED_PHYSICAL_DEVICE_5_OR_6\n' >&2; exit 1 ;;
   esac
@@ -52,6 +53,7 @@ resolve_inputs() {
   test -f "$ARTIFACT_DIR/cross_kv.bin"
   test -d "$COMPILE_CACHE"
   case "$PREFAULT_ARTIFACT" in 0|1) ;; *) exit 2 ;; esac
+  case "$STEP_TRACE" in 0|1) ;; *) exit 2 ;; esac
 }
 
 worker_main() {
@@ -82,6 +84,9 @@ worker_main() {
   fi
   if [[ -n "$REFERENCE_RUN_SUMMARY" ]]; then
     command+=(--reference-run-summary "$REFERENCE_RUN_SUMMARY")
+  fi
+  if [[ "$STEP_TRACE" == 1 ]]; then
+    command+=(--step-trace-jsonl "$run_root/decode_steps.jsonl")
   fi
   printf '%q ' "${command[@]}" >"$run_root/command.sh"
   printf '\n' >>"$run_root/command.sh"
@@ -122,7 +127,8 @@ launch_main() {
     OVER_CAPACITY="$OVER_CAPACITY" WARMUP_PASSES="$WARMUP_PASSES" \
     ADMISSION_PREFETCH_DEPTH="$ADMISSION_PREFETCH_DEPTH" \
     PREFAULT_ARTIFACT="$PREFAULT_ARTIFACT" REFERENCE_TRACE="$REFERENCE_TRACE" \
-    REFERENCE_RUN_SUMMARY="$REFERENCE_RUN_SUMMARY" \
+    REFERENCE_RUN_SUMMARY="$REFERENCE_RUN_SUMMARY" STEP_TRACE="$STEP_TRACE" \
+    UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:-}" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     bash "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"

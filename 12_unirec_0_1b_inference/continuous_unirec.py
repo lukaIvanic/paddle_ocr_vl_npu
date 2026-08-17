@@ -631,6 +631,7 @@ class ContinuousUniRecDecoder:
         *,
         on_complete: Callable[[ContinuousCompletedItem], None],
         graph_warmup_passes: int = 0,
+        on_step: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
         if graph_warmup_passes < 0:
             raise ValueError("graph_warmup_passes must be non-negative")
@@ -659,6 +660,7 @@ class ContinuousUniRecDecoder:
         production_graph_warmup_s = 0.0
         production_graph_warmup_pass_s: list[float] = []
         production_graph_warmup_warnings: list[str] = []
+        diagnostic_step_callback_s = 0.0
 
         def next_ready() -> ContinuousReadyItem | None:
             nonlocal source_exhausted, source_pull_s, submitted
@@ -1057,7 +1059,18 @@ class ContinuousUniRecDecoder:
         try:
             with torch.inference_mode():
                 while any(slot is not None for slot in slots):
+                    iteration_started = time.perf_counter()
                     active_slots = [slot is not None for slot in slots]
+                    active_positions = [
+                        int(cache_positions[index])
+                        for index, is_active in enumerate(active_slots)
+                        if is_active
+                    ]
+                    active_source_lengths = [
+                        int(slots[index].prefilled.actual_cross_attention_length)
+                        for index, is_active in enumerate(active_slots)
+                        if is_active and slots[index] is not None
+                    ]
                     input_build_started = time.perf_counter()
                     next_token_host_array[:] = last_tokens
                     cache_position_host_array[:] = cache_positions
@@ -1069,7 +1082,8 @@ class ContinuousUniRecDecoder:
                         cache_position_host,
                         non_blocking=decode_input_host_pinned,
                     )
-                    decode_input_build_s += time.perf_counter() - input_build_started
+                    input_build_s = time.perf_counter() - input_build_started
+                    decode_input_build_s += input_build_s
                     # Default-stream ordering makes the input copies and any
                     # admitted arena rows visible to the graph. A device-wide
                     # synchronization here would also drain the independent
@@ -1077,6 +1091,7 @@ class ContinuousUniRecDecoder:
                     # The sampled-token CPU read below remains the required
                     # completion point for this iteration.
                     step_started = time.perf_counter()
+                    graph_submit_started = step_started
                     if decode_module is None:
                         logits = self.runner.model.forward_cached_logits(
                             decoder_input_ids=next_token_tensor,
@@ -1100,11 +1115,16 @@ class ContinuousUniRecDecoder:
                             cache.cross_value_cache,
                             cache.cross_attention_mask,
                         )
+                    graph_submit_s = time.perf_counter() - graph_submit_started
+                    token_wait_started = time.perf_counter()
                     predicted = self.runner.model.select_next_token(logits)
                     predicted_ids = [
                         int(token)
                         for token in predicted.detach().cpu().view(-1).tolist()
                     ]
+                    token_select_d2h_wait_s = (
+                        time.perf_counter() - token_wait_started
+                    )
                     step_s = time.perf_counter() - step_started
                     decode_s += step_s
                     if first_decode_step_s is None:
@@ -1115,6 +1135,7 @@ class ContinuousUniRecDecoder:
                     effective_decode_tokens += active_count
                     idle_decode_token_slots += self.batch_size - active_count
 
+                    scheduler_started = time.perf_counter()
                     completed_slots = []
                     for slot, is_active in enumerate(active_slots):
                         if not is_active:
@@ -1131,10 +1152,74 @@ class ContinuousUniRecDecoder:
                         ):
                             completed_slots.append(slot)
 
+                    refills_before = slot_refills
                     for slot in completed_slots:
                         complete_slot(slot)
                     for slot in completed_slots:
                         refill_slot(slot)
+                    scheduler_s = time.perf_counter() - scheduler_started
+                    if on_step is not None:
+                        sorted_positions = sorted(active_positions)
+                        sorted_source_lengths = sorted(active_source_lengths)
+                        callback_started = time.perf_counter()
+                        on_step(
+                            {
+                                "iteration": decode_iterations,
+                                "active_count": active_count,
+                                "cache_position_min": (
+                                    sorted_positions[0]
+                                    if sorted_positions
+                                    else None
+                                ),
+                                "cache_position_p50": (
+                                    sorted_positions[
+                                        (len(sorted_positions) - 1) // 2
+                                    ]
+                                    if sorted_positions
+                                    else None
+                                ),
+                                "cache_position_max": (
+                                    sorted_positions[-1]
+                                    if sorted_positions
+                                    else None
+                                ),
+                                "cross_length_min": (
+                                    sorted_source_lengths[0]
+                                    if sorted_source_lengths
+                                    else None
+                                ),
+                                "cross_length_p50": (
+                                    sorted_source_lengths[
+                                        (len(sorted_source_lengths) - 1) // 2
+                                    ]
+                                    if sorted_source_lengths
+                                    else None
+                                ),
+                                "cross_length_max": (
+                                    sorted_source_lengths[-1]
+                                    if sorted_source_lengths
+                                    else None
+                                ),
+                                "input_build_s": input_build_s,
+                                "graph_submit_s": graph_submit_s,
+                                "token_select_d2h_wait_s": (
+                                    token_select_d2h_wait_s
+                                ),
+                                "decode_step_s": step_s,
+                                "scheduler_s": scheduler_s,
+                                "iteration_wall_s": (
+                                    time.perf_counter() - iteration_started
+                                ),
+                                "completed_slots": len(completed_slots),
+                                "refilled_slots": slot_refills - refills_before,
+                                "active_after": sum(
+                                    slot is not None for slot in slots
+                                ),
+                            }
+                        )
+                        diagnostic_step_callback_s += (
+                            time.perf_counter() - callback_started
+                        )
         finally:
             if admission_prefetcher is not None:
                 admission_prefetcher.close()
@@ -1165,6 +1250,7 @@ class ContinuousUniRecDecoder:
                 decode_input_build_s,
                 pre_decode_sync_s,
                 production_graph_warmup_s,
+                diagnostic_step_callback_s,
                 decode_s,
             )
         )
@@ -1235,6 +1321,7 @@ class ContinuousUniRecDecoder:
                 "explicit_pre_decode_sync": False,
                 "pre_decode_sync_s": pre_decode_sync_s,
                 "production_graph_warmup_s": production_graph_warmup_s,
+                "diagnostic_step_callback_s": diagnostic_step_callback_s,
                 "decode_s": decode_s,
                 "scheduler_bookkeeping_residual_s": max(
                     0.0, run_wall_s - directly_accounted_s

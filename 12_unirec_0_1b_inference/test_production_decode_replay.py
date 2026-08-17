@@ -12,7 +12,11 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from production_decode_replay import compare_completions, load_artifact
+from production_decode_replay import (
+    compare_completions,
+    load_artifact,
+    summarize_step_trace,
+)
 
 
 def write_artifact(root: Path, lengths: list[int]) -> None:
@@ -127,6 +131,40 @@ class ProductionDecodeReplayTest(unittest.TestCase):
         self.assertEqual(comparison["length_exact_count"], 2)
         self.assertEqual(comparison["token_exact_count"], 1)
         self.assertEqual(comparison["first_mismatches"][0]["request_id"], "b")
+
+    def test_step_trace_groups_position_and_active_count(self) -> None:
+        rows = []
+        for iteration, position, active, step_s in (
+            (1, 16, 128, 0.01),
+            (2, 96, 80, 0.02),
+            (3, 700, 20, 0.03),
+        ):
+            rows.append(
+                {
+                    "iteration": iteration,
+                    "active_count": active,
+                    "cache_position_max": position,
+                    "input_build_s": 0.001,
+                    "graph_submit_s": 0.0001,
+                    "token_select_d2h_wait_s": step_s - 0.0001,
+                    "decode_step_s": step_s,
+                    "scheduler_s": 0.002,
+                    "iteration_wall_s": step_s + 0.003,
+                }
+            )
+        summary = summarize_step_trace(rows)
+        self.assertEqual(summary["count"], 3)
+        self.assertEqual(
+            sorted(summary["by_cache_position_max"]),
+            ["0000-0032", "0065-0128", "0513-1024"],
+        )
+        self.assertEqual(
+            sorted(summary["by_active_count"]),
+            ["001-032", "065-096", "097-128"],
+        )
+        self.assertEqual(
+            summary["slowest_decode_steps"][0]["iteration"], 3
+        )
 
 
 if __name__ == "__main__":
