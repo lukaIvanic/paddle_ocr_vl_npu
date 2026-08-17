@@ -206,6 +206,39 @@ contains count, sum, mean, p50, p75, p90, p95, p99, and maximum values plus
 histograms for source/processed crop shapes, vision buckets, physical graph
 shapes, text-pack occupancy, and cross-KV lengths.
 
+## Production decode replay
+
+`text_decode_lab.py` is the fixed-step decoder-graph microbenchmark. It uses
+production model math and graph construction, but synthetic KV contents and no
+continuous slot scheduler. Use it for kernel ceilings and profiling, not as an
+end-to-end decode-throughput replacement.
+
+`production_decode_replay.py` is the serving-faithful decode boundary. It maps
+real `unirec_cross_kv_v1` rows written by `run_prefill_export.py`, then directly
+invokes the unchanged `ContinuousUniRecDecoder`. The measured path retains the
+production fixed arena, pageable CPU cross-KV admission, pinned CPU input
+buffers, per-step input H2D, compiled IncreFA graph, sampled-token D2H, EOS and
+length completion, slot refill, and callback accounting. Layout, crop
+preparation, vision, and text prefill are excluded.
+
+Run the current accuracy-safe B128/S2048/C1320 contract in the background:
+
+```sh
+export PYTHON_BIN=/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python
+export MODEL=/workspace/models/unirec-0.1b
+export ARTIFACT_DIR=/path/to/persistent/prefill/artifact
+export COMPILE_CACHE=.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf
+bash 12_unirec_0_1b_inference/run_production_decode_replay_background.sh
+```
+
+Set `REFERENCE_TRACE` and `REFERENCE_RUN_SUMMARY` to a matching production
+`recognition_trace.jsonl` and `run_summary.json` for token parity and direct
+throughput ratios. A smaller cross cache rejects over-capacity crops by default;
+set `OVER_CAPACITY=skip` only for a deliberate capacity/quality experiment.
+The artifact mmap uses copy-on-write views so `torch.from_numpy` does not emit
+the non-writable-array warning. Optional prefaulting is outside decode timing
+and approximates production's already-resident shared-memory bank.
+
 The source-pipeline adapter remains available for environments where the
 Paddle predictor loads correctly. It preserves OpenOCR's pipeline and places
 only UniRec on the NPU:
