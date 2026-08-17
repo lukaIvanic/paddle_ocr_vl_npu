@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--attention-impl",
         choices=("native_gqa", "pseudo_batch_2"),
-        default="native_gqa",
+        default="pseudo_batch_2",
     )
     parser.add_argument(
         "--cache-length",

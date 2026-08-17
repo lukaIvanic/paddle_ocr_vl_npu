@@ -42,7 +42,7 @@ def build_stage(
     name: str,
     cache_length: int,
     expert_impl: str = "selected_bmm",
-    attention_impl: str = "native_gqa",
+    attention_impl: str = "pseudo_batch_2",
 ) -> tuple[Qwen3MoePipelineStage, dict[str, object]]:
     started = time.perf_counter()
     with torch.device("meta"):

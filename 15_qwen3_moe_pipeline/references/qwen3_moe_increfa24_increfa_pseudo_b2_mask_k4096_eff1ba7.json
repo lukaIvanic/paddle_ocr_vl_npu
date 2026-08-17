@@ -1,0 +1,24 @@
+{
+  "contract": "all KV slots valid; mask is all false",
+  "result": {
+    "attention_calls_per_step": 24,
+    "elapsed_s": 0.21267650416120887,
+    "first_call_s": 39.07402459112927,
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "mean_attention_us": 44.30760503358518,
+    "mean_step_us": 1063.3825208060443,
+    "steps": 200,
+    "unique_graphs": 1,
+    "variant": "increfa_pseudo_b2_mask"
+  },
+  "shape": {
+    "batch": 1,
+    "cache_length": 4096,
+    "dtype": "bfloat16",
+    "head_dim": 128,
+    "key_value_heads": 4,
+    "layers": 24,
+    "query_heads": 32
+  }
+}

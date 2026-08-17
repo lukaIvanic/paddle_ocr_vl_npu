@@ -671,7 +671,7 @@ class Qwen3MoePipelineStage(nn.Module):
         with_embedding: bool,
         with_lm_head: bool,
         expert_impl: str = "selected_bmm",
-        attention_impl: str = "native_gqa",
+        attention_impl: str = "pseudo_batch_2",
     ):
         super().__init__()
         if not 0 <= layer_start < layer_end <= config.num_hidden_layers:

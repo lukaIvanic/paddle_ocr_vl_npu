@@ -177,6 +177,46 @@ The corresponding JSON files are under `references/` with
 `gmm_v2_gating_qknorm_l24_k4096` in their names. The rejected direct B1 route
 uses `gmm_b1_gating_qknorm_l24_k4096`.
 
+## Verified stock IncreFA optimization
+
+The default B1 attention path now reshapes the 32 query heads and four KV heads
+into a pseudo batch of two calls with 16 query heads and two KV heads per batch
+row. It does not repeat K/V data. The static boolean mask is expanded once
+before the 24-layer loop and is reused by every layer. The graph does not pass
+`actual_seq_lengths`.
+
+A 24-call static attention screen at BF16 B1/KV4096, with all KV slots valid,
+reduced the graph step from 1.209 ms to 1.063 ms. That is a 12.03% attention-only
+gain with exact output. Pseudo-B4 reached 1.101 ms and was therefore rejected.
+FP16 attention reached 1.113 ms before pricing model-side casts and introduced
+numerical drift, so it was also rejected.
+
+The complete 24-layer stage has much less available upside because attention is
+only one part of the decode step. With both OMs already present in the disk
+cache, ten warmup steps, and 1,000 measured steps in the KV4096 arena:
+
+| stock IncreFA contract | tokens/s | mean TPOT |
+| --- | ---: | ---: |
+| native B1 GQA | 208.68 | 4.792 ms |
+| pseudo-B2, repeat 1 | 211.75 | 4.723 ms |
+| pseudo-B2, repeat 2 | 210.08 | 4.760 ms |
+
+The conservative repeat is 0.67% faster than native GQA; the two pseudo-B2
+runs average 210.91 tokens/s, a 1.07% gain. All runs include the final RMSNorm
+and LM head. Pseudo-B2 kept all eight captured greedy tokens, used one static
+TorchAir graph, and caused no recompilation. These timing windows advance the
+logical position from about 22 through 1,021 inside a 4,096-slot cache arena;
+they are not a fully populated 4,096-token semantic context.
+
+The profile near logical position 1,022 reported 578.28 microseconds for the 24
+IncreFA kernels. The end-to-end gain is therefore a compiled-graph result, not a
+claim that the isolated IncreFA kernel became 12% faster at every prefix length.
+Use `--attention-impl native_gqa` for the retained control.
+
+The exact attention screen, warm native control, two warm pseudo-B2 runs, and
+profile summary are stored in `references/` with `increfa24` or
+`pseudob2` in their names.
+
 ## Development replay package
 
 The full pipeline processes the prompt token-by-token, avoiding a separate
