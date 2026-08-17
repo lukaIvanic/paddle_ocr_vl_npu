@@ -35,6 +35,46 @@ from opendoc_layout_npu import (
 from vision_bucket_presets import VISION_BUCKET_PRESET_CHOICES
 
 
+def prepare_decode_warmup_report(
+    *,
+    base: Any,
+    runner: Any,
+    batch_size: int,
+    passes: int,
+) -> dict[str, Any]:
+    """Prepare decode setup without calling the generic warmup at zero passes."""
+    if passes < 0:
+        raise ValueError("decode warmup passes must be non-negative")
+    if passes == 0:
+        report: dict[str, Any] = {
+            "passes": 0,
+            "graphs": {},
+            "wall_s": 0.0,
+        }
+    else:
+        report = base.warmup_configured_graphs(
+            args=SimpleNamespace(
+                text_prefill_mode="eager",
+                decode_mode="compiled_ifa",
+                compile_backend="torchair",
+                decode_batch_size=batch_size,
+            ),
+            runner=runner,
+            vision_atlas_runtime=None,
+            passes=passes,
+            warmup_decode=False,
+        )
+    report["decode"] = {
+        "execution": (
+            "disabled_live_arena_warmup"
+            if passes == 0
+            else "deferred_to_actual_admitted_arena"
+        ),
+        "passes": passes,
+    }
+    return report
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--openocr-root", type=Path, required=True)
@@ -559,22 +599,12 @@ def main() -> None:
     runner._static_cross_cache_len_by_processor_max_side[processor_shape] = (
         args.cross_cache_length
     )
-    decode_graph_warmup = base.warmup_configured_graphs(
-        args=SimpleNamespace(
-            text_prefill_mode="eager",
-            decode_mode="compiled_ifa",
-            compile_backend="torchair",
-            decode_batch_size=args.decode_batch_size,
-        ),
+    decode_graph_warmup = prepare_decode_warmup_report(
+        base=base,
         runner=runner,
-        vision_atlas_runtime=None,
+        batch_size=args.decode_batch_size,
         passes=args.decode_warmup_passes,
-        warmup_decode=False,
     )
-    decode_graph_warmup["decode"] = {
-        "execution": "deferred_to_actual_admitted_arena",
-        "passes": args.decode_warmup_passes,
-    }
     decode_setup_s = time.perf_counter() - decode_setup_started
     print(
         "UNIREC_TWO_PHASE_DECODE_SETUP_END "
