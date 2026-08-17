@@ -35,6 +35,7 @@ class DecodeOptimizationConfig:
     npu_swiglu: bool = False
     batched_qk_rms_norm: bool = False
     qk_add_rms_norm: bool = False
+    qk_add_rms_zero_bank: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -167,6 +168,20 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         weight_prefetch_timing="complete_layer_ahead",
         complete_layer_prefetch_ahead=1,
         qk_add_rms_norm=True,
+    ),
+    "combined_apply_complete_layer_prefetch1_qk_add_rms_zero_bank_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch1_qk_add_rms_zero_bank_rope_lut",
+        npu_rms_norm=True,
+        fused_add_rms_norm=True,
+        packed_qkv=True,
+        npu_rotary=True,
+        rope_lookup=True,
+        weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=1,
+        qk_add_rms_norm=True,
+        qk_add_rms_zero_bank=True,
     ),
 }
 
@@ -481,6 +496,7 @@ class LocalQwen3Attention(nn.Module):
         self,
         hidden_states: torch.Tensor,
         optimization: DecodeOptimizationConfig,
+        qk_norm_zero: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch, sequence_length, _hidden = hidden_states.shape
         if optimization.packed_qkv:
@@ -551,8 +567,12 @@ class LocalQwen3Attention(nn.Module):
             # residual input. A persistent zero buffer would therefore stop
             # being zero after the first compiled decode step. Build graph-local
             # zero tensors so every invocation preserves plain RMSNorm semantics.
-            query_zero = torch.zeros_like(query_states)
-            key_zero = torch.zeros_like(key_states)
+            if qk_norm_zero is None:
+                query_zero = torch.zeros_like(query_states)
+                key_zero = torch.zeros_like(key_states)
+            else:
+                query_zero = qk_norm_zero[:, :, : self.num_heads, :]
+                key_zero = qk_norm_zero[:, :, self.num_heads :, :]
             query_states = torch_npu.npu_add_rms_norm(
                 query_states,
                 query_zero,
@@ -615,6 +635,7 @@ class LocalQwen3Attention(nn.Module):
         attention_mask: torch.Tensor | None,
         actual_seq_length: int | None,
         optimization: DecodeOptimizationConfig,
+        qk_norm_zero: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         if (
             optimization.weight_prefetch
@@ -630,6 +651,7 @@ class LocalQwen3Attention(nn.Module):
         query_states, key_states, value_states = self.project_qkv_decode(
             hidden_states,
             optimization,
+            qk_norm_zero,
         )
         if optimization.npu_rotary and query_states.device.type == "npu":
             query_bsnd = query_states.transpose(1, 2).contiguous()
@@ -741,6 +763,7 @@ class LocalQwen3DecoderLayer(nn.Module):
         attention_mask: torch.Tensor | None,
         actual_seq_length: int | None,
         optimization: DecodeOptimizationConfig,
+        qk_norm_zero: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         residual = hidden_states
         attn_output, key_cache, value_cache = self.self_attn.forward_decode(
@@ -757,6 +780,7 @@ class LocalQwen3DecoderLayer(nn.Module):
             attention_mask,
             actual_seq_length,
             optimization,
+            qk_norm_zero,
         )
         hidden_states = residual + attn_output
         hidden_states = hidden_states + self.mlp.forward_decode(
@@ -781,6 +805,7 @@ class LocalQwen3DecoderLayer(nn.Module):
         attention_mask: torch.Tensor | None,
         actual_seq_length: int | None,
         optimization: DecodeOptimizationConfig,
+        qk_norm_zero: torch.Tensor | None = None,
     ) -> tuple[
         torch.Tensor,
         torch.Tensor,
@@ -810,6 +835,7 @@ class LocalQwen3DecoderLayer(nn.Module):
             attention_mask,
             actual_seq_length,
             optimization,
+            qk_norm_zero,
         )
         mlp_input, residual = _decode_add_rms_norm(
             attention_output,
@@ -919,6 +945,8 @@ class LocalQwen3ForCausalLM(nn.Module):
         qk_add_rms_norm_count = 0
         if optimization.qk_add_rms_norm:
             qk_add_rms_norm_count = len(self.layers)
+        if optimization.qk_add_rms_zero_bank and not optimization.qk_add_rms_norm:
+            raise ValueError("Q/K add-RMS zero bank requires Q/K add-RMSNorm")
         if optimization.rope_lookup:
             positions = torch.arange(
                 int(cache_length),
@@ -1011,6 +1039,7 @@ class LocalQwen3ForCausalLM(nn.Module):
             "batched_qk_norm_count": batched_qk_norm_count,
             "qk_add_rms_norm": optimization.qk_add_rms_norm,
             "qk_add_rms_norm_count": qk_add_rms_norm_count,
+            "qk_add_rms_zero_bank": optimization.qk_add_rms_zero_bank,
             "rope_lookup": optimization.rope_lookup,
             "rope_lookup_shape": (
                 None
@@ -1079,6 +1108,26 @@ class LocalQwen3ForCausalLM(nn.Module):
     ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
         optimization = self.decode_optimization
         hidden_states = self.embed_tokens(input_ids)
+        qk_norm_zero_bank = None
+        if (
+            optimization.qk_add_rms_norm
+            and optimization.qk_add_rms_zero_bank
+            and hidden_states.device.type == "npu"
+        ):
+            # TorchAir lowers npu_add_rms_norm to an in-place residual update.
+            # Build one fresh graph-local bank and give every layer disjoint Q/K
+            # slices. This preserves zero-residual RMSNorm semantics while
+            # replacing two zeros_like launches per layer with one allocation.
+            qk_norm_zero_bank = hidden_states.new_zeros(
+                (
+                    len(self.layers),
+                    hidden_states.shape[0],
+                    hidden_states.shape[1],
+                    self.config.num_attention_heads
+                    + self.config.num_key_value_heads,
+                    self.config.head_dim,
+                )
+            )
         if optimization.rope_lookup:
             selected = torch.index_select(
                 self.rotary_emb.decode_factor_lut,
@@ -1128,6 +1177,11 @@ class LocalQwen3ForCausalLM(nn.Module):
                     attention_mask,
                     actual_seq_length,
                     optimization,
+                    (
+                        None
+                        if qk_norm_zero_bank is None
+                        else qk_norm_zero_bank[layer_idx]
+                    ),
                 )
                 next_key_caches.append(layer_key_cache)
                 next_value_caches.append(layer_value_cache)
@@ -1148,6 +1202,11 @@ class LocalQwen3ForCausalLM(nn.Module):
                     attention_mask,
                     actual_seq_length,
                     optimization,
+                    (
+                        None
+                        if qk_norm_zero_bank is None
+                        else qk_norm_zero_bank[layer_idx]
+                    ),
                 )
                 next_key_caches.append(layer_key_cache)
                 next_value_caches.append(layer_value_cache)
