@@ -225,9 +225,6 @@ print(
     f"w2_pages_s={w2['pages_per_s']:.6f} "
     f"w4_pages_s={w4['pages_per_s']:.6f} "
     f"w4_over_w2={w4['pages_per_s'] / w2['pages_per_s']:.6f}x "
-    "w1_reference_pages_s=3.190000 "
-    f"w2_over_w1_reference={w2['pages_per_s'] / 3.19:.6f}x "
-    f"w4_over_w1_reference={w4['pages_per_s'] / 3.19:.6f}x "
     f"output={output}"
 )
 PY

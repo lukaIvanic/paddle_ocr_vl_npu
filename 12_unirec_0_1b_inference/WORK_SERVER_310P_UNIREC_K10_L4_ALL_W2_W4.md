@@ -58,7 +58,9 @@ After `exit_code.txt` becomes `0`, return only:
 - peak HBM if it was observed externally
 
 State plainly whether W2 and W4 exceed the corrected W1 reference of about
-40 seconds / 3.19 pages/s. Do not mix trace timing with clean timing.
+40 seconds / 3.19 pages/s. Cite the exact prior W1 clean `run_summary.json`,
+its measured wall time, and its pages/s. Do not use a trace lane or an
+approximate hard-coded value for this comparison.
 
 If W4 fails or OOMs, preserve and report the completed W2 output plus the first
 real W4 error. Do not retry with a different configuration.
