@@ -424,11 +424,7 @@ class Qwen3MoeAttention(nn.Module):
                 query_states.view(2, 16, 1, self.head_dim),
                 key_cache.view(2, 2, cache_length, self.head_dim),
                 value_cache.view(2, 2, cache_length, self.head_dim),
-                atten_mask=(
-                    attention_mask.view(1, 1, 1, cache_length)
-                    .expand(2, 1, 1, cache_length)
-                    .contiguous()
-                ),
+                atten_mask=attention_mask,
                 num_heads=16,
                 num_key_value_heads=2,
                 input_layout="BNSD",
@@ -804,6 +800,13 @@ class Qwen3MoePipelineStage(nn.Module):
         attention_mask = build_static_decode_mask(
             cache_position, key_caches[0].shape[2]
         )
+        if self.attention_impl == "pseudo_batch_2":
+            cache_length = int(key_caches[0].shape[2])
+            attention_mask = (
+                attention_mask.view(1, 1, 1, cache_length)
+                .expand(2, 1, 1, cache_length)
+                .contiguous()
+            )
         q_norm_zero_bank = hidden_states.new_zeros(
             self.num_layers,
             hidden_states.shape[0],
