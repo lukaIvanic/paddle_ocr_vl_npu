@@ -38,6 +38,33 @@ averaged 448.17 tok/s, with individual runs from 443.13 to 451.84 tok/s, exact
 compiled/eager tokens, and zero K/V difference. This is within normal
 run-to-run variation from the recorded 450.67 tok/s result.
 
+## B1 KV-capacity sweep
+
+The optimized decoder was swept from KV512 through KV128K on Ascend 910B2.
+Every point uses FP16, B1, a 256-token prefix, 64 decode steps, one warmup, and
+three measured repeats. The prefix is fixed so only the static K/V capacity
+changes. Every shape compiled as one fullgraph and passed exact compiled/eager
+token parity with zero K/V difference.
+
+| Static KV capacity | Mean tok/s | Repeat range, tok/s | Reserved HBM |
+|---:|---:|---:|---:|
+| 512 | **554.53** | 554.42-554.70 | 1.80 GiB |
+| 1,024 | **531.98** | 531.12-532.67 | 1.91 GiB |
+| 2,048 | **477.05** | 472.53-481.65 | 2.48 GiB |
+| 4,096 | **450.88** | 448.92-454.50 | 3.57 GiB |
+| 8,192 | **384.53** | 384.27-384.68 | 5.36 GiB |
+| 16,384 | **290.28** | 289.95-290.70 | 8.90 GiB |
+| 32,768 | **190.09** | 189.43-190.42 | 15.97 GiB |
+| 65,536 | **96.96** | 96.71-97.38 | 29.97 GiB |
+| 131,072 | **53.95** | 53.93-53.99 | 58.36 GiB |
+
+The masked incremental-attention graph retains the full static K/V tensor
+shape, so decode cost rises with capacity even though the live prefix remains
+256 tokens. KV128K is also close to the 64 GB device limit: the run left only
+2.21 GiB of HBM free. The complete measurements, physical-NPU mapping, parity,
+and artifact path are in
+[`references/qwen3_0_6b_b1_kv_sweep_910b2_20260817.json`](references/qwen3_0_6b_b1_kv_sweep_910b2_20260817.json).
+
 ## Goal: improve on vLLM-Ascend B1 decode
 
 The comparison uses B1 decode and KV4096 throughout:

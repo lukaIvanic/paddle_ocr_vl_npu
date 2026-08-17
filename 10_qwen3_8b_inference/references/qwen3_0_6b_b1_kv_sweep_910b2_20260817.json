@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-17",
+  "experiment": "10_qwen3_8b_inference",
+  "purpose": "Optimized Qwen3-0.6B B1 decode throughput versus static KV-cache capacity",
+  "git_head_on_runner": "18beed2",
+  "experiment_10_code_commit": "fd3053a",
+  "hardware": "Ascend 910B2",
+  "model": "/workspace/models/Qwen3-0.6B",
+  "dtype": "float16",
+  "batch_size": 1,
+  "prefill_tokens": 256,
+  "decode_steps": 64,
+  "decode_warmups": 1,
+  "decode_repeats": 3,
+  "compile": {
+    "backend": "torchair",
+    "fullgraph": true,
+    "dynamic": false,
+    "torch_npu_jit_compile": false
+  },
+  "decode_contract": {
+    "optimization": "qwen3_0_6b_optimized_static_decode",
+    "attention": "masked_npu_incre_flash_attention",
+    "packed_qkv": true,
+    "qk_add_rms_zero_bank": true,
+    "complete_layer_prefetch_ahead": 1
+  },
+  "remote_artifact_root": "tmp/10_qwen3_8b_inference/optimized_b1_kv_sweep_82529bc",
+  "runs": [
+    {
+      "kv_cache_len": 512,
+      "physical_npu": 1,
+      "mean_tok_s": 554.527892,
+      "min_repeat_tok_s": 554.416443,
+      "max_repeat_tok_s": 554.703615,
+      "compile_first_call_sec": 51.225733,
+      "reserved_hbm_gib": 1.796875,
+      "free_hbm_gib": 58.774666,
+      "compiled_eager_token_exact_match": true,
+      "compiled_eager_kv_max_abs": 0.0
+    },
+    {
+      "kv_cache_len": 1024,
+      "physical_npu": 3,
+      "mean_tok_s": 531.975179,
+      "min_repeat_tok_s": 531.116990,
+      "max_repeat_tok_s": 532.669973,
+      "compile_first_call_sec": 49.362045,
+      "reserved_hbm_gib": 1.914062,
+      "free_hbm_gib": 58.656868,
+      "compiled_eager_token_exact_match": true,
+      "compiled_eager_kv_max_abs": 0.0
+    },
+    {
+      "kv_cache_len": 2048,
+      "physical_npu": 4,
+      "mean_tok_s": 477.054926,
+      "min_repeat_tok_s": 472.526949,
+      "max_repeat_tok_s": 481.647504,
+      "compile_first_call_sec": 53.074936,
+      "reserved_hbm_gib": 2.480469,
+      "free_hbm_gib": 58.086975,
+      "compiled_eager_token_exact_match": true,
+      "compiled_eager_kv_max_abs": 0.0
+    },
+    {
+      "kv_cache_len": 4096,
+      "physical_npu": 6,
+      "mean_tok_s": 450.880474,
+      "min_repeat_tok_s": 448.922531,
+      "max_repeat_tok_s": 454.503480,
+      "compile_first_call_sec": 28.356534,
+      "reserved_hbm_gib": 3.568359,
+      "free_hbm_gib": 56.992481,
+      "compiled_eager_token_exact_match": true,
+      "compiled_eager_kv_max_abs": 0.0
+    },
+    {
+      "kv_cache_len": 8192,
+      "physical_npu": 7,
+      "mean_tok_s": 384.530593,
+      "min_repeat_tok_s": 384.265317,
+      "max_repeat_tok_s": 384.681969,
+      "compile_first_call_sec": 52.177998,
+      "reserved_hbm_gib": 5.359375,
+      "free_hbm_gib": 55.209667,
+      "compiled_eager_token_exact_match": true,
+      "compiled_eager_kv_max_abs": 0.0
+    },
+    {
+      "kv_cache_len": 16384,
+      "physical_npu": 1,
+      "mean_tok_s": 290.283078,
+      "min_repeat_tok_s": 289.947203,
+      "max_repeat_tok_s": 290.699733,
+      "compile_first_call_sec": 51.661111,
+      "reserved_hbm_gib": 8.896484,
+      "free_hbm_gib": 51.674034,
+      "compiled_eager_token_exact_match": true,
+      "compiled_eager_kv_max_abs": 0.0
+    },
+    {
+      "kv_cache_len": 32768,
+      "physical_npu": 3,
+      "mean_tok_s": 190.088294,
+      "min_repeat_tok_s": 189.429327,
+      "max_repeat_tok_s": 190.424299,
+      "compile_first_call_sec": 51.958948,
+      "reserved_hbm_gib": 15.970703,
+      "free_hbm_gib": 44.600403,
+      "compiled_eager_token_exact_match": true,
+      "compiled_eager_kv_max_abs": 0.0
+    },
+    {
+      "kv_cache_len": 65536,
+      "physical_npu": 4,
+      "mean_tok_s": 96.960820,
+      "min_repeat_tok_s": 96.714431,
+      "max_repeat_tok_s": 97.384483,
+      "compile_first_call_sec": 52.576848,
+      "reserved_hbm_gib": 29.974609,
+      "free_hbm_gib": 30.592560,
+      "compiled_eager_token_exact_match": true,
+      "compiled_eager_kv_max_abs": 0.0
+    },
+    {
+      "kv_cache_len": 131072,
+      "physical_npu": 6,
+      "mean_tok_s": 53.954012,
+      "min_repeat_tok_s": 53.930150,
+      "max_repeat_tok_s": 53.993260,
+      "compile_first_call_sec": 52.045267,
+      "reserved_hbm_gib": 58.355469,
+      "free_hbm_gib": 2.205116,
+      "compiled_eager_token_exact_match": true,
+      "compiled_eager_kv_max_abs": 0.0
+    }
+  ]
+}
