@@ -180,6 +180,63 @@ Both cold bucket slots logged `Saving cache`; both fresh-process calls logged
 the behavior the ten-bucket 310P run must reproduce structurally, although its
 absolute load and graph times will differ.
 
+The complete ten-bucket representative-128 gate also passed on 910B2:
+
+```text
+cold worker setup:       233.966 s
+fresh-process setup:      39.674 s
+trace prefill:            69.466 s, 1.8426 pages/s
+clean prefill:            71.079 s, 1.8008 pages/s
+compiled bucket graph:     8.298 s
+eager fallback graph:      16.788 s
+total vision graph:        25.086 s
+clean layout section:      19.294 s
+crops/rejections:        2489 / 0
+compiled-module files:      10
+OM files after restart:     10
+new OMs during restart:      0
+exit code:                   0
+```
+
+The normalized 910B2 trace-stage evidence is:
+
+```text
+direct RGB decode:               4.207 s
+layout:                         17.649 s
+crop build:                      0.639 s
+recognition input preparation:   9.338 s
+processor resize:                7.430 s
+recognition prefill:            34.184 s
+cache D2H:                       1.320 s
+shared pack:                     2.713 s
+text-prefill pack wall:          3.123 s
+text-prefill device:             1.168 s
+static-cache build/pad device:   1.299 s
+peak vision allocation:        859734528 bytes
+```
+
+The actual trace created 1,051 bucket calls. Its reported aggregate slot
+efficiency was 87.5857% and its pixel efficiency was 68.1510%. The compiled
+bucket rows alone had 89.8232% slot efficiency; the aggregate metric also
+accounts for the 62 eager-fallback crops. These normalized values are the
+comparison reference. Raw machine logs remain local because they include
+environment-specific paths and metadata.
+
+The actual call histogram was:
+
+```text
+448x64_b4   301
+448x256_b2   82
+448x384_b2   44
+512x128_b4   59
+960x64_b2    61
+960x64_b4   151
+960x128_b1  142
+960x256_b1  121
+960x384_b1   37
+960x512_b1   53
+```
+
 The fixed CPU replay for this exact K10 planner predicts:
 
 - 2,425 compiled crops from the prior representative-128 trace;
@@ -189,7 +246,7 @@ The fixed CPU replay for this exact K10 planner predicts:
 - no change to crop geometry or model semantics; only padding canvas and call
   grouping change.
 
-The exact expected call histogram is:
+The prior fixed-replay forecast histogram was:
 
 ```text
 448x64_b4   300
