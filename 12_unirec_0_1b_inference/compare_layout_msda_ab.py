@@ -130,12 +130,12 @@ def compare_outputs(
                 ),
             }
         )
-    baseline_forward_ms = baseline["summary"]["stages"]["model_forward_s"][
-        "mean_ms"
-    ]
-    candidate_forward_ms = candidate["summary"]["stages"]["model_forward_s"][
-        "mean_ms"
-    ]
+    baseline_summary = baseline["summary"]
+    candidate_summary = candidate["summary"]
+    baseline_forward = baseline_summary["stages"]["model_forward_s"]
+    candidate_forward = candidate_summary["stages"]["model_forward_s"]
+    baseline_forward_ms = baseline_forward["mean_ms"]
+    candidate_forward_ms = candidate_forward["mean_ms"]
     return {
         "page_count": len(page_rows),
         "total_baseline_boxes": sum(
@@ -158,13 +158,30 @@ def compare_outputs(
         "score_mean_abs": statistics.fmean(score_diffs),
         "baseline_model_forward_mean_ms": baseline_forward_ms,
         "candidate_model_forward_mean_ms": candidate_forward_ms,
+        "baseline_model_forward_median_ms": baseline_forward["median_ms"],
+        "candidate_model_forward_median_ms": candidate_forward["median_ms"],
+        "baseline_model_forward_p90_ms": baseline_forward["p90_ms"],
+        "candidate_model_forward_p90_ms": candidate_forward["p90_ms"],
+        "baseline_model_forward_min_ms": baseline_forward["min_ms"],
+        "candidate_model_forward_min_ms": candidate_forward["min_ms"],
+        "baseline_model_forward_max_ms": baseline_forward["max_ms"],
+        "candidate_model_forward_max_ms": candidate_forward["max_ms"],
         "model_forward_speedup": baseline_forward_ms / candidate_forward_ms,
         "model_forward_saved_ms": baseline_forward_ms - candidate_forward_ms,
-        "baseline_pages_per_s": baseline["summary"]["pages_per_s"],
-        "candidate_pages_per_s": candidate["summary"]["pages_per_s"],
+        "baseline_page_wall_mean_ms": baseline_summary["page_wall_mean_ms"],
+        "candidate_page_wall_mean_ms": candidate_summary["page_wall_mean_ms"],
+        "baseline_page_wall_median_ms": baseline_summary[
+            "page_wall_median_ms"
+        ],
+        "candidate_page_wall_median_ms": candidate_summary[
+            "page_wall_median_ms"
+        ],
+        "baseline_page_wall_p90_ms": baseline_summary["page_wall_p90_ms"],
+        "candidate_page_wall_p90_ms": candidate_summary["page_wall_p90_ms"],
+        "baseline_pages_per_s": baseline_summary["pages_per_s"],
+        "candidate_pages_per_s": candidate_summary["pages_per_s"],
         "layout_section_speedup": (
-            candidate["summary"]["pages_per_s"]
-            / baseline["summary"]["pages_per_s"]
+            candidate_summary["pages_per_s"] / baseline_summary["pages_per_s"]
         ),
         "worst_iou_pages": sorted(
             page_rows,
@@ -285,7 +302,14 @@ def main() -> None:
         f"minimum_iou={output['minimum_paired_iou']:.9f} "
         f"forward_ms={output['baseline_model_forward_mean_ms']:.6f}->"
         f"{output['candidate_model_forward_mean_ms']:.6f} "
+        f"forward_median_ms="
+        f"{output['baseline_model_forward_median_ms']:.6f}->"
+        f"{output['candidate_model_forward_median_ms']:.6f} "
+        f"forward_p90_ms={output['baseline_model_forward_p90_ms']:.6f}->"
+        f"{output['candidate_model_forward_p90_ms']:.6f} "
         f"forward_speedup={output['model_forward_speedup']:.6f} "
+        f"pages_per_s={output['baseline_pages_per_s']:.6f}->"
+        f"{output['candidate_pages_per_s']:.6f} "
         f"quality_review_required="
         f"{str(report['quality_review_required']).lower()}"
     )
@@ -300,8 +324,21 @@ def main() -> None:
             f"gridsample="
             f"{profiles['baseline']['selected_ops']['GridSample']['count']}->"
             f"{profiles['candidate']['selected_ops']['GridSample']['count']} "
+            f"gridsample_ms="
+            f"{profiles['baseline']['selected_ops']['GridSample']['total_time_ms']:.6f}->"
+            f"{profiles['candidate']['selected_ops']['GridSample']['total_time_ms']:.6f} "
             f"native_msda="
-            f"{profiles['candidate']['selected_ops']['MultiScaleDeformableAttnFunction']['count']}"
+            f"{profiles['baseline']['selected_ops']['MultiScaleDeformableAttnFunction']['count']}->"
+            f"{profiles['candidate']['selected_ops']['MultiScaleDeformableAttnFunction']['count']} "
+            f"native_msda_ms="
+            f"{profiles['baseline']['selected_ops']['MultiScaleDeformableAttnFunction']['total_time_ms']:.6f}->"
+            f"{profiles['candidate']['selected_ops']['MultiScaleDeformableAttnFunction']['total_time_ms']:.6f} "
+            f"transpose_ms="
+            f"{profiles['baseline']['selected_ops']['Transpose']['total_time_ms']:.6f}->"
+            f"{profiles['candidate']['selected_ops']['Transpose']['total_time_ms']:.6f} "
+            f"cast_ms="
+            f"{profiles['baseline']['selected_ops']['Cast']['total_time_ms']:.6f}->"
+            f"{profiles['candidate']['selected_ops']['Cast']['total_time_ms']:.6f}"
         )
     print(f"UNIREC_LAYOUT_MSDA_REAL_OUTPUT {args.output.resolve()}")
     if not report["passed_structural_geometry_gates"]:
