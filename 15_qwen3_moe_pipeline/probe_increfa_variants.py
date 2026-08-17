@@ -123,7 +123,7 @@ class AttentionVariant(nn.Module):
                 query.view(2, 16, 1, 128),
                 key.view(2, 2, self.cache_length, 128),
                 value.view(2, 2, self.cache_length, 128),
-                atten_mask=mask,
+                atten_mask=mask.expand(2, 1, 1, self.cache_length).contiguous(),
                 num_heads=16, num_key_value_heads=2, input_layout="BNSD",
                 scale_value=self.scale, inner_precise=1,
             )
@@ -133,7 +133,7 @@ class AttentionVariant(nn.Module):
                 query.view(4, 8, 1, 128),
                 key.view(4, 1, self.cache_length, 128),
                 value.view(4, 1, self.cache_length, 128),
-                atten_mask=mask,
+                atten_mask=mask.expand(4, 1, 1, self.cache_length).contiguous(),
                 num_heads=8, num_key_value_heads=1, input_layout="BNSD",
                 scale_value=self.scale, inner_precise=1,
             )
