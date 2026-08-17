@@ -24,11 +24,21 @@ from modeling_optimized_unirec import (  # noqa: E402
     OptimizedUniRecRunner,
     synchronize_device,
 )
+import vision_full_batch  # noqa: E402
 from vision_full_batch import (  # noqa: E402
     BucketedFullVisionRuntime,
     VisionBucketSpec,
+    _MaskedFullVisionEncoder,
     _make_host_masks,
 )
+
+
+def _static_forward_module_factory(
+    runner: OptimizedUniRecRunner,
+    _spec: VisionBucketSpec,
+) -> _MaskedFullVisionEncoder:
+    """Use the ordinary class-defined forward for cache-persistence diagnosis."""
+    return _MaskedFullVisionEncoder(runner).eval()
 
 
 def parse_args() -> argparse.Namespace:
@@ -42,6 +52,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-sizes", required=True)
     parser.add_argument("--warmups", type=int, default=2)
     parser.add_argument("--repeats", type=int, default=20)
+    parser.add_argument(
+        "--module-identity",
+        default="dynamic_bucket",
+        choices=("dynamic_bucket", "static_class"),
+        help=(
+            "Use production's dynamic per-bucket forward identity or the "
+            "ordinary class-defined forward for cache-persistence diagnosis."
+        ),
+    )
     parser.add_argument(
         "--focal-depthwise-rewrite",
         default="constant_grouped_all",
@@ -144,6 +163,10 @@ def main() -> None:
         dtype="float16",
         compile_cache_dir=cache_dir,
     )
+    if args.module_identity == "static_class":
+        vision_full_batch._new_masked_full_encoder_module = (
+            _static_forward_module_factory
+        )
     specs = tuple(
         VisionBucketSpec(args.width, args.height, batch) for batch in batches
     )
@@ -322,6 +345,7 @@ def main() -> None:
         "repeats": args.repeats,
         "focal_depthwise_rewrite": args.focal_depthwise_rewrite,
         "weight_format": args.weight_format,
+        "module_identity": args.module_identity,
         "runtime_init_wall_s": runtime_init_wall_s,
         "compile_api": runtime.compile_api,
         "cache_inventory": runtime.cache_inventory(),
