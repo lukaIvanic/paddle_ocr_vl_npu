@@ -10,6 +10,7 @@ CHIP_LABEL="${UNIREC_K10_CHIP_LABEL:-910B2}"
 ALLOWED_DEVICES="${UNIREC_K10_ALLOWED_DEVICES:-}"
 RECOGNITION_THREADS="${UNIREC_K10_THREADS:-1}"
 LAYOUT_CPU_THREADS="${UNIREC_K10_LAYOUT_CPU_THREADS:-1}"
+WORKERS="${UNIREC_K10_WORKERS:-1}"
 ALLOW_THREAD_OVERSUBSCRIPTION="${UNIREC_K10_ALLOW_THREAD_OVERSUBSCRIPTION:-0}"
 
 resolve_inputs() {
@@ -26,6 +27,9 @@ resolve_inputs() {
   esac
   case "$LAYOUT_CPU_THREADS" in
     ''|*[!0-9]*|0) printf 'UNIREC_K10_INVALID_LAYOUT_CPU_THREADS=%s\n' "$LAYOUT_CPU_THREADS" >&2; exit 1 ;;
+  esac
+  case "$WORKERS" in
+    ''|*[!0-9]*|0) printf 'UNIREC_K10_INVALID_WORKERS=%s\n' "$WORKERS" >&2; exit 1 ;;
   esac
   if [[ "$ASCEND_RT_VISIBLE_DEVICES" == *,* ]]; then
     printf 'UNIREC_K10_REQUIRES_ONE_NPU=%s\n' \
@@ -117,7 +121,7 @@ run_lane() {
     --dtype float16
     --offset 0
     --limit 128
-    --workers 1
+    --workers "$WORKERS"
     --warmup-pages 8
     --layout-batch-size 1
     --layout-cpu-threads "$LAYOUT_CPU_THREADS"
@@ -152,6 +156,7 @@ report_clean_only() {
   CHIP_LABEL="$CHIP_LABEL" \
   EXPECTED_THREADS="$RECOGNITION_THREADS" \
   EXPECTED_LAYOUT_CPU_THREADS="$LAYOUT_CPU_THREADS" \
+  EXPECTED_WORKERS="$WORKERS" \
     "$PYTHON_BIN" - <<'PY' | tee "$RUN_ROOT/report.log"
 import json
 import os
@@ -160,7 +165,8 @@ from pathlib import Path
 run = json.loads(Path(os.environ["CLEAN_SUMMARY"]).read_text())
 assert run["status"] == "ok"
 assert run["execution"] == "production_two_phase_prefill_only"
-assert (run["page_count"], run["workers"]) == (128, 1)
+assert run["page_count"] == 128
+assert run["workers"] == int(os.environ["EXPECTED_WORKERS"])
 assert run["recognition_preprocess_threads"] == int(os.environ["EXPECTED_THREADS"])
 assert run["layout_batch_size"] == 1
 assert run["layout_cpu_threads"] == int(
@@ -194,11 +200,21 @@ print(
     f"{prefix}_CLEAN_ONLY_RESULT PASS "
     f"clean_wall_s={run['timing_s']['prefill_phase']:.6f} "
     f"clean_pages_s={run['throughput']['prefill_pages_per_s']:.6f} "
+    f"workers={run['workers']} "
     f"threads={run['recognition_preprocess_threads']} "
     f"layout_cpu_threads={run['layout_cpu_threads']} "
     f"clean_layout_s={run['prefill_phase_summary']['stage_s']['worker_detector_call_sum_s']:.6f} "
     f"crops={run['retained_bank']['crop_count']} "
     f"real_source_tokens={run['retained_bank']['real_source_tokens']}"
+)
+stages = run["prefill_phase_summary"]["stage_s"]
+print(
+    f"{prefix}_CLEAN_ONLY_STAGES "
+    f"detector_service_sum_s={stages['worker_detector_call_sum_s']:.6f} "
+    f"recognition_input_service_sum_s={stages['worker_recognition_input_prepare_sum_s']:.6f} "
+    f"recognition_prefill_service_sum_s={stages['worker_recognition_prefill_sum_s']:.6f} "
+    f"shared_pack_service_sum_s={stages['worker_shared_pack_sum_s']:.6f} "
+    f"decode_service_sum_s={stages['worker_direct_rgb_decode_sum_s']:.6f}"
 )
 print(
     f"{prefix}_FALLBACK_WARMUP "
@@ -218,6 +234,7 @@ report_result() {
   CHIP_LABEL="$CHIP_LABEL" \
   EXPECTED_THREADS="$RECOGNITION_THREADS" \
   EXPECTED_LAYOUT_CPU_THREADS="$LAYOUT_CPU_THREADS" \
+  EXPECTED_WORKERS="$WORKERS" \
     "$PYTHON_BIN" - <<'PY' | tee "$RUN_ROOT/report.log"
 import json
 import os
@@ -234,7 +251,8 @@ expected = {
 for run, traced in ((trace_run, True), (clean_run, False)):
     assert run["status"] == "ok"
     assert run["execution"] == "production_two_phase_prefill_only"
-    assert (run["page_count"], run["workers"]) == (128, 1)
+    assert run["page_count"] == 128
+    assert run["workers"] == int(os.environ["EXPECTED_WORKERS"])
     assert run["recognition_preprocess_threads"] == int(os.environ["EXPECTED_THREADS"])
     assert run["layout_batch_size"] == 1
     assert run["layout_cpu_threads"] == int(
@@ -246,13 +264,14 @@ for run, traced in ((trace_run, True), (clean_run, False)):
     assert run["vision_weight_format"] == "torchair_internal"
     assert run["prefill_trace_enabled"] is traced
     worker_setup = run["prefill_worker_setup_diagnostics"]
-    assert len(worker_setup) == 1
-    assert worker_setup[0]["recognition_preprocess_threads"] == int(
-        os.environ["EXPECTED_THREADS"]
-    )
-    assert worker_setup[0]["layout_cpu_threads"] == int(
-        os.environ["EXPECTED_LAYOUT_CPU_THREADS"]
-    )
+    assert len(worker_setup) == int(os.environ["EXPECTED_WORKERS"])
+    for worker in worker_setup:
+        assert worker["recognition_preprocess_threads"] == int(
+            os.environ["EXPECTED_THREADS"]
+        )
+        assert worker["layout_cpu_threads"] == int(
+            os.environ["EXPECTED_LAYOUT_CPU_THREADS"]
+        )
 assert trace_run["retained_bank"]["crop_count"] == clean_run["retained_bank"]["crop_count"]
 assert trace_run["retained_bank"]["real_source_tokens"] == clean_run["retained_bank"]["real_source_tokens"]
 
@@ -312,6 +331,7 @@ print(
     f"clean_wall_s={clean_run['timing_s']['prefill_phase']:.6f} "
     f"clean_pages_s={clean_run['throughput']['prefill_pages_per_s']:.6f} "
     f"trace_wall_s={trace_run['timing_s']['prefill_phase']:.6f} "
+    f"workers={trace_run['workers']} "
     f"threads={trace_run['recognition_preprocess_threads']} "
     f"layout_cpu_threads={trace_run['layout_cpu_threads']} "
     f"bucket_graph_s={bucket_graph['sum_s']:.6f} "
@@ -327,17 +347,24 @@ cpu_execution = distributions["cpu_execution"][
     "recognition_crop_preprocess"
 ]
 assert cpu_execution["available"] is True
-assert cpu_execution["native_thread_count"] == int(
-    os.environ["EXPECTED_THREADS"]
+assert cpu_execution["native_thread_count"] == (
+    int(os.environ["EXPECTED_THREADS"])
+    * int(os.environ["EXPECTED_WORKERS"])
 )
-worker_affinity = trace_run["prefill_worker_setup_diagnostics"][0][
-    "cpu_affinity"
+worker_affinities = [
+    worker["cpu_affinity"]
+    for worker in trace_run["prefill_worker_setup_diagnostics"]
 ]
-assert len(worker_affinity) == int(
-    trace_run["prefill_worker_setup_diagnostics"][0]["cpu_affinity_count"]
-)
+for worker, affinity in zip(
+    trace_run["prefill_worker_setup_diagnostics"], worker_affinities
+):
+    assert len(affinity) == int(worker["cpu_affinity_count"])
 if os.environ.get("UNIREC_K10_ALLOW_THREAD_OVERSUBSCRIPTION", "0") != "1":
-    assert len(worker_affinity) >= int(os.environ["EXPECTED_THREADS"])
+    assert all(
+        len(affinity) >= int(os.environ["EXPECTED_THREADS"])
+        and len(affinity) >= int(os.environ["EXPECTED_LAYOUT_CPU_THREADS"])
+        for affinity in worker_affinities
+    )
 text_device_rows = [
     row
     for name, row in stage_rows.items()
@@ -370,9 +397,10 @@ print(
 )
 print(
     f"{prefix}_CPU_EXECUTION "
+    f"workers={trace_run['workers']} "
     f"configured_threads={trace_run['recognition_preprocess_threads']} "
-    f"worker_affinity_count={len(worker_affinity)} "
-    f"worker_affinity={worker_affinity} "
+    f"worker_affinity_counts={[len(value) for value in worker_affinities]} "
+    f"worker_affinities={worker_affinities} "
     f"native_threads={cpu_execution['native_thread_count']} "
     f"max_concurrent_tasks={cpu_execution['max_concurrent_tasks']} "
     f"observed_cpu_count={cpu_execution['cpu_id_count_observed']} "
@@ -400,8 +428,8 @@ worker_main() {
   {
     printf 'commit=%s\nphysical_device=%s\npython=%s\n' \
       "$(git -C "$REPO" rev-parse HEAD)" "$ASCEND_RT_VISIBLE_DEVICES" "$PYTHON_BIN"
-    printf 'recognition_threads=%s\ncpu_affinity_count=%s\n' \
-      "$RECOGNITION_THREADS" "$CPU_AFFINITY_COUNT"
+    printf 'workers=%s\nrecognition_threads=%s\ncpu_affinity_count=%s\n' \
+      "$WORKERS" "$RECOGNITION_THREADS" "$CPU_AFFINITY_COUNT"
     printf 'layout_cpu_threads=%s\n' "$LAYOUT_CPU_THREADS"
     printf 'model=%s\nlayout_model=%s\ncompile_cache=%s\nlayout_cache=%s\n' \
       "$MODEL" "$LAYOUT_MODEL" "$COMPILE_CACHE" "$LAYOUT_CACHE_ROOT"
@@ -472,6 +500,7 @@ launch_main() {
     UNIREC_K10_RUN_MODE="${UNIREC_K10_RUN_MODE:-both}" \
     UNIREC_K10_THREADS="$RECOGNITION_THREADS" \
     UNIREC_K10_LAYOUT_CPU_THREADS="$LAYOUT_CPU_THREADS" \
+    UNIREC_K10_WORKERS="$WORKERS" \
     CPU_AFFINITY_COUNT="$CPU_AFFINITY_COUNT" \
     UNIREC_K10_ALLOW_THREAD_OVERSUBSCRIPTION="$ALLOW_THREAD_OVERSUBSCRIPTION" \
     bash "$0" --worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 < /dev/null &
