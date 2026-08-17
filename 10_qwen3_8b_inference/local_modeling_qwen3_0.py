@@ -33,6 +33,7 @@ class DecodeOptimizationConfig:
     complete_layer_prefetch_ahead: int = 0
     packed_mlp: bool = False
     npu_swiglu: bool = False
+    batched_qk_rms_norm: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -139,6 +140,19 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         weight_prefetch_timing="complete_layer_ahead",
         complete_layer_prefetch_ahead=1,
         packed_mlp=True,
+    ),
+    "combined_apply_complete_layer_prefetch1_batched_qk_norm_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch1_batched_qk_norm_rope_lut",
+        npu_rms_norm=True,
+        fused_add_rms_norm=True,
+        packed_qkv=True,
+        npu_rotary=True,
+        rope_lookup=True,
+        weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=1,
+        batched_qk_rms_norm=True,
     ),
 }
 
@@ -459,9 +473,51 @@ class LocalQwen3Attention(nn.Module):
             packed = linear_tokenwise(self.decode_qkv_proj, hidden_states)
             query_size = self.num_heads * self.head_dim
             kv_size = self.num_key_value_heads * self.head_dim
+            if optimization.batched_qk_rms_norm:
+                qk_states, value_states = packed.split(
+                    (query_size + kv_size, kv_size),
+                    dim=-1,
+                )
+                qk_states = qk_states.view(
+                    batch,
+                    sequence_length,
+                    self.num_heads + self.num_key_value_heads,
+                    self.head_dim,
+                )
+                if qk_states.device.type == "npu":
+                    qk_states = torch_npu.npu_rms_norm(
+                        qk_states,
+                        self.decode_qk_unit_weight,
+                        self.q_norm.variance_epsilon,
+                    )[0]
+                else:
+                    input_dtype = qk_states.dtype
+                    qk_float = qk_states.float()
+                    variance = qk_float.pow(2).mean(dim=-1, keepdim=True)
+                    qk_states = (
+                        qk_float
+                        * torch.rsqrt(
+                            variance + self.q_norm.variance_epsilon
+                        )
+                    ).to(input_dtype)
+                qk_states = qk_states * self.decode_qk_norm_weight
+                query_states, key_states = qk_states.split(
+                    (self.num_heads, self.num_key_value_heads),
+                    dim=2,
+                )
+                value_states = value_states.view(
+                    batch,
+                    sequence_length,
+                    self.num_key_value_heads,
+                    self.head_dim,
+                )
+                return (
+                    query_states.transpose(1, 2),
+                    key_states.transpose(1, 2),
+                    value_states.transpose(1, 2),
+                )
             query_states, key_states, value_states = packed.split(
-                (query_size, kv_size, kv_size),
-                dim=-1,
+                (query_size, kv_size, kv_size), dim=-1
             )
         else:
             query_states = linear_tokenwise(self.q_proj, hidden_states)
@@ -786,6 +842,40 @@ class LocalQwen3ForCausalLM(nn.Module):
                         (mlp.gate_proj, mlp.up_proj)
                     )
                     packed_mlp_count += 1
+        batched_qk_norm_count = 0
+        if optimization.batched_qk_rms_norm:
+            if not optimization.packed_qkv:
+                raise ValueError("batched Q/K RMSNorm requires packed QKV")
+            for layer in self.layers:
+                attention = layer.self_attn
+                if not hasattr(attention, "decode_qk_norm_weight"):
+                    q_weight = attention.q_norm.weight.detach().view(1, -1)
+                    k_weight = attention.k_norm.weight.detach().view(1, -1)
+                    attention.register_buffer(
+                        "decode_qk_norm_weight",
+                        torch.cat(
+                            (
+                                q_weight.expand(attention.num_heads, -1),
+                                k_weight.expand(
+                                    attention.num_key_value_heads, -1
+                                ),
+                            ),
+                            dim=0,
+                        ).view(
+                            1,
+                            1,
+                            attention.num_heads
+                            + attention.num_key_value_heads,
+                            attention.head_dim,
+                        ).contiguous(),
+                        persistent=False,
+                    )
+                    attention.register_buffer(
+                        "decode_qk_unit_weight",
+                        torch.ones_like(attention.q_norm.weight),
+                        persistent=False,
+                    )
+                    batched_qk_norm_count += 1
         if optimization.rope_lookup:
             positions = torch.arange(
                 int(cache_length),
@@ -874,6 +964,8 @@ class LocalQwen3ForCausalLM(nn.Module):
             "packed_qkv_count": packed_qkv_count,
             "packed_mlp_count": packed_mlp_count,
             "npu_swiglu": optimization.npu_swiglu,
+            "batched_qk_rms_norm": optimization.batched_qk_rms_norm,
+            "batched_qk_norm_count": batched_qk_norm_count,
             "rope_lookup": optimization.rope_lookup,
             "rope_lookup_shape": (
                 None
