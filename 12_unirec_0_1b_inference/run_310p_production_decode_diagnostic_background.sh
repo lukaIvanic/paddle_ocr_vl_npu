@@ -6,6 +6,7 @@ REPO="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 PREFILL="$SCRIPT_DIR/run_prefill_export.py"
 REPLAY="$SCRIPT_DIR/production_decode_replay.py"
 REPORT="$SCRIPT_DIR/report_310p_decode_diagnostic.py"
+REFERENCE="$SCRIPT_DIR/references/unirec_910b_decode_diagnostic_first128_039a633/reference_summary.json"
 
 absolute_executable_path() {
   local value="$1"
@@ -42,6 +43,7 @@ resolve_inputs() {
   test -d "$IMAGES_DIR"
   test -d "$COMPILE_CACHE"
   test -d "$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE"
+  test -f "$REFERENCE"
   local exact_cache
   exact_cache="$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE/decode_selfkv2048_cross1320_increfa_all_b128"
   test "$(find "$exact_cache" -name compiled_module | wc -l)" -eq 1
@@ -103,7 +105,8 @@ worker_main() {
   run_replay "$artifact" "$run_root/trace.json" "$run_root/decode_steps.jsonl" \
     | tee "$run_root/trace.log"
   "$PYTHON_BIN" "$REPORT" --clean "$run_root/clean.json" \
-    --trace "$run_root/trace.json" --output "$run_root/comparison.json" \
+    --trace "$run_root/trace.json" --reference "$REFERENCE" \
+    --output "$run_root/comparison.json" \
     | tee "$run_root/final_report.txt"
 }
 
