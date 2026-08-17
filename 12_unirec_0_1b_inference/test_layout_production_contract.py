@@ -20,7 +20,10 @@ from layout_detector_lab import (  # noqa: E402
 )
 from layout_page_input import materialize_layout_bgr  # noqa: E402
 from layout_page_input import materialize_layout_rgb  # noqa: E402
-from layout_msda_aclnn import _uses_310p_internal_layout  # noqa: E402
+from layout_msda_aclnn import (  # noqa: E402
+    _build_310p_descriptor_bridge_shapes,
+    _uses_310p_internal_layout,
+)
 
 
 class LayoutProductionContractTest(unittest.TestCase):
@@ -28,6 +31,38 @@ class LayoutProductionContractTest(unittest.TestCase):
         self.assertTrue(_uses_310p_internal_layout("Ascend310P3"))
         self.assertTrue(_uses_310p_internal_layout("ascend310p"))
         self.assertFalse(_uses_310p_internal_layout("Ascend910B2"))
+
+    def test_310p_msda_descriptor_bridge_preserves_allocation_size(self) -> None:
+        infer_location, internal_output = _build_310p_descriptor_bridge_shapes(
+            (1, 13125, 8, 32),
+            (1, 300, 8, 3, 4, 2),
+            (1, 300, 256),
+        )
+        self.assertEqual(infer_location, (1, 8, 3, 4, 2, 300))
+        self.assertEqual(internal_output, (1, 256, 300))
+        original_location_numel = 1 * 300 * 8 * 3 * 4 * 2
+        infer_location_numel = 1
+        for dim in infer_location:
+            infer_location_numel *= dim
+        self.assertEqual(infer_location_numel, original_location_numel)
+        self.assertEqual(1 * 256 * 300, 1 * 300 * 256)
+        # Reproduce the installed broken callback's transposed branch:
+        # [value.B, location[-1], location.H * value.D]. The bridge makes its
+        # wrong indexing produce the correct public allocation descriptor.
+        broken_host_infer_output = (
+            1,
+            infer_location[5],
+            infer_location[1] * 32,
+        )
+        self.assertEqual(broken_host_infer_output, (1, 300, 256))
+
+    def test_310p_msda_descriptor_bridge_rejects_inconsistent_shapes(self) -> None:
+        with self.assertRaises(RuntimeError):
+            _build_310p_descriptor_bridge_shapes(
+                (1, 13125, 8, 32),
+                (1, 300, 8, 3, 4, 2),
+                (1, 300, 128),
+            )
 
     def test_production_contract_is_the_lab_default(self) -> None:
         argv = [

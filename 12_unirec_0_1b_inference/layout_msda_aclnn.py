@@ -25,6 +25,57 @@ def _uses_310p_internal_layout(device_name: str) -> bool:
     return "310P" in device_name.upper()
 
 
+def _build_310p_descriptor_bridge_shapes(
+    value_shape: tuple[int, ...],
+    location_shape: tuple[int, ...],
+    output_shape: tuple[int, ...],
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """Return the fake location descriptor and real internal output shape.
+
+    The installed 310P kernel consumes flat location bytes in
+    ``[L,B,H,Q,P,2]`` order, but its broken graph host-infer callback only
+    produces the correct allocation size when locations look like the generic
+    transposed descriptor ``[B,H,L,P,2,Q]``. Both descriptors have the same
+    number of elements. The 310P tiler does not read the location shape; it
+    gets Q/H/P from attention weights.
+    """
+    if len(value_shape) != 4:
+        raise RuntimeError(f"layout MSDA expected rank-4 value, got {value_shape}")
+    if len(location_shape) != 6:
+        raise RuntimeError(
+            f"layout MSDA expected rank-6 locations, got {location_shape}"
+        )
+    if len(output_shape) != 3:
+        raise RuntimeError(f"layout MSDA expected rank-3 output, got {output_shape}")
+    batch, _, heads, head_dim = value_shape
+    loc_batch, queries, loc_heads, levels, points, coordinates = location_shape
+    out_batch, out_queries, channels = output_shape
+    if coordinates != 2:
+        raise RuntimeError(
+            f"layout MSDA expected two location coordinates, got {coordinates}"
+        )
+    if not (
+        batch == loc_batch == out_batch
+        and heads == loc_heads
+        and queries == out_queries
+        and channels == heads * head_dim
+    ):
+        raise RuntimeError(
+            "layout MSDA inconsistent static shapes: "
+            f"value={value_shape} locations={location_shape} output={output_shape}"
+        )
+    infer_location_shape = (
+        batch,
+        heads,
+        levels,
+        points,
+        coordinates,
+        queries,
+    )
+    internal_output_shape = (batch, channels, queries)
+    return infer_location_shape, internal_output_shape
+
+
 def load_layout_msda_extension(path: str | Path) -> Path:
     """Load the small host binding around the installed ACLNN operator."""
     global _LOADED_EXTENSION
@@ -146,6 +197,11 @@ def register_layout_msda_converter() -> None:
         # and run the internal kernel in FP32. The internal result is
         # [B,H*D,Q], which is transposed and cast back below.
         if use_310p_internal_layout:
+            logical_value_shape = tuple(int(dim) for dim in value.symsize)
+            logical_location_shape = tuple(
+                int(dim) for dim in sampling_locations.symsize
+            )
+            logical_output_shape = tuple(int(dim) for dim in meta_outputs.size)
             value = ge_apis_module.Transpose(value, [0, 2, 1, 3])
             sampling_locations = ge_apis_module.Transpose(
                 sampling_locations,
@@ -163,6 +219,26 @@ def register_layout_msda_converter() -> None:
             attention_weights = ge_apis_module.Cast(
                 attention_weights,
                 dst_type=ge_data_type.DT_FLOAT,
+            )
+            (
+                infer_location_shape,
+                internal_output_shape,
+            ) = _build_310p_descriptor_bridge_shapes(
+                logical_value_shape,
+                logical_location_shape,
+                logical_output_shape,
+            )
+            # CANN 9.1 calls the stock broken host infer even when its reserved
+            # disable-infer node attribute is set. Keep the real flat bytes in
+            # the 310P kernel's [L,B,H,Q,P,2] order, but expose the same-size
+            # generic-transposed descriptor [B,H,L,P,2,Q]. The host callback
+            # then infers [B,Q,H*D], which has the correct allocation size.
+            # The 310P tiler ignores this descriptor and reads dimensions from
+            # attention_weights, while the device kernel consumes only the
+            # unchanged flat location pointer plus its tiling data.
+            sampling_locations = ge_apis_module.Reshape(
+                sampling_locations,
+                list(infer_location_shape),
             )
 
         output = ge_custom_op(
@@ -186,16 +262,20 @@ def register_layout_msda_converter() -> None:
         specific_output_layout(output, indices=0, layout="ND")
 
         if use_310p_internal_layout:
-            logical_shape = tuple(int(dim) for dim in meta_outputs.size)
-            if len(logical_shape) != 3:
-                raise RuntimeError(
-                    "layout MSDA expected rank-3 output metadata, got "
-                    f"{logical_shape}"
-                )
-            _pin_ge_output_shape_without_host_infer(
+            # The 310P kernel writes [B,H*D,Q] into the correctly sized buffer,
+            # while the descriptor bridge deliberately made host infer label
+            # that buffer [B,Q,H*D]. Restore the physical interpretation with
+            # a same-numel reshape before the real output transpose.
+            output = ge_apis_module.Reshape(
                 output,
-                (logical_shape[0], logical_shape[2], logical_shape[1]),
-                ge_attr=ge_attr,
+                list(internal_output_shape),
+            )
+            print(
+                "UNIREC_LAYOUT_MSDA_DESCRIPTOR_BRIDGE "
+                f"node={output.node.name} "
+                f"location_shape={list(infer_location_shape)} "
+                f"internal_output_shape={list(internal_output_shape)}",
+                flush=True,
             )
             output = ge_apis_module.Transpose(output, [0, 2, 1])
             output = ge_apis_module.Cast(
