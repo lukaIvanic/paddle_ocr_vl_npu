@@ -639,60 +639,38 @@ def warmup_configured_graphs(
                 batch_size=args.decode_batch_size,
             )
             batch_size = args.decode_batch_size
-            heads = runner.config.decoder_attention_heads
-            head_dim = runner.config.d_model // heads
-            layer_count = runner.config.decoder_layers
-            self_keys = tuple(
-                torch.zeros(
-                    (batch_size, heads, LOCAL_UNIREC_STATIC_CACHE_LEN, head_dim),
-                    dtype=runner.dtype,
-                    device=device,
-                )
-                for _ in range(layer_count)
+            # Use the production allocator itself. This keeps every Dynamo
+            # tensor guard identical across warmup and the later continuous
+            # decoder: inference-tensor state, shape, stride, storage aliasing,
+            # NPU format, and the packed cross-K/V view relationships.
+            warmup_decoder = ContinuousUniRecDecoder(
+                runner=runner,
+                batch_size=batch_size,
+                max_length=LOCAL_UNIREC_STATIC_CACHE_LEN,
+                decode_mode=args.decode_mode,
+                compile_backend=args.compile_backend,
+                compile_dynamic=False,
             )
-            self_values = tuple(torch.zeros_like(tensor) for tensor in self_keys)
-            # Match ContinuousUniRecDecoder._allocate_empty_arena exactly.
-            # Dynamo guards tensor aliasing as well as shape/stride: warming
-            # independent per-layer tensors does not warm the production
-            # contract, where every cross-K/V layer is a view into one packed
-            # arena allocation.
-            packed_cross_kv = torch.zeros(
-                (
-                    2 * layer_count,
+            warmup_cache = warmup_decoder._allocate_empty_arena()
+            decoder_input_ids, cache_position = (
+                ContinuousUniRecDecoder._allocate_decode_device_inputs(
                     batch_size,
-                    heads,
-                    cross_cache_len,
-                    head_dim,
-                ),
-                dtype=runner.dtype,
-                device=device,
+                    device,
+                )
             )
-            cross_keys = tuple(
-                packed_cross_kv[layer] for layer in range(layer_count)
+            decoder_input_ids.fill_(
+                int(runner.config.decoder_start_token_id)
             )
-            cross_values = tuple(
-                packed_cross_kv[layer_count + layer]
-                for layer in range(layer_count)
-            )
-            cross_mask = torch.zeros(
-                (batch_size, 1, 1, cross_cache_len),
-                dtype=torch.float32,
-                device=device,
-            )
+            cache_position.fill_(1)
             decode_inputs = (
-                torch.full(
-                    (batch_size, 1),
-                    int(runner.config.decoder_start_token_id),
-                    dtype=torch.long,
-                    device=device,
-                ),
-                torch.ones((batch_size,), dtype=torch.int64, device=device),
+                decoder_input_ids,
+                cache_position,
                 0,
-                self_keys,
-                self_values,
-                cross_keys,
-                cross_values,
-                cross_mask,
+                warmup_cache.key_cache,
+                warmup_cache.value_cache,
+                warmup_cache.cross_key_cache,
+                warmup_cache.cross_value_cache,
+                warmup_cache.cross_attention_mask,
             )
             pass_times = []
             for pass_index in range(passes):
@@ -712,6 +690,11 @@ def warmup_configured_graphs(
                 "shape_discovery_s": shape_discovery_s,
                 "cross_cache_len": cross_cache_len,
                 "cache_dir": decode_metadata.get("torchair_cache_dir"),
+                "production_arena_allocator": True,
+                "device_inputs_are_inference_tensors": bool(
+                    decoder_input_ids.is_inference()
+                    and cache_position.is_inference()
+                ),
             }
 
     report["wall_s"] = time.perf_counter() - warmup_started

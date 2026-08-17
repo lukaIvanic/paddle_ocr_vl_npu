@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 RUNNER="$SCRIPT_DIR/run_two_phase_batched_unirec.py"
+DECODE_CACHE_PROBE="$SCRIPT_DIR/probe_production_decode_cache_contract.py"
 PREP="$SCRIPT_DIR/prepare_unirec_subset_eval.py"
 SUMMARIZER="$SCRIPT_DIR/summarize_completed_unirec_eval.py"
 EVAL_ENV="$REPO/09_persistent_page_engine/scripts/omnidocbench_eval_env.sh"
@@ -97,6 +98,7 @@ resolve_inputs() {
   test -f "$EVALUATOR_ROOT/pdf_validation.py"
   test "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)" = "$EVALUATOR_COMMIT"
   test -f "$RUNNER"
+  test -f "$DECODE_CACHE_PROBE"
   test -f "$PREP"
   test -f "$SUMMARIZER"
   test -f "$CDM_RUNNER"
@@ -105,6 +107,41 @@ resolve_inputs() {
     'import Levenshtein; import src.metrics.cal_metric'
   PYTHONPATH="$(dirname "$CDM_RUNNER")" "$EVAL_PYTHON" -c \
     'from run_cdm_from_matched_formulas import _configure_cdm_runtime; print(_configure_cdm_runtime())'
+}
+
+gate_decode_cache() {
+  local gate_root="$RUN_ROOT/decode_cache_gate"
+  mkdir -p "$gate_root"
+  local attempt status result log
+  for attempt in 1 2 3; do
+    result="$gate_root/attempt_${attempt}.json"
+    log="$gate_root/attempt_${attempt}.log"
+    set +e
+    "$PYTHON_BIN" "$DECODE_CACHE_PROBE" \
+      --model-path "$MODEL" \
+      --compile-cache-dir "$COMPILE_CACHE" \
+      --device npu:0 \
+      --batch-size 128 \
+      --self-cache-length 2048 \
+      --cross-cache-length 1320 \
+      --passes 2 \
+      --output "$result" \
+      >"$log" 2>&1
+    status="$?"
+    set -e
+    cat "$log"
+    printf 'UNIREC_310P_DECODE_CACHE_GATE attempt=%s status=%s result=%s\n' \
+      "$attempt" "$status" "$result"
+    if [[ "$status" == 0 ]]; then
+      cp "$result" "$gate_root/passed.json"
+      return 0
+    fi
+    if [[ "$status" != 3 && "$status" != 4 ]]; then
+      return "$status"
+    fi
+  done
+  printf 'UNIREC_310P_DECODE_CACHE_GATE_FAILED attempts=3\n' >&2
+  return 1
 }
 
 prepare_clean_evaluator() {
@@ -304,6 +341,7 @@ worker_main() {
     df -h /dev/shm
     grep -E '^(MemTotal|MemAvailable):' /proc/meminfo
   } >"$RUN_ROOT/preflight.log" 2>&1
+  gate_decode_cache
   run_inference
   run_evaluation
   report | tee "$RUN_ROOT/final_report.txt"

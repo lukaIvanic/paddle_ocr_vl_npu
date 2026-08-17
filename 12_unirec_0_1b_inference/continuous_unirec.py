@@ -222,6 +222,38 @@ class ContinuousUniRecDecoder:
         self._cross_attention_mask_templates: torch.Tensor | None = None
 
     @staticmethod
+    def _allocate_decode_device_inputs(
+        batch_size: int,
+        device: str | torch.device,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Allocate the exact inference-tensor contract used by decode.
+
+        TorchDynamo guards whether a tensor was created under inference mode.
+        Graph warmup already creates its inputs under inference mode.  Keep the
+        long-lived production input buffers under the same contract so the
+        first real decode step cannot specialize a second graph.
+        """
+        with torch.inference_mode():
+            next_token_tensor = torch.empty(
+                (int(batch_size), 1),
+                dtype=torch.long,
+                device=device,
+            )
+            cache_position_tensor = torch.empty(
+                int(batch_size),
+                dtype=torch.int64,
+                device=device,
+            )
+        if not (
+            next_token_tensor.is_inference()
+            and cache_position_tensor.is_inference()
+        ):
+            raise RuntimeError(
+                "continuous decode device inputs must be inference tensors"
+            )
+        return next_token_tensor, cache_position_tensor
+
+    @staticmethod
     def _copy_cache_row(
         destination: LocalUniRecStaticCache,
         slot: int,
@@ -894,15 +926,11 @@ class ContinuousUniRecDecoder:
             )
         next_token_host_array = next_token_host.numpy()
         cache_position_host_array = cache_position_host.numpy()
-        next_token_tensor = torch.empty(
-            (self.batch_size, 1),
-            dtype=torch.long,
-            device=self.runner.device,
-        )
-        cache_position_tensor = torch.empty(
-            self.batch_size,
-            dtype=torch.int64,
-            device=self.runner.device,
+        next_token_tensor, cache_position_tensor = (
+            self._allocate_decode_device_inputs(
+                self.batch_size,
+                self.runner.device,
+            )
         )
         decode_input_buffer_setup_s = (
             time.perf_counter() - input_buffer_setup_started
@@ -1072,6 +1100,10 @@ class ContinuousUniRecDecoder:
                 "completion_callback_s": completion_callback_s,
                 "decode_input_buffer_setup_s": decode_input_buffer_setup_s,
                 "decode_input_host_pinned": decode_input_host_pinned,
+                "decode_input_device_tensors_inference": bool(
+                    next_token_tensor.is_inference()
+                    and cache_position_tensor.is_inference()
+                ),
                 "decode_input_build_s": decode_input_build_s,
                 "explicit_pre_decode_sync": False,
                 "pre_decode_sync_s": pre_decode_sync_s,
