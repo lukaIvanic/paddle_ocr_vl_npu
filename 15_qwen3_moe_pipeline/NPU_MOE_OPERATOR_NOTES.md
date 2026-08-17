@@ -3,39 +3,33 @@
 These notes map the installed `torch_npu 2.10.0` A2/910B operator contracts to
 the Qwen3-30B-A3B BF16 top-8 expert block. They do not make a 310P support claim.
 
-## Current compiled baseline
+## Verified compiled paths
 
-The static TorchAir graph currently preserves the correctness-first path:
+The original static TorchAir graph used the correctness-first path:
 
 1. FP32 router softmax and top 8;
 2. `index_select` complete gate/up and down weights for the selected experts;
 3. two small BMM calls;
 4. SiLU, multiply, weighting, and reduction as separate operations.
 
-This path fullgraph-compiles without a graph break. The clean second-half run
-reaches 153.43 tokens/s, while the complete two-process pipeline reaches 86.07
-tokens/s.
-It still materializes selected expert weights and therefore performs avoidable
-HBM reads and writes.
+At B1/KV4096, the complete 24-layer second half plus final RMSNorm and LM head
+reached 146.50 tokens/s. It materialized selected expert weights and therefore
+performed avoidable HBM reads and writes.
 
-## Recommended BF16 grouped-matmul lane
-
-The next lane should keep routing on device and use this sequence:
+The verified optimized BF16 sequence is:
 
 1. Router linear in BF16.
-2. `npu_moe_gating_top_k_softmax` on FP32 router logits. It returns selected
-   probabilities, `int32` expert IDs, and row IDs. Renormalize the selected
-   probabilities afterward because this model has `norm_topk_prob=true`.
-3. `npu_moe_init_routing` to replicate and sort the B1 token for its eight
-   selected experts.
-4. `npu_moe_compute_expert_tokens` to produce the device-side expert group
-   boundaries.
-5. BF16 `npu_grouped_matmul` with persistent gate/up weights stored as
+2. `npu_moe_gating_top_k_softmax` on router logits. It returns selected
+   probabilities and `int32` expert IDs. Renormalize the selected probabilities
+   afterward because this model has `norm_topk_prob=true`.
+3. `npu_moe_init_routing_v2` to replicate and sort the B1 token and emit the
+   per-expert group counts in one call.
+4. BF16 `npu_grouped_matmul` with persistent gate/up weights stored as
    `[128, 2048, 1536]`.
-6. Split gate/up, then run SiLU and multiply.
-7. A second BF16 `npu_grouped_matmul` with down weights stored as
+5. Split gate/up, then run SiLU and multiply.
+6. A second BF16 `npu_grouped_matmul` with down weights stored as
    `[128, 768, 2048]`.
-8. `npu_moe_finalize_routing` to apply routing weights and combine the eight
+7. `npu_moe_finalize_routing` to apply routing weights and combine the eight
    expert outputs.
 
 `npu_grouped_matmul` supports graph mode, BF16 A2 inputs, 3D expert weights, and
@@ -43,6 +37,20 @@ a device Tensor `group_list`. This avoids copying eight complete expert matrices
 before each multiplication. The checkpoint loader should write the persistent
 weights directly in the operator's `[expert, K, N]` layout; transposing them on
 every token would defeat the optimization.
+
+This complete path reached 196.83 tokens/s at 5.080 ms TPOT over 200 tokens. It
+matched all eight captured greedy tokens and used one static TorchAir graph
+without recompilation.
+
+The one-layer probe is not a performance benchmark. It exists only to catch
+operator contract and numerical failures. Timing decisions use the complete
+24-layer stage plus final RMSNorm and LM head.
+
+The installed `npu_moe_gating_top_k_softmax_v2` Python wrapper accepts
+`renorm=1`, which is the direct Qwen top-k-normalization contract. Its TorchAir
+GE converter rejects that attribute. The compiled path therefore uses
+`npu_moe_gating_top_k_softmax` followed by an explicit selected-probability
+renormalization.
 
 ## Operators that do not directly fit
 

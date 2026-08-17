@@ -1,7 +1,7 @@
 # Experiment 15: Qwen3-30B-A3B PP2, TP2, and stage replay
 
-This experiment establishes a correctness-first custom Qwen3-30B-A3B decode
-lane before optimizing MoE execution.
+This experiment establishes and optimizes a correctness-first custom
+Qwen3-30B-A3B decode lane.
 
 The full model runs as a two-stage sequential pipeline:
 
@@ -116,6 +116,48 @@ The exact evidence is in:
 - `references/qwen3_moe_pp2_k4096.json`;
 - `references/qwen3_moe_stage2_tp2_router_membership.json`.
 
+## Verified single-NPU MoE optimization ladder
+
+MoE kernel changes are timed on the complete second half of the model, not on
+one layer. The representative gate is layers 24 through 47 plus final RMSNorm
+and LM head, B1, KV4096, BF16, two warmup tokens, 200 measured tokens, and one
+static TorchAir graph with `fullgraph=True` and `dynamic=False`.
+
+| expert path | tokens/s | mean TPOT | change from selected BMM |
+| --- | ---: | ---: | ---: |
+| selected expert-weight gather and BMM | 146.50 | 6.826 ms | baseline |
+| persistent BF16 grouped matmul | 161.48 | 6.193 ms | +10.22% |
+| grouped matmul plus fused output finalization | 178.43 | 5.604 ms | +21.79% |
+| InitRoutingV2 counts plus fused finalization | 195.33 | 5.120 ms | +33.33% |
+| compile-compatible fused gating, InitRoutingV2, and fused finalization | 196.83 | 5.080 ms | +34.36% |
+
+All rows use all 24 layers and include the LM head. Every measured path used
+one static graph, had no recompilation after capture, and matched all eight
+captured greedy token IDs. The first run of the final path used a cold graph
+cache; the 200-token timing excludes that first compile/load call.
+
+The large gains came from three changes:
+
+1. Keep all 128 expert weights in the persistent `[expert, K, N]` layout and
+   let BF16 `npu_grouped_matmul` read only the routed experts. This removes the
+   complete expert-weight gathers.
+2. Replace output reorder, weighting, and reduction with
+   `npu_moe_finalize_routing`.
+3. Use `npu_moe_init_routing_v2` to produce the expert group counts directly.
+   This removes the separate `npu_moe_compute_expert_tokens` call.
+
+`npu_moe_gating_top_k_softmax_v2(..., renorm=1)` is exposed by the installed
+PyTorch API but does not compile in this TorchAir build: its GE converter
+rejects the `renorm` attribute. The final path therefore uses the older
+compile-compatible fused gating operator and keeps the top-k renormalization
+explicit. That last change contributed only 0.77% over the preceding full-stage
+run.
+
+The corresponding JSON files are under `references/` with
+`bmm_l24_k4096`, `gmm_manual_l24_k4096`, `gmm_finalize_l24_k4096`,
+`gmm_v2_finalize_l24_k4096`, and `gmm_v2_gating_finalize_l24_k4096` in their
+names.
+
 ## Development replay package
 
 The full pipeline processes the prompt token-by-token, avoiding a separate
@@ -209,7 +251,10 @@ decisions, and expected logits needed by `replay_stage2.py`.
 The first remote run must proceed in rungs: CPU unit test, one real MoE layer,
 one complete stage, full pipeline without an external reference, then vLLM
 token parity and stage-2 replay. Do not jump directly to the full pipeline if a
-smaller rung fails.
+smaller rung fails. The one-layer rung is only an operator-contract and
+correctness smoke. Never use it to accept or reject a performance change. All
+performance decisions require the complete compiled 24-layer stage with final
+RMSNorm and LM head.
 
 The one-layer rung is:
 
