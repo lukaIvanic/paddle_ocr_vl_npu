@@ -9,6 +9,7 @@ MANIFEST="$SCRIPT_DIR/references/unirec_representative_128_v1.json"
 CHIP_LABEL="${UNIREC_K10_CHIP_LABEL:-910B2}"
 ALLOWED_DEVICES="${UNIREC_K10_ALLOWED_DEVICES:-}"
 RECOGNITION_THREADS="${UNIREC_K10_THREADS:-1}"
+ALLOW_THREAD_OVERSUBSCRIPTION="${UNIREC_K10_ALLOW_THREAD_OVERSUBSCRIPTION:-0}"
 
 resolve_inputs() {
   : "${PYTHON_BIN:?export the validated UniRec inference Python}"
@@ -59,10 +60,15 @@ resolve_inputs() {
   CPU_AFFINITY_COUNT="$(
     "$PYTHON_BIN" -c 'import os; print(len(os.sched_getaffinity(0)))'
   )"
-  if (( CPU_AFFINITY_COUNT < RECOGNITION_THREADS )); then
+  if (( CPU_AFFINITY_COUNT < RECOGNITION_THREADS )) \
+    && [[ "$ALLOW_THREAD_OVERSUBSCRIPTION" != 1 ]]; then
     printf 'UNIREC_K10_INSUFFICIENT_CPU_AFFINITY threads=%s affinity=%s\n' \
       "$RECOGNITION_THREADS" "$CPU_AFFINITY_COUNT" >&2
     exit 1
+  fi
+  if (( CPU_AFFINITY_COUNT < RECOGNITION_THREADS )); then
+    printf 'UNIREC_K10_DIAGNOSTIC_CPU_OVERSUBSCRIPTION threads=%s affinity=%s\n' \
+      "$RECOGNITION_THREADS" "$CPU_AFFINITY_COUNT" >&2
   fi
   export CPU_AFFINITY_COUNT
   test -f "$MODEL/model.pth"
@@ -405,6 +411,7 @@ launch_main() {
     UNIREC_K10_RUN_MODE="${UNIREC_K10_RUN_MODE:-both}" \
     UNIREC_K10_THREADS="$RECOGNITION_THREADS" \
     CPU_AFFINITY_COUNT="$CPU_AFFINITY_COUNT" \
+    UNIREC_K10_ALLOW_THREAD_OVERSUBSCRIPTION="$ALLOW_THREAD_OVERSUBSCRIPTION" \
     bash "$0" --worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 < /dev/null &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"
   printf 'RUN_ROOT=%s\nRUN_LOG=%s\nPID=%s\nTAIL_COMMAND=tail -f %q\n' \
