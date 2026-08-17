@@ -290,6 +290,7 @@ def audit_summary(path: Path, search_root: Path, min_pages: int) -> dict[str, An
             "decode_wall_including_ingress_s": timing.get("decode_inference_including_ingress", payload.get("decode_wall_excluding_warmup_s")),
             "timing_detail": decode.get("timing_detail"),
         },
+        "throughput": throughput,
         "recognition_trace": trace_summary,
         "evaluation_summaries": [
             str(candidate.resolve())
@@ -313,6 +314,8 @@ def compact_row(row: dict[str, Any]) -> str:
         f"iterations={decode['iterations']} graph_s={decode['decode_graph_s']} "
         f"step_ms={decode['mean_step_ms']} raw_tok_s={decode['raw_tok_s']} "
         f"effective_tok_s={decode['effective_tok_s']} slot_eff={decode['slot_efficiency']} "
+        f"prefill_pg_s={row['throughput'].get('prefill_pages_per_s')} "
+        f"pipeline_pg_s={row['throughput'].get('sequential_core_pages_per_s')} "
         f"generated_sum={lengths.get('sum')} generated_mean={lengths.get('mean')} "
         f"caps={trace.get('length_cap_count')} repeated_caps={trace.get('single_token_repeated_to_cap_count')} "
         f"commit={row['project_commit']} root={row['run_root']}"
