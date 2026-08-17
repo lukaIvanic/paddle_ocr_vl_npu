@@ -213,7 +213,77 @@ def profile_fields(profile: dict[str, Any]) -> dict[str, Any]:
             }
             for name in PROFILE_OPS
         },
+        "op_types": {
+            name: {
+                "count": int(row["count"]),
+                "total_time_ms": float(row["total_time_us"]) / 1000.0,
+                "core_type": row.get("core_type"),
+            }
+            for name, row in by_name.items()
+        },
     }
+
+
+def compare_profile_op_types(
+    baseline: dict[str, Any],
+    candidate: dict[str, Any],
+) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    baseline_ops = baseline["op_types"]
+    candidate_ops = candidate["op_types"]
+    for name in sorted(set(baseline_ops) | set(candidate_ops)):
+        baseline_row = baseline_ops.get(name, {})
+        candidate_row = candidate_ops.get(name, {})
+        baseline_ms = float(baseline_row.get("total_time_ms", 0.0))
+        candidate_ms = float(candidate_row.get("total_time_ms", 0.0))
+        rows.append(
+            {
+                "op_type": name,
+                "baseline_count": int(baseline_row.get("count", 0)),
+                "candidate_count": int(candidate_row.get("count", 0)),
+                "baseline_time_ms": baseline_ms,
+                "candidate_time_ms": candidate_ms,
+                "candidate_minus_baseline_ms": candidate_ms - baseline_ms,
+                "baseline_core_type": baseline_row.get("core_type"),
+                "candidate_core_type": candidate_row.get("core_type"),
+            }
+        )
+    regressions = sorted(
+        (row for row in rows if row["candidate_minus_baseline_ms"] > 0.0),
+        key=lambda row: row["candidate_minus_baseline_ms"],
+        reverse=True,
+    )
+    savings = sorted(
+        (row for row in rows if row["candidate_minus_baseline_ms"] < 0.0),
+        key=lambda row: row["candidate_minus_baseline_ms"],
+    )
+    return {
+        "top_regressions": regressions[:20],
+        "top_savings": savings[:20],
+        "all_deltas": sorted(
+            rows,
+            key=lambda row: abs(row["candidate_minus_baseline_ms"]),
+            reverse=True,
+        ),
+        "total_regression_ms": sum(
+            row["candidate_minus_baseline_ms"] for row in regressions
+        ),
+        "total_savings_ms": -sum(
+            row["candidate_minus_baseline_ms"] for row in savings
+        ),
+        "net_candidate_minus_baseline_ms": sum(
+            row["candidate_minus_baseline_ms"] for row in rows
+        ),
+    }
+
+
+def format_profile_delta_rows(rows: list[dict[str, Any]], limit: int = 8) -> str:
+    return ";".join(
+        f"{row['op_type']}:{row['baseline_count']}->{row['candidate_count']}:"
+        f"{row['baseline_time_ms']:.3f}->{row['candidate_time_ms']:.3f}:"
+        f"{row['candidate_minus_baseline_ms']:+.3f}ms"
+        for row in rows[:limit]
+    )
 
 
 def main() -> None:
@@ -236,6 +306,10 @@ def main() -> None:
             "speedup": (
                 baseline_profile["device_event_mean_ms"]
                 / candidate_profile["device_event_mean_ms"]
+            ),
+            "op_type_delta": compare_profile_op_types(
+                baseline_profile,
+                candidate_profile,
             ),
         }
         structural_profile_gate = (
@@ -339,6 +413,22 @@ def main() -> None:
             f"cast_ms="
             f"{profiles['baseline']['selected_ops']['Cast']['total_time_ms']:.6f}->"
             f"{profiles['candidate']['selected_ops']['Cast']['total_time_ms']:.6f}"
+        )
+        op_delta = profiles["op_type_delta"]
+        print(
+            "UNIREC_LAYOUT_MSDA_REAL_OP_DELTA "
+            f"regression_ms={op_delta['total_regression_ms']:.6f} "
+            f"savings_ms={op_delta['total_savings_ms']:.6f} "
+            f"net_candidate_minus_baseline_ms="
+            f"{op_delta['net_candidate_minus_baseline_ms']:.6f}"
+        )
+        print(
+            "UNIREC_LAYOUT_MSDA_REAL_OP_REGRESSIONS "
+            f"{format_profile_delta_rows(op_delta['top_regressions'])}"
+        )
+        print(
+            "UNIREC_LAYOUT_MSDA_REAL_OP_SAVINGS "
+            f"{format_profile_delta_rows(op_delta['top_savings'])}"
         )
     print(f"UNIREC_LAYOUT_MSDA_REAL_OUTPUT {args.output.resolve()}")
     if not report["passed_structural_geometry_gates"]:
