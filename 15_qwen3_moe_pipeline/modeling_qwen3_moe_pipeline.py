@@ -266,6 +266,67 @@ def selected_expert_grouped_matmul_finalize(
     )
 
 
+def selected_expert_grouped_matmul_v2_finalize(
+    hidden_states: torch.Tensor,
+    selected_experts: torch.Tensor,
+    routing_weights: torch.Tensor,
+    gate_up_proj: torch.Tensor,
+    down_proj: torch.Tensor,
+) -> torch.Tensor:
+    """Fuse expert permutation and group-count construction with InitRoutingV2."""
+    require_torch_npu()
+    tokens, _hidden_size = hidden_states.shape
+    top_k = selected_experts.shape[1]
+    expert_num = gate_up_proj.shape[0]
+    intermediate_size = gate_up_proj.shape[2] // 2
+    selected_experts_int32 = selected_experts.to(dtype=torch.int32)
+    expanded_hidden, expanded_row_idx, group_counts, _expanded_scale = (
+        torch_npu.npu_moe_init_routing_v2(
+            hidden_states,
+            selected_experts_int32,
+            scale=None,
+            offset=None,
+            active_num=tokens * top_k,
+            expert_capacity=-1,
+            expert_num=expert_num,
+            drop_pad_mode=0,
+            expert_tokens_num_type=1,
+            expert_tokens_num_flag=True,
+            quant_mode=-1,
+            active_expert_range=[0, expert_num],
+            row_idx_type=0,
+        )
+    )
+    gate_up = torch_npu.npu_grouped_matmul(
+        [expanded_hidden],
+        [gate_up_proj],
+        group_list=group_counts,
+        split_item=3,
+        group_type=0,
+        group_list_type=1,
+    )[0]
+    gate, up = gate_up.split(intermediate_size, dim=-1)
+    intermediate = F.silu(gate) * up
+    expert_output = torch_npu.npu_grouped_matmul(
+        [intermediate],
+        [down_proj],
+        group_list=group_counts,
+        split_item=3,
+        group_type=0,
+        group_list_type=1,
+    )[0]
+    return torch_npu.npu_moe_finalize_routing(
+        expert_output,
+        None,
+        None,
+        None,
+        routing_weights,
+        expanded_row_idx,
+        selected_experts_int32,
+        0,
+    )
+
+
 class Qwen3MoeRMSNorm(nn.Module):
     def __init__(self, hidden_size: int, eps: float):
         super().__init__()
@@ -359,6 +420,7 @@ class Qwen3SparseMoeBlock(nn.Module):
             "selected_bmm",
             "grouped_matmul",
             "grouped_matmul_finalize",
+            "grouped_matmul_v2_finalize",
         ):
             raise ValueError(f"Unsupported expert implementation: {expert_impl}")
         self.expert_impl = expert_impl
@@ -419,6 +481,9 @@ class Qwen3SparseMoeBlock(nn.Module):
             "selected_bmm": selected_expert_bmm,
             "grouped_matmul": selected_expert_grouped_matmul,
             "grouped_matmul_finalize": selected_expert_grouped_matmul_finalize,
+            "grouped_matmul_v2_finalize": (
+                selected_expert_grouped_matmul_v2_finalize
+            ),
         }[self.expert_impl]
         output = expert_fn(
             flat_hidden,
