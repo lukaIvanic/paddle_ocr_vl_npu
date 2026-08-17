@@ -32,6 +32,7 @@ from opendoc_layout_npu import (
     LAYOUT_DEPTHWISE_REWRITE_CHOICES,
     LAYOUT_WEIGHT_FORMAT_CHOICES,
 )
+from vision_bucket_presets import VISION_BUCKET_PRESET_CHOICES
 
 
 def parse_args() -> argparse.Namespace:
@@ -103,7 +104,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--vision-page-lookahead", type=int, default=4)
     parser.add_argument(
         "--vision-bucket-preset",
-        choices=("production_v1", "310p_k10_l1"),
+        choices=VISION_BUCKET_PRESET_CHOICES,
         default="production_v1",
     )
     parser.add_argument(
