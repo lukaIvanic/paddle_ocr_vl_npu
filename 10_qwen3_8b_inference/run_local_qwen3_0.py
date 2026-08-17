@@ -70,9 +70,8 @@ class LocalQwen30Runner:
 
         # Construct without allocating or initializing a second, float32 copy of
         # the model on the host. Allocate the final dtype directly on the target
-        # device, then copy one checkpoint shard at a time. This matters for 8B:
-        # the naive model + complete state_dict path temporarily retains roughly
-        # 48 GiB of host tensors before the NPU copy even starts.
+        # device, then copy one checkpoint shard at a time. This keeps loading
+        # memory bounded and avoids a redundant float32 model copy.
         with torch.device("meta"):
             model = LocalQwen3ForCausalLM(self.config)
         model = model.to(dtype=self.dtype)
@@ -229,6 +228,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--static-kv-cache-len", type=int, default=4096)
     parser.add_argument("--device", default="npu:0")
     return parser.parse_args()
+
 
 def main() -> None:
     args = parse_args()

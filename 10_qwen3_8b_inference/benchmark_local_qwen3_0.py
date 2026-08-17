@@ -46,6 +46,7 @@ def require_torch_npu() -> None:
     if torch_npu is None or npu_prof is None:
         raise RuntimeError("torch_npu is required for NPU benchmark/profiling runs")
 
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Benchmark the optimized compiled Qwen3-0.6B decoder."
@@ -54,8 +55,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prompt", default="Write a tiny Python function that adds two numbers.")
     parser.add_argument("--prefill-tokens", type=int, default=512)
     parser.add_argument("--decode-steps", type=int, default=64)
-    parser.add_argument("--batch-size", type=int, default=1)
-    parser.add_argument("--static-kv-cache-len", type=int, default=65536)
+    parser.add_argument("--static-kv-cache-len", type=int, default=4096)
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--prefill-warmups", type=int, default=1)
     parser.add_argument("--prefill-repeats", type=int, default=3)
@@ -834,13 +834,11 @@ def main() -> None:
     memory_snapshots = {"after_load": npu_memory_snapshot("after_load")}
     print_memory_snapshot(memory_snapshots["after_load"])
     log.log("building benchmark input ids")
-    if args.batch_size < 1:
-        raise ValueError(f"batch_size must be positive, got {args.batch_size}")
     input_ids = build_prefill_input_ids(
         runner,
         args.prompt,
         args.prefill_tokens,
-        args.batch_size,
+        1,
     )
     attributor = KernelAttributor(runner.config)
 
@@ -853,7 +851,7 @@ def main() -> None:
         "decode_increfa_mode": "mask",
         "decode_optimization": "qwen3_0_6b_optimized_static_decode",
         "decode_optimization_metadata": runner.decode_optimization_metadata,
-        "batch_size": int(args.batch_size),
+        "batch_size": 1,
         "prefill_tokens": int(args.prefill_tokens),
         "decode_steps": int(args.decode_steps),
         "static_kv_cache_len": int(args.static_kv_cache_len),

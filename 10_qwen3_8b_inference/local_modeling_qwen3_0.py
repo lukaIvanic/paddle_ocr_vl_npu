@@ -389,7 +389,6 @@ class LocalQwen3Attention(nn.Module):
             key_cache.contiguous(),
             value_cache.contiguous(),
             atten_mask=attention_mask.contiguous(),
-            actual_seq_lengths=None,
             num_heads=int(self.num_heads),
             num_key_value_heads=int(self.num_key_value_heads),
             input_layout="BNSD",

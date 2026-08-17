@@ -36,6 +36,12 @@ eager mode from independent prefills. At both prefix positions:
 
 The 450.67 tok/s result is 2.97 times the 151.74 tok/s KV4096 starting point.
 
+After the old code paths were deleted, commit `ad1c83a` repeated the same
+contract for five measured runs. It averaged 448.17 tok/s, with individual
+runs from 443.13 to 451.84 tok/s, exact compiled/eager tokens, and zero K/V
+difference. The cleanup therefore preserved the selected performance within
+normal run-to-run variation.
+
 ## The first milestone: beating vLLM-Ascend with fullgraph TorchAir
 
 Before the model-specific optimization work, the first local runtime already
@@ -235,7 +241,6 @@ dynamic, alternative-attention, weight-format, or optimization-preset flag.
 $PYTHON ./benchmark_local_qwen3_0.py \
   --model-dir "$MODEL_DIR" \
   --device npu:0 \
-  --batch-size 1 \
   --prefill-tokens 512 \
   --decode-steps 64 \
   --static-kv-cache-len 4096 \
