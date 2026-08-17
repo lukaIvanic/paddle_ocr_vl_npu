@@ -60,12 +60,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--max-buckets", type=int, default=20)
     parser.add_argument("--beam-width", type=int, default=8)
+    parser.add_argument("--page-lookahead", type=int, default=1)
+    parser.add_argument("--include-fallback", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
 
 def load_compiled_crops(
-    path: Path,
+    path: Path, *, include_fallback: bool = False
 ) -> tuple[list[list[tuple[int, int]]], int, int]:
     by_page: dict[int, list[tuple[int, int]]] = defaultdict(list)
     fallback_count = 0
@@ -79,13 +81,14 @@ def load_compiled_crops(
                 continue
             for member in event["members"]:
                 width, height = map(int, member["processed_image_size"])
-                if name == "vision_fallback_call":
-                    fallback_count += 1
-                    fallback_pixels += width * height
-                    continue
                 match = pattern.search(str(member["request_id"]))
                 if match is None:
                     raise ValueError(f"cannot recover page from {member['request_id']}")
+                if name == "vision_fallback_call":
+                    fallback_count += 1
+                    fallback_pixels += width * height
+                    if not include_fallback:
+                        continue
                 by_page[int(match.group(1))].append((width, height))
     if not by_page:
         raise ValueError("no compiled vision crops found")
@@ -177,10 +180,18 @@ def minimum_call_plan(
 
 def main() -> None:
     args = parse_args()
-    if args.max_buckets < 1 or args.beam_width < 1:
-        raise ValueError("max buckets and beam width must be positive")
+    if (
+        args.max_buckets < 1
+        or args.beam_width < 1
+        or args.page_lookahead < 1
+    ):
+        raise ValueError(
+            "max buckets, beam width, and page lookahead must be positive"
+        )
     started = time.perf_counter()
-    pages, fallback_count, fallback_pixels = load_compiled_crops(args.iterations)
+    pages, fallback_count, fallback_pixels = load_compiled_crops(
+        args.iterations, include_fallback=args.include_fallback
+    )
     xs, ys, latency_payload = latency_curve(args.latency_reference)
     variants = make_variants(pages, xs, ys)
     variant_by_canvas_batch = {
@@ -190,6 +201,14 @@ def main() -> None:
     shapes = sorted({shape for page in pages for shape in page})
     shape_index = {shape: index for index, shape in enumerate(shapes)}
     page_shape_counts = [Counter(shape_index[shape] for shape in page) for page in pages]
+    grouped_shape_counts = []
+    for start in range(0, len(page_shape_counts), args.page_lookahead):
+        counts: Counter[int] = Counter()
+        for page_counts in page_shape_counts[
+            start : start + args.page_lookahead
+        ]:
+            counts.update(page_counts)
+        grouped_shape_counts.append(counts)
     effective_pixels = sum(width * height for page in pages for width, height in page)
     crop_count = sum(len(page) for page in pages)
 
@@ -245,7 +264,7 @@ def main() -> None:
             )
             for canvas in canvases
         }
-        for counts in page_shape_counts:
+        for counts in grouped_shape_counts:
             canvas_counts: Counter[tuple[int, int]] = Counter()
             for shape_id, count in counts.items():
                 canvas_counts[route[shape_id]] += count
@@ -357,7 +376,9 @@ def main() -> None:
         "schema": "unirec_vision_bucket_frontier_v1",
         "status": "best_found_not_global_optimum_proof",
         "search": {
-            "page_lookahead": 1,
+            "page_lookahead": args.page_lookahead,
+            "page_group_count": len(grouped_shape_counts),
+            "include_fallback": args.include_fallback,
             "max_buckets": args.max_buckets,
             "beam_width": args.beam_width,
             "candidate_canvas_count": len({variant.canvas for variant in variants}),
