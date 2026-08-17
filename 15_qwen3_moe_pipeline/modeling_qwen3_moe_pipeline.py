@@ -195,7 +195,7 @@ def selected_expert_grouped_matmul(
     )
     group_list = torch_npu.npu_moe_compute_expert_tokens(
         expanded_expert_idx.reshape(-1), gate_up_proj.shape[0]
-    )
+    ).to(dtype=torch.int64)
     gate_up = torch_npu.npu_grouped_matmul(
         [expanded_hidden],
         [gate_up_proj],
