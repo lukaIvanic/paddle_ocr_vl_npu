@@ -19,6 +19,7 @@ from local_modeling_qwen3_0 import (
     LocalQwen3ForCausalLM,
     cast_decode_lm_head_to_nz,
     cast_decode_linear_weights_to_nz,
+    prepare_decode_lm_head_copy,
     resolve_decode_optimization,
 )
 
@@ -66,6 +67,11 @@ class LocalQwen30Runner:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir)
         self.config = LocalQwen3Config.from_model_dir(self.model_dir)
         self.model = self.load_model()
+        if (
+            self.decode_linear_weight_format != "unchanged"
+            and self.model.config.tie_word_embeddings
+        ):
+            prepare_decode_lm_head_copy(self.model)
         self.decode_optimization_metadata = (
             self.model.prepare_decode_optimizations(
                 cache_length=self.static_kv_cache_len,

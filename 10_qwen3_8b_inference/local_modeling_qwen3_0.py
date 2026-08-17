@@ -28,6 +28,9 @@ class DecodeOptimizationConfig:
     npu_rotary: bool = False
     rope_lookup: bool = False
     weight_prefetch: bool = False
+    post_scatter_kv_prefetch: bool = False
+    weight_prefetch_timing: str = "before_attention"
+    complete_layer_prefetch_ahead: int = 0
     packed_mlp: bool = False
     npu_swiglu: bool = False
 
@@ -88,6 +91,29 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         rope_lookup=True,
         weight_prefetch=True,
         packed_mlp=True,
+    ),
+    "combined_apply_kv_then_mlp_prefetch_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_kv_then_mlp_prefetch_rope_lut",
+        npu_rms_norm=True,
+        fused_add_rms_norm=True,
+        packed_qkv=True,
+        npu_rotary=True,
+        rope_lookup=True,
+        weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="after_attention",
+    ),
+    "combined_apply_complete_layer_prefetch1_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch1_rope_lut",
+        npu_rms_norm=True,
+        fused_add_rms_norm=True,
+        packed_qkv=True,
+        npu_rotary=True,
+        rope_lookup=True,
+        weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=1,
     ),
 }
 
@@ -344,7 +370,11 @@ class LocalQwen3MLP(nn.Module):
             output = linear_tokenwise(self.down_proj, activated)
         else:
             output = self(hidden_states)
-        if optimization.weight_prefetch and output.device.type == "npu":
+        if (
+            optimization.weight_prefetch
+            and optimization.weight_prefetch_timing != "complete_layer_ahead"
+            and output.device.type == "npu"
+        ):
             for weight in self._decode_prefetch_next_attention:
                 torch_npu.npu_prefetch(
                     weight,
@@ -469,7 +499,11 @@ class LocalQwen3Attention(nn.Module):
         actual_seq_length: int | None,
         optimization: DecodeOptimizationConfig,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        if optimization.weight_prefetch and hidden_states.device.type == "npu":
+        if (
+            optimization.weight_prefetch
+            and optimization.weight_prefetch_timing == "before_attention"
+            and hidden_states.device.type == "npu"
+        ):
             for weight in self._decode_prefetch_current_mlp:
                 torch_npu.npu_prefetch(
                     weight,
@@ -504,6 +538,18 @@ class LocalQwen3Attention(nn.Module):
         scatter_update_tensor_(key_cache, cache_position, key_states)
         scatter_update_tensor_(value_cache, cache_position, value_states)
 
+        if optimization.post_scatter_kv_prefetch:
+            torch_npu.npu_prefetch(
+                key_cache,
+                key_states,
+                int(key_cache.numel() * key_cache.element_size()),
+            )
+            torch_npu.npu_prefetch(
+                value_cache,
+                value_states,
+                int(value_cache.numel() * value_cache.element_size()),
+            )
+
         if self.decode_increfa_mode == "actual_seq_lengths":
             if actual_seq_length is None:
                 raise ValueError("decode_increfa_mode='actual_seq_lengths' requires actual_seq_length")
@@ -524,6 +570,16 @@ class LocalQwen3Attention(nn.Module):
             scale_value=float(self.scaling),
         ).transpose(1, 2).contiguous()
         attn_output = attn_output.reshape(hidden_states.shape[0], 1, self.num_heads * self.head_dim)
+        if (
+            optimization.weight_prefetch
+            and optimization.weight_prefetch_timing == "after_attention"
+        ):
+            for weight in self._decode_prefetch_current_mlp:
+                torch_npu.npu_prefetch(
+                    weight,
+                    attn_output,
+                    int(weight.numel() * weight.element_size()),
+                )
         return linear_tokenwise(self.o_proj, attn_output), key_cache, value_cache
 
 
@@ -718,6 +774,35 @@ class LocalQwen3ForCausalLM(nn.Module):
                 dim=0,
             ).to(dtype=self.embed_tokens.weight.dtype)
         if optimization.weight_prefetch:
+            output_head = getattr(self, "decode_lm_head", self.lm_head)
+
+            def complete_layer_weights(
+                layer: LocalQwen3DecoderLayer,
+            ) -> tuple[torch.Tensor, ...]:
+                attention_weights = (
+                    (layer.self_attn.decode_qkv_proj.weight,)
+                    if optimization.packed_qkv
+                    else (
+                        layer.self_attn.q_proj.weight,
+                        layer.self_attn.k_proj.weight,
+                        layer.self_attn.v_proj.weight,
+                    )
+                )
+                mlp_weights = (
+                    (layer.mlp.decode_gate_up_proj.weight,)
+                    if optimization.packed_mlp
+                    else (
+                        layer.mlp.gate_proj.weight,
+                        layer.mlp.up_proj.weight,
+                    )
+                )
+                return (
+                    *attention_weights,
+                    layer.self_attn.o_proj.weight,
+                    *mlp_weights,
+                    layer.mlp.down_proj.weight,
+                )
+
             for index, layer in enumerate(self.layers):
                 layer.self_attn._decode_prefetch_current_mlp = (
                     *(
@@ -745,8 +830,20 @@ class LocalQwen3ForCausalLM(nn.Module):
                     )
                 else:
                     layer.mlp._decode_prefetch_next_attention = (
-                        self.lm_head.weight,
+                        output_head.weight,
                     )
+                future_weights: list[torch.Tensor] = []
+                for offset in range(
+                    1, optimization.complete_layer_prefetch_ahead + 1
+                ):
+                    future_index = index + offset
+                    if future_index < len(self.layers):
+                        future_weights.extend(
+                            complete_layer_weights(self.layers[future_index])
+                        )
+                if index + 1 >= len(self.layers):
+                    future_weights.append(output_head.weight)
+                layer._decode_prefetch_future_layers = tuple(future_weights)
         return {
             "name": optimization.name,
             "packed_qkv_count": packed_qkv_count,
@@ -759,6 +856,11 @@ class LocalQwen3ForCausalLM(nn.Module):
                 else list(self.rotary_emb.decode_factor_lut.shape)
             ),
             "weight_prefetch": optimization.weight_prefetch,
+            "post_scatter_kv_prefetch": optimization.post_scatter_kv_prefetch,
+            "weight_prefetch_timing": optimization.weight_prefetch_timing,
+            "complete_layer_prefetch_ahead": (
+                optimization.complete_layer_prefetch_ahead
+            ),
         }
 
     def make_causal_mask(self, input_ids: torch.Tensor) -> torch.Tensor:
@@ -838,6 +940,16 @@ class LocalQwen3ForCausalLM(nn.Module):
         if optimization.fused_add_rms_norm:
             residual: torch.Tensor | None = None
             for layer_idx, layer in enumerate(self.layers):
+                if (
+                    optimization.complete_layer_prefetch_ahead
+                    and hidden_states.device.type == "npu"
+                ):
+                    for weight in layer._decode_prefetch_future_layers:
+                        torch_npu.npu_prefetch(
+                            weight,
+                            hidden_states,
+                            int(weight.numel() * weight.element_size()),
+                        )
                 (
                     hidden_states,
                     residual,
