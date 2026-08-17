@@ -34,6 +34,13 @@ resolve_inputs() {
   : "${EVAL_PYTHON:?export the CDM-capable evaluator Python}"
   : "${ASCEND_RT_VISIBLE_DEVICES:?source npu-setup and select one free 310P}"
   : "${CDM_WORKERS:=64}"
+  : "${MATCH_WORKERS:=12}"
+  : "${TEDS_WORKERS:=12}"
+  : "${RUN_VARIANT:=accuracy_anchor}"
+  : "${LAYOUT_CPU_THREADS:=1}"
+  : "${PROGRESS_EVERY_PAGES:=1}"
+  : "${ALLOW_LOW_HOST_MEMORY:=0}"
+  : "${CPUSET:=}"
 
   case ",${ASCEND_RT_VISIBLE_DEVICES}," in
     *,5,*|*,6,*) printf 'REJECTED_PHYSICAL_DEVICE_5_OR_6\n' >&2; exit 1 ;;
@@ -42,10 +49,21 @@ resolve_inputs() {
     printf 'REQUIRES_EXACTLY_ONE_NPU=%s\n' "$ASCEND_RT_VISIBLE_DEVICES" >&2
     exit 1
   fi
-  if ! [[ "$CDM_WORKERS" =~ ^[1-9][0-9]*$ ]]; then
-    printf 'INVALID_CDM_WORKERS=%s\n' "$CDM_WORKERS" >&2
-    exit 1
-  fi
+  for worker_setting in CDM_WORKERS MATCH_WORKERS TEDS_WORKERS LAYOUT_CPU_THREADS PROGRESS_EVERY_PAGES; do
+    if ! [[ "${!worker_setting}" =~ ^[1-9][0-9]*$ ]]; then
+      printf 'INVALID_POSITIVE_INTEGER %s=%s\n' \
+        "$worker_setting" "${!worker_setting}" >&2
+      exit 1
+    fi
+  done
+  case "$RUN_VARIANT" in
+    accuracy_anchor|optimized_k10_l4) ;;
+    *) printf 'INVALID_RUN_VARIANT=%s\n' "$RUN_VARIANT" >&2; exit 1 ;;
+  esac
+  case "$ALLOW_LOW_HOST_MEMORY" in
+    0|1) ;;
+    *) printf 'INVALID_ALLOW_LOW_HOST_MEMORY=%s\n' "$ALLOW_LOW_HOST_MEMORY" >&2; exit 1 ;;
+  esac
 
   # Preserve the final venv launcher symlink. Dereferencing it with readlink -f
   # silently runs the base interpreter without the venv's site-packages.
@@ -111,7 +129,7 @@ run_inference() {
     --layout-dtype float32
     --layout-reading-order-dtype float32
     --layout-weight-format native
-    --layout-depthwise-rewrite constant_grouped
+    --layout-depthwise-rewrite native
     --layout-threshold 0.5
     --input "$IMAGES_DIR"
     --output-dir "$output"
@@ -122,6 +140,7 @@ run_inference() {
     --workers 4
     --warmup-pages 8
     --layout-batch-size 2
+    --layout-cpu-threads "$LAYOUT_CPU_THREADS"
     --vision-page-lookahead 4
     --vision-focal-depthwise-rewrite native
     --vision-weight-format native
@@ -134,9 +153,19 @@ run_inference() {
     --compile-cache-dir "$COMPILE_CACHE"
     --decode-warmup-passes 2
     --decode-admission-prefetch-depth 0
-    --progress-every-pages 1
+    --progress-every-pages "$PROGRESS_EVERY_PAGES"
     --progress-heartbeat-s 15
   )
+  if [[ "$RUN_VARIANT" == optimized_k10_l4 ]]; then
+    command+=(
+      --vision-bucket-preset 310p_k10_l4_all
+      --vision-focal-depthwise-rewrite constant_grouped_all
+      --vision-weight-format torchair_internal
+    )
+  fi
+  if [[ -n "$CPUSET" ]]; then
+    command=(taskset -c "$CPUSET" "${command[@]}")
+  fi
   printf '%q ' "${command[@]}" >"$RUN_ROOT/command.sh"
   printf '\n' >>"$RUN_ROOT/command.sh"
   local started_ns ended_ns
@@ -165,13 +194,14 @@ run_evaluation() {
     "$REPO/09_persistent_page_engine/scripts/run_omnidocbench_eval.py" \
     --config config.yaml \
     --evaluator-root "$EVALUATOR_ROOT" \
-    --match-workers 12 --teds-workers 12 \
+    --match-workers "$MATCH_WORKERS" --teds-workers "$TEDS_WORKERS" \
     --page-timeout-sec 120 \
     --fallback-timeout-sec 180 \
     --fallback-latex-timeout-sec 30
   printf '%s\n' "$((SECONDS - started))" >"$evaluation/eval_match_teds_wall_s.txt"
 
   mkdir -p "$evaluation/cdm"
+  local cdm_started="$SECONDS"
   PYTHONUNBUFFERED=1 "$EVAL_PYTHON" \
     "$CDM_RUNNER" \
     --input "$evaluation/work/result/predictions_quick_match_display_formula_result.json" \
@@ -179,9 +209,10 @@ run_evaluation() {
     --evaluator-root "$EVALUATOR_ROOT" \
     --workers "$CDM_WORKERS" \
     >"$evaluation/cdm/run.log" 2>&1
+  printf '%s\n' "$((SECONDS - cdm_started))" >"$evaluation/cdm_wall_s.txt"
 
   "$EVAL_PYTHON" "$SUMMARIZER" \
-    --lane full1651_w4t8_b128_cross1320_self2048_t05_image_tags_stripped \
+    --lane "full1651_${RUN_VARIANT}_w4t8_b128_cross1320_self2048_t05_image_tags_stripped" \
     --metric-result "$evaluation/work/result/predictions_quick_match_metric_result.json" \
     --stage-execution "$evaluation/work/result/predictions_quick_match_stage_execution.json" \
     --cdm-summary "$evaluation/cdm/cdm_run_summary.json" \
@@ -209,6 +240,12 @@ assert run["recognition_preprocess_threads"] == 8
 assert run["decode_batch_size"] == 128
 assert run["cross_cache_length"] == 1320
 assert run["self_cache_length"] == 2048
+variant = os.environ["RUN_VARIANT"]
+if variant == "optimized_k10_l4":
+    assert run["vision_bucket_preset"] == "310p_k10_l4_all"
+    assert run["vision_focal_depthwise_rewrite"] == "constant_grouped_all"
+    assert run["vision_weight_format"] == "torchair_internal"
+    assert run["prefill_phase_summary"]["vision_batching"]["fallback_rows"] == 0
 assert transform["page_count"] == 1651 and transform["strip_image_tags"] is True
 assert stage["page_match"]["page_count"] == 1651
 assert stage["page_match"]["fallbacks"]["page_timeout"]["count"] == 0
@@ -252,6 +289,8 @@ worker_main() {
   {
     printf 'project_commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
     printf 'physical_npu=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
+    printf 'run_variant=%s\ncpuset=%s\n' "$RUN_VARIANT" "${CPUSET:-unrestricted}"
+    printf 'match_workers=%s\nteds_workers=%s\n' "$MATCH_WORKERS" "$TEDS_WORKERS"
     printf 'cdm_workers=%s\n' "$CDM_WORKERS"
     printf 'evaluator_root=%s\nevaluator_commit=%s\n' \
       "$EVALUATOR_ROOT" "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)"
@@ -292,14 +331,19 @@ launch_main() {
   shm_available="$(df --output=avail -B1 /dev/shm | tail -n 1 | tr -d ' ')"
   mem_available="$(( $(awk '/^MemAvailable:/ {print $2}' /proc/meminfo) * 1024 ))"
   if (( shm_available < minimum_shm || mem_available < minimum_mem )); then
-    printf 'INSUFFICIENT_HOST_MEMORY shm=%s/%s ram=%s/%s\n' \
-      "$shm_available" "$minimum_shm" "$mem_available" "$minimum_mem" >&2
-    exit 1
+    if [[ "$ALLOW_LOW_HOST_MEMORY" == 1 ]]; then
+      printf 'LOW_HOST_MEMORY_PROCEEDING shm=%s/%s ram=%s/%s\n' \
+        "$shm_available" "$minimum_shm" "$mem_available" "$minimum_mem" >&2
+    else
+      printf 'INSUFFICIENT_HOST_MEMORY shm=%s/%s ram=%s/%s\n' \
+        "$shm_available" "$minimum_shm" "$mem_available" "$minimum_mem" >&2
+      exit 1
+    fi
   fi
   local short timestamp
   short="$(git -C "$REPO" rev-parse --short HEAD)"
   timestamp="$(date +%Y%m%dT%H%M%S)"
-  RUN_ROOT="${RUN_ROOT:-$REPO/tmp/12_unirec_0_1b_inference/310p_full1651_w4t8_eval_${short}_${timestamp}}"
+  RUN_ROOT="${RUN_ROOT:-$REPO/tmp/12_unirec_0_1b_inference/310p_full1651_${RUN_VARIANT}_w4t8_eval_${short}_${timestamp}}"
   RUN_ROOT="$(realpath -m "$RUN_ROOT")"
   test ! -e "$RUN_ROOT"
   mkdir -p "$RUN_ROOT"
@@ -312,7 +356,11 @@ launch_main() {
     OMNIDOCBENCH_EVAL_TOOLS_ROOT="$OMNIDOCBENCH_EVAL_TOOLS_ROOT" \
     OMNIDOCBENCH_TOOL_ROOT="$OMNIDOCBENCH_TOOL_ROOT" \
     CDM_PDFLATEX="$CDM_PDFLATEX" CDM_KPSEWHICH="$CDM_KPSEWHICH" \
-    CDM_WORKERS="$CDM_WORKERS" \
+    CDM_WORKERS="$CDM_WORKERS" MATCH_WORKERS="$MATCH_WORKERS" \
+    TEDS_WORKERS="$TEDS_WORKERS" RUN_VARIANT="$RUN_VARIANT" \
+    LAYOUT_CPU_THREADS="$LAYOUT_CPU_THREADS" \
+    PROGRESS_EVERY_PAGES="$PROGRESS_EVERY_PAGES" \
+    ALLOW_LOW_HOST_MEMORY="$ALLOW_LOW_HOST_MEMORY" CPUSET="$CPUSET" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"

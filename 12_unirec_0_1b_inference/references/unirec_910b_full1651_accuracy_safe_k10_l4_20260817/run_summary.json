@@ -1,0 +1,6667 @@
+{
+  "status": "ok",
+  "execution": "prefill_then_decode_cpu_shared_memory",
+  "physical_devices": [
+    3
+  ],
+  "page_count": 1651,
+  "offset": 0,
+  "workers": 4,
+  "layout_batch_size": 2,
+  "layout_cpu_threads": 16,
+  "layout_execution": "eager",
+  "layout_dtype": "float32",
+  "layout_reading_order_dtype": "float32",
+  "layout_weight_format": "native",
+  "layout_depthwise_rewrite": "native",
+  "layout_preformat_frozen_bn_buffers": false,
+  "vision_focal_depthwise_rewrite": "constant_grouped_all",
+  "vision_weight_format": "torchair_internal",
+  "vision_bucket_preset": "310p_k10_l4_all",
+  "recognition_preprocess_threads": 8,
+  "use_chart_recognition": true,
+  "vision_prefill_mode": "compiled_full_buckets",
+  "text_prefill_mode": "compiled_packed_s1320",
+  "decode_mode": "compiled_ifa",
+  "decode_scheduling": "continuous",
+  "decode_batch_size": 128,
+  "decode_admission_prefetch_depth": 0,
+  "self_cache_length": 2048,
+  "cross_cache_length": 1320,
+  "retained_bank": {
+    "crop_count": 32109,
+    "cross_kv_bytes": 42635132928,
+    "rejected_crop_count": 0,
+    "real_source_tokens": 2313104,
+    "physical_source_tokens": 3487440,
+    "shared_payload_bytes": 42635132928,
+    "storage": "page_scoped_posix_shared_memory_cross_kv_only",
+    "retained_images": false,
+    "disk_bytes": 0
+  },
+  "timing_s": {
+    "prefill_worker_setup": 42.04817276773974,
+    "prefill_warmup": 4.872406260110438,
+    "prefill_phase": 109.71902841189876,
+    "prefill_worker_shutdown": 13.06501582916826,
+    "decode_setup_and_graph_warmup": 19.73570519173518,
+    "decode_inference_including_ingress": 153.56011487124488,
+    "decode_phase_including_ingress_and_output": 153.71675374405459,
+    "sequential_inference_core": 263.27914328314364,
+    "sequential_core_prefill_plus_decode": 263.43578215595335,
+    "lifecycle": 344.7918654088862,
+    "decode_graph": 121.01002876646817,
+    "output_assembly": 5.1131290583871305,
+    "output_write": 9.325035127811134,
+    "output_image_reload": 57.43219644064084,
+    "output_write_backpressure": 41.28991155931726,
+    "output_write_final_drain": 0.1153758610598743,
+    "completion_collector_processing": 52.5121673704125,
+    "completion_collector_final_join": 0.15579420793801546
+  },
+  "throughput": {
+    "prefill_pages_per_s": 15.047526613177274,
+    "decode_inference_pages_per_s": 10.751489743181747,
+    "decode_phase_pages_per_s": 10.7405338701661,
+    "sequential_inference_core_pages_per_s": 6.2709107125300525,
+    "sequential_core_pages_per_s": 6.267182030050162,
+    "decode_effective_tokens_per_s": 18595.582721021085,
+    "decode_raw_token_slots_per_s": 20502.63127189249
+  },
+  "prefill_worker_setup_diagnostics": [
+    {
+      "worker": 0,
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63
+      ],
+      "cpu_affinity_count": 64,
+      "prefix_graph_warmup": {
+        "execution": "compiled_masked_full_encoder_buckets",
+        "shape_count": 10,
+        "wall_s": 7.97200482012704,
+        "graphs": {
+          "448x192_b2": {
+            "pass_wall_s": [
+              3.1552315852604806
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x192_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "448x384_b2": {
+            "pass_wall_s": [
+              0.5152410957962275
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x384_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "512x64_b4": {
+            "pass_wall_s": [
+              0.5186148942448199
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x64_b4_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x64_b4": {
+            "pass_wall_s": [
+              0.5170302679762244
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x64_b4_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x128_b2": {
+            "pass_wall_s": [
+              0.5183013789355755
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x128_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x256_b1": {
+            "pass_wall_s": [
+              0.5416582957841456
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x256_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x448_b1": {
+            "pass_wall_s": [
+              0.5438177022151649
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x448_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x576_b1": {
+            "pass_wall_s": [
+              0.5469269957393408
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x576_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x896_b1": {
+            "pass_wall_s": [
+              0.5459704990498722
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x896_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x1408_b1": {
+            "pass_wall_s": [
+              0.5517987888306379
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x1408_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          }
+        },
+        "fallback_eager": {
+          "execution": "skipped_compiled_bucket_coverage",
+          "input_shape": [
+            1,
+            3,
+            640,
+            384
+          ],
+          "processed_image_size": [
+            384,
+            640
+          ],
+          "accepting_buckets": [
+            "960x896_b1",
+            "960x1408_b1"
+          ],
+          "pass_wall_s": []
+        }
+      },
+      "recognition_preprocess_threads": 8,
+      "layout_batch_size": 2,
+      "layout_cpu_threads": 16,
+      "layout_dtype": "float32",
+      "layout_input_color_order": "rgb",
+      "layout_weight_format": "native",
+      "layout_depthwise_rewrite": "native",
+      "layout_preformat_frozen_bn_buffers": false,
+      "layout_depthwise_rewrite_summary": {
+        "requested": "native",
+        "target_count": 0,
+        "rewritten_count": 0,
+        "modules": []
+      },
+      "layout_weight_format_summary": {
+        "requested": "native",
+        "before_histogram": {
+          "conv2d": {
+            "0": 96
+          },
+          "depthwise_conv2d": {
+            "0": 27
+          },
+          "linear": {
+            "2": 138
+          }
+        },
+        "after_histogram": {
+          "conv2d": {
+            "0": 96
+          },
+          "depthwise_conv2d": {
+            "0": 27
+          },
+          "linear": {
+            "2": 138
+          }
+        }
+      },
+      "layout_frozen_bn_buffer_format_summary": {
+        "converted_count": 0,
+        "modules": []
+      },
+      "vision_focal_depthwise_rewrite": "constant_grouped_all",
+      "vision_weight_format": "torchair_internal",
+      "vision_focal_depthwise_rewrite_summary": {
+        "requested": "constant_grouped_all",
+        "target_count": 45,
+        "rewritten_count": 45,
+        "constant_weight_digest": "d901a68ebd3b31a5",
+        "modules": [
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.0.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 0,
+            "weight_shape": [
+              96,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              54,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.1.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 1,
+            "weight_shape": [
+              96,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              150,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.2.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 2,
+            "weight_shape": [
+              96,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              294,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.0.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 3,
+            "weight_shape": [
+              96,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              54,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.1.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 4,
+            "weight_shape": [
+              96,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              150,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.2.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 5,
+            "weight_shape": [
+              96,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              294,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.0.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 6,
+            "weight_shape": [
+              192,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              108,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.1.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 7,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              300,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.2.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 8,
+            "weight_shape": [
+              192,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              588,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.0.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 9,
+            "weight_shape": [
+              192,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              108,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.1.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 10,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              300,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.2.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 11,
+            "weight_shape": [
+              192,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              588,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 12,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 13,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 14,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 15,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 16,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 17,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 18,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 19,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 20,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 21,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 22,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 23,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 24,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 25,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 26,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 27,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 28,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 29,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 30,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 31,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 32,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 33,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 34,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 35,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 36,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 37,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 38,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.0.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 39,
+            "weight_shape": [
+              768,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              432,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.1.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 40,
+            "weight_shape": [
+              768,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              1200,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.2.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 41,
+            "weight_shape": [
+              768,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              2352,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.0.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 42,
+            "weight_shape": [
+              768,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              432,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.1.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 43,
+            "weight_shape": [
+              768,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              1200,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.2.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 44,
+            "weight_shape": [
+              768,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              2352,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          }
+        ]
+      },
+      "vision_weight_format_summary": {
+        "requested": "torchair_internal",
+        "tracked_count": 80,
+        "before_histogram": {
+          "0": 20,
+          "2": 60
+        },
+        "after_histogram": {
+          "29": 60,
+          "4": 20
+        },
+        "focal_prepack_count": 0,
+        "focal_prepack_modules": []
+      }
+    },
+    {
+      "worker": 1,
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63
+      ],
+      "cpu_affinity_count": 64,
+      "prefix_graph_warmup": {
+        "execution": "compiled_masked_full_encoder_buckets",
+        "shape_count": 10,
+        "wall_s": 8.587511050980538,
+        "graphs": {
+          "448x192_b2": {
+            "pass_wall_s": [
+              3.4780429708771408
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x192_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "448x384_b2": {
+            "pass_wall_s": [
+              0.7921363827772439
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x384_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "512x64_b4": {
+            "pass_wall_s": [
+              0.5233179940842092
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x64_b4_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x64_b4": {
+            "pass_wall_s": [
+              0.5286127338185906
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x64_b4_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x128_b2": {
+            "pass_wall_s": [
+              0.5265840701758862
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x128_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x256_b1": {
+            "pass_wall_s": [
+              0.5401222300715744
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x256_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x448_b1": {
+            "pass_wall_s": [
+              0.5428090747445822
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x448_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x576_b1": {
+            "pass_wall_s": [
+              0.5517699881456792
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x576_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x896_b1": {
+            "pass_wall_s": [
+              0.5451908959075809
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x896_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x1408_b1": {
+            "pass_wall_s": [
+              0.5417931582778692
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x1408_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          }
+        },
+        "fallback_eager": {
+          "execution": "skipped_compiled_bucket_coverage",
+          "input_shape": [
+            1,
+            3,
+            640,
+            384
+          ],
+          "processed_image_size": [
+            384,
+            640
+          ],
+          "accepting_buckets": [
+            "960x896_b1",
+            "960x1408_b1"
+          ],
+          "pass_wall_s": []
+        }
+      },
+      "recognition_preprocess_threads": 8,
+      "layout_batch_size": 2,
+      "layout_cpu_threads": 16,
+      "layout_dtype": "float32",
+      "layout_input_color_order": "rgb",
+      "layout_weight_format": "native",
+      "layout_depthwise_rewrite": "native",
+      "layout_preformat_frozen_bn_buffers": false,
+      "layout_depthwise_rewrite_summary": {
+        "requested": "native",
+        "target_count": 0,
+        "rewritten_count": 0,
+        "modules": []
+      },
+      "layout_weight_format_summary": {
+        "requested": "native",
+        "before_histogram": {
+          "conv2d": {
+            "0": 96
+          },
+          "depthwise_conv2d": {
+            "0": 27
+          },
+          "linear": {
+            "2": 138
+          }
+        },
+        "after_histogram": {
+          "conv2d": {
+            "0": 96
+          },
+          "depthwise_conv2d": {
+            "0": 27
+          },
+          "linear": {
+            "2": 138
+          }
+        }
+      },
+      "layout_frozen_bn_buffer_format_summary": {
+        "converted_count": 0,
+        "modules": []
+      },
+      "vision_focal_depthwise_rewrite": "constant_grouped_all",
+      "vision_weight_format": "torchair_internal",
+      "vision_focal_depthwise_rewrite_summary": {
+        "requested": "constant_grouped_all",
+        "target_count": 45,
+        "rewritten_count": 45,
+        "constant_weight_digest": "d901a68ebd3b31a5",
+        "modules": [
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.0.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 0,
+            "weight_shape": [
+              96,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              54,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.1.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 1,
+            "weight_shape": [
+              96,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              150,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.2.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 2,
+            "weight_shape": [
+              96,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              294,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.0.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 3,
+            "weight_shape": [
+              96,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              54,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.1.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 4,
+            "weight_shape": [
+              96,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              150,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.2.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 5,
+            "weight_shape": [
+              96,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              294,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.0.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 6,
+            "weight_shape": [
+              192,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              108,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.1.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 7,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              300,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.2.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 8,
+            "weight_shape": [
+              192,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              588,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.0.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 9,
+            "weight_shape": [
+              192,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              108,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.1.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 10,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              300,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.2.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 11,
+            "weight_shape": [
+              192,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              588,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 12,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 13,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 14,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 15,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 16,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 17,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 18,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 19,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 20,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 21,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 22,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 23,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 24,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 25,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 26,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 27,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 28,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 29,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 30,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 31,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 32,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 33,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 34,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 35,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 36,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 37,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 38,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.0.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 39,
+            "weight_shape": [
+              768,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              432,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.1.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 40,
+            "weight_shape": [
+              768,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              1200,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.2.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 41,
+            "weight_shape": [
+              768,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              2352,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.0.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 42,
+            "weight_shape": [
+              768,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              432,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.1.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 43,
+            "weight_shape": [
+              768,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              1200,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.2.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 44,
+            "weight_shape": [
+              768,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              2352,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          }
+        ]
+      },
+      "vision_weight_format_summary": {
+        "requested": "torchair_internal",
+        "tracked_count": 80,
+        "before_histogram": {
+          "0": 20,
+          "2": 60
+        },
+        "after_histogram": {
+          "29": 60,
+          "4": 20
+        },
+        "focal_prepack_count": 0,
+        "focal_prepack_modules": []
+      }
+    },
+    {
+      "worker": 2,
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63
+      ],
+      "cpu_affinity_count": 64,
+      "prefix_graph_warmup": {
+        "execution": "compiled_masked_full_encoder_buckets",
+        "shape_count": 10,
+        "wall_s": 8.243998163379729,
+        "graphs": {
+          "448x192_b2": {
+            "pass_wall_s": [
+              3.301118365023285
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x192_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "448x384_b2": {
+            "pass_wall_s": [
+              0.6310917260125279
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x384_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "512x64_b4": {
+            "pass_wall_s": [
+              0.5341848088428378
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x64_b4_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x64_b4": {
+            "pass_wall_s": [
+              0.5076751178130507
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x64_b4_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x128_b2": {
+            "pass_wall_s": [
+              0.5236581400968134
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x128_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x256_b1": {
+            "pass_wall_s": [
+              0.5399728082120419
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x256_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x448_b1": {
+            "pass_wall_s": [
+              0.5544644929468632
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x448_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x576_b1": {
+            "pass_wall_s": [
+              0.5488354680128396
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x576_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x896_b1": {
+            "pass_wall_s": [
+              0.5416911062784493
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x896_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x1408_b1": {
+            "pass_wall_s": [
+              0.539198094047606
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x1408_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          }
+        },
+        "fallback_eager": {
+          "execution": "skipped_compiled_bucket_coverage",
+          "input_shape": [
+            1,
+            3,
+            640,
+            384
+          ],
+          "processed_image_size": [
+            384,
+            640
+          ],
+          "accepting_buckets": [
+            "960x896_b1",
+            "960x1408_b1"
+          ],
+          "pass_wall_s": []
+        }
+      },
+      "recognition_preprocess_threads": 8,
+      "layout_batch_size": 2,
+      "layout_cpu_threads": 16,
+      "layout_dtype": "float32",
+      "layout_input_color_order": "rgb",
+      "layout_weight_format": "native",
+      "layout_depthwise_rewrite": "native",
+      "layout_preformat_frozen_bn_buffers": false,
+      "layout_depthwise_rewrite_summary": {
+        "requested": "native",
+        "target_count": 0,
+        "rewritten_count": 0,
+        "modules": []
+      },
+      "layout_weight_format_summary": {
+        "requested": "native",
+        "before_histogram": {
+          "conv2d": {
+            "0": 96
+          },
+          "depthwise_conv2d": {
+            "0": 27
+          },
+          "linear": {
+            "2": 138
+          }
+        },
+        "after_histogram": {
+          "conv2d": {
+            "0": 96
+          },
+          "depthwise_conv2d": {
+            "0": 27
+          },
+          "linear": {
+            "2": 138
+          }
+        }
+      },
+      "layout_frozen_bn_buffer_format_summary": {
+        "converted_count": 0,
+        "modules": []
+      },
+      "vision_focal_depthwise_rewrite": "constant_grouped_all",
+      "vision_weight_format": "torchair_internal",
+      "vision_focal_depthwise_rewrite_summary": {
+        "requested": "constant_grouped_all",
+        "target_count": 45,
+        "rewritten_count": 45,
+        "constant_weight_digest": "d901a68ebd3b31a5",
+        "modules": [
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.0.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 0,
+            "weight_shape": [
+              96,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              54,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.1.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 1,
+            "weight_shape": [
+              96,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              150,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.2.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 2,
+            "weight_shape": [
+              96,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              294,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.0.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 3,
+            "weight_shape": [
+              96,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              54,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.1.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 4,
+            "weight_shape": [
+              96,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              150,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.2.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 5,
+            "weight_shape": [
+              96,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              294,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.0.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 6,
+            "weight_shape": [
+              192,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              108,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.1.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 7,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              300,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.2.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 8,
+            "weight_shape": [
+              192,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              588,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.0.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 9,
+            "weight_shape": [
+              192,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              108,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.1.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 10,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              300,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.2.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 11,
+            "weight_shape": [
+              192,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              588,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 12,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 13,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 14,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 15,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 16,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 17,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 18,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 19,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 20,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 21,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 22,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 23,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 24,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 25,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 26,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 27,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 28,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 29,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 30,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 31,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 32,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 33,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 34,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 35,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 36,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 37,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 38,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.0.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 39,
+            "weight_shape": [
+              768,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              432,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.1.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 40,
+            "weight_shape": [
+              768,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              1200,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.2.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 41,
+            "weight_shape": [
+              768,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              2352,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.0.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 42,
+            "weight_shape": [
+              768,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              432,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.1.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 43,
+            "weight_shape": [
+              768,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              1200,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.2.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 44,
+            "weight_shape": [
+              768,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              2352,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          }
+        ]
+      },
+      "vision_weight_format_summary": {
+        "requested": "torchair_internal",
+        "tracked_count": 80,
+        "before_histogram": {
+          "0": 20,
+          "2": 60
+        },
+        "after_histogram": {
+          "29": 60,
+          "4": 20
+        },
+        "focal_prepack_count": 0,
+        "focal_prepack_modules": []
+      }
+    },
+    {
+      "worker": 3,
+      "cpu_affinity": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63
+      ],
+      "cpu_affinity_count": 64,
+      "prefix_graph_warmup": {
+        "execution": "compiled_masked_full_encoder_buckets",
+        "shape_count": 10,
+        "wall_s": 7.832812533713877,
+        "graphs": {
+          "448x192_b2": {
+            "pass_wall_s": [
+              2.5404974780976772
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x192_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "448x384_b2": {
+            "pass_wall_s": [
+              0.8338053412735462
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x384_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "512x64_b4": {
+            "pass_wall_s": [
+              0.5339999748393893
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x64_b4_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x64_b4": {
+            "pass_wall_s": [
+              0.5334310159087181
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x64_b4_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x128_b2": {
+            "pass_wall_s": [
+              0.546083671040833
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x128_b2_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x256_b1": {
+            "pass_wall_s": [
+              0.5597805138677359
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x256_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x448_b1": {
+            "pass_wall_s": [
+              0.561876218765974
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x448_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x576_b1": {
+            "pass_wall_s": [
+              0.5656456239521503
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x576_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x896_b1": {
+            "pass_wall_s": [
+              0.5664237570017576
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x896_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          },
+          "960x1408_b1": {
+            "pass_wall_s": [
+              0.5697629330679774
+            ],
+            "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x1408_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+          }
+        },
+        "fallback_eager": {
+          "execution": "skipped_compiled_bucket_coverage",
+          "input_shape": [
+            1,
+            3,
+            640,
+            384
+          ],
+          "processed_image_size": [
+            384,
+            640
+          ],
+          "accepting_buckets": [
+            "960x896_b1",
+            "960x1408_b1"
+          ],
+          "pass_wall_s": []
+        }
+      },
+      "recognition_preprocess_threads": 8,
+      "layout_batch_size": 2,
+      "layout_cpu_threads": 16,
+      "layout_dtype": "float32",
+      "layout_input_color_order": "rgb",
+      "layout_weight_format": "native",
+      "layout_depthwise_rewrite": "native",
+      "layout_preformat_frozen_bn_buffers": false,
+      "layout_depthwise_rewrite_summary": {
+        "requested": "native",
+        "target_count": 0,
+        "rewritten_count": 0,
+        "modules": []
+      },
+      "layout_weight_format_summary": {
+        "requested": "native",
+        "before_histogram": {
+          "conv2d": {
+            "0": 96
+          },
+          "depthwise_conv2d": {
+            "0": 27
+          },
+          "linear": {
+            "2": 138
+          }
+        },
+        "after_histogram": {
+          "conv2d": {
+            "0": 96
+          },
+          "depthwise_conv2d": {
+            "0": 27
+          },
+          "linear": {
+            "2": 138
+          }
+        }
+      },
+      "layout_frozen_bn_buffer_format_summary": {
+        "converted_count": 0,
+        "modules": []
+      },
+      "vision_focal_depthwise_rewrite": "constant_grouped_all",
+      "vision_weight_format": "torchair_internal",
+      "vision_focal_depthwise_rewrite_summary": {
+        "requested": "constant_grouped_all",
+        "target_count": 45,
+        "rewritten_count": 45,
+        "constant_weight_digest": "d901a68ebd3b31a5",
+        "modules": [
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.0.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 0,
+            "weight_shape": [
+              96,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              54,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.1.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 1,
+            "weight_shape": [
+              96,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              150,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.0.modulation.focal_layers.2.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 2,
+            "weight_shape": [
+              96,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              294,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.0.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 3,
+            "weight_shape": [
+              96,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              54,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.1.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 4,
+            "weight_shape": [
+              96,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              150,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.0.blocks.1.modulation.focal_layers.2.0",
+            "stage": 0,
+            "channels": 96,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 96,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 96,
+            "group_width": 1,
+            "weight_id": 5,
+            "weight_shape": [
+              96,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              294,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.0.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 6,
+            "weight_shape": [
+              192,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              108,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.1.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 7,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              300,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.0.modulation.focal_layers.2.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 8,
+            "weight_shape": [
+              192,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              588,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.0.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 9,
+            "weight_shape": [
+              192,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              108,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.1.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 10,
+            "weight_shape": [
+              192,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              300,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.1.blocks.1.modulation.focal_layers.2.0",
+            "stage": 1,
+            "channels": 192,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 192,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 192,
+            "group_width": 1,
+            "weight_id": 11,
+            "weight_shape": [
+              192,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              588,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 12,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 13,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.0.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 14,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 15,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 16,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.1.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 17,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 18,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 19,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.2.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 20,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 21,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 22,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.3.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 23,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 24,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 25,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.4.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 26,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 27,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 28,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.5.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 29,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 30,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 31,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.6.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 32,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 33,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 34,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.7.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 35,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.0.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 36,
+            "weight_shape": [
+              384,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              216,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.1.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 37,
+            "weight_shape": [
+              384,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              600,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.2.blocks.8.modulation.focal_layers.2.0",
+            "stage": 2,
+            "channels": 384,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 384,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 384,
+            "group_width": 1,
+            "weight_id": 38,
+            "weight_shape": [
+              384,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              1176,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.0.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 39,
+            "weight_shape": [
+              768,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              432,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.1.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 40,
+            "weight_shape": [
+              768,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              1200,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.0.modulation.focal_layers.2.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 41,
+            "weight_shape": [
+              768,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              2352,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.0.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              3,
+              3
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              3,
+              3
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 42,
+            "weight_shape": [
+              768,
+              1,
+              3,
+              3
+            ],
+            "weight_storage_shape": [
+              432,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.1.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              5,
+              5
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              5,
+              5
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 43,
+            "weight_shape": [
+              768,
+              1,
+              5,
+              5
+            ],
+            "weight_storage_shape": [
+              1200,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          },
+          {
+            "module": "layers.3.blocks.1.modulation.focal_layers.2.0",
+            "stage": 3,
+            "channels": 768,
+            "source_kernel": [
+              7,
+              7
+            ],
+            "source_groups": 768,
+            "target_kernel": [
+              7,
+              7
+            ],
+            "target_groups": 768,
+            "group_width": 1,
+            "weight_id": 44,
+            "weight_shape": [
+              768,
+              1,
+              7,
+              7
+            ],
+            "weight_storage_shape": [
+              2352,
+              1,
+              16,
+              16
+            ],
+            "weight_binding": "frozen_prepacked_fractal_z_grouped"
+          }
+        ]
+      },
+      "vision_weight_format_summary": {
+        "requested": "torchair_internal",
+        "tracked_count": 80,
+        "before_histogram": {
+          "0": 20,
+          "2": 60
+        },
+        "after_histogram": {
+          "29": 60,
+          "4": 20
+        },
+        "focal_prepack_count": 0,
+        "focal_prepack_modules": []
+      }
+    }
+  ],
+  "prefill_warmup_summary": {
+    "label": "two_phase_warmup",
+    "worker_count": 4,
+    "page_count": 8,
+    "wall_s": 4.8621645560488105,
+    "pages_per_s": 1.645357722425816,
+    "worker_page_counts": [
+      3,
+      1,
+      2,
+      2
+    ],
+    "worker_busy_s": [
+      4.654447296168655,
+      4.860265973955393,
+      4.282908360939473,
+      4.778347771149129
+    ],
+    "stage_s": {
+      "worker_file_read_sum_s": 0.004144869279116392,
+      "worker_direct_rgb_decode_sum_s": 0.11297869123518467,
+      "worker_rgb_materialize_sum_s": 9.594019502401352e-05,
+      "worker_rgb_to_bgr_sum_s": 0.0,
+      "worker_detector_call_sum_s": 17.529638200532645,
+      "worker_layout_crop_views_sum_s": 0.0002594529651105404,
+      "worker_document_image_index_sum_s": 0.00014381250366568565,
+      "worker_recognition_crop_build_sum_s": 0.01161109795793891,
+      "worker_recognition_input_prepare_sum_s": 0.09938132856041193,
+      "worker_recognition_prefill_sum_s": 0.680927483830601,
+      "worker_recognition_prefill_cache_d2h_sum_s": 0.04311726288869977,
+      "worker_recognition_page_collect_sum_s": 0.08165877731516957,
+      "worker_shared_pack_sum_s": 0.04434266500174999,
+      "worker_recognition_capacity_filter_sum_s": 0.0005376790650188923,
+      "worker_recognition_pil_fromarray_sum_s": 0.06634331913664937,
+      "worker_recognition_processor_image_convert_rgb_sum_s": 4.4710468500852585e-05,
+      "worker_recognition_processor_target_size_sum_s": 0.0005454476922750473,
+      "worker_recognition_processor_resize_sum_s": 0.22286901390179992,
+      "worker_recognition_processor_pil_to_uint8_hwc_sum_s": 0.04106695856899023,
+      "worker_recognition_processor_pil_to_float_array_sum_s": 0.0,
+      "worker_recognition_processor_rescale_sum_s": 0.0,
+      "worker_recognition_processor_normalize_sum_s": 0.0,
+      "worker_recognition_processor_transpose_sum_s": 0.0,
+      "worker_recognition_processor_tensor_view_sum_s": 0.0,
+      "worker_recognition_tensor_numpy_view_sum_s": 0.0,
+      "worker_recognition_contiguous_chw_copy_sum_s": 0.0
+    },
+    "ipc_delivery_sum_s": 0.010560672264546156,
+    "ipc_delivery_mean_s": 0.0013200840330682695,
+    "ipc_delivery_max_s": 0.0016931788995862007,
+    "shared_payload_bytes": 54706176,
+    "scheduling": "dynamic_shared_filepath_queue",
+    "layout_batch_size": 2,
+    "layout_batching": {
+      "calls": 5,
+      "real_rows": 8,
+      "physical_rows": 10,
+      "slot_efficiency": 0.8
+    },
+    "full_page_frontend": true,
+    "retained_shared_images": false,
+    "recognition_full_vision_buckets": true,
+    "recognition_page_lookahead": 4,
+    "trace_prefill_iterations": false,
+    "vision_batching": {
+      "page_groups": 4,
+      "pages": 8,
+      "crops": 54,
+      "page_group_size_histogram": {
+        "2": 2,
+        "3": 1,
+        "1": 1
+      },
+      "bucket_real_rows": {
+        "960x64_b4": 37,
+        "512x64_b4": 12,
+        "960x128_b2": 4,
+        "960x256_b1": 1
+      },
+      "bucket_calls": {
+        "512x64_b4": 4,
+        "960x64_b4": 10,
+        "960x128_b2": 3,
+        "960x256_b1": 1
+      },
+      "bucket_physical_rows": {
+        "512x64_b4": 16,
+        "960x64_b4": 40,
+        "960x128_b2": 6,
+        "960x256_b1": 1
+      },
+      "fallback_rows": 0,
+      "max_npu_memory_before_bytes": 1062660096,
+      "max_npu_memory_after_bytes": 1062662144,
+      "max_npu_peak_memory_bytes": 1113032192,
+      "max_npu_peak_increment_bytes": 50372096,
+      "compiled_real_rows": 54,
+      "compiled_physical_rows": 63,
+      "compiled_padding_rows": 9,
+      "compiled_slot_efficiency": 0.8571428571428571
+    }
+  },
+  "prefill_phase_summary": {
+    "label": "two_phase_measured_prefill",
+    "worker_count": 4,
+    "page_count": 1651,
+    "wall_s": 109.7183196102269,
+    "pages_per_s": 15.047623823124152,
+    "worker_page_counts": [
+      408,
+      420,
+      440,
+      383
+    ],
+    "worker_busy_s": [
+      108.95954056130726,
+      109.3947296361439,
+      109.04323182720697,
+      109.46129530854522
+    ],
+    "stage_s": {
+      "worker_file_read_sum_s": 1.6498011825606227,
+      "worker_direct_rgb_decode_sum_s": 58.69670937303454,
+      "worker_rgb_materialize_sum_s": 0.009665688965469599,
+      "worker_rgb_to_bgr_sum_s": 0.0,
+      "worker_detector_call_sum_s": 82.22575110662729,
+      "worker_layout_crop_views_sum_s": 0.12026782752946019,
+      "worker_document_image_index_sum_s": 0.04736934835091233,
+      "worker_recognition_crop_build_sum_s": 10.418473015539348,
+      "worker_recognition_input_prepare_sum_s": 40.19795005489141,
+      "worker_recognition_prefill_sum_s": 200.69095868291333,
+      "worker_recognition_prefill_cache_d2h_sum_s": 18.807389022782445,
+      "worker_recognition_page_collect_sum_s": 0.23143915925174952,
+      "worker_shared_pack_sum_s": 37.47694783657789,
+      "worker_recognition_capacity_filter_sum_s": 0.16736900992691517,
+      "worker_recognition_pil_fromarray_sum_s": 35.202452566474676,
+      "worker_recognition_processor_image_convert_rgb_sum_s": 0.022031464148312807,
+      "worker_recognition_processor_target_size_sum_s": 0.24849545443430543,
+      "worker_recognition_processor_resize_sum_s": 110.96813301974908,
+      "worker_recognition_processor_pil_to_uint8_hwc_sum_s": 10.038430355489254,
+      "worker_recognition_processor_pil_to_float_array_sum_s": 0.0,
+      "worker_recognition_processor_rescale_sum_s": 0.0,
+      "worker_recognition_processor_normalize_sum_s": 0.0,
+      "worker_recognition_processor_transpose_sum_s": 0.0,
+      "worker_recognition_processor_tensor_view_sum_s": 0.0,
+      "worker_recognition_tensor_numpy_view_sum_s": 0.0,
+      "worker_recognition_contiguous_chw_copy_sum_s": 0.0
+    },
+    "ipc_delivery_sum_s": 13.830489780753851,
+    "ipc_delivery_mean_s": 0.00837703802589573,
+    "ipc_delivery_max_s": 0.781928498763591,
+    "shared_payload_bytes": 42635132928,
+    "scheduling": "dynamic_shared_filepath_queue",
+    "layout_batch_size": 2,
+    "layout_batching": {
+      "calls": 826,
+      "real_rows": 1651,
+      "physical_rows": 1652,
+      "slot_efficiency": 0.9993946731234867
+    },
+    "full_page_frontend": true,
+    "retained_shared_images": false,
+    "recognition_full_vision_buckets": true,
+    "recognition_page_lookahead": 4,
+    "trace_prefill_iterations": false,
+    "vision_batching": {
+      "page_groups": 413,
+      "pages": 1651,
+      "crops": 32109,
+      "page_group_size_histogram": {
+        "4": 412,
+        "3": 1
+      },
+      "bucket_real_rows": {
+        "512x64_b4": 14596,
+        "960x64_b4": 7548,
+        "960x128_b2": 1819,
+        "960x256_b1": 1656,
+        "960x448_b1": 1120,
+        "448x384_b2": 1522,
+        "448x192_b2": 2504,
+        "960x576_b1": 520,
+        "960x896_b1": 535,
+        "960x1408_b1": 289
+      },
+      "bucket_calls": {
+        "512x64_b4": 3806,
+        "960x64_b4": 2033,
+        "960x128_b2": 1008,
+        "960x256_b1": 1656,
+        "960x448_b1": 1120,
+        "448x384_b2": 803,
+        "448x192_b2": 1315,
+        "960x576_b1": 520,
+        "960x896_b1": 535,
+        "960x1408_b1": 289
+      },
+      "bucket_physical_rows": {
+        "512x64_b4": 15224,
+        "960x64_b4": 8132,
+        "960x128_b2": 2016,
+        "960x256_b1": 1656,
+        "960x448_b1": 1120,
+        "448x384_b2": 1606,
+        "448x192_b2": 2630,
+        "960x576_b1": 520,
+        "960x896_b1": 535,
+        "960x1408_b1": 289
+      },
+      "fallback_rows": 0,
+      "max_npu_memory_before_bytes": 1062662144,
+      "max_npu_memory_after_bytes": 1062662144,
+      "max_npu_peak_memory_bytes": 1249883136,
+      "max_npu_peak_increment_bytes": 187220992,
+      "compiled_real_rows": 32109,
+      "compiled_physical_rows": 33728,
+      "compiled_padding_rows": 1619,
+      "compiled_slot_efficiency": 0.951998339658444
+    }
+  },
+  "prefill_trace": null,
+  "decode_graph_warmup": {
+    "passes": 2,
+    "graphs": {
+      "decode_b128": {
+        "pass_wall_s": [
+          3.7600087439641356,
+          0.00657236110419035
+        ],
+        "shape_discovery_s": 9.390991181135178e-06,
+        "cross_cache_len": 1320,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/decode_selfkv2048_cross1320_increfa_all_b128"
+      }
+    },
+    "wall_s": 5.073415226303041
+  },
+  "decode": {
+    "batch_size": 128,
+    "submitted": 32109,
+    "completed": 32109,
+    "decode_iterations": 19383,
+    "raw_decode_token_slots": 2481024,
+    "effective_decode_tokens": 2250252,
+    "idle_decode_token_slots": 230772,
+    "decode_s": 121.01002876646817,
+    "first_decode_step_s": 0.010070280637592077,
+    "steady_decode_s": 120.99995848583058,
+    "raw_decode_tokens_per_s": 20502.63127189249,
+    "effective_decode_tokens_per_s": 18595.582721021085,
+    "steady_raw_decode_tokens_per_s": 20503.27976179033,
+    "steady_effective_decode_tokens_per_s": 18596.072495871937,
+    "slot_refills": 31981,
+    "compile_wrap_s": 7.052114233374596e-05,
+    "compile": {
+      "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+      "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+      "backend": "torchair",
+      "fullgraph": true,
+      "dynamic": false,
+      "torchair_ge_cache": true,
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/decode_selfkv2048_cross1320_increfa_all_b128",
+      "mask_mode": "per_step",
+      "qkv_fused": false,
+      "weights_nz": false,
+      "ge_tuning": [],
+      "prefetch_mode": "none",
+      "static_self_kv_len": 2048,
+      "static_cross_kv_len": 1320,
+      "self_attention_backend": "increfa_all",
+      "batch_size": 128
+    },
+    "timing_detail": {
+      "run_wall_s": 153.55507617583498,
+      "source_pull_s": 2.371940028388053,
+      "initial_cache_stack_s": 0.0,
+      "initial_arena_allocate_s": 0.012320499401539564,
+      "initial_arena_admission_enqueue_s": 0.0737442416138947,
+      "initial_state_build_s": 0.00023455405607819557,
+      "cache_refill_copy_enqueue_s": 0.0,
+      "cache_refill_direct_admission_enqueue_s": 20.300901795271784,
+      "cache_refill_row_bytes": 0,
+      "cache_refill_total_bytes": 0,
+      "direct_admission_count": 32109,
+      "direct_cross_kv_bytes": 42635132928,
+      "direct_reset_bytes": 168859680,
+      "admission_prefetch": null,
+      "result_build_s": 4.017001809552312,
+      "completion_callback_s": 0.19913173373788595,
+      "decode_input_buffer_setup_s": 0.0005929600447416306,
+      "decode_input_host_pinned": true,
+      "decode_input_build_s": 1.9454893269576132,
+      "explicit_pre_decode_sync": false,
+      "pre_decode_sync_s": 0.0,
+      "decode_s": 121.01002876646817,
+      "scheduler_bookkeeping_residual_s": 3.62361993920058
+    }
+  },
+  "prefill_device_stage_s": {
+    "coordinator_direct_arena_admission_enqueue": 20.37464603688568
+  },
+  "text_prefill_real_source_tokens": 2313104,
+  "text_prefill_physical_source_tokens": 3487440,
+  "crop_count": 32109,
+  "output_image_reload_pages": 704,
+  "output_write_max_pending": 8,
+  "max_rss_mib": 11137.6953125,
+  "trace": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_full1651_accuracy_safe_layout_optvision_20260817/output/recognition_trace.jsonl"
+}

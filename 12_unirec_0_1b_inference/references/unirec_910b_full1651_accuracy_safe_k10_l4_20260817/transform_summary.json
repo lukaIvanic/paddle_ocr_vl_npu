@@ -1,0 +1,12 @@
+{
+  "status": "ok",
+  "offset": 0,
+  "limit": 1651,
+  "page_count": 1651,
+  "strip_image_tags": true,
+  "removed_image_tags": 1545,
+  "source_output": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_full1651_accuracy_safe_layout_optvision_20260817/output",
+  "source_run_summary": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_full1651_accuracy_safe_layout_optvision_20260817/output/run_summary.json",
+  "source_run_commit": null,
+  "prediction_transform_manifest": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_full1651_accuracy_safe_layout_optvision_20260817/evaluation_image_tags_stripped/prediction_transform_manifest.json"
+}

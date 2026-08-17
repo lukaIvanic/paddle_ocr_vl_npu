@@ -1,0 +1,6 @@
+project_commit=737de30f97db89c1d6a02fe25cb0a25c4fedf1e7
+physical_npu=3
+Filesystem      Size  Used Avail Use% Mounted on
+shm             128G   12G  117G   9% /dev/shm
+MemTotal:       1582638916 kB
+MemAvailable:   1521588604 kB
