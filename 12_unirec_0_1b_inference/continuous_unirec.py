@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 import time
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from queue import Queue
@@ -619,7 +620,10 @@ class ContinuousUniRecDecoder:
         source: Iterable[ContinuousReadyItem],
         *,
         on_complete: Callable[[ContinuousCompletedItem], None],
+        graph_warmup_passes: int = 0,
     ) -> dict[str, Any]:
+        if graph_warmup_passes < 0:
+            raise ValueError("graph_warmup_passes must be non-negative")
         run_started = time.perf_counter()
         iterator = iter(source)
         source_exhausted = False
@@ -642,6 +646,9 @@ class ContinuousUniRecDecoder:
         decode_input_buffer_setup_s = 0.0
         decode_input_host_pinned = False
         pre_decode_sync_s = 0.0
+        production_graph_warmup_s = 0.0
+        production_graph_warmup_pass_s: list[float] = []
+        production_graph_warmup_warnings: list[str] = []
 
         def next_ready() -> ContinuousReadyItem | None:
             nonlocal source_exhausted, source_pull_s, submitted
@@ -972,6 +979,69 @@ class ContinuousUniRecDecoder:
             time.perf_counter() - input_buffer_setup_started
         )
 
+        # Warm the graph on the actual admitted production arena and the exact
+        # long-lived device input tensors used by every measured decode step.
+        # A synthetic arena can satisfy the isolated cache probe yet select a
+        # second Dynamo contract when the real arena arrives on 310P. Repeated
+        # warmup writes are safe: the first measured step writes the same
+        # self-KV positions again before they are consumed by later steps.
+        if decode_module is not None and graph_warmup_passes:
+            from modeling_optimized_unirec import synchronize_device
+
+            next_token_host_array[:] = last_tokens
+            cache_position_host_array[:] = cache_positions
+            next_token_tensor.view(-1).copy_(
+                next_token_host,
+                non_blocking=decode_input_host_pinned,
+            )
+            cache_position_tensor.copy_(
+                cache_position_host,
+                non_blocking=decode_input_host_pinned,
+            )
+            warmup_started = time.perf_counter()
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                for pass_index in range(graph_warmup_passes):
+                    pass_started = time.perf_counter()
+                    _ = decode_module(
+                        next_token_tensor,
+                        cache_position_tensor,
+                        0,
+                        cache.key_cache,
+                        cache.value_cache,
+                        cache.cross_key_cache,
+                        cache.cross_value_cache,
+                        cache.cross_attention_mask,
+                    )
+                    synchronize_device(self.runner.device)
+                    pass_s = time.perf_counter() - pass_started
+                    production_graph_warmup_pass_s.append(pass_s)
+                    print(
+                        "UNIREC_PRODUCTION_DECODE_WARMUP_PASS "
+                        f"pass={pass_index + 1}/{graph_warmup_passes} "
+                        f"wall_s={pass_s:.6f}",
+                        flush=True,
+                    )
+                production_graph_warmup_warnings = [
+                    str(warning.message) for warning in caught
+                ]
+            production_graph_warmup_s = time.perf_counter() - warmup_started
+            recompile_warnings = [
+                message
+                for message in production_graph_warmup_warnings
+                if (
+                    "Skip cache as LocalUniRecCachedDecodeStepModule.forward"
+                    in message
+                    and "recompiled" in message
+                )
+            ]
+            if recompile_warnings:
+                raise RuntimeError(
+                    "production decode arena invalidated the persisted graph "
+                    "cache; refusing to enter the slow decode loop: "
+                    + recompile_warnings[0]
+                )
+
         try:
             with torch.inference_mode():
                 while any(slot is not None for slot in slots):
@@ -1082,6 +1152,7 @@ class ContinuousUniRecDecoder:
                 decode_input_buffer_setup_s,
                 decode_input_build_s,
                 pre_decode_sync_s,
+                production_graph_warmup_s,
                 decode_s,
             )
         )
@@ -1113,6 +1184,14 @@ class ContinuousUniRecDecoder:
             "slot_refills": slot_refills,
             "compile_wrap_s": compile_wrap_s,
             "compile": compile_meta,
+            "production_graph_warmup": {
+                "passes": int(graph_warmup_passes),
+                "wall_s": production_graph_warmup_s,
+                "pass_wall_s": production_graph_warmup_pass_s,
+                "warnings": production_graph_warmup_warnings,
+                "arena": "actual_admitted_decode_arena",
+                "included_in_decode_s": False,
+            },
             "timing_detail": {
                 "run_wall_s": run_wall_s,
                 "source_pull_s": source_pull_s,
@@ -1143,6 +1222,7 @@ class ContinuousUniRecDecoder:
                 "decode_input_build_s": decode_input_build_s,
                 "explicit_pre_decode_sync": False,
                 "pre_decode_sync_s": pre_decode_sync_s,
+                "production_graph_warmup_s": production_graph_warmup_s,
                 "decode_s": decode_s,
                 "scheduler_bookkeeping_residual_s": max(
                     0.0, run_wall_s - directly_accounted_s

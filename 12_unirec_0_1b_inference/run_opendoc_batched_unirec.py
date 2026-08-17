@@ -533,6 +533,7 @@ def warmup_configured_graphs(
     runner: OptimizedUniRecRunner,
     vision_atlas_runtime: UniRecVisionAtlasRuntime | None,
     passes: int = 2,
+    warmup_decode: bool = True,
 ) -> dict[str, Any]:
     """Load and replay every configured graph before pipeline timing starts."""
     if passes < 1:
@@ -624,7 +625,7 @@ def warmup_configured_graphs(
                 "cache_dir": str(text_runtime.cache_dir),
             }
 
-        if args.decode_mode.startswith("compiled"):
+        if args.decode_mode.startswith("compiled") and warmup_decode:
             shape_started = time.perf_counter()
             cross_cache_len = runner._get_static_cross_cache_len()
             shape_discovery_s = time.perf_counter() - shape_started

@@ -569,7 +569,12 @@ def main() -> None:
         runner=runner,
         vision_atlas_runtime=None,
         passes=args.decode_warmup_passes,
+        warmup_decode=False,
     )
+    decode_graph_warmup["decode"] = {
+        "execution": "deferred_to_actual_admitted_arena",
+        "passes": args.decode_warmup_passes,
+    }
     decode_setup_s = time.perf_counter() - decode_setup_started
     print(
         "UNIREC_TWO_PHASE_DECODE_SETUP_END "
@@ -848,8 +853,18 @@ def main() -> None:
             decode_mode="compiled_ifa",
             compile_backend="torchair",
             admission_prefetch_depth=args.decode_admission_prefetch_depth,
-        ).run(ready_source(), on_complete=enqueue_completed_crop)
-        decode_inference_wall_s = time.perf_counter() - decode_phase_started
+        ).run(
+            ready_source(),
+            on_complete=enqueue_completed_crop,
+            graph_warmup_passes=args.decode_warmup_passes,
+        )
+        decode_inference_wall_s = (
+            time.perf_counter()
+            - decode_phase_started
+            - float(
+                continuous_decode["production_graph_warmup"]["wall_s"]
+            )
+        )
         base.record_direct_arena_admission_metrics(metrics, continuous_decode)
         metrics.decode_s = float(continuous_decode["decode_s"])
         metrics.raw_decode_token_slots = int(
@@ -888,7 +903,11 @@ def main() -> None:
         for page, _future in pending_writes:
             base.release_page_frontend_storage(page)
         raise
-    decode_phase_wall_s = time.perf_counter() - decode_phase_started
+    decode_phase_wall_s = (
+        time.perf_counter()
+        - decode_phase_started
+        - float(continuous_decode["production_graph_warmup"]["wall_s"])
+    )
 
     trace_path = output_dir / "recognition_trace.jsonl"
     with trace_path.open("w", encoding="utf-8") as handle:
