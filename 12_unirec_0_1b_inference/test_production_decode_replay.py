@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import tempfile
 import unittest
 import zlib
@@ -16,6 +17,7 @@ from production_decode_replay import (
     compare_completions,
     load_artifact,
     summarize_step_trace,
+    write_completion_trace,
 )
 
 
@@ -131,6 +133,62 @@ class ProductionDecodeReplayTest(unittest.TestCase):
         self.assertEqual(comparison["length_exact_count"], 2)
         self.assertEqual(comparison["token_exact_count"], 1)
         self.assertEqual(comparison["first_mismatches"][0]["request_id"], "b")
+
+    def test_reference_digest_comparison(self) -> None:
+        tokens = [0, 10, 2]
+        digest = hashlib.sha256(
+            json.dumps(tokens, separators=(",", ":")).encode()
+        ).hexdigest()
+        comparison = compare_completions(
+            [
+                SimpleNamespace(
+                    request_id="a",
+                    result={"generated_ids": tokens},
+                )
+            ],
+            {
+                "a": {
+                    "generated_token_count": 2,
+                    "token_sha256": digest,
+                }
+            },
+        )
+        self.assertEqual(comparison["length_exact_count"], 1)
+        self.assertEqual(comparison["token_exact_count"], 1)
+
+    def test_completion_trace_records_eos_and_length_cap(self) -> None:
+        completed = [
+            SimpleNamespace(
+                request_id="eos",
+                payload={"page_index": 1, "crop_index": 2, "label": "text"},
+                result={
+                    "generated_ids": [0, 10, 2],
+                    "generated_token_count": 2,
+                    "decode_generated_token_count": 2,
+                },
+            ),
+            SimpleNamespace(
+                request_id="cap",
+                payload={"page_index": 1, "crop_index": 3, "label": "formula"},
+                result={
+                    "generated_ids": [0, 11, 11, 11],
+                    "generated_token_count": 3,
+                    "decode_generated_token_count": 3,
+                },
+            ),
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "completions.jsonl"
+            write_completion_trace(
+                output,
+                completed,
+                eos_token_id=2,
+                max_length=4,
+            )
+            rows = [json.loads(line) for line in output.read_text().splitlines()]
+        self.assertEqual(rows[0]["termination"], "eos")
+        self.assertEqual(rows[1]["termination"], "length_cap")
+        self.assertEqual(rows[1]["token_ids"], [0, 11, 11, 11])
 
     def test_step_trace_groups_position_and_active_count(self) -> None:
         rows = []

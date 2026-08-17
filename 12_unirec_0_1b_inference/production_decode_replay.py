@@ -10,6 +10,7 @@ EOS/length completion, slot refill, and compiled decoder graph.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -114,6 +115,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--completion-trace-jsonl",
+        type=Path,
+        help=(
+            "Optional compact per-crop token trace written after measured "
+            "decode. This is outside the decode timing window."
+        ),
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=Path(
@@ -152,6 +161,47 @@ def atomic_write_json(path: Path, value: dict[str, Any]) -> None:
         json.dumps(value, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    os.replace(partial, path)
+
+
+def write_completion_trace(
+    path: Path,
+    completed: list[Any],
+    *,
+    eos_token_id: int,
+    max_length: int,
+) -> None:
+    """Write compact token evidence without changing measured decode timing."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    partial = path.with_suffix(path.suffix + ".partial")
+    with partial.open("w", encoding="utf-8") as handle:
+        for item in completed:
+            token_ids = [int(token) for token in item.result["generated_ids"]]
+            if token_ids and token_ids[-1] == eos_token_id:
+                termination = "eos"
+            elif len(token_ids) >= max_length:
+                termination = "length_cap"
+            else:
+                termination = "other"
+            payload = dict(item.payload or {})
+            row = {
+                "request_id": str(item.request_id),
+                "page_index": payload.get("page_index"),
+                "crop_index": payload.get("crop_index"),
+                "label": payload.get("label"),
+                "token_ids": token_ids,
+                "generated_token_count": int(
+                    item.result["generated_token_count"]
+                ),
+                "decode_generated_token_count": int(
+                    item.result["decode_generated_token_count"]
+                ),
+                "termination": termination,
+            }
+            handle.write(
+                json.dumps(row, ensure_ascii=False, separators=(",", ":"))
+                + "\n"
+            )
     os.replace(partial, path)
 
 
@@ -436,22 +486,46 @@ def compare_completions(
                 missing_reference.append(request_id)
             continue
         actual_tokens = [int(token) for token in item.result["generated_ids"]]
-        expected_tokens = [int(token) for token in expected["token_ids"]]
+        expected_tokens_raw = expected.get("token_ids")
+        expected_tokens = (
+            [int(token) for token in expected_tokens_raw]
+            if expected_tokens_raw is not None
+            else None
+        )
+        expected_length = (
+            len(expected_tokens)
+            if expected_tokens is not None
+            else int(expected["generated_token_count"]) + 1
+        )
+        actual_digest = hashlib.sha256(
+            json.dumps(actual_tokens, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        expected_digest = (
+            hashlib.sha256(
+                json.dumps(expected_tokens, separators=(",", ":")).encode(
+                    "utf-8"
+                )
+            ).hexdigest()
+            if expected_tokens is not None
+            else str(expected["token_sha256"])
+        )
         compared += 1
-        if len(actual_tokens) == len(expected_tokens):
+        if len(actual_tokens) == expected_length:
             length_exact += 1
-        if actual_tokens == expected_tokens:
+        if actual_digest == expected_digest:
             token_exact += 1
         elif len(mismatches) < 20:
-            mismatches.append(
-                {
-                    "request_id": request_id,
-                    "actual_length": len(actual_tokens),
-                    "expected_length": len(expected_tokens),
-                    "first_actual_tokens": actual_tokens[:16],
-                    "first_expected_tokens": expected_tokens[:16],
-                }
-            )
+            mismatch = {
+                "request_id": request_id,
+                "actual_length": len(actual_tokens),
+                "expected_length": expected_length,
+                "actual_token_sha256": actual_digest,
+                "expected_token_sha256": expected_digest,
+                "first_actual_tokens": actual_tokens[:16],
+            }
+            if expected_tokens is not None:
+                mismatch["first_expected_tokens"] = expected_tokens[:16]
+            mismatches.append(mismatch)
     return {
         "enabled": True,
         "reference_rows": len(reference),
@@ -684,6 +758,18 @@ def main() -> None:
     decode_wall_s = time.perf_counter() - decode_wall_started
     warmup = decode["production_graph_warmup"]
     decode_wall_excluding_warmup_s = decode_wall_s - float(warmup["wall_s"])
+    completion_trace_path = (
+        args.completion_trace_jsonl.expanduser().resolve()
+        if args.completion_trace_jsonl is not None
+        else None
+    )
+    if completion_trace_path is not None:
+        write_completion_trace(
+            completion_trace_path,
+            completed,
+            eos_token_id=int(runner.config.eos_token_id),
+            max_length=int(args.max_length),
+        )
     reference = load_reference_trace(args.reference_trace)
     validation = compare_completions(completed, reference)
     generated_lengths = [
@@ -754,6 +840,11 @@ def main() -> None:
             "over_capacity": args.over_capacity,
             "step_trace_jsonl": (
                 str(step_trace_path) if step_trace_path is not None else None
+            ),
+            "completion_trace_jsonl": (
+                str(completion_trace_path)
+                if completion_trace_path is not None
+                else None
             ),
         },
         "setup_s": {

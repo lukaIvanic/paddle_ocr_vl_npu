@@ -2,6 +2,12 @@
   "schema": "unirec_production_decode_reference_v1",
   "chip": "Ascend910B2",
   "project_commit": "039a633",
+  "recognition_token_digest_reference": {
+    "file": "recognition_token_digests.jsonl",
+    "rows": 957,
+    "sha256": "987803c020dafd41f0dbe74de2d5cf429f9dca0532f67f79ab3abf69dea0071c",
+    "content": "request identity, generated length, and irreversible token-sequence SHA-256 only"
+  },
   "config": {
     "batch_size": 128,
     "self_cache_length": 2048,
