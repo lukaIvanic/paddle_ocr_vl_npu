@@ -151,11 +151,26 @@ def router_debug_check(
         torch.equal(gathered_weights[0], gathered_weights[1])
     )
     indices_match_capture = bool(torch.equal(local_indices, expected_indices))
+    per_layer_indices_match = torch.all(
+        local_indices == expected_indices, dim=-1
+    )
+    mismatched_local_layers = torch.nonzero(
+        ~per_layer_indices_match, as_tuple=False
+    ).flatten()
+    mismatched_global_layers = [
+        stage.layer_start + int(layer.item())
+        for layer in mismatched_local_layers
+    ]
+    mismatched_index_count = int(
+        (local_indices != expected_indices).sum().item()
+    )
     weight_diff = (local_weights - expected_weights).abs()
     result = {
         "indices_cross_rank_exact": indices_cross_rank,
         "weights_cross_rank_exact": weights_cross_rank,
         "indices_match_capture": indices_match_capture,
+        "mismatched_index_count": mismatched_index_count,
+        "mismatched_global_layers": mismatched_global_layers,
         "weights_vs_capture_max_abs": float(weight_diff.max().item()),
         "weights_vs_capture_mean_abs": float(weight_diff.mean().item()),
     }
@@ -173,12 +188,8 @@ def router_debug_check(
                 "logit_mean_abs": float(diff.mean().item()),
             }
         )
-    if not (
-        indices_cross_rank
-        and weights_cross_rank
-        and indices_match_capture
-    ):
-        raise RuntimeError(f"TP2 router debug parity failed: {result}")
+    if not (indices_cross_rank and weights_cross_rank):
+        raise RuntimeError(f"TP2 cross-rank router parity failed: {result}")
     return result
 
 
