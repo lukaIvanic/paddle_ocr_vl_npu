@@ -21,12 +21,28 @@ from layout_detector_lab import (  # noqa: E402
 from layout_page_input import materialize_layout_bgr  # noqa: E402
 from layout_page_input import materialize_layout_rgb  # noqa: E402
 from layout_msda_aclnn import (  # noqa: E402
+    STATIC_LAYOUT_LEVEL_CUMSUM,
+    STATIC_LAYOUT_LEVEL_PRODUCTS,
+    STATIC_LAYOUT_SPATIAL_SHAPES,
     _build_310p_descriptor_bridge_shapes,
     _uses_310p_internal_layout,
 )
 
 
 class LayoutProductionContractTest(unittest.TestCase):
+    def test_static_layout_metadata_matches_800px_feature_pyramid(self) -> None:
+        self.assertEqual(
+            tuple(height * width for height, width in STATIC_LAYOUT_SPATIAL_SHAPES),
+            STATIC_LAYOUT_LEVEL_PRODUCTS,
+        )
+        running = 0
+        cumulative = []
+        for product in STATIC_LAYOUT_LEVEL_PRODUCTS:
+            running += product
+            cumulative.append(running)
+        self.assertEqual(tuple(cumulative), STATIC_LAYOUT_LEVEL_CUMSUM)
+        self.assertEqual((0, *STATIC_LAYOUT_LEVEL_CUMSUM[:-1]), (0, 10000, 12500))
+
     def test_msda_internal_layout_is_310p_only(self) -> None:
         self.assertTrue(_uses_310p_internal_layout("Ascend310P3"))
         self.assertTrue(_uses_310p_internal_layout("ascend310p"))

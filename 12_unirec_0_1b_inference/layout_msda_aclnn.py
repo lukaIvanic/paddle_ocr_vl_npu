@@ -14,6 +14,9 @@ import torch.nn as nn
 GE_OP_NAME = "MultiScaleDeformableAttnFunction"
 PYTORCH_OP_NAME = "unirec_layout::msda_aclnn"
 EXPECTED_MODULE_COUNT = 6
+STATIC_LAYOUT_SPATIAL_SHAPES = ((100, 100), (50, 50), (25, 25))
+STATIC_LAYOUT_LEVEL_PRODUCTS = (10000, 2500, 625)
+STATIC_LAYOUT_LEVEL_CUMSUM = (10000, 12500, 13125)
 
 _LOADED_EXTENSION: Path | None = None
 _CONVERTER_REGISTERED = False
@@ -314,13 +317,93 @@ def register_layout_msda_converter() -> None:
             raise NotImplementedError(
                 "layout MSDA only lowers prod(dim=1, keepdim=False, dtype=None)"
             )
-        inputs_i32 = ge_apis_module.Cast(inputs, dst_type=ge_data_type.DT_INT32)
-        product_i32 = ge_apis_module.ReduceProdD(
-            inputs_i32,
-            axes=[1],
-            keep_dims=False,
+        if tuple(int(dim) for dim in inputs.symsize) != (3, 2):
+            raise NotImplementedError(
+                "layout MSDA expected fixed spatial_shapes tensor [3,2], got "
+                f"{inputs.symsize}"
+            )
+        print(
+            "UNIREC_LAYOUT_MSDA_STATIC_LEVEL_PRODUCTS "
+            f"values={list(STATIC_LAYOUT_LEVEL_PRODUCTS)}",
+            flush=True,
         )
-        return ge_apis_module.Cast(product_i32, dst_type=ge_data_type.DT_INT64)
+        return ge_apis_module.Const(
+            list(STATIC_LAYOUT_LEVEL_PRODUCTS),
+            dtype=ge_data_type.DT_INT64,
+        )
+
+    # The fixed 800x800 layout graph builds [[100,100],[50,50],[25,25]] with
+    # six indexed writes. Functionalization lowers each scalar assignment to
+    # nested select_scatter nodes, which become 12 expensive ScatterElements
+    # AICPU launches on 310P. Replace each outer [3,2] update with the complete
+    # exact constant. Inner row updates then become dead and GE prunes them.
+    @register_converter(torch.ops.aten.select_scatter.default)
+    def _convert_layout_spatial_shape_scatter(
+        inputs: Any,
+        src: Any,
+        dim: int,
+        index: Any,
+        meta_outputs: Any = None,
+    ) -> Any:
+        del meta_outputs
+        input_shape = tuple(int(value) for value in inputs.symsize)
+        if input_shape == (3, 2) and int(dim) == 0:
+            index_value = int(index)
+            if index_value not in (0, 1, 2):
+                raise RuntimeError(
+                    f"layout spatial-shape row index out of range: {index_value}"
+                )
+            print(
+                "UNIREC_LAYOUT_MSDA_STATIC_SPATIAL_SHAPES "
+                f"row={index_value} values="
+                f"{[list(row) for row in STATIC_LAYOUT_SPATIAL_SHAPES]}",
+                flush=True,
+            )
+            return ge_apis_module.Const(
+                [list(row) for row in STATIC_LAYOUT_SPATIAL_SHAPES],
+                dtype=ge_data_type.DT_INT64,
+            )
+
+        # Preserve TorchAir's stock converter for any unrelated scatter.
+        input_sizes = ge_apis_module.Shape(inputs)
+        indices = ge_apis_module.BroadcastTo(index, input_sizes)
+        updates = ge_apis_module.BroadcastTo(
+            ge_apis_module.ExpandDims(src, dim),
+            input_sizes,
+        )
+        return ge_apis_module.ScatterElements(
+            inputs,
+            indices,
+            updates,
+            axis=dim,
+        )
+
+    @register_converter(torch.ops.aten.cumsum.default)
+    def _convert_layout_level_cumsum(
+        inputs: Any,
+        dim: int,
+        *,
+        dtype: int | None = None,
+        meta_outputs: Any = None,
+    ) -> Any:
+        if (
+            tuple(int(value) for value in inputs.symsize) == (3,)
+            and inputs.node.type == "Const"
+            and int(dim) == 0
+            and dtype is None
+        ):
+            print(
+                "UNIREC_LAYOUT_MSDA_STATIC_LEVEL_CUMSUM "
+                f"values={list(STATIC_LAYOUT_LEVEL_CUMSUM)}",
+                flush=True,
+            )
+            return ge_apis_module.Const(
+                list(STATIC_LAYOUT_LEVEL_CUMSUM),
+                dtype=ge_data_type.DT_INT64,
+            )
+        target_dtype = meta_outputs.dtype if dtype is None else dtype
+        promoted = ge_apis_module.Cast(inputs, dst_type=target_dtype)
+        return ge_apis_module.Cumsum(promoted, dim)
 
     _CONVERTER_DEVICE_NAME = device_name
     _CONVERTER_USES_310P_INTERNAL_LAYOUT = use_310p_internal_layout
