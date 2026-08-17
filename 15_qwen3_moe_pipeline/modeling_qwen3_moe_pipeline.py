@@ -591,6 +591,26 @@ class Qwen3MoePipelineStage(nn.Module):
             return hidden_states
         return self.logits(hidden_states)[:, -1, :]
 
+    def decode_static_input_ids(
+        self,
+        input_ids: torch.Tensor,
+        cache_position: torch.Tensor,
+        key_caches: tuple[torch.Tensor, ...],
+        value_caches: tuple[torch.Tensor, ...],
+    ) -> torch.Tensor:
+        """Static-shape embedding-stage entrypoint for pipeline decode."""
+        if self.embed_tokens is None:
+            raise RuntimeError("This pipeline stage does not own the embedding")
+        hidden_states = self.embed_tokens(input_ids)
+        hidden_states, _router_indices, _router_weights = self._decode_hidden_tensors(
+            hidden_states,
+            cache_position,
+            key_caches,
+            value_caches,
+            capture_router=False,
+        )
+        return hidden_states
+
     def decode_hidden_states(
         self,
         hidden_states: torch.Tensor,
