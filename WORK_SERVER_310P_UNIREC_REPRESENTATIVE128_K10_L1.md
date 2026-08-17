@@ -94,9 +94,15 @@ UNIREC_VISION_GRAPH_DIAGNOSTIC ... warmup_graph_call_begin ...
 UNIREC_VISION_GRAPH_DIAGNOSTIC ... warmup_graph_call_end ... synchronized_wall_s=...
 ```
 
-Use these records to distinguish a long single compile from repeated compile.
-Each graph cache must end with exactly one OM. The second lane must load/replay
-the warmed cache rather than compile another OM.
+Use these records to distinguish a long cold compile from first-process cache
+loading and fast workload replay. Do not use `om_count` alone as the verdict.
+On the matched 910B2 run, the cold lane created one OM per graph. Reopening the
+cache in the clean process took about 20--23 seconds per graph and materialized
+a second OM file. This is the previously observed TorchAir cache-load behavior,
+not enough evidence of a full cold recompile. The decisive checks are that the
+clean setup is much shorter than cold setup and that measured workload calls
+after warmup are fast. Do not stop only because `om_count` changes from one to
+two.
 
 ## Completion and report
 
@@ -115,7 +121,8 @@ Paste back:
 1. commit, physical NPU, CANN, torch, and torch-npu versions;
 2. absolute `RUN_ROOT` and `RUN_LOG`;
 3. all ten first-lane graph warmup durations and OM counts;
-4. whether the clean lane compiled, loaded, or replayed each graph;
+4. clean-lane first-open time, OM-count change, and later workload-call time for
+   each graph; label compile versus load only when the logs establish it;
 5. the complete `UNIREC_310P_K10_L1_RESULT`, `BUCKET_CALLS`, and `LAYOUT`
    lines;
 6. trace and clean retained crop counts and source-token totals;
