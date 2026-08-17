@@ -351,8 +351,6 @@ class Qwen3MoeAttention(nn.Module):
         self.o_proj = nn.Linear(self.q_size, config.hidden_size, bias=False)
         self.q_norm = Qwen3MoeRMSNorm(config.head_dim, config.rms_norm_eps)
         self.k_norm = Qwen3MoeRMSNorm(config.head_dim, config.rms_norm_eps)
-        self.register_buffer("q_norm_zero", None, persistent=False)
-        self.register_buffer("k_norm_zero", None, persistent=False)
 
     def forward_decode(
         self,
@@ -363,6 +361,8 @@ class Qwen3MoeAttention(nn.Module):
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
         attention_mask: torch.Tensor,
+        q_norm_zero: torch.Tensor,
+        k_norm_zero: torch.Tensor,
     ) -> torch.Tensor:
         require_torch_npu()
         batch_size, sequence_length, _hidden = hidden_states.shape
@@ -379,17 +379,15 @@ class Qwen3MoeAttention(nn.Module):
         value_states = value_states.view(
             batch_size, sequence_length, self.num_key_value_heads, self.head_dim
         )
-        if self.q_norm_zero is None or self.k_norm_zero is None:
-            raise RuntimeError("prepare_decode() must initialize Q/K norm zeros")
         query_states = torch_npu.npu_add_rms_norm(
             query_states,
-            self.q_norm_zero,
+            q_norm_zero,
             self.q_norm.weight,
             self.q_norm.variance_epsilon,
         )[0]
         key_states = torch_npu.npu_add_rms_norm(
             key_states,
-            self.k_norm_zero,
+            k_norm_zero,
             self.k_norm.weight,
             self.k_norm.variance_epsilon,
         )[0]
@@ -553,6 +551,8 @@ class Qwen3MoeDecoderLayer(nn.Module):
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
         attention_mask: torch.Tensor,
+        q_norm_zero: torch.Tensor,
+        k_norm_zero: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         residual = hidden_states
         attention_input = npu_rms_norm(
@@ -568,6 +568,8 @@ class Qwen3MoeDecoderLayer(nn.Module):
             value_cache,
             cache_position,
             attention_mask,
+            q_norm_zero,
+            k_norm_zero,
         )
         hidden_states = residual + attention_output
         residual = hidden_states
@@ -698,23 +700,6 @@ class Qwen3MoePipelineStage(nn.Module):
         self.decode_factor_lut = torch.stack((emb.cos(), emb.sin()), dim=0).to(
             dtype=parameter.dtype
         )
-        for layer in self.layers:
-            layer.self_attn.q_norm_zero = torch.zeros(
-                1,
-                1,
-                self.config.num_attention_heads,
-                self.config.head_dim,
-                dtype=parameter.dtype,
-                device=parameter.device,
-            )
-            layer.self_attn.k_norm_zero = torch.zeros(
-                1,
-                1,
-                self.config.num_key_value_heads,
-                self.config.head_dim,
-                dtype=parameter.dtype,
-                device=parameter.device,
-            )
 
     def make_cache(self, *, cache_length: int) -> Qwen3MoeStageCache:
         parameter = next(self.parameters())
@@ -777,6 +762,22 @@ class Qwen3MoePipelineStage(nn.Module):
         attention_mask = build_static_decode_mask(
             cache_position, key_caches[0].shape[2]
         )
+        q_norm_zero_bank = hidden_states.new_zeros(
+            self.num_layers,
+            hidden_states.shape[0],
+            hidden_states.shape[1],
+            self.config.num_attention_heads,
+            self.config.head_dim,
+        )
+        k_norm_zero_bank = hidden_states.new_zeros(
+            self.num_layers,
+            hidden_states.shape[0],
+            hidden_states.shape[1],
+            self.config.num_key_value_heads,
+            self.config.head_dim,
+        )
+        q_norm_zeros = q_norm_zero_bank.unbind(dim=0)
+        k_norm_zeros = k_norm_zero_bank.unbind(dim=0)
         router_indices = []
         router_weights = []
         for layer_index, layer in enumerate(self.layers):
@@ -788,6 +789,8 @@ class Qwen3MoePipelineStage(nn.Module):
                 value_caches[layer_index],
                 cache_position,
                 attention_mask,
+                q_norm_zeros[layer_index],
+                k_norm_zeros[layer_index],
             )
             if capture_router:
                 router_indices.append(indices)
