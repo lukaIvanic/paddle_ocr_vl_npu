@@ -3,8 +3,11 @@
 ## Objective
 
 Repeat the corrected K10 representative-128 prefill experiment with exactly one
-process worker and eight recognition-preprocess threads. Compare it with the
-completed corrected W1/T1 run. Do not run decode or evaluation.
+process worker and eight recognition-preprocess threads. The earlier W1/T8 run
+was only about 1% faster than W1/T1 and did not prove that eight crop tasks ran
+concurrently. This rerun must collect direct native-thread and CPU evidence.
+Compare it with the completed corrected W1/T1 run. Do not run decode or
+evaluation.
 
 Use the commit containing this brief or later. It must include the
 `fd24c1b` eager-fallback warmup fix.
@@ -25,6 +28,12 @@ Use the commit containing this brief or later. It must include the
 The eight-thread setting applies only to recognition crop preprocessing. The
 launcher pins OpenMP, MKL, OpenBLAS, and NumExpr to one thread each. Do not
 change those pins and do not let `nproc` select a thread count.
+
+The trace now records every recognition crop task's native thread ID, start/end
+CPU, thread CPU time, and monotonic interval. The report calculates the native
+thread count, maximum concurrent tasks, CPUs observed, task interval union, and
+average CPU cores used during crop-active windows. A CLI value of `8` without
+this runtime evidence is not a valid W1/T8 result.
 
 Do not use `nproc` to decide whether eight CPUs are available. GNU `nproc`
 honors `OMP_NUM_THREADS=1` and can therefore print `1` even when the process has
@@ -99,13 +108,25 @@ Wait for `exit_code.txt`; success requires zero. Paste back:
    `CPU_AFFINITY` line;
 2. complete `UNIREC_310P_K10_L1_RESULT` line; it must say `threads=8`;
 3. complete `UNIREC_310P_K10_L1_STAGES`, `BUCKET_CALLS`, `LAYOUT`,
-   `FALLBACK_WARMUP`, and `CACHE` lines;
+   `FALLBACK_WARMUP`, `CPU_EXECUTION`, and `CACHE` lines;
 4. trace and clean setup, warmup, measured-prefill, and shutdown times;
 5. all ten cache-open durations and confirmation that no new OM appeared;
 6. crop/rejection/token counts and peak HBM;
 7. absolute run root/log paths and final NPU state;
 8. the corrected W1/T1 result line from the immediately preceding run, so the
    W1/T8 speedup is explicit.
+
+`UNIREC_310P_K10_L1_CPU_EXECUTION` must report:
+
+- `configured_threads=8`;
+- worker affinity of at least eight CPUs;
+- `native_threads=8`;
+- measured overlap (`max_concurrent_tasks`);
+- the actual CPUs observed at crop-task boundaries;
+- summed thread CPU time and active-window wall time.
+
+If the line does not prove eight native threads, do not interpret the timing as
+a W1/T8 result. Report it as an invalid lane and stop.
 
 The stage report includes aggregate layout time, layout model-forward time,
 layout processor time, compiled vision, eager fallback, crop preprocessing,

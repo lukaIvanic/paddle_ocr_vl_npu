@@ -406,6 +406,11 @@ def main() -> None:
                 "recognition_preprocess_threads": (
                     args.recognition_preprocess_threads
                 ),
+                "coordinator_cpu_affinity": (
+                    sorted(int(cpu) for cpu in os.sched_getaffinity(0))
+                    if hasattr(os, "sched_getaffinity")
+                    else []
+                ),
                 "layout_batch_size": args.layout_batch_size,
                 "layout_threshold": args.layout_threshold,
                 "vision_page_lookahead": args.vision_page_lookahead,

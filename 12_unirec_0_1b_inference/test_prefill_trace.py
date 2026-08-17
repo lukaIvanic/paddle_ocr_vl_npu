@@ -98,6 +98,50 @@ class PrefillTraceTest(unittest.TestCase):
             self.assertTrue(Path(report["artifacts"]["pages"]).is_file())
             self.assertTrue(Path(report["artifacts"]["distributions"]).is_file())
 
+    def test_crop_cpu_execution_proves_threads_and_overlap(self) -> None:
+        events = [
+            {
+                "event": "recognition_crop_preprocess",
+                "native_thread_id": 101,
+                "thread_name": "unirec-crop-0_0",
+                "cpu_start": 4,
+                "cpu_end": 4,
+                "thread_cpu_s": 0.006,
+                "monotonic_start_ns": 0,
+                "monotonic_end_ns": 10_000_000,
+                "source_image_size": [320, 80],
+                "processed_image_size": [320, 64],
+                "stage_s": {},
+                "wall_s": 0.010,
+            },
+            {
+                "event": "recognition_crop_preprocess",
+                "native_thread_id": 102,
+                "thread_name": "unirec-crop-0_1",
+                "cpu_start": 5,
+                "cpu_end": 6,
+                "thread_cpu_s": 0.005,
+                "monotonic_start_ns": 2_000_000,
+                "monotonic_end_ns": 12_000_000,
+                "source_image_size": [640, 80],
+                "processed_image_size": [640, 64],
+                "stage_s": {},
+                "wall_s": 0.010,
+            },
+        ]
+        report = MODULE.summarize_trace(
+            events,
+            [],
+            config={"workers": 1, "recognition_preprocess_threads": 8},
+        )
+        cpu = report["cpu_execution"]["recognition_crop_preprocess"]
+        self.assertTrue(cpu["available"])
+        self.assertEqual(cpu["native_thread_count"], 2)
+        self.assertEqual(cpu["max_concurrent_tasks"], 2)
+        self.assertEqual(cpu["cpu_ids_observed"], [4, 5, 6])
+        self.assertAlmostEqual(cpu["active_window_union_s"], 0.012)
+        self.assertAlmostEqual(cpu["average_task_concurrency"], 5.0 / 3.0)
+
 
 if __name__ == "__main__":
     unittest.main()

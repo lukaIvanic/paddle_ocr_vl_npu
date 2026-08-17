@@ -12,6 +12,7 @@ import multiprocessing as mp
 import os
 import queue
 import sys
+import threading
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
@@ -53,6 +54,24 @@ RECOGNITION_CPU_DETAIL_TIMING_FIELDS = (
     "recognition_tensor_numpy_view_s",
     "recognition_contiguous_chw_copy_s",
 )
+
+
+def _current_cpu() -> int | None:
+    """Return the calling native thread's current CPU on Linux."""
+    try:
+        stat = Path(f"/proc/self/task/{threading.get_native_id()}/stat").read_text()
+        # Fields 1 and 2 are pid and a parenthesized comm. The first item after
+        # the closing parenthesis is field 3, so field 39 (processor) is 36.
+        return int(stat.rsplit(")", 1)[1].split()[36])
+    except (FileNotFoundError, IndexError, OSError, ValueError):
+        return None
+
+
+def _cpu_affinity() -> list[int]:
+    try:
+        return sorted(int(cpu) for cpu in os.sched_getaffinity(0))
+    except (AttributeError, OSError):
+        return []
 
 
 def _resize_recognition_compact_hwc_with_timing(
@@ -998,7 +1017,14 @@ def _prepare_full_vision_worker_page(
 
     def prepare_crop(
         crop: dict[str, Any],
-    ) -> tuple[np.ndarray, dict[str, float], float]:
+    ) -> tuple[np.ndarray, dict[str, float], float, dict[str, Any] | None]:
+        cpu_evidence = None
+        if trace_prefill_iterations:
+            monotonic_start_ns = time.perf_counter_ns()
+            thread_cpu_start_ns = time.thread_time_ns()
+            native_thread_id = threading.get_native_id()
+            thread_name = threading.current_thread().name
+            cpu_start = _current_cpu()
         prepare_started = time.perf_counter()
         detail_s: dict[str, float] = {}
         if recognition_input_contract == "compact_uint8_hwc":
@@ -1072,7 +1098,23 @@ def _prepare_full_vision_worker_page(
         detail_s.update(
             {name: float(value) for name, value in processor_timing_s.items()}
         )
-        return pixel_values, detail_s, time.perf_counter() - prepare_started
+        prepare_wall_s = time.perf_counter() - prepare_started
+        if trace_prefill_iterations:
+            cpu_end = _current_cpu()
+            thread_cpu_end_ns = time.thread_time_ns()
+            monotonic_end_ns = time.perf_counter_ns()
+            cpu_evidence = {
+                "native_thread_id": int(native_thread_id),
+                "thread_name": str(thread_name),
+                "cpu_start": cpu_start,
+                "cpu_end": cpu_end,
+                "thread_cpu_s": (
+                    thread_cpu_end_ns - thread_cpu_start_ns
+                ) / 1_000_000_000.0,
+                "monotonic_start_ns": int(monotonic_start_ns),
+                "monotonic_end_ns": int(monotonic_end_ns),
+            }
+        return pixel_values, detail_s, prepare_wall_s, cpu_evidence
 
     if recognition_preprocess_executor is None:
         prepared_crops = map(prepare_crop, result["crops"])
@@ -1081,7 +1123,12 @@ def _prepare_full_vision_worker_page(
             prepare_crop,
             result["crops"],
         )
-    for crop, (pixel_values, detail_s, crop_prepare_wall_s) in zip(
+    for crop, (
+        pixel_values,
+        detail_s,
+        crop_prepare_wall_s,
+        crop_cpu_evidence,
+    ) in zip(
         result["crops"],
         prepared_crops,
     ):
@@ -1099,31 +1146,33 @@ def _prepare_full_vision_worker_page(
                     "unexpected traced recognition input shape: "
                     f"{pixel_values.shape}"
                 )
-            result["prefill_trace_events"].append(
-                {
-                    "event": "recognition_crop_preprocess",
-                    "page_index": int(page_index),
-                    "page_image": path.name,
-                    "crop_index": int(crop["crop_index"]),
-                    "label": str(crop["label"]),
-                    "source_image_size": [source_width, source_height],
-                    "processed_image_size": [
-                        int(processed_width),
-                        int(processed_height),
-                    ],
-                    "processed_tensor_shape": list(pixel_values.shape),
-                    "encoder_tokens": int(
-                        recognition_processor.estimate_encoder_token_count_from_processed_size(
-                            processed_width=int(processed_width),
-                            processed_height=int(processed_height),
-                        )
-                    ),
-                    "stage_s": {
-                        name: float(value) for name, value in detail_s.items()
-                    },
-                    "wall_s": crop_prepare_wall_s,
-                }
-            )
+            event = {
+                "event": "recognition_crop_preprocess",
+                "page_index": int(page_index),
+                "page_image": path.name,
+                "crop_index": int(crop["crop_index"]),
+                "label": str(crop["label"]),
+                "source_image_size": [source_width, source_height],
+                "processed_image_size": [
+                    int(processed_width),
+                    int(processed_height),
+                ],
+                "processed_tensor_shape": list(pixel_values.shape),
+                "encoder_tokens": int(
+                    recognition_processor.estimate_encoder_token_count_from_processed_size(
+                        processed_width=int(processed_width),
+                        processed_height=int(processed_height),
+                    )
+                ),
+                "stage_s": {
+                    name: float(value) for name, value in detail_s.items()
+                },
+                "wall_s": crop_prepare_wall_s,
+            }
+            if crop_cpu_evidence is None:
+                raise RuntimeError("traced crop has no CPU execution evidence")
+            event.update(crop_cpu_evidence)
+            result["prefill_trace_events"].append(event)
     recognition_prepare_s = time.perf_counter() - recognition_prepare_started
     result["frontend_timing_s"] = {
         "page_file_read_s": decode_timing["file_read_s"],
@@ -1764,6 +1813,7 @@ def _worker_main(
             {
                 "status": "ready",
                 "worker": worker_index,
+                "cpu_affinity": _cpu_affinity(),
                 "prefix_graph_warmup": prefix_graph_warmup,
                 "recognition_preprocess_threads": (
                     recognition_preprocess_threads
@@ -2189,6 +2239,10 @@ class DynamicLayoutProcessPool:
         self.worker_setup_diagnostics = [
             {
                 "worker": int(message["worker"]),
+                "cpu_affinity": [
+                    int(cpu) for cpu in message.get("cpu_affinity", [])
+                ],
+                "cpu_affinity_count": len(message.get("cpu_affinity", [])),
                 "prefix_graph_warmup": message.get("prefix_graph_warmup"),
                 "recognition_preprocess_threads": int(
                     message.get("recognition_preprocess_threads", 1)

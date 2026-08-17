@@ -225,6 +225,11 @@ for run, traced in ((trace_run, True), (clean_run, False)):
     assert run["vision_focal_depthwise_rewrite"] == "constant_grouped_all"
     assert run["vision_weight_format"] == "torchair_internal"
     assert run["prefill_trace_enabled"] is traced
+    worker_setup = run["prefill_worker_setup_diagnostics"]
+    assert len(worker_setup) == 1
+    assert worker_setup[0]["recognition_preprocess_threads"] == int(
+        os.environ["EXPECTED_THREADS"]
+    )
 assert trace_run["retained_bank"]["crop_count"] == clean_run["retained_bank"]["crop_count"]
 assert trace_run["retained_bank"]["real_source_tokens"] == clean_run["retained_bank"]["real_source_tokens"]
 
@@ -294,6 +299,21 @@ print(
 )
 print(f"{prefix}_BUCKET_CALLS " + json.dumps(bucket_calls, sort_keys=True))
 stage_rows = distributions["stage_distributions"]
+cpu_execution = distributions["cpu_execution"][
+    "recognition_crop_preprocess"
+]
+assert cpu_execution["available"] is True
+assert cpu_execution["native_thread_count"] == int(
+    os.environ["EXPECTED_THREADS"]
+)
+worker_affinity = trace_run["prefill_worker_setup_diagnostics"][0][
+    "cpu_affinity"
+]
+assert len(worker_affinity) == int(
+    trace_run["prefill_worker_setup_diagnostics"][0]["cpu_affinity_count"]
+)
+if os.environ.get("UNIREC_K10_ALLOW_THREAD_OVERSUBSCRIPTION", "0") != "1":
+    assert len(worker_affinity) >= int(os.environ["EXPECTED_THREADS"])
 text_device_rows = [
     row
     for name, row in stage_rows.items()
@@ -323,6 +343,22 @@ print(
     f"trace_warm_replay_s={fallback_warmups['trace']['warm_replay_wall_s']:.6f} "
     f"clean_cold_first_use_s={fallback_warmups['clean']['cold_first_use_wall_s']:.6f} "
     f"clean_warm_replay_s={fallback_warmups['clean']['warm_replay_wall_s']:.6f}"
+)
+print(
+    f"{prefix}_CPU_EXECUTION "
+    f"configured_threads={trace_run['recognition_preprocess_threads']} "
+    f"worker_affinity_count={len(worker_affinity)} "
+    f"worker_affinity={worker_affinity} "
+    f"native_threads={cpu_execution['native_thread_count']} "
+    f"max_concurrent_tasks={cpu_execution['max_concurrent_tasks']} "
+    f"observed_cpu_count={cpu_execution['cpu_id_count_observed']} "
+    f"observed_cpus={cpu_execution['cpu_ids_observed']} "
+    f"task_wall_sum_s={cpu_execution['task_wall_sum_s']:.6f} "
+    f"preprocess_service_wall_sum_s={cpu_execution['preprocess_service_wall_sum_s']:.6f} "
+    f"thread_cpu_sum_s={cpu_execution['thread_cpu_sum_s']:.6f} "
+    f"active_window_union_s={cpu_execution['active_window_union_s']:.6f} "
+    f"average_task_concurrency={cpu_execution['average_task_concurrency']:.6f} "
+    f"average_cpu_cores={cpu_execution['average_cpu_cores_during_active_windows']:.6f}"
 )
 print(f"{prefix}_CACHE " + json.dumps(cache_inventory, sort_keys=True))
 print(

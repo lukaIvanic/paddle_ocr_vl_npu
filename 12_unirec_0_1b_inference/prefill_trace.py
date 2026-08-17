@@ -82,6 +82,111 @@ def _shape_key(shape: Iterable[int]) -> str:
     return "x".join(str(int(value)) for value in shape)
 
 
+def summarize_crop_cpu_execution(
+    events: list[dict[str, Any]],
+) -> dict[str, Any]:
+    rows = [
+        event
+        for event in events
+        if event.get("event") == "recognition_crop_preprocess"
+        and event.get("native_thread_id") is not None
+    ]
+    if not rows:
+        return {"available": False, "task_count": 0}
+
+    intervals = sorted(
+        (
+            int(row["monotonic_start_ns"]),
+            int(row["monotonic_end_ns"]),
+        )
+        for row in rows
+    )
+    merged: list[list[int]] = []
+    for start, end in intervals:
+        if not merged or start > merged[-1][1]:
+            merged.append([start, end])
+        else:
+            merged[-1][1] = max(merged[-1][1], end)
+    wall_union_s = sum(end - start for start, end in merged) / 1e9
+
+    sweep = []
+    for start, end in intervals:
+        sweep.append((start, 1))
+        sweep.append((end, -1))
+    active = max_active = 0
+    for _, delta in sorted(sweep, key=lambda item: (item[0], item[1])):
+        active += delta
+        max_active = max(max_active, active)
+
+    by_thread: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        interval_wall_s = (
+            int(row["monotonic_end_ns"]) - int(row["monotonic_start_ns"])
+        ) / 1e9
+        key = str(int(row["native_thread_id"]))
+        item = by_thread.setdefault(
+            key,
+            {
+                "thread_name": str(row.get("thread_name", "")),
+                "task_count": 0,
+                "thread_cpu_s": 0.0,
+                "task_wall_s": 0.0,
+                "cpu_ids": set(),
+            },
+        )
+        item["task_count"] += 1
+        item["thread_cpu_s"] += float(row["thread_cpu_s"])
+        item["task_wall_s"] += interval_wall_s
+        for name in ("cpu_start", "cpu_end"):
+            if row.get(name) is not None:
+                item["cpu_ids"].add(int(row[name]))
+
+    task_wall_s = sum(
+        (
+            int(row["monotonic_end_ns"]) - int(row["monotonic_start_ns"])
+        ) / 1e9
+        for row in rows
+    )
+    preprocess_service_wall_s = sum(float(row["wall_s"]) for row in rows)
+    thread_cpu_s = sum(float(row["thread_cpu_s"]) for row in rows)
+    cpu_ids = sorted(
+        {
+            int(cpu)
+            for item in by_thread.values()
+            for cpu in item["cpu_ids"]
+        }
+    )
+    serializable_threads = {
+        key: {
+            **item,
+            "cpu_ids": sorted(item["cpu_ids"]),
+        }
+        for key, item in sorted(by_thread.items(), key=lambda pair: int(pair[0]))
+    }
+    return {
+        "available": True,
+        "task_count": len(rows),
+        "native_thread_count": len(by_thread),
+        "native_threads": serializable_threads,
+        "cpu_ids_observed": cpu_ids,
+        "cpu_id_count_observed": len(cpu_ids),
+        "max_concurrent_tasks": max_active,
+        "task_wall_sum_s": task_wall_s,
+        "preprocess_service_wall_sum_s": preprocess_service_wall_s,
+        "thread_cpu_sum_s": thread_cpu_s,
+        "active_window_union_s": wall_union_s,
+        "average_task_concurrency": (
+            task_wall_s / wall_union_s if wall_union_s else 0.0
+        ),
+        "average_cpu_cores_during_active_windows": (
+            thread_cpu_s / wall_union_s if wall_union_s else 0.0
+        ),
+        "thread_cpu_over_task_wall": (
+            thread_cpu_s / task_wall_s if task_wall_s else 0.0
+        ),
+    }
+
+
 def summarize_trace(
     events: list[dict[str, Any]],
     pages: list[dict[str, Any]],
@@ -156,6 +261,9 @@ def summarize_trace(
                 sorted(counter.items(), key=lambda item: (-item[1], item[0]))
             )
             for name, counter in sorted(shapes.items())
+        },
+        "cpu_execution": {
+            "recognition_crop_preprocess": summarize_crop_cpu_execution(events)
         },
         "timing_semantics": {
             "npu": (
