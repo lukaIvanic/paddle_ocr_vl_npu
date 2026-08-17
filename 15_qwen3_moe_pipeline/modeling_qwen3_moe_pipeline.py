@@ -327,6 +327,55 @@ def selected_expert_grouped_matmul_v2_finalize(
     )
 
 
+def selected_expert_grouped_matmul_b1(
+    hidden_states: torch.Tensor,
+    selected_experts: torch.Tensor,
+    routing_weights: torch.Tensor,
+    gate_up_proj: torch.Tensor,
+    down_proj: torch.Tensor,
+) -> torch.Tensor:
+    """B1 GMM path with direct device sorting and expert group counts."""
+    require_torch_npu()
+    tokens, hidden_size = hidden_states.shape
+    if tokens != 1:
+        raise ValueError("grouped_matmul_b1_gating requires exactly one token")
+    top_k = selected_experts.shape[1]
+    intermediate_size = gate_up_proj.shape[2] // 2
+    sorted_experts, sort_order = torch.sort(selected_experts.reshape(-1))
+    sorted_weights = torch.index_select(
+        routing_weights.reshape(-1), 0, sort_order.to(dtype=torch.int64)
+    )
+    expanded_hidden = hidden_states.expand(top_k, hidden_size).contiguous()
+    expert_axis = torch.arange(
+        gate_up_proj.shape[0], dtype=torch.int32, device=hidden_states.device
+    )
+    group_counts = (
+        sorted_experts.to(dtype=torch.int32).view(top_k, 1)
+        == expert_axis.view(1, -1)
+    ).sum(dim=0, dtype=torch.int64)
+    gate_up = torch_npu.npu_grouped_matmul(
+        [expanded_hidden],
+        [gate_up_proj],
+        group_list=group_counts,
+        split_item=3,
+        group_type=0,
+        group_list_type=1,
+    )[0]
+    gate, up = gate_up.split(intermediate_size, dim=-1)
+    intermediate = F.silu(gate) * up
+    expert_output = torch_npu.npu_grouped_matmul(
+        [intermediate],
+        [down_proj],
+        group_list=group_counts,
+        split_item=3,
+        group_type=0,
+        group_list_type=1,
+    )[0]
+    return (expert_output * sorted_weights.unsqueeze(-1)).sum(
+        dim=0, keepdim=True
+    )
+
+
 class Qwen3MoeRMSNorm(nn.Module):
     def __init__(self, hidden_size: int, eps: float):
         super().__init__()
@@ -430,6 +479,7 @@ class Qwen3SparseMoeBlock(nn.Module):
             "grouped_matmul_finalize",
             "grouped_matmul_v2_finalize",
             "grouped_matmul_v2_gating_finalize",
+            "grouped_matmul_b1_gating",
         ):
             raise ValueError(f"Unsupported expert implementation: {expert_impl}")
         self.expert_impl = expert_impl
@@ -469,7 +519,10 @@ class Qwen3SparseMoeBlock(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         flat_hidden = hidden_states.reshape(-1, self.hidden_size)
         router_logits = linear_tokenwise(self.gate, flat_hidden)
-        if self.expert_impl == "grouped_matmul_v2_gating_finalize":
+        if self.expert_impl in (
+            "grouped_matmul_v2_gating_finalize",
+            "grouped_matmul_b1_gating",
+        ):
             if not self.norm_topk_prob:
                 raise ValueError(
                     "Fused MoE gating requires normalized top-k probabilities"
@@ -515,6 +568,7 @@ class Qwen3SparseMoeBlock(nn.Module):
             "grouped_matmul_v2_gating_finalize": (
                 selected_expert_grouped_matmul_v2_finalize
             ),
+            "grouped_matmul_b1_gating": selected_expert_grouped_matmul_b1,
         }[self.expert_impl]
         output = expert_fn(
             flat_hidden,
