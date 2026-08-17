@@ -46,23 +46,32 @@ three measured repeats. The prefix is fixed so only the static K/V capacity
 changes. Every shape compiled as one fullgraph and passed exact compiled/eager
 token parity with zero K/V difference.
 
-| Static KV capacity | Mean tok/s | Repeat range, tok/s | Reserved HBM |
+| Static KV capacity | Mean tok/s | Repeat range, tok/s | One B1 K/V state |
 |---:|---:|---:|---:|
-| 512 | **554.53** | 554.42-554.70 | 1.80 GiB |
-| 1,024 | **531.98** | 531.12-532.67 | 1.91 GiB |
-| 2,048 | **477.05** | 472.53-481.65 | 2.48 GiB |
-| 4,096 | **450.88** | 448.92-454.50 | 3.57 GiB |
-| 8,192 | **384.53** | 384.27-384.68 | 5.36 GiB |
-| 16,384 | **290.28** | 289.95-290.70 | 8.90 GiB |
-| 32,768 | **190.09** | 189.43-190.42 | 15.97 GiB |
-| 65,536 | **96.96** | 96.71-97.38 | 29.97 GiB |
-| 131,072 | **53.95** | 53.93-53.99 | 58.36 GiB |
+| 512 | **554.53** | 554.42-554.70 | 0.055 GiB |
+| 1,024 | **531.98** | 531.12-532.67 | 0.109 GiB |
+| 2,048 | **477.05** | 472.53-481.65 | 0.219 GiB |
+| 4,096 | **450.88** | 448.92-454.50 | 0.438 GiB |
+| 8,192 | **384.53** | 384.27-384.68 | 0.875 GiB |
+| 16,384 | **290.28** | 289.95-290.70 | 1.75 GiB |
+| 32,768 | **190.09** | 189.43-190.42 | 3.50 GiB |
+| 65,536 | **96.96** | 96.71-97.38 | 7.00 GiB |
+| 131,072 | **53.95** | 53.93-53.99 | 14.00 GiB |
 
 The masked incremental-attention graph retains the full static K/V tensor
 shape, so decode cost rises with capacity even though the live prefix remains
-256 tokens. KV128K is also close to the 64 GB device limit: the run left only
-2.21 GiB of HBM free. The complete measurements, physical-NPU mapping, parity,
-and artifact path are in
+256 tokens. One KV128K B1 state is 14 GiB:
+`28 layers * 2 caches * 8 heads * 131072 tokens * 128 dimensions * 2 bytes`.
+
+The benchmark artifact reported 58.36 GiB reserved after the KV128K run, but
+that is not the live deployment footprint. The correctness and timing harness
+temporarily holds up to four independent K/V states: eager parity, compiled
+parity, the previous timing state, and the newly allocated timing state before
+Python releases the previous one. This produces a 57.43 GiB allocation peak.
+After the benchmark returns, live allocation is only 1.41 GiB, while the NPU
+caching allocator retains the released blocks as a 58.36 GiB reusable
+reservation. The complete measurements, physical-NPU mapping, parity, and
+artifact path are in
 [`references/qwen3_0_6b_b1_kv_sweep_910b2_20260817.json`](references/qwen3_0_6b_b1_kv_sweep_910b2_20260817.json).
 
 ## Goal: improve on vLLM-Ascend B1 decode
