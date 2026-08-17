@@ -988,19 +988,21 @@ class ContinuousUniRecDecoder:
         if decode_module is not None and graph_warmup_passes:
             from modeling_optimized_unirec import synchronize_device
 
-            next_token_host_array[:] = last_tokens
-            cache_position_host_array[:] = cache_positions
-            next_token_tensor.view(-1).copy_(
-                next_token_host,
-                non_blocking=decode_input_host_pinned,
-            )
-            cache_position_tensor.copy_(
-                cache_position_host,
-                non_blocking=decode_input_host_pinned,
-            )
             warmup_started = time.perf_counter()
-            with warnings.catch_warnings(record=True) as caught:
+            with torch.inference_mode(), warnings.catch_warnings(
+                record=True
+            ) as caught:
                 warnings.simplefilter("always")
+                next_token_host_array[:] = last_tokens
+                cache_position_host_array[:] = cache_positions
+                next_token_tensor.view(-1).copy_(
+                    next_token_host,
+                    non_blocking=decode_input_host_pinned,
+                )
+                cache_position_tensor.copy_(
+                    cache_position_host,
+                    non_blocking=decode_input_host_pinned,
+                )
                 for pass_index in range(graph_warmup_passes):
                     pass_started = time.perf_counter()
                     _ = decode_module(
