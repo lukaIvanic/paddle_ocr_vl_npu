@@ -1,12 +1,13 @@
-# 310P UniRec representative-128 K10 W1/T8 follow-up
+# 310P UniRec representative-128 K10 W1 layout-T16 / crop-T8
 
 ## Objective
 
 Repeat the corrected K10 representative-128 prefill experiment with exactly one
-process worker and eight recognition-preprocess threads. The earlier W1/T8 run
-was only about 1% faster than W1/T1 and did not prove that eight crop tasks ran
-concurrently. This rerun must collect direct native-thread and CPU evidence.
-Compare it with the completed corrected W1/T1 run. Do not run decode or
+process worker, 16 Torch CPU intra-op threads for the production layout resize,
+and eight recognition crop-preprocess threads. This changes only CPU resource
+allocation. It does not change batching, scheduling, page lookahead, graph
+sources, outputs, or NPU work. Collect direct native-thread and CPU evidence.
+Compare it with the completed layout-T1/crop-T8 run. Do not run decode or
 evaluation.
 
 Use the commit containing this brief or later. It must include the
@@ -15,7 +16,8 @@ Use the commit containing this brief or later. It must include the
 ## Fixed contract
 
 - committed `unirec_representative_128_v1` pages;
-- W1/T8, layout B1, one-page vision lookahead;
+- W1, layout CPU T16, recognition crop T8, layout B1, one-page vision
+  lookahead;
 - K10 `310p_k10_l1` vision buckets;
 - optimized compiled vision: `constant_grouped_all` plus
   `torchair_internal` weights;
@@ -26,8 +28,34 @@ Use the commit containing this brief or later. It must include the
 - prefill only.
 
 The eight-thread setting applies only to recognition crop preprocessing. The
-launcher pins OpenMP, MKL, OpenBLAS, and NumExpr to one thread each. Do not
-change those pins and do not let `nproc` select a thread count.
+new layout setting calls `torch.set_num_threads(16)` inside each spawned layout
+worker before model/runtime construction. The launcher still pins OpenMP, MKL,
+OpenBLAS, and NumExpr environment defaults to one. Do not change those pins and
+do not let `nproc` select a thread count.
+
+On 910B2, the faithful CPU-only 128-page layout-processor sweep was exact in all
+lanes:
+
+| Layout Torch threads | Mean/page | Speedup vs T1 |
+|---:|---:|---:|
+| 1 | 115.777 ms | 1.00x |
+| 2 | 61.051 ms | 1.90x |
+| 4 | 31.714 ms | 3.65x |
+| 8 | 22.318 ms | 5.19x |
+| 16 | 12.121 ms | 9.55x |
+
+The production 910B2 comparison on the same pages and affinity 0-63 was:
+
+- layout-T1/crop-T8: 43.370 s, 2.951 pg/s;
+- layout-T16/crop-T8: 29.104 s, 4.398 pg/s;
+- layout section: 17.608 to 3.909 s;
+- layout processor: 15.153 to 1.574 s;
+- layout model forward: 1.648 to 1.641 s;
+- vision graph: 9.908 to 9.885 s;
+- text-prefill device: 1.212 to 1.108 s.
+
+This is the adoption target: CPU time must fall while NPU stage times and crop
+counts remain stable.
 
 The trace now records every recognition crop task's native thread ID, start/end
 CPU, thread CPU time, and monotonic interval. The report calculates the native
@@ -83,7 +111,7 @@ test -d "$IMAGES_DIR"
 test -d "$COMPILE_CACHE"
 test -d "$LAYOUT_CACHE_ROOT"
 "$PYTHON_BIN" -c \
-  'import os; a=sorted(os.sched_getaffinity(0)); print("CPU_AFFINITY", len(a), a)'
+  'import os; a=sorted(os.sched_getaffinity(0)); print("CPU_AFFINITY", len(a), a); assert len(a) >= 16'
 ```
 
 ## Launch in background
@@ -93,6 +121,7 @@ export UNIREC_K10_CHIP_LABEL=310P
 export UNIREC_K10_ALLOWED_DEVICES=0,1,2,3
 export UNIREC_K10_RUN_MODE=both
 export UNIREC_K10_THREADS=8
+export UNIREC_K10_LAYOUT_CPU_THREADS=16
 bash 12_unirec_0_1b_inference/run_910b_representative128_k10_l1_background.sh
 ```
 
@@ -106,7 +135,8 @@ Wait for `exit_code.txt`; success requires zero. Paste back:
 
 1. commit, physical NPU, CANN, torch, torch-npu, and the complete
    `CPU_AFFINITY` line;
-2. complete `UNIREC_310P_K10_L1_RESULT` line; it must say `threads=8`;
+2. complete `UNIREC_310P_K10_L1_RESULT` line; it must say `threads=8` and
+   `layout_cpu_threads=16`;
 3. complete `UNIREC_310P_K10_L1_STAGES`, `BUCKET_CALLS`, `LAYOUT`,
    `FALLBACK_WARMUP`, `CPU_EXECUTION`, and `CACHE` lines;
 4. trace and clean setup, warmup, measured-prefill, and shutdown times;
@@ -127,6 +157,10 @@ Wait for `exit_code.txt`; success requires zero. Paste back:
 
 If the line does not prove eight native threads, do not interpret the timing as
 a W1/T8 result. Report it as an invalid lane and stop.
+
+Also confirm that both trace and clean run summaries report
+`layout_cpu_threads=16`, and that worker setup reports the same value from
+`torch.get_num_threads()`.
 
 The stage report includes aggregate layout time, layout model-forward time,
 layout processor time, compiled vision, eager fallback, crop preprocessing,
