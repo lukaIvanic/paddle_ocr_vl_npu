@@ -25,6 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--stage1-device", default="npu:1")
     parser.add_argument("--warmup-steps", type=int, default=2)
     parser.add_argument("--decode-steps", type=int, default=20)
+    parser.add_argument("--stage-timing-steps", type=int, default=5)
     parser.add_argument(
         "--compile-cache-dir",
         type=Path,
@@ -115,7 +116,11 @@ def pipeline_step(
 
 def main() -> None:
     args = parse_args()
-    if args.warmup_steps < 0 or args.decode_steps < 1:
+    if (
+        args.warmup_steps < 0
+        or args.decode_steps < 1
+        or args.stage_timing_steps < 0
+    ):
         raise ValueError("Invalid warmup/decode step count")
     torch.npu.set_compile_mode(jit_compile=False)
     stage0_device = torch.device(args.stage0_device)
@@ -133,6 +138,7 @@ def main() -> None:
         + len(capture["generated_token_ids"])
         + args.warmup_steps
         + args.decode_steps
+        + args.stage_timing_steps
         - 1
     )
     if final_position >= cache_length:
@@ -284,6 +290,67 @@ def main() -> None:
         position += 1
     synchronize(stage0_device, stage1_device)
     measured_sec = time.perf_counter() - measured_started
+
+    stage_timing_samples = []
+    for _ in range(args.stage_timing_steps):
+        stage0_position = torch.tensor(
+            [position], dtype=torch.int64, device=stage0_device
+        )
+        synchronize(stage0_device, stage1_device)
+        total_started = time.perf_counter()
+        stage_started = time.perf_counter()
+        boundary = stage0_decode(
+            current_input,
+            stage0_position,
+            stage0_cache.key_caches,
+            stage0_cache.value_caches,
+        )
+        synchronize(stage0_device)
+        stage0_sec = time.perf_counter() - stage_started
+
+        stage_started = time.perf_counter()
+        boundary_stage1 = boundary.to(stage1_device)
+        stage1_position = stage0_position.to(stage1_device)
+        synchronize(stage1_device)
+        boundary_copy_sec = time.perf_counter() - stage_started
+
+        stage_started = time.perf_counter()
+        logits = stage1_decode(
+            boundary_stage1,
+            stage1_position,
+            stage1_cache.key_caches,
+            stage1_cache.value_caches,
+        )
+        synchronize(stage1_device)
+        stage1_sec = time.perf_counter() - stage_started
+
+        stage_started = time.perf_counter()
+        next_token_stage1 = logits.argmax(dim=-1, keepdim=True)
+        synchronize(stage1_device)
+        argmax_sec = time.perf_counter() - stage_started
+
+        stage_started = time.perf_counter()
+        current_input = next_token_stage1.to(stage0_device)
+        synchronize(stage0_device)
+        token_copy_sec = time.perf_counter() - stage_started
+        total_sec = time.perf_counter() - total_started
+        stage_timing_samples.append(
+            {
+                "stage0_ms": 1000.0 * stage0_sec,
+                "boundary_copy_ms": 1000.0 * boundary_copy_sec,
+                "stage1_ms": 1000.0 * stage1_sec,
+                "argmax_ms": 1000.0 * argmax_sec,
+                "token_copy_ms": 1000.0 * token_copy_sec,
+                "total_ms": 1000.0 * total_sec,
+            }
+        )
+        position += 1
+
+    stage_timing_mean_ms = {
+        key: sum(sample[key] for sample in stage_timing_samples)
+        / len(stage_timing_samples)
+        for key in stage_timing_samples[0]
+    } if stage_timing_samples else {}
     stats_final = dynamo_stats()
     unique_graph_delta = (
         stats_final["unique_graphs"] - stats_after_prompt["unique_graphs"]
@@ -324,6 +391,11 @@ def main() -> None:
             "elapsed_sec": measured_sec,
             "mean_tpot_ms": 1000.0 * measured_sec / args.decode_steps,
             "tok_s": args.decode_steps / measured_sec,
+        },
+        "stage_timing_diagnostic": {
+            "steps": args.stage_timing_steps,
+            "mean_ms": stage_timing_mean_ms,
+            "samples": stage_timing_samples,
         },
         "stage0": stage0_metadata,
         "stage1": stage1_metadata,
