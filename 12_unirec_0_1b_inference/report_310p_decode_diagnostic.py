@@ -117,6 +117,13 @@ def main() -> None:
             separators=(",", ":"),
         )
     )
+    print("CROSS_LENGTH_SPLIT")
+    print(
+        json.dumps(
+            report["step_trace"].get("by_cross_length_max", {}),
+            separators=(",", ":"),
+        )
+    )
     print("SLOWEST_DECODE_STEPS")
     print(
         json.dumps(

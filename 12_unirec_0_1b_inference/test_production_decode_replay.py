@@ -144,6 +144,7 @@ class ProductionDecodeReplayTest(unittest.TestCase):
                     "iteration": iteration,
                     "active_count": active,
                     "cache_position_max": position,
+                    "cross_length_max": position,
                     "input_build_s": 0.001,
                     "graph_submit_s": 0.0001,
                     "token_select_d2h_wait_s": step_s - 0.0001,
@@ -164,6 +165,10 @@ class ProductionDecodeReplayTest(unittest.TestCase):
         )
         self.assertEqual(
             summary["slowest_decode_steps"][0]["iteration"], 3
+        )
+        self.assertEqual(
+            sorted(summary["by_cross_length_max"]),
+            ["0000-0064", "0065-0128", "0513-0768"],
         )
 
 

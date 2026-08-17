@@ -205,6 +205,16 @@ def _position_bucket(position: int | None) -> str:
     return "2049+"
 
 
+def _cross_length_bucket(length: int | None) -> str:
+    value = int(length or 0)
+    lower = 0
+    for upper in (64, 128, 256, 512, 768, 1024, 1320):
+        if value <= upper:
+            return f"{lower:04d}-{upper:04d}"
+        lower = upper + 1
+    return "1321+"
+
+
 def summarize_step_trace(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if not rows:
         return {"enabled": False, "count": 0}
@@ -230,10 +240,14 @@ def summarize_step_trace(rows: list[dict[str, Any]]) -> dict[str, Any]:
         }
 
     by_position: dict[str, list[dict[str, Any]]] = {}
+    by_cross_length: dict[str, list[dict[str, Any]]] = {}
     by_active: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
         by_position.setdefault(
             _position_bucket(row.get("cache_position_max")), []
+        ).append(row)
+        by_cross_length.setdefault(
+            _cross_length_bucket(row.get("cross_length_max")), []
         ).append(row)
         active_count = int(row["active_count"])
         active_bucket = (
@@ -257,6 +271,10 @@ def summarize_step_trace(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "by_active_count": {
             key: summarize_group(value)
             for key, value in sorted(by_active.items())
+        },
+        "by_cross_length_max": {
+            key: summarize_group(value)
+            for key, value in sorted(by_cross_length.items())
         },
         "slowest_decode_steps": sorted(
             rows,
