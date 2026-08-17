@@ -335,8 +335,13 @@ class Qwen3MoeRMSNorm(nn.Module):
 
 
 class Qwen3MoeAttention(nn.Module):
-    def __init__(self, config: Qwen3MoeConfig):
+    def __init__(self, config: Qwen3MoeConfig, *, attention_impl: str):
         super().__init__()
+        if attention_impl not in ("native_gqa", "pseudo_batch_2"):
+            raise ValueError(
+                f"Unsupported attention implementation: {attention_impl}"
+            )
+        self.attention_impl = attention_impl
         self.num_heads = config.num_attention_heads
         self.num_key_value_heads = config.num_key_value_heads
         self.head_dim = config.head_dim
@@ -405,16 +410,41 @@ class Qwen3MoeAttention(nn.Module):
 
         scatter_update_tensor_(key_cache, cache_position, key_states)
         scatter_update_tensor_(value_cache, cache_position, value_states)
-        attention_output = torch_npu.npu_incre_flash_attention(
-            query_states,
-            key_cache,
-            value_cache,
-            atten_mask=attention_mask.contiguous(),
-            num_heads=int(self.num_heads),
-            num_key_value_heads=int(self.num_key_value_heads),
-            input_layout="BNSD",
-            scale_value=float(self.scaling),
-        )
+        if self.attention_impl == "pseudo_batch_2":
+            if (
+                batch_size != 1
+                or self.num_heads != 32
+                or self.num_key_value_heads != 4
+            ):
+                raise ValueError(
+                    "pseudo_batch_2 requires B1, 32 Q heads, and 4 KV heads"
+                )
+            cache_length = int(key_cache.shape[2])
+            attention_output = torch_npu.npu_incre_flash_attention(
+                query_states.view(2, 16, 1, self.head_dim),
+                key_cache.view(2, 2, cache_length, self.head_dim),
+                value_cache.view(2, 2, cache_length, self.head_dim),
+                atten_mask=(
+                    attention_mask.view(1, 1, 1, cache_length)
+                    .expand(2, 1, 1, cache_length)
+                    .contiguous()
+                ),
+                num_heads=16,
+                num_key_value_heads=2,
+                input_layout="BNSD",
+                scale_value=float(self.scaling),
+            ).view(1, 32, 1, self.head_dim)
+        else:
+            attention_output = torch_npu.npu_incre_flash_attention(
+                query_states,
+                key_cache,
+                value_cache,
+                atten_mask=attention_mask.contiguous(),
+                num_heads=int(self.num_heads),
+                num_key_value_heads=int(self.num_key_value_heads),
+                input_layout="BNSD",
+                scale_value=float(self.scaling),
+            )
         attention_output = attention_output.transpose(1, 2).contiguous().reshape(
             batch_size, sequence_length, self.q_size
         )
@@ -531,9 +561,15 @@ class Qwen3SparseMoeBlock(nn.Module):
 
 
 class Qwen3MoeDecoderLayer(nn.Module):
-    def __init__(self, config: Qwen3MoeConfig, *, expert_impl: str):
+    def __init__(
+        self,
+        config: Qwen3MoeConfig,
+        *,
+        expert_impl: str,
+        attention_impl: str,
+    ):
         super().__init__()
-        self.self_attn = Qwen3MoeAttention(config)
+        self.self_attn = Qwen3MoeAttention(config, attention_impl=attention_impl)
         self.mlp = Qwen3SparseMoeBlock(config, expert_impl=expert_impl)
         self.input_layernorm = Qwen3MoeRMSNorm(
             config.hidden_size, config.rms_norm_eps
@@ -639,6 +675,7 @@ class Qwen3MoePipelineStage(nn.Module):
         with_embedding: bool,
         with_lm_head: bool,
         expert_impl: str = "selected_bmm",
+        attention_impl: str = "native_gqa",
     ):
         super().__init__()
         if not 0 <= layer_start < layer_end <= config.num_hidden_layers:
@@ -650,13 +687,18 @@ class Qwen3MoePipelineStage(nn.Module):
         self.layer_start = int(layer_start)
         self.layer_end = int(layer_end)
         self.expert_impl = expert_impl
+        self.attention_impl = attention_impl
         self.embed_tokens = (
             nn.Embedding(config.vocab_size, config.hidden_size)
             if with_embedding
             else None
         )
         self.layers = nn.ModuleList(
-            Qwen3MoeDecoderLayer(config, expert_impl=expert_impl)
+            Qwen3MoeDecoderLayer(
+                config,
+                expert_impl=expert_impl,
+                attention_impl=attention_impl,
+            )
             for _ in range(layer_end - layer_start)
         )
         self.norm = (
