@@ -157,6 +157,71 @@ def selected_expert_bmm(
     return (expert_output * routing_weights.unsqueeze(-1)).sum(dim=1)
 
 
+def selected_expert_grouped_matmul(
+    hidden_states: torch.Tensor,
+    selected_experts: torch.Tensor,
+    routing_weights: torch.Tensor,
+    gate_up_proj: torch.Tensor,
+    down_proj: torch.Tensor,
+) -> torch.Tensor:
+    """Execute selected experts directly from persistent GMM weight banks.
+
+    Shapes:
+      hidden_states: [tokens, hidden]
+      selected_experts/routing_weights: [tokens, top_k]
+      gate_up_proj: [experts, hidden, 2 * intermediate]
+      down_proj: [experts, intermediate, hidden]
+    """
+    require_torch_npu()
+    tokens, hidden_size = hidden_states.shape
+    top_k = selected_experts.shape[1]
+    intermediate_size = gate_up_proj.shape[2] // 2
+    source_rows = torch.arange(
+        tokens, dtype=torch.int32, device=hidden_states.device
+    ).view(tokens, 1)
+    expert_slots = (
+        torch.arange(top_k, dtype=torch.int32, device=hidden_states.device)
+        .view(1, top_k)
+        * tokens
+    )
+    row_idx = source_rows + expert_slots
+    expanded_hidden, expanded_row_idx, expanded_expert_idx = (
+        torch_npu.npu_moe_init_routing(
+            hidden_states,
+            row_idx,
+            selected_experts.to(dtype=torch.int32),
+            active_num=tokens,
+        )
+    )
+    group_list = torch_npu.npu_moe_compute_expert_tokens(
+        expanded_expert_idx.reshape(-1), gate_up_proj.shape[0]
+    )
+    gate_up = torch_npu.npu_grouped_matmul(
+        [expanded_hidden],
+        [gate_up_proj],
+        group_list=group_list,
+        split_item=3,
+        group_type=0,
+        group_list_type=0,
+    )[0]
+    gate, up = gate_up.split(intermediate_size, dim=-1)
+    intermediate = F.silu(gate) * up
+    expert_output = torch_npu.npu_grouped_matmul(
+        [intermediate],
+        [down_proj],
+        group_list=group_list,
+        split_item=3,
+        group_type=0,
+        group_list_type=0,
+    )[0]
+    source_order_output = torch.index_select(
+        expert_output,
+        0,
+        expanded_row_idx.to(dtype=torch.int64),
+    ).view(tokens, top_k, hidden_size)
+    return (source_order_output * routing_weights.unsqueeze(-1)).sum(dim=1)
+
+
 class Qwen3MoeRMSNorm(nn.Module):
     def __init__(self, hidden_size: int, eps: float):
         super().__init__()
@@ -244,28 +309,41 @@ class Qwen3MoeAttention(nn.Module):
 
 
 class Qwen3SparseMoeBlock(nn.Module):
-    def __init__(self, config: Qwen3MoeConfig):
+    def __init__(self, config: Qwen3MoeConfig, *, expert_impl: str):
         super().__init__()
+        if expert_impl not in ("selected_bmm", "grouped_matmul"):
+            raise ValueError(f"Unsupported expert implementation: {expert_impl}")
+        self.expert_impl = expert_impl
         self.hidden_size = config.hidden_size
         self.intermediate_size = config.moe_intermediate_size
         self.num_experts = config.num_experts
         self.top_k = config.num_experts_per_tok
         self.norm_topk_prob = config.norm_topk_prob
         self.gate = nn.Linear(config.hidden_size, config.num_experts, bias=False)
-        self.gate_up_proj = nn.Parameter(
-            torch.empty(
+        if expert_impl == "selected_bmm":
+            gate_up_shape = (
                 config.num_experts,
                 2 * config.moe_intermediate_size,
                 config.hidden_size,
             )
-        )
-        self.down_proj = nn.Parameter(
-            torch.empty(
+            down_shape = (
                 config.num_experts,
                 config.hidden_size,
                 config.moe_intermediate_size,
             )
-        )
+        else:
+            gate_up_shape = (
+                config.num_experts,
+                config.hidden_size,
+                2 * config.moe_intermediate_size,
+            )
+            down_shape = (
+                config.num_experts,
+                config.moe_intermediate_size,
+                config.hidden_size,
+            )
+        self.gate_up_proj = nn.Parameter(torch.empty(gate_up_shape))
+        self.down_proj = nn.Parameter(torch.empty(down_shape))
 
     def route(
         self, hidden_states: torch.Tensor
@@ -289,7 +367,12 @@ class Qwen3SparseMoeBlock(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         _router_logits, routing_weights, selected_experts = self.route(hidden_states)
         flat_hidden = hidden_states.reshape(-1, self.hidden_size)
-        output = selected_expert_bmm(
+        expert_fn = (
+            selected_expert_bmm
+            if self.expert_impl == "selected_bmm"
+            else selected_expert_grouped_matmul
+        )
+        output = expert_fn(
             flat_hidden,
             selected_experts,
             routing_weights,
@@ -304,10 +387,10 @@ class Qwen3SparseMoeBlock(nn.Module):
 
 
 class Qwen3MoeDecoderLayer(nn.Module):
-    def __init__(self, config: Qwen3MoeConfig):
+    def __init__(self, config: Qwen3MoeConfig, *, expert_impl: str):
         super().__init__()
         self.self_attn = Qwen3MoeAttention(config)
-        self.mlp = Qwen3SparseMoeBlock(config)
+        self.mlp = Qwen3SparseMoeBlock(config, expert_impl=expert_impl)
         self.input_layernorm = Qwen3MoeRMSNorm(
             config.hidden_size, config.rms_norm_eps
         )
@@ -407,6 +490,7 @@ class Qwen3MoePipelineStage(nn.Module):
         layer_end: int,
         with_embedding: bool,
         with_lm_head: bool,
+        expert_impl: str = "selected_bmm",
     ):
         super().__init__()
         if not 0 <= layer_start < layer_end <= config.num_hidden_layers:
@@ -417,13 +501,14 @@ class Qwen3MoePipelineStage(nn.Module):
         self.config = config
         self.layer_start = int(layer_start)
         self.layer_end = int(layer_end)
+        self.expert_impl = expert_impl
         self.embed_tokens = (
             nn.Embedding(config.vocab_size, config.hidden_size)
             if with_embedding
             else None
         )
         self.layers = nn.ModuleList(
-            Qwen3MoeDecoderLayer(config)
+            Qwen3MoeDecoderLayer(config, expert_impl=expert_impl)
             for _ in range(layer_end - layer_start)
         )
         self.norm = (

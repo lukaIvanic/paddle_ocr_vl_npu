@@ -117,37 +117,70 @@ def load_pipeline_stage(
                 device=device,
             )
 
-            gate_up_cpu = torch.empty(
+            grouped_matmul = layer.mlp.expert_impl == "grouped_matmul"
+            gate_up_shape = (
                 (
+                    config.num_experts,
+                    config.hidden_size,
+                    2 * config.moe_intermediate_size,
+                )
+                if grouped_matmul
+                else (
                     config.num_experts,
                     2 * config.moe_intermediate_size,
                     config.hidden_size,
-                ),
+                )
+            )
+            down_shape = (
+                (
+                    config.num_experts,
+                    config.moe_intermediate_size,
+                    config.hidden_size,
+                )
+                if grouped_matmul
+                else (
+                    config.num_experts,
+                    config.hidden_size,
+                    config.moe_intermediate_size,
+                )
+            )
+            gate_up_cpu = torch.empty(
+                gate_up_shape,
                 dtype=checkpoint.tensor(
                     f"{prefix}.mlp.experts.0.gate_proj.weight"
                 ).dtype,
             )
             down_cpu = torch.empty(
-                (
-                    config.num_experts,
-                    config.hidden_size,
-                    config.moe_intermediate_size,
-                ),
+                down_shape,
                 dtype=checkpoint.tensor(
                     f"{prefix}.mlp.experts.0.down_proj.weight"
                 ).dtype,
             )
             for expert_index in range(config.num_experts):
                 expert_prefix = f"{prefix}.mlp.experts.{expert_index}"
-                gate_up_cpu[expert_index, : config.moe_intermediate_size].copy_(
-                    checkpoint.tensor(f"{expert_prefix}.gate_proj.weight")
+                gate_weight = checkpoint.tensor(
+                    f"{expert_prefix}.gate_proj.weight"
                 )
-                gate_up_cpu[expert_index, config.moe_intermediate_size :].copy_(
-                    checkpoint.tensor(f"{expert_prefix}.up_proj.weight")
+                up_weight = checkpoint.tensor(f"{expert_prefix}.up_proj.weight")
+                down_weight = checkpoint.tensor(
+                    f"{expert_prefix}.down_proj.weight"
                 )
-                down_cpu[expert_index].copy_(
-                    checkpoint.tensor(f"{expert_prefix}.down_proj.weight")
-                )
+                if grouped_matmul:
+                    gate_up_cpu[
+                        expert_index, :, : config.moe_intermediate_size
+                    ].copy_(gate_weight.transpose(0, 1))
+                    gate_up_cpu[
+                        expert_index, :, config.moe_intermediate_size :
+                    ].copy_(up_weight.transpose(0, 1))
+                    down_cpu[expert_index].copy_(down_weight.transpose(0, 1))
+                else:
+                    gate_up_cpu[
+                        expert_index, : config.moe_intermediate_size
+                    ].copy_(gate_weight)
+                    gate_up_cpu[
+                        expert_index, config.moe_intermediate_size :
+                    ].copy_(up_weight)
+                    down_cpu[expert_index].copy_(down_weight)
             copy_parameter(layer.mlp.gate_up_proj, gate_up_cpu, device=device)
             copy_parameter(layer.mlp.down_proj, down_cpu, device=device)
             del gate_up_cpu, down_cpu

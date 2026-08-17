@@ -26,6 +26,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--capture", required=True)
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--layers", type=int, default=24)
+    parser.add_argument(
+        "--expert-impl",
+        choices=("selected_bmm", "grouped_matmul"),
+        default="selected_bmm",
+    )
+    parser.add_argument(
+        "--cache-length",
+        type=int,
+        help="Static KV capacity. Default: use the capture capacity.",
+    )
     parser.add_argument("--warmup-steps", type=int, default=2)
     parser.add_argument("--decode-steps", type=int, default=20)
     parser.add_argument(
@@ -164,6 +174,11 @@ def main() -> None:
     layer_start = int(capture["stage2_layer_start"])
     layer_end = layer_start + args.layers
     complete_stage = layer_end == int(capture["stage2_layer_end"])
+    cache_length = (
+        int(args.cache_length)
+        if args.cache_length is not None
+        else int(capture["cache_length"])
+    )
     stage, stage_metadata = build_stage(
         config,
         args.model_dir,
@@ -173,10 +188,11 @@ def main() -> None:
         with_lm_head=complete_stage,
         device=device,
         name=f"stage2-compile-l{args.layers}",
-        cache_length=int(capture["cache_length"]),
+        cache_length=cache_length,
+        expert_impl=args.expert_impl,
     )
 
-    eager_cache = stage.make_cache(cache_length=int(capture["cache_length"]))
+    eager_cache = stage.make_cache(cache_length=cache_length)
     restore_capture_prefix(eager_cache, capture)
     eager_outputs, eager_capture_times = run_capture_sequence(
         stage.decode_static_output,
@@ -194,7 +210,7 @@ def main() -> None:
     )
 
     shape_key = (
-        f"stage2_l{args.layers}_b1_kv{capture['cache_length']}_bf16_"
+        f"stage2_{args.expert_impl}_l{args.layers}_b1_kv{cache_length}_bf16_"
         f"src{source_hash()}"
     )
     cache_dir = args.compile_cache_dir.expanduser().resolve() / shape_key
@@ -214,7 +230,7 @@ def main() -> None:
         fullgraph=True,
     )
     compile_wrapper_sec = time.perf_counter() - wrapper_started
-    compiled_cache = stage.make_cache(cache_length=int(capture["cache_length"]))
+    compiled_cache = stage.make_cache(cache_length=cache_length)
     restore_capture_prefix(compiled_cache, capture)
     compiled_outputs, compiled_capture_times = run_capture_sequence(
         compiled_decode,
@@ -283,7 +299,8 @@ def main() -> None:
         "dtype": "bfloat16",
         "layers": args.layers,
         "complete_stage": complete_stage,
-        "cache_length": int(capture["cache_length"]),
+        "cache_length": cache_length,
+        "expert_impl": args.expert_impl,
         "capture_steps": len(compiled_capture_times),
         "compile_contract": {
             "fullgraph": True,
