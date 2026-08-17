@@ -34,6 +34,7 @@ class DecodeOptimizationConfig:
     packed_mlp: bool = False
     npu_swiglu: bool = False
     batched_qk_rms_norm: bool = False
+    qk_add_rms_norm: bool = False
 
 
 DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
@@ -153,6 +154,19 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         weight_prefetch_timing="complete_layer_ahead",
         complete_layer_prefetch_ahead=1,
         batched_qk_rms_norm=True,
+    ),
+    "combined_apply_complete_layer_prefetch1_qk_add_rms_norm_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch1_qk_add_rms_norm_rope_lut",
+        npu_rms_norm=True,
+        fused_add_rms_norm=True,
+        packed_qkv=True,
+        npu_rotary=True,
+        rope_lookup=True,
+        weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=1,
+        qk_add_rms_norm=True,
     ),
 }
 
@@ -532,16 +546,34 @@ class LocalQwen3Attention(nn.Module):
         value_states = value_states.view(
             batch, sequence_length, self.num_key_value_heads, self.head_dim
         )
-        query_states = _decode_rms_norm(
-            self.q_norm,
-            query_states,
-            optimization,
-        ).transpose(1, 2)
-        key_states = _decode_rms_norm(
-            self.k_norm,
-            key_states,
-            optimization,
-        ).transpose(1, 2)
+        if optimization.qk_add_rms_norm and query_states.device.type == "npu":
+            query_zero = self.decode_q_norm_zero.expand_as(query_states)
+            key_zero = self.decode_k_norm_zero.expand_as(key_states)
+            query_states = torch_npu.npu_add_rms_norm(
+                query_states,
+                query_zero,
+                self.q_norm.weight,
+                self.q_norm.variance_epsilon,
+            )[0]
+            key_states = torch_npu.npu_add_rms_norm(
+                key_states,
+                key_zero,
+                self.k_norm.weight,
+                self.k_norm.variance_epsilon,
+            )[0]
+        else:
+            query_states = _decode_rms_norm(
+                self.q_norm,
+                query_states,
+                optimization,
+            )
+            key_states = _decode_rms_norm(
+                self.k_norm,
+                key_states,
+                optimization,
+            )
+        query_states = query_states.transpose(1, 2)
+        key_states = key_states.transpose(1, 2)
         return query_states, key_states, value_states.transpose(1, 2)
 
     def forward_prefill(
@@ -844,6 +876,10 @@ class LocalQwen3ForCausalLM(nn.Module):
                     packed_mlp_count += 1
         batched_qk_norm_count = 0
         if optimization.batched_qk_rms_norm:
+            if optimization.qk_add_rms_norm:
+                raise ValueError(
+                    "batched Q/K RMSNorm and Q/K add-RMSNorm are mutually exclusive"
+                )
             if not optimization.packed_qkv:
                 raise ValueError("batched Q/K RMSNorm requires packed QKV")
             for layer in self.layers:
@@ -876,6 +912,36 @@ class LocalQwen3ForCausalLM(nn.Module):
                         persistent=False,
                     )
                     batched_qk_norm_count += 1
+        qk_add_rms_norm_count = 0
+        if optimization.qk_add_rms_norm:
+            for layer in self.layers:
+                attention = layer.self_attn
+                if not hasattr(attention, "decode_q_norm_zero"):
+                    attention.register_buffer(
+                        "decode_q_norm_zero",
+                        torch.zeros(
+                            1,
+                            1,
+                            attention.num_heads,
+                            attention.head_dim,
+                            device=attention.q_norm.weight.device,
+                            dtype=attention.q_norm.weight.dtype,
+                        ),
+                        persistent=False,
+                    )
+                    attention.register_buffer(
+                        "decode_k_norm_zero",
+                        torch.zeros(
+                            1,
+                            1,
+                            attention.num_key_value_heads,
+                            attention.head_dim,
+                            device=attention.k_norm.weight.device,
+                            dtype=attention.k_norm.weight.dtype,
+                        ),
+                        persistent=False,
+                    )
+                    qk_add_rms_norm_count += 1
         if optimization.rope_lookup:
             positions = torch.arange(
                 int(cache_length),
@@ -966,6 +1032,8 @@ class LocalQwen3ForCausalLM(nn.Module):
             "npu_swiglu": optimization.npu_swiglu,
             "batched_qk_rms_norm": optimization.batched_qk_rms_norm,
             "batched_qk_norm_count": batched_qk_norm_count,
+            "qk_add_rms_norm": optimization.qk_add_rms_norm,
+            "qk_add_rms_norm_count": qk_add_rms_norm_count,
             "rope_lookup": optimization.rope_lookup,
             "rope_lookup_shape": (
                 None
