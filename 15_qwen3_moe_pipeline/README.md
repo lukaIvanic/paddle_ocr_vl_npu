@@ -164,10 +164,18 @@ invocation restored 8/8 token agreement and improved the valid full stage from
 196.83 to 203.77 tokens/s. This failure is also why one-layer timings are not
 accepted as performance evidence.
 
+The earlier hand-built B1 routing path was also rerun under this complete-stage
+gate because its original rejection used only one layer. With fused gating and
+the valid Q/K normalization path, direct sort/equality/group-count routing
+reached 170.46 tokens/s at 5.867 ms TPOT. It matched all eight tokens but was
+16.35% slower than InitRoutingV2 at 203.77 tokens/s, so it is retained only as a
+JSON ablation artifact and not as an active implementation.
+
 The corresponding JSON files are under `references/` with
 `bmm_l24_k4096`, `gmm_manual_l24_k4096`, `gmm_finalize_l24_k4096`,
 `gmm_v2_finalize_l24_k4096`, `gmm_v2_gating_finalize_l24_k4096`, and
-`gmm_v2_gating_qknorm_l24_k4096` in their names.
+`gmm_v2_gating_qknorm_l24_k4096` in their names. The rejected direct B1 route
+uses `gmm_b1_gating_qknorm_l24_k4096`.
 
 ## Development replay package
 

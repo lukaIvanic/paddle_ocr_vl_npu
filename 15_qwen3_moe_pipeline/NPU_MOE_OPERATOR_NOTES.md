@@ -47,6 +47,10 @@ The one-layer probe is not a performance benchmark. It exists only to catch
 operator contract and numerical failures. Timing decisions use the complete
 24-layer stage plus final RMSNorm and LM head.
 
+A direct B1 sort/equality/group-count implementation was retested on that full
+stage and reached 170.46 tokens/s. It was 16.35% slower than InitRoutingV2, so
+the active implementation does not keep the B1-specialized route.
+
 The installed `npu_moe_gating_top_k_softmax_v2` Python wrapper accepts
 `renorm=1`, which is the direct Qwen top-k-normalization contract. Its TorchAir
 GE converter rejects that attribute. The compiled path therefore uses
