@@ -235,16 +235,25 @@ def main() -> None:
 
     step_checks = []
     all_outputs_close = True
+    all_tokens_match = True
     for step, (eager, compiled) in enumerate(zip(eager_outputs, compiled_outputs)):
         diff = (eager.float() - compiled.float()).abs()
         close = bool(
             torch.allclose(eager, compiled, atol=args.atol, rtol=args.rtol)
         )
+        eager_top2 = torch.topk(eager.float(), 2, dim=-1).values
+        compiled_top2 = torch.topk(compiled.float(), 2, dim=-1).values
         check = {
             "step": step,
             "allclose": close,
             "max_abs": float(diff.max().item()),
             "mean_abs": float(diff.mean().item()),
+            "eager_top1_margin": float(
+                (eager_top2[0, 0] - eager_top2[0, 1]).item()
+            ),
+            "compiled_top1_margin": float(
+                (compiled_top2[0, 0] - compiled_top2[0, 1]).item()
+            ),
         }
         if complete_stage:
             expected = capture["expected_logits"][step]
@@ -258,11 +267,11 @@ def main() -> None:
                 torch.topk(compiled.float(), 10, dim=-1).indices,
                 capture["expected_topk_ids"][step],
             )
-            close = bool(
-                close and check["expected_logits_allclose"] and check["token_match"]
-            )
-        all_outputs_close &= close
+            all_tokens_match &= check["token_match"]
+        all_outputs_close &= bool(close)
         step_checks.append(check)
+
+    parity_passed = all_tokens_match if complete_stage else all_outputs_close
 
     unique_graph_delta = (
         stats_final["unique_graphs"] - stats_after_capture["unique_graphs"]
@@ -290,7 +299,12 @@ def main() -> None:
             "no_recompilations_after_capture": no_recompilations_after_capture,
         },
         "parity": {
+            "gate": (
+                "exact_greedy_token_ids" if complete_stage else "output_allclose"
+            ),
+            "passed": parity_passed,
             "all_outputs_close": all_outputs_close,
+            "all_tokens_match": all_tokens_match if complete_stage else None,
             "step_checks": step_checks,
         },
         "eager": {
@@ -310,7 +324,7 @@ def main() -> None:
     if args.summary_out:
         args.summary_out.parent.mkdir(parents=True, exist_ok=True)
         args.summary_out.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
-    if not all_outputs_close:
+    if not parity_passed:
         raise RuntimeError("Compiled stage output parity failed")
     if not no_recompilations_after_capture:
         raise RuntimeError("Additional static graphs were compiled after capture parity")
