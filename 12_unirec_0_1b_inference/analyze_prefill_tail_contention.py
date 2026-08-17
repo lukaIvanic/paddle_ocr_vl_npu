@@ -545,7 +545,8 @@ def print_report(report: dict[str, Any]) -> None:
     gap = clean["completion_gap"]
     print(
         "UNIREC_PREFILL_TAIL_CONTENTION PASS "
-        f"label={report['label']} pages={clean['page_count']} "
+        f"label={report['label']} pages={report['trace_config']['page_count']} "
+        f"progress_records={clean['page_count']} "
         f"trace_wall_s={npu['trace_prefill_wall_s']:.6f} "
         f"npu_service_sum_s={npu['aggregate_service_sum_s']:.6f} "
         "npu_service_over_wall="
@@ -623,6 +624,7 @@ def main() -> None:
             name: trace_summary.get(name)
             for name in (
                 "workers",
+                "page_count",
                 "recognition_preprocess_threads",
                 "layout_cpu_threads",
                 "layout_batch_size",
