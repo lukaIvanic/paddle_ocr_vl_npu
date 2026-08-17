@@ -79,6 +79,16 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         packed_mlp=True,
         npu_swiglu=True,
     ),
+    "combined_apply_packed_mlp_prefetch": DecodeOptimizationConfig(
+        name="combined_apply_packed_mlp_prefetch",
+        npu_rms_norm=True,
+        fused_add_rms_norm=True,
+        packed_qkv=True,
+        npu_rotary=True,
+        rope_lookup=True,
+        weight_prefetch=True,
+        packed_mlp=True,
+    ),
 }
 
 
