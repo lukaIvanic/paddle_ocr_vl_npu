@@ -50,6 +50,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmups", type=int, default=2)
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument(
+        "--save-compiled-outputs-dir",
+        type=Path,
+        help="Save one warmed masked-compiled output per batch size.",
+    )
+    parser.add_argument(
+        "--reference-compiled-outputs-dir",
+        type=Path,
+        help=(
+            "Compare each warmed masked-compiled output with a saved lane. "
+            "Differences are reported but do not change the timing verdict."
+        ),
+    )
+    parser.add_argument(
         "--stock-only",
         action="store_true",
         help="Compile and time only stock eager/compiled; skip all bucket graphs.",
@@ -71,6 +84,11 @@ def parse_args() -> argparse.Namespace:
         parser.error("width and height must be divisible by 32")
     if args.warmups < 0 or args.repeats < 1:
         parser.error("warmups must be non-negative and repeats positive")
+    if args.stock_only and (
+        args.save_compiled_outputs_dir is not None
+        or args.reference_compiled_outputs_dir is not None
+    ):
+        parser.error("compiled output comparison requires the bucket graph lane")
     return args
 
 
@@ -180,6 +198,20 @@ def main() -> None:
     torch_npu.npu.set_compile_mode(jit_compile=False)
     cache_dir = args.cache_dir.expanduser().resolve()
     cache_dir.mkdir(parents=True, exist_ok=True)
+    save_outputs_dir = (
+        args.save_compiled_outputs_dir.expanduser().resolve()
+        if args.save_compiled_outputs_dir is not None
+        else None
+    )
+    reference_outputs_dir = (
+        args.reference_compiled_outputs_dir.expanduser().resolve()
+        if args.reference_compiled_outputs_dir is not None
+        else None
+    )
+    if save_outputs_dir is not None:
+        save_outputs_dir.mkdir(parents=True, exist_ok=False)
+    if reference_outputs_dir is not None and not reference_outputs_dir.is_dir():
+        raise FileNotFoundError(reference_outputs_dir)
 
     runner = OptimizedUniRecRunner(
         model_path=args.model_path.expanduser().resolve(),
@@ -293,6 +325,34 @@ def main() -> None:
                         ),
                     }
                 )
+                compiled_output_cpu = compiled_output.detach().cpu()
+                cross_lane_reference = {
+                    "reference": "not_requested",
+                    "exact": True,
+                    "max_abs": 0.0,
+                    "mean_abs": 0.0,
+                }
+                if reference_outputs_dir is not None:
+                    reference_path = reference_outputs_dir / f"{spec.key}.pt"
+                    reference_output = torch.load(
+                        reference_path,
+                        map_location="cpu",
+                        weights_only=True,
+                    )
+                    difference = (compiled_output_cpu - reference_output).abs()
+                    cross_lane_reference = {
+                        "reference": str(reference_path),
+                        "exact": bool(
+                            torch.equal(compiled_output_cpu, reference_output)
+                        ),
+                        "max_abs": float(difference.max().item()),
+                        "mean_abs": float(difference.mean().item()),
+                    }
+                if save_outputs_dir is not None:
+                    torch.save(
+                        compiled_output_cpu,
+                        save_outputs_dir / f"{spec.key}.pt",
+                    )
 
             for _ in range(args.warmups):
                 for _name, function in lanes:
@@ -332,6 +392,7 @@ def main() -> None:
                 },
             }
             if runtime is not None:
+                row["cross_lane_reference"] = cross_lane_reference
                 row["speedup"].update(
                     {
                         "compiled_vs_bucket_module_eager": (

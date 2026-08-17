@@ -1,13 +1,10 @@
-# Experiment 10: Optimized Qwen3-0.6B Decode on Ascend
+# Experiment 10: Qwen3-0.6B B1 Decode vs vLLM-Ascend
 
-This experiment contains one implementation: the selected FP16, B1,
-fixed-shape Qwen3-0.6B decode path for Ascend NPU.
-
-It does not contain baseline or ablation implementations. The old dynamic
-decode, alternative attention contracts, NPU Graph replay, FRACTAL_NZ weights,
-packed MLP, batched Q/K RMSNorm, Transformers reference, and Qwen3-8B routes
-were removed after the optimization study. Their measured results remain in
-this document as historical evidence.
+This experiment asks how far a direct PyTorch and Torch-NPU Qwen3-0.6B decoder
+can improve over vLLM-Ascend for B1 decode with a KV4096 cache. The recorded
+vLLM-Ascend reference is 123.5 tok/s. A direct fullgraph TorchAir implementation
+first reached 151.74 tok/s, and the selected optimized implementation reaches
+450.67 tok/s.
 
 The runtime loads the official Qwen3-0.6B safetensors checkpoint without using
 Transformers model classes. Transformers is used only for tokenization. The
@@ -36,44 +33,43 @@ eager mode from independent prefills. At both prefix positions:
 
 The 450.67 tok/s result is 2.97 times the 151.74 tok/s KV4096 starting point.
 
-After the old code paths were deleted, commit `ad1c83a` repeated the same
-contract for five measured runs. It averaged 448.17 tok/s, with individual
-runs from 443.13 to 451.84 tok/s, exact compiled/eager tokens, and zero K/V
-difference. The cleanup therefore preserved the selected performance within
-normal run-to-run variation.
+Commit `ad1c83a` revalidated the selected contract for five measured runs. It
+averaged 448.17 tok/s, with individual runs from 443.13 to 451.84 tok/s, exact
+compiled/eager tokens, and zero K/V difference. This is within normal
+run-to-run variation from the recorded 450.67 tok/s result.
 
-## The first milestone: beating vLLM-Ascend with fullgraph TorchAir
+## Goal: improve on vLLM-Ascend B1 decode
 
-Before the model-specific optimization work, the first local runtime already
-beat the recorded vLLM-Ascend B1 result using a small, direct decode graph:
+The comparison uses B1 decode and KV4096 throughout:
 
-| Runtime | Decode contract | Decode tok/s |
-|---|---|---:|
-| vLLM-Ascend | Recorded pure B1 decode | 123.5 |
-| Local TorchAir | B1, KV128, 64 steps | 239.09 |
-| Local TorchAir | B1, KV64, 32 steps | 260.24 |
+| Runtime | B1 decode contract | Decode tok/s | Relative to vLLM-Ascend |
+|---|---|---:|---:|
+| vLLM-Ascend | KV4096 reference | 123.5 | 1.00x |
+| Direct fullgraph TorchAir | KV4096 starting implementation | 151.74 | 1.23x |
+| Selected optimized TorchAir | KV4096, prefix 512 | **450.67** | **3.65x** |
 
-The stable 239.09 tok/s result was 1.94 times the recorded vLLM-Ascend result.
-The short-cache maximum was 2.11 times faster.
+The first local KV4096 implementation already beat vLLM-Ascend by 22.9% with
+fullgraph TorchAir compilation and a direct decode contract. The remaining work
+improved that same KV4096 contract by another 2.97 times, reaching 3.65 times
+the vLLM-Ascend reference.
 
 This first win did not require a custom kernel or a serving runtime. It came
-from a simple static execution contract:
+from a direct fullgraph execution contract:
 
 1. Reimplement the dense Qwen3 forward directly in PyTorch and Torch-NPU.
 2. Keep the K/V cache caller-owned and fixed in shape.
 3. Use one uniform one-token decode signature for every generation step.
 4. Express Linear calls as unambiguous 2-D MatMuls.
 5. Update K/V state with the NPU scatter operator.
-6. Use NPU incremental flash attention.
+6. Use NPU incremental flash attention with the current sequence length.
 7. Compile the whole decode step with
-   `torch.compile(fullgraph=True, dynamic=False, backend=torchair)`.
+   `torch.compile(fullgraph=True, dynamic=True, backend=torchair)`.
 8. Disable torch-npu JIT compilation so no unrelated JIT path is measured.
 
-The comparison is a decoder-kernel comparison, not a serving-QPS claim. The
-vLLM and local measurements did not use identical K/V capacities, and the local
+This is a B1 decoder comparison, not a serving-QPS comparison. The local
 benchmark excludes request scheduling, HTTP, tokenization, and prefill. A
 previous vLLM B4 result of 309.5 aggregate output tok/s included prefill and is
-not used as a pure-decode comparison.
+not used here.
 
 ## KV4096 optimization ladder
 
