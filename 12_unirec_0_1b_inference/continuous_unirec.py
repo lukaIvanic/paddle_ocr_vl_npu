@@ -24,21 +24,31 @@ from modeling_optimized_unirec import (
 
 
 def production_decode_cache_parent(base: str | Path) -> Path:
-    """Namespace persisted decode graphs by source and Ascend runtime.
+    """Return a stable cache namespace for the compiled decode graph.
 
-    The old cache path encoded shapes but not graph source or runtime. That let
-    a changed caller/runtime select a stale OM before Dynamo could reject it.
+    Continuous scheduler changes do not change the compiled
+    LocalUniRecCachedDecodeStepModule graph and must not force a large B128 OM
+    rebuild on memory-limited 310P devices.  Hash only the file that defines
+    the compiled graph plus the runtime.  An explicit override supports reuse
+    of a previously validated complete cache during migration.
     """
-    digest = hashlib.sha256(b"unirec-production-decode-contract-v2\0")
+    override = os.environ.get("UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE")
+    if override:
+        path = Path(override).expanduser().resolve()
+        if not path.is_dir():
+            raise FileNotFoundError(
+                "UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE is not a "
+                f"directory: {path}"
+            )
+        return path
+
+    digest = hashlib.sha256(b"unirec-production-decode-graph-v1\0")
     directory = Path(__file__).resolve().parent
-    for source in (
-        Path(__file__).resolve(),
-        directory / "modeling_optimized_unirec.py",
-    ):
-        digest.update(source.name.encode("utf-8"))
-        digest.update(b"\0")
-        digest.update(source.read_bytes())
-        digest.update(b"\0")
+    source = directory / "modeling_optimized_unirec.py"
+    digest.update(source.name.encode("utf-8"))
+    digest.update(b"\0")
+    digest.update(source.read_bytes())
+    digest.update(b"\0")
     digest.update(str(torch.__version__).encode("utf-8"))
     try:
         import torch_npu
@@ -52,7 +62,7 @@ def production_decode_cache_parent(base: str | Path) -> Path:
         if version_file.is_file():
             digest.update(version_file.read_bytes())
     return Path(base).expanduser().resolve() / (
-        f"production_decode_contract_{digest.hexdigest()[:16]}"
+        f"production_decode_graph_{digest.hexdigest()[:16]}"
     )
 
 

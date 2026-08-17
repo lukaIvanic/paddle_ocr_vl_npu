@@ -36,8 +36,26 @@ class ContinuousDecodeInputContractTest(unittest.TestCase):
             self.assertEqual(first.parent, root.resolve())
             self.assertRegex(
                 first.name,
-                r"^production_decode_contract_[0-9a-f]{16}$",
+                r"^production_decode_graph_[0-9a-f]{16}$",
             )
+
+    def test_decode_cache_parent_override_reuses_validated_cache(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            previous = root / "previous_complete_cache"
+            previous.mkdir()
+            with unittest.mock.patch.dict(
+                "os.environ",
+                {
+                    "UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE": str(
+                        previous
+                    )
+                },
+            ):
+                self.assertEqual(
+                    production_decode_cache_parent(root),
+                    previous.resolve(),
+                )
 
     def test_decode_device_inputs_are_static_inference_tensors(self) -> None:
         next_token, cache_position = (
