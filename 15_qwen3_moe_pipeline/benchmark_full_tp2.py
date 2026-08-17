@@ -26,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--model-dir", required=True)
     parser.add_argument("--capture", required=True)
+    parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--warmup-steps", type=int, default=2)
     parser.add_argument("--decode-steps", type=int, default=20)
     parser.add_argument("--summary-out", type=Path)
@@ -104,10 +105,11 @@ def validate_capture(
     stage: Qwen3MoeTPStage,
     capture,
     *,
+    cache_length: int,
     world_size: int,
     device: torch.device,
 ) -> tuple[object, torch.Tensor, list[float], list[dict[str, object]]]:
-    cache = stage.make_cache(cache_length=int(capture["cache_length"]))
+    cache = stage.make_cache(cache_length=cache_length)
     prompt_ids = [int(token) for token in capture["prompt_token_ids"]]
     call_times = []
     for position, token_id in enumerate(prompt_ids[:-1]):
@@ -237,7 +239,7 @@ def main() -> None:
         + args.warmup_steps
         + args.decode_steps
     )
-    if final_position >= int(capture["cache_length"]):
+    if final_position >= args.cache_length:
         raise ValueError("Validation and benchmark exceed the static KV cache")
 
     config = Qwen3MoeConfig.from_model_dir(args.model_dir)
@@ -262,7 +264,7 @@ def main() -> None:
         device=device,
         progress=lambda message: log(rank, message),
     )
-    stage.prepare_decode(cache_length=int(capture["cache_length"]))
+    stage.prepare_decode(cache_length=args.cache_length)
     stage.eval()
     load_sec = reduce_max_seconds(time.perf_counter() - load_started, device)
     log(rank, "loaded full TP shard: " + json.dumps(memory_snapshot(device)))
@@ -272,6 +274,7 @@ def main() -> None:
             stage.decode_input_ids_local_output,
             stage,
             capture,
+            cache_length=args.cache_length,
             world_size=world_size,
             device=device,
         )
@@ -302,6 +305,7 @@ def main() -> None:
                 compiled,
                 stage,
                 capture,
+                cache_length=args.cache_length,
                 world_size=world_size,
                 device=device,
             )
@@ -347,7 +351,7 @@ def main() -> None:
         "dtype": "bfloat16",
         "tensor_parallel_size": world_size,
         "layers": config.num_hidden_layers,
-        "cache_length": int(capture["cache_length"]),
+        "cache_length": args.cache_length,
         "collectives_per_token_in_graph": 1 + 2 * config.num_hidden_layers,
         "load_sec": load_sec,
         "parity_passed": parity_passed,
