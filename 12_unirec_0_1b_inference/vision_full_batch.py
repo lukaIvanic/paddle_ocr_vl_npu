@@ -488,6 +488,9 @@ class BucketedFullVisionRuntime:
         if len(set(keys)) != len(keys):
             raise ValueError(f"duplicate full-vision graph keys: {keys}")
         self.preset_name = str(preset_name)
+        self.trace_h2d_device_details = (
+            os.environ.get("UNIREC_VISION_H2D_DEVICE_DETAIL_TRACE", "0") == "1"
+        )
         self.specs_by_canvas: dict[
             tuple[int, int], tuple[VisionBucketSpec, ...]
         ] = {}
@@ -670,9 +673,12 @@ class BucketedFullVisionRuntime:
         if not self.trace_iterations:
             return operation()
         started = time.perf_counter()
-        marker = self._trace_begin()
+        marker = (
+            self._trace_begin() if self.trace_h2d_device_details else None
+        )
         output = operation()
-        device_markers[f"{name}_s"] = self._trace_end(marker)
+        if marker is not None:
+            device_markers[f"{name}_s"] = self._trace_end(marker)
         host_stage_s[f"{name}_submit_s"] = time.perf_counter() - started
         return output
 
@@ -1131,6 +1137,7 @@ class BucketedFullVisionRuntime:
                     "total": sum(h2d_bytes.values()),
                 },
                 "h2d_tensor_submissions": len(h2d_bytes),
+                "h2d_device_detail_trace": self.trace_h2d_device_details,
             },
             {
                 **input_device_markers,
@@ -1271,6 +1278,7 @@ class BucketedFullVisionRuntime:
                     "total": sum(h2d_bytes.values()),
                 },
                 "h2d_tensor_submissions": len(h2d_bytes),
+                "h2d_device_detail_trace": self.trace_h2d_device_details,
                 "numpy_input_writeable": bool(
                     item.pixel_values.flags.writeable
                 ),

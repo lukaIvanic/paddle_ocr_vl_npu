@@ -145,6 +145,10 @@ def summarize_group(
     umbrella_host = distribution(outer_host)
     return {
         "call_count": len(events),
+        "device_detail_trace": all(
+            bool(event.get("h2d_device_detail_trace", False))
+            for event in events
+        ),
         "h2d_tensor_submissions": total_submissions,
         "h2d_bytes": {
             **dict(sorted(byte_histogram.items())),
@@ -219,6 +223,14 @@ def print_group(prefix: str, group: dict[str, Any]) -> None:
     for name, row in group["device_components"].items():
         print(
             "UNIREC_VISION_H2D_DEVICE_COMPONENT "
+            f"group={prefix} name={name} count={row['count']} "
+            f"sum_s={row['sum_s']:.6f} mean_ms={row['mean_ms']:.3f} "
+            f"p95_ms={row['p95_ms']:.3f} p99_ms={row['p99_ms']:.3f} "
+            f"max_ms={row['max_ms']:.3f}"
+        )
+    for name, row in group["host_components"].items():
+        print(
+            "UNIREC_VISION_H2D_HOST_COMPONENT "
             f"group={prefix} name={name} count={row['count']} "
             f"sum_s={row['sum_s']:.6f} mean_ms={row['mean_ms']:.3f} "
             f"p95_ms={row['p95_ms']:.3f} p99_ms={row['p99_ms']:.3f} "
