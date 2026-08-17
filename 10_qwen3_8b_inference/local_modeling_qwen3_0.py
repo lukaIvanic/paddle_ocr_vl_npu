@@ -115,6 +115,31 @@ DECODE_OPTIMIZATION_PRESETS: dict[str, DecodeOptimizationConfig] = {
         weight_prefetch_timing="complete_layer_ahead",
         complete_layer_prefetch_ahead=1,
     ),
+    "combined_apply_complete_layer_prefetch2_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch2_rope_lut",
+        npu_rms_norm=True,
+        fused_add_rms_norm=True,
+        packed_qkv=True,
+        npu_rotary=True,
+        rope_lookup=True,
+        weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=2,
+    ),
+    "combined_apply_complete_layer_prefetch1_packed_mlp_rope_lut": DecodeOptimizationConfig(
+        name="combined_apply_complete_layer_prefetch1_packed_mlp_rope_lut",
+        npu_rms_norm=True,
+        fused_add_rms_norm=True,
+        packed_qkv=True,
+        npu_rotary=True,
+        rope_lookup=True,
+        weight_prefetch=True,
+        post_scatter_kv_prefetch=True,
+        weight_prefetch_timing="complete_layer_ahead",
+        complete_layer_prefetch_ahead=1,
+        packed_mlp=True,
+    ),
 }
 
 
