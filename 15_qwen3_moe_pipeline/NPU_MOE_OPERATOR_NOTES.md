@@ -38,7 +38,8 @@ before each multiplication. The checkpoint loader should write the persistent
 weights directly in the operator's `[expert, K, N]` layout; transposing them on
 every token would defeat the optimization.
 
-This complete path reached 196.83 tokens/s at 5.080 ms TPOT over 200 tokens. It
+With fresh per-call Q/K AddRMSNorm zero banks, this complete path reached
+203.77 tokens/s at 4.908 ms TPOT over 200 tokens. It
 matched all eight captured greedy tokens and used one static TorchAir graph
 without recompilation.
 
@@ -51,6 +52,12 @@ The installed `npu_moe_gating_top_k_softmax_v2` Python wrapper accepts
 GE converter rejects that attribute. The compiled path therefore uses
 `npu_moe_gating_top_k_softmax` followed by an explicit selected-probability
 renormalization.
+
+`npu_add_rms_norm` mutates the add input. Static Q/K zero buffers therefore
+become nonzero after one decode call and cause accumulating output error. The
+valid graph allocates one Q zero bank and one K zero bank per invocation, then
+unbinds one row for each layer. Two fused `Fill` kernels cost about 11 us total
+and preserve the zero-input contract across decode steps.
 
 ## Operators that do not directly fit
 

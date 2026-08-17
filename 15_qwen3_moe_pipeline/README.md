@@ -130,13 +130,14 @@ static TorchAir graph with `fullgraph=True` and `dynamic=False`.
 | grouped matmul plus fused output finalization | 178.43 | 5.604 ms | +21.79% |
 | InitRoutingV2 counts plus fused finalization | 195.33 | 5.120 ms | +33.33% |
 | compile-compatible fused gating, InitRoutingV2, and fused finalization | 196.83 | 5.080 ms | +34.36% |
+| preceding path plus fresh per-call Q/K AddRMSNorm zero banks | 203.77 | 4.908 ms | +39.09% |
 
 All rows use all 24 layers and include the LM head. Every measured path used
 one static graph, had no recompilation after capture, and matched all eight
 captured greedy token IDs. The first run of the final path used a cold graph
 cache; the 200-token timing excludes that first compile/load call.
 
-The large gains came from three changes:
+The gains came from four changes:
 
 1. Keep all 128 expert weights in the persistent `[expert, K, N]` layout and
    let BF16 `npu_grouped_matmul` read only the routed experts. This removes the
@@ -145,6 +146,8 @@ The large gains came from three changes:
    `npu_moe_finalize_routing`.
 3. Use `npu_moe_init_routing_v2` to produce the expert group counts directly.
    This removes the separate `npu_moe_compute_expert_tokens` call.
+4. Use `npu_add_rms_norm` for Q/K normalization with zero banks created fresh
+   inside each graph invocation.
 
 `npu_moe_gating_top_k_softmax_v2(..., renorm=1)` is exposed by the installed
 PyTorch API but does not compile in this TorchAir build: its GE converter
@@ -153,10 +156,18 @@ compile-compatible fused gating operator and keeps the top-k renormalization
 explicit. That last change contributed only 0.77% over the preceding full-stage
 run.
 
+The Q/K zero banks must not persist across decode calls. `npu_add_rms_norm`
+mutates its add input. A persistent-buffer candidate initially reached 201.13
+tokens/s, but the accumulated nonzero state changed the third checked token and
+grew maximum logit error above 11.6. Creating the banks inside each static graph
+invocation restored 8/8 token agreement and improved the valid full stage from
+196.83 to 203.77 tokens/s. This failure is also why one-layer timings are not
+accepted as performance evidence.
+
 The corresponding JSON files are under `references/` with
 `bmm_l24_k4096`, `gmm_manual_l24_k4096`, `gmm_finalize_l24_k4096`,
-`gmm_v2_finalize_l24_k4096`, and `gmm_v2_gating_finalize_l24_k4096` in their
-names.
+`gmm_v2_finalize_l24_k4096`, `gmm_v2_gating_finalize_l24_k4096`, and
+`gmm_v2_gating_qknorm_l24_k4096` in their names.
 
 ## Development replay package
 

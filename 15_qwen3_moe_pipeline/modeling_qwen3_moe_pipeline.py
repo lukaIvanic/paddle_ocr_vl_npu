@@ -405,16 +405,6 @@ class Qwen3MoeAttention(nn.Module):
 
         scatter_update_tensor_(key_cache, cache_position, key_states)
         scatter_update_tensor_(value_cache, cache_position, value_states)
-        torch_npu.npu_prefetch(
-            key_cache,
-            key_states,
-            int(key_cache.numel() * key_cache.element_size()),
-        )
-        torch_npu.npu_prefetch(
-            value_cache,
-            value_states,
-            int(value_cache.numel() * value_cache.element_size()),
-        )
         attention_output = torch_npu.npu_incre_flash_attention(
             query_states,
             key_cache,
