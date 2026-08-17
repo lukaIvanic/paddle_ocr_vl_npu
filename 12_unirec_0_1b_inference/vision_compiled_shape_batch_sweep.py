@@ -65,7 +65,10 @@ def parse_args() -> argparse.Namespace:
 def _physical_devices() -> list[int]:
     raw = os.environ.get("ASCEND_RT_VISIBLE_DEVICES")
     if not raw:
-        raise RuntimeError("source npu-setup before launching the vision sweep")
+        raise RuntimeError(
+            "set ASCEND_RT_VISIBLE_DEVICES to exactly one physical NPU before "
+            "launching the vision sweep"
+        )
     devices = [int(item.strip()) for item in raw.split(",") if item.strip()]
     if len(devices) != 1:
         raise RuntimeError(f"expected one visible physical NPU, got {devices}")

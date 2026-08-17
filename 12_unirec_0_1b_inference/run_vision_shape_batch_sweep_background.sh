@@ -7,7 +7,7 @@ SWEEP="$SCRIPT_DIR/vision_compiled_shape_batch_sweep.py"
 ANALYZER="$SCRIPT_DIR/analyze_vision_shape_batch_sweep.py"
 
 reject_bad_device() {
-  : "${ASCEND_RT_VISIBLE_DEVICES:?source npu-setup before launching}"
+  : "${ASCEND_RT_VISIBLE_DEVICES:?set exactly one physical NPU before launching}"
   case ",${ASCEND_RT_VISIBLE_DEVICES}," in
     *,5,*|*,6,*) printf 'REJECTED_PHYSICAL_DEVICE_5_OR_6\n' >&2; exit 1 ;;
   esac

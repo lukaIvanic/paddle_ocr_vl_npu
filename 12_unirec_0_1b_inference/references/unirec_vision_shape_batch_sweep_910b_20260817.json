@@ -1,0 +1,1108 @@
+{
+  "schema": "unirec_vision_shape_batch_sweep_combined_v1",
+  "status": "ok",
+  "device_name": "Ascend910B2",
+  "correctness_policy": "warning_only",
+  "warning_count": 6,
+  "measurement_scope": "synchronized NPU events around optimized compiled full vision encoder graph compute only; no H2D, layout, text prefill, or decode",
+  "rows": [
+    {
+      "bucket": "960x64_b1",
+      "width": 960,
+      "height": 64,
+      "batch_size": 1,
+      "physical_pixels": 61440,
+      "tokens_per_crop": 60,
+      "physical_input_shape": [
+        1,
+        3,
+        64,
+        960
+      ],
+      "physical_output_shape": [
+        1,
+        60,
+        768
+      ],
+      "first_call_wall_s": 31.71872233087197,
+      "timing": {
+        "min_ms": 5.365540027618408,
+        "median_ms": 5.413179874420166,
+        "mean_ms": 5.4127579689025875,
+        "p90_ms": 5.4277081966400145,
+        "max_ms": 5.436260223388672,
+        "per_crop_median_ms": 5.413179874420166,
+        "crops_per_s": 184.73430094674532,
+        "mpix_per_s": 11.350075450168033
+      },
+      "memory": {
+        "allocated_before_bytes": 402527232,
+        "allocated_after_bytes": 402527232,
+        "peak_allocated_bytes": 402619904,
+        "peak_increment_bytes": 92672
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.02099609375,
+          "mean_abs": 0.0009379386901855469
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "self",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.0,
+        "batch_efficiency": 1.0,
+        "latency_ratio": 1.0
+      }
+    },
+    {
+      "bucket": "960x64_b4",
+      "width": 960,
+      "height": 64,
+      "batch_size": 4,
+      "physical_pixels": 245760,
+      "tokens_per_crop": 60,
+      "physical_input_shape": [
+        4,
+        3,
+        64,
+        960
+      ],
+      "physical_output_shape": [
+        4,
+        60,
+        768
+      ],
+      "first_call_wall_s": 23.614918142091483,
+      "timing": {
+        "min_ms": 6.5493597984313965,
+        "median_ms": 6.594199895858765,
+        "mean_ms": 6.594315004348755,
+        "p90_ms": 6.6039759635925295,
+        "max_ms": 6.615300178527832,
+        "per_crop_median_ms": 1.6485499739646912,
+        "crops_per_s": 606.5936828078335,
+        "mpix_per_s": 37.26911587171328
+      },
+      "memory": {
+        "allocated_before_bytes": 435838464,
+        "allocated_after_bytes": 435838464,
+        "peak_allocated_bytes": 436207616,
+        "peak_increment_bytes": 369152
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0380859375,
+          "mean_abs": 0.000980377197265625
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "960x64_b1.row0",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.001953125,
+          "mean_abs": 1.1920928955078125e-07
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 3.283600715725774,
+        "batch_efficiency": 0.8209001789314435,
+        "latency_ratio": 1.2181749080645696
+      }
+    },
+    {
+      "bucket": "960x64_b16",
+      "width": 960,
+      "height": 64,
+      "batch_size": 16,
+      "physical_pixels": 983040,
+      "tokens_per_crop": 60,
+      "physical_input_shape": [
+        16,
+        3,
+        64,
+        960
+      ],
+      "physical_output_shape": [
+        16,
+        60,
+        768
+      ],
+      "first_call_wall_s": 20.59180851187557,
+      "timing": {
+        "min_ms": 10.699060440063477,
+        "median_ms": 10.737210273742676,
+        "mean_ms": 10.73666205406189,
+        "p90_ms": 10.751314163208008,
+        "max_ms": 10.759559631347656,
+        "per_crop_median_ms": 0.6710756421089172,
+        "crops_per_s": 1490.1449810596725,
+        "mpix_per_s": 91.55450763630627
+      },
+      "memory": {
+        "allocated_before_bytes": 561587712,
+        "allocated_after_bytes": 561587712,
+        "peak_allocated_bytes": 563062784,
+        "peak_increment_bytes": 1475072
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.03955078125,
+          "mean_abs": 0.0009851455688476562
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "960x64_b1.row0",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.001953125,
+          "mean_abs": 1.1920928955078125e-07
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 8.066422821440439,
+        "batch_efficiency": 0.5041514263400274,
+        "latency_ratio": 1.9835310340380652
+      }
+    },
+    {
+      "bucket": "512x256_b1",
+      "width": 512,
+      "height": 256,
+      "batch_size": 1,
+      "physical_pixels": 131072,
+      "tokens_per_crop": 128,
+      "physical_input_shape": [
+        1,
+        3,
+        256,
+        512
+      ],
+      "physical_output_shape": [
+        1,
+        128,
+        768
+      ],
+      "first_call_wall_s": 22.586336250882596,
+      "timing": {
+        "min_ms": 5.229559898376465,
+        "median_ms": 5.279170036315918,
+        "mean_ms": 5.276628923416138,
+        "p90_ms": 5.290303802490235,
+        "max_ms": 5.303339958190918,
+        "per_crop_median_ms": 5.279170036315918,
+        "crops_per_s": 189.42371492505524,
+        "mpix_per_s": 24.828145162656842
+      },
+      "memory": {
+        "allocated_before_bytes": 406542848,
+        "allocated_after_bytes": 406542848,
+        "peak_allocated_bytes": 406739968,
+        "peak_increment_bytes": 197120
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.03515625,
+          "mean_abs": 0.0020503997802734375
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "self",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.0,
+        "batch_efficiency": 1.0,
+        "latency_ratio": 1.0
+      }
+    },
+    {
+      "bucket": "512x256_b2",
+      "width": 512,
+      "height": 256,
+      "batch_size": 2,
+      "physical_pixels": 262144,
+      "tokens_per_crop": 128,
+      "physical_input_shape": [
+        2,
+        3,
+        256,
+        512
+      ],
+      "physical_output_shape": [
+        2,
+        128,
+        768
+      ],
+      "first_call_wall_s": 78.8670370709151,
+      "timing": {
+        "min_ms": 6.244440078735352,
+        "median_ms": 6.2718799114227295,
+        "mean_ms": 6.270014953613281,
+        "p90_ms": 6.275885820388794,
+        "max_ms": 6.278160095214844,
+        "per_crop_median_ms": 3.1359399557113647,
+        "crops_per_s": 318.88365661425985,
+        "mpix_per_s": 41.79671863974426
+      },
+      "memory": {
+        "allocated_before_bytes": 441887232,
+        "allocated_after_bytes": 441887232,
+        "peak_allocated_bytes": 442280960,
+        "peak_increment_bytes": 393728
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.044921875,
+          "mean_abs": 0.002044677734375
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "512x256_b1.row0",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0009765625,
+          "mean_abs": 5.960464477539063e-08
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.6834410450688548,
+        "batch_efficiency": 0.8417205225344274,
+        "latency_ratio": 1.18804279238552
+      }
+    },
+    {
+      "bucket": "512x256_b4",
+      "width": 512,
+      "height": 256,
+      "batch_size": 4,
+      "physical_pixels": 524288,
+      "tokens_per_crop": 128,
+      "physical_input_shape": [
+        4,
+        3,
+        256,
+        512
+      ],
+      "physical_output_shape": [
+        4,
+        128,
+        768
+      ],
+      "first_call_wall_s": 20.628311241976917,
+      "timing": {
+        "min_ms": 8.136240005493164,
+        "median_ms": 8.159739971160889,
+        "mean_ms": 8.157606983184815,
+        "p90_ms": 8.167201805114745,
+        "max_ms": 8.174860000610352,
+        "per_crop_median_ms": 2.039934992790222,
+        "crops_per_s": 490.21169965431125,
+        "mpix_per_s": 64.2530278970899
+      },
+      "memory": {
+        "allocated_before_bytes": 506825728,
+        "allocated_after_bytes": 506825728,
+        "peak_allocated_bytes": 507612672,
+        "peak_increment_bytes": 786944
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.037109375,
+          "mean_abs": 0.0020847320556640625
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "512x256_b1.row0",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0009765625,
+          "mean_abs": 5.960464477539063e-08
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 2.587910916266538,
+        "batch_efficiency": 0.6469777290666345,
+        "latency_ratio": 1.5456482581597586
+      }
+    },
+    {
+      "bucket": "512x256_b8",
+      "width": 512,
+      "height": 256,
+      "batch_size": 8,
+      "physical_pixels": 1048576,
+      "tokens_per_crop": 128,
+      "physical_input_shape": [
+        8,
+        3,
+        256,
+        512
+      ],
+      "physical_output_shape": [
+        8,
+        128,
+        768
+      ],
+      "first_call_wall_s": 79.18268857523799,
+      "timing": {
+        "min_ms": 11.07837963104248,
+        "median_ms": 11.112190246582031,
+        "mean_ms": 11.121504974365234,
+        "p90_ms": 11.125110054016114,
+        "max_ms": 11.330900192260742,
+        "per_crop_median_ms": 1.389023780822754,
+        "crops_per_s": 719.9300788123834,
+        "mpix_per_s": 94.36267529009672
+      },
+      "memory": {
+        "allocated_before_bytes": 638769152,
+        "allocated_after_bytes": 638769152,
+        "peak_allocated_bytes": 640863744,
+        "peak_increment_bytes": 2094592
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.041015625,
+          "mean_abs": 0.0020809173583984375
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "512x256_b1.row0",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0009765625,
+          "mean_abs": 5.960464477539063e-08
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 3.800633300308892,
+        "batch_efficiency": 0.4750791625386115,
+        "latency_ratio": 2.1049123574615343
+      }
+    },
+    {
+      "bucket": "512x256_b16",
+      "width": 512,
+      "height": 256,
+      "batch_size": 16,
+      "physical_pixels": 2097152,
+      "tokens_per_crop": 128,
+      "physical_input_shape": [
+        16,
+        3,
+        256,
+        512
+      ],
+      "physical_output_shape": [
+        16,
+        128,
+        768
+      ],
+      "first_call_wall_s": 20.175685280002654,
+      "timing": {
+        "min_ms": 16.683799743652344,
+        "median_ms": 16.72881031036377,
+        "mean_ms": 16.728452968597413,
+        "p90_ms": 16.744860458374024,
+        "max_ms": 16.756399154663086,
+        "per_crop_median_ms": 1.0455506443977356,
+        "crops_per_s": 956.4338230368803,
+        "mpix_per_s": 125.36169405308998
+      },
+      "memory": {
+        "allocated_before_bytes": 900573696,
+        "allocated_after_bytes": 900573696,
+        "peak_allocated_bytes": 903719936,
+        "peak_increment_bytes": 3146240
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.04248046875,
+          "mean_abs": 0.0020923614501953125
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "512x256_b1.row0",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 5.0491767802953795,
+        "batch_efficiency": 0.3155735487684612,
+        "latency_ratio": 3.1688333952656715
+      }
+    },
+    {
+      "bucket": "960x256_b1",
+      "width": 960,
+      "height": 256,
+      "batch_size": 1,
+      "physical_pixels": 245760,
+      "tokens_per_crop": 240,
+      "physical_input_shape": [
+        1,
+        3,
+        256,
+        960
+      ],
+      "physical_output_shape": [
+        1,
+        240,
+        768
+      ],
+      "first_call_wall_s": 62.39482902362943,
+      "timing": {
+        "min_ms": 6.1427202224731445,
+        "median_ms": 6.252909898757935,
+        "mean_ms": 6.28660204410553,
+        "p90_ms": 6.285525989532471,
+        "max_ms": 7.216020107269287,
+        "per_crop_median_ms": 6.252909898757935,
+        "crops_per_s": 159.92554125858075,
+        "mpix_per_s": 39.3033010197088
+      },
+      "memory": {
+        "allocated_before_bytes": 419050496,
+        "allocated_after_bytes": 419050496,
+        "peak_allocated_bytes": 419419648,
+        "peak_increment_bytes": 369152
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": false,
+          "max_abs": 0.447265625,
+          "mean_abs": 0.0025787353515625
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "self",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.0,
+        "batch_efficiency": 1.0,
+        "latency_ratio": 1.0
+      }
+    },
+    {
+      "bucket": "960x256_b4",
+      "width": 960,
+      "height": 256,
+      "batch_size": 4,
+      "physical_pixels": 983040,
+      "tokens_per_crop": 240,
+      "physical_input_shape": [
+        4,
+        3,
+        256,
+        960
+      ],
+      "physical_output_shape": [
+        4,
+        240,
+        768
+      ],
+      "first_call_wall_s": 20.156502043828368,
+      "timing": {
+        "min_ms": 10.109979629516602,
+        "median_ms": 10.130949974060059,
+        "mean_ms": 10.131083917617797,
+        "p90_ms": 10.15406608581543,
+        "max_ms": 10.159079551696777,
+        "per_crop_median_ms": 2.5327374935150146,
+        "crops_per_s": 394.82970602380425,
+        "mpix_per_s": 97.03334855241013
+      },
+      "memory": {
+        "allocated_before_bytes": 544245760,
+        "allocated_after_bytes": 544245760,
+        "peak_allocated_bytes": 546503168,
+        "peak_increment_bytes": 2257408
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": false,
+          "max_abs": 0.4677734375,
+          "mean_abs": 0.002552032470703125
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "960x256_b1.row0",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 2.4688345771199307,
+        "batch_efficiency": 0.6172086442799827,
+        "latency_ratio": 1.6201976580651594
+      }
+    },
+    {
+      "bucket": "512x512_b1",
+      "width": 512,
+      "height": 512,
+      "batch_size": 1,
+      "physical_pixels": 262144,
+      "tokens_per_crop": 256,
+      "physical_input_shape": [
+        1,
+        3,
+        512,
+        512
+      ],
+      "physical_output_shape": [
+        1,
+        256,
+        768
+      ],
+      "first_call_wall_s": 62.127637843135744,
+      "timing": {
+        "min_ms": 5.992219924926758,
+        "median_ms": 6.05262017250061,
+        "mean_ms": 6.051614046096802,
+        "p90_ms": 6.067282009124756,
+        "max_ms": 6.093820095062256,
+        "per_crop_median_ms": 6.05262017250061,
+        "crops_per_s": 165.2177026642752,
+        "mpix_per_s": 43.31082944722376
+      },
+      "memory": {
+        "allocated_before_bytes": 418289152,
+        "allocated_after_bytes": 418289152,
+        "peak_allocated_bytes": 418682880,
+        "peak_increment_bytes": 393728
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.060546875,
+          "mean_abs": 0.0028095245361328125
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "self",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.0,
+        "batch_efficiency": 1.0,
+        "latency_ratio": 1.0
+      }
+    },
+    {
+      "bucket": "512x512_b4",
+      "width": 512,
+      "height": 512,
+      "batch_size": 4,
+      "physical_pixels": 1048576,
+      "tokens_per_crop": 256,
+      "physical_input_shape": [
+        4,
+        3,
+        512,
+        512
+      ],
+      "physical_output_shape": [
+        4,
+        256,
+        768
+      ],
+      "first_call_wall_s": 71.68699734983966,
+      "timing": {
+        "min_ms": 10.322999954223633,
+        "median_ms": 10.350289821624756,
+        "mean_ms": 10.352600955963135,
+        "p90_ms": 10.369808006286622,
+        "max_ms": 10.375020027160645,
+        "per_crop_median_ms": 2.587572455406189,
+        "crops_per_s": 386.4626081912064,
+        "mpix_per_s": 101.30885396167562
+      },
+      "memory": {
+        "allocated_before_bytes": 552247808,
+        "allocated_after_bytes": 552247808,
+        "peak_allocated_bytes": 553821184,
+        "peak_increment_bytes": 1573376
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": false,
+          "max_abs": 0.08056640625,
+          "mean_abs": 0.002857208251953125
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "512x512_b1.row0",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 2.339111378255296,
+        "batch_efficiency": 0.584777844563824,
+        "latency_ratio": 1.710051106238273
+      }
+    },
+    {
+      "bucket": "512x512_b8",
+      "width": 512,
+      "height": 512,
+      "batch_size": 8,
+      "physical_pixels": 2097152,
+      "tokens_per_crop": 256,
+      "physical_input_shape": [
+        8,
+        3,
+        512,
+        512
+      ],
+      "physical_output_shape": [
+        8,
+        256,
+        768
+      ],
+      "first_call_wall_s": 20.617049281019717,
+      "timing": {
+        "min_ms": 15.769140243530273,
+        "median_ms": 15.793700218200684,
+        "mean_ms": 15.79291205406189,
+        "p90_ms": 15.809270000457763,
+        "max_ms": 15.8162202835083,
+        "per_crop_median_ms": 1.9742125272750854,
+        "crops_per_s": 506.53107818146304,
+        "mpix_per_s": 132.78408295880143
+      },
+      "memory": {
+        "allocated_before_bytes": 814572544,
+        "allocated_after_bytes": 814572544,
+        "peak_allocated_bytes": 817718784,
+        "peak_increment_bytes": 3146240
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": false,
+          "max_abs": 0.10009765625,
+          "mean_abs": 0.00286865234375
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "512x512_b1.row0",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0009765625,
+          "mean_abs": 5.960464477539063e-08
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 3.065840221799607,
+        "batch_efficiency": 0.38323002772495085,
+        "latency_ratio": 2.609398866619379
+      }
+    },
+    {
+      "bucket": "960x512_b1",
+      "width": 960,
+      "height": 512,
+      "batch_size": 1,
+      "physical_pixels": 491520,
+      "tokens_per_crop": 480,
+      "physical_input_shape": [
+        1,
+        3,
+        512,
+        960
+      ],
+      "physical_output_shape": [
+        1,
+        480,
+        768
+      ],
+      "first_call_wall_s": 64.98034811578691,
+      "timing": {
+        "min_ms": 7.908860206604004,
+        "median_ms": 7.9776599407196045,
+        "mean_ms": 7.975074005126953,
+        "p90_ms": 7.994151973724365,
+        "max_ms": 8.009940147399902,
+        "per_crop_median_ms": 7.9776599407196045,
+        "crops_per_s": 125.35004091811383,
+        "mpix_per_s": 61.61205211207131
+      },
+      "memory": {
+        "allocated_before_bytes": 451963392,
+        "allocated_after_bytes": 451963392,
+        "peak_allocated_bytes": 452701184,
+        "peak_increment_bytes": 737792
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": false,
+          "max_abs": 0.208984375,
+          "mean_abs": 0.004070281982421875
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "self",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.0,
+        "batch_efficiency": 1.0,
+        "latency_ratio": 1.0
+      }
+    },
+    {
+      "bucket": "960x512_b4",
+      "width": 960,
+      "height": 512,
+      "batch_size": 4,
+      "physical_pixels": 1966080,
+      "tokens_per_crop": 480,
+      "physical_input_shape": [
+        4,
+        3,
+        512,
+        960
+      ],
+      "physical_output_shape": [
+        4,
+        480,
+        768
+      ],
+      "first_call_wall_s": 20.60775944404304,
+      "timing": {
+        "min_ms": 15.152620315551758,
+        "median_ms": 15.193520069122314,
+        "mean_ms": 15.191108083724975,
+        "p90_ms": 15.204313850402832,
+        "max_ms": 15.215160369873047,
+        "per_crop_median_ms": 3.7983800172805786,
+        "crops_per_s": 263.27012975282616,
+        "mpix_per_s": 129.4025341761091
+      },
+      "memory": {
+        "allocated_before_bytes": 703986176,
+        "allocated_after_bytes": 703986176,
+        "peak_allocated_bytes": 706935808,
+        "peak_increment_bytes": 2949632
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": false,
+          "max_abs": 0.2431640625,
+          "mean_abs": 0.004119873046875
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "960x512_b1.row0",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0009765625,
+          "mean_abs": 1.1920928955078125e-07
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 2.1002795677171737,
+        "batch_efficiency": 0.5250698919292934,
+        "latency_ratio": 1.904508362354666
+      }
+    }
+  ],
+  "b1_shape_curve": [
+    {
+      "bucket": "960x64_b1",
+      "width": 960,
+      "height": 64,
+      "batch_size": 1,
+      "physical_pixels": 61440,
+      "tokens_per_crop": 60,
+      "physical_input_shape": [
+        1,
+        3,
+        64,
+        960
+      ],
+      "physical_output_shape": [
+        1,
+        60,
+        768
+      ],
+      "first_call_wall_s": 31.71872233087197,
+      "timing": {
+        "min_ms": 5.365540027618408,
+        "median_ms": 5.413179874420166,
+        "mean_ms": 5.4127579689025875,
+        "p90_ms": 5.4277081966400145,
+        "max_ms": 5.436260223388672,
+        "per_crop_median_ms": 5.413179874420166,
+        "crops_per_s": 184.73430094674532,
+        "mpix_per_s": 11.350075450168033
+      },
+      "memory": {
+        "allocated_before_bytes": 402527232,
+        "allocated_after_bytes": 402527232,
+        "peak_allocated_bytes": 402619904,
+        "peak_increment_bytes": 92672
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.02099609375,
+          "mean_abs": 0.0009379386901855469
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "self",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.0,
+        "batch_efficiency": 1.0,
+        "latency_ratio": 1.0
+      }
+    },
+    {
+      "bucket": "512x256_b1",
+      "width": 512,
+      "height": 256,
+      "batch_size": 1,
+      "physical_pixels": 131072,
+      "tokens_per_crop": 128,
+      "physical_input_shape": [
+        1,
+        3,
+        256,
+        512
+      ],
+      "physical_output_shape": [
+        1,
+        128,
+        768
+      ],
+      "first_call_wall_s": 22.586336250882596,
+      "timing": {
+        "min_ms": 5.229559898376465,
+        "median_ms": 5.279170036315918,
+        "mean_ms": 5.276628923416138,
+        "p90_ms": 5.290303802490235,
+        "max_ms": 5.303339958190918,
+        "per_crop_median_ms": 5.279170036315918,
+        "crops_per_s": 189.42371492505524,
+        "mpix_per_s": 24.828145162656842
+      },
+      "memory": {
+        "allocated_before_bytes": 406542848,
+        "allocated_after_bytes": 406542848,
+        "peak_allocated_bytes": 406739968,
+        "peak_increment_bytes": 197120
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.03515625,
+          "mean_abs": 0.0020503997802734375
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "self",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.0,
+        "batch_efficiency": 1.0,
+        "latency_ratio": 1.0
+      }
+    },
+    {
+      "bucket": "960x256_b1",
+      "width": 960,
+      "height": 256,
+      "batch_size": 1,
+      "physical_pixels": 245760,
+      "tokens_per_crop": 240,
+      "physical_input_shape": [
+        1,
+        3,
+        256,
+        960
+      ],
+      "physical_output_shape": [
+        1,
+        240,
+        768
+      ],
+      "first_call_wall_s": 62.39482902362943,
+      "timing": {
+        "min_ms": 6.1427202224731445,
+        "median_ms": 6.252909898757935,
+        "mean_ms": 6.28660204410553,
+        "p90_ms": 6.285525989532471,
+        "max_ms": 7.216020107269287,
+        "per_crop_median_ms": 6.252909898757935,
+        "crops_per_s": 159.92554125858075,
+        "mpix_per_s": 39.3033010197088
+      },
+      "memory": {
+        "allocated_before_bytes": 419050496,
+        "allocated_after_bytes": 419050496,
+        "peak_allocated_bytes": 419419648,
+        "peak_increment_bytes": 369152
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": false,
+          "max_abs": 0.447265625,
+          "mean_abs": 0.0025787353515625
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "self",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.0,
+        "batch_efficiency": 1.0,
+        "latency_ratio": 1.0
+      }
+    },
+    {
+      "bucket": "512x512_b1",
+      "width": 512,
+      "height": 512,
+      "batch_size": 1,
+      "physical_pixels": 262144,
+      "tokens_per_crop": 256,
+      "physical_input_shape": [
+        1,
+        3,
+        512,
+        512
+      ],
+      "physical_output_shape": [
+        1,
+        256,
+        768
+      ],
+      "first_call_wall_s": 62.127637843135744,
+      "timing": {
+        "min_ms": 5.992219924926758,
+        "median_ms": 6.05262017250061,
+        "mean_ms": 6.051614046096802,
+        "p90_ms": 6.067282009124756,
+        "max_ms": 6.093820095062256,
+        "per_crop_median_ms": 6.05262017250061,
+        "crops_per_s": 165.2177026642752,
+        "mpix_per_s": 43.31082944722376
+      },
+      "memory": {
+        "allocated_before_bytes": 418289152,
+        "allocated_after_bytes": 418289152,
+        "peak_allocated_bytes": 418682880,
+        "peak_increment_bytes": 393728
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.060546875,
+          "mean_abs": 0.0028095245361328125
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "self",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.0,
+        "batch_efficiency": 1.0,
+        "latency_ratio": 1.0
+      }
+    },
+    {
+      "bucket": "960x512_b1",
+      "width": 960,
+      "height": 512,
+      "batch_size": 1,
+      "physical_pixels": 491520,
+      "tokens_per_crop": 480,
+      "physical_input_shape": [
+        1,
+        3,
+        512,
+        960
+      ],
+      "physical_output_shape": [
+        1,
+        480,
+        768
+      ],
+      "first_call_wall_s": 64.98034811578691,
+      "timing": {
+        "min_ms": 7.908860206604004,
+        "median_ms": 7.9776599407196045,
+        "mean_ms": 7.975074005126953,
+        "p90_ms": 7.994151973724365,
+        "max_ms": 8.009940147399902,
+        "per_crop_median_ms": 7.9776599407196045,
+        "crops_per_s": 125.35004091811383,
+        "mpix_per_s": 61.61205211207131
+      },
+      "memory": {
+        "allocated_before_bytes": 451963392,
+        "allocated_after_bytes": 451963392,
+        "peak_allocated_bytes": 452701184,
+        "peak_increment_bytes": 737792
+      },
+      "warnings": {
+        "compiled_vs_eager": {
+          "allclose_atol_5e_2_rtol_5e_2": false,
+          "max_abs": 0.208984375,
+          "mean_abs": 0.004070281982421875
+        },
+        "compiled_row0_vs_b1": {
+          "reference": "self",
+          "allclose_atol_5e_2_rtol_5e_2": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0
+        }
+      },
+      "scaling_vs_b1": {
+        "throughput_speedup": 1.0,
+        "batch_efficiency": 1.0,
+        "latency_ratio": 1.0
+      }
+    }
+  ],
+  "aspect_comparison": {
+    "left": "960x256_b1",
+    "right": "512x512_b1",
+    "pixel_ratio_right_over_left": 1.0666666666666667,
+    "latency_ratio_right_over_left": 0.9679685571197645,
+    "mpix_ratio_right_over_left": 1.1019641690021245
+  },
+  "cross_chip": null,
+  "inputs": [
+    "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/vision_shape_batch_sweep_705bd76_20260817T074440/960x64.json",
+    "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/vision_shape_batch_sweep_705bd76_20260817T074440/512x256.json",
+    "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/vision_shape_batch_sweep_705bd76_20260817T074440/960x256.json",
+    "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/vision_shape_batch_sweep_705bd76_20260817T074440/512x512.json",
+    "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/vision_shape_batch_sweep_705bd76_20260817T074440/960x512.json"
+  ],
+  "reference": null
+}
