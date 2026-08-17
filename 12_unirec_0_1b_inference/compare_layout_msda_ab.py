@@ -27,6 +27,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--baseline-profile", type=Path)
     parser.add_argument("--candidate-profile", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--require-exact",
+        action="store_true",
+        help="Require exact page digests, labels, order, coordinates, and scores",
+    )
     return parser.parse_args()
 
 
@@ -335,6 +340,18 @@ def main() -> None:
         gates["profile_has_18_to_0_gridsample_and_six_msda"] = (
             structural_profile_gate
         )
+    if args.require_exact:
+        gates.update(
+            {
+                "all_page_digests_match": (
+                    output["digest_match_pages"] == output["page_count"]
+                ),
+                "no_label_mismatches": output["label_mismatch_count"] == 0,
+                "no_order_mismatches": output["order_mismatch_count"] == 0,
+                "coordinates_exact": output["coordinate_max_abs_px"] == 0.0,
+                "scores_exact": output["score_max_abs"] == 0.0,
+            }
+        )
     report = {
         "format": "unirec_layout_msda_real_ab_v1",
         "passed_structural_geometry_gates": all(gates.values()),
@@ -342,6 +359,7 @@ def main() -> None:
             output["label_mismatch_count"] > 0
             or output["order_mismatch_count"] > 0
         ),
+        "require_exact": bool(args.require_exact),
         "gates": gates,
         "output_comparison": output,
         "profiles": profiles,

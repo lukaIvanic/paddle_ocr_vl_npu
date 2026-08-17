@@ -80,6 +80,14 @@ resolve_inputs() {
     full_ab)
       MSDA_FORWARD_LIMIT="${MSDA_FORWARD_LIMIT:-128}"
       ;;
+    candidate_against_reference)
+      MSDA_FORWARD_LIMIT="${MSDA_FORWARD_LIMIT:-128}"
+      : "${MSDA_REFERENCE_RUN_ROOT:?set the completed native-MSDA A/B run root}"
+      MSDA_REFERENCE_RUN_ROOT="$(readlink -f "$MSDA_REFERENCE_RUN_ROOT")"
+      test -f "$MSDA_REFERENCE_RUN_ROOT/forward_baseline.json"
+      test -f "$MSDA_REFERENCE_RUN_ROOT/forward_candidate.json"
+      test -f "$MSDA_REFERENCE_RUN_ROOT/profile_baseline/profile_suite_summary.json"
+      ;;
     candidate_compile_probe)
       MSDA_FORWARD_LIMIT="${MSDA_FORWARD_LIMIT:-1}"
       ;;
@@ -240,6 +248,7 @@ worker_main() {
     printf 'msda_forward_limit=%s\n' "$MSDA_FORWARD_LIMIT"
     printf 'msda_warmup_pages=%s\n' "$MSDA_WARMUP_PAGES"
     printf 'msda_host_opp_mode=%s\n' "$MSDA_HOST_OPP_MODE"
+    printf 'msda_reference_run_root=%s\n' "${MSDA_REFERENCE_RUN_ROOT:-}"
     "$PYTHON_BIN" -c \
       'import torch,torch_npu; print("torch="+torch.__version__); print("torch_npu="+torch_npu.__version__)'
     npu-smi info
@@ -248,6 +257,29 @@ worker_main() {
   if [[ "$MSDA_RUN_MODE" == candidate_compile_probe ]]; then
     run_forward \
       candidate current_production_msda_aclnn "$LAYOUT_CACHE_ROOT/candidate"
+  elif [[ "$MSDA_RUN_MODE" == candidate_against_reference ]]; then
+    run_forward \
+      candidate current_production_msda_aclnn "$LAYOUT_CACHE_ROOT/candidate"
+    run_profile candidate aclnn "$LAYOUT_CACHE_ROOT/candidate"
+
+    run_phase analyze_reference_baseline "$RUN_ROOT/analyze_reference_baseline.log" \
+      "$PYTHON_BIN" "$ANALYZER" \
+        --baseline-forward \
+          "$MSDA_REFERENCE_RUN_ROOT/forward_baseline.json" \
+        --candidate-forward "$RUN_ROOT/forward_candidate.json" \
+        --baseline-profile \
+          "$MSDA_REFERENCE_RUN_ROOT/profile_baseline/profile_suite_summary.json" \
+        --candidate-profile \
+          "$RUN_ROOT/profile_candidate/profile_suite_summary.json" \
+        --output "$RUN_ROOT/comparison_summary.json"
+
+    run_phase analyze_previous_native "$RUN_ROOT/analyze_previous_native.log" \
+      "$PYTHON_BIN" "$ANALYZER" \
+        --baseline-forward \
+          "$MSDA_REFERENCE_RUN_ROOT/forward_candidate.json" \
+        --candidate-forward "$RUN_ROOT/forward_candidate.json" \
+        --require-exact \
+        --output "$RUN_ROOT/previous_native_output_parity.json"
   else
     run_forward baseline current_production "$LAYOUT_CACHE_ROOT/baseline"
     run_forward \
@@ -318,6 +350,7 @@ launch_main() {
     MSDA_FORWARD_LIMIT="${MSDA_FORWARD_LIMIT:-}" \
     MSDA_WARMUP_PAGES="${MSDA_WARMUP_PAGES:-}" \
     MSDA_HOST_OPP_MODE="${MSDA_HOST_OPP_MODE:-override}" \
+    MSDA_REFERENCE_RUN_ROOT="${MSDA_REFERENCE_RUN_ROOT:-}" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     OMP_NUM_THREADS=1 \
     MKL_NUM_THREADS=1 \
