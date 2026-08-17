@@ -6,6 +6,7 @@ from pathlib import Path
 
 from vision_bucket_presets import (
     VISION_BUCKETS_310P_K10_L1,
+    VISION_BUCKETS_310P_K10_L4_ALL,
     VisionBucketSpec,
     plan_canvas_bucket_calls,
     resolve_vision_bucket_specs,
@@ -71,6 +72,15 @@ class VisionBucketPresetTest(unittest.TestCase):
         self.assertEqual(len(specs), 10)
         self.assertEqual(len({spec.key for spec in specs}), 10)
         self.assertEqual(specs, VISION_BUCKETS_310P_K10_L1)
+
+    def test_k10_l4_all_has_ten_unique_graph_variants(self) -> None:
+        specs = resolve_vision_bucket_specs("310p_k10_l4_all")
+        self.assertEqual(len(specs), 10)
+        self.assertEqual(len({spec.key for spec in specs}), 10)
+        self.assertEqual(specs, VISION_BUCKETS_310P_K10_L4_ALL)
+        self.assertTrue(any(spec.height == 1408 for spec in specs))
+        for width, height in ((64, 1408), (448, 1152), (896, 576)):
+            self.assertTrue(any(spec.accepts(width, height) for spec in specs))
 
     def test_same_canvas_planner_uses_b2_and_b4(self) -> None:
         specs = tuple(

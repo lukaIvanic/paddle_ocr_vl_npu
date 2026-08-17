@@ -62,9 +62,28 @@ VISION_BUCKETS_310P_K10_L1 = (
 )
 
 
+# Jointly optimized against the same representative-128 workload and measured
+# 310P latency curve, but with four-page crop pooling and all formerly eager
+# fallback shapes included.  This keeps the runtime at ten static graph slots,
+# covers every representative crop through height 1408, and permits layout B2.
+VISION_BUCKETS_310P_K10_L4_ALL = (
+    VisionBucketSpec(448, 192, 2, planning_cost_ms=8.083821429),
+    VisionBucketSpec(448, 384, 2, planning_cost_ms=14.655714286),
+    VisionBucketSpec(512, 64, 4, planning_cost_ms=6.609000000),
+    VisionBucketSpec(960, 64, 4, planning_cost_ms=10.738500000),
+    VisionBucketSpec(960, 128, 2, planning_cost_ms=10.738500000),
+    VisionBucketSpec(960, 256, 1, planning_cost_ms=10.738500000),
+    VisionBucketSpec(960, 448, 1, planning_cost_ms=18.578214286),
+    VisionBucketSpec(960, 576, 1, planning_cost_ms=23.950375000),
+    VisionBucketSpec(960, 896, 1, planning_cost_ms=41.847250000),
+    VisionBucketSpec(960, 1408, 1, planning_cost_ms=70.597607143),
+)
+
+
 VISION_BUCKET_PRESETS = {
     "production_v1": DEFAULT_VISION_BUCKETS,
     "310p_k10_l1": VISION_BUCKETS_310P_K10_L1,
+    "310p_k10_l4_all": VISION_BUCKETS_310P_K10_L4_ALL,
 }
 VISION_BUCKET_PRESET_CHOICES = tuple(VISION_BUCKET_PRESETS)
 
