@@ -27,40 +27,11 @@ from vision_focal_depthwise import (
     rewrite_vision_focal_depthwise_convs,
     vision_rewrite_source_hash,
 )
-
-
-@dataclass(frozen=True, order=True)
-class VisionBucketSpec:
-    width: int
-    height: int
-    batch_size: int
-
-    def __post_init__(self) -> None:
-        if self.width < 1 or self.height < 1 or self.batch_size < 1:
-            raise ValueError(f"invalid UniRec vision bucket: {self}")
-        if self.width % 32 or self.height % 32:
-            raise ValueError(
-                "UniRec vision bucket dimensions must be divisible by 32: "
-                f"{self.width}x{self.height}"
-            )
-
-    @property
-    def key(self) -> str:
-        return f"{self.width}x{self.height}_b{self.batch_size}"
-
-    def accepts(self, width: int, height: int) -> bool:
-        return width <= self.width and height <= self.height
-
-
-# Five graphs cover 1,513/1,564 accepted crops in the first 32 hard pages.
-DEFAULT_VISION_BUCKETS = (
-    VisionBucketSpec(width=960, height=64, batch_size=16),
-    VisionBucketSpec(width=512, height=256, batch_size=16),
-    VisionBucketSpec(width=960, height=256, batch_size=4),
-    VisionBucketSpec(width=512, height=512, batch_size=8),
-    VisionBucketSpec(width=960, height=512, batch_size=4),
+from vision_bucket_presets import (
+    DEFAULT_VISION_BUCKETS,
+    VisionBucketSpec,
+    plan_canvas_bucket_calls,
 )
-
 
 VISION_WEIGHT_FORMAT_CHOICES = (
     "native",
@@ -485,6 +456,7 @@ class BucketedFullVisionRuntime:
         trace_iterations: bool = False,
         focal_depthwise_rewrite: str = "native",
         weight_format: str = "native",
+        preset_name: str = "custom",
     ) -> None:
         if not specs:
             raise ValueError("bucketed UniRec vision requires at least one bucket")
@@ -492,6 +464,19 @@ class BucketedFullVisionRuntime:
             raise ValueError("bucketed UniRec vision requires compile_cache_dir")
         self.runner = runner
         self.specs = tuple(specs)
+        keys = [spec.key for spec in self.specs]
+        if len(set(keys)) != len(keys):
+            raise ValueError(f"duplicate full-vision graph keys: {keys}")
+        self.preset_name = str(preset_name)
+        self.specs_by_canvas: dict[
+            tuple[int, int], tuple[VisionBucketSpec, ...]
+        ] = {}
+        for canvas in sorted({(spec.width, spec.height) for spec in self.specs}):
+            self.specs_by_canvas[canvas] = tuple(
+                spec
+                for spec in self.specs
+                if (spec.width, spec.height) == canvas
+            )
         self.diagnostic_graph_log = bool(diagnostic_graph_log)
         self.trace_iterations = bool(trace_iterations)
         self._pending_trace_events: list[
@@ -771,6 +756,19 @@ class BucketedFullVisionRuntime:
                 spec.height,
                 spec.width,
             ),
+        )
+
+    def select_canvas(self, width: int, height: int) -> tuple[int, int] | None:
+        candidates = [
+            canvas
+            for canvas in self.specs_by_canvas
+            if width <= canvas[0] and height <= canvas[1]
+        ]
+        if not candidates:
+            return None
+        return min(
+            candidates,
+            key=lambda canvas: (canvas[0] * canvas[1], canvas[1], canvas[0]),
         )
 
     def _prep_metadata(self, item: PreprocessedVisionInput) -> dict[str, Any]:
@@ -1149,27 +1147,38 @@ class BucketedFullVisionRuntime:
         items: Sequence[PreprocessedVisionInput],
     ) -> list[EncodedVisionItem]:
         """Encode arbitrary cross-page inputs and preserve source-index order."""
-        grouped: dict[str, list[PreprocessedVisionInput]] = {
-            spec.key: [] for spec in self.specs
+        grouped: dict[tuple[int, int], list[PreprocessedVisionInput]] = {
+            canvas: [] for canvas in self.specs_by_canvas
         }
         fallbacks = []
-        specs_by_key = {spec.key: spec for spec in self.specs}
         for item in items:
-            spec = self.select_bucket(item.processed_width, item.processed_height)
-            if spec is None:
+            canvas = self.select_canvas(
+                item.processed_width, item.processed_height
+            )
+            if canvas is None:
                 fallbacks.append(item)
             else:
-                grouped[spec.key].append(item)
+                grouped[canvas].append(item)
 
         outputs: dict[int, EncodedVisionItem] = {}
-        for spec in self.specs:
-            pending = grouped[spec.key]
-            for start in range(0, len(pending), spec.batch_size):
+        for canvas in self.specs_by_canvas:
+            pending = grouped[canvas]
+            offset = 0
+            for spec in plan_canvas_bucket_calls(
+                self.specs_by_canvas[canvas], len(pending)
+            ):
+                real_rows = min(spec.batch_size, len(pending) - offset)
                 for output in self._run_bucket(
-                    specs_by_key[spec.key],
-                    pending[start : start + spec.batch_size],
+                    spec,
+                    pending[offset : offset + real_rows],
                 ):
                     outputs[output.source_index] = output
+                offset += real_rows
+            if offset != len(pending):
+                raise RuntimeError(
+                    f"bucket plan for {canvas} consumed {offset} of "
+                    f"{len(pending)} rows"
+                )
         for item in fallbacks:
             output = self._run_fallback(item)
             outputs[output.source_index] = output
@@ -1278,6 +1287,7 @@ class BucketedFullVisionRuntime:
     def summary(self) -> dict[str, Any]:
         return {
             "spatial_execution": "compiled_masked_full_encoder_buckets",
+            "preset_name": self.preset_name,
             "compile_api": self.compile_api,
             "diagnostic_graph_log": self.diagnostic_graph_log,
             "buckets": [
@@ -1286,6 +1296,7 @@ class BucketedFullVisionRuntime:
                     "width": spec.width,
                     "height": spec.height,
                     "batch_size": spec.batch_size,
+                    "planning_cost_ms": spec.planning_cost_ms,
                     "cache_dir": str(self.cache_dirs[spec.key]),
                 }
                 for spec in self.specs

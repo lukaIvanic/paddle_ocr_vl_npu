@@ -1,0 +1,23 @@
+{
+  "schema": "unirec_vision_shape_batch_sweep_transcribed_v1",
+  "device_name": "Ascend310P",
+  "source": "user-provided work-agent result image, transcribed 2026-08-17",
+  "process_wall_s": 944,
+  "rows": [
+    {"width": 960, "height": 64, "batch_size": 1, "median_ms": 4.734},
+    {"width": 960, "height": 64, "batch_size": 4, "median_ms": 10.540},
+    {"width": 960, "height": 64, "batch_size": 16, "median_ms": 49.355},
+    {"width": 512, "height": 256, "batch_size": 1, "median_ms": 6.609},
+    {"width": 512, "height": 256, "batch_size": 2, "median_ms": 11.074},
+    {"width": 512, "height": 256, "batch_size": 4, "median_ms": 22.280},
+    {"width": 512, "height": 256, "batch_size": 8, "median_ms": 51.021},
+    {"width": 512, "height": 256, "batch_size": 16, "median_ms": 115.458},
+    {"width": 960, "height": 256, "batch_size": 1, "median_ms": 10.937},
+    {"width": 960, "height": 256, "batch_size": 4, "median_ms": 48.657},
+    {"width": 512, "height": 512, "batch_size": 1, "median_ms": 10.766},
+    {"width": 512, "height": 512, "batch_size": 4, "median_ms": 51.089},
+    {"width": 512, "height": 512, "batch_size": 8, "median_ms": 116.234},
+    {"width": 960, "height": 512, "batch_size": 1, "median_ms": 21.380},
+    {"width": 960, "height": 512, "batch_size": 4, "median_ms": 110.211}
+  ]
+}

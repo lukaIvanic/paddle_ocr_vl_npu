@@ -92,6 +92,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-batch-size", type=int, default=1)
     parser.add_argument("--vision-page-lookahead", type=int, default=4)
     parser.add_argument(
+        "--vision-bucket-preset",
+        choices=("production_v1", "310p_k10_l1"),
+        default="production_v1",
+    )
+    parser.add_argument(
         "--vision-focal-depthwise-rewrite",
         choices=(
             "native",
@@ -265,6 +270,7 @@ def main() -> None:
     os.environ["UNIREC_RECOGNITION_INPUT_CONTRACT"] = (
         args.recognition_input_contract
     )
+    os.environ["UNIREC_VISION_BUCKET_PRESET"] = args.vision_bucket_preset
 
     openocr_root = args.openocr_root.expanduser().resolve()
     model_path = args.model_path.expanduser().resolve()
@@ -403,6 +409,7 @@ def main() -> None:
                 "layout_batch_size": args.layout_batch_size,
                 "layout_threshold": args.layout_threshold,
                 "vision_page_lookahead": args.vision_page_lookahead,
+                "vision_bucket_preset": args.vision_bucket_preset,
                 "cross_cache_length": args.cross_cache_length,
                 "self_cache_length": args.self_cache_length,
                 "page_count": len(image_paths),
@@ -431,6 +438,7 @@ def main() -> None:
             ),
             "layout_threshold": args.layout_threshold,
             "vision_page_lookahead": args.vision_page_lookahead,
+            "vision_bucket_preset": args.vision_bucket_preset,
             "vision_focal_depthwise_rewrite": (
                 args.vision_focal_depthwise_rewrite
             ),
@@ -887,6 +895,7 @@ def main() -> None:
             args.vision_focal_depthwise_rewrite
         ),
         "vision_weight_format": args.vision_weight_format,
+        "vision_bucket_preset": args.vision_bucket_preset,
         "recognition_preprocess_threads": args.recognition_preprocess_threads,
         "use_chart_recognition": args.use_chart_recognition,
         "vision_prefill_mode": "compiled_full_buckets",

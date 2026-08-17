@@ -1671,15 +1671,28 @@ def _worker_main(
                         "full-vision buckets cannot be combined with a "
                         "per-shape prefix manifest"
                     )
+                from vision_bucket_presets import resolve_vision_bucket_specs
                 from vision_full_batch import BucketedFullVisionRuntime
+
+                vision_bucket_preset = os.environ.get(
+                    "UNIREC_VISION_BUCKET_PRESET", "production_v1"
+                )
 
                 full_vision_runtime = BucketedFullVisionRuntime(
                     recognition_runner,
+                    specs=resolve_vision_bucket_specs(vision_bucket_preset),
+                    diagnostic_graph_log=(
+                        os.environ.get(
+                            "UNIREC_VISION_DIAGNOSTIC_GRAPH_LOG", "0"
+                        )
+                        == "1"
+                    ),
                     trace_iterations=trace_prefill_iterations,
                     focal_depthwise_rewrite=(
                         recognition_vision_focal_depthwise_rewrite
                     ),
                     weight_format=recognition_vision_weight_format,
+                    preset_name=vision_bucket_preset,
                 )
                 vision_atlas_runtime = None
                 warmup_started = time.perf_counter()
@@ -1773,6 +1786,11 @@ def _worker_main(
                     recognition_vision_focal_depthwise_rewrite
                 ),
                 "vision_weight_format": recognition_vision_weight_format,
+                "vision_bucket_preset": (
+                    full_vision_runtime.preset_name
+                    if full_vision_runtime is not None
+                    else None
+                ),
                 "vision_focal_depthwise_rewrite_summary": (
                     full_vision_runtime.focal_depthwise_rewrite_summary
                     if full_vision_runtime is not None
