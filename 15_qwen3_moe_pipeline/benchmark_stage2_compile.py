@@ -257,8 +257,12 @@ def main() -> None:
         close = bool(
             torch.allclose(eager, compiled, atol=args.atol, rtol=args.rtol)
         )
-        eager_top2 = torch.topk(eager.float(), 2, dim=-1).values
-        compiled_top2 = torch.topk(compiled.float(), 2, dim=-1).values
+        eager_top2 = torch.topk(
+            eager.float().reshape(-1, eager.shape[-1]), 2, dim=-1
+        ).values
+        compiled_top2 = torch.topk(
+            compiled.float().reshape(-1, compiled.shape[-1]), 2, dim=-1
+        ).values
         check = {
             "step": step,
             "allclose": close,
