@@ -262,14 +262,16 @@ execution also had exact tokens and zero KV-cache difference.
 | Paddle one-layer-ahead schedule | 512 | 421.09 |
 | Paddle one-layer-ahead schedule | 2048 | 419.32 |
 | Batched Q/K RMSNorm stock-op probe | 512 | 421.18 |
-| **Q/K through add-RMSNorm (default)** | **512** | **443.24** |
-| **Q/K through add-RMSNorm (default)** | **2048** | **440.46** |
+| Q/K through add-RMSNorm with per-layer zeros | 512 | 443.24 |
+| Q/K through add-RMSNorm with per-layer zeros | 2048 | 440.46 |
+| **Q/K add-RMSNorm with unbound zero banks (default)** | **512** | **450.67** |
+| **Q/K add-RMSNorm with unbound zero banks (default)** | **2048** | **447.21** |
 | Paddle K/V-then-MLP schedule | 512 | 417.87 |
 | One-layer-ahead plus FRACTAL_NZ | 512 | 403.30 |
 | Two-layer-ahead prefetch | 512 | 388.27 |
 | One-layer-ahead plus packed MLP | 512 | 409.81 |
 
-The selected KV4096 result is 69-70% faster than the previous saved 260.24 tok/s
+The selected KV4096 result is 72-73% faster than the previous saved 260.24 tok/s
 KV64 maximum. FRACTAL_NZ and packed MLP remain explicit ablations because both
 regressed Qwen3-0.6B.
 
@@ -284,9 +286,12 @@ The successful add-RMSNorm lane retains the separate learned Q and K gamma
 weights and supplies a zero residual to `npu_add_rms_norm`. A persistent zero
 buffer is invalid under TorchAir because the compiled InplaceAddRmsNorm lowering
 aliases the summed output onto that residual; it caused 60/64 token mismatches
-after the first step. Graph-local `zeros_like` inputs preserve semantics. They
-cost about 59 microseconds per token, but the complete normalization path still
-saves about 109 microseconds per token and improves throughput by 5.3%.
+after the first step. The default now creates separate graph-local Q and K zero
+banks and unbinds each bank once. Every layer receives direct disjoint views.
+This preserves semantics while replacing 56 `ZerosLike` kernels per token with
+graph-local bank initialization and one unbind per bank. A first combined-bank
+attempt regressed to 414.66 tok/s because per-layer indexing introduced 1,984 `GatherV2` and 3,584
+`StridedSliceD` calls over 64 tokens; it remains rejected evidence, not a default.
 
 Run the selected contract explicitly:
 
@@ -298,7 +303,7 @@ $PYTHON ./benchmark_local_qwen3_0.py \
   --compile-decode \
   --no-compile-decode-dynamic \
   --decode-increfa-mode mask \
-  --decode-optimization combined_apply_complete_layer_prefetch1_qk_add_rms_norm_rope_lut \
+  --decode-optimization combined_apply_complete_layer_prefetch1_qk_add_rms_zero_bank_rope_lut \
   --decode-linear-weight-format unchanged \
   --prefill-tokens 2048 \
   --decode-steps 64 \
@@ -309,11 +314,13 @@ $PYTHON ./benchmark_local_qwen3_0.py \
   --decode-repeats 3
 ```
 
-The remaining profile is 42.7% MatMul, 28.6% IncreFlashAttention, 11.8%
-InplaceAddRmsNorm, and 2.6% graph-local zero creation by summed device-kernel
-time. The Paddle ~899 tok/s KV4096 lab result also uses 18 decoder layers, two
-KV heads, and a 16,384-row decode head, versus Qwen3-0.6B's 28 layers, eight KV
-heads, and 151,936-row head.
+The selected path matched compiled versus eager tokens exactly for all 64 steps
+and had zero compiled/eager KV-cache difference at both prefix lengths. Its
+remaining profile is 43.5% MatMul, 29.8% IncreFlashAttention, and 12.0%
+InplaceAddRmsNorm by summed device-kernel time. Bank filling is only 0.07%; the
+associated unpacks are 0.28%. The Paddle ~899 tok/s KV4096 lab result also uses
+18 decoder layers, two KV heads, and a 16,384-row decode head, versus
+Qwen3-0.6B's 28 layers, eight KV heads, and 151,936-row head.
 
 ### Qwen3-8B
 
