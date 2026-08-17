@@ -1,0 +1,55 @@
+{
+  "schema": "unirec_representative128_layout_optimized_b2_reference_v1",
+  "chip": "Ascend910B2",
+  "project_commit": "c3559e3c9efb92c9c5cc192057d93b1ba05ebec8",
+  "workload": "unirec_representative_128_v1",
+  "page_count": 128,
+  "configuration": {
+    "workers": 1,
+    "recognition_preprocess_threads": 1,
+    "layout_batch_size": 2,
+    "layout_threshold": 0.5,
+    "layout_execution": "torchair",
+    "layout_dtype": "float16",
+    "layout_reading_order_dtype": "float32",
+    "layout_weight_format": "torchair_internal",
+    "layout_depthwise_rewrite": "constant_grouped",
+    "layout_preformat_frozen_bn_buffers": true,
+    "layout_cogview_attention": "direct_softmax",
+    "layout_msda_implementation": "decomposed",
+    "vision_focal_depthwise_rewrite": "native",
+    "vision_weight_format": "native",
+    "vision_page_lookahead": 4,
+    "cross_cache_length": 1320,
+    "self_cache_length": 2048
+  },
+  "optimized": {
+    "prefill_wall_s": 32.925230637192726,
+    "prefill_pages_per_s": 3.8875961541605633,
+    "layout_call_sum_s": 3.3393637565895915,
+    "layout_call_count": 64,
+    "layout_mean_ms_per_b2_call": 52.17755869671237,
+    "layout_effective_pages_per_s": 38.33065497803785,
+    "crop_count": 2485,
+    "rejected_crop_count": 0,
+    "real_source_tokens": 180336
+  },
+  "historical_accuracy_baseline": {
+    "project_commit": "4cf871c",
+    "prefill_wall_s": 36.973793705925345,
+    "prefill_pages_per_s": 3.461911455937154,
+    "layout_call_sum_s": 6.270237369928509,
+    "layout_call_count": 64,
+    "layout_mean_ms_per_b2_call": 97.97245890513295,
+    "layout_effective_pages_per_s": 20.413900215943407,
+    "crop_count": 2487,
+    "rejected_crop_count": 0,
+    "real_source_tokens": 180596
+  },
+  "speedup": {
+    "prefill_wall": 1.1229623298115736,
+    "prefill_throughput": 1.1229623298115736,
+    "layout_section": 1.8776742598213216
+  },
+  "artifact_root": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/representative128_w1t1_layout_optimized_b2_decomposed_c3559e3_round1"
+}
