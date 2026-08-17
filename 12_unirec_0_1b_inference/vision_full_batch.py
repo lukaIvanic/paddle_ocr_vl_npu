@@ -658,6 +658,24 @@ class BucketedFullVisionRuntime:
         end.record()
         return start, end
 
+    def _trace_input_operation(
+        self,
+        name: str,
+        operation: Callable[[], Any],
+        *,
+        host_stage_s: dict[str, float],
+        device_markers: dict[str, tuple[Any, Any] | None],
+    ) -> Any:
+        """Measure one input sub-operation only when iteration tracing is on."""
+        if not self.trace_iterations:
+            return operation()
+        started = time.perf_counter()
+        marker = self._trace_begin()
+        output = operation()
+        device_markers[f"{name}_s"] = self._trace_end(marker)
+        host_stage_s[f"{name}_submit_s"] = time.perf_counter() - started
+        return output
+
     def _queue_trace_event(
         self,
         record: dict[str, Any],
@@ -917,28 +935,74 @@ class BucketedFullVisionRuntime:
 
         transfer_started = time.perf_counter()
         transfer_marker = self._trace_begin()
+        input_host_stage_s: dict[str, float] = {}
+        input_device_markers: dict[str, tuple[Any, Any] | None] = {}
+        h2d_bytes: dict[str, int] = {"pixels": int(host_pixels.nbytes)}
         with torch.inference_mode(False):
             if compact_input:
-                pixel_values = _compact_uint8_hwc_to_device(
-                    host_pixels,
-                    device=self.runner.device,
-                    dtype=self.runner.dtype,
+                pixels_uint8 = self._trace_input_operation(
+                    "pixels_h2d_uint8",
+                    lambda: torch.from_numpy(host_pixels).to(
+                        self.runner.device
+                    ),
+                    host_stage_s=input_host_stage_s,
+                    device_markers=input_device_markers,
+                )
+
+                def normalize_pixels() -> torch.Tensor:
+                    pixels = pixels_uint8.permute(0, 3, 1, 2)
+                    output = pixels.to(torch.float32)
+                    output.mul_(np.float32(2.0 / 255.0))
+                    output.sub_(np.float32(1.0))
+                    return output.to(self.runner.dtype).contiguous()
+
+                pixel_values = self._trace_input_operation(
+                    "pixels_normalize_layout",
+                    normalize_pixels,
+                    host_stage_s=input_host_stage_s,
+                    device_markers=input_device_markers,
                 )
                 assert host_pixel_mask is not None
-                pixel_mask = torch.from_numpy(host_pixel_mask).to(
-                    self.runner.device,
-                    dtype=self.runner.dtype,
+                h2d_bytes["pixel_mask"] = int(host_pixel_mask.nbytes)
+                pixel_mask = self._trace_input_operation(
+                    "pixel_mask_h2d_cast",
+                    lambda: torch.from_numpy(host_pixel_mask).to(
+                        self.runner.device,
+                        dtype=self.runner.dtype,
+                    ),
+                    host_stage_s=input_host_stage_s,
+                    device_markers=input_device_markers,
                 )
-                pixel_values.mul_(pixel_mask)
+                pixel_values = self._trace_input_operation(
+                    "pixel_mask_apply",
+                    lambda: pixel_values.mul_(pixel_mask),
+                    host_stage_s=input_host_stage_s,
+                    device_markers=input_device_markers,
+                )
             else:
-                pixel_values = torch.from_numpy(host_pixels).to(
-                    self.runner.device,
-                    dtype=self.runner.dtype,
+                pixel_values = self._trace_input_operation(
+                    "pixels_h2d_cast",
+                    lambda: torch.from_numpy(host_pixels).to(
+                        self.runner.device,
+                        dtype=self.runner.dtype,
+                    ),
+                    host_stage_s=input_host_stage_s,
+                    device_markers=input_device_markers,
                 )
-            masks = tuple(
-                torch.from_numpy(mask).to(self.runner.device)
-                for mask in host_masks
-            )
+            masks = []
+            for factor, mask in zip((2, 4, 8, 16, 32), host_masks):
+                h2d_bytes[f"mask{factor}"] = int(mask.nbytes)
+                masks.append(
+                    self._trace_input_operation(
+                        f"mask{factor}_h2d",
+                        lambda mask=mask: torch.from_numpy(mask).to(
+                            self.runner.device
+                        ),
+                        host_stage_s=input_host_stage_s,
+                        device_markers=input_device_markers,
+                    )
+                )
+            masks = tuple(masks)
         transfer_device_marker = self._trace_end(transfer_marker)
         transfer_host_s = time.perf_counter() - transfer_started
         self.stats["batch_h2d_s"] += transfer_host_s
@@ -1058,11 +1122,18 @@ class BucketedFullVisionRuntime:
                 "host_stage_s": {
                     "host_canvas_pack_s": host_canvas_pack_s,
                     "input_h2d_submit_s": transfer_host_s,
+                    **input_host_stage_s,
                     "graph_submit_s": graph_submit_s,
                     "output_compact_submit_s": compact_host_s,
                 },
+                "h2d_bytes": {
+                    **h2d_bytes,
+                    "total": sum(h2d_bytes.values()),
+                },
+                "h2d_tensor_submissions": len(h2d_bytes),
             },
             {
+                **input_device_markers,
                 "input_h2d_normalize_s": transfer_device_marker,
                 "graph_s": graph_device_marker,
                 "output_compact_s": compact_device_marker,
@@ -1093,17 +1164,42 @@ class BucketedFullVisionRuntime:
         compact_input = item.input_contract == "compact_uint8_hwc"
         transfer_started = time.perf_counter()
         transfer_marker = self._trace_begin()
+        input_host_stage_s: dict[str, float] = {}
+        input_device_markers: dict[str, tuple[Any, Any] | None] = {}
+        h2d_bytes = {"pixels": int(item.pixel_values.nbytes)}
         with torch.inference_mode(False):
             if compact_input:
-                pixel_values = _compact_uint8_hwc_to_device(
-                    item.pixel_values,
-                    device=self.runner.device,
-                    dtype=self.runner.dtype,
+                pixels_uint8 = self._trace_input_operation(
+                    "pixels_h2d_uint8",
+                    lambda: torch.from_numpy(item.pixel_values).to(
+                        self.runner.device
+                    ),
+                    host_stage_s=input_host_stage_s,
+                    device_markers=input_device_markers,
+                )
+
+                def normalize_pixels() -> torch.Tensor:
+                    pixels = pixels_uint8.permute(2, 0, 1).unsqueeze(0)
+                    output = pixels.to(torch.float32)
+                    output.mul_(np.float32(2.0 / 255.0))
+                    output.sub_(np.float32(1.0))
+                    return output.to(self.runner.dtype).contiguous()
+
+                pixel_values = self._trace_input_operation(
+                    "pixels_normalize_layout",
+                    normalize_pixels,
+                    host_stage_s=input_host_stage_s,
+                    device_markers=input_device_markers,
                 )
             else:
-                pixel_values = torch.from_numpy(item.pixel_values).to(
-                    self.runner.device,
-                    dtype=self.runner.dtype,
+                pixel_values = self._trace_input_operation(
+                    "pixels_h2d_cast",
+                    lambda: torch.from_numpy(item.pixel_values).to(
+                        self.runner.device,
+                        dtype=self.runner.dtype,
+                    ),
+                    host_stage_s=input_host_stage_s,
+                    device_markers=input_device_markers,
                 )
         transfer_device_marker = self._trace_end(transfer_marker)
         transfer_host_s = time.perf_counter() - transfer_started
@@ -1167,10 +1263,20 @@ class BucketedFullVisionRuntime:
                 ],
                 "host_stage_s": {
                     "input_h2d_submit_s": transfer_host_s,
+                    **input_host_stage_s,
                     "graph_submit_s": graph_submit_s,
                 },
+                "h2d_bytes": {
+                    **h2d_bytes,
+                    "total": sum(h2d_bytes.values()),
+                },
+                "h2d_tensor_submissions": len(h2d_bytes),
+                "numpy_input_writeable": bool(
+                    item.pixel_values.flags.writeable
+                ),
             },
             {
+                **input_device_markers,
                 "input_h2d_normalize_s": transfer_device_marker,
                 "graph_s": graph_device_marker,
             },
