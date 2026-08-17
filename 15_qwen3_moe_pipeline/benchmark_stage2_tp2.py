@@ -33,6 +33,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup-steps", type=int, default=2)
     parser.add_argument("--decode-steps", type=int, default=20)
     parser.add_argument("--summary-out", type=Path)
+    parser.add_argument("--router-debug-only", action="store_true")
     parser.add_argument("--logit-atol", type=float, default=1.0)
     parser.add_argument("--logit-rtol", type=float, default=5e-2)
     return parser.parse_args()
@@ -164,13 +165,43 @@ def router_debug_check(
     mismatched_index_count = int(
         (local_indices != expected_indices).sum().item()
     )
+    order_only_global_layers = []
+    membership_changed_global_layers = []
+    layer_differences = []
+    for local_layer in mismatched_local_layers.tolist():
+        actual_ids = [int(value) for value in local_indices[local_layer].tolist()]
+        expected_ids = [
+            int(value) for value in expected_indices[local_layer].tolist()
+        ]
+        actual_set = set(actual_ids)
+        expected_set = set(expected_ids)
+        global_layer = stage.layer_start + int(local_layer)
+        same_membership = actual_set == expected_set
+        if same_membership:
+            order_only_global_layers.append(global_layer)
+        else:
+            membership_changed_global_layers.append(global_layer)
+        layer_differences.append(
+            {
+                "global_layer": global_layer,
+                "same_membership": same_membership,
+                "ordered_actual": actual_ids,
+                "ordered_expected": expected_ids,
+                "actual_only": sorted(actual_set - expected_set),
+                "expected_only": sorted(expected_set - actual_set),
+                "membership_overlap": len(actual_set & expected_set),
+            }
+        )
     weight_diff = (local_weights - expected_weights).abs()
     result = {
         "indices_cross_rank_exact": indices_cross_rank,
         "weights_cross_rank_exact": weights_cross_rank,
         "indices_match_capture": indices_match_capture,
-        "mismatched_index_count": mismatched_index_count,
+        "ordered_slot_mismatch_count": mismatched_index_count,
         "mismatched_global_layers": mismatched_global_layers,
+        "order_only_global_layers": order_only_global_layers,
+        "membership_changed_global_layers": membership_changed_global_layers,
+        "layer_differences": layer_differences,
         "weights_vs_capture_max_abs": float(weight_diff.max().item()),
         "weights_vs_capture_mean_abs": float(weight_diff.mean().item()),
     }
@@ -385,6 +416,31 @@ def main() -> None:
         device=device,
     )
     log(rank, "router debug: " + json.dumps(debug, sort_keys=True))
+
+    if args.router_debug_only:
+        debug_summary = {
+            "model": capture["model"],
+            "chip": "Ascend 910B2",
+            "dtype": "bfloat16",
+            "tensor_parallel_size": world_size,
+            "layers": args.layers,
+            "load_sec": reduce_max_seconds(load_sec, device),
+            "router_debug": debug,
+        }
+        if rank == 0:
+            print(
+                "QWEN3_MOE_STAGE2_TP2_ROUTER_DEBUG "
+                + json.dumps(debug_summary, sort_keys=True),
+                flush=True,
+            )
+            if args.summary_out:
+                args.summary_out.parent.mkdir(parents=True, exist_ok=True)
+                args.summary_out.write_text(
+                    json.dumps(debug_summary, indent=2, sort_keys=True) + "\n"
+                )
+        dist.barrier()
+        dist.destroy_process_group()
+        return
 
     eager_cache = stage.make_cache(cache_length=int(capture["cache_length"]))
     restore_prefix(eager_cache, capture, rank=rank, world_size=world_size)
