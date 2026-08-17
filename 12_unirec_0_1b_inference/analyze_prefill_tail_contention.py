@@ -172,8 +172,10 @@ def per_page_analysis(
             "layout_wall_s": 0.0,
             "layout_model_forward_s": 0.0,
             "crop_preprocess_service_s": 0.0,
+            "vision_input_device_s": 0.0,
             "vision_bucket_graph_s": 0.0,
             "vision_fallback_graph_s": 0.0,
+            "vision_output_compact_device_s": 0.0,
             "text_prefill_device_s": 0.0,
             "cross_kv_d2h_s": 0.0,
             "shared_pack_s": 0.0,
@@ -201,18 +203,32 @@ def per_page_analysis(
                     event.get("wall_s", 0.0)
                 )
             elif name == "vision_bucket_call":
+                row["vision_input_device_s"] += float(
+                    event.get("device_stage_s", {}).get(
+                        "input_h2d_normalize_s", 0.0
+                    )
+                ) * share
                 row["vision_bucket_graph_s"] += float(
                     event.get("device_stage_s", {}).get("graph_s", 0.0)
                 ) * share
+                row["vision_output_compact_device_s"] += float(
+                    event.get("device_stage_s", {}).get(
+                        "output_compact_s", 0.0
+                    )
+                ) * share
             elif name == "vision_fallback_call":
+                row["vision_input_device_s"] += float(
+                    event.get("device_stage_s", {}).get(
+                        "input_h2d_normalize_s", 0.0
+                    )
+                ) * share
                 row["vision_fallback_graph_s"] += float(
                     event.get("device_stage_s", {}).get("graph_s", 0.0)
                 ) * share
             elif name == "text_prefill_pack":
                 row["text_prefill_device_s"] += sum(
                     float(value)
-                    for key, value in event.get("device_stage_s", {}).items()
-                    if key.startswith("compiled_packed_text_prefill_s")
+                    for value in event.get("device_stage_s", {}).values()
                 )
             elif name == "cross_kv_d2h":
                 row["cross_kv_d2h_s"] += float(event.get("wall_s", 0.0))
@@ -226,8 +242,10 @@ def per_page_analysis(
     for row in page_rows.values():
         row["npu_service_s"] = (
             row["layout_model_forward_s"]
+            + row["vision_input_device_s"]
             + row["vision_bucket_graph_s"]
             + row["vision_fallback_graph_s"]
+            + row["vision_output_compact_device_s"]
             + row["text_prefill_device_s"]
         )
         rows.append(row)
@@ -237,8 +255,10 @@ def per_page_analysis(
             "layout_wall_s",
             "layout_model_forward_s",
             "crop_preprocess_service_s",
+            "vision_input_device_s",
             "vision_bucket_graph_s",
             "vision_fallback_graph_s",
+            "vision_output_compact_device_s",
             "text_prefill_device_s",
             "cross_kv_d2h_s",
             "shared_pack_s",
@@ -266,24 +286,59 @@ def npu_service_analysis(
     for event in events:
         name = event["event"]
         if name == "layout_batch_call":
-            samples["layout_model_forward_s"].append(
+            samples["layout_input_h2d_sync_s"].append(
+                float(event.get("stage_s", {}).get("inputs_h2d_s", 0.0))
+            )
+            samples["layout_model_forward_sync_s"].append(
                 float(event.get("stage_s", {}).get("model_forward_s", 0.0))
             )
+            samples["layout_output_d2h_sync_s"].append(
+                float(event.get("stage_s", {}).get("outputs_d2h_s", 0.0))
+            )
         elif name == "vision_bucket_call":
+            samples["vision_input_device_s"].append(
+                float(
+                    event.get("device_stage_s", {}).get(
+                        "input_h2d_normalize_s", 0.0
+                    )
+                )
+            )
             samples["vision_bucket_graph_s"].append(
                 float(event.get("device_stage_s", {}).get("graph_s", 0.0))
             )
+            samples["vision_output_compact_device_s"].append(
+                float(
+                    event.get("device_stage_s", {}).get(
+                        "output_compact_s", 0.0
+                    )
+                )
+            )
         elif name == "vision_fallback_call":
+            samples["vision_input_device_s"].append(
+                float(
+                    event.get("device_stage_s", {}).get(
+                        "input_h2d_normalize_s", 0.0
+                    )
+                )
+            )
             samples["vision_fallback_graph_s"].append(
                 float(event.get("device_stage_s", {}).get("graph_s", 0.0))
             )
         elif name == "text_prefill_pack":
-            samples["text_prefill_device_s"].append(
+            device = event.get("device_stage_s", {})
+            samples["text_prefill_graph_device_s"].append(
                 sum(
                     float(value)
-                    for key, value in event.get("device_stage_s", {}).items()
+                    for key, value in device.items()
                     if key.startswith("compiled_packed_text_prefill_s")
                 )
+            )
+            samples["text_static_cache_device_s"].append(
+                float(device.get("static_cache_build_and_padding", 0.0))
+            )
+        elif name == "cross_kv_d2h":
+            samples["cross_kv_d2h_sync_s"].append(
+                float(event.get("wall_s", 0.0))
             )
     distributions = {
         name: distribution(values) for name, values in sorted(samples.items())
@@ -300,9 +355,58 @@ def npu_service_analysis(
             service_sum_s / trace_wall_s if trace_wall_s else None
         ),
         "interpretation": (
-            "The sum is device service time across all workers. A ratio above "
-            "one proves cross-worker overlap, but is not a device-utilization "
-            "percentage because CPU work overlaps too."
+            "The sum combines NPU-event intervals with explicitly synchronized "
+            "layout and D2H intervals across all worker streams. With one worker "
+            "it is a sequential NPU-facing service total. With multiple workers "
+            "events include stream scheduling and contention residence, so a "
+            "ratio above one proves overlapping intervals but is neither physical "
+            "device busy time nor a utilization percentage. Unsynchronized host "
+            "submission timers are intentionally excluded because they can absorb "
+            "backpressure from earlier queued graphs."
+        ),
+    }
+
+
+def vision_backpressure_analysis(events: list[dict[str, Any]]) -> dict[str, Any]:
+    """Show whether blocking pixel submissions absorb preceding graph backlog."""
+    vision = [
+        event
+        for event in events
+        if event.get("event") in {"vision_bucket_call", "vision_fallback_call"}
+    ]
+    consecutive = []
+    nonconsecutive = []
+    for previous, current in zip(vision, vision[1:]):
+        host = current.get("host_stage_s", {})
+        pixel_submit = host.get("pixels_h2d_uint8_submit_s")
+        if pixel_submit is None:
+            pixel_submit = host.get("pixels_h2d_cast_submit_s")
+        if pixel_submit is None:
+            continue
+        row = float(pixel_submit)
+        if int(current.get("trace_index", -1)) == int(
+            previous.get("trace_index", -2)
+        ) + 1:
+            consecutive.append(row)
+        else:
+            nonconsecutive.append(row)
+    consecutive_summary = distribution(consecutive)
+    nonconsecutive_summary = distribution(nonconsecutive)
+    consecutive_mean = float(consecutive_summary.get("mean_ms", 0.0))
+    nonconsecutive_mean = float(nonconsecutive_summary.get("mean_ms", 0.0))
+    return {
+        "consecutive_after_vision": consecutive_summary,
+        "nonconsecutive": nonconsecutive_summary,
+        "mean_ratio": (
+            consecutive_mean / nonconsecutive_mean
+            if nonconsecutive_mean
+            else None
+        ),
+        "host_submit_is_device_service": False,
+        "interpretation": (
+            "A blocking pageable-memory transfer immediately after an async "
+            "vision graph can wait for that earlier graph. Treat these host "
+            "durations as submission/backpressure observations, not H2D service."
         ),
     }
 
@@ -454,6 +558,18 @@ def print_report(report: dict[str, Any]) -> None:
         f"p99_ms={gap['p99_ms']:.3f} max_ms={gap['max_ms']:.3f} "
         f"warnings={clean['nonwriteable_warning_count']}"
     )
+    backpressure = report["vision_backpressure"]
+    consecutive = backpressure["consecutive_after_vision"]
+    nonconsecutive = backpressure["nonconsecutive"]
+    print(
+        "UNIREC_PREFILL_VISION_BACKPRESSURE "
+        f"consecutive_count={consecutive['count']} "
+        f"consecutive_mean_ms={consecutive['mean_ms']:.3f} "
+        f"nonconsecutive_count={nonconsecutive['count']} "
+        f"nonconsecutive_mean_ms={nonconsecutive['mean_ms']:.3f} "
+        f"mean_ratio={backpressure['mean_ratio']:.6f} "
+        "host_submit_is_device_service=false"
+    )
     for name, row in npu["components"].items():
         print(
             "UNIREC_PREFILL_NPU_COMPONENT "
@@ -520,6 +636,7 @@ def main() -> None:
         "top_events": top_events(samples, sample_rows, limit=args.top),
         "per_page": per_page_analysis(events, pages, limit=args.top),
         "npu_service": npu_service_analysis(events, trace_summary),
+        "vision_backpressure": vision_backpressure_analysis(events),
         "vision_buckets": bucket_analysis(events),
         "clean_progress": clean_progress_analysis(args.clean_log, limit=args.top),
     }

@@ -51,35 +51,71 @@ class AnalyzePrefillTailContentionTest(unittest.TestCase):
         events = [
             {
                 "event": "layout_batch_call",
-                "stage_s": {"model_forward_s": 0.01},
+                "stage_s": {
+                    "inputs_h2d_s": 0.005,
+                    "model_forward_s": 0.01,
+                    "outputs_d2h_s": 0.005,
+                },
             },
             {
                 "event": "vision_bucket_call",
-                "device_stage_s": {"graph_s": 0.02},
+                "device_stage_s": {
+                    "input_h2d_normalize_s": 0.01,
+                    "graph_s": 0.02,
+                    "output_compact_s": 0.005,
+                },
             },
             {
                 "event": "vision_fallback_call",
-                "device_stage_s": {"graph_s": 0.03},
+                "device_stage_s": {
+                    "input_h2d_normalize_s": 0.01,
+                    "graph_s": 0.03,
+                },
             },
             {
                 "event": "text_prefill_pack",
                 "device_stage_s": {
                     "compiled_packed_text_prefill_s1024": 0.04,
-                    "static_cache_build_and_padding": 1.0,
+                    "static_cache_build_and_padding": 0.02,
                 },
             },
+            {"event": "cross_kv_d2h", "wall_s": 0.01},
         ]
         report = MODULE.npu_service_analysis(
             events,
             {"timing_s": {"prefill_phase": 0.05}},
         )
-        self.assertAlmostEqual(report["aggregate_service_sum_s"], 0.1)
+        self.assertAlmostEqual(report["aggregate_service_sum_s"], 0.165)
         self.assertAlmostEqual(
-            report["aggregate_service_sum_over_trace_wall"], 2.0
+            report["aggregate_service_sum_over_trace_wall"], 3.3
         )
         self.assertEqual(
             report["components"]["vision_bucket_graph_s"]["count"], 1
         )
+
+    def test_backpressure_splits_consecutive_vision_submissions(self) -> None:
+        events = [
+            {
+                "trace_index": 1,
+                "event": "vision_bucket_call",
+                "host_stage_s": {"pixels_h2d_uint8_submit_s": 0.001},
+            },
+            {
+                "trace_index": 2,
+                "event": "vision_bucket_call",
+                "host_stage_s": {"pixels_h2d_uint8_submit_s": 0.004},
+            },
+            {
+                "trace_index": 8,
+                "event": "vision_bucket_call",
+                "host_stage_s": {"pixels_h2d_uint8_submit_s": 0.0004},
+            },
+        ]
+        report = MODULE.vision_backpressure_analysis(events)
+        self.assertEqual(report["consecutive_after_vision"]["count"], 1)
+        self.assertEqual(report["nonconsecutive"]["count"], 1)
+        self.assertAlmostEqual(report["mean_ratio"], 10.0)
+        self.assertFalse(report["host_submit_is_device_service"])
 
 
 if __name__ == "__main__":
