@@ -136,6 +136,10 @@ class MaskLanes:
         self.device = torch.device(device)
         self.dtype = torch.float16
         self.host_masks = [make_host_masks(spec) for spec in calls]
+        self.packed_scaled_masks = [
+            np.concatenate([mask.reshape(-1) for mask in masks[1:]])
+            for masks in self.host_masks
+        ]
         self.level_extents = [make_level_extents(spec) for spec in calls]
         self.coordinates: dict[tuple[int, int], tuple[torch.Tensor, torch.Tensor]] = {}
         for spec in calls:
@@ -158,6 +162,26 @@ class MaskLanes:
             torch.from_numpy(masks[0]).to(self.device, dtype=self.dtype),
             *(torch.from_numpy(mask).to(self.device) for mask in masks[1:]),
         )
+
+    def packed_cpu_mask_h2d(
+        self, index: int, _spec: CallSpec
+    ) -> tuple[torch.Tensor, ...]:
+        host_masks = self.host_masks[index]
+        pixel_mask = torch.from_numpy(host_masks[0]).to(
+            self.device, dtype=self.dtype
+        )
+        packed = torch.from_numpy(self.packed_scaled_masks[index]).to(self.device)
+        scaled_masks = []
+        offset = 0
+        for host_mask in host_masks[1:]:
+            size = int(host_mask.size)
+            scaled_masks.append(
+                packed[offset : offset + size].view(*host_mask.shape)
+            )
+            offset += size
+        if offset != int(packed.numel()):
+            raise AssertionError("packed mask split did not consume the tensor")
+        return pixel_mask, *scaled_masks
 
     def npu_from_extents(self, index: int, spec: CallSpec) -> tuple[torch.Tensor, ...]:
         extents = torch.from_numpy(self.level_extents[index]).to(self.device)
@@ -186,14 +210,23 @@ def validate_parity(calls: Sequence[CallSpec], lanes: MaskLanes) -> dict[str, An
     for index in selected:
         spec = calls[index]
         control = lanes.cpu_mask_h2d(index, spec)
-        candidate = lanes.npu_from_extents(index, spec)
-        for factor, expected, actual in zip(FACTORS, control, candidate):
-            if not torch.equal(expected, actual):
-                mismatches.append({"bucket": spec.bucket, "factor": factor})
+        for lane_name, candidate in (
+            ("packed_cpu_mask_h2d", lanes.packed_cpu_mask_h2d(index, spec)),
+            ("npu_from_extents", lanes.npu_from_extents(index, spec)),
+        ):
+            for factor, expected, actual in zip(FACTORS, control, candidate):
+                if not torch.equal(expected, actual):
+                    mismatches.append(
+                        {
+                            "bucket": spec.bucket,
+                            "factor": factor,
+                            "lane": lane_name,
+                        }
+                    )
     torch.npu.synchronize(lanes.device)
     return {
         "checked_buckets": len(selected),
-        "checked_tensors": len(selected) * len(FACTORS),
+        "checked_tensors": len(selected) * len(FACTORS) * 2,
         "mismatches": mismatches,
         "exact": not mismatches,
     }
@@ -269,7 +302,14 @@ def main() -> None:
         warmup_replays=args.warmup_replays,
         measured_replays=args.measured_replays,
     )
-    candidate = benchmark_lane(
+    packed = benchmark_lane(
+        calls,
+        lanes.packed_cpu_mask_h2d,
+        device=lanes.device,
+        warmup_replays=args.warmup_replays,
+        measured_replays=args.measured_replays,
+    )
+    generated = benchmark_lane(
         calls,
         lanes.npu_from_extents,
         device=lanes.device,
@@ -293,11 +333,18 @@ def main() -> None:
         },
         "lanes": {
             "cpu_mask_h2d": control,
-            "npu_from_extents": candidate,
+            "packed_cpu_mask_h2d": packed,
+            "npu_from_extents": generated,
         },
-        "candidate_speedup": {
-            name: float(control[name]["p50"]) / float(candidate[name]["p50"])
-            for name in ("device_s", "host_submit_s", "wall_s")
+        "speedups_vs_cpu_mask_h2d": {
+            lane_name: {
+                name: float(control[name]["p50"]) / float(result[name]["p50"])
+                for name in ("device_s", "host_submit_s", "wall_s")
+            }
+            for lane_name, result in (
+                ("packed_cpu_mask_h2d", packed),
+                ("npu_from_extents", generated),
+            )
         },
     }
     args.output_json.parent.mkdir(parents=True, exist_ok=True)
@@ -317,12 +364,13 @@ def main() -> None:
             f"host_submit_p50_s={result['host_submit_s']['p50']:.6f} "
             f"wall_p50_s={result['wall_s']['p50']:.6f}"
         )
-    print(
-        "UNIREC_VISION_MASK_H2D_SPEEDUP "
-        f"device={output['candidate_speedup']['device_s']:.6f} "
-        f"host_submit={output['candidate_speedup']['host_submit_s']:.6f} "
-        f"wall={output['candidate_speedup']['wall_s']:.6f}"
-    )
+    for lane, result in output["speedups_vs_cpu_mask_h2d"].items():
+        print(
+            "UNIREC_VISION_MASK_H2D_SPEEDUP "
+            f"name={lane} device={result['device_s']:.6f} "
+            f"host_submit={result['host_submit_s']:.6f} "
+            f"wall={result['wall_s']:.6f}"
+        )
     print(f"UNIREC_VISION_MASK_H2D_JSON={args.output_json.resolve()}")
 
 
