@@ -490,6 +490,34 @@ class Qwen3MoePipelineStage(nn.Module):
         tuple[torch.Tensor, ...],
         tuple[torch.Tensor, ...],
     ]:
+        return self._decode_hidden_tensors(
+            hidden_states,
+            cache_position,
+            cache.key_caches,
+            cache.value_caches,
+            capture_router=capture_router,
+        )
+
+    def _decode_hidden_tensors(
+        self,
+        hidden_states: torch.Tensor,
+        cache_position: torch.Tensor,
+        key_caches: tuple[torch.Tensor, ...],
+        value_caches: tuple[torch.Tensor, ...],
+        *,
+        capture_router: bool,
+    ) -> tuple[
+        torch.Tensor,
+        tuple[torch.Tensor, ...],
+        tuple[torch.Tensor, ...],
+    ]:
+        if (
+            len(key_caches) != self.num_layers
+            or len(value_caches) != self.num_layers
+        ):
+            raise ValueError(
+                "Static cache tuple length does not match this pipeline stage"
+            )
         selected = torch.index_select(
             self.decode_factor_lut,
             1,
@@ -499,7 +527,7 @@ class Qwen3MoePipelineStage(nn.Module):
         cos = cos.view(1, 1, self.config.head_dim)
         sin = sin.view(1, 1, self.config.head_dim)
         attention_mask = build_static_decode_mask(
-            cache_position, cache.key_caches[0].shape[2]
+            cache_position, key_caches[0].shape[2]
         )
         router_indices = []
         router_weights = []
@@ -508,8 +536,8 @@ class Qwen3MoePipelineStage(nn.Module):
                 hidden_states,
                 cos,
                 sin,
-                cache.key_caches[layer_index],
-                cache.value_caches[layer_index],
+                key_caches[layer_index],
+                value_caches[layer_index],
                 cache_position,
                 attention_mask,
             )
@@ -539,6 +567,29 @@ class Qwen3MoePipelineStage(nn.Module):
             cache,
             capture_router=capture_router,
         )
+
+    def decode_static_output(
+        self,
+        hidden_states: torch.Tensor,
+        cache_position: torch.Tensor,
+        key_caches: tuple[torch.Tensor, ...],
+        value_caches: tuple[torch.Tensor, ...],
+    ) -> torch.Tensor:
+        """Static-shape stage entrypoint used by TorchAir fullgraph decode.
+
+        A complete second stage returns final logits. A partial compile-probe
+        stage returns its boundary hidden state instead.
+        """
+        hidden_states, _router_indices, _router_weights = self._decode_hidden_tensors(
+            hidden_states,
+            cache_position,
+            key_caches,
+            value_caches,
+            capture_router=False,
+        )
+        if self.norm is None or self.lm_head is None:
+            return hidden_states
+        return self.logits(hidden_states)[:, -1, :]
 
     def decode_hidden_states(
         self,
