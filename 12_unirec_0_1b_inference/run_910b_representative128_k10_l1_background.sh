@@ -6,6 +6,8 @@ REPO="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 RUNNER="$SCRIPT_DIR/run_two_phase_batched_unirec.py"
 MATERIALIZER="$SCRIPT_DIR/materialize_page_subset.py"
 MANIFEST="$SCRIPT_DIR/references/unirec_representative_128_v1.json"
+CHIP_LABEL="${UNIREC_K10_CHIP_LABEL:-910B2}"
+ALLOWED_DEVICES="${UNIREC_K10_ALLOWED_DEVICES:-}"
 
 resolve_inputs() {
   : "${PYTHON_BIN:?export the validated UniRec inference Python}"
@@ -15,14 +17,25 @@ resolve_inputs() {
   : "${IMAGES_DIR:?export the OmniDocBench v1.6 image directory}"
   : "${COMPILE_CACHE:?export the recognition compile-cache parent}"
   : "${LAYOUT_CACHE_ROOT:?export the layout compile-cache directory}"
-  : "${ASCEND_RT_VISIBLE_DEVICES:?select one free physical 910B NPU}"
-  case ",${ASCEND_RT_VISIBLE_DEVICES}," in
-    *,5,*|*,6,*) printf 'REJECTED_PHYSICAL_DEVICE_5_OR_6\n' >&2; exit 1 ;;
-  esac
+  : "${ASCEND_RT_VISIBLE_DEVICES:?select one free physical NPU}"
   if [[ "$ASCEND_RT_VISIBLE_DEVICES" == *,* ]]; then
     printf 'UNIREC_K10_REQUIRES_ONE_NPU=%s\n' \
       "$ASCEND_RT_VISIBLE_DEVICES" >&2
     exit 1
+  fi
+  if [[ -n "$ALLOWED_DEVICES" ]]; then
+    case ",${ALLOWED_DEVICES}," in
+      *,${ASCEND_RT_VISIBLE_DEVICES},*) ;;
+      *)
+        printf 'UNIREC_K10_REJECTED_DEVICE chip=%s device=%s allowed=%s\n' \
+          "$CHIP_LABEL" "$ASCEND_RT_VISIBLE_DEVICES" "$ALLOWED_DEVICES" >&2
+        exit 1
+        ;;
+    esac
+  else
+    case ",${ASCEND_RT_VISIBLE_DEVICES}," in
+      *,5,*|*,6,*) printf 'REJECTED_PHYSICAL_DEVICE_5_OR_6\n' >&2; exit 1 ;;
+    esac
   fi
   if [[ "$PYTHON_BIN" == */* ]]; then
     PYTHON_BIN="$(cd "$(dirname "$PYTHON_BIN")" && pwd -P)/$(basename "$PYTHON_BIN")"
@@ -104,6 +117,7 @@ report_result() {
   TRACE_DISTRIBUTIONS="$RUN_ROOT/trace/output/prefill_distributions.json" \
   TRACE_ITERATIONS="$RUN_ROOT/trace/output/prefill_iterations.jsonl" \
   CLEAN_SUMMARY="$RUN_ROOT/clean/output/run_summary.json" \
+  CHIP_LABEL="$CHIP_LABEL" \
     "$PYTHON_BIN" - <<'PY' | tee "$RUN_ROOT/report.log"
 import json
 import os
@@ -139,6 +153,8 @@ fallback_graph = distributions["stage_distributions"][
 ]
 calls = real_rows = physical_rows = effective_pixels = physical_pixels = 0
 bucket_calls = {}
+chip_label = os.environ["CHIP_LABEL"]
+prefix = "UNIREC_" + chip_label.upper().replace("-", "_") + "_K10_L1"
 with Path(os.environ["TRACE_ITERATIONS"]).open() as handle:
     for line in handle:
         event = json.loads(line)
@@ -158,7 +174,7 @@ with Path(os.environ["TRACE_ITERATIONS"]).open() as handle:
         bucket_calls[event["bucket"]] = bucket_calls.get(event["bucket"], 0) + 1
 assert set(bucket_calls) == expected
 print(
-    "UNIREC_910B_K10_L1_RESULT PASS "
+    f"{prefix}_RESULT PASS "
     f"clean_wall_s={clean_run['timing_s']['prefill_phase']:.6f} "
     f"clean_pages_s={clean_run['throughput']['prefill_pages_per_s']:.6f} "
     f"trace_wall_s={trace_run['timing_s']['prefill_phase']:.6f} "
@@ -169,9 +185,9 @@ print(
     f"pixel_eff={effective_pixels / physical_pixels:.6f} "
     f"crops={clean_run['retained_bank']['crop_count']}"
 )
-print("UNIREC_910B_K10_L1_BUCKET_CALLS " + json.dumps(bucket_calls, sort_keys=True))
+print(f"{prefix}_BUCKET_CALLS " + json.dumps(bucket_calls, sort_keys=True))
 print(
-    "UNIREC_910B_K10_L1_LAYOUT "
+    f"{prefix}_LAYOUT "
     f"clean_layout_s={clean_run['prefill_phase_summary']['stage_s']['worker_detector_call_sum_s']:.6f} "
     f"trace_layout_s={trace_run['prefill_phase_summary']['stage_s']['worker_detector_call_sum_s']:.6f}"
 )
@@ -238,6 +254,8 @@ launch_main() {
     COMPILE_CACHE="$COMPILE_CACHE" \
     LAYOUT_CACHE_ROOT="$LAYOUT_CACHE_ROOT" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
+    UNIREC_K10_CHIP_LABEL="$CHIP_LABEL" \
+    UNIREC_K10_ALLOWED_DEVICES="$ALLOWED_DEVICES" \
     bash "$0" --worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 < /dev/null &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"
   printf 'RUN_ROOT=%s\nRUN_LOG=%s\nPID=%s\nTAIL_COMMAND=tail -f %q\n' \
