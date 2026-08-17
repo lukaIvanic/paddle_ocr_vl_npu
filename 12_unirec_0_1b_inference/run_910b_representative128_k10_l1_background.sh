@@ -135,6 +135,22 @@ assert run["vision_page_lookahead"] == 1
 assert run["vision_bucket_preset"] == "310p_k10_l1"
 assert run["prefill_trace_enabled"] is False
 prefix = "UNIREC_" + os.environ["CHIP_LABEL"].upper().replace("-", "_") + "_K10_L1"
+cache_inventory = {}
+graph_rows = run["prefill_worker_setup_diagnostics"][0][
+    "prefix_graph_warmup"
+]["graphs"]
+for bucket, row in graph_rows.items():
+    cache_dir = Path(row["cache_dir"])
+    compiled_modules = sorted(cache_dir.rglob("compiled_module"))
+    om_files = sorted(cache_dir.rglob("*.om"))
+    assert len(compiled_modules) == 1, (bucket, compiled_modules)
+    assert len(om_files) == 1, (bucket, om_files)
+    cache_inventory[bucket] = {
+        "compiled_module_count": 1,
+        "compiled_module_bytes": compiled_modules[0].stat().st_size,
+        "om_count": 1,
+        "om_bytes": om_files[0].stat().st_size,
+    }
 print(
     f"{prefix}_CLEAN_ONLY_RESULT PASS "
     f"clean_wall_s={run['timing_s']['prefill_phase']:.6f} "
@@ -143,6 +159,7 @@ print(
     f"crops={run['retained_bank']['crop_count']} "
     f"real_source_tokens={run['retained_bank']['real_source_tokens']}"
 )
+print(f"{prefix}_CACHE " + json.dumps(cache_inventory, sort_keys=True))
 PY
 }
 
@@ -189,6 +206,22 @@ calls = real_rows = physical_rows = effective_pixels = physical_pixels = 0
 bucket_calls = {}
 chip_label = os.environ["CHIP_LABEL"]
 prefix = "UNIREC_" + chip_label.upper().replace("-", "_") + "_K10_L1"
+cache_inventory = {}
+graph_rows = trace_run["prefill_worker_setup_diagnostics"][0][
+    "prefix_graph_warmup"
+]["graphs"]
+for bucket, row in graph_rows.items():
+    cache_dir = Path(row["cache_dir"])
+    compiled_modules = sorted(cache_dir.rglob("compiled_module"))
+    om_files = sorted(cache_dir.rglob("*.om"))
+    assert len(compiled_modules) == 1, (bucket, compiled_modules)
+    assert len(om_files) == 1, (bucket, om_files)
+    cache_inventory[bucket] = {
+        "compiled_module_count": 1,
+        "compiled_module_bytes": compiled_modules[0].stat().st_size,
+        "om_count": 1,
+        "om_bytes": om_files[0].stat().st_size,
+    }
 with Path(os.environ["TRACE_ITERATIONS"]).open() as handle:
     for line in handle:
         event = json.loads(line)
@@ -220,6 +253,7 @@ print(
     f"crops={clean_run['retained_bank']['crop_count']}"
 )
 print(f"{prefix}_BUCKET_CALLS " + json.dumps(bucket_calls, sort_keys=True))
+print(f"{prefix}_CACHE " + json.dumps(cache_inventory, sort_keys=True))
 print(
     f"{prefix}_LAYOUT "
     f"clean_layout_s={clean_run['prefill_phase_summary']['stage_s']['worker_detector_call_sum_s']:.6f} "

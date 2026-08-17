@@ -368,29 +368,49 @@ class _MaskedFullVisionEncoder(nn.Module):
             mask32,
         )
 
+    # TorchAir cache_compile persists its Python/Dynamo layer only when the
+    # original method has a normal, stable code object.  Do not generate these
+    # methods with exec(): dynamically generated forward methods leave only the
+    # GE OM cache and force every fresh process to retrace the complete graph.
+    # Each bucket still needs a distinct code object because Dynamo caches by
+    # code object across separately wrapped modules in the same process.
+    def _forward_bucket_slot_0(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
+        return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
+
+    def _forward_bucket_slot_1(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
+        return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
+
+    def _forward_bucket_slot_2(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
+        return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
+
+    def _forward_bucket_slot_3(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
+        return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
+
+    def _forward_bucket_slot_4(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
+        return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
+
+    def _forward_bucket_slot_5(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
+        return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
+
+    def _forward_bucket_slot_6(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
+        return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
+
+    def _forward_bucket_slot_7(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
+        return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
+
+    def _forward_bucket_slot_8(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
+        return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
+
+    def _forward_bucket_slot_9(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
+        return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
+
 
 def _new_masked_full_encoder_module(
     runner: OptimizedUniRecRunner,
-    spec: VisionBucketSpec,
+    _spec: VisionBucketSpec,
 ) -> _MaskedFullVisionEncoder:
-    """Give each static bucket a distinct deterministic forward identity."""
-    filename = f"<unirec_full_vision_{spec.key}>"
-    namespace: dict[str, Any] = {}
-    exec(
-        compile(
-            "def forward(self, pixel_values, mask2, mask4, mask8, mask16, mask32):\n"
-            "    return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)\n",
-            filename,
-            "exec",
-        ),
-        namespace,
-    )
-    module_type = type(
-        f"MaskedFullVisionEncoder_{spec.width}x{spec.height}_b{spec.batch_size}",
-        (_MaskedFullVisionEncoder,),
-        {"forward": namespace["forward"]},
-    )
-    return module_type(runner).eval()
+    """Build one bucket module with cache-persistable static methods."""
+    return _MaskedFullVisionEncoder(runner).eval()
 
 
 def _source_hash() -> str:
@@ -558,7 +578,16 @@ class BucketedFullVisionRuntime:
             compile_api=import_path,
         )
         for graph_index, spec in enumerate(self.specs):
+            if graph_index >= 10:
+                raise ValueError(
+                    "compiled full-vision runtime currently supports at most "
+                    "10 cache-stable bucket slots"
+                )
             module = _new_masked_full_encoder_module(runner, spec)
+            compile_method = getattr(
+                module,
+                f"_forward_bucket_slot_{graph_index}",
+            )
             cache_dir = runner.compile_cache_dir / (
                 f"vision_full_bucket_{spec.key}_{runner.dtype_name}_src{source_hash}"
                 f"{rewrite_cache_suffix}"
@@ -579,7 +608,7 @@ class BucketedFullVisionRuntime:
             )
             registration_started = time.perf_counter()
             self.compiled[spec.key] = cache_compile(
-                module.forward,
+                compile_method,
                 config=config,
                 dynamic=False,
                 cache_dir=str(cache_dir),
@@ -670,10 +699,15 @@ class BucketedFullVisionRuntime:
     def _cache_snapshot(cache_dir: Path) -> dict[str, Any]:
         try:
             om_files = sorted(cache_dir.rglob("*.om"))
+            compiled_modules = sorted(cache_dir.rglob("compiled_module"))
             return {
                 "directory": str(cache_dir),
                 "om_count": len(om_files),
                 "om_bytes": sum(path.stat().st_size for path in om_files),
+                "compiled_module_count": len(compiled_modules),
+                "compiled_module_bytes": sum(
+                    path.stat().st_size for path in compiled_modules
+                ),
             }
         except OSError as exception:
             return {
@@ -694,6 +728,14 @@ class BucketedFullVisionRuntime:
                     "mtime_ns": path.stat().st_mtime_ns,
                 }
                 for path in sorted(cache_dir.rglob("*.om"))
+            ]
+            snapshot["compiled_module_files"] = [
+                {
+                    "path": str(path.relative_to(cache_dir)),
+                    "size_bytes": path.stat().st_size,
+                    "mtime_ns": path.stat().st_mtime_ns,
+                }
+                for path in sorted(cache_dir.rglob("compiled_module"))
             ]
         except OSError as exception:
             snapshot["inventory_error"] = repr(exception)

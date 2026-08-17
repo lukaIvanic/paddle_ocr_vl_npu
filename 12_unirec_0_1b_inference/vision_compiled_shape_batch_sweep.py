@@ -54,11 +54,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument(
         "--module-identity",
-        default="dynamic_bucket",
-        choices=("dynamic_bucket", "static_class"),
+        default="production_slots",
+        choices=("production_slots", "static_class"),
         help=(
-            "Use production's dynamic per-bucket forward identity or the "
-            "ordinary class-defined forward for cache-persistence diagnosis."
+            "Use production's distinct static bucket slots or one shared "
+            "class-defined forward for cache-persistence diagnosis."
         ),
     )
     parser.add_argument(

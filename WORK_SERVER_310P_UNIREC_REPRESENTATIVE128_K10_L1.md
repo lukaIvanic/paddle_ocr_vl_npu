@@ -18,9 +18,15 @@ This is one experiment, not an A/B matrix. Use:
 - cross-KV 1320 and self-KV 2048;
 - prefill only.
 
-The runner compiles every K10 graph once, then runs trace and clean lanes. Cold
-compile/cache-load/setup time is recorded but excluded from measured prefill
-wall time.
+The runner compiles every corrected cache-stable K10 graph once, then runs trace
+and clean lanes. Cold compile/cache-load/setup time is recorded but excluded
+from measured prefill wall time.
+
+This revision replaces the old dynamically generated per-bucket `forward`
+methods. Those methods left only GE OMs and never persisted TorchAir's upper
+`compiled_module` cache. Do not reuse an old dynamic K10 directory as evidence.
+The corrected source hash creates new cache directories without deleting the
+old ones.
 
 ## Work-server rules
 
@@ -100,15 +106,19 @@ UNIREC_VISION_GRAPH_DIAGNOSTIC ... warmup_graph_call_begin ...
 UNIREC_VISION_GRAPH_DIAGNOSTIC ... warmup_graph_call_end ... synchronized_wall_s=...
 ```
 
-Use these records to distinguish a long cold compile from first-process cache
-loading and fast workload replay. Do not use `om_count` alone as the verdict.
-On the matched 910B2 run, the cold lane created one OM per graph. Reopening the
-cache in the clean process took about 20--23 seconds per graph and materialized
-a second OM file. This is the previously observed TorchAir cache-load behavior,
-not enough evidence of a full cold recompile. The decisive checks are that the
-clean setup is much shorter than cold setup and that measured workload calls
-after warmup are fast. Do not stop only because `om_count` changes from one to
-two.
+Use these records to distinguish cold compilation from cache loading. The
+corrected requirement is strict:
+
+- after the trace lane, every one of the ten cache directories contains exactly
+  one `compiled_module` and one GE OM;
+- the clean fresh process keeps the same OM inventory;
+- clean first-call times are cache-load times, not cold compile times;
+- no second OM is created merely because the process restarted.
+
+The 910B2 proof reduced a one-bucket fresh-process first call from 13--23 seconds
+to approximately 0.60 seconds while preserving graph output and steady kernel
+latency. If `compiled_module` is absent, stop and report the cache directory and
+log. Do not continue to call the result warmed.
 
 ## Completion and report
 
@@ -126,9 +136,10 @@ Paste back:
 
 1. commit, physical NPU, CANN, torch, and torch-npu versions;
 2. absolute `RUN_ROOT` and `RUN_LOG`;
-3. all ten first-lane graph warmup durations and OM counts;
-4. clean-lane first-open time, OM-count change, and later workload-call time for
-   each graph; label compile versus load only when the logs establish it;
+3. all ten first-lane graph warmup durations, OM counts, and
+   `compiled_module_count` values;
+4. clean-lane first-open time and final OM/`compiled_module` inventory for each
+   graph; confirm no new OM appeared across the process restart;
 5. the complete `UNIREC_310P_K10_L1_RESULT`, `BUCKET_CALLS`, and `LAYOUT`
    lines;
 6. trace and clean retained crop counts and source-token totals;
@@ -137,6 +148,15 @@ Paste back:
 8. peak HBM from the run summary or observed `npu-smi` sampling;
 9. `exit_code.txt`, total process wall time, and final NPU state;
 10. any warning, crash, fallback, cache anomaly, or mismatch.
+
+Also run this final inventory command and paste its complete output:
+
+```bash
+find "$COMPILE_CACHE" \
+  -path '*vision_full_bucket*' \
+  \( -name compiled_module -o -name '*.om' \) \
+  -printf '%TY-%Tm-%TdT%TH:%TM:%TS %s %p\n' | sort
+```
 
 ## Reference expectations
 
