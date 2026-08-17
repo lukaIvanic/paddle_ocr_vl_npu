@@ -93,3 +93,13 @@ python3 probe_real_layer.py \
   --layer 24 \
   --cache-length 256
 ```
+
+After that passes, load the complete second stage without the LM head:
+
+```sh
+python3 probe_real_layer.py \
+  --model-dir /models/Qwen3-30B-A3B \
+  --layer 24 \
+  --num-layers 24 \
+  --cache-length 256
+```

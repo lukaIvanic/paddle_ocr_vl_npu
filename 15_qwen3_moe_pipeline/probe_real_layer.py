@@ -15,10 +15,11 @@ from runtime import build_stage, memory_snapshot
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="One-layer real-weight Qwen3-30B-A3B NPU decode probe."
+        description="Real-weight Qwen3-30B-A3B stage decode probe."
     )
     parser.add_argument("--model-dir", required=True)
     parser.add_argument("--layer", type=int, default=24)
+    parser.add_argument("--num-layers", type=int, default=1)
     parser.add_argument("--cache-length", type=int, default=256)
     parser.add_argument("--device", default="npu:0")
     return parser.parse_args()
@@ -31,15 +32,17 @@ def main() -> None:
     torch.npu.set_device(device)
     config = Qwen3MoeConfig.from_model_dir(args.model_dir)
     config.validate_qwen3_30b_a3b()
+    if args.num_layers < 1 or args.layer + args.num_layers > config.num_hidden_layers:
+        raise ValueError("Requested layer range is outside the model")
     stage, metadata = build_stage(
         config,
         args.model_dir,
         layer_start=args.layer,
-        layer_end=args.layer + 1,
+        layer_end=args.layer + args.num_layers,
         with_embedding=False,
         with_lm_head=False,
         device=device,
-        name=f"layer-{args.layer}",
+        name=f"layers-{args.layer}-{args.layer + args.num_layers}",
         cache_length=args.cache_length,
     )
     cache = stage.make_cache(cache_length=args.cache_length)
@@ -61,6 +64,7 @@ def main() -> None:
         elapsed = time.perf_counter() - started
     result = {
         "layer": args.layer,
+        "num_layers": args.num_layers,
         "elapsed_sec": elapsed,
         "output_shape": list(output.shape),
         "output_finite": bool(torch.isfinite(output).all().item()),
