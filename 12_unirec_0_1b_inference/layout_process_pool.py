@@ -1614,6 +1614,7 @@ def _worker_main(
     layout_depthwise_rewrite: str,
     layout_preformat_frozen_bn_buffers: bool,
     layout_batch_size: int,
+    layout_cpu_threads: int,
     warmup_path: str,
     openocr_root: str | None,
     prepare_pages: bool,
@@ -1637,6 +1638,7 @@ def _worker_main(
     try:
         import torch_npu
 
+        torch.set_num_threads(layout_cpu_threads)
         torch_npu.npu.set_compile_mode(jit_compile=False)
         runtime = PPDocLayoutV2NpuAdapter(
             model_path=model_path,
@@ -1819,6 +1821,7 @@ def _worker_main(
                     recognition_preprocess_threads
                 ),
                 "layout_batch_size": layout_batch_size,
+                "layout_cpu_threads": int(torch.get_num_threads()),
                 "layout_dtype": layout_dtype,
                 "layout_reading_order_dtype": (
                     layout_reading_order_dtype or layout_dtype
@@ -2088,6 +2091,7 @@ class DynamicLayoutProcessPool:
         layout_depthwise_rewrite: str = DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
         layout_preformat_frozen_bn_buffers: bool = False,
         layout_batch_size: int = 1,
+        layout_cpu_threads: int = 1,
         openocr_root: Path | None = None,
         prepare_pages: bool = False,
         use_chart_recognition: bool = False,
@@ -2116,6 +2120,8 @@ class DynamicLayoutProcessPool:
             raise ValueError("recognition page lookahead must be positive")
         if layout_batch_size < 1:
             raise ValueError("layout batch size must be positive")
+        if layout_cpu_threads < 1:
+            raise ValueError("layout CPU thread count must be positive")
         if layout_batch_size > 1 and not recognition_full_vision_buckets:
             raise ValueError(
                 "process-worker layout batching requires full-vision grouping"
@@ -2130,6 +2136,7 @@ class DynamicLayoutProcessPool:
             raise ValueError("progress heartbeat interval must be non-negative")
         self.worker_count = worker_count
         self.layout_batch_size = int(layout_batch_size)
+        self.layout_cpu_threads = int(layout_cpu_threads)
         self.layout_dtype = str(layout_dtype)
         self.layout_reading_order_dtype = (
             None
@@ -2173,6 +2180,7 @@ class DynamicLayoutProcessPool:
                     self.layout_depthwise_rewrite,
                     self.layout_preformat_frozen_bn_buffers,
                     self.layout_batch_size,
+                    self.layout_cpu_threads,
                     str(warmup_paths[worker_index % len(warmup_paths)]),
                     str(openocr_root) if openocr_root is not None else None,
                     prepare_pages,
@@ -2248,6 +2256,9 @@ class DynamicLayoutProcessPool:
                     message.get("recognition_preprocess_threads", 1)
                 ),
                 "layout_batch_size": int(message.get("layout_batch_size", 1)),
+                "layout_cpu_threads": int(
+                    message.get("layout_cpu_threads", 1)
+                ),
                 "layout_dtype": str(message["layout_dtype"]),
                 "layout_input_color_order": str(
                     message["layout_input_color_order"]

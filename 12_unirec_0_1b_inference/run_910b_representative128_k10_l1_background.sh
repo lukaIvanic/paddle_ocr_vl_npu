@@ -9,6 +9,7 @@ MANIFEST="$SCRIPT_DIR/references/unirec_representative_128_v1.json"
 CHIP_LABEL="${UNIREC_K10_CHIP_LABEL:-910B2}"
 ALLOWED_DEVICES="${UNIREC_K10_ALLOWED_DEVICES:-}"
 RECOGNITION_THREADS="${UNIREC_K10_THREADS:-1}"
+LAYOUT_CPU_THREADS="${UNIREC_K10_LAYOUT_CPU_THREADS:-1}"
 ALLOW_THREAD_OVERSUBSCRIPTION="${UNIREC_K10_ALLOW_THREAD_OVERSUBSCRIPTION:-0}"
 
 resolve_inputs() {
@@ -22,6 +23,9 @@ resolve_inputs() {
   : "${ASCEND_RT_VISIBLE_DEVICES:?select one free physical NPU}"
   case "$RECOGNITION_THREADS" in
     ''|*[!0-9]*|0) printf 'UNIREC_K10_INVALID_THREADS=%s\n' "$RECOGNITION_THREADS" >&2; exit 1 ;;
+  esac
+  case "$LAYOUT_CPU_THREADS" in
+    ''|*[!0-9]*|0) printf 'UNIREC_K10_INVALID_LAYOUT_CPU_THREADS=%s\n' "$LAYOUT_CPU_THREADS" >&2; exit 1 ;;
   esac
   if [[ "$ASCEND_RT_VISIBLE_DEVICES" == *,* ]]; then
     printf 'UNIREC_K10_REQUIRES_ONE_NPU=%s\n' \
@@ -64,6 +68,12 @@ resolve_inputs() {
     && [[ "$ALLOW_THREAD_OVERSUBSCRIPTION" != 1 ]]; then
     printf 'UNIREC_K10_INSUFFICIENT_CPU_AFFINITY threads=%s affinity=%s\n' \
       "$RECOGNITION_THREADS" "$CPU_AFFINITY_COUNT" >&2
+    exit 1
+  fi
+  if (( CPU_AFFINITY_COUNT < LAYOUT_CPU_THREADS )) \
+    && [[ "$ALLOW_THREAD_OVERSUBSCRIPTION" != 1 ]]; then
+    printf 'UNIREC_K10_INSUFFICIENT_LAYOUT_CPU_AFFINITY threads=%s affinity=%s\n' \
+      "$LAYOUT_CPU_THREADS" "$CPU_AFFINITY_COUNT" >&2
     exit 1
   fi
   if (( CPU_AFFINITY_COUNT < RECOGNITION_THREADS )); then
@@ -110,6 +120,7 @@ run_lane() {
     --workers 1
     --warmup-pages 8
     --layout-batch-size 1
+    --layout-cpu-threads "$LAYOUT_CPU_THREADS"
     --vision-page-lookahead 1
     --vision-bucket-preset 310p_k10_l1
     --vision-focal-depthwise-rewrite constant_grouped_all
@@ -140,6 +151,7 @@ report_clean_only() {
   CLEAN_SUMMARY="$RUN_ROOT/clean/output/run_summary.json" \
   CHIP_LABEL="$CHIP_LABEL" \
   EXPECTED_THREADS="$RECOGNITION_THREADS" \
+  EXPECTED_LAYOUT_CPU_THREADS="$LAYOUT_CPU_THREADS" \
     "$PYTHON_BIN" - <<'PY' | tee "$RUN_ROOT/report.log"
 import json
 import os
@@ -151,6 +163,9 @@ assert run["execution"] == "production_two_phase_prefill_only"
 assert (run["page_count"], run["workers"]) == (128, 1)
 assert run["recognition_preprocess_threads"] == int(os.environ["EXPECTED_THREADS"])
 assert run["layout_batch_size"] == 1
+assert run["layout_cpu_threads"] == int(
+    os.environ["EXPECTED_LAYOUT_CPU_THREADS"]
+)
 assert run["vision_page_lookahead"] == 1
 assert run["vision_bucket_preset"] == "310p_k10_l1"
 assert run["prefill_trace_enabled"] is False
@@ -180,6 +195,7 @@ print(
     f"clean_wall_s={run['timing_s']['prefill_phase']:.6f} "
     f"clean_pages_s={run['throughput']['prefill_pages_per_s']:.6f} "
     f"threads={run['recognition_preprocess_threads']} "
+    f"layout_cpu_threads={run['layout_cpu_threads']} "
     f"clean_layout_s={run['prefill_phase_summary']['stage_s']['worker_detector_call_sum_s']:.6f} "
     f"crops={run['retained_bank']['crop_count']} "
     f"real_source_tokens={run['retained_bank']['real_source_tokens']}"
@@ -201,6 +217,7 @@ report_result() {
   CLEAN_SUMMARY="$RUN_ROOT/clean/output/run_summary.json" \
   CHIP_LABEL="$CHIP_LABEL" \
   EXPECTED_THREADS="$RECOGNITION_THREADS" \
+  EXPECTED_LAYOUT_CPU_THREADS="$LAYOUT_CPU_THREADS" \
     "$PYTHON_BIN" - <<'PY' | tee "$RUN_ROOT/report.log"
 import json
 import os
@@ -220,6 +237,9 @@ for run, traced in ((trace_run, True), (clean_run, False)):
     assert (run["page_count"], run["workers"]) == (128, 1)
     assert run["recognition_preprocess_threads"] == int(os.environ["EXPECTED_THREADS"])
     assert run["layout_batch_size"] == 1
+    assert run["layout_cpu_threads"] == int(
+        os.environ["EXPECTED_LAYOUT_CPU_THREADS"]
+    )
     assert run["vision_page_lookahead"] == 1
     assert run["vision_bucket_preset"] == "310p_k10_l1"
     assert run["vision_focal_depthwise_rewrite"] == "constant_grouped_all"
@@ -229,6 +249,9 @@ for run, traced in ((trace_run, True), (clean_run, False)):
     assert len(worker_setup) == 1
     assert worker_setup[0]["recognition_preprocess_threads"] == int(
         os.environ["EXPECTED_THREADS"]
+    )
+    assert worker_setup[0]["layout_cpu_threads"] == int(
+        os.environ["EXPECTED_LAYOUT_CPU_THREADS"]
     )
 assert trace_run["retained_bank"]["crop_count"] == clean_run["retained_bank"]["crop_count"]
 assert trace_run["retained_bank"]["real_source_tokens"] == clean_run["retained_bank"]["real_source_tokens"]
@@ -290,6 +313,7 @@ print(
     f"clean_pages_s={clean_run['throughput']['prefill_pages_per_s']:.6f} "
     f"trace_wall_s={trace_run['timing_s']['prefill_phase']:.6f} "
     f"threads={trace_run['recognition_preprocess_threads']} "
+    f"layout_cpu_threads={trace_run['layout_cpu_threads']} "
     f"bucket_graph_s={bucket_graph['sum_s']:.6f} "
     f"fallback_graph_s={fallback_graph['sum_s']:.6f} "
     f"vision_graph_s={bucket_graph['sum_s'] + fallback_graph['sum_s']:.6f} "
@@ -378,6 +402,7 @@ worker_main() {
       "$(git -C "$REPO" rev-parse HEAD)" "$ASCEND_RT_VISIBLE_DEVICES" "$PYTHON_BIN"
     printf 'recognition_threads=%s\ncpu_affinity_count=%s\n' \
       "$RECOGNITION_THREADS" "$CPU_AFFINITY_COUNT"
+    printf 'layout_cpu_threads=%s\n' "$LAYOUT_CPU_THREADS"
     printf 'model=%s\nlayout_model=%s\ncompile_cache=%s\nlayout_cache=%s\n' \
       "$MODEL" "$LAYOUT_MODEL" "$COMPILE_CACHE" "$LAYOUT_CACHE_ROOT"
     "$PYTHON_BIN" -c \
@@ -446,6 +471,7 @@ launch_main() {
     UNIREC_K10_ALLOWED_DEVICES="$ALLOWED_DEVICES" \
     UNIREC_K10_RUN_MODE="${UNIREC_K10_RUN_MODE:-both}" \
     UNIREC_K10_THREADS="$RECOGNITION_THREADS" \
+    UNIREC_K10_LAYOUT_CPU_THREADS="$LAYOUT_CPU_THREADS" \
     CPU_AFFINITY_COUNT="$CPU_AFFINITY_COUNT" \
     UNIREC_K10_ALLOW_THREAD_OVERSUBSCRIPTION="$ALLOW_THREAD_OVERSUBSCRIPTION" \
     bash "$0" --worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 < /dev/null &

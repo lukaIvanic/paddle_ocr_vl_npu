@@ -90,6 +90,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--warmup-pages", type=int, default=8)
     parser.add_argument("--layout-batch-size", type=int, default=1)
+    parser.add_argument(
+        "--layout-cpu-threads",
+        type=int,
+        default=1,
+        help=(
+            "Torch CPU intra-op threads per layout worker. This controls the "
+            "exact torchvision bicubic layout resize; it does not change "
+            "layout batching or recognition crop-preprocess threads."
+        ),
+    )
     parser.add_argument("--vision-page-lookahead", type=int, default=4)
     parser.add_argument(
         "--vision-bucket-preset",
@@ -174,6 +184,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--warmup-pages must be non-negative")
     if args.layout_batch_size < 1:
         parser.error("--layout-batch-size must be positive")
+    if args.layout_cpu_threads < 1:
+        parser.error("--layout-cpu-threads must be positive")
     if args.layout_batch_size > args.vision_page_lookahead:
         parser.error(
             "--layout-batch-size cannot exceed --vision-page-lookahead"
@@ -317,6 +329,7 @@ def main() -> None:
             args.layout_preformat_frozen_bn_buffers
         ),
         layout_batch_size=args.layout_batch_size,
+        layout_cpu_threads=args.layout_cpu_threads,
         openocr_root=openocr_root,
         prepare_pages=True,
         use_chart_recognition=args.use_chart_recognition,
@@ -412,6 +425,7 @@ def main() -> None:
                     else []
                 ),
                 "layout_batch_size": args.layout_batch_size,
+                "layout_cpu_threads": args.layout_cpu_threads,
                 "layout_threshold": args.layout_threshold,
                 "vision_page_lookahead": args.vision_page_lookahead,
                 "vision_bucket_preset": args.vision_bucket_preset,
@@ -436,6 +450,7 @@ def main() -> None:
                 args.recognition_preprocess_threads
             ),
             "layout_batch_size": args.layout_batch_size,
+            "layout_cpu_threads": args.layout_cpu_threads,
             "layout_execution": args.layout_execution,
             "layout_dtype": args.layout_dtype,
             "layout_reading_order_dtype": (
@@ -886,6 +901,7 @@ def main() -> None:
         "offset": args.offset,
         "workers": args.workers,
         "layout_batch_size": args.layout_batch_size,
+        "layout_cpu_threads": args.layout_cpu_threads,
         "layout_execution": args.layout_execution,
         "layout_dtype": args.layout_dtype,
         "layout_reading_order_dtype": (
