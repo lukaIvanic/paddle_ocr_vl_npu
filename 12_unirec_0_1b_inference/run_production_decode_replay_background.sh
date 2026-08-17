@@ -124,7 +124,7 @@ launch_main() {
     PREFAULT_ARTIFACT="$PREFAULT_ARTIFACT" REFERENCE_TRACE="$REFERENCE_TRACE" \
     REFERENCE_RUN_SUMMARY="$REFERENCE_RUN_SUMMARY" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
-    "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
+    bash "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"
   printf 'RUN_ROOT=%s\nRUN_LOG=%s\nPID=%s\n' \
     "$RUN_ROOT" "$RUN_ROOT/run.log" "$(cat "$RUN_ROOT/pid.txt")"
