@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 import time
 from pathlib import Path
 
@@ -44,6 +45,7 @@ def parse_args() -> argparse.Namespace:
         default=Path(".runtime_cache/15_qwen3_moe_pipeline"),
     )
     parser.add_argument("--summary-out", type=Path)
+    parser.add_argument("--profile-dir", type=Path)
     parser.add_argument("--atol", type=float, default=5e-2)
     parser.add_argument("--rtol", type=float, default=5e-2)
     return parser.parse_args()
@@ -156,6 +158,70 @@ def dynamo_stats() -> dict[str, int]:
     }
 
 
+def profile_compiled_step(
+    decode,
+    cache,
+    capture: dict[str, object],
+    *,
+    profile_dir: Path,
+    device: torch.device,
+    warmup_steps: int,
+    decode_steps: int,
+) -> dict[str, object]:
+    import torch_npu.profiler as npu_prof
+
+    if profile_dir.exists():
+        shutil.rmtree(profile_dir)
+    profile_dir.mkdir(parents=True)
+    boundary = capture["boundary_hidden_states"][-1].to(
+        device=device, dtype=torch.bfloat16
+    )
+    first_position = (
+        int(capture["cache_positions"][-1])
+        + 1
+        + warmup_steps
+        + decode_steps
+    )
+    synchronized_seconds = []
+    schedule = npu_prof.schedule(wait=0, warmup=1, active=1, repeat=1)
+    experimental_config = npu_prof._ExperimentalConfig(
+        profiler_level=npu_prof.ProfilerLevel.Level1,
+        aic_metrics=npu_prof.AiCMetrics.PipeUtilization,
+        export_type=npu_prof.ExportType.Text,
+    )
+    with npu_prof.profile(
+        activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
+        schedule=schedule,
+        on_trace_ready=npu_prof.tensorboard_trace_handler(
+            str(profile_dir), analyse_flag=True
+        ),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=False,
+        experimental_config=experimental_config,
+    ) as prof:
+        for offset in range(2):
+            position = torch.tensor(
+                [first_position + offset], dtype=torch.int64, device=device
+            )
+            synchronize(device)
+            started = time.perf_counter()
+            decode(
+                boundary,
+                position,
+                cache.key_caches,
+                cache.value_caches,
+            )
+            synchronize(device)
+            synchronized_seconds.append(time.perf_counter() - started)
+            prof.step()
+    synchronize(device)
+    return {
+        "profile_dir": str(profile_dir),
+        "synchronized_seconds": synchronized_seconds,
+    }
+
+
 def main() -> None:
     args = parse_args()
     if not 1 <= args.layers <= 24:
@@ -247,6 +313,17 @@ def main() -> None:
         warmup_steps=args.warmup_steps,
         decode_steps=args.decode_steps,
     )
+    profile_summary = None
+    if args.profile_dir is not None:
+        profile_summary = profile_compiled_step(
+            compiled_decode,
+            compiled_cache,
+            capture,
+            profile_dir=args.profile_dir,
+            device=device,
+            warmup_steps=args.warmup_steps,
+            decode_steps=args.decode_steps,
+        )
     stats_final = dynamo_stats()
 
     step_checks = []
@@ -338,6 +415,7 @@ def main() -> None:
         },
         "speedup": eager_benchmark["mean_tpot_ms"]
         / compiled_benchmark["mean_tpot_ms"],
+        "profile": profile_summary,
         "stage": stage_metadata,
         "memory": memory_snapshot(device),
     }
