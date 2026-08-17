@@ -421,6 +421,7 @@ class Qwen3SparseMoeBlock(nn.Module):
             "grouped_matmul",
             "grouped_matmul_finalize",
             "grouped_matmul_v2_finalize",
+            "grouped_matmul_v2_gating_finalize",
         ):
             raise ValueError(f"Unsupported expert implementation: {expert_impl}")
         self.expert_impl = expert_impl
@@ -460,15 +461,33 @@ class Qwen3SparseMoeBlock(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         flat_hidden = hidden_states.reshape(-1, self.hidden_size)
         router_logits = linear_tokenwise(self.gate, flat_hidden)
-        router_probs = torch.softmax(router_logits, dtype=torch.float32, dim=-1)
-        routing_weights, selected_experts = torch.topk(
-            router_probs, self.top_k, dim=-1
-        )
-        if self.norm_topk_prob:
-            routing_weights = routing_weights / routing_weights.sum(
-                dim=-1, keepdim=True
+        if self.expert_impl == "grouped_matmul_v2_gating_finalize":
+            if not self.norm_topk_prob:
+                raise ValueError(
+                    "Fused MoE gating requires normalized top-k probabilities"
+                )
+            require_torch_npu()
+            routing_weights, selected_experts, _row_idx = (
+                torch_npu.npu_moe_gating_top_k_softmax_v2(
+                    router_logits,
+                    k=self.top_k,
+                    finished=None,
+                    renorm=1,
+                    output_softmax=False,
+                )
             )
-        routing_weights = routing_weights.to(router_logits.dtype)
+        else:
+            router_probs = torch.softmax(
+                router_logits, dtype=torch.float32, dim=-1
+            )
+            routing_weights, selected_experts = torch.topk(
+                router_probs, self.top_k, dim=-1
+            )
+            if self.norm_topk_prob:
+                routing_weights = routing_weights / routing_weights.sum(
+                    dim=-1, keepdim=True
+                )
+            routing_weights = routing_weights.to(router_logits.dtype)
         return router_logits, routing_weights, selected_experts
 
     def forward(
@@ -482,6 +501,9 @@ class Qwen3SparseMoeBlock(nn.Module):
             "grouped_matmul": selected_expert_grouped_matmul,
             "grouped_matmul_finalize": selected_expert_grouped_matmul_finalize,
             "grouped_matmul_v2_finalize": (
+                selected_expert_grouped_matmul_v2_finalize
+            ),
+            "grouped_matmul_v2_gating_finalize": (
                 selected_expert_grouped_matmul_v2_finalize
             ),
         }[self.expert_impl]
