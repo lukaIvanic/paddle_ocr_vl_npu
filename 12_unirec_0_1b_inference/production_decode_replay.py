@@ -377,14 +377,19 @@ def warm_production_decode_graph(
         batch_size=batch_size,
     )
     arena = decoder._allocate_empty_arena()
+    if arena.cross_attention_mask is None:
+        raise RuntimeError("decode replay warmup has no cross-attention mask")
+    decoder_input_ids, cache_position = decoder._allocate_decode_device_inputs(
+        batch_size,
+        runner.device,
+    )
+    with torch.inference_mode():
+        arena.cross_attention_mask.zero_()
+        decoder_input_ids.fill_(int(runner.config.decoder_start_token_id))
+        cache_position.fill_(1)
     inputs = (
-        torch.full(
-            (batch_size, 1),
-            int(runner.config.decoder_start_token_id),
-            dtype=torch.long,
-            device=runner.device,
-        ),
-        torch.ones(batch_size, dtype=torch.int64, device=runner.device),
+        decoder_input_ids,
+        cache_position,
         0,
         arena.key_cache,
         arena.value_cache,
@@ -427,6 +432,7 @@ def main() -> None:
         ContinuousReadyItem,
         ContinuousUniRecDecoder,
         ContinuousWorkerPrefilledItem,
+        production_decode_cache_parent,
     )
     from modeling_optimized_unirec import OptimizedUniRecRunner
 
@@ -451,11 +457,14 @@ def main() -> None:
     )
 
     model_started = time.perf_counter()
+    decode_cache_parent = production_decode_cache_parent(
+        args.compile_cache_dir
+    )
     runner = OptimizedUniRecRunner(
         model_path=args.model_path.expanduser().resolve(),
         device=args.device,
         dtype=args.dtype,
-        compile_cache_dir=args.compile_cache_dir.expanduser().resolve(),
+        compile_cache_dir=decode_cache_parent,
     )
     processor_shape = tuple(int(value) for value in runner.processor.max_side)
     runner._static_cross_cache_len_by_processor_max_side[processor_shape] = (

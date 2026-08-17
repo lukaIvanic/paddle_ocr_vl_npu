@@ -652,6 +652,12 @@ def warmup_configured_graphs(
                 compile_dynamic=False,
             )
             warmup_cache = warmup_decoder._allocate_empty_arena()
+            if warmup_cache.cross_attention_mask is None:
+                raise RuntimeError("decode warmup has no cross-attention mask")
+            # An empty arena starts fully masked. Real production admits rows
+            # before its first graph call, so never exercise the 310P attention
+            # kernel with an artificial all-masked cross-attention input.
+            warmup_cache.cross_attention_mask.zero_()
             decoder_input_ids, cache_position = (
                 ContinuousUniRecDecoder._allocate_decode_device_inputs(
                     batch_size,

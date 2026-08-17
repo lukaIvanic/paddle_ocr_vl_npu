@@ -520,6 +520,7 @@ def main() -> None:
         ContinuousCompletedItem,
         ContinuousReadyItem,
         ContinuousUniRecDecoder,
+        production_decode_cache_parent,
     )
     from modeling_optimized_unirec import OptimizedUniRecRunner
 
@@ -540,11 +541,19 @@ def main() -> None:
         "header_image",
         "chart",
     ]
+    decode_cache_parent = production_decode_cache_parent(
+        args.compile_cache_dir
+    )
+    print(
+        "UNIREC_TWO_PHASE_DECODE_CACHE_NAMESPACE "
+        f"path={decode_cache_parent}",
+        flush=True,
+    )
     runner = OptimizedUniRecRunner(
         model_path=model_path,
         device=args.device,
         dtype=args.dtype,
-        compile_cache_dir=args.compile_cache_dir.expanduser().resolve(),
+        compile_cache_dir=decode_cache_parent,
     )
     processor_shape = tuple(int(value) for value in runner.processor.max_side)
     runner._static_cross_cache_len_by_processor_max_side[processor_shape] = (

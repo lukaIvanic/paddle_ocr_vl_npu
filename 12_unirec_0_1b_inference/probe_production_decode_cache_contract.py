@@ -68,15 +68,19 @@ def main() -> int:
     torch_npu.npu.set_compile_mode(jit_compile=False)
     torch._logging.set_logs(recompiles=True)
 
-    from continuous_unirec import ContinuousUniRecDecoder
+    from continuous_unirec import (
+        ContinuousUniRecDecoder,
+        production_decode_cache_parent,
+    )
     from modeling_optimized_unirec import OptimizedUniRecRunner, synchronize_device
 
     setup_started = time.perf_counter()
+    cache_parent = production_decode_cache_parent(args.compile_cache_dir)
     runner = OptimizedUniRecRunner(
         model_path=args.model_path.expanduser().resolve(),
         device=args.device,
         dtype="float16",
-        compile_cache_dir=args.compile_cache_dir.expanduser().resolve(),
+        compile_cache_dir=cache_parent,
     )
     processor_shape = tuple(int(value) for value in runner.processor.max_side)
     runner._static_cross_cache_len_by_processor_max_side[processor_shape] = (
@@ -99,11 +103,17 @@ def main() -> int:
     cache_dir = Path(metadata["torchair_cache_dir"])
     before = inventory(cache_dir)
     arena = decoder._allocate_empty_arena()
+    if arena.cross_attention_mask is None:
+        raise RuntimeError("decode cache probe has no cross-attention mask")
+    # Production always admits valid rows before its first decode call. Avoid
+    # an artificial all-masked input, which can timeout the 310P attention
+    # kernel even though that state is unreachable in the real scheduler.
     decoder_input_ids, cache_position = decoder._allocate_decode_device_inputs(
         args.batch_size,
         args.device,
     )
     with torch.inference_mode():
+        arena.cross_attention_mask.zero_()
         decoder_input_ids.fill_(int(runner.config.decoder_start_token_id))
         cache_position.fill_(1)
     inputs = (
@@ -174,6 +184,7 @@ def main() -> int:
             "cross_cache_length": args.cross_cache_length,
             "device": args.device,
             "passes": args.passes,
+            "cache_parent": str(cache_parent),
         },
         "setup_s": setup_s,
         "pass_wall_s": pass_wall_s,

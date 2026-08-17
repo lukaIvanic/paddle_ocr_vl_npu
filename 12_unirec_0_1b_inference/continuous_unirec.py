@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
+import os
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from queue import Queue
 from threading import Event as ThreadEvent
 from threading import Thread
@@ -17,6 +20,39 @@ from modeling_optimized_unirec import (
     OptimizedUniRecRunner,
     UniRecPrefilledItem,
 )
+
+
+def production_decode_cache_parent(base: str | Path) -> Path:
+    """Namespace persisted decode graphs by source and Ascend runtime.
+
+    The old cache path encoded shapes but not graph source or runtime. That let
+    a changed caller/runtime select a stale OM before Dynamo could reject it.
+    """
+    digest = hashlib.sha256(b"unirec-production-decode-contract-v2\0")
+    directory = Path(__file__).resolve().parent
+    for source in (
+        Path(__file__).resolve(),
+        directory / "modeling_optimized_unirec.py",
+    ):
+        digest.update(source.name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(source.read_bytes())
+        digest.update(b"\0")
+    digest.update(str(torch.__version__).encode("utf-8"))
+    try:
+        import torch_npu
+
+        digest.update(str(torch_npu.__version__).encode("utf-8"))
+    except Exception:
+        digest.update(b"torch_npu_unavailable")
+    ascend_home = os.environ.get("ASCEND_HOME_PATH")
+    if ascend_home:
+        version_file = Path(ascend_home) / "opp" / "version.info"
+        if version_file.is_file():
+            digest.update(version_file.read_bytes())
+    return Path(base).expanduser().resolve() / (
+        f"production_decode_contract_{digest.hexdigest()[:16]}"
+    )
 
 
 @dataclass

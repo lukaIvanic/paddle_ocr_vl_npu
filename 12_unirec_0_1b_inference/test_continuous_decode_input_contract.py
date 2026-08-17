@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import types
 import unittest
+from pathlib import Path
 
 import torch
 
@@ -18,10 +20,25 @@ modeling_stub.OptimizedUniRecRunner = type("OptimizedUniRecRunner", (), {})
 modeling_stub.UniRecPrefilledItem = type("UniRecPrefilledItem", (), {})
 sys.modules.setdefault("modeling_optimized_unirec", modeling_stub)
 
-from continuous_unirec import ContinuousUniRecDecoder
+from continuous_unirec import (
+    ContinuousUniRecDecoder,
+    production_decode_cache_parent,
+)
 
 
 class ContinuousDecodeInputContractTest(unittest.TestCase):
+    def test_decode_cache_parent_is_stable_and_namespaced(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            first = production_decode_cache_parent(root)
+            second = production_decode_cache_parent(root)
+            self.assertEqual(first, second)
+            self.assertEqual(first.parent, root.resolve())
+            self.assertRegex(
+                first.name,
+                r"^production_decode_contract_[0-9a-f]{16}$",
+            )
+
     def test_decode_device_inputs_are_static_inference_tensors(self) -> None:
         next_token, cache_position = (
             ContinuousUniRecDecoder._allocate_decode_device_inputs(7, "cpu")
