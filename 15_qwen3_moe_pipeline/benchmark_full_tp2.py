@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import time
 from pathlib import Path
 
@@ -30,6 +31,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup-steps", type=int, default=2)
     parser.add_argument("--decode-steps", type=int, default=20)
     parser.add_argument("--summary-out", type=Path)
+    parser.add_argument(
+        "--profile-dir",
+        type=Path,
+        help="Optional torch-npu profiler output root, with one subdirectory per rank.",
+    )
     return parser.parse_args()
 
 
@@ -216,6 +222,83 @@ def benchmark_continuation(
     }
 
 
+def profile_compiled_step(
+    decode,
+    cache,
+    stage: Qwen3MoeTPStage,
+    capture,
+    benchmark: dict[str, float],
+    *,
+    profile_root: Path,
+    rank: int,
+    world_size: int,
+    device: torch.device,
+    warmup_steps: int,
+    decode_steps: int,
+) -> dict[str, object]:
+    import torch_npu.profiler as npu_prof
+
+    profile_dir = profile_root / f"rank{rank}"
+    if profile_dir.exists():
+        shutil.rmtree(profile_dir)
+    profile_dir.mkdir(parents=True)
+    current_token = torch.tensor(
+        [[int(benchmark["final_token_id"])]], dtype=torch.int64, device=device
+    )
+    first_position = (
+        len(capture["prompt_token_ids"])
+        - 1
+        + len(capture["generated_token_ids"])
+        + warmup_steps
+        + decode_steps
+    )
+    synchronized_seconds = []
+    schedule = npu_prof.schedule(wait=0, warmup=1, active=1, repeat=1)
+    experimental_config = npu_prof._ExperimentalConfig(
+        profiler_level=npu_prof.ProfilerLevel.Level1,
+        aic_metrics=npu_prof.AiCMetrics.PipeUtilization,
+        export_type=npu_prof.ExportType.Text,
+    )
+    dist.barrier()
+    with npu_prof.profile(
+        activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
+        schedule=schedule,
+        on_trace_ready=npu_prof.tensorboard_trace_handler(
+            str(profile_dir), analyse_flag=True
+        ),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=False,
+        experimental_config=experimental_config,
+    ) as prof:
+        for offset in range(2):
+            cache_position = torch.tensor(
+                [first_position + offset], dtype=torch.int64, device=device
+            )
+            torch.npu.synchronize()
+            started = time.perf_counter()
+            local_logits = decode(
+                current_token,
+                cache_position,
+                cache.key_caches,
+                cache.value_caches,
+            )
+            current_token = distributed_local_argmax(
+                local_logits,
+                vocab_start=stage.vocab_start,
+                world_size=world_size,
+            )
+            torch.npu.synchronize()
+            synchronized_seconds.append(time.perf_counter() - started)
+            prof.step()
+    torch.npu.synchronize()
+    return {
+        "rank": rank,
+        "profile_dir": str(profile_dir),
+        "synchronized_seconds": synchronized_seconds,
+    }
+
+
 def main() -> None:
     args = parse_args()
     rank = int(os.environ["RANK"])
@@ -337,6 +420,21 @@ def main() -> None:
                 torch._dynamo.utils.counters["stats"]["calls_captured"]
             ),
         }
+        profile_summary = None
+        if args.profile_dir is not None:
+            profile_summary = profile_compiled_step(
+                compiled,
+                compiled_cache,
+                stage,
+                capture,
+                compiled_benchmark,
+                profile_root=args.profile_dir,
+                rank=rank,
+                world_size=world_size,
+                device=device,
+                warmup_steps=args.warmup_steps,
+                decode_steps=args.decode_steps,
+            )
 
     parity_passed = all(
         bool(check["token_match"])
@@ -373,6 +471,7 @@ def main() -> None:
         "dynamo_after_capture": stats_after_capture,
         "dynamo_final": stats_final,
         "no_recompilations_after_capture": no_recompilations,
+        "profile": profile_summary,
         "rank0_memory": memory_snapshot(device) if rank == 0 else None,
         "contracts": {
             "embedding": "vocab_parallel_all_reduce",
