@@ -10,10 +10,11 @@ The full model runs as a two-stage sequential pipeline:
   greedy token selection.
 
 The official BF16 checkpoint contains 61,064,245,248 bytes of tensors. A
-24-layer split therefore fits comfortably on two 64 GB 910B2 devices. B1 does
-not provide useful inter-stage pipeline overlap, so this first lane uses a
-single host process and a direct NPU-to-NPU boundary copy. The goal is exact
-state ownership and token parity, not pipeline throughput.
+24-layer split therefore fits comfortably on two 64 GB 910B2 devices. The
+initial parity lane uses one host process and a direct NPU-to-NPU boundary copy.
+The compiled throughput lane uses one process per NPU and HCCL send/receive.
+B1 does not provide useful inter-stage pipeline overlap, so stage latencies
+remain additive.
 
 ## MoE parity control
 
@@ -50,6 +51,29 @@ Verified on 2026-08-17 with the real BF16 `Qwen3-30B-A3B` checkpoint at commit
 
 The speed numbers are raw-eager development measurements. They are not a
 compiled serving result. The checked JSON artifacts are in `references/`.
+
+## Verified static TorchAir result
+
+Verified on 2026-08-17 on two Ascend 910B2 devices:
+
+- both 24-layer stages compile with `fullgraph=True`, `dynamic=False`, and
+  `ge_cache=True`;
+- each process owns one fixed NPU context and one static graph;
+- no additional graph appeared after prompt setup on either rank;
+- the independently replayed second half improved from 21.12 to 153.43
+  tokens/s in the clean cold-cache run, a 7.27x speedup;
+- the complete two-process HCCL pipeline sustained 86.07 tokens/s over 64
+  measured tokens, or 11.62 ms TPOT;
+- the first eight greedy tokens still matched the captured eager pipeline and
+  vLLM reference exactly;
+- both ranks loaded the second run from the persistent disk graph cache.
+
+The complete compiled result is 7.72x faster than the original 11.15-token/s
+raw-eager pipeline. Compiled BF16 logits are not bit-identical to eager logits:
+the observed eight-step maximum absolute difference was 0.8125, and top-10
+ordering changed on seven steps. The greedy token remained identical on all
+eight checked steps. See [NPU_MOE_OPERATOR_NOTES.md](NPU_MOE_OPERATOR_NOTES.md)
+for the next operator optimization lane and its constraints.
 
 ## Development replay package
 
@@ -101,6 +125,25 @@ python3 replay_stage2.py \
   --capture /results/qwen3_moe_stage2_capture.pt \
   --summary-out /results/qwen3_moe_stage2_replay_summary.json
 ```
+
+Compile and benchmark the complete two-process pipeline:
+
+```sh
+torchrun --nnodes=1 --nproc-per-node=2 \
+  --master-addr=127.0.0.1 --master-port=29572 \
+  benchmark_pipeline_compile_distributed.py \
+  --model-dir /models/Qwen3-30B-A3B \
+  --capture /results/qwen3_moe_stage2_capture.pt \
+  --warmup-steps 2 \
+  --decode-steps 64 \
+  --compile-cache-dir /results/qwen3_moe_compile_cache \
+  --summary-out /results/qwen3_moe_pipeline_compile_distributed_warm.json
+```
+
+Do not run both cached stage executors in one process by switching the current
+NPU. TorchAir cache executors own device-context streams. That experiment either
+serialized the second stage into the following token handoff or failed with
+`stream is not in current ctx`. The two-process runner is the supported lane.
 
 The verified development capture is stored at
 `references/qwen3_moe_stage2_capture.pt`. It contains no model weights. It

@@ -1,0 +1,150 @@
+{
+  "batch_size": 1,
+  "benchmark": {
+    "decode_steps": 20,
+    "elapsed_sec": 0.23005378991365433,
+    "mean_tpot_ms": 11.502689495682716,
+    "tok_s": 86.9361900428007,
+    "warmup_steps": 2
+  },
+  "cache_length": 256,
+  "chip": "Ascend 910B2",
+  "dtype": "bfloat16",
+  "model": "Qwen/Qwen3-30B-A3B",
+  "no_recompilations_after_prompt": true,
+  "parity": {
+    "expected_token_ids": [
+      12095,
+      13,
+      576,
+      6722,
+      315,
+      279,
+      3639,
+      15072
+    ],
+    "generated_token_ids": [
+      12095,
+      13,
+      576,
+      6722,
+      315,
+      279,
+      3639,
+      15072
+    ],
+    "passed": true
+  },
+  "pipeline_parallel_size": 2,
+  "rank0": {
+    "compile_contract": {
+      "cache_dir": "/results/qwen3_moe_compile_cache/distributed_stage0_l24_b1_kv256_bf16_src019a9ad80ff9",
+      "cache_was_warm": false,
+      "dynamic": false,
+      "dynamo_after_prompt": {
+        "calls_captured": 1983,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "dynamo_final": {
+        "calls_captured": 1983,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "first_call_sec": 55.607663340866566,
+      "fullgraph": true,
+      "ge_cache": true,
+      "no_recompilations_after_prompt": true,
+      "unique_graph_delta_after_prompt": 0,
+      "wrapper_sec": 0.0006684307008981705
+    },
+    "device": "npu:0",
+    "memory": {
+      "allocated_gib": 28.518545627593994,
+      "device": "npu:0",
+      "free_gib": 30.169300079345703,
+      "reserved_gib": 29.970703125,
+      "total_gib": 60.95703125
+    },
+    "rank": 0,
+    "stage": {
+      "allocated_memory": {
+        "allocated_gib": 28.435832977294922,
+        "device": "npu:0",
+        "free_gib": 31.97359848022461,
+        "reserved_gib": 28.626953125,
+        "total_gib": 60.95703125
+      },
+      "device": "npu:0",
+      "layer_end": 24,
+      "layer_start": 0,
+      "load_elapsed_sec": 36.14538011606783,
+      "loaded_memory": {
+        "allocated_gib": 28.43595552444458,
+        "device": "npu:0",
+        "free_gib": 30.636966705322266,
+        "reserved_gib": 29.9609375,
+        "total_gib": 60.95703125
+      },
+      "name": "distributed-stage0"
+    }
+  },
+  "rank1": {
+    "compile_contract": {
+      "cache_dir": "/results/qwen3_moe_compile_cache/distributed_stage1_l24_b1_kv256_bf16_src019a9ad80ff9",
+      "cache_was_warm": false,
+      "dynamic": false,
+      "dynamo_after_prompt": {
+        "calls_captured": 1988,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "dynamo_final": {
+        "calls_captured": 1988,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "first_call_sec": 55.607804683968425,
+      "fullgraph": true,
+      "ge_cache": true,
+      "no_recompilations_after_prompt": true,
+      "unique_graph_delta_after_prompt": 0,
+      "wrapper_sec": 0.0006798519752919674
+    },
+    "device": "npu:1",
+    "memory": {
+      "allocated_gib": 28.51880168914795,
+      "device": "npu:1",
+      "free_gib": 30.725566864013672,
+      "reserved_gib": 29.412109375,
+      "total_gib": 60.95703125
+    },
+    "rank": 1,
+    "stage": {
+      "allocated_memory": {
+        "allocated_gib": 28.435837268829346,
+        "device": "npu:1",
+        "free_gib": 31.970539093017578,
+        "reserved_gib": 28.626953125,
+        "total_gib": 60.95703125
+      },
+      "device": "npu:1",
+      "layer_end": 48,
+      "layer_start": 24,
+      "load_elapsed_sec": 32.53099665697664,
+      "loaded_memory": {
+        "allocated_gib": 28.435959815979004,
+        "device": "npu:1",
+        "free_gib": 31.193004608154297,
+        "reserved_gib": 29.40234375,
+        "total_gib": 60.95703125
+      },
+      "name": "distributed-stage1"
+    }
+  },
+  "transport": "two_process_hccl_send_recv"
+}
