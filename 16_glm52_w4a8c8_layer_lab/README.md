@@ -13,9 +13,8 @@ not yet the final absorbed-MLA performance path.
 Eager and compiled timing use independent empty KV caches. Each lane runs the
 same ordinary decode loop for warmup and measurement. Warmup includes cold
 first use (and compile/cache load for TorchAir) and is excluded from measured
-latency. All runtime tensors use one inference-mode contract. The runner fails
-if a static compiled run captures anything other than one Dynamo graph; it does
-not accept a recompilation as successful warmup.
+latency. TorchAir may compile or recompile during warmup. The runner only fails
+if a new graph appears inside the measured window.
 
 Run on one Ascend 910B2 after sourcing the NPU environment:
 

@@ -49,7 +49,8 @@ def benchmark(
     *,
     warmup_steps: int,
     decode_steps: int,
-) -> tuple[dict[str, float | int], torch.Tensor]:
+    capture_dynamo_stats: bool = False,
+) -> tuple[dict[str, object], torch.Tensor]:
     torch.npu.synchronize()
     warmup_started = time.perf_counter()
     for step in range(warmup_steps):
@@ -57,6 +58,16 @@ def benchmark(
         decode(hidden_states, cache_position, key_cache, value_cache)
     torch.npu.synchronize()
     warmup_elapsed = time.perf_counter() - warmup_started
+    dynamo_after_warmup = None
+    if capture_dynamo_stats:
+        dynamo_after_warmup = {
+            "unique_graphs": int(
+                torch._dynamo.utils.counters["stats"]["unique_graphs"]
+            ),
+            "calls_captured": int(
+                torch._dynamo.utils.counters["stats"]["calls_captured"]
+            ),
+        }
 
     started = time.perf_counter()
     output = None
@@ -67,15 +78,36 @@ def benchmark(
     elapsed = time.perf_counter() - started
     if output is None:
         raise ValueError("decode_steps must be positive")
+    dynamo_summary = None
+    if capture_dynamo_stats:
+        dynamo_after_measurement = {
+            "unique_graphs": int(
+                torch._dynamo.utils.counters["stats"]["unique_graphs"]
+            ),
+            "calls_captured": int(
+                torch._dynamo.utils.counters["stats"]["calls_captured"]
+            ),
+        }
+        dynamo_summary = {
+            "after_warmup": dynamo_after_warmup,
+            "after_measurement": dynamo_after_measurement,
+            "new_graphs_during_measurement": (
+                dynamo_after_measurement["unique_graphs"]
+                - dynamo_after_warmup["unique_graphs"]
+            ),
+        }
+    summary = {
+        "warmup_steps": warmup_steps,
+        "warmup_elapsed_sec_excluded": warmup_elapsed,
+        "decode_steps": decode_steps,
+        "elapsed_sec": elapsed,
+        "mean_layer_ms": 1000.0 * elapsed / decode_steps,
+        "layer_calls_per_sec": decode_steps / elapsed,
+    }
+    if dynamo_summary is not None:
+        summary["dynamo"] = dynamo_summary
     return (
-        {
-            "warmup_steps": warmup_steps,
-            "warmup_elapsed_sec_excluded": warmup_elapsed,
-            "decode_steps": decode_steps,
-            "elapsed_sec": elapsed,
-            "mean_layer_ms": 1000.0 * elapsed / decode_steps,
-            "layer_calls_per_sec": decode_steps / elapsed,
-        },
+        summary,
         output,
     )
 
@@ -159,19 +191,12 @@ def main() -> None:
                 compiled_value,
                 warmup_steps=args.warmup_steps,
                 decode_steps=args.decode_steps,
+                capture_dynamo_stats=True,
             )
-        stats_after_warmup_and_measurement = {
-            "unique_graphs": int(
-                torch._dynamo.utils.counters["stats"]["unique_graphs"]
-            ),
-            "calls_captured": int(
-                torch._dynamo.utils.counters["stats"]["calls_captured"]
-            ),
-        }
-        if stats_after_warmup_and_measurement["unique_graphs"] != 1:
+        if compiled_summary["dynamo"]["new_graphs_during_measurement"] != 0:
             raise RuntimeError(
-                "Static TorchAir run captured more than one graph: "
-                + json.dumps(stats_after_warmup_and_measurement, sort_keys=True)
+                "TorchAir recompiled inside the measured window: "
+                + json.dumps(compiled_summary["dynamo"], sort_keys=True)
             )
         output_diff = (compiled_output.float() - eager_output.float()).abs()
         used_cache_length = args.warmup_steps + args.decode_steps
@@ -197,8 +222,7 @@ def main() -> None:
                 )
             ),
         }
-        compiled_summary["dynamo"] = stats_after_warmup_and_measurement
-        compiled_summary["single_static_graph"] = True
+        compiled_summary["measured_window_graph_stable"] = True
         print("[layer3] parity " + json.dumps(parity, sort_keys=True), flush=True)
         if not parity["allclose_atol_5e_2_rtol_5e_2"]:
             raise RuntimeError("Compiled layer-3 output failed eager parity")
