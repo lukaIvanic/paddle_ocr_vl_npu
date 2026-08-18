@@ -305,8 +305,12 @@ def _masked_flat_global_context(
     valid_mask: torch.Tensor,
 ) -> torch.Tensor:
     """Return the masked spatial mean as unambiguous ND ``[batch, channels]``."""
-    pixel_count = valid_mask.sum(dim=(2, 3), keepdim=False).clamp_min(1)
-    return (ctx * valid_mask).sum(dim=(2, 3), keepdim=False) / pixel_count
+    # A direct FP16 sum over the 1024x1408 stage-0 canvas has 90,112 elements
+    # and can exceed FP16's finite range. The ratio of two means is the same
+    # masked mean, avoids that overflow, and retains a single spatial reduction.
+    masked_mean = (ctx * valid_mask).mean(dim=(2, 3), keepdim=False)
+    valid_fraction = valid_mask.mean(dim=(2, 3), keepdim=False).clamp_min(1e-4)
+    return masked_mean / valid_fraction
 
 
 def _run_masked_focal_block_flat_global(
