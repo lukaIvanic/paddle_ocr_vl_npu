@@ -40,6 +40,15 @@ VISION_WEIGHT_FORMAT_CHOICES = (
     "torchair_internal",
 )
 
+# These two aligned K10 canvases are the 310P shapes for which the compiled
+# two-stage width-then-height global-context reduction is numerically corrupt.
+# Keep the legacy graph code/cache identity for the eight already-clean buckets
+# and use the corrected flat reduction only for the affected graphs.
+FLAT_GLOBAL_CONTEXT_BUCKET_KEYS = frozenset({
+    "1024x704_b1",
+    "1024x1408_b1",
+})
+
 
 class _FocalGroupPrepackModule(nn.Module):
     def __init__(self, groups: int) -> None:
@@ -291,6 +300,55 @@ def _run_masked_focal_block(
     return _mask_nhwc(output, valid_mask).permute(0, 3, 1, 2).contiguous()
 
 
+def _masked_flat_global_context(
+    ctx: torch.Tensor,
+    valid_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Return the masked spatial mean as unambiguous ND ``[batch, channels]``."""
+    pixel_count = valid_mask.sum(dim=(2, 3), keepdim=False).clamp_min(1)
+    return (ctx * valid_mask).sum(dim=(2, 3), keepdim=False) / pixel_count
+
+
+def _run_masked_focal_block_flat_global(
+    block: nn.Module,
+    x: torch.Tensor,
+    valid_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Run one focal block with the 310P-safe flat global-context reduction."""
+    _batch, channels, _height, _width = x.shape
+    shortcut = x * valid_mask
+    normalized = block.norm1(shortcut.permute(0, 2, 3, 1))
+    modulation = block.modulation
+    projected = modulation.f(normalized).permute(0, 3, 1, 2).contiguous()
+    q, ctx, gates = torch.split(
+        projected,
+        (channels, channels, modulation.focal_level + 1),
+        dim=1,
+    )
+    q = q * valid_mask
+    ctx = ctx * valid_mask
+    gates = gates * valid_mask
+    ctx_all = None
+    for level, focal_layer in enumerate(modulation.focal_layers):
+        ctx = focal_layer(ctx) * valid_mask
+        contribution = ctx * gates[:, level : level + 1]
+        ctx_all = contribution if ctx_all is None else ctx_all + contribution
+    if ctx_all is None:
+        raise RuntimeError("UniRec focal modulation unexpectedly has no focal layers")
+    global_context_2d = modulation.act(
+        _masked_flat_global_context(ctx, valid_mask)
+    )
+    global_context = global_context_2d.unsqueeze(-1).unsqueeze(-1)
+    ctx_all = ctx_all + global_context * gates[:, modulation.focal_level :]
+    modulator = modulation.h(ctx_all) * valid_mask
+    modulated = q * modulator
+    modulated = modulated.permute(0, 2, 3, 1).contiguous()
+    modulated = _mask_nhwc(modulation.proj(modulated), valid_mask)
+    residual = shortcut.permute(0, 2, 3, 1) + modulated
+    output = residual + block.mlp(block.norm2(residual))
+    return _mask_nhwc(output, valid_mask).permute(0, 3, 1, 2).contiguous()
+
+
 class _MaskedFullVisionEncoder(nn.Module):
     """Complete UniRec vision encoder over independent masked batch rows."""
 
@@ -406,6 +464,52 @@ class _MaskedFullVisionEncoder(nn.Module):
         return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
 
 
+class _FlatGlobalContextFullVisionEncoder(_MaskedFullVisionEncoder):
+    """Affected 310P buckets with direct 2D masked global-context reduction."""
+
+    def _forward_fixed_flat(
+        self,
+        pixel_values: torch.Tensor,
+        mask2: torch.Tensor,
+        mask4: torch.Tensor,
+        mask8: torch.Tensor,
+        mask16: torch.Tensor,
+        mask32: torch.Tensor,
+    ) -> torch.Tensor:
+        x = self.stem0(pixel_values) * mask2
+        x = self.stem1(x) * mask4
+        x = self.pos_drop(x.flatten(2).transpose(1, 2))
+        x = self._tokens_to_chw(x, mask4)
+        stage_masks = (mask4, mask8, mask16, mask32)
+        for stage_index, stage in enumerate(self.stages):
+            stage_mask = stage_masks[stage_index]
+            for block in stage.blocks:
+                x = _run_masked_focal_block_flat_global(block, x, stage_mask)
+            if stage.downsample is not None:
+                x = stage.downsample(x)[0]
+                x = self._tokens_to_chw(x, stage_masks[stage_index + 1])
+        tokens = x.flatten(2).transpose(1, 2).contiguous()
+        tokens = self.projection(tokens)
+        return tokens * mask32.flatten(2).transpose(1, 2)
+
+    # The affected aligned K10 graphs have stable cache slots 6 and 8. Keep
+    # distinct normal code objects so a fresh process can restore each compiled
+    # graph without Dynamo specializing one shared method again.
+    def _forward_flat_bucket_slot_6(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_8(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+
 def _new_masked_full_encoder_module(
     runner: OptimizedUniRecRunner,
     _spec: VisionBucketSpec,
@@ -414,11 +518,30 @@ def _new_masked_full_encoder_module(
     return _MaskedFullVisionEncoder(runner).eval()
 
 
+def _new_flat_global_context_encoder_module(
+    runner: OptimizedUniRecRunner,
+    _spec: VisionBucketSpec,
+) -> _FlatGlobalContextFullVisionEncoder:
+    return _FlatGlobalContextFullVisionEncoder(runner).eval()
+
+
 def _source_hash() -> str:
     payload = inspect.getsource(_MaskedFullVisionEncoder).encode("utf-8")
     payload += inspect.getsource(_run_masked_focal_block).encode("utf-8")
     payload += inspect.getsource(_masked_per_row_global_context).encode("utf-8")
     payload += inspect.getsource(_new_masked_full_encoder_module).encode("utf-8")
+    payload += Path(__file__).with_name("modeling_optimized_unirec.py").read_bytes()
+    return hashlib.sha256(payload).hexdigest()[:12]
+
+
+def _flat_global_context_source_hash() -> str:
+    payload = inspect.getsource(_MaskedFullVisionEncoder).encode("utf-8")
+    payload += inspect.getsource(_FlatGlobalContextFullVisionEncoder).encode("utf-8")
+    payload += inspect.getsource(_run_masked_focal_block_flat_global).encode("utf-8")
+    payload += inspect.getsource(_masked_flat_global_context).encode("utf-8")
+    payload += inspect.getsource(
+        _new_flat_global_context_encoder_module
+    ).encode("utf-8")
     payload += Path(__file__).with_name("modeling_optimized_unirec.py").read_bytes()
     return hashlib.sha256(payload).hexdigest()[:12]
 
@@ -550,6 +673,7 @@ class BucketedFullVisionRuntime:
         )
 
         source_hash = _source_hash()
+        flat_global_context_source_hash = _flat_global_context_source_hash()
         rewrite_hash = vision_rewrite_source_hash(
             self.focal_depthwise_rewrite,
             constant_weight_digest=self.focal_depthwise_rewrite_summary[
@@ -585,13 +709,24 @@ class BucketedFullVisionRuntime:
         for graph_index, (spec, cache_slot) in enumerate(
             zip(self.specs, cache_slots)
         ):
-            module = _new_masked_full_encoder_module(runner, spec)
-            compile_method = getattr(
-                module,
-                f"_forward_bucket_slot_{cache_slot}",
-            )
+            use_flat_global_context = spec.key in FLAT_GLOBAL_CONTEXT_BUCKET_KEYS
+            if use_flat_global_context:
+                module = _new_flat_global_context_encoder_module(runner, spec)
+                compile_method = getattr(
+                    module,
+                    f"_forward_flat_bucket_slot_{cache_slot}",
+                )
+                selected_source_hash = flat_global_context_source_hash
+            else:
+                module = _new_masked_full_encoder_module(runner, spec)
+                compile_method = getattr(
+                    module,
+                    f"_forward_bucket_slot_{cache_slot}",
+                )
+                selected_source_hash = source_hash
             cache_dir = runner.compile_cache_dir / (
-                f"vision_full_bucket_{spec.key}_{runner.dtype_name}_src{source_hash}"
+                f"vision_full_bucket_{spec.key}_{runner.dtype_name}_src"
+                f"{selected_source_hash}"
                 f"{rewrite_cache_suffix}"
                 f"{weight_format_cache_suffix}"
             )
@@ -607,6 +742,9 @@ class BucketedFullVisionRuntime:
                 width=spec.width,
                 height=spec.height,
                 batch_size=spec.batch_size,
+                global_context_mode=(
+                    "direct_2d" if use_flat_global_context else "legacy_two_stage"
+                ),
                 cache=self._cache_snapshot(cache_dir),
             )
             registration_started = time.perf_counter()

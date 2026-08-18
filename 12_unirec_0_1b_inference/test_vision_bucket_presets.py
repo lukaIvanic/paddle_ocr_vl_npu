@@ -50,6 +50,49 @@ class VisionBucketPresetTest(unittest.TestCase):
             )
         )
 
+    def test_flat_global_context_has_stable_affected_bucket_methods(self) -> None:
+        source = Path(__file__).with_name("vision_full_batch.py").read_text()
+        tree = ast.parse(source)
+        encoder = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.ClassDef)
+            and node.name == "_FlatGlobalContextFullVisionEncoder"
+        )
+        methods = {
+            node.name
+            for node in encoder.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name.startswith("_forward_flat_bucket_slot_")
+        }
+        self.assertEqual(
+            methods,
+            {
+                "_forward_flat_bucket_slot_6",
+                "_forward_flat_bucket_slot_8",
+            },
+        )
+
+        flat_keys = next(
+            node.value
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name)
+                and target.id == "FLAT_GLOBAL_CONTEXT_BUCKET_KEYS"
+                for target in node.targets
+            )
+        )
+        self.assertIsInstance(flat_keys, ast.Call)
+        self.assertEqual(
+            {
+                element.value
+                for element in flat_keys.args[0].elts
+                if isinstance(element, ast.Constant)
+            },
+            {"1024x704_b1", "1024x1408_b1"},
+        )
+
     def test_worker_setup_warms_eager_fallback_twice(self) -> None:
         source = Path(__file__).with_name("layout_process_pool.py").read_text()
         tree = ast.parse(source)
