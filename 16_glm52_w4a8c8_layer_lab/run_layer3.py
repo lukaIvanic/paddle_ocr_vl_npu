@@ -43,7 +43,6 @@ def memory_snapshot(device: torch.device) -> dict[str, float | str]:
 def benchmark(
     decode,
     hidden_states: torch.Tensor,
-    cache_position: torch.Tensor,
     key_cache: torch.Tensor,
     value_cache: torch.Tensor,
     *,
@@ -54,7 +53,9 @@ def benchmark(
     torch.npu.synchronize()
     warmup_started = time.perf_counter()
     for step in range(warmup_steps):
-        cache_position.fill_(step)
+        cache_position = torch.tensor(
+            [step], dtype=torch.int64, device=hidden_states.device
+        )
         decode(hidden_states, cache_position, key_cache, value_cache)
     torch.npu.synchronize()
     warmup_elapsed = time.perf_counter() - warmup_started
@@ -72,7 +73,11 @@ def benchmark(
     started = time.perf_counter()
     output = None
     for step in range(decode_steps):
-        cache_position.fill_(warmup_steps + step)
+        cache_position = torch.tensor(
+            [warmup_steps + step],
+            dtype=torch.int64,
+            device=hidden_states.device,
+        )
         output = decode(hidden_states, cache_position, key_cache, value_cache)
     torch.npu.synchronize()
     elapsed = time.perf_counter() - started
@@ -147,11 +152,9 @@ def main() -> None:
             dtype=torch.float32,
         ).to(device=device, dtype=torch.bfloat16)
         eager_key, eager_value = model.make_cache(device=device)
-        position = torch.zeros(1, dtype=torch.int64, device=device)
         eager_summary, eager_output = benchmark(
             model.forward_decode,
             hidden_states,
-            position,
             eager_key,
             eager_value,
             warmup_steps=args.warmup_steps,
@@ -182,11 +185,9 @@ def main() -> None:
         )
         with torch.inference_mode():
             compiled_key, compiled_value = model.make_cache(device=device)
-            position.zero_()
             compiled_summary, compiled_output = benchmark(
                 compiled,
                 hidden_states,
-                position,
                 compiled_key,
                 compiled_value,
                 warmup_steps=args.warmup_steps,
