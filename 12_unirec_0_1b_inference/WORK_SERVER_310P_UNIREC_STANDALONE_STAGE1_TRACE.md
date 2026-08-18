@@ -13,6 +13,19 @@ This run compiles **one graph only**. The same compiled stage-1 suffix returns
 intermediate tensors after every block/downsample plus final projection. The
 report identifies the first eager-vs-TorchAir boundary that diverges.
 
+Verified 910B2 control at commit `ab53929`, physical NPU 7:
+
+- one cold graph build/load: 25.233 s;
+- steady compiled forward: 9.565 ms;
+- stage-1 block 0: max-abs 0.0009766, cosine 0.99999976;
+- final projection: max-abs 0.0041504, cosine 0.99999917;
+- first divergent boundary: none.
+
+Returning intermediate tensors can change compiler fusion. Therefore, either
+310P outcome is informative: a failure localizes the first corrupt boundary;
+a clean trace means the original corruption depends on a fusion that the extra
+graph outputs inhibited.
+
 Do not run the old stage ladder again. Do not delete any cache. Do not change
 tracked files on the work server.
 
