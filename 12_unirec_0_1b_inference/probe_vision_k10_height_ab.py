@@ -23,6 +23,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
+PROCESS_STARTED = time.perf_counter()
+
 import numpy as np
 import torch
 
@@ -57,6 +59,23 @@ DEFAULT_REQUEST_IDS = (
     "page_000032_crop_0002",  # 310P K10 mismatch
     "page_000032_crop_0004",  # same page and shape, known-good K10 control
 )
+PHASE_EVENTS: list[dict[str, Any]] = []
+
+
+def _phase(name: str, started: float, **fields: Any) -> float:
+    now = time.perf_counter()
+    event = {
+        "phase": name,
+        "phase_s": now - started,
+        "process_elapsed_s": now - PROCESS_STARTED,
+        **fields,
+    }
+    PHASE_EVENTS.append(event)
+    print(
+        "UNIREC_VISION_K10_HEIGHT_AB_PHASE " + json.dumps(event),
+        flush=True,
+    )
+    return now
 
 
 def parse_args() -> argparse.Namespace:
@@ -157,11 +176,17 @@ def _time_ms(fn: Callable[[], torch.Tensor], *, device: str) -> tuple[torch.Tens
 
 
 def main() -> None:
+    phase_started = PROCESS_STARTED
     args = parse_args()
     devices = _physical_devices()
     sys.path.insert(0, str(args.openocr_root.expanduser().resolve()))
     from tools.utils.opendoc_onnx_utils.utils import (  # noqa: PLC0415
         tokenize_figure_of_table,
+    )
+    phase_started = _phase(
+        "imports_and_arguments",
+        phase_started,
+        physical_devices=devices,
     )
 
     page_manifest = args.page_manifest.expanduser().resolve()
@@ -171,6 +196,11 @@ def main() -> None:
         page_manifest=page_manifest,
         selected_rows=rows,
         tokenize_figure_of_table=tokenize_figure_of_table,
+    )
+    phase_started = _phase(
+        "manifest_and_crop_reconstruction",
+        phase_started,
+        crop_count=len(rows),
     )
 
     processor = UniRecImageProcessor()
@@ -205,6 +235,13 @@ def main() -> None:
                 image_source=request_id,
             )
         )
+    phase_started = _phase(
+        "compact_crop_preparation",
+        phase_started,
+        processed_shapes=[
+            [item.processed_width, item.processed_height] for item in items
+        ],
+    )
 
     runner = OptimizedUniRecRunner(
         model_path=args.model_path.expanduser().resolve(),
@@ -212,6 +249,7 @@ def main() -> None:
         dtype="float16",
         compile_cache_dir=args.cache_dir.expanduser().resolve(),
     )
+    phase_started = _phase("model_load", phase_started)
     runtime = BucketedFullVisionRuntime(
         runner,
         specs=_probe_specs(),
@@ -220,6 +258,11 @@ def main() -> None:
         preset_name="k10_height_ab",
     )
     by_key = {spec.key: spec for spec in runtime.specs}
+    phase_started = _phase(
+        "graph_registration",
+        phase_started,
+        registered_graphs=len(runtime.specs),
+    )
 
     def run_eager(item: PreprocessedVisionInput) -> torch.Tensor:
         pixels = _compact_uint8_hwc_to_device(
@@ -235,12 +278,31 @@ def main() -> None:
 
     # Use the real crop data for warmup.  This catches cache-key and first-call
     # behavior without introducing synthetic content into the comparison.
-    for _ in range(args.warmup_replays):
+    for replay_index in range(args.warmup_replays):
         for item in items:
-            run_eager(item)
-            run_bucket(item, CURRENT_KEY)
-            run_bucket(item, CONTROL_KEY)
-    synchronize_device(runner.device)
+            warmup_lanes: tuple[
+                tuple[str, Callable[[], torch.Tensor]], ...
+            ] = (
+                ("eager", lambda item=item: run_eager(item)),
+                (
+                    CURRENT_KEY,
+                    lambda item=item: run_bucket(item, CURRENT_KEY),
+                ),
+                (
+                    CONTROL_KEY,
+                    lambda item=item: run_bucket(item, CONTROL_KEY),
+                ),
+            )
+            for lane, fn in warmup_lanes:
+                _unused, elapsed_ms = _time_ms(fn, device=runner.device)
+                phase_started = _phase(
+                    "warmup_call",
+                    phase_started,
+                    replay_index=replay_index,
+                    request_id=item.image_source,
+                    lane=lane,
+                    synchronized_ms=elapsed_ms,
+                )
 
     result_rows = []
     all_timing: dict[str, list[float]] = {
@@ -284,6 +346,11 @@ def main() -> None:
                 },
             }
         )
+    phase_started = _phase(
+        "measured_replays_and_comparisons",
+        phase_started,
+        measured_calls=sum(len(values) for values in all_timing.values()),
+    )
 
     report = {
         "status": "pass",
@@ -312,10 +379,12 @@ def main() -> None:
             key: runtime.cache_inventory()[key]
             for key in (CURRENT_KEY, CONTROL_KEY)
         },
+        "phase_events": PHASE_EVENTS,
     }
     output = args.output.expanduser().resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    _phase("report_write", phase_started, output=str(output))
     print("UNIREC_VISION_K10_HEIGHT_AB " + json.dumps(report), flush=True)
     print(f"OUTPUT_JSON={output}", flush=True)
 

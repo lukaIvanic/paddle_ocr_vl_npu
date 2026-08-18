@@ -114,7 +114,7 @@ diff -u "$RUN_ROOT/cache_before.txt" "$RUN_ROOT/cache_after.txt" \
 
 cat "$RUN_ROOT/exit_code.txt"
 cat "$RUN_ROOT/process_wall_s.txt"
-jq '{status,physical_devices,probe,rows,aggregate_timing_p50_ms,cache_inventory}' \
+jq '{status,physical_devices,probe,phase_events,rows,aggregate_timing_p50_ms,cache_inventory}' \
   "$RUN_ROOT/report.json"
 cat "$RUN_ROOT/cache.diff"
 ```
@@ -125,12 +125,15 @@ Return only:
 
 1. `RUN_ROOT`, commit, device, exit code, and process wall time.
 2. Whether either target OM or `compiled_module` inventory changed.
-3. For each crop, the max abs, mean abs, RMSE, and cosine for:
+3. Every `phase_events` row. These separate imports, crop reconstruction,
+   model load, graph registration, each synchronized cold/warm graph call, and
+   measured replay work.
+4. For each crop, the max abs, mean abs, RMSE, and cosine for:
    - `448_vs_eager`
    - `512_vs_eager`
    - `448_vs_512`
-4. The three p50 times: eager, 448, and 512.
-5. A factual one-line result:
+5. The three p50 times: eager, 448, and 512.
+6. A factual one-line result:
    - 512 materially fixes only the suspect;
    - both heights are equivalent;
    - or both compiled heights differ materially from eager.
