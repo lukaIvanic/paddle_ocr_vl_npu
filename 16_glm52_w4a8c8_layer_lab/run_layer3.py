@@ -146,6 +146,14 @@ def main() -> None:
                     hidden_states, position, compiled_key, compiled_value
                 )
             )
+        stats_after_first = {
+            "unique_graphs": int(
+                torch._dynamo.utils.counters["stats"]["unique_graphs"]
+            ),
+            "calls_captured": int(
+                torch._dynamo.utils.counters["stats"]["calls_captured"]
+            ),
+        }
         output_diff = (compiled_output.float() - eager_output.float()).abs()
         key_diff = (
             compiled_key[:, :, :1].float() - eager_key[:, :, :1].float()
@@ -167,23 +175,32 @@ def main() -> None:
                 )
             ),
         }
-        benchmark_summary = benchmark(
-            compiled,
-            model,
-            hidden_states,
-            device=device,
-            warmup_steps=args.warmup_steps,
-            decode_steps=args.decode_steps,
-        )
+        with torch.inference_mode():
+            benchmark_summary = benchmark(
+                compiled,
+                model,
+                hidden_states,
+                device=device,
+                warmup_steps=args.warmup_steps,
+                decode_steps=args.decode_steps,
+            )
+        stats_final = {
+            "unique_graphs": int(
+                torch._dynamo.utils.counters["stats"]["unique_graphs"]
+            ),
+            "calls_captured": int(
+                torch._dynamo.utils.counters["stats"]["calls_captured"]
+            ),
+        }
         compiled_summary = {
             "first_call_sec": compile_first_sec,
             "benchmark": benchmark_summary,
             "dynamo": {
-                "unique_graphs": int(
-                    torch._dynamo.utils.counters["stats"]["unique_graphs"]
-                ),
-                "calls_captured": int(
-                    torch._dynamo.utils.counters["stats"]["calls_captured"]
+                "after_first": stats_after_first,
+                "final": stats_final,
+                "no_recompilations_after_first": (
+                    stats_final["unique_graphs"]
+                    == stats_after_first["unique_graphs"]
                 ),
             },
         }
