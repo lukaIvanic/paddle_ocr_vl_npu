@@ -57,6 +57,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timing-repeats", type=int, default=3)
     parser.add_argument("--require-cache", action="store_true")
     parser.add_argument(
+        "--trace-boundaries",
+        action="store_true",
+        help=(
+            "return intermediate stage/block boundaries from the same compiled "
+            "graph so eager-vs-TorchAir divergence can be localized"
+        ),
+    )
+    parser.add_argument(
         "--weight-format",
         choices=("native", "torchair_internal"),
         default="torchair_internal",
@@ -198,13 +206,31 @@ def run_masked_focal_block(
 
 
 class MaskedVisionSuffix(nn.Module):
-    def __init__(self, start_stage: int) -> None:
+    def __init__(self, start_stage: int, *, trace_boundaries: bool = False) -> None:
         super().__init__()
         self.start_stage = int(start_stage)
+        self.trace_boundaries = bool(trace_boundaries)
         self.stages = nn.ModuleList(
             [Stage(index) for index in range(self.start_stage, 4)]
         )
         self.projection = nn.Linear(768, 768)
+
+        boundary_specs: list[tuple[str, int, str]] = []
+        for stage_index in range(self.start_stage, 4):
+            for block_index in range(STAGE_DEPTHS[stage_index]):
+                boundary_specs.append(
+                    (f"stage_{stage_index}_block_{block_index}", stage_index, "nchw")
+                )
+            if stage_index < 3:
+                boundary_specs.append(
+                    (
+                        f"stage_{stage_index}_downsample_to_{stage_index + 1}",
+                        stage_index + 1,
+                        "nchw",
+                    )
+                )
+        boundary_specs.append(("projection", 3, "tokens"))
+        self.boundary_specs = tuple(boundary_specs)
 
     @staticmethod
     def tokens_to_chw(tokens: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -220,19 +246,52 @@ class MaskedVisionSuffix(nn.Module):
         mask8: torch.Tensor,
         mask16: torch.Tensor,
         mask32: torch.Tensor,
-    ) -> torch.Tensor:
+    ) -> torch.Tensor | tuple[torch.Tensor, ...]:
         masks = (mask4, mask8, mask16, mask32)
+        boundaries: list[torch.Tensor] = []
         for offset, stage in enumerate(self.stages):
             stage_index = self.start_stage + offset
             stage_mask = masks[stage_index]
             for block in stage.blocks:
                 x = run_masked_focal_block(block, x, stage_mask)
+                if self.trace_boundaries:
+                    boundaries.append(x)
             if stage.downsample is not None:
                 x = stage.downsample(x)
                 x = self.tokens_to_chw(x, masks[stage_index + 1])
+                if self.trace_boundaries:
+                    boundaries.append(x)
         tokens = x.flatten(2).transpose(1, 2).contiguous()
         tokens = self.projection(tokens)
-        return tokens * mask32.flatten(2).transpose(1, 2)
+        tokens = tokens * mask32.flatten(2).transpose(1, 2)
+        if self.trace_boundaries:
+            boundaries.append(tokens)
+            return tuple(boundaries)
+        return tokens
+
+
+def compact_boundary(
+    tensor: torch.Tensor,
+    *,
+    stage_index: int,
+    layout: str,
+) -> torch.Tensor:
+    factor = STAGE_FACTORS[stage_index]
+    valid_height = VALID_HEIGHT // factor
+    valid_width = VALID_WIDTH // factor
+    if layout == "nchw":
+        return tensor[:, :, :valid_height, :valid_width].contiguous()
+    if layout == "tokens":
+        grid = tensor.reshape(
+            tensor.shape[0],
+            CANVAS_HEIGHT // factor,
+            CANVAS_WIDTH // factor,
+            tensor.shape[-1],
+        )
+        return grid[:, :valid_height, :valid_width].reshape(
+            tensor.shape[0], -1, tensor.shape[-1]
+        )
+    raise ValueError(f"unsupported boundary layout: {layout}")
 
 
 def difference(reference: torch.Tensor, candidate: torch.Tensor) -> dict[str, Any]:
@@ -306,7 +365,10 @@ def main() -> None:
         start_stage=args.start_stage,
     )
 
-    module = MaskedVisionSuffix(args.start_stage).to(dtype=torch.float16)
+    module = MaskedVisionSuffix(
+        args.start_stage,
+        trace_boundaries=args.trace_boundaries,
+    ).to(dtype=torch.float16)
     torch_npu.npu.config.allow_internal_format = False
     module = module.to(args.device).eval()
     torch.npu.synchronize()
@@ -357,6 +419,7 @@ def main() -> None:
     source_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12]
     cache_dir = args.cache_root.expanduser().resolve() / (
         f"standalone_vision_suffix_s{args.start_stage}_1024x704_fp16_"
+        f"trace{int(args.trace_boundaries)}_"
         f"w{args.weight_format}_src{source_hash}"
     )
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -380,6 +443,7 @@ def main() -> None:
     with torch.inference_mode():
         eager_first, eager_first_ms = timed(lambda: call(module), args.device)
         phase("eager_first", synchronized_ms=eager_first_ms)
+        phase("compiled_first_begin", cache_dir=str(cache_dir))
         compiled_first, compiled_first_ms = timed(lambda: call(compiled), args.device)
         phase("compiled_first", synchronized_ms=compiled_first_ms)
         eager_times = []
@@ -399,20 +463,65 @@ def main() -> None:
                     compiled_output = output
                     compiled_times.append(elapsed_ms)
 
-    full_difference = difference(eager_output, compiled_output)
-    output_grid_eager = eager_output.reshape(
-        1, CANVAS_HEIGHT // 32, CANVAS_WIDTH // 32, 768
-    )
-    output_grid_compiled = compiled_output.reshape(
-        1, CANVAS_HEIGHT // 32, CANVAS_WIDTH // 32, 768
-    )
-    compact_eager = output_grid_eager[:, : VALID_HEIGHT // 32, : VALID_WIDTH // 32].reshape(
-        1, -1, 768
-    )
-    compact_compiled = output_grid_compiled[
-        :, : VALID_HEIGHT // 32, : VALID_WIDTH // 32
-    ].reshape(1, -1, 768)
-    compact_difference = difference(compact_eager, compact_compiled)
+    if args.trace_boundaries:
+        if not isinstance(eager_output, tuple) or not isinstance(compiled_output, tuple):
+            raise RuntimeError("boundary trace requested but graph did not return tuples")
+        if len(eager_output) != len(module.boundary_specs):
+            raise RuntimeError(
+                f"boundary count mismatch: {len(eager_output)} != "
+                f"{len(module.boundary_specs)}"
+            )
+        boundary_comparison = {}
+        first_divergent_boundary = None
+        for spec, eager_tensor, compiled_tensor in zip(
+            module.boundary_specs,
+            eager_output,
+            compiled_output,
+            strict=True,
+        ):
+            name, stage_index, layout = spec
+            full = difference(eager_tensor, compiled_tensor)
+            valid = difference(
+                compact_boundary(
+                    eager_tensor,
+                    stage_index=stage_index,
+                    layout=layout,
+                ),
+                compact_boundary(
+                    compiled_tensor,
+                    stage_index=stage_index,
+                    layout=layout,
+                ),
+            )
+            boundary_comparison[name] = {
+                "stage_index": stage_index,
+                "layout": layout,
+                "full_physical": full,
+                "valid_compact": valid,
+            }
+            diverged = float(valid["cosine"]) < 0.999 or float(valid["max_abs"]) > 0.5
+            if diverged and first_divergent_boundary is None:
+                first_divergent_boundary = name
+        final_name = module.boundary_specs[-1][0]
+        full_difference = boundary_comparison[final_name]["full_physical"]
+        compact_difference = boundary_comparison[final_name]["valid_compact"]
+    else:
+        if isinstance(eager_output, tuple) or isinstance(compiled_output, tuple):
+            raise RuntimeError("unexpected tuple output without boundary trace")
+        full_difference = difference(eager_output, compiled_output)
+        compact_eager = compact_boundary(
+            eager_output,
+            stage_index=3,
+            layout="tokens",
+        )
+        compact_compiled = compact_boundary(
+            compiled_output,
+            stage_index=3,
+            layout="tokens",
+        )
+        compact_difference = difference(compact_eager, compact_compiled)
+        boundary_comparison = None
+        first_divergent_boundary = None
     after = inventory(cache_dir)
     report = {
         "schema": "unirec_standalone_vision_torchair_divergence_v1",
@@ -421,6 +530,7 @@ def main() -> None:
         "canvas": [CANVAS_WIDTH, CANVAS_HEIGHT],
         "valid_pixels": [VALID_WIDTH, VALID_HEIGHT],
         "start_stage": args.start_stage,
+        "trace_boundaries": args.trace_boundaries,
         "input_shape": list(x.shape),
         "weight_format": args.weight_format,
         "npu_jit_compile": False,
@@ -436,6 +546,8 @@ def main() -> None:
             "full_physical": full_difference,
             "valid_compact": compact_difference,
         },
+        "boundary_comparison": boundary_comparison,
+        "first_divergent_boundary": first_divergent_boundary,
         "cache_dir": str(cache_dir),
         "cache_before": before,
         "cache_after": after,
@@ -445,6 +557,21 @@ def main() -> None:
     output = args.output.expanduser().resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    if boundary_comparison is not None:
+        for name, row in boundary_comparison.items():
+            valid = row["valid_compact"]
+            print(
+                "UNIREC_STANDALONE_VISION_BOUNDARY "
+                f"name={name} shape={valid['shape']} "
+                f"max_abs={valid['max_abs']:.9g} rmse={valid['rmse']:.9g} "
+                f"cosine={valid['cosine']:.9g}",
+                flush=True,
+            )
+        print(
+            "UNIREC_STANDALONE_VISION_FIRST_DIVERGENCE "
+            f"boundary={first_divergent_boundary or 'none'}",
+            flush=True,
+        )
     print("UNIREC_STANDALONE_VISION_RESULT " + json.dumps(report), flush=True)
     print(f"OUTPUT_JSON={output}", flush=True)
 
