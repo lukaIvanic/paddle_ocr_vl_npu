@@ -39,7 +39,7 @@ resolve_inputs() {
   : "${COMPILE_CACHE:?export the existing production compile-cache parent}"
   : "${EVALUATOR_ROOT:?export the OmniDocBench evaluator checkout}"
   : "${EVAL_PYTHON:?export the CDM-capable evaluator Python}"
-  : "${ASCEND_RT_VISIBLE_DEVICES:?source npu-setup and select one free 310P}"
+  : "${ASCEND_RT_VISIBLE_DEVICES:?select one free physical 310P device from 0-3}"
   : "${CDM_WORKERS:=64}"
   : "${MATCH_WORKERS:=12}"
   : "${TEDS_WORKERS:=12}"
@@ -67,7 +67,7 @@ resolve_inputs() {
     fi
   done
   case "$RUN_VARIANT" in
-    accuracy_anchor|optimized_k10_l4|optimized_k10_l4_aligned) ;;
+    accuracy_anchor|optimized_k10_l4|optimized_k10_l4_aligned|optimized_k20_l4_compiled_fp32) ;;
     *) printf 'INVALID_RUN_VARIANT=%s\n' "$RUN_VARIANT" >&2; exit 1 ;;
   esac
   case "$ALLOW_LOW_HOST_MEMORY" in
@@ -90,6 +90,12 @@ resolve_inputs() {
   COMPILE_CACHE="$(readlink -f "$COMPILE_CACHE")"
   EVALUATOR_ROOT="$(readlink -f "$EVALUATOR_ROOT")"
   EVAL_PYTHON="$(absolute_executable_path "$EVAL_PYTHON")"
+  if [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 ]]; then
+    : "${LAYOUT_CACHE_ROOT:?export the warmed compiled-FP32 B2 layout cache}"
+    LAYOUT_CACHE_ROOT="$(readlink -f "$LAYOUT_CACHE_ROOT")"
+    test -d "$LAYOUT_CACHE_ROOT"
+    export LAYOUT_CACHE_ROOT
+  fi
   if [[ -n "${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:-}" ]]; then
     UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="$(
       readlink -f "$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE"
@@ -218,8 +224,12 @@ PY
 
 om_inventory() {
   local output="$1"
-  find "$COMPILE_CACHE" -type f -name '*.om' -printf '%p %s %T@\n' \
-    | sort >"$output"
+  {
+    find "$COMPILE_CACHE" -type f -name '*.om' -printf 'production %p %s %T@\n'
+    if [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 ]]; then
+      find "$LAYOUT_CACHE_ROOT" -type f -name '*.om' -printf 'layout %p %s %T@\n'
+    fi
+  } | sort >"$output"
 }
 
 gate_decode_cache() {
@@ -295,17 +305,24 @@ verify_evaluator_runtime() {
 run_inference() {
   local output="$RUN_ROOT/output"
   mkdir -p "$output"
+  local layout_execution=eager
+  local layout_cache_args=()
+  if [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 ]]; then
+    layout_execution=torchair
+    layout_cache_args=(--layout-cache-dir "$LAYOUT_CACHE_ROOT")
+  fi
   command=(
     "$PYTHON_BIN" "$RUNNER"
     --openocr-root "$OPENOCR_ROOT"
     --model-path "$MODEL"
     --layout-model "$LAYOUT_MODEL"
-    --layout-execution eager
+    --layout-execution "$layout_execution"
     --layout-dtype float32
     --layout-reading-order-dtype float32
     --layout-weight-format native
     --layout-depthwise-rewrite native
     --layout-threshold 0.5
+    "${layout_cache_args[@]}"
     --input "$IMAGES_DIR"
     --output-dir "$output"
     --device npu:0
@@ -340,6 +357,12 @@ run_inference() {
   elif [[ "$RUN_VARIANT" == optimized_k10_l4_aligned ]]; then
     command+=(
       --vision-bucket-preset 310p_k10_l4_aligned
+      --vision-focal-depthwise-rewrite constant_grouped_all
+      --vision-weight-format torchair_internal
+    )
+  elif [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 ]]; then
+    command+=(
+      --vision-bucket-preset 310p_k20_l4
       --vision-focal-depthwise-rewrite constant_grouped_all
       --vision-weight-format torchair_internal
     )
@@ -426,20 +449,38 @@ stage = json.loads(
 assert run["status"] == "ok"
 assert (run["page_count"], run["offset"], run["workers"]) == (1651, 0, 4)
 assert run["recognition_preprocess_threads"] == 8
+assert run["layout_batch_size"] == 2
 assert run["decode_batch_size"] == 128
 assert run["cross_cache_length"] == 1320
 assert run["self_cache_length"] == 2048
+assert run["retained_bank"]["rejected_crop_count"] == 0
 variant = os.environ["RUN_VARIANT"]
-if variant in {"optimized_k10_l4", "optimized_k10_l4_aligned"}:
+if variant in {
+    "optimized_k10_l4",
+    "optimized_k10_l4_aligned",
+    "optimized_k20_l4_compiled_fp32",
+}:
     expected_preset = (
-        "310p_k10_l4_aligned"
-        if variant == "optimized_k10_l4_aligned"
-        else "310p_k10_l4_all"
+        "310p_k20_l4"
+        if variant == "optimized_k20_l4_compiled_fp32"
+        else (
+            "310p_k10_l4_aligned"
+            if variant == "optimized_k10_l4_aligned"
+            else "310p_k10_l4_all"
+        )
     )
     assert run["vision_bucket_preset"] == expected_preset
     assert run["vision_focal_depthwise_rewrite"] == "constant_grouped_all"
     assert run["vision_weight_format"] == "torchair_internal"
     assert run["prefill_phase_summary"]["vision_batching"]["fallback_rows"] == 0
+if variant == "optimized_k20_l4_compiled_fp32":
+    assert run["layout_cpu_threads"] == 16
+    assert run["layout_execution"] == "torchair"
+    assert run["layout_dtype"] == "float32"
+    assert run["layout_reading_order_dtype"] == "float32"
+    assert run["layout_weight_format"] == "native"
+    assert run["layout_depthwise_rewrite"] == "native"
+    assert run["prefill_phase_summary"]["recognition_page_lookahead"] == 4
 assert transform["page_count"] == 1651 and transform["strip_image_tags"] is True
 assert stage["page_match"]["page_count"] == 1651
 assert stage["page_match"]["fallbacks"]["page_timeout"]["count"] == 0
@@ -452,9 +493,24 @@ inference_process_wall_s = float(
     (root / "inference_process_wall_s.txt").read_text()
 )
 slot_eff = run["decode"]["effective_decode_tokens"] / run["decode"]["raw_decode_token_slots"]
+vision = run["prefill_phase_summary"]["vision_batching"]
+print(
+    "UNIREC_310P_FULL1651_VISION "
+    + json.dumps(
+        {
+            "bucket_calls": vision["bucket_calls"],
+            "bucket_real_rows": vision["bucket_real_rows"],
+            "bucket_physical_rows": vision["bucket_physical_rows"],
+            "compiled_slot_efficiency": vision["compiled_slot_efficiency"],
+            "fallback_rows": vision["fallback_rows"],
+        },
+        sort_keys=True,
+    )
+)
 print(
     "UNIREC_310P_FULL1651_W4T8_EVAL: PASS "
     f"pages=1651 crops={run['crop_count']} "
+    f"rejected={run['retained_bank']['rejected_crop_count']} "
     f"cold_process_wall_s={inference_process_wall_s:.6f} "
     f"cold_process_pg_s={1651 / inference_process_wall_s:.6f} "
     f"lifecycle_s={t['lifecycle']:.6f} "
@@ -487,6 +543,9 @@ worker_main() {
     printf 'project_commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
     printf 'physical_npu=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
     printf 'run_variant=%s\ncpuset=%s\n' "$RUN_VARIANT" "${CPUSET:-unrestricted}"
+    if [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 ]]; then
+      printf 'layout_cache_root=%s\n' "$LAYOUT_CACHE_ROOT"
+    fi
     printf 'match_workers=%s\nteds_workers=%s\n' "$MATCH_WORKERS" "$TEDS_WORKERS"
     printf 'cdm_workers=%s\n' "$CDM_WORKERS"
     printf 'evaluator_root=%s\nevaluator_commit=%s\n' \
@@ -589,6 +648,7 @@ launch_main() {
     ALLOW_LOW_HOST_MEMORY="$ALLOW_LOW_HOST_MEMORY" CPUSET="$CPUSET" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:-}" \
+    LAYOUT_CACHE_ROOT="${LAYOUT_CACHE_ROOT:-}" \
     "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"
   printf 'RUN_ROOT=%s\nRUN_LOG=%s\nPID=%s\n' \
