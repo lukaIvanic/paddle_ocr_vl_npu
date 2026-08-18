@@ -43,6 +43,7 @@ def parse_args() -> argparse.Namespace:
         type=int,
         help="Static KV capacity. Default: use the capture capacity.",
     )
+    parser.add_argument("--dense-weight-prefetch", action="store_true")
     parser.add_argument("--warmup-steps", type=int, default=2)
     parser.add_argument("--decode-steps", type=int, default=20)
     parser.add_argument(
@@ -262,6 +263,7 @@ def main() -> None:
         name=f"stage2-compile-l{args.layers}",
         cache_length=cache_length,
         expert_impl=args.expert_impl,
+        dense_weight_prefetch=args.dense_weight_prefetch,
     )
 
     eager_cache = stage.make_cache(cache_length=cache_length)
@@ -282,7 +284,8 @@ def main() -> None:
     )
 
     shape_key = (
-        f"stage2_{args.expert_impl}_l{args.layers}_b1_kv{cache_length}_bf16_"
+        f"stage2_{args.expert_impl}_prefetch{int(args.dense_weight_prefetch)}_"
+        f"l{args.layers}_b1_kv{cache_length}_bf16_"
         f"src{source_hash()}"
     )
     cache_dir = args.compile_cache_dir.expanduser().resolve() / shape_key
@@ -388,6 +391,7 @@ def main() -> None:
         "complete_stage": complete_stage,
         "cache_length": cache_length,
         "expert_impl": args.expert_impl,
+        "dense_weight_prefetch": args.dense_weight_prefetch,
         "capture_steps": len(compiled_capture_times),
         "compile_contract": {
             "fullgraph": True,
