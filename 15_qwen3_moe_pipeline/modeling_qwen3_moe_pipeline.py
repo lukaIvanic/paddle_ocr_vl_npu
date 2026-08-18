@@ -121,19 +121,6 @@ def npu_rms_norm(
     return torch_npu.npu_rms_norm(hidden_states, weight, float(eps))[0]
 
 
-def prefetch_weights(
-    weights: tuple[torch.Tensor, ...],
-    dependency: torch.Tensor,
-) -> None:
-    require_torch_npu()
-    for weight in weights:
-        torch_npu.npu_prefetch(
-            weight,
-            dependency,
-            int(weight.numel() * weight.element_size()),
-        )
-
-
 def selected_expert_bmm(
     hidden_states: torch.Tensor,
     selected_experts: torch.Tensor,
@@ -285,7 +272,6 @@ def selected_expert_grouped_matmul_v2_finalize(
     routing_weights: torch.Tensor,
     gate_up_proj: torch.Tensor,
     down_proj: torch.Tensor,
-    prefetch_during_down: tuple[torch.Tensor, ...] = (),
 ) -> torch.Tensor:
     """Fuse expert permutation and group-count construction with InitRoutingV2."""
     require_torch_npu()
@@ -321,7 +307,6 @@ def selected_expert_grouped_matmul_v2_finalize(
     )[0]
     gate, up = gate_up.split(intermediate_size, dim=-1)
     intermediate = F.silu(gate) * up
-    prefetch_weights(prefetch_during_down, intermediate)
     expert_output = torch_npu.npu_grouped_matmul(
         [intermediate],
         [down_proj],
@@ -366,8 +351,6 @@ class Qwen3MoeAttention(nn.Module):
         self.o_proj = nn.Linear(self.q_size, config.hidden_size, bias=False)
         self.q_norm = Qwen3MoeRMSNorm(config.head_dim, config.rms_norm_eps)
         self.k_norm = Qwen3MoeRMSNorm(config.head_dim, config.rms_norm_eps)
-        self._decode_prefetch_o: tuple[torch.Tensor, ...] = ()
-        self._decode_prefetch_router: tuple[torch.Tensor, ...] = ()
 
     def forward_decode(
         self,
@@ -422,7 +405,6 @@ class Qwen3MoeAttention(nn.Module):
 
         scatter_update_tensor_(key_cache, cache_position, key_states)
         scatter_update_tensor_(value_cache, cache_position, value_states)
-        prefetch_weights(self._decode_prefetch_o, query_states)
         attention_output = torch_npu.npu_incre_flash_attention(
             query_states,
             key_cache,
@@ -436,7 +418,6 @@ class Qwen3MoeAttention(nn.Module):
         attention_output = attention_output.transpose(1, 2).contiguous().reshape(
             batch_size, sequence_length, self.q_size
         )
-        prefetch_weights(self._decode_prefetch_router, attention_output)
         return linear_tokenwise(self.o_proj, attention_output)
 
 
@@ -482,7 +463,6 @@ class Qwen3SparseMoeBlock(nn.Module):
             )
         self.gate_up_proj = nn.Parameter(torch.empty(gate_up_shape))
         self.down_proj = nn.Parameter(torch.empty(down_shape))
-        self._decode_prefetch_during_down: tuple[torch.Tensor, ...] = ()
 
     def route(
         self, hidden_states: torch.Tensor
@@ -525,31 +505,24 @@ class Qwen3SparseMoeBlock(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         _router_logits, routing_weights, selected_experts = self.route(hidden_states)
         flat_hidden = hidden_states.reshape(-1, self.hidden_size)
-        if self.expert_impl in (
-            "grouped_matmul_v2_finalize",
-            "grouped_matmul_v2_gating_finalize",
-        ):
-            output = selected_expert_grouped_matmul_v2_finalize(
-                flat_hidden,
-                selected_experts,
-                routing_weights,
-                self.gate_up_proj,
-                self.down_proj,
-                self._decode_prefetch_during_down,
-            )
-        else:
-            expert_fn = {
-                "selected_bmm": selected_expert_bmm,
-                "grouped_matmul": selected_expert_grouped_matmul,
-                "grouped_matmul_finalize": selected_expert_grouped_matmul_finalize,
-            }[self.expert_impl]
-            output = expert_fn(
-                flat_hidden,
-                selected_experts,
-                routing_weights,
-                self.gate_up_proj,
-                self.down_proj,
-            )
+        expert_fn = {
+            "selected_bmm": selected_expert_bmm,
+            "grouped_matmul": selected_expert_grouped_matmul,
+            "grouped_matmul_finalize": selected_expert_grouped_matmul_finalize,
+            "grouped_matmul_v2_finalize": (
+                selected_expert_grouped_matmul_v2_finalize
+            ),
+            "grouped_matmul_v2_gating_finalize": (
+                selected_expert_grouped_matmul_v2_finalize
+            ),
+        }[self.expert_impl]
+        output = expert_fn(
+            flat_hidden,
+            selected_experts,
+            routing_weights,
+            self.gate_up_proj,
+            self.down_proj,
+        )
         return (
             output.view_as(hidden_states),
             selected_experts,
@@ -666,7 +639,6 @@ class Qwen3MoePipelineStage(nn.Module):
         with_embedding: bool,
         with_lm_head: bool,
         expert_impl: str = "selected_bmm",
-        dense_weight_prefetch: bool = False,
     ):
         super().__init__()
         if not 0 <= layer_start < layer_end <= config.num_hidden_layers:
@@ -678,7 +650,6 @@ class Qwen3MoePipelineStage(nn.Module):
         self.layer_start = int(layer_start)
         self.layer_end = int(layer_end)
         self.expert_impl = expert_impl
-        self.dense_weight_prefetch = bool(dense_weight_prefetch)
         self.embed_tokens = (
             nn.Embedding(config.vocab_size, config.hidden_size)
             if with_embedding
@@ -729,23 +700,6 @@ class Qwen3MoePipelineStage(nn.Module):
         self.decode_factor_lut = torch.stack((emb.cos(), emb.sin()), dim=0).to(
             dtype=parameter.dtype
         )
-        if self.dense_weight_prefetch:
-            for index, layer in enumerate(self.layers):
-                layer.self_attn._decode_prefetch_o = (
-                    layer.self_attn.o_proj.weight,
-                )
-                layer.self_attn._decode_prefetch_router = (
-                    layer.mlp.gate.weight,
-                )
-                if index + 1 < len(self.layers):
-                    next_layer = self.layers[index + 1]
-                    layer.mlp._decode_prefetch_during_down = (
-                        next_layer.self_attn.qkv_proj.weight,
-                    )
-                elif self.lm_head is not None:
-                    layer.mlp._decode_prefetch_during_down = (
-                        self.lm_head.weight,
-                    )
 
     def make_cache(self, *, cache_length: int) -> Qwen3MoeStageCache:
         parameter = next(self.parameters())
