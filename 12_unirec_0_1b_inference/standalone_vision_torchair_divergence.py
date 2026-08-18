@@ -30,6 +30,34 @@ VALID_HEIGHT = 640
 STAGE_FACTORS = (4, 8, 16, 32)
 STAGE_DIMS = (96, 192, 384, 768)
 STAGE_DEPTHS = (2, 2, 9, 2)
+STAGE1_BLOCK0_OP_SPECS = (
+    ("stage_1_block_0_shortcut", 1, "nchw"),
+    ("stage_1_block_0_norm1", 1, "nhwc"),
+    ("stage_1_block_0_f_linear", 1, "nhwc"),
+    ("stage_1_block_0_q", 1, "nchw"),
+    ("stage_1_block_0_ctx_initial", 1, "nchw"),
+    ("stage_1_block_0_gates", 1, "nchw"),
+    ("stage_1_block_0_depthwise_3x3_conv", 1, "nchw"),
+    ("stage_1_block_0_depthwise_3x3_gelu", 1, "nchw"),
+    ("stage_1_block_0_accum_3x3", 1, "nchw"),
+    ("stage_1_block_0_depthwise_5x5_conv", 1, "nchw"),
+    ("stage_1_block_0_depthwise_5x5_gelu", 1, "nchw"),
+    ("stage_1_block_0_accum_5x5", 1, "nchw"),
+    ("stage_1_block_0_depthwise_7x7_conv", 1, "nchw"),
+    ("stage_1_block_0_depthwise_7x7_gelu", 1, "nchw"),
+    ("stage_1_block_0_accum_7x7", 1, "nchw"),
+    ("stage_1_block_0_global_context_pre_gelu", 1, "raw"),
+    ("stage_1_block_0_global_context_gelu", 1, "raw"),
+    ("stage_1_block_0_ctx_with_global", 1, "nchw"),
+    ("stage_1_block_0_modulator_1x1", 1, "nchw"),
+    ("stage_1_block_0_q_times_modulator", 1, "nchw"),
+    ("stage_1_block_0_modulation_proj", 1, "nhwc"),
+    ("stage_1_block_0_residual", 1, "nhwc"),
+    ("stage_1_block_0_norm2", 1, "nhwc"),
+    ("stage_1_block_0_mlp_fc1", 1, "nhwc"),
+    ("stage_1_block_0_mlp_gelu", 1, "nhwc"),
+    ("stage_1_block_0_mlp_fc2", 1, "nhwc"),
+)
 
 
 def phase(name: str, **fields: Any) -> None:
@@ -65,6 +93,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--trace-stage1-block0-ops",
+        action="store_true",
+        help=(
+            "return detailed operation boundaries inside stage-1 block 0; "
+            "this implies --trace-boundaries and requires --start-stage 1"
+        ),
+    )
+    parser.add_argument(
         "--weight-format",
         choices=("native", "torchair_internal"),
         default="torchair_internal",
@@ -74,6 +110,10 @@ def parse_args() -> argparse.Namespace:
         parser.error("--timing-repeats must be positive")
     if not args.device.startswith("npu"):
         parser.error("the standalone reproducer requires an NPU device")
+    if args.trace_stage1_block0_ops and args.start_stage != 1:
+        parser.error("--trace-stage1-block0-ops requires --start-stage 1")
+    if args.trace_stage1_block0_ops:
+        args.trace_boundaries = True
     return args
 
 
@@ -205,11 +245,83 @@ def run_masked_focal_block(
     return mask_nhwc(output, valid_mask).permute(0, 3, 1, 2).contiguous()
 
 
+def run_masked_focal_block_traced(
+    block: FocalBlock,
+    x: torch.Tensor,
+    valid_mask: torch.Tensor,
+) -> tuple[torch.Tensor, tuple[torch.Tensor, ...]]:
+    """Run the same focal block while exposing operation-level tensors."""
+
+    traces: list[torch.Tensor] = []
+    channels = x.shape[1]
+    shortcut = x * valid_mask
+    traces.append(shortcut)
+    normalized = block.norm1(shortcut.permute(0, 2, 3, 1))
+    traces.append(normalized)
+    modulation = block.modulation
+    projected_nhwc = modulation.f(normalized)
+    traces.append(projected_nhwc)
+    projected = projected_nhwc.permute(0, 3, 1, 2).contiguous()
+    q, ctx, gates = torch.split(
+        projected,
+        (channels, channels, modulation.focal_level + 1),
+        dim=1,
+    )
+    q = q * valid_mask
+    ctx = ctx * valid_mask
+    gates = gates * valid_mask
+    traces.extend((q, ctx, gates))
+    ctx_all = None
+    for level, focal_layer in enumerate(modulation.focal_layers):
+        depthwise = focal_layer[0](ctx)
+        traces.append(depthwise)
+        ctx = focal_layer[1](depthwise) * valid_mask
+        traces.append(ctx)
+        contribution = ctx * gates[:, level : level + 1]
+        ctx_all = contribution if ctx_all is None else ctx_all + contribution
+        traces.append(ctx_all)
+    if ctx_all is None:
+        raise RuntimeError("focal modulation unexpectedly has no focal layers")
+    global_context_pre_gelu = masked_global_context(ctx, valid_mask)
+    traces.append(global_context_pre_gelu)
+    global_context = modulation.act(global_context_pre_gelu)
+    traces.append(global_context)
+    ctx_all = ctx_all + global_context * gates[:, modulation.focal_level :]
+    traces.append(ctx_all)
+    modulator = modulation.h(ctx_all) * valid_mask
+    traces.append(modulator)
+    modulated_nchw = q * modulator
+    traces.append(modulated_nchw)
+    modulated = modulated_nchw.permute(0, 2, 3, 1).contiguous()
+    modulated = mask_nhwc(modulation.proj(modulated), valid_mask)
+    traces.append(modulated)
+    residual = shortcut.permute(0, 2, 3, 1) + modulated
+    traces.append(residual)
+    normalized2 = block.norm2(residual)
+    traces.append(normalized2)
+    mlp_fc1 = block.mlp.fc1(normalized2)
+    traces.append(mlp_fc1)
+    mlp_gelu = block.mlp.act(mlp_fc1)
+    traces.append(mlp_gelu)
+    mlp_fc2 = block.mlp.fc2(mlp_gelu)
+    traces.append(mlp_fc2)
+    output = residual + mlp_fc2
+    output = mask_nhwc(output, valid_mask).permute(0, 3, 1, 2).contiguous()
+    return output, tuple(traces)
+
+
 class MaskedVisionSuffix(nn.Module):
-    def __init__(self, start_stage: int, *, trace_boundaries: bool = False) -> None:
+    def __init__(
+        self,
+        start_stage: int,
+        *,
+        trace_boundaries: bool = False,
+        trace_stage1_block0_ops: bool = False,
+    ) -> None:
         super().__init__()
         self.start_stage = int(start_stage)
         self.trace_boundaries = bool(trace_boundaries)
+        self.trace_stage1_block0_ops = bool(trace_stage1_block0_ops)
         self.stages = nn.ModuleList(
             [Stage(index) for index in range(self.start_stage, 4)]
         )
@@ -218,6 +330,12 @@ class MaskedVisionSuffix(nn.Module):
         boundary_specs: list[tuple[str, int, str]] = []
         for stage_index in range(self.start_stage, 4):
             for block_index in range(STAGE_DEPTHS[stage_index]):
+                if (
+                    self.trace_stage1_block0_ops
+                    and stage_index == 1
+                    and block_index == 0
+                ):
+                    boundary_specs.extend(STAGE1_BLOCK0_OP_SPECS)
                 boundary_specs.append(
                     (f"stage_{stage_index}_block_{block_index}", stage_index, "nchw")
                 )
@@ -252,8 +370,20 @@ class MaskedVisionSuffix(nn.Module):
         for offset, stage in enumerate(self.stages):
             stage_index = self.start_stage + offset
             stage_mask = masks[stage_index]
-            for block in stage.blocks:
-                x = run_masked_focal_block(block, x, stage_mask)
+            for block_index, block in enumerate(stage.blocks):
+                if (
+                    self.trace_stage1_block0_ops
+                    and stage_index == 1
+                    and block_index == 0
+                ):
+                    x, operation_traces = run_masked_focal_block_traced(
+                        block,
+                        x,
+                        stage_mask,
+                    )
+                    boundaries.extend(operation_traces)
+                else:
+                    x = run_masked_focal_block(block, x, stage_mask)
                 if self.trace_boundaries:
                     boundaries.append(x)
             if stage.downsample is not None:
@@ -281,6 +411,8 @@ def compact_boundary(
     valid_width = VALID_WIDTH // factor
     if layout == "nchw":
         return tensor[:, :, :valid_height, :valid_width].contiguous()
+    if layout == "nhwc":
+        return tensor[:, :valid_height, :valid_width, :].contiguous()
     if layout == "tokens":
         grid = tensor.reshape(
             tensor.shape[0],
@@ -291,6 +423,8 @@ def compact_boundary(
         return grid[:, :valid_height, :valid_width].reshape(
             tensor.shape[0], -1, tensor.shape[-1]
         )
+    if layout == "raw":
+        return tensor
     raise ValueError(f"unsupported boundary layout: {layout}")
 
 
@@ -368,6 +502,7 @@ def main() -> None:
     module = MaskedVisionSuffix(
         args.start_stage,
         trace_boundaries=args.trace_boundaries,
+        trace_stage1_block0_ops=args.trace_stage1_block0_ops,
     ).to(dtype=torch.float16)
     torch_npu.npu.config.allow_internal_format = False
     module = module.to(args.device).eval()
@@ -420,6 +555,7 @@ def main() -> None:
     cache_dir = args.cache_root.expanduser().resolve() / (
         f"standalone_vision_suffix_s{args.start_stage}_1024x704_fp16_"
         f"trace{int(args.trace_boundaries)}_"
+        f"block0ops{int(args.trace_stage1_block0_ops)}_"
         f"w{args.weight_format}_src{source_hash}"
     )
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -531,6 +667,7 @@ def main() -> None:
         "valid_pixels": [VALID_WIDTH, VALID_HEIGHT],
         "start_stage": args.start_stage,
         "trace_boundaries": args.trace_boundaries,
+        "trace_stage1_block0_ops": args.trace_stage1_block0_ops,
         "input_shape": list(x.shape),
         "weight_format": args.weight_format,
         "npu_jit_compile": False,
