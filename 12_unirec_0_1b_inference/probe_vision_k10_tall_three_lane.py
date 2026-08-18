@@ -140,10 +140,20 @@ def compact_output(
 def main() -> None:
     args = parse_args()
     devices = physical_devices()
+    import torch_npu
+
+    # Match the production UniRec process.  Atlas 310P otherwise defaults to
+    # eager JIT compilation, which turns the supposed raw-eager control into
+    # additional shape-specific graph compilations.
+    torch_npu.npu.set_compile_mode(jit_compile=False)
     sys.path.insert(0, str(args.openocr_root.expanduser().resolve()))
     from tools.utils.opendoc_onnx_utils.utils import tokenize_figure_of_table
 
-    phase("imports_and_arguments", physical_devices=devices)
+    phase(
+        "imports_and_arguments",
+        physical_devices=devices,
+        npu_jit_compile=False,
+    )
     wanted = {request_id for request_id, _spec in CASES}
     by_id = {
         str(row["request_id"]): row
