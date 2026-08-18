@@ -102,3 +102,19 @@ Interpret only the eager-versus-compiled comparison:
   `--start-stage 2`.
 
 Do not automatically run stage 2 or any other lane.
+
+## Continuation after a clean stage 3
+
+Once stage 3 has passed, use the committed automatic ladder instead of
+requesting one stage per turn:
+
+```bash
+bash 12_unirec_0_1b_inference/run_310p_standalone_vision_stage_ladder_background.sh
+```
+
+It launches in the background, prints the absolute log path, and runs stages
+`2,1,0` in order. It stops at the first material eager/compiled divergence
+(`cosine < 0.999` or `max_abs > 0.5`), otherwise finishes all stages. Each stage
+uses its own deterministic cache and can compile at most one graph. Monitor the
+printed log every 15-30 seconds and report `UNIREC_STANDALONE_LADDER_RESULT`,
+`UNIREC_STANDALONE_LADDER_STOP`, or `UNIREC_STANDALONE_LADDER_PASS`.
