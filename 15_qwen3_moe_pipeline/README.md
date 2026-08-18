@@ -97,14 +97,21 @@ tokens, and 200 measured tokens:
 | --- | ---: | ---: |
 | PP2, two serial 24-layer stages | 76.87 | 13.01 ms |
 | TP2, selected-expert gather and BMM | 94.74 | 10.55 ms |
+| PP2, persistent grouped matmul and fused routing | 108.14 | 9.25 ms |
 | TP2, persistent grouped matmul and fused routing | 119.47 | 8.37 ms |
 
 The optimized TP2 path was 26.10% faster than the first TP2 implementation and
-reduced its TPOT by 20.70%. It was 55.42% faster than PP2. All three paths
-matched all eight captured greedy token IDs. The optimized run used one static
-graph per rank and produced no recompilations after setup. TP2 keeps both NPUs
-active while each layer reads and computes its weight shard. PP2 executes its
-two model halves serially for B1, so it cannot overlap the two stages.
+reduced its TPOT by 20.70%. Against the directly matched optimized PP2 run, TP2
+was 10.47% faster and reduced TPOT by 9.48%. All four paths matched all eight
+captured greedy token IDs. The optimized runs used one static graph per rank and
+produced no recompilations after setup. TP2 keeps both NPUs active while each
+layer reads and computes its weight shard. PP2 executes its two model halves
+serially for B1, so it cannot overlap the two stages.
+
+The strict optimized PP2 row uses the same two warmup tokens and 200 measured
+tokens as TP2. A second disk-cache-warm PP2 run with ten warmup tokens and 1,000
+measured tokens reached 111.54 tokens/s and 8.97 ms TPOT. The longer result
+confirms the optimization but is not substituted into the matched table.
 
 The optimized TP2 expert path carries the verified single-NPU improvements into
 the sharded model: persistent grouped-matmul expert weights, fused gate/top-k,
@@ -150,6 +157,8 @@ The exact evidence is in:
 - `references/qwen3_moe_full_tp2_optimized_profile_a231825_compact.json`;
 - `references/qwen3_moe_full_tp2_fused_o_694cddf.json`;
 - `references/qwen3_moe_pp2_k4096.json`;
+- `references/qwen3_moe_pp2_optimized_f994153.json`;
+- `references/qwen3_moe_pp2_optimized_warm1000_f994153.json`;
 - `references/qwen3_moe_stage2_tp2_router_membership.json`.
 
 ## Verified single-NPU MoE optimization ladder

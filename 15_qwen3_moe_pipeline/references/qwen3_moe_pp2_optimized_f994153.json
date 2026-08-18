@@ -1,0 +1,153 @@
+{
+  "batch_size": 1,
+  "benchmark": {
+    "decode_steps": 200,
+    "elapsed_sec": 1.8493735622614622,
+    "mean_tpot_ms": 9.246867811307311,
+    "tok_s": 108.14472753435211,
+    "warmup_steps": 2
+  },
+  "cache_length": 4096,
+  "chip": "Ascend 910B2",
+  "dtype": "bfloat16",
+  "expert_impl": "grouped_matmul_v2_gating_finalize",
+  "model": "Qwen/Qwen3-30B-A3B",
+  "no_recompilations_after_prompt": true,
+  "parity": {
+    "expected_token_ids": [
+      12095,
+      13,
+      576,
+      6722,
+      315,
+      279,
+      3639,
+      15072
+    ],
+    "generated_token_ids": [
+      12095,
+      13,
+      576,
+      6722,
+      315,
+      279,
+      3639,
+      15072
+    ],
+    "passed": true
+  },
+  "pipeline_parallel_size": 2,
+  "rank0": {
+    "compile_contract": {
+      "cache_dir": "/results/qwen3_moe_pp2_optimized_cache_f994153/distributed_stage0_grouped_matmul_v2_gating_finalize_l24_b1_kv4096_bf16_src73983cb00aab",
+      "cache_was_warm": false,
+      "dynamic": false,
+      "dynamo_after_prompt": {
+        "calls_captured": 1867,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "dynamo_final": {
+        "calls_captured": 1867,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "first_call_sec": 48.86743700597435,
+      "fullgraph": true,
+      "ge_cache": true,
+      "no_recompilations_after_prompt": true,
+      "unique_graph_delta_after_prompt": 0,
+      "wrapper_sec": 0.0006901919841766357
+    },
+    "device": "npu:0",
+    "memory": {
+      "allocated_gib": 28.6428484916687,
+      "device": "npu:0",
+      "free_gib": 30.034229278564453,
+      "reserved_gib": 29.9609375,
+      "total_gib": 60.95703125
+    },
+    "rank": 0,
+    "stage": {
+      "allocated_memory": {
+        "allocated_gib": 28.435832977294922,
+        "device": "npu:0",
+        "free_gib": 31.956233978271484,
+        "reserved_gib": 28.626953125,
+        "total_gib": 60.95703125
+      },
+      "device": "npu:0",
+      "expert_impl": "grouped_matmul_v2_gating_finalize",
+      "layer_end": 24,
+      "layer_start": 0,
+      "load_elapsed_sec": 91.21956999972463,
+      "loaded_memory": {
+        "allocated_gib": 28.43778657913208,
+        "device": "npu:0",
+        "free_gib": 29.22677993774414,
+        "reserved_gib": 29.9609375,
+        "total_gib": 60.95703125
+      },
+      "name": "distributed-stage0"
+    }
+  },
+  "rank1": {
+    "compile_contract": {
+      "cache_dir": "/results/qwen3_moe_pp2_optimized_cache_f994153/distributed_stage1_grouped_matmul_v2_gating_finalize_l24_b1_kv4096_bf16_src73983cb00aab",
+      "cache_was_warm": false,
+      "dynamic": false,
+      "dynamo_after_prompt": {
+        "calls_captured": 1872,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "dynamo_final": {
+        "calls_captured": 1872,
+        "frames_ok": 0,
+        "frames_total": 0,
+        "unique_graphs": 1
+      },
+      "first_call_sec": 48.86795736476779,
+      "fullgraph": true,
+      "ge_cache": true,
+      "no_recompilations_after_prompt": true,
+      "unique_graph_delta_after_prompt": 0,
+      "wrapper_sec": 0.0007207919843494892
+    },
+    "device": "npu:1",
+    "memory": {
+      "allocated_gib": 28.643110275268555,
+      "device": "npu:1",
+      "free_gib": 30.737380981445312,
+      "reserved_gib": 29.40234375,
+      "total_gib": 60.95703125
+    },
+    "rank": 1,
+    "stage": {
+      "allocated_memory": {
+        "allocated_gib": 28.435837268829346,
+        "device": "npu:1",
+        "free_gib": 31.97223663330078,
+        "reserved_gib": 28.626953125,
+        "total_gib": 60.95703125
+      },
+      "device": "npu:1",
+      "expert_impl": "grouped_matmul_v2_gating_finalize",
+      "layer_end": 48,
+      "layer_start": 24,
+      "load_elapsed_sec": 97.52282474888489,
+      "loaded_memory": {
+        "allocated_gib": 28.437790870666504,
+        "device": "npu:1",
+        "free_gib": 31.19467544555664,
+        "reserved_gib": 29.40234375,
+        "total_gib": 60.95703125
+      },
+      "name": "distributed-stage1"
+    }
+  },
+  "transport": "two_process_hccl_send_recv"
+}
