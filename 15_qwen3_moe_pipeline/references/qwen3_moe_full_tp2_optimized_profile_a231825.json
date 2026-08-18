@@ -1,0 +1,228 @@
+{
+  "cache_length": 4096,
+  "chip": "Ascend 910B2",
+  "collectives_per_token_in_graph": 97,
+  "compile_first_call_sec": 49.49578094482422,
+  "compiled": {
+    "benchmark": {
+      "elapsed_sec": 0.1658235341310501,
+      "final_token_id": 75372,
+      "mean_tpot_ms": 8.291176706552505,
+      "steps": 20,
+      "tok_s": 120.61014200911933
+    },
+    "call_times_sec": [
+      49.49475104827434,
+      0.009565852116793394,
+      0.008217839989811182,
+      0.00819728011265397,
+      0.008131518959999084,
+      0.008401182945817709,
+      0.008229009807109833,
+      0.008166218176484108,
+      0.008145428728312254,
+      0.008229250088334084,
+      0.00816560909152031,
+      0.008202558849006891
+    ],
+    "checks": [
+      {
+        "expected_token_id": 12095,
+        "logit_max_abs": 0.84375,
+        "logit_mean_abs": 0.2302260547876358,
+        "step": 0,
+        "token_id": 12095,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 13,
+        "logit_max_abs": 0.6875,
+        "logit_mean_abs": 0.12598036229610443,
+        "step": 1,
+        "token_id": 13,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 576,
+        "logit_max_abs": 0.46875,
+        "logit_mean_abs": 0.11297750473022461,
+        "step": 2,
+        "token_id": 576,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 6722,
+        "logit_max_abs": 0.21875,
+        "logit_mean_abs": 0.034611888229846954,
+        "step": 3,
+        "token_id": 6722,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 315,
+        "logit_max_abs": 1.4375,
+        "logit_mean_abs": 0.3731721043586731,
+        "step": 4,
+        "token_id": 315,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 279,
+        "logit_max_abs": 0.59375,
+        "logit_mean_abs": 0.08428028225898743,
+        "step": 5,
+        "token_id": 279,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 3639,
+        "logit_max_abs": 0.5,
+        "logit_mean_abs": 0.08498963713645935,
+        "step": 6,
+        "token_id": 3639,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 15072,
+        "logit_max_abs": 0.7421875,
+        "logit_mean_abs": 0.20186753571033478,
+        "step": 7,
+        "token_id": 15072,
+        "token_match": true
+      }
+    ]
+  },
+  "contracts": {
+    "attention_o": "row_parallel_all_reduce",
+    "embedding": "vocab_parallel_all_reduce",
+    "expert_compute": "persistent_bf16_grouped_matmul",
+    "expert_down": "row_parallel_all_reduce",
+    "expert_finalize": "npu_moe_finalize_routing_then_all_reduce",
+    "expert_routing": "fused_gating_init_routing_v2",
+    "kv_heads_per_rank": 2,
+    "lm_head": "vocab_parallel_local_pair_all_gather",
+    "moe_intermediate_per_rank": 384,
+    "q_heads_per_rank": 16,
+    "qk_norm": "fresh_per_call_npu_add_rms_norm_zero_banks"
+  },
+  "dtype": "bfloat16",
+  "dynamo_after_capture": {
+    "calls_captured": 4020,
+    "unique_graphs": 1
+  },
+  "dynamo_final": {
+    "calls_captured": 4020,
+    "unique_graphs": 1
+  },
+  "eager": {
+    "benchmark": {
+      "elapsed_sec": 1.8081860542297363,
+      "final_token_id": 75372,
+      "mean_tpot_ms": 90.40930271148682,
+      "steps": 20,
+      "tok_s": 11.060808677965243
+    },
+    "call_times_sec": [
+      0.8261681022122502,
+      0.10098815709352493,
+      0.0914878137409687,
+      0.08749600686132908,
+      0.08692822698503733,
+      0.09035490592941642,
+      0.08633629698306322,
+      0.09225749829784036,
+      0.08560815500095487,
+      0.08519990835338831,
+      0.0855561038479209,
+      0.0846302593126893
+    ],
+    "checks": [
+      {
+        "expected_token_id": 12095,
+        "logit_max_abs": 0.5625,
+        "logit_mean_abs": 0.09229107201099396,
+        "step": 0,
+        "token_id": 12095,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 13,
+        "logit_max_abs": 0.75,
+        "logit_mean_abs": 0.0975366085767746,
+        "step": 1,
+        "token_id": 13,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 576,
+        "logit_max_abs": 0.46875,
+        "logit_mean_abs": 0.07738620787858963,
+        "step": 2,
+        "token_id": 576,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 6722,
+        "logit_max_abs": 0.3125,
+        "logit_mean_abs": 0.03612256422638893,
+        "step": 3,
+        "token_id": 6722,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 315,
+        "logit_max_abs": 0.28125,
+        "logit_mean_abs": 0.04494424909353256,
+        "step": 4,
+        "token_id": 315,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 279,
+        "logit_max_abs": 0.65625,
+        "logit_mean_abs": 0.09754162281751633,
+        "step": 5,
+        "token_id": 279,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 3639,
+        "logit_max_abs": 0.8125,
+        "logit_mean_abs": 0.07707228511571884,
+        "step": 6,
+        "token_id": 3639,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 15072,
+        "logit_max_abs": 0.390625,
+        "logit_mean_abs": 0.05978468060493469,
+        "step": 7,
+        "token_id": 15072,
+        "token_match": true
+      }
+    ]
+  },
+  "layers": 48,
+  "load_sec": 91.6093521118164,
+  "model": "Qwen/Qwen3-30B-A3B",
+  "no_recompilations_after_capture": true,
+  "parity_passed": true,
+  "profile": {
+    "profile_dir": "/results/qwen3_moe_full_tp2_optimized_profile_a231825/rank0",
+    "rank": 0,
+    "synchronized_seconds": [
+      0.009359398856759071,
+      0.008985293097794056
+    ]
+  },
+  "rank0_memory": {
+    "allocated_gib": 28.841931343078613,
+    "device": "npu:0",
+    "free_gib": 30.721004486083984,
+    "reserved_gib": 29.421875,
+    "total_gib": 60.95703125
+  },
+  "speedup": 10.904278838977882,
+  "tensor_parallel_size": 2
+}

@@ -96,13 +96,45 @@ tokens, and 200 measured tokens:
 | mode | tokens/s | mean TPOT |
 | --- | ---: | ---: |
 | PP2, two serial 24-layer stages | 76.87 | 13.01 ms |
-| TP2, all 48 layers sharded | 94.74 | 10.55 ms |
+| TP2, selected-expert gather and BMM | 94.74 | 10.55 ms |
+| TP2, persistent grouped matmul and fused routing | 119.47 | 8.37 ms |
 
-TP2 was 23.25% faster and reduced TPOT by 18.86%. Both paths matched all eight
-captured greedy token IDs, used one static graph per rank, and produced no
-recompilations after setup. TP2 keeps both NPUs active while each layer reads
-and computes its weight shard. PP2 executes its two model halves serially for
-B1, so it cannot overlap the two stages.
+The optimized TP2 path was 26.10% faster than the first TP2 implementation and
+reduced its TPOT by 20.70%. It was 55.42% faster than PP2. All three paths
+matched all eight captured greedy token IDs. The optimized run used one static
+graph per rank and produced no recompilations after setup. TP2 keeps both NPUs
+active while each layer reads and computes its weight shard. PP2 executes its
+two model halves serially for B1, so it cannot overlap the two stages.
+
+The optimized TP2 expert path carries the verified single-NPU improvements into
+the sharded model: persistent grouped-matmul expert weights, fused gate/top-k,
+InitRoutingV2 counts, fused output finalization, and fresh per-call Q/K
+AddRMSNorm zero banks. A synchronized NPU profile attributed the rank-0 clean
+8.291-ms mean approximately as follows. Kernel durations come from the profiled
+run and percentages use the clean non-profiled mean, so they are diagnostic,
+not an additive hardware utilization model.
+
+| component | device duration | share of clean TPOT |
+| --- | ---: | ---: |
+| expert grouped matmuls | 2.141 ms | 25.8% |
+| dense matmuls, including projections and LM head | 1.509 ms | 18.2% |
+| IncreFlashAttention | 1.021 ms | 12.3% |
+| 97 HCCL all-reduces | 0.956 ms | 11.5% |
+| AddRMSNorm/RMSNorm | 0.502 ms | 6.1% |
+| gate, init routing, and finalize routing | 0.608 ms | 7.3% |
+| remaining kernels and launch/runtime gaps | 1.553 ms | 18.7% |
+
+This explains why the 203.77-token/s single-NPU half-model result does not turn
+into approximately 200 tokens/s for TP2. TP2 runs 48 half-width kernel sequences
+instead of 24 full-width sequences. The smaller matmuls and grouped matmuls are
+less efficient, attention remains a 48-layer cost, and 97 collective calls add
+about 0.96 ms. Even removing all measured HCCL time would leave about 7.34 ms,
+well above the 4.91-ms half-model result.
+
+Fusing the attention output matmul and all-reduce with
+`npu_mm_all_reduce_base` was also measured. It regressed to 91.22 tokens/s and
+10.96 ms TPOT. The rejected path was removed from the implementation; its result
+is retained only as evidence.
 
 TP arithmetic is not bit-identical to the unsharded pipeline. On the first
 captured stage-2 token, 190 of 192 selected-expert memberships matched. Seven
@@ -113,6 +145,10 @@ made identical routing decisions, and the final greedy token remained exact.
 The exact evidence is in:
 
 - `references/qwen3_moe_full_tp2_k4096.json`;
+- `references/qwen3_moe_full_tp2_optimized_a231825.json`;
+- `references/qwen3_moe_full_tp2_optimized_profile_a231825.json`;
+- `references/qwen3_moe_full_tp2_optimized_profile_a231825_compact.json`;
+- `references/qwen3_moe_full_tp2_fused_o_694cddf.json`;
 - `references/qwen3_moe_pp2_k4096.json`;
 - `references/qwen3_moe_stage2_tp2_router_membership.json`.
 

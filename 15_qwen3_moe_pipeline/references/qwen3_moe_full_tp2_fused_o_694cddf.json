@@ -1,0 +1,221 @@
+{
+  "cache_length": 4096,
+  "chip": "Ascend 910B2",
+  "collectives_per_token_in_graph": 97,
+  "compile_first_call_sec": 48.41841506958008,
+  "compiled": {
+    "benchmark": {
+      "elapsed_sec": 2.1924495697021484,
+      "final_token_id": 315,
+      "mean_tpot_ms": 10.962247848510742,
+      "steps": 200,
+      "tok_s": 91.22216664129276
+    },
+    "call_times_sec": [
+      48.41841614479199,
+      0.0196610139682889,
+      0.014894204214215279,
+      0.013440577778965235,
+      0.010755633004009724,
+      0.011313822120428085,
+      0.011556616984307766,
+      0.01172860898077488,
+      0.011807030998170376,
+      0.010158393066376448,
+      0.01120713073760271,
+      0.011372363194823265
+    ],
+    "checks": [
+      {
+        "expected_token_id": 12095,
+        "logit_max_abs": 0.84375,
+        "logit_mean_abs": 0.2302260547876358,
+        "step": 0,
+        "token_id": 12095,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 13,
+        "logit_max_abs": 0.6875,
+        "logit_mean_abs": 0.12598036229610443,
+        "step": 1,
+        "token_id": 13,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 576,
+        "logit_max_abs": 0.46875,
+        "logit_mean_abs": 0.11297750473022461,
+        "step": 2,
+        "token_id": 576,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 6722,
+        "logit_max_abs": 0.21875,
+        "logit_mean_abs": 0.034611888229846954,
+        "step": 3,
+        "token_id": 6722,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 315,
+        "logit_max_abs": 1.4375,
+        "logit_mean_abs": 0.3731721043586731,
+        "step": 4,
+        "token_id": 315,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 279,
+        "logit_max_abs": 0.59375,
+        "logit_mean_abs": 0.08428028225898743,
+        "step": 5,
+        "token_id": 279,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 3639,
+        "logit_max_abs": 0.5,
+        "logit_mean_abs": 0.08498963713645935,
+        "step": 6,
+        "token_id": 3639,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 15072,
+        "logit_max_abs": 0.7421875,
+        "logit_mean_abs": 0.20186753571033478,
+        "step": 7,
+        "token_id": 15072,
+        "token_match": true
+      }
+    ]
+  },
+  "contracts": {
+    "attention_o": "fused_mm_allreduce",
+    "embedding": "vocab_parallel_all_reduce",
+    "expert_compute": "persistent_bf16_grouped_matmul",
+    "expert_down": "row_parallel_all_reduce",
+    "expert_finalize": "npu_moe_finalize_routing_then_all_reduce",
+    "expert_routing": "fused_gating_init_routing_v2",
+    "kv_heads_per_rank": 2,
+    "lm_head": "vocab_parallel_local_pair_all_gather",
+    "moe_intermediate_per_rank": 384,
+    "q_heads_per_rank": 16,
+    "qk_norm": "fresh_per_call_npu_add_rms_norm_zero_banks"
+  },
+  "dtype": "bfloat16",
+  "dynamo_after_capture": {
+    "calls_captured": 3924,
+    "unique_graphs": 1
+  },
+  "dynamo_final": {
+    "calls_captured": 3924,
+    "unique_graphs": 1
+  },
+  "eager": {
+    "benchmark": {
+      "elapsed_sec": 15.650144577026367,
+      "final_token_id": 315,
+      "mean_tpot_ms": 78.25072288513184,
+      "steps": 200,
+      "tok_s": 12.779434657337928
+    },
+    "call_times_sec": [
+      1.3222519028931856,
+      0.0731256022118032,
+      0.0827671168372035,
+      0.08034995570778847,
+      0.08008958073332906,
+      0.07833928102627397,
+      0.07526946999132633,
+      0.07550857309252024,
+      0.07845245394855738,
+      0.07549559324979782,
+      0.07464773906394839,
+      0.0750146247446537
+    ],
+    "checks": [
+      {
+        "expected_token_id": 12095,
+        "logit_max_abs": 0.5625,
+        "logit_mean_abs": 0.09229107201099396,
+        "step": 0,
+        "token_id": 12095,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 13,
+        "logit_max_abs": 0.75,
+        "logit_mean_abs": 0.0975366085767746,
+        "step": 1,
+        "token_id": 13,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 576,
+        "logit_max_abs": 0.46875,
+        "logit_mean_abs": 0.07738620787858963,
+        "step": 2,
+        "token_id": 576,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 6722,
+        "logit_max_abs": 0.3125,
+        "logit_mean_abs": 0.03612256422638893,
+        "step": 3,
+        "token_id": 6722,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 315,
+        "logit_max_abs": 0.28125,
+        "logit_mean_abs": 0.04494424909353256,
+        "step": 4,
+        "token_id": 315,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 279,
+        "logit_max_abs": 0.65625,
+        "logit_mean_abs": 0.09754162281751633,
+        "step": 5,
+        "token_id": 279,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 3639,
+        "logit_max_abs": 0.8125,
+        "logit_mean_abs": 0.07707228511571884,
+        "step": 6,
+        "token_id": 3639,
+        "token_match": true
+      },
+      {
+        "expected_token_id": 15072,
+        "logit_max_abs": 0.390625,
+        "logit_mean_abs": 0.05978468060493469,
+        "step": 7,
+        "token_id": 15072,
+        "token_match": true
+      }
+    ]
+  },
+  "layers": 48,
+  "load_sec": 91.41925811767578,
+  "model": "Qwen/Qwen3-30B-A3B",
+  "no_recompilations_after_capture": true,
+  "parity_passed": true,
+  "profile": null,
+  "rank0_memory": {
+    "allocated_gib": 28.844253540039062,
+    "device": "npu:0",
+    "free_gib": 30.651302337646484,
+    "reserved_gib": 29.421875,
+    "total_gib": 60.95703125
+  },
+  "speedup": 7.1382004828291175,
+  "tensor_parallel_size": 2
+}

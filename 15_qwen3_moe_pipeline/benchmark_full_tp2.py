@@ -30,11 +30,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--warmup-steps", type=int, default=2)
     parser.add_argument("--decode-steps", type=int, default=20)
-    parser.add_argument(
-        "--attention-o-impl",
-        choices=("separate", "fused_mm_allreduce"),
-        default="separate",
-    )
     parser.add_argument("--summary-out", type=Path)
     parser.add_argument(
         "--profile-dir",
@@ -341,7 +336,6 @@ def main() -> None:
             layer_end=config.num_hidden_layers,
             with_lm_head=True,
             with_embedding=True,
-            attention_o_impl=args.attention_o_impl,
         )
     stage = stage.to(dtype=torch.bfloat16)
     stage.to_empty(device=device)
@@ -485,7 +479,7 @@ def main() -> None:
             "kv_heads_per_rank": config.num_key_value_heads // world_size,
             "moe_intermediate_per_rank": config.moe_intermediate_size
             // world_size,
-            "attention_o": args.attention_o_impl,
+            "attention_o": "row_parallel_all_reduce",
             "expert_routing": "fused_gating_init_routing_v2",
             "expert_compute": "persistent_bf16_grouped_matmul",
             "expert_finalize": "npu_moe_finalize_routing_then_all_reduce",
