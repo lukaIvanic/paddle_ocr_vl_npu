@@ -69,6 +69,15 @@ def parse_args() -> argparse.Namespace:
         help="Zero replays every crop after --offset-crops.",
     )
     parser.add_argument(
+        "--request-ids-file",
+        type=Path,
+        help=(
+            "Optional newline-delimited request IDs. The replay keeps this "
+            "exact order and rejects missing or duplicate IDs. This is a "
+            "diagnostic selector; it cannot be combined with crop offset/limit."
+        ),
+    )
+    parser.add_argument(
         "--over-capacity",
         choices=("error", "skip"),
         default="error",
@@ -140,6 +149,13 @@ def parse_args() -> argparse.Namespace:
         parser.error("--max-length must be in [1, --self-cache-length]")
     if args.offset_crops < 0 or args.limit_crops < 0:
         parser.error("crop offset and limit must be non-negative")
+    if args.request_ids_file is not None and (
+        args.offset_crops != 0 or args.limit_crops != 0
+    ):
+        parser.error(
+            "--request-ids-file cannot be combined with --offset-crops or "
+            "--limit-crops"
+        )
     if args.decode_warmup_passes < 0:
         parser.error("--decode-warmup-passes must be non-negative")
     if args.decode_admission_prefetch_depth < 0:
@@ -350,6 +366,7 @@ def load_artifact(
     cross_cache_length: int,
     offset_crops: int = 0,
     limit_crops: int = 0,
+    request_ids: list[str] | None = None,
     over_capacity: str = "error",
     verify_crc: bool = False,
     prefault: bool = True,
@@ -361,8 +378,24 @@ def load_artifact(
     if summary.get("status") != "ok":
         raise ValueError(f"prefill artifact status is not ok: {summary.get('status')!r}")
     rows = read_jsonl(directory / "crops.jsonl")
-    stop = None if limit_crops == 0 else offset_crops + limit_crops
-    rows = rows[offset_crops:stop]
+    if request_ids is not None:
+        if not request_ids:
+            raise ValueError("request-ID selection is empty")
+        if len(set(request_ids)) != len(request_ids):
+            raise ValueError("request-ID selection contains duplicates")
+        by_id = {str(row["request_id"]): row for row in rows}
+        if len(by_id) != len(rows):
+            raise ValueError("artifact crop manifest contains duplicate request IDs")
+        missing_ids = [request_id for request_id in request_ids if request_id not in by_id]
+        if missing_ids:
+            raise ValueError(
+                "request-ID selection is missing from artifact: "
+                + ", ".join(missing_ids[:20])
+            )
+        rows = [by_id[request_id] for request_id in request_ids]
+    else:
+        stop = None if limit_crops == 0 else offset_crops + limit_crops
+        rows = rows[offset_crops:stop]
     if not rows:
         raise ValueError("selected artifact crop range is empty")
     data_names = {str(row["cross_kv"]["file"]) for row in rows}
@@ -465,6 +498,22 @@ def load_reference_trace(path: Path | None) -> dict[str, dict[str, Any]]:
     if len(result) != len(rows):
         raise ValueError("reference trace contains duplicate request IDs")
     return result
+
+
+def load_request_ids(path: Path | None) -> list[str] | None:
+    if path is None:
+        return None
+    resolved = path.expanduser().resolve()
+    request_ids = [
+        line.strip()
+        for line in resolved.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if not request_ids:
+        raise ValueError(f"request-ID file is empty: {resolved}")
+    if len(set(request_ids)) != len(request_ids):
+        raise ValueError(f"request-ID file contains duplicates: {resolved}")
+    return request_ids
 
 
 def compare_completions(
@@ -638,11 +687,13 @@ def main() -> None:
     torch.npu.set_device(args.device)
     torch.npu.set_compile_mode(jit_compile=False)
     artifact_load_started = time.perf_counter()
+    request_ids = load_request_ids(args.request_ids_file)
     artifact = load_artifact(
         args.artifact_dir,
         cross_cache_length=args.cross_cache_length,
         offset_crops=args.offset_crops,
         limit_crops=args.limit_crops,
+        request_ids=request_ids,
         over_capacity=args.over_capacity,
         verify_crc=args.verify_crc,
         prefault=args.prefault_artifact,
@@ -827,6 +878,11 @@ def main() -> None:
             "self_cache_length": args.self_cache_length,
             "cross_cache_length": args.cross_cache_length,
             "max_length": args.max_length,
+            "request_ids_file": (
+                str(args.request_ids_file.expanduser().resolve())
+                if args.request_ids_file is not None
+                else None
+            ),
             "decode_mode": "compiled_ifa",
             "self_attention_backend": "increfa_all",
             "compile_backend": "torchair",

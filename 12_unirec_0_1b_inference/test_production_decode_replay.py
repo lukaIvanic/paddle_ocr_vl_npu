@@ -111,6 +111,37 @@ class ProductionDecodeReplayTest(unittest.TestCase):
             self.assertEqual([crop.source_length for crop in artifact.crops], [3])
             self.assertEqual(len(artifact.skipped_rows), 1)
 
+    def test_request_id_selection_preserves_requested_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_artifact(root, [3, 5, 7])
+            artifact = load_artifact(
+                root,
+                cross_cache_length=8,
+                request_ids=[
+                    "page_000000_crop_0002",
+                    "page_000000_crop_0000",
+                ],
+                prefault=False,
+            )
+            self.assertEqual(
+                [crop.row["request_id"] for crop in artifact.crops],
+                ["page_000000_crop_0002", "page_000000_crop_0000"],
+            )
+            self.assertEqual([crop.source_length for crop in artifact.crops], [7, 3])
+
+    def test_request_id_selection_rejects_missing_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_artifact(root, [3])
+            with self.assertRaisesRegex(ValueError, "missing from artifact"):
+                load_artifact(
+                    root,
+                    cross_cache_length=8,
+                    request_ids=["page_999999_crop_0000"],
+                    prefault=False,
+                )
+
     def test_reference_token_comparison(self) -> None:
         completed = [
             SimpleNamespace(
