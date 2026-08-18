@@ -30,6 +30,7 @@ from vision_focal_depthwise import (
 from vision_bucket_presets import (
     DEFAULT_VISION_BUCKETS,
     VisionBucketSpec,
+    assign_vision_bucket_cache_slots,
     plan_canvas_bucket_calls,
 )
 
@@ -580,16 +581,14 @@ class BucketedFullVisionRuntime:
             graph_keys=[spec.key for spec in self.specs],
             compile_api=import_path,
         )
-        for graph_index, spec in enumerate(self.specs):
-            if graph_index >= 10:
-                raise ValueError(
-                    "compiled full-vision runtime currently supports at most "
-                    "10 cache-stable bucket slots"
-                )
+        cache_slots = assign_vision_bucket_cache_slots(self.specs)
+        for graph_index, (spec, cache_slot) in enumerate(
+            zip(self.specs, cache_slots)
+        ):
             module = _new_masked_full_encoder_module(runner, spec)
             compile_method = getattr(
                 module,
-                f"_forward_bucket_slot_{graph_index}",
+                f"_forward_bucket_slot_{cache_slot}",
             )
             cache_dir = runner.compile_cache_dir / (
                 f"vision_full_bucket_{spec.key}_{runner.dtype_name}_src{source_hash}"
@@ -602,6 +601,7 @@ class BucketedFullVisionRuntime:
             self._diagnostic_log(
                 "graph_registration_begin",
                 graph_index=graph_index,
+                cache_slot=cache_slot,
                 graph_count=len(self.specs),
                 bucket=spec.key,
                 width=spec.width,
@@ -621,6 +621,7 @@ class BucketedFullVisionRuntime:
             self._diagnostic_log(
                 "graph_registration_end",
                 graph_index=graph_index,
+                cache_slot=cache_slot,
                 graph_count=len(self.specs),
                 bucket=spec.key,
                 registration_wall_s=time.perf_counter() - registration_started,

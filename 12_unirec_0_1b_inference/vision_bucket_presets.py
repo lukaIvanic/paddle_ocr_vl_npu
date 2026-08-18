@@ -117,6 +117,55 @@ VISION_BUCKET_PRESETS = {
 VISION_BUCKET_PRESET_CHOICES = tuple(VISION_BUCKET_PRESETS)
 
 
+# TorchAir's persisted cache path includes the bound method name. Preserve the
+# original K10/L4 slot for shared shapes so changing bucket sets does not turn a
+# cache hit into a new `_forward_bucket_slot_N` specialization. New aligned
+# shapes occupy slots unused by the aligned preset. Keep this table append-only.
+VISION_BUCKET_CACHE_SLOT_PREFERENCES = {
+    "448x192_b2": 0,
+    "448x384_b2": 1,
+    "512x64_b4": 2,
+    "960x64_b4": 3,
+    "960x128_b2": 4,
+    "960x256_b1": 5,
+    "960x448_b1": 6,
+    "960x576_b1": 7,
+    "960x896_b1": 8,
+    "960x1408_b1": 9,
+    "960x512_b1": 9,
+    "512x192_b2": 0,
+    "960x1024_b1": 7,
+    "1024x704_b1": 8,
+    "1024x1408_b1": 6,
+}
+
+
+def assign_vision_bucket_cache_slots(
+    specs: Sequence[VisionBucketSpec],
+    *,
+    slot_count: int = 10,
+) -> tuple[int, ...]:
+    """Assign distinct, cache-stable static method slots to one preset."""
+    if len(specs) > slot_count:
+        raise ValueError(
+            f"{len(specs)} vision buckets exceed {slot_count} static slots"
+        )
+    used: set[int] = set()
+    result = []
+    for spec in specs:
+        preferred = VISION_BUCKET_CACHE_SLOT_PREFERENCES.get(spec.key)
+        if preferred is not None and 0 <= preferred < slot_count:
+            candidates = (preferred, *range(slot_count))
+        else:
+            candidates = tuple(range(slot_count))
+        selected = next((slot for slot in candidates if slot not in used), None)
+        if selected is None:
+            raise ValueError(f"no static cache slot remains for {spec.key}")
+        used.add(selected)
+        result.append(selected)
+    return tuple(result)
+
+
 def resolve_vision_bucket_specs(name: str) -> tuple[VisionBucketSpec, ...]:
     try:
         return VISION_BUCKET_PRESETS[str(name)]

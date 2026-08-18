@@ -9,6 +9,7 @@ from vision_bucket_presets import (
     VISION_BUCKETS_310P_K10_L4_ALL,
     VISION_BUCKETS_310P_K10_L4_ALIGNED,
     VisionBucketSpec,
+    assign_vision_bucket_cache_slots,
     plan_canvas_bucket_calls,
     resolve_vision_bucket_specs,
 )
@@ -92,6 +93,36 @@ class VisionBucketPresetTest(unittest.TestCase):
         self.assertTrue(any(spec.width == 1024 for spec in specs))
         for width, height in ((64, 1408), (448, 1152), (896, 576)):
             self.assertTrue(any(spec.accepts(width, height) for spec in specs))
+
+    def test_aligned_k10_preserves_shared_l4_cache_slots(self) -> None:
+        old_slots = dict(
+            zip(
+                (spec.key for spec in VISION_BUCKETS_310P_K10_L4_ALL),
+                assign_vision_bucket_cache_slots(VISION_BUCKETS_310P_K10_L4_ALL),
+            )
+        )
+        aligned_slots = dict(
+            zip(
+                (spec.key for spec in VISION_BUCKETS_310P_K10_L4_ALIGNED),
+                assign_vision_bucket_cache_slots(
+                    VISION_BUCKETS_310P_K10_L4_ALIGNED
+                ),
+            )
+        )
+        shared = set(old_slots) & set(aligned_slots)
+        self.assertEqual(shared, {
+            "448x384_b2",
+            "512x64_b4",
+            "960x64_b4",
+            "960x128_b2",
+            "960x256_b1",
+        })
+        for key in shared:
+            self.assertEqual(aligned_slots[key], old_slots[key], key)
+        self.assertEqual(
+            tuple(aligned_slots.values()),
+            (1, 2, 0, 3, 4, 5, 9, 7, 8, 6),
+        )
 
     def test_same_canvas_planner_uses_b2_and_b4(self) -> None:
         specs = tuple(
