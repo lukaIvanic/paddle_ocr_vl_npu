@@ -649,10 +649,14 @@ class GLM52Layer3(nn.Module):
         key_cache: torch.Tensor,
         value_cache: torch.Tensor,
     ) -> torch.Tensor:
+        # Match the standalone decoder-layer contract used when there is no
+        # incoming fused residual. Keeping an explicit residual copy also
+        # prevents compiled buffer reuse from consuming the caller's input.
+        residual = hidden_states.clone()
         attention_input = npu_rms_norm(
             hidden_states, self.input_norm, self.config.rms_norm_eps
         )
-        hidden_states = hidden_states + self.attention(
+        hidden_states = residual + self.attention(
             attention_input, cache_position, key_cache, value_cache
         )
         mlp_input = npu_rms_norm(
