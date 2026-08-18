@@ -29,6 +29,8 @@ VARIANTS = (
     "manual_scatter_rank_repeat",
     "manual_one_hot_rank",
     "manual_compare_rank",
+    "manual_compare_buffer_rank",
+    "manual_identity_rank",
     "manual_bincount_rank",
     "manual_scatter_sort_order",
     "legacy_pair",
@@ -97,6 +99,16 @@ class RoutingGraph(nn.Module):
         self.hidden_size = hidden_size
         self.expert_num = expert_num
         self.top_k = top_k
+        self.register_buffer(
+            "expert_axis",
+            torch.arange(expert_num, dtype=torch.int32),
+            persistent=False,
+        )
+        self.register_buffer(
+            "expert_identity",
+            torch.eye(expert_num, dtype=torch.int64),
+            persistent=False,
+        )
 
     def _v2(
         self,
@@ -159,11 +171,18 @@ class RoutingGraph(nn.Module):
             counts = F.one_hot(ids_i64, num_classes=self.expert_num).sum(
                 dim=0, dtype=torch.int64
             )
-        elif self.variant == "manual_compare_rank":
-            expert_axis = torch.arange(
-                self.expert_num, dtype=torch.int32, device=hidden_states.device
-            )
+        elif self.variant in ("manual_compare_rank", "manual_compare_buffer_rank"):
+            if self.variant == "manual_compare_rank":
+                expert_axis = torch.arange(
+                    self.expert_num, dtype=torch.int32, device=hidden_states.device
+                )
+            else:
+                expert_axis = self.expert_axis
             counts = (ids.view(self.top_k, 1) == expert_axis.view(1, -1)).sum(
+                dim=0, dtype=torch.int64
+            )
+        elif self.variant == "manual_identity_rank":
+            counts = torch.index_select(self.expert_identity, 0, ids_i64).sum(
                 dim=0, dtype=torch.int64
             )
         elif self.variant == "manual_bincount_rank":
