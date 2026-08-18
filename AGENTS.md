@@ -61,7 +61,7 @@ Known implementation surfaces:
 
 Each numbered directory is a rung, kept as evidence for how the current design
 was reached. **09 is the active PaddleOCR-VL engine**; 01–08 are historical and
-10–15 are self-contained sibling model/runtime investigations.
+10–16 are self-contained sibling model/runtime investigations.
 
 - `01_transformers_recognition_baseline/`: minimal Transformers recognizer smoke.
 - `02_local_eager_recognition/`: the recognizer reimplemented in local PyTorch
@@ -89,6 +89,8 @@ was reached. **09 is the active PaddleOCR-VL engine**; 01–08 are historical an
   vLLM-Ascend comparison lane.
 - `15_qwen3_moe_pipeline/`: correctness-first Qwen3-30B-A3B two-stage pipeline,
   vLLM token parity, and captured second-half replay for MoE optimization.
+- `16_glm52_w4a8c8_layer_lab/`: owned GLM-5.2 W4A8C8 layer-3 eager and static
+  TorchAir compile lab on one 910B2, with exact multi-position KV parity.
 
 Supporting artifacts:
 
