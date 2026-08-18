@@ -23,6 +23,11 @@ absolute_executable_path() {
   printf '%s/%s\n' "$(cd "$directory" && pwd -P)" "$basename"
 }
 
+phase() {
+  printf 'UNIREC_310P_FULL1651_PHASE phase=%s epoch_s=%s\n' \
+    "$1" "$(date +%s)"
+}
+
 resolve_inputs() {
   : "${PYTHON_BIN:?export the validated 310P inference Python}"
   : "${MODEL:?export the UniRec model directory}"
@@ -38,6 +43,8 @@ resolve_inputs() {
   : "${MATCH_WORKERS:=12}"
   : "${TEDS_WORKERS:=12}"
   : "${RUN_VARIANT:=accuracy_anchor}"
+  : "${REQUIRE_WARM_VISION_CACHE:=0}"
+  : "${DECODE_CACHE_GATE_ATTEMPTS:=3}"
   : "${LAYOUT_CPU_THREADS:=1}"
   : "${PROGRESS_EVERY_PAGES:=1}"
   : "${ALLOW_LOW_HOST_MEMORY:=0}"
@@ -50,7 +57,8 @@ resolve_inputs() {
     printf 'REQUIRES_EXACTLY_ONE_NPU=%s\n' "$ASCEND_RT_VISIBLE_DEVICES" >&2
     exit 1
   fi
-  for worker_setting in CDM_WORKERS MATCH_WORKERS TEDS_WORKERS LAYOUT_CPU_THREADS PROGRESS_EVERY_PAGES; do
+  for worker_setting in CDM_WORKERS MATCH_WORKERS TEDS_WORKERS \
+      LAYOUT_CPU_THREADS PROGRESS_EVERY_PAGES DECODE_CACHE_GATE_ATTEMPTS; do
     if ! [[ "${!worker_setting}" =~ ^[1-9][0-9]*$ ]]; then
       printf 'INVALID_POSITIVE_INTEGER %s=%s\n' \
         "$worker_setting" "${!worker_setting}" >&2
@@ -58,12 +66,16 @@ resolve_inputs() {
     fi
   done
   case "$RUN_VARIANT" in
-    accuracy_anchor|optimized_k10_l4) ;;
+    accuracy_anchor|optimized_k10_l4|optimized_k10_l4_aligned) ;;
     *) printf 'INVALID_RUN_VARIANT=%s\n' "$RUN_VARIANT" >&2; exit 1 ;;
   esac
   case "$ALLOW_LOW_HOST_MEMORY" in
     0|1) ;;
     *) printf 'INVALID_ALLOW_LOW_HOST_MEMORY=%s\n' "$ALLOW_LOW_HOST_MEMORY" >&2; exit 1 ;;
+  esac
+  case "$REQUIRE_WARM_VISION_CACHE" in
+    0|1) ;;
+    *) printf 'INVALID_REQUIRE_WARM_VISION_CACHE=%s\n' "$REQUIRE_WARM_VISION_CACHE" >&2; exit 1 ;;
   esac
 
   # Preserve the final venv launcher symlink. Dereferencing it with readlink -f
@@ -77,6 +89,19 @@ resolve_inputs() {
   COMPILE_CACHE="$(readlink -f "$COMPILE_CACHE")"
   EVALUATOR_ROOT="$(readlink -f "$EVALUATOR_ROOT")"
   EVAL_PYTHON="$(absolute_executable_path "$EVAL_PYTHON")"
+  if [[ -n "${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:-}" ]]; then
+    UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="$(
+      readlink -f "$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE"
+    )"
+    local exact_decode_cache
+    exact_decode_cache="$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE/decode_selfkv2048_cross1320_increfa_all_b128"
+    test "$(find "$exact_decode_cache" -name compiled_module | wc -l)" -eq 1
+    test "$(find "$exact_decode_cache" -name '*.om' | wc -l)" -eq 1
+    export UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE
+  elif [[ "$RUN_VARIANT" == optimized_k10_l4_aligned ]]; then
+    printf 'ALIGNED_RUN_REQUIRES_PASSED_DECODE_CACHE_OVERRIDE\n' >&2
+    exit 1
+  fi
 
   export OMNIDOCBENCH_EVAL_PYTHON="$EVAL_PYTHON"
   export OMNIDOCBENCH_EVALUATOR_ROOT="$EVALUATOR_ROOT"
@@ -109,11 +134,87 @@ resolve_inputs() {
     'from run_cdm_from_matched_formulas import _configure_cdm_runtime; print(_configure_cdm_runtime())'
 }
 
+vision_cache_inventory() {
+  local output="$1"
+  COMPILE_CACHE="$COMPILE_CACHE" SCRIPT_DIR="$SCRIPT_DIR" \
+    "$PYTHON_BIN" - "$output" <<'PY'
+import json
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, os.environ["SCRIPT_DIR"])
+import vision_full_batch
+
+slots = {
+    "448x384_b2": 1,
+    "512x64_b4": 2,
+    "512x192_b2": 0,
+    "960x64_b4": 3,
+    "960x128_b2": 4,
+    "960x256_b1": 5,
+    "960x512_b1": 9,
+    "960x1024_b1": 7,
+    "1024x704_b1": 8,
+    "1024x1408_b1": 6,
+}
+root = Path(os.environ["COMPILE_CACHE"])
+legacy_hash = vision_full_batch._source_hash()
+flat_hash = vision_full_batch._flat_global_context_source_hash()
+flat_keys = set(vision_full_batch.FLAT_GLOBAL_CONTEXT_BUCKET_KEYS)
+report = {}
+for key, slot in slots.items():
+    use_flat = key in flat_keys
+    source_hash = flat_hash if use_flat else legacy_hash
+    method = (
+        f"_forward_flat_bucket_slot_{slot}"
+        if use_flat
+        else f"_forward_bucket_slot_{slot}"
+    )
+    directories = sorted(root.glob(
+        f"vision_full_bucket_{key}_float16_src{source_hash}_"
+        "dwconstant_grouped_all*wtorchair_internal*"
+    ))
+    modules = []
+    oms = []
+    for directory in directories:
+        found = list(directory.glob(f"**/{method}/compiled_module"))
+        modules.extend(found)
+        for module in found:
+            oms.extend(module.parent.glob("*.om"))
+    report[key] = {
+        "slot": slot,
+        "method": method,
+        "source_hash": source_hash,
+        "global_context_mode": "direct_2d" if use_flat else "legacy_two_stage",
+        "target_compiled_module_count": len(set(modules)),
+        "target_om_count": len(set(oms)),
+        "target_compiled_modules": [str(path) for path in sorted(set(modules))],
+        "target_oms": [str(path) for path in sorted(set(oms))],
+    }
+Path(sys.argv[1]).write_text(json.dumps(report, indent=2) + "\n")
+missing = [key for key, row in report.items() if not row["target_compiled_module_count"]]
+print(
+    "UNIREC_310P_FULL1651_VISION_CACHE "
+    f"legacy_hash={legacy_hash} flat_hash={flat_hash} "
+    f"missing={len(missing)} keys={missing}"
+)
+if missing:
+    raise SystemExit(1)
+PY
+}
+
+om_inventory() {
+  local output="$1"
+  find "$COMPILE_CACHE" -type f -name '*.om' -printf '%p %s %T@\n' \
+    | sort >"$output"
+}
+
 gate_decode_cache() {
   local gate_root="$RUN_ROOT/decode_cache_gate"
   mkdir -p "$gate_root"
   local attempt status result log
-  for attempt in 1 2 3; do
+  for ((attempt = 1; attempt <= DECODE_CACHE_GATE_ATTEMPTS; attempt++)); do
     result="$gate_root/attempt_${attempt}.json"
     log="$gate_root/attempt_${attempt}.log"
     set +e
@@ -140,7 +241,8 @@ gate_decode_cache() {
       return "$status"
     fi
   done
-  printf 'UNIREC_310P_DECODE_CACHE_GATE_FAILED attempts=3\n' >&2
+  printf 'UNIREC_310P_DECODE_CACHE_GATE_FAILED attempts=%s\n' \
+    "$DECODE_CACHE_GATE_ATTEMPTS" >&2
   return 1
 }
 
@@ -199,6 +301,12 @@ run_inference() {
       --vision-focal-depthwise-rewrite constant_grouped_all
       --vision-weight-format torchair_internal
     )
+  elif [[ "$RUN_VARIANT" == optimized_k10_l4_aligned ]]; then
+    command+=(
+      --vision-bucket-preset 310p_k10_l4_aligned
+      --vision-focal-depthwise-rewrite constant_grouped_all
+      --vision-weight-format torchair_internal
+    )
   fi
   if [[ -n "$CPUSET" ]]; then
     command=(taskset -c "$CPUSET" "${command[@]}")
@@ -207,13 +315,13 @@ run_inference() {
   printf '\n' >>"$RUN_ROOT/command.sh"
   local started_ns ended_ns
   started_ns="$(date +%s%N)"
-  printf 'UNIREC_310P_FULL1651_INFERENCE_BEGIN\n'
+  phase inference_begin
   "${command[@]}"
   ended_ns="$(date +%s%N)"
   "$EVAL_PYTHON" -c \
     'import sys; print(f"{(int(sys.argv[2]) - int(sys.argv[1])) / 1e9:.6f}")' \
     "$started_ns" "$ended_ns" >"$RUN_ROOT/inference_process_wall_s.txt"
-  printf 'UNIREC_310P_FULL1651_INFERENCE_END\n'
+  phase inference_end
 }
 
 run_evaluation() {
@@ -227,7 +335,12 @@ run_evaluation() {
   cd "$evaluation/work"
   ulimit -n 65536
   local started="$SECONDS"
-  PYTHONUNBUFFERED=1 "$EVAL_PYTHON" \
+  local eval_prefix=()
+  if [[ -n "$CPUSET" ]]; then
+    eval_prefix=(taskset -c "$CPUSET")
+  fi
+  phase evaluation_match_teds_begin
+  PYTHONUNBUFFERED=1 "${eval_prefix[@]}" "$EVAL_PYTHON" \
     "$REPO/09_persistent_page_engine/scripts/run_omnidocbench_eval.py" \
     --config config.yaml \
     --evaluator-root "$EVALUATOR_ROOT" \
@@ -236,10 +349,12 @@ run_evaluation() {
     --fallback-timeout-sec 180 \
     --fallback-latex-timeout-sec 30
   printf '%s\n' "$((SECONDS - started))" >"$evaluation/eval_match_teds_wall_s.txt"
+  phase evaluation_match_teds_end
 
   mkdir -p "$evaluation/cdm"
   local cdm_started="$SECONDS"
-  PYTHONUNBUFFERED=1 "$EVAL_PYTHON" \
+  phase evaluation_cdm_begin
+  PYTHONUNBUFFERED=1 "${eval_prefix[@]}" "$EVAL_PYTHON" \
     "$CDM_RUNNER" \
     --input "$evaluation/work/result/predictions_quick_match_display_formula_result.json" \
     --output-dir "$evaluation/cdm" \
@@ -247,6 +362,7 @@ run_evaluation() {
     --workers "$CDM_WORKERS" \
     >"$evaluation/cdm/run.log" 2>&1
   printf '%s\n' "$((SECONDS - cdm_started))" >"$evaluation/cdm_wall_s.txt"
+  phase evaluation_cdm_end
 
   "$EVAL_PYTHON" "$SUMMARIZER" \
     --lane "full1651_${RUN_VARIANT}_w4t8_b128_cross1320_self2048_t05_image_tags_stripped" \
@@ -278,8 +394,13 @@ assert run["decode_batch_size"] == 128
 assert run["cross_cache_length"] == 1320
 assert run["self_cache_length"] == 2048
 variant = os.environ["RUN_VARIANT"]
-if variant == "optimized_k10_l4":
-    assert run["vision_bucket_preset"] == "310p_k10_l4_all"
+if variant in {"optimized_k10_l4", "optimized_k10_l4_aligned"}:
+    expected_preset = (
+        "310p_k10_l4_aligned"
+        if variant == "optimized_k10_l4_aligned"
+        else "310p_k10_l4_all"
+    )
+    assert run["vision_bucket_preset"] == expected_preset
     assert run["vision_focal_depthwise_rewrite"] == "constant_grouped_all"
     assert run["vision_weight_format"] == "torchair_internal"
     assert run["prefill_phase_summary"]["vision_batching"]["fallback_rows"] == 0
@@ -341,8 +462,33 @@ worker_main() {
     df -h /dev/shm
     grep -E '^(MemTotal|MemAvailable):' /proc/meminfo
   } >"$RUN_ROOT/preflight.log" 2>&1
+  export UNIREC_VISION_DIAGNOSTIC_GRAPH_LOG=1
+  if [[ "$REQUIRE_WARM_VISION_CACHE" == 1 ]]; then
+    phase warm_vision_cache_gate_begin
+    vision_cache_inventory "$RUN_ROOT/vision_cache_before.json"
+    phase warm_vision_cache_gate_end
+  fi
+  om_inventory "$RUN_ROOT/om_before_inference.txt"
+  phase decode_cache_gate_begin
   gate_decode_cache
+  phase decode_cache_gate_end
+  om_inventory "$RUN_ROOT/om_after_decode_gate.txt"
+  if ! diff -u "$RUN_ROOT/om_before_inference.txt" \
+      "$RUN_ROOT/om_after_decode_gate.txt" >"$RUN_ROOT/decode_gate_om.diff"; then
+    printf 'UNIREC_310P_FULL1651_DECODE_GATE_CHANGED_OM_INVENTORY\n' >&2
+    cat "$RUN_ROOT/decode_gate_om.diff" >&2
+    return 1
+  fi
   run_inference
+  om_inventory "$RUN_ROOT/om_after_inference.txt"
+  if diff -u "$RUN_ROOT/om_before_inference.txt" \
+      "$RUN_ROOT/om_after_inference.txt" >"$RUN_ROOT/inference_om.diff"; then
+    printf 'UNIREC_310P_FULL1651_OM_INVENTORY_UNCHANGED\n'
+  else
+    printf 'UNIREC_310P_FULL1651_OM_INVENTORY_CHANGED\n' >&2
+    cat "$RUN_ROOT/inference_om.diff" >&2
+    return 1
+  fi
   run_evaluation
   report | tee "$RUN_ROOT/final_report.txt"
 }
@@ -396,10 +542,13 @@ launch_main() {
     CDM_PDFLATEX="$CDM_PDFLATEX" CDM_KPSEWHICH="$CDM_KPSEWHICH" \
     CDM_WORKERS="$CDM_WORKERS" MATCH_WORKERS="$MATCH_WORKERS" \
     TEDS_WORKERS="$TEDS_WORKERS" RUN_VARIANT="$RUN_VARIANT" \
+    REQUIRE_WARM_VISION_CACHE="$REQUIRE_WARM_VISION_CACHE" \
+    DECODE_CACHE_GATE_ATTEMPTS="$DECODE_CACHE_GATE_ATTEMPTS" \
     LAYOUT_CPU_THREADS="$LAYOUT_CPU_THREADS" \
     PROGRESS_EVERY_PAGES="$PROGRESS_EVERY_PAGES" \
     ALLOW_LOW_HOST_MEMORY="$ALLOW_LOW_HOST_MEMORY" CPUSET="$CPUSET" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
+    UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:-}" \
     "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"
   printf 'RUN_ROOT=%s\nRUN_LOG=%s\nPID=%s\n' \
