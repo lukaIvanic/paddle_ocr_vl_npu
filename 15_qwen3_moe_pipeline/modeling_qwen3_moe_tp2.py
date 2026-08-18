@@ -15,7 +15,7 @@ from modeling_qwen3_moe_pipeline import (
     linear_tokenwise,
     npu_rms_norm,
     scatter_update_tensor_,
-    selected_expert_bmm,
+    selected_expert_grouped_matmul_v2_finalize,
 )
 
 
@@ -60,6 +60,8 @@ class Qwen3MoeTPAttention(nn.Module):
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
         attention_mask: torch.Tensor,
+        q_norm_zero: torch.Tensor,
+        k_norm_zero: torch.Tensor,
     ) -> torch.Tensor:
         batch_size, sequence_length, _hidden = hidden_states.shape
         packed = linear_tokenwise(self.qkv_proj, hidden_states)
@@ -81,12 +83,18 @@ class Qwen3MoeTPAttention(nn.Module):
             self.num_key_value_heads,
             self.head_dim,
         )
-        query_states = npu_rms_norm(
-            query_states, self.q_norm.weight, self.q_norm.variance_epsilon
-        )
-        key_states = npu_rms_norm(
-            key_states, self.k_norm.weight, self.k_norm.variance_epsilon
-        )
+        query_states = torch_npu.npu_add_rms_norm(
+            query_states,
+            q_norm_zero,
+            self.q_norm.weight,
+            self.q_norm.variance_epsilon,
+        )[0]
+        key_states = torch_npu.npu_add_rms_norm(
+            key_states,
+            k_norm_zero,
+            self.k_norm.weight,
+            self.k_norm.variance_epsilon,
+        )[0]
         query_states, key_states = torch_npu.npu_apply_rotary_pos_emb(
             query_states,
             key_states,
@@ -130,15 +138,15 @@ class Qwen3MoeTPSparseBlock(nn.Module):
         self.gate_up_proj = nn.Parameter(
             torch.empty(
                 config.num_experts,
-                2 * self.intermediate_size,
                 config.hidden_size,
+                2 * self.intermediate_size,
             )
         )
         self.down_proj = nn.Parameter(
             torch.empty(
                 config.num_experts,
-                config.hidden_size,
                 self.intermediate_size,
+                config.hidden_size,
             )
         )
 
@@ -147,21 +155,24 @@ class Qwen3MoeTPSparseBlock(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor]:
         flat_hidden = hidden_states.reshape(-1, self.hidden_size)
         router_logits = linear_tokenwise(self.gate, flat_hidden)
-        router_probs = torch.softmax(router_logits, dtype=torch.float32, dim=-1)
-        routing_weights, selected_experts = torch.topk(
-            router_probs, self.top_k, dim=-1
+        routing_weights, selected_experts, _row_idx = (
+            torch_npu.npu_moe_gating_top_k_softmax(
+                router_logits,
+                None,
+                self.top_k,
+            )
         )
         if self.norm_topk_prob:
             routing_weights = routing_weights / routing_weights.sum(
                 dim=-1, keepdim=True
             )
-        return routing_weights.to(router_logits.dtype), selected_experts
+        return routing_weights, selected_experts
 
     def forward(
         self, hidden_states: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         routing_weights, selected_experts = self.route(hidden_states)
-        local_output = selected_expert_bmm(
+        local_output = selected_expert_grouped_matmul_v2_finalize(
             hidden_states.reshape(-1, self.hidden_size),
             selected_experts,
             routing_weights,
@@ -196,6 +207,8 @@ class Qwen3MoeTPDecoderLayer(nn.Module):
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
         attention_mask: torch.Tensor,
+        q_norm_zero: torch.Tensor,
+        k_norm_zero: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         residual = hidden_states
         attention_input = npu_rms_norm(
@@ -211,6 +224,8 @@ class Qwen3MoeTPDecoderLayer(nn.Module):
             value_cache,
             cache_position,
             attention_mask,
+            q_norm_zero,
+            k_norm_zero,
         )
         hidden_states = residual + attention_output
         residual = hidden_states
@@ -390,6 +405,22 @@ class Qwen3MoeTPStage(nn.Module):
         attention_mask = build_static_decode_mask(
             cache_position, key_caches[0].shape[2]
         )
+        q_norm_zero_bank = hidden_states.new_zeros(
+            self.num_layers,
+            hidden_states.shape[0],
+            hidden_states.shape[1],
+            self.config.num_attention_heads // self.tp_size,
+            self.config.head_dim,
+        )
+        k_norm_zero_bank = hidden_states.new_zeros(
+            self.num_layers,
+            hidden_states.shape[0],
+            hidden_states.shape[1],
+            self.config.num_key_value_heads // self.tp_size,
+            self.config.head_dim,
+        )
+        q_norm_zeros = q_norm_zero_bank.unbind(dim=0)
+        k_norm_zeros = k_norm_zero_bank.unbind(dim=0)
         router_indices = []
         router_weights = []
         for layer_index, layer in enumerate(self.layers):
@@ -401,6 +432,8 @@ class Qwen3MoeTPStage(nn.Module):
                 value_caches[layer_index],
                 cache_position,
                 attention_mask,
+                q_norm_zeros[layer_index],
+                k_norm_zeros[layer_index],
             )
             if capture_router:
                 router_indices.append(indices)

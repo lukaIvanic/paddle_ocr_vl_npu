@@ -480,7 +480,11 @@ def main() -> None:
             "moe_intermediate_per_rank": config.moe_intermediate_size
             // world_size,
             "attention_o": "row_parallel_all_reduce",
+            "expert_routing": "fused_gating_init_routing_v2",
+            "expert_compute": "persistent_bf16_grouped_matmul",
+            "expert_finalize": "npu_moe_finalize_routing_then_all_reduce",
             "expert_down": "row_parallel_all_reduce",
+            "qk_norm": "fresh_per_call_npu_add_rms_norm_zero_banks",
             "lm_head": "vocab_parallel_local_pair_all_gather",
         },
     }

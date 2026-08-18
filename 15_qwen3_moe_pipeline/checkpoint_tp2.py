@@ -101,8 +101,8 @@ def load_tp_stage_checkpoint(
             gate_up_cpu = torch.empty(
                 (
                     config.num_experts,
-                    2 * local_intermediate,
                     config.hidden_size,
+                    2 * local_intermediate,
                 ),
                 dtype=checkpoint.tensor(
                     f"{prefix}.mlp.experts.0.gate_proj.weight"
@@ -111,8 +111,8 @@ def load_tp_stage_checkpoint(
             down_cpu = torch.empty(
                 (
                     config.num_experts,
-                    config.hidden_size,
                     local_intermediate,
+                    config.hidden_size,
                 ),
                 dtype=checkpoint.tensor(
                     f"{prefix}.mlp.experts.0.down_proj.weight"
@@ -120,20 +120,20 @@ def load_tp_stage_checkpoint(
             )
             for expert_index in range(config.num_experts):
                 expert_prefix = f"{prefix}.mlp.experts.{expert_index}"
-                gate_up_cpu[expert_index, :local_intermediate].copy_(
+                gate_up_cpu[expert_index, :, :local_intermediate].copy_(
                     checkpoint.tensor(f"{expert_prefix}.gate_proj.weight")[
                         intermediate_start:intermediate_end
-                    ]
+                    ].transpose(0, 1)
                 )
-                gate_up_cpu[expert_index, local_intermediate:].copy_(
+                gate_up_cpu[expert_index, :, local_intermediate:].copy_(
                     checkpoint.tensor(f"{expert_prefix}.up_proj.weight")[
                         intermediate_start:intermediate_end
-                    ]
+                    ].transpose(0, 1)
                 )
                 down_cpu[expert_index].copy_(
                     checkpoint.tensor(f"{expert_prefix}.down_proj.weight")[
                         :, intermediate_start:intermediate_end
-                    ]
+                    ].transpose(0, 1)
                 )
             copy_parameter(layer.mlp.gate_up_proj, gate_up_cpu, device=device)
             copy_parameter(layer.mlp.down_proj, down_cpu, device=device)
