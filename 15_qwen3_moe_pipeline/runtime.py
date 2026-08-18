@@ -42,7 +42,6 @@ def build_stage(
     name: str,
     cache_length: int,
     expert_impl: str = "selected_bmm",
-    attention_impl: str = "pseudo_batch_2",
 ) -> tuple[Qwen3MoePipelineStage, dict[str, object]]:
     started = time.perf_counter()
     with torch.device("meta"):
@@ -53,7 +52,6 @@ def build_stage(
             with_embedding=with_embedding,
             with_lm_head=with_lm_head,
             expert_impl=expert_impl,
-            attention_impl=attention_impl,
         )
     stage = stage.to(dtype=dtype)
     stage.to_empty(device=device)
@@ -74,7 +72,6 @@ def build_stage(
         "layer_end": layer_end,
         "device": str(device),
         "expert_impl": expert_impl,
-        "attention_impl": attention_impl,
         "allocated_memory": allocated,
         "loaded_memory": loaded,
         "load_elapsed_sec": time.perf_counter() - started,

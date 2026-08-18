@@ -39,11 +39,6 @@ def parse_args() -> argparse.Namespace:
         default="selected_bmm",
     )
     parser.add_argument(
-        "--attention-impl",
-        choices=("native_gqa", "pseudo_batch_2"),
-        default="pseudo_batch_2",
-    )
-    parser.add_argument(
         "--cache-length",
         type=int,
         help="Static KV capacity. Default: use the capture capacity.",
@@ -267,7 +262,6 @@ def main() -> None:
         name=f"stage2-compile-l{args.layers}",
         cache_length=cache_length,
         expert_impl=args.expert_impl,
-        attention_impl=args.attention_impl,
     )
 
     eager_cache = stage.make_cache(cache_length=cache_length)
@@ -288,8 +282,7 @@ def main() -> None:
     )
 
     shape_key = (
-        f"stage2_{args.expert_impl}_{args.attention_impl}_"
-        f"l{args.layers}_b1_kv{cache_length}_bf16_"
+        f"stage2_{args.expert_impl}_l{args.layers}_b1_kv{cache_length}_bf16_"
         f"src{source_hash()}"
     )
     cache_dir = args.compile_cache_dir.expanduser().resolve() / shape_key
@@ -395,7 +388,6 @@ def main() -> None:
         "complete_stage": complete_stage,
         "cache_length": cache_length,
         "expert_impl": args.expert_impl,
-        "attention_impl": args.attention_impl,
         "capture_steps": len(compiled_capture_times),
         "compile_contract": {
             "fullgraph": True,
