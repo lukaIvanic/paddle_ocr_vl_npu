@@ -189,18 +189,20 @@ class RoutingGraph(nn.Module):
         elif self.variant == "manual_npu_scatter_rank":
             # The NPU ScatterUpdate kernel requires a 2D-8D int32 data tensor.
             # Top-k expert IDs are unique, so assigning one gives exact counts.
-            counts_i32 = torch.zeros(
-                (1, self.expert_num), dtype=torch.int32, device=hidden_states.device
+            count_rows = torch.zeros(
+                (self.top_k, self.expert_num),
+                dtype=torch.int32,
+                device=hidden_states.device,
             )
             torch_npu.scatter_update_(
-                counts_i32,
-                ids_i64.view(1, self.top_k),
+                count_rows,
+                ids_i64,
                 torch.ones(
-                    (1, self.top_k), dtype=torch.int32, device=hidden_states.device
+                    (self.top_k, 1), dtype=torch.int32, device=hidden_states.device
                 ),
                 1,
             )
-            counts = counts_i32.reshape(self.expert_num).to(dtype=torch.int64)
+            counts = count_rows.sum(dim=0, dtype=torch.int64)
         elif self.variant == "manual_bincount_rank":
             counts = torch.bincount(ids_i64, minlength=self.expert_num)
         else:
