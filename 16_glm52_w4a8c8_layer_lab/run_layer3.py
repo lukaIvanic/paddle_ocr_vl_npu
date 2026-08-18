@@ -199,6 +199,7 @@ def main() -> None:
         }
         compiled_summary["dynamo"] = stats_after_warmup_and_measurement
         compiled_summary["single_static_graph"] = True
+        print("[layer3] parity " + json.dumps(parity, sort_keys=True), flush=True)
         if not parity["allclose_atol_5e_2_rtol_5e_2"]:
             raise RuntimeError("Compiled layer-3 output failed eager parity")
 
