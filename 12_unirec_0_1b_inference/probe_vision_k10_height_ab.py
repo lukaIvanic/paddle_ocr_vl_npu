@@ -253,6 +253,7 @@ def main() -> None:
     runtime = BucketedFullVisionRuntime(
         runner,
         specs=_probe_specs(),
+        diagnostic_graph_log=True,
         focal_depthwise_rewrite="constant_grouped_all",
         weight_format="torchair_internal",
         preset_name="k10_height_ab",
@@ -294,9 +295,16 @@ def main() -> None:
                 ),
             )
             for lane, fn in warmup_lanes:
+                phase_started = _phase(
+                    "warmup_call_begin",
+                    phase_started,
+                    replay_index=replay_index,
+                    request_id=item.image_source,
+                    lane=lane,
+                )
                 _unused, elapsed_ms = _time_ms(fn, device=runner.device)
                 phase_started = _phase(
-                    "warmup_call",
+                    "warmup_call_end",
                     phase_started,
                     replay_index=replay_index,
                     request_id=item.image_source,

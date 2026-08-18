@@ -103,6 +103,25 @@ echo "RUN_ROOT=$RUN_ROOT"
 echo "tail -f '$RUN_ROOT/run.log'"
 ```
 
+Immediately start the read-only cache monitor in a second shell. It also works
+for a probe that was launched from an older commit:
+
+```bash
+export RUN_ROOT COMPILE_CACHE
+bash 12_unirec_0_1b_inference/monitor_vision_k10_height_ab.sh
+```
+
+The monitor prints every two seconds:
+
+- process elapsed time and whether it is alive;
+- OM and `compiled_module` counts for both executable graph keys;
+- the three newest cache files, including mtimes and sizes;
+- the latest graph/phase/cache lines from `run.log`.
+
+Do not stop an active compile merely because it is slow. If one graph spends
+more than 60 seconds without a cache-file or log change, report the monitor
+lines immediately while leaving the process running.
+
 After the process exits:
 
 ```bash
@@ -125,15 +144,17 @@ Return only:
 
 1. `RUN_ROOT`, commit, device, exit code, and process wall time.
 2. Whether either target OM or `compiled_module` inventory changed.
-3. Every `phase_events` row. These separate imports, crop reconstruction,
+3. The full `live_cache_monitor.log`, including which graph was active and the
+   duration of every interval with no cache change.
+4. Every `phase_events` row. These separate imports, crop reconstruction,
    model load, graph registration, each synchronized cold/warm graph call, and
    measured replay work.
-4. For each crop, the max abs, mean abs, RMSE, and cosine for:
+5. For each crop, the max abs, mean abs, RMSE, and cosine for:
    - `448_vs_eager`
    - `512_vs_eager`
    - `448_vs_512`
-5. The three p50 times: eager, 448, and 512.
-6. A factual one-line result:
+6. The three p50 times: eager, 448, and 512.
+7. A factual one-line result:
    - 512 materially fixes only the suspect;
    - both heights are equivalent;
    - or both compiled heights differ materially from eager.
