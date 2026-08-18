@@ -50,23 +50,22 @@ def synchronize_timed(callable_):
 
 def benchmark(
     decode,
-    model: GLM52Layer3,
     hidden_states: torch.Tensor,
+    cache_position: torch.Tensor,
     key_cache: torch.Tensor,
     value_cache: torch.Tensor,
     *,
-    device: torch.device,
     warmup_steps: int,
     decode_steps: int,
 ) -> dict[str, float | int]:
     for step in range(warmup_steps):
-        position = torch.tensor([step], dtype=torch.int64, device=device)
-        decode(hidden_states, position, key_cache, value_cache)
+        cache_position.fill_(step)
+        decode(hidden_states, cache_position, key_cache, value_cache)
     torch.npu.synchronize()
     started = time.perf_counter()
     for step in range(decode_steps):
-        position = torch.tensor([warmup_steps + step], dtype=torch.int64, device=device)
-        decode(hidden_states, position, key_cache, value_cache)
+        cache_position.fill_(warmup_steps + step)
+        decode(hidden_states, cache_position, key_cache, value_cache)
     torch.npu.synchronize()
     elapsed = time.perf_counter() - started
     return {
@@ -108,9 +107,9 @@ def main() -> None:
         dtype=torch.float32,
     ).to(device=device, dtype=torch.bfloat16)
 
-    eager_key, eager_value = model.make_cache(device=device)
-    position = torch.tensor([0], dtype=torch.int64, device=device)
     with torch.inference_mode():
+        eager_key, eager_value = model.make_cache(device=device)
+        position = torch.zeros(1, dtype=torch.int64, device=device)
         eager_output, eager_first_sec = synchronize_timed(
             lambda: model.forward_decode(
                 hidden_states, position, eager_key, eager_value
@@ -179,11 +178,10 @@ def main() -> None:
         with torch.inference_mode():
             benchmark_summary = benchmark(
                 compiled,
-                model,
                 hidden_states,
+                position,
                 compiled_key,
                 compiled_value,
-                device=device,
                 warmup_steps=args.warmup_steps,
                 decode_steps=args.decode_steps,
             )
