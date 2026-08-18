@@ -78,6 +78,7 @@ def main() -> None:
     parser.add_argument("--intermediate-parity", type=Path, required=True)
     parser.add_argument("--intermediate-cross-kv", type=Path, required=True)
     parser.add_argument("--optimized-cross-kv", type=Path, required=True)
+    parser.add_argument("--allow-no-optimized-mismatch", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
@@ -114,9 +115,15 @@ def main() -> None:
     )
     compared = int(parity["compared_count"])
     intermediate_mismatch_count = compared - int(parity["token_exact_count"])
-    if optimized_mismatch_count < 1:
+    if optimized_mismatch_count < 1 and not args.allow_no_optimized_mismatch:
         raise ValueError("optimized prior report has no mismatch to factor")
-    if intermediate_mismatch_count:
+    if optimized_mismatch_count < 1 and not intermediate_mismatch_count:
+        verdict = "NO_MISMATCH_REPRODUCED_ON_VALIDATION_CHIP"
+        next_step = (
+            "The complete harness passed, but this chip did not reproduce the "
+            "310P-only mismatch; use the 310P result for causal attribution."
+        )
+    elif intermediate_mismatch_count:
         verdict = "VISION_WEIGHT_OR_DEPTHWISE_PATH_IMPLICATED"
         next_step = (
             "Keep production_v1 and split torchair_internal from "

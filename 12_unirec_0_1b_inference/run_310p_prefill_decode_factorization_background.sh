@@ -30,8 +30,13 @@ resolve_inputs() {
   : "${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:?export the passed B128 decode-cache parent}"
   : "${ASCEND_RT_VISIBLE_DEVICES:?select one free physical 310P, 0-3}"
   : "${CPUSET:=0-63}"
+  : "${UNIREC_FACTORIZATION_ALLOWED_DEVICES:=0,1,2,3}"
+  : "${UNIREC_FACTORIZATION_ALLOW_NO_OPTIMIZED_MISMATCH:=0}"
   [[ "$ASCEND_RT_VISIBLE_DEVICES" != *,* ]]
-  case "$ASCEND_RT_VISIBLE_DEVICES" in 0|1|2|3) ;; *) exit 2;; esac
+  case ",$UNIREC_FACTORIZATION_ALLOWED_DEVICES," in
+    *,$ASCEND_RT_VISIBLE_DEVICES,*) ;;
+    *) exit 2 ;;
+  esac
   PYTHON_BIN="$(absolute_executable_path "$PYTHON_BIN")"
   for variable in MODEL LAYOUT_MODEL OPENOCR_ROOT IMAGES_DIR COMPILE_CACHE \
     CANONICAL_ARTIFACT OPTIMIZED_ARTIFACT OPTIMIZED_MISMATCH_REPORT \
@@ -89,6 +94,11 @@ om_inventory() {
 
 worker_main() {
   local run_root="$1"
+  local -a selector_extra=() reporter_extra=()
+  if [[ "$UNIREC_FACTORIZATION_ALLOW_NO_OPTIMIZED_MISMATCH" == 1 ]]; then
+    selector_extra+=(--allow-empty-mismatches)
+    reporter_extra+=(--allow-no-optimized-mismatch)
+  fi
   resolve_inputs
   check_intermediate_vision_cache
   om_inventory >"$run_root/om_before.txt"
@@ -118,6 +128,7 @@ worker_main() {
     --reference-trace "$CANONICAL_TRACE" \
     --artifact-crops "$CANONICAL_ARTIFACT/crops.jsonl" \
     --cohort-size 128 --control-max-tokens 256 \
+    "${selector_extra[@]}" \
     --output "$run_root/probe_request_ids.txt" \
     --summary "$run_root/probe_selection.json"
 
@@ -157,6 +168,7 @@ worker_main() {
     --intermediate-parity "$run_root/intermediate_parity.json" \
     --intermediate-cross-kv "$run_root/intermediate_cross_kv.json" \
     --optimized-cross-kv "$run_root/optimized_cross_kv.json" \
+    "${reporter_extra[@]}" \
     --output "$run_root/factorization_report.json" \
     | tee "$run_root/final_report.txt"
 
@@ -199,6 +211,8 @@ launch_main() {
     OPTIMIZED_MISMATCH_REPORT="$OPTIMIZED_MISMATCH_REPORT" \
     CANONICAL_TRACE="$CANONICAL_TRACE" CPUSET="$CPUSET" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
+    UNIREC_FACTORIZATION_ALLOWED_DEVICES="$UNIREC_FACTORIZATION_ALLOWED_DEVICES" \
+    UNIREC_FACTORIZATION_ALLOW_NO_OPTIMIZED_MISMATCH="$UNIREC_FACTORIZATION_ALLOW_NO_OPTIMIZED_MISMATCH" \
     UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE" \
     bash "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"

@@ -35,6 +35,7 @@ def main() -> None:
     parser.add_argument("--artifact-crops", type=Path, required=True)
     parser.add_argument("--cohort-size", type=int, default=128)
     parser.add_argument("--control-max-tokens", type=int, default=256)
+    parser.add_argument("--allow-empty-mismatches", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--summary", type=Path, required=True)
     args = parser.parse_args()
@@ -43,7 +44,7 @@ def main() -> None:
 
     report = json.loads(args.mismatch_report.read_text(encoding="utf-8"))
     mismatches = report.get("first_mismatches") or []
-    if not mismatches:
+    if not mismatches and not args.allow_empty_mismatches:
         raise ValueError("mismatch report has no first_mismatches rows")
     mismatch_ids = [str(row["request_id"]) for row in mismatches]
     artifact_ids = {
