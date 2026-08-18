@@ -15,6 +15,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable
 
+from vision_bucket_presets import VisionBucketSpec
+
 
 @dataclass(frozen=True, order=True)
 class Variant:
@@ -130,23 +132,65 @@ def interpolate_latency(pixels: int, xs: list[int], ys: list[float]) -> float:
 
 def make_variants(
     pages: list[list[tuple[int, int]]], xs: list[int], ys: list[float]
-) -> list[Variant]:
+) -> tuple[list[Variant], list[str], list[dict[str, Any]]]:
     widths = sorted({width for page in pages for width, _height in page})
     heights = sorted({height for page in pages for _width, height in page})
-    variants = []
+    variants_by_key: dict[tuple[int, int, int], Variant] = {}
+    rejected_unaligned = []
+    alignment_adjustments = []
     for width in widths:
         for height in heights:
             for batch_size in (1, 2, 4):
-                pixels = width * height * batch_size
-                variants.append(
-                    Variant(
-                        width=width,
-                        height=height,
+                spec = VisionBucketSpec(width, height, batch_size)
+                aligned_canvases = [(width, height)]
+                if not spec.has_aligned_final_stage_rows:
+                    rejected_unaligned.append(spec.key)
+                    # An optimum under a monotone physical-pixel cost never
+                    # needs more than the minimum-area aligned expansion of a
+                    # candidate canvas. Search the complete 16-row tile period
+                    # in both spatial dimensions and retain all minimum-area
+                    # ties, because their coverage of other shapes can differ.
+                    expanded = []
+                    for width_steps in range(16):
+                        for height_steps in range(16):
+                            candidate_width = width + width_steps * 32
+                            candidate_height = height + height_steps * 32
+                            candidate = VisionBucketSpec(
+                                candidate_width,
+                                candidate_height,
+                                batch_size,
+                            )
+                            if candidate.has_aligned_final_stage_rows:
+                                expanded.append(
+                                    (candidate_width * candidate_height, candidate)
+                                )
+                    minimum_area = min(area for area, _candidate in expanded)
+                    aligned_canvases = [
+                        (candidate.width, candidate.height)
+                        for area, candidate in expanded
+                        if area == minimum_area
+                    ]
+                    alignment_adjustments.append(
+                        {
+                            "source_key": spec.key,
+                            "replacement_keys": [
+                                f"{candidate_width}x{candidate_height}_b{batch_size}"
+                                for candidate_width, candidate_height in aligned_canvases
+                            ],
+                        }
+                    )
+                for candidate_width, candidate_height in aligned_canvases:
+                    pixels = candidate_width * candidate_height * batch_size
+                    variant = Variant(
+                        width=candidate_width,
+                        height=candidate_height,
                         batch_size=batch_size,
                         latency_ms=interpolate_latency(pixels, xs, ys),
                     )
-                )
-    return variants
+                    variants_by_key[
+                        (candidate_width, candidate_height, batch_size)
+                    ] = variant
+    return sorted(variants_by_key.values()), rejected_unaligned, alignment_adjustments
 
 
 def minimum_call_plan(
@@ -193,7 +237,9 @@ def main() -> None:
         args.iterations, include_fallback=args.include_fallback
     )
     xs, ys, latency_payload = latency_curve(args.latency_reference)
-    variants = make_variants(pages, xs, ys)
+    variants, rejected_unaligned, alignment_adjustments = make_variants(
+        pages, xs, ys
+    )
     variant_by_canvas_batch = {
         (variant.width, variant.height, variant.batch_size): variant
         for variant in variants
@@ -353,6 +399,11 @@ def main() -> None:
                     "batch_size": variant.batch_size,
                     "estimated_latency_ms": variant.latency_ms,
                     "used": index in used_set,
+                    "final_stage_rows": (
+                        variant.batch_size
+                        * (variant.width // 32)
+                        * (variant.height // 32)
+                    ),
                 }
             )
         row = {
@@ -373,7 +424,7 @@ def main() -> None:
         )
 
     report = {
-        "schema": "unirec_vision_bucket_frontier_v1",
+        "schema": "unirec_vision_bucket_frontier_v2",
         "status": "best_found_not_global_optimum_proof",
         "search": {
             "page_lookahead": args.page_lookahead,
@@ -383,7 +434,14 @@ def main() -> None:
             "beam_width": args.beam_width,
             "candidate_canvas_count": len({variant.canvas for variant in variants}),
             "candidate_variant_count": len(variants),
+            "rejected_unaligned_variant_count": len(rejected_unaligned),
+            "rejected_unaligned_variants": rejected_unaligned,
+            "alignment_adjustment_count": len(alignment_adjustments),
+            "alignment_adjustments": alignment_adjustments,
             "batch_sizes": [1, 2, 4],
+            "compiled_shape_constraint": (
+                "batch_size*(width/32)*(height/32) divisible by 16"
+            ),
             "routing": "smallest_compatible_canvas_then_exact_batch_mix",
             "latency_model": "piecewise_linear_by_total_physical_pixels",
             "search_anchor": list(anchor_keys),

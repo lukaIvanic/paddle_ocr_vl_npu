@@ -32,6 +32,16 @@ class VisionBucketSpec:
     def accepts(self, width: int, height: int) -> bool:
         return width <= self.width and height <= self.height
 
+    @property
+    def final_stage_rows(self) -> int:
+        """Flattened B*H*W rows entering the final focal-vision stage."""
+        return self.batch_size * (self.width // 32) * (self.height // 32)
+
+    @property
+    def has_aligned_final_stage_rows(self) -> bool:
+        """Whether the final-stage row count fills complete 16-row tiles."""
+        return self.final_stage_rows % 16 == 0
+
 
 # Five graphs cover 1,513/1,564 accepted crops in the first 32 hard pages.
 DEFAULT_VISION_BUCKETS = (

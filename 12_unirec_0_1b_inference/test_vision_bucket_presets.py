@@ -114,6 +114,23 @@ class VisionBucketPresetTest(unittest.TestCase):
         b4 = VisionBucketSpec(448, 64, 4)
         self.assertEqual(plan_canvas_bucket_calls((b4,), 5), (b4, b4))
 
+    def test_final_stage_row_alignment_identifies_310p_tail_shapes(self) -> None:
+        cases = {
+            (960, 448, 1): False,
+            (960, 512, 1): True,
+            (960, 64, 2): False,
+            (960, 64, 4): True,
+            (448, 192, 2): False,
+            (448, 192, 4): True,
+        }
+        for (width, height, batch_size), expected in cases.items():
+            spec = VisionBucketSpec(width, height, batch_size)
+            self.assertEqual(
+                spec.has_aligned_final_stage_rows,
+                expected,
+                spec.key,
+            )
+
     def test_multiple_variants_require_costs(self) -> None:
         with self.assertRaisesRegex(ValueError, "require planning costs"):
             plan_canvas_bucket_calls(
