@@ -185,6 +185,7 @@ def main() -> None:
         )
         with torch.inference_mode():
             compiled_key, compiled_value = model.make_cache(device=device)
+            compiled_hidden_before = hidden_states.clone()
             compiled_summary, compiled_output = benchmark(
                 compiled,
                 hidden_states,
@@ -193,6 +194,12 @@ def main() -> None:
                 warmup_steps=args.warmup_steps,
                 decode_steps=args.decode_steps,
                 capture_dynamo_stats=True,
+            )
+            compiled_summary["hidden_input_max_abs_after"] = float(
+                (hidden_states.float() - compiled_hidden_before.float())
+                .abs()
+                .max()
+                .item()
             )
         if compiled_summary["dynamo"]["new_graphs_during_measurement"] != 0:
             raise RuntimeError(
