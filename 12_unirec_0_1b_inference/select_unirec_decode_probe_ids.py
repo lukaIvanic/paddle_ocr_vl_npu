@@ -14,6 +14,20 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
         return [json.loads(line) for line in handle if line.strip()]
 
 
+def generated_token_count(row: dict[str, Any]) -> int:
+    """Read either production-page or decode-replay trace length schema."""
+    if "generated_token_count" in row:
+        return int(row["generated_token_count"])
+    if "token_count" in row:
+        return int(row["token_count"])
+    if "token_ids" in row:
+        return max(0, len(row["token_ids"]) - 1)
+    raise ValueError(
+        "reference trace row has no generated_token_count, token_count, "
+        f"or token_ids: request_id={row.get('request_id')!r}"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mismatch-report", type=Path, required=True)
@@ -52,7 +66,7 @@ def main() -> None:
         request_id = str(row["request_id"])
         if request_id in selected or request_id not in artifact_ids:
             continue
-        generated = int(row.get("generated_token_count", 2**31 - 1))
+        generated = generated_token_count(row)
         if generated > args.control_max_tokens:
             continue
         controls.append(request_id)
