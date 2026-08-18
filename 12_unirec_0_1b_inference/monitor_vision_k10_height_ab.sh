@@ -4,6 +4,7 @@ set -euo pipefail
 : "${RUN_ROOT:?set the active height A/B RUN_ROOT}"
 : "${COMPILE_CACHE:?set the same compile-cache parent as the probe}"
 : "${MONITOR_INTERVAL_S:=2}"
+: "${FOCAL_REWRITE:=constant_grouped_all}"
 
 test -s "$RUN_ROOT/pid.txt"
 pid="$(cat "$RUN_ROOT/pid.txt")"
@@ -27,7 +28,7 @@ snapshot() {
       printf '\n'
     done < <(
       find "$COMPILE_CACHE" -type d \
-        -name "vision_full_bucket_${key}_float16_*dwconstant_grouped_all*wtorchair_internal*" \
+        -name "vision_full_bucket_${key}_float16_*dw${FOCAL_REWRITE}_*wtorchair_internal*" \
         | sort
     )
   done

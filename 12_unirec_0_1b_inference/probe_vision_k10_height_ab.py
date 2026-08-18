@@ -87,6 +87,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--request-id", action="append")
+    parser.add_argument(
+        "--focal-depthwise-rewrite",
+        choices=("constant", "constant_grouped_all"),
+        default="constant_grouped_all",
+    )
+    parser.add_argument("--current-height-only", action="store_true")
     parser.add_argument("--warmup-replays", type=int, default=1)
     parser.add_argument("--timing-repeats", type=int, default=3)
     args = parser.parse_args()
@@ -254,11 +260,16 @@ def main() -> None:
         runner,
         specs=_probe_specs(),
         diagnostic_graph_log=True,
-        focal_depthwise_rewrite="constant_grouped_all",
+        focal_depthwise_rewrite=args.focal_depthwise_rewrite,
         weight_format="torchair_internal",
         preset_name="k10_height_ab",
     )
     by_key = {spec.key: spec for spec in runtime.specs}
+    requested_keys = (
+        (CURRENT_KEY,)
+        if args.current_height_only
+        else (CURRENT_KEY, CONTROL_KEY)
+    )
     phase_started = _phase(
         "graph_registration",
         phase_started,
@@ -281,19 +292,18 @@ def main() -> None:
     # behavior without introducing synthetic content into the comparison.
     for replay_index in range(args.warmup_replays):
         for item in items:
-            warmup_lanes: tuple[
-                tuple[str, Callable[[], torch.Tensor]], ...
-            ] = (
+            warmup_lanes: list[tuple[str, Callable[[], torch.Tensor]]] = [
                 ("eager", lambda item=item: run_eager(item)),
                 (
                     CURRENT_KEY,
                     lambda item=item: run_bucket(item, CURRENT_KEY),
                 ),
-                (
+            ]
+            if not args.current_height_only:
+                warmup_lanes.append((
                     CONTROL_KEY,
                     lambda item=item: run_bucket(item, CONTROL_KEY),
-                ),
-            )
+                ))
             for lane, fn in warmup_lanes:
                 phase_started = _phase(
                     "warmup_call_begin",
@@ -313,41 +323,45 @@ def main() -> None:
                 )
 
     result_rows = []
-    all_timing: dict[str, list[float]] = {
-        "eager": [],
-        CURRENT_KEY: [],
-        CONTROL_KEY: [],
-    }
+    lane_names = ("eager", *requested_keys)
+    all_timing: dict[str, list[float]] = {name: [] for name in lane_names}
     for item in items:
         latest: dict[str, torch.Tensor] = {}
-        timing: dict[str, list[float]] = {
-            "eager": [],
-            CURRENT_KEY: [],
-            CONTROL_KEY: [],
-        }
-        lanes: tuple[tuple[str, Callable[[], torch.Tensor]], ...] = (
+        timing: dict[str, list[float]] = {name: [] for name in lane_names}
+        lanes: list[tuple[str, Callable[[], torch.Tensor]]] = [
             ("eager", lambda item=item: run_eager(item)),
             (CURRENT_KEY, lambda item=item: run_bucket(item, CURRENT_KEY)),
-            (CONTROL_KEY, lambda item=item: run_bucket(item, CONTROL_KEY)),
-        )
+        ]
+        if not args.current_height_only:
+            lanes.append(
+                (CONTROL_KEY, lambda item=item: run_bucket(item, CONTROL_KEY))
+            )
         for repeat_index in range(args.timing_repeats):
-            ordered = lanes if repeat_index % 2 == 0 else tuple(reversed(lanes))
+            ordered = lanes if repeat_index % 2 == 0 else list(reversed(lanes))
             for name, fn in ordered:
                 output, elapsed_ms = _time_ms(fn, device=runner.device)
                 latest[name] = output
                 timing[name].append(elapsed_ms)
                 all_timing[name].append(elapsed_ms)
+        comparisons = {
+            "448_vs_eager": _diff(latest["eager"], latest[CURRENT_KEY]),
+        }
+        if not args.current_height_only:
+            comparisons.update(
+                {
+                    "512_vs_eager": _diff(
+                        latest["eager"], latest[CONTROL_KEY]
+                    ),
+                    "448_vs_512": _diff(
+                        latest[CONTROL_KEY], latest[CURRENT_KEY]
+                    ),
+                }
+            )
         result_rows.append(
             {
                 "request_id": item.image_source,
                 "processed_size": [item.processed_width, item.processed_height],
-                "comparisons": {
-                    "448_vs_eager": _diff(latest["eager"], latest[CURRENT_KEY]),
-                    "512_vs_eager": _diff(latest["eager"], latest[CONTROL_KEY]),
-                    "448_vs_512": _diff(
-                        latest[CONTROL_KEY], latest[CURRENT_KEY]
-                    ),
-                },
+                "comparisons": comparisons,
                 "timing_p50_ms": {
                     name: statistics.median(values)
                     for name, values in timing.items()
@@ -363,14 +377,17 @@ def main() -> None:
     report = {
         "status": "pass",
         "physical_devices": devices,
-        "probe": "same_640x320_crop_k10_448_vs_aligned_512",
+        "probe": (
+            "same_640x320_crop_k10_448_vs_aligned_512"
+            if not args.current_height_only
+            else "same_640x320_crop_k10_448_rewrite_isolation"
+        ),
         "weights": {
-            "focal_depthwise_rewrite": "constant_grouped_all",
+            "focal_depthwise_rewrite": args.focal_depthwise_rewrite,
             "weight_format": "torchair_internal",
         },
         "graph_slots": {
-            CURRENT_KEY: 6,
-            CONTROL_KEY: 9,
+            key: 6 if key == CURRENT_KEY else 9 for key in requested_keys
         },
         "warmup_replays": args.warmup_replays,
         "timing_repeats": args.timing_repeats,
@@ -381,11 +398,11 @@ def main() -> None:
         },
         "cache_dirs": {
             key: str(runtime.cache_dirs[key])
-            for key in (CURRENT_KEY, CONTROL_KEY)
+            for key in requested_keys
         },
         "cache_inventory": {
             key: runtime.cache_inventory()[key]
-            for key in (CURRENT_KEY, CONTROL_KEY)
+            for key in requested_keys
         },
         "phase_events": PHASE_EVENTS,
     }
