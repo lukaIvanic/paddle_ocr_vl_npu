@@ -223,6 +223,32 @@ def main() -> None:
                 )
             ),
         }
+        parity["cache_row_abs_max"] = {
+            "eager_key": eager_key[:, :, :used_cache_length]
+            .float()
+            .abs()
+            .amax(dim=(0, 1, 3))
+            .cpu()
+            .tolist(),
+            "compiled_key": compiled_key[:, :, :used_cache_length]
+            .float()
+            .abs()
+            .amax(dim=(0, 1, 3))
+            .cpu()
+            .tolist(),
+            "eager_value": eager_value[:, :, :used_cache_length]
+            .float()
+            .abs()
+            .amax(dim=(0, 1, 3))
+            .cpu()
+            .tolist(),
+            "compiled_value": compiled_value[:, :, :used_cache_length]
+            .float()
+            .abs()
+            .amax(dim=(0, 1, 3))
+            .cpu()
+            .tolist(),
+        }
         compiled_summary["measured_window_graph_stable"] = True
         print("[layer3] parity " + json.dumps(parity, sort_keys=True), flush=True)
         if not parity["allclose_atol_5e_2_rtol_5e_2"]:
