@@ -194,7 +194,7 @@ class RoutingGraph(nn.Module):
             )
             torch_npu.scatter_update_(
                 counts_i32,
-                ids_i64,
+                ids_i64.view(1, self.top_k),
                 torch.ones(
                     (1, self.top_k), dtype=torch.int32, device=hidden_states.device
                 ),
@@ -285,6 +285,12 @@ def make_inputs(
     selected = torch.stack(
         [torch.randperm(expert_num, generator=generator)[:top_k] for _ in range(layers)]
     ).view(layers, 1, top_k)
+    if layers >= 1 and expert_num >= top_k:
+        selected[0, 0] = torch.arange(top_k)
+    if layers >= 2 and expert_num >= top_k:
+        selected[1, 0] = torch.arange(expert_num - top_k, expert_num)
+    if layers >= 3 and expert_num >= 128 and top_k == 8:
+        selected[2, 0] = torch.tensor([127, 0, 64, 1, 126, 63, 2, 125])
     return (
         hidden.to(device=device),
         selected.to(device=device, dtype=torch.int32),
@@ -387,6 +393,10 @@ def main() -> None:
     candidate = candidate_module(hidden, selected)
     synchronize(device)
     correctness = compare_outputs(reference, candidate)
+    if args.variant == "manual_npu_scatter_rank" and not correctness["all_exact"]:
+        raise RuntimeError(
+            "NPU ScatterUpdate candidate failed synchronized exact routing parity"
+        )
 
     source_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12]
     shape_key = (
