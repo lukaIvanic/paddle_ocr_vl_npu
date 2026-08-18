@@ -52,12 +52,13 @@ def benchmark(
     decode,
     model: GLM52Layer3,
     hidden_states: torch.Tensor,
+    key_cache: torch.Tensor,
+    value_cache: torch.Tensor,
     *,
     device: torch.device,
     warmup_steps: int,
     decode_steps: int,
 ) -> dict[str, float | int]:
-    key_cache, value_cache = model.make_cache(device=device)
     for step in range(warmup_steps):
         position = torch.tensor([step], dtype=torch.int64, device=device)
         decode(hidden_states, position, key_cache, value_cache)
@@ -180,6 +181,8 @@ def main() -> None:
                 compiled,
                 model,
                 hidden_states,
+                compiled_key,
+                compiled_value,
                 device=device,
                 warmup_steps=args.warmup_steps,
                 decode_steps=args.decode_steps,
