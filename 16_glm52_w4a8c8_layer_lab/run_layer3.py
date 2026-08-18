@@ -56,7 +56,7 @@ def benchmark(
         cache_position = torch.tensor(
             [step], dtype=torch.int64, device=hidden_states.device
         )
-        decode(hidden_states, cache_position, key_cache, value_cache)
+        decode(hidden_states.clone(), cache_position, key_cache, value_cache)
     torch.npu.synchronize()
     warmup_elapsed = time.perf_counter() - warmup_started
     dynamo_after_warmup = None
@@ -78,7 +78,9 @@ def benchmark(
             dtype=torch.int64,
             device=hidden_states.device,
         )
-        output = decode(hidden_states, cache_position, key_cache, value_cache)
+        output = decode(
+            hidden_states.clone(), cache_position, key_cache, value_cache
+        )
     torch.npu.synchronize()
     elapsed = time.perf_counter() - started
     if output is None:
@@ -108,6 +110,7 @@ def benchmark(
         "elapsed_sec": elapsed,
         "mean_layer_ms": 1000.0 * elapsed / decode_steps,
         "layer_calls_per_sec": decode_steps / elapsed,
+        "fresh_input_clone_in_timing": True,
     }
     if dynamo_summary is not None:
         summary["dynamo"] = dynamo_summary
