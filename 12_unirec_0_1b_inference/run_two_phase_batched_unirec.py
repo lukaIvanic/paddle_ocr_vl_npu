@@ -181,6 +181,33 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-length", type=int, default=1024)
     parser.add_argument("--decode-batch-size", type=int, default=128)
     parser.add_argument(
+        "--decode-lane-mode",
+        choices=("single", "dual"),
+        default="single",
+        help="Use the canonical single arena or bounded-quantum A/B arenas.",
+    )
+    parser.add_argument("--decode-a-batch-size", type=int, default=128)
+    parser.add_argument("--decode-a-cross-cache-length", type=int, default=384)
+    parser.add_argument("--decode-a-self-cache-length", type=int, default=1408)
+    parser.add_argument("--decode-a-max-length", type=int, default=1408)
+    parser.add_argument(
+        "--decode-b-batch-size",
+        type=int,
+        default=0,
+        help="Lane-B batch size; zero inherits --decode-batch-size.",
+    )
+    parser.add_argument("--decode-quantum-steps", type=int, default=16)
+    parser.add_argument("--decode-max-skipped-quanta", type=int, default=8)
+    parser.add_argument(
+        "--decode-a-overflow-policy",
+        choices=("finish_at_cap", "restart_b"),
+        default="restart_b",
+        help=(
+            "Finish lane-A rows at its cap, or restart capped non-EOS rows "
+            "from their retained CPU cross-KV in lane B."
+        ),
+    )
+    parser.add_argument(
         "--compile-cache-dir",
         type=Path,
         default=Path(
@@ -235,6 +262,24 @@ def parse_args() -> argparse.Namespace:
         parser.error("--limit must be positive")
     if args.decode_batch_size < 1:
         parser.error("--decode-batch-size must be positive")
+    if args.decode_b_batch_size < 0:
+        parser.error("--decode-b-batch-size must be non-negative")
+    for name in (
+        "decode_a_batch_size",
+        "decode_a_cross_cache_length",
+        "decode_a_self_cache_length",
+        "decode_a_max_length",
+        "decode_quantum_steps",
+        "decode_max_skipped_quanta",
+    ):
+        if int(getattr(args, name)) < 1:
+            parser.error(f"--{name.replace('_', '-')} must be positive")
+    if args.decode_a_max_length > args.decode_a_self_cache_length:
+        parser.error("lane-A max length cannot exceed its self cache")
+    if args.decode_lane_mode == "dual" and (
+        args.decode_a_cross_cache_length >= args.cross_cache_length
+    ):
+        parser.error("lane-A cross cache must be smaller than lane B")
     if args.max_length > args.self_cache_length:
         parser.error("--max-length cannot exceed --self-cache-length")
     if args.decode_admission_prefetch_depth < 0:
@@ -562,6 +607,11 @@ def main() -> None:
         ContinuousUniRecDecoder,
         production_decode_cache_parent,
     )
+    from dual_lane_decode_policy import DecodeLaneSpec
+    from dual_lane_unirec import (
+        DualLaneContinuousUniRecDecoder,
+        RankedReadyItem,
+    )
     from modeling_optimized_unirec import OptimizedUniRecRunner
 
     # The two-phase path owns layout and recognition.  Reuse only OpenDoc's
@@ -599,12 +649,23 @@ def main() -> None:
     runner._static_cross_cache_len_by_processor_max_side[processor_shape] = (
         args.cross_cache_length
     )
-    decode_graph_warmup = prepare_decode_warmup_report(
-        base=base,
-        runner=runner,
-        batch_size=args.decode_batch_size,
-        passes=args.decode_warmup_passes,
-    )
+    if args.decode_lane_mode == "single":
+        decode_graph_warmup = prepare_decode_warmup_report(
+            base=base,
+            runner=runner,
+            batch_size=args.decode_batch_size,
+            passes=args.decode_warmup_passes,
+        )
+    else:
+        decode_graph_warmup = {
+            "passes": args.decode_warmup_passes,
+            "graphs": {},
+            "wall_s": 0.0,
+            "decode": {
+                "execution": "deferred_to_dual_actual_admitted_arenas",
+                "passes": args.decode_warmup_passes,
+            },
+        }
     decode_setup_s = time.perf_counter() - decode_setup_started
     print(
         "UNIREC_TWO_PHASE_DECODE_SETUP_END "
@@ -786,6 +847,22 @@ def main() -> None:
                 "decode_slot": completed_item.slot,
                 "admission_index": completed_item.admission_index,
                 "completion_index": completed_item.completion_index,
+                "decode_lane": result.get("decode_lane", "single"),
+                "decode_global_rank": result.get("decode_global_rank"),
+                "decode_promoted_from_a": result.get(
+                    "decode_promoted_from_a",
+                    False,
+                ),
+                "decode_speculative_a_tokens": result.get(
+                    "decode_speculative_a_tokens",
+                    0,
+                ),
+                "decode_lane_queue_wait_s": result.get(
+                    "decode_lane_queue_wait_s"
+                ),
+                "decode_promotion_wait_s": result.get(
+                    "decode_promotion_wait_s"
+                ),
             }
         )
         flush_ready_pages()
@@ -876,18 +953,60 @@ def main() -> None:
     decode_progress_thread.start()
     decode_inference_wall_s = 0.0
     try:
-        continuous_decode = ContinuousUniRecDecoder(
-            runner=runner,
-            batch_size=args.decode_batch_size,
-            max_length=args.max_length,
-            decode_mode="compiled_ifa",
-            compile_backend="torchair",
-            admission_prefetch_depth=args.decode_admission_prefetch_depth,
-        ).run(
-            ready_source(),
-            on_complete=enqueue_completed_crop,
-            graph_warmup_passes=args.decode_warmup_passes,
-        )
+        if args.decode_lane_mode == "dual":
+            if args.decode_admission_prefetch_depth:
+                raise RuntimeError(
+                    "dual-lane decode does not yet support admission prefetch"
+                )
+            ranked_items = [
+                RankedReadyItem(ready=item, global_rank=rank)
+                for rank, item in enumerate(ready_source())
+            ]
+            b_batch_size = (
+                args.decode_batch_size
+                if args.decode_b_batch_size == 0
+                else args.decode_b_batch_size
+            )
+            continuous_decode = DualLaneContinuousUniRecDecoder(
+                runner=runner,
+                a_spec=DecodeLaneSpec(
+                    name="a",
+                    batch_size=args.decode_a_batch_size,
+                    self_cache_length=args.decode_a_self_cache_length,
+                    cross_cache_length=args.decode_a_cross_cache_length,
+                    max_length=args.decode_a_max_length,
+                ),
+                b_spec=DecodeLaneSpec(
+                    name="b",
+                    batch_size=b_batch_size,
+                    self_cache_length=args.self_cache_length,
+                    cross_cache_length=args.cross_cache_length,
+                    max_length=args.max_length,
+                ),
+                quantum_steps=args.decode_quantum_steps,
+                max_skipped_quanta=args.decode_max_skipped_quanta,
+                overflow_policy=args.decode_a_overflow_policy,
+            ).run(
+                ranked_items,
+                on_complete=enqueue_completed_crop,
+                graph_warmup_passes=args.decode_warmup_passes,
+            )
+            decode_graph_warmup = continuous_decode[
+                "production_graph_warmup"
+            ]
+        else:
+            continuous_decode = ContinuousUniRecDecoder(
+                runner=runner,
+                batch_size=args.decode_batch_size,
+                max_length=args.max_length,
+                decode_mode="compiled_ifa",
+                compile_backend="torchair",
+                admission_prefetch_depth=args.decode_admission_prefetch_depth,
+            ).run(
+                ready_source(),
+                on_complete=enqueue_completed_crop,
+                graph_warmup_passes=args.decode_warmup_passes,
+            )
         decode_inference_wall_s = (
             time.perf_counter()
             - decode_phase_started
@@ -981,8 +1100,48 @@ def main() -> None:
         "vision_prefill_mode": "compiled_full_buckets",
         "text_prefill_mode": "compiled_packed_s1320",
         "decode_mode": "compiled_ifa",
-        "decode_scheduling": "continuous",
+        "decode_scheduling": (
+            "dual_lane_bounded_quantum"
+            if args.decode_lane_mode == "dual"
+            else "continuous"
+        ),
+        "decode_lane_mode": args.decode_lane_mode,
         "decode_batch_size": args.decode_batch_size,
+        "decode_a": (
+            {
+                "batch_size": args.decode_a_batch_size,
+                "self_cache_length": args.decode_a_self_cache_length,
+                "cross_cache_length": args.decode_a_cross_cache_length,
+                "max_length": args.decode_a_max_length,
+                "overflow_policy": args.decode_a_overflow_policy,
+            }
+            if args.decode_lane_mode == "dual"
+            else None
+        ),
+        "decode_b": (
+            {
+                "batch_size": (
+                    args.decode_batch_size
+                    if args.decode_b_batch_size == 0
+                    else args.decode_b_batch_size
+                ),
+                "self_cache_length": args.self_cache_length,
+                "cross_cache_length": args.cross_cache_length,
+                "max_length": args.max_length,
+            }
+            if args.decode_lane_mode == "dual"
+            else None
+        ),
+        "decode_quantum_steps": (
+            args.decode_quantum_steps
+            if args.decode_lane_mode == "dual"
+            else None
+        ),
+        "decode_max_skipped_quanta": (
+            args.decode_max_skipped_quanta
+            if args.decode_lane_mode == "dual"
+            else None
+        ),
         "decode_admission_prefetch_depth": (
             args.decode_admission_prefetch_depth
         ),

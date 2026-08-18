@@ -2000,6 +2000,7 @@ class OptimizedUniRecRunner:
         compile_dynamic: bool,
         cross_cache_len: int | None,
         batch_size: int,
+        self_cache_len: int | None = None,
         mask_mode: str = "per_step",
         prefetch_mode: str = "none",
         graph_mode: str = "ge",
@@ -2020,10 +2021,17 @@ class OptimizedUniRecRunner:
                 raise ValueError(f"Unsupported GE tuning knob: {knob}")
         if ge_tuning and graph_mode != "ge":
             raise ValueError("GE tuning knobs apply to graph_mode=ge only")
+        normalized_self_cache_len = int(
+            LOCAL_UNIREC_STATIC_CACHE_LEN
+            if self_cache_len is None
+            else self_cache_len
+        )
+        if normalized_self_cache_len < 1:
+            raise ValueError("self_cache_len must be positive")
         normalized_cross_cache_len = "none" if cross_cache_len is None else str(int(cross_cache_len))
         cache_key = (
             f"{backend}:self_attn={self_attention_backend}:dynamic={int(compile_dynamic)}:"
-            f"self_kv={LOCAL_UNIREC_STATIC_CACHE_LEN}:cross_kv={normalized_cross_cache_len}:"
+            f"self_kv={normalized_self_cache_len}:cross_kv={normalized_cross_cache_len}:"
             f"batch={int(batch_size)}:mask={mask_mode}:qkv_fused={int(self.qkv_fused)}:"
             f"prefetch={prefetch_mode}:graph={graph_mode}:wnz={int(self.weights_nz)}:"
             f"getune={','.join(ge_tuning) or 'none'}"
@@ -2082,7 +2090,7 @@ class OptimizedUniRecRunner:
                 "qkv_fused": bool(self.qkv_fused),
                 "weights_nz": bool(self.weights_nz),
                 "prefetch_mode": prefetch_mode,
-                "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
+                "static_self_kv_len": normalized_self_cache_len,
                 "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
                 "self_attention_backend": self_attention_backend,
                 "batch_size": int(batch_size),
@@ -2106,7 +2114,7 @@ class OptimizedUniRecRunner:
                 "qkv_fused": bool(self.qkv_fused),
                 "weights_nz": bool(self.weights_nz),
                 "prefetch_mode": prefetch_mode,
-                "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
+                "static_self_kv_len": normalized_self_cache_len,
                 "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
                 "self_attention_backend": self_attention_backend,
                 "batch_size": int(batch_size),
@@ -2150,7 +2158,7 @@ class OptimizedUniRecRunner:
                         "qkv_fused": bool(self.qkv_fused),
                         "weights_nz": bool(self.weights_nz),
                         "prefetch_mode": prefetch_mode,
-                        "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
+                        "static_self_kv_len": normalized_self_cache_len,
                         "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
                         "self_attention_backend": self_attention_backend,
                         "batch_size": int(batch_size),
@@ -2189,7 +2197,7 @@ class OptimizedUniRecRunner:
                 }
             else:
                 shape_name = (
-                    f"decode_selfkv{LOCAL_UNIREC_STATIC_CACHE_LEN}_cross"
+                    f"decode_selfkv{normalized_self_cache_len}_cross"
                     f"{normalized_cross_cache_len}_{self_attention_backend}"
                 )
                 if batch_size != 1:
@@ -2241,7 +2249,7 @@ class OptimizedUniRecRunner:
                 "weights_nz": bool(self.weights_nz),
                 "ge_tuning": list(ge_tuning),
                 "prefetch_mode": prefetch_mode,
-                "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
+                "static_self_kv_len": normalized_self_cache_len,
                 "static_cross_kv_len": None if cross_cache_len is None else int(cross_cache_len),
                 "self_attention_backend": self_attention_backend,
                 "batch_size": int(batch_size),

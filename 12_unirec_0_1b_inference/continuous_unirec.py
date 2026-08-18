@@ -248,12 +248,26 @@ class ContinuousUniRecDecoder:
         compile_backend: str,
         compile_dynamic: bool = False,
         admission_prefetch_depth: int = 0,
+        self_cache_length: int | None = None,
+        cross_cache_length: int | None = None,
     ) -> None:
         if batch_size < 1:
             raise ValueError("Continuous decode batch_size must be >= 1")
-        if max_length > LOCAL_UNIREC_STATIC_CACHE_LEN:
+        self.self_cache_length = int(
+            LOCAL_UNIREC_STATIC_CACHE_LEN
+            if self_cache_length is None
+            else self_cache_length
+        )
+        self.cross_cache_length = (
+            None if cross_cache_length is None else int(cross_cache_length)
+        )
+        if self.self_cache_length < 1:
+            raise ValueError("self_cache_length must be positive")
+        if self.cross_cache_length is not None and self.cross_cache_length < 1:
+            raise ValueError("cross_cache_length must be positive")
+        if max_length > self.self_cache_length:
             raise ValueError(
-                f"max_length must be <= {LOCAL_UNIREC_STATIC_CACHE_LEN}, got {max_length}"
+                f"max_length must be <= {self.self_cache_length}, got {max_length}"
             )
         if decode_mode not in {"eager", "compiled", "compiled_ifa"}:
             raise ValueError(f"Unsupported decode_mode: {decode_mode}")
@@ -337,11 +351,15 @@ class ContinuousUniRecDecoder:
         layer_count = len(self.runner.model.decoder.layers)
         num_heads = int(self.runner.config.decoder_attention_heads)
         head_dim = int(self.runner.config.d_model) // num_heads
-        cross_cache_len = int(self.runner._get_static_cross_cache_len())
+        cross_cache_len = int(
+            self.runner._get_static_cross_cache_len()
+            if self.cross_cache_length is None
+            else self.cross_cache_length
+        )
         cache_shape = (
             self.batch_size,
             num_heads,
-            LOCAL_UNIREC_STATIC_CACHE_LEN,
+            self.self_cache_length,
             head_dim,
         )
         cross_shape = (
@@ -404,7 +422,7 @@ class ContinuousUniRecDecoder:
         return LocalUniRecStaticCache(
             key_cache=key_cache,
             value_cache=value_cache,
-            cache_len=LOCAL_UNIREC_STATIC_CACHE_LEN,
+            cache_len=self.self_cache_length,
             cross_key_cache=cross_key_cache,
             cross_value_cache=cross_value_cache,
             cross_attention_mask=cross_attention_mask,
@@ -613,7 +631,7 @@ class ContinuousUniRecDecoder:
             "compile_wrap_s": compile_wrap_s,
             "compile": compile_meta,
             "cross_cache_len": int(cross_cache_len),
-            "static_self_kv_len": int(LOCAL_UNIREC_STATIC_CACHE_LEN),
+            "static_self_kv_len": self.self_cache_length,
             "device": self.runner.device,
             "dtype": self.runner.dtype_name,
             "decode_mode": self.decode_mode,
@@ -808,6 +826,7 @@ class ContinuousUniRecDecoder:
                 compile_dynamic=self.compile_dynamic,
                 cross_cache_len=cross_cache_len,
                 batch_size=self.batch_size,
+                self_cache_len=self.self_cache_length,
             )
             compile_wrap_s = time.perf_counter() - compile_started
 
