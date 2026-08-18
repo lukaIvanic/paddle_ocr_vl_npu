@@ -40,6 +40,24 @@ def memory_snapshot(device: torch.device) -> dict[str, float | str]:
     }
 
 
+def cache_row_abs_max_summary(cache: torch.Tensor, used_length: int) -> dict[str, object]:
+    values = (
+        cache[:, :, :used_length]
+        .float()
+        .abs()
+        .amax(dim=(0, 1, 3))
+        .cpu()
+        .tolist()
+    )
+    return {
+        "rows": used_length,
+        "min": min(values),
+        "max": max(values),
+        "first": values[:8],
+        "last": values[-8:],
+    }
+
+
 def benchmark(
     decode,
     hidden_states: torch.Tensor,
@@ -234,30 +252,16 @@ def main() -> None:
             ),
         }
         parity["cache_row_abs_max"] = {
-            "eager_key": eager_key[:, :, :used_cache_length]
-            .float()
-            .abs()
-            .amax(dim=(0, 1, 3))
-            .cpu()
-            .tolist(),
-            "compiled_key": compiled_key[:, :, :used_cache_length]
-            .float()
-            .abs()
-            .amax(dim=(0, 1, 3))
-            .cpu()
-            .tolist(),
-            "eager_value": eager_value[:, :, :used_cache_length]
-            .float()
-            .abs()
-            .amax(dim=(0, 1, 3))
-            .cpu()
-            .tolist(),
-            "compiled_value": compiled_value[:, :, :used_cache_length]
-            .float()
-            .abs()
-            .amax(dim=(0, 1, 3))
-            .cpu()
-            .tolist(),
+            "eager_key": cache_row_abs_max_summary(eager_key, used_cache_length),
+            "compiled_key": cache_row_abs_max_summary(
+                compiled_key, used_cache_length
+            ),
+            "eager_value": cache_row_abs_max_summary(
+                eager_value, used_cache_length
+            ),
+            "compiled_value": cache_row_abs_max_summary(
+                compiled_value, used_cache_length
+            ),
         }
         compiled_summary["measured_window_graph_stable"] = True
         print("[layer3] parity " + json.dumps(parity, sort_keys=True), flush=True)
