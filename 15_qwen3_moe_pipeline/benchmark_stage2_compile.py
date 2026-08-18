@@ -35,7 +35,6 @@ def parse_args() -> argparse.Namespace:
             "grouped_matmul_finalize",
             "grouped_matmul_v2_finalize",
             "grouped_matmul_v2_gating_finalize",
-            "grouped_matmul_scatter_nd_gating_finalize",
         ),
         default="selected_bmm",
     )

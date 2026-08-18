@@ -327,70 +327,6 @@ def selected_expert_grouped_matmul_v2_finalize(
     )
 
 
-def selected_expert_grouped_matmul_scatter_nd_finalize(
-    hidden_states: torch.Tensor,
-    selected_experts: torch.Tensor,
-    routing_weights: torch.Tensor,
-    gate_up_proj: torch.Tensor,
-    down_proj: torch.Tensor,
-    count_updates: torch.Tensor,
-) -> torch.Tensor:
-    """B1 routing with direct int64 expert-count ScatterNd construction."""
-    require_torch_npu()
-    tokens, hidden_size = hidden_states.shape
-    top_k = selected_experts.shape[1]
-    if tokens != 1:
-        raise ValueError("ScatterNd routing is specialized for B1 decode")
-    expert_num = gate_up_proj.shape[0]
-    intermediate_size = gate_up_proj.shape[2] // 2
-    selected_experts_int32 = selected_experts.to(dtype=torch.int32)
-    expert_ids = selected_experts_int32.reshape(top_k)
-
-    expanded_hidden = hidden_states.expand(top_k, hidden_size).contiguous()
-    expanded_row_idx = (
-        expert_ids.view(top_k, 1) > expert_ids.view(1, top_k)
-    ).sum(dim=1, dtype=torch.int32)
-    group_counts = torch.zeros(
-        expert_num,
-        dtype=torch.int64,
-        device=hidden_states.device,
-    )
-    torch_npu.npu_scatter_nd_update_(
-        group_counts,
-        expert_ids.view(top_k, 1),
-        count_updates,
-    )
-
-    gate_up = torch_npu.npu_grouped_matmul(
-        [expanded_hidden],
-        [gate_up_proj],
-        group_list=group_counts,
-        split_item=3,
-        group_type=0,
-        group_list_type=1,
-    )[0]
-    gate, up = gate_up.split(intermediate_size, dim=-1)
-    intermediate = F.silu(gate) * up
-    expert_output = torch_npu.npu_grouped_matmul(
-        [intermediate],
-        [down_proj],
-        group_list=group_counts,
-        split_item=3,
-        group_type=0,
-        group_list_type=1,
-    )[0]
-    return torch_npu.npu_moe_finalize_routing(
-        expert_output,
-        None,
-        None,
-        None,
-        routing_weights,
-        expanded_row_idx,
-        selected_experts_int32,
-        0,
-    )
-
-
 class Qwen3MoeRMSNorm(nn.Module):
     def __init__(self, hidden_size: int, eps: float):
         super().__init__()
@@ -494,7 +430,6 @@ class Qwen3SparseMoeBlock(nn.Module):
             "grouped_matmul_finalize",
             "grouped_matmul_v2_finalize",
             "grouped_matmul_v2_gating_finalize",
-            "grouped_matmul_scatter_nd_gating_finalize",
         ):
             raise ValueError(f"Unsupported expert implementation: {expert_impl}")
         self.expert_impl = expert_impl
@@ -528,22 +463,13 @@ class Qwen3SparseMoeBlock(nn.Module):
             )
         self.gate_up_proj = nn.Parameter(torch.empty(gate_up_shape))
         self.down_proj = nn.Parameter(torch.empty(down_shape))
-        if expert_impl == "grouped_matmul_scatter_nd_gating_finalize":
-            self.register_buffer(
-                "group_count_updates",
-                torch.ones(self.top_k, dtype=torch.int64),
-                persistent=False,
-            )
 
     def route(
         self, hidden_states: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         flat_hidden = hidden_states.reshape(-1, self.hidden_size)
         router_logits = linear_tokenwise(self.gate, flat_hidden)
-        if self.expert_impl in (
-            "grouped_matmul_v2_gating_finalize",
-            "grouped_matmul_scatter_nd_gating_finalize",
-        ):
+        if self.expert_impl == "grouped_matmul_v2_gating_finalize":
             if not self.norm_topk_prob:
                 raise ValueError(
                     "Fused MoE gating requires normalized top-k probabilities"
@@ -579,20 +505,6 @@ class Qwen3SparseMoeBlock(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         _router_logits, routing_weights, selected_experts = self.route(hidden_states)
         flat_hidden = hidden_states.reshape(-1, self.hidden_size)
-        if self.expert_impl == "grouped_matmul_scatter_nd_gating_finalize":
-            output = selected_expert_grouped_matmul_scatter_nd_finalize(
-                flat_hidden,
-                selected_experts,
-                routing_weights,
-                self.gate_up_proj,
-                self.down_proj,
-                self.group_count_updates,
-            )
-            return (
-                output.view_as(hidden_states),
-                selected_experts,
-                routing_weights,
-            )
         expert_fn = {
             "selected_bmm": selected_expert_bmm,
             "grouped_matmul": selected_expert_grouped_matmul,
@@ -765,11 +677,6 @@ class Qwen3MoePipelineStage(nn.Module):
 
     def prepare_decode(self, *, cache_length: int) -> None:
         parameter = next(self.parameters())
-        # ``build_stage`` materializes the meta module with ``to_empty``.
-        # Reinitialize non-checkpoint runtime buffers after that operation.
-        for layer in self.layers:
-            if hasattr(layer.mlp, "group_count_updates"):
-                layer.mlp.group_count_updates.fill_(1)
         inv_freq = 1.0 / (
             self.config.rope_theta
             ** (

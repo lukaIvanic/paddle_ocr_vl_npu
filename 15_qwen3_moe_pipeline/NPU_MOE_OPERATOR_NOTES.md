@@ -111,10 +111,37 @@ tokens/s versus 210.78 tokens/s for the exact production `active_num=8` path.
 Both used one warm static graph, had no recompilations, and matched all eight
 captured greedy tokens. The 1.79% full-stage regression rejects the alias.
 
+A later direct-ScatterNd probe removed the `[8,128]` count workspace, its row
+reduction, and its count cast. It wrote eight int64 ones through `[8,1]`
+indices directly into a fresh `[128]` int64 count vector. The `[8]` update
+values can be prepared once; the selected indices, inverse route rank, changing
+hidden-state replication, and fresh zero count vector cannot. The routing-only
+24-call graph was exact, including alternating expert sets and expert IDs 0 and
+127, and improved from 597.56 us to 432.60 us.
+
+That microbenchmark also failed the complete-stage gate. A first real-model
+attempt exposed an important materialization rule: `Module.to_empty()` discards
+non-persistent buffer contents, so runtime constants must be initialized after
+checkpoint materialization. After the int64 update buffer was correctly reset
+to eight ones, eight real layer-24 expert selections matched the fused routing
+output exactly. The complete 24-layer static graph also matched all eight
+captured greedy tokens and compiled without recompilation, but reached only
+187.43 tokens/s at B1/KV4096 versus the 210.78 tokens/s production control.
+
+The full-stage profiles explain the reversal. Direct routing spent 134.14 us
+in 24 `ScatterNdUpdate` calls, 129.44 us in hidden-state `BroadcastTo`, 91.18 us
+in fresh-count `TensorMove`, and about 120 us in the rank comparison, reduction,
+and cast. The production profile spent 233.78 us total in 24 fused
+`MoeInitRoutingV3` calls. The direct route therefore saved tensor volume but
+lost to launch and synchronization overhead. It was rejected and its temporary
+implementation was removed.
+
 Evidence is stored in `references/routing_probe_*.json`,
 `references/qwen3_moe_active0_l24_k4096_warm1000.json`, and
-`references/qwen3_moe_native_active8_l24_k4096_warm1000_rerun.json`. The
-temporary implementations were removed after the study.
+`references/qwen3_moe_native_active8_l24_k4096_warm1000_rerun.json`. The direct
+ScatterNd full-stage and profile summaries are stored in
+`references/qwen3_moe_scatter_nd_l24_*.json`. The temporary implementations
+were removed after the study.
 
 ## Operators that do not directly fit
 

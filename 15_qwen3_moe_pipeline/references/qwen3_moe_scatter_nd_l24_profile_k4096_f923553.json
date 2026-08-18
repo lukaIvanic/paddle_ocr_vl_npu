@@ -1,0 +1,218 @@
+{
+  "cache_length": 4096,
+  "capture_steps": 8,
+  "chip": "Ascend 910B2",
+  "compile_contract": {
+    "cache_dir": "/results/scatter_nd_stage_cache_f923553/stage2_grouped_matmul_scatter_nd_gating_finalize_l24_b1_kv4096_bf16_src3534d402ec32",
+    "cache_was_warm": true,
+    "compile_wrapper_sec": 0.000848664902150631,
+    "dynamic": false,
+    "dynamo_after_capture": {
+      "calls_captured": 0,
+      "frames_ok": 0,
+      "frames_total": 0,
+      "unique_graphs": 0
+    },
+    "dynamo_final": {
+      "calls_captured": 0,
+      "frames_ok": 0,
+      "frames_total": 0,
+      "unique_graphs": 0
+    },
+    "first_call_sec": 5.130610087886453,
+    "fullgraph": true,
+    "ge_cache": true,
+    "no_recompilations_after_capture": true,
+    "unique_graph_delta_after_capture": 0
+  },
+  "compiled": {
+    "benchmark": {
+      "elapsed_sec": 0.5080177541822195,
+      "mean_tpot_ms": 5.080177541822195,
+      "steps": 100,
+      "tok_s": 196.84351418185136
+    },
+    "capture_step_times_sec": [
+      5.130610087886453,
+      0.005547394044697285,
+      0.005107786972075701,
+      0.005072426982223988,
+      0.005058886017650366,
+      0.005076685920357704,
+      0.00504326494410634,
+      0.005072486121207476
+    ]
+  },
+  "complete_stage": true,
+  "dtype": "bfloat16",
+  "eager": {
+    "benchmark": {
+      "elapsed_sec": 4.887817951850593,
+      "mean_tpot_ms": 48.87817951850593,
+      "steps": 100,
+      "tok_s": 20.459027112934653
+    },
+    "capture_step_times_sec": [
+      0.7694627670571208,
+      0.05166090792044997,
+      0.04991200799122453,
+      0.049793307203799486,
+      0.04994919942691922,
+      0.049830887001007795,
+      0.04895216226577759,
+      0.050970655865967274
+    ]
+  },
+  "expert_impl": "grouped_matmul_scatter_nd_gating_finalize",
+  "layers": 24,
+  "memory": {
+    "allocated_gib": 28.83035707473755,
+    "device": "npu:0",
+    "free_gib": 31.168704986572266,
+    "reserved_gib": 29.40234375,
+    "total_gib": 60.95703125
+  },
+  "model": "Qwen/Qwen3-30B-A3B",
+  "parity": {
+    "all_outputs_close": false,
+    "all_tokens_match": true,
+    "gate": "exact_greedy_token_ids",
+    "passed": true,
+    "step_checks": [
+      {
+        "allclose": false,
+        "compiled_top1_margin": 3.375,
+        "eager_top1_margin": 3.375,
+        "expected_logits_allclose": false,
+        "expected_token_id": 12095,
+        "max_abs": 0.53125,
+        "mean_abs": 0.09330718964338303,
+        "step": 0,
+        "token_id": 12095,
+        "token_match": true,
+        "top10_ids_match": false
+      },
+      {
+        "allclose": false,
+        "compiled_top1_margin": 0.75,
+        "eager_top1_margin": 0.875,
+        "expected_logits_allclose": false,
+        "expected_token_id": 13,
+        "max_abs": 0.640625,
+        "mean_abs": 0.11078650504350662,
+        "step": 1,
+        "token_id": 13,
+        "token_match": true,
+        "top10_ids_match": false
+      },
+      {
+        "allclose": false,
+        "compiled_top1_margin": 0.5,
+        "eager_top1_margin": 0.375,
+        "expected_logits_allclose": false,
+        "expected_token_id": 576,
+        "max_abs": 0.5,
+        "mean_abs": 0.10371159017086029,
+        "step": 2,
+        "token_id": 576,
+        "token_match": true,
+        "top10_ids_match": false
+      },
+      {
+        "allclose": false,
+        "compiled_top1_margin": 3.375,
+        "eager_top1_margin": 3.25,
+        "expected_logits_allclose": false,
+        "expected_token_id": 6722,
+        "max_abs": 0.25,
+        "mean_abs": 0.07779596000909805,
+        "step": 3,
+        "token_id": 6722,
+        "token_match": true,
+        "top10_ids_match": false
+      },
+      {
+        "allclose": false,
+        "compiled_top1_margin": 6.5,
+        "eager_top1_margin": 6.375,
+        "expected_logits_allclose": false,
+        "expected_token_id": 315,
+        "max_abs": 0.53125,
+        "mean_abs": 0.08853460103273392,
+        "step": 4,
+        "token_id": 315,
+        "token_match": true,
+        "top10_ids_match": false
+      },
+      {
+        "allclose": false,
+        "compiled_top1_margin": 0.375,
+        "eager_top1_margin": 0.25,
+        "expected_logits_allclose": false,
+        "expected_token_id": 279,
+        "max_abs": 0.1875,
+        "mean_abs": 0.02508988417685032,
+        "step": 5,
+        "token_id": 279,
+        "token_match": true,
+        "top10_ids_match": true
+      },
+      {
+        "allclose": false,
+        "compiled_top1_margin": 2.0,
+        "eager_top1_margin": 1.875,
+        "expected_logits_allclose": false,
+        "expected_token_id": 3639,
+        "max_abs": 0.8125,
+        "mean_abs": 0.10029885172843933,
+        "step": 6,
+        "token_id": 3639,
+        "token_match": true,
+        "top10_ids_match": false
+      },
+      {
+        "allclose": false,
+        "compiled_top1_margin": 1.0,
+        "eager_top1_margin": 0.875,
+        "expected_logits_allclose": false,
+        "expected_token_id": 15072,
+        "max_abs": 0.125,
+        "mean_abs": 0.02352273464202881,
+        "step": 7,
+        "token_id": 15072,
+        "token_match": true,
+        "top10_ids_match": false
+      }
+    ]
+  },
+  "profile": {
+    "profile_dir": "/results/qwen3_moe_scatter_nd_l24_profile_k4096_f923553",
+    "synchronized_seconds": [
+      0.005646436009556055,
+      0.005374581087380648
+    ]
+  },
+  "speedup": 9.621352623234099,
+  "stage": {
+    "allocated_memory": {
+      "allocated_gib": 28.435848712921143,
+      "device": "npu:0",
+      "free_gib": 31.972076416015625,
+      "reserved_gib": 28.626953125,
+      "total_gib": 60.95703125
+    },
+    "device": "npu:0",
+    "expert_impl": "grouped_matmul_scatter_nd_gating_finalize",
+    "layer_end": 48,
+    "layer_start": 24,
+    "load_elapsed_sec": 72.01791968522593,
+    "loaded_memory": {
+      "allocated_gib": 28.4378023147583,
+      "device": "npu:0",
+      "free_gib": 31.19427490234375,
+      "reserved_gib": 29.40234375,
+      "total_gib": 60.95703125
+    },
+    "name": "stage2-compile-l24"
+  }
+}
