@@ -2,7 +2,7 @@
 """Compare one K10 height bucket against its aligned-height control.
 
 This is deliberately a small diagnostic.  It runs two exact crops with the
-same processed 960x320 shape through:
+same processed 640x320 shape through:
 
 * the current K10 960x448 B1 graph;
 * a 960x512 B1 graph; and
@@ -55,7 +55,7 @@ CURRENT_KEY = "960x448_b1"
 CONTROL_KEY = "960x512_b1"
 DEFAULT_REQUEST_IDS = (
     "page_000032_crop_0002",  # 310P K10 mismatch
-    "page_000013_crop_0002",  # same 960x320 shape, known-good K10 control
+    "page_000032_crop_0004",  # same page and shape, known-good K10 control
 )
 
 
@@ -191,9 +191,9 @@ def main() -> None:
                 f"processed-size mismatch for {request_id}: "
                 f"{actual_size} != {expected_size}"
             )
-        if actual_size != [960, 320]:
+        if actual_size != [640, 320]:
             raise RuntimeError(
-                f"height A/B expects 960x320 crops, got {request_id}={actual_size}"
+                f"height A/B expects 640x320 crops, got {request_id}={actual_size}"
             )
         items.append(
             PreprocessedVisionInput(
@@ -288,7 +288,7 @@ def main() -> None:
     report = {
         "status": "pass",
         "physical_devices": devices,
-        "probe": "same_960x320_crop_k10_448_vs_aligned_512",
+        "probe": "same_640x320_crop_k10_448_vs_aligned_512",
         "weights": {
             "focal_depthwise_rewrite": "constant_grouped_all",
             "weight_format": "torchair_internal",
