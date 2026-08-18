@@ -135,13 +135,24 @@ def _measure_ms(function: Callable[[], torch.Tensor]) -> float:
 
 
 def _difference(left: torch.Tensor, right: torch.Tensor) -> dict[str, Any]:
-    delta = (left - right).abs()
+    left_finite = torch.isfinite(left)
+    right_finite = torch.isfinite(right)
+    jointly_finite = left_finite & right_finite
+    finite_delta = (left[jointly_finite] - right[jointly_finite]).abs()
     return {
         "allclose_atol_5e_2_rtol_5e_2": bool(
             torch.allclose(left, right, atol=5e-2, rtol=5e-2)
         ),
-        "max_abs": float(delta.max().item()),
-        "mean_abs": float(delta.mean().item()),
+        "element_count": int(left.numel()),
+        "left_nonfinite_count": int((~left_finite).sum().item()),
+        "right_nonfinite_count": int((~right_finite).sum().item()),
+        "jointly_finite_count": int(jointly_finite.sum().item()),
+        "finite_max_abs": (
+            float(finite_delta.max().item()) if finite_delta.numel() else None
+        ),
+        "finite_mean_abs": (
+            float(finite_delta.mean().item()) if finite_delta.numel() else None
+        ),
     }
 
 
@@ -230,8 +241,10 @@ def main() -> None:
                 print(
                     "UNIREC_VISION_SWEEP_WARNING "
                     f"bucket={spec.key} comparison=compiled_vs_eager "
-                    f"max_abs={compiled_vs_eager['max_abs']:.9g} "
-                    f"mean_abs={compiled_vs_eager['mean_abs']:.9g}",
+                    f"finite_max_abs={compiled_vs_eager['finite_max_abs']} "
+                    f"finite_mean_abs={compiled_vs_eager['finite_mean_abs']} "
+                    f"eager_nonfinite={compiled_vs_eager['right_nonfinite_count']} "
+                    f"compiled_nonfinite={compiled_vs_eager['left_nonfinite_count']}",
                     flush=True,
                 )
 
@@ -240,9 +253,7 @@ def main() -> None:
                 b1_output = row0
                 row0_vs_b1 = {
                     "reference": "self",
-                    "allclose_atol_5e_2_rtol_5e_2": True,
-                    "max_abs": 0.0,
-                    "mean_abs": 0.0,
+                    **_difference(row0, row0),
                 }
             else:
                 row0_vs_b1 = {
@@ -254,8 +265,10 @@ def main() -> None:
                     print(
                         "UNIREC_VISION_SWEEP_WARNING "
                         f"bucket={spec.key} comparison=row0_vs_b1 "
-                        f"max_abs={row0_vs_b1['max_abs']:.9g} "
-                        f"mean_abs={row0_vs_b1['mean_abs']:.9g}",
+                        f"finite_max_abs={row0_vs_b1['finite_max_abs']} "
+                        f"finite_mean_abs={row0_vs_b1['finite_mean_abs']} "
+                        f"left_nonfinite={row0_vs_b1['left_nonfinite_count']} "
+                        f"right_nonfinite={row0_vs_b1['right_nonfinite_count']}",
                         flush=True,
                     )
 
