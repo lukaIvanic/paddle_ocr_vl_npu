@@ -40,14 +40,6 @@ def memory_snapshot(device: torch.device) -> dict[str, float | str]:
     }
 
 
-def synchronize_timed(callable_):
-    torch.npu.synchronize()
-    started = time.perf_counter()
-    result = callable_()
-    torch.npu.synchronize()
-    return result, time.perf_counter() - started
-
-
 def benchmark(
     decode,
     hidden_states: torch.Tensor,
@@ -57,28 +49,43 @@ def benchmark(
     *,
     warmup_steps: int,
     decode_steps: int,
-) -> dict[str, float | int]:
+) -> tuple[dict[str, float | int], torch.Tensor]:
+    torch.npu.synchronize()
+    warmup_started = time.perf_counter()
     for step in range(warmup_steps):
         cache_position.fill_(step)
         decode(hidden_states, cache_position, key_cache, value_cache)
     torch.npu.synchronize()
+    warmup_elapsed = time.perf_counter() - warmup_started
+
     started = time.perf_counter()
+    output = None
     for step in range(decode_steps):
         cache_position.fill_(warmup_steps + step)
-        decode(hidden_states, cache_position, key_cache, value_cache)
+        output = decode(hidden_states, cache_position, key_cache, value_cache)
     torch.npu.synchronize()
     elapsed = time.perf_counter() - started
-    return {
-        "warmup_steps": warmup_steps,
-        "decode_steps": decode_steps,
-        "elapsed_sec": elapsed,
-        "mean_layer_ms": 1000.0 * elapsed / decode_steps,
-        "layer_calls_per_sec": decode_steps / elapsed,
-    }
+    if output is None:
+        raise ValueError("decode_steps must be positive")
+    return (
+        {
+            "warmup_steps": warmup_steps,
+            "warmup_elapsed_sec_excluded": warmup_elapsed,
+            "decode_steps": decode_steps,
+            "elapsed_sec": elapsed,
+            "mean_layer_ms": 1000.0 * elapsed / decode_steps,
+            "layer_calls_per_sec": decode_steps / elapsed,
+        },
+        output,
+    )
 
 
 def main() -> None:
     args = parse_args()
+    if args.warmup_steps < 1:
+        raise ValueError("At least one normal warmup step is required")
+    if args.decode_steps < 1:
+        raise ValueError("At least one measured decode step is required")
     if args.cache_length < args.warmup_steps + args.decode_steps + 1:
         raise ValueError("Static cache is too short for the requested run")
     torch.npu.set_compile_mode(jit_compile=False)
@@ -98,31 +105,33 @@ def main() -> None:
     load_sec = time.perf_counter() - load_started
     print("[layer3] loaded " + json.dumps(memory_snapshot(device), sort_keys=True), flush=True)
 
-    generator = torch.Generator(device="cpu").manual_seed(52)
-    hidden_states = torch.randn(
-        1,
-        1,
-        model.config.hidden_size,
-        generator=generator,
-        dtype=torch.float32,
-    ).to(device=device, dtype=torch.bfloat16)
-
     with torch.inference_mode():
+        generator = torch.Generator(device="cpu").manual_seed(52)
+        hidden_states = torch.randn(
+            1,
+            1,
+            model.config.hidden_size,
+            generator=generator,
+            dtype=torch.float32,
+        ).to(device=device, dtype=torch.bfloat16)
         eager_key, eager_value = model.make_cache(device=device)
         position = torch.zeros(1, dtype=torch.int64, device=device)
-        eager_output, eager_first_sec = synchronize_timed(
-            lambda: model.forward_decode(
-                hidden_states, position, eager_key, eager_value
-            )
+        eager_summary, eager_output = benchmark(
+            model.forward_decode,
+            hidden_states,
+            position,
+            eager_key,
+            eager_value,
+            warmup_steps=args.warmup_steps,
+            decode_steps=args.decode_steps,
         )
     eager_finite = bool(torch.isfinite(eager_output).all().item())
-    eager_summary = {
-        "first_call_sec": eager_first_sec,
+    eager_summary.update({
         "finite": eager_finite,
         "output_mean": float(eager_output.float().mean().item()),
         "output_std": float(eager_output.float().std().item()),
         "output_abs_max": float(eager_output.float().abs().max().item()),
-    }
+    })
     if not eager_finite:
         raise RuntimeError("Owned eager layer-3 output is not finite")
 
@@ -139,14 +148,19 @@ def main() -> None:
             dynamic=False,
             fullgraph=True,
         )
-        compiled_key, compiled_value = model.make_cache(device=device)
         with torch.inference_mode():
-            compiled_output, compile_first_sec = synchronize_timed(
-                lambda: compiled(
-                    hidden_states, position, compiled_key, compiled_value
-                )
+            compiled_key, compiled_value = model.make_cache(device=device)
+            position.zero_()
+            compiled_summary, compiled_output = benchmark(
+                compiled,
+                hidden_states,
+                position,
+                compiled_key,
+                compiled_value,
+                warmup_steps=args.warmup_steps,
+                decode_steps=args.decode_steps,
             )
-        stats_after_first = {
+        stats_after_warmup_and_measurement = {
             "unique_graphs": int(
                 torch._dynamo.utils.counters["stats"]["unique_graphs"]
             ),
@@ -154,12 +168,20 @@ def main() -> None:
                 torch._dynamo.utils.counters["stats"]["calls_captured"]
             ),
         }
+        if stats_after_warmup_and_measurement["unique_graphs"] != 1:
+            raise RuntimeError(
+                "Static TorchAir run captured more than one graph: "
+                + json.dumps(stats_after_warmup_and_measurement, sort_keys=True)
+            )
         output_diff = (compiled_output.float() - eager_output.float()).abs()
+        used_cache_length = args.warmup_steps + args.decode_steps
         key_diff = (
-            compiled_key[:, :, :1].float() - eager_key[:, :, :1].float()
+            compiled_key[:, :, :used_cache_length].float()
+            - eager_key[:, :, :used_cache_length].float()
         ).abs()
         value_diff = (
-            compiled_value[:, :, :1].float() - eager_value[:, :, :1].float()
+            compiled_value[:, :, :used_cache_length].float()
+            - eager_value[:, :, :used_cache_length].float()
         ).abs()
         parity = {
             "output_max_abs": float(output_diff.max().item()),
@@ -175,36 +197,8 @@ def main() -> None:
                 )
             ),
         }
-        with torch.inference_mode():
-            benchmark_summary = benchmark(
-                compiled,
-                hidden_states,
-                position,
-                compiled_key,
-                compiled_value,
-                warmup_steps=args.warmup_steps,
-                decode_steps=args.decode_steps,
-            )
-        stats_final = {
-            "unique_graphs": int(
-                torch._dynamo.utils.counters["stats"]["unique_graphs"]
-            ),
-            "calls_captured": int(
-                torch._dynamo.utils.counters["stats"]["calls_captured"]
-            ),
-        }
-        compiled_summary = {
-            "first_call_sec": compile_first_sec,
-            "benchmark": benchmark_summary,
-            "dynamo": {
-                "after_first": stats_after_first,
-                "final": stats_final,
-                "no_recompilations_after_first": (
-                    stats_final["unique_graphs"]
-                    == stats_after_first["unique_graphs"]
-                ),
-            },
-        }
+        compiled_summary["dynamo"] = stats_after_warmup_and_measurement
+        compiled_summary["single_static_graph"] = True
         if not parity["allclose_atol_5e_2_rtol_5e_2"]:
             raise RuntimeError("Compiled layer-3 output failed eager parity")
 

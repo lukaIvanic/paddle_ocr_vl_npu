@@ -10,6 +10,13 @@ attention with a static full K/V cache, W8A8 attention and shared-expert
 linears, and W4A8 routed experts. This is a correctness and compileability rung,
 not yet the final absorbed-MLA performance path.
 
+Eager and compiled timing use independent empty KV caches. Each lane runs the
+same ordinary decode loop for warmup and measurement. Warmup includes cold
+first use (and compile/cache load for TorchAir) and is excluded from measured
+latency. All runtime tensors use one inference-mode contract. The runner fails
+if a static compiled run captures anything other than one Dynamo graph; it does
+not accept a recompilation as successful warmup.
+
 Run on one Ascend 910B2 after sourcing the NPU environment:
 
 ```bash
