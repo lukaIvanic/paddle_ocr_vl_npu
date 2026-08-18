@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # graphs and the exact B128 decode graph. This wrapper never repairs a cold
 # vision cache implicitly.
 : "${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:?export the passed B128 decode-cache parent}"
+: "${OMNIDOCBENCH_EVAL_TOOLS_ROOT:?export the exact tools root recorded by the passed same-host CDM fingerprint}"
 export RUN_VARIANT=optimized_k10_l4_aligned
 export REQUIRE_WARM_VISION_CACHE=1
 export DECODE_CACHE_GATE_ATTEMPTS=1

@@ -8,6 +8,7 @@ DECODE_CACHE_PROBE="$SCRIPT_DIR/probe_production_decode_cache_contract.py"
 PREP="$SCRIPT_DIR/prepare_unirec_subset_eval.py"
 SUMMARIZER="$SCRIPT_DIR/summarize_completed_unirec_eval.py"
 EVAL_ENV="$REPO/09_persistent_page_engine/scripts/omnidocbench_eval_env.sh"
+EVAL_RUNTIME_VERIFY="$REPO/09_persistent_page_engine/scripts/verify_omnidocbench_eval_runtime.py"
 CDM_RUNNER="$REPO/09_persistent_page_engine/scripts/run_cdm_from_matched_formulas.py"
 EVALUATOR_COMMIT=2b161d010d2e3aff77a0edef359ea3a6411d23cd
 
@@ -127,11 +128,22 @@ resolve_inputs() {
   test -f "$PREP"
   test -f "$SUMMARIZER"
   test -f "$CDM_RUNNER"
+  test -f "$EVAL_RUNTIME_VERIFY"
   "$PYTHON_BIN" -c 'import kornia_rs, torch, torch_npu'
   PYTHONPATH="$EVALUATOR_ROOT" "$EVAL_PYTHON" -c \
     'import Levenshtein; import src.metrics.cal_metric'
   PYTHONPATH="$(dirname "$CDM_RUNNER")" "$EVAL_PYTHON" -c \
     'from run_cdm_from_matched_formulas import _configure_cdm_runtime; print(_configure_cdm_runtime())'
+
+  # CDM scores are environment-sensitive. Refuse the ambient 310P TeX 2022
+  # installation and require the frozen cross-host runtime used for the
+  # canonical 910B/310P same-host replay.
+  [[ "$("$CDM_PDFLATEX" --version | head -n 1)" == *"1.40.28 (TeX Live 2025)"* ]]
+  [[ "$("$OMNIDOCBENCH_IMAGEMAGICK_ROOT/bin/magick" --version | head -n 1)" == *"ImageMagick 7.1.1-47"* ]]
+  [[ "$(gs --version)" == "9.55.0" ]]
+  test -n "$("$CDM_KPSEWHICH" CJK.sty)"
+  test -n "$("$CDM_KPSEWHICH" c70gkai.fd)"
+  test -n "$("$CDM_KPSEWHICH" xcolor.sty)"
 }
 
 vision_cache_inventory() {
@@ -246,14 +258,38 @@ gate_decode_cache() {
   return 1
 }
 
-prepare_clean_evaluator() {
-  local source_root="$EVALUATOR_ROOT"
-  local canonical_root="$RUN_ROOT/evaluator_clean"
-  git clone --quiet --no-checkout "$source_root" "$canonical_root"
-  git -C "$canonical_root" checkout --quiet --detach "$EVALUATOR_COMMIT"
-  test -z "$(git -C "$canonical_root" status --porcelain=v1 --untracked-files=all)"
-  EVALUATOR_ROOT="$canonical_root"
-  export OMNIDOCBENCH_EVALUATOR_ROOT="$canonical_root"
+verify_evaluator_source() {
+  test "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)" = "$EVALUATOR_COMMIT"
+  local non_result_status
+  non_result_status="$(
+    git -C "$EVALUATOR_ROOT" status --porcelain=v1 --untracked-files=all \
+      -- . ':(exclude)result/**'
+  )"
+  if [[ -n "$non_result_status" ]]; then
+    printf 'UNIREC_EVALUATOR_SOURCE_DIRTY_OUTSIDE_RESULT\n%s\n' \
+      "$non_result_status" >&2
+    return 1
+  fi
+  printf 'UNIREC_EVALUATOR_SOURCE_VERIFIED commit=%s allowed_dirty=result_only\n' \
+    "$EVALUATOR_COMMIT"
+}
+
+verify_evaluator_runtime() {
+  {
+    printf 'tools_root=%s\n' "$OMNIDOCBENCH_EVAL_TOOLS_ROOT"
+    "$CDM_PDFLATEX" --version | head -n 2
+    "$CDM_KPSEWHICH" --version | head -n 2
+    "$OMNIDOCBENCH_IMAGEMAGICK_ROOT/bin/magick" --version | head -n 2
+    printf 'ghostscript=%s\n' "$(gs --version)"
+    for resource in CJK.sty c70gkai.fd xcolor.sty; do
+      printf '%s=%s\n' "$resource" "$("$CDM_KPSEWHICH" "$resource")"
+    done
+  } >"$RUN_ROOT/evaluator_runtime_versions.txt"
+  "$EVAL_PYTHON" "$EVAL_RUNTIME_VERIFY" \
+    --evaluator-root "$EVALUATOR_ROOT" \
+    >"$RUN_ROOT/evaluator_runtime_smoke.json"
+  printf 'UNIREC_EVALUATOR_RUNTIME_VERIFIED tools_root=%s\n' \
+    "$OMNIDOCBENCH_EVAL_TOOLS_ROOT"
 }
 
 run_inference() {
@@ -443,7 +479,10 @@ PY
 worker_main() {
   RUN_ROOT="$1"
   resolve_inputs
-  prepare_clean_evaluator
+  verify_evaluator_source
+  phase evaluator_runtime_gate_begin
+  verify_evaluator_runtime
+  phase evaluator_runtime_gate_end
   {
     printf 'project_commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
     printf 'physical_npu=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
@@ -452,6 +491,7 @@ worker_main() {
     printf 'cdm_workers=%s\n' "$CDM_WORKERS"
     printf 'evaluator_root=%s\nevaluator_commit=%s\n' \
       "$EVALUATOR_ROOT" "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)"
+    printf 'evaluator_tools_root=%s\n' "$OMNIDOCBENCH_EVAL_TOOLS_ROOT"
     printf 'cann_home=%s\n' "${ASCEND_HOME_PATH:-unavailable}"
     if [[ -f "${ASCEND_HOME_PATH:-}/opp/version.info" ]]; then
       grep -E '^(Version|version_dir|timestamp)=' \

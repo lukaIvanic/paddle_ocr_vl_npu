@@ -58,6 +58,25 @@ export EVAL_PYTHON=/absolute/path/to/frozen/evaluator/python
 export ASCEND_RT_VISIBLE_DEVICES=0
 export CPUSET=0-63
 
+# Recover the exact frozen runtime used by the successful approximately
+# 0.92179 same-host 310P CDM replay. Do not guess a checkout-relative path and
+# do not download or reinstall anything.
+RUNTIME_FP="$(
+  find "$WORK_SERVER_REPO/tmp" "$WORK_SERVER_REPO/temp" \
+    -type f -name candidate_runtime_fingerprint.json -printf '%T@ %p\n' \
+    2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-
+)"
+test -s "$RUNTIME_FP"
+export OMNIDOCBENCH_EVAL_TOOLS_ROOT="$(
+  "$EVAL_PYTHON" -c \
+    'import json,sys; from pathlib import Path; d=json.load(open(sys.argv[1])); print(Path(d["tex_runtime"]["texlive_root"]).parents[1])' \
+    "$RUNTIME_FP"
+)"
+printf 'RUNTIME_FP=%s\nOMNIDOCBENCH_EVAL_TOOLS_ROOT=%s\n' \
+  "$RUNTIME_FP" "$OMNIDOCBENCH_EVAL_TOOLS_ROOT"
+test -x "$OMNIDOCBENCH_EVAL_TOOLS_ROOT/texlive/2025/bin/aarch64-linux/pdflatex"
+test -x "$OMNIDOCBENCH_EVAL_TOOLS_ROOT/imagemagick-7.1.1-47/bin/magick"
+
 bash 12_unirec_0_1b_inference/run_310p_full1651_aligned_k10_accuracy_background.sh
 ```
 
@@ -89,6 +108,19 @@ Expected cache behavior before page inference:
 - no OM appears during inference;
 - cache loading and first-call warmup can take time, but that is not a compile.
 
+Expected evaluator behavior before NPU inference:
+
+- no evaluator repository is cloned;
+- dirty generated files are permitted only below `EVALUATOR_ROOT/result/`;
+- all evaluator source remains byte-identical to commit `2b161d0`;
+- `OMNIDOCBENCH_EVAL_TOOLS_ROOT` is recovered from the successful same-host
+  audit fingerprint rather than guessed from the current checkout;
+- the gate requires TeX Live 2025/pdfTeX 1.40.28, ImageMagick 7.1.1-47,
+  Ghostscript 9.55.0, `CJK.sty`, `c70gkai.fd`, and `xcolor.sty`, then renders a
+  representative CJK formula;
+- the older ambient TeX Live 2022 installation is invalid and must never be
+  used. It previously produced the incorrect lower CDM result.
+
 Stop and report immediately if a cache is missing, an OM inventory changes, no
 page progress appears for 30 seconds after setup, or the NPU becomes unhealthy.
 Do not automatically rerun.
@@ -110,6 +142,8 @@ Paste these artifacts or their complete summaries:
 
 ```bash
 cat "$RUN_ROOT/preflight.log"
+cat "$RUN_ROOT/evaluator_runtime_versions.txt"
+cat "$RUN_ROOT/evaluator_runtime_smoke.json"
 cat "$RUN_ROOT/vision_cache_before.json"
 cat "$RUN_ROOT/decode_cache_gate/passed.json"
 cat "$RUN_ROOT/inference_process_wall_s.txt"
