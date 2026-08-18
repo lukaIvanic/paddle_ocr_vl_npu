@@ -320,7 +320,12 @@ class GLM52W4A8Experts(nn.Module):
             correction_bias=correction_bias,
             w13_weight=w13_weight,
             w2_weight=w2_weight,
-            w13_scale=float_scale_to_int64_bits(w13_scale_f32).to(device),
+            # CANN 9.0 GroupedMatmulV5 needs the explicit one-group axis for
+            # per-channel W4 scales. Squeezing this to [E,N] makes the tiler
+            # misread N as quantGroupNum and reject K=6144.
+            w13_scale=float_scale_to_int64_bits(w13_scale_f32)
+            .unsqueeze(1)
+            .to(device),
             w2_scale=float_scale_to_int64_bits(w2_scale_f32).unsqueeze(1).to(device),
             w13_bias=w13_bias_cpu.to(device),
             w2_bias=w2_bias_cpu.to(device),
