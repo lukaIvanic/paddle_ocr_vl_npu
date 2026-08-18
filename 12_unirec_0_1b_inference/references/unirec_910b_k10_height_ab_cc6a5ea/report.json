@@ -1,0 +1,178 @@
+{
+  "status": "pass",
+  "physical_devices": [
+    7
+  ],
+  "probe": "same_640x320_crop_k10_448_vs_aligned_512",
+  "weights": {
+    "focal_depthwise_rewrite": "constant_grouped_all",
+    "weight_format": "torchair_internal"
+  },
+  "graph_slots": {
+    "960x448_b1": 6,
+    "960x512_b1": 9
+  },
+  "warmup_replays": 1,
+  "timing_repeats": 3,
+  "rows": [
+    {
+      "request_id": "page_000032_crop_0002",
+      "processed_size": [
+        640,
+        320
+      ],
+      "comparisons": {
+        "448_vs_eager": {
+          "shape_exact": true,
+          "shape": [
+            1,
+            200,
+            768
+          ],
+          "exact": false,
+          "max_abs": 0.0087890625,
+          "mean_abs": 0.0007676451932638884,
+          "rmse": 0.0010192457120865583,
+          "cosine": 0.9999991655349731
+        },
+        "512_vs_eager": {
+          "shape_exact": true,
+          "shape": [
+            1,
+            200,
+            768
+          ],
+          "exact": false,
+          "max_abs": 0.0087890625,
+          "mean_abs": 0.0007676727254875004,
+          "rmse": 0.0010192659683525562,
+          "cosine": 0.9999992847442627
+        },
+        "448_vs_512": {
+          "shape_exact": true,
+          "shape": [
+            1,
+            200,
+            768
+          ],
+          "exact": false,
+          "max_abs": 0.0009765625,
+          "mean_abs": 6.301831945165759e-08,
+          "rmse": 6.002273948979564e-06,
+          "cosine": 0.9999999403953552
+        }
+      },
+      "timing_p50_ms": {
+        "eager": 27.577738743275404,
+        "960x448_b1": 10.713861789554358,
+        "960x512_b1": 11.033457238227129
+      }
+    },
+    {
+      "request_id": "page_000032_crop_0004",
+      "processed_size": [
+        640,
+        320
+      ],
+      "comparisons": {
+        "448_vs_eager": {
+          "shape_exact": true,
+          "shape": [
+            1,
+            200,
+            768
+          ],
+          "exact": false,
+          "max_abs": 0.010009765625,
+          "mean_abs": 0.0007689482299610972,
+          "rmse": 0.0010132254101336002,
+          "cosine": 0.9999991059303284
+        },
+        "512_vs_eager": {
+          "shape_exact": true,
+          "shape": [
+            1,
+            200,
+            768
+          ],
+          "exact": false,
+          "max_abs": 0.010009765625,
+          "mean_abs": 0.0007689428748562932,
+          "rmse": 0.0010132177267223597,
+          "cosine": 0.9999991059303284
+        },
+        "448_vs_512": {
+          "shape_exact": true,
+          "shape": [
+            1,
+            200,
+            768
+          ],
+          "exact": false,
+          "max_abs": 0.0009765625,
+          "mean_abs": 6.029149801634048e-08,
+          "rmse": 5.796163804916432e-06,
+          "cosine": 0.9999999403953552
+        }
+      },
+      "timing_p50_ms": {
+        "eager": 28.58353592455387,
+        "960x448_b1": 10.55074017494917,
+        "960x512_b1": 11.18507981300354
+      }
+    }
+  ],
+  "aggregate_timing_p50_ms": {
+    "eager": 28.061537072062492,
+    "960x448_b1": 10.632300982251763,
+    "960x512_b1": 11.04070758447051
+  },
+  "cache_dirs": {
+    "960x448_b1": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x448_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac",
+    "960x512_b1": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x512_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac"
+  },
+  "cache_inventory": {
+    "960x448_b1": {
+      "directory": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x448_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac",
+      "om_count": 1,
+      "om_bytes": 5190212,
+      "compiled_module_count": 1,
+      "compiled_module_bytes": 2105728,
+      "om_files": [
+        {
+          "path": "_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_6/graph_7_20260817162627.om",
+          "size_bytes": 5190212,
+          "mtime_ns": 1786984037278802972
+        }
+      ],
+      "compiled_module_files": [
+        {
+          "path": "_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_6/compiled_module",
+          "size_bytes": 2105728,
+          "mtime_ns": 1786984037486806507
+        }
+      ]
+    },
+    "960x512_b1": {
+      "directory": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x512_b1_float16_src6b821e651aad_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac",
+      "om_count": 1,
+      "om_bytes": 5182076,
+      "compiled_module_count": 1,
+      "compiled_module_bytes": 2105298,
+      "om_files": [
+        {
+          "path": "_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_9/graph_10_20260817113114.om",
+          "size_bytes": 5182076,
+          "mtime_ns": 1786966281585032561
+        }
+      ],
+      "compiled_module_files": [
+        {
+          "path": "_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_9/compiled_module",
+          "size_bytes": 2105298,
+          "mtime_ns": 1786966281781035892
+        }
+      ]
+    }
+  }
+}
