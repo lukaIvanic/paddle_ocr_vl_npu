@@ -33,9 +33,21 @@ def tp_all_reduce_sum(tensor: torch.Tensor, tp_size: int) -> torch.Tensor:
 
 
 class Qwen3MoeTPAttention(nn.Module):
-    def __init__(self, config: Qwen3MoeConfig, *, tp_size: int):
+    def __init__(
+        self,
+        config: Qwen3MoeConfig,
+        *,
+        tp_size: int,
+        attention_o_impl: str,
+        hcom_info: str | None,
+    ):
         super().__init__()
+        if attention_o_impl not in ("separate", "fused_mm_allreduce"):
+            raise ValueError(f"Unsupported attention O implementation: {attention_o_impl}")
         self.tp_size = int(tp_size)
+        self.attention_o_impl = attention_o_impl
+        self.hcom_info = hcom_info
+        self.hidden_size = config.hidden_size
         self.num_heads = config.num_attention_heads // tp_size
         self.num_key_value_heads = config.num_key_value_heads // tp_size
         self.head_dim = config.head_dim
@@ -121,6 +133,16 @@ class Qwen3MoeTPAttention(nn.Module):
         attention_output = attention_output.transpose(1, 2).contiguous().reshape(
             batch_size, sequence_length, self.q_size
         )
+        if self.attention_o_impl == "fused_mm_allreduce":
+            if self.hcom_info is None:
+                raise RuntimeError("Fused attention O requires an HCCL communicator")
+            output = torch_npu.npu_mm_all_reduce_base(
+                attention_output.reshape(-1, self.q_size),
+                self.o_proj.weight.t(),
+                self.hcom_info,
+                reduce_op="sum",
+            )
+            return output.view(batch_size, sequence_length, self.hidden_size)
         local_output = linear_tokenwise(self.o_proj, attention_output)
         return tp_all_reduce_sum(local_output, self.tp_size)
 
@@ -187,9 +209,21 @@ class Qwen3MoeTPSparseBlock(nn.Module):
 
 
 class Qwen3MoeTPDecoderLayer(nn.Module):
-    def __init__(self, config: Qwen3MoeConfig, *, tp_size: int):
+    def __init__(
+        self,
+        config: Qwen3MoeConfig,
+        *,
+        tp_size: int,
+        attention_o_impl: str,
+        hcom_info: str | None,
+    ):
         super().__init__()
-        self.self_attn = Qwen3MoeTPAttention(config, tp_size=tp_size)
+        self.self_attn = Qwen3MoeTPAttention(
+            config,
+            tp_size=tp_size,
+            attention_o_impl=attention_o_impl,
+            hcom_info=hcom_info,
+        )
         self.mlp = Qwen3MoeTPSparseBlock(config, tp_size=tp_size)
         self.input_layernorm = Qwen3MoeRMSNorm(
             config.hidden_size, config.rms_norm_eps
@@ -301,6 +335,7 @@ class Qwen3MoeTPStage(nn.Module):
         layer_end: int,
         with_lm_head: bool,
         with_embedding: bool = False,
+        attention_o_impl: str = "separate",
     ):
         super().__init__()
         config.validate_qwen3_30b_a3b()
@@ -315,8 +350,23 @@ class Qwen3MoeTPStage(nn.Module):
         self.tp_size = int(tp_size)
         self.layer_start = int(layer_start)
         self.layer_end = int(layer_end)
+        hcom_info = None
+        if attention_o_impl == "fused_mm_allreduce":
+            if not dist.is_initialized():
+                raise RuntimeError("The TP process group must exist before model construction")
+            group = dist.group.WORLD
+            group_rank = dist.get_rank(group)
+            global_rank = dist.get_global_rank(group, group_rank)
+            hcom_info = group._get_backend(torch.device("npu")).get_hccl_comm_name(
+                global_rank
+            )
         self.layers = nn.ModuleList(
-            Qwen3MoeTPDecoderLayer(config, tp_size=tp_size)
+            Qwen3MoeTPDecoderLayer(
+                config,
+                tp_size=tp_size,
+                attention_o_impl=attention_o_impl,
+                hcom_info=hcom_info,
+            )
             for _ in range(layer_end - layer_start)
         )
         self.norm = (
