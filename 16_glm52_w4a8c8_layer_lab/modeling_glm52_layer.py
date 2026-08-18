@@ -205,7 +205,12 @@ class BF16Linear(nn.Module):
         return cls(reader.tensor(prefix + ".weight").to(device=device, dtype=torch.bfloat16))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return F.linear(x, self.weight)
+        # GE can interpret the singleton sequence axis of [B,1,K] as the
+        # contraction dimension. Present an ordinary 2-D matmul and restore the
+        # leading dimensions after projection.
+        leading = x.shape[:-1]
+        output = F.linear(x.reshape(-1, x.shape[-1]), self.weight)
+        return output.reshape(*leading, output.shape[-1])
 
 
 class GLM52W4A8Experts(nn.Module):
