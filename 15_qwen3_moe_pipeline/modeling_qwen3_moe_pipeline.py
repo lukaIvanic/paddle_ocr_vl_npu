@@ -765,6 +765,11 @@ class Qwen3MoePipelineStage(nn.Module):
 
     def prepare_decode(self, *, cache_length: int) -> None:
         parameter = next(self.parameters())
+        # ``build_stage`` materializes the meta module with ``to_empty``.
+        # Reinitialize non-checkpoint runtime buffers after that operation.
+        for layer in self.layers:
+            if hasattr(layer.mlp, "group_count_updates"):
+                layer.mlp.group_count_updates.fill_(1)
         inv_freq = 1.0 / (
             self.config.rope_theta
             ** (
