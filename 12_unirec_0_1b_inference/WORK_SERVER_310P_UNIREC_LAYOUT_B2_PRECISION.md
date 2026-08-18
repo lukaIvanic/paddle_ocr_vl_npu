@@ -9,6 +9,21 @@ FP16 body with an FP32 reading-order head.
 This is not a page-pipeline benchmark. Processor, H2D, postprocess, and total
 call wall time are recorded separately from synchronized `model_forward_s`.
 
+The exact runner passed on 910B2 at commit `e83235a`, physical NPU 7, with two
+real 1500x2000 pages, two warmups, and 20 hot repeats:
+
+| Lane | Forward mean | Median | p90 |
+|---|---:|---:|---:|
+| eager FP32 | 61.059 ms | 61.145 ms | 61.586 ms |
+| compiled FP32 | 24.208 ms | 24.208 ms | 24.255 ms |
+| compiled FP16 body + FP32 reading order | 18.152 ms | 18.122 ms | 18.213 ms |
+
+Compiled FP32 was 2.522x faster than eager FP32. Compiled FP16 was 1.334x
+faster than compiled FP32. Both compiled lanes reused their caches and created
+zero new OM files. The first cached calls were 8.450 seconds for FP32 and 1.316
+seconds for FP16; these are cache/setup warmups and are excluded from forward
+latency.
+
 ## Constraints
 
 - Pull only. Do not edit tracked files, commit, push, or create a branch.
