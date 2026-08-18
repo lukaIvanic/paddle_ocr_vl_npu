@@ -8,6 +8,7 @@ from vision_bucket_presets import (
     VISION_BUCKETS_310P_K10_L1,
     VISION_BUCKETS_310P_K10_L4_ALL,
     VISION_BUCKETS_310P_K10_L4_ALIGNED,
+    VISION_BUCKETS_310P_K20_L4,
     VisionBucketSpec,
     assign_vision_bucket_cache_slots,
     plan_canvas_bucket_calls,
@@ -16,7 +17,7 @@ from vision_bucket_presets import (
 
 
 class VisionBucketPresetTest(unittest.TestCase):
-    def test_full_vision_has_ten_static_bucket_code_objects(self) -> None:
+    def test_full_vision_preserves_ten_legacy_static_code_objects(self) -> None:
         source = Path(__file__).with_name("vision_full_batch.py").read_text()
         tree = ast.parse(source)
         encoder = next(
@@ -90,7 +91,64 @@ class VisionBucketPresetTest(unittest.TestCase):
                 for element in flat_keys.args[0].elts
                 if isinstance(element, ast.Constant)
             },
-            {"1024x704_b1", "1024x1408_b1"},
+            {
+                "1024x704_b1",
+                "1024x1408_b1",
+            },
+        )
+
+        extended = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.ClassDef)
+            and node.name == "_ExtendedFlatGlobalContextFullVisionEncoder"
+        )
+        extended_methods = {
+            node.name
+            for node in extended.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name.startswith("_forward_flat_bucket_slot_")
+        }
+        self.assertEqual(
+            extended_methods,
+            {
+                f"_forward_flat_bucket_slot_{index}"
+                for index in range(20)
+                if index not in {6, 8}
+            },
+        )
+        extended_flat_keys = next(
+            node.value
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name)
+                and target.id == "EXTENDED_FLAT_GLOBAL_CONTEXT_BUCKET_KEYS"
+                for target in node.targets
+            )
+        )
+        self.assertEqual(
+            {
+                element.value
+                for element in extended_flat_keys.args[0].elts
+                if isinstance(element, ast.Constant)
+            },
+            {
+                "128x1408_b1",
+                "192x64_b4",
+                "320x320_b2",
+                "448x192_b2",
+                "448x576_b1",
+                "512x128_b4",
+                "512x768_b1",
+                "576x256_b2",
+                "960x192_b1",
+                "960x384_b1",
+                "960x704_b1",
+                "960x896_b1",
+                "960x1152_b1",
+                "960x1344_b1",
+            },
         )
 
     def test_worker_setup_warms_eager_fallback_twice(self) -> None:
@@ -136,6 +194,49 @@ class VisionBucketPresetTest(unittest.TestCase):
         self.assertTrue(any(spec.width == 1024 for spec in specs))
         for width, height in ((64, 1408), (448, 1152), (896, 576)):
             self.assertTrue(any(spec.accepts(width, height) for spec in specs))
+
+    def test_k20_l4_has_twenty_unrestricted_graph_variants(self) -> None:
+        specs = resolve_vision_bucket_specs("310p_k20_l4")
+        self.assertEqual(specs, VISION_BUCKETS_310P_K20_L4)
+        self.assertEqual(len(specs), 20)
+        self.assertEqual(len({spec.key for spec in specs}), 20)
+        self.assertTrue(any(not spec.has_aligned_final_stage_rows for spec in specs))
+        for width, height in ((64, 1408), (448, 1152), (896, 576)):
+            self.assertTrue(any(spec.accepts(width, height) for spec in specs))
+
+    def test_k20_preserves_six_validated_k10_cache_slots(self) -> None:
+        aligned_slots = dict(
+            zip(
+                (spec.key for spec in VISION_BUCKETS_310P_K10_L4_ALIGNED),
+                assign_vision_bucket_cache_slots(
+                    VISION_BUCKETS_310P_K10_L4_ALIGNED
+                ),
+            )
+        )
+        k20_slots = dict(
+            zip(
+                (spec.key for spec in VISION_BUCKETS_310P_K20_L4),
+                assign_vision_bucket_cache_slots(
+                    VISION_BUCKETS_310P_K20_L4,
+                    slot_count=20,
+                ),
+            )
+        )
+        shared = set(aligned_slots) & set(k20_slots)
+        self.assertEqual(
+            shared,
+            {
+                "448x384_b2",
+                "512x64_b4",
+                "960x64_b4",
+                "960x128_b2",
+                "960x256_b1",
+                "960x512_b1",
+            },
+        )
+        for key in shared:
+            self.assertEqual(k20_slots[key], aligned_slots[key], key)
+        self.assertEqual(len(set(k20_slots.values())), 20)
 
     def test_aligned_k10_preserves_shared_l4_cache_slots(self) -> None:
         old_slots = dict(

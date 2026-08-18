@@ -108,11 +108,41 @@ VISION_BUCKETS_310P_K10_L4_ALIGNED = (
 )
 
 
+# Unrestricted K=20 frontier for the representative-128 workload with four-page
+# lookahead. The final-stage tile constraint is intentionally absent: the 310P
+# correctness failure was traced to the ambiguous two-stage global-context
+# reduction, not to the flattened row count. Planning costs use the same
+# measured 310P physical-pixel latency curve as the K10 presets.
+VISION_BUCKETS_310P_K20_L4 = (
+    VisionBucketSpec(128, 1408, 1, planning_cost_ms=8.378785714),
+    VisionBucketSpec(192, 64, 4, planning_cost_ms=4.403117647),
+    VisionBucketSpec(320, 320, 2, planning_cost_ms=9.263678571),
+    VisionBucketSpec(448, 192, 2, planning_cost_ms=8.083821429),
+    VisionBucketSpec(448, 384, 2, planning_cost_ms=14.655714286),
+    VisionBucketSpec(448, 576, 1, planning_cost_ms=10.874625000),
+    VisionBucketSpec(512, 64, 4, planning_cost_ms=6.609000000),
+    VisionBucketSpec(512, 128, 4, planning_cost_ms=10.920000000),
+    VisionBucketSpec(512, 768, 1, planning_cost_ms=16.897142857),
+    VisionBucketSpec(576, 256, 2, planning_cost_ms=12.414285714),
+    VisionBucketSpec(960, 64, 4, planning_cost_ms=10.738500000),
+    VisionBucketSpec(960, 128, 2, planning_cost_ms=10.738500000),
+    VisionBucketSpec(960, 192, 1, planning_cost_ms=8.526267857),
+    VisionBucketSpec(960, 256, 1, planning_cost_ms=10.738500000),
+    VisionBucketSpec(960, 384, 1, planning_cost_ms=15.776428571),
+    VisionBucketSpec(960, 512, 1, planning_cost_ms=21.380000000),
+    VisionBucketSpec(960, 704, 1, planning_cost_ms=31.109125000),
+    VisionBucketSpec(960, 896, 1, planning_cost_ms=41.847250000),
+    VisionBucketSpec(960, 1152, 1, planning_cost_ms=54.752250000),
+    VisionBucketSpec(960, 1344, 1, planning_cost_ms=66.636267857),
+)
+
+
 VISION_BUCKET_PRESETS = {
     "production_v1": DEFAULT_VISION_BUCKETS,
     "310p_k10_l1": VISION_BUCKETS_310P_K10_L1,
     "310p_k10_l4_all": VISION_BUCKETS_310P_K10_L4_ALL,
     "310p_k10_l4_aligned": VISION_BUCKETS_310P_K10_L4_ALIGNED,
+    "310p_k20_l4": VISION_BUCKETS_310P_K20_L4,
 }
 VISION_BUCKET_PRESET_CHOICES = tuple(VISION_BUCKET_PRESETS)
 
@@ -122,15 +152,27 @@ VISION_BUCKET_PRESET_CHOICES = tuple(VISION_BUCKET_PRESETS)
 # cache hit into a new `_forward_bucket_slot_N` specialization. New aligned
 # shapes occupy slots unused by the aligned preset. Keep this table append-only.
 VISION_BUCKET_CACHE_SLOT_PREFERENCES = {
+    "128x1408_b1": 6,
+    "192x64_b4": 7,
+    "320x320_b2": 10,
     "448x192_b2": 0,
     "448x384_b2": 1,
+    "448x576_b1": 11,
     "512x64_b4": 2,
+    "512x128_b4": 12,
+    "512x768_b1": 13,
+    "576x256_b2": 14,
     "960x64_b4": 3,
     "960x128_b2": 4,
+    "960x192_b1": 15,
     "960x256_b1": 5,
+    "960x384_b1": 16,
     "960x448_b1": 6,
     "960x576_b1": 7,
     "960x896_b1": 8,
+    "960x704_b1": 17,
+    "960x1152_b1": 18,
+    "960x1344_b1": 19,
     "960x1408_b1": 9,
     "960x512_b1": 9,
     "512x192_b2": 0,

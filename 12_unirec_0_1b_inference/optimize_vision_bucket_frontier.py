@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import random
 import re
 import statistics
 import time
@@ -15,7 +16,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable
 
-from vision_bucket_presets import VisionBucketSpec
+from vision_bucket_presets import VisionBucketSpec, resolve_vision_bucket_specs
 
 
 @dataclass(frozen=True, order=True)
@@ -62,8 +63,34 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--max-buckets", type=int, default=20)
     parser.add_argument("--beam-width", type=int, default=8)
+    parser.add_argument(
+        "--refine-target",
+        action="store_true",
+        help="run exhaustive one-swap descent on the max-bucket beam result",
+    )
+    parser.add_argument(
+        "--evolution-generations",
+        type=int,
+        default=0,
+        help="evolutionary generations for the max-bucket set",
+    )
+    parser.add_argument("--evolution-population", type=int, default=32)
+    parser.add_argument("--random-seed", type=int, default=20260818)
     parser.add_argument("--page-lookahead", type=int, default=1)
     parser.add_argument("--include-fallback", action="store_true")
+    parser.add_argument(
+        "--allow-unaligned",
+        action="store_true",
+        help=(
+            "search the native processed-shape frontier without expanding "
+            "canvases to 16-row final-stage tiles"
+        ),
+    )
+    parser.add_argument(
+        "--baseline-preset",
+        default="310p_k10_l4_aligned",
+        help="existing vision preset to score with the same workload and model",
+    )
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
@@ -131,7 +158,11 @@ def interpolate_latency(pixels: int, xs: list[int], ys: list[float]) -> float:
 
 
 def make_variants(
-    pages: list[list[tuple[int, int]]], xs: list[int], ys: list[float]
+    pages: list[list[tuple[int, int]]],
+    xs: list[int],
+    ys: list[float],
+    *,
+    require_aligned_final_stage: bool = True,
 ) -> tuple[list[Variant], list[str], list[dict[str, Any]]]:
     widths = sorted({width for page in pages for width, _height in page})
     heights = sorted({height for page in pages for _width, height in page})
@@ -143,7 +174,10 @@ def make_variants(
             for batch_size in (1, 2, 4):
                 spec = VisionBucketSpec(width, height, batch_size)
                 aligned_canvases = [(width, height)]
-                if not spec.has_aligned_final_stage_rows:
+                if (
+                    require_aligned_final_stage
+                    and not spec.has_aligned_final_stage_rows
+                ):
                     rejected_unaligned.append(spec.key)
                     # An optimum under a monotone physical-pixel cost never
                     # needs more than the minimum-area aligned expansion of a
@@ -228,6 +262,8 @@ def main() -> None:
         args.max_buckets < 1
         or args.beam_width < 1
         or args.page_lookahead < 1
+        or args.evolution_generations < 0
+        or args.evolution_population < 2
     ):
         raise ValueError(
             "max buckets, beam width, and page lookahead must be positive"
@@ -238,8 +274,23 @@ def main() -> None:
     )
     xs, ys, latency_payload = latency_curve(args.latency_reference)
     variants, rejected_unaligned, alignment_adjustments = make_variants(
-        pages, xs, ys
+        pages,
+        xs,
+        ys,
+        require_aligned_final_stage=not args.allow_unaligned,
     )
+    baseline_specs = resolve_vision_bucket_specs(args.baseline_preset)
+    variants_by_key = {variant.key: variant for variant in variants}
+    for spec in baseline_specs:
+        if spec.key not in variants_by_key:
+            physical_pixels = spec.width * spec.height * spec.batch_size
+            variants_by_key[spec.key] = Variant(
+                width=spec.width,
+                height=spec.height,
+                batch_size=spec.batch_size,
+                latency_ms=interpolate_latency(physical_pixels, xs, ys),
+            )
+    variants = sorted(variants_by_key.values())
     variant_by_canvas_batch = {
         (variant.width, variant.height, variant.batch_size): variant
         for variant in variants
@@ -351,6 +402,10 @@ def main() -> None:
     initial.sort(key=lambda item: item[0][:3])
     beam = initial[: args.beam_width]
     index_by_key = {variant.key: index for index, variant in enumerate(variants)}
+    baseline_state = tuple(
+        sorted(index_by_key[spec.key] for spec in baseline_specs)
+    )
+    baseline_result = evaluate(baseline_state)
     anchor_keys = (
         "960x64_b4",
         "512x256_b2",
@@ -360,6 +415,7 @@ def main() -> None:
     )
     anchor_state = tuple(sorted(index_by_key[key] for key in anchor_keys))
     frontier = []
+    target_beam: list[tuple[tuple[Any, ...], tuple[int, ...]]] = []
     for bucket_count in range(1, args.max_buckets + 1):
         if bucket_count > 1:
             expanded: dict[tuple[int, ...], tuple[Any, ...]] = {}
@@ -416,12 +472,181 @@ def main() -> None:
             "variants": selected_rows,
         }
         frontier.append(row)
+        if bucket_count == args.max_buckets:
+            target_beam = list(beam)
         print(
             "UNIREC_VISION_BUCKET_FRONTIER "
             f"k={bucket_count} graph_s={row['estimated_graph_s']:.6f} "
             f"calls={row['graph_calls']} pixel_eff={row['pixel_efficiency']:.6f} "
             f"used={row['used_variant_count']}"
         )
+
+    def one_swap_refine(
+        state: tuple[int, ...],
+        result: tuple[float, int, int, float, tuple[int, ...]],
+    ) -> tuple[tuple[float, int, int, float, tuple[int, ...]], tuple[int, ...], int]:
+        rounds = 0
+        while True:
+            state_set = set(state)
+            best_result = result
+            best_state = state
+            for removed in state:
+                retained = state_set - {removed}
+                for added in range(len(variants)):
+                    if added in state_set:
+                        continue
+                    candidate_state = tuple(sorted((*retained, added)))
+                    candidate_result = evaluate(candidate_state)
+                    if candidate_result[:3] < best_result[:3]:
+                        best_result = candidate_result
+                        best_state = candidate_state
+            if best_state == state:
+                return result, state, rounds
+            result = best_result
+            state = best_state
+            rounds += 1
+            print(
+                "UNIREC_VISION_BUCKET_LOCAL_REFINE "
+                f"round={rounds} graph_s={result[0] / 1000.0:.6f}",
+                flush=True,
+            )
+
+    target_result, target_state = target_beam[0]
+    local_rounds = 0
+    if args.refine_target:
+        target_result, target_state, local_rounds = one_swap_refine(
+            target_state,
+            target_result,
+        )
+
+    evolutionary_report = None
+    if args.evolution_generations:
+        rng = random.Random(args.random_seed)
+        population: dict[tuple[int, ...], tuple[float, int, int, float, tuple[int, ...]]] = {
+            state: result for result, state in target_beam
+        }
+
+        def mutate(state: tuple[int, ...]) -> tuple[int, ...]:
+            values = set(state)
+            swaps = 2 if rng.random() < 0.20 else 1
+            for _ in range(swaps):
+                values.remove(rng.choice(tuple(values)))
+                while True:
+                    candidate = rng.randrange(len(variants))
+                    if candidate not in values:
+                        values.add(candidate)
+                        break
+            return tuple(sorted(values))
+
+        def crossover(left: tuple[int, ...], right: tuple[int, ...]) -> tuple[int, ...]:
+            target_count = args.max_buckets
+            common = set(left) & set(right)
+            pool = list((set(left) | set(right)) - common)
+            rng.shuffle(pool)
+            values = set(common)
+            values.update(pool[: max(0, target_count - len(values))])
+            while len(values) < target_count:
+                values.add(rng.randrange(len(variants)))
+            while len(values) > target_count:
+                values.remove(rng.choice(tuple(values)))
+            return tuple(sorted(values))
+
+        while len(population) < args.evolution_population:
+            parent = rng.choice(tuple(population))
+            child = mutate(parent)
+            result = evaluate(child)
+            if math.isfinite(result[0]):
+                population[child] = result
+
+        for generation in range(1, args.evolution_generations + 1):
+            ranked = sorted(
+                ((result, state) for state, result in population.items()),
+                key=lambda item: item[0][:3],
+            )
+            elites = ranked[: max(4, args.evolution_population // 4)]
+            candidates = {state: result for result, state in elites}
+            while len(candidates) < args.evolution_population * 2:
+                left = rng.choice(elites)[1]
+                if rng.random() < 0.50:
+                    right = rng.choice(ranked[: max(8, len(ranked) // 2)])[1]
+                    child = crossover(left, right)
+                else:
+                    child = left
+                child = mutate(child)
+                result = evaluate(child)
+                if math.isfinite(result[0]):
+                    candidates[child] = result
+            population = dict(
+                sorted(
+                    candidates.items(),
+                    key=lambda item: item[1][:3],
+                )[: args.evolution_population]
+            )
+            if generation == 1 or generation % 10 == 0:
+                generation_best = min(population.values(), key=lambda item: item[:3])
+                print(
+                    "UNIREC_VISION_BUCKET_EVOLUTION "
+                    f"generation={generation} "
+                    f"graph_s={generation_best[0] / 1000.0:.6f}",
+                    flush=True,
+                )
+        evolutionary_state, evolutionary_result = min(
+            population.items(),
+            key=lambda item: item[1][:3],
+        )
+        if args.refine_target:
+            evolutionary_result, evolutionary_state, evolutionary_local_rounds = (
+                one_swap_refine(evolutionary_state, evolutionary_result)
+            )
+        else:
+            evolutionary_local_rounds = 0
+        if evolutionary_result[:3] < target_result[:3]:
+            target_result = evolutionary_result
+            target_state = evolutionary_state
+        evolutionary_report = {
+            "generations": args.evolution_generations,
+            "population": args.evolution_population,
+            "random_seed": args.random_seed,
+            "post_evolution_local_rounds": evolutionary_local_rounds,
+            "best_estimated_graph_s": evolutionary_result[0] / 1000.0,
+        }
+
+    all_variants_state = tuple(range(len(variants)))
+    all_variants_result = evaluate(all_variants_state)
+
+    def state_rows(state: tuple[int, ...]) -> list[dict[str, Any]]:
+        return [
+            {
+                "key": variants[index].key,
+                "estimated_latency_ms": variants[index].latency_ms,
+                "used": index in set(target_result[4]),
+            }
+            for index in state
+        ]
+
+    target_optimization = {
+        "bucket_count": args.max_buckets,
+        "estimated_graph_s": target_result[0] / 1000.0,
+        "physical_pixels": target_result[1],
+        "graph_calls": target_result[2],
+        "pixel_efficiency": target_result[3],
+        "used_variant_count": len(target_result[4]),
+        "local_refinement_rounds": local_rounds,
+        "evolution": evolutionary_report,
+        "variants": state_rows(target_state),
+    }
+    all_variants_smallest_routing_reference = {
+        "candidate_variant_count": len(variants),
+        "estimated_graph_s": all_variants_result[0] / 1000.0,
+        "physical_pixels": all_variants_result[1],
+        "graph_calls": all_variants_result[2],
+        "pixel_efficiency": all_variants_result[3],
+        "used_variant_count": len(all_variants_result[4]),
+        "interpretation": (
+            "diagnostic only, not a lower bound: exposing every canvas forces "
+            "smallest-canvas routing and can fragment batches"
+        ),
+    }
 
     report = {
         "schema": "unirec_vision_bucket_frontier_v2",
@@ -441,6 +666,8 @@ def main() -> None:
             "batch_sizes": [1, 2, 4],
             "compiled_shape_constraint": (
                 "batch_size*(width/32)*(height/32) divisible by 16"
+                if not args.allow_unaligned
+                else "width and height divisible by 32; no final-stage tile constraint"
             ),
             "routing": "smallest_compatible_canvas_then_exact_batch_mix",
             "latency_model": "piecewise_linear_by_total_physical_pixels",
@@ -455,6 +682,20 @@ def main() -> None:
             "fixed_fallback_count": fallback_count,
             "fixed_fallback_effective_pixels": fallback_pixels,
         },
+        "baseline": {
+            "preset": args.baseline_preset,
+            "bucket_count": len(baseline_specs),
+            "estimated_graph_s": baseline_result[0] / 1000.0,
+            "physical_pixels": baseline_result[1],
+            "graph_calls": baseline_result[2],
+            "pixel_efficiency": baseline_result[3],
+            "used_variant_count": len(baseline_result[4]),
+            "variants": [spec.key for spec in baseline_specs],
+        },
+        "target_optimization": target_optimization,
+        "all_variants_smallest_routing_reference": (
+            all_variants_smallest_routing_reference
+        ),
         "latency_reference": {
             "path": str(args.latency_reference.expanduser().resolve()),
             "device_name": latency_payload.get("device_name"),

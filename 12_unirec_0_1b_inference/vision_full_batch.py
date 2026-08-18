@@ -40,13 +40,29 @@ VISION_WEIGHT_FORMAT_CHOICES = (
     "torchair_internal",
 )
 
-# These two aligned K10 canvases are the 310P shapes for which the compiled
-# two-stage width-then-height global-context reduction is numerically corrupt.
-# Keep the legacy graph code/cache identity for the eight already-clean buckets
-# and use the corrected flat reduction only for the affected graphs.
+# Keep the legacy graph/cache identity for shapes already proven clean in the
+# full K10 accuracy run. New K20 shapes use the unambiguous direct-2D reduction;
+# 960x896 is deliberately rebuilt because it belonged to the earlier divergent
+# K10 frontier rather than the validated aligned K10 set.
 FLAT_GLOBAL_CONTEXT_BUCKET_KEYS = frozenset({
     "1024x704_b1",
     "1024x1408_b1",
+})
+EXTENDED_FLAT_GLOBAL_CONTEXT_BUCKET_KEYS = frozenset({
+    "128x1408_b1",
+    "192x64_b4",
+    "320x320_b2",
+    "448x192_b2",
+    "448x576_b1",
+    "512x128_b4",
+    "512x768_b1",
+    "576x256_b2",
+    "960x192_b1",
+    "960x384_b1",
+    "960x704_b1",
+    "960x896_b1",
+    "960x1152_b1",
+    "960x1344_b1",
 })
 
 
@@ -467,7 +483,6 @@ class _MaskedFullVisionEncoder(nn.Module):
     def _forward_bucket_slot_9(self, pixel_values, mask2, mask4, mask8, mask16, mask32):
         return self._forward_fixed(pixel_values, mask2, mask4, mask8, mask16, mask32)
 
-
 class _FlatGlobalContextFullVisionEncoder(_MaskedFullVisionEncoder):
     """Affected 310P buckets with direct 2D masked global-context reduction."""
 
@@ -513,6 +528,137 @@ class _FlatGlobalContextFullVisionEncoder(_MaskedFullVisionEncoder):
             pixel_values, mask2, mask4, mask8, mask16, mask32
         )
 
+class _ExtendedFlatGlobalContextFullVisionEncoder(
+    _FlatGlobalContextFullVisionEncoder
+):
+    """K20-only static methods without perturbing the validated K10 hashes."""
+
+    def _forward_flat_bucket_slot_0(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_1(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_2(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_3(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_4(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_5(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_7(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_9(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_10(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_11(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_12(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_13(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_14(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_15(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_16(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_17(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_18(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
+    def _forward_flat_bucket_slot_19(
+        self, pixel_values, mask2, mask4, mask8, mask16, mask32
+    ):
+        return self._forward_fixed_flat(
+            pixel_values, mask2, mask4, mask8, mask16, mask32
+        )
+
 
 def _new_masked_full_encoder_module(
     runner: OptimizedUniRecRunner,
@@ -527,6 +673,13 @@ def _new_flat_global_context_encoder_module(
     _spec: VisionBucketSpec,
 ) -> _FlatGlobalContextFullVisionEncoder:
     return _FlatGlobalContextFullVisionEncoder(runner).eval()
+
+
+def _new_extended_flat_global_context_encoder_module(
+    runner: OptimizedUniRecRunner,
+    _spec: VisionBucketSpec,
+) -> _ExtendedFlatGlobalContextFullVisionEncoder:
+    return _ExtendedFlatGlobalContextFullVisionEncoder(runner).eval()
 
 
 def _source_hash() -> str:
@@ -545,6 +698,21 @@ def _flat_global_context_source_hash() -> str:
     payload += inspect.getsource(_masked_flat_global_context).encode("utf-8")
     payload += inspect.getsource(
         _new_flat_global_context_encoder_module
+    ).encode("utf-8")
+    payload += Path(__file__).with_name("modeling_optimized_unirec.py").read_bytes()
+    return hashlib.sha256(payload).hexdigest()[:12]
+
+
+def _extended_flat_global_context_source_hash() -> str:
+    payload = inspect.getsource(_MaskedFullVisionEncoder).encode("utf-8")
+    payload += inspect.getsource(_FlatGlobalContextFullVisionEncoder).encode("utf-8")
+    payload += inspect.getsource(
+        _ExtendedFlatGlobalContextFullVisionEncoder
+    ).encode("utf-8")
+    payload += inspect.getsource(_run_masked_focal_block_flat_global).encode("utf-8")
+    payload += inspect.getsource(_masked_flat_global_context).encode("utf-8")
+    payload += inspect.getsource(
+        _new_extended_flat_global_context_encoder_module
     ).encode("utf-8")
     payload += Path(__file__).with_name("modeling_optimized_unirec.py").read_bytes()
     return hashlib.sha256(payload).hexdigest()[:12]
@@ -678,6 +846,9 @@ class BucketedFullVisionRuntime:
 
         source_hash = _source_hash()
         flat_global_context_source_hash = _flat_global_context_source_hash()
+        extended_flat_global_context_source_hash = (
+            _extended_flat_global_context_source_hash()
+        )
         rewrite_hash = vision_rewrite_source_hash(
             self.focal_depthwise_rewrite,
             constant_weight_digest=self.focal_depthwise_rewrite_summary[
@@ -709,12 +880,31 @@ class BucketedFullVisionRuntime:
             graph_keys=[spec.key for spec in self.specs],
             compile_api=import_path,
         )
-        cache_slots = assign_vision_bucket_cache_slots(self.specs)
+        cache_slots = assign_vision_bucket_cache_slots(
+            self.specs,
+            slot_count=max(10, len(self.specs)),
+        )
         for graph_index, (spec, cache_slot) in enumerate(
             zip(self.specs, cache_slots)
         ):
-            use_flat_global_context = spec.key in FLAT_GLOBAL_CONTEXT_BUCKET_KEYS
-            if use_flat_global_context:
+            use_extended_flat_global_context = (
+                spec.key in EXTENDED_FLAT_GLOBAL_CONTEXT_BUCKET_KEYS
+            )
+            use_flat_global_context = (
+                spec.key in FLAT_GLOBAL_CONTEXT_BUCKET_KEYS
+                or use_extended_flat_global_context
+            )
+            if use_extended_flat_global_context:
+                module = _new_extended_flat_global_context_encoder_module(
+                    runner,
+                    spec,
+                )
+                compile_method = getattr(
+                    module,
+                    f"_forward_flat_bucket_slot_{cache_slot}",
+                )
+                selected_source_hash = extended_flat_global_context_source_hash
+            elif use_flat_global_context:
                 module = _new_flat_global_context_encoder_module(runner, spec)
                 compile_method = getattr(
                     module,
