@@ -1,16 +1,26 @@
-# 310P aligned-K10 first-128 gate
+# 310P corrected-global-context K10 first-128 gate
 
 ## Goal
 
-Validate the correctness-safe aligned K10 preset on the first 128 OmniDocBench
-pages. The 910B2 control at commit `544e667` produced 957/957 token-exact
-outputs, 8.115 s hot prefill, and 15.77 pages/s. Its cold run also exposed an
-unstable shape-to-method-slot cache key. Commit `c2d40b9` fixes that identity.
+Validate the direct-2D global-context fix on the first 128 OmniDocBench pages.
+The former compiled `1024x704_b1` and `1024x1408_b1` graphs corrupted cross-KV
+on 310P because TorchAir mis-lowered the two-stage width-then-height reduction.
+The corrected graphs use a direct masked mean in unambiguous `[N,C]` form,
+apply GELU there, and expand only for the final broadcast.
+
+Verified 910B2 control at commit `71329c2`, physical NPU 7:
+
+- corrected `1024x704_b1`: finite, 8.22 ms;
+- corrected `1024x1408_b1`: finite, 12.35 ms;
+- production first-128: 128 pages, 957 crops, zero rejections;
+- B128 decode parity: **957/957 token-exact**, 957/957 length-exact;
+- identical generated-token sum 40,917; no new runaway output.
 
 This 310P gate separates one-time compilation from hot execution:
 
-1. W1 compiles only missing aligned graphs. With the historical K10 caches,
-   exactly four new shapes should be missing.
+1. W1 compiles only the missing corrected graphs. The eight clean legacy graphs
+   retain their exact old source hash and cache identity. At most two corrected
+   graphs may be missing.
 2. W4 runs the full first-128 hot prefill. It must create no OM.
 3. The unchanged B128 decoder replays all 957 crops and requires token-exact
    agreement with the canonical 90.13 run.
@@ -82,13 +92,15 @@ done
 
 Expected cold behavior:
 
-- `UNIREC_ALIGNED_K10_EXPECTED_COMPILES count=4`;
-- the four missing shapes are `512x192_b2`, `960x1024_b1`,
-  `1024x704_b1`, and `1024x1408_b1`;
+- `UNIREC_ALIGNED_K10_EXPECTED_COMPILES count=2` on a server that has not yet
+  compiled this fix; zero or one is also valid if a corrected graph already
+  exists;
+- only `1024x704_b1` and `1024x1408_b1` may be missing;
 - compilation may take roughly 1-2 minutes per new shape on 310P. Report the
   measured time instead of waiting without a progress check.
 
-If the missing count exceeds four, the runner stops before NPU inference. Paste
+If any legacy graph is missing or the missing count exceeds two, the runner
+stops before NPU inference. Paste
 `cache_before.json`; do not delete caches or let an unexpectedly cold ten-graph
 run consume time.
 
@@ -98,7 +110,7 @@ Exit zero requires all of these:
 
 ```text
 UNIREC_ALIGNED_K10_HOT_OM_INVENTORY_UNCHANGED
-UNIREC_ALIGNED_K10_FIRST128: PASS
+UNIREC_FLAT_GLOBAL_K10_FIRST128: PASS
 UNIREC_ALIGNED_K10_PARITY exact=957/957 ... mismatches=0
 ```
 

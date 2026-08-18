@@ -56,9 +56,13 @@ resolve_inputs() {
 
 cache_inventory() {
   local output="$1"
-  COMPILE_CACHE="$COMPILE_CACHE" "$PYTHON_BIN" - "$output" <<'PY'
+  COMPILE_CACHE="$COMPILE_CACHE" SCRIPT_DIR="$SCRIPT_DIR" \
+    "$PYTHON_BIN" - "$output" <<'PY'
 import json, os, sys
 from pathlib import Path
+
+sys.path.insert(0, os.environ["SCRIPT_DIR"])
+import vision_full_batch
 
 slots = {
     "448x384_b2": 1,
@@ -73,23 +77,34 @@ slots = {
     "1024x1408_b1": 6,
 }
 root = Path(os.environ["COMPILE_CACHE"])
+legacy_hash = vision_full_batch._source_hash()
+flat_hash = vision_full_batch._flat_global_context_source_hash()
+flat_keys = set(vision_full_batch.FLAT_GLOBAL_CONTEXT_BUCKET_KEYS)
 report = {}
 for key, slot in slots.items():
+    use_flat = key in flat_keys
+    source_hash = flat_hash if use_flat else legacy_hash
+    method = (
+        f"_forward_flat_bucket_slot_{slot}"
+        if use_flat
+        else f"_forward_bucket_slot_{slot}"
+    )
     directories = sorted(root.glob(
-        f"vision_full_bucket_{key}_float16_*"
+        f"vision_full_bucket_{key}_float16_src{source_hash}_"
         "dwconstant_grouped_all*wtorchair_internal*"
     ))
     target_modules = []
     target_oms = []
     for directory in directories:
-        target_modules.extend(directory.glob(
-            f"**/_forward_bucket_slot_{slot}/compiled_module"
-        ))
-        for module in target_modules:
-            if directory in module.parents:
-                target_oms.extend(module.parent.rglob("*.om"))
+        modules = list(directory.glob(f"**/{method}/compiled_module"))
+        target_modules.extend(modules)
+        for module in modules:
+            target_oms.extend(module.parent.glob("*.om"))
     report[key] = {
         "slot": slot,
+        "method": method,
+        "source_hash": source_hash,
+        "global_context_mode": "direct_2d" if use_flat else "legacy_two_stage",
         "target_compiled_module_count": len(set(target_modules)),
         "target_om_count": len(set(target_oms)),
         "target_compiled_modules": [str(path) for path in sorted(set(target_modules))],
@@ -97,7 +112,11 @@ for key, slot in slots.items():
     }
 Path(sys.argv[1]).write_text(json.dumps(report, indent=2) + "\n")
 missing = [key for key, row in report.items() if not row["target_compiled_module_count"]]
-print(f"UNIREC_ALIGNED_K10_CACHE_INVENTORY missing={len(missing)} keys={missing}")
+print(
+    "UNIREC_ALIGNED_K10_CACHE_INVENTORY "
+    f"legacy_hash={legacy_hash} flat_hash={flat_hash} "
+    f"missing={len(missing)} keys={missing}"
+)
 PY
 }
 
@@ -132,8 +151,17 @@ worker_main() {
   local missing_before
   missing_before="$($PYTHON_BIN -c 'import json,sys; p=json.load(open(sys.argv[1])); print(sum(not r["target_compiled_module_count"] for r in p.values()))' "$run_root/cache_before.json")"
   printf 'UNIREC_ALIGNED_K10_EXPECTED_COMPILES count=%s\n' "$missing_before"
-  if (( missing_before > 4 )); then
-    echo "UNIREC_ALIGNED_K10_STOP unexpected_cache_misses=$missing_before" >&2
+  local missing_keys
+  missing_keys="$($PYTHON_BIN -c 'import json,sys; p=json.load(open(sys.argv[1])); print(" ".join(k for k,r in p.items() if not r["target_compiled_module_count"]))' "$run_root/cache_before.json")"
+  if [[ -n "$missing_keys" ]] && \
+      [[ "$missing_keys" != "1024x704_b1" ]] && \
+      [[ "$missing_keys" != "1024x1408_b1" ]] && \
+      [[ "$missing_keys" != "1024x704_b1 1024x1408_b1" ]]; then
+    echo "UNIREC_ALIGNED_K10_STOP unexpected_cache_misses=$missing_keys" >&2
+    return 1
+  fi
+  if (( missing_before > 2 )); then
+    echo "UNIREC_ALIGNED_K10_STOP unexpected_cache_miss_count=$missing_before" >&2
     return 1
   fi
 
@@ -208,7 +236,7 @@ def graph_times(summary):
 
 builder_graphs = graph_times(builder)
 hot_graphs = graph_times(hot)
-print("UNIREC_ALIGNED_K10_FIRST128: PASS")
+print("UNIREC_FLAT_GLOBAL_K10_FIRST128: PASS")
 print(
     "UNIREC_ALIGNED_K10_CACHE_BUILDER "
     f"total_wall_s={builder['total_wall_s']:.6f} "
