@@ -90,10 +90,29 @@ VISION_BUCKETS_310P_K10_L4_ALL = (
 )
 
 
+# Correctness-safe successor to K10/L4/all. Candidate canvases come from the
+# aligned K=10 frontier: every final-stage B*H*W row count fills complete
+# 16-row physical tiles. Synthetic 1024-wide canvases are deliberate; they are
+# cheaper than padding the corresponding tall 960-wide crops in height or B.
+VISION_BUCKETS_310P_K10_L4_ALIGNED = (
+    VisionBucketSpec(448, 384, 2, planning_cost_ms=14.655714286),
+    VisionBucketSpec(512, 64, 4, planning_cost_ms=6.609000000),
+    VisionBucketSpec(512, 192, 2, planning_cost_ms=8.968714286),
+    VisionBucketSpec(960, 64, 4, planning_cost_ms=10.738500000),
+    VisionBucketSpec(960, 128, 2, planning_cost_ms=10.738500000),
+    VisionBucketSpec(960, 256, 1, planning_cost_ms=10.738500000),
+    VisionBucketSpec(960, 512, 1, planning_cost_ms=21.380000000),
+    VisionBucketSpec(960, 1024, 1, planning_cost_ms=49.006000000),
+    VisionBucketSpec(1024, 704, 1, planning_cost_ms=33.734000000),
+    VisionBucketSpec(1024, 1408, 1, planning_cost_ms=76.407571429),
+)
+
+
 VISION_BUCKET_PRESETS = {
     "production_v1": DEFAULT_VISION_BUCKETS,
     "310p_k10_l1": VISION_BUCKETS_310P_K10_L1,
     "310p_k10_l4_all": VISION_BUCKETS_310P_K10_L4_ALL,
+    "310p_k10_l4_aligned": VISION_BUCKETS_310P_K10_L4_ALIGNED,
 }
 VISION_BUCKET_PRESET_CHOICES = tuple(VISION_BUCKET_PRESETS)
 

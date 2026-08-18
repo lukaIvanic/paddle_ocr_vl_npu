@@ -7,6 +7,7 @@ from pathlib import Path
 from vision_bucket_presets import (
     VISION_BUCKETS_310P_K10_L1,
     VISION_BUCKETS_310P_K10_L4_ALL,
+    VISION_BUCKETS_310P_K10_L4_ALIGNED,
     VisionBucketSpec,
     plan_canvas_bucket_calls,
     resolve_vision_bucket_specs,
@@ -79,6 +80,16 @@ class VisionBucketPresetTest(unittest.TestCase):
         self.assertEqual(len({spec.key for spec in specs}), 10)
         self.assertEqual(specs, VISION_BUCKETS_310P_K10_L4_ALL)
         self.assertTrue(any(spec.height == 1408 for spec in specs))
+        for width, height in ((64, 1408), (448, 1152), (896, 576)):
+            self.assertTrue(any(spec.accepts(width, height) for spec in specs))
+
+    def test_k10_l4_aligned_has_ten_safe_graph_variants(self) -> None:
+        specs = resolve_vision_bucket_specs("310p_k10_l4_aligned")
+        self.assertEqual(specs, VISION_BUCKETS_310P_K10_L4_ALIGNED)
+        self.assertEqual(len(specs), 10)
+        self.assertEqual(len({spec.key for spec in specs}), 10)
+        self.assertTrue(all(spec.has_aligned_final_stage_rows for spec in specs))
+        self.assertTrue(any(spec.width == 1024 for spec in specs))
         for width, height in ((64, 1408), (448, 1152), (896, 576)):
             self.assertTrue(any(spec.accepts(width, height) for spec in specs))
 
