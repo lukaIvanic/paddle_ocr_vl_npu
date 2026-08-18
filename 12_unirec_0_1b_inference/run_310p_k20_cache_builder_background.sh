@@ -54,7 +54,10 @@ import vision_bucket_presets
 import vision_full_batch
 
 specs = vision_bucket_presets.VISION_BUCKET_PRESETS["310p_k20_l4"]
-slots = vision_bucket_presets.assign_vision_bucket_cache_slots(specs)
+slots = vision_bucket_presets.assign_vision_bucket_cache_slots(
+    specs,
+    slot_count=max(10, len(specs)),
+)
 flat_keys = set(vision_full_batch.FLAT_GLOBAL_CONTEXT_BUCKET_KEYS)
 extended_keys = set(vision_full_batch.EXTENDED_FLAT_GLOBAL_CONTEXT_BUCKET_KEYS)
 root = Path(os.environ["COMPILE_CACHE"])
