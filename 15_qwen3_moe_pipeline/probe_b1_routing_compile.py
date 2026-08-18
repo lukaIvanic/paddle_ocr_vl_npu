@@ -367,7 +367,7 @@ def main() -> None:
 
     wrapper_started = time.perf_counter()
     compiled = import_cache_compile()(
-        candidate_module,
+        candidate_module.forward,
         config=CompilerConfig(),
         dynamic=False,
         cache_dir=str(cache_dir),
