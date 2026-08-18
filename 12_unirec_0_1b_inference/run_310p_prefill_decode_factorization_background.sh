@@ -94,11 +94,6 @@ om_inventory() {
 
 worker_main() {
   local run_root="$1"
-  local -a selector_extra=() reporter_extra=()
-  if [[ "$UNIREC_FACTORIZATION_ALLOW_NO_OPTIMIZED_MISMATCH" == 1 ]]; then
-    selector_extra+=(--allow-empty-mismatches)
-    reporter_extra+=(--allow-no-optimized-mismatch)
-  fi
   resolve_inputs
   check_intermediate_vision_cache
   om_inventory >"$run_root/om_before.txt"
@@ -122,6 +117,22 @@ worker_main() {
     --no-retain-shared-images --progress-every-pages 16 \
     --progress-heartbeat-s 15 | tee "$run_root/intermediate_prefill.log"
   printf 'UNIREC_FACTORIZATION_PHASE_END phase=intermediate_prefill\n'
+
+  post_prefill_main "$run_root"
+}
+
+post_prefill_main() {
+  local run_root="$1"
+  local intermediate="$run_root/prefill_production_buckets_optimized_weights"
+  local -a selector_extra=() reporter_extra=()
+  if [[ "$UNIREC_FACTORIZATION_ALLOW_NO_OPTIMIZED_MISMATCH" == 1 ]]; then
+    selector_extra+=(--allow-empty-mismatches)
+    reporter_extra+=(--allow-no-optimized-mismatch)
+  fi
+  test -s "$run_root/om_before.txt"
+  test -s "$intermediate/summary.json"
+  test -s "$intermediate/crops.jsonl"
+  test -s "$intermediate/cross_kv.bin"
 
   "$PYTHON_BIN" "$SELECT" \
     --mismatch-report "$OPTIMIZED_MISMATCH_REPORT" \
@@ -183,10 +194,28 @@ worker_main() {
   fi
 }
 
+resume_worker_entry() {
+  local run_root="$1" status=0 started="$SECONDS"
+  set +e
+  (
+    set -e
+    resolve_inputs
+    post_prefill_main "$run_root"
+  )
+  status=$?
+  set -e
+  printf '%s\n' "$status" >"$run_root/resume_exit_code.txt"
+  printf '%s\n' "$((SECONDS - started))" >"$run_root/resume_process_wall_s.txt"
+  exit "$status"
+}
+
 worker_entry() {
   local run_root="$1" status=0 started="$SECONDS"
   set +e
-  worker_main "$run_root"
+  (
+    set -e
+    worker_main "$run_root"
+  )
   status=$?
   set -e
   printf '%s\n' "$status" >"$run_root/exit_code.txt"
@@ -220,4 +249,34 @@ launch_main() {
     "$RUN_ROOT" "$RUN_ROOT/run.log" "$(cat "$RUN_ROOT/pid.txt")"
 }
 
-if [[ "${1:-}" == worker ]]; then worker_entry "$2"; else launch_main; fi
+launch_resume_main() {
+  resolve_inputs
+  local run_root
+  run_root="$(realpath -m "$1")"
+  test -d "$run_root"
+  test -s "$run_root/om_before.txt"
+  test -s "$run_root/prefill_production_buckets_optimized_weights/summary.json"
+  test ! -e "$run_root/resume_pid.txt"
+  nohup env PYTHONUNBUFFERED=1 PYTHON_BIN="$PYTHON_BIN" MODEL="$MODEL" \
+    LAYOUT_MODEL="$LAYOUT_MODEL" OPENOCR_ROOT="$OPENOCR_ROOT" \
+    IMAGES_DIR="$IMAGES_DIR" COMPILE_CACHE="$COMPILE_CACHE" \
+    CANONICAL_ARTIFACT="$CANONICAL_ARTIFACT" \
+    OPTIMIZED_ARTIFACT="$OPTIMIZED_ARTIFACT" \
+    OPTIMIZED_MISMATCH_REPORT="$OPTIMIZED_MISMATCH_REPORT" \
+    CANONICAL_TRACE="$CANONICAL_TRACE" CPUSET="$CPUSET" \
+    ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
+    UNIREC_FACTORIZATION_ALLOWED_DEVICES="$UNIREC_FACTORIZATION_ALLOWED_DEVICES" \
+    UNIREC_FACTORIZATION_ALLOW_NO_OPTIMIZED_MISMATCH="$UNIREC_FACTORIZATION_ALLOW_NO_OPTIMIZED_MISMATCH" \
+    UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE" \
+    bash "$0" resume-worker "$run_root" >"$run_root/resume.log" 2>&1 &
+  printf '%s\n' "$!" >"$run_root/resume_pid.txt"
+  printf 'RUN_ROOT=%s\nRESUME_LOG=%s\nPID=%s\n' \
+    "$run_root" "$run_root/resume.log" "$(cat "$run_root/resume_pid.txt")"
+}
+
+case "${1:-}" in
+  worker) worker_entry "$2" ;;
+  resume-worker) resume_worker_entry "$2" ;;
+  resume) launch_resume_main "$2" ;;
+  *) launch_main ;;
+esac
