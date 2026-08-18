@@ -34,6 +34,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup-steps", type=int, default=2)
     parser.add_argument("--decode-steps", type=int, default=20)
     parser.add_argument(
+        "--expert-impl",
+        choices=(
+            "selected_bmm",
+            "grouped_matmul",
+            "grouped_matmul_finalize",
+            "grouped_matmul_v2_finalize",
+            "grouped_matmul_v2_gating_finalize",
+        ),
+        default="selected_bmm",
+    )
+    parser.add_argument(
         "--compile-cache-dir",
         type=Path,
         default=Path(".runtime_cache/15_qwen3_moe_pipeline"),
@@ -139,11 +150,13 @@ def main() -> None:
         device=device,
         name=stage_name,
         cache_length=cache_length,
+        expert_impl=args.expert_impl,
     )
     cache = stage.make_cache(cache_length=cache_length)
 
     cache_dir = args.compile_cache_dir.expanduser().resolve() / (
-        f"distributed_stage{rank}_l24_b1_kv{cache_length}_bf16_"
+        f"distributed_stage{rank}_{args.expert_impl}_l24_b1_"
+        f"kv{cache_length}_bf16_"
         f"src{source_hash()}"
     )
     torch._dynamo.reset()
@@ -283,6 +296,7 @@ def main() -> None:
             "dtype": "bfloat16",
             "batch_size": 1,
             "pipeline_parallel_size": 2,
+            "expert_impl": args.expert_impl,
             "transport": "two_process_hccl_send_recv",
             "cache_length": cache_length,
             "parity": {
