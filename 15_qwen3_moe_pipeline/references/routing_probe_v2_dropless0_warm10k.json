@@ -1,0 +1,300 @@
+{
+  "format": "qwen3_moe_b1_routing_compile_probe_v1",
+  "variant": "v2_dropless0",
+  "shape": {
+    "layers": 24,
+    "hidden_size": 2048,
+    "expert_num": 128,
+    "top_k": 8,
+    "dtype": "bfloat16"
+  },
+  "correctness": {
+    "raw_candidate_vs_v2_active8": {
+      "all_exact": true,
+      "outputs": {
+        "expanded_hidden": {
+          "exact": true,
+          "reference_dtype": "torch.bfloat16",
+          "candidate_dtype": "torch.bfloat16",
+          "reference_shape": [
+            8,
+            2048
+          ],
+          "candidate_shape": [
+            8,
+            2048
+          ],
+          "reference_first": [
+            -1.4375,
+            -1.796875,
+            -0.51953125,
+            0.032470703125,
+            0.330078125,
+            -0.51171875,
+            0.84375,
+            1.953125,
+            0.13671875,
+            1.53125,
+            1.265625,
+            0.6875,
+            -2.0,
+            -0.671875,
+            1.078125,
+            0.984375
+          ],
+          "candidate_first": [
+            -1.4375,
+            -1.796875,
+            -0.51953125,
+            0.032470703125,
+            0.330078125,
+            -0.51171875,
+            0.84375,
+            1.953125,
+            0.13671875,
+            1.53125,
+            1.265625,
+            0.6875,
+            -2.0,
+            -0.671875,
+            1.078125,
+            0.984375
+          ]
+        },
+        "expanded_row_idx": {
+          "exact": true,
+          "reference_dtype": "torch.int32",
+          "candidate_dtype": "torch.int32",
+          "reference_shape": [
+            8
+          ],
+          "candidate_shape": [
+            8
+          ],
+          "reference_first": [
+            2,
+            0,
+            3,
+            1,
+            7,
+            4,
+            5,
+            6
+          ],
+          "candidate_first": [
+            2,
+            0,
+            3,
+            1,
+            7,
+            4,
+            5,
+            6
+          ]
+        },
+        "group_counts": {
+          "exact": true,
+          "reference_dtype": "torch.int64",
+          "candidate_dtype": "torch.int64",
+          "reference_shape": [
+            128
+          ],
+          "candidate_shape": [
+            128
+          ],
+          "reference_first": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "candidate_first": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      }
+    },
+    "compiled_candidate_vs_v2_active8": {
+      "all_exact": true,
+      "outputs": {
+        "expanded_hidden": {
+          "exact": true,
+          "reference_dtype": "torch.bfloat16",
+          "candidate_dtype": "torch.bfloat16",
+          "reference_shape": [
+            8,
+            2048
+          ],
+          "candidate_shape": [
+            8,
+            2048
+          ],
+          "reference_first": [
+            -1.4375,
+            -1.796875,
+            -0.51953125,
+            0.032470703125,
+            0.330078125,
+            -0.51171875,
+            0.84375,
+            1.953125,
+            0.13671875,
+            1.53125,
+            1.265625,
+            0.6875,
+            -2.0,
+            -0.671875,
+            1.078125,
+            0.984375
+          ],
+          "candidate_first": [
+            -1.4375,
+            -1.796875,
+            -0.51953125,
+            0.032470703125,
+            0.330078125,
+            -0.51171875,
+            0.84375,
+            1.953125,
+            0.13671875,
+            1.53125,
+            1.265625,
+            0.6875,
+            -2.0,
+            -0.671875,
+            1.078125,
+            0.984375
+          ]
+        },
+        "expanded_row_idx": {
+          "exact": true,
+          "reference_dtype": "torch.int32",
+          "candidate_dtype": "torch.int32",
+          "reference_shape": [
+            8
+          ],
+          "candidate_shape": [
+            8
+          ],
+          "reference_first": [
+            2,
+            0,
+            3,
+            1,
+            7,
+            4,
+            5,
+            6
+          ],
+          "candidate_first": [
+            2,
+            0,
+            3,
+            1,
+            7,
+            4,
+            5,
+            6
+          ]
+        },
+        "group_counts": {
+          "exact": true,
+          "reference_dtype": "torch.int64",
+          "candidate_dtype": "torch.int64",
+          "reference_shape": [
+            128
+          ],
+          "candidate_shape": [
+            128
+          ],
+          "reference_first": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "candidate_first": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      }
+    }
+  },
+  "compile": {
+    "fullgraph": true,
+    "dynamic": false,
+    "cache_dir": "/results/routing_probe_cache/v2_dropless0_l24_h2048_e128_k8_src85fdeceb55fb",
+    "cache_was_warm": true,
+    "wrapper_sec": 0.0007053217850625515,
+    "first_call_sec": 4.67467545857653,
+    "dynamo_stats_after_first": {
+      "unique_graphs": 0,
+      "calls_captured": 0,
+      "frames_total": 0,
+      "frames_ok": 0
+    }
+  },
+  "benchmark": {
+    "warmup_steps": 100,
+    "steps": 10000,
+    "elapsed_sec": 5.760926811024547,
+    "graph_calls_per_s": 1735.8318076291546,
+    "us_per_24_layer_graph": 576.0926811024547,
+    "us_per_routing_call": 24.003861712602276
+  },
+  "profile_dir": null
+}

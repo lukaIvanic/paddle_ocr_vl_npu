@@ -272,8 +272,6 @@ def selected_expert_grouped_matmul_v2_finalize(
     routing_weights: torch.Tensor,
     gate_up_proj: torch.Tensor,
     down_proj: torch.Tensor,
-    *,
-    active_num: int | None = None,
 ) -> torch.Tensor:
     """Fuse expert permutation and group-count construction with InitRoutingV2."""
     require_torch_npu()
@@ -288,7 +286,7 @@ def selected_expert_grouped_matmul_v2_finalize(
             selected_experts_int32,
             scale=None,
             offset=None,
-            active_num=tokens * top_k if active_num is None else active_num,
+            active_num=tokens * top_k,
             expert_capacity=-1,
             expert_num=expert_num,
             drop_pad_mode=0,
@@ -326,24 +324,6 @@ def selected_expert_grouped_matmul_v2_finalize(
         expanded_row_idx,
         selected_experts_int32,
         0,
-    )
-
-
-def selected_expert_grouped_matmul_v2_active0_finalize(
-    hidden_states: torch.Tensor,
-    selected_experts: torch.Tensor,
-    routing_weights: torch.Tensor,
-    gate_up_proj: torch.Tensor,
-    down_proj: torch.Tensor,
-) -> torch.Tensor:
-    """Use InitRoutingV3's active_num=0 alias for all routed rows."""
-    return selected_expert_grouped_matmul_v2_finalize(
-        hidden_states,
-        selected_experts,
-        routing_weights,
-        gate_up_proj,
-        down_proj,
-        active_num=0,
     )
 
 
@@ -450,7 +430,6 @@ class Qwen3SparseMoeBlock(nn.Module):
             "grouped_matmul_finalize",
             "grouped_matmul_v2_finalize",
             "grouped_matmul_v2_gating_finalize",
-            "grouped_matmul_v2_gating_active0_finalize",
         ):
             raise ValueError(f"Unsupported expert implementation: {expert_impl}")
         self.expert_impl = expert_impl
@@ -490,10 +469,7 @@ class Qwen3SparseMoeBlock(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         flat_hidden = hidden_states.reshape(-1, self.hidden_size)
         router_logits = linear_tokenwise(self.gate, flat_hidden)
-        if self.expert_impl in (
-            "grouped_matmul_v2_gating_finalize",
-            "grouped_matmul_v2_gating_active0_finalize",
-        ):
+        if self.expert_impl == "grouped_matmul_v2_gating_finalize":
             if not self.norm_topk_prob:
                 raise ValueError(
                     "Fused MoE gating requires normalized top-k probabilities"
@@ -538,9 +514,6 @@ class Qwen3SparseMoeBlock(nn.Module):
             ),
             "grouped_matmul_v2_gating_finalize": (
                 selected_expert_grouped_matmul_v2_finalize
-            ),
-            "grouped_matmul_v2_gating_active0_finalize": (
-                selected_expert_grouped_matmul_v2_active0_finalize
             ),
         }[self.expert_impl]
         output = expert_fn(
