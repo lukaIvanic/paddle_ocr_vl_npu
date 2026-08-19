@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import statistics
 import time
 from pathlib import Path
 
@@ -30,6 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--last-layer", type=int, default=5)
     parser.add_argument("--warmup-steps", type=int, default=20)
     parser.add_argument("--decode-steps", type=int, default=1000)
+    parser.add_argument("--measurement-repeats", type=int, default=3)
     parser.add_argument("--profile-dir", type=Path)
     parser.add_argument("--profile-metric", choices=PROFILE_METRICS, default="pipe")
     parser.add_argument("--profile-warmup-steps", type=int, default=20)
@@ -180,6 +182,7 @@ def main() -> None:
     if min(
         args.warmup_steps,
         args.decode_steps,
+        args.measurement_repeats,
         args.profile_warmup_steps,
         args.profile_active_steps,
     ) < 1:
@@ -256,14 +259,21 @@ def main() -> None:
                 torch._dynamo.utils.counters["stats"]["calls_captured"]
             ),
         }
-        measured_rows = make_hidden_rows(
-            steps=args.decode_steps,
-            hidden_size=stack.config.hidden_size,
-            device=device,
-            seed=52002,
-        )
-        torch.npu.synchronize()
-        final_output, elapsed_sec = timed_rows(compiled, measured_rows)
+        repeat_elapsed_sec = []
+        final_output = None
+        for repeat_index in range(args.measurement_repeats):
+            measured_rows = make_hidden_rows(
+                steps=args.decode_steps,
+                hidden_size=stack.config.hidden_size,
+                device=device,
+                seed=52002 + repeat_index,
+            )
+            torch.npu.synchronize()
+            final_output, elapsed_sec = timed_rows(compiled, measured_rows)
+            repeat_elapsed_sec.append(elapsed_sec)
+        if final_output is None:
+            raise RuntimeError("measurement produced no output")
+        median_elapsed_sec = statistics.median(repeat_elapsed_sec)
         dynamo_after_measurement = {
             "unique_graphs": int(
                 torch._dynamo.utils.counters["stats"]["unique_graphs"]
@@ -308,11 +318,17 @@ def main() -> None:
         "warmup_steps": args.warmup_steps,
         "warmup_elapsed_sec_excluded": warmup_sec,
         "decode_steps": args.decode_steps,
-        "elapsed_sec": elapsed_sec,
-        "mean_stack_ms": 1000.0 * elapsed_sec / args.decode_steps,
-        "stack_calls_per_sec": args.decode_steps / elapsed_sec,
+        "measurement_repeats": args.measurement_repeats,
+        "repeat_elapsed_sec": repeat_elapsed_sec,
+        "repeat_mean_stack_ms": [
+            1000.0 * elapsed / args.decode_steps
+            for elapsed in repeat_elapsed_sec
+        ],
+        "elapsed_sec": median_elapsed_sec,
+        "mean_stack_ms": 1000.0 * median_elapsed_sec / args.decode_steps,
+        "stack_calls_per_sec": args.decode_steps / median_elapsed_sec,
         "effective_moe_layer_calls_per_sec": (
-            len(stack.blocks) * args.decode_steps / elapsed_sec
+            len(stack.blocks) * args.decode_steps / median_elapsed_sec
         ),
         "reference_parity": {
             "output_max_abs": float(reference_diff.max().item()),
