@@ -66,6 +66,7 @@ WORK_SERVER_REPO="$(git rev-parse --show-toplevel)"
 cd "$WORK_SERVER_REPO"
 git pull --ff-only origin main
 git rev-parse HEAD
+git merge-base --is-ancestor d4b314ce8c262f41d583fabdda639a59f67d264c HEAD
 
 # Reuse these exact values from the last passed full-1651 K20/compiled-FP32
 # run. Do not discover new model or evaluator installations.

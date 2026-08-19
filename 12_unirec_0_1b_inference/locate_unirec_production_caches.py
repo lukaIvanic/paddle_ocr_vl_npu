@@ -205,7 +205,10 @@ def k20_row(
             "source_hash": source_hash,
             "compiled_modules": [str(path) for path in modules],
             "oms": [str(path) for path in oms],
-            "complete": len(modules) == 1 and len(oms) == 1,
+            # TorchAir may retain more than one OM beside one restored
+            # compiled_module on 310P. Production requires one unambiguous
+            # compiled module and at least one OM, then gates inventory drift.
+            "complete": len(modules) == 1 and len(oms) >= 1,
         }
     missing = [key for key, row in buckets.items() if not row["complete"]]
     return {
@@ -242,7 +245,7 @@ def layout_row(root: Path, provenance: list[str]) -> dict[str, Any]:
         "graph_root": str(graph_root),
         "compiled_modules": [str(path) for path in modules],
         "oms": [str(path) for path in oms],
-        "complete": len(modules) == 1 and len(oms) == 1,
+        "complete": len(modules) == 1 and len(oms) >= 1,
         "newest_om_mtime_ns": newest_om_mtime_ns,
     }
 
