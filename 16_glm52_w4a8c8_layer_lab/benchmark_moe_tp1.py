@@ -213,6 +213,12 @@ def main() -> None:
 
         torch._dynamo.reset()
         torch._dynamo.utils.counters.clear()
+        frozen_static_scale_count = 0
+        if args.frozen_parameters:
+            for block in stack.blocks:
+                torch._dynamo.mark_static_address(block.routed.w13_scale)
+                torch._dynamo.mark_static_address(block.routed.w2_scale)
+                frozen_static_scale_count += 2
         compiler_config = CompilerConfig()
         compiler_config.experimental_config.frozen_parameter.value = (
             args.frozen_parameters
@@ -286,6 +292,7 @@ def main() -> None:
         "moe_intermediate_size": stack.config.moe_intermediate_size,
         "backend": "torchair_fullgraph_static",
         "frozen_parameters": args.frozen_parameters,
+        "frozen_static_scale_count": frozen_static_scale_count,
         "input_mode": "preallocated_varied_bfloat16_hidden_rows",
         "shared_w8a8_weight_format": shared_weight_format,
         "routed_w4a8_weight_storage": {
