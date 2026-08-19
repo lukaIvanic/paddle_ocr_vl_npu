@@ -17,6 +17,9 @@ from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 from modeling_glm52_dense_tp import GLM52DenseTPStack, shard_bounds
 
 
+PROFILE_METRICS = ("pipe", "memory", "memory_access", "l2")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="GLM-5.2 W4A8C8 dense layers 0-2 TP1/TP2 benchmark."
@@ -32,6 +35,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reference-out", type=Path)
     parser.add_argument("--reference-in", type=Path)
     parser.add_argument("--profile-dir", type=Path)
+    parser.add_argument("--profile-metric", choices=PROFILE_METRICS, default="pipe")
+    parser.add_argument("--profile-warmup-steps", type=int, default=20)
+    parser.add_argument("--profile-active-steps", type=int, default=3)
     parser.add_argument("--summary-out", type=Path)
     return parser.parse_args()
 
@@ -363,6 +369,9 @@ def main() -> None:
                 world_size=world_size,
                 device=device,
                 first_position=0,
+                metric=args.profile_metric,
+                ordinary_warmup_steps=args.profile_warmup_steps,
+                active_steps=args.profile_active_steps,
             )
     if rank == 0:
         result = {
@@ -417,19 +426,40 @@ def profile_compiled_steps(
     world_size: int,
     device: torch.device,
     first_position: int,
+    metric: str,
+    ordinary_warmup_steps: int,
+    active_steps: int,
 ) -> dict[str, object]:
     import torch_npu.profiler as npu_prof
 
+    if ordinary_warmup_steps < 1 or active_steps < 1:
+        raise ValueError("profile warmup and active steps must be positive")
     profile_dir = profile_root / f"rank{rank}"
     profile_dir.mkdir(parents=True, exist_ok=False)
-    schedule = npu_prof.schedule(wait=0, warmup=1, active=1, repeat=1)
+    metric_value = {
+        "pipe": npu_prof.AiCMetrics.PipeUtilization,
+        "memory": npu_prof.AiCMetrics.Memory,
+        "memory_access": npu_prof.AiCMetrics.MemoryAccess,
+        "l2": npu_prof.AiCMetrics.L2Cache,
+    }[metric]
+    _, ordinary_warmup_sec = timed_steps(
+        decode,
+        hidden_states,
+        caches,
+        first_position=first_position,
+        steps=ordinary_warmup_steps,
+        world_size=world_size,
+        device=device,
+    )
+    schedule = npu_prof.schedule(wait=0, warmup=1, active=active_steps, repeat=1)
     experimental_config = npu_prof._ExperimentalConfig(
         profiler_level=npu_prof.ProfilerLevel.Level1,
-        aic_metrics=npu_prof.AiCMetrics.PipeUtilization,
+        aic_metrics=metric_value,
         export_type=npu_prof.ExportType.Text,
     )
-    synchronized_seconds = []
     barrier(world_size)
+    torch.npu.synchronize()
+    started = time.perf_counter()
     with npu_prof.profile(
         activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
         schedule=schedule,
@@ -441,21 +471,26 @@ def profile_compiled_steps(
         with_stack=False,
         experimental_config=experimental_config,
     ) as prof:
-        for offset in range(2):
+        for offset in range(1 + active_steps):
             position = torch.tensor(
-                [first_position + offset], dtype=torch.int64, device=device
+                [first_position + ordinary_warmup_steps + offset],
+                dtype=torch.int64,
+                device=device,
             )
-            torch.npu.synchronize()
-            started = time.perf_counter()
             decode(hidden_states.clone(), position, *caches)
-            torch.npu.synchronize()
-            synchronized_seconds.append(time.perf_counter() - started)
             prof.step()
     torch.npu.synchronize()
+    profiled_loop_sec = time.perf_counter() - started
     barrier(world_size)
     return {
         "profile_dir": str(profile_dir),
-        "synchronized_seconds": synchronized_seconds,
+        "metric": metric,
+        "ordinary_warmup_steps": ordinary_warmup_steps,
+        "ordinary_warmup_sec_excluded": ordinary_warmup_sec,
+        "profiler_schedule_warmup_steps": 1,
+        "active_steps": active_steps,
+        "profiled_loop_sec_including_profiler_overhead": profiled_loop_sec,
+        "execution_mode": "contiguous_graph_calls_with_one_final_sync",
     }
 
 
