@@ -297,6 +297,12 @@ The live benchmark therefore has no RoPE/cache-fusion selection flag. Full
 measurements, profile rows, parity details, and rejection reasons are in
 `references/dense_layers0_2_rope_fusion_910b2_5194a83.json`.
 
+The cleaned single-path runtime at commit `b1454c7` then passed the same
+eight-position raw-eager reference with exact output. Its independent static
+TorchAir run used 20 excluded ordinary warmup calls and 1,000 measured calls.
+It measured 1.731 ms per three-layer stack, or 577.6 stack calls/s. Dynamo
+reported one graph after warmup and the same one graph after measurement.
+
 The optimized-only TP1/TP2 validation and exact five-call PipeUtilization
 profile are saved in
 `references/dense_layers0_2_optimized_cleanup_profile_910b2_ff44430.json`.

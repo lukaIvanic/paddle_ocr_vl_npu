@@ -61,6 +61,29 @@
     "interleave_cache_layout": "block; converted to canonical interleaved layout only for reference comparison",
     "fused_kv_raw_eager_eight_position_output_exact": true
   },
+  "clean_runtime_validation": {
+    "commit": "b1454c7",
+    "raw_eager_eight_position_reference": {
+      "output_max_abs": 0.0,
+      "key_cache_max_abs": 0.001953125,
+      "value_cache_max_abs": 0.0,
+      "index_cache_max_abs": 0.0078125
+    },
+    "compiled": {
+      "warmup_steps_excluded": 20,
+      "measured_calls": 1000,
+      "mean_stack_ms": 1.7314146156422794,
+      "stack_calls_per_sec": 577.5624110860607,
+      "unique_graphs_after_warmup": 1,
+      "unique_graphs_after_measurement": 1,
+      "new_graphs_during_measurement": 0,
+      "reference_output_max_abs": 0.015625,
+      "reference_output_mean_abs": 0.00006280932575464249,
+      "reference_key_cache_max_abs": 0.0068359375,
+      "reference_value_cache_max_abs": 0.000213623046875,
+      "reference_index_cache_max_abs": 0.0234375
+    }
+  },
   "rejected_lanes": {
     "npu_rotary_mul": "Eager parity passed, but the compiled cache values diverged; reject compiled semantics.",
     "npu_kv_rmsnorm_rope_cache_v2": "Correct and fast, but 0.96 percent slower than plain npu_interleave_rope in matched warmed repeats.",
