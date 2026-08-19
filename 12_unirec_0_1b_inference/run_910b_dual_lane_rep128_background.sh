@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
+
+# The CANN/ATB environment scripts are not safe under nounset/errexit.
+source npu-setup
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 cd "$REPO"
 
-source npu-setup
 case ",${ASCEND_RT_VISIBLE_DEVICES:?}," in
   *,5,*|*,6,*) printf 'REJECTED_PHYSICAL_NPU=%s\n' "$ASCEND_RT_VISIBLE_DEVICES" >&2; exit 1 ;;
 esac
