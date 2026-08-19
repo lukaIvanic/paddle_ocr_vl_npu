@@ -1,0 +1,142 @@
+{
+  "experiment": "GLM-5.2 W4A8C8 dense layers 0-2 native ND versus FRACTAL_NZ weights",
+  "model": "Eco-Tech/GLM-5.2-w4a8c8",
+  "chip": "Ascend 910B2",
+  "physical_npu": 7,
+  "source_commit": "1ba4a0e",
+  "batch_size": 1,
+  "cache_length": 4096,
+  "dtype": "BF16 activations with INT8 W8A8_DYNAMIC weights",
+  "weight_format_contract": {
+    "native_format_code": 2,
+    "fractal_nz_format_code": 29,
+    "logical_weight_order": "K,N",
+    "quant_linear_count": 18,
+    "quant_linears_per_layer": 6,
+    "layers": [0, 1, 2],
+    "projection_families": [
+      {"name": "fused_q_kv_a", "shape_k_n": [6144, 2624], "count": 3},
+      {"name": "q_b", "shape_k_n": [2048, 16384], "count": 3},
+      {"name": "attention_o", "shape_k_n": [16384, 6144], "count": 3},
+      {"name": "dense_gate_up", "shape_k_n": [6144, 24576], "count": 3},
+      {"name": "dense_down", "shape_k_n": [12288, 6144], "count": 3},
+      {"name": "indexer_wq_b", "shape_k_n": [2048, 4096], "count": 3}
+    ],
+    "fractal_nz_before_histogram": {"2": 18},
+    "fractal_nz_after_histogram": {"29": 18},
+    "bf16_linears_changed": false
+  },
+  "raw_eager_gate": {
+    "validation_steps": 8,
+    "output_max_abs_difference": 0.0,
+    "key_cache_max_abs_difference": 0.0,
+    "value_cache_max_abs_difference": 0.0,
+    "index_cache_max_abs_difference": 0.0,
+    "all_finite": true
+  },
+  "compiled_timing": {
+    "warmup_steps_excluded": 10,
+    "decode_steps_per_process": 1000,
+    "fresh_processes_per_lane": 3,
+    "native_internal_formats_disabled": {
+      "mean_stack_ms": [2.328159818891436, 2.206197596155107, 2.229695434682071],
+      "median_stack_ms": 2.229695434682071,
+      "median_stack_calls_per_sec": 448.49174665085525
+    },
+    "native_internal_formats_enabled": {
+      "mean_stack_ms": [2.3020483939908445, 2.188807229977101, 2.221622148063034],
+      "median_stack_ms": 2.221622148063034,
+      "median_stack_calls_per_sec": 450.12154783920846
+    },
+    "fractal_nz_internal_formats_enabled": {
+      "mean_stack_ms": [1.8331121345981956, 1.6995842661708593, 1.725407974794507],
+      "median_stack_ms": 1.725407974794507,
+      "median_stack_calls_per_sec": 579.5730717653013
+    },
+    "fractal_nz_vs_matched_native": {
+      "latency_reduction_percent": 22.33566917313825,
+      "throughput_increase_percent": 28.75923726547196
+    },
+    "fractal_nz_vs_current_default": {
+      "latency_reduction_percent": 22.616876369909676
+    },
+    "native_internal_setting_only": {
+      "latency_reduction_percent": 0.3620802416985036,
+      "interpretation": "negligible relative to the observed FRACTAL_NZ gain"
+    },
+    "graph_behavior": {
+      "first_process_unique_graphs_after_warmup": 1,
+      "first_process_new_graphs_during_measurement": 0,
+      "warm_disk_cache_processes_dynamo_unique_graphs": 0,
+      "warm_disk_cache_interpretation": "cache_compile loaded the existing graph without Dynamo capture",
+      "warm_disk_cache_new_graphs_during_measurement": 0
+    },
+    "compiled_reference_comparison_all_lanes": {
+      "output_allclose_atol_5e_2_rtol_5e_2": true,
+      "output_max_abs": 0.015625,
+      "output_mean_abs": 0.00006166131788631901,
+      "key_cache_max_abs": 0.0068359375,
+      "value_cache_max_abs": 0.000213623046875,
+      "index_cache_max_abs": 0.0234375
+    }
+  },
+  "setup_cost": {
+    "native_load_seconds": [3.4916773731820285, 3.510214328300208, 3.5210895128548145],
+    "fractal_nz_load_seconds": [9.835511051118374, 9.358418873045594, 9.945132373832166],
+    "approximate_extra_seconds_for_three_layers": 6.3,
+    "included_in_decode_timing": false
+  },
+  "matched_pipe_profile": {
+    "ordinary_warmup_steps_excluded": 20,
+    "profiler_schedule_warmup_steps": 1,
+    "active_stack_calls": 5,
+    "exact_count_checks": {
+      "quant_batch_matmul_v3_per_lane": 90,
+      "quant_batch_matmul_v3_per_stack": 18,
+      "total_kernel_rows_per_lane": 955,
+      "passed": true
+    },
+    "clean_timing_before_profile": {
+      "native_mean_stack_ms": 2.127002850174904,
+      "fractal_nz_mean_stack_ms": 1.6607240261510015
+    },
+    "aggregate_device_kernel_time_us_per_stack": {
+      "native": 1919.3320000000028,
+      "fractal_nz": 1411.5200000000018,
+      "reduction_percent": 26.45774675772613
+    },
+    "quant_batch_matmul_v3_us_per_stack": {
+      "native": 1342.6160000000004,
+      "fractal_nz": 826.268,
+      "saved": 516.3480000000004,
+      "reduction_percent": 38.45835294678448
+    },
+    "non_quant_kernel_increase_us_per_stack": 8.536000000000513,
+    "input_formats": {
+      "native": "ND;ND;ND;ND",
+      "fractal_nz": "ND;FRACTAL_NZ;ND;ND"
+    },
+    "projection_breakdown_us_per_stack": [
+      {"projection": "fused_q_kv_a", "native": 203.432, "fractal_nz": 54.872, "reduction_percent": 73.02685909788038},
+      {"projection": "dense_gate_up", "native": 440.868, "fractal_nz": 290.872, "reduction_percent": 34.02288213252038},
+      {"projection": "attention_o", "native": 319.892, "fractal_nz": 209.292, "reduction_percent": 34.57416878196391},
+      {"projection": "dense_down", "native": 215.324, "fractal_nz": 152.892, "reduction_percent": 28.99444557968457},
+      {"projection": "q_b", "native": 116.004, "fractal_nz": 83.788, "reduction_percent": 27.77145615668426},
+      {"projection": "indexer_wq_b", "native": 47.096, "fractal_nz": 34.552, "reduction_percent": 26.634958382877528}
+    ],
+    "interpretation": "The W8A8 matmuls saved 516.348 us per stack while the complete trace saved 507.812 us; the aggregate gain is entirely attributable to the weight-format change within profiler variation."
+  },
+  "commands": {
+    "raw_eager_fractal_nz": "/usr/local/python3.12.13/bin/python3 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend raw_eager --w8-weight-format fractal_nz --enable-internal-format --validation-steps 8 --warmup-steps 1 --decode-steps 2 --reference-in /tmp/glm52_manual_relu_ref_10a3e91.pt --summary-out /tmp/glm52_nz_raw_smoke_1ba4a0e.json",
+    "native_default_template": "/usr/local/python3.12.13/bin/python3 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --w8-weight-format native --compile-cache-dir /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/16_glm52_w4a8_dense_nz_1ba4a0e/native_default --validation-steps 8 --warmup-steps 10 --decode-steps 1000 --reference-in /tmp/glm52_manual_relu_ref_10a3e91.pt --summary-out /tmp/glm52_nz_1ba4a0e/native_default_RUN.json",
+    "native_internal_template": "/usr/local/python3.12.13/bin/python3 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --w8-weight-format native --enable-internal-format --compile-cache-dir /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/16_glm52_w4a8_dense_nz_1ba4a0e/native_internal --validation-steps 8 --warmup-steps 10 --decode-steps 1000 --reference-in /tmp/glm52_manual_relu_ref_10a3e91.pt --summary-out /tmp/glm52_nz_1ba4a0e/native_internal_RUN.json",
+    "fractal_nz_template": "/usr/local/python3.12.13/bin/python3 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --w8-weight-format fractal_nz --enable-internal-format --compile-cache-dir /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/16_glm52_w4a8_dense_nz_1ba4a0e/fractal_nz --validation-steps 8 --warmup-steps 10 --decode-steps 1000 --reference-in /tmp/glm52_manual_relu_ref_10a3e91.pt --summary-out /tmp/glm52_nz_1ba4a0e/fractal_nz_RUN.json",
+    "profile_template": "Use the matched native-internal or FRACTAL_NZ command with --decode-steps 200 --profile-dir /tmp/glm52_nz_1ba4a0e/profile_LANE --profile-metric pipe --profile-warmup-steps 20 --profile-active-steps 5"
+  },
+  "remote_artifacts": {
+    "root": "/tmp/glm52_nz_1ba4a0e",
+    "native_kernel_details": "/tmp/glm52_nz_1ba4a0e/native_kernel_details.csv",
+    "fractal_nz_kernel_details": "/tmp/glm52_nz_1ba4a0e/fractal_nz_kernel_details.csv"
+  },
+  "scope_limit": "TP1 dense layers 0-2 only; this does not establish TP2 or MoE-layer performance."
+}

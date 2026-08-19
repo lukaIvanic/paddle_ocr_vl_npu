@@ -262,6 +262,52 @@ The optimized-only TP1/TP2 validation and exact five-call PipeUtilization
 profile are saved in
 `references/dense_layers0_2_optimized_cleanup_profile_910b2_ff44430.json`.
 
+## Verified TP1 FRACTAL_NZ W8A8-weight rung
+
+The FRACTAL_NZ experiment changes only the storage format of all 18 W8A8
+weights in dense layers 0-2. It enables torch-npu internal formats before the
+first NPU allocation, then converts each already-logical `[K,N]` INT8 weight
+from format code 2 (ND) to format code 29 (FRACTAL_NZ) once before graph
+compilation. The six affected projection families in each layer are fused
+Q/KV-A, Q-B, attention O, dense gate/up, dense down, and indexer WQ-B. BF16
+linears are unchanged.
+
+On physical Ascend 910B2 NPU 7, B1/KV4096, three fresh-process 1,000-call runs
+per lane gave:
+
+| TP1 TorchAir weight lane | Three stack times | Median | Median calls/s |
+| --- | --- | ---: | ---: |
+| Native ND, internal formats disabled | 2.328, 2.206, 2.230 ms | 2.230 ms | 448.49 |
+| Native ND, internal formats enabled | 2.302, 2.189, 2.222 ms | 2.222 ms | 450.12 |
+| FRACTAL_NZ, internal formats enabled | 1.833, 1.700, 1.725 ms | **1.725 ms** | **579.57** |
+
+The native controls differ by only 0.36%. Against the matched internal-format
+control, FRACTAL_NZ reduced median stack latency by 22.34% and increased stack
+throughput by 28.76%. Raw eager output and all three cache families matched the
+saved reference exactly for eight positions. Compiled parity was unchanged
+from native. The first process captured one static graph; warm disk-cache
+processes loaded it without capturing a new graph, and no process created a
+graph during its measured window.
+
+Matched five-call profiles attribute the result to the W8A8 matmuls. Their
+combined time fell from 1.343 to 0.826 ms per stack, while complete recorded
+kernel time fell from 1.919 to 1.412 ms. Every projection family improved:
+
+| W8A8 projection family | Native | FRACTAL_NZ | Reduction |
+| --- | ---: | ---: | ---: |
+| Fused Q/KV-A | 203.43 us | 54.87 us | 73.03% |
+| Dense gate/up | 440.87 us | 290.87 us | 34.02% |
+| Attention O | 319.89 us | 209.29 us | 34.57% |
+| Dense down | 215.32 us | 152.89 us | 28.99% |
+| Q-B | 116.00 us | 83.79 us | 27.77% |
+| Indexer WQ-B | 47.10 us | 34.55 us | 26.63% |
+
+FRACTAL_NZ adds about 6.3 seconds to one-time three-layer weight setup in these
+fresh processes; that setup is outside decode timing. This result establishes
+the TP1 dense layers 0-2 point only. TP2 and the MoE linears need separate
+validation. Full evidence and exact commands are in
+`references/dense_layers0_2_fractal_nz_910b2_1ba4a0e.json`.
+
 Run on one Ascend 910B2 after sourcing the NPU environment:
 
 ```bash
