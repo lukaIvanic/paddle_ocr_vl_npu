@@ -147,6 +147,38 @@ traffic amplification is mainly the manual sparse-attention gather, cast, and
 materialization route. Per-kernel memory and L2 results are saved in
 `references/dense_layers0_2_tp1_memory_profile_910b2_d9099a6.json`.
 
+## Verified TP1 absorbed-MLA rung
+
+The first vLLM-Ascend-derived optimization keeps the owned DSA indexer and
+manual sparse softmax, but absorbs the BF16 KV-B projection into per-head
+`W_UK_T` and `W_UV` weights. It stores one latent-512 row and one RoPE-64 row
+per token and layer instead of decompressed per-head K/V. The old
+`decompressed_manual` path remains available as an explicit baseline;
+`absorbed_manual` selects the new path.
+
+Commit `e9767ad` ran both paths sequentially on physical Ascend 910B2 NPU 7
+with B1, KV4096, 10 ordinary warmup positions, and 1,000 measured positions.
+Both paths captured one static graph during warmup and no graph during the
+measurement window.
+
+| TP1 TorchAir lane | Mean layers 0-2 time | Stack calls/s | Allocated HBM |
+| --- | ---: | ---: | ---: |
+| Decompressed manual | 4.028 ms | 248.29 | 2.931 GiB |
+| Absorbed manual | **2.604 ms** | **384.07** | **1.227 GiB** |
+
+Absorption reduced latency by 35.4%, increased stack throughput by 54.7%
+(`1.547x`), and reduced allocated HBM by 1.704 GiB. In raw eager execution,
+eight sequential positions had exact output, reconstructed K/V-cache, and
+index-cache parity. The compiled absorbed and decompressed paths had identical
+comparison errors against the raw reference, so this rung added no observed
+compiled-path drift.
+
+A short PipeUtilization profile found that quantized linears now account for
+61.9% of recorded kernel time. The remaining manual absorbed attention still
+materializes selected latent/RoPE rows and casts them for FP32 scoring, making
+the fused sparse-attention operator the next isolated rung. Full evidence is in
+`references/dense_layers0_2_tp1_absorbed_mla_910b2_e9767ad.json`.
+
 Run on one Ascend 910B2 after sourcing the NPU environment:
 
 ```bash

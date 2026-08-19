@@ -1,0 +1,69 @@
+{
+  "chip": "Ascend 910B2",
+  "physical_npu": 7,
+  "commit": "e9767ad",
+  "model": "Eco-Tech/GLM-5.2-w4a8c8",
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "layers": [0, 1, 2],
+    "tensor_parallel_size": 1
+  },
+  "method": {
+    "backend": "TorchAir fullgraph static",
+    "warmup": "10 ordinary forward calls, excluded",
+    "measured_calls": 1000,
+    "baseline_attention_path": "decompressed_manual",
+    "candidate_attention_path": "absorbed_manual",
+    "candidate_cache": "one BF16 latent-512 row plus one BF16 RoPE-64 row per token and layer",
+    "unchanged_components": "Q/KV-A, Q-B, DSA indexer and top-2048 result, FP32 score/softmax policy, O projection, norms, and dense MLP"
+  },
+  "raw_eager_parity_8_sequential_positions": {
+    "output_max_abs": 0.0,
+    "output_mean_abs": 0.0,
+    "reconstructed_key_cache_max_abs": 0.0,
+    "reconstructed_value_cache_max_abs": 0.0,
+    "index_cache_max_abs": 0.0
+  },
+  "non_profiled_torchair_1000_calls": {
+    "decompressed_manual": {
+      "mean_stack_ms": 4.027624692302197,
+      "stack_calls_per_sec": 248.28529875468567,
+      "allocated_gib": 2.9313859939575195,
+      "unique_graphs_after_warmup": 1,
+      "new_graphs_during_measurement": 0
+    },
+    "absorbed_manual": {
+      "mean_stack_ms": 2.603659620974213,
+      "stack_calls_per_sec": 384.0747814899973,
+      "allocated_gib": 1.2272839546203613,
+      "unique_graphs_after_warmup": 1,
+      "new_graphs_during_measurement": 0
+    },
+    "comparison": {
+      "speedup": 1.546909073619684,
+      "latency_reduction_pct": 35.35495931509058,
+      "throughput_gain_pct": 54.6909073619684,
+      "allocated_gib_reduction": 1.7041020393371582,
+      "allocated_memory_reduction_pct": 58.13298019605171
+    }
+  },
+  "compiled_candidate_vs_raw_decompressed_reference": {
+    "output_max_abs": 0.015625,
+    "output_mean_abs": 0.000061503924371209,
+    "reconstructed_key_cache_max_abs": 0.0068359375,
+    "reconstructed_value_cache_max_abs": 0.000213623046875,
+    "index_cache_max_abs": 0.0234375,
+    "allclose_atol_5e_2_rtol_5e_2": true,
+    "note": "The compiled decompressed baseline had the same comparison values, so absorption added no observed compiled-path drift."
+  },
+  "pipe_profile_diagnostic": {
+    "clean_200_call_mean_stack_ms_before_profile": 2.5581506243906915,
+    "active_profile_steps": 3,
+    "profiled_kernel_duration_us_total": 8912.860000000002,
+    "weighted_cube_utilization_pct": 78.67811096248477,
+    "quant_batch_matmul_duration_us": 5515.220000000003,
+    "quant_batch_matmul_share_pct": 61.87935185787729,
+    "note": "Profile totals include profiler scheduling overhead and are diagnostic. The 1000-call non-profiled timings are the throughput result."
+  }
+}
