@@ -14,7 +14,11 @@ import torch_npu
 from torch_npu.dynamo import torchair
 from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
-from modeling_glm52_dense_tp import GLM52DenseTPStack, shard_bounds
+from modeling_glm52_dense_tp import (
+    ATTENTION_PATHS,
+    GLM52DenseTPStack,
+    shard_bounds,
+)
 
 
 PROFILE_METRICS = ("pipe", "memory", "memory_access", "l2")
@@ -31,6 +35,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--validation-steps", type=int, default=8)
     parser.add_argument(
         "--backend", choices=("raw_eager", "torchair"), default="torchair"
+    )
+    parser.add_argument(
+        "--attention-path",
+        choices=ATTENTION_PATHS,
+        default="decompressed_manual",
     )
     parser.add_argument("--reference-out", type=Path)
     parser.add_argument("--reference-in", type=Path)
@@ -93,17 +102,24 @@ def run_steps(
     return output
 
 
-def used_cache_cpu(caches, used_length: int) -> dict[str, tuple[torch.Tensor, ...]]:
-    keys, values, indices = caches
+def used_cache_cpu(
+    stack: GLM52DenseTPStack,
+    caches,
+    used_length: int,
+) -> dict[str, tuple[torch.Tensor, ...]]:
+    keys, values, indices = stack.materialize_reference_caches(
+        caches, used_length=used_length
+    )
     return {
-        "keys": tuple(cache[:, :, :used_length].cpu() for cache in keys),
-        "values": tuple(cache[:, :, :used_length].cpu() for cache in values),
-        "indices": tuple(cache[:, :used_length].cpu() for cache in indices),
+        "keys": tuple(cache.cpu() for cache in keys),
+        "values": tuple(cache.cpu() for cache in values),
+        "indices": tuple(cache.cpu() for cache in indices),
     }
 
 
 def save_reference(
     path: Path,
+    stack: GLM52DenseTPStack,
     output: torch.Tensor,
     caches,
     *,
@@ -114,13 +130,14 @@ def save_reference(
         "format": "glm52_dense_layers0_2_tp1_reference_v1",
         "used_length": used_length,
         "output": output.cpu(),
-        **used_cache_cpu(caches, used_length),
+        **used_cache_cpu(stack, caches, used_length),
     }
     torch.save(record, path)
 
 
 def compare_reference(
     path: Path,
+    stack: GLM52DenseTPStack,
     output: torch.Tensor,
     caches,
     *,
@@ -134,25 +151,27 @@ def compare_reference(
     used_length = int(reference["used_length"])
     output_diff = (output.cpu().float() - reference["output"].float()).abs()
     head_start, head_end = shard_bounds(total_heads, rank, world_size)
-    keys, values, indices = caches
+    keys, values, indices = stack.materialize_reference_caches(
+        caches, used_length=used_length
+    )
     key_max = 0.0
     value_max = 0.0
     index_max = 0.0
     for layer_index in range(3):
         key_diff = (
-            keys[layer_index][:, :, :used_length].cpu().float()
+            keys[layer_index].cpu().float()
             - reference["keys"][layer_index][
                 :, head_start:head_end, :used_length
             ].float()
         ).abs()
         value_diff = (
-            values[layer_index][:, :, :used_length].cpu().float()
+            values[layer_index].cpu().float()
             - reference["values"][layer_index][
                 :, head_start:head_end, :used_length
             ].float()
         ).abs()
         index_diff = (
-            indices[layer_index][:, :used_length].cpu().float()
+            indices[layer_index].cpu().float()
             - reference["indices"][layer_index][:, :used_length].float()
         ).abs()
         key_max = max(key_max, float(key_diff.max().item()))
@@ -204,6 +223,7 @@ def main() -> None:
         world_size=world_size,
         cache_length=args.cache_length,
         device=device,
+        attention_path=args.attention_path,
         progress=lambda message: log(rank, message),
     )
     stack.eval()
@@ -251,6 +271,7 @@ def main() -> None:
     if args.reference_in is not None:
         reference_comparison = compare_reference(
             args.reference_in,
+            stack,
             validation_output,
             validation_caches,
             rank=rank,
@@ -267,6 +288,7 @@ def main() -> None:
             raise ValueError("Only TP1 may write the full reference")
         save_reference(
             args.reference_out,
+            stack,
             validation_output,
             validation_caches,
             used_length=args.validation_steps,
@@ -324,6 +346,7 @@ def main() -> None:
         "layers": [0, 1, 2],
         "tensor_parallel_size": world_size,
         "backend": args.backend,
+        "attention_path": args.attention_path,
         "batch_size": 1,
         "cache_length": args.cache_length,
         "validation_steps": args.validation_steps,
@@ -346,8 +369,17 @@ def main() -> None:
         "contracts": {
             "replicated_qkv_a_and_indexer": True,
             "attention_heads_per_rank": stack.local_heads,
-            "q_b_and_kv_b": "column_parallel_by_head",
-            "kv_cache": "head_sharded",
+            "q_b": "column_parallel_by_head",
+            "kv_b": (
+                "column_parallel_by_head"
+                if args.attention_path == "decompressed_manual"
+                else "absorbed_w_uk_w_uv_by_head"
+            ),
+            "kv_cache": (
+                "decompressed_head_sharded_kv"
+                if args.attention_path == "decompressed_manual"
+                else "compressed_latent512_plus_rope64"
+            ),
             "o_proj": "row_parallel_all_reduce",
             "dense_gate_up": "column_parallel_intermediate",
             "dense_down": "row_parallel_all_reduce",
