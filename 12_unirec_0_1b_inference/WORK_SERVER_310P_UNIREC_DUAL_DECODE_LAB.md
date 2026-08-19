@@ -21,15 +21,16 @@ The completed 910B2 full run established the workload counts used by the report:
 The matrix prints graph-only and production-like sampled-token D2H projections.
 They are forecasts, not production measurements.
 
-The exact runner passed on 910B2 at commit `f0cad0b` with warm caches:
+The production-arena-reuse runner passed on 910B2 at commit `b84b22c` with
+warm caches:
 
 | Lane | Clean step | Clean raw tok/s | D2H step | D2H raw tok/s | Peak HBM |
 |---|---:|---:|---:|---:|---:|
-| A, C256/S256 | 1.8556 ms | 68,979.5 | 2.3055 ms | 55,520.2 | 2.62 GiB |
-| B, C1320/S2048 | 5.7797 ms | 22,146.3 | 6.1174 ms | 20,924.1 | 15.18 GiB |
+| A, C256/S256 | 1.8907 ms | 67,701.2 | 2.2852 ms | 56,011.7 | 1.55 GiB |
+| B, C1320/S2048 | 5.8356 ms | 21,934.4 | 6.1893 ms | 20,680.9 | 7.83 GiB |
 
-The 910B2 D2H projection was 79.52 seconds versus the measured full-production
-dual graph time of 81.54 seconds, a 2.5% miss. Compare the 310P result directly
+The 910B2 D2H projection was 79.90 seconds versus the measured full-production
+dual graph time of 81.54 seconds, a 2.0% miss. Compare the 310P result directly
 against these rows; do not transfer the 910B timings to 310P.
 
 ## Constraints
