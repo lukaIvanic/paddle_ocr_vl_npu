@@ -31,6 +31,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--reference-out", type=Path)
     parser.add_argument("--reference-in", type=Path)
+    parser.add_argument("--profile-dir", type=Path)
     parser.add_argument("--summary-out", type=Path)
     return parser.parse_args()
 
@@ -348,6 +349,21 @@ def main() -> None:
         },
         "final_output_abs_max": float(final_output.float().abs().max().item()),
     }
+    if args.profile_dir is not None:
+        if args.backend != "torchair":
+            raise ValueError("Profiling is supported only for TorchAir")
+        with torch.inference_mode():
+            profile_caches = stack.make_cache(device=device)
+            summary["profile"] = profile_compiled_steps(
+                decode,
+                hidden_states,
+                profile_caches,
+                profile_root=args.profile_dir,
+                rank=rank,
+                world_size=world_size,
+                device=device,
+                first_position=0,
+            )
     if rank == 0:
         result = {
             "rank0": summary,
@@ -389,6 +405,58 @@ def timed_steps(
     return output, reduce_max_seconds(
         elapsed, world_size=world_size, device=device
     )
+
+
+def profile_compiled_steps(
+    decode,
+    hidden_states: torch.Tensor,
+    caches,
+    *,
+    profile_root: Path,
+    rank: int,
+    world_size: int,
+    device: torch.device,
+    first_position: int,
+) -> dict[str, object]:
+    import torch_npu.profiler as npu_prof
+
+    profile_dir = profile_root / f"rank{rank}"
+    profile_dir.mkdir(parents=True, exist_ok=False)
+    schedule = npu_prof.schedule(wait=0, warmup=1, active=1, repeat=1)
+    experimental_config = npu_prof._ExperimentalConfig(
+        profiler_level=npu_prof.ProfilerLevel.Level1,
+        aic_metrics=npu_prof.AiCMetrics.PipeUtilization,
+        export_type=npu_prof.ExportType.Text,
+    )
+    synchronized_seconds = []
+    barrier(world_size)
+    with npu_prof.profile(
+        activities=[npu_prof.ProfilerActivity.CPU, npu_prof.ProfilerActivity.NPU],
+        schedule=schedule,
+        on_trace_ready=npu_prof.tensorboard_trace_handler(
+            str(profile_dir), analyse_flag=True
+        ),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=False,
+        experimental_config=experimental_config,
+    ) as prof:
+        for offset in range(2):
+            position = torch.tensor(
+                [first_position + offset], dtype=torch.int64, device=device
+            )
+            torch.npu.synchronize()
+            started = time.perf_counter()
+            decode(hidden_states.clone(), position, *caches)
+            torch.npu.synchronize()
+            synchronized_seconds.append(time.perf_counter() - started)
+            prof.step()
+    torch.npu.synchronize()
+    barrier(world_size)
+    return {
+        "profile_dir": str(profile_dir),
+        "synchronized_seconds": synchronized_seconds,
+    }
 
 
 if __name__ == "__main__":
