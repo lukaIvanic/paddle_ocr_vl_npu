@@ -34,6 +34,7 @@ resolve_inputs() {
   : "${PREFAULT_ARTIFACT:=1}"
   : "${REFERENCE_TRACE:=}"
   : "${REFERENCE_RUN_SUMMARY:=}"
+  : "${REQUEST_IDS_FILE:=}"
   : "${STEP_TRACE:=0}"
   : "${PROGRESS_EVERY:=1000}"
   case ",${ASCEND_RT_VISIBLE_DEVICES}," in
@@ -47,6 +48,11 @@ resolve_inputs() {
   MODEL="$(readlink -f "$MODEL")"
   ARTIFACT_DIR="$(readlink -f "$ARTIFACT_DIR")"
   COMPILE_CACHE="$(readlink -f "$COMPILE_CACHE")"
+  if [[ -n "$REQUEST_IDS_FILE" ]]; then
+    REQUEST_IDS_FILE="$(readlink -f "$REQUEST_IDS_FILE")"
+    test -s "$REQUEST_IDS_FILE"
+    [[ "$OFFSET_CROPS" -eq 0 && "$LIMIT_CROPS" -eq 0 ]]
+  fi
   test -x "$PYTHON_BIN"
   test -f "$MODEL/model.pth"
   test -f "$ARTIFACT_DIR/summary.json"
@@ -87,6 +93,9 @@ worker_main() {
   fi
   if [[ -n "$REFERENCE_RUN_SUMMARY" ]]; then
     command+=(--reference-run-summary "$REFERENCE_RUN_SUMMARY")
+  fi
+  if [[ -n "$REQUEST_IDS_FILE" ]]; then
+    command+=(--request-ids-file "$REQUEST_IDS_FILE")
   fi
   if [[ "$STEP_TRACE" == 1 ]]; then
     command+=(--step-trace-jsonl "$run_root/decode_steps.jsonl")
@@ -130,7 +139,8 @@ launch_main() {
     OVER_CAPACITY="$OVER_CAPACITY" WARMUP_PASSES="$WARMUP_PASSES" \
     ADMISSION_PREFETCH_DEPTH="$ADMISSION_PREFETCH_DEPTH" \
     PREFAULT_ARTIFACT="$PREFAULT_ARTIFACT" REFERENCE_TRACE="$REFERENCE_TRACE" \
-    REFERENCE_RUN_SUMMARY="$REFERENCE_RUN_SUMMARY" STEP_TRACE="$STEP_TRACE" \
+    REFERENCE_RUN_SUMMARY="$REFERENCE_RUN_SUMMARY" \
+    REQUEST_IDS_FILE="$REQUEST_IDS_FILE" STEP_TRACE="$STEP_TRACE" \
     PROGRESS_EVERY="$PROGRESS_EVERY" \
     UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:-}" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
