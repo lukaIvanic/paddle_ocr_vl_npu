@@ -300,15 +300,30 @@ def main() -> None:
     )
     progress("cache_bind_end", compile=compile_meta)
     progress("state_allocate_begin")
-    state = make_state(
-        runner,
-        batch_size=args.batch_size,
-        self_cache_length=args.self_cache_length,
-        cross_cache_length=args.cross_cache_length,
-        cache_position=min(args.cache_positions),
-        seed=7,
+    # Production allocates its long-lived decoder inputs and KV arena under
+    # inference_mode. TorchDynamo guards this tensor property. A normal tensor
+    # state makes cache_compile skip the cached graph on every call.
+    with torch.inference_mode():
+        state = make_state(
+            runner,
+            batch_size=args.batch_size,
+            self_cache_length=args.self_cache_length,
+            cross_cache_length=args.cross_cache_length,
+            cache_position=min(args.cache_positions),
+            seed=7,
+        )
+    inference_tensors = (
+        state["next_token"],
+        state["cache_position"],
+        *state["self_keys"],
+        *state["self_values"],
+        *state["cross_keys"],
+        *state["cross_values"],
+        state["cross_mask"],
     )
-    progress("state_allocate_end")
+    if not all(tensor.is_inference() for tensor in inference_tensors):
+        raise RuntimeError("decode sweep state must use production inference tensors")
+    progress("state_allocate_end", inference_tensors=True)
     eligible = read_source_lengths(
         args.artifact_crops_jsonl, args.cross_cache_length
     )
@@ -329,25 +344,26 @@ def main() -> None:
                     source_mode=source_mode,
                 )
                 if first_call_s is None:
-                    configure_masks_(
-                        state,
-                        active_rows=active_rows,
-                        active_position=position,
-                        source_lengths=sample,
-                    )
-                    started = time.perf_counter()
-                    _ = module(
-                        state["next_token"],
-                        state["cache_position"],
-                        0,
-                        state["self_keys"],
-                        state["self_values"],
-                        state["cross_keys"],
-                        state["cross_values"],
-                        state["cross_mask"],
-                    )
-                    synchronize_device(runner.device)
-                    first_call_s = time.perf_counter() - started
+                    with torch.inference_mode():
+                        configure_masks_(
+                            state,
+                            active_rows=active_rows,
+                            active_position=position,
+                            source_lengths=sample,
+                        )
+                        started = time.perf_counter()
+                        _ = module(
+                            state["next_token"],
+                            state["cache_position"],
+                            0,
+                            state["self_keys"],
+                            state["self_values"],
+                            state["cross_keys"],
+                            state["cross_values"],
+                            state["cross_mask"],
+                        )
+                        synchronize_device(runner.device)
+                        first_call_s = time.perf_counter() - started
                 point = measure_point(
                     runner=runner,
                     module=module,

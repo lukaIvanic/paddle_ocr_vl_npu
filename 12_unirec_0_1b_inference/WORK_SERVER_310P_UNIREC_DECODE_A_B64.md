@@ -9,6 +9,11 @@ realistic source-length distribution as the completed B128 sweep.
 The B64 graph is new and may require exactly one cold compilation. Report this
 separately. Never describe compile/cache-load time as decode time.
 
+The measured state must use production-style inference tensors. The runner
+hard-fails if any `Skip cache as ... recompiled` warning appears. An earlier
+runner revision allocated ordinary tensors and produced an invalid cache-skip
+measurement; do not use results from commit `1dc1565`.
+
 ## Run
 
 ```bash

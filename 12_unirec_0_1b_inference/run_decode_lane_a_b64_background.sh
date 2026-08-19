@@ -79,6 +79,7 @@ worker_main() {
   printf 'UNIREC_DECODE_A_B64_LANE_END status=%s wall_s=%s\n' \
     "$status" "$(( $(date +%s) - started ))"
   test "$status" -eq 0
+  ! grep -Eq 'Skip cache as .*recompiled' "$RUN_ROOT/lane.log"
 
   cache_inventory "$RUN_ROOT/om_after.txt"
   diff -u "$RUN_ROOT/om_before.txt" "$RUN_ROOT/om_after.txt" \
