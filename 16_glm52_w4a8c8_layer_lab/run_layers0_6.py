@@ -12,6 +12,7 @@ import torch_npu
 from torch_npu.dynamo import torchair
 from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
+from modeling_glm52_layer import configure_grouped_matmul_scale_conversion
 from modeling_glm52_stack import GLM52LayerStack
 
 
@@ -174,6 +175,7 @@ def main() -> None:
     if not args.eager_only:
         torch._dynamo.reset()
         torch._dynamo.utils.counters.clear()
+        configure_grouped_matmul_scale_conversion()
         compiled = torch.compile(
             stack.forward_decode,
             backend=torchair.get_npu_backend(

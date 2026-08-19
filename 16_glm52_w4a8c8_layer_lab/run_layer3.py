@@ -12,7 +12,10 @@ import torch_npu
 from torch_npu.dynamo import torchair
 from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
-from modeling_glm52_layer import GLM52Layer3
+from modeling_glm52_layer import (
+    GLM52Layer3,
+    configure_grouped_matmul_scale_conversion,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -196,6 +199,7 @@ def main() -> None:
     if not args.eager_only:
         torch._dynamo.reset()
         torch._dynamo.utils.counters.clear()
+        configure_grouped_matmul_scale_conversion()
         compiled = torch.compile(
             model.forward_decode,
             backend=torchair.get_npu_backend(

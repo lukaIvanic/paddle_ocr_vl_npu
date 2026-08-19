@@ -138,6 +138,32 @@ def require_npu() -> None:
         raise RuntimeError("torch_npu is required for GLM-5.2 layer inference")
 
 
+def configure_grouped_matmul_scale_conversion(mode: str = "bitcast") -> None:
+    """Avoid a numeric INT64-to-UINT64 kernel for packed quant scales."""
+    if mode == "cast":
+        return
+    if mode != "bitcast":
+        raise ValueError(f"Unsupported grouped-matmul scale conversion: {mode}")
+    require_npu()
+    from torch_npu.dynamo.torchair._ge_concrete_graph.ge_converter.custom import (
+        grouped_matmul as grouped_matmul_converter,
+    )
+
+    def bitcast_int64_scales(scales):
+        if scales[0].dtype != grouped_matmul_converter.DataType.DT_INT64:
+            return scales
+        return [
+            grouped_matmul_converter.ge.Bitcast(
+                scale,
+                type=grouped_matmul_converter.DataType.DT_UINT64,
+                keep_dim=True,
+            )
+            for scale in scales
+        ]
+
+    grouped_matmul_converter.convert_scale_tensorlist = bitcast_int64_scales
+
+
 def npu_rms_norm(x: torch.Tensor, weight: torch.Tensor, eps: float) -> torch.Tensor:
     require_npu()
     return torch_npu.npu_rms_norm(x, weight, float(eps))[0]
@@ -249,7 +275,7 @@ class GLM52W4A8Experts(nn.Module):
         *,
         device: torch.device,
         progress=None,
-        w4_weight_format: str = "native",
+        w4_weight_format: str = "fractal_nz",
     ) -> "GLM52W4A8Experts":
         prefix = f"model.layers.{layer_index}.mlp"
         router_weight = reader.tensor(prefix + ".gate.weight").to(device=device, dtype=torch.bfloat16)

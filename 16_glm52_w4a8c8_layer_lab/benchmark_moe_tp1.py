@@ -13,34 +13,11 @@ from torch_npu.dynamo import torchair
 from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
 from modeling_glm52_dense_tp import prepare_w8a8_weight_format
+from modeling_glm52_layer import configure_grouped_matmul_scale_conversion
 from modeling_glm52_moe_tp1 import GLM52MoEMLPStack
 
 
 PROFILE_METRICS = ("pipe", "memory", "memory_access", "l2")
-
-
-def configure_grouped_matmul_scale_conversion(mode: str) -> None:
-    if mode == "cast":
-        return
-    if mode != "bitcast":
-        raise ValueError(f"Unsupported grouped-matmul scale conversion: {mode}")
-    from torch_npu.dynamo.torchair._ge_concrete_graph.ge_converter.custom import (
-        grouped_matmul as grouped_matmul_converter,
-    )
-
-    def bitcast_int64_scales(scales):
-        if scales[0].dtype != grouped_matmul_converter.DataType.DT_INT64:
-            return scales
-        return [
-            grouped_matmul_converter.ge.Bitcast(
-                scale,
-                type=grouped_matmul_converter.DataType.DT_UINT64,
-                keep_dim=True,
-            )
-            for scale in scales
-        ]
-
-    grouped_matmul_converter.convert_scale_tensorlist = bitcast_int64_scales
 
 
 def parse_args() -> argparse.Namespace:
@@ -65,7 +42,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--w4-weight-format",
         choices=("native", "fractal_nz"),
-        default="native",
+        default="fractal_nz",
+    )
+    parser.add_argument(
+        "--engine-parallel",
+        action=argparse.BooleanOptionalAction,
+        default=False,
     )
     parser.add_argument("--summary-out", type=Path)
     return parser.parse_args()
@@ -244,10 +226,14 @@ def main() -> None:
         torch._dynamo.reset()
         torch._dynamo.utils.counters.clear()
         configure_grouped_matmul_scale_conversion(args.gmm_scale_conversion)
+        compiler_config = CompilerConfig()
+        compiler_config.experimental_config.cc_parallel_enable.value = (
+            args.engine_parallel
+        )
         compiled = torch.compile(
             stack.forward,
             backend=torchair.get_npu_backend(
-                compiler_config=CompilerConfig()
+                compiler_config=compiler_config
             ),
             dynamic=False,
             fullgraph=True,
@@ -314,6 +300,7 @@ def main() -> None:
         "backend": "torchair_fullgraph_static",
         "gmm_scale_conversion": args.gmm_scale_conversion,
         "requested_w4_weight_format": args.w4_weight_format,
+        "engine_parallel": args.engine_parallel,
         "input_mode": "preallocated_varied_bfloat16_hidden_rows",
         "shared_w8a8_weight_format": shared_weight_format,
         "routed_w4a8_weight_storage": {
