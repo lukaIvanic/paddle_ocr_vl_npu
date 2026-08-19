@@ -580,7 +580,13 @@ if variant in {
     assert run["vision_bucket_preset"] == expected_preset
     assert run["vision_focal_depthwise_rewrite"] == "constant_grouped_all"
     assert run["vision_weight_format"] == "torchair_internal"
-    assert run["prefill_phase_summary"]["vision_batching"]["fallback_rows"] == 0
+    # Fifty oversized crops use the established eager fallback in K20 full
+    # runs. They are not rejected. The older K10 presets had no fallback rows.
+    expected_fallback_rows = 50 if expected_preset == "310p_k20_l4" else 0
+    assert (
+        run["prefill_phase_summary"]["vision_batching"]["fallback_rows"]
+        == expected_fallback_rows
+    )
 if variant in {
     "optimized_k20_l4_compiled_fp32",
     "optimized_k20_l4_compiled_fp32_dual_restart",
@@ -795,6 +801,10 @@ launch_main() {
 
 if [[ "${1:-}" == worker ]]; then
   worker_entry "$2"
+elif [[ "${1:-}" == report ]]; then
+  RUN_ROOT="$2"
+  resolve_inputs
+  report
 else
   launch_main
 fi
