@@ -1,0 +1,80 @@
+{
+  "attention": "owned_dsa_topk_manual_sparse_attention",
+  "cache_length": 4096,
+  "chip": "Ascend 910B2",
+  "compiled": {
+    "dynamo": {
+      "after_measurement": {
+        "calls_captured": 1201,
+        "unique_graphs": 1
+      },
+      "after_warmup": {
+        "calls_captured": 1201,
+        "unique_graphs": 1
+      },
+      "new_graphs_during_measurement": 0
+    },
+    "effective_layer_calls_per_sec": 767.9716489482888,
+    "elapsed_sec": 20.052823591977358,
+    "fresh_stack_input_clone_in_timing": true,
+    "mean_stack_ms": 9.114919814535163,
+    "memory_after_compile": {
+      "allocated_gib": 23.97126865386963,
+      "device": "npu:0",
+      "free_gib": 35.80979919433594,
+      "reserved_gib": 24.748046875,
+      "total_gib": 60.95703125
+    },
+    "stack_calls_per_sec": 109.71023556404127,
+    "steps": 2200,
+    "warmup_elapsed_sec_excluded": 19.81399612268433,
+    "warmup_steps": 10
+  },
+  "dtype": "bfloat16",
+  "eager": {
+    "effective_layer_calls_per_sec": 303.98939407808695,
+    "elapsed_sec": 50.65966214612126,
+    "finite": true,
+    "fresh_stack_input_clone_in_timing": true,
+    "mean_stack_ms": 23.027119157327846,
+    "output_abs_max": 3.6875,
+    "output_mean": -0.0010935640893876553,
+    "output_std": 0.9953992962837219,
+    "stack_calls_per_sec": 43.42705629686956,
+    "steps": 2200,
+    "warmup_elapsed_sec_excluded": 0.9825412789359689,
+    "warmup_steps": 10
+  },
+  "index_topk": 2048,
+  "layer_types": {
+    "0-2": "dense_mlp_full_dsa_indexer",
+    "3-5": "w4a8_moe_shared_dsa_indices",
+    "6": "w4a8_moe_full_dsa_indexer"
+  },
+  "layers": [0, 1, 2, 3, 4, 5, 6],
+  "load_sec": 53.142440513242036,
+  "measured_positions_with_dsa_pruning": 162,
+  "memory_after_eager_caches": {
+    "allocated_gib": 21.88516664505005,
+    "device": "npu:0",
+    "free_gib": 38.56324768066406,
+    "reserved_gib": 22.033203125,
+    "total_gib": 60.95703125
+  },
+  "memory_after_weights": {
+    "allocated_gib": 20.12733793258667,
+    "device": "npu:0",
+    "free_gib": 40.34059143066406,
+    "reserved_gib": 20.255859375,
+    "total_gib": 60.95703125
+  },
+  "model": "Eco-Tech/GLM-5.2-w4a8c8",
+  "parity": {
+    "allclose_atol_5e_2_rtol_5e_2": true,
+    "index_cache_max_abs": 0.0234375,
+    "key_cache_max_abs": 0.0078125,
+    "output_max_abs": 0.015625,
+    "output_mean_abs": 0.0002649209345690906,
+    "value_cache_max_abs": 0.001953125
+  }
+}

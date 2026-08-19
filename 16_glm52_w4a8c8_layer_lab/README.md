@@ -37,10 +37,49 @@ exactly (`max_abs=0`). Dynamo reported one unique graph after warmup and zero
 new graphs during measurement. The full summary is in
 `references/layer3_steady1000_910b2_e04f03a.json`.
 
-This does not establish vLLM-Ascend reference parity or whole-model token
-throughput. The current attention path decompresses MLA into a full K/V cache,
-and layer 3 skips the configured DSA top-k indexer. Absorbed MLA, DSA layers,
-real upstream activations, and final logits remain future rungs.
+This single-layer result does not establish vLLM-Ascend reference parity or
+whole-model token throughput. It decompresses MLA into a full K/V cache, and
+the standalone layer 3 has no upstream shared DSA selection. Stack-level DSA,
+absorbed MLA, real upstream activations, and final logits require later rungs.
+
+## Verified layers 0-6 stack
+
+The owned seven-layer stack covers the decoder-layer variants present at the
+front of GLM-5.2:
+
+- layers 0-2: W8A8 dense MLPs with full DSA indexers;
+- layers 3-5: W4A8 MoE layers reusing the last DSA selection;
+- layer 6: W4A8 MoE with a refreshed DSA selection.
+
+The current DSA implementation owns the index projections, interleaved RoPE,
+index cache, top-2048 selection, shared-index propagation, and sparse attention.
+It uses ordinary PyTorch/torch-npu operations rather than vLLM-Ascend runtime
+classes or its fused sparse-attention extension.
+
+Commit `107dca3` ran layers 0-6 on physical Ascend 910B2 NPU 7 with B1,
+KV4096, 10 ordinary warmup positions, and 2,200 measured positions. The final
+162 positions had more than 2,048 valid cache entries, so DSA pruned tokens
+rather than selecting the complete valid context.
+
+| Lane | Mean seven-layer time | Stack calls/s |
+| --- | ---: | ---: |
+| Owned eager | 23.027 ms | 43.43 |
+| Owned TorchAir static compile | 9.115 ms | 109.71 |
+
+Measured HBM allocation was 20.13 GiB for weights, 21.89 GiB after the eager
+KV/index caches, and 23.97 GiB after the compiled parity lane. The compiled
+run captured one graph during warmup and no new graph during measurement.
+Compiled-versus-eager output max/mean absolute differences were 0.015625 and
+0.000265. Maximum K/V/index cache differences were 0.007813, 0.001953, and
+0.023438.
+
+This establishes fit, eager execution, static compilation, state propagation,
+and internal eager/compiled parity. It does not yet establish independent
+vLLM-Ascend parity, final model logits, or production performance. The full K/V
+cache and manual sparse attention must be replaced by absorbed MLA and the
+target fused DSA kernels before extrapolating this timing to the full model.
+The full result is in
+`references/layers0_6_dsa2200_910b2_107dca3.json`.
 
 Run on one Ascend 910B2 after sourcing the NPU environment:
 

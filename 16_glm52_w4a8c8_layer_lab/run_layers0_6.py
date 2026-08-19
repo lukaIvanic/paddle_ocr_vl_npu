@@ -271,6 +271,10 @@ def main() -> None:
         },
         "attention": "owned_dsa_topk_manual_sparse_attention",
         "index_topk": stack.top_k,
+        "measured_positions_with_dsa_pruning": max(
+            0,
+            used_length - max(args.warmup_steps, stack.top_k),
+        ),
         "cache_length": args.cache_length,
         "dtype": "bfloat16",
         "load_sec": load_sec,
