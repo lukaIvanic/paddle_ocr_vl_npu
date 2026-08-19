@@ -26,6 +26,60 @@ from modeling_glm52_layer import (
 from modeling_glm52_stack import GLM52DSAIndexer
 
 
+FRACTAL_NZ = 29
+
+
+def prepare_w8a8_weight_format(
+    module: nn.Module, *, requested: str
+) -> dict[str, object]:
+    """Prepare every W8A8 linear weight once before graph compilation."""
+    if requested not in {"native", "fractal_nz"}:
+        raise ValueError(f"unsupported W8A8 weight format {requested!r}")
+    targets = [
+        (name, child)
+        for name, child in module.named_modules()
+        if isinstance(child, W8A8DynamicLinear)
+    ]
+    if not targets:
+        raise RuntimeError("no W8A8 linears found")
+    if any(child.weight.device.type != "npu" for _, child in targets):
+        raise RuntimeError("W8A8 weight preparation requires NPU-resident weights")
+
+    before = [int(torch_npu.get_npu_format(child.weight)) for _, child in targets]
+    if requested == "fractal_nz":
+        for _, child in targets:
+            # The owned loader already stores the public QuantMatmul contract as
+            # logical [K,N]. Preserve that logical order during the one-time cast.
+            child.weight.data = torch_npu.npu_format_cast(
+                child.weight.data.contiguous(), FRACTAL_NZ
+            )
+    after = [int(torch_npu.get_npu_format(child.weight)) for _, child in targets]
+    if requested == "fractal_nz" and any(code != FRACTAL_NZ for code in after):
+        raise RuntimeError(f"not all W8A8 weights became FRACTAL_NZ: {after}")
+
+    return {
+        "requested": requested,
+        "target_format": "FRACTAL_NZ" if requested == "fractal_nz" else "unchanged",
+        "target_format_code": FRACTAL_NZ if requested == "fractal_nz" else None,
+        "quant_linear_count": len(targets),
+        "before_format_histogram": {
+            str(code): before.count(code) for code in sorted(set(before))
+        },
+        "after_format_histogram": {
+            str(code): after.count(code) for code in sorted(set(after))
+        },
+        "weights": [
+            {
+                "name": name,
+                "shape_k_n": list(child.weight.shape),
+                "format_before": before[index],
+                "format_after": after[index],
+            }
+            for index, (name, child) in enumerate(targets)
+        ],
+    }
+
+
 def shard_bounds(size: int, rank: int, world_size: int) -> tuple[int, int]:
     if size % world_size:
         raise ValueError(f"size={size} is not divisible by world_size={world_size}")

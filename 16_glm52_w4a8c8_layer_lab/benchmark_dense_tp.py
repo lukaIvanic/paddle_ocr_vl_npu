@@ -14,7 +14,11 @@ import torch_npu
 from torch_npu.dynamo import torchair
 from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
-from modeling_glm52_dense_tp import GLM52DenseTPStack, shard_bounds
+from modeling_glm52_dense_tp import (
+    GLM52DenseTPStack,
+    prepare_w8a8_weight_format,
+    shard_bounds,
+)
 
 
 PROFILE_METRICS = ("pipe", "memory", "memory_access", "l2")
@@ -31,6 +35,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--validation-steps", type=int, default=8)
     parser.add_argument(
         "--backend", choices=("raw_eager", "torchair"), default="torchair"
+    )
+    parser.add_argument(
+        "--w8-weight-format",
+        choices=("native", "fractal_nz"),
+        default="native",
+    )
+    parser.add_argument(
+        "--enable-internal-format",
+        action="store_true",
+        help="Enable torch-npu internal formats before the first NPU allocation.",
+    )
+    parser.add_argument(
+        "--compile-cache-dir",
+        type=Path,
+        help="Optional isolated TorchAir disk-cache directory for this graph.",
     )
     parser.add_argument("--reference-out", type=Path)
     parser.add_argument("--reference-in", type=Path)
@@ -199,7 +218,10 @@ def main() -> None:
     )
     if required > args.cache_length:
         raise ValueError("Requested positions exceed the static cache")
+    if args.w8_weight_format == "fractal_nz" and not args.enable_internal_format:
+        raise ValueError("FRACTAL_NZ requires --enable-internal-format")
 
+    torch.npu.config.allow_internal_format = bool(args.enable_internal_format)
     torch.npu.set_device(local_rank)
     torch.npu.set_compile_mode(jit_compile=False)
     if world_size > 1:
@@ -217,6 +239,14 @@ def main() -> None:
         progress=lambda message: log(rank, message),
     )
     stack.eval()
+    weight_format = prepare_w8a8_weight_format(
+        stack, requested=args.w8_weight_format
+    )
+    if weight_format["quant_linear_count"] != 18:
+        raise RuntimeError(
+            "Expected six W8A8 linears in each of three dense layers, got "
+            f"{weight_format['quant_linear_count']}"
+        )
     torch.npu.synchronize()
     load_sec = time.perf_counter() - load_started
     weights_memory = memory_snapshot(device)
@@ -234,14 +264,29 @@ def main() -> None:
     if args.backend == "torchair":
         torch._dynamo.reset()
         torch._dynamo.utils.counters.clear()
-        decode = torch.compile(
-            eager_decode,
-            backend=torchair.get_npu_backend(
-                compiler_config=CompilerConfig()
-            ),
-            dynamic=False,
-            fullgraph=True,
-        )
+        if args.compile_cache_dir is None:
+            decode = torch.compile(
+                eager_decode,
+                backend=torchair.get_npu_backend(
+                    compiler_config=CompilerConfig()
+                ),
+                dynamic=False,
+                fullgraph=True,
+            )
+        else:
+            try:
+                from torch_npu.dynamo.torchair.inference import cache_compile
+            except ImportError:
+                from torchair.inference import cache_compile
+            args.compile_cache_dir.mkdir(parents=True, exist_ok=True)
+            decode = cache_compile(
+                eager_decode,
+                config=CompilerConfig(),
+                dynamic=False,
+                cache_dir=str(args.compile_cache_dir),
+                ge_cache=True,
+                fullgraph=True,
+            )
     else:
         decode = eager_decode
 
@@ -336,6 +381,13 @@ def main() -> None:
         "layers": [0, 1, 2],
         "tensor_parallel_size": world_size,
         "backend": args.backend,
+        "internal_format_enabled": bool(args.enable_internal_format),
+        "w8_weight_format": weight_format,
+        "compile_cache_dir": (
+            None
+            if args.compile_cache_dir is None
+            else str(args.compile_cache_dir.resolve())
+        ),
         "attention_path": "absorbed_sparse_flash",
         "indexer_path": "lightning",
         "batch_size": 1,
