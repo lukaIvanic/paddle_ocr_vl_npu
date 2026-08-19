@@ -35,6 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--physical-heads", type=int, choices=(6, 8), required=True)
+    parser.add_argument("--weights-nz", action="store_true")
     parser.add_argument("--source-length", type=int, default=56)
     parser.add_argument("--warmup-steps", type=int, default=20)
     parser.add_argument("--measure-steps", type=int, default=100)
@@ -231,7 +232,11 @@ def main() -> None:
 
     torch.npu.set_device(args.device)
     torch.npu.set_compile_mode(jit_compile=False)
-    progress("lane_begin", physical_heads=args.physical_heads)
+    progress(
+        "lane_begin",
+        physical_heads=args.physical_heads,
+        weights_nz=args.weights_nz,
+    )
     runner = OptimizedUniRecRunner(
         model_path=args.model,
         device=args.device,
@@ -243,6 +248,9 @@ def main() -> None:
         pad_runner_attention_heads(runner) if args.physical_heads == 8 else 0
     )
     padding_s = time.perf_counter() - padding_started
+    nz_started = time.perf_counter()
+    nz_tensor_count = runner.cast_decoder_weights_nz() if args.weights_nz else 0
+    nz_format_s = time.perf_counter() - nz_started if args.weights_nz else 0.0
 
     eager_state = make_state(
         runner,
@@ -341,6 +349,9 @@ def main() -> None:
         },
         "padded_attention_modules": padded_modules,
         "padding_s": padding_s,
+        "weights_nz": bool(runner.weights_nz),
+        "nz_tensor_count": nz_tensor_count,
+        "nz_format_s": nz_format_s,
         "first_call_s": first_call_s,
         "measure_steps": args.measure_steps,
         "measure_s": measured_s,

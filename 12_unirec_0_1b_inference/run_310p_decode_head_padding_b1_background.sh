@@ -25,12 +25,14 @@ resolve_inputs() {
   MODEL="$(readlink -f "$MODEL")"
   CACHE_PARENT="${CACHE_PARENT:-$REPO/.runtime_cache/12_unirec_0_1b_inference/decode_headpad_b1_310p}"
   CACHE_PARENT="$(realpath -m "$CACHE_PARENT")"
+  WEIGHTS_NZ="${WEIGHTS_NZ:-0}"
+  [[ "$WEIGHTS_NZ" =~ ^[01]$ ]]
   test -x "$PYTHON_BIN"
   test -f "$MODEL/model.pth"
   test -s "$LAB"
   test -s "$PARSER"
   mkdir -p "$CACHE_PARENT"
-  export PYTHON_BIN MODEL CACHE_PARENT
+  export PYTHON_BIN MODEL CACHE_PARENT WEIGHTS_NZ
 }
 
 cache_inventory() {
@@ -41,6 +43,8 @@ cache_inventory() {
 
 run_lane() {
   local lane="$1" heads="$2" lane_root child status started now profile_dir
+  local -a format_args=()
+  if [[ "$WEIGHTS_NZ" == 1 ]]; then format_args+=(--weights-nz); fi
   lane_root="$RUN_ROOT/$lane"
   mkdir -p "$lane_root"
   env PYTHONUNBUFFERED=1 TORCH_LOGS=recompiles \
@@ -49,6 +53,7 @@ run_lane() {
       --cache-dir "$CACHE_PARENT/$lane" --output "$lane_root/result.json" \
       --physical-heads "$heads" --source-length 56 --warmup-steps 20 \
       --measure-steps 100 --timing-steps 100 \
+      "${format_args[@]}" \
       >"$lane_root/run.log" 2>&1 &
   child="$!"
   printf '%s\n' "$child" >"$lane_root/pid.txt"
@@ -139,6 +144,9 @@ def timing(value):
         ],
         "first_call_s": value["first_call_s"],
         "same_lane_compiled_vs_eager": value["compiled_vs_same_lane_eager"],
+        "weights_nz": value["weights_nz"],
+        "nz_tensor_count": value["nz_tensor_count"],
+        "nz_format_s": value["nz_format_s"],
     }
 
 argmax_exact = bool(a.argmax() == b.argmax())
@@ -178,9 +186,10 @@ PY
 worker_main() {
   RUN_ROOT="$1"
   resolve_inputs
-  printf 'commit=%s\nphysical_npu=%s\npython=%s\nmodel=%s\ncache_parent=%s\n' \
+  printf 'commit=%s\nphysical_npu=%s\npython=%s\nmodel=%s\ncache_parent=%s\nweights_nz=%s\n' \
     "$(git -C "$REPO" rev-parse HEAD)" "$ASCEND_RT_VISIBLE_DEVICES" \
-    "$PYTHON_BIN" "$MODEL" "$CACHE_PARENT" >"$RUN_ROOT/command.txt"
+    "$PYTHON_BIN" "$MODEL" "$CACHE_PARENT" "$WEIGHTS_NZ" \
+    >"$RUN_ROOT/command.txt"
   cache_inventory "$RUN_ROOT/cache_before.txt"
   run_lane heads6 6
   run_lane heads8 8
@@ -211,7 +220,7 @@ launch_main() {
   test ! -e "$RUN_ROOT"
   mkdir -p "$RUN_ROOT"
   nohup env PYTHONUNBUFFERED=1 PYTHON_BIN="$PYTHON_BIN" MODEL="$MODEL" \
-    CACHE_PARENT="$CACHE_PARENT" \
+    CACHE_PARENT="$CACHE_PARENT" WEIGHTS_NZ="$WEIGHTS_NZ" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     bash "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"
