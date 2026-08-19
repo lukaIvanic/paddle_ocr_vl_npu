@@ -119,6 +119,23 @@ dense block under TorchAir; they are not full-model TPOT projections. The
 comparison is saved in
 `references/dense_layers0_2_tp1_tp2_910b2_deb120b.json`.
 
+The matching Torch NPU profile explains why the end-to-end speedup is below
+2x. In this model, "dense layer" describes the FFN. Each layer still has DSA
+attention, including a full top-2048 attention-position indexer. The Q/KV-A
+projection and that indexer are replicated on both TP ranks. Norms, RoPE,
+masks, and small cache/control kernels are also not halved.
+
+The explicitly sharded major attention kernels fell from 2.043 ms to 0.839 ms
+(2.435x), while the explicitly sharded dense gate/up and down matmuls fell from
+0.748 ms to 0.332 ms (2.249x). The remaining replicated, fixed-shape, and small
+compute kernels barely moved: 1.014 ms to 0.968 ms. TP2 then added 0.147 ms of
+communication on the critical rank. Six all-reduces are present; the first
+accounted for 0.100 ms, mostly synchronization, while the other five were about
+0.0095 ms each. The profiler perturbed timing, so its device-stage ratio
+(4.410/2.663 ms, 1.656x) is diagnostic rather than the reported throughput
+result. The complete profile accounting is saved in
+`references/dense_layers0_2_tp1_tp2_profile_910b2_337074b.json`.
+
 Run on one Ascend 910B2 after sourcing the NPU environment:
 
 ```bash

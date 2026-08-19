@@ -1,0 +1,86 @@
+{
+  "chip": "Ascend 910B2",
+  "commit": "337074b",
+  "model": "Eco-Tech/GLM-5.2-w4a8c8",
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "layers": [0, 1, 2]
+  },
+  "method": {
+    "backend": "TorchAir fullgraph static",
+    "profile_schedule": "wait=0,warmup=1,active=1",
+    "profiled_steps": 2,
+    "profile_metric": "PipeUtilization",
+    "note": "The synchronized profiler call and device-stage times are diagnostic only. The 2200-step non-profiled benchmark in dense_layers0_2_tp1_tp2_910b2_deb120b.json remains the throughput result."
+  },
+  "non_profiled_50_step_check": {
+    "tp1_mean_stack_ms": 4.016525,
+    "tp2_mean_stack_ms_slowest_rank": 2.6265540719032288,
+    "speedup": 1.5291994339543602
+  },
+  "profiled_active_step": {
+    "tp1": {
+      "synchronized_call_ms": 4.543527029,
+      "device_stage_ms": 4.41,
+      "compute_ms": 3.80512,
+      "communication_ms": 0.0,
+      "free_or_runtime_gap_ms": 0.60486
+    },
+    "tp2_rank0_critical": {
+      "synchronized_call_ms": 2.7930382639169693,
+      "device_stage_ms": 2.66275,
+      "compute_ms": 2.13984,
+      "communication_ms": 0.14686,
+      "free_or_runtime_gap_ms": 0.3762
+    },
+    "tp2_rank1": {
+      "device_stage_ms": 2.5775,
+      "compute_ms": 2.1298,
+      "communication_ms": 0.07432,
+      "free_or_runtime_gap_ms": 0.3733
+    },
+    "device_stage_speedup_tp1_over_critical_tp2": 1.6561825180734204
+  },
+  "critical_rank_kernel_groups_ms": {
+    "explicitly_sharded_attention_major_kernels": {
+      "includes": "main Q-B, KV-B, selected-KV gathers, selected-value cast, sparse attention BMMs, and O projection",
+      "tp1": 2.04304,
+      "tp2": 0.8391,
+      "speedup": 2.4347991896079133
+    },
+    "explicitly_sharded_dense_ffn_major_kernels": {
+      "includes": "gate/up and down W8A8 matmuls",
+      "tp1": 0.74768,
+      "tp2": 0.33246,
+      "speedup": 2.2489322023702103
+    },
+    "remaining_replicated_fixed_shape_and_small_compute": {
+      "includes": "replicated fused Q/KV-A, full DSA indexer, norms, RoPE, masks, cache updates, and all remaining compute kernels",
+      "tp1": 1.0144,
+      "tp2": 0.96828,
+      "speedup": 1.0476308505804106
+    }
+  },
+  "selected_kernel_totals_ms": {
+    "all_quant_batch_matmul_v3": {"tp1": 1.43874, "tp2": 0.79936, "speedup": 1.7993584865417314},
+    "fused_q_kv_a_replicated": {"tp1": 0.19884, "tp2": 0.20036, "speedup": 0.9924136554202435},
+    "main_q_b_head_sharded": {"tp1": 0.12254, "tp2": 0.07724, "speedup": 1.5864836872087},
+    "dsa_indexer_wq_b_replicated": {"tp1": 0.04624, "tp2": 0.0454, "speedup": 1.0185022026431718},
+    "main_kv_b_head_sharded_bf16": {"tp1": 0.14366, "tp2": 0.05384, "speedup": 2.6682763744427934},
+    "attention_o_row_sharded": {"tp1": 0.32344, "tp2": 0.1439, "speedup": 2.247671994440584},
+    "dense_gate_up_column_sharded": {"tp1": 0.52128, "tp2": 0.21322, "speedup": 2.444798799362161},
+    "dense_down_row_sharded": {"tp1": 0.2264, "tp2": 0.11924, "speedup": 1.898691714189869},
+    "selected_kv_gathers": {"tp1": 0.6635, "tp2": 0.33408, "speedup": 1.9859015804597702},
+    "sparse_attention_batch_matmuls": {"tp1": 0.45042, "tp2": 0.14828, "speedup": 3.0373617480442418},
+    "selected_value_cast": {"tp1": 0.33948, "tp2": 0.08176, "speedup": 4.151663405088063}
+  },
+  "tp2_communication": {
+    "collectives_per_three_layer_stack": 6,
+    "rank0_total_ms": 0.14686,
+    "rank0_first_all_reduce_ms": 0.09954,
+    "rank0_first_all_reduce_wait_ms": 0.09584,
+    "rank0_remaining_five_all_reduce_ms": 0.04732,
+    "interpretation": "The first collective is mostly rank synchronization. The five later collectives are about 0.0095 ms each."
+  }
+}
