@@ -19,6 +19,30 @@ from modeling_glm52_moe_tp1 import GLM52MoEMLPStack
 PROFILE_METRICS = ("pipe", "memory", "memory_access", "l2")
 
 
+def configure_grouped_matmul_scale_conversion(mode: str) -> None:
+    if mode == "cast":
+        return
+    if mode != "bitcast":
+        raise ValueError(f"Unsupported grouped-matmul scale conversion: {mode}")
+    from torch_npu.dynamo.torchair._ge_concrete_graph.ge_converter.custom import (
+        grouped_matmul as grouped_matmul_converter,
+    )
+
+    def bitcast_int64_scales(scales):
+        if scales[0].dtype != grouped_matmul_converter.DataType.DT_INT64:
+            return scales
+        return [
+            grouped_matmul_converter.ge.Bitcast(
+                scale,
+                type=grouped_matmul_converter.DataType.DT_UINT64,
+                keep_dim=True,
+            )
+            for scale in scales
+        ]
+
+    grouped_matmul_converter.convert_scale_tensorlist = bitcast_int64_scales
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="GLM-5.2 W4A8C8 TP1 MoE MLP stack benchmark."
@@ -33,6 +57,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--profile-metric", choices=PROFILE_METRICS, default="pipe")
     parser.add_argument("--profile-warmup-steps", type=int, default=20)
     parser.add_argument("--profile-active-steps", type=int, default=5)
+    parser.add_argument(
+        "--gmm-scale-conversion",
+        choices=("cast", "bitcast"),
+        default="cast",
+    )
     parser.add_argument("--summary-out", type=Path)
     return parser.parse_args()
 
@@ -208,6 +237,7 @@ def main() -> None:
 
         torch._dynamo.reset()
         torch._dynamo.utils.counters.clear()
+        configure_grouped_matmul_scale_conversion(args.gmm_scale_conversion)
         compiled = torch.compile(
             stack.forward,
             backend=torchair.get_npu_backend(
@@ -276,6 +306,7 @@ def main() -> None:
         "experts_per_token": stack.config.top_k,
         "moe_intermediate_size": stack.config.moe_intermediate_size,
         "backend": "torchair_fullgraph_static",
+        "gmm_scale_conversion": args.gmm_scale_conversion,
         "input_mode": "preallocated_varied_bfloat16_hidden_rows",
         "shared_w8a8_weight_format": shared_weight_format,
         "routed_w4a8_weight_storage": {
