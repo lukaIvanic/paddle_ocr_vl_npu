@@ -403,7 +403,7 @@ class GLM52W4A8Experts(nn.Module):
             activated_i8, activated_scale = (
                 torch.ops._C_ascend.grouped_matmul_swiglu_quant_v2(
                     expanded_i8,
-                    [self.w13_weight],
+                    [self.w13_weight.view(torch.int8)],
                     [self.w13_scale.squeeze(1)],
                     expanded_scale,
                     group_counts,
