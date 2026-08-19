@@ -334,14 +334,14 @@ class GLM52W4A8Experts(nn.Module):
             if progress is not None and (expert + 1) % 32 == 0:
                 progress(f"loaded routed experts {expert + 1}/{config.num_experts}")
 
-        if w4_weight_format == "fractal_nz":
-            require_npu()
-            w13_i8 = torch_npu.npu_format_cast(w13_i8, 29)
-            w2_i8 = torch_npu.npu_format_cast(w2_i8, 29)
-        elif w4_weight_format != "native":
-            raise ValueError(f"Unsupported W4 weight format: {w4_weight_format}")
         w13_weight = w13_i8.view(torch.int32).contiguous()
         w2_weight = w2_i8.view(torch.int32).contiguous()
+        if w4_weight_format == "fractal_nz":
+            require_npu()
+            w13_weight = torch_npu.npu_format_cast(w13_weight, 29)
+            w2_weight = torch_npu.npu_format_cast(w2_weight, 29)
+        elif w4_weight_format != "native":
+            raise ValueError(f"Unsupported W4 weight format: {w4_weight_format}")
         return cls(
             router_weight=router_weight,
             correction_bias=correction_bias,
@@ -403,7 +403,7 @@ class GLM52W4A8Experts(nn.Module):
             activated_i8, activated_scale = (
                 torch.ops._C_ascend.grouped_matmul_swiglu_quant_v2(
                     expanded_i8,
-                    [self.w13_weight.view(torch.int8)],
+                    [self.w13_weight],
                     [self.w13_scale.squeeze(1)],
                     expanded_scale,
                     group_counts,
