@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -138,6 +139,13 @@ def require_npu() -> None:
         raise RuntimeError("torch_npu is required for GLM-5.2 layer inference")
 
 
+def require_fused_w4_gmm1_op() -> None:
+    """Register vLLM-Ascend's logical-width-aware fused W4 GMM binding."""
+    importlib.import_module("vllm_ascend.vllm_ascend_C")
+    if not hasattr(torch.ops._C_ascend, "grouped_matmul_swiglu_quant_v2"):
+        raise RuntimeError("fused W4 grouped-matmul SwiGLU op is unavailable")
+
+
 def npu_rms_norm(x: torch.Tensor, weight: torch.Tensor, eps: float) -> torch.Tensor:
     require_npu()
     return torch_npu.npu_rms_norm(x, weight, float(eps))[0]
@@ -243,6 +251,8 @@ class GLM52W4A8Experts(nn.Module):
         self.register_buffer("w13_bias", w13_bias.float().contiguous())
         self.register_buffer("w2_bias", w2_bias.float().contiguous())
         self.fuse_gmm1_swiglu_quant = bool(fuse_gmm1_swiglu_quant)
+        if self.fuse_gmm1_swiglu_quant:
+            require_fused_w4_gmm1_op()
 
     @classmethod
     def from_checkpoint(
@@ -391,7 +401,7 @@ class GLM52W4A8Experts(nn.Module):
         )
         if self.fuse_gmm1_swiglu_quant:
             activated_i8, activated_scale = (
-                torch_npu.npu_grouped_matmul_swiglu_quant_v2(
+                torch.ops._C_ascend.grouped_matmul_swiglu_quant_v2(
                     expanded_i8,
                     [self.w13_weight],
                     [self.w13_scale_f32],
@@ -399,7 +409,13 @@ class GLM52W4A8Experts(nn.Module):
                     group_counts,
                     weight_assist_matrix=[self.w13_bias],
                     dequant_mode=0,
+                    dequant_dtype=0,
+                    quant_mode=0,
+                    quant_dtype=0,
+                    transpose_weight=False,
                     group_list_type=1,
+                    tuning_config=[],
+                    swiglu_limit=0.0,
                 )
             )
         else:
