@@ -303,6 +303,16 @@ TorchAir run used 20 excluded ordinary warmup calls and 1,000 measured calls.
 It measured 1.731 ms per three-layer stack, or 577.6 stack calls/s. Dynamo
 reported one graph after warmup and the same one graph after measurement.
 
+The current optimized path was then measured under TP2 at commit `160e7a3` on
+physical NPUs 6 and 7. Two independent 1,000-call runs measured 1.451 and
+1.425 ms per stack, for a 1.438 ms mean. Against the matched 1.703 ms TP1
+InterleaveRope mean, TP2 saved 264.9 us and delivered only `1.184x` speedup.
+Both runs passed the TP1 reference and captured no new graph during
+measurement. The six HCCL all-reduces, replicated work, runtime gaps, and
+non-linear small-matrix scaling therefore dominate well before ideal 2x TP2
+scaling. Full evidence is in
+`references/dense_layers0_2_tp2_interleave_nz_910b2_160e7a3.json`.
+
 The optimized-only TP1/TP2 validation and exact five-call PipeUtilization
 profile are saved in
 `references/dense_layers0_2_optimized_cleanup_profile_910b2_ff44430.json`.

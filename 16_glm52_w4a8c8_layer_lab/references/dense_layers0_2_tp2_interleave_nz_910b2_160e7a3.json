@@ -1,0 +1,66 @@
+{
+  "experiment": "Current optimized GLM-5.2 dense layers 0-2 TP2 scaling check",
+  "source_commit": "160e7a3",
+  "chip": "Ascend 910B2",
+  "physical_npus": [
+    6,
+    7
+  ],
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "layers": [
+      0,
+      1,
+      2
+    ]
+  },
+  "runtime_contract": {
+    "backend": "TorchAir fullgraph static",
+    "w8a8_weight_format": "FRACTAL_NZ",
+    "attention": "absorbed contiguous-BSND SparseFlashAttention",
+    "indexer": "contiguous-BSND LightningIndexer",
+    "rope": "block-layout InterleaveRope",
+    "tensor_parallel_size": 2,
+    "attention_heads_per_rank": 32,
+    "all_reduces_per_layer": 2,
+    "all_reduces_per_stack": 6
+  },
+  "measurement": {
+    "ordinary_warmup_steps_excluded": 20,
+    "measured_steps_per_run": 1000,
+    "tp2_mean_stack_ms_runs": [
+      1.450576663017273,
+      1.4249192476272583
+    ],
+    "tp2_mean_stack_ms": 1.4377479553222656,
+    "tp2_stack_calls_per_sec_from_mean": 695.5322146498916,
+    "tp1_interleave_matched_mean_ms": 1.702600922,
+    "speedup_vs_tp1_interleave_mean": 1.1842137668826442,
+    "latency_saved_us_vs_tp1_interleave_mean": 264.8529666777344,
+    "tp1_clean_validation_ms": 1.7314146156422794,
+    "speedup_vs_tp1_clean_validation": 1.2042546186436338,
+    "naive_effective_fixed_plus_communication_floor_ms": 1.1728949886445312,
+    "floor_formula": "2 * TP2_mean - TP1_mean; diagnostic only because HCCL and small-matrix efficiency are not constant with TP size"
+  },
+  "correctness_and_graph": {
+    "output_allclose_atol_5e_2_rtol_5e_2": true,
+    "output_max_abs": 0.015625,
+    "output_mean_abs": 0.00007489106064895168,
+    "key_cache_max_abs": 0.0068359375,
+    "value_cache_max_abs": 0.0001983642578125,
+    "index_cache_max_abs": 0.0234375,
+    "unique_graphs_after_warmup_per_run": 1,
+    "new_graphs_during_measurement_per_run": 0
+  },
+  "interpretation": {
+    "ideal_tp2_speedup": 2.0,
+    "observed_speedup": 1.1842137668826442,
+    "conclusion": "The replicated fixed path, non-linear small-matrix scaling, runtime gaps, and six HCCL collectives already dominate the optimized TP2 critical path. Further sharding alone cannot produce strong B1 scaling."
+  },
+  "commands": {
+    "template": "ASCEND_RT_VISIBLE_DEVICES=6,7 /usr/local/python3.12.13/bin/python3 -m torch.distributed.run --nnodes=1 --nproc-per-node=2 --master-addr=127.0.0.1 --master-port=<unique> 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --enable-internal-format --w8-weight-format fractal_nz --warmup-steps 20 --decode-steps 1000 --validation-steps 8 --reference-in /tmp/glm52_manual_relu_ref_10a3e91.pt --summary-out <unique-output.json>",
+    "run_1_summary": "/tmp/glm52_tp2_interleave_clean_160e7a3.json",
+    "run_2_summary": "/tmp/glm52_tp2_interleave_clean_160e7a3_repeat2.json"
+  }
+}
