@@ -35,6 +35,7 @@ resolve_inputs() {
   : "${REFERENCE_TRACE:=}"
   : "${REFERENCE_RUN_SUMMARY:=}"
   : "${STEP_TRACE:=0}"
+  : "${PROGRESS_EVERY:=1000}"
   case ",${ASCEND_RT_VISIBLE_DEVICES}," in
     *,5,*|*,6,*) printf 'REJECTED_PHYSICAL_DEVICE_5_OR_6\n' >&2; exit 1 ;;
   esac
@@ -54,6 +55,7 @@ resolve_inputs() {
   test -d "$COMPILE_CACHE"
   case "$PREFAULT_ARTIFACT" in 0|1) ;; *) exit 2 ;; esac
   case "$STEP_TRACE" in 0|1) ;; *) exit 2 ;; esac
+  [[ "$PROGRESS_EVERY" =~ ^[1-9][0-9]*$ ]]
 }
 
 worker_main() {
@@ -74,6 +76,7 @@ worker_main() {
     --decode-warmup-passes "$WARMUP_PASSES"
     --decode-admission-prefetch-depth "$ADMISSION_PREFETCH_DEPTH"
     --compile-cache-dir "$COMPILE_CACHE"
+    --progress-every "$PROGRESS_EVERY"
     --output "$run_root/result.json"
   )
   if [[ "$PREFAULT_ARTIFACT" == 0 ]]; then
@@ -128,6 +131,7 @@ launch_main() {
     ADMISSION_PREFETCH_DEPTH="$ADMISSION_PREFETCH_DEPTH" \
     PREFAULT_ARTIFACT="$PREFAULT_ARTIFACT" REFERENCE_TRACE="$REFERENCE_TRACE" \
     REFERENCE_RUN_SUMMARY="$REFERENCE_RUN_SUMMARY" STEP_TRACE="$STEP_TRACE" \
+    PROGRESS_EVERY="$PROGRESS_EVERY" \
     UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:-}" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     bash "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
