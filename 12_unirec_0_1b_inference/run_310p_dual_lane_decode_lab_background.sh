@@ -29,6 +29,10 @@ count_cache_files() {
   fi
 }
 
+count_compiler_processes() {
+  ps -eo comm= | grep -Ec '^(ccec_compiler|op_compiler|atc)$' || true
+}
+
 run_lane() {
   local lane="$1" self_len="$2" cross_len="$3" position="$4"
   local measure_steps="$5" timing_steps="$6" output="$7"
@@ -70,8 +74,7 @@ run_lane() {
       "$lane" "$((now - started))" \
       "$(count_cache_files "$DECODE_CACHE_PARENT" compiled_module)" \
       "$(count_cache_files "$DECODE_CACHE_PARENT" '*.om')" \
-      "$(pgrep -af 'ccec_compiler|op_compiler|tbe.*compile|atc' \
-          | grep -vF 'pgrep -af' | wc -l || true)" \
+      "$(count_compiler_processes)" \
       "$(grep 'UNIREC_DECODE_LAB' "$lane_log" | tail -n 1 || true)"
   done
   set +e
