@@ -48,6 +48,23 @@ def parse_args() -> argparse.Namespace:
         parser.error("--source-length must be within C256")
     if len(args.weight_formats) != 1:
         parser.error("run exactly one --weight-formats value per process")
+    initial_cache_position = 32
+    self_cache_length = 256
+    phase_calls = {
+        "warmup": args.warmup_steps,
+        "measure": args.measure_steps,
+        # profile_compiled_timing runs one queued pass and one production-like
+        # pass against the same state.
+        "timing": 2 * args.timing_steps,
+    }
+    for phase, calls in phase_calls.items():
+        if calls < 1:
+            parser.error(f"--{phase}-steps must be positive")
+        if initial_cache_position + calls > self_cache_length:
+            parser.error(
+                f"{phase} would advance cache position beyond S256: "
+                f"start={initial_cache_position} calls={calls}"
+            )
     return args
 
 

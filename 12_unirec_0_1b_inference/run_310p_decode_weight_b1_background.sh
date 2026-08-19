@@ -48,7 +48,7 @@ run_lane() {
     "$PYTHON_BIN" "$LAB" \
       --model "$MODEL" --device npu:0 --cache-dir "$CACHE_PARENT" \
       --output "$lane_root/result.json" --weight-formats "$format" \
-      --source-length 56 --warmup-steps 20 --measure-steps 1000 \
+      --source-length 56 --warmup-steps 20 --measure-steps 100 \
       --timing-steps 100 >"$lane_root/run.log" 2>&1 &
   child="$!"
   printf '%s\n' "$child" >"$lane_root/pid.txt"

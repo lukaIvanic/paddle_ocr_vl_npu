@@ -52,6 +52,10 @@ The first run can create at most two decode graphs: one ND graph and one NZ
 graph. Later runs must reuse those caches. Do not delete the cache merely
 because `cache.diff` is non-empty on the first run.
 
+The runner uses 100 measured steps. Do not increase this without also resetting
+the decode state. Lane A starts at self-KV position 32 and has capacity 256.
+The lab now rejects any phase that could advance past the cache boundary.
+
 Expected wall time:
 
 - one to six minutes when both graphs are cold;
