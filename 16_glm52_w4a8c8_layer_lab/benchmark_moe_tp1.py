@@ -44,11 +44,7 @@ def parse_args() -> argparse.Namespace:
         choices=("native", "fractal_nz"),
         default="fractal_nz",
     )
-    parser.add_argument(
-        "--engine-parallel",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-    )
+    parser.add_argument("--gmm-tuning-token-count", type=int, default=0)
     parser.add_argument("--summary-out", type=Path)
     return parser.parse_args()
 
@@ -189,6 +185,8 @@ def main() -> None:
         args.profile_active_steps,
     ) < 1:
         raise ValueError("warmup, decode, and profile steps must be positive")
+    if args.gmm_tuning_token_count < 0:
+        raise ValueError("GMM tuning token count must not be negative")
     torch.npu.config.allow_internal_format = True
     torch.npu.set_compile_mode(jit_compile=False)
     device = torch.device(args.device)
@@ -202,6 +200,7 @@ def main() -> None:
         device=device,
         progress=lambda message: print("[moe-tp1] " + message, flush=True),
         w4_weight_format=args.w4_weight_format,
+        gmm_tuning_token_count=args.gmm_tuning_token_count,
     )
     stack.eval()
     shared_weight_format = prepare_w8a8_weight_format(
@@ -226,14 +225,10 @@ def main() -> None:
         torch._dynamo.reset()
         torch._dynamo.utils.counters.clear()
         configure_grouped_matmul_scale_conversion(args.gmm_scale_conversion)
-        compiler_config = CompilerConfig()
-        compiler_config.experimental_config.cc_parallel_enable.value = (
-            args.engine_parallel
-        )
         compiled = torch.compile(
             stack.forward,
             backend=torchair.get_npu_backend(
-                compiler_config=compiler_config
+                compiler_config=CompilerConfig()
             ),
             dynamic=False,
             fullgraph=True,
@@ -300,7 +295,7 @@ def main() -> None:
         "backend": "torchair_fullgraph_static",
         "gmm_scale_conversion": args.gmm_scale_conversion,
         "requested_w4_weight_format": args.w4_weight_format,
-        "engine_parallel": args.engine_parallel,
+        "gmm_tuning_token_count": args.gmm_tuning_token_count,
         "input_mode": "preallocated_varied_bfloat16_hidden_rows",
         "shared_w8a8_weight_format": shared_weight_format,
         "routed_w4a8_weight_storage": {
