@@ -249,7 +249,6 @@ class GLM52W4A8Experts(nn.Module):
         *,
         device: torch.device,
         progress=None,
-        w4_scale_mode: str = "int64_bits",
     ) -> "GLM52W4A8Experts":
         prefix = f"model.layers.{layer_index}.mlp"
         router_weight = reader.tensor(prefix + ".gate.weight").to(device=device, dtype=torch.bfloat16)
@@ -321,14 +320,6 @@ class GLM52W4A8Experts(nn.Module):
 
         w13_weight = w13_i8.view(torch.int32)
         w2_weight = w2_i8.view(torch.int32)
-        if w4_scale_mode == "int64_bits":
-            w13_scale = float_scale_to_int64_bits(w13_scale_f32)
-            w2_scale = float_scale_to_int64_bits(w2_scale_f32)
-        elif w4_scale_mode == "float32":
-            w13_scale = w13_scale_f32
-            w2_scale = w2_scale_f32
-        else:
-            raise ValueError(f"Unsupported W4 scale mode: {w4_scale_mode}")
         return cls(
             router_weight=router_weight,
             correction_bias=correction_bias,
@@ -337,8 +328,10 @@ class GLM52W4A8Experts(nn.Module):
             # CANN 9.0 GroupedMatmulV5 needs the explicit one-group axis for
             # per-channel W4 scales. Squeezing this to [E,N] makes the tiler
             # misread N as quantGroupNum and reject K=6144.
-            w13_scale=w13_scale.unsqueeze(1).to(device),
-            w2_scale=w2_scale.unsqueeze(1).to(device),
+            w13_scale=float_scale_to_int64_bits(w13_scale_f32)
+            .unsqueeze(1)
+            .to(device),
+            w2_scale=float_scale_to_int64_bits(w2_scale_f32).unsqueeze(1).to(device),
             w13_bias=w13_bias_cpu.to(device),
             w2_bias=w2_bias_cpu.to(device),
             config=config,

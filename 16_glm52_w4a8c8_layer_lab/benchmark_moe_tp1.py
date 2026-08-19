@@ -33,11 +33,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--profile-metric", choices=PROFILE_METRICS, default="pipe")
     parser.add_argument("--profile-warmup-steps", type=int, default=20)
     parser.add_argument("--profile-active-steps", type=int, default=5)
-    parser.add_argument(
-        "--w4-scale-mode",
-        choices=("int64_bits", "float32"),
-        default="int64_bits",
-    )
     parser.add_argument("--summary-out", type=Path)
     return parser.parse_args()
 
@@ -190,7 +185,6 @@ def main() -> None:
         last_layer=args.last_layer,
         device=device,
         progress=lambda message: print("[moe-tp1] " + message, flush=True),
-        w4_scale_mode=args.w4_scale_mode,
     )
     stack.eval()
     shared_weight_format = prepare_w8a8_weight_format(
@@ -282,7 +276,6 @@ def main() -> None:
         "experts_per_token": stack.config.top_k,
         "moe_intermediate_size": stack.config.moe_intermediate_size,
         "backend": "torchair_fullgraph_static",
-        "w4_scale_mode": args.w4_scale_mode,
         "input_mode": "preallocated_varied_bfloat16_hidden_rows",
         "shared_w8a8_weight_format": shared_weight_format,
         "routed_w4a8_weight_storage": {
@@ -312,8 +305,6 @@ def main() -> None:
             "allclose_atol_5e_2_rtol_5e_2": True,
         },
         "final_output_abs_max": float(final_output.float().abs().max().item()),
-        "final_output_float_sum": float(final_output.float().sum().item()),
-        "final_output_float_mean": float(final_output.float().mean().item()),
         "dynamo": {
             "after_warmup": dynamo_after_warmup,
             "after_measurement": dynamo_after_measurement,
