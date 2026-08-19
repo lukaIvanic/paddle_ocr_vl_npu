@@ -33,11 +33,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--profile-metric", choices=PROFILE_METRICS, default="pipe")
     parser.add_argument("--profile-warmup-steps", type=int, default=20)
     parser.add_argument("--profile-active-steps", type=int, default=5)
-    parser.add_argument(
-        "--frozen-parameters",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-    )
     parser.add_argument("--summary-out", type=Path)
     return parser.parse_args()
 
@@ -213,23 +208,10 @@ def main() -> None:
 
         torch._dynamo.reset()
         torch._dynamo.utils.counters.clear()
-        frozen_static_scale_count = 0
-        if args.frozen_parameters:
-            for block in stack.blocks:
-                torch._dynamo.mark_static_address(block.routed.w13_scale)
-                torch._dynamo.mark_static_address(block.routed.w2_scale)
-                frozen_static_scale_count += 2
-        compiler_config = CompilerConfig()
-        compiler_config.experimental_config.frozen_parameter.value = (
-            args.frozen_parameters
-        )
-        compiler_config.ge_config.oo_constant_folding.value = (
-            args.frozen_parameters
-        )
         compiled = torch.compile(
             stack.forward,
             backend=torchair.get_npu_backend(
-                compiler_config=compiler_config
+                compiler_config=CompilerConfig()
             ),
             dynamic=False,
             fullgraph=True,
@@ -294,8 +276,6 @@ def main() -> None:
         "experts_per_token": stack.config.top_k,
         "moe_intermediate_size": stack.config.moe_intermediate_size,
         "backend": "torchair_fullgraph_static",
-        "frozen_parameters": args.frozen_parameters,
-        "frozen_static_scale_count": frozen_static_scale_count,
         "input_mode": "preallocated_varied_bfloat16_hidden_rows",
         "shared_w8a8_weight_format": shared_weight_format,
         "routed_w4a8_weight_storage": {
