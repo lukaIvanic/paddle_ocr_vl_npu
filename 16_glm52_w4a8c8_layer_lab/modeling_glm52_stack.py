@@ -163,14 +163,17 @@ class GLM52DSAIndexer(nn.Module):
             )
         elif self.rope_path == "rotary_mul":
             q_pe = torch_npu.npu_rotary_mul(
-                q_pe, cos, sin, rotary_mode="interleave"
-            )
-            k_pe = torch_npu.npu_rotary_mul(
-                k_pe.view(1, 1, self.rope_dim),
-                cos,
-                sin,
+                q_pe.view(1, self.num_heads, 1, self.rope_dim),
+                cos.view(1, 1, 1, self.rope_dim),
+                sin.view(1, 1, 1, self.rope_dim),
                 rotary_mode="interleave",
-            )
+            ).view(1, self.num_heads, self.rope_dim)
+            k_pe = torch_npu.npu_rotary_mul(
+                k_pe.view(1, 1, 1, self.rope_dim),
+                cos.view(1, 1, 1, self.rope_dim),
+                sin.view(1, 1, 1, self.rope_dim),
+                rotary_mode="interleave",
+            ).view(1, 1, self.rope_dim)
         elif self.rope_path == "interleave":
             q_pe = torch_npu.npu_interleave_rope(
                 q_pe.view(1, self.num_heads, 1, self.rope_dim).contiguous(),
