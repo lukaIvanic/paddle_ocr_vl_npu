@@ -46,14 +46,16 @@ The 910B result was:
   `npu-setup` command.
 - Preserve the validated venv's real `python_nosym` path. Never apply
   `readlink -f` to it.
-- Reuse the passed K20 vision and compiled-FP32 B2 layout caches.
-- Build only the two new decode graphs listed below.
+- Reuse the compiled-FP32 B2 layout cache. The current K20 source hashes are
+  absent on 310P, so build all twenty current K20 graphs once into the best
+  existing recognition-cache parent.
+- After that rebuild, build only the two new decode graphs listed below.
 - Do not delete or repair a cache after a failure.
 - `/dev/shm` can expose only 64 GiB. Use `ALLOW_LOW_HOST_MEMORY=1` and preserve
   a real OOM if one occurs.
-- Use the repository-local frozen evaluator runtime at
-  `$WORK_SERVER_REPO/.runtime_cache/omnidocbench_eval/tools`. Ambient TeX Live
-  2022 is invalid for Page CDM.
+- Recover the frozen evaluator path from the successful 310P runtime
+  fingerprint. Do not assume it is below the repository. Ambient TeX Live 2022
+  is invalid for Page CDM.
 - Record the time spent in every cache attempt. If an attempt has no new log
   line for 30 seconds, report its elapsed time, compiler-process count, OM
   count, and last log line before waiting longer.
@@ -87,27 +89,52 @@ test -d "$LAYOUT_MODEL"
 test -d "$IMAGES_DIR"
 test -f "$DATASET_JSON"
 
-# Locate and prove the exact source-compatible K20 and compiled-FP32 B2 caches.
-# This does not import torch_npu, load a model, or compile a graph. It scans only
-# cache-root children and command artifacts up to depth two. It should finish in
-# a few seconds. If it exceeds 30 seconds, stop it and report the absolute log.
+# Locate the compiled-FP32 B2 cache and the best recognition-cache donor. This
+# does not import torch_npu, load a model, or compile a graph.
 CACHE_LOCATOR="$WORK_SERVER_REPO/12_unirec_0_1b_inference/locate_unirec_production_caches.py"
-CACHE_LOCATOR_ROOT="$WORK_SERVER_REPO/tmp/12_unirec_0_1b_inference/310p_cache_locator_$(date +%Y%m%dT%H%M%S)"
+CACHE_LOCATOR_ROOT="$WORK_SERVER_REPO/tmp/12_unirec_0_1b_inference/310p_cache_recovery_$(date +%Y%m%dT%H%M%S)"
 mkdir -p "$CACHE_LOCATOR_ROOT"
-CACHE_LOCATOR_JSON="$CACHE_LOCATOR_ROOT/cache_locator.json"
-CACHE_LOCATOR_LOG="$CACHE_LOCATOR_ROOT/cache_locator.log"
-CACHE_LOCATOR_STARTED="$(date +%s)"
-"$PYTHON_BIN" "$CACHE_LOCATOR" \
-  --search-root "$WORK_SERVER_REPO/.runtime_cache/12_unirec_0_1b_inference" \
-  --artifact-root "$WORK_SERVER_REPO/tmp/12_unirec_0_1b_inference" \
-  --output "$CACHE_LOCATOR_JSON" | tee "$CACHE_LOCATOR_LOG"
-CACHE_LOCATOR_WALL_S="$(( $(date +%s) - CACHE_LOCATOR_STARTED ))"
-printf 'CACHE_LOCATOR_WALL_S=%s\n' "$CACHE_LOCATOR_WALL_S"
-test "$CACHE_LOCATOR_WALL_S" -le 30
 
-export COMPILE_CACHE="$(
-  sed -n 's/^UNIREC_K20_COMPILE_CACHE=//p' "$CACHE_LOCATOR_LOG" | tail -n 1
-)"
+run_cache_locator() {
+  local label="$1" started locator_status
+  CACHE_LOCATOR_JSON="$CACHE_LOCATOR_ROOT/${label}.json"
+  CACHE_LOCATOR_LOG="$CACHE_LOCATOR_ROOT/${label}.log"
+  started="$(date +%s)"
+  set +e
+  "$PYTHON_BIN" "$CACHE_LOCATOR" \
+    --search-root "$WORK_SERVER_REPO/.runtime_cache/12_unirec_0_1b_inference" \
+    --artifact-root "$WORK_SERVER_REPO/tmp/12_unirec_0_1b_inference" \
+    --output "$CACHE_LOCATOR_JSON" | tee "$CACHE_LOCATOR_LOG"
+  locator_status="${PIPESTATUS[0]}"
+  set -e
+  printf 'CACHE_LOCATOR label=%s status=%s wall_s=%s json=%s log=%s\n' \
+    "$label" "$locator_status" "$(( $(date +%s) - started ))" \
+    "$CACHE_LOCATOR_JSON" "$CACHE_LOCATOR_LOG"
+  return "$locator_status"
+}
+
+if run_cache_locator before_rebuild; then
+  CACHE_LOCATOR_STATUS=0
+else
+  CACHE_LOCATOR_STATUS="$?"
+fi
+case "$CACHE_LOCATOR_STATUS" in
+  0)
+    export COMPILE_CACHE="$(
+      sed -n 's/^UNIREC_K20_COMPILE_CACHE=//p' "$CACHE_LOCATOR_LOG" | tail -n 1
+    )"
+    ;;
+  2)
+    export COMPILE_CACHE="$(
+      sed -n 's/^UNIREC_K20_DONOR_COMPILE_CACHE=//p' "$CACHE_LOCATOR_LOG" | tail -n 1
+    )"
+    ;;
+  *)
+    printf 'NO_USABLE_K20_CACHE_PARENT status=%s json=%s\n' \
+      "$CACHE_LOCATOR_STATUS" "$CACHE_LOCATOR_JSON" >&2
+    exit 1
+    ;;
+esac
 export LAYOUT_CACHE_ROOT="$(
   sed -n 's/^UNIREC_FP32_B2_LAYOUT_CACHE=//p' "$CACHE_LOCATOR_LOG" | tail -n 1
 )"
@@ -116,25 +143,79 @@ test -n "$LAYOUT_CACHE_ROOT"
 test -d "$COMPILE_CACHE"
 test -d "$LAYOUT_CACHE_ROOT"
 
-# This is the old broken K10-only gate signature. None of these names belongs
-# to the current 20-bucket production preset. Seeing them means stale code ran.
-if grep -Eq '512x192_b2|960x1024_b1|1024x704_b1|1024x1408_b1' \
-    "$CACHE_LOCATOR_LOG"; then
-  printf 'STALE_K10_FOUR_BUCKET_GATE_DETECTED\n' >&2
-  exit 1
-fi
-
-export OMNIDOCBENCH_EVAL_TOOLS_ROOT="$WORK_SERVER_REPO/.runtime_cache/omnidocbench_eval/tools"
+# Recover the exact frozen runtime used by the successful 310P same-host CDM
+# replay. This is the previously validated recovery method. Do not install or
+# download anything.
+RUNTIME_FP="$(
+  {
+    find "$WORK_SERVER_REPO/tmp" -type f \
+      -name candidate_runtime_fingerprint.json -printf '%T@ %p\n'
+    if [[ -d "$WORK_SERVER_REPO/temp" ]]; then
+      find "$WORK_SERVER_REPO/temp" -type f \
+        -name candidate_runtime_fingerprint.json -printf '%T@ %p\n'
+    fi
+  } 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-
+)"
+test -s "$RUNTIME_FP"
+export OMNIDOCBENCH_EVAL_TOOLS_ROOT="$(
+  "$EVAL_PYTHON" -c \
+    'import json,sys; from pathlib import Path; d=json.load(open(sys.argv[1])); print(Path(d["tex_runtime"]["texlive_root"]).parents[1])' \
+    "$RUNTIME_FP"
+)"
 test -x "$OMNIDOCBENCH_EVAL_TOOLS_ROOT/texlive/2025/bin/aarch64-linux/pdflatex"
 test -x "$OMNIDOCBENCH_EVAL_TOOLS_ROOT/imagemagick-7.1.1-47/bin/magick"
+printf 'RUNTIME_FP=%s\nOMNIDOCBENCH_EVAL_TOOLS_ROOT=%s\n' \
+  "$RUNTIME_FP" "$OMNIDOCBENCH_EVAL_TOOLS_ROOT"
+
+# The first relayed report established that all twenty current-source K20
+# identities are absent. Build them once in the selected donor parent.
+if [[ "$CACHE_LOCATOR_STATUS" == 2 ]]; then
+  export CPUSET=0-63
+  REBUILD_LAUNCH="$(
+    ALLOW_FULL_K20_REBUILD=1 \
+      bash 12_unirec_0_1b_inference/run_310p_k20_cache_builder_background.sh
+  )"
+  printf '%s\n' "$REBUILD_LAUNCH"
+  K20_REBUILD_ROOT="$(printf '%s\n' "$REBUILD_LAUNCH" | sed -n 's/^RUN_ROOT=//p' | tail -n 1)"
+  K20_REBUILD_LOG="$(printf '%s\n' "$REBUILD_LAUNCH" | sed -n 's/^RUN_LOG=//p' | tail -n 1)"
+  test -n "$K20_REBUILD_ROOT" && test -n "$K20_REBUILD_LOG"
+  printf 'TAIL_COMMAND=tail -f %q\n' "$K20_REBUILD_LOG"
+
+  while [[ ! -s "$K20_REBUILD_ROOT/exit_code.txt" ]]; do
+    date -Ins
+    ps -p "$(cat "$K20_REBUILD_ROOT/pid.txt")" \
+      -o pid,etime,stat,%cpu,%mem --no-headers || true
+    printf 'compiler_processes=%s current_source_om_count=%s\n' \
+      "$(pgrep -af 'atc|ccec|compiler|tbe' | wc -l)" \
+      "$(find "$COMPILE_CACHE" -type f -name '*.om' \
+        \( -path '*src38b70231a30c*' -o -path '*src00e6eb857633*' \) | wc -l)"
+    grep -E \
+      'UNIREC_K20_(CACHE_PHASE|EXPECTED_COMPILES|REBUILD_MODE)|warmup_graph_call_(begin|end)|HEARTBEAT|Traceback|ERROR' \
+      "$K20_REBUILD_LOG" | tail -12
+    sleep 20
+  done
+  test "$(cat "$K20_REBUILD_ROOT/exit_code.txt")" = 0
+  cat "$K20_REBUILD_ROOT/final_report.txt"
+
+  if ! run_cache_locator after_rebuild; then
+    printf 'K20_POST_REBUILD_LOCATOR_FAILED json=%s log=%s\n' \
+      "$CACHE_LOCATOR_JSON" "$CACHE_LOCATOR_LOG" >&2
+    exit 1
+  fi
+  export COMPILE_CACHE="$(
+    sed -n 's/^UNIREC_K20_COMPILE_CACHE=//p' "$CACHE_LOCATOR_LOG" | tail -n 1
+  )"
+  test -n "$COMPILE_CACHE" && test -d "$COMPILE_CACHE"
+fi
 
 export OPTIMIZED_DECODE_CACHE_PARENT="$WORK_SERVER_REPO/.runtime_cache/12_unirec_0_1b_inference/production_dual_decode_nz_lmhead57344"
 mkdir -p "$OPTIMIZED_DECODE_CACHE_PARENT"
 export UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="$OPTIMIZED_DECODE_CACHE_PARENT"
 
-printf 'CACHE_LOCATOR_JSON=%s\nCACHE_LOCATOR_LOG=%s\nCOMPILE_CACHE=%s\nLAYOUT_CACHE_ROOT=%s\nDECODE_CACHE=%s\n' \
+printf 'CACHE_LOCATOR_JSON=%s\nCACHE_LOCATOR_LOG=%s\nCOMPILE_CACHE=%s\nLAYOUT_CACHE_ROOT=%s\nRUNTIME_FP=%s\nEVAL_TOOLS=%s\nDECODE_CACHE=%s\n' \
   "$CACHE_LOCATOR_JSON" "$CACHE_LOCATOR_LOG" "$COMPILE_CACHE" \
-  "$LAYOUT_CACHE_ROOT" "$OPTIMIZED_DECODE_CACHE_PARENT"
+  "$LAYOUT_CACHE_ROOT" "$RUNTIME_FP" "$OMNIDOCBENCH_EVAL_TOOLS_ROOT" \
+  "$OPTIMIZED_DECODE_CACHE_PARENT"
 ```
 
 ## Build and fresh-process gate the two decode graphs

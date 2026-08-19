@@ -25,11 +25,13 @@ resolve_inputs() {
   : "${COMPILE_CACHE:?export the existing aligned-K10 production cache parent}"
   : "${ASCEND_RT_VISIBLE_DEVICES:?select one free physical 310P, 0-3}"
   : "${CPUSET:=0-63}"
+  : "${ALLOW_FULL_K20_REBUILD:=0}"
   PYTHON_BIN="$(absolute_executable_path "$PYTHON_BIN")"
   for variable in MODEL LAYOUT_MODEL OPENOCR_ROOT IMAGES_DIR COMPILE_CACHE; do
     printf -v "$variable" '%s' "$(readlink -f "${!variable}")"
   done
   case "$ASCEND_RT_VISIBLE_DEVICES" in 0|1|2|3) ;; *) echo 310P_DEVICE_MUST_BE_0_TO_3 >&2; exit 1;; esac
+  case "$ALLOW_FULL_K20_REBUILD" in 0|1) ;; *) echo INVALID_ALLOW_FULL_K20_REBUILD >&2; exit 1;; esac
   [[ "$ASCEND_RT_VISIBLE_DEVICES" != *,* ]]
   test -x "$PYTHON_BIN"
   test -f "$MODEL/model.pth"
@@ -118,14 +120,16 @@ new=[k for k in missing if p[k]["global_context_mode"].startswith("direct_2d_ext
 print(len(legacy), len(new))' "$run_root/cache_before.json"
   )
   printf 'UNIREC_K20_EXPECTED_COMPILES legacy_missing=%s new_missing=%s\n' "$legacy_missing" "$new_missing"
-  if (( legacy_missing != 0 )); then
+  if [[ "$ALLOW_FULL_K20_REBUILD" == 0 ]] && (( legacy_missing != 0 )); then
     echo 'UNIREC_K20_STOP legacy K10 cache identity is unexpectedly missing; inspect cache_before.json' >&2
     return 1
   fi
-  if (( new_missing > 14 )); then
+  if [[ "$ALLOW_FULL_K20_REBUILD" == 0 ]] && (( new_missing > 14 )); then
     echo "UNIREC_K20_STOP unexpected new-graph miss count=$new_missing" >&2
     return 1
   fi
+  printf 'UNIREC_K20_REBUILD_MODE allow_full=%s total_missing=%s\n' \
+    "$ALLOW_FULL_K20_REBUILD" "$((legacy_missing + new_missing))"
 
   find "$COMPILE_CACHE" -type f -name '*.om' -printf '%p %s %T@\n' | sort \
     >"$run_root/om_before.txt"
@@ -196,6 +200,7 @@ launch_main() {
   nohup env PYTHONUNBUFFERED=1 PYTHON_BIN="$PYTHON_BIN" MODEL="$MODEL" \
     LAYOUT_MODEL="$LAYOUT_MODEL" OPENOCR_ROOT="$OPENOCR_ROOT" \
     IMAGES_DIR="$IMAGES_DIR" COMPILE_CACHE="$COMPILE_CACHE" CPUSET="$CPUSET" \
+    ALLOW_FULL_K20_REBUILD="$ALLOW_FULL_K20_REBUILD" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
     bash "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"

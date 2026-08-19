@@ -174,6 +174,21 @@ def k20_row(
     provenance: list[str],
     reference: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
+    vision_directories = sorted(root.glob("vision_full_bucket_*"))
+    donor_modules = sorted(
+        set(
+            module
+            for directory in vision_directories
+            for module in directory.glob("**/compiled_module")
+        )
+    )
+    donor_oms = sorted(
+        set(
+            om
+            for directory in vision_directories
+            for om in directory.glob("**/*.om")
+        )
+    )
     buckets = {}
     newest_om_mtime_ns = 0
     for key, expected in reference.items():
@@ -219,6 +234,13 @@ def k20_row(
         "missing_buckets": missing,
         "complete": not missing and len(buckets) == 20,
         "newest_om_mtime_ns": newest_om_mtime_ns,
+        "donor_vision_directory_count": len(vision_directories),
+        "donor_compiled_module_count": len(donor_modules),
+        "donor_om_count": len(donor_oms),
+        "donor_newest_om_mtime_ns": max(
+            (path.stat().st_mtime_ns for path in donor_oms),
+            default=0,
+        ),
         "buckets": buckets,
     }
 
@@ -260,6 +282,22 @@ def select_latest_complete(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
     )
 
 
+def select_best_donor(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
+    donors = [row for row in rows if row["donor_compiled_module_count"] > 0]
+    if not donors:
+        return None
+    return max(
+        donors,
+        key=lambda row: (
+            row["donor_compiled_module_count"],
+            row["donor_vision_directory_count"],
+            row["donor_om_count"],
+            row["donor_newest_om_mtime_ns"],
+            row["root"],
+        ),
+    )
+
+
 def main() -> int:
     args = parse_args()
     reference = load_k20_reference()
@@ -287,10 +325,17 @@ def main() -> int:
         if row["compiled_modules"] or row["oms"]
     ]
     selected_k20 = select_latest_complete(k20_candidates)
+    selected_donor = select_best_donor(all_k20_candidates)
     selected_layout = select_latest_complete(layout_candidates)
+    if selected_k20 and selected_layout:
+        status = "ok"
+    elif selected_donor and selected_layout:
+        status = "needs_k20_rebuild"
+    else:
+        status = "missing"
     payload = {
         "schema": "unirec_production_cache_locator_v2",
-        "status": "ok" if selected_k20 and selected_layout else "missing",
+        "status": status,
         "search_roots": [str(path) for path in search_roots],
         "artifact_roots": [str(path) for path in artifact_roots],
         "selected_compile_cache": (
@@ -298,6 +343,9 @@ def main() -> int:
         ),
         "selected_layout_cache_root": (
             selected_layout["root"] if selected_layout is not None else None
+        ),
+        "selected_k20_donor_cache": (
+            selected_donor["root"] if selected_donor is not None else None
         ),
         "expected_k20_bucket_count": len(reference),
         "expected_k20_buckets": reference,
@@ -339,10 +387,22 @@ def main() -> int:
         )
     if selected_k20 is not None:
         print(f"UNIREC_K20_COMPILE_CACHE={selected_k20['root']}")
+    elif selected_donor is not None:
+        print(
+            "UNIREC_CACHE_LOCATOR_K20_REBUILD_REQUIRED "
+            f"current_buckets={selected_donor['complete_bucket_count']}/20 "
+            f"donor_modules={selected_donor['donor_compiled_module_count']} "
+            f"donor_oms={selected_donor['donor_om_count']} "
+            f"root={selected_donor['root']}"
+        )
+        print(f"UNIREC_K20_DONOR_COMPILE_CACHE={selected_donor['root']}")
     if selected_layout is not None:
         print(f"UNIREC_FP32_B2_LAYOUT_CACHE={selected_layout['root']}")
     print(f"UNIREC_CACHE_LOCATOR_OUTPUT={args.output.resolve()}")
-    if selected_k20 is None or selected_layout is None:
+    if status == "needs_k20_rebuild":
+        print("UNIREC_PRODUCTION_CACHE_LOCATOR: NEEDS_K20_REBUILD")
+        return 2
+    if status == "missing":
         return 1
     print("UNIREC_PRODUCTION_CACHE_LOCATOR: PASS")
     return 0
