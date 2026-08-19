@@ -535,7 +535,7 @@ class DualLaneContinuousUniRecDecoder:
         b_spec: DecodeLaneSpec,
         quantum_steps: int = 16,
         max_skipped_quanta: int = 8,
-        overflow_policy: str = "restart_b",
+        overflow_policy: str = "finish_at_cap",
         decode_mode: str = "compiled_ifa",
         compile_backend: str = "torchair",
     ) -> None:

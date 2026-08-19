@@ -93,7 +93,7 @@ def main() -> None:
         b_spec=DecodeLaneSpec("b", 128, 2048, 1320, 8),
         quantum_steps=2,
         max_skipped_quanta=2,
-        overflow_policy="restart_b",
+        overflow_policy="finish_at_cap",
     ).run(
         items,
         on_complete=completed.append,
@@ -108,6 +108,8 @@ def main() -> None:
         raise RuntimeError("lane-A routing mismatch")
     if summary["routed_b"] != args.b_items:
         raise RuntimeError("lane-B routing mismatch")
+    if summary["promoted_a_to_b"] != 0:
+        raise RuntimeError("finish-at-cap smoke unexpectedly promoted a row")
     if summary["scheduler_quanta"] < 2 or summary["graph_switches"] < 1:
         raise RuntimeError("dual smoke did not switch between both graphs")
     args.output.parent.mkdir(parents=True, exist_ok=True)

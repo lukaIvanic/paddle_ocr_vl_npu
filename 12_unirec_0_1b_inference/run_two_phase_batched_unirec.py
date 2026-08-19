@@ -201,10 +201,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--decode-a-overflow-policy",
         choices=("finish_at_cap", "restart_b"),
-        default="restart_b",
+        default="finish_at_cap",
         help=(
-            "Finish lane-A rows at its cap, or restart capped non-EOS rows "
-            "from their retained CPU cross-KV in lane B."
+            "Finish lane-A rows at its cap (default), or diagnostically "
+            "restart capped non-EOS rows from retained CPU cross-KV in lane B."
         ),
     )
     parser.add_argument(
