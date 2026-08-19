@@ -39,12 +39,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--w8-weight-format",
         choices=("native", "fractal_nz"),
-        default="native",
+        default="fractal_nz",
     )
     parser.add_argument(
         "--enable-internal-format",
-        action="store_true",
-        help="Enable torch-npu internal formats before the first NPU allocation.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Enable torch-npu internal formats before the first NPU allocation "
+            "(default: enabled)."
+        ),
     )
     parser.add_argument(
         "--compile-cache-dir",
