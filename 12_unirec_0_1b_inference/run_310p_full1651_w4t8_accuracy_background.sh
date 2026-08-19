@@ -217,20 +217,21 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.environ["SCRIPT_DIR"])
+import vision_bucket_presets
 import vision_full_batch
 
-slots = {
-    "448x384_b2": 1,
-    "512x64_b4": 2,
-    "512x192_b2": 0,
-    "960x64_b4": 3,
-    "960x128_b2": 4,
-    "960x256_b1": 5,
-    "960x512_b1": 9,
-    "960x1024_b1": 7,
-    "1024x704_b1": 8,
-    "1024x1408_b1": 6,
-}
+variant = os.environ["RUN_VARIANT"]
+preset = {
+    "optimized_k10_l4": "310p_k10_l4_all",
+    "optimized_k10_l4_aligned": "310p_k10_l4_aligned",
+    "optimized_k20_l4_compiled_fp32": "310p_k20_l4",
+    "optimized_k20_l4_compiled_fp32_dual_restart": "310p_k20_l4",
+}[variant]
+specs = vision_bucket_presets.VISION_BUCKET_PRESETS[preset]
+slots = vision_bucket_presets.assign_vision_bucket_cache_slots(
+    specs,
+    slot_count=max(10, len(specs)),
+)
 root = Path(os.environ["COMPILE_CACHE"])
 legacy_hash = vision_full_batch._source_hash()
 flat_hash = vision_full_batch._flat_global_context_source_hash()
@@ -240,7 +241,8 @@ extended_flat_keys = set(
     vision_full_batch.EXTENDED_FLAT_GLOBAL_CONTEXT_BUCKET_KEYS
 )
 report = {}
-for key, slot in slots.items():
+for spec, slot in zip(specs, slots):
+    key = spec.key
     use_flat = key in flat_keys or key in extended_flat_keys
     if key in extended_flat_keys:
         source_hash = extended_flat_hash
@@ -281,6 +283,7 @@ Path(sys.argv[1]).write_text(json.dumps(report, indent=2) + "\n")
 missing = [key for key, row in report.items() if not row["target_compiled_module_count"]]
 print(
     "UNIREC_310P_FULL1651_VISION_CACHE "
+    f"preset={preset} "
     f"legacy_hash={legacy_hash} flat_hash={flat_hash} "
     f"extended_flat_hash={extended_flat_hash} "
     f"missing={len(missing)} keys={missing}"
