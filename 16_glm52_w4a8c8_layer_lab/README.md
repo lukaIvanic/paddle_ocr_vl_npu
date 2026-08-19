@@ -42,6 +42,39 @@ whole-model token throughput. It decompresses MLA into a full K/V cache, and
 the standalone layer 3 has no upstream shared DSA selection. Stack-level DSA,
 absorbed MLA, real upstream activations, and final logits require later rungs.
 
+## Verified TP1 MoE MLP optimization
+
+The focused MoE harness measures the post-attention RMSNorm, routed W4A8
+experts, shared W8A8 expert, and residual add for layers 3-5. It uses varied
+preallocated BF16 inputs, ordinary inference warmup, one static TorchAir graph,
+and three 1,000-call measured repetitions.
+
+The original TorchAir grouped-matmul converter numerically cast packed W4 scale
+bits from INT64 to UINT64 on AI CPU for every projection and every token. The
+scale tensor already contains the required 64-bit representation. The current
+path uses an equal-width GE Bitcast instead. This is exact for the stored bits
+and removes all six runtime AI-CPU scale casts from the three-layer graph.
+Routed and shared quantized weights use FRACTAL_NZ by default.
+
+Commit `af0bbba` ran on physical Ascend 910B2 NPU 7 with B1, 20 excluded
+warmup calls, and three 1,000-call repetitions:
+
+| TP1 TorchAir MoE MLP lane | Three stack times | Median | Stack calls/s |
+| --- | --- | ---: | ---: |
+| Numeric scale cast, routed W4 native | 4.96885, 4.96313, 4.96524 ms | 4.96524 ms | 201.40 |
+| Scale bitcast, routed/shared FRACTAL_NZ | 0.83453, 0.83391, 0.83363 ms | **0.83391 ms** | **1,199.17** |
+
+The optimized default is `5.954x` faster and reduces stack latency by 83.2%.
+That is 277.97 us per MoE layer. Compiled output matched eager exactly, Dynamo
+reported one graph after warmup, and no graph appeared during measurement.
+
+Before the change, AI-CPU scale casts represented 82.8% of recorded kernel
+time. After the change, no AI-CPU cast remained. The optimized profile is now
+compute-shaped: routed grouped matmuls use 65.8%, shared-expert quantized
+matmuls 11.5%, routing initialization 4.7%, and dynamic quantization 4.0% of
+recorded kernel time. Full evidence is in
+`references/moe_layers3_5_tp1_scale_bitcast_nz_910b2_af0bbba.json`.
+
 ## Verified layers 0-6 stack
 
 The owned seven-layer stack covers the decoder-layer variants present at the

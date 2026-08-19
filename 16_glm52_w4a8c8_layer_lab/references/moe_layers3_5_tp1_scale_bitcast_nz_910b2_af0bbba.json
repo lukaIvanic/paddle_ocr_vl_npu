@@ -1,0 +1,65 @@
+{
+  "benchmark": {
+    "batch_size": 1,
+    "decode_steps_per_repeat": 1000,
+    "layers": [3, 4, 5],
+    "measurement_repeats": 3,
+    "scope": "post_attention_norm_plus_routed_and_shared_moe_mlp",
+    "warmup_steps_excluded": 20
+  },
+  "chip": "Ascend 910B2",
+  "commit": "af0bbba",
+  "device": "physical NPU 7",
+  "baseline": {
+    "gmm_scale_conversion": "cast",
+    "median_stack_ms": 4.965236767195165,
+    "repeat_stack_ms": [
+      4.968849398661405,
+      4.963133262004703,
+      4.965236767195165
+    ],
+    "routed_w4_weight_format": "native",
+    "stack_calls_per_sec": 201.40026485884871
+  },
+  "optimized_default": {
+    "compiled_vs_eager_output_max_abs": 0.0,
+    "compiled_vs_eager_output_mean_abs": 0.0,
+    "gmm_scale_conversion": "bitcast",
+    "median_stack_ms": 0.8339129528030753,
+    "repeat_stack_ms": [
+      0.8345348942093551,
+      0.8339129528030753,
+      0.8336316077038646
+    ],
+    "routed_w4_weight_format": "FRACTAL_NZ",
+    "stack_calls_per_sec": 1199.1659280967488,
+    "unique_graphs_after_warmup": 1,
+    "unique_graphs_after_measurement": 1
+  },
+  "result": {
+    "latency_reduction_percent": 83.204971,
+    "median_speedup": 5.954142756,
+    "optimized_per_moe_layer_us": 277.970984
+  },
+  "profile": {
+    "baseline_three_layer_profile_commit": "eb5a30c",
+    "baseline_top_ops_percent": {
+      "Cast_AI_CPU": 82.755,
+      "GroupedMatmul": 12.742,
+      "QuantBatchMatmulV3": 1.601
+    },
+    "optimized_one_layer_profile_commit": "270d9fd",
+    "optimized_top_ops_percent": {
+      "DynamicQuant": 3.999,
+      "GroupedMatmul": 65.803,
+      "MoeInitRoutingV3": 4.683,
+      "QuantBatchMatmulV3": 11.493
+    },
+    "runtime_ai_cpu_cast_count": 0
+  },
+  "source_artifacts": {
+    "baseline_summary": "/tmp/glm52_moe_tp1_baseline_repeats_af0bbba.json",
+    "optimized_profile": "/tmp/glm52_moe_tp1_bitcast_nz_profile_270d9fd",
+    "optimized_summary": "/tmp/glm52_moe_tp1_optimized_repeats_af0bbba.json"
+  }
+}
