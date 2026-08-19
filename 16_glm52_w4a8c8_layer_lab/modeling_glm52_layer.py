@@ -343,7 +343,9 @@ class GLM52W4A8Experts(nn.Module):
             w13_scale=float_scale_to_int64_bits(w13_scale_f32)
             .unsqueeze(1)
             .to(device),
-            w13_scale_f32=w13_scale_f32.unsqueeze(1).to(device),
+            # The fused per-channel GMM1 contract expects [E,N]. The generic
+            # W4 GMM contract above still needs the explicit [E,1,N] axis.
+            w13_scale_f32=w13_scale_f32.to(device),
             w2_scale=float_scale_to_int64_bits(w2_scale_f32).unsqueeze(1).to(device),
             w13_bias=w13_bias_cpu.to(device),
             w2_bias=w2_bias_cpu.to(device),
