@@ -404,7 +404,7 @@ class GLM52W4A8Experts(nn.Module):
                 torch.ops._C_ascend.grouped_matmul_swiglu_quant_v2(
                     expanded_i8,
                     [self.w13_weight],
-                    [self.w13_scale_f32],
+                    [self.w13_scale.squeeze(1)],
                     expanded_scale,
                     group_counts,
                     weight_assist_matrix=[self.w13_bias],
