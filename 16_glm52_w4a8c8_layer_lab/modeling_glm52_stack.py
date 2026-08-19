@@ -143,7 +143,7 @@ class GLM52DSAIndexer(nn.Module):
                 q_lora.reshape(-1, q_lora.shape[-1]),
                 self.wq_b.weight,
                 self.wq_b.weight_scale,
-                pertoken_scale=q_lora_scale.reshape(-1, 1),
+                pertoken_scale=q_lora_scale.reshape(-1),
                 output_dtype=torch.bfloat16,
             ).reshape(*leading, self.num_heads * self.head_dim)
         q = q.view(1, self.num_heads, self.head_dim)

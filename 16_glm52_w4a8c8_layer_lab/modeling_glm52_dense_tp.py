@@ -611,7 +611,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
                     q_a.reshape(-1, cfg.q_lora_rank),
                     self.q_b_proj.weight,
                     self.q_b_proj.weight_scale,
-                    pertoken_scale=q_a_scale.reshape(-1, 1),
+                    pertoken_scale=q_a_scale.reshape(-1),
                     output_dtype=x.dtype,
                 ).view(1, 1, self.local_heads * cfg.qk_head_dim)
             query = query.view(1, 1, self.local_heads, cfg.qk_head_dim)
