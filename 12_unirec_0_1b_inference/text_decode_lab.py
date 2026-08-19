@@ -175,6 +175,15 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("tmp/12_unirec_0_1b_inference/text_decode_lab/result.json"),
     )
+    parser.add_argument(
+        "--reuse-state",
+        action="store_true",
+        help=(
+            "Reuse one preallocated KV state across warmup, measurement, "
+            "validation, and compiled timing. This matches the production "
+            "arena lifecycle and avoids a second full static KV allocation."
+        ),
+    )
     args = parser.parse_args()
     if args.batch_size < 1:
         parser.error("--batch-size must be positive")
@@ -239,15 +248,15 @@ def make_state(
         for _ in range(layers)
     )
     self_values = tuple(torch.zeros_like(value) for value in self_keys)
-    cross_keys = tuple(
-        torch.zeros(
-            (batch_size, heads, cross_cache_length, head_dim),
-            device=runner.device,
-            dtype=runner.dtype,
-        )
-        for _ in range(layers)
+    packed_cross_kv = torch.zeros(
+        (2 * layers, batch_size, heads, cross_cache_length, head_dim),
+        device=runner.device,
+        dtype=runner.dtype,
     )
-    cross_values = tuple(torch.zeros_like(value) for value in cross_keys)
+    cross_keys = tuple(packed_cross_kv[layer] for layer in range(layers))
+    cross_values = tuple(
+        packed_cross_kv[layers + layer] for layer in range(layers)
+    )
     cross_mask = torch.zeros(
         (batch_size, 1, 1, cross_cache_length),
         device=runner.device,
@@ -999,7 +1008,7 @@ def main() -> None:
             # state would change input addresses and force a re-capture inside
             # the measurement); other modes keep fresh per-phase states.
             nonlocal state
-            if stepper is step_static:
+            if args.reuse_state or stepper is step_static:
                 reset_state_(
                     state, runner, seed=seed, cache_position=args.cache_position
                 )
@@ -1130,6 +1139,7 @@ def main() -> None:
             "initial_cache_position": args.cache_position,
             "lm_head_rows": args.lm_head_rows or None,
             "synthetic_head": bool(args.lm_head_rows),
+            "reuse_state": bool(args.reuse_state),
         },
         "lanes": lanes,
         "comparison": comparison,

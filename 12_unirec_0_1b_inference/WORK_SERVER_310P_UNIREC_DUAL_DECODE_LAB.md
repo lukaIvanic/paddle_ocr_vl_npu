@@ -40,6 +40,8 @@ against these rows; do not transfer the 910B timings to 310P.
 - Reuse the exact B graph from the completed accuracy-safe full run.
 - Lane A may compile exactly once if its exact cache is absent. Lane B must
   never compile or change.
+- The lab reuses one production-shaped KV arena across all timing phases. It
+  must not allocate a second full B-lane synthetic state.
 - The runner emits a heartbeat every ten seconds. If a phase exceeds 90
   seconds, report its last event, OM counts, and compiler-process count before
   continuing. Do not wait blindly.

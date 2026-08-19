@@ -53,6 +53,7 @@ run_lane() {
     --backends increfa_all
     --compiled-timing-steps "$timing_steps"
     --graph-mode ge
+    --reuse-state
     --cache-dir "$DECODE_CACHE_PARENT"
     --output "$output"
   )
@@ -173,6 +174,7 @@ for payload, shape in (
     lane = payload["lanes"]["increfa_all"]
     assert lane["compile"]["mask_mode"] == "per_step"
     assert lane["compile"]["batch_size"] == 128
+    assert payload["shape"]["reuse_state"] is True
 
 def row(payload):
     lane = payload["lanes"]["increfa_all"]
