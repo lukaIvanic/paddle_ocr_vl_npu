@@ -249,6 +249,7 @@ class GLM52W4A8Experts(nn.Module):
         *,
         device: torch.device,
         progress=None,
+        w4_weight_format: str = "native",
     ) -> "GLM52W4A8Experts":
         prefix = f"model.layers.{layer_index}.mlp"
         router_weight = reader.tensor(prefix + ".gate.weight").to(device=device, dtype=torch.bfloat16)
@@ -318,8 +319,14 @@ class GLM52W4A8Experts(nn.Module):
             if progress is not None and (expert + 1) % 32 == 0:
                 progress(f"loaded routed experts {expert + 1}/{config.num_experts}")
 
-        w13_weight = w13_i8.view(torch.int32)
-        w2_weight = w2_i8.view(torch.int32)
+        if w4_weight_format == "fractal_nz":
+            require_npu()
+            w13_i8 = torch_npu.npu_format_cast(w13_i8, 29)
+            w2_i8 = torch_npu.npu_format_cast(w2_i8, 29)
+        elif w4_weight_format != "native":
+            raise ValueError(f"Unsupported W4 weight format: {w4_weight_format}")
+        w13_weight = w13_i8.view(torch.int32).contiguous()
+        w2_weight = w2_i8.view(torch.int32).contiguous()
         return cls(
             router_weight=router_weight,
             correction_bias=correction_bias,

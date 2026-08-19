@@ -60,7 +60,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--gmm-scale-conversion",
         choices=("cast", "bitcast"),
-        default="cast",
+        default="bitcast",
+    )
+    parser.add_argument(
+        "--w4-weight-format",
+        choices=("native", "fractal_nz"),
+        default="native",
     )
     parser.add_argument("--summary-out", type=Path)
     return parser.parse_args()
@@ -214,6 +219,7 @@ def main() -> None:
         last_layer=args.last_layer,
         device=device,
         progress=lambda message: print("[moe-tp1] " + message, flush=True),
+        w4_weight_format=args.w4_weight_format,
     )
     stack.eval()
     shared_weight_format = prepare_w8a8_weight_format(
@@ -307,6 +313,7 @@ def main() -> None:
         "moe_intermediate_size": stack.config.moe_intermediate_size,
         "backend": "torchair_fullgraph_static",
         "gmm_scale_conversion": args.gmm_scale_conversion,
+        "requested_w4_weight_format": args.w4_weight_format,
         "input_mode": "preallocated_varied_bfloat16_hidden_rows",
         "shared_w8a8_weight_format": shared_weight_format,
         "routed_w4a8_weight_storage": {

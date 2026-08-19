@@ -40,6 +40,7 @@ class GLM52MoEMLPBlock(nn.Module):
         *,
         device: torch.device,
         progress=None,
+        w4_weight_format: str = "native",
     ) -> "GLM52MoEMLPBlock":
         if layer_index < config.first_k_dense_replace:
             raise ValueError(f"layer {layer_index} is not a MoE layer")
@@ -50,6 +51,7 @@ class GLM52MoEMLPBlock(nn.Module):
             config,
             device=device,
             progress=progress,
+            w4_weight_format=w4_weight_format,
         )
         return cls(
             config=config,
@@ -93,6 +95,7 @@ class GLM52MoEMLPStack(nn.Module):
         last_layer: int,
         device: torch.device,
         progress=None,
+        w4_weight_format: str = "native",
     ) -> "GLM52MoEMLPStack":
         if last_layer < first_layer:
             raise ValueError("last_layer must not be smaller than first_layer")
@@ -115,6 +118,7 @@ class GLM52MoEMLPStack(nn.Module):
                             f"layer {index}: {message}"
                         )
                     ),
+                    w4_weight_format=w4_weight_format,
                 )
             )
             if progress is not None:
