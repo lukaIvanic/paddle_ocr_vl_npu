@@ -254,7 +254,6 @@ class GLM52W4A8Experts(nn.Module):
         w13_bias: torch.Tensor,
         w2_bias: torch.Tensor,
         config: GLM52Config,
-        gmm_tuning_token_count: int = 0,
     ):
         super().__init__()
         self.config = config
@@ -266,7 +265,6 @@ class GLM52W4A8Experts(nn.Module):
         self.register_buffer("w2_scale", w2_scale.contiguous())
         self.register_buffer("w13_bias", w13_bias.float().contiguous())
         self.register_buffer("w2_bias", w2_bias.float().contiguous())
-        self.gmm_tuning_token_count = int(gmm_tuning_token_count)
 
     @classmethod
     def from_checkpoint(
@@ -278,7 +276,6 @@ class GLM52W4A8Experts(nn.Module):
         device: torch.device,
         progress=None,
         w4_weight_format: str = "fractal_nz",
-        gmm_tuning_token_count: int = 0,
     ) -> "GLM52W4A8Experts":
         prefix = f"model.layers.{layer_index}.mlp"
         router_weight = reader.tensor(prefix + ".gate.weight").to(device=device, dtype=torch.bfloat16)
@@ -371,7 +368,6 @@ class GLM52W4A8Experts(nn.Module):
             w13_bias=w13_bias_cpu.to(device),
             w2_bias=w2_bias_cpu.to(device),
             config=config,
-            gmm_tuning_token_count=gmm_tuning_token_count,
         )
 
     def route(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -420,7 +416,6 @@ class GLM52W4A8Experts(nn.Module):
             split_item=2,
             group_type=0,
             group_list_type=1,
-            tuning_config=[self.gmm_tuning_token_count],
             output_dtype=hidden_states.dtype,
         )[0]
         activated = torch_npu.npu_swiglu(gate_up)
@@ -437,7 +432,6 @@ class GLM52W4A8Experts(nn.Module):
             split_item=2,
             group_type=0,
             group_list_type=1,
-            tuning_config=[self.gmm_tuning_token_count],
             output_dtype=hidden_states.dtype,
         )[0]
         output = torch_npu.npu_moe_finalize_routing(

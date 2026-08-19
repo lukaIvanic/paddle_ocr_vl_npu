@@ -41,7 +41,6 @@ class GLM52MoEMLPBlock(nn.Module):
         device: torch.device,
         progress=None,
         w4_weight_format: str = "fractal_nz",
-        gmm_tuning_token_count: int = 0,
     ) -> "GLM52MoEMLPBlock":
         if layer_index < config.first_k_dense_replace:
             raise ValueError(f"layer {layer_index} is not a MoE layer")
@@ -53,7 +52,6 @@ class GLM52MoEMLPBlock(nn.Module):
             device=device,
             progress=progress,
             w4_weight_format=w4_weight_format,
-            gmm_tuning_token_count=gmm_tuning_token_count,
         )
         return cls(
             config=config,
@@ -98,7 +96,6 @@ class GLM52MoEMLPStack(nn.Module):
         device: torch.device,
         progress=None,
         w4_weight_format: str = "fractal_nz",
-        gmm_tuning_token_count: int = 0,
     ) -> "GLM52MoEMLPStack":
         if last_layer < first_layer:
             raise ValueError("last_layer must not be smaller than first_layer")
@@ -122,7 +119,6 @@ class GLM52MoEMLPStack(nn.Module):
                         )
                     ),
                     w4_weight_format=w4_weight_format,
-                    gmm_tuning_token_count=gmm_tuning_token_count,
                 )
             )
             if progress is not None:
