@@ -34,6 +34,7 @@ ROPE_CACHE_PATHS = (
     "fused_kv",
     "mla_prolog_v3",
 )
+Q_A_QUANT_PATHS = ("separate", "shared_fused")
 
 
 def apply_rope_path(
@@ -290,6 +291,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         q_a_norm: torch.Tensor,
         kv_a_norm: torch.Tensor,
         rope_cache_path: str,
+        q_a_quant_path: str,
     ):
         super().__init__()
         self.layer_index = int(layer_index)
@@ -301,6 +303,9 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         if rope_cache_path not in ROPE_CACHE_PATHS:
             raise ValueError(f"unsupported RoPE/cache path {rope_cache_path!r}")
         self.rope_cache_path = str(rope_cache_path)
+        if q_a_quant_path not in Q_A_QUANT_PATHS:
+            raise ValueError(f"unsupported Q-A quant path {q_a_quant_path!r}")
+        self.q_a_quant_path = str(q_a_quant_path)
         self.fused_qkv_a = fused_qkv_a
         self.q_b_proj = q_b_proj
         w_uk_t, w_uv = absorb_kv_b_weight(
@@ -319,6 +324,15 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         self.register_buffer("post_attention_norm", post_attention_norm.contiguous())
         self.register_buffer("q_a_norm", q_a_norm.contiguous())
         self.register_buffer("kv_a_norm", kv_a_norm.contiguous())
+        if self.q_a_quant_path == "shared_fused":
+            self.register_buffer(
+                "q_a_zero",
+                torch.zeros(
+                    (1, 1, config.q_lora_rank),
+                    dtype=q_a_norm.dtype,
+                    device=q_a_norm.device,
+                ),
+            )
         if self.rope_cache_path == "mla_prolog_v3":
             self.register_buffer(
                 "prolog_weight_dq",
@@ -382,6 +396,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         world_size: int,
         device: torch.device,
         rope_cache_path: str,
+        q_a_quant_path: str,
     ) -> "GLM52DenseTPDecoderLayer":
         config = GLM52Config.from_model_dir(model_dir)
         with (Path(model_dir) / "config.json").open() as handle:
@@ -399,6 +414,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             rank=rank,
             world_size=world_size,
             rope_cache_path=rope_cache_path,
+            q_a_quant_path=q_a_quant_path,
             fused_qkv_a=W8A8DynamicLinear.from_checkpoint(
                 reader,
                 [attn + ".q_a_proj", attn + ".kv_a_proj_with_mqa"],
@@ -492,6 +508,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         position = cache_position.reshape(-1).to(torch.int64)
         compressed_kv = None
         k_rope = None
+        q_a_scale = None
         if self.rope_cache_path == "mla_prolog_v3":
             cos = torch.index_select(
                 self.rope_cos_block, 0, position
@@ -539,6 +556,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             )
             if q_a.dtype == torch.int8:
                 q_a = q_a.to(x.dtype) * q_a_scale.to(x.dtype)
+                q_a_scale = None
             q_a = q_a.view(1, 1, cfg.q_lora_rank)
             query_nope = query_nope.view(
                 1, 1, self.local_heads, cfg.kv_lora_rank
@@ -569,15 +587,34 @@ class GLM52DenseTPDecoderLayer(nn.Module):
                 dim=-1,
             )
         if self.rope_cache_path != "mla_prolog_v3":
-            q_a = npu_rms_norm(q_a, self.q_a_norm, cfg.rms_norm_eps)
+            if self.q_a_quant_path == "shared_fused":
+                q_a, _, _, q_a_scale, _ = (
+                    torch_npu.npu_add_rms_norm_dynamic_quant(
+                        q_a,
+                        self.q_a_zero,
+                        self.q_a_norm,
+                        epsilon=cfg.rms_norm_eps,
+                        output_mask=[True, False],
+                    )
+                )
+            else:
+                q_a = npu_rms_norm(q_a, self.q_a_norm, cfg.rms_norm_eps)
         if compressed_kv is not None:
             compressed_kv = npu_rms_norm(
                 compressed_kv, self.kv_a_norm, cfg.rms_norm_eps
             )
         if self.rope_cache_path != "mla_prolog_v3":
-            query = self.q_b_proj(q_a).view(
-                1, 1, self.local_heads, cfg.qk_head_dim
-            )
+            if q_a_scale is None:
+                query = self.q_b_proj(q_a)
+            else:
+                query = torch_npu.npu_quant_matmul(
+                    q_a.reshape(-1, cfg.q_lora_rank),
+                    self.q_b_proj.weight,
+                    self.q_b_proj.weight_scale,
+                    pertoken_scale=q_a_scale.reshape(-1, 1),
+                    output_dtype=x.dtype,
+                ).view(1, 1, self.local_heads * cfg.qk_head_dim)
+            query = query.view(1, 1, self.local_heads, cfg.qk_head_dim)
             query_nope, query_rope = torch.split(
                 query, [cfg.qk_nope_head_dim, cfg.qk_rope_head_dim], dim=-1
             )
@@ -650,6 +687,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             cos.view(1, 1, cfg.qk_rope_head_dim),
             sin.view(1, 1, cfg.qk_rope_head_dim),
             index_key_cache,
+            q_lora_scale=q_a_scale,
         ).reshape(-1)
         local_attention = sparse_flash_absorbed_attention(
             query_nope,
@@ -681,6 +719,7 @@ class GLM52DenseTPStack(nn.Module):
         world_size: int,
         cache_length: int,
         rope_cache_path: str,
+        q_a_quant_path: str,
     ):
         super().__init__()
         self.layers = nn.ModuleList(layers)
@@ -688,6 +727,7 @@ class GLM52DenseTPStack(nn.Module):
         self.world_size = int(world_size)
         self.cache_length = int(cache_length)
         self.rope_cache_path = str(rope_cache_path)
+        self.q_a_quant_path = str(q_a_quant_path)
         self.config = layers[0].config
         self.local_heads = self.config.num_attention_heads // world_size
 
@@ -701,6 +741,7 @@ class GLM52DenseTPStack(nn.Module):
         cache_length: int,
         device: torch.device,
         rope_cache_path: str = "manual",
+        q_a_quant_path: str = "separate",
         progress=None,
     ) -> "GLM52DenseTPStack":
         if world_size not in (1, 2):
@@ -720,6 +761,7 @@ class GLM52DenseTPStack(nn.Module):
                     world_size=world_size,
                     device=device,
                     rope_cache_path=rope_cache_path,
+                    q_a_quant_path=q_a_quant_path,
                 )
             )
             if progress is not None:
@@ -730,6 +772,7 @@ class GLM52DenseTPStack(nn.Module):
             world_size=world_size,
             cache_length=cache_length,
             rope_cache_path=rope_cache_path,
+            q_a_quant_path=q_a_quant_path,
         )
 
     def make_cache(self, *, device: torch.device):
@@ -773,8 +816,23 @@ class GLM52DenseTPStack(nn.Module):
             )
             keys.append(key)
             values.append(value)
+        if self.rope_cache_path in {"interleave", "fused_kv", "mla_prolog_v3"}:
+            canonical_indices = tuple(
+                torch.cat(
+                    (
+                        block_rope_to_interleaved(
+                            cache[..., : self.config.qk_rope_head_dim]
+                        ),
+                        cache[..., self.config.qk_rope_head_dim :],
+                    ),
+                    dim=-1,
+                )
+                for cache in indices
+            )
+        else:
+            canonical_indices = indices
         return tuple(keys), tuple(values), tuple(
-            cache[:, :used_length] for cache in indices
+            cache[:, :used_length] for cache in canonical_indices
         )
 
     def forward_decode(

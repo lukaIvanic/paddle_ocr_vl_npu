@@ -133,8 +133,20 @@ class GLM52DSAIndexer(nn.Module):
         cos: torch.Tensor,
         sin: torch.Tensor,
         key_cache: torch.Tensor,
+        q_lora_scale: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        q = self.wq_b(q_lora).view(1, self.num_heads, self.head_dim)
+        if q_lora_scale is None:
+            q = self.wq_b(q_lora)
+        else:
+            leading = q_lora.shape[:-1]
+            q = torch_npu.npu_quant_matmul(
+                q_lora.reshape(-1, q_lora.shape[-1]),
+                self.wq_b.weight,
+                self.wq_b.weight_scale,
+                pertoken_scale=q_lora_scale.reshape(-1, 1),
+                output_dtype=torch.bfloat16,
+            ).reshape(*leading, self.num_heads * self.head_dim)
+        q = q.view(1, self.num_heads, self.head_dim)
         k = F.linear(
             hidden_states.reshape(-1, hidden_states.shape[-1]), self.wk_weight
         )
