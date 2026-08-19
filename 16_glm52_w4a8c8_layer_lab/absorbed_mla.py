@@ -72,13 +72,10 @@ def sparse_flash_absorbed_attention(
     v_head_dim = w_uv.shape[-1]
     sparse_k = selected.shape[0]
 
-    if query_nope.shape[-1] == kv_lora_rank:
-        latent_query = query_nope.reshape(1, 1, local_heads, kv_lora_rank)
-    else:
-        latent_query = torch.bmm(
-            query_nope.reshape(local_heads, 1, query_nope.shape[-1]),
-            w_uk_t,
-        ).reshape(1, 1, local_heads, kv_lora_rank)
+    latent_query = torch.bmm(
+        query_nope.reshape(local_heads, 1, query_nope.shape[-1]),
+        w_uk_t,
+    ).reshape(1, 1, local_heads, kv_lora_rank)
     sparse_indices = torch.where(
         selected <= position.reshape(1),
         selected,

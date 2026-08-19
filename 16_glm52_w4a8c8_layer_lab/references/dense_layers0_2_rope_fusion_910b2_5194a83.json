@@ -1,0 +1,72 @@
+{
+  "experiment": "GLM-5.2 dense layers 0-2 RoPE and cache-fusion sweep",
+  "source_commit": "5194a83",
+  "chip": "Ascend 910B2",
+  "physical_npu": 7,
+  "batch_size": 1,
+  "cache_length": 4096,
+  "backend": "TorchAir fullgraph static",
+  "weight_format": "FRACTAL_NZ",
+  "measurement": {
+    "ordinary_inference_warmup": true,
+    "measured_calls_per_repeat": 1000,
+    "manual_interleaved_rope_ms": [
+      1.82751853,
+      1.844698322
+    ],
+    "manual_mean_ms": 1.836108426,
+    "npu_interleave_rope_ms": [
+      1.701493038,
+      1.703708805
+    ],
+    "npu_interleave_rope_mean_ms": 1.702600922,
+    "npu_kv_rmsnorm_rope_cache_v2_ms": [
+      1.725372214,
+      1.712994114
+    ],
+    "npu_kv_rmsnorm_rope_cache_v2_mean_ms": 1.719183164,
+    "interleave_latency_reduction_vs_manual_percent": 7.2712,
+    "interleave_throughput_ratio_vs_manual": 1.07841,
+    "interleave_latency_reduction_vs_fused_kv_percent": 0.9645
+  },
+  "five_stack_profile": {
+    "manual_recorded_kernel_us_per_stack": 1408.1577,
+    "npu_interleave_rope_recorded_kernel_us_per_stack": 1276.7918,
+    "npu_kv_rmsnorm_rope_cache_v2_recorded_kernel_us_per_stack": 1277.5886,
+    "manual_key_ops_total_us": {
+      "GatherV2_150_calls": 518.12,
+      "AutomaticBufferFusionOp_60_calls": 210.42,
+      "Mul_30_calls": 151.24,
+      "RmsNorm_35_calls": 116.82,
+      "Pack_60_calls": 69.4,
+      "Neg_60_calls": 66.98,
+      "Scatter_45_calls": 50.66
+    },
+    "interleave_key_ops_total_us": {
+      "InterleaveRope_60_calls": 291.58,
+      "RmsNorm_35_calls": 110.94,
+      "Scatter_45_calls": 54.2,
+      "GatherV2_30_calls": 38.58
+    },
+    "fused_kv_key_ops_total_us": {
+      "InterleaveRope_45_calls": 261.98,
+      "RmsNorm_20_calls": 57.14,
+      "KvRmsNormRopeCache_15_calls": 46.86,
+      "GatherV2_30_calls": 38.76,
+      "Scatter_15_calls": 18.22
+    }
+  },
+  "correctness": {
+    "interleave_raw_eager_eight_position_output_exact": true,
+    "interleave_cache_layout": "block; converted to canonical interleaved layout only for reference comparison",
+    "fused_kv_raw_eager_eight_position_output_exact": true
+  },
+  "rejected_lanes": {
+    "npu_rotary_mul": "Eager parity passed, but the compiled cache values diverged; reject compiled semantics.",
+    "npu_kv_rmsnorm_rope_cache_v2": "Correct and fast, but 0.96 percent slower than plain npu_interleave_rope in matched warmed repeats.",
+    "npu_qkv_rms_norm_rope_cache": "Standard-MHA fused-QKV contract requires a common D=128 head/cache layout; it does not map to GLM-5.2 compressed MLA and split 192+64 Q heads.",
+    "npu_mla_prolog_v3": "Kernel rejected GLM-5.2 q_lora_rank=2048 because this installed CANN implementation requires Hcq=1536.",
+    "npu_add_rms_norm_dynamic_quant": "Shared Q-A normalization and quantization passed parity but measured 1.709674067 ms, about 0.4 percent slower than the plain interleave path."
+  },
+  "selected_runtime_path": "npu_interleave_rope for main Q/K RoPE and DSA indexer Q/K RoPE; ordinary RMSNorm plus scatter_update for compressed KV writes"
+}

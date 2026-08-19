@@ -16,8 +16,6 @@ from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 
 from modeling_glm52_dense_tp import (
     GLM52DenseTPStack,
-    Q_A_QUANT_PATHS,
-    ROPE_CACHE_PATHS,
     prepare_w8a8_weight_format,
     shard_bounds,
 )
@@ -47,16 +45,6 @@ def parse_args() -> argparse.Namespace:
         "--enable-internal-format",
         action="store_true",
         help="Enable torch-npu internal formats before the first NPU allocation.",
-    )
-    parser.add_argument(
-        "--rope-cache-path",
-        choices=ROPE_CACHE_PATHS,
-        default="manual",
-    )
-    parser.add_argument(
-        "--q-a-quant-path",
-        choices=Q_A_QUANT_PATHS,
-        default="separate",
     )
     parser.add_argument(
         "--compile-cache-dir",
@@ -248,8 +236,6 @@ def main() -> None:
         world_size=world_size,
         cache_length=args.cache_length,
         device=device,
-        rope_cache_path=args.rope_cache_path,
-        q_a_quant_path=args.q_a_quant_path,
         progress=lambda message: log(rank, message),
     )
     stack.eval()
@@ -397,8 +383,8 @@ def main() -> None:
         "backend": args.backend,
         "internal_format_enabled": bool(args.enable_internal_format),
         "w8_weight_format": weight_format,
-        "rope_cache_path": args.rope_cache_path,
-        "q_a_quant_path": args.q_a_quant_path,
+        "rope_path": "npu_interleave_rope_block_layout",
+        "kv_cache_write": "npu_scatter_update",
         "compile_cache_dir": (
             None
             if args.compile_cache_dir is None

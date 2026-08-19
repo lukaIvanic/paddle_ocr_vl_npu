@@ -252,11 +252,50 @@ The layers 0-2 TP benchmark now exposes one runtime path only:
 - absorbed KV-B weights and compressed latent/RoPE KV caches;
 - contiguous-BSND `npu_sparse_flash_attention`;
 - contiguous-BSND `npu_lightning_indexer`;
+- block-layout `npu_interleave_rope` for the attention and indexer Q/K paths;
 - one static TorchAir graph after ordinary inference warmup.
 
 There are no attention or indexer selection flags. Historical JSON files retain
 the exact commands and results for the removed baselines; replay those commands
 from their recorded commit, not from the current head.
+
+## Verified InterleaveRope rung
+
+The final replicated-kernel sweep compared the historical manual interleaved
+RoPE chain, `npu_interleave_rope`, and
+`npu_kv_rmsnorm_rope_cache_v2`. All lanes used B1, KV4096, FRACTAL_NZ W8A8
+weights, ordinary inference warmup, and one static TorchAir graph on physical
+Ascend 910B2 NPU 7.
+
+| TP1 TorchAir lane | Two 1,000-call stack times | Mean |
+| --- | --- | ---: |
+| Manual interleaved RoPE | 1.828, 1.845 ms | 1.836 ms |
+| `npu_interleave_rope` | 1.701, 1.704 ms | **1.703 ms** |
+| `npu_kv_rmsnorm_rope_cache_v2` | 1.725, 1.713 ms | 1.719 ms |
+
+Plain `npu_interleave_rope` reduced latency by 7.27% and increased throughput
+by `1.078x` relative to the manual path. It was also 0.96% faster than the
+fused KV RMSNorm/RoPE/cache-write lane. The fused KV operator was correct, but
+its extra fusion did not reduce full-graph latency further.
+
+The matched five-stack profile recorded 1,408.2 us of kernel time per manual
+stack and 1,276.8 us per InterleaveRope stack. InterleaveRope removed most of
+the manual Gather, buffer-fusion, Mul, Pack, and Neg chain. Its block-layout
+RoPE result is a pure permutation of the historical interleaved layout. The
+runtime stores that block layout directly; reference validation converts it
+back only outside the timed graph.
+
+The broader operator sweep also rejected three tempting alternatives:
+
+- `npu_rotary_mul` matched eagerly but produced wrong compiled cache state;
+- `npu_qkv_rms_norm_rope_cache` uses a standard-MHA fused-QKV/cache contract
+  that does not map to GLM-5.2 compressed MLA and its split 192+64 Q heads;
+- `npu_mla_prolog_v3` maps conceptually, but the installed kernel requires a
+  Q-LoRA width of 1,536 and rejected GLM-5.2's width of 2,048.
+
+The live benchmark therefore has no RoPE/cache-fusion selection flag. Full
+measurements, profile rows, parity details, and rejection reasons are in
+`references/dense_layers0_2_rope_fusion_910b2_5194a83.json`.
 
 The optimized-only TP1/TP2 validation and exact five-call PipeUtilization
 profile are saved in

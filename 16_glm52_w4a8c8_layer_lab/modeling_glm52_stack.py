@@ -133,20 +133,8 @@ class GLM52DSAIndexer(nn.Module):
         cos: torch.Tensor,
         sin: torch.Tensor,
         key_cache: torch.Tensor,
-        q_lora_scale: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        if q_lora_scale is None:
-            q = self.wq_b(q_lora)
-        else:
-            leading = q_lora.shape[:-1]
-            q = torch_npu.npu_quant_matmul(
-                q_lora.reshape(-1, q_lora.shape[-1]),
-                self.wq_b.weight,
-                self.wq_b.weight_scale,
-                pertoken_scale=q_lora_scale.reshape(-1),
-                output_dtype=torch.bfloat16,
-            ).reshape(*leading, self.num_heads * self.head_dim)
-        q = q.view(1, self.num_heads, self.head_dim)
+        q = self.wq_b(q_lora).view(1, self.num_heads, self.head_dim)
         k = F.linear(
             hidden_states.reshape(-1, hidden_states.shape[-1]), self.wk_weight
         )
@@ -173,19 +161,6 @@ class GLM52DSAIndexer(nn.Module):
             k_pe = apply_interleaved_rope(
                 k_pe.view(1, 1, self.rope_dim), cos, sin
             )
-        elif self.rope_path == "rotary_mul":
-            q_pe = torch_npu.npu_rotary_mul(
-                q_pe.view(1, self.num_heads, 1, self.rope_dim),
-                cos.view(1, 1, 1, self.rope_dim),
-                sin.view(1, 1, 1, self.rope_dim),
-                rotary_mode="interleave",
-            ).view(1, self.num_heads, self.rope_dim)
-            k_pe = torch_npu.npu_rotary_mul(
-                k_pe.view(1, 1, 1, self.rope_dim),
-                cos.view(1, 1, 1, self.rope_dim),
-                sin.view(1, 1, 1, self.rope_dim),
-                rotary_mode="interleave",
-            ).view(1, 1, self.rope_dim)
         elif self.rope_path == "interleave":
             q_pe = torch_npu.npu_interleave_rope(
                 q_pe.view(1, self.num_heads, 1, self.rope_dim).contiguous(),
