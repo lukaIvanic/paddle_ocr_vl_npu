@@ -13,6 +13,12 @@ contents. Run the existing A and B graphs across:
 This is a value-only sweep. Tensor shapes and compiled graphs never change.
 There must be zero compilation.
 
+310P safety rule: no IncreFA batch row may be fully masked. The sweep mirrors
+production static-batch padding by giving every inactive logical row the final
+active row's valid source length. Inactive rows still do not count toward
+effective tokens. The runner checks this before every forward and fails before
+entering IncreFA if the rule is violated.
+
 The complete 910B controls are committed under:
 
 `12_unirec_0_1b_inference/references/unirec_decode_mask_profile_910b_20260819/`
@@ -51,7 +57,8 @@ bash 12_unirec_0_1b_inference/run_310p_decode_mask_occupancy_sweep_background.sh
 
 Immediately give Luka the absolute `RUN_LOG` printed by the launcher. Monitor
 every 10--15 seconds. The runner prints ten-second heartbeats with the latest
-completed point and active compiler-process count.
+setup/point event and active compiler-process count. A `point_begin` without a
+completed point for more than 30 seconds is abnormal; report it immediately.
 
 Expected wall time is approximately two to five minutes. A compiler process,
 compile/recompile message, OM change, traceback, or NPU timeout invalidates the

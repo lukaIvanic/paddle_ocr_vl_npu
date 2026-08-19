@@ -69,9 +69,9 @@ run_lane() {
   while kill -0 "$child" 2>/dev/null; do
     sleep 10
     now="$(date +%s)"
-    printf 'UNIREC_310P_DECODE_MASK_SWEEP_HEARTBEAT lane=%s elapsed_s=%s compiler_processes=%s last_point=%q\n' \
+    printf 'UNIREC_310P_DECODE_MASK_SWEEP_HEARTBEAT lane=%s elapsed_s=%s compiler_processes=%s last_event=%q\n' \
       "$lane" "$((now - started))" "$(compiler_count)" \
-      "$(grep 'UNIREC_DECODE_MASK_SWEEP_POINT' "$lane_root/run.log" | tail -n 1 || true)"
+      "$(grep -E 'UNIREC_DECODE_MASK_SWEEP_(PROGRESS|POINT)' "$lane_root/run.log" | tail -n 1 || true)"
   done
   set +e
   wait "$child"

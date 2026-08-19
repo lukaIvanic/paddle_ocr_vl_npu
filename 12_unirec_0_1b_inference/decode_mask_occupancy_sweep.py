@@ -21,6 +21,14 @@ from modeling_optimized_unirec import (
 from text_decode_lab import make_state
 
 
+def progress(event: str, **fields: Any) -> None:
+    print(
+        "UNIREC_DECODE_MASK_SWEEP_PROGRESS "
+        + json.dumps({"event": event, **fields}, sort_keys=True),
+        flush=True,
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, required=True)
@@ -108,7 +116,20 @@ def configure_masks_(
     cross_len = int(state["cross_mask"].shape[-1])
     if len(source_lengths) != active_rows:
         raise ValueError("source-length sample does not match active rows")
-    lengths = torch.zeros(batch, dtype=torch.int64, device=state["cross_mask"].device)
+    # 310P IncreFA can stall when any batch row is fully masked. Production
+    # fills static tail slots by duplicating a real row, rather than presenting
+    # an empty attention row. Mirror that contract here: inactive logical rows
+    # use the final active row's source length, but remain excluded from the
+    # effective-token metric.
+    filler_source_length = int(source_lengths[-1])
+    if filler_source_length < 1:
+        raise ValueError("IncreFA filler rows require at least one valid source token")
+    lengths = torch.full(
+        (batch,),
+        filler_source_length,
+        dtype=torch.int64,
+        device=state["cross_mask"].device,
+    )
     lengths[:active_rows] = torch.tensor(
         source_lengths, dtype=torch.int64, device=lengths.device
     )
@@ -116,6 +137,13 @@ def configure_masks_(
         cross_len, dtype=torch.int64, device=lengths.device
     ).view(1, 1, 1, cross_len)
     valid = positions < lengths.view(batch, 1, 1, 1)
+    valid_rows = valid.reshape(batch, -1).any(dim=1)
+    if not bool(valid_rows.all().item()):
+        bad_rows = (~valid_rows).nonzero(as_tuple=False).view(-1).cpu().tolist()
+        raise RuntimeError(
+            "310P-unsafe fully masked IncreFA rows constructed: "
+            f"rows={bad_rows[:16]} count={len(bad_rows)}"
+        )
     negative = torch.finfo(torch.float32).min
     state["cross_mask"].copy_(
         torch.where(
@@ -220,6 +248,11 @@ def measure_point(
         "active_fraction": active_rows / batch,
         "initial_cache_position": active_position,
         "source_lengths": distribution(source_lengths),
+        "physical_source_lengths": distribution(
+            source_lengths
+            + [int(source_lengths[-1])] * (batch - active_rows)
+        ),
+        "inactive_row_policy": "duplicate_last_active_source_length",
         "source_mode": source_mode,
         "warmup_steps": warmup_steps,
         "measure_steps": measure_steps,
@@ -242,13 +275,21 @@ def main() -> None:
         )
     import torch_npu  # noqa: F401
 
+    progress("setup_begin", device=args.device)
     torch.npu.set_device(args.device)
     torch.npu.set_compile_mode(jit_compile=False)
+    progress("model_load_begin")
     runner = OptimizedUniRecRunner(
         model_path=args.model,
         device=args.device,
         dtype="float16",
         compile_cache_dir=args.cache_dir,
+    )
+    progress("model_load_end")
+    progress(
+        "cache_bind_begin",
+        self_cache_length=args.self_cache_length,
+        cross_cache_length=args.cross_cache_length,
     )
     module, compile_meta = runner._compile_decode_module(
         backend="torchair",
@@ -257,6 +298,8 @@ def main() -> None:
         cross_cache_len=args.cross_cache_length,
         batch_size=args.batch_size,
     )
+    progress("cache_bind_end", compile=compile_meta)
+    progress("state_allocate_begin")
     state = make_state(
         runner,
         batch_size=args.batch_size,
@@ -265,6 +308,7 @@ def main() -> None:
         cache_position=min(args.cache_positions),
         seed=7,
     )
+    progress("state_allocate_end")
     eligible = read_source_lengths(
         args.artifact_crops_jsonl, args.cross_cache_length
     )
@@ -277,6 +321,12 @@ def main() -> None:
                     quantile_sample(eligible, active_rows)
                     if source_mode == "realistic"
                     else [args.cross_cache_length] * active_rows
+                )
+                progress(
+                    "point_begin",
+                    active_rows=active_rows,
+                    cache_position=position,
+                    source_mode=source_mode,
                 )
                 if first_call_s is None:
                     configure_masks_(
