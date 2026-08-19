@@ -81,6 +81,44 @@ target fused DSA kernels before extrapolating this timing to the full model.
 The full result is in
 `references/layers0_6_dsa2200_910b2_107dca3.json`.
 
+## Verified dense-layer TP2
+
+The owned TP implementation shards layers 0-2 as follows:
+
+- Q/latent A projections and all DSA indexer projections are replicated;
+- Q-B and KV-B outputs are column-sharded by attention head;
+- decompressed K/V caches contain 32 of 64 heads per TP2 rank;
+- attention output projection is row-sharded and all-reduced;
+- dense gate/up outputs are column-sharded across the intermediate dimension;
+- dense down projection is row-sharded and all-reduced.
+
+Each layer therefore has two HCCL all-reduces. The full three-layer graph has
+six. Commit `deb120b` ran TP1 and TP2 on Ascend 910B2 with B1, KV4096, 10
+ordinary warmup positions, and 2,200 measured positions. TP2 used physical
+NPUs 6 and 7; timing uses the slower rank.
+
+| Lane | Mean layers 0-2 time | Stack calls/s | Relative to TP1 |
+| --- | ---: | ---: | ---: |
+| TP1 raw eager, 200 steps | 10.171 ms | 98.32 | 1.000x |
+| TP2 raw eager, 200 steps | 11.508 ms | 86.89 | 0.884x |
+| TP1 TorchAir, 2,200 steps | 4.038 ms | 247.67 | 1.000x |
+| TP2 TorchAir, 2,200 steps | 2.711 ms | 368.93 | **1.490x** |
+
+TP2 eager regressed 13.1% because B1 communication was exposed between small
+kernel calls. Static compilation made the reduced matrix/cache work outweigh
+the six all-reduces and improved stack throughput by 49.0%. Per-NPU allocated
+HBM in the compiled parity process fell from 2.93 GiB at TP1 to 1.51 GiB at
+TP2. The TP2 output max/mean difference from the TP1 eager reference was
+0.015625/0.0000747. Maximum local K/V/index-cache differences were
+0.006836/0.000198/0.023438. Both ranks captured one graph and captured no new
+graph during measurement.
+
+These timings still use the owned manual DSA attention and decompressed K/V
+cache. They demonstrate that TP2 is technically correct and beneficial for the
+dense block under TorchAir; they are not full-model TPOT projections. The
+comparison is saved in
+`references/dense_layers0_2_tp1_tp2_910b2_deb120b.json`.
+
 Run on one Ascend 910B2 after sourcing the NPU environment:
 
 ```bash

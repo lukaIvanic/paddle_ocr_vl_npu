@@ -1,0 +1,64 @@
+{
+  "chip": "Ascend 910B2",
+  "commit": "deb120b",
+  "model": "Eco-Tech/GLM-5.2-w4a8c8",
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "layers": [0, 1, 2]
+  },
+  "sharding_contract": {
+    "all_reduces_per_layer": 2,
+    "dense_down": "row_parallel_all_reduce",
+    "dense_gate_up": "column_parallel_intermediate",
+    "indexer": "replicated",
+    "kv_cache": "head_sharded",
+    "o_proj": "row_parallel_all_reduce",
+    "q_a_and_kv_a": "replicated",
+    "q_b_and_kv_b": "column_parallel_by_head"
+  },
+  "eager_200_steps": {
+    "tp1": {
+      "mean_stack_ms": 10.171362066175789,
+      "stack_calls_per_sec": 98.31524956971454
+    },
+    "tp2": {
+      "mean_stack_ms": 11.508232355117798,
+      "stack_calls_per_sec": 86.894317836335,
+      "speedup_over_tp1": 0.8838335682067201
+    }
+  },
+  "compiled_2200_steps": {
+    "tp1": {
+      "allocated_gib": 2.9313859939575195,
+      "effective_layer_calls_per_sec": 743.0186644648722,
+      "elapsed_sec": 8.882683996576816,
+      "mean_stack_ms": 4.0375836348076435,
+      "stack_calls_per_sec": 247.67288815495743,
+      "unique_graphs": 1
+    },
+    "tp2": {
+      "allocated_gib_per_rank": 1.5112357139587402,
+      "effective_layer_calls_per_sec": 1106.7862488965086,
+      "elapsed_sec_slowest_rank": 5.9632110595703125,
+      "mean_stack_ms": 2.710550481622869,
+      "stack_calls_per_sec": 368.9287496321695,
+      "speedup_over_tp1": 1.489580681924894,
+      "unique_graphs_per_rank": 1
+    }
+  },
+  "tp2_vs_tp1_eager_reference": {
+    "index_cache_max_abs": 0.0234375,
+    "key_cache_max_abs": 0.0068359375,
+    "output_allclose_atol_5e_2_rtol_5e_2": true,
+    "output_max_abs": 0.015625,
+    "output_mean_abs": 0.00007465792441507801,
+    "value_cache_max_abs": 0.0001983642578125
+  },
+  "derived": {
+    "compiled_speedup_percent": 48.9580681924894,
+    "eager_regression_percent": 13.143473609966993,
+    "per_npu_allocated_memory_reduction_percent": 48.44637597798932,
+    "per_npu_weight_memory_reduction_percent": 46.60980740692422
+  }
+}
