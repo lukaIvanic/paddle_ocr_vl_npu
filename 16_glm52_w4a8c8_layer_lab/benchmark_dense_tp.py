@@ -91,6 +91,42 @@ def reduce_max_seconds(
     return float(value.item())
 
 
+def prepare_step_inputs(
+    hidden_states: torch.Tensor,
+    *,
+    first_position: int,
+    steps: int,
+) -> tuple[tuple[torch.Tensor, ...], tuple[torch.Tensor, ...]]:
+    if steps < 1:
+        raise ValueError("steps must be positive")
+    hidden_bank = (
+        hidden_states.unsqueeze(0)
+        .expand(steps, *hidden_states.shape)
+        .clone()
+    )
+    position_bank = torch.arange(
+        first_position,
+        first_position + steps,
+        dtype=torch.int64,
+        device=hidden_states.device,
+    ).view(steps, 1)
+    return hidden_bank.unbind(0), position_bank.unbind(0)
+
+
+def run_prepared_steps(
+    decode,
+    hidden_rows: tuple[torch.Tensor, ...],
+    position_rows: tuple[torch.Tensor, ...],
+    caches,
+) -> torch.Tensor:
+    output = None
+    for hidden_row, position_row in zip(hidden_rows, position_rows, strict=True):
+        output = decode(hidden_row, position_row, *caches)
+    if output is None:
+        raise ValueError("prepared step inputs must not be empty")
+    return output
+
+
 def run_steps(
     decode,
     hidden_states: torch.Tensor,
@@ -99,17 +135,12 @@ def run_steps(
     first_position: int,
     steps: int,
 ) -> torch.Tensor:
-    output = None
-    for offset in range(steps):
-        position = torch.tensor(
-            [first_position + offset],
-            dtype=torch.int64,
-            device=hidden_states.device,
-        )
-        output = decode(hidden_states.clone(), position, *caches)
-    if output is None:
-        raise ValueError("steps must be positive")
-    return output
+    hidden_rows, position_rows = prepare_step_inputs(
+        hidden_states,
+        first_position=first_position,
+        steps=steps,
+    )
+    return run_prepared_steps(decode, hidden_rows, position_rows, caches)
 
 
 def used_cache_cpu(
@@ -392,6 +423,7 @@ def main() -> None:
         ),
         "attention_path": "absorbed_sparse_flash",
         "indexer_path": "lightning",
+        "step_input_mode": "preallocated_fresh_hidden_rows_and_position_views",
         "batch_size": 1,
         "cache_length": args.cache_length,
         "validation_steps": args.validation_steps,
@@ -470,15 +502,20 @@ def timed_steps(
     world_size: int,
     device: torch.device,
 ) -> tuple[torch.Tensor, float]:
+    hidden_rows, position_rows = prepare_step_inputs(
+        hidden_states,
+        first_position=first_position,
+        steps=steps,
+    )
+    torch.npu.synchronize()
     barrier(world_size)
     torch.npu.synchronize()
     started = time.perf_counter()
-    output = run_steps(
+    output = run_prepared_steps(
         decode,
-        hidden_states,
+        hidden_rows,
+        position_rows,
         caches,
-        first_position=first_position,
-        steps=steps,
     )
     torch.npu.synchronize()
     elapsed = time.perf_counter() - started
@@ -528,6 +565,12 @@ def profile_compiled_steps(
         aic_metrics=metric_value,
         export_type=npu_prof.ExportType.Text,
     )
+    profile_hidden_rows, profile_position_rows = prepare_step_inputs(
+        hidden_states,
+        first_position=first_position + ordinary_warmup_steps,
+        steps=1 + active_steps,
+    )
+    torch.npu.synchronize()
     barrier(world_size)
     torch.npu.synchronize()
     started = time.perf_counter()
@@ -542,13 +585,10 @@ def profile_compiled_steps(
         with_stack=False,
         experimental_config=experimental_config,
     ) as prof:
-        for offset in range(1 + active_steps):
-            position = torch.tensor(
-                [first_position + ordinary_warmup_steps + offset],
-                dtype=torch.int64,
-                device=device,
-            )
-            decode(hidden_states.clone(), position, *caches)
+        for offset, (hidden_row, position_row) in enumerate(
+            zip(profile_hidden_rows, profile_position_rows, strict=True)
+        ):
+            decode(hidden_row, position_row, *caches)
             # Flush the profiler warmup before recording starts, then flush the
             # final active call before recording stops. Active calls 1..N stay
             # contiguous, while async work cannot leak across trace boundaries.
@@ -566,7 +606,9 @@ def profile_compiled_steps(
         "profiler_schedule_warmup_steps": 1,
         "active_steps": active_steps,
         "profiled_loop_sec_including_profiler_overhead": profiled_loop_sec,
-        "execution_mode": "contiguous_active_graph_calls_with_boundary_syncs",
+        "execution_mode": (
+            "preallocated_inputs_contiguous_active_graph_calls_with_boundary_syncs"
+        ),
     }
 
 
