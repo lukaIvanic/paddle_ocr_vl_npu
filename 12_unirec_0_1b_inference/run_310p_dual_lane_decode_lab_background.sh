@@ -90,7 +90,13 @@ worker_main() {
   : "${MODEL:?export the OpenDoc UniRec model directory}"
   : "${DECODE_CACHE_PARENT:?export the exact production decode-cache parent}"
   : "${ASCEND_RT_VISIBLE_DEVICES:?select one free physical 310P device 0-3}"
-  [[ "$ASCEND_RT_VISIBLE_DEVICES" =~ ^[0-3]$ ]]
+  : "${UNIREC_ALLOW_910B_CONTROL:=0}"
+  if [[ "$UNIREC_ALLOW_910B_CONTROL" == 1 ]]; then
+    [[ "$ASCEND_RT_VISIBLE_DEVICES" =~ ^[0-7]$ ]]
+    [[ "$ASCEND_RT_VISIBLE_DEVICES" != 5 && "$ASCEND_RT_VISIBLE_DEVICES" != 6 ]]
+  else
+    [[ "$ASCEND_RT_VISIBLE_DEVICES" =~ ^[0-3]$ ]]
+  fi
   test -x "$PYTHON_BIN"
   test -f "$MODEL/model.pth"
   test -d "$DECODE_CACHE_PARENT"
@@ -106,8 +112,9 @@ worker_main() {
   test "$(find "$b_cache" -type f -name compiled_module | wc -l)" -eq 1
 
   ulimit -n 65536 2>/dev/null || true
-  printf 'project_commit=%s\nphysical_npu=%s\npython=%s\nmodel=%s\ncache_parent=%s\nsoft_nofile=%s\na_om_before=%s\nb_om_before=%s\n' \
+  printf 'project_commit=%s\nphysical_npu=%s\nallow_910b_control=%s\npython=%s\nmodel=%s\ncache_parent=%s\nsoft_nofile=%s\na_om_before=%s\nb_om_before=%s\n' \
     "$(git -C "$REPO" rev-parse HEAD)" "$ASCEND_RT_VISIBLE_DEVICES" \
+    "$UNIREC_ALLOW_910B_CONTROL" \
     "$PYTHON_BIN" "$MODEL" "$DECODE_CACHE_PARENT" "$(ulimit -n)" \
     "$a_before" "$b_before" >"$RUN_ROOT/preflight.txt"
   cache_inventory "$DECODE_CACHE_PARENT" "$RUN_ROOT/om_before.txt"
@@ -227,6 +234,7 @@ launch_main() {
     PYTHON_BIN="$PYTHON_BIN" MODEL="$MODEL" \
     DECODE_CACHE_PARENT="$DECODE_CACHE_PARENT" \
     ASCEND_RT_VISIBLE_DEVICES="$ASCEND_RT_VISIBLE_DEVICES" \
+    UNIREC_ALLOW_910B_CONTROL="${UNIREC_ALLOW_910B_CONTROL:-0}" \
     "$0" worker "$RUN_ROOT" >"$RUN_ROOT/run.log" 2>&1 &
   printf '%s\n' "$!" >"$RUN_ROOT/pid.txt"
   printf 'RUN_ROOT=%s\nRUN_LOG=%s\nPID=%s\n' \
