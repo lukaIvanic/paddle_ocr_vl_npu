@@ -71,16 +71,18 @@ def manual_absorbed_attention(
         query_nope.reshape(local_heads, 1, query_nope.shape[-1]),
         w_uk_t,
     )
+    # Keep both score contractions explicitly 2-D. GE can interpret the
+    # singleton query axis of [heads, 1, dim] as the contraction dimension.
     latent_scores = torch.matmul(
-        latent_query.float(),
+        latent_query.reshape(local_heads, kv_lora_rank).float(),
         selected_latent.reshape(sparse_k, kv_lora_rank).float().transpose(0, 1),
-    )
+    ).view(local_heads, 1, sparse_k)
     rope_scores = torch.matmul(
-        query_rope.reshape(local_heads, 1, query_rope.shape[-1]).float(),
+        query_rope.reshape(local_heads, query_rope.shape[-1]).float(),
         selected_rope.reshape(sparse_k, query_rope.shape[-1])
         .float()
         .transpose(0, 1),
-    )
+    ).view(local_heads, 1, sparse_k)
     scores = (latent_scores + rope_scores).view(1, local_heads, 1, sparse_k)
     scores = scores * scale
     valid = selected.unsqueeze(0) <= position.unsqueeze(1)
