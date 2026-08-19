@@ -132,19 +132,22 @@ class _WorkerDecodeLane:
     def _copy_valid_row(self, source_slot: int, destination_slot: int) -> None:
         if self.cache is None:
             raise RuntimeError("decode lane arena is not allocated")
-        for tensor_group in (
-            self.cache.key_cache,
-            self.cache.value_cache,
-            self.cache.cross_key_cache or (),
-            self.cache.cross_value_cache or (),
-        ):
-            for tensor in tensor_group:
-                tensor[destination_slot : destination_slot + 1].copy_(
-                    tensor[source_slot : source_slot + 1]
-                )
-        self.cache.cross_attention_mask[
-            destination_slot : destination_slot + 1
-        ].copy_(self.cache.cross_attention_mask[source_slot : source_slot + 1])
+        with torch.inference_mode():
+            for tensor_group in (
+                self.cache.key_cache,
+                self.cache.value_cache,
+                self.cache.cross_key_cache or (),
+                self.cache.cross_value_cache or (),
+            ):
+                for tensor in tensor_group:
+                    tensor[destination_slot : destination_slot + 1].copy_(
+                        tensor[source_slot : source_slot + 1]
+                    )
+            self.cache.cross_attention_mask[
+                destination_slot : destination_slot + 1
+            ].copy_(
+                self.cache.cross_attention_mask[source_slot : source_slot + 1]
+            )
 
     def _admit(self, slot: int, item: RankedReadyItem) -> None:
         if self.cache is None:
