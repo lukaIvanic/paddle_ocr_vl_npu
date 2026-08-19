@@ -27,7 +27,13 @@ from modeling_glm52_stack import GLM52DSAIndexer
 
 
 FRACTAL_NZ = 29
-ROPE_CACHE_PATHS = ("manual", "rotary_mul", "interleave", "fused_kv")
+ROPE_CACHE_PATHS = (
+    "manual",
+    "rotary_mul",
+    "interleave",
+    "fused_kv",
+    "mla_prolog_v3",
+)
 
 
 def apply_rope_path(
@@ -85,6 +91,35 @@ def prepare_w8a8_weight_format(
     if requested == "fractal_nz" and any(code != FRACTAL_NZ for code in after):
         raise RuntimeError(f"not all W8A8 weights became FRACTAL_NZ: {after}")
 
+    prolog_targets = []
+    for module_name, child in module.named_modules():
+        for attribute in ("prolog_weight_dq", "prolog_weight_dkv_kr"):
+            value = getattr(child, attribute, None)
+            if value is not None:
+                prolog_targets.append((f"{module_name}.{attribute}", child, attribute))
+    prolog_before = [
+        int(torch_npu.get_npu_format(getattr(child, attribute)))
+        for _, child, attribute in prolog_targets
+    ]
+    if requested == "fractal_nz":
+        for _, child, attribute in prolog_targets:
+            value = getattr(child, attribute)
+            setattr(
+                child,
+                attribute,
+                torch_npu.npu_format_cast(value.contiguous(), FRACTAL_NZ),
+            )
+    prolog_after = [
+        int(torch_npu.get_npu_format(getattr(child, attribute)))
+        for _, child, attribute in prolog_targets
+    ]
+    if requested == "fractal_nz" and any(
+        code != FRACTAL_NZ for code in prolog_after
+    ):
+        raise RuntimeError(
+            f"not all MLA prolog weights became FRACTAL_NZ: {prolog_after}"
+        )
+
     return {
         "requested": requested,
         "target_format": "FRACTAL_NZ" if requested == "fractal_nz" else "unchanged",
@@ -104,6 +139,15 @@ def prepare_w8a8_weight_format(
                 "format_after": after[index],
             }
             for index, (name, child) in enumerate(targets)
+        ],
+        "mla_prolog_weights": [
+            {
+                "name": name,
+                "shape_k_n": list(getattr(child, attribute).shape),
+                "format_before": prolog_before[index],
+                "format_after": prolog_after[index],
+            }
+            for index, (name, child, attribute) in enumerate(prolog_targets)
         ],
     }
 
@@ -275,6 +319,27 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         self.register_buffer("post_attention_norm", post_attention_norm.contiguous())
         self.register_buffer("q_a_norm", q_a_norm.contiguous())
         self.register_buffer("kv_a_norm", kv_a_norm.contiguous())
+        if self.rope_cache_path == "mla_prolog_v3":
+            self.register_buffer(
+                "prolog_weight_dq",
+                fused_qkv_a.weight[:, : config.q_lora_rank].contiguous(),
+            )
+            self.register_buffer(
+                "prolog_scale_dq",
+                fused_qkv_a.weight_scale[: config.q_lora_rank]
+                .view(1, -1)
+                .contiguous(),
+            )
+            self.register_buffer(
+                "prolog_weight_dkv_kr",
+                fused_qkv_a.weight[:, config.q_lora_rank :].contiguous(),
+            )
+            self.register_buffer(
+                "prolog_scale_dkv_kr",
+                fused_qkv_a.weight_scale[config.q_lora_rank :]
+                .view(1, -1)
+                .contiguous(),
+            )
 
         device = input_norm.device
         positions = torch.arange(cache_length, device=device, dtype=torch.float32)
@@ -378,7 +443,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
                 device=device,
                 rope_path=(
                     "interleave"
-                    if rope_cache_path == "fused_kv"
+                    if rope_cache_path in {"fused_kv", "mla_prolog_v3"}
                     else rope_cache_path
                 ),
             ),
@@ -403,7 +468,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         *,
         used_length: int,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        if self.rope_cache_path in {"interleave", "fused_kv"}:
+        if self.rope_cache_path in {"interleave", "fused_kv", "mla_prolog_v3"}:
             secondary_cache = block_rope_to_interleaved(secondary_cache)
         return materialize_absorbed_kv(
             primary_cache,
@@ -424,8 +489,72 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         cfg = self.config
         residual = hidden_states.clone()
         x = npu_rms_norm(hidden_states, self.input_norm, cfg.rms_norm_eps)
-        fused = self.fused_qkv_a(x)
-        if self.rope_cache_path == "fused_kv":
+        position = cache_position.reshape(-1).to(torch.int64)
+        compressed_kv = None
+        k_rope = None
+        if self.rope_cache_path == "mla_prolog_v3":
+            cos = torch.index_select(
+                self.rope_cos_block, 0, position
+            ).view(1, 1, cfg.qk_rope_head_dim)
+            sin = torch.index_select(
+                self.rope_sin_block, 0, position
+            ).view(1, 1, cfg.qk_rope_head_dim)
+            quantized_x, dequant_scale_x = torch_npu.npu_dynamic_quant(
+                x.reshape(-1, cfg.hidden_size), dst_type=torch.int8
+            )
+            (
+                query_nope,
+                query_rope,
+                _,
+                q_a,
+                q_a_scale,
+            ) = torch_npu.npu_mla_prolog_v3(
+                token_x=quantized_x.view(1, 1, cfg.hidden_size),
+                weight_dq=self.prolog_weight_dq,
+                weight_uq_qr=self.q_b_proj.weight,
+                weight_uk=self.w_uk_t,
+                weight_dkv_kr=self.prolog_weight_dkv_kr,
+                rmsnorm_gamma_cq=self.q_a_norm,
+                rmsnorm_gamma_ckv=self.kv_a_norm,
+                rope_sin=sin,
+                rope_cos=cos,
+                cache_index=position.view(1, 1),
+                kv_cache=key_cache.view(
+                    1, self.cache_length, 1, cfg.kv_lora_rank
+                ),
+                kr_cache=value_cache.view(
+                    1, self.cache_length, 1, cfg.qk_rope_head_dim
+                ),
+                dequant_scale_x=dequant_scale_x.reshape(1, 1),
+                dequant_scale_w_dq=self.prolog_scale_dq,
+                dequant_scale_w_uq_qr=self.q_b_proj.weight_scale.view(1, -1),
+                dequant_scale_w_dkv_kr=self.prolog_scale_dkv_kr,
+                rmsnorm_epsilon_cq=cfg.rms_norm_eps,
+                rmsnorm_epsilon_ckv=cfg.rms_norm_eps,
+                cache_mode="PA_BSND",
+                query_norm_flag=True,
+                weight_quant_mode=2,
+                kv_cache_quant_mode=0,
+                query_quant_mode=0,
+            )
+            if q_a.dtype == torch.int8:
+                q_a = q_a.to(x.dtype) * q_a_scale.to(x.dtype)
+            q_a = q_a.view(1, 1, cfg.q_lora_rank)
+            query_nope = query_nope.view(
+                1, 1, self.local_heads, cfg.kv_lora_rank
+            )
+            query_rope = query_rope.view(
+                1, 1, self.local_heads, cfg.qk_rope_head_dim
+            )
+        else:
+            query_nope = None
+            query_rope = None
+
+        if self.rope_cache_path != "mla_prolog_v3":
+            fused = self.fused_qkv_a(x)
+        if self.rope_cache_path == "mla_prolog_v3":
+            pass
+        elif self.rope_cache_path == "fused_kv":
             q_a, fused_kv = torch.split(
                 fused,
                 [cfg.q_lora_rank, cfg.kv_lora_rank + cfg.qk_rope_head_dim],
@@ -439,26 +568,27 @@ class GLM52DenseTPDecoderLayer(nn.Module):
                 [cfg.q_lora_rank, cfg.kv_lora_rank, cfg.qk_rope_head_dim],
                 dim=-1,
             )
-        q_a = npu_rms_norm(q_a, self.q_a_norm, cfg.rms_norm_eps)
+        if self.rope_cache_path != "mla_prolog_v3":
+            q_a = npu_rms_norm(q_a, self.q_a_norm, cfg.rms_norm_eps)
         if compressed_kv is not None:
             compressed_kv = npu_rms_norm(
                 compressed_kv, self.kv_a_norm, cfg.rms_norm_eps
             )
-        query = self.q_b_proj(q_a).view(
-            1, 1, self.local_heads, cfg.qk_head_dim
-        )
-        query_nope, query_rope = torch.split(
-            query, [cfg.qk_nope_head_dim, cfg.qk_rope_head_dim], dim=-1
-        )
-        position = cache_position.reshape(-1).to(torch.int64)
+        if self.rope_cache_path != "mla_prolog_v3":
+            query = self.q_b_proj(q_a).view(
+                1, 1, self.local_heads, cfg.qk_head_dim
+            )
+            query_nope, query_rope = torch.split(
+                query, [cfg.qk_nope_head_dim, cfg.qk_rope_head_dim], dim=-1
+            )
         rope_cos = (
             self.rope_cos_block
-            if self.rope_cache_path in {"interleave", "fused_kv"}
+            if self.rope_cache_path in {"interleave", "fused_kv", "mla_prolog_v3"}
             else self.rope_cos
         )
         rope_sin = (
             self.rope_sin_block
-            if self.rope_cache_path in {"interleave", "fused_kv"}
+            if self.rope_cache_path in {"interleave", "fused_kv", "mla_prolog_v3"}
             else self.rope_sin
         )
         cos = torch.index_select(rope_cos, 0, position).view(
@@ -467,13 +597,16 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         sin = torch.index_select(rope_sin, 0, position).view(
             1, 1, 1, cfg.qk_rope_head_dim
         )
-        query_rope = apply_rope_path(
-            query_rope,
-            cos,
-            sin,
-            path=self.rope_cache_path,
-        )
-        if self.rope_cache_path == "fused_kv":
+        if self.rope_cache_path != "mla_prolog_v3":
+            query_rope = apply_rope_path(
+                query_rope,
+                cos,
+                sin,
+                path=self.rope_cache_path,
+            )
+        if self.rope_cache_path == "mla_prolog_v3":
+            pass
+        elif self.rope_cache_path == "fused_kv":
             torch_npu.npu_kv_rmsnorm_rope_cache_v2(
                 fused_kv.view(
                     1,
