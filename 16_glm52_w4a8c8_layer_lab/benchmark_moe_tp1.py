@@ -302,7 +302,7 @@ def main() -> None:
         "reference_parity": {
             "output_max_abs": float(reference_diff.max().item()),
             "output_mean_abs": float(reference_diff.mean().item()),
-            "allclose_atol_5e_2_rtol_5e_2": true,
+            "allclose_atol_5e_2_rtol_5e_2": True,
         },
         "final_output_abs_max": float(final_output.float().abs().max().item()),
         "dynamo": {
