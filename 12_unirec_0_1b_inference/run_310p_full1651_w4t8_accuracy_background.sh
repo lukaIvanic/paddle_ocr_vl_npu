@@ -234,11 +234,23 @@ slots = {
 root = Path(os.environ["COMPILE_CACHE"])
 legacy_hash = vision_full_batch._source_hash()
 flat_hash = vision_full_batch._flat_global_context_source_hash()
+extended_flat_hash = vision_full_batch._extended_flat_global_context_source_hash()
 flat_keys = set(vision_full_batch.FLAT_GLOBAL_CONTEXT_BUCKET_KEYS)
+extended_flat_keys = set(
+    vision_full_batch.EXTENDED_FLAT_GLOBAL_CONTEXT_BUCKET_KEYS
+)
 report = {}
 for key, slot in slots.items():
-    use_flat = key in flat_keys
-    source_hash = flat_hash if use_flat else legacy_hash
+    use_flat = key in flat_keys or key in extended_flat_keys
+    if key in extended_flat_keys:
+        source_hash = extended_flat_hash
+        global_context_mode = "direct_2d_extended"
+    elif key in flat_keys:
+        source_hash = flat_hash
+        global_context_mode = "direct_2d_legacy"
+    else:
+        source_hash = legacy_hash
+        global_context_mode = "legacy_two_stage"
     method = (
         f"_forward_flat_bucket_slot_{slot}"
         if use_flat
@@ -259,7 +271,7 @@ for key, slot in slots.items():
         "slot": slot,
         "method": method,
         "source_hash": source_hash,
-        "global_context_mode": "direct_2d" if use_flat else "legacy_two_stage",
+        "global_context_mode": global_context_mode,
         "target_compiled_module_count": len(set(modules)),
         "target_om_count": len(set(oms)),
         "target_compiled_modules": [str(path) for path in sorted(set(modules))],
@@ -270,6 +282,7 @@ missing = [key for key, row in report.items() if not row["target_compiled_module
 print(
     "UNIREC_310P_FULL1651_VISION_CACHE "
     f"legacy_hash={legacy_hash} flat_hash={flat_hash} "
+    f"extended_flat_hash={extended_flat_hash} "
     f"missing={len(missing)} keys={missing}"
 )
 if missing:
