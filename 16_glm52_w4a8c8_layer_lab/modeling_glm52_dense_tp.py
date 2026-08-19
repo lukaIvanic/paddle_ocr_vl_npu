@@ -13,6 +13,7 @@ from absorbed_mla import (
     absorb_kv_b_weight,
     manual_absorbed_attention,
     materialize_absorbed_kv,
+    sparse_flash_absorbed_attention,
 )
 from modeling_glm52_layer import (
     BF16Linear,
@@ -26,7 +27,11 @@ from modeling_glm52_layer import (
 from modeling_glm52_stack import GLM52DSAIndexer
 
 
-ATTENTION_PATHS = ("decompressed_manual", "absorbed_manual")
+ATTENTION_PATHS = (
+    "decompressed_manual",
+    "absorbed_manual",
+    "absorbed_sparse_flash",
+)
 
 
 def shard_bounds(size: int, rank: int, world_size: int) -> tuple[int, int]:
@@ -438,10 +443,25 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             local_attention = local_attention.transpose(1, 2).reshape(
                 1, 1, self.local_heads * cfg.v_head_dim
             )
-        else:
+        elif self.attention_path == "absorbed_manual":
             assert self.w_uk_t is not None
             assert self.w_uv is not None
             local_attention = manual_absorbed_attention(
+                query_nope,
+                query_rope,
+                key_cache,
+                value_cache,
+                self.w_uk_t,
+                self.w_uv,
+                selected,
+                position,
+                scale=cfg.qk_head_dim**-0.5,
+            )
+        else:
+            assert self.attention_path == "absorbed_sparse_flash"
+            assert self.w_uk_t is not None
+            assert self.w_uv is not None
+            local_attention = sparse_flash_absorbed_attention(
                 query_nope,
                 query_rope,
                 key_cache,

@@ -380,6 +380,11 @@ def main() -> None:
                 if args.attention_path == "decompressed_manual"
                 else "compressed_latent512_plus_rope64"
             ),
+            "sparse_attention": (
+                "contiguous_bsnd_npu_sparse_flash_attention"
+                if args.attention_path == "absorbed_sparse_flash"
+                else "manual_selected_attention"
+            ),
             "o_proj": "row_parallel_all_reduce",
             "dense_gate_up": "column_parallel_intermediate",
             "dense_down": "row_parallel_all_reduce",
