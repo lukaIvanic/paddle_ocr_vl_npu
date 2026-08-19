@@ -10,8 +10,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
-import torch.nn.functional as F
 
 from modeling_optimized_unirec import OptimizedUniRecRunner, synchronize_device
 from text_decode_lab import (
@@ -33,9 +33,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup-steps", type=int, default=10)
     parser.add_argument("--measure-steps", type=int, default=100)
     parser.add_argument("--timing-steps", type=int, default=30)
+    parser.add_argument(
+        "--weight-formats",
+        nargs="+",
+        choices=("nd", "nz"),
+        default=("nd",),
+        help=(
+            "Run one format per process for valid TorchDynamo code-object "
+            "caching. Passing both is rejected."
+        ),
+    )
     args = parser.parse_args()
     if not 1 <= args.source_length <= 256:
         parser.error("--source-length must be within C256")
+    if len(args.weight_formats) != 1:
+        parser.error("run exactly one --weight-formats value per process")
     return args
 
 
@@ -200,25 +212,14 @@ def main() -> None:
     lanes = {}
     logits = {}
     tokens = {}
-    for weight_format in ("nd", "nz"):
+    for weight_format in args.weight_formats:
         lanes[weight_format], logits[weight_format], tokens[weight_format] = run_lane(
             args,
             weight_format,
         )
-
-    delta = (logits["nd"] - logits["nz"]).abs()
-    parity = {
-        "token_exact": tokens["nd"] == tokens["nz"],
-        "nd_tokens": tokens["nd"],
-        "nz_tokens": tokens["nz"],
-        "logits_max_abs": float(delta.max()),
-        "logits_mean_abs": float(delta.mean()),
-        "logits_cosine": float(
-            F.cosine_similarity(
-                logits["nd"].flatten(), logits["nz"].flatten(), dim=0
-            )
-        ),
-    }
+    weight_format = args.weight_formats[0]
+    logits_path = args.output.with_suffix(".validation_logits.npy")
+    np.save(logits_path, logits[weight_format].numpy())
     payload = {
         "schema_version": 1,
         "kind": "unirec_decode_weight_format_b1_lab",
@@ -231,8 +232,7 @@ def main() -> None:
             "source_length": args.source_length,
         },
         "lanes": lanes,
-        "parity": parity,
-        "nz_over_nd_raw_tok_s": lanes["nz"]["raw_tok_s"] / lanes["nd"]["raw_tok_s"],
+        "validation_logits_npy": str(logits_path),
     }
     args.output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print("UNIREC_DECODE_WEIGHT_B1: PASS")
