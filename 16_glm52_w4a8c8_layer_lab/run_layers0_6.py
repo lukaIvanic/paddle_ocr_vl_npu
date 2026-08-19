@@ -256,6 +256,7 @@ def main() -> None:
                     "after_measurement": stats_after_measurement,
                     "new_graphs_during_measurement": new_graphs,
                 },
+                "memory_after_compile": memory_snapshot(device),
             }
         )
 
