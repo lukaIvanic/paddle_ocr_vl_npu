@@ -149,12 +149,12 @@ materialization route. Per-kernel memory and L2 results are saved in
 
 ## Verified TP1 absorbed-MLA rung
 
-The first vLLM-Ascend-derived optimization keeps the owned DSA indexer and
-manual sparse softmax, but absorbs the BF16 KV-B projection into per-head
+The first vLLM-Ascend-derived optimization kept the owned DSA indexer and
+manual sparse softmax, but absorbed the BF16 KV-B projection into per-head
 `W_UK_T` and `W_UV` weights. It stores one latent-512 row and one RoPE-64 row
-per token and layer instead of decompressed per-head K/V. The old
-`decompressed_manual` path remains available as an explicit baseline;
-`absorbed_manual` selects the new path.
+per token and layer instead of decompressed per-head K/V. The decompressed and
+manual absorbed implementations now exist only in their named historical
+commits and evidence files; the live dense path always uses absorption.
 
 Commit `e9767ad` ran both paths sequentially on physical Ascend 910B2 NPU 7
 with B1, KV4096, 10 ordinary warmup positions, and 1,000 measured positions.
@@ -181,7 +181,7 @@ the fused sparse-attention operator the next isolated rung. Full evidence is in
 
 ## Verified contiguous-cache SparseFA rung
 
-The `absorbed_sparse_flash` lane replaces only the selected-attention core with
+The contiguous SparseFA rung replaced only the selected-attention core with
 `torch_npu.npu_sparse_flash_attention`. It deliberately does not use paged
 attention: query and KV use `BSND`, the compressed KV cache remains one static
 KV4096 tensor, `block_table=None`, and the valid KV length is the on-device
@@ -212,7 +212,7 @@ SparseFlashAttention kernel averaged 20.47 us. Quantized linears now account for
 
 ## Verified contiguous LightningIndexer rung
 
-The `lightning` indexer lane replaces manual KV4096 scoring, head weighting and
+The LightningIndexer rung replaced manual KV4096 scoring, head weighting and
 reduction, causal-range construction, and TopK with
 `torch_npu.npu_lightning_indexer`. Like the SparseFA rung, it uses ordinary
 contiguous `BSND`: `block_table=None`, an on-device `position + 1` length, and
@@ -220,8 +220,9 @@ no Python sequence-length list or graph-task parameter update.
 
 This rung also corrected an older semantic error. The authoritative GLM-5.2
 indexer applies ReLU to each head's Q/K score before weighted head reduction.
-The historical owned path omitted ReLU. `manual_legacy` remains available only
-to reproduce older timing evidence; `manual_relu` is the corrected control.
+The historical owned path omitted ReLU. The corrected manual ReLU control and
+the incorrect legacy implementation remain reproducible at commit `10a3e91`,
+but both have been removed from the live source.
 On physical 910B2 NPU 7, a real 32-head/top-2048 operator probe matched the
 corrected manual TopK in exact order, and eight sequential raw-eager model
 positions had exact output and cache parity.
@@ -243,6 +244,19 @@ manual and 1.920 ms for LightningIndexer: 2.86% lower latency and `1.029x`
 throughput. Both lanes passed TP1-reference parity, captured one static graph,
 and captured no new graph during measurement. Full evidence is in
 `references/dense_layers0_2_lightning_indexer_910b2_10a3e91.json`.
+
+## Current dense path
+
+The layers 0-2 TP benchmark now exposes one runtime path only:
+
+- absorbed KV-B weights and compressed latent/RoPE KV caches;
+- contiguous-BSND `npu_sparse_flash_attention`;
+- contiguous-BSND `npu_lightning_indexer`;
+- one static TorchAir graph after ordinary inference warmup.
+
+There are no attention or indexer selection flags. Historical JSON files retain
+the exact commands and results for the removed baselines; replay those commands
+from their recorded commit, not from the current head.
 
 Run on one Ascend 910B2 after sourcing the NPU environment:
 

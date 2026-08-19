@@ -11,7 +11,6 @@ from torch import nn
 
 from absorbed_mla import (
     absorb_kv_b_weight,
-    manual_absorbed_attention,
     materialize_absorbed_kv,
     sparse_flash_absorbed_attention,
 )
@@ -24,14 +23,7 @@ from modeling_glm52_layer import (
     npu_rms_norm,
     torch_npu,
 )
-from modeling_glm52_stack import GLM52DSAIndexer, INDEXER_PATHS
-
-
-ATTENTION_PATHS = (
-    "decompressed_manual",
-    "absorbed_manual",
-    "absorbed_sparse_flash",
-)
+from modeling_glm52_stack import GLM52DSAIndexer
 
 
 def shard_bounds(size: int, rank: int, world_size: int) -> tuple[int, int]:
@@ -171,35 +163,25 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         post_attention_norm: torch.Tensor,
         q_a_norm: torch.Tensor,
         kv_a_norm: torch.Tensor,
-        attention_path: str,
     ):
         super().__init__()
-        if attention_path not in ATTENTION_PATHS:
-            raise ValueError(f"Unsupported attention path: {attention_path}")
         self.layer_index = int(layer_index)
         self.config = config
         self.cache_length = int(cache_length)
         self.rank = int(rank)
         self.world_size = int(world_size)
         self.local_heads = config.num_attention_heads // world_size
-        self.attention_path = attention_path
         self.fused_qkv_a = fused_qkv_a
         self.q_b_proj = q_b_proj
-        if attention_path == "decompressed_manual":
-            self.kv_b_proj = kv_b_proj
-            self.register_buffer("w_uk_t", None)
-            self.register_buffer("w_uv", None)
-        else:
-            w_uk_t, w_uv = absorb_kv_b_weight(
-                kv_b_proj.weight,
-                local_heads=self.local_heads,
-                qk_nope_head_dim=config.qk_nope_head_dim,
-                v_head_dim=config.v_head_dim,
-                kv_lora_rank=config.kv_lora_rank,
-            )
-            self.kv_b_proj = None
-            self.register_buffer("w_uk_t", w_uk_t)
-            self.register_buffer("w_uv", w_uv)
+        w_uk_t, w_uv = absorb_kv_b_weight(
+            kv_b_proj.weight,
+            local_heads=self.local_heads,
+            qk_nope_head_dim=config.qk_nope_head_dim,
+            v_head_dim=config.v_head_dim,
+            kv_lora_rank=config.kv_lora_rank,
+        )
+        self.register_buffer("w_uk_t", w_uk_t)
+        self.register_buffer("w_uv", w_uv)
         self.o_proj = o_proj
         self.mlp = mlp
         self.indexer = indexer
@@ -244,8 +226,6 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         rank: int,
         world_size: int,
         device: torch.device,
-        attention_path: str,
-        indexer_path: str,
     ) -> "GLM52DenseTPDecoderLayer":
         config = GLM52Config.from_model_dir(model_dir)
         with (Path(model_dir) / "config.json").open() as handle:
@@ -304,7 +284,6 @@ class GLM52DenseTPDecoderLayer(nn.Module):
                 top_k=int(raw["index_topk"]),
                 cache_length=cache_length,
                 device=device,
-                implementation=indexer_path,
             ),
             input_norm=reader.tensor(layer + ".input_layernorm.weight").to(
                 device=device, dtype=torch.bfloat16
@@ -318,7 +297,6 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             kv_a_norm=reader.tensor(attn + ".kv_a_layernorm.weight").to(
                 device=device, dtype=torch.bfloat16
             ),
-            attention_path=attention_path,
         )
 
     def materialize_reference_kv(
@@ -328,13 +306,6 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         *,
         used_length: int,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        if self.attention_path == "decompressed_manual":
-            return (
-                primary_cache[:, :, :used_length],
-                secondary_cache[:, :, :used_length],
-            )
-        assert self.w_uk_t is not None
-        assert self.w_uv is not None
         return materialize_absorbed_kv(
             primary_cache,
             secondary_cache,
@@ -382,35 +353,15 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             k_rope.view(1, 1, 1, cfg.qk_rope_head_dim), cos, sin
         )
 
-        if self.attention_path == "decompressed_manual":
-            assert self.kv_b_proj is not None
-            kv = self.kv_b_proj(compressed_kv).view(
-                1,
-                1,
-                self.local_heads,
-                cfg.qk_nope_head_dim + cfg.v_head_dim,
-            )
-            key_nope, value = torch.split(
-                kv, [cfg.qk_nope_head_dim, cfg.v_head_dim], dim=-1
-            )
-            expanded_key_rope = key_rope.expand(
-                -1, -1, self.local_heads, -1
-            )
-            query = torch.cat((query_nope, query_rope), dim=-1).transpose(1, 2)
-            key = torch.cat((key_nope, expanded_key_rope), dim=-1).transpose(1, 2)
-            value = value.transpose(1, 2)
-            torch_npu.scatter_update_(key_cache, position, key.contiguous(), 2)
-            torch_npu.scatter_update_(value_cache, position, value.contiguous(), 2)
-        else:
-            torch_npu.scatter_update_(
-                key_cache, position, compressed_kv.contiguous(), 1
-            )
-            torch_npu.scatter_update_(
-                value_cache,
-                position,
-                key_rope.view(1, 1, cfg.qk_rope_head_dim).contiguous(),
-                1,
-            )
+        torch_npu.scatter_update_(
+            key_cache, position, compressed_kv.contiguous(), 1
+        )
+        torch_npu.scatter_update_(
+            value_cache,
+            position,
+            key_rope.view(1, 1, cfg.qk_rope_head_dim).contiguous(),
+            1,
+        )
 
         selected = self.indexer(
             x,
@@ -420,63 +371,17 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             sin.view(1, 1, cfg.qk_rope_head_dim),
             index_key_cache,
         ).reshape(-1)
-        if self.attention_path == "decompressed_manual":
-            safe_selected = selected.clamp_min(0)
-            selected_key = torch.index_select(key_cache, 2, safe_selected)
-            selected_value = torch.index_select(value_cache, 2, safe_selected)
-            sparse_k = selected.shape[0]
-            scores = torch.bmm(
-                query.reshape(self.local_heads, 1, cfg.qk_head_dim).float(),
-                selected_key.reshape(
-                    self.local_heads, sparse_k, cfg.qk_head_dim
-                ).float().transpose(1, 2),
-            ).view(1, self.local_heads, 1, sparse_k)
-            scores = scores * (cfg.qk_head_dim**-0.5)
-            valid = (selected.unsqueeze(0) >= 0) & (
-                selected.unsqueeze(0) <= position.unsqueeze(1)
-            )
-            scores = scores.masked_fill(
-                ~valid.unsqueeze(1), torch.finfo(scores.dtype).min
-            )
-            probabilities = torch.softmax(scores, dim=-1).to(value.dtype)
-            local_attention = torch.bmm(
-                probabilities.reshape(self.local_heads, 1, sparse_k),
-                selected_value.reshape(
-                    self.local_heads, sparse_k, cfg.v_head_dim
-                ),
-            ).view(1, self.local_heads, 1, cfg.v_head_dim)
-            local_attention = local_attention.transpose(1, 2).reshape(
-                1, 1, self.local_heads * cfg.v_head_dim
-            )
-        elif self.attention_path == "absorbed_manual":
-            assert self.w_uk_t is not None
-            assert self.w_uv is not None
-            local_attention = manual_absorbed_attention(
-                query_nope,
-                query_rope,
-                key_cache,
-                value_cache,
-                self.w_uk_t,
-                self.w_uv,
-                selected,
-                position,
-                scale=cfg.qk_head_dim**-0.5,
-            )
-        else:
-            assert self.attention_path == "absorbed_sparse_flash"
-            assert self.w_uk_t is not None
-            assert self.w_uv is not None
-            local_attention = sparse_flash_absorbed_attention(
-                query_nope,
-                query_rope,
-                key_cache,
-                value_cache,
-                self.w_uk_t,
-                self.w_uv,
-                selected,
-                position,
-                scale=cfg.qk_head_dim**-0.5,
-            )
+        local_attention = sparse_flash_absorbed_attention(
+            query_nope,
+            query_rope,
+            key_cache,
+            value_cache,
+            self.w_uk_t,
+            self.w_uv,
+            selected,
+            position,
+            scale=cfg.qk_head_dim**-0.5,
+        )
         attention_output = tp_all_reduce_sum(
             self.o_proj(local_attention), self.world_size
         )
@@ -495,16 +400,12 @@ class GLM52DenseTPStack(nn.Module):
         rank: int,
         world_size: int,
         cache_length: int,
-        attention_path: str,
-        indexer_path: str,
     ):
         super().__init__()
         self.layers = nn.ModuleList(layers)
         self.rank = int(rank)
         self.world_size = int(world_size)
         self.cache_length = int(cache_length)
-        self.attention_path = attention_path
-        self.indexer_path = indexer_path
         self.config = layers[0].config
         self.local_heads = self.config.num_attention_heads // world_size
 
@@ -517,14 +418,10 @@ class GLM52DenseTPStack(nn.Module):
         world_size: int,
         cache_length: int,
         device: torch.device,
-        attention_path: str = "decompressed_manual",
-        indexer_path: str = "manual_legacy",
         progress=None,
     ) -> "GLM52DenseTPStack":
         if world_size not in (1, 2):
             raise ValueError("The dense TP rung supports TP1 and TP2")
-        if indexer_path not in INDEXER_PATHS:
-            raise ValueError(f"Unsupported indexer path: {indexer_path}")
         reader = ShardedSafetensorReader(model_dir)
         layers = []
         for layer_index in range(3):
@@ -539,8 +436,6 @@ class GLM52DenseTPStack(nn.Module):
                     rank=rank,
                     world_size=world_size,
                     device=device,
-                    attention_path=attention_path,
-                    indexer_path=indexer_path,
                 )
             )
             if progress is not None:
@@ -550,30 +445,19 @@ class GLM52DenseTPStack(nn.Module):
             rank=rank,
             world_size=world_size,
             cache_length=cache_length,
-            attention_path=attention_path,
-            indexer_path=indexer_path,
         )
 
     def make_cache(self, *, device: torch.device):
-        if self.attention_path == "decompressed_manual":
-            primary_shape = (
-                1,
-                self.local_heads,
-                self.cache_length,
-                self.config.v_head_dim,
-            )
-            secondary_shape = primary_shape
-        else:
-            primary_shape = (
-                1,
-                self.cache_length,
-                self.config.kv_lora_rank,
-            )
-            secondary_shape = (
-                1,
-                self.cache_length,
-                self.config.qk_rope_head_dim,
-            )
+        primary_shape = (
+            1,
+            self.cache_length,
+            self.config.kv_lora_rank,
+        )
+        secondary_shape = (
+            1,
+            self.cache_length,
+            self.config.qk_rope_head_dim,
+        )
         keys = tuple(
             torch.zeros(primary_shape, dtype=torch.bfloat16, device=device)
             for _ in self.layers

@@ -12,7 +12,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from absorbed_mla import (  # noqa: E402
     absorb_kv_b_weight,
-    manual_absorbed_attention,
     materialize_absorbed_kv,
 )
 
@@ -65,57 +64,6 @@ class AbsorbedMLATest(unittest.TestCase):
 
         torch.testing.assert_close(key, expected_key)
         torch.testing.assert_close(value, expected_value)
-
-    def test_absorbed_attention_matches_decompressed_attention(self) -> None:
-        latent_cache = torch.randn(1, self.cache_length, self.latent)
-        rope_cache = torch.randn(1, self.cache_length, self.rope)
-        query_nope = torch.randn(1, 1, self.heads, self.nope)
-        query_rope = torch.randn(1, 1, self.heads, self.rope)
-        selected = torch.tensor([0, 2, 3, 5, 6], dtype=torch.int64)
-        position = torch.tensor([5], dtype=torch.int64)
-        scale = (self.nope + self.rope) ** -0.5
-
-        absorbed = manual_absorbed_attention(
-            query_nope,
-            query_rope,
-            latent_cache,
-            rope_cache,
-            self.w_uk_t,
-            self.w_uv,
-            selected,
-            position,
-            scale=scale,
-        )
-
-        key, value = materialize_absorbed_kv(
-            latent_cache,
-            rope_cache,
-            self.w_uk_t,
-            self.w_uv,
-            used_length=self.cache_length,
-        )
-        selected_key = torch.index_select(key, 2, selected)
-        selected_value = torch.index_select(value, 2, selected)
-        query = torch.cat((query_nope, query_rope), dim=-1).transpose(1, 2)
-        sparse_k = selected.shape[0]
-        scores = torch.bmm(
-            query.reshape(self.heads, 1, self.nope + self.rope),
-            selected_key.reshape(
-                self.heads, sparse_k, self.nope + self.rope
-            ).transpose(1, 2),
-        ).view(1, self.heads, 1, sparse_k)
-        scores = scores * scale
-        valid = selected.unsqueeze(0) <= position.unsqueeze(1)
-        scores = scores.masked_fill(
-            ~valid.unsqueeze(1), torch.finfo(scores.dtype).min
-        )
-        probabilities = torch.softmax(scores, dim=-1)
-        expected = torch.bmm(
-            probabilities.reshape(self.heads, 1, sparse_k),
-            selected_value.reshape(self.heads, sparse_k, self.value),
-        ).transpose(0, 1).reshape(1, 1, self.heads * self.value)
-
-        torch.testing.assert_close(absorbed, expected, atol=2e-5, rtol=2e-5)
 
     def test_rejects_wrong_weight_shape(self) -> None:
         with self.assertRaisesRegex(ValueError, "Expected KV-B weight"):
