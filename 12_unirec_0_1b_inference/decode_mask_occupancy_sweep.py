@@ -31,6 +31,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cross-cache-length", type=int, required=True)
     parser.add_argument("--active-rows", type=int, nargs="+", required=True)
     parser.add_argument("--cache-positions", type=int, nargs="+", required=True)
+    parser.add_argument(
+        "--source-modes",
+        nargs="+",
+        choices=("realistic", "full"),
+        default=("realistic",),
+        help=(
+            "realistic samples source lengths from the artifact; full marks "
+            "every active row valid through the static cross-KV capacity"
+        ),
+    )
     parser.add_argument("--warmup-steps", type=int, default=5)
     parser.add_argument("--measure-steps", type=int, default=30)
     parser.add_argument("--cache-dir", type=Path, required=True)
@@ -134,6 +144,7 @@ def measure_point(
     active_rows: int,
     active_position: int,
     source_lengths: list[int],
+    source_mode: str,
     warmup_steps: int,
     measure_steps: int,
 ) -> dict[str, Any]:
@@ -209,6 +220,7 @@ def measure_point(
         "active_fraction": active_rows / batch,
         "initial_cache_position": active_position,
         "source_lengths": distribution(source_lengths),
+        "source_mode": source_mode,
         "warmup_steps": warmup_steps,
         "measure_steps": measure_steps,
         "decode_s": decode_s,
@@ -260,43 +272,49 @@ def main() -> None:
     first_call_s = None
     for position in args.cache_positions:
         for active_rows in args.active_rows:
-            sample = quantile_sample(eligible, active_rows)
-            if first_call_s is None:
-                configure_masks_(
-                    state,
+            for source_mode in args.source_modes:
+                sample = (
+                    quantile_sample(eligible, active_rows)
+                    if source_mode == "realistic"
+                    else [args.cross_cache_length] * active_rows
+                )
+                if first_call_s is None:
+                    configure_masks_(
+                        state,
+                        active_rows=active_rows,
+                        active_position=position,
+                        source_lengths=sample,
+                    )
+                    started = time.perf_counter()
+                    _ = module(
+                        state["next_token"],
+                        state["cache_position"],
+                        0,
+                        state["self_keys"],
+                        state["self_values"],
+                        state["cross_keys"],
+                        state["cross_values"],
+                        state["cross_mask"],
+                    )
+                    synchronize_device(runner.device)
+                    first_call_s = time.perf_counter() - started
+                point = measure_point(
+                    runner=runner,
+                    module=module,
+                    state=state,
                     active_rows=active_rows,
                     active_position=position,
                     source_lengths=sample,
+                    source_mode=source_mode,
+                    warmup_steps=args.warmup_steps,
+                    measure_steps=args.measure_steps,
                 )
-                started = time.perf_counter()
-                _ = module(
-                    state["next_token"],
-                    state["cache_position"],
-                    0,
-                    state["self_keys"],
-                    state["self_values"],
-                    state["cross_keys"],
-                    state["cross_values"],
-                    state["cross_mask"],
+                points.append(point)
+                print(
+                    "UNIREC_DECODE_MASK_SWEEP_POINT "
+                    + json.dumps(point, sort_keys=True),
+                    flush=True,
                 )
-                synchronize_device(runner.device)
-                first_call_s = time.perf_counter() - started
-            point = measure_point(
-                runner=runner,
-                module=module,
-                state=state,
-                active_rows=active_rows,
-                active_position=position,
-                source_lengths=sample,
-                warmup_steps=args.warmup_steps,
-                measure_steps=args.measure_steps,
-            )
-            points.append(point)
-            print(
-                "UNIREC_DECODE_MASK_SWEEP_POINT "
-                + json.dumps(point, sort_keys=True),
-                flush=True,
-            )
     payload = {
         "schema_version": 1,
         "kind": "unirec_decode_mask_occupancy_sweep",
