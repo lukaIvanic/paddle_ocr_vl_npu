@@ -210,6 +210,40 @@ SparseFlashAttention kernel averaged 20.47 us. Quantized linears now account for
 67.9% of recorded kernel time. Full evidence is in
 `references/dense_layers0_2_tp1_sparsefa_bsnd_910b2_07ce6df.json`.
 
+## Verified contiguous LightningIndexer rung
+
+The `lightning` indexer lane replaces manual KV4096 scoring, head weighting and
+reduction, causal-range construction, and TopK with
+`torch_npu.npu_lightning_indexer`. Like the SparseFA rung, it uses ordinary
+contiguous `BSND`: `block_table=None`, an on-device `position + 1` length, and
+no Python sequence-length list or graph-task parameter update.
+
+This rung also corrected an older semantic error. The authoritative GLM-5.2
+indexer applies ReLU to each head's Q/K score before weighted head reduction.
+The historical owned path omitted ReLU. `manual_legacy` remains available only
+to reproduce older timing evidence; `manual_relu` is the corrected control.
+On physical 910B2 NPU 7, a real 32-head/top-2048 operator probe matched the
+corrected manual TopK in exact order, and eight sequential raw-eager model
+positions had exact output and cache parity.
+
+Three 1,000-call TP1 runs per lane gave:
+
+| TP1 TorchAir indexer | Three stack times | Median | Median calls/s |
+| --- | --- | ---: | ---: |
+| Corrected manual ReLU | 2.435, 2.388, 2.437 ms | 2.435 ms | 410.76 |
+| Contiguous LightningIndexer | 2.306, 2.327, 2.302 ms | **2.306 ms** | **433.63** |
+
+LightningIndexer reduced median stack latency by 5.28% and increased throughput
+by `1.056x`. The matched profile measured 50.7 us/layer for the former manual
+indexer chain and 16.0 us/layer for LightningIndexer, a direct saving of about
+104 us per three-layer stack. Complete recorded kernel time fell by 7.7%.
+
+A single TP2 pair on physical NPUs 0 and 1 measured 1.977 ms for corrected
+manual and 1.920 ms for LightningIndexer: 2.86% lower latency and `1.029x`
+throughput. Both lanes passed TP1-reference parity, captured one static graph,
+and captured no new graph during measurement. Full evidence is in
+`references/dense_layers0_2_lightning_indexer_910b2_10a3e91.json`.
+
 Run on one Ascend 910B2 after sourcing the NPU environment:
 
 ```bash

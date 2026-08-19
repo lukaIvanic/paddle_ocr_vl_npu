@@ -1,0 +1,127 @@
+{
+  "commit_under_test": "10a3e91",
+  "date": "2026-08-19",
+  "host": "liteserver-c001-4",
+  "chip": "Ascend 910B2",
+  "model": "/workspace/models/GLM-5.2-w4a8c8",
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "layers": [0, 1, 2],
+    "index_heads": 32,
+    "index_head_dim": 128,
+    "sparse_count": 2048
+  },
+  "contract": {
+    "attention": "contiguous BSND npu_sparse_flash_attention",
+    "candidate_indexer": "contiguous BSND npu_lightning_indexer",
+    "paged_attention": false,
+    "block_table": null,
+    "actual_kv_length": "on-device int32 tensor position + 1",
+    "python_sequence_length_lists": false,
+    "graph_task_parameter_updates": false
+  },
+  "semantic_correction": {
+    "authoritative_formula": "sum_h(weight_h * relu(q_h dot k))",
+    "manual_legacy": "historical path without ReLU, preserved only to reproduce older evidence",
+    "manual_relu": "corrected semantic control",
+    "random_shape_probe": {
+      "lightning_vs_manual_relu_exact_topk_order": true,
+      "matching_topk": 2048,
+      "short_length": 101,
+      "short_valid_indices": 101,
+      "short_negative_one_tail": 1947
+    },
+    "raw_eager_model_parity_8_positions": {
+      "output_max_abs": 0.0,
+      "output_mean_abs": 0.0,
+      "key_cache_max_abs": 0.0,
+      "value_cache_max_abs": 0.0,
+      "index_cache_max_abs": 0.0
+    }
+  },
+  "tp1_torchair": {
+    "physical_npu": 7,
+    "ordinary_warmup_steps": 10,
+    "measured_steps_per_run": 1000,
+    "unique_graphs_after_warmup": 1,
+    "new_graphs_during_measurement": 0,
+    "manual_relu": {
+      "mean_stack_ms": [
+        2.434527225792408,
+        2.387918314896524,
+        2.4372564619407058
+      ],
+      "stack_calls_per_sec": [
+        410.75736981109856,
+        418.7747938284619,
+        410.2974043214695
+      ],
+      "median_stack_ms": 2.434527225792408,
+      "median_stack_calls_per_sec": 410.75736981109856
+    },
+    "lightning": {
+      "mean_stack_ms": [
+        2.3060913239605725,
+        2.326954427640885,
+        2.301533886231482
+      ],
+      "stack_calls_per_sec": [
+        433.634171209907,
+        429.7462761287598,
+        434.49284235279896
+      ],
+      "median_stack_ms": 2.3060913239605725,
+      "median_stack_calls_per_sec": 433.634171209907
+    },
+    "median_latency_reduction_percent": 5.275599322576121,
+    "median_throughput_speedup": 1.055694195844445,
+    "compiled_reference_comparison": {
+      "output_max_abs": 0.015625,
+      "output_mean_abs": 0.00006166131788631901,
+      "allclose_atol_5e_2_rtol_5e_2": true
+    }
+  },
+  "tp1_pipe_profile": {
+    "ordinary_warmup_steps": 20,
+    "profile_active_steps": 3,
+    "manual_total_kernel_us": 7880.96,
+    "lightning_total_kernel_us": 7272.96,
+    "total_kernel_time_reduction_percent": 7.714796171779826,
+    "manual_indexer_chain_us": 557.7,
+    "manual_indexer_chain_occurrences": 11,
+    "manual_indexer_chain_mean_us_per_layer": 50.7,
+    "lightning_indexer_us": 176.28,
+    "lightning_indexer_occurrences": 11,
+    "lightning_indexer_mean_us_per_layer": 16.025454545454547,
+    "direct_saving_us_per_layer": 34.67454545454545,
+    "direct_saving_us_per_three_layer_stack": 104.02363636363636,
+    "manual_chain_types": [
+      "Cast query and KV4096 key",
+      "MatMul 32x128 by 128x4096",
+      "ReLU and weighted-head fusion",
+      "ReduceSum",
+      "Range and causal masking",
+      "TopK 2048"
+    ]
+  },
+  "tp2_torchair_single_pair": {
+    "physical_npus": [0, 1],
+    "ordinary_warmup_steps": 10,
+    "measured_steps": 1000,
+    "timing_uses_slowest_rank": true,
+    "manual_relu_stack_ms": 1.97658371925354,
+    "manual_relu_stack_calls_per_sec": 505.9234224481276,
+    "lightning_stack_ms": 1.920054316520691,
+    "lightning_stack_calls_per_sec": 520.8185994509201,
+    "latency_reduction_percent": 2.8599548899551563,
+    "throughput_speedup": 1.0294415643591195,
+    "output_allclose_atol_5e_2_rtol_5e_2": true,
+    "unique_graphs_after_warmup": 1,
+    "new_graphs_during_measurement": 0
+  },
+  "commands": {
+    "tp1": "/usr/local/python3.12.13/bin/python3 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --attention-path absorbed_sparse_flash --indexer-path lightning --validation-steps 8 --warmup-steps 10 --decode-steps 1000 --reference-in /tmp/glm52_manual_relu_ref_10a3e91.pt",
+    "tp2": "ASCEND_RT_VISIBLE_DEVICES=0,1 /usr/local/python3.12.13/bin/python3 -m torch.distributed.run --nnodes=1 --nproc-per-node=2 --master-addr=127.0.0.1 --master-port=29617 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --attention-path absorbed_sparse_flash --indexer-path lightning --validation-steps 8 --warmup-steps 10 --decode-steps 1000 --reference-in /tmp/glm52_manual_relu_ref_10a3e91.pt"
+  }
+}
