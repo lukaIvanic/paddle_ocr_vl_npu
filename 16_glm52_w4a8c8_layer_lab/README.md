@@ -136,6 +136,17 @@ accounted for 0.100 ms, mostly synchronization, while the other five were about
 result. The complete profile accounting is saved in
 `references/dense_layers0_2_tp1_tp2_profile_910b2_337074b.json`.
 
+The warmed TP1 memory profile uses 20 ordinary forward calls on the same cache,
+followed by three contiguous profiled graph calls. The clean 200-call lane was
+3.940 ms per three-layer stack. Resident weights plus the minimum selected-K/V
+reads account for about 1.66 GB per stack, whose 1.6 TB/s HBM roof is 1.04 ms.
+The current stack therefore realizes about 26% of that minimum-traffic roof.
+The compiled graph requested about 3.38 GB of logical global-memory traffic per
+stack and sustained 0.87-0.91 TB/s across the complete graph. The roughly 2x
+traffic amplification is mainly the manual sparse-attention gather, cast, and
+materialization route. Per-kernel memory and L2 results are saved in
+`references/dense_layers0_2_tp1_memory_profile_910b2_d9099a6.json`.
+
 Run on one Ascend 910B2 after sourcing the NPU environment:
 
 ```bash

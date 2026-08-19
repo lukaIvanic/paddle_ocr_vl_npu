@@ -1,0 +1,110 @@
+{
+  "chip": "Ascend 910B2",
+  "commit": "d9099a6",
+  "model": "Eco-Tech/GLM-5.2-w4a8c8",
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "dsa_top_k": 2048,
+    "layers": [0, 1, 2]
+  },
+  "clean_repeated_timing": {
+    "ordinary_warmup_steps": 10,
+    "measured_steps": 200,
+    "mean_stack_ms": 3.939998613204807,
+    "stack_calls_per_sec": 253.80719593365464,
+    "unique_graphs": 1,
+    "new_graphs_during_measurement": 0
+  },
+  "minimum_hbm_roof": {
+    "peak_hbm_bytes_per_sec": 1600000000000.0,
+    "resident_three_layer_weight_bytes": 1255854080.0,
+    "minimum_selected_kv_read_bytes": 402653184.0,
+    "minor_index_cache_and_state_bytes_omitted": true,
+    "minimum_bytes_per_stack_approx": 1658507264.0,
+    "ideal_stack_ms_approx": 1.03656704,
+    "observed_fraction_of_minimum_hbm_roof": 0.263088
+  },
+  "memory_access_profile": {
+    "ordinary_warmup_steps": 20,
+    "active_graph_calls": 3,
+    "active_graph_logical_gm_bytes_each": [
+      3377000000.0,
+      3377000000.0,
+      3377000000.0
+    ],
+    "active_graph_device_span_us": [3789.25, 3874.75, 3711.5],
+    "logical_gm_byte_amplification_over_minimum": 2.036,
+    "effective_logical_gm_bandwidth_gb_per_sec": [891.2, 871.5, 909.9],
+    "note": "MemoryAccess reports operator core accesses to global-memory address space. Some requests are served by L2; bandwidth above physical HBM is therefore possible for producer-consumer intermediates."
+  },
+  "substage_average_per_three_layer_graph": {
+    "sparse_attention_core": {
+      "kernel_time_us": 1504.41,
+      "logical_gm_bytes": 2032900000.0,
+      "effective_logical_gm_gb_per_sec": 1351.3,
+      "profile_device_time_percent": 39.7,
+      "interpretation": "High bandwidth but excessive traffic from selected-KV gathers, BF16-to-FP32 materialization, two BMMs, masks, and softmax."
+    },
+    "dense_ffn_major": {
+      "kernel_time_us": 682.83,
+      "logical_gm_bytes": 685900000.0,
+      "effective_logical_gm_gb_per_sec": 1004.5,
+      "profile_device_time_percent": 18.0
+    },
+    "attention_projections_w8": {
+      "kernel_time_us": 646.82,
+      "logical_gm_bytes": 506100000.0,
+      "effective_logical_gm_gb_per_sec": 782.4,
+      "profile_device_time_percent": 17.1
+    },
+    "attention_kv_b_bf16": {
+      "kernel_time_us": 150.89,
+      "logical_gm_bytes": 88500000.0,
+      "effective_logical_gm_gb_per_sec": 586.3,
+      "profile_device_time_percent": 4.0
+    },
+    "dsa_indexer_core": {
+      "kernel_time_us": 249.34,
+      "logical_gm_bytes": 55600000.0,
+      "effective_logical_gm_gb_per_sec": 223.1,
+      "profile_device_time_percent": 6.6
+    },
+    "dense_ffn_support": {
+      "kernel_time_us": 35.8,
+      "logical_gm_bytes": 500000.0,
+      "effective_logical_gm_gb_per_sec": 15.3,
+      "profile_device_time_percent": 0.9
+    },
+    "norm_rope_cache_and_other": {
+      "kernel_time_us": 448.89,
+      "logical_gm_bytes": 7500000.0,
+      "effective_logical_gm_gb_per_sec": 16.6,
+      "profile_device_time_percent": 11.8,
+      "interpretation": "Small tensors and many kernels; latency and fusion bound rather than HBM bound."
+    }
+  },
+  "representative_kernel_efficiency": {
+    "selected_kv_gather": {"us": 112.803, "logical_gm_gb_per_sec": 1201.7, "peak_fraction": 0.751},
+    "dense_gate_up_w8": {"us": 165.787, "logical_gm_gb_per_sec": 949.1, "peak_fraction": 0.593},
+    "dense_down_w8": {"us": 73.72, "logical_gm_gb_per_sec": 1041.7, "peak_fraction": 0.651},
+    "attention_o_w8": {"us": 106.768, "logical_gm_gb_per_sec": 949.0, "peak_fraction": 0.593},
+    "main_q_b_w8": {"us": 42.442, "logical_gm_gb_per_sec": 820.7, "peak_fraction": 0.513},
+    "fused_q_kv_a_w8": {"us": 67.013, "logical_gm_gb_per_sec": 492.3, "peak_fraction": 0.308},
+    "kv_b_bf16": {"us": 50.362, "logical_gm_gb_per_sec": 585.8, "peak_fraction": 0.366},
+    "dsa_indexer_wq_b_w8": {"us": 15.364, "logical_gm_gb_per_sec": 580.2, "peak_fraction": 0.363},
+    "attention_probability_value_bmm": {"us": 87.147, "logical_gm_gb_per_sec": 777.6, "peak_fraction": 0.486},
+    "selected_key_fp32_cast": {
+      "us": 108.107,
+      "logical_gm_gb_per_sec": 1871.1,
+      "physical_hbm_peak_fraction_not_applicable": true,
+      "l2_read_hit_percent": 22.3
+    },
+    "query_key_bmm": {
+      "us": 53.707,
+      "logical_gm_gb_per_sec": 2511.0,
+      "physical_hbm_peak_fraction_not_applicable": true,
+      "l2_read_hit_percent": 100.0
+    }
+  }
+}
