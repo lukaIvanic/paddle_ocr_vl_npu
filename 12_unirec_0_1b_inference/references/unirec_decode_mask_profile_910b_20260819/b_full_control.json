@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "kind": "unirec_decode_mask_occupancy_sweep",
+  "status": "ok",
+  "physical_devices": [
+    7
+  ],
+  "shape": {
+    "batch_size": 128,
+    "self_cache_length": 2048,
+    "cross_cache_length": 1320
+  },
+  "eligible_source_lengths": {
+    "count": 957,
+    "min": 4,
+    "mean": 68.42215256008359,
+    "p50": 56.0,
+    "p90": 120.0,
+    "p99": 370.5599999999986,
+    "max": 1144
+  },
+  "first_call_s": 4.152002255897969,
+  "compile": {
+    "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+    "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+    "backend": "torchair",
+    "fullgraph": true,
+    "dynamic": false,
+    "torchair_ge_cache": true,
+    "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/dual_lane_decode_173eb50/decode_selfkv2048_cross1320_increfa_all_b128",
+    "mask_mode": "per_step",
+    "qkv_fused": false,
+    "weights_nz": false,
+    "ge_tuning": [],
+    "prefetch_mode": "none",
+    "static_self_kv_len": 2048,
+    "static_cross_kv_len": 1320,
+    "self_attention_backend": "increfa_all",
+    "batch_size": 128
+  },
+  "points": [
+    {
+      "active_rows": 128,
+      "active_fraction": 1.0,
+      "initial_cache_position": 1023,
+      "source_lengths": {
+        "count": 128,
+        "min": 4,
+        "mean": 73.0625,
+        "p50": 56.0,
+        "p90": 127.19999999999993,
+        "p99": 387.6000000000005,
+        "max": 1144
+      },
+      "source_mode": "realistic",
+      "warmup_steps": 5,
+      "measure_steps": 30,
+      "decode_s": 0.18461116589605808,
+      "decode_step_ms": 6.153705529868603,
+      "raw_tok_s": 20800.475319905847,
+      "effective_tok_s": 20800.475319905847,
+      "input_build_step_ms": 0.0672355139007171,
+      "iteration_step_ms": 6.278807080040376,
+      "host_pinned": true
+    },
+    {
+      "active_rows": 128,
+      "active_fraction": 1.0,
+      "initial_cache_position": 1023,
+      "source_lengths": {
+        "count": 128,
+        "min": 1320,
+        "mean": 1320.0,
+        "p50": 1320.0,
+        "p90": 1320.0,
+        "p99": 1320.0,
+        "max": 1320
+      },
+      "source_mode": "full",
+      "warmup_steps": 5,
+      "measure_steps": 30,
+      "decode_s": 0.18548359582200646,
+      "decode_step_ms": 6.182786527400215,
+      "raw_tok_s": 20702.63940583153,
+      "effective_tok_s": 20702.63940583153,
+      "input_build_step_ms": 0.07657761064668496,
+      "iteration_step_ms": 6.323189800605178,
+      "host_pinned": true
+    }
+  ]
+}

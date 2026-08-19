@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "kind": "unirec_decode_mask_occupancy_sweep",
+  "status": "ok",
+  "physical_devices": [
+    7
+  ],
+  "shape": {
+    "batch_size": 128,
+    "self_cache_length": 256,
+    "cross_cache_length": 256
+  },
+  "eligible_source_lengths": {
+    "count": 936,
+    "min": 4,
+    "mean": 59.65384615384615,
+    "p50": 56.0,
+    "p90": 120.0,
+    "p99": 240.0,
+    "max": 252
+  },
+  "first_call_s": 4.1137134046293795,
+  "compile": {
+    "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+    "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+    "backend": "torchair",
+    "fullgraph": true,
+    "dynamic": false,
+    "torchair_ge_cache": true,
+    "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/dual_lane_decode_173eb50/decode_selfkv256_cross256_increfa_all_b128",
+    "mask_mode": "per_step",
+    "qkv_fused": false,
+    "weights_nz": false,
+    "ge_tuning": [],
+    "prefetch_mode": "none",
+    "static_self_kv_len": 256,
+    "static_cross_kv_len": 256,
+    "self_attention_backend": "increfa_all",
+    "batch_size": 128
+  },
+  "points": [
+    {
+      "active_rows": 128,
+      "active_fraction": 1.0,
+      "initial_cache_position": 32,
+      "source_lengths": {
+        "count": 128,
+        "min": 4,
+        "mean": 60.125,
+        "p50": 56.0,
+        "p90": 120.0,
+        "p99": 235.68000000000006,
+        "max": 252
+      },
+      "source_mode": "realistic",
+      "warmup_steps": 5,
+      "measure_steps": 30,
+      "decode_s": 0.06549869477748871,
+      "decode_step_ms": 2.1832898259162903,
+      "raw_tok_s": 58627.122464733024,
+      "effective_tok_s": 58627.122464733024,
+      "input_build_step_ms": 0.05044698094328245,
+      "iteration_step_ms": 2.276169011990229,
+      "host_pinned": true
+    },
+    {
+      "active_rows": 128,
+      "active_fraction": 1.0,
+      "initial_cache_position": 32,
+      "source_lengths": {
+        "count": 128,
+        "min": 256,
+        "mean": 256.0,
+        "p50": 256.0,
+        "p90": 256.0,
+        "p99": 256.0,
+        "max": 256
+      },
+      "source_mode": "full",
+      "warmup_steps": 5,
+      "measure_steps": 30,
+      "decode_s": 0.0652869869954884,
+      "decode_step_ms": 2.1762328998496137,
+      "raw_tok_s": 58817.23413373877,
+      "effective_tok_s": 58817.23413373877,
+      "input_build_step_ms": 0.050294833878676094,
+      "iteration_step_ms": 2.266023214906454,
+      "host_pinned": true
+    }
+  ]
+}

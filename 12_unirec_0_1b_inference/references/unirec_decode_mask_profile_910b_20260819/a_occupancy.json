@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "kind": "unirec_decode_mask_occupancy_sweep",
+  "status": "ok",
+  "physical_devices": [
+    7
+  ],
+  "shape": {
+    "batch_size": 128,
+    "self_cache_length": 256,
+    "cross_cache_length": 256
+  },
+  "eligible_source_lengths": {
+    "count": 936,
+    "min": 4,
+    "mean": 59.65384615384615,
+    "p50": 56.0,
+    "p90": 120.0,
+    "p99": 240.0,
+    "max": 252
+  },
+  "first_call_s": 4.087097703013569,
+  "compile": {
+    "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+    "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+    "backend": "torchair",
+    "fullgraph": true,
+    "dynamic": false,
+    "torchair_ge_cache": true,
+    "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/dual_lane_decode_173eb50/decode_selfkv256_cross256_increfa_all_b128",
+    "mask_mode": "per_step",
+    "qkv_fused": false,
+    "weights_nz": false,
+    "ge_tuning": [],
+    "prefetch_mode": "none",
+    "static_self_kv_len": 256,
+    "static_cross_kv_len": 256,
+    "self_attention_backend": "increfa_all",
+    "batch_size": 128
+  },
+  "points": [
+    {
+      "active_rows": 16,
+      "active_fraction": 0.125,
+      "initial_cache_position": 32,
+      "source_lengths": {
+        "count": 16,
+        "min": 4,
+        "mean": 65.75,
+        "p50": 58.0,
+        "p90": 144.0,
+        "p99": 239.39999999999998,
+        "max": 252
+      },
+      "warmup_steps": 5,
+      "measure_steps": 30,
+      "decode_s": 0.06534632062539458,
+      "decode_step_ms": 2.1782106875131526,
+      "raw_tok_s": 58763.828831515224,
+      "effective_tok_s": 7345.478603939403,
+      "input_build_step_ms": 0.043733976781368256,
+      "iteration_step_ms": 2.2483045235276222,
+      "host_pinned": true
+    },
+    {
+      "active_rows": 32,
+      "active_fraction": 0.25,
+      "initial_cache_position": 32,
+      "source_lengths": {
+        "count": 32,
+        "min": 4,
+        "mean": 61.625,
+        "p50": 56.0,
+        "p90": 120.0,
+        "p99": 229.6800000000001,
+        "max": 252
+      },
+      "warmup_steps": 5,
+      "measure_steps": 30,
+      "decode_s": 0.0654122713021934,
+      "decode_step_ms": 2.180409043406447,
+      "raw_tok_s": 58704.58132022144,
+      "effective_tok_s": 14676.14533005536,
+      "input_build_step_ms": 0.0439000471184651,
+      "iteration_step_ms": 2.251106221228838,
+      "host_pinned": true
+    },
+    {
+      "active_rows": 64,
+      "active_fraction": 0.5,
+      "initial_cache_position": 32,
+      "source_lengths": {
+        "count": 64,
+        "min": 4,
+        "mean": 60.4375,
+        "p50": 56.0,
+        "p90": 120.0,
+        "p99": 234.35999999999993,
+        "max": 252
+      },
+      "warmup_steps": 5,
+      "measure_steps": 30,
+      "decode_s": 0.06547972187399864,
+      "decode_step_ms": 2.182657395799955,
+      "raw_tok_s": 58644.109811419745,
+      "effective_tok_s": 29322.054905709872,
+      "input_build_step_ms": 0.04396174723903338,
+      "iteration_step_ms": 2.2546369892855487,
+      "host_pinned": true
+    },
+    {
+      "active_rows": 96,
+      "active_fraction": 0.75,
+      "initial_cache_position": 32,
+      "source_lengths": {
+        "count": 96,
+        "min": 4,
+        "mean": 60.375,
+        "p50": 56.0,
+        "p90": 120.0,
+        "p99": 240.59999999999997,
+        "max": 252
+      },
+      "warmup_steps": 5,
+      "measure_steps": 30,
+      "decode_s": 0.06532803270965815,
+      "decode_step_ms": 2.177601090321938,
+      "raw_tok_s": 58780.27916539865,
+      "effective_tok_s": 44085.20937404899,
+      "input_build_step_ms": 0.04487819969654083,
+      "iteration_step_ms": 2.252165600657463,
+      "host_pinned": true
+    },
+    {
+      "active_rows": 128,
+      "active_fraction": 1.0,
+      "initial_cache_position": 32,
+      "source_lengths": {
+        "count": 128,
+        "min": 4,
+        "mean": 60.125,
+        "p50": 56.0,
+        "p90": 120.0,
+        "p99": 235.68000000000006,
+        "max": 252
+      },
+      "warmup_steps": 5,
+      "measure_steps": 30,
+      "decode_s": 0.0667395256459713,
+      "decode_step_ms": 2.22465085486571,
+      "raw_tok_s": 57537.11856403942,
+      "effective_tok_s": 57537.11856403942,
+      "input_build_step_ms": 0.04826768611868223,
+      "iteration_step_ms": 2.3061671449492374,
+      "host_pinned": true
+    }
+  ]
+}

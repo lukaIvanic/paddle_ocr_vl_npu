@@ -1,0 +1,5085 @@
+{
+  "profile_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe",
+  "runs": [
+    {
+      "api_statistic": {
+        "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "row_count": 12,
+        "top_apis": [
+          {
+            "api_name": "ModelLoad",
+            "avg_us": 38465.13,
+            "count": 1,
+            "level": "model",
+            "max_us": 38465.13,
+            "time_us": 38465.13
+          },
+          {
+            "api_name": "launch",
+            "avg_us": 28.453,
+            "count": 111,
+            "level": "node",
+            "max_us": 579.73,
+            "time_us": 3158.33
+          },
+          {
+            "api_name": "aclrtSynchronizeDeviceWithTimeout",
+            "avg_us": 660.835,
+            "count": 2,
+            "level": "acl",
+            "max_us": 1312.01,
+            "time_us": 1321.67
+          },
+          {
+            "api_name": "InputCopy",
+            "avg_us": 108.0,
+            "count": 1,
+            "level": "model",
+            "max_us": 108.0,
+            "time_us": 108.0
+          },
+          {
+            "api_name": "aclrtLaunchKernelWithHostArgs",
+            "avg_us": 18.094,
+            "count": 5,
+            "level": "acl",
+            "max_us": 37.87,
+            "time_us": 90.47
+          },
+          {
+            "api_name": "aclnnInplaceCopy",
+            "avg_us": 66.56,
+            "count": 1,
+            "level": "acl",
+            "max_us": 66.56,
+            "time_us": 66.56
+          },
+          {
+            "api_name": "aclnnArgMax",
+            "avg_us": 27.83,
+            "count": 1,
+            "level": "acl",
+            "max_us": 27.83,
+            "time_us": 27.83
+          },
+          {
+            "api_name": "ModelExecute",
+            "avg_us": 21.67,
+            "count": 1,
+            "level": "model",
+            "max_us": 21.67,
+            "time_us": 21.67
+          },
+          {
+            "api_name": "aclnnAdds",
+            "avg_us": 20.52,
+            "count": 1,
+            "level": "acl",
+            "max_us": 20.52,
+            "time_us": 20.52
+          },
+          {
+            "api_name": "step_info",
+            "avg_us": 3.835,
+            "count": 2,
+            "level": "node",
+            "max_us": 6.18,
+            "time_us": 7.67
+          },
+          {
+            "api_name": "aclrtGetStreamAttribute",
+            "avg_us": 1.427,
+            "count": 3,
+            "level": "acl",
+            "max_us": 3.36,
+            "time_us": 4.28
+          },
+          {
+            "api_name": "OutputCopy",
+            "avg_us": 0.48,
+            "count": 1,
+            "level": "model",
+            "max_us": 0.48,
+            "time_us": 0.48
+          }
+        ]
+      },
+      "ascend_output_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT",
+      "files": {
+        "api_statistic": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/api_statistic.csv",
+        "kernel_details": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "op_statistic": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "operator_details": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "profiler_info": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/profiler_info.json",
+        "profiler_metadata": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/profiler_metadata.json",
+        "step_trace_time": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "trace_view": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/trace_view.json"
+      },
+      "kernel_details": {
+        "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+        "row_count": 111,
+        "suspect_kernel_rows": [
+          {
+            "aicore_time_us": 10.452,
+            "count": 1,
+            "duration_us": 175.6,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.49
+          },
+          {
+            "aicore_time_us": 5.435,
+            "count": 1,
+            "duration_us": 164.58,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_1",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.07
+          },
+          {
+            "aicore_time_us": 85.102,
+            "count": 1,
+            "duration_us": 93.26,
+            "input_dtypes": "FLOAT16;FLOAT16",
+            "input_formats": "ND;ND",
+            "input_shapes": "\"128,768;56371,768\"",
+            "name": "MatMul",
+            "output_formats": "ND",
+            "output_shapes": "\"128,56371\"",
+            "type": "MatMul",
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 5.802,
+            "count": 1,
+            "duration_us": 86.9,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_3",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 0.79
+          },
+          {
+            "aicore_time_us": 5.775,
+            "count": 1,
+            "duration_us": 84.64,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_9",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.16
+          },
+          {
+            "aicore_time_us": 5.678,
+            "count": 1,
+            "duration_us": 84.1,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_5",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.14
+          },
+          {
+            "aicore_time_us": 5.574,
+            "count": 1,
+            "duration_us": 81.92,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_7",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.41
+          },
+          {
+            "aicore_time_us": 5.309,
+            "count": 1,
+            "duration_us": 81.44,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_11",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 0.85
+          },
+          {
+            "aicore_time_us": 6.209,
+            "count": 1,
+            "duration_us": 81.04,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_4",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.24
+          },
+          {
+            "aicore_time_us": 6.678,
+            "count": 1,
+            "duration_us": 79.4,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_10",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 0.94
+          },
+          {
+            "aicore_time_us": 6.393,
+            "count": 1,
+            "duration_us": 78.66,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_2",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.06
+          },
+          {
+            "aicore_time_us": 6.585,
+            "count": 1,
+            "duration_us": 77.64,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_8",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.31
+          },
+          {
+            "aicore_time_us": 6.173,
+            "count": 1,
+            "duration_us": 77.34,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "input_formats": "NCHW;NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\"",
+            "name": "IncreFlashAttention_6",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,1,128\"",
+            "type": "IncreFlashAttention",
+            "wait_us": 1.14
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 16.38,
+            "input_dtypes": "FLOAT16;INT64;FLOAT16",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,256,128;128;128,6,1,128\"",
+            "name": "Scatter",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,256,128\"",
+            "type": "Scatter",
+            "wait_us": 0.11
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 14.36,
+            "input_dtypes": "FLOAT16",
+            "input_formats": "ND",
+            "input_shapes": "\"128,56371\"",
+            "name": "aclnnInplaceCopy_CastAiCore_Cast",
+            "output_formats": "ND",
+            "output_shapes": "\"128,56371\"",
+            "type": "Cast",
+            "wait_us": 19.49
+          },
+          {
+            "aicore_time_us": 11.444,
+            "count": 1,
+            "duration_us": 12.9,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND",
+            "input_shapes": "\"128,768;3072,768;3072\"",
+            "name": "MatMulV2_6",
+            "output_formats": "ND",
+            "output_shapes": "\"128,3072\"",
+            "type": "MatMulV2",
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.82,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_13_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.02
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.78,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_16_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.15
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.7,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_4_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.15
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.62,
+            "input_dtypes": "FLOAT16;INT64;FLOAT16",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,256,128;128;128,6,1,128\"",
+            "name": "Scatter_6",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,256,128\"",
+            "type": "Scatter",
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.6,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.06
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.36,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_10_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.01
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.32,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_18_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.3,
+            "input_dtypes": "FLOAT16;INT64;FLOAT16",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,256,128;128;128,6,1,128\"",
+            "name": "Scatter_10",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,256,128\"",
+            "type": "Scatter",
+            "wait_us": 0.26
+          },
+          {
+            "aicore_time_us": 10.195,
+            "count": 1,
+            "duration_us": 12.24,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND",
+            "input_shapes": "\"128,3072;768,3072;768\"",
+            "name": "MatMulV2_7",
+            "output_formats": "ND",
+            "output_shapes": "\"128,768\"",
+            "type": "MatMulV2",
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.0,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_8_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.03
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.0,
+            "input_dtypes": "FLOAT16;INT64;FLOAT16",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,256,128;128;128,6,1,128\"",
+            "name": "Scatter_8",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,256,128\"",
+            "type": "Scatter",
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.82,
+            "input_dtypes": "FLOAT16;INT64;FLOAT16",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,256,128;128;128,6,1,128\"",
+            "name": "Scatter_2",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,256,128\"",
+            "type": "Scatter",
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.66,
+            "input_dtypes": "FLOAT16;INT64;FLOAT16",
+            "input_formats": "NCHW;NCHW;NCHW",
+            "input_shapes": "\"128,6,256,128;128;128,6,1,128\"",
+            "name": "Scatter_4",
+            "output_formats": "NCHW",
+            "output_shapes": "\"128,6,256,128\"",
+            "type": "Scatter",
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.66,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_7_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.17
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.64,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_1_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.58,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_11_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.04
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.58,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_14_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.54,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_5_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.08
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 10.92,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_17_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.21
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 10.84,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND;ND",
+            "input_shapes": "\"128,1,768;128,1,768;768;768\"",
+            "name": "LayerNormV4_2_LayerNormV3/AddLayerNorm",
+            "output_formats": "ND;ND;ND;ND",
+            "output_shapes": "\"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "type": "AddLayerNorm",
+            "wait_us": 0.02
+          },
+          {
+            "aicore_time_us": 8.57,
+            "count": 1,
+            "duration_us": 9.96,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND",
+            "input_shapes": "\"128,3072;768,3072;768\"",
+            "name": "MatMulV2_15",
+            "output_formats": "ND",
+            "output_shapes": "\"128,768\"",
+            "type": "MatMulV2",
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 8.686,
+            "count": 1,
+            "duration_us": 9.8,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND",
+            "input_shapes": "\"128,3072;768,3072;768\"",
+            "name": "MatMulV2_39",
+            "output_formats": "ND",
+            "output_shapes": "\"128,768\"",
+            "type": "MatMulV2",
+            "wait_us": 0.04
+          },
+          {
+            "aicore_time_us": 8.509,
+            "count": 1,
+            "duration_us": 9.62,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND",
+            "input_shapes": "\"128,768;768,768;768\"",
+            "name": "MatMulV2",
+            "output_formats": "ND",
+            "output_shapes": "\"128,768\"",
+            "type": "MatMulV2",
+            "wait_us": 0.15
+          },
+          {
+            "aicore_time_us": 8.536,
+            "count": 1,
+            "duration_us": 9.54,
+            "input_dtypes": "FLOAT16;FLOAT16;FLOAT16",
+            "input_formats": "ND;ND;ND",
+            "input_shapes": "\"128,3072;768,3072;768\"",
+            "name": "MatMulV2_31",
+            "output_formats": "ND",
+            "output_shapes": "\"128,768\"",
+            "type": "MatMulV2",
+            "wait_us": 0.0
+          }
+        ],
+        "top_core_types": [
+          {
+            "aicore_time_us": 76.06299999999999,
+            "count": 12,
+            "duration_us": 1153.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention",
+              "IncreFlashAttention_1",
+              "IncreFlashAttention_2"
+            ],
+            "name": "MIX_AIC",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 13.6
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 50,
+            "duration_us": 483.07999999999987,
+            "input_dtype_samples": [
+              "N/A",
+              "FLOAT16;INT64;INT64",
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "N/A",
+              "ND;ND;ND",
+              "ND"
+            ],
+            "input_shape_samples": [
+              "N/A",
+              "\"56371,768;128,1;1\"",
+              "\"128,1,768\""
+            ],
+            "kernel_name_samples": [
+              "UpdateModelParam_static_bin",
+              "GatherV2",
+              "Muls"
+            ],
+            "name": "AI_VECTOR_CORE",
+            "output_format_samples": [
+              "N/A",
+              "ND",
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "N/A",
+              "\"128,1,768\"",
+              "\"128,1\""
+            ],
+            "wait_us": 59.32999999999999
+          },
+          {
+            "aicore_time_us": 320.89500000000004,
+            "count": 49,
+            "duration_us": 384.32,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16",
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND",
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\"",
+              "\"128,768;3072,768;3072\"",
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2",
+              "MatMulV2_1",
+              "MatMulV2_2"
+            ],
+            "name": "AI_CORE",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\"",
+              "\"128,3072\"",
+              "\"128,56371\""
+            ],
+            "wait_us": 14.139999999999995
+          }
+        ],
+        "top_input_dtypes": [
+          {
+            "aicore_time_us": 76.06299999999999,
+            "count": 12,
+            "duration_us": 1153.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention",
+              "IncreFlashAttention_1",
+              "IncreFlashAttention_2"
+            ],
+            "name": "FLOAT16;FLOAT16;FLOAT16;BOOL",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 13.6
+          },
+          {
+            "aicore_time_us": 235.79300000000003,
+            "count": 48,
+            "duration_us": 291.06,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\"",
+              "\"128,768;3072,768;3072\"",
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2",
+              "MatMulV2_1",
+              "MatMulV2_2"
+            ],
+            "name": "FLOAT16;FLOAT16;FLOAT16",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\"",
+              "\"128,3072\""
+            ],
+            "wait_us": 13.959999999999996
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 19,
+            "duration_us": 197.72,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_LayerNormV3/AddLayerNorm",
+              "LayerNormV4_1_LayerNormV3/AddLayerNorm",
+              "LayerNormV4_2_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "FLOAT16;FLOAT16;FLOAT16;FLOAT16",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 1.4
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 12,
+            "duration_us": 116.43999999999998,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,256,128;128;128,6,1,128\""
+            ],
+            "kernel_name_samples": [
+              "Scatter",
+              "Scatter_1",
+              "Scatter_2"
+            ],
+            "name": "FLOAT16;INT64;FLOAT16",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,256,128\""
+            ],
+            "wait_us": 0.76
+          },
+          {
+            "aicore_time_us": 85.102,
+            "count": 1,
+            "duration_us": 93.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;56371,768\""
+            ],
+            "kernel_name_samples": [
+              "MatMul"
+            ],
+            "name": "FLOAT16;FLOAT16",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,56371\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 8,
+            "duration_us": 76.64,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768\"",
+              "\"128,1,3072\"",
+              "\"128,56371\""
+            ],
+            "kernel_name_samples": [
+              "Muls",
+              "Relu",
+              "Relu_1"
+            ],
+            "name": "FLOAT16",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768\"",
+              "\"128,1,3072\"",
+              "\"128,56371\""
+            ],
+            "wait_us": 19.79
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 36.32,
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,56371;\""
+            ],
+            "kernel_name_samples": [
+              "aclnnArgMax_ArgMaxV2AiCore_ArgMaxV2"
+            ],
+            "name": "FLOAT;INT64",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 18.84,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"56371,768;128,1;1\"",
+              "\"3074,768;128;\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2",
+              "GatherV2_1"
+            ],
+            "name": "FLOAT16;INT64;INT64",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768\"",
+              "\"128,768\""
+            ],
+            "wait_us": 36.9
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 11.92,
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW",
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1,256;128,1,1,1\"",
+              "\"128;\""
+            ],
+            "kernel_name_samples": [
+              "Greater",
+              "aclnnAdds_AddAiCore_Add"
+            ],
+            "name": "INT64;INT64",
+            "output_format_samples": [
+              "NCHW",
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,1,256\"",
+              "\"128\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 8.88,
+            "input_dtype_samples": [
+              "INT32;FLOAT;INT32"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\";;\""
+            ],
+            "kernel_name_samples": [
+              "Range"
+            ],
+            "name": "INT32;FLOAT;INT32",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"256\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 8.26,
+            "input_dtype_samples": [
+              "FLOAT"
+            ],
+            "input_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"256\"",
+              "\"128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "Cast_2",
+              "Cast_1"
+            ],
+            "name": "FLOAT",
+            "output_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"256\"",
+              "\"128,1,1,256\""
+            ],
+            "wait_us": 0.12
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 4.1,
+            "input_dtype_samples": [
+              "N/A"
+            ],
+            "input_format_samples": [
+              "N/A"
+            ],
+            "input_shape_samples": [
+              "N/A"
+            ],
+            "kernel_name_samples": [
+              "UpdateModelParam_static_bin"
+            ],
+            "name": "N/A",
+            "output_format_samples": [
+              "N/A"
+            ],
+            "output_shape_samples": [
+              "N/A"
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 2.62,
+            "input_dtype_samples": [
+              "INT64;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1;;\""
+            ],
+            "kernel_name_samples": [
+              "AddAdd_1"
+            ],
+            "name": "INT64;INT64;INT64",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 1.34,
+            "input_dtype_samples": [
+              "INT32"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1\""
+            ],
+            "kernel_name_samples": [
+              "aclnnArgMax_CastAiCore_Cast"
+            ],
+            "name": "INT32",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1\""
+            ],
+            "wait_us": 0.18
+          }
+        ],
+        "top_input_formats": [
+          {
+            "aicore_time_us": 76.06299999999999,
+            "count": 12,
+            "duration_us": 1153.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention",
+              "IncreFlashAttention_1",
+              "IncreFlashAttention_2"
+            ],
+            "name": "NCHW;NCHW;NCHW;NCHW",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 13.6
+          },
+          {
+            "aicore_time_us": 235.79300000000003,
+            "count": 52,
+            "duration_us": 321.40000000000003,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64",
+              "INT64;INT64;INT64",
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"56371,768;128,1;1\"",
+              "\"128,1;;\"",
+              "\"3074,768;128;\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2",
+              "AddAdd_1",
+              "GatherV2_1"
+            ],
+            "name": "ND;ND;ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768\"",
+              "\"128,1\"",
+              "\"128,768\""
+            ],
+            "wait_us": 51.04
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 19,
+            "duration_us": 197.72,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_LayerNormV3/AddLayerNorm",
+              "LayerNormV4_1_LayerNormV3/AddLayerNorm",
+              "LayerNormV4_2_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "ND;ND;ND;ND",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 1.4
+          },
+          {
+            "aicore_time_us": 85.102,
+            "count": 3,
+            "duration_us": 132.24,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16",
+              "FLOAT;INT64",
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;56371,768\"",
+              "\"128,56371;\"",
+              "\"128;\""
+            ],
+            "kernel_name_samples": [
+              "MatMul",
+              "aclnnArgMax_ArgMaxV2AiCore_ArgMaxV2",
+              "aclnnAdds_AddAiCore_Add"
+            ],
+            "name": "ND;ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,56371\"",
+              "\"128,1\"",
+              "\"128\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 12,
+            "duration_us": 116.43999999999998,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,256,128;128;128,6,1,128\""
+            ],
+            "kernel_name_samples": [
+              "Scatter",
+              "Scatter_1",
+              "Scatter_2"
+            ],
+            "name": "NCHW;NCHW;NCHW",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,256,128\""
+            ],
+            "wait_us": 0.76
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 10,
+            "duration_us": 79.06,
+            "input_dtype_samples": [
+              "FLOAT16",
+              "FLOAT",
+              "INT32"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768\"",
+              "\"256\"",
+              "\"128,1,3072\""
+            ],
+            "kernel_name_samples": [
+              "Muls",
+              "Cast_2",
+              "Relu"
+            ],
+            "name": "ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768\"",
+              "\"256\"",
+              "\"128,1,3072\""
+            ],
+            "wait_us": 20.09
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 9.26,
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1,256;128,1,1,1\""
+            ],
+            "kernel_name_samples": [
+              "Greater"
+            ],
+            "name": "NCHW;NCHW",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,1,1,256\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 7.18,
+            "input_dtype_samples": [
+              "FLOAT"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "Cast_1"
+            ],
+            "name": "NCHW",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,1,1,256\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 4.1,
+            "input_dtype_samples": [
+              "N/A"
+            ],
+            "input_format_samples": [
+              "N/A"
+            ],
+            "input_shape_samples": [
+              "N/A"
+            ],
+            "kernel_name_samples": [
+              "UpdateModelParam_static_bin"
+            ],
+            "name": "N/A",
+            "output_format_samples": [
+              "N/A"
+            ],
+            "output_shape_samples": [
+              "N/A"
+            ],
+            "wait_us": 0.0
+          }
+        ],
+        "top_kernel_names": [
+          {
+            "aicore_time_us": 10.452,
+            "count": 1,
+            "duration_us": 175.6,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention"
+            ],
+            "name": "IncreFlashAttention",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 1.49
+          },
+          {
+            "aicore_time_us": 5.435,
+            "count": 1,
+            "duration_us": 164.58,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_1"
+            ],
+            "name": "IncreFlashAttention_1",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 1.07
+          },
+          {
+            "aicore_time_us": 85.102,
+            "count": 1,
+            "duration_us": 93.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;56371,768\""
+            ],
+            "kernel_name_samples": [
+              "MatMul"
+            ],
+            "name": "MatMul",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,56371\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 5.802,
+            "count": 1,
+            "duration_us": 86.9,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_3"
+            ],
+            "name": "IncreFlashAttention_3",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 0.79
+          },
+          {
+            "aicore_time_us": 5.775,
+            "count": 1,
+            "duration_us": 84.64,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_9"
+            ],
+            "name": "IncreFlashAttention_9",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 1.16
+          },
+          {
+            "aicore_time_us": 5.678,
+            "count": 1,
+            "duration_us": 84.1,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_5"
+            ],
+            "name": "IncreFlashAttention_5",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 1.14
+          },
+          {
+            "aicore_time_us": 5.574,
+            "count": 1,
+            "duration_us": 81.92,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_7"
+            ],
+            "name": "IncreFlashAttention_7",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 1.41
+          },
+          {
+            "aicore_time_us": 5.309,
+            "count": 1,
+            "duration_us": 81.44,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_11"
+            ],
+            "name": "IncreFlashAttention_11",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 0.85
+          },
+          {
+            "aicore_time_us": 6.209,
+            "count": 1,
+            "duration_us": 81.04,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_4"
+            ],
+            "name": "IncreFlashAttention_4",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 1.24
+          },
+          {
+            "aicore_time_us": 6.678,
+            "count": 1,
+            "duration_us": 79.4,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_10"
+            ],
+            "name": "IncreFlashAttention_10",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 0.94
+          },
+          {
+            "aicore_time_us": 6.393,
+            "count": 1,
+            "duration_us": 78.66,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_2"
+            ],
+            "name": "IncreFlashAttention_2",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 1.06
+          },
+          {
+            "aicore_time_us": 6.585,
+            "count": 1,
+            "duration_us": 77.64,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_8"
+            ],
+            "name": "IncreFlashAttention_8",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 1.31
+          },
+          {
+            "aicore_time_us": 6.173,
+            "count": 1,
+            "duration_us": 77.34,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention_6"
+            ],
+            "name": "IncreFlashAttention_6",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 1.14
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 36.32,
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,56371;\""
+            ],
+            "kernel_name_samples": [
+              "aclnnArgMax_ArgMaxV2AiCore_ArgMaxV2"
+            ],
+            "name": "aclnnArgMax_ArgMaxV2AiCore_ArgMaxV2",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 16.38,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,256,128;128;128,6,1,128\""
+            ],
+            "kernel_name_samples": [
+              "Scatter"
+            ],
+            "name": "Scatter",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,256,128\""
+            ],
+            "wait_us": 0.11
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 14.36,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"128,56371\""
+            ],
+            "kernel_name_samples": [
+              "aclnnInplaceCopy_CastAiCore_Cast"
+            ],
+            "name": "aclnnInplaceCopy_CastAiCore_Cast",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,56371\""
+            ],
+            "wait_us": 19.49
+          },
+          {
+            "aicore_time_us": 11.444,
+            "count": 1,
+            "duration_us": 12.9,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;3072,768;3072\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_6"
+            ],
+            "name": "MatMulV2_6",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,3072\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.82,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_13_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_13_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.02
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.78,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_16_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_16_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.15
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.7,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_4_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_4_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.15
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.62,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,256,128;128;128,6,1,128\""
+            ],
+            "kernel_name_samples": [
+              "Scatter_6"
+            ],
+            "name": "Scatter_6",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,256,128\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.6,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.06
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.36,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_10_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_10_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.01
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.32,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_18_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_18_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.3,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,256,128;128;128,6,1,128\""
+            ],
+            "kernel_name_samples": [
+              "Scatter_10"
+            ],
+            "name": "Scatter_10",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,256,128\""
+            ],
+            "wait_us": 0.26
+          },
+          {
+            "aicore_time_us": 10.195,
+            "count": 1,
+            "duration_us": 12.24,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_7"
+            ],
+            "name": "MatMulV2_7",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.0,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_8_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_8_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.03
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 12.0,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,256,128;128;128,6,1,128\""
+            ],
+            "kernel_name_samples": [
+              "Scatter_8"
+            ],
+            "name": "Scatter_8",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,256,128\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.82,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,256,128;128;128,6,1,128\""
+            ],
+            "kernel_name_samples": [
+              "Scatter_2"
+            ],
+            "name": "Scatter_2",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,256,128\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.66,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,256,128;128;128,6,1,128\""
+            ],
+            "kernel_name_samples": [
+              "Scatter_4"
+            ],
+            "name": "Scatter_4",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,256,128\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.66,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_7_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_7_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.17
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.64,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_1_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_1_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.58,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_11_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_11_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.04
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.58,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_14_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_14_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 11.54,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_5_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_5_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.08
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 10.92,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_17_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_17_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.21
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 10.84,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_2_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "LayerNormV4_2_LayerNormV3/AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 0.02
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 10.44,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"3074,768;128;\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2_1"
+            ],
+            "name": "GatherV2_1",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 8.57,
+            "count": 1,
+            "duration_us": 9.96,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_15"
+            ],
+            "name": "MatMulV2_15",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 8.686,
+            "count": 1,
+            "duration_us": 9.8,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_39"
+            ],
+            "name": "MatMulV2_39",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.04
+          }
+        ],
+        "top_kernel_types": [
+          {
+            "aicore_time_us": 76.06299999999999,
+            "count": 12,
+            "duration_us": 1153.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention",
+              "IncreFlashAttention_1",
+              "IncreFlashAttention_2"
+            ],
+            "name": "IncreFlashAttention",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 13.6
+          },
+          {
+            "aicore_time_us": 235.79300000000003,
+            "count": 48,
+            "duration_us": 291.06,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\"",
+              "\"128,768;3072,768;3072\"",
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2",
+              "MatMulV2_1",
+              "MatMulV2_2"
+            ],
+            "name": "MatMulV2",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\"",
+              "\"128,3072\""
+            ],
+            "wait_us": 13.959999999999996
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 19,
+            "duration_us": 197.72,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_LayerNormV3/AddLayerNorm",
+              "LayerNormV4_1_LayerNormV3/AddLayerNorm",
+              "LayerNormV4_2_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "AddLayerNorm",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 1.4
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 12,
+            "duration_us": 116.43999999999998,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,256,128;128;128,6,1,128\""
+            ],
+            "kernel_name_samples": [
+              "Scatter",
+              "Scatter_1",
+              "Scatter_2"
+            ],
+            "name": "Scatter",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,256,128\""
+            ],
+            "wait_us": 0.76
+          },
+          {
+            "aicore_time_us": 85.102,
+            "count": 1,
+            "duration_us": 93.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;56371,768\""
+            ],
+            "kernel_name_samples": [
+              "MatMul"
+            ],
+            "name": "MatMul",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,56371\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 6,
+            "duration_us": 53.96,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,3072\""
+            ],
+            "kernel_name_samples": [
+              "Relu",
+              "Relu_1",
+              "Relu_2"
+            ],
+            "name": "Relu",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,3072\""
+            ],
+            "wait_us": 0.3
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 36.32,
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,56371;\""
+            ],
+            "kernel_name_samples": [
+              "aclnnArgMax_ArgMaxV2AiCore_ArgMaxV2"
+            ],
+            "name": "ArgMaxV2",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 4,
+            "duration_us": 23.959999999999997,
+            "input_dtype_samples": [
+              "FLOAT",
+              "FLOAT16",
+              "INT32"
+            ],
+            "input_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"256\"",
+              "\"128,1,1,256\"",
+              "\"128,56371\""
+            ],
+            "kernel_name_samples": [
+              "Cast_2",
+              "Cast_1",
+              "aclnnInplaceCopy_CastAiCore_Cast"
+            ],
+            "name": "Cast",
+            "output_format_samples": [
+              "ND",
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"256\"",
+              "\"128,1,1,256\"",
+              "\"128,56371\""
+            ],
+            "wait_us": 19.79
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 2,
+            "duration_us": 18.84,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"56371,768;128,1;1\"",
+              "\"3074,768;128;\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2",
+              "GatherV2_1"
+            ],
+            "name": "GatherV2",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768\"",
+              "\"128,768\""
+            ],
+            "wait_us": 36.9
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 9.26,
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1,256;128,1,1,1\""
+            ],
+            "kernel_name_samples": [
+              "Greater"
+            ],
+            "name": "Greater",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,1,1,256\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 8.88,
+            "input_dtype_samples": [
+              "INT32;FLOAT;INT32"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\";;\""
+            ],
+            "kernel_name_samples": [
+              "Range"
+            ],
+            "name": "Range",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"256\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 8.32,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768\""
+            ],
+            "kernel_name_samples": [
+              "Muls"
+            ],
+            "name": "Muls",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 4.1,
+            "input_dtype_samples": [
+              "N/A"
+            ],
+            "input_format_samples": [
+              "N/A"
+            ],
+            "input_shape_samples": [
+              "N/A"
+            ],
+            "kernel_name_samples": [
+              "UpdateModelParam_static_bin"
+            ],
+            "name": "Data",
+            "output_format_samples": [
+              "N/A"
+            ],
+            "output_shape_samples": [
+              "N/A"
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 2.66,
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128;\""
+            ],
+            "kernel_name_samples": [
+              "aclnnAdds_AddAiCore_Add"
+            ],
+            "name": "Add",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 2.62,
+            "input_dtype_samples": [
+              "INT64;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1;;\""
+            ],
+            "kernel_name_samples": [
+              "AddAdd_1"
+            ],
+            "name": "AutomaticBufferFusionOp",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1\""
+            ],
+            "wait_us": 0.18
+          }
+        ],
+        "top_matmul_names": [
+          {
+            "aicore_time_us": 85.102,
+            "count": 1,
+            "duration_us": 93.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;56371,768\""
+            ],
+            "kernel_name_samples": [
+              "MatMul"
+            ],
+            "name": "MatMul",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,56371\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 11.444,
+            "count": 1,
+            "duration_us": 12.9,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;3072,768;3072\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_6"
+            ],
+            "name": "MatMulV2_6",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,3072\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 10.195,
+            "count": 1,
+            "duration_us": 12.24,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_7"
+            ],
+            "name": "MatMulV2_7",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 8.57,
+            "count": 1,
+            "duration_us": 9.96,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_15"
+            ],
+            "name": "MatMulV2_15",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 8.686,
+            "count": 1,
+            "duration_us": 9.8,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_39"
+            ],
+            "name": "MatMulV2_39",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.04
+          },
+          {
+            "aicore_time_us": 8.509,
+            "count": 1,
+            "duration_us": 9.62,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2"
+            ],
+            "name": "MatMulV2",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.15
+          },
+          {
+            "aicore_time_us": 8.536,
+            "count": 1,
+            "duration_us": 9.54,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_31"
+            ],
+            "name": "MatMulV2_31",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 8.547,
+            "count": 1,
+            "duration_us": 9.54,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_47"
+            ],
+            "name": "MatMulV2_47",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.07
+          },
+          {
+            "aicore_time_us": 8.452,
+            "count": 1,
+            "duration_us": 9.5,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_23"
+            ],
+            "name": "MatMulV2_23",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.02
+          },
+          {
+            "aicore_time_us": 7.915,
+            "count": 1,
+            "duration_us": 9.46,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;3072,768;3072\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_46"
+            ],
+            "name": "MatMulV2_46",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,3072\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 7.145,
+            "count": 1,
+            "duration_us": 8.34,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;3072,768;3072\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_22"
+            ],
+            "name": "MatMulV2_22",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,3072\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 7.151,
+            "count": 1,
+            "duration_us": 8.34,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;3072,768;3072\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_30"
+            ],
+            "name": "MatMulV2_30",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,3072\""
+            ],
+            "wait_us": 0.17
+          },
+          {
+            "aicore_time_us": 6.706,
+            "count": 1,
+            "duration_us": 8.02,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;3072,768;3072\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_14"
+            ],
+            "name": "MatMulV2_14",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,3072\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 6.546,
+            "count": 1,
+            "duration_us": 7.94,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;3072,768;3072\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_38"
+            ],
+            "name": "MatMulV2_38",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,3072\""
+            ],
+            "wait_us": 0.17
+          },
+          {
+            "aicore_time_us": 4.177,
+            "count": 1,
+            "duration_us": 5.38,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_40"
+            ],
+            "name": "MatMulV2_40",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 4.331,
+            "count": 1,
+            "duration_us": 5.36,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_3"
+            ],
+            "name": "MatMulV2_3",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 1.15
+          },
+          {
+            "aicore_time_us": 4.047,
+            "count": 1,
+            "duration_us": 5.36,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_20"
+            ],
+            "name": "MatMulV2_20",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 4.096,
+            "count": 1,
+            "duration_us": 5.3,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_9"
+            ],
+            "name": "MatMulV2_9",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 4.074,
+            "count": 1,
+            "duration_us": 5.24,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_42"
+            ],
+            "name": "MatMulV2_42",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 3.859,
+            "count": 1,
+            "duration_us": 5.14,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_2"
+            ],
+            "name": "MatMulV2_2",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 4.086,
+            "count": 1,
+            "duration_us": 5.12,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_16"
+            ],
+            "name": "MatMulV2_16",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.07
+          },
+          {
+            "aicore_time_us": 4.043,
+            "count": 1,
+            "duration_us": 5.1,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_10"
+            ],
+            "name": "MatMulV2_10",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.14
+          },
+          {
+            "aicore_time_us": 3.606,
+            "count": 1,
+            "duration_us": 5.08,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_19"
+            ],
+            "name": "MatMulV2_19",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.96
+          },
+          {
+            "aicore_time_us": 3.849,
+            "count": 1,
+            "duration_us": 5.04,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_24"
+            ],
+            "name": "MatMulV2_24",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 3.93,
+            "count": 1,
+            "duration_us": 5.04,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_26"
+            ],
+            "name": "MatMulV2_26",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.22
+          },
+          {
+            "aicore_time_us": 3.959,
+            "count": 1,
+            "duration_us": 5.04,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_45"
+            ],
+            "name": "MatMulV2_45",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 1.06
+          },
+          {
+            "aicore_time_us": 3.778,
+            "count": 1,
+            "duration_us": 4.98,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_5"
+            ],
+            "name": "MatMulV2_5",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 1.17
+          },
+          {
+            "aicore_time_us": 3.888,
+            "count": 1,
+            "duration_us": 4.98,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_35"
+            ],
+            "name": "MatMulV2_35",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 1.36
+          },
+          {
+            "aicore_time_us": 4.077,
+            "count": 1,
+            "duration_us": 4.96,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_12"
+            ],
+            "name": "MatMulV2_12",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.05
+          },
+          {
+            "aicore_time_us": 3.841,
+            "count": 1,
+            "duration_us": 4.96,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_29"
+            ],
+            "name": "MatMulV2_29",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 1.08
+          },
+          {
+            "aicore_time_us": 3.993,
+            "count": 1,
+            "duration_us": 4.92,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_13"
+            ],
+            "name": "MatMulV2_13",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 1.1
+          },
+          {
+            "aicore_time_us": 3.978,
+            "count": 1,
+            "duration_us": 4.9,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_18"
+            ],
+            "name": "MatMulV2_18",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.01
+          },
+          {
+            "aicore_time_us": 3.833,
+            "count": 1,
+            "duration_us": 4.9,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_44"
+            ],
+            "name": "MatMulV2_44",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 3.797,
+            "count": 1,
+            "duration_us": 4.84,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_28"
+            ],
+            "name": "MatMulV2_28",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 3.881,
+            "count": 1,
+            "duration_us": 4.82,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_32"
+            ],
+            "name": "MatMulV2_32",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 3.699,
+            "count": 1,
+            "duration_us": 4.76,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_37"
+            ],
+            "name": "MatMulV2_37",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.86
+          },
+          {
+            "aicore_time_us": 3.812,
+            "count": 1,
+            "duration_us": 4.74,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_27"
+            ],
+            "name": "MatMulV2_27",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 1.16
+          },
+          {
+            "aicore_time_us": 3.402,
+            "count": 1,
+            "duration_us": 4.72,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_21"
+            ],
+            "name": "MatMulV2_21",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.9
+          },
+          {
+            "aicore_time_us": 3.512,
+            "count": 1,
+            "duration_us": 4.62,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_4"
+            ],
+            "name": "MatMulV2_4",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.11
+          },
+          {
+            "aicore_time_us": 3.525,
+            "count": 1,
+            "duration_us": 4.52,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_1"
+            ],
+            "name": "MatMulV2_1",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          }
+        ],
+        "top_matmul_shape_signatures": [
+          {
+            "aicore_time_us": 135.89999999999998,
+            "count": 36,
+            "duration_us": 175.48,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2",
+              "MatMulV2_1",
+              "MatMulV2_2"
+            ],
+            "name": "MatMulV2 | \"128,768;768,768;768\" -> \"128,768\" | ND;ND;ND -> ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 13.489999999999997
+          },
+          {
+            "aicore_time_us": 85.102,
+            "count": 1,
+            "duration_us": 93.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;56371,768\""
+            ],
+            "kernel_name_samples": [
+              "MatMul"
+            ],
+            "name": "MatMul | \"128,768;56371,768\" -> \"128,56371\" | ND;ND -> ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,56371\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 52.986000000000004,
+            "count": 6,
+            "duration_us": 60.580000000000005,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_7",
+              "MatMulV2_15",
+              "MatMulV2_23"
+            ],
+            "name": "MatMulV2 | \"128,3072;768,3072;768\" -> \"128,768\" | ND;ND;ND -> ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.13
+          },
+          {
+            "aicore_time_us": 46.907,
+            "count": 6,
+            "duration_us": 55.0,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;3072,768;3072\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_6",
+              "MatMulV2_14",
+              "MatMulV2_22"
+            ],
+            "name": "MatMulV2 | \"128,768;3072,768;3072\" -> \"128,3072\" | ND;ND;ND -> ND",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,3072\""
+            ],
+            "wait_us": 0.34
+          }
+        ],
+        "top_shape_signatures": [
+          {
+            "aicore_time_us": 76.06299999999999,
+            "count": 12,
+            "duration_us": 1153.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;BOOL"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "IncreFlashAttention",
+              "IncreFlashAttention_1",
+              "IncreFlashAttention_2"
+            ],
+            "name": "IncreFlashAttention | \"128,6,1,128;128,6,256,128;128,6,256,128;128,1,1,256\" -> \"128,6,1,128\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,1,128\""
+            ],
+            "wait_us": 13.6
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 19,
+            "duration_us": 197.72,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768;128,1,768;768;768\""
+            ],
+            "kernel_name_samples": [
+              "LayerNormV4_LayerNormV3/AddLayerNorm",
+              "LayerNormV4_1_LayerNormV3/AddLayerNorm",
+              "LayerNormV4_2_LayerNormV3/AddLayerNorm"
+            ],
+            "name": "AddLayerNorm | \"128,1,768;128,1,768;768;768\" -> \"128,1,768;128,1,1;128,1,1;128,1,768\"",
+            "output_format_samples": [
+              "ND;ND;ND;ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768;128,1,1;128,1,1;128,1,768\""
+            ],
+            "wait_us": 1.4
+          },
+          {
+            "aicore_time_us": 135.89999999999998,
+            "count": 36,
+            "duration_us": 175.48,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;768,768;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2",
+              "MatMulV2_1",
+              "MatMulV2_2"
+            ],
+            "name": "MatMulV2 | \"128,768;768,768;768\" -> \"128,768\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 13.489999999999997
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 12,
+            "duration_us": 116.43999999999998,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;FLOAT16"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,6,256,128;128;128,6,1,128\""
+            ],
+            "kernel_name_samples": [
+              "Scatter",
+              "Scatter_1",
+              "Scatter_2"
+            ],
+            "name": "Scatter | \"128,6,256,128;128;128,6,1,128\" -> \"128,6,256,128\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,6,256,128\""
+            ],
+            "wait_us": 0.76
+          },
+          {
+            "aicore_time_us": 85.102,
+            "count": 1,
+            "duration_us": 93.26,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;56371,768\""
+            ],
+            "kernel_name_samples": [
+              "MatMul"
+            ],
+            "name": "MatMul | \"128,768;56371,768\" -> \"128,56371\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,56371\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 52.986000000000004,
+            "count": 6,
+            "duration_us": 60.580000000000005,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,3072;768,3072;768\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_7",
+              "MatMulV2_15",
+              "MatMulV2_23"
+            ],
+            "name": "MatMulV2 | \"128,3072;768,3072;768\" -> \"128,768\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.13
+          },
+          {
+            "aicore_time_us": 46.907,
+            "count": 6,
+            "duration_us": 55.0,
+            "input_dtype_samples": [
+              "FLOAT16;FLOAT16;FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,768;3072,768;3072\""
+            ],
+            "kernel_name_samples": [
+              "MatMulV2_6",
+              "MatMulV2_14",
+              "MatMulV2_22"
+            ],
+            "name": "MatMulV2 | \"128,768;3072,768;3072\" -> \"128,3072\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,3072\""
+            ],
+            "wait_us": 0.34
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 6,
+            "duration_us": 53.96,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,3072\""
+            ],
+            "kernel_name_samples": [
+              "Relu",
+              "Relu_1",
+              "Relu_2"
+            ],
+            "name": "Relu | \"128,1,3072\" -> \"128,1,3072\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,3072\""
+            ],
+            "wait_us": 0.3
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 36.32,
+            "input_dtype_samples": [
+              "FLOAT;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,56371;\""
+            ],
+            "kernel_name_samples": [
+              "aclnnArgMax_ArgMaxV2AiCore_ArgMaxV2"
+            ],
+            "name": "ArgMaxV2 | \"128,56371;\" -> \"128,1\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 14.36,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"128,56371\""
+            ],
+            "kernel_name_samples": [
+              "aclnnInplaceCopy_CastAiCore_Cast"
+            ],
+            "name": "Cast | \"128,56371\" -> \"128,56371\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,56371\""
+            ],
+            "wait_us": 19.49
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 10.44,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"3074,768;128;\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2_1"
+            ],
+            "name": "GatherV2 | \"3074,768;128;\" -> \"128,768\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 9.26,
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "NCHW;NCHW"
+            ],
+            "input_shape_samples": [
+              "\"1,1,1,256;128,1,1,1\""
+            ],
+            "kernel_name_samples": [
+              "Greater"
+            ],
+            "name": "Greater | \"1,1,1,256;128,1,1,1\" -> \"128,1,1,256\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,1,1,256\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 8.88,
+            "input_dtype_samples": [
+              "INT32;FLOAT;INT32"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\";;\""
+            ],
+            "kernel_name_samples": [
+              "Range"
+            ],
+            "name": "Range | \";;\" -> \"256\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"256\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 8.4,
+            "input_dtype_samples": [
+              "FLOAT16;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"56371,768;128,1;1\""
+            ],
+            "kernel_name_samples": [
+              "GatherV2"
+            ],
+            "name": "GatherV2 | \"56371,768;128,1;1\" -> \"128,1,768\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768\""
+            ],
+            "wait_us": 36.9
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 8.32,
+            "input_dtype_samples": [
+              "FLOAT16"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1,768\""
+            ],
+            "kernel_name_samples": [
+              "Muls"
+            ],
+            "name": "Muls | \"128,1,768\" -> \"128,1,768\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1,768\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 7.18,
+            "input_dtype_samples": [
+              "FLOAT"
+            ],
+            "input_format_samples": [
+              "NCHW"
+            ],
+            "input_shape_samples": [
+              "\"128,1,1,256\""
+            ],
+            "kernel_name_samples": [
+              "Cast_1"
+            ],
+            "name": "Cast | \"128,1,1,256\" -> \"128,1,1,256\"",
+            "output_format_samples": [
+              "NCHW"
+            ],
+            "output_shape_samples": [
+              "\"128,1,1,256\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 4.1,
+            "input_dtype_samples": [
+              "N/A"
+            ],
+            "input_format_samples": [
+              "N/A"
+            ],
+            "input_shape_samples": [
+              "N/A"
+            ],
+            "kernel_name_samples": [
+              "UpdateModelParam_static_bin"
+            ],
+            "name": "Data | N/A -> N/A",
+            "output_format_samples": [
+              "N/A"
+            ],
+            "output_shape_samples": [
+              "N/A"
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 2.66,
+            "input_dtype_samples": [
+              "INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128;\""
+            ],
+            "kernel_name_samples": [
+              "aclnnAdds_AddAiCore_Add"
+            ],
+            "name": "Add | \"128;\" -> \"128\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128\""
+            ],
+            "wait_us": 0.0
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 2.62,
+            "input_dtype_samples": [
+              "INT64;INT64;INT64"
+            ],
+            "input_format_samples": [
+              "ND;ND;ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1;;\""
+            ],
+            "kernel_name_samples": [
+              "AddAdd_1"
+            ],
+            "name": "AutomaticBufferFusionOp | \"128,1;;\" -> \"128,1\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 1.34,
+            "input_dtype_samples": [
+              "INT32"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"128,1\""
+            ],
+            "kernel_name_samples": [
+              "aclnnArgMax_CastAiCore_Cast"
+            ],
+            "name": "Cast | \"128,1\" -> \"128,1\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"128,1\""
+            ],
+            "wait_us": 0.18
+          },
+          {
+            "aicore_time_us": 0.0,
+            "count": 1,
+            "duration_us": 1.08,
+            "input_dtype_samples": [
+              "FLOAT"
+            ],
+            "input_format_samples": [
+              "ND"
+            ],
+            "input_shape_samples": [
+              "\"256\""
+            ],
+            "kernel_name_samples": [
+              "Cast_2"
+            ],
+            "name": "Cast | \"256\" -> \"256\"",
+            "output_format_samples": [
+              "ND"
+            ],
+            "output_shape_samples": [
+              "\"256\""
+            ],
+            "wait_us": 0.12
+          }
+        ],
+        "top_transdata_names": [],
+        "top_transdata_shape_signatures": [],
+        "total_aicore_time_us": 396.9580000000001,
+        "total_duration_us": 2020.6599999999994,
+        "total_wait_us": 87.07,
+        "weighted_cube_utilization_pct": 25.58636249170773
+      },
+      "op_statistic": {
+        "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/op_statistic.csv",
+        "row_count": 15,
+        "top_op_types": [
+          {
+            "avg_time_us": 96.105,
+            "core_type": "MIX_AIC",
+            "count": 12,
+            "op_type": "IncreFlashAttention",
+            "ratio_pct": 57.073,
+            "total_time_us": 1153.26
+          },
+          {
+            "avg_time_us": 6.063,
+            "core_type": "AI_CORE",
+            "count": 48,
+            "op_type": "MatMulV2",
+            "ratio_pct": 14.404,
+            "total_time_us": 291.06
+          },
+          {
+            "avg_time_us": 10.406,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 19,
+            "op_type": "AddLayerNorm",
+            "ratio_pct": 9.785,
+            "total_time_us": 197.72
+          },
+          {
+            "avg_time_us": 9.703,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 12,
+            "op_type": "Scatter",
+            "ratio_pct": 5.762,
+            "total_time_us": 116.44
+          },
+          {
+            "avg_time_us": 93.26,
+            "core_type": "AI_CORE",
+            "count": 1,
+            "op_type": "MatMul",
+            "ratio_pct": 4.615,
+            "total_time_us": 93.26
+          },
+          {
+            "avg_time_us": 8.993,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 6,
+            "op_type": "Relu",
+            "ratio_pct": 2.67,
+            "total_time_us": 53.96
+          },
+          {
+            "avg_time_us": 36.32,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 1,
+            "op_type": "ArgMaxV2",
+            "ratio_pct": 1.797,
+            "total_time_us": 36.32
+          },
+          {
+            "avg_time_us": 5.99,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 4,
+            "op_type": "Cast",
+            "ratio_pct": 1.186,
+            "total_time_us": 23.96
+          },
+          {
+            "avg_time_us": 9.42,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 2,
+            "op_type": "GatherV2",
+            "ratio_pct": 0.932,
+            "total_time_us": 18.84
+          },
+          {
+            "avg_time_us": 9.26,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 1,
+            "op_type": "Greater",
+            "ratio_pct": 0.458,
+            "total_time_us": 9.26
+          },
+          {
+            "avg_time_us": 8.88,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 1,
+            "op_type": "Range",
+            "ratio_pct": 0.439,
+            "total_time_us": 8.88
+          },
+          {
+            "avg_time_us": 8.32,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 1,
+            "op_type": "Muls",
+            "ratio_pct": 0.412,
+            "total_time_us": 8.32
+          },
+          {
+            "avg_time_us": 4.1,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 1,
+            "op_type": "Data",
+            "ratio_pct": 0.203,
+            "total_time_us": 4.1
+          },
+          {
+            "avg_time_us": 2.66,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 1,
+            "op_type": "Add",
+            "ratio_pct": 0.132,
+            "total_time_us": 2.66
+          },
+          {
+            "avg_time_us": 2.62,
+            "core_type": "AI_VECTOR_CORE",
+            "count": 1,
+            "op_type": "AutomaticBufferFusionOp",
+            "ratio_pct": 0.13,
+            "total_time_us": 2.62
+          }
+        ]
+      },
+      "operator_details": {
+        "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/operator_details.csv",
+        "row_count": 31,
+        "top_by_device_total_us": [
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 1146.93,
+            "host_total_us": 1146.93,
+            "input_shape_samples": [],
+            "name": "unirec.decode.compiled.increfa_all"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 730.1,
+            "host_total_us": 730.1,
+            "input_shape_samples": [],
+            "name": "cache_compiler inference"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 353.76,
+            "host_total_us": 353.76,
+            "input_shape_samples": [],
+            "name": "TorchNpuGraphBase::Run"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 155.2,
+            "host_total_us": 155.2,
+            "input_shape_samples": [],
+            "name": "ExecuteGraph"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 123.12,
+            "host_total_us": 123.12,
+            "input_shape_samples": [
+              "128,56371;\r\n;\r\n",
+              "128,56371;\r\n;\r\n;\r\n128,1"
+            ],
+            "name": "aten::argmax"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 102.9,
+            "host_total_us": 102.9,
+            "input_shape_samples": [
+              "128,56371;\r\n;\r\n;\r\n;\r\n",
+              "128,1;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::to"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 95.44,
+            "host_total_us": 95.44,
+            "input_shape_samples": [
+              "128,56371;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::_to_copy"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 88.22,
+            "host_total_us": 88.22,
+            "input_shape_samples": [],
+            "name": "RefreshAtTensorFromGeTensor"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 72.69,
+            "host_total_us": 72.69,
+            "input_shape_samples": [
+              "128,56371;\r\n128,56371;\r\n"
+            ],
+            "name": "aten::copy_"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 3,
+            "device_total_us": 67.32,
+            "host_total_us": 67.32,
+            "input_shape_samples": [
+              ";\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::empty"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 4,
+            "device_total_us": 45.1,
+            "host_total_us": 45.1,
+            "input_shape_samples": [],
+            "name": "empty_tensor"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 37.660000000000004,
+            "host_total_us": 2.79,
+            "input_shape_samples": [],
+            "name": "aclnnArgMax"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 34.1,
+            "host_total_us": 34.1,
+            "input_shape_samples": [],
+            "name": "aclnnInplaceCopy"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 33.61,
+            "host_total_us": 33.61,
+            "input_shape_samples": [],
+            "name": "AssembleInputs"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 31.79,
+            "host_total_us": 31.79,
+            "input_shape_samples": [
+              "128;\r\n;\r\n"
+            ],
+            "name": "aten::add"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 27.35,
+            "host_total_us": 27.35,
+            "input_shape_samples": [
+              "0;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::set_"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 19.99,
+            "host_total_us": 19.99,
+            "input_shape_samples": [
+              "128,1,56371;\r\n;\r\n"
+            ],
+            "name": "aten::select"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 14.22,
+            "host_total_us": 14.22,
+            "input_shape_samples": [],
+            "name": "AssembleOutputs"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 8.37,
+            "host_total_us": 8.37,
+            "input_shape_samples": [
+              "128,1,56371;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::as_strided"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 7.99,
+            "host_total_us": 7.99,
+            "input_shape_samples": [
+              "128,56371;\r\n"
+            ],
+            "name": "aten::reshape"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 5.46,
+            "host_total_us": 5.46,
+            "input_shape_samples": [],
+            "name": "aten::item"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 4.3,
+            "host_total_us": 4.3,
+            "input_shape_samples": [
+              "128,56371;\r\n"
+            ],
+            "name": "aten::view"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 2.66,
+            "host_total_us": 2.66,
+            "input_shape_samples": [],
+            "name": "aten::_local_scalar_dense"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 2.66,
+            "host_total_us": 2.35,
+            "input_shape_samples": [],
+            "name": "aclnnAdds"
+          }
+        ],
+        "top_by_host_total_us": [
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 1146.93,
+            "host_total_us": 1146.93,
+            "input_shape_samples": [],
+            "name": "unirec.decode.compiled.increfa_all"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 730.1,
+            "host_total_us": 730.1,
+            "input_shape_samples": [],
+            "name": "cache_compiler inference"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 353.76,
+            "host_total_us": 353.76,
+            "input_shape_samples": [],
+            "name": "TorchNpuGraphBase::Run"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 155.2,
+            "host_total_us": 155.2,
+            "input_shape_samples": [],
+            "name": "ExecuteGraph"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 123.12,
+            "host_total_us": 123.12,
+            "input_shape_samples": [
+              "128,56371;\r\n;\r\n",
+              "128,56371;\r\n;\r\n;\r\n128,1"
+            ],
+            "name": "aten::argmax"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 2,
+            "device_total_us": 102.9,
+            "host_total_us": 102.9,
+            "input_shape_samples": [
+              "128,56371;\r\n;\r\n;\r\n;\r\n",
+              "128,1;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::to"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 95.44,
+            "host_total_us": 95.44,
+            "input_shape_samples": [
+              "128,56371;\r\n;\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::_to_copy"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 88.22,
+            "host_total_us": 88.22,
+            "input_shape_samples": [],
+            "name": "RefreshAtTensorFromGeTensor"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 72.69,
+            "host_total_us": 72.69,
+            "input_shape_samples": [
+              "128,56371;\r\n128,56371;\r\n"
+            ],
+            "name": "aten::copy_"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 3,
+            "device_total_us": 67.32,
+            "host_total_us": 67.32,
+            "input_shape_samples": [
+              ";\r\n;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::empty"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 4,
+            "device_total_us": 45.1,
+            "host_total_us": 45.1,
+            "input_shape_samples": [],
+            "name": "empty_tensor"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 34.1,
+            "host_total_us": 34.1,
+            "input_shape_samples": [],
+            "name": "aclnnInplaceCopy"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 33.61,
+            "host_total_us": 33.61,
+            "input_shape_samples": [],
+            "name": "AssembleInputs"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 31.79,
+            "host_total_us": 31.79,
+            "input_shape_samples": [
+              "128;\r\n;\r\n"
+            ],
+            "name": "aten::add"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 27.35,
+            "host_total_us": 27.35,
+            "input_shape_samples": [
+              "0;\r\n;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::set_"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 19.99,
+            "host_total_us": 19.99,
+            "input_shape_samples": [
+              "128,1,56371;\r\n;\r\n"
+            ],
+            "name": "aten::select"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 14.22,
+            "host_total_us": 14.22,
+            "input_shape_samples": [],
+            "name": "AssembleOutputs"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 8.37,
+            "host_total_us": 8.37,
+            "input_shape_samples": [
+              "128,1,56371;\r\n;\r\n;\r\n"
+            ],
+            "name": "aten::as_strided"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 7.99,
+            "host_total_us": 7.99,
+            "input_shape_samples": [
+              "128,56371;\r\n"
+            ],
+            "name": "aten::reshape"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 5.46,
+            "host_total_us": 5.46,
+            "input_shape_samples": [],
+            "name": "aten::item"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 4.3,
+            "host_total_us": 4.3,
+            "input_shape_samples": [
+              "128,56371;\r\n"
+            ],
+            "name": "aten::view"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 37.660000000000004,
+            "host_total_us": 2.79,
+            "input_shape_samples": [],
+            "name": "aclnnArgMax"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 2.66,
+            "host_total_us": 2.66,
+            "input_shape_samples": [],
+            "name": "aten::_local_scalar_dense"
+          },
+          {
+            "call_stack_samples": [],
+            "count": 1,
+            "device_total_us": 2.66,
+            "host_total_us": 2.35,
+            "input_shape_samples": [],
+            "name": "aclnnAdds"
+          }
+        ],
+        "total_device_us": 3210.9399999999982,
+        "total_host_us": 3175.7599999999984
+      },
+      "profiler_info": {
+        "cann_version": "9.0.0",
+        "config": {
+          "common_config": {
+            "activities": [
+              "ProfilerActivity.CPU",
+              "ProfilerActivity.NPU"
+            ],
+            "profile_memory": false,
+            "record_shapes": true,
+            "schedule": {
+              "active": 1,
+              "repeat": 1,
+              "skip_first": 0,
+              "wait": 0,
+              "warmup": 0
+            },
+            "with_flops": false,
+            "with_modules": false,
+            "with_stack": false
+          },
+          "experimental_config": {
+            "_aic_metrics": "ACL_AICORE_PIPE_UTILIZATION",
+            "_data_simplification": true,
+            "_export_type": [
+              "text"
+            ],
+            "_gc_detect_threshold": null,
+            "_host_sys": [],
+            "_l2_cache": false,
+            "_msprof_tx": false,
+            "_mstx": false,
+            "_mstx_domain_exclude": [],
+            "_mstx_domain_include": [],
+            "_op_attr": false,
+            "_profiler_level": "Level1",
+            "_sys_interconnection": false,
+            "_sys_io": false,
+            "record_op_args": false
+          }
+        },
+        "end_info": {
+          "MonotonicTimeEnd": 2836891643350648,
+          "collectionTimeEnd": 1787143585967702468
+        },
+        "start_info": {
+          "freq": 100,
+          "start_cnt": 283703258066028,
+          "start_monotonic": 2836843136888960,
+          "syscnt_enable": true
+        },
+        "torch_npu_version": "2.10.0"
+      },
+      "run_root": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt",
+      "step_trace_time": {
+        "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/910b_decode_ab_profile_20260819T124429/a/profile_compiled_increfa_all_pipe/liteserver-c001-4_3578901_20260819124625637_ascend_pt/ASCEND_PROFILER_OUTPUT/step_trace_time.csv",
+        "row_count": 1,
+        "totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 54.68000000000001,
+          "Free": 0.06,
+          "Overlapped": 0.0,
+          "Preparing": 2518.25,
+          "Stage": 54.75
+        }
+      }
+    }
+  ],
+  "skip_trace": true,
+  "topn": 40
+}
