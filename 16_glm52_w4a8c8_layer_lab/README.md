@@ -258,6 +258,10 @@ There are no attention or indexer selection flags. Historical JSON files retain
 the exact commands and results for the removed baselines; replay those commands
 from their recorded commit, not from the current head.
 
+The optimized-only TP1/TP2 validation and exact five-call PipeUtilization
+profile are saved in
+`references/dense_layers0_2_optimized_cleanup_profile_910b2_ff44430.json`.
+
 Run on one Ascend 910B2 after sourcing the NPU environment:
 
 ```bash

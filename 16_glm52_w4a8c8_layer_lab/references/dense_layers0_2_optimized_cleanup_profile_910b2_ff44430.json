@@ -1,0 +1,139 @@
+{
+  "experiment": "GLM-5.2 W4A8C8 dense layers 0-2 optimized-only cleanup and profile",
+  "model": "Eco-Tech/GLM-5.2-w4a8c8",
+  "chip": "Ascend 910B2",
+  "batch_size": 1,
+  "cache_length": 4096,
+  "source_commits": {
+    "remove_slow_runtime_paths": "527cc0a",
+    "exact_profile_boundaries": "ff44430"
+  },
+  "remaining_runtime_contract": {
+    "kv_b": "absorbed_w_uk_w_uv_by_head",
+    "kv_cache": "compressed_latent512_plus_rope64",
+    "sparse_attention": "contiguous_bsnd_npu_sparse_flash_attention",
+    "indexer": "contiguous_bsnd_npu_lightning_indexer",
+    "attention_or_indexer_selectors": false
+  },
+  "cleanup": {
+    "files_changed": 6,
+    "insertions": 89,
+    "deletions": 364,
+    "historical_json_evidence_retained": true,
+    "reference_only_decompressed_kv_materialization_retained": true,
+    "local_unit_tests": {
+      "count": 2,
+      "passed": true
+    }
+  },
+  "tp1_clean_validation": {
+    "physical_npus": [7],
+    "decode_steps": 1000,
+    "warmup_steps_excluded": 10,
+    "mean_stack_ms": 2.329798016231507,
+    "stack_calls_per_sec": 429.2217578661687,
+    "unique_graphs_after_warmup": 1,
+    "new_graphs_during_measurement": 0,
+    "reference_comparison": {
+      "output_allclose_atol_5e_2_rtol_5e_2": true,
+      "output_max_abs": 0.015625,
+      "output_mean_abs": 0.00006166131788631901,
+      "key_cache_max_abs": 0.0068359375,
+      "value_cache_max_abs": 0.000213623046875,
+      "index_cache_max_abs": 0.0234375
+    }
+  },
+  "tp2_smoke_validation": {
+    "physical_npus": [0, 1],
+    "decode_steps": 200,
+    "warmup_steps_excluded": 10,
+    "timing_uses_slowest_rank": true,
+    "mean_stack_ms": 1.8259099125862122,
+    "stack_calls_per_sec": 547.6721458747128,
+    "unique_graphs_after_warmup_per_rank": 1,
+    "new_graphs_during_measurement_per_rank": 0,
+    "reference_comparison": {
+      "output_allclose_atol_5e_2_rtol_5e_2": true,
+      "output_max_abs": 0.015625,
+      "output_mean_abs": 0.00007489106064895168,
+      "key_cache_max_abs": 0.0068359375,
+      "value_cache_max_abs": 0.0001983642578125,
+      "index_cache_max_abs": 0.0234375
+    }
+  },
+  "tp1_pipe_profile": {
+    "physical_npus": [7],
+    "metric": "PipeUtilization",
+    "ordinary_warmup_steps_excluded": 20,
+    "profiler_schedule_warmup_steps": 1,
+    "active_stack_calls": 5,
+    "execution_mode": "contiguous_active_graph_calls_with_boundary_syncs",
+    "exact_count_checks": {
+      "sparse_flash_attention": 15,
+      "lightning_indexer": 15,
+      "quant_batch_matmul_v3": 90,
+      "expected_layer_calls": 15,
+      "passed": true
+    },
+    "clean_timing_before_profiler": {
+      "decode_steps": 200,
+      "warmup_steps_excluded": 10,
+      "mean_stack_ms": 2.2708737454377115,
+      "stack_calls_per_sec": 440.35913577716303,
+      "unique_graphs_after_warmup": 1,
+      "new_graphs_during_measurement": 0
+    },
+    "aggregate_device_kernel_time": {
+      "five_stack_calls_us": 9693.920000000004,
+      "per_stack_us": 1938.7840000000008,
+      "per_stack_fraction_of_clean_wall": 0.8537612466985917,
+      "clean_wall_minus_summed_kernels_us_per_stack": 332.0897454377107,
+      "residual_fraction_of_clean_wall": 0.14623875330140834,
+      "note": "Use the five-call aggregate. Step attribution is distorted by asynchronous execution and the final boundary synchronization."
+    },
+    "operator_types": [
+      {"type": "QuantBatchMatmulV3", "calls": 90, "us_per_stack": 1341.608, "ratio_percent": 69.198},
+      {"type": "GatherV2", "calls": 150, "us_per_stack": 111.352, "ratio_percent": 5.743},
+      {"type": "BatchMatMul", "calls": 30, "us_per_stack": 69.428, "ratio_percent": 3.581},
+      {"type": "SparseFlashAttention", "calls": 15, "us_per_stack": 58.844, "ratio_percent": 3.035},
+      {"type": "LightningIndexer", "calls": 15, "us_per_stack": 49.852, "ratio_percent": 2.571},
+      {"type": "AutomaticBufferFusionOp", "calls": 60, "us_per_stack": 45.712, "ratio_percent": 2.358},
+      {"type": "DynamicQuant", "calls": 75, "us_per_stack": 34.476, "ratio_percent": 1.778},
+      {"type": "Mul", "calls": 30, "us_per_stack": 34.424, "ratio_percent": 1.776},
+      {"type": "MatMul", "calls": 30, "us_per_stack": 30.704, "ratio_percent": 1.584},
+      {"type": "RmsNorm", "calls": 35, "us_per_stack": 22.604, "ratio_percent": 1.166},
+      {"type": "SplitVD", "calls": 60, "us_per_stack": 16.056, "ratio_percent": 0.828},
+      {"type": "Cast", "calls": 60, "us_per_stack": 15.812, "ratio_percent": 0.816},
+      {"type": "Pack", "calls": 60, "us_per_stack": 14.036, "ratio_percent": 0.724},
+      {"type": "Neg", "calls": 60, "us_per_stack": 13.24, "ratio_percent": 0.683},
+      {"type": "AddRmsNormDynamicQuant", "calls": 15, "us_per_stack": 11.56, "ratio_percent": 0.596},
+      {"type": "ConcatV2D", "calls": 15, "us_per_stack": 11.528, "ratio_percent": 0.595},
+      {"type": "Scatter", "calls": 45, "us_per_stack": 10.836, "ratio_percent": 0.559},
+      {"type": "SwiGlu", "calls": 15, "us_per_stack": 9.9, "ratio_percent": 0.511},
+      {"type": "Add", "calls": 35, "us_per_stack": 9.46, "ratio_percent": 0.488},
+      {"type": "LessEqual", "calls": 15, "us_per_stack": 8.308, "ratio_percent": 0.429},
+      {"type": "SelectV2", "calls": 15, "us_per_stack": 5.688, "ratio_percent": 0.293},
+      {"type": "InplaceAddRmsNorm", "calls": 10, "us_per_stack": 5.564, "ratio_percent": 0.287},
+      {"type": "LayerNormV3", "calls": 15, "us_per_stack": 4.44, "ratio_percent": 0.229},
+      {"type": "Data", "calls": 5, "us_per_stack": 3.352, "ratio_percent": 0.173}
+    ],
+    "quantized_projection_breakdown_us_per_stack": {
+      "dense_gate_up_6144x24576": 438.388,
+      "dense_down_16384x6144": 319.472,
+      "attention_o_12288x6144": 218.4,
+      "fused_q_kv_a_6144x2624": 201.76,
+      "q_b_2048x16384": 115.724,
+      "indexer_wq_b_2048x4096": 47.864,
+      "total": 1341.608
+    },
+    "remote_artifacts": {
+      "summary": "/tmp/glm52_dense_clean_profile_ff44430.json",
+      "profile_root": "/tmp/glm52_dense_clean_profile_ff44430/rank0"
+    }
+  },
+  "commands": {
+    "tp1_clean": "/usr/local/python3.12.13/bin/python3 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --validation-steps 8 --warmup-steps 10 --decode-steps 1000 --reference-in /tmp/glm52_manual_relu_ref_10a3e91.pt --summary-out /tmp/glm52_dense_clean_527cc0a.json",
+    "tp2_smoke": "ASCEND_RT_VISIBLE_DEVICES=0,1 /usr/local/python3.12.13/bin/python3 -m torch.distributed.run --nnodes=1 --nproc-per-node=2 --master-addr=127.0.0.1 --master-port=29627 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --validation-steps 8 --warmup-steps 10 --decode-steps 200 --reference-in /tmp/glm52_manual_relu_ref_10a3e91.pt --summary-out /tmp/glm52_dense_tp2_clean_527cc0a.json",
+    "tp1_profile": "/usr/local/python3.12.13/bin/python3 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --validation-steps 8 --warmup-steps 10 --decode-steps 200 --reference-in /tmp/glm52_manual_relu_ref_10a3e91.pt --profile-dir /tmp/glm52_dense_clean_profile_ff44430 --profile-metric pipe --profile-warmup-steps 20 --profile-active-steps 5 --summary-out /tmp/glm52_dense_clean_profile_ff44430.json"
+  }
+}
