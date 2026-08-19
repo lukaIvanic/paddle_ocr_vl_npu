@@ -69,6 +69,7 @@ class GLM52DSAIndexer(nn.Module):
         rope_dim: int,
         top_k: int,
         cache_length: int,
+        rope_path: str = "manual",
     ):
         super().__init__()
         self.wq_b = wq_b
@@ -77,6 +78,7 @@ class GLM52DSAIndexer(nn.Module):
         self.rope_dim = int(rope_dim)
         self.top_k = min(int(top_k), int(cache_length))
         self.cache_length = int(cache_length)
+        self.rope_path = str(rope_path)
         self.register_buffer("wk_weight", wk_weight.contiguous())
         self.register_buffer(
             "weights_proj_weight", weights_proj_weight.contiguous()
@@ -96,6 +98,7 @@ class GLM52DSAIndexer(nn.Module):
         top_k: int,
         cache_length: int,
         device: torch.device,
+        rope_path: str = "manual",
     ) -> "GLM52DSAIndexer":
         prefix = f"model.layers.{layer_index}.self_attn.indexer"
         return cls(
@@ -119,6 +122,7 @@ class GLM52DSAIndexer(nn.Module):
             rope_dim=rope_dim,
             top_k=top_k,
             cache_length=cache_length,
+            rope_path=rope_path,
         )
 
     def forward(
@@ -152,8 +156,34 @@ class GLM52DSAIndexer(nn.Module):
         k_pe, k_nope = torch.split(
             k, [self.rope_dim, self.head_dim - self.rope_dim], dim=-1
         )
-        q_pe = apply_interleaved_rope(q_pe, cos, sin)
-        k_pe = apply_interleaved_rope(k_pe.view(1, 1, self.rope_dim), cos, sin)
+        if self.rope_path == "manual":
+            q_pe = apply_interleaved_rope(q_pe, cos, sin)
+            k_pe = apply_interleaved_rope(
+                k_pe.view(1, 1, self.rope_dim), cos, sin
+            )
+        elif self.rope_path == "rotary_mul":
+            q_pe = torch_npu.npu_rotary_mul(
+                q_pe, cos, sin, rotary_mode="interleave"
+            )
+            k_pe = torch_npu.npu_rotary_mul(
+                k_pe.view(1, 1, self.rope_dim),
+                cos,
+                sin,
+                rotary_mode="interleave",
+            )
+        elif self.rope_path == "interleave":
+            q_pe = torch_npu.npu_interleave_rope(
+                q_pe.view(1, self.num_heads, 1, self.rope_dim).contiguous(),
+                cos.view(1, 1, 1, self.rope_dim),
+                sin.view(1, 1, 1, self.rope_dim),
+            ).view(1, self.num_heads, self.rope_dim)
+            k_pe = torch_npu.npu_interleave_rope(
+                k_pe.view(1, 1, 1, self.rope_dim).contiguous(),
+                cos.view(1, 1, 1, self.rope_dim),
+                sin.view(1, 1, 1, self.rope_dim),
+            ).view(1, 1, self.rope_dim)
+        else:
+            raise ValueError(f"unsupported indexer RoPE path {self.rope_path!r}")
         q = torch.cat((q_pe, q_nope), dim=-1)
         k = torch.cat((k_pe.view(1, self.rope_dim), k_nope), dim=-1)
 

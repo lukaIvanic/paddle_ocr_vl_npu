@@ -27,6 +27,34 @@ from modeling_glm52_stack import GLM52DSAIndexer
 
 
 FRACTAL_NZ = 29
+ROPE_CACHE_PATHS = ("manual", "rotary_mul", "interleave", "fused_kv")
+
+
+def apply_rope_path(
+    value: torch.Tensor,
+    cos: torch.Tensor,
+    sin: torch.Tensor,
+    *,
+    path: str,
+) -> torch.Tensor:
+    if path == "manual":
+        return apply_interleaved_rope(value, cos, sin)
+    if path == "rotary_mul":
+        return torch_npu.npu_rotary_mul(
+            value, cos, sin, rotary_mode="interleave"
+        )
+    if path in {"interleave", "fused_kv"}:
+        return torch_npu.npu_interleave_rope(value.contiguous(), cos, sin)
+    raise ValueError(f"unsupported RoPE/cache path {path!r}")
+
+
+def block_rope_to_interleaved(value: torch.Tensor) -> torch.Tensor:
+    width = value.shape[-1]
+    return (
+        value.view(*value.shape[:-1], 2, width // 2)
+        .transpose(-1, -2)
+        .reshape_as(value)
+    )
 
 
 def prepare_w8a8_weight_format(
@@ -217,6 +245,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         post_attention_norm: torch.Tensor,
         q_a_norm: torch.Tensor,
         kv_a_norm: torch.Tensor,
+        rope_cache_path: str,
     ):
         super().__init__()
         self.layer_index = int(layer_index)
@@ -225,6 +254,9 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         self.rank = int(rank)
         self.world_size = int(world_size)
         self.local_heads = config.num_attention_heads // world_size
+        if rope_cache_path not in ROPE_CACHE_PATHS:
+            raise ValueError(f"unsupported RoPE/cache path {rope_cache_path!r}")
+        self.rope_cache_path = str(rope_cache_path)
         self.fused_qkv_a = fused_qkv_a
         self.q_b_proj = q_b_proj
         w_uk_t, w_uv = absorb_kv_b_weight(
@@ -260,14 +292,18 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             )
         )
         freqs = positions[:, None] * inv_freq[None, :]
+        base_cos = freqs.cos().to(input_norm.dtype)
+        base_sin = freqs.sin().to(input_norm.dtype)
         self.register_buffer(
             "rope_cos",
-            freqs.cos().repeat_interleave(2, dim=-1).to(input_norm.dtype),
+            base_cos.repeat_interleave(2, dim=-1),
         )
         self.register_buffer(
             "rope_sin",
-            freqs.sin().repeat_interleave(2, dim=-1).to(input_norm.dtype),
+            base_sin.repeat_interleave(2, dim=-1),
         )
+        self.register_buffer("rope_cos_block", base_cos.repeat(1, 2))
+        self.register_buffer("rope_sin_block", base_sin.repeat(1, 2))
 
     @classmethod
     def from_checkpoint(
@@ -280,6 +316,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         rank: int,
         world_size: int,
         device: torch.device,
+        rope_cache_path: str,
     ) -> "GLM52DenseTPDecoderLayer":
         config = GLM52Config.from_model_dir(model_dir)
         with (Path(model_dir) / "config.json").open() as handle:
@@ -296,6 +333,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             cache_length=cache_length,
             rank=rank,
             world_size=world_size,
+            rope_cache_path=rope_cache_path,
             fused_qkv_a=W8A8DynamicLinear.from_checkpoint(
                 reader,
                 [attn + ".q_a_proj", attn + ".kv_a_proj_with_mqa"],
@@ -338,6 +376,11 @@ class GLM52DenseTPDecoderLayer(nn.Module):
                 top_k=int(raw["index_topk"]),
                 cache_length=cache_length,
                 device=device,
+                rope_path=(
+                    "interleave"
+                    if rope_cache_path == "fused_kv"
+                    else rope_cache_path
+                ),
             ),
             input_norm=reader.tensor(layer + ".input_layernorm.weight").to(
                 device=device, dtype=torch.bfloat16
@@ -360,6 +403,8 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         *,
         used_length: int,
     ) -> tuple[torch.Tensor, torch.Tensor]:
+        if self.rope_cache_path in {"interleave", "fused_kv"}:
+            secondary_cache = block_rope_to_interleaved(secondary_cache)
         return materialize_absorbed_kv(
             primary_cache,
             secondary_cache,
@@ -380,15 +425,25 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         residual = hidden_states.clone()
         x = npu_rms_norm(hidden_states, self.input_norm, cfg.rms_norm_eps)
         fused = self.fused_qkv_a(x)
-        q_a, compressed_kv, k_rope = torch.split(
-            fused,
-            [cfg.q_lora_rank, cfg.kv_lora_rank, cfg.qk_rope_head_dim],
-            dim=-1,
-        )
+        if self.rope_cache_path == "fused_kv":
+            q_a, fused_kv = torch.split(
+                fused,
+                [cfg.q_lora_rank, cfg.kv_lora_rank + cfg.qk_rope_head_dim],
+                dim=-1,
+            )
+            compressed_kv = None
+            k_rope = None
+        else:
+            q_a, compressed_kv, k_rope = torch.split(
+                fused,
+                [cfg.q_lora_rank, cfg.kv_lora_rank, cfg.qk_rope_head_dim],
+                dim=-1,
+            )
         q_a = npu_rms_norm(q_a, self.q_a_norm, cfg.rms_norm_eps)
-        compressed_kv = npu_rms_norm(
-            compressed_kv, self.kv_a_norm, cfg.rms_norm_eps
-        )
+        if compressed_kv is not None:
+            compressed_kv = npu_rms_norm(
+                compressed_kv, self.kv_a_norm, cfg.rms_norm_eps
+            )
         query = self.q_b_proj(q_a).view(
             1, 1, self.local_heads, cfg.qk_head_dim
         )
@@ -396,26 +451,62 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             query, [cfg.qk_nope_head_dim, cfg.qk_rope_head_dim], dim=-1
         )
         position = cache_position.reshape(-1).to(torch.int64)
-        cos = torch.index_select(self.rope_cos, 0, position).view(
+        rope_cos = (
+            self.rope_cos_block
+            if self.rope_cache_path in {"interleave", "fused_kv"}
+            else self.rope_cos
+        )
+        rope_sin = (
+            self.rope_sin_block
+            if self.rope_cache_path in {"interleave", "fused_kv"}
+            else self.rope_sin
+        )
+        cos = torch.index_select(rope_cos, 0, position).view(
             1, 1, 1, cfg.qk_rope_head_dim
         )
-        sin = torch.index_select(self.rope_sin, 0, position).view(
+        sin = torch.index_select(rope_sin, 0, position).view(
             1, 1, 1, cfg.qk_rope_head_dim
         )
-        query_rope = apply_interleaved_rope(query_rope, cos, sin)
-        key_rope = apply_interleaved_rope(
-            k_rope.view(1, 1, 1, cfg.qk_rope_head_dim), cos, sin
+        query_rope = apply_rope_path(
+            query_rope,
+            cos,
+            sin,
+            path=self.rope_cache_path,
         )
-
-        torch_npu.scatter_update_(
-            key_cache, position, compressed_kv.contiguous(), 1
-        )
-        torch_npu.scatter_update_(
-            value_cache,
-            position,
-            key_rope.view(1, 1, cfg.qk_rope_head_dim).contiguous(),
-            1,
-        )
+        if self.rope_cache_path == "fused_kv":
+            torch_npu.npu_kv_rmsnorm_rope_cache_v2(
+                fused_kv.view(
+                    1,
+                    1,
+                    1,
+                    cfg.kv_lora_rank + cfg.qk_rope_head_dim,
+                ).contiguous(),
+                self.kv_a_norm,
+                cos,
+                sin,
+                position,
+                value_cache,
+                key_cache,
+                epsilon=cfg.rms_norm_eps,
+                cache_mode="Norm",
+                is_output_kv=False,
+            )
+        else:
+            key_rope = apply_rope_path(
+                k_rope.view(1, 1, 1, cfg.qk_rope_head_dim),
+                cos,
+                sin,
+                path=self.rope_cache_path,
+            )
+            torch_npu.scatter_update_(
+                key_cache, position, compressed_kv.contiguous(), 1
+            )
+            torch_npu.scatter_update_(
+                value_cache,
+                position,
+                key_rope.view(1, 1, cfg.qk_rope_head_dim).contiguous(),
+                1,
+            )
 
         selected = self.indexer(
             x,
@@ -454,12 +545,14 @@ class GLM52DenseTPStack(nn.Module):
         rank: int,
         world_size: int,
         cache_length: int,
+        rope_cache_path: str,
     ):
         super().__init__()
         self.layers = nn.ModuleList(layers)
         self.rank = int(rank)
         self.world_size = int(world_size)
         self.cache_length = int(cache_length)
+        self.rope_cache_path = str(rope_cache_path)
         self.config = layers[0].config
         self.local_heads = self.config.num_attention_heads // world_size
 
@@ -472,6 +565,7 @@ class GLM52DenseTPStack(nn.Module):
         world_size: int,
         cache_length: int,
         device: torch.device,
+        rope_cache_path: str = "manual",
         progress=None,
     ) -> "GLM52DenseTPStack":
         if world_size not in (1, 2):
@@ -490,6 +584,7 @@ class GLM52DenseTPStack(nn.Module):
                     rank=rank,
                     world_size=world_size,
                     device=device,
+                    rope_cache_path=rope_cache_path,
                 )
             )
             if progress is not None:
@@ -499,6 +594,7 @@ class GLM52DenseTPStack(nn.Module):
             rank=rank,
             world_size=world_size,
             cache_length=cache_length,
+            rope_cache_path=rope_cache_path,
         )
 
     def make_cache(self, *, device: torch.device):
