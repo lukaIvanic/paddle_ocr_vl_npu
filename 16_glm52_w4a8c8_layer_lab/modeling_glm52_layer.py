@@ -224,10 +224,12 @@ class GLM52W4A8Experts(nn.Module):
         w13_weight: torch.Tensor,
         w2_weight: torch.Tensor,
         w13_scale: torch.Tensor,
+        w13_scale_f32: torch.Tensor,
         w2_scale: torch.Tensor,
         w13_bias: torch.Tensor,
         w2_bias: torch.Tensor,
         config: GLM52Config,
+        fuse_gmm1_swiglu_quant: bool = False,
     ):
         super().__init__()
         self.config = config
@@ -236,9 +238,11 @@ class GLM52W4A8Experts(nn.Module):
         self.register_buffer("w13_weight", w13_weight.contiguous())
         self.register_buffer("w2_weight", w2_weight.contiguous())
         self.register_buffer("w13_scale", w13_scale.contiguous())
+        self.register_buffer("w13_scale_f32", w13_scale_f32.contiguous())
         self.register_buffer("w2_scale", w2_scale.contiguous())
         self.register_buffer("w13_bias", w13_bias.float().contiguous())
         self.register_buffer("w2_bias", w2_bias.float().contiguous())
+        self.fuse_gmm1_swiglu_quant = bool(fuse_gmm1_swiglu_quant)
 
     @classmethod
     def from_checkpoint(
@@ -249,6 +253,8 @@ class GLM52W4A8Experts(nn.Module):
         *,
         device: torch.device,
         progress=None,
+        w4_weight_format: str = "native",
+        fuse_gmm1_swiglu_quant: bool = False,
     ) -> "GLM52W4A8Experts":
         prefix = f"model.layers.{layer_index}.mlp"
         router_weight = reader.tensor(prefix + ".gate.weight").to(device=device, dtype=torch.bfloat16)
@@ -318,8 +324,14 @@ class GLM52W4A8Experts(nn.Module):
             if progress is not None and (expert + 1) % 32 == 0:
                 progress(f"loaded routed experts {expert + 1}/{config.num_experts}")
 
-        w13_weight = w13_i8.view(torch.int32)
-        w2_weight = w2_i8.view(torch.int32)
+        if w4_weight_format == "fractal_nz":
+            require_npu()
+            w13_i8 = torch_npu.npu_format_cast(w13_i8, 29)
+            w2_i8 = torch_npu.npu_format_cast(w2_i8, 29)
+        elif w4_weight_format != "native":
+            raise ValueError(f"Unsupported W4 weight format: {w4_weight_format}")
+        w13_weight = w13_i8.view(torch.int32).contiguous()
+        w2_weight = w2_i8.view(torch.int32).contiguous()
         return cls(
             router_weight=router_weight,
             correction_bias=correction_bias,
@@ -331,10 +343,12 @@ class GLM52W4A8Experts(nn.Module):
             w13_scale=float_scale_to_int64_bits(w13_scale_f32)
             .unsqueeze(1)
             .to(device),
+            w13_scale_f32=w13_scale_f32.unsqueeze(1).to(device),
             w2_scale=float_scale_to_int64_bits(w2_scale_f32).unsqueeze(1).to(device),
             w13_bias=w13_bias_cpu.to(device),
             w2_bias=w2_bias_cpu.to(device),
             config=config,
+            fuse_gmm1_swiglu_quant=fuse_gmm1_swiglu_quant,
         )
 
     def route(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -373,22 +387,36 @@ class GLM52W4A8Experts(nn.Module):
         expanded_i8, expanded_scale = torch_npu.npu_dynamic_quant(
             expanded, dst_type=torch.int8
         )
-        gate_up = torch_npu.npu_grouped_matmul(
-            x=[expanded_i8],
-            weight=[self.w13_weight],
-            scale=[self.w13_scale],
-            bias=[self.w13_bias],
-            per_token_scale=[expanded_scale],
-            group_list=group_counts,
-            split_item=2,
-            group_type=0,
-            group_list_type=1,
-            output_dtype=hidden_states.dtype,
-        )[0]
-        activated = torch_npu.npu_swiglu(gate_up)
-        activated_i8, activated_scale = torch_npu.npu_dynamic_quant(
-            activated, dst_type=torch.int8
-        )
+        if self.fuse_gmm1_swiglu_quant:
+            activated_i8, activated_scale = (
+                torch_npu.npu_grouped_matmul_swiglu_quant_v2(
+                    expanded_i8,
+                    [self.w13_weight],
+                    [self.w13_scale_f32],
+                    expanded_scale,
+                    group_counts,
+                    weight_assist_matrix=[self.w13_bias],
+                    dequant_mode=0,
+                    group_list_type=1,
+                )
+            )
+        else:
+            gate_up = torch_npu.npu_grouped_matmul(
+                x=[expanded_i8],
+                weight=[self.w13_weight],
+                scale=[self.w13_scale],
+                bias=[self.w13_bias],
+                per_token_scale=[expanded_scale],
+                group_list=group_counts,
+                split_item=2,
+                group_type=0,
+                group_list_type=1,
+                output_dtype=hidden_states.dtype,
+            )[0]
+            activated = torch_npu.npu_swiglu(gate_up)
+            activated_i8, activated_scale = torch_npu.npu_dynamic_quant(
+                activated, dst_type=torch.int8
+            )
         expert_output = torch_npu.npu_grouped_matmul(
             x=[activated_i8],
             weight=[self.w2_weight],
