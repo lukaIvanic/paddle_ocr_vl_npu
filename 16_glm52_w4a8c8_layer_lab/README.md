@@ -297,34 +297,42 @@ The live benchmark therefore has no RoPE/cache-fusion selection flag. Full
 measurements, profile rows, parity details, and rejection reasons are in
 `references/dense_layers0_2_rope_fusion_910b2_5194a83.json`.
 
+Absolute dense-stack wall timings recorded before commit `91355e3` include
+benchmark-side per-call NPU tensor creation and input cloning. Their operator
+profiles and parity evidence remain useful, but the corrected TP1/TP2 section
+below is authoritative for current wall time and scaling.
+
 The cleaned single-path runtime at commit `b1454c7` then passed the same
 eight-position raw-eager reference with exact output. Its independent static
 TorchAir run used 20 excluded ordinary warmup calls and 1,000 measured calls.
 It measured 1.731 ms per three-layer stack, or 577.6 stack calls/s. Dynamo
 reported one graph after warmup and the same one graph after measurement.
 
-The current optimized path was then measured under TP2 at commit `160e7a3` on
-physical NPUs 6 and 7. Two independent 1,000-call runs measured 1.451 and
-1.425 ms per stack, for a 1.438 ms mean. Against the matched 1.703 ms TP1
-InterleaveRope mean, TP2 saved 264.9 us and delivered only `1.184x` speedup.
-Both runs passed the TP1 reference and captured no new graph during
-measurement. The six HCCL all-reduces, replicated work, runtime gaps, and
-non-linear small-matrix scaling therefore dominate well before ideal 2x TP2
-scaling. Full evidence is in
-`references/dense_layers0_2_tp2_interleave_nz_910b2_160e7a3.json`.
+The first TP2 wall measurements at commits `160e7a3` and `ddbef11` were
+invalid for graph-runtime accounting. Their timed Python loop created an NPU
+position tensor and cloned the NPU hidden input before every graph call. The
+historical JSON files retain those results but are marked superseded.
 
-The matched TP2 profile at commit `ddbef11` explains the missing speedup. The
-same-process clean timing was 1.364 ms. Per stack, the critical rank recorded
-906.8 us of compute kernels, the six all-reduces took about 59.7 us, and the
-remaining wall/runtime gap was 397.4 us. HCCL was only 4.4% of clean wall time.
+Commit `91355e3` moved both operations before the timing boundary. It creates
+one physically fresh hidden row per call, preallocates every NPU position, and
+times only tuple lookup plus the compiled graph call. Two 1,000-call runs per
+lane measured:
 
-Relative to the matched TP1 profile, compute kernels saved 370.0 us. HCCL and
-the larger runtime gap consumed about 93 us of that saving, leaving 277.0 us at
-the wall. Quantized projections fell from 831.9 to 487.7 us and produced almost
-all kernel savings. SparseFA, InterleaveRope, LightningIndexer, dynamic
-quantization, BF16 indexer projections, norms, and cache/control work barely
-changed. Full rank-level accounting is in
-`references/dense_layers0_2_tp2_profile_910b2_ddbef11.json`.
+| Corrected lane | Stack times | Mean | Calls/s |
+| --- | --- | ---: | ---: |
+| TP1 | 1.331, 1.320 ms | 1.326 ms | 754.3 |
+| TP2 | 1.034, 1.044 ms | **1.039 ms** | **962.1** |
+
+TP2 saved 286.3 us and delivered `1.276x` speedup. The four sharded W8A8
+projection families themselves improved by `1.884x`.
+
+Corrected matched profiles show that TorchAir scheduling is not a missing
+0.4 ms bucket. TP1 wall was 1.288 ms versus 1.280 ms of summed kernels. TP2
+wall was 0.986 ms versus 0.901 ms of compute kernels and about 0.060 ms of
+six-all-reduce HCCL. Only about 0.025 ms remained unattributed. Each rank owns
+one static full graph containing all six HCCL operations; no Python callback
+occurs between them. Full corrected evidence is in
+`references/dense_layers0_2_preallocated_tp1_tp2_profile_910b2_91355e3.json`.
 
 The optimized-only TP1/TP2 validation and exact five-call PipeUtilization
 profile are saved in

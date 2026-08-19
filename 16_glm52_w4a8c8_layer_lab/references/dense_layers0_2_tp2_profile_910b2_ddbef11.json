@@ -1,4 +1,7 @@
 {
+  "status": "superseded_by_preallocated_step_input_measurement",
+  "superseded_by": "dense_layers0_2_preallocated_tp1_tp2_profile_910b2_91355e3.json",
+  "supersession_reason": "The reported wall-minus-kernel gap contained per-call NPU position creation and hidden-state cloning performed by the Python benchmark loop outside the compiled graph.",
   "experiment": "Optimized GLM-5.2 dense layers 0-2 TP2 critical-path profile",
   "source_commit": "ddbef11",
   "chip": "Ascend 910B2",

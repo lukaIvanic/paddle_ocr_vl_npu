@@ -1,0 +1,160 @@
+{
+  "experiment": "Corrected GLM-5.2 dense layers 0-2 TP1 and TP2 measurement",
+  "source_commit": "91355e3",
+  "chip": "Ascend 910B2",
+  "physical_npus": {
+    "tp1": [
+      7
+    ],
+    "tp2": [
+      6,
+      7
+    ]
+  },
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "layers": [
+      0,
+      1,
+      2
+    ]
+  },
+  "measurement_correction": {
+    "old_timed_loop": "Create one NPU cache-position tensor and clone the NPU hidden state before every compiled graph call.",
+    "corrected_timed_loop": "Index preallocated physically fresh hidden rows and preallocated NPU position views, then call the compiled graph once.",
+    "setup_excluded": "Hidden-row bank creation, position-bank creation, and their device synchronization occur before the timing boundary.",
+    "fresh_input_semantics_preserved": true,
+    "old_tp1_interleave_mean_ms": 1.702600922,
+    "corrected_tp1_mean_ms": 1.325683540897444,
+    "old_tp1_harness_overhead_us": 376.91738110255613,
+    "old_tp2_mean_ms": 1.4377479553222656,
+    "corrected_tp2_mean_ms": 1.0393412113189697,
+    "old_tp2_harness_overhead_us": 398.4067440032959,
+    "superseded_evidence": [
+      "dense_layers0_2_tp2_interleave_nz_910b2_160e7a3.json",
+      "dense_layers0_2_tp2_profile_910b2_ddbef11.json"
+    ]
+  },
+  "runtime_contract": {
+    "backend": "TorchAir fullgraph static",
+    "dynamic": false,
+    "fullgraph": true,
+    "w8a8_weight_format": "FRACTAL_NZ",
+    "attention": "absorbed contiguous-BSND SparseFlashAttention",
+    "indexer": "contiguous-BSND LightningIndexer",
+    "rope": "block-layout InterleaveRope",
+    "ordinary_warmup_steps_excluded": 20,
+    "measured_steps_per_long_run": 1000,
+    "all_reduces_per_tp2_stack": 6,
+    "all_reduces_captured_inside_each_rank_local_graph": true,
+    "python_call_between_in_graph_all_reduces": false
+  },
+  "long_run_timing": {
+    "tp1_mean_stack_ms_runs": [
+      1.330891938880086,
+      1.3204751429148018
+    ],
+    "tp1_mean_stack_ms": 1.325683540897444,
+    "tp1_stack_calls_per_sec_from_mean": 754.3278633496492,
+    "tp2_mean_stack_ms_runs": [
+      1.0344882011413574,
+      1.044194221496582
+    ],
+    "tp2_mean_stack_ms": 1.0393412113189697,
+    "tp2_stack_calls_per_sec_from_mean": 962.1480295102316,
+    "tp2_speedup": 1.275503681043392,
+    "tp2_latency_saved_us": 286.34232957847416,
+    "naive_effective_fixed_plus_communication_floor_ms": 0.7529988817404956
+  },
+  "matched_five_call_profile": {
+    "tp1_clean_200_call_wall_ms": 1.2875512801110744,
+    "tp1_compute_kernel_us_per_stack": 1279.584,
+    "tp1_wall_minus_profiled_kernels_us": 7.967280111074388,
+    "tp2_clean_200_call_wall_ms": 0.9855698794126511,
+    "tp2_compute_kernel_us_per_stack": {
+      "rank0": 898.02,
+      "rank1": 900.964
+    },
+    "tp2_steady_six_all_reduce_hccl_us_per_stack": 59.6575,
+    "tp2_wall_minus_compute_and_hccl_us": 24.948379412651015,
+    "profile_speedup": 1.3064028304907094,
+    "interpretation": "After input preallocation, summed kernels plus HCCL explain nearly all clean wall time. TorchAir graph scheduling is not a material missing-latency bucket."
+  },
+  "operator_us_per_stack_rank0": {
+    "tp1": {
+      "QuantBatchMatmulV3": 836.38,
+      "BatchMatMul": 64.92,
+      "SparseFlashAttention": 63.272,
+      "InterleaveRope": 58.884,
+      "LightningIndexer": 47.764,
+      "DynamicQuant": 34.632,
+      "MatMul": 30.1,
+      "RmsNorm": 22.308
+    },
+    "tp2": {
+      "QuantBatchMatmulV3": 484.608,
+      "InterleaveRope": 61.244,
+      "SparseFlashAttention": 56.928,
+      "BatchMatMul": 49.284,
+      "LightningIndexer": 48.204,
+      "DynamicQuant": 30.388,
+      "MatMul": 29.476,
+      "RmsNorm": 21.98
+    }
+  },
+  "quant_projection_us_per_stack_rank0": {
+    "tp1": {
+      "replicated_fused_q_kv_a": 58.076,
+      "sharded_main_q_b": 81.672,
+      "replicated_indexer_wq_b": 32.604,
+      "sharded_attention_o": 211.056,
+      "sharded_dense_gate_up": 301.536,
+      "sharded_dense_down": 151.436,
+      "four_sharded_projection_total": 745.7
+    },
+    "tp2": {
+      "replicated_fused_q_kv_a": 56.992,
+      "sharded_main_q_b": 49.62,
+      "replicated_indexer_wq_b": 31.848,
+      "sharded_attention_o": 114.236,
+      "sharded_dense_gate_up": 152.344,
+      "sharded_dense_down": 79.568,
+      "four_sharded_projection_total": 395.768
+    },
+    "four_sharded_projection_speedup": 1.8841846738493262
+  },
+  "scaling_interpretation": {
+    "main_observation": "Large sharded W8A8 projections scale close to 2x. Replicated projections, LightningIndexer, RoPE, norms, dynamic quantization, and B1 attention kernels remain effectively fixed.",
+    "effective_tp2_floor_excluding_four_sharded_quant_projection_families_us": 643.5732113189697,
+    "idealized_tp4_ms_before_extra_hccl_or_efficiency_loss": 0.8414572113189697,
+    "idealized_tp8_ms_before_extra_hccl_or_efficiency_loss": 0.7425152113189697,
+    "idealized_tp4_speedup_ceiling_vs_corrected_tp1": 1.575461619515338,
+    "idealized_tp8_speedup_ceiling_vs_corrected_tp1": 1.7853958015790155,
+    "next_target": "Reduce or overlap replicated model work. Do not attribute the remaining scaling limit to Python callbacks inside the all-reduces or to a large GE scheduling gap."
+  },
+  "correctness_and_graph": {
+    "output_allclose_atol_5e_2_rtol_5e_2": true,
+    "output_max_abs": 0.015625,
+    "key_cache_max_abs": 0.0068359375,
+    "value_cache_max_abs": 0.0001983642578125,
+    "index_cache_max_abs": 0.0234375,
+    "unique_graphs_after_warmup_per_run": 1,
+    "new_graphs_during_measurement_per_run": 0
+  },
+  "remote_artifacts": {
+    "tp1_long_runs": [
+      "/tmp/glm52_prealloc_tp1_91355e3_run1.json",
+      "/tmp/glm52_prealloc_tp1_91355e3_run2.json"
+    ],
+    "tp2_long_runs": [
+      "/tmp/glm52_prealloc_tp2_91355e3_run1.json",
+      "/tmp/glm52_prealloc_tp2_91355e3_run2.json"
+    ],
+    "tp1_profile_summary": "/tmp/glm52_prealloc_profile_tp1_91355e3_summary.json",
+    "tp1_profile_root": "/tmp/glm52_prealloc_profile_tp1_91355e3/rank0",
+    "tp2_profile_summary": "/tmp/glm52_prealloc_profile_tp2_91355e3_summary.json",
+    "tp2_profile_rank0": "/tmp/glm52_prealloc_profile_tp2_91355e3/rank0",
+    "tp2_profile_rank1": "/tmp/glm52_prealloc_profile_tp2_91355e3/rank1"
+  }
+}

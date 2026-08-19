@@ -1,4 +1,7 @@
 {
+  "status": "superseded_by_preallocated_step_input_measurement",
+  "superseded_by": "dense_layers0_2_preallocated_tp1_tp2_profile_910b2_91355e3.json",
+  "supersession_reason": "The timed loop created an NPU position tensor and cloned the hidden input before every graph call. Those operations were outside the compiled graph but inside wall timing.",
   "experiment": "Current optimized GLM-5.2 dense layers 0-2 TP2 scaling check",
   "source_commit": "160e7a3",
   "chip": "Ascend 910B2",
