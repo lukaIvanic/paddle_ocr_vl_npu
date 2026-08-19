@@ -1134,6 +1134,16 @@ def main() -> None:
         "lanes": lanes,
         "comparison": comparison,
         "profiles": profiles,
+        "npu_memory": {
+            "allocated_bytes": int(torch.npu.memory_allocated(runner.device)),
+            "reserved_bytes": int(torch.npu.memory_reserved(runner.device)),
+            "max_allocated_bytes": int(
+                torch.npu.max_memory_allocated(runner.device)
+            ),
+            "max_reserved_bytes": int(
+                torch.npu.max_memory_reserved(runner.device)
+            ),
+        },
     }
     output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(payload, indent=2), flush=True)
