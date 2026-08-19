@@ -160,9 +160,18 @@ class GLM52DSAIndexer(nn.Module):
         torch_npu.scatter_update_(
             key_cache, position, k.view(1, 1, self.head_dim).contiguous(), 1
         )
-        scores = torch.matmul(q.float(), key_cache.float().transpose(-1, -2))
-        weights = weights.float().unsqueeze(-1)
-        scores = (scores * weights).sum(dim=1)
+        # GE can misread the singleton batch axis of the rank-3 matmul as the
+        # contraction dimension. The indexer is B1, so expose the ordinary
+        # [heads, dim] x [dim, cache] matrix multiplication explicitly.
+        scores = torch.matmul(
+            q.reshape(self.num_heads, self.head_dim).float(),
+            key_cache.reshape(self.cache_length, self.head_dim)
+            .float()
+            .transpose(0, 1),
+        )
+        scores = (scores * weights.reshape(self.num_heads, 1).float()).sum(
+            dim=0, keepdim=True
+        )
         scores = scores * (self.head_dim**-0.5 * self.num_heads**-0.5)
         cache_positions = torch.arange(
             self.cache_length, device=position.device, dtype=torch.int64
@@ -389,15 +398,28 @@ class GLM52DecoderLayer(nn.Module):
         selected = shared_topk.reshape(-1)
         selected_key = torch.index_select(key_cache, 2, selected)
         selected_value = torch.index_select(value_cache, 2, selected)
-        scores = torch.matmul(
-            query.float(), selected_key.float().transpose(-1, -2)
-        ) * (cfg.qk_head_dim**-0.5)
+        sparse_k = selected.shape[0]
+        query_bmm = query.reshape(
+            cfg.num_attention_heads, 1, cfg.qk_head_dim
+        )
+        key_bmm = selected_key.reshape(
+            cfg.num_attention_heads, sparse_k, cfg.qk_head_dim
+        )
+        scores = torch.bmm(
+            query_bmm.float(), key_bmm.float().transpose(1, 2)
+        ).view(1, cfg.num_attention_heads, 1, sparse_k)
+        scores = scores * (cfg.qk_head_dim**-0.5)
         valid = selected.unsqueeze(0) <= position.unsqueeze(1)
         scores = scores.masked_fill(
             ~valid.unsqueeze(1), torch.finfo(scores.dtype).min
         )
         probabilities = torch.softmax(scores, dim=-1).to(value.dtype)
-        output = torch.matmul(probabilities, selected_value)
+        output = torch.bmm(
+            probabilities.reshape(cfg.num_attention_heads, 1, sparse_k),
+            selected_value.reshape(
+                cfg.num_attention_heads, sparse_k, cfg.v_head_dim
+            ),
+        ).view(1, cfg.num_attention_heads, 1, cfg.v_head_dim)
         output = output.transpose(1, 2).reshape(
             1, 1, cfg.attention_output_size
         )
