@@ -1,0 +1,58 @@
+{
+  "status": "ok",
+  "exit_code": 0,
+  "config": {
+    "batch_size": 128,
+    "self_cache_length": 2048,
+    "cross_cache_length": 1320,
+    "device": "npu:0",
+    "passes": 2,
+    "cache_parent": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/production_dual_decode_nz_lmhead57344_0b707c1/decode_weight_nz_lmhead57344_semantic56371",
+    "decode_model_optimizations": {
+      "weight_format": "nz",
+      "weights_nz": true,
+      "nz_tensor_count": 49,
+      "semantic_vocab_size": 56371,
+      "lm_head_rows": 57344,
+      "lm_head_padded_rows": 973,
+      "decode_module": "SemanticVocabDecodeStepModule"
+    }
+  },
+  "setup_s": 12.056971237063408,
+  "pass_wall_s": [
+    0.14064103970304132,
+    0.006070182658731937
+  ],
+  "production_contract": {
+    "arena_allocator": "ContinuousUniRecDecoder._allocate_empty_arena",
+    "device_input_allocator": "ContinuousUniRecDecoder._allocate_decode_device_inputs",
+    "device_inputs_are_inference_tensors": true
+  },
+  "cache_before": {
+    "directory": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/production_dual_decode_nz_lmhead57344_0b707c1/decode_weight_nz_lmhead57344_semantic56371/decode_selfkv2048_cross1320_increfa_all_b128_wnz",
+    "compiled_module_count": 1,
+    "om_count": 1,
+    "compiled_module_bytes": 603334,
+    "om_bytes": 945881,
+    "compiled_module_files": [
+      "SemanticVocabDecodeStepModule_static_gecache_73d9982b116dc1e224bc1b0752050fc4/forward/compiled_module"
+    ],
+    "om_files": [
+      "SemanticVocabDecodeStepModule_static_gecache_73d9982b116dc1e224bc1b0752050fc4/forward/graph_1_20260819174544.om"
+    ]
+  },
+  "cache_after": {
+    "directory": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/production_dual_decode_nz_lmhead57344_0b707c1/decode_weight_nz_lmhead57344_semantic56371/decode_selfkv2048_cross1320_increfa_all_b128_wnz",
+    "compiled_module_count": 1,
+    "om_count": 1,
+    "compiled_module_bytes": 603334,
+    "om_bytes": 945881,
+    "compiled_module_files": [
+      "SemanticVocabDecodeStepModule_static_gecache_73d9982b116dc1e224bc1b0752050fc4/forward/compiled_module"
+    ],
+    "om_files": [
+      "SemanticVocabDecodeStepModule_static_gecache_73d9982b116dc1e224bc1b0752050fc4/forward/graph_1_20260819174544.om"
+    ]
+  },
+  "warnings": []
+}

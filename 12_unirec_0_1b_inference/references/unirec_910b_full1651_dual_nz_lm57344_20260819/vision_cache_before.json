@@ -1,0 +1,282 @@
+{
+  "128x1408_b1": {
+    "slot": 6,
+    "method": "_forward_flat_bucket_slot_6",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_128x1408_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_6/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_128x1408_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_6/graph_2_20260819085128.om"
+    ]
+  },
+  "192x64_b4": {
+    "slot": 7,
+    "method": "_forward_flat_bucket_slot_7",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_192x64_b4_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_7/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_192x64_b4_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_7/graph_3_20260819085148.om"
+    ]
+  },
+  "320x320_b2": {
+    "slot": 10,
+    "method": "_forward_flat_bucket_slot_10",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_320x320_b2_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_10/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_320x320_b2_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_10/graph_4_20260819085206.om"
+    ]
+  },
+  "448x192_b2": {
+    "slot": 0,
+    "method": "_forward_flat_bucket_slot_0",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x192_b2_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_0/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x192_b2_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_0/graph_5_20260819085224.om"
+    ]
+  },
+  "448x384_b2": {
+    "slot": 1,
+    "method": "_forward_bucket_slot_1",
+    "source_hash": "00e6eb857633",
+    "global_context_mode": "legacy_two_stage",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x384_b2_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_1/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x384_b2_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_1/graph_6_20260819085243.om"
+    ]
+  },
+  "448x576_b1": {
+    "slot": 11,
+    "method": "_forward_flat_bucket_slot_11",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x576_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_11/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_448x576_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_11/graph_7_20260819085303.om"
+    ]
+  },
+  "512x64_b4": {
+    "slot": 2,
+    "method": "_forward_bucket_slot_2",
+    "source_hash": "00e6eb857633",
+    "global_context_mode": "legacy_two_stage",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x64_b4_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_2/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x64_b4_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_2/graph_8_20260819085322.om"
+    ]
+  },
+  "512x128_b4": {
+    "slot": 12,
+    "method": "_forward_flat_bucket_slot_12",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x128_b4_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_12/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x128_b4_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_12/graph_9_20260819085341.om"
+    ]
+  },
+  "512x768_b1": {
+    "slot": 13,
+    "method": "_forward_flat_bucket_slot_13",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x768_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_13/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_512x768_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_13/graph_10_20260819085400.om"
+    ]
+  },
+  "576x256_b2": {
+    "slot": 14,
+    "method": "_forward_flat_bucket_slot_14",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_576x256_b2_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_14/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_576x256_b2_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_14/graph_11_20260819085418.om"
+    ]
+  },
+  "960x64_b4": {
+    "slot": 3,
+    "method": "_forward_bucket_slot_3",
+    "source_hash": "00e6eb857633",
+    "global_context_mode": "legacy_two_stage",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x64_b4_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_3/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x64_b4_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_3/graph_12_20260819085436.om"
+    ]
+  },
+  "960x128_b2": {
+    "slot": 4,
+    "method": "_forward_bucket_slot_4",
+    "source_hash": "00e6eb857633",
+    "global_context_mode": "legacy_two_stage",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x128_b2_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_4/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x128_b2_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_4/graph_13_20260819085457.om"
+    ]
+  },
+  "960x192_b1": {
+    "slot": 15,
+    "method": "_forward_flat_bucket_slot_15",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x192_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_15/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x192_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_15/graph_14_20260819085516.om"
+    ]
+  },
+  "960x256_b1": {
+    "slot": 5,
+    "method": "_forward_bucket_slot_5",
+    "source_hash": "00e6eb857633",
+    "global_context_mode": "legacy_two_stage",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x256_b1_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_5/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x256_b1_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_5/graph_15_20260819085536.om"
+    ]
+  },
+  "960x384_b1": {
+    "slot": 16,
+    "method": "_forward_flat_bucket_slot_16",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x384_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_16/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x384_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_16/graph_16_20260819085555.om"
+    ]
+  },
+  "960x512_b1": {
+    "slot": 9,
+    "method": "_forward_bucket_slot_9",
+    "source_hash": "00e6eb857633",
+    "global_context_mode": "legacy_two_stage",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x512_b1_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_9/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x512_b1_float16_src00e6eb857633_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_MaskedFullVisionEncoder_static_gecache_b2349f70336a7c9a71b9a9083d9f858c/_forward_bucket_slot_9/graph_10_20260818232707.om"
+    ]
+  },
+  "960x704_b1": {
+    "slot": 17,
+    "method": "_forward_flat_bucket_slot_17",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x704_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_17/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x704_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_17/graph_17_20260819085613.om"
+    ]
+  },
+  "960x896_b1": {
+    "slot": 8,
+    "method": "_forward_flat_bucket_slot_8",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x896_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_8/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x896_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_8/graph_18_20260819085633.om"
+    ]
+  },
+  "960x1152_b1": {
+    "slot": 18,
+    "method": "_forward_flat_bucket_slot_18",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x1152_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_18/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x1152_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_18/graph_19_20260819085651.om"
+    ]
+  },
+  "960x1344_b1": {
+    "slot": 19,
+    "method": "_forward_flat_bucket_slot_19",
+    "source_hash": "38b70231a30c",
+    "global_context_mode": "direct_2d_extended",
+    "target_compiled_module_count": 1,
+    "target_om_count": 1,
+    "target_compiled_modules": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x1344_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_19/compiled_module"
+    ],
+    "target_oms": [
+      "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/vision_full_bucket_960x1344_b1_float16_src38b70231a30c_dwconstant_grouped_all_src149c9cdc72a9_wtorchair_internal_src96e1ee2997ac/_ExtendedFlatGlobalContextFullVisionEncoder_static_gecache_58bd81c179d69407bdbaad762b5db130/_forward_flat_bucket_slot_19/graph_20_20260819085709.om"
+    ]
+  }
+}
