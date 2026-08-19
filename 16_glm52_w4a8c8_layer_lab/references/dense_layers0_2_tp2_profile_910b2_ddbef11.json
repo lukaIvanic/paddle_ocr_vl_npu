@@ -1,0 +1,134 @@
+{
+  "experiment": "Optimized GLM-5.2 dense layers 0-2 TP2 critical-path profile",
+  "source_commit": "ddbef11",
+  "chip": "Ascend 910B2",
+  "physical_npus": [
+    6,
+    7
+  ],
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "layers": [
+      0,
+      1,
+      2
+    ],
+    "tensor_parallel_size": 2
+  },
+  "method": {
+    "backend": "TorchAir fullgraph static",
+    "w8a8_weight_format": "FRACTAL_NZ",
+    "ordinary_warmup_steps_excluded": 20,
+    "clean_decode_steps_before_profile": 200,
+    "profile_schedule": "wait=0,warmup=1,active=5,repeat=1",
+    "active_stack_calls": 5,
+    "profile_metric": "PipeUtilization",
+    "execution": "five contiguous active graph calls with synchronization only at profile boundaries"
+  },
+  "clean_same_process_timing": {
+    "mean_stack_ms": 1.3638955354690552,
+    "stack_calls_per_sec": 733.1939829659253,
+    "unique_graphs_after_warmup": 1,
+    "new_graphs_during_measurement": 0
+  },
+  "rank_compute_kernel_us_per_stack": {
+    "rank0": 904.356,
+    "rank1": 906.756
+  },
+  "rank_hccl_us_by_active_stack": {
+    "rank0": [
+      57.0,
+      62.3,
+      65.04,
+      56.44,
+      57.88
+    ],
+    "rank1": [
+      505.34,
+      97.04,
+      58.74,
+      57.14,
+      70.42
+    ],
+    "rank0_mean": 59.732,
+    "interpretation": "Rank1 first-call waits are profiler-boundary rank skew. Rank0 is stable across all calls and both ranks converge to roughly 60 us per stack after the boundary."
+  },
+  "tp2_wall_accounting_us_per_stack": {
+    "clean_wall": 1363.8955354690552,
+    "critical_compute_kernels": 906.756,
+    "representative_six_all_reduce_hccl": 59.732,
+    "remaining_runtime_and_inter_kernel_gap": 397.40753546905523,
+    "hccl_fraction_of_clean_wall_percent": 4.379511272169083,
+    "gap_fraction_of_clean_wall_percent": 29.135095248889894
+  },
+  "tp1_to_tp2_profile_matched_accounting_us": {
+    "tp1_clean_wall": 1640.91129,
+    "tp1_compute_kernels": 1276.7918,
+    "tp1_wall_minus_kernels": 364.11949000000004,
+    "tp2_clean_wall": 1363.8955354690552,
+    "tp2_critical_compute_kernels": 906.756,
+    "tp2_hccl": 59.732,
+    "tp2_remaining_gap": 397.40753546905523,
+    "compute_kernel_saving": 370.0358,
+    "wall_saving": 277.01575453094483,
+    "cost_that_consumed_compute_saving": "about 60 us HCCL plus about 33 us additional runtime gap"
+  },
+  "operator_us_per_stack_rank0": {
+    "QuantBatchMatmulV3": 487.712,
+    "SparseFlashAttention": 60.388,
+    "InterleaveRope": 55.092,
+    "LightningIndexer": 51.204,
+    "BatchMatMul": 48.7,
+    "DynamicQuant": 30.172,
+    "MatMul": 28.988,
+    "RmsNorm": 22.86,
+    "SplitVD": 15.604,
+    "Cast": 15.6,
+    "AddRmsNormDynamicQuant": 11.828,
+    "ConcatV2D": 11.564,
+    "Scatter": 11.3
+  },
+  "quant_projection_us_per_stack_rank0": {
+    "replicated_fused_q_kv_a": 53.884,
+    "sharded_main_q_b": 51.056,
+    "replicated_indexer_wq_b": 34.096,
+    "sharded_attention_o": 111.608,
+    "sharded_dense_gate_up": 153.348,
+    "sharded_dense_down": 83.72,
+    "sharded_projection_total": 399.732,
+    "replicated_projection_total": 87.98
+  },
+  "tp1_operator_comparison_us_per_stack": {
+    "QuantBatchMatmulV3": 831.932,
+    "SparseFlashAttention": 61.524,
+    "InterleaveRope": 58.316,
+    "LightningIndexer": 49.692,
+    "BatchMatMul": 67.392,
+    "DynamicQuant": 34.244,
+    "MatMul": 30.12,
+    "total_compute_kernels": 1276.7918
+  },
+  "interpretation": {
+    "hccl_is_primary_bottleneck": false,
+    "main_observation": "Almost all TP2 kernel saving came from quantized projections. SparseFlashAttention, InterleaveRope, LightningIndexer, dynamic quantization, BF16 indexer projections, norms, and cache/control kernels were effectively fixed at B1.",
+    "effective_tp2_floor_excluding_four_sharded_quant_projection_families_us": 964.1635354690552,
+    "idealized_tp4_ms_before_extra_hccl_or_efficiency_loss": 1.1640295354690553,
+    "idealized_tp8_ms_before_extra_hccl_or_efficiency_loss": 1.0640965354690552,
+    "idealized_tp4_speedup_ceiling_vs_profile_tp1": 1.4096818336647972,
+    "idealized_tp8_speedup_ceiling_vs_profile_tp1": 1.5420699488291107,
+    "next_target": "Reduce graph task count and overlap or fuse the replicated DSA/main-preparation branches; more tensor slicing alone has a low ceiling."
+  },
+  "correctness": {
+    "output_allclose_atol_5e_2_rtol_5e_2": true,
+    "output_max_abs": 0.015625,
+    "key_cache_max_abs": 0.0068359375,
+    "value_cache_max_abs": 0.0001983642578125,
+    "index_cache_max_abs": 0.0234375
+  },
+  "remote_artifacts": {
+    "summary": "/tmp/glm52_tp2_profile_ddbef11_summary.json",
+    "profile_rank0": "/tmp/glm52_tp2_profile_ddbef11/rank0",
+    "profile_rank1": "/tmp/glm52_tp2_profile_ddbef11/rank1"
+  }
+}

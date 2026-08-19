@@ -313,6 +313,19 @@ non-linear small-matrix scaling therefore dominate well before ideal 2x TP2
 scaling. Full evidence is in
 `references/dense_layers0_2_tp2_interleave_nz_910b2_160e7a3.json`.
 
+The matched TP2 profile at commit `ddbef11` explains the missing speedup. The
+same-process clean timing was 1.364 ms. Per stack, the critical rank recorded
+906.8 us of compute kernels, the six all-reduces took about 59.7 us, and the
+remaining wall/runtime gap was 397.4 us. HCCL was only 4.4% of clean wall time.
+
+Relative to the matched TP1 profile, compute kernels saved 370.0 us. HCCL and
+the larger runtime gap consumed about 93 us of that saving, leaving 277.0 us at
+the wall. Quantized projections fell from 831.9 to 487.7 us and produced almost
+all kernel savings. SparseFA, InterleaveRope, LightningIndexer, dynamic
+quantization, BF16 indexer projections, norms, and cache/control work barely
+changed. Full rank-level accounting is in
+`references/dense_layers0_2_tp2_profile_910b2_ddbef11.json`.
+
 The optimized-only TP1/TP2 validation and exact five-call PipeUtilization
 profile are saved in
 `references/dense_layers0_2_optimized_cleanup_profile_910b2_ff44430.json`.
