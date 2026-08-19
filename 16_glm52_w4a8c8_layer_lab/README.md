@@ -179,6 +179,37 @@ materializes selected latent/RoPE rows and casts them for FP32 scoring, making
 the fused sparse-attention operator the next isolated rung. Full evidence is in
 `references/dense_layers0_2_tp1_absorbed_mla_910b2_e9767ad.json`.
 
+## Verified contiguous-cache SparseFA rung
+
+The `absorbed_sparse_flash` lane replaces only the selected-attention core with
+`torch_npu.npu_sparse_flash_attention`. It deliberately does not use paged
+attention: query and KV use `BSND`, the compressed KV cache remains one static
+KV4096 tensor, `block_table=None`, and the valid KV length is the on-device
+`position + 1` tensor. Invalid future entries in the fixed top-2048 result are
+converted to an on-device `-1` tail. No Python sequence-length list or graph-task
+parameter update is part of decode.
+
+Commit `07ce6df` passed raw-eager parity for eight sequential positions on
+physical Ascend 910B2 NPU 7. The output maximum absolute difference versus the
+manual reference was `0.00390625`; reconstructed latent/RoPE cache differences
+were zero. Static TorchAir captured one graph during ordinary warmup and no new
+graph during any 1,000-call measured interval.
+
+Three interleaved 1,000-call runs per lane gave:
+
+| TP1 TorchAir lane | Three stack times | Median | Median calls/s |
+| --- | --- | ---: | ---: |
+| Absorbed manual | 2.515, 2.546, 2.578 ms | 2.546 ms | 392.72 |
+| Contiguous SparseFA | 2.413, 2.467, 2.463 ms | **2.463 ms** | **406.08** |
+
+SparseFA reduced median stack latency by 3.29% and increased median throughput
+by `1.034x`. Allocated HBM increased by 0.064 GiB. In the matched pipe profile,
+recorded kernel time fell from 8.913 ms to 8.142 ms, or 8.65%. The former manual
+gather/cast/score/softmax/aggregation chain averaged 94.87 us per layer; the
+SparseFlashAttention kernel averaged 20.47 us. Quantized linears now account for
+67.9% of recorded kernel time. Full evidence is in
+`references/dense_layers0_2_tp1_sparsefa_bsnd_910b2_07ce6df.json`.
+
 Run on one Ascend 910B2 after sourcing the NPU environment:
 
 ```bash

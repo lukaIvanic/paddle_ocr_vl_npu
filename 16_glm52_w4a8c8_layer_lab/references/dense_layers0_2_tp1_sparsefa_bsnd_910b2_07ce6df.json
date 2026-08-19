@@ -1,0 +1,110 @@
+{
+  "commit_under_test": "07ce6df",
+  "date": "2026-08-19",
+  "host": "liteserver-c001-4",
+  "chip": "Ascend 910B2",
+  "physical_npu": 7,
+  "model": "/workspace/models/GLM-5.2-w4a8c8",
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "layers": [0, 1, 2],
+    "attention_heads": 64,
+    "kv_lora_rank": 512,
+    "rope_head_dim": 64,
+    "sparse_count": 2048
+  },
+  "contract": {
+    "attention_path": "absorbed_sparse_flash",
+    "query_layout": "BSND",
+    "kv_layout": "BSND",
+    "paged_attention": false,
+    "block_table": null,
+    "actual_kv_length": "on-device int32 tensor position + 1",
+    "invalid_sparse_indices": "on-device int32 -1 tail",
+    "python_sequence_length_lists": false,
+    "graph_task_parameter_updates": false
+  },
+  "raw_eager_parity": {
+    "validation_positions": 8,
+    "output_max_abs": 0.00390625,
+    "output_mean_abs": 0.000003734913889275049,
+    "reconstructed_key_cache_max_abs": 0.0,
+    "reconstructed_value_cache_max_abs": 0.0,
+    "output_allclose_atol_5e_2_rtol_5e_2": true
+  },
+  "torchair": {
+    "dynamic": false,
+    "fullgraph": true,
+    "ordinary_warmup_steps": 10,
+    "measured_steps_per_run": 1000,
+    "unique_graphs_after_warmup": 1,
+    "new_graphs_during_measurement": 0,
+    "compiled_reference_comparison": {
+      "output_max_abs": 0.015625,
+      "output_mean_abs_manual": 0.000061503924371209,
+      "output_mean_abs_sparse_flash": 0.00006178145849844441,
+      "output_allclose_atol_5e_2_rtol_5e_2": true
+    },
+    "manual_absorbed_runs": {
+      "mean_stack_ms": [
+        2.514804181177169,
+        2.5463560773059726,
+        2.578363861888647
+      ],
+      "stack_calls_per_sec": [
+        397.6452749223219,
+        392.7180526370032,
+        387.8428544478209
+      ],
+      "median_stack_ms": 2.5463560773059726,
+      "allocated_gib": 1.2272839546203613
+    },
+    "contiguous_sparse_flash_runs": {
+      "mean_stack_ms": [
+        2.4132441552355886,
+        2.466820975765586,
+        2.4625426130369306
+      ],
+      "stack_calls_per_sec": [
+        414.379953155787,
+        405.38004574476537,
+        406.0843433554841
+      ],
+      "median_stack_ms": 2.4625426130369306,
+      "allocated_gib": 1.2917509078979492
+    },
+    "median_latency_reduction_percent": 3.291506047249923,
+    "median_throughput_speedup": 1.0340353356020422,
+    "allocated_memory_delta_gib": 0.06446695327758789
+  },
+  "pipe_profile": {
+    "ordinary_warmup_steps": 20,
+    "profile_active_steps": 3,
+    "execution": "three contiguous graph calls with one final synchronize",
+    "manual_absorbed_total_kernel_us": 8912.86,
+    "contiguous_sparse_flash_total_kernel_us": 8142.28,
+    "total_kernel_time_reduction_percent": 8.645709682413958,
+    "manual_replaced_chain_us": 1043.52,
+    "manual_replaced_chain_occurrences": 11,
+    "manual_replaced_chain_mean_us_per_layer": 94.86545454545454,
+    "sparse_flash_total_us": 225.12,
+    "sparse_flash_occurrences": 11,
+    "sparse_flash_mean_us_per_layer": 20.465454545454545,
+    "gross_replaced_chain_reduction_us_per_three_layer_stack": 223.2,
+    "top_kernel_types": [
+      {"type": "QuantBatchMatmulV3", "duration_us": 5524.92, "percent": 67.855},
+      {"type": "GatherV2", "duration_us": 406.94, "percent": 4.998},
+      {"type": "BatchMatMul", "duration_us": 258.1, "percent": 3.17},
+      {"type": "AutomaticBufferFusionOp", "duration_us": 239.86, "percent": 2.946},
+      {"type": "SparseFlashAttention", "duration_us": 225.12, "percent": 2.765},
+      {"type": "Cast", "duration_us": 194.38, "percent": 2.387},
+      {"type": "Mul", "duration_us": 194.32, "percent": 2.387},
+      {"type": "MatMul", "duration_us": 192.36, "percent": 2.362}
+    ]
+  },
+  "commands": {
+    "manual": "/usr/local/python3.12.13/bin/python3 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --attention-path absorbed_manual --validation-steps 8 --warmup-steps 10 --decode-steps 1000 --reference-in /tmp/glm52_dense_tp1_reference_deb120b.pt",
+    "sparse_flash": "/usr/local/python3.12.13/bin/python3 16_glm52_w4a8c8_layer_lab/benchmark_dense_tp.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --cache-length 4096 --backend torchair --attention-path absorbed_sparse_flash --validation-steps 8 --warmup-steps 10 --decode-steps 1000 --reference-in /tmp/glm52_dense_tp1_reference_deb120b.pt"
+  }
+}
