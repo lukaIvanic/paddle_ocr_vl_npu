@@ -33,16 +33,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--profile-metric", choices=PROFILE_METRICS, default="pipe")
     parser.add_argument("--profile-warmup-steps", type=int, default=20)
     parser.add_argument("--profile-active-steps", type=int, default=5)
-    parser.add_argument(
-        "--w4-weight-format",
-        choices=("native", "fractal_nz"),
-        default="fractal_nz",
-    )
-    parser.add_argument(
-        "--fuse-gmm1-swiglu-quant",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
     parser.add_argument("--summary-out", type=Path)
     return parser.parse_args()
 
@@ -195,8 +185,6 @@ def main() -> None:
         last_layer=args.last_layer,
         device=device,
         progress=lambda message: print("[moe-tp1] " + message, flush=True),
-        w4_weight_format=args.w4_weight_format,
-        fuse_gmm1_swiglu_quant=args.fuse_gmm1_swiglu_quant,
     )
     stack.eval()
     shared_weight_format = prepare_w8a8_weight_format(
@@ -288,8 +276,6 @@ def main() -> None:
         "experts_per_token": stack.config.top_k,
         "moe_intermediate_size": stack.config.moe_intermediate_size,
         "backend": "torchair_fullgraph_static",
-        "fuse_gmm1_swiglu_quant": args.fuse_gmm1_swiglu_quant,
-        "requested_w4_weight_format": args.w4_weight_format,
         "input_mode": "preallocated_varied_bfloat16_hidden_rows",
         "shared_w8a8_weight_format": shared_weight_format,
         "routed_w4a8_weight_storage": {
