@@ -223,6 +223,9 @@ def main() -> None:
         compiler_config.experimental_config.frozen_parameter.value = (
             args.frozen_parameters
         )
+        compiler_config.ge_config.oo_constant_folding.value = (
+            args.frozen_parameters
+        )
         compiled = torch.compile(
             stack.forward,
             backend=torchair.get_npu_backend(
