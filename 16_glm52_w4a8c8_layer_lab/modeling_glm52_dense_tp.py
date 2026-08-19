@@ -485,8 +485,10 @@ class GLM52DenseTPDecoderLayer(nn.Module):
                 cos,
                 sin,
                 position,
-                value_cache,
-                key_cache,
+                value_cache.view(
+                    1, 1, self.cache_length, cfg.qk_rope_head_dim
+                ),
+                key_cache.view(1, 1, self.cache_length, cfg.kv_lora_rank),
                 epsilon=cfg.rms_norm_eps,
                 cache_mode="Norm",
                 is_output_kv=False,
