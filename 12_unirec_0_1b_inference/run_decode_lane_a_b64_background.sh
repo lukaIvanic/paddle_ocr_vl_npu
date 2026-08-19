@@ -100,7 +100,7 @@ def points(value):
         (
             int(point["active_rows"]),
             int(point["initial_cache_position"]),
-            str(point["source_mode"]),
+            str(point.get("source_mode", "realistic")),
         ): point
         for point in value["points"]
     }
@@ -122,7 +122,7 @@ p128 = points(b128)
 b64_real = p64[(64, 32, "realistic")]
 b64_full = p64[(64, 32, "full")]
 b128_real = p128[(128, 32, "realistic")]
-b128_full = p128[(128, 32, "full")]
+b128_full = p128.get((128, 32, "full"))
 
 report = {
     "status": "pass",
@@ -144,10 +144,14 @@ report = {
         "raw_tok_s": b128_real["raw_tok_s"],
         "source_mean": b128_real["source_lengths"]["mean"],
     },
-    "b128_full": {
-        "step_ms": b128_full["decode_step_ms"],
-        "raw_tok_s": b128_full["raw_tok_s"],
-    },
+    "b128_full": (
+        {
+            "step_ms": b128_full["decode_step_ms"],
+            "raw_tok_s": b128_full["raw_tok_s"],
+        }
+        if b128_full is not None
+        else None
+    ),
     "b64_over_b128_realistic_raw_tok_s": (
         b64_real["raw_tok_s"] / b128_real["raw_tok_s"]
     ),
