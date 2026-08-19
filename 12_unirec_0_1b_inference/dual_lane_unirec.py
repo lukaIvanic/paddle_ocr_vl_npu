@@ -20,6 +20,7 @@ from dual_lane_decode_policy import (
     DecodeLaneSpec,
     DecodeLaneStatus,
     choose_lane,
+    full_lane_schedule,
     route_lane,
 )
 from modeling_optimized_unirec import OptimizedUniRecRunner, synchronize_device
@@ -535,6 +536,8 @@ class DualLaneContinuousUniRecDecoder:
         b_spec: DecodeLaneSpec,
         quantum_steps: int = 16,
         max_skipped_quanta: int = 8,
+        full_a_quanta_weight: int = 1,
+        full_b_quanta_weight: int = 1,
         overflow_policy: str = "finish_at_cap",
         decode_mode: str = "compiled_ifa",
         compile_backend: str = "torchair",
@@ -545,6 +548,10 @@ class DualLaneContinuousUniRecDecoder:
             raise ValueError("lane A cross capacity must be smaller than lane B")
         if quantum_steps < 1 or max_skipped_quanta < 1:
             raise ValueError("quantum settings must be positive")
+        self.full_lane_schedule = full_lane_schedule(
+            a_quanta=full_a_quanta_weight,
+            b_quanta=full_b_quanta_weight,
+        )
         if overflow_policy not in ("finish_at_cap", "restart_b"):
             raise ValueError(f"unsupported overflow policy: {overflow_policy}")
         self.runner = runner
@@ -552,6 +559,8 @@ class DualLaneContinuousUniRecDecoder:
         self.b_spec = b_spec
         self.quantum_steps = int(quantum_steps)
         self.max_skipped_quanta = int(max_skipped_quanta)
+        self.full_a_quanta_weight = int(full_a_quanta_weight)
+        self.full_b_quanta_weight = int(full_b_quanta_weight)
         self.overflow_policy = overflow_policy
         self.decode_mode = decode_mode
         self.compile_backend = compile_backend
@@ -665,17 +674,28 @@ class DualLaneContinuousUniRecDecoder:
         graph_switches = 0
         scheduler_quanta = 0
         lane_quantum_steps = {"a": 0, "b": 0}
+        full_schedule_index = 0
         while True:
             a_lane.prepare()
             b_lane.prepare()
             if not a_lane.runnable and not b_lane.runnable:
                 break
-            lane_name = choose_lane(
-                a_lane.status(skipped["a"]),
-                b_lane.status(skipped["b"]),
-                round_robin_next=round_robin_next,
-                max_skipped_quanta=self.max_skipped_quanta,
+            both_full = (
+                a_lane.active_count == a_lane.spec.batch_size
+                and b_lane.active_count == b_lane.spec.batch_size
             )
+            if both_full:
+                lane_name = self.full_lane_schedule[
+                    full_schedule_index % len(self.full_lane_schedule)
+                ]
+                full_schedule_index += 1
+            else:
+                lane_name = choose_lane(
+                    a_lane.status(skipped["a"]),
+                    b_lane.status(skipped["b"]),
+                    round_robin_next=round_robin_next,
+                    max_skipped_quanta=self.max_skipped_quanta,
+                )
             lane = a_lane if lane_name == "a" else b_lane
             other_name = "b" if lane_name == "a" else "a"
             if last_lane is not None and last_lane != lane_name:
@@ -738,6 +758,9 @@ class DualLaneContinuousUniRecDecoder:
             "overflow_policy": self.overflow_policy,
             "quantum_steps": self.quantum_steps,
             "max_skipped_quanta": self.max_skipped_quanta,
+            "full_a_quanta_weight": self.full_a_quanta_weight,
+            "full_b_quanta_weight": self.full_b_quanta_weight,
+            "full_lane_schedule": list(self.full_lane_schedule),
             "scheduler_quanta": scheduler_quanta,
             "graph_switches": graph_switches,
             "lane_quantum_steps": lane_quantum_steps,

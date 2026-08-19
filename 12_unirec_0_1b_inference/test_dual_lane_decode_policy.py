@@ -6,6 +6,7 @@ from dual_lane_decode_policy import (
     DecodeLaneSpec,
     DecodeLaneStatus,
     choose_lane,
+    full_lane_schedule,
     route_lane,
 )
 
@@ -37,6 +38,16 @@ class DualLaneDecodePolicyTest(unittest.TestCase):
     def test_cross_boundary_routes_exactly(self) -> None:
         self.assertEqual(route_lane(cross_length=384, a_cross_capacity=384), "a")
         self.assertEqual(route_lane(cross_length=385, a_cross_capacity=384), "b")
+
+    def test_weighted_full_lane_schedule(self) -> None:
+        self.assertEqual(
+            full_lane_schedule(a_quanta=3, b_quanta=1),
+            ("a", "a", "a", "b"),
+        )
+
+    def test_weighted_full_lane_schedule_rejects_zero(self) -> None:
+        with self.assertRaises(ValueError):
+            full_lane_schedule(a_quanta=0, b_quanta=1)
 
     def test_full_lanes_use_round_robin(self) -> None:
         a = status("a", active=128, step_ms=4.0)

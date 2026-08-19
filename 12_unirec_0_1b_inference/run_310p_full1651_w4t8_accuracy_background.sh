@@ -29,6 +29,15 @@ phase() {
     "$1" "$(date +%s)"
 }
 
+is_compiled_fp32_variant() {
+  [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 \
+    || "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32_dual_restart ]]
+}
+
+is_dual_restart_variant() {
+  [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32_dual_restart ]]
+}
+
 resolve_inputs() {
   : "${PYTHON_BIN:?export the validated 310P inference Python}"
   : "${MODEL:?export the UniRec model directory}"
@@ -67,7 +76,7 @@ resolve_inputs() {
     fi
   done
   case "$RUN_VARIANT" in
-    accuracy_anchor|optimized_k10_l4|optimized_k10_l4_aligned|optimized_k20_l4_compiled_fp32) ;;
+    accuracy_anchor|optimized_k10_l4|optimized_k10_l4_aligned|optimized_k20_l4_compiled_fp32|optimized_k20_l4_compiled_fp32_dual_restart) ;;
     *) printf 'INVALID_RUN_VARIANT=%s\n' "$RUN_VARIANT" >&2; exit 1 ;;
   esac
   case "$ALLOW_LOW_HOST_MEMORY" in
@@ -90,7 +99,7 @@ resolve_inputs() {
   COMPILE_CACHE="$(readlink -f "$COMPILE_CACHE")"
   EVALUATOR_ROOT="$(readlink -f "$EVALUATOR_ROOT")"
   EVAL_PYTHON="$(absolute_executable_path "$EVAL_PYTHON")"
-  if [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 ]]; then
+  if is_compiled_fp32_variant; then
     : "${LAYOUT_CACHE_ROOT:?export the warmed compiled-FP32 B2 layout cache}"
     LAYOUT_CACHE_ROOT="$(readlink -f "$LAYOUT_CACHE_ROOT")"
     test -d "$LAYOUT_CACHE_ROOT"
@@ -104,6 +113,11 @@ resolve_inputs() {
     exact_decode_cache="$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE/decode_selfkv2048_cross1320_increfa_all_b128"
     test "$(find "$exact_decode_cache" -name compiled_module | wc -l)" -eq 1
     test "$(find "$exact_decode_cache" -name '*.om' | wc -l)" -eq 1
+    if is_dual_restart_variant; then
+      exact_decode_cache="$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE/decode_selfkv256_cross256_increfa_all_b128"
+      test "$(find "$exact_decode_cache" -name compiled_module | wc -l)" -eq 1
+      test "$(find "$exact_decode_cache" -name '*.om' | wc -l)" -eq 1
+    fi
     export UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE
   elif [[ "$RUN_VARIANT" == optimized_k10_l4_aligned ]]; then
     printf 'ALIGNED_RUN_REQUIRES_PASSED_DECODE_CACHE_OVERRIDE\n' >&2
@@ -226,27 +240,32 @@ om_inventory() {
   local output="$1"
   {
     find "$COMPILE_CACHE" -type f -name '*.om' -printf 'production %p %s %T@\n'
-    if [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 ]]; then
+    if is_compiled_fp32_variant; then
       find "$LAYOUT_CACHE_ROOT" -type f -name '*.om' -printf 'layout %p %s %T@\n'
+    fi
+    if [[ -n "${UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE:-}" ]]; then
+      find "$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE" \
+        -type f -name '*.om' -printf 'decode %p %s %T@\n'
     fi
   } | sort >"$output"
 }
 
-gate_decode_cache() {
+gate_decode_cache_shape() {
+  local label="$1" batch_size="$2" self_cache="$3" cross_cache="$4"
   local gate_root="$RUN_ROOT/decode_cache_gate"
   mkdir -p "$gate_root"
   local attempt status result log
   for ((attempt = 1; attempt <= DECODE_CACHE_GATE_ATTEMPTS; attempt++)); do
-    result="$gate_root/attempt_${attempt}.json"
-    log="$gate_root/attempt_${attempt}.log"
+    result="$gate_root/${label}_attempt_${attempt}.json"
+    log="$gate_root/${label}_attempt_${attempt}.log"
     set +e
     "$PYTHON_BIN" "$DECODE_CACHE_PROBE" \
       --model-path "$MODEL" \
       --compile-cache-dir "$COMPILE_CACHE" \
       --device npu:0 \
-      --batch-size 128 \
-      --self-cache-length 2048 \
-      --cross-cache-length 1320 \
+      --batch-size "$batch_size" \
+      --self-cache-length "$self_cache" \
+      --cross-cache-length "$cross_cache" \
       --passes 2 \
       --output "$result" \
       >"$log" 2>&1
@@ -256,7 +275,7 @@ gate_decode_cache() {
     printf 'UNIREC_310P_DECODE_CACHE_GATE attempt=%s status=%s result=%s\n' \
       "$attempt" "$status" "$result"
     if [[ "$status" == 0 ]]; then
-      cp "$result" "$gate_root/passed.json"
+      cp "$result" "$gate_root/${label}_passed.json"
       return 0
     fi
     if [[ "$status" != 3 && "$status" != 4 ]]; then
@@ -266,6 +285,13 @@ gate_decode_cache() {
   printf 'UNIREC_310P_DECODE_CACHE_GATE_FAILED attempts=%s\n' \
     "$DECODE_CACHE_GATE_ATTEMPTS" >&2
   return 1
+}
+
+gate_decode_cache() {
+  if is_dual_restart_variant; then
+    gate_decode_cache_shape a 128 256 256
+  fi
+  gate_decode_cache_shape b 128 2048 1320
 }
 
 verify_evaluator_source() {
@@ -307,7 +333,7 @@ run_inference() {
   mkdir -p "$output"
   local layout_execution=eager
   local layout_cache_args=()
-  if [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 ]]; then
+  if is_compiled_fp32_variant; then
     layout_execution=torchair
     layout_cache_args=(--layout-cache-dir "$LAYOUT_CACHE_ROOT")
   fi
@@ -360,11 +386,26 @@ run_inference() {
       --vision-focal-depthwise-rewrite constant_grouped_all
       --vision-weight-format torchair_internal
     )
-  elif [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 ]]; then
+  elif is_compiled_fp32_variant; then
     command+=(
       --vision-bucket-preset 310p_k20_l4
       --vision-focal-depthwise-rewrite constant_grouped_all
       --vision-weight-format torchair_internal
+    )
+  fi
+  if is_dual_restart_variant; then
+    command+=(
+      --decode-lane-mode dual
+      --decode-a-batch-size 128
+      --decode-a-cross-cache-length 256
+      --decode-a-self-cache-length 256
+      --decode-a-max-length 256
+      --decode-b-batch-size 128
+      --decode-quantum-steps 16
+      --decode-max-skipped-quanta 8
+      --decode-a-full-quanta-weight 3
+      --decode-b-full-quanta-weight 1
+      --decode-a-overflow-policy restart_b
     )
   fi
   if [[ -n "$CPUSET" ]]; then
@@ -459,10 +500,14 @@ if variant in {
     "optimized_k10_l4",
     "optimized_k10_l4_aligned",
     "optimized_k20_l4_compiled_fp32",
+    "optimized_k20_l4_compiled_fp32_dual_restart",
 }:
     expected_preset = (
         "310p_k20_l4"
-        if variant == "optimized_k20_l4_compiled_fp32"
+        if variant in {
+            "optimized_k20_l4_compiled_fp32",
+            "optimized_k20_l4_compiled_fp32_dual_restart",
+        }
         else (
             "310p_k10_l4_aligned"
             if variant == "optimized_k10_l4_aligned"
@@ -473,7 +518,10 @@ if variant in {
     assert run["vision_focal_depthwise_rewrite"] == "constant_grouped_all"
     assert run["vision_weight_format"] == "torchair_internal"
     assert run["prefill_phase_summary"]["vision_batching"]["fallback_rows"] == 0
-if variant == "optimized_k20_l4_compiled_fp32":
+if variant in {
+    "optimized_k20_l4_compiled_fp32",
+    "optimized_k20_l4_compiled_fp32_dual_restart",
+}:
     assert run["layout_cpu_threads"] == 16
     assert run["layout_execution"] == "torchair"
     assert run["layout_dtype"] == "float32"
@@ -481,6 +529,24 @@ if variant == "optimized_k20_l4_compiled_fp32":
     assert run["layout_weight_format"] == "native"
     assert run["layout_depthwise_rewrite"] == "native"
     assert run["prefill_phase_summary"]["recognition_page_lookahead"] == 4
+if variant == "optimized_k20_l4_compiled_fp32_dual_restart":
+    assert run["decode_lane_mode"] == "dual"
+    assert run["decode_a"] == {
+        "batch_size": 128,
+        "self_cache_length": 256,
+        "cross_cache_length": 256,
+        "max_length": 256,
+        "overflow_policy": "restart_b",
+    }
+    assert run["decode_b"] == {
+        "batch_size": 128,
+        "self_cache_length": 2048,
+        "cross_cache_length": 1320,
+        "max_length": 2048,
+    }
+    assert run["decode_full_quanta_weights"] == {"a": 3, "b": 1}
+    assert run["decode"]["promoted_a_to_b"] > 0
+    assert run["decode"]["completed"] == run["crop_count"]
 assert transform["page_count"] == 1651 and transform["strip_image_tags"] is True
 assert stage["page_match"]["page_count"] == 1651
 assert stage["page_match"]["fallbacks"]["page_timeout"]["count"] == 0
@@ -543,7 +609,7 @@ worker_main() {
     printf 'project_commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
     printf 'physical_npu=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
     printf 'run_variant=%s\ncpuset=%s\n' "$RUN_VARIANT" "${CPUSET:-unrestricted}"
-    if [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32 ]]; then
+    if is_compiled_fp32_variant; then
       printf 'layout_cache_root=%s\n' "$LAYOUT_CACHE_ROOT"
     fi
     printf 'match_workers=%s\nteds_workers=%s\n' "$MATCH_WORKERS" "$TEDS_WORKERS"

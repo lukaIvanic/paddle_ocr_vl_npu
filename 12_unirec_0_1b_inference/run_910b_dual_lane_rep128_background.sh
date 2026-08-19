@@ -21,6 +21,13 @@ COMPILE_CACHE="${COMPILE_CACHE:-$REPO/.runtime_cache/12_unirec_0_1b_inference/op
 LAYOUT_CACHE="${LAYOUT_CACHE:-$REPO/.runtime_cache/12_unirec_0_1b_inference/representative128_layout_compiled_fp32_optimized_b2_6deceef}"
 DECODE_CACHE="${DECODE_CACHE:-$REPO/.runtime_cache/12_unirec_0_1b_inference/dual_lane_decode_173eb50}"
 CPUSET="${CPUSET:-0-63}"
+A_CROSS="${A_CROSS:-384}"
+A_SELF="${A_SELF:-1408}"
+A_MAX="${A_MAX:-$A_SELF}"
+A_WEIGHT="${A_WEIGHT:-1}"
+B_WEIGHT="${B_WEIGHT:-1}"
+OVERFLOW_POLICY="${OVERFLOW_POLICY:-finish_at_cap}"
+RUN_LABEL="${RUN_LABEL:-c${A_CROSS}_s${A_SELF}_${OVERFLOW_POLICY}_w${A_WEIGHT}_${B_WEIGHT}}"
 
 test -x "$PYTHON_BIN"
 test -f "$MODEL/model.pth"
@@ -29,12 +36,12 @@ test -f "$OPENOCR_ROOT/tools/infer_doc_onnx.py"
 test -d "$INPUT"
 test -d "$COMPILE_CACHE"
 test -d "$LAYOUT_CACHE"
-test -d "$DECODE_CACHE/decode_selfkv1408_cross384_increfa_all_b128"
+test -d "$DECODE_CACHE/decode_selfkv${A_SELF}_cross${A_CROSS}_increfa_all_b128"
 test -d "$DECODE_CACHE/decode_selfkv2048_cross1320_increfa_all_b128"
 
 STAMP="$(date +%Y%m%dT%H%M%S)"
 COMMIT="$(git rev-parse --short HEAD)"
-RUN_ROOT="$REPO/tmp/12_unirec_0_1b_inference/910b_dual_lane_rep128_${COMMIT}_${STAMP}"
+RUN_ROOT="$REPO/tmp/12_unirec_0_1b_inference/910b_dual_lane_rep128_${RUN_LABEL}_${COMMIT}_${STAMP}"
 OUTPUT="$RUN_ROOT/output"
 RUN_LOG="$RUN_ROOT/run.log"
 mkdir -p "$OUTPUT"
@@ -90,13 +97,15 @@ command=(
   --decode-batch-size 128
   --decode-lane-mode dual
   --decode-a-batch-size 128
-  --decode-a-cross-cache-length 384
-  --decode-a-self-cache-length 1408
-  --decode-a-max-length 1408
+  --decode-a-cross-cache-length "$A_CROSS"
+  --decode-a-self-cache-length "$A_SELF"
+  --decode-a-max-length "$A_MAX"
   --decode-b-batch-size 128
   --decode-quantum-steps 16
   --decode-max-skipped-quanta 8
-  --decode-a-overflow-policy finish_at_cap
+  --decode-a-full-quanta-weight "$A_WEIGHT"
+  --decode-b-full-quanta-weight "$B_WEIGHT"
+  --decode-a-overflow-policy "$OVERFLOW_POLICY"
   --compile-cache-dir "$COMPILE_CACHE"
   --decode-warmup-passes 2
   --decode-admission-prefetch-depth 0
@@ -141,6 +150,10 @@ printf '%s\n' "$PID" >"$RUN_ROOT/pid.txt"
   printf 'compile_cache=%s\n' "$COMPILE_CACHE"
   printf 'layout_cache=%s\n' "$LAYOUT_CACHE"
   printf 'decode_cache=%s\n' "$DECODE_CACHE"
+  printf 'lane_a=cross%s_self%s_max%s_weight%s\n' \
+    "$A_CROSS" "$A_SELF" "$A_MAX" "$A_WEIGHT"
+  printf 'lane_b=cross1320_self2048_max2048_weight%s\n' "$B_WEIGHT"
+  printf 'overflow_policy=%s\n' "$OVERFLOW_POLICY"
 } >"$RUN_ROOT/preflight.txt"
 
 printf 'RUN_ROOT=%s\n' "$RUN_ROOT"

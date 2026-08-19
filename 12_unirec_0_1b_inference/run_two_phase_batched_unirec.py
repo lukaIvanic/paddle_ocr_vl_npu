@@ -198,6 +198,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--decode-quantum-steps", type=int, default=16)
     parser.add_argument("--decode-max-skipped-quanta", type=int, default=8)
+    parser.add_argument("--decode-a-full-quanta-weight", type=int, default=1)
+    parser.add_argument("--decode-b-full-quanta-weight", type=int, default=1)
     parser.add_argument(
         "--decode-a-overflow-policy",
         choices=("finish_at_cap", "restart_b"),
@@ -271,6 +273,8 @@ def parse_args() -> argparse.Namespace:
         "decode_a_max_length",
         "decode_quantum_steps",
         "decode_max_skipped_quanta",
+        "decode_a_full_quanta_weight",
+        "decode_b_full_quanta_weight",
     ):
         if int(getattr(args, name)) < 1:
             parser.error(f"--{name.replace('_', '-')} must be positive")
@@ -985,6 +989,8 @@ def main() -> None:
                 ),
                 quantum_steps=args.decode_quantum_steps,
                 max_skipped_quanta=args.decode_max_skipped_quanta,
+                full_a_quanta_weight=args.decode_a_full_quanta_weight,
+                full_b_quanta_weight=args.decode_b_full_quanta_weight,
                 overflow_policy=args.decode_a_overflow_policy,
             ).run(
                 ranked_items,
@@ -1139,6 +1145,14 @@ def main() -> None:
         ),
         "decode_max_skipped_quanta": (
             args.decode_max_skipped_quanta
+            if args.decode_lane_mode == "dual"
+            else None
+        ),
+        "decode_full_quanta_weights": (
+            {
+                "a": args.decode_a_full_quanta_weight,
+                "b": args.decode_b_full_quanta_weight,
+            }
             if args.decode_lane_mode == "dual"
             else None
         ),

@@ -62,6 +62,13 @@ def route_lane(*, cross_length: int, a_cross_capacity: int) -> str:
     return "a" if cross_length <= a_cross_capacity else "b"
 
 
+def full_lane_schedule(*, a_quanta: int, b_quanta: int) -> tuple[str, ...]:
+    """Return the deterministic weighted schedule used while both lanes are full."""
+    if a_quanta < 1 or b_quanta < 1:
+        raise ValueError("full-lane quantum weights must be positive")
+    return ("a",) * int(a_quanta) + ("b",) * int(b_quanta)
+
+
 def choose_lane(
     a: DecodeLaneStatus,
     b: DecodeLaneStatus,
