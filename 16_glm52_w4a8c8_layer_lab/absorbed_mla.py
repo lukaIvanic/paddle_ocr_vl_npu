@@ -63,8 +63,9 @@ def manual_absorbed_attention(
     local_heads = w_uk_t.shape[0]
     kv_lora_rank = w_uk_t.shape[-1]
     v_head_dim = w_uv.shape[-1]
-    selected_latent = torch.index_select(latent_cache, 1, selected)
-    selected_rope = torch.index_select(rope_cache, 1, selected)
+    safe_selected = selected.clamp_min(0)
+    selected_latent = torch.index_select(latent_cache, 1, safe_selected)
+    selected_rope = torch.index_select(rope_cache, 1, safe_selected)
     sparse_k = selected.shape[0]
 
     latent_query = torch.bmm(
@@ -85,7 +86,9 @@ def manual_absorbed_attention(
     ).view(local_heads, 1, sparse_k)
     scores = (latent_scores + rope_scores).view(1, local_heads, 1, sparse_k)
     scores = scores * scale
-    valid = selected.unsqueeze(0) <= position.unsqueeze(1)
+    valid = (selected.unsqueeze(0) >= 0) & (
+        selected.unsqueeze(0) <= position.unsqueeze(1)
+    )
     scores = scores.masked_fill(
         ~valid.unsqueeze(1), torch.finfo(scores.dtype).min
     )

@@ -23,6 +23,9 @@ from modeling_glm52_layer import (
 )
 
 
+INDEXER_PATHS = ("manual_legacy", "manual_relu", "lightning")
+
+
 class GLM52DenseMLP(nn.Module):
     def __init__(self, gate_up: W8A8DynamicLinear, down: W8A8DynamicLinear):
         super().__init__()
@@ -69,14 +72,18 @@ class GLM52DSAIndexer(nn.Module):
         rope_dim: int,
         top_k: int,
         cache_length: int,
+        implementation: str,
     ):
         super().__init__()
+        if implementation not in INDEXER_PATHS:
+            raise ValueError(f"Unsupported indexer implementation: {implementation}")
         self.wq_b = wq_b
         self.num_heads = int(num_heads)
         self.head_dim = int(head_dim)
         self.rope_dim = int(rope_dim)
         self.top_k = min(int(top_k), int(cache_length))
         self.cache_length = int(cache_length)
+        self.implementation = implementation
         self.register_buffer("wk_weight", wk_weight.contiguous())
         self.register_buffer(
             "weights_proj_weight", weights_proj_weight.contiguous()
@@ -96,6 +103,7 @@ class GLM52DSAIndexer(nn.Module):
         top_k: int,
         cache_length: int,
         device: torch.device,
+        implementation: str = "manual_legacy",
     ) -> "GLM52DSAIndexer":
         prefix = f"model.layers.{layer_index}.self_attn.indexer"
         return cls(
@@ -119,6 +127,7 @@ class GLM52DSAIndexer(nn.Module):
             rope_dim=rope_dim,
             top_k=top_k,
             cache_length=cache_length,
+            implementation=implementation,
         )
 
     def forward(
@@ -160,6 +169,23 @@ class GLM52DSAIndexer(nn.Module):
         torch_npu.scatter_update_(
             key_cache, position, k.view(1, 1, self.head_dim).contiguous(), 1
         )
+        if self.implementation == "lightning":
+            indices, _ = torch_npu.npu_lightning_indexer(
+                q.view(1, 1, self.num_heads, self.head_dim).contiguous(),
+                key_cache.view(1, self.cache_length, 1, self.head_dim),
+                weights.view(1, 1, self.num_heads).contiguous(),
+                actual_seq_lengths_key=(position.reshape(1) + 1).to(
+                    torch.int32
+                ),
+                block_table=None,
+                layout_query="BSND",
+                layout_key="BSND",
+                sparse_count=self.top_k,
+                sparse_mode=0,
+                return_value=False,
+            )
+            return indices.reshape(-1).to(torch.int64)
+
         # GE can misread the singleton batch axis of the rank-3 matmul as the
         # contraction dimension. The indexer is B1, so expose the ordinary
         # [heads, dim] x [dim, cache] matrix multiplication explicitly.
@@ -169,6 +195,8 @@ class GLM52DSAIndexer(nn.Module):
             .float()
             .transpose(0, 1),
         )
+        if self.implementation == "manual_relu":
+            scores = torch.relu(scores)
         scores = (scores * weights.reshape(self.num_heads, 1).float()).sum(
             dim=0, keepdim=True
         )

@@ -24,7 +24,7 @@ from modeling_glm52_layer import (
     npu_rms_norm,
     torch_npu,
 )
-from modeling_glm52_stack import GLM52DSAIndexer
+from modeling_glm52_stack import GLM52DSAIndexer, INDEXER_PATHS
 
 
 ATTENTION_PATHS = (
@@ -245,6 +245,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         world_size: int,
         device: torch.device,
         attention_path: str,
+        indexer_path: str,
     ) -> "GLM52DenseTPDecoderLayer":
         config = GLM52Config.from_model_dir(model_dir)
         with (Path(model_dir) / "config.json").open() as handle:
@@ -303,6 +304,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
                 top_k=int(raw["index_topk"]),
                 cache_length=cache_length,
                 device=device,
+                implementation=indexer_path,
             ),
             input_norm=reader.tensor(layer + ".input_layernorm.weight").to(
                 device=device, dtype=torch.bfloat16
@@ -419,8 +421,9 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             index_key_cache,
         ).reshape(-1)
         if self.attention_path == "decompressed_manual":
-            selected_key = torch.index_select(key_cache, 2, selected)
-            selected_value = torch.index_select(value_cache, 2, selected)
+            safe_selected = selected.clamp_min(0)
+            selected_key = torch.index_select(key_cache, 2, safe_selected)
+            selected_value = torch.index_select(value_cache, 2, safe_selected)
             sparse_k = selected.shape[0]
             scores = torch.bmm(
                 query.reshape(self.local_heads, 1, cfg.qk_head_dim).float(),
@@ -429,7 +432,9 @@ class GLM52DenseTPDecoderLayer(nn.Module):
                 ).float().transpose(1, 2),
             ).view(1, self.local_heads, 1, sparse_k)
             scores = scores * (cfg.qk_head_dim**-0.5)
-            valid = selected.unsqueeze(0) <= position.unsqueeze(1)
+            valid = (selected.unsqueeze(0) >= 0) & (
+                selected.unsqueeze(0) <= position.unsqueeze(1)
+            )
             scores = scores.masked_fill(
                 ~valid.unsqueeze(1), torch.finfo(scores.dtype).min
             )
@@ -491,6 +496,7 @@ class GLM52DenseTPStack(nn.Module):
         world_size: int,
         cache_length: int,
         attention_path: str,
+        indexer_path: str,
     ):
         super().__init__()
         self.layers = nn.ModuleList(layers)
@@ -498,6 +504,7 @@ class GLM52DenseTPStack(nn.Module):
         self.world_size = int(world_size)
         self.cache_length = int(cache_length)
         self.attention_path = attention_path
+        self.indexer_path = indexer_path
         self.config = layers[0].config
         self.local_heads = self.config.num_attention_heads // world_size
 
@@ -511,10 +518,13 @@ class GLM52DenseTPStack(nn.Module):
         cache_length: int,
         device: torch.device,
         attention_path: str = "decompressed_manual",
+        indexer_path: str = "manual_legacy",
         progress=None,
     ) -> "GLM52DenseTPStack":
         if world_size not in (1, 2):
             raise ValueError("The dense TP rung supports TP1 and TP2")
+        if indexer_path not in INDEXER_PATHS:
+            raise ValueError(f"Unsupported indexer path: {indexer_path}")
         reader = ShardedSafetensorReader(model_dir)
         layers = []
         for layer_index in range(3):
@@ -530,6 +540,7 @@ class GLM52DenseTPStack(nn.Module):
                     world_size=world_size,
                     device=device,
                     attention_path=attention_path,
+                    indexer_path=indexer_path,
                 )
             )
             if progress is not None:
@@ -540,6 +551,7 @@ class GLM52DenseTPStack(nn.Module):
             world_size=world_size,
             cache_length=cache_length,
             attention_path=attention_path,
+            indexer_path=indexer_path,
         )
 
     def make_cache(self, *, device: torch.device):

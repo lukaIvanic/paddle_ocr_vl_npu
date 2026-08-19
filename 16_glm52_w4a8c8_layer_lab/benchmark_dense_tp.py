@@ -17,6 +17,7 @@ from torch_npu.dynamo.torchair.configs.compiler_config import CompilerConfig
 from modeling_glm52_dense_tp import (
     ATTENTION_PATHS,
     GLM52DenseTPStack,
+    INDEXER_PATHS,
     shard_bounds,
 )
 
@@ -40,6 +41,11 @@ def parse_args() -> argparse.Namespace:
         "--attention-path",
         choices=ATTENTION_PATHS,
         default="decompressed_manual",
+    )
+    parser.add_argument(
+        "--indexer-path",
+        choices=INDEXER_PATHS,
+        default="manual_legacy",
     )
     parser.add_argument("--reference-out", type=Path)
     parser.add_argument("--reference-in", type=Path)
@@ -224,6 +230,7 @@ def main() -> None:
         cache_length=args.cache_length,
         device=device,
         attention_path=args.attention_path,
+        indexer_path=args.indexer_path,
         progress=lambda message: log(rank, message),
     )
     stack.eval()
@@ -347,6 +354,7 @@ def main() -> None:
         "tensor_parallel_size": world_size,
         "backend": args.backend,
         "attention_path": args.attention_path,
+        "indexer_path": args.indexer_path,
         "batch_size": 1,
         "cache_length": args.cache_length,
         "validation_steps": args.validation_steps,
@@ -368,6 +376,11 @@ def main() -> None:
         else None,
         "contracts": {
             "replicated_qkv_a_and_indexer": True,
+            "indexer": (
+                "contiguous_bsnd_npu_lightning_indexer"
+                if args.indexer_path == "lightning"
+                else args.indexer_path
+            ),
             "attention_heads_per_rank": stack.local_heads,
             "q_b": "column_parallel_by_head",
             "kv_b": (
