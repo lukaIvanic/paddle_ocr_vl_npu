@@ -13,11 +13,6 @@ from pathlib import Path
 from typing import Any
 
 
-RECOMPILE_WARNING = (
-    "Skip cache as LocalUniRecCachedDecodeStepModule.forward recompiled"
-)
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-path", type=Path, required=True)
@@ -26,6 +21,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--self-cache-length", type=int, default=2048)
     parser.add_argument("--cross-cache-length", type=int, default=1320)
+    parser.add_argument(
+        "--decode-weight-format",
+        choices=("native", "nz"),
+        default="native",
+    )
+    parser.add_argument("--decode-lm-head-rows", type=int, default=0)
     parser.add_argument("--passes", type=int, default=2)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -33,6 +34,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("batch size must be positive and passes must be >= 2")
     if args.self_cache_length < 1 or args.cross_cache_length < 1:
         parser.error("cache lengths must be positive")
+    if args.decode_lm_head_rows < 0:
+        parser.error("decode LM-head rows must be non-negative")
     return args
 
 
@@ -72,15 +75,29 @@ def main() -> int:
         ContinuousUniRecDecoder,
         production_decode_cache_parent,
     )
+    from decode_model_optimizations import (
+        apply_decode_model_optimizations,
+        decode_cache_variant_root,
+    )
     from modeling_optimized_unirec import OptimizedUniRecRunner, synchronize_device
 
     setup_started = time.perf_counter()
     cache_parent = production_decode_cache_parent(args.compile_cache_dir)
+    cache_parent = decode_cache_variant_root(
+        cache_parent,
+        weight_format=args.decode_weight_format,
+        lm_head_rows=args.decode_lm_head_rows,
+    )
     runner = OptimizedUniRecRunner(
         model_path=args.model_path.expanduser().resolve(),
         device=args.device,
         dtype="float16",
         compile_cache_dir=cache_parent,
+    )
+    decode_model_optimizations = apply_decode_model_optimizations(
+        runner,
+        weight_format=args.decode_weight_format,
+        lm_head_rows=args.decode_lm_head_rows,
     )
     processor_shape = tuple(int(value) for value in runner.processor.max_side)
     runner._static_cross_cache_len_by_processor_max_side[processor_shape] = (
@@ -155,7 +172,8 @@ def main() -> int:
 
     after = inventory(cache_dir)
     recompiled = any(
-        RECOMPILE_WARNING in row["message"] for row in warning_rows
+        "Skip cache as" in row["message"] and "recompiled" in row["message"]
+        for row in warning_rows
     )
     had_complete_cache = (
         before["compiled_module_count"] == 1 and before["om_count"] == 1
@@ -185,6 +203,7 @@ def main() -> int:
             "device": args.device,
             "passes": args.passes,
             "cache_parent": str(cache_parent),
+            "decode_model_optimizations": decode_model_optimizations,
         },
         "setup_s": setup_s,
         "pass_wall_s": pass_wall_s,

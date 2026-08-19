@@ -201,6 +201,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--decode-a-full-quanta-weight", type=int, default=1)
     parser.add_argument("--decode-b-full-quanta-weight", type=int, default=1)
     parser.add_argument(
+        "--decode-weight-format",
+        choices=("native", "nz"),
+        default="native",
+        help="Keep native decode weights or preformat all decode matmuls to FRACTAL_NZ.",
+    )
+    parser.add_argument(
+        "--decode-lm-head-rows",
+        type=int,
+        default=0,
+        help=(
+            "Pad the decode-only LM head to this many rows, then restrict "
+            "returned logits to the real vocabulary. Zero keeps 56,371 rows."
+        ),
+    )
+    parser.add_argument(
         "--decode-a-overflow-policy",
         choices=("finish_at_cap", "restart_b"),
         default="finish_at_cap",
@@ -288,6 +303,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--max-length cannot exceed --self-cache-length")
     if args.decode_admission_prefetch_depth < 0:
         parser.error("--decode-admission-prefetch-depth must be non-negative")
+    if args.decode_lm_head_rows < 0:
+        parser.error("--decode-lm-head-rows must be non-negative")
     if args.progress_every_pages < 0 or args.progress_heartbeat_s < 0:
         parser.error("progress intervals must be non-negative")
     return args
@@ -616,6 +633,10 @@ def main() -> None:
         DualLaneContinuousUniRecDecoder,
         RankedReadyItem,
     )
+    from decode_model_optimizations import (
+        apply_decode_model_optimizations,
+        decode_cache_variant_root,
+    )
     from modeling_optimized_unirec import OptimizedUniRecRunner
 
     # The two-phase path owns layout and recognition.  Reuse only OpenDoc's
@@ -638,6 +659,11 @@ def main() -> None:
     decode_cache_parent = production_decode_cache_parent(
         args.compile_cache_dir
     )
+    decode_cache_parent = decode_cache_variant_root(
+        decode_cache_parent,
+        weight_format=args.decode_weight_format,
+        lm_head_rows=args.decode_lm_head_rows,
+    )
     print(
         "UNIREC_TWO_PHASE_DECODE_CACHE_NAMESPACE "
         f"path={decode_cache_parent}",
@@ -648,6 +674,16 @@ def main() -> None:
         device=args.device,
         dtype=args.dtype,
         compile_cache_dir=decode_cache_parent,
+    )
+    decode_model_optimizations = apply_decode_model_optimizations(
+        runner,
+        weight_format=args.decode_weight_format,
+        lm_head_rows=args.decode_lm_head_rows,
+    )
+    print(
+        "UNIREC_TWO_PHASE_DECODE_MODEL_OPTIMIZATIONS "
+        + json.dumps(decode_model_optimizations, sort_keys=True),
+        flush=True,
     )
     processor_shape = tuple(int(value) for value in runner.processor.max_side)
     runner._static_cross_cache_len_by_processor_max_side[processor_shape] = (
@@ -1112,6 +1148,11 @@ def main() -> None:
             else "continuous"
         ),
         "decode_lane_mode": args.decode_lane_mode,
+        "decode_model_optimizations": decode_model_optimizations,
+        "decode_weight_format": args.decode_weight_format,
+        "decode_lm_head_rows": (
+            args.decode_lm_head_rows or int(runner.config.vocab_size)
+        ),
         "decode_batch_size": args.decode_batch_size,
         "decode_a": (
             {

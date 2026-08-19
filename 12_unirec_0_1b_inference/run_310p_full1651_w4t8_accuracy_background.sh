@@ -38,6 +38,20 @@ is_dual_restart_variant() {
   [[ "$RUN_VARIANT" == optimized_k20_l4_compiled_fp32_dual_restart ]]
 }
 
+decode_cache_variant_parent() {
+  local base="$1"
+  if [[ "$DECODE_WEIGHT_FORMAT" == native && "$DECODE_LM_HEAD_ROWS" == 0 ]]; then
+    printf '%s\n' "$base"
+    return
+  fi
+  local rows="$DECODE_LM_HEAD_ROWS"
+  if [[ "$rows" == 0 ]]; then
+    rows=56371
+  fi
+  printf '%s/decode_weight_%s_lmhead%s_semantic56371\n' \
+    "$base" "$DECODE_WEIGHT_FORMAT" "$rows"
+}
+
 resolve_inputs() {
   : "${PYTHON_BIN:?export the validated 310P inference Python}"
   : "${MODEL:?export the UniRec model directory}"
@@ -55,6 +69,8 @@ resolve_inputs() {
   : "${RUN_VARIANT:=accuracy_anchor}"
   : "${REQUIRE_WARM_VISION_CACHE:=0}"
   : "${DECODE_CACHE_GATE_ATTEMPTS:=3}"
+  : "${DECODE_WEIGHT_FORMAT:=native}"
+  : "${DECODE_LM_HEAD_ROWS:=0}"
   : "${LAYOUT_CPU_THREADS:=1}"
   : "${PROGRESS_EVERY_PAGES:=1}"
   : "${ALLOW_LOW_HOST_MEMORY:=0}"
@@ -87,6 +103,18 @@ resolve_inputs() {
     0|1) ;;
     *) printf 'INVALID_REQUIRE_WARM_VISION_CACHE=%s\n' "$REQUIRE_WARM_VISION_CACHE" >&2; exit 1 ;;
   esac
+  case "$DECODE_WEIGHT_FORMAT" in
+    native|nz) ;;
+    *) printf 'INVALID_DECODE_WEIGHT_FORMAT=%s\n' "$DECODE_WEIGHT_FORMAT" >&2; exit 1 ;;
+  esac
+  if ! [[ "$DECODE_LM_HEAD_ROWS" =~ ^[0-9]+$ ]]; then
+    printf 'INVALID_DECODE_LM_HEAD_ROWS=%s\n' "$DECODE_LM_HEAD_ROWS" >&2
+    exit 1
+  fi
+  if (( DECODE_LM_HEAD_ROWS > 0 && DECODE_LM_HEAD_ROWS < 56371 )); then
+    printf 'DECODE_LM_HEAD_ROWS_BELOW_VOCAB=%s\n' "$DECODE_LM_HEAD_ROWS" >&2
+    exit 1
+  fi
 
   # Preserve the final venv launcher symlink. Dereferencing it with readlink -f
   # silently runs the base interpreter without the venv's site-packages.
@@ -109,12 +137,15 @@ resolve_inputs() {
     UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="$(
       readlink -f "$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE"
     )"
-    local exact_decode_cache
-    exact_decode_cache="$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE/decode_selfkv2048_cross1320_increfa_all_b128"
+    local exact_decode_cache decode_variant_parent
+    decode_variant_parent="$(
+      decode_cache_variant_parent "$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE"
+    )"
+    exact_decode_cache="$decode_variant_parent/decode_selfkv2048_cross1320_increfa_all_b128"
     test "$(find "$exact_decode_cache" -name compiled_module | wc -l)" -eq 1
     test "$(find "$exact_decode_cache" -name '*.om' | wc -l)" -eq 1
     if is_dual_restart_variant; then
-      exact_decode_cache="$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE/decode_selfkv256_cross256_increfa_all_b128"
+      exact_decode_cache="$decode_variant_parent/decode_selfkv256_cross256_increfa_all_b128"
       test "$(find "$exact_decode_cache" -name compiled_module | wc -l)" -eq 1
       test "$(find "$exact_decode_cache" -name '*.om' | wc -l)" -eq 1
     fi
@@ -266,6 +297,8 @@ gate_decode_cache_shape() {
       --batch-size "$batch_size" \
       --self-cache-length "$self_cache" \
       --cross-cache-length "$cross_cache" \
+      --decode-weight-format "$DECODE_WEIGHT_FORMAT" \
+      --decode-lm-head-rows "$DECODE_LM_HEAD_ROWS" \
       --passes 2 \
       --output "$result" \
       >"$log" 2>&1
@@ -368,6 +401,8 @@ run_inference() {
     --self-cache-length 2048
     --max-length 2048
     --decode-batch-size 128
+    --decode-weight-format "$DECODE_WEIGHT_FORMAT"
+    --decode-lm-head-rows "$DECODE_LM_HEAD_ROWS"
     --compile-cache-dir "$COMPILE_CACHE"
     --decode-warmup-passes 2
     --decode-admission-prefetch-depth 0
@@ -496,6 +531,8 @@ assert run["cross_cache_length"] == 1320
 assert run["self_cache_length"] == 2048
 assert run["retained_bank"]["rejected_crop_count"] == 0
 variant = os.environ["RUN_VARIANT"]
+decode_weight_format = os.environ["DECODE_WEIGHT_FORMAT"]
+decode_lm_head_rows = int(os.environ["DECODE_LM_HEAD_ROWS"])
 if variant in {
     "optimized_k10_l4",
     "optimized_k10_l4_aligned",
@@ -547,6 +584,11 @@ if variant == "optimized_k20_l4_compiled_fp32_dual_restart":
     assert run["decode_full_quanta_weights"] == {"a": 3, "b": 1}
     assert run["decode"]["promoted_a_to_b"] > 0
     assert run["decode"]["completed"] == run["crop_count"]
+assert run["decode_weight_format"] == decode_weight_format
+expected_lm_head_rows = decode_lm_head_rows or 56371
+assert run["decode_lm_head_rows"] == expected_lm_head_rows
+assert run["decode_model_optimizations"]["weight_format"] == decode_weight_format
+assert run["decode_model_optimizations"]["lm_head_rows"] == expected_lm_head_rows
 assert transform["page_count"] == 1651 and transform["strip_image_tags"] is True
 assert stage["page_match"]["page_count"] == 1651
 assert stage["page_match"]["fallbacks"]["page_timeout"]["count"] == 0
@@ -609,6 +651,8 @@ worker_main() {
     printf 'project_commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
     printf 'physical_npu=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
     printf 'run_variant=%s\ncpuset=%s\n' "$RUN_VARIANT" "${CPUSET:-unrestricted}"
+    printf 'decode_weight_format=%s\ndecode_lm_head_rows=%s\n' \
+      "$DECODE_WEIGHT_FORMAT" "$DECODE_LM_HEAD_ROWS"
     if is_compiled_fp32_variant; then
       printf 'layout_cache_root=%s\n' "$LAYOUT_CACHE_ROOT"
     fi
@@ -709,6 +753,8 @@ launch_main() {
     TEDS_WORKERS="$TEDS_WORKERS" RUN_VARIANT="$RUN_VARIANT" \
     REQUIRE_WARM_VISION_CACHE="$REQUIRE_WARM_VISION_CACHE" \
     DECODE_CACHE_GATE_ATTEMPTS="$DECODE_CACHE_GATE_ATTEMPTS" \
+    DECODE_WEIGHT_FORMAT="$DECODE_WEIGHT_FORMAT" \
+    DECODE_LM_HEAD_ROWS="$DECODE_LM_HEAD_ROWS" \
     LAYOUT_CPU_THREADS="$LAYOUT_CPU_THREADS" \
     PROGRESS_EVERY_PAGES="$PROGRESS_EVERY_PAGES" \
     ALLOW_LOW_HOST_MEMORY="$ALLOW_LOW_HOST_MEMORY" CPUSET="$CPUSET" \
