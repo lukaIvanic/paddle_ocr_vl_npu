@@ -52,6 +52,16 @@ decode_cache_variant_parent() {
     "$base" "$DECODE_WEIGHT_FORMAT" "$rows"
 }
 
+decode_shape_cache_name() {
+  local self_cache="$1" cross_cache="$2"
+  local suffix=""
+  if [[ "$DECODE_WEIGHT_FORMAT" == nz ]]; then
+    suffix="_wnz"
+  fi
+  printf 'decode_selfkv%s_cross%s_increfa_all_b128%s\n' \
+    "$self_cache" "$cross_cache" "$suffix"
+}
+
 resolve_inputs() {
   : "${PYTHON_BIN:?export the validated 310P inference Python}"
   : "${MODEL:?export the UniRec model directory}"
@@ -141,11 +151,11 @@ resolve_inputs() {
     decode_variant_parent="$(
       decode_cache_variant_parent "$UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE"
     )"
-    exact_decode_cache="$decode_variant_parent/decode_selfkv2048_cross1320_increfa_all_b128"
+    exact_decode_cache="$decode_variant_parent/$(decode_shape_cache_name 2048 1320)"
     test "$(find "$exact_decode_cache" -name compiled_module | wc -l)" -eq 1
     test "$(find "$exact_decode_cache" -name '*.om' | wc -l)" -eq 1
     if is_dual_restart_variant; then
-      exact_decode_cache="$decode_variant_parent/decode_selfkv256_cross256_increfa_all_b128"
+      exact_decode_cache="$decode_variant_parent/$(decode_shape_cache_name 256 256)"
       test "$(find "$exact_decode_cache" -name compiled_module | wc -l)" -eq 1
       test "$(find "$exact_decode_cache" -name '*.om' | wc -l)" -eq 1
     fi
