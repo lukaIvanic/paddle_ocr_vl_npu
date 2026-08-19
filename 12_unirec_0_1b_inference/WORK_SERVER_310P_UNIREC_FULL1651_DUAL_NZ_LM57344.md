@@ -86,36 +86,42 @@ test -d "$LAYOUT_MODEL"
 test -d "$IMAGES_DIR"
 test -f "$DATASET_JSON"
 
-# Recover the two production cache roots from the actual last passed full run.
-LAST_FULL_REPORT="$(
-  find "$WORK_SERVER_REPO/tmp/12_unirec_0_1b_inference" \
-    -type f \( -name final_report.txt -o -name final_report_replayed.txt \) \
-    -print0 2>/dev/null \
-  | xargs -0 -r grep -l 'UNIREC_310P_FULL1651_W4T8_EVAL: PASS' \
-  | xargs -r ls -1t | head -n 1
+# Locate and prove the exact source-compatible K20 and compiled-FP32 B2 caches.
+# This does not import torch_npu, load a model, or compile a graph. It scans only
+# cache-root children and command artifacts up to depth two. It should finish in
+# a few seconds. If it exceeds 30 seconds, stop it and report the absolute log.
+CACHE_LOCATOR="$WORK_SERVER_REPO/12_unirec_0_1b_inference/locate_unirec_production_caches.py"
+CACHE_LOCATOR_ROOT="$WORK_SERVER_REPO/tmp/12_unirec_0_1b_inference/310p_cache_locator_$(date +%Y%m%dT%H%M%S)"
+mkdir -p "$CACHE_LOCATOR_ROOT"
+CACHE_LOCATOR_JSON="$CACHE_LOCATOR_ROOT/cache_locator.json"
+CACHE_LOCATOR_LOG="$CACHE_LOCATOR_ROOT/cache_locator.log"
+CACHE_LOCATOR_STARTED="$(date +%s)"
+"$PYTHON_BIN" "$CACHE_LOCATOR" \
+  --search-root "$WORK_SERVER_REPO/.runtime_cache/12_unirec_0_1b_inference" \
+  --artifact-root "$WORK_SERVER_REPO/tmp/12_unirec_0_1b_inference" \
+  --output "$CACHE_LOCATOR_JSON" | tee "$CACHE_LOCATOR_LOG"
+CACHE_LOCATOR_WALL_S="$(( $(date +%s) - CACHE_LOCATOR_STARTED ))"
+printf 'CACHE_LOCATOR_WALL_S=%s\n' "$CACHE_LOCATOR_WALL_S"
+test "$CACHE_LOCATOR_WALL_S" -le 30
+
+export COMPILE_CACHE="$(
+  sed -n 's/^UNIREC_K20_COMPILE_CACHE=//p' "$CACHE_LOCATOR_LOG" | tail -n 1
 )"
-test -s "$LAST_FULL_REPORT"
-LAST_FULL_ROOT="$(dirname "$LAST_FULL_REPORT")"
-LAST_FULL_COMMAND="$LAST_FULL_ROOT/command.sh"
-test -s "$LAST_FULL_COMMAND"
-
-extract_flag() {
-  "$PYTHON_BIN" - "$LAST_FULL_COMMAND" "$1" <<'PY'
-import shlex
-import sys
-words = shlex.split(open(sys.argv[1]).read())
-flag = sys.argv[2]
-positions = [i for i, word in enumerate(words) if word == flag]
-if len(positions) != 1 or positions[0] + 1 >= len(words):
-    raise SystemExit(f"expected one {flag}, found {len(positions)}")
-print(words[positions[0] + 1])
-PY
-}
-
-export COMPILE_CACHE="$(extract_flag --compile-cache-dir)"
-export LAYOUT_CACHE_ROOT="$(extract_flag --layout-cache-dir)"
+export LAYOUT_CACHE_ROOT="$(
+  sed -n 's/^UNIREC_FP32_B2_LAYOUT_CACHE=//p' "$CACHE_LOCATOR_LOG" | tail -n 1
+)"
+test -n "$COMPILE_CACHE"
+test -n "$LAYOUT_CACHE_ROOT"
 test -d "$COMPILE_CACHE"
 test -d "$LAYOUT_CACHE_ROOT"
+
+# This is the old broken K10-only gate signature. None of these names belongs
+# to the current 20-bucket production preset. Seeing them means stale code ran.
+if grep -Eq '512x192_b2|960x1024_b1|1024x704_b1|1024x1408_b1' \
+    "$CACHE_LOCATOR_LOG"; then
+  printf 'STALE_K10_FOUR_BUCKET_GATE_DETECTED\n' >&2
+  exit 1
+fi
 
 export OMNIDOCBENCH_EVAL_TOOLS_ROOT="$WORK_SERVER_REPO/.runtime_cache/omnidocbench_eval/tools"
 test -x "$OMNIDOCBENCH_EVAL_TOOLS_ROOT/texlive/2025/bin/aarch64-linux/pdflatex"
@@ -125,9 +131,9 @@ export OPTIMIZED_DECODE_CACHE_PARENT="$WORK_SERVER_REPO/.runtime_cache/12_unirec
 mkdir -p "$OPTIMIZED_DECODE_CACHE_PARENT"
 export UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="$OPTIMIZED_DECODE_CACHE_PARENT"
 
-printf 'LAST_FULL_ROOT=%s\nCOMPILE_CACHE=%s\nLAYOUT_CACHE_ROOT=%s\nDECODE_CACHE=%s\n' \
-  "$LAST_FULL_ROOT" "$COMPILE_CACHE" "$LAYOUT_CACHE_ROOT" \
-  "$OPTIMIZED_DECODE_CACHE_PARENT"
+printf 'CACHE_LOCATOR_JSON=%s\nCACHE_LOCATOR_LOG=%s\nCOMPILE_CACHE=%s\nLAYOUT_CACHE_ROOT=%s\nDECODE_CACHE=%s\n' \
+  "$CACHE_LOCATOR_JSON" "$CACHE_LOCATOR_LOG" "$COMPILE_CACHE" \
+  "$LAYOUT_CACHE_ROOT" "$OPTIMIZED_DECODE_CACHE_PARENT"
 ```
 
 ## Build and fresh-process gate the two decode graphs
