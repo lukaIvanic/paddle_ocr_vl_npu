@@ -495,6 +495,11 @@ def profile_compiled_steps(
                 device=device,
             )
             decode(hidden_states.clone(), position, *caches)
+            # Flush the profiler warmup before recording starts, then flush the
+            # final active call before recording stops. Active calls 1..N stay
+            # contiguous, while async work cannot leak across trace boundaries.
+            if offset in (0, active_steps):
+                torch.npu.synchronize()
             prof.step()
     torch.npu.synchronize()
     profiled_loop_sec = time.perf_counter() - started
@@ -507,7 +512,7 @@ def profile_compiled_steps(
         "profiler_schedule_warmup_steps": 1,
         "active_steps": active_steps,
         "profiled_loop_sec_including_profiler_overhead": profiled_loop_sec,
-        "execution_mode": "contiguous_graph_calls_with_one_final_sync",
+        "execution_mode": "contiguous_active_graph_calls_with_boundary_syncs",
     }
 
 
