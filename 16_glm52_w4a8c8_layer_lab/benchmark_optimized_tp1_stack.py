@@ -358,7 +358,7 @@ def main() -> None:
         seed=52100,
     )
     validation_positions = make_position_rows(
-        first_position=0,
+        first_position=args.cache_length - args.validation_steps,
         steps=args.validation_steps,
         device=device,
     )
@@ -517,6 +517,7 @@ def main() -> None:
         "load_sec": load_sec,
         "memory_after_weights": memory_after_weights,
         "validation_steps": args.validation_steps,
+        "validation_first_position": args.cache_length - args.validation_steps,
         "parity": parity,
         "warmup_steps": args.warmup_steps,
         "warmup_elapsed_sec_excluded": warmup_sec,
