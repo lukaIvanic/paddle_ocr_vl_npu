@@ -123,12 +123,14 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
                     "table_1",
                     b"png-bytes",
                     timeout_s=2.0,
+                    source_request_id="source_table_1",
                 )
             )
         self.assertEqual(result["http_status"], 200)
         self.assertEqual(result["worker_wall_s"], 1.25)
         self.assertEqual(result["output_tokens"], 123)
         self.assertIn(b"crop_type=table", writer.writes[0])
+        self.assertIn(b"source_request_id=source_table_1", writer.writes[0])
         self.assertEqual(writer.writes[1], b"png-bytes")
 
 

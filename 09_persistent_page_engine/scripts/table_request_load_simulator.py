@@ -272,6 +272,8 @@ async def post_table_ocr(
     request_id: str,
     image_bytes: bytes,
     timeout_s: float,
+    *,
+    source_request_id: str | None = None,
 ) -> dict[str, Any]:
     parsed = urlparse(api_url)
     if parsed.scheme != "http" or not parsed.hostname:
@@ -279,6 +281,8 @@ async def post_table_ocr(
     port = parsed.port or 80
     query = dict(parse_qsl(parsed.query, keep_blank_values=True))
     query.update({"crop_type": "table", "request_id": request_id})
+    if source_request_id is not None:
+        query["source_request_id"] = source_request_id
     target = urlunparse(("", "", parsed.path or "/v1/ocr", "", urlencode(query), ""))
     host_header = parsed.hostname if port == 80 else f"{parsed.hostname}:{port}"
     header = (
@@ -545,6 +549,7 @@ def main() -> None:
                 f"load-{item.sequence:05d}-{request_id}",
                 payloads[request_id],
                 args.request_timeout_s,
+                source_request_id=request_id,
             )
 
         request_function = send_http_request

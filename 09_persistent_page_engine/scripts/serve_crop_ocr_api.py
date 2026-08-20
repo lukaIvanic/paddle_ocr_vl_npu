@@ -364,6 +364,9 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(HTTPStatus.BAD_REQUEST, {"error": f"crop_type must be one of {sorted(PROMPTS)}"})
             return
         public_request_id = query.get("request_id", [uuid.uuid4().hex])[0].strip()
+        source_request_id = query.get(
+            "source_request_id", [public_request_id]
+        )[0].strip()
         request_id = f"{public_request_id}:{uuid.uuid4().hex}"
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -378,6 +381,7 @@ class _Handler(BaseHTTPRequestHandler):
             message = self.state.submit(
                 {
                     "request_id": request_id,
+                    "source_request_id": source_request_id,
                     "crop_type": crop_type,
                     "prompt": PROMPTS[crop_type],
                     "image_bytes": image_bytes,
