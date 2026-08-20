@@ -42,6 +42,16 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
         self.assertEqual(offsets, sorted(offsets))
         self.assertTrue(all(offset < 2.0 for offset in offsets))
 
+    def test_send_and_receive_for_one_table_use_the_same_color(self) -> None:
+        send = MODULE.color_event_line("SEND", "table_17", enabled=True)
+        receive = MODULE.color_event_line("RECV", "table_17", enabled=True)
+        self.assertEqual(send.split("m", 1)[0], receive.split("m", 1)[0])
+        self.assertTrue(send.endswith(MODULE.ANSI_RESET))
+        self.assertEqual(
+            MODULE.color_event_line("SEND", "table_17", enabled=False),
+            "SEND",
+        )
+
     def test_requests_overlap_and_each_result_is_written(self) -> None:
         schedule = [
             MODULE.ScheduledRequest(

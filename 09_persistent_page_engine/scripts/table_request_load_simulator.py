@@ -9,10 +9,12 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 import math
+import os
 from pathlib import Path
 import random
 import re
 import statistics
+import sys
 import time
 from typing import Any, Iterable, TextIO
 
@@ -30,6 +32,8 @@ LATEX_MARKUP = re.compile(
     r"\\(?:frac|pm|times|mathrm|mathbf|mathit|text|sqrt|sum|alpha|beta|gamma)\b|"
     r"[\^_]\{)"
 )
+ANSI_COLORS = (31, 32, 33, 34, 35, 36, 91, 92, 93, 94, 95, 96)
+ANSI_RESET = "\033[0m"
 
 
 @dataclass(frozen=True)
@@ -217,18 +221,35 @@ def format_seconds(value: float | int | None) -> str:
     return "n/a" if value is None else f"{float(value):.3f}s"
 
 
+def event_color(request_id: str) -> str:
+    stable_index = sum(
+        (position + 1) * ord(character)
+        for position, character in enumerate(request_id)
+    )
+    return f"\033[{ANSI_COLORS[stable_index % len(ANSI_COLORS)]}m"
+
+
+def color_event_line(line: str, request_id: str, enabled: bool) -> str:
+    if not enabled:
+        return line
+    return f"{event_color(request_id)}{line}{ANSI_RESET}"
+
+
 async def run_schedule(
     schedule: list[ScheduledRequest],
     ocr_time_s: float,
     result_handle: TextIO,
     *,
     print_events: bool = True,
+    color_events: bool | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if ocr_time_s < 0:
         raise ValueError("ocr-time-s must not be negative")
 
     loop = asyncio.get_running_loop()
     start = loop.time()
+    if color_events is None:
+        color_events = sys.stdout.isatty() and "NO_COLOR" not in os.environ
     active = 0
     max_active = 0
     results: list[dict[str, Any]] = []
@@ -244,12 +265,12 @@ async def run_schedule(
         request_id = str(item.table["request_id"])
 
         if print_events:
-            print(
+            line = (
                 f"[{dispatch_offset_s:8.3f}s] SEND #{item.sequence:05d} "
                 f"table={request_id} lag={dispatch_lag_s * 1000:6.1f}ms "
-                f"active={active}",
-                flush=True,
+                f"active={active}"
             )
+            print(color_event_line(line, request_id, color_events), flush=True)
 
         await asyncio.sleep(ocr_time_s)
 
@@ -287,11 +308,11 @@ async def run_schedule(
         result_handle.flush()
 
         if print_events:
-            print(
+            line = (
                 f"[{completion_offset_s:8.3f}s] RECV #{item.sequence:05d} "
-                f"table={request_id} latency={latency_s:6.3f}s active={active}",
-                flush=True,
+                f"table={request_id} latency={latency_s:6.3f}s active={active}"
             )
+            print(color_event_line(line, request_id, color_events), flush=True)
 
     tasks: list[asyncio.Task[None]] = []
     for item in schedule:
