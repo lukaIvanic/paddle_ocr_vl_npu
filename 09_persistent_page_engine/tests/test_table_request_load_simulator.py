@@ -76,6 +76,22 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
         first_background_codes = [line.split("m", 1)[0] for line in rendered]
         self.assertEqual(len(set(first_background_codes)), 1)
 
+    def test_indented_background_has_four_clear_offsets_per_color(self) -> None:
+        rendered = [
+            MODULE.style_event_line(
+                "SEND table=preview",
+                sequence,
+                "indented-background",
+                enabled=True,
+                line_width=80,
+            )
+            for sequence in (1, 13, 25, 37)
+        ]
+        leading_spaces = [len(line) - len(line.lstrip(" ")) for line in rendered]
+        self.assertEqual(leading_spaces, [0, 8, 16, 24])
+        background_codes = [line.lstrip().split("m", 1)[0] for line in rendered]
+        self.assertEqual(len(set(background_codes)), 1)
+
     def test_requests_overlap_and_each_result_is_written(self) -> None:
         schedule = [
             MODULE.ScheduledRequest(

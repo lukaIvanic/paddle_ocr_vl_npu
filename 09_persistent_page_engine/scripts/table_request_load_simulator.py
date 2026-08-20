@@ -39,6 +39,7 @@ EVENT_STYLE_CHOICES = (
     "pattern",
     "background",
     "background-pattern",
+    "indented-background",
 )
 EVENT_SLOT_COUNT = 48
 ANSI_256_COLORS = (
@@ -65,6 +66,8 @@ BACKGROUND_PATTERN_FAMILIES = (
     (172, 215, 16),
 )
 BACKGROUND_PATTERN_LABELS = ("SOLID", "WIDE", "THIN", "PULSE")
+INDENTED_BACKGROUND_COLORS = PATTERN_COLORS
+INDENTED_BACKGROUND_SPACES = (0, 8, 16, 24)
 ANSI_RESET = "\033[0m"
 
 
@@ -101,7 +104,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--event-style",
         choices=EVENT_STYLE_CHOICES,
-        default="background-pattern",
+        default="indented-background",
         help="Terminal identifier style for matching SEND and RECV lines.",
     )
     parser.add_argument(
@@ -286,7 +289,7 @@ def event_tag(sequence: int, style: str, enabled: bool) -> str:
         color = PATTERN_COLORS[slot % len(PATTERN_COLORS)]
         pattern = PATTERNS[slot // len(PATTERN_COLORS)]
         return f"\033[38;5;{color}m{pattern} {label}{ANSI_RESET}"
-    if style in {"background", "background-pattern"}:
+    if style in {"background", "background-pattern", "indented-background"}:
         return f"[{label}]"
     raise ValueError(f"unsupported event style: {style}")
 
@@ -352,6 +355,29 @@ def render_full_background(
     return "".join(pieces) + ANSI_RESET
 
 
+def render_indented_background(
+    line: str,
+    sequence: int,
+    *,
+    line_width: int | None = None,
+) -> str:
+    slot = event_slot(sequence)
+    color_index = slot % len(INDENTED_BACKGROUND_COLORS)
+    indent_index = slot // len(INDENTED_BACKGROUND_COLORS)
+    background = INDENTED_BACKGROUND_COLORS[color_index]
+    foreground = 15 if background in BADGE_DARK_BACKGROUNDS else 16
+    leading_spaces = INDENTED_BACKGROUND_SPACES[indent_index]
+    margin = " " * leading_spaces
+    text = f"[{slot + 1:02d}] {line}"
+    if line_width is None:
+        line_width = max(1, shutil.get_terminal_size(fallback=(120, 24)).columns - 1)
+    colored_width = max(len(text), line_width - leading_spaces)
+    return (
+        f"{margin}\033[48;5;{background};38;5;{foreground}m"
+        f"{text.ljust(colored_width)}{ANSI_RESET}"
+    )
+
+
 def style_event_line(
     line: str,
     sequence: int,
@@ -377,6 +403,12 @@ def style_event_line(
             patterned=True,
             line_width=line_width,
         )
+    if style == "indented-background":
+        return render_indented_background(
+            line,
+            sequence,
+            line_width=line_width,
+        )
     if style == "foreground":
         color = ANSI_256_COLORS[event_slot(sequence)]
         return f"\033[38;5;{color}m[{event_slot(sequence) + 1:02d}] {line}{ANSI_RESET}"
@@ -384,7 +416,7 @@ def style_event_line(
 
 
 def preview_event_styles() -> None:
-    for style in ("background", "background-pattern"):
+    for style in ("indented-background",):
         print(f"\n{style}")
         preview_sequences = (
             (1, 13, 25, 37),
@@ -422,7 +454,7 @@ async def run_schedule(
     *,
     print_events: bool = True,
     color_events: bool | None = None,
-    event_style: str = "badge",
+    event_style: str = "indented-background",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if ocr_time_s < 0:
         raise ValueError("ocr-time-s must not be negative")
