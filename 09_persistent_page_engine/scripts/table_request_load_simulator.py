@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replay open-loop table requests against a simple simulated OCR service."""
+"""Replay open-loop table requests against simulated or HTTP OCR."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import argparse
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import io
 import json
 import math
 from pathlib import Path
@@ -14,7 +15,9 @@ import random
 import re
 import statistics
 import time
-from typing import Any, Iterable, TextIO
+from typing import Any, Awaitable, Callable, Iterable, TextIO
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from urllib.request import urlopen
 
 
 HERE = Path(__file__).resolve().parent
@@ -30,6 +33,8 @@ LATEX_MARKUP = re.compile(
     r"\\(?:frac|pm|times|mathrm|mathbf|mathit|text|sqrt|sum|alpha|beta|gamma)\b|"
     r"[\^_]\{)"
 )
+
+
 @dataclass(frozen=True)
 class ScheduledRequest:
     sequence: int
@@ -57,8 +62,19 @@ def parse_args() -> argparse.Namespace:
         "--ocr-time-s",
         type=float,
         default=0.5,
-        help="Asynchronous sleep used as the simulated OCR service time.",
+        help="Asynchronous sleep used when --api-url is not set.",
     )
+    parser.add_argument(
+        "--api-url",
+        help="Send real table crops to this OCR endpoint instead of sleeping.",
+    )
+    parser.add_argument(
+        "--images-dir",
+        type=Path,
+        default=Path("/workspace/datasets/OmniDocBench/images"),
+        help="OmniDocBench images used to prepare HTTP request bodies.",
+    )
+    parser.add_argument("--request-timeout-s", type=float, default=900.0)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument(
         "--output-dir",
@@ -133,6 +149,8 @@ def freeze_tail_cohort(
                 "has_latex_markup": has_latex_markup(row),
                 "output_tokens": row.get("output_tokens"),
                 "real_vision_tokens": vision.get("real_vision_tokens"),
+                "page_name": row.get("page_name"),
+                "bbox_xyxy": row.get("bbox_xyxy"),
             }
         )
     return frozen
@@ -215,12 +233,117 @@ def format_seconds(value: float | int | None) -> str:
     return "n/a" if value is None else f"{float(value):.3f}s"
 
 
+def prepare_http_payloads(
+    cohort: list[dict[str, Any]],
+    images_dir: Path,
+) -> dict[str, bytes]:
+    from PIL import Image
+
+    payloads: dict[str, bytes] = {}
+    for table in cohort:
+        request_id = str(table["request_id"])
+        page_name = table.get("page_name")
+        bbox = table.get("bbox_xyxy")
+        if not page_name or not isinstance(bbox, list) or len(bbox) != 4:
+            raise ValueError(f"{request_id}: missing page_name or bbox_xyxy")
+        image_path = images_dir / str(page_name)
+        if not image_path.is_file():
+            raise FileNotFoundError(image_path)
+        with Image.open(image_path) as page:
+            crop = page.crop(tuple(int(value) for value in bbox)).convert("RGB")
+        buffer = io.BytesIO()
+        crop.save(buffer, format="PNG")
+        payloads[request_id] = buffer.getvalue()
+    return payloads
+
+
+def check_api_ready(api_url: str, timeout_s: float) -> dict[str, Any]:
+    parsed = urlparse(api_url)
+    ready_url = urlunparse(parsed._replace(path="/ready", query=""))
+    with urlopen(ready_url, timeout=timeout_s) as response:
+        payload = json.load(response)
+    if not isinstance(payload, dict) or not payload.get("ready"):
+        raise RuntimeError(f"OCR API is not ready: {payload}")
+    return payload
+
+
+async def post_table_ocr(
+    api_url: str,
+    request_id: str,
+    image_bytes: bytes,
+    timeout_s: float,
+) -> dict[str, Any]:
+    parsed = urlparse(api_url)
+    if parsed.scheme != "http" or not parsed.hostname:
+        raise ValueError("--api-url must be an http:// URL")
+    port = parsed.port or 80
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query.update({"crop_type": "table", "request_id": request_id})
+    target = urlunparse(("", "", parsed.path or "/v1/ocr", "", urlencode(query), ""))
+    host_header = parsed.hostname if port == 80 else f"{parsed.hostname}:{port}"
+    header = (
+        f"POST {target} HTTP/1.1\r\n"
+        f"Host: {host_header}\r\n"
+        "Content-Type: image/png\r\n"
+        f"Content-Length: {len(image_bytes)}\r\n"
+        "Connection: close\r\n\r\n"
+    )
+
+    async def request() -> dict[str, Any]:
+        reader, writer = await asyncio.open_connection(parsed.hostname, port)
+        try:
+            writer.write(bytes(header, "ascii"))
+            writer.write(image_bytes)
+            await writer.drain()
+
+            status_line = (await reader.readline()).decode("iso-8859-1").strip()
+            parts = status_line.split(" ", 2)
+            if len(parts) < 2 or not parts[1].isdigit():
+                raise RuntimeError(f"invalid HTTP status line: {status_line!r}")
+            status = int(parts[1])
+            headers: dict[str, str] = {}
+            while True:
+                raw_line = await reader.readline()
+                if raw_line in {b"", b"\r\n", b"\n"}:
+                    break
+                name, value = raw_line.decode("iso-8859-1").split(":", 1)
+                headers[name.strip().lower()] = value.strip()
+            content_length = int(headers.get("content-length", "0"))
+            body = (
+                await reader.readexactly(content_length)
+                if content_length
+                else await reader.read()
+            )
+            payload = json.loads(body.decode("utf-8")) if body else {}
+            if status >= 400:
+                raise RuntimeError(f"HTTP {status}: {payload}")
+            if not isinstance(payload, dict):
+                raise RuntimeError("OCR response must be a JSON object")
+            return {
+                "http_status": status,
+                "worker_wall_s": payload.get("worker_wall_s"),
+                "server_http_wall_s": payload.get("http_wall_s"),
+                "output_tokens": payload.get("output_tokens"),
+                "stop_reason": payload.get("stop_reason"),
+                "response": payload,
+            }
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+    return await asyncio.wait_for(request(), timeout=timeout_s)
+
+
+RequestFunction = Callable[[ScheduledRequest], Awaitable[dict[str, Any]]]
+
+
 async def run_schedule(
     schedule: list[ScheduledRequest],
     ocr_time_s: float,
     result_handle: TextIO,
     *,
     print_events: bool = True,
+    request_function: RequestFunction | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if ocr_time_s < 0:
         raise ValueError("ocr-time-s must not be negative")
@@ -249,7 +372,16 @@ async def run_schedule(
             )
             print(line, flush=True)
 
-        await asyncio.sleep(ocr_time_s)
+        service_result: dict[str, Any] = {}
+        error: str | None = None
+        try:
+            if request_function is None:
+                await asyncio.sleep(ocr_time_s)
+                service_result = {"simulated_ocr_s": ocr_time_s}
+            else:
+                service_result = await request_function(item)
+        except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
 
         completion_time = loop.time()
         active -= 1
@@ -263,10 +395,11 @@ async def run_schedule(
             "dispatch_lag_s": dispatch_lag_s,
             "completion_offset_s": completion_offset_s,
             "latency_s": latency_s,
-            "simulated_ocr_s": ocr_time_s,
             "active_at_dispatch": active_at_dispatch,
             "active_after_completion": active,
-            "status": "ok",
+            "status": "ok" if error is None else "error",
+            "error": error,
+            "service_result": service_result,
             **{
                 key: item.table.get(key)
                 for key in (
@@ -287,7 +420,8 @@ async def run_schedule(
         if print_events:
             line = (
                 f"[{completion_offset_s:8.3f}s] RECV #{item.sequence:05d} "
-                f"table={request_id} latency={latency_s:6.3f}s active={active}"
+                f"table={request_id} latency={latency_s:6.3f}s "
+                f"status={result['status']} active={active}"
             )
             print(line, flush=True)
 
@@ -301,7 +435,11 @@ async def run_schedule(
 
     run_wall_s = loop.time() - start
     results.sort(key=lambda row: int(row["sequence"]))
-    return results, {"run_wall_s": run_wall_s, "max_active": max_active}
+    return results, {
+        "run_wall_s": run_wall_s,
+        "max_active": max_active,
+        "error_count": sum(row["status"] != "ok" for row in results),
+    }
 
 
 def make_summary(
@@ -320,9 +458,15 @@ def make_summary(
     non_latex_latencies = [
         float(row["latency_s"]) for row in results if not row["has_latex_markup"]
     ]
+    worker_latencies = [
+        float(row["service_result"]["worker_wall_s"])
+        for row in results
+        if row["service_result"].get("worker_wall_s") is not None
+    ]
     return {
         "format": "table_request_load_simulator_v1",
-        "mode": "async_sleep",
+        "mode": "http" if args.api_url else "async_sleep",
+        "api_url": args.api_url,
         "source_jsonl": str(args.source_jsonl.resolve()),
         "cohort": args.cohort,
         "cohort_table_count": len(cohort),
@@ -332,16 +476,18 @@ def make_summary(
         "target_qps": args.qps,
         "arrival_process": "poisson",
         "duration_s": args.duration_s,
-        "ocr_time_s": args.ocr_time_s,
+        "ocr_time_s": None if args.api_url else args.ocr_time_s,
         "seed": args.seed,
         "scheduled_request_count": len(schedule),
         "completed_request_count": len(results),
+        "failed_request_count": run_stats["error_count"],
         "run_wall_s": run_stats["run_wall_s"],
         "max_active_requests": run_stats["max_active"],
         "latency_s": distribution(latencies),
         "dispatch_lag_s": distribution(dispatch_lags),
         "latex_latency_s": distribution(latex_latencies),
         "non_latex_latency_s": distribution(non_latex_latencies),
+        "server_worker_latency_s": distribution(worker_latencies),
     }
 
 
@@ -357,6 +503,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--duration-s must be greater than zero")
     if args.ocr_time_s < 0:
         raise ValueError("--ocr-time-s must not be negative")
+    if args.request_timeout_s <= 0:
+        raise ValueError("--request-timeout-s must be greater than zero")
 
 
 def main() -> None:
@@ -380,15 +528,41 @@ def main() -> None:
     write_jsonl(cohort_path, cohort)
     write_jsonl(schedule_path, schedule_rows(schedule))
 
+    request_function: RequestFunction | None = None
+    if args.api_url:
+        ready = check_api_ready(args.api_url, min(args.request_timeout_s, 10.0))
+        print(
+            f"OCR API ready worker_pid={ready.get('worker_pid')}; "
+            "preparing table crops in RAM",
+            flush=True,
+        )
+        payloads = prepare_http_payloads(cohort, args.images_dir)
+
+        async def send_http_request(item: ScheduledRequest) -> dict[str, Any]:
+            request_id = str(item.table["request_id"])
+            return await post_table_ocr(
+                args.api_url,
+                f"load-{item.sequence:05d}-{request_id}",
+                payloads[request_id],
+                args.request_timeout_s,
+            )
+
+        request_function = send_http_request
+
     latex_count = sum(bool(row["has_latex_markup"]) for row in cohort)
     print(
         f"Frozen {args.cohort.upper()} cohort: {len(cohort)} tables "
         f"({latex_count} LaTeX, {len(cohort) - latex_count} non-LaTeX)",
         flush=True,
     )
+    mode_description = (
+        f"HTTP endpoint={args.api_url}"
+        if args.api_url
+        else f"simulated OCR time={args.ocr_time_s:g}s"
+    )
     print(
         f"Scheduled {len(schedule)} Poisson arrivals at {args.qps:g} QPS over "
-        f"{args.duration_s:g}s; simulated OCR time={args.ocr_time_s:g}s",
+        f"{args.duration_s:g}s; {mode_description}",
         flush=True,
     )
     print(f"Writing each completion to {results_path}", flush=True)
@@ -396,7 +570,12 @@ def main() -> None:
     wall_start = time.perf_counter()
     with results_path.open("w", encoding="utf-8") as result_handle:
         results, run_stats = asyncio.run(
-            run_schedule(schedule, args.ocr_time_s, result_handle)
+            run_schedule(
+                schedule,
+                args.ocr_time_s,
+                result_handle,
+                request_function=request_function,
+            )
         )
     process_wall_s = time.perf_counter() - wall_start
     run_stats["process_wall_s"] = process_wall_s
@@ -417,6 +596,7 @@ def main() -> None:
     print(
         "DONE "
         f"completed={summary['completed_request_count']} "
+        f"failed={summary['failed_request_count']} "
         f"max_active={summary['max_active_requests']} "
         f"p50={format_seconds(latency['p50'])} "
         f"p95={format_seconds(latency['p95'])} "

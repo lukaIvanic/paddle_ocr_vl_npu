@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import AsyncMock, patch
 
 
 SCRIPT = (
@@ -69,6 +70,66 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
             self.assertEqual(stats["max_active"], 3)
             self.assertEqual(len(path.read_text(encoding="utf-8").splitlines()), 3)
             self.assertTrue(all(row["latency_s"] >= 0.045 for row in results))
+
+    def test_async_http_client_posts_table_crop(self) -> None:
+        payload = bytes(
+            '{"worker_wall_s":1.25,"http_wall_s":1.3,'
+            '"output_tokens":123,"stop_reason":"eos"}',
+            "utf-8",
+        )
+
+        class FakeReader:
+            def __init__(self) -> None:
+                self.lines = [
+                    b"HTTP/1.1 200 OK\r\n",
+                    b"Content-Type: application/json\r\n",
+                    f"Content-Length: {len(payload)}\r\n".encode("ascii"),
+                    b"\r\n",
+                ]
+
+            async def readline(self) -> bytes:
+                return self.lines.pop(0)
+
+            async def readexactly(self, length: int) -> bytes:
+                self.assert_length = length
+                return payload
+
+            async def read(self) -> bytes:
+                return payload
+
+        class FakeWriter:
+            def __init__(self) -> None:
+                self.writes: list[bytes] = []
+
+            def write(self, value: bytes) -> None:
+                self.writes.append(value)
+
+            async def drain(self) -> None:
+                return None
+
+            def close(self) -> None:
+                return None
+
+            async def wait_closed(self) -> None:
+                return None
+
+        reader = FakeReader()
+        writer = FakeWriter()
+        open_connection = AsyncMock(return_value=(reader, writer))
+        with patch.object(MODULE.asyncio, "open_connection", open_connection):
+            result = asyncio.run(
+                MODULE.post_table_ocr(
+                    "http://127.0.0.1:8767/v1/ocr",
+                    "table_1",
+                    b"png-bytes",
+                    timeout_s=2.0,
+                )
+            )
+        self.assertEqual(result["http_status"], 200)
+        self.assertEqual(result["worker_wall_s"], 1.25)
+        self.assertEqual(result["output_tokens"], 123)
+        self.assertIn(b"crop_type=table", writer.writes[0])
+        self.assertEqual(writer.writes[1], b"png-bytes")
 
 
 if __name__ == "__main__":
