@@ -43,54 +43,45 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
         self.assertTrue(all(offset < 2.0 for offset in offsets))
 
     def test_send_and_receive_for_one_request_use_the_same_identifier(self) -> None:
-        for style in MODULE.EVENT_STYLE_CHOICES:
-            send = MODULE.style_event_line("SEND", 17, style, enabled=True)
-            receive = MODULE.style_event_line("RECV", 17, style, enabled=True)
-            self.assertIn("17", send)
-            self.assertIn("17", receive)
-            self.assertEqual(
-                send.split("m", 1)[0],
-                receive.split("m", 1)[0],
-            )
+        marker = MODULE.event_marker(17, enabled=True)
+        send = MODULE.format_event_line("SEND", 17, enabled=True)
+        receive = MODULE.format_event_line("RECV", 17, enabled=True)
+        self.assertTrue(send.startswith(marker))
+        self.assertTrue(receive.startswith(marker))
 
-    def test_first_48_request_tags_are_unique(self) -> None:
-        for style in MODULE.EVENT_STYLE_CHOICES:
-            tags = {
-                MODULE.event_tag(sequence, style, enabled=True)
-                for sequence in range(1, 49)
-            }
-            self.assertEqual(len(tags), 48)
+    def test_first_48_request_markers_are_unique(self) -> None:
+        markers = {
+            MODULE.event_marker(sequence, enabled=True)
+            for sequence in range(1, 49)
+        }
+        self.assertEqual(len(markers), 48)
 
-    def test_same_background_family_has_four_distinct_patterns(self) -> None:
+    def test_a_b_c_d_lanes_use_doubled_offsets(self) -> None:
+        identities = [MODULE.event_identity(sequence) for sequence in (1, 13, 25, 37)]
+        lanes = [identity[0] for identity in identities]
+        leading_spaces = [identity[1] for identity in identities]
+        backgrounds = [identity[2] for identity in identities]
+        self.assertEqual(lanes, ["A", "B", "C", "D"])
+        self.assertEqual(leading_spaces, [0, 16, 32, 48])
+        self.assertEqual(len(set(backgrounds)), 1)
+
+    def test_only_marker_has_background_color(self) -> None:
+        rendered = MODULE.format_event_line("SEND table=preview", 1, enabled=True)
+        self.assertEqual(rendered.count("\033["), 2)
+        reset_end = rendered.index(MODULE.ANSI_RESET) + len(MODULE.ANSI_RESET)
+        self.assertEqual(rendered[reset_end:], " SEND table=preview")
+
+    def test_plain_logs_keep_lane_marker_and_spacing(self) -> None:
         rendered = [
-            MODULE.style_event_line(
-                "SEND table=preview",
-                sequence,
-                "background-pattern",
-                enabled=True,
-                line_width=80,
-            )
-            for sequence in (1, 13, 25, 37)
-        ]
-        self.assertEqual(len(set(rendered)), 4)
-        first_background_codes = [line.split("m", 1)[0] for line in rendered]
-        self.assertEqual(len(set(first_background_codes)), 1)
-
-    def test_indented_background_has_four_clear_offsets_per_color(self) -> None:
-        rendered = [
-            MODULE.style_event_line(
-                "SEND table=preview",
-                sequence,
-                "indented-background",
-                enabled=True,
-                line_width=80,
-            )
+            MODULE.format_event_line("SEND", sequence, enabled=False)
             for sequence in (1, 13, 25, 37)
         ]
         leading_spaces = [len(line) - len(line.lstrip(" ")) for line in rendered]
-        self.assertEqual(leading_spaces, [0, 8, 16, 24])
-        background_codes = [line.lstrip().split("m", 1)[0] for line in rendered]
-        self.assertEqual(len(set(background_codes)), 1)
+        self.assertEqual(leading_spaces, [0, 16, 32, 48])
+        self.assertEqual(
+            [line.strip().split(" ", 1)[0] for line in rendered],
+            ["[A]", "[B]", "[C]", "[D]"],
+        )
 
     def test_requests_overlap_and_each_result_is_written(self) -> None:
         schedule = [

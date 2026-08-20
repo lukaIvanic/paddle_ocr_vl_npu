@@ -13,7 +13,6 @@ import os
 from pathlib import Path
 import random
 import re
-import shutil
 import statistics
 import sys
 import time
@@ -33,41 +32,11 @@ LATEX_MARKUP = re.compile(
     r"\\(?:frac|pm|times|mathrm|mathbf|mathit|text|sqrt|sum|alpha|beta|gamma)\b|"
     r"[\^_]\{)"
 )
-EVENT_STYLE_CHOICES = (
-    "foreground",
-    "badge",
-    "pattern",
-    "background",
-    "background-pattern",
-    "indented-background",
-)
 EVENT_SLOT_COUNT = 48
-ANSI_256_COLORS = (
-    196, 46, 226, 21, 201, 51, 208, 93, 118, 213, 39, 214,
-    82, 207, 220, 45, 160, 76, 190, 27, 165, 50, 202, 99,
-    112, 219, 33, 172, 84, 205, 228, 69, 129, 48, 198, 154,
-    215, 81, 177, 122, 203, 117, 141, 87, 183, 75, 192, 159,
-)
-PATTERN_COLORS = (196, 46, 226, 21, 201, 51, 208, 93, 118, 213, 39, 214)
-PATTERNS = ("●●", "◆◆", "▲▲", "■■")
-BADGE_DARK_BACKGROUNDS = {21, 27, 33, 69, 75, 87, 93, 99, 129, 141}
-BACKGROUND_PATTERN_FAMILIES = (
-    (196, 203, 16),
-    (46, 82, 16),
-    (226, 220, 16),
-    (21, 27, 15),
-    (201, 207, 16),
-    (51, 45, 16),
-    (208, 214, 16),
-    (93, 99, 15),
-    (118, 154, 16),
-    (213, 219, 16),
-    (39, 81, 16),
-    (172, 215, 16),
-)
-BACKGROUND_PATTERN_LABELS = ("SOLID", "WIDE", "THIN", "PULSE")
-INDENTED_BACKGROUND_COLORS = PATTERN_COLORS
-INDENTED_BACKGROUND_SPACES = (0, 8, 16, 24)
+EVENT_LANES = ("A", "B", "C", "D")
+EVENT_LANE_SPACES = (0, 16, 32, 48)
+EVENT_MARKER_COLORS = (196, 46, 226, 21, 201, 51, 208, 93, 118, 213, 39, 214)
+DARK_MARKER_BACKGROUNDS = {21, 93}
 ANSI_RESET = "\033[0m"
 
 
@@ -101,17 +70,6 @@ def parse_args() -> argparse.Namespace:
         help="Asynchronous sleep used as the simulated OCR service time.",
     )
     parser.add_argument("--seed", type=int, default=1)
-    parser.add_argument(
-        "--event-style",
-        choices=EVENT_STYLE_CHOICES,
-        default="indented-background",
-        help="Terminal identifier style for matching SEND and RECV lines.",
-    )
-    parser.add_argument(
-        "--preview-event-styles",
-        action="store_true",
-        help="Print the full-line terminal identifier designs and exit.",
-    )
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -271,180 +229,31 @@ def event_slot(sequence: int) -> int:
     return (sequence - 1) % EVENT_SLOT_COUNT
 
 
-def event_tag(sequence: int, style: str, enabled: bool) -> str:
+def event_identity(sequence: int) -> tuple[str, int, int, int]:
     slot = event_slot(sequence)
-    label = f"{slot + 1:02d}"
+    color_count = len(EVENT_MARKER_COLORS)
+    lane_index = slot // color_count
+    color_index = slot % color_count
+    lane = EVENT_LANES[lane_index]
+    spaces = EVENT_LANE_SPACES[lane_index]
+    background = EVENT_MARKER_COLORS[color_index]
+    foreground = 15 if background in DARK_MARKER_BACKGROUNDS else 16
+    return lane, spaces, background, foreground
+
+
+def event_marker(sequence: int, enabled: bool) -> str:
+    lane, spaces, background, foreground = event_identity(sequence)
+    margin = " " * spaces
     if not enabled:
-        return f"[{label}]"
-    if style == "foreground":
-        color = ANSI_256_COLORS[slot]
-        return f"\033[38;5;{color}m[{label}]{ANSI_RESET}"
-    if style == "badge":
-        background = ANSI_256_COLORS[slot]
-        foreground = 15 if background in BADGE_DARK_BACKGROUNDS else 16
-        return (
-            f"\033[48;5;{background};38;5;{foreground}m {label} {ANSI_RESET}"
-        )
-    if style == "pattern":
-        color = PATTERN_COLORS[slot % len(PATTERN_COLORS)]
-        pattern = PATTERNS[slot // len(PATTERN_COLORS)]
-        return f"\033[38;5;{color}m{pattern} {label}{ANSI_RESET}"
-    if style in {"background", "background-pattern", "indented-background"}:
-        return f"[{label}]"
-    raise ValueError(f"unsupported event style: {style}")
-
-
-def background_pattern_uses_accent(pattern_index: int, position: int) -> bool:
-    if pattern_index == 0:
-        return False
-    if pattern_index == 1:
-        return (position // 6) % 2 == 1
-    if pattern_index == 2:
-        return (position // 2) % 2 == 1
-    if pattern_index == 3:
-        return position % 8 in {1, 2, 5}
-    raise ValueError(f"unsupported background pattern: {pattern_index}")
-
-
-def render_full_background(
-    line: str,
-    sequence: int,
-    *,
-    patterned: bool,
-    line_width: int | None = None,
-) -> str:
-    slot = event_slot(sequence)
-    if patterned:
-        family_index = slot % len(BACKGROUND_PATTERN_FAMILIES)
-        pattern_index = slot // len(BACKGROUND_PATTERN_FAMILIES)
-        base, accent, foreground = BACKGROUND_PATTERN_FAMILIES[family_index]
-        label = BACKGROUND_PATTERN_LABELS[pattern_index]
-        text = f"[{slot + 1:02d} {label:5s}] {line}"
-    else:
-        base = accent = ANSI_256_COLORS[slot]
-        foreground = 15 if base in BADGE_DARK_BACKGROUNDS else 16
-        pattern_index = 0
-        text = f"[{slot + 1:02d}] {line}"
-
-    if line_width is None:
-        line_width = max(1, shutil.get_terminal_size(fallback=(120, 24)).columns - 1)
-    text = text.ljust(max(len(text), line_width))
-
-    pieces: list[str] = []
-    current_background: int | None = None
-    run: list[str] = []
-    for position, character in enumerate(text):
-        background = (
-            accent
-            if patterned and background_pattern_uses_accent(pattern_index, position)
-            else base
-        )
-        if current_background is None:
-            current_background = background
-        if background != current_background:
-            pieces.append(
-                f"\033[48;5;{current_background};38;5;{foreground}m{''.join(run)}"
-            )
-            run = []
-            current_background = background
-        run.append(character)
-    if run:
-        pieces.append(
-            f"\033[48;5;{current_background};38;5;{foreground}m{''.join(run)}"
-        )
-    return "".join(pieces) + ANSI_RESET
-
-
-def render_indented_background(
-    line: str,
-    sequence: int,
-    *,
-    line_width: int | None = None,
-) -> str:
-    slot = event_slot(sequence)
-    color_index = slot % len(INDENTED_BACKGROUND_COLORS)
-    indent_index = slot // len(INDENTED_BACKGROUND_COLORS)
-    background = INDENTED_BACKGROUND_COLORS[color_index]
-    foreground = 15 if background in BADGE_DARK_BACKGROUNDS else 16
-    leading_spaces = INDENTED_BACKGROUND_SPACES[indent_index]
-    margin = " " * leading_spaces
-    text = f"[{slot + 1:02d}] {line}"
-    if line_width is None:
-        line_width = max(1, shutil.get_terminal_size(fallback=(120, 24)).columns - 1)
-    colored_width = max(len(text), line_width - leading_spaces)
+        return f"{margin}[{lane}]"
     return (
         f"{margin}\033[48;5;{background};38;5;{foreground}m"
-        f"{text.ljust(colored_width)}{ANSI_RESET}"
+        f" {lane} {ANSI_RESET}"
     )
 
 
-def style_event_line(
-    line: str,
-    sequence: int,
-    style: str,
-    enabled: bool,
-    *,
-    line_width: int | None = None,
-) -> str:
-    tag = event_tag(sequence, style, enabled)
-    if not enabled:
-        return f"{tag} {line}"
-    if style == "background":
-        return render_full_background(
-            line,
-            sequence,
-            patterned=False,
-            line_width=line_width,
-        )
-    if style == "background-pattern":
-        return render_full_background(
-            line,
-            sequence,
-            patterned=True,
-            line_width=line_width,
-        )
-    if style == "indented-background":
-        return render_indented_background(
-            line,
-            sequence,
-            line_width=line_width,
-        )
-    if style == "foreground":
-        color = ANSI_256_COLORS[event_slot(sequence)]
-        return f"\033[38;5;{color}m[{event_slot(sequence) + 1:02d}] {line}{ANSI_RESET}"
-    return f"{tag} {line}"
-
-
-def preview_event_styles() -> None:
-    for style in ("indented-background",):
-        print(f"\n{style}")
-        preview_sequences = (
-            (1, 13, 25, 37),
-            (2, 14, 26, 38),
-            (3, 15, 27, 39),
-        )
-        for family_sequences in preview_sequences:
-            for sequence in family_sequences:
-                print(
-                    style_event_line(
-                        f"SEND #{sequence:05d} table=preview_table_{sequence:02d} active=12",
-                        sequence,
-                        style,
-                        enabled=True,
-                        line_width=96,
-                    )
-                )
-        print("paired completions")
-        for sequence in (37, 25, 13, 1):
-            print(
-                style_event_line(
-                    f"RECV #{sequence:05d} table=preview_table_{sequence:02d} active=11",
-                    sequence,
-                    style,
-                    enabled=True,
-                    line_width=96,
-                )
-            )
+def format_event_line(line: str, sequence: int, enabled: bool) -> str:
+    return f"{event_marker(sequence, enabled)} {line}"
 
 
 async def run_schedule(
@@ -454,7 +263,6 @@ async def run_schedule(
     *,
     print_events: bool = True,
     color_events: bool | None = None,
-    event_style: str = "indented-background",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if ocr_time_s < 0:
         raise ValueError("ocr-time-s must not be negative")
@@ -484,7 +292,7 @@ async def run_schedule(
                 f"active={active}"
             )
             print(
-                style_event_line(line, item.sequence, event_style, color_events),
+                format_event_line(line, item.sequence, color_events),
                 flush=True,
             )
 
@@ -529,7 +337,7 @@ async def run_schedule(
                 f"table={request_id} latency={latency_s:6.3f}s active={active}"
             )
             print(
-                style_event_line(line, item.sequence, event_style, color_events),
+                format_event_line(line, item.sequence, color_events),
                 flush=True,
             )
 
@@ -603,9 +411,6 @@ def validate_args(args: argparse.Namespace) -> None:
 
 def main() -> None:
     args = parse_args()
-    if args.preview_event_styles:
-        preview_event_styles()
-        return
     validate_args(args)
     output_dir = args.output_dir or default_output_dir()
     output_dir.mkdir(parents=True, exist_ok=False)
@@ -641,12 +446,7 @@ def main() -> None:
     wall_start = time.perf_counter()
     with results_path.open("w", encoding="utf-8") as result_handle:
         results, run_stats = asyncio.run(
-            run_schedule(
-                schedule,
-                args.ocr_time_s,
-                result_handle,
-                event_style=args.event_style,
-            )
+            run_schedule(schedule, args.ocr_time_s, result_handle)
         )
     process_wall_s = time.perf_counter() - wall_start
     run_stats["process_wall_s"] = process_wall_s
