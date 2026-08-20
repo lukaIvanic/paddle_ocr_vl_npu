@@ -257,21 +257,14 @@ def profile_rows(
     profile_root: Path,
     device: torch.device,
     metric: str,
+    first_position: int,
+    shared_topk: torch.Tensor,
     ordinary_warmup_steps: int,
     active_steps: int,
 ) -> dict[str, object]:
     import torch_npu.profiler as npu_prof
 
     profile_root.mkdir(parents=True, exist_ok=False)
-    total_steps = ordinary_warmup_steps + 1 + active_steps
-    first_position = stack.cache_length - total_steps
-    fill_prefilled_caches(
-        stack,
-        caches,
-        device=device,
-        prefix_length=first_position,
-        seed=52119,
-    )
     warmup_hidden = make_hidden_rows(
         steps=ordinary_warmup_steps,
         hidden_size=stack.config.hidden_size,
@@ -288,7 +281,7 @@ def profile_rows(
         warmup_hidden,
         warmup_positions,
         caches,
-        stack.initial_topk(device=device),
+        shared_topk,
         device=device,
     )
     profile_hidden = make_hidden_rows(
@@ -377,13 +370,19 @@ def main() -> None:
         args.profile_active_steps,
     ) < 1:
         raise ValueError("all step and repeat counts must be positive")
-    if max(
-        args.validation_steps,
-        args.warmup_steps,
-        args.decode_steps,
-        args.profile_warmup_steps + 1 + args.profile_active_steps,
-    ) > args.cache_length:
-        raise ValueError("requested steps exceed the static cache")
+    profile_steps = (
+        args.profile_warmup_steps + 1 + args.profile_active_steps
+        if args.profile_dir is not None
+        else 0
+    )
+    continuation_steps = (
+        args.validation_steps
+        + args.warmup_steps
+        + args.measurement_repeats * args.decode_steps
+        + profile_steps
+    )
+    if continuation_steps > args.cache_length:
+        raise ValueError("continuous validation and measurement exceed the cache")
 
     torch.npu.config.allow_internal_format = True
     torch.npu.set_compile_mode(jit_compile=False)
@@ -429,13 +428,13 @@ def main() -> None:
         device=device,
         seed=52100,
     )
+    validation_first_position = args.cache_length - continuation_steps
     validation_positions = make_position_rows(
-        first_position=args.cache_length - args.validation_steps,
+        first_position=validation_first_position,
         steps=args.validation_steps,
         device=device,
     )
     with torch.inference_mode():
-        validation_first_position = args.cache_length - args.validation_steps
         eager_caches = make_prefilled_caches(
             stack,
             device=device,
@@ -514,14 +513,7 @@ def main() -> None:
                 + json.dumps(parity, sort_keys=True)
             )
 
-        warmup_first_position = args.cache_length - args.warmup_steps
-        warmup_caches = fill_prefilled_caches(
-            stack,
-            compiled_caches,
-            device=device,
-            prefix_length=warmup_first_position,
-            seed=52101,
-        )
+        warmup_first_position = validation_first_position + args.validation_steps
         warmup_hidden = make_hidden_rows(
             steps=args.warmup_steps,
             hidden_size=stack.config.hidden_size,
@@ -533,12 +525,12 @@ def main() -> None:
             steps=args.warmup_steps,
             device=device,
         )
-        _, _, warmup_sec = timed_rows(
+        _warmup_output, continuation_topk, warmup_sec = timed_rows(
             compiled,
             warmup_hidden,
             warmup_positions,
-            warmup_caches,
-            stack.initial_topk(device=device),
+            compiled_caches,
+            compiled_topk,
             device=device,
         )
         stats_after_warmup = dynamo_stats()
@@ -546,13 +538,10 @@ def main() -> None:
         repeat_elapsed_sec = []
         final_output = None
         for repeat in range(args.measurement_repeats):
-            measured_first_position = args.cache_length - args.decode_steps
-            measured_caches = fill_prefilled_caches(
-                stack,
-                compiled_caches,
-                device=device,
-                prefix_length=measured_first_position,
-                seed=52130 + repeat,
+            measured_first_position = (
+                warmup_first_position
+                + args.warmup_steps
+                + repeat * args.decode_steps
             )
             measured_hidden = make_hidden_rows(
                 steps=args.decode_steps,
@@ -569,10 +558,11 @@ def main() -> None:
                 compiled,
                 measured_hidden,
                 measured_positions,
-                measured_caches,
-                stack.initial_topk(device=device),
+                compiled_caches,
+                continuation_topk,
                 device=device,
             )
+            continuation_topk = _final_topk
             repeat_elapsed_sec.append(elapsed_sec)
         stats_after_measurement = dynamo_stats()
         if (
@@ -613,7 +603,8 @@ def main() -> None:
         "load_sec": load_sec,
         "memory_after_weights": memory_after_weights,
         "validation_steps": args.validation_steps,
-        "validation_first_position": args.cache_length - args.validation_steps,
+        "validation_first_position": validation_first_position,
+        "continuous_last_position": args.cache_length - 1,
         "parity": parity,
         "warmup_steps": args.warmup_steps,
         "warmup_elapsed_sec_excluded": warmup_sec,
@@ -646,6 +637,13 @@ def main() -> None:
                 profile_root=args.profile_dir,
                 device=device,
                 metric=args.profile_metric,
+                first_position=(
+                    validation_first_position
+                    + args.validation_steps
+                    + args.warmup_steps
+                    + args.measurement_repeats * args.decode_steps
+                ),
+                shared_topk=continuation_topk,
                 ordinary_warmup_steps=args.profile_warmup_steps,
                 active_steps=args.profile_active_steps,
             )
