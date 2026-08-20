@@ -75,6 +75,66 @@ matmuls 11.5%, routing initialization 4.7%, and dynamic quantization 4.0% of
 recorded kernel time. Full evidence is in
 `references/moe_layers3_5_tp1_scale_bitcast_nz_910b2_af0bbba.json`.
 
+## Verified integrated optimized TP1 decoder variants
+
+Commit `c201ed7` joins the current absorbed MLA, contiguous BSND
+SparseFlashAttention, block-layout InterleaveRope, LightningIndexer, FRACTAL_NZ
+W8A8 linears, and optimized W4A8 MoE path in one TP1 stack. The representative
+range is layers 2-6. It contains every normal decoder variant in GLM-5.2:
+
+- layer 2: dense MLP with a full DSA indexer;
+- layers 3-5: MoE layers that reuse layer 2's top-k selection;
+- layer 6: MoE layer with a refreshed full DSA indexer.
+
+The Ascend 910B2 run used B1, a deterministic varied BF16 KV prefix, one
+continuous sequence ending at position 4095, 20 ordinary warmup calls, three
+200-call timing windows, and five contiguous profiled calls. Validation,
+warmup, timing, and profiling all used the same inference-mode input contract
+and the same static cache allocation.
+
+| Integrated TP1 layers 2-6 | Result |
+| --- | ---: |
+| Timing windows | 2.7232, 2.7369, 2.7189 ms |
+| Median five-layer time | **2.7232 ms** |
+| Stack calls/s | **367.22** |
+| Effective layer calls/s | **1,836.10** |
+| Allocated HBM after weights | 19.35 GiB |
+
+Compiled output matched eager at `atol=rtol=5e-2`; max/mean error was
+0.003906/0.0000281. Latent, RoPE, and index-cache maxima were
+0.046875/0.005859/0.015625. At the 2048-of-4096 index cutoff, eager and compiled
+selected 2,037 common positions, or 99.46%. Eleven near-boundary positions
+swapped, so the selection is not bit-exact even though the final layer output
+passes the established tolerance.
+
+TorchAir captured one graph. The graph count remained one after validation,
+warmup, all measured calls, and profiling. The earlier two-graph diagnostic was
+caused by creating validation inputs outside `torch.inference_mode()`, which
+added `ADInplaceOrView` to their dispatch keys. Moving all real decode inputs
+under the same inference-mode contract removed the recompile. Cache compilation
+wrote one 2.7 MiB OM/module cache entry.
+
+The PipeUtilization profile accounted for 2.6991 ms of kernels per stack,
+within 0.9% of the clean wall time. The largest buckets were:
+
+| Kernel family | Time per stack | Share |
+| --- | ---: | ---: |
+| All W8A8 `QuantBatchMatmulV3` | 0.9313 ms | 34.5% |
+| Routed-expert `GroupedMatmul` | 0.7148 ms | 26.5% |
+| SparseFlashAttention | 0.3550 ms | 13.2% |
+| Absorbed-attention batch matmuls | 0.1326 ms | 4.9% |
+
+The W8A8 bucket contains 0.5957 ms of main-attention projections, 0.1604 ms
+of shared experts, 0.1518 ms of the one dense MLP, and 0.0233 ms of indexer
+WQ-B projections. Perfectly overlapping all four shared experts with routed
+expert work can save at most 0.1604 ms, or 5.9% of this stack. A full-index
+layer costs about 60-65 us more than a shared-index layer at this KV length.
+The indexer is therefore not the main remaining TP1 bottleneck.
+
+The exact command, parity fields, graph counts, profile totals, and remote
+artifact paths are in
+`references/optimized_tp1_layers2_6_910b2_c201ed7.json`.
+
 ## Verified layers 0-6 stack
 
 The owned seven-layer stack covers the decoder-layer variants present at the

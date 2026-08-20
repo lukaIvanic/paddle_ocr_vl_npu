@@ -1,0 +1,136 @@
+{
+  "experiment": "Integrated optimized GLM-5.2 TP1 decoder variants",
+  "source_commit": "c201ed7",
+  "chip": "Ascend 910B2",
+  "physical_npu": 7,
+  "command": "/usr/local/python3.12.13/bin/python3 16_glm52_w4a8c8_layer_lab/benchmark_optimized_tp1_stack.py --model-dir /workspace/models/GLM-5.2-w4a8c8 --first-layer 2 --last-layer 6 --cache-length 4096 --validation-steps 8 --warmup-steps 20 --decode-steps 200 --measurement-repeats 3 --compile-cache-dir .runtime_cache/16_glm52_w4a8c8_layer_lab --profile-dir /tmp/glm52_tp1_l2_6_profile_c201ed7 --profile-metric pipe --profile-warmup-steps 20 --profile-active-steps 5 --summary-out /tmp/glm52_tp1_l2_6_c201ed7.json",
+  "shape": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "continuous_positions": [3442, 4095],
+    "layers": [2, 3, 4, 5, 6]
+  },
+  "layer_variants": {
+    "dense_full_index": [2],
+    "moe_shared_index": [3, 4, 5],
+    "moe_full_index": [6]
+  },
+  "runtime": {
+    "attention": "absorbed_contiguous_bsnd_sparse_flash",
+    "indexer": "contiguous_bsnd_lightning_indexer_with_four_layer_reuse",
+    "moe": "w4a8_grouped_matmul_bitcast_scale_fractal_nz",
+    "w8_weights": "fractal_nz",
+    "backend": "torchair_fullgraph_static_cache_compile",
+    "ordinary_warmup_steps_excluded": 20,
+    "measurement_repeats": 3,
+    "decode_steps_per_repeat": 200,
+    "profile_active_steps": 5
+  },
+  "timing": {
+    "repeat_mean_stack_ms": [
+      2.723156535066664,
+      2.7368748164735734,
+      2.7189096086658537
+    ],
+    "median_mean_stack_ms": 2.723156535066664,
+    "stack_calls_per_sec": 367.2209023325644,
+    "effective_layer_calls_per_sec": 1836.104511662822
+  },
+  "correctness": {
+    "output_max_abs": 0.00390625,
+    "output_mean_abs": 0.0000280868262052536,
+    "output_allclose_atol_5e_2_rtol_5e_2": true,
+    "latent_cache_max_abs": 0.046875,
+    "rope_cache_max_abs": 0.005859375,
+    "index_cache_max_abs": 0.015625,
+    "shared_topk_count": 2048,
+    "shared_topk_ordered_match_count": 85,
+    "shared_topk_set_overlap_count": 2037,
+    "shared_topk_set_overlap_ratio": 0.99462890625
+  },
+  "graph": {
+    "unique_graphs_after_validation": 1,
+    "unique_graphs_after_warmup": 1,
+    "unique_graphs_after_measurement": 1,
+    "unique_graphs_after_profile": 1,
+    "calls_captured": 679,
+    "disk_cache_written": true,
+    "disk_cache_size_mib": 2.7
+  },
+  "memory_after_weights": {
+    "allocated_gib": 19.34691047668457,
+    "reserved_gib": 22.98046875,
+    "free_gib": 37.613006591796875,
+    "total_gib": 60.95703125
+  },
+  "profile": {
+    "total_kernel_us_for_five_calls": 13495.36,
+    "kernel_us_per_stack": 2699.072,
+    "clean_wall_minus_profiled_kernels_us_per_stack": 24.0845350666641,
+    "clean_wall_minus_profiled_kernels_percent": 0.8923265132113594,
+    "top_kernel_types": {
+      "QuantBatchMatmulV3": {
+        "us_per_stack": 931.324,
+        "percent": 34.50534109501346
+      },
+      "GroupedMatmul": {
+        "us_per_stack": 714.752,
+        "percent": 26.48139805088568
+      },
+      "SparseFlashAttention": {
+        "us_per_stack": 355.028,
+        "percent": 13.15370616271076
+      },
+      "BatchMatMul": {
+        "us_per_stack": 132.556,
+        "percent": 4.91116946861737
+      },
+      "DynamicQuant": {
+        "us_per_stack": 78.716,
+        "percent": 2.91640978825315
+      },
+      "InterleaveRope": {
+        "us_per_stack": 69.8,
+        "percent": 2.58607402840681
+      },
+      "LightningIndexer": {
+        "us_per_stack": 47.644,
+        "percent": 1.76519929812914
+      }
+    },
+    "w8_matmul_breakdown": {
+      "main_attention_us_per_stack": 595.744,
+      "main_attention_percent": 22.07217888222322,
+      "shared_experts_us_per_stack": 160.428,
+      "shared_experts_percent": 5.94382069096341,
+      "dense_mlp_us_per_stack": 151.824,
+      "dense_mlp_percent": 5.62504445972542,
+      "indexer_wq_us_per_stack": 23.328,
+      "indexer_wq_percent": 0.864297062101344
+    },
+    "full_indexer_increment": {
+      "identifiable_lower_bound_us_per_full_index_layer": 47.976,
+      "estimated_total_us_per_full_index_layer": [60.0, 65.0],
+      "note": "The lower bound is LightningIndexer plus WQ-B and the two BF16 index projections. The estimate also assigns the indexer RoPE, norm, cache write and small tensor operations."
+    },
+    "shared_expert_overlap_upper_bound": {
+      "us_per_stack": 160.428,
+      "percent": 5.94382069096341,
+      "note": "This is the maximum removable time if all four shared experts overlap perfectly with routed expert work."
+    },
+    "expected_operator_counts_matched": {
+      "sparse_flash_attention_per_step": 5,
+      "lightning_indexer_per_step": 2,
+      "moe_init_routing_per_step": 4,
+      "grouped_matmul_per_step": 8
+    },
+    "transdata_calls": 0
+  },
+  "remote_artifacts": {
+    "summary": "/tmp/glm52_tp1_l2_6_c201ed7.json",
+    "log": "/tmp/glm52_tp1_l2_6_c201ed7.log",
+    "profile_root": "/tmp/glm52_tp1_l2_6_profile_c201ed7",
+    "parsed_profile_json": "/tmp/glm52_tp1_l2_6_profile_c201ed7_parsed.json",
+    "parsed_profile_markdown": "/tmp/glm52_tp1_l2_6_profile_c201ed7_parsed.md"
+  }
+}
