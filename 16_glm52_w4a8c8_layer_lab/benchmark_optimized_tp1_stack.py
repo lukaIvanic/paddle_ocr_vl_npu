@@ -422,19 +422,19 @@ def main() -> None:
         flush=True,
     )
 
-    validation_hidden = make_hidden_rows(
-        steps=args.validation_steps,
-        hidden_size=stack.config.hidden_size,
-        device=device,
-        seed=52100,
-    )
     validation_first_position = args.cache_length - continuation_steps
-    validation_positions = make_position_rows(
-        first_position=validation_first_position,
-        steps=args.validation_steps,
-        device=device,
-    )
     with torch.inference_mode():
+        validation_hidden = make_hidden_rows(
+            steps=args.validation_steps,
+            hidden_size=stack.config.hidden_size,
+            device=device,
+            seed=52100,
+        )
+        validation_positions = make_position_rows(
+            first_position=validation_first_position,
+            steps=args.validation_steps,
+            device=device,
+        )
         eager_caches = make_prefilled_caches(
             stack,
             device=device,
