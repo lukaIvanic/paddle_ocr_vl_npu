@@ -9,12 +9,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 import math
-import os
 from pathlib import Path
 import random
 import re
 import statistics
-import sys
 import time
 from typing import Any, Iterable, TextIO
 
@@ -32,14 +30,6 @@ LATEX_MARKUP = re.compile(
     r"\\(?:frac|pm|times|mathrm|mathbf|mathit|text|sqrt|sum|alpha|beta|gamma)\b|"
     r"[\^_]\{)"
 )
-EVENT_SLOT_COUNT = 48
-EVENT_LANES = ("A", "B", "C", "D")
-EVENT_LANE_SPACES = (0, 16, 32, 48)
-EVENT_MARKER_COLORS = (196, 46, 226, 21, 201, 51, 208, 93, 118, 213, 39, 214)
-DARK_MARKER_BACKGROUNDS = {21, 93}
-ANSI_RESET = "\033[0m"
-
-
 @dataclass(frozen=True)
 class ScheduledRequest:
     sequence: int
@@ -225,68 +215,18 @@ def format_seconds(value: float | int | None) -> str:
     return "n/a" if value is None else f"{float(value):.3f}s"
 
 
-def make_event_slot_order(seed: int) -> tuple[int, ...]:
-    slots = list(range(EVENT_SLOT_COUNT))
-    random.Random(seed + 1_000_003).shuffle(slots)
-    return tuple(slots)
-
-
-def event_identity(
-    sequence: int,
-    slot_order: tuple[int, ...],
-) -> tuple[str, int, int, int]:
-    slot = slot_order[(sequence - 1) % EVENT_SLOT_COUNT]
-    color_count = len(EVENT_MARKER_COLORS)
-    lane_index = slot // color_count
-    color_index = slot % color_count
-    lane = EVENT_LANES[lane_index]
-    spaces = EVENT_LANE_SPACES[lane_index]
-    background = EVENT_MARKER_COLORS[color_index]
-    foreground = 15 if background in DARK_MARKER_BACKGROUNDS else 16
-    return lane, spaces, background, foreground
-
-
-def event_marker(
-    sequence: int,
-    enabled: bool,
-    slot_order: tuple[int, ...],
-) -> str:
-    lane, spaces, background, foreground = event_identity(sequence, slot_order)
-    margin = " " * spaces
-    if not enabled:
-        return f"{margin}[{lane}]"
-    return (
-        f"{margin}\033[48;5;{background};38;5;{foreground}m"
-        f" {lane} {ANSI_RESET}"
-    )
-
-
-def format_event_line(
-    line: str,
-    sequence: int,
-    enabled: bool,
-    slot_order: tuple[int, ...],
-) -> str:
-    return f"{event_marker(sequence, enabled, slot_order)} {line}"
-
-
 async def run_schedule(
     schedule: list[ScheduledRequest],
     ocr_time_s: float,
     result_handle: TextIO,
     *,
     print_events: bool = True,
-    color_events: bool | None = None,
-    identity_seed: int = 1,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if ocr_time_s < 0:
         raise ValueError("ocr-time-s must not be negative")
 
     loop = asyncio.get_running_loop()
     start = loop.time()
-    if color_events is None:
-        color_events = sys.stdout.isatty() and "NO_COLOR" not in os.environ
-    slot_order = make_event_slot_order(identity_seed)
     active = 0
     max_active = 0
     results: list[dict[str, Any]] = []
@@ -307,10 +247,7 @@ async def run_schedule(
                 f"table={request_id} lag={dispatch_lag_s * 1000:6.1f}ms "
                 f"active={active}"
             )
-            print(
-                format_event_line(line, item.sequence, color_events, slot_order),
-                flush=True,
-            )
+            print(line, flush=True)
 
         await asyncio.sleep(ocr_time_s)
 
@@ -352,10 +289,7 @@ async def run_schedule(
                 f"[{completion_offset_s:8.3f}s] RECV #{item.sequence:05d} "
                 f"table={request_id} latency={latency_s:6.3f}s active={active}"
             )
-            print(
-                format_event_line(line, item.sequence, color_events, slot_order),
-                flush=True,
-            )
+            print(line, flush=True)
 
     tasks: list[asyncio.Task[None]] = []
     for item in schedule:
@@ -462,12 +396,7 @@ def main() -> None:
     wall_start = time.perf_counter()
     with results_path.open("w", encoding="utf-8") as result_handle:
         results, run_stats = asyncio.run(
-            run_schedule(
-                schedule,
-                args.ocr_time_s,
-                result_handle,
-                identity_seed=args.seed,
-            )
+            run_schedule(schedule, args.ocr_time_s, result_handle)
         )
     process_wall_s = time.perf_counter() - wall_start
     run_stats["process_wall_s"] = process_wall_s
