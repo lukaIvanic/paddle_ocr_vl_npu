@@ -219,8 +219,8 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         q_b_proj: W8A8DynamicLinear,
         kv_b_proj: BF16Linear,
         o_proj: W8A8DynamicLinear,
-        mlp: GLM52DenseTPMLP,
-        indexer: GLM52DSAIndexer,
+        mlp: nn.Module,
+        indexer: GLM52DSAIndexer | None,
         input_norm: torch.Tensor,
         post_attention_norm: torch.Tensor,
         q_a_norm: torch.Tensor,
@@ -382,6 +382,34 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         value_cache: torch.Tensor,
         index_key_cache: torch.Tensor,
     ) -> torch.Tensor:
+        if self.indexer is None:
+            raise RuntimeError(
+                "forward_decode without shared_topk requires a full DSA indexer"
+            )
+        initial_topk = torch.arange(
+            min(2048, self.cache_length),
+            device=hidden_states.device,
+            dtype=torch.int64,
+        )
+        hidden_states, _shared_topk = self.forward_decode_with_topk(
+            hidden_states,
+            cache_position,
+            key_cache,
+            value_cache,
+            index_key_cache,
+            initial_topk,
+        )
+        return hidden_states
+
+    def forward_decode_with_topk(
+        self,
+        hidden_states: torch.Tensor,
+        cache_position: torch.Tensor,
+        key_cache: torch.Tensor,
+        value_cache: torch.Tensor,
+        index_key_cache: torch.Tensor,
+        shared_topk: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         cfg = self.config
         residual = hidden_states.clone()
         x = npu_rms_norm(hidden_states, self.input_norm, cfg.rms_norm_eps)
@@ -426,14 +454,16 @@ class GLM52DenseTPDecoderLayer(nn.Module):
             1,
         )
 
-        selected = self.indexer(
-            x,
-            q_a,
-            position,
-            cos.view(1, 1, cfg.qk_rope_head_dim),
-            sin.view(1, 1, cfg.qk_rope_head_dim),
-            index_key_cache,
-        ).reshape(-1)
+        if self.indexer is not None:
+            shared_topk = self.indexer(
+                x,
+                q_a,
+                position,
+                cos.view(1, 1, cfg.qk_rope_head_dim),
+                sin.view(1, 1, cfg.qk_rope_head_dim),
+                index_key_cache,
+            )
+        selected = shared_topk.reshape(-1)
         local_attention = sparse_flash_absorbed_attention(
             query_nope,
             query_rope,
@@ -452,7 +482,7 @@ class GLM52DenseTPDecoderLayer(nn.Module):
         mlp_input = npu_rms_norm(
             hidden_states, self.post_attention_norm, cfg.rms_norm_eps
         )
-        return hidden_states + self.mlp(mlp_input)
+        return hidden_states + self.mlp(mlp_input), shared_topk
 
 
 class GLM52DenseTPStack(nn.Module):
