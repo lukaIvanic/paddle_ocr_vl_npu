@@ -38,6 +38,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--decode-steps", type=int, default=200)
     parser.add_argument("--measurement-repeats", type=int, default=3)
     parser.add_argument(
+        "--cache-parity-atol",
+        type=float,
+        default=5e-2,
+        help=(
+            "Maximum compiled-versus-eager cache absolute difference. "
+            "The established validation default remains 0.05; capacity probes "
+            "may opt into a wider tolerance explicitly."
+        ),
+    )
+    parser.add_argument(
         "--compile-cache-dir",
         type=Path,
         default=Path(".runtime_cache/16_glm52_w4a8c8_layer_lab"),
@@ -503,15 +513,17 @@ def main() -> None:
                 "compiled shared top-k overlap fell below 99%: "
                 + json.dumps(parity["shared_topk"], sort_keys=True)
             )
-        if max(
+        cache_parity_max_abs = max(
             parity["latent_max_abs"],
             parity["rope_max_abs"],
             parity["index_max_abs"],
-        ) > 5e-2:
+        )
+        if cache_parity_max_abs > args.cache_parity_atol:
             raise RuntimeError(
                 "compiled cache state failed eager parity: "
                 + json.dumps(parity, sort_keys=True)
             )
+        memory_after_validation = memory_snapshot(device)
 
         warmup_first_position = validation_first_position + args.validation_steps
         warmup_hidden = make_hidden_rows(
@@ -565,6 +577,7 @@ def main() -> None:
             continuation_topk = _final_topk
             repeat_elapsed_sec.append(elapsed_sec)
         stats_after_measurement = dynamo_stats()
+        memory_after_measurement = memory_snapshot(device)
         if (
             stats_after_measurement["unique_graphs"]
             != stats_after_warmup["unique_graphs"]
@@ -602,8 +615,11 @@ def main() -> None:
         "compile_cache_was_warm": cache_was_warm,
         "load_sec": load_sec,
         "memory_after_weights": memory_after_weights,
+        "memory_after_validation": memory_after_validation,
+        "memory_after_measurement": memory_after_measurement,
         "validation_steps": args.validation_steps,
         "validation_first_position": validation_first_position,
+        "cache_parity_atol": args.cache_parity_atol,
         "continuous_last_position": args.cache_length - 1,
         "parity": parity,
         "warmup_steps": args.warmup_steps,
