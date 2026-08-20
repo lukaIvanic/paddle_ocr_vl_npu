@@ -114,6 +114,34 @@ def make_position_rows(
     ).view(steps, 1).unbind(0)
 
 
+def make_prefilled_caches(
+    stack: GLM52OptimizedTP1Stack,
+    *,
+    device: torch.device,
+    prefix_length: int,
+    seed: int,
+):
+    if not 0 <= prefix_length < stack.cache_length:
+        raise ValueError("prefix_length must fit inside the static cache")
+    caches = stack.make_cache(device=device)
+    generator = torch.Generator(device="cpu").manual_seed(seed)
+    for group in caches:
+        for cache in group:
+            if cache.shape[1] == 1 and stack.cache_length != 1:
+                continue
+            prefix = torch.randn(
+                cache[:, :prefix_length].shape,
+                generator=generator,
+                dtype=torch.float32,
+            ).to(device=device, dtype=cache.dtype)
+            cache[:, :prefix_length].copy_(prefix)
+    return caches
+
+
+def clone_caches(caches):
+    return tuple(tuple(cache.clone() for cache in group) for group in caches)
+
+
 def run_rows(
     decode,
     hidden_rows: tuple[torch.Tensor, ...],
@@ -199,7 +227,12 @@ def profile_rows(
     profile_root.mkdir(parents=True, exist_ok=False)
     total_steps = ordinary_warmup_steps + 1 + active_steps
     first_position = stack.cache_length - total_steps
-    caches = stack.make_cache(device=device)
+    caches = make_prefilled_caches(
+        stack,
+        device=device,
+        prefix_length=first_position,
+        seed=52119,
+    )
     warmup_hidden = make_hidden_rows(
         steps=ordinary_warmup_steps,
         hidden_size=stack.config.hidden_size,
@@ -363,7 +396,14 @@ def main() -> None:
         device=device,
     )
     with torch.inference_mode():
-        eager_caches = stack.make_cache(device=device)
+        validation_first_position = args.cache_length - args.validation_steps
+        eager_caches = make_prefilled_caches(
+            stack,
+            device=device,
+            prefix_length=validation_first_position,
+            seed=52099,
+        )
+        compiled_caches = clone_caches(eager_caches)
         eager_output, eager_topk = run_rows(
             stack.forward_decode,
             validation_hidden,
@@ -390,7 +430,6 @@ def main() -> None:
             ge_cache=True,
             fullgraph=True,
         )
-        compiled_caches = stack.make_cache(device=device)
         compiled_output, compiled_topk = run_rows(
             compiled,
             validation_hidden,
@@ -433,7 +472,13 @@ def main() -> None:
                 + json.dumps(parity, sort_keys=True)
             )
 
-        warmup_caches = stack.make_cache(device=device)
+        warmup_first_position = args.cache_length - args.warmup_steps
+        warmup_caches = make_prefilled_caches(
+            stack,
+            device=device,
+            prefix_length=warmup_first_position,
+            seed=52101,
+        )
         warmup_hidden = make_hidden_rows(
             steps=args.warmup_steps,
             hidden_size=stack.config.hidden_size,
@@ -441,7 +486,7 @@ def main() -> None:
             seed=52101,
         )
         warmup_positions = make_position_rows(
-            first_position=args.cache_length - args.warmup_steps,
+            first_position=warmup_first_position,
             steps=args.warmup_steps,
             device=device,
         )
@@ -458,7 +503,13 @@ def main() -> None:
         repeat_elapsed_sec = []
         final_output = None
         for repeat in range(args.measurement_repeats):
-            measured_caches = stack.make_cache(device=device)
+            measured_first_position = args.cache_length - args.decode_steps
+            measured_caches = make_prefilled_caches(
+                stack,
+                device=device,
+                prefix_length=measured_first_position,
+                seed=52130 + repeat,
+            )
             measured_hidden = make_hidden_rows(
                 steps=args.decode_steps,
                 hidden_size=stack.config.hidden_size,
@@ -466,7 +517,7 @@ def main() -> None:
                 seed=52102 + repeat,
             )
             measured_positions = make_position_rows(
-                first_position=args.cache_length - args.decode_steps,
+                first_position=measured_first_position,
                 steps=args.decode_steps,
                 device=device,
             )
@@ -507,6 +558,7 @@ def main() -> None:
         "backend": "torchair_fullgraph_static_cache_compile",
         "batch_size": 1,
         "cache_length": args.cache_length,
+        "cache_prefix_mode": "deterministic_varied_bfloat16_prefix",
         "attention_path": "absorbed_contiguous_bsnd_sparse_flash",
         "indexer_path": "contiguous_bsnd_lightning_indexer_with_four_layer_reuse",
         "rope_path": "block_layout_npu_interleave_rope",
