@@ -22,6 +22,15 @@ import traceback
 HERE = Path(__file__).resolve().parent
 EXPERIMENT_ROOT = HERE.parent
 REPO_ROOT = EXPERIMENT_ROOT.parent
+DEFAULT_TARGETS = (
+    REPO_ROOT
+    / "tmp/09_persistent_page_engine/table_spec_full_d1e6d00/"
+    "whole/whole/tables.jsonl"
+)
+DEFAULT_COMPACT_VOCAB = (
+    EXPERIMENT_ROOT
+    / "presets/table_compact_vocab/b1_verifier_topfreq_16384.json"
+)
 sys.path.insert(0, str(HERE))
 
 from serve_crop_ocr_api import _Handler, _Server, _State  # noqa: E402
@@ -34,7 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--request-timeout-s", type=float, default=900.0)
     parser.add_argument("--max-image-bytes", type=int, default=64 * 1024 * 1024)
     parser.add_argument("--queue-capacity", type=int, default=256)
-    parser.add_argument("--targets", type=Path, required=True)
+    parser.add_argument("--targets", type=Path, default=DEFAULT_TARGETS)
     parser.add_argument(
         "--images-dir",
         type=Path,
@@ -45,7 +54,11 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("/workspace/models/PaddleOCR-VL-1.6"),
     )
-    parser.add_argument("--decode-vocab-token-ids", type=Path, required=True)
+    parser.add_argument(
+        "--decode-vocab-token-ids",
+        type=Path,
+        default=DEFAULT_COMPACT_VOCAB,
+    )
     parser.add_argument("--height-threshold-px", type=int, default=384)
     parser.add_argument("--cold-request-id", default="page_000010_table_box_id_1")
     parser.add_argument("--draft-cache-length", type=int, default=768)

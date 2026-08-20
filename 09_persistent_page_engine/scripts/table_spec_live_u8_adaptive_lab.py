@@ -21,6 +21,10 @@ import torch
 HERE = Path(__file__).resolve().parent
 EXPERIMENT_ROOT = HERE.parent
 REPO_ROOT = EXPERIMENT_ROOT.parent
+DEFAULT_COMPACT_VOCAB = (
+    EXPERIMENT_ROOT
+    / "presets/table_compact_vocab/b1_verifier_topfreq_16384.json"
+)
 sys.path.insert(0, str(EXPERIMENT_ROOT))
 sys.path.insert(0, str(HERE))
 
@@ -51,7 +55,7 @@ DEFAULT_TAIL_IDS = (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--targets", type=Path, required=True)
+    parser.add_argument("--targets", type=Path, default=fixed_lab.DEFAULT_TARGETS)
     parser.add_argument(
         "--images-dir",
         type=Path,
@@ -81,7 +85,11 @@ def parse_args() -> argparse.Namespace:
         "--b1-decode-optimization",
         default="combined_apply_complete_layer_prefetch1_rope_lut",
     )
-    parser.add_argument("--b1-decode-vocab-token-ids", type=Path, required=True)
+    parser.add_argument(
+        "--b1-decode-vocab-token-ids",
+        type=Path,
+        default=DEFAULT_COMPACT_VOCAB,
+    )
     parser.add_argument("--b1-cache-length", type=int, default=4096)
     parser.add_argument("--b1-max-new-tokens", type=int, default=4096)
     parser.add_argument("--b1-vision-buckets", default="4096")
@@ -90,7 +98,11 @@ def parse_args() -> argparse.Namespace:
         "--draft-decode-optimization",
         default="combined_apply_complete_layer_prefetch1_rope_lut",
     )
-    parser.add_argument("--draft-decode-vocab-token-ids", type=Path, required=True)
+    parser.add_argument(
+        "--draft-decode-vocab-token-ids",
+        type=Path,
+        default=DEFAULT_COMPACT_VOCAB,
+    )
     parser.add_argument("--draft-cache-length", type=int, default=768)
     parser.add_argument(
         "--draft-row-count",
@@ -135,11 +147,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--overlap-target-cpu-preparation",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=False,
         help=(
             "Overlap full-table CPU preprocessing with draft recognition. "
-            "Disable to finish full-table preprocessing before draft-row "
-            "preprocessing starts."
+            "The validated concurrency-one default finishes full-table "
+            "preprocessing before draft-row preprocessing starts."
         ),
     )
 
