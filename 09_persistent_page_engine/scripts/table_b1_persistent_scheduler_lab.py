@@ -7,6 +7,7 @@ import argparse
 from dataclasses import asdict
 import json
 from pathlib import Path
+import threading
 from types import SimpleNamespace
 from typing import Any
 import sys
@@ -49,6 +50,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--sample-count", type=int, default=32)
     parser.add_argument("--request-id", action="append", default=[])
+    parser.add_argument(
+        "--arrival-mode",
+        choices=("sequential", "queued"),
+        default="sequential",
+        help=(
+            "Submit the next request after the prior response, or make the "
+            "whole sample available immediately."
+        ),
+    )
     parser.add_argument(
         "--compare-one-shot",
         action=argparse.BooleanOptionalAction,
@@ -168,6 +178,38 @@ class _ImmediateSource:
             return None
 
 
+class _SequentialSource:
+    def __init__(self) -> None:
+        self._condition = threading.Condition()
+        self._pending: list[Any] = []
+        self._closed = False
+
+    @property
+    def closed(self) -> bool:
+        with self._condition:
+            return self._closed
+
+    def submit(self, request: Any) -> None:
+        with self._condition:
+            if self._closed:
+                raise RuntimeError("cannot submit to a closed source")
+            self._pending.append(request)
+            self._condition.notify()
+
+    def close(self) -> None:
+        with self._condition:
+            self._closed = True
+            self._condition.notify_all()
+
+    def pull(self, *, block: bool) -> Any | None:
+        with self._condition:
+            while block and not self._pending and not self._closed:
+                self._condition.wait()
+            if self._pending:
+                return self._pending.pop(0)
+            return None
+
+
 def _recognition_record(recognition: Any, completed_at: float) -> dict[str, Any]:
     return {
         "request_id": str(recognition.request_id),
@@ -200,6 +242,8 @@ def main() -> None:
         raise ValueError("batch-size must be positive")
     if args.compare_one_shot and args.batch_size != 1:
         raise ValueError("--compare-one-shot requires --batch-size 1")
+    if args.arrival_mode == "sequential" and args.batch_size != 1:
+        raise ValueError("sequential arrival validation requires --batch-size 1")
 
     import torch
     import torch_npu  # noqa: F401
@@ -253,6 +297,8 @@ def main() -> None:
         crop = fixed_lab.exact_target_crop(record, args.images_dir)
         return fixed_lab.request_for(record, crop, recognizer_args)
 
+    selected_requests = [make_request(record) for record in selected]
+
     warm_requests = [make_request(warm_record) for _ in range(args.batch_size)]
     for index, request in enumerate(warm_requests):
         request_id = f"warm-{index}-{request.request_id}"
@@ -282,11 +328,14 @@ def main() -> None:
     if args.compare_one_shot:
         one_shot_records: list[dict[str, Any]] = []
         phase_started = time.perf_counter()
-        for index, record in enumerate(selected, start=1):
+        for index, (record, request) in enumerate(
+            zip(selected, selected_requests),
+            start=1,
+        ):
             emitted: list[Any] = []
             call_started = time.perf_counter()
             recognizer.run(
-                [make_request(record)],
+                [request],
                 schedule_id=f"one-shot:{record['request_id']}",
                 emit_result=emitted.append,
             )
@@ -320,31 +369,73 @@ def main() -> None:
     external_reference = _reference_tokens(args.reference_json)
     reference = one_shot_by_id or external_reference
     persistent_records: list[dict[str, Any]] = []
+    submitted_at: dict[str, float] = {}
     phase_started = time.perf_counter()
 
     def emit_persistent(recognition: Any) -> None:
         completed = time.perf_counter() - phase_started
         item = _recognition_record(recognition, completed)
+        item["service_wall_s"] = (
+            time.perf_counter() - submitted_at[item["request_id"]]
+        )
         persistent_records.append(item)
         print(
             f"PERSISTENT {len(persistent_records)}/{len(selected)} "
-            f"id={item['request_id']} request={item['request_total_s']:.4f}s "
+            f"id={item['request_id']} service={item['service_wall_s']:.4f}s "
             f"queued={completed:.4f}s tokens={item['output_tokens']}",
             flush=True,
         )
 
     errors: list[dict[str, str]] = []
-    schedule = recognizer.serve(
-        _ImmediateSource([make_request(record) for record in selected]),
-        schedule_id=f"persistent:b{args.batch_size}",
-        emit_result=emit_persistent,
-        on_request_error=lambda request_id, exc: errors.append(
+    producer: threading.Thread | None = None
+    if args.arrival_mode == "queued":
+        for request in selected_requests:
+            submitted_at[str(request.request_id)] = phase_started
+        request_source: Any = _ImmediateSource(selected_requests)
+    else:
+        request_source = _SequentialSource()
+        completions = {
+            str(request.request_id): threading.Event()
+            for request in selected_requests
+        }
+
+        def produce_sequentially() -> None:
+            for request in selected_requests:
+                request_id = str(request.request_id)
+                submitted_at[request_id] = time.perf_counter()
+                request_source.submit(request)
+                completions[request_id].wait()
+            request_source.close()
+
+        producer = threading.Thread(
+            target=produce_sequentially,
+            name="table-b1-sequential-source",
+        )
+        producer.start()
+
+    def emit_persistent_and_release(recognition: Any) -> None:
+        emit_persistent(recognition)
+        if args.arrival_mode == "sequential":
+            completions[str(recognition.request_id)].set()
+
+    def emit_error(request_id: str, exc: BaseException) -> None:
+        errors.append(
             {
                 "request_id": str(request_id),
                 "error": f"{type(exc).__name__}: {exc}",
             }
-        ),
+        )
+        if args.arrival_mode == "sequential":
+            completions[str(request_id)].set()
+
+    schedule = recognizer.serve(
+        request_source,
+        schedule_id=f"persistent:b{args.batch_size}",
+        emit_result=emit_persistent_and_release,
+        on_request_error=emit_error,
     )
+    if producer is not None:
+        producer.join()
     persistent_wall_s = time.perf_counter() - phase_started
     if errors:
         raise RuntimeError(f"persistent source errors: {errors}")
@@ -370,6 +461,7 @@ def main() -> None:
         "format": "table_b1_persistent_scheduler_lab_v1",
         "configuration": configuration,
         "batch_size": args.batch_size,
+        "arrival_mode": args.arrival_mode,
         "selected_request_ids": selected_ids,
         "warm_request_id": str(warm_record["request_id"]),
         "one_shot": one_shot_payload,
@@ -378,6 +470,9 @@ def main() -> None:
             "tables_per_s": len(persistent_records) / persistent_wall_s,
             "request_total_s": _distribution(
                 [record["request_total_s"] for record in persistent_records]
+            ),
+            "service_wall_s": _distribution(
+                [record["service_wall_s"] for record in persistent_records]
             ),
             "queued_completion_s": _distribution(
                 [record["completed_at_s"] for record in persistent_records]
