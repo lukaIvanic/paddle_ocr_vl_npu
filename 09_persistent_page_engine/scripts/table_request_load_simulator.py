@@ -225,12 +225,17 @@ def format_seconds(value: float | int | None) -> str:
     return "n/a" if value is None else f"{float(value):.3f}s"
 
 
-def event_slot(sequence: int) -> int:
-    return (sequence - 1) % EVENT_SLOT_COUNT
+def make_event_slot_order(seed: int) -> tuple[int, ...]:
+    slots = list(range(EVENT_SLOT_COUNT))
+    random.Random(seed + 1_000_003).shuffle(slots)
+    return tuple(slots)
 
 
-def event_identity(sequence: int) -> tuple[str, int, int, int]:
-    slot = event_slot(sequence)
+def event_identity(
+    sequence: int,
+    slot_order: tuple[int, ...],
+) -> tuple[str, int, int, int]:
+    slot = slot_order[(sequence - 1) % EVENT_SLOT_COUNT]
     color_count = len(EVENT_MARKER_COLORS)
     lane_index = slot // color_count
     color_index = slot % color_count
@@ -241,8 +246,12 @@ def event_identity(sequence: int) -> tuple[str, int, int, int]:
     return lane, spaces, background, foreground
 
 
-def event_marker(sequence: int, enabled: bool) -> str:
-    lane, spaces, background, foreground = event_identity(sequence)
+def event_marker(
+    sequence: int,
+    enabled: bool,
+    slot_order: tuple[int, ...],
+) -> str:
+    lane, spaces, background, foreground = event_identity(sequence, slot_order)
     margin = " " * spaces
     if not enabled:
         return f"{margin}[{lane}]"
@@ -252,8 +261,13 @@ def event_marker(sequence: int, enabled: bool) -> str:
     )
 
 
-def format_event_line(line: str, sequence: int, enabled: bool) -> str:
-    return f"{event_marker(sequence, enabled)} {line}"
+def format_event_line(
+    line: str,
+    sequence: int,
+    enabled: bool,
+    slot_order: tuple[int, ...],
+) -> str:
+    return f"{event_marker(sequence, enabled, slot_order)} {line}"
 
 
 async def run_schedule(
@@ -263,6 +277,7 @@ async def run_schedule(
     *,
     print_events: bool = True,
     color_events: bool | None = None,
+    identity_seed: int = 1,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if ocr_time_s < 0:
         raise ValueError("ocr-time-s must not be negative")
@@ -271,6 +286,7 @@ async def run_schedule(
     start = loop.time()
     if color_events is None:
         color_events = sys.stdout.isatty() and "NO_COLOR" not in os.environ
+    slot_order = make_event_slot_order(identity_seed)
     active = 0
     max_active = 0
     results: list[dict[str, Any]] = []
@@ -292,7 +308,7 @@ async def run_schedule(
                 f"active={active}"
             )
             print(
-                format_event_line(line, item.sequence, color_events),
+                format_event_line(line, item.sequence, color_events, slot_order),
                 flush=True,
             )
 
@@ -337,7 +353,7 @@ async def run_schedule(
                 f"table={request_id} latency={latency_s:6.3f}s active={active}"
             )
             print(
-                format_event_line(line, item.sequence, color_events),
+                format_event_line(line, item.sequence, color_events, slot_order),
                 flush=True,
             )
 
@@ -446,7 +462,12 @@ def main() -> None:
     wall_start = time.perf_counter()
     with results_path.open("w", encoding="utf-8") as result_handle:
         results, run_stats = asyncio.run(
-            run_schedule(schedule, args.ocr_time_s, result_handle)
+            run_schedule(
+                schedule,
+                args.ocr_time_s,
+                result_handle,
+                identity_seed=args.seed,
+            )
         )
     process_wall_s = time.perf_counter() - wall_start
     run_stats["process_wall_s"] = process_wall_s
