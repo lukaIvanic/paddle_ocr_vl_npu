@@ -32,7 +32,17 @@ LATEX_MARKUP = re.compile(
     r"\\(?:frac|pm|times|mathrm|mathbf|mathit|text|sqrt|sum|alpha|beta|gamma)\b|"
     r"[\^_]\{)"
 )
-ANSI_COLORS = (31, 32, 33, 34, 35, 36, 91, 92, 93, 94, 95, 96)
+EVENT_STYLE_CHOICES = ("foreground", "badge", "pattern")
+EVENT_SLOT_COUNT = 48
+ANSI_256_COLORS = (
+    196, 46, 226, 21, 201, 51, 208, 93, 118, 213, 39, 214,
+    82, 207, 220, 45, 160, 76, 190, 27, 165, 50, 202, 99,
+    112, 219, 33, 172, 84, 205, 228, 69, 129, 48, 198, 154,
+    215, 81, 177, 122, 203, 117, 141, 87, 183, 75, 192, 159,
+)
+PATTERN_COLORS = (196, 46, 226, 21, 201, 51, 208, 93, 118, 213, 39, 214)
+PATTERNS = ("●●", "◆◆", "▲▲", "■■")
+BADGE_DARK_BACKGROUNDS = {21, 27, 33, 69, 75, 87, 93, 99, 129, 141}
 ANSI_RESET = "\033[0m"
 
 
@@ -66,6 +76,17 @@ def parse_args() -> argparse.Namespace:
         help="Asynchronous sleep used as the simulated OCR service time.",
     )
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument(
+        "--event-style",
+        choices=EVENT_STYLE_CHOICES,
+        default="badge",
+        help="Terminal identifier style for matching SEND and RECV lines.",
+    )
+    parser.add_argument(
+        "--preview-event-styles",
+        action="store_true",
+        help="Print all terminal identifier designs and exit.",
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -221,18 +242,72 @@ def format_seconds(value: float | int | None) -> str:
     return "n/a" if value is None else f"{float(value):.3f}s"
 
 
-def event_color(request_id: str) -> str:
-    stable_index = sum(
-        (position + 1) * ord(character)
-        for position, character in enumerate(request_id)
-    )
-    return f"\033[{ANSI_COLORS[stable_index % len(ANSI_COLORS)]}m"
+def event_slot(sequence: int) -> int:
+    return (sequence - 1) % EVENT_SLOT_COUNT
 
 
-def color_event_line(line: str, request_id: str, enabled: bool) -> str:
+def event_tag(sequence: int, style: str, enabled: bool) -> str:
+    slot = event_slot(sequence)
+    label = f"{slot + 1:02d}"
     if not enabled:
-        return line
-    return f"{event_color(request_id)}{line}{ANSI_RESET}"
+        return f"[{label}]"
+    if style == "foreground":
+        color = ANSI_256_COLORS[slot]
+        return f"\033[38;5;{color}m[{label}]{ANSI_RESET}"
+    if style == "badge":
+        background = ANSI_256_COLORS[slot]
+        foreground = 15 if background in BADGE_DARK_BACKGROUNDS else 16
+        return (
+            f"\033[48;5;{background};38;5;{foreground}m {label} {ANSI_RESET}"
+        )
+    if style == "pattern":
+        color = PATTERN_COLORS[slot % len(PATTERN_COLORS)]
+        pattern = PATTERNS[slot // len(PATTERN_COLORS)]
+        return f"\033[38;5;{color}m{pattern} {label}{ANSI_RESET}"
+    raise ValueError(f"unsupported event style: {style}")
+
+
+def style_event_line(line: str, sequence: int, style: str, enabled: bool) -> str:
+    tag = event_tag(sequence, style, enabled)
+    if not enabled:
+        return f"{tag} {line}"
+    if style == "foreground":
+        color = ANSI_256_COLORS[event_slot(sequence)]
+        return f"\033[38;5;{color}m[{event_slot(sequence) + 1:02d}] {line}{ANSI_RESET}"
+    return f"{tag} {line}"
+
+
+def preview_event_styles() -> None:
+    for style in EVENT_STYLE_CHOICES:
+        print(f"\n{style}")
+        for start in range(1, EVENT_SLOT_COUNT + 1, 8):
+            print(
+                "  ".join(
+                    event_tag(sequence, style, enabled=True)
+                    for sequence in range(start, min(start + 8, EVENT_SLOT_COUNT + 1))
+                )
+            )
+        print("  paired example")
+        for sequence in range(1, 5):
+            request_id = f"preview_table_{sequence:02d}"
+            print(
+                style_event_line(
+                    f"SEND #{sequence:05d} table={request_id} active=4",
+                    sequence,
+                    style,
+                    enabled=True,
+                )
+            )
+        for sequence in range(4, 0, -1):
+            request_id = f"preview_table_{sequence:02d}"
+            print(
+                style_event_line(
+                    f"RECV #{sequence:05d} table={request_id} active=3",
+                    sequence,
+                    style,
+                    enabled=True,
+                )
+            )
 
 
 async def run_schedule(
@@ -242,6 +317,7 @@ async def run_schedule(
     *,
     print_events: bool = True,
     color_events: bool | None = None,
+    event_style: str = "badge",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if ocr_time_s < 0:
         raise ValueError("ocr-time-s must not be negative")
@@ -270,7 +346,10 @@ async def run_schedule(
                 f"table={request_id} lag={dispatch_lag_s * 1000:6.1f}ms "
                 f"active={active}"
             )
-            print(color_event_line(line, request_id, color_events), flush=True)
+            print(
+                style_event_line(line, item.sequence, event_style, color_events),
+                flush=True,
+            )
 
         await asyncio.sleep(ocr_time_s)
 
@@ -312,7 +391,10 @@ async def run_schedule(
                 f"[{completion_offset_s:8.3f}s] RECV #{item.sequence:05d} "
                 f"table={request_id} latency={latency_s:6.3f}s active={active}"
             )
-            print(color_event_line(line, request_id, color_events), flush=True)
+            print(
+                style_event_line(line, item.sequence, event_style, color_events),
+                flush=True,
+            )
 
     tasks: list[asyncio.Task[None]] = []
     for item in schedule:
@@ -384,6 +466,9 @@ def validate_args(args: argparse.Namespace) -> None:
 
 def main() -> None:
     args = parse_args()
+    if args.preview_event_styles:
+        preview_event_styles()
+        return
     validate_args(args)
     output_dir = args.output_dir or default_output_dir()
     output_dir.mkdir(parents=True, exist_ok=False)
@@ -419,7 +504,12 @@ def main() -> None:
     wall_start = time.perf_counter()
     with results_path.open("w", encoding="utf-8") as result_handle:
         results, run_stats = asyncio.run(
-            run_schedule(schedule, args.ocr_time_s, result_handle)
+            run_schedule(
+                schedule,
+                args.ocr_time_s,
+                result_handle,
+                event_style=args.event_style,
+            )
         )
     process_wall_s = time.perf_counter() - wall_start
     run_stats["process_wall_s"] = process_wall_s

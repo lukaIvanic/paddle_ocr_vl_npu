@@ -42,15 +42,24 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
         self.assertEqual(offsets, sorted(offsets))
         self.assertTrue(all(offset < 2.0 for offset in offsets))
 
-    def test_send_and_receive_for_one_table_use_the_same_color(self) -> None:
-        send = MODULE.color_event_line("SEND", "table_17", enabled=True)
-        receive = MODULE.color_event_line("RECV", "table_17", enabled=True)
-        self.assertEqual(send.split("m", 1)[0], receive.split("m", 1)[0])
-        self.assertTrue(send.endswith(MODULE.ANSI_RESET))
-        self.assertEqual(
-            MODULE.color_event_line("SEND", "table_17", enabled=False),
-            "SEND",
-        )
+    def test_send_and_receive_for_one_request_use_the_same_identifier(self) -> None:
+        for style in MODULE.EVENT_STYLE_CHOICES:
+            send = MODULE.style_event_line("SEND", 17, style, enabled=True)
+            receive = MODULE.style_event_line("RECV", 17, style, enabled=True)
+            self.assertIn("17", send)
+            self.assertIn("17", receive)
+            self.assertEqual(
+                send.split("m", 1)[0],
+                receive.split("m", 1)[0],
+            )
+
+    def test_first_48_request_tags_are_unique(self) -> None:
+        for style in MODULE.EVENT_STYLE_CHOICES:
+            tags = {
+                MODULE.event_tag(sequence, style, enabled=True)
+                for sequence in range(1, 49)
+            }
+            self.assertEqual(len(tags), 48)
 
     def test_requests_overlap_and_each_result_is_written(self) -> None:
         schedule = [
