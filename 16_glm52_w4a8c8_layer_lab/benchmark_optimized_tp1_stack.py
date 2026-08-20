@@ -121,12 +121,30 @@ def make_prefilled_caches(
     prefix_length: int,
     seed: int,
 ):
+    caches = stack.make_cache(device=device)
+    return fill_prefilled_caches(
+        stack,
+        caches,
+        device=device,
+        prefix_length=prefix_length,
+        seed=seed,
+    )
+
+
+def fill_prefilled_caches(
+    stack: GLM52OptimizedTP1Stack,
+    caches,
+    *,
+    device: torch.device,
+    prefix_length: int,
+    seed: int,
+):
     if not 0 <= prefix_length < stack.cache_length:
         raise ValueError("prefix_length must fit inside the static cache")
-    caches = stack.make_cache(device=device)
     generator = torch.Generator(device="cpu").manual_seed(seed)
     for group in caches:
         for cache in group:
+            cache.zero_()
             if cache.shape[1] == 1 and stack.cache_length != 1:
                 continue
             prefix = torch.randn(
@@ -235,6 +253,7 @@ def profile_rows(
     decode,
     *,
     stack: GLM52OptimizedTP1Stack,
+    caches,
     profile_root: Path,
     device: torch.device,
     metric: str,
@@ -246,8 +265,9 @@ def profile_rows(
     profile_root.mkdir(parents=True, exist_ok=False)
     total_steps = ordinary_warmup_steps + 1 + active_steps
     first_position = stack.cache_length - total_steps
-    caches = make_prefilled_caches(
+    fill_prefilled_caches(
         stack,
+        caches,
         device=device,
         prefix_length=first_position,
         seed=52119,
@@ -495,8 +515,9 @@ def main() -> None:
             )
 
         warmup_first_position = args.cache_length - args.warmup_steps
-        warmup_caches = make_prefilled_caches(
+        warmup_caches = fill_prefilled_caches(
             stack,
+            compiled_caches,
             device=device,
             prefix_length=warmup_first_position,
             seed=52101,
@@ -526,8 +547,9 @@ def main() -> None:
         final_output = None
         for repeat in range(args.measurement_repeats):
             measured_first_position = args.cache_length - args.decode_steps
-            measured_caches = make_prefilled_caches(
+            measured_caches = fill_prefilled_caches(
                 stack,
+                compiled_caches,
                 device=device,
                 prefix_length=measured_first_position,
                 seed=52130 + repeat,
@@ -620,6 +642,7 @@ def main() -> None:
             summary["profile"] = profile_rows(
                 compiled,
                 stack=stack,
+                caches=compiled_caches,
                 profile_root=args.profile_dir,
                 device=device,
                 metric=args.profile_metric,
