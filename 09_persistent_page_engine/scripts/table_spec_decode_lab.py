@@ -191,14 +191,18 @@ def distribution(values: list[float]) -> dict[str, float]:
     }
 
 
-def build_recognizer(args: argparse.Namespace) -> ContinuousRecognizer:
+def build_recognizer(
+    args: argparse.Namespace,
+    *,
+    batch_size: int = 1,
+) -> ContinuousRecognizer:
     return ContinuousRecognizer(
         model=str(args.model),
         dtype="fp16",
         decode_backend="torchair",
         decode_optimization=args.decode_optimization,
         decode_vocab_token_ids=args.decode_vocab_token_ids,
-        batch_size=1,
+        batch_size=batch_size,
         cache_length=args.cache_length,
         max_new_tokens=args.max_new_tokens,
         token_selection=getattr(args, "token_selection", "greedy"),
