@@ -7,6 +7,7 @@ import argparse
 from dataclasses import asdict
 import json
 from pathlib import Path
+import random
 import threading
 from types import SimpleNamespace
 from typing import Any
@@ -50,6 +51,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--sample-count", type=int, default=32)
     parser.add_argument("--request-id", action="append", default=[])
+    parser.add_argument(
+        "--shuffle-seed",
+        type=int,
+        help="Shuffle the selected request order with a fixed seed.",
+    )
     parser.add_argument(
         "--arrival-mode",
         choices=("sequential", "queued"),
@@ -259,6 +265,8 @@ def main() -> None:
         args.sample_count,
         target_tokens=fixed_lab.target_tokens,
     )
+    if args.shuffle_seed is not None:
+        random.Random(args.shuffle_seed).shuffle(selected)
     selected_ids = [str(record["request_id"]) for record in selected]
     selected_set = set(selected_ids)
     warm_record = next(
@@ -462,6 +470,7 @@ def main() -> None:
         "configuration": configuration,
         "batch_size": args.batch_size,
         "arrival_mode": args.arrival_mode,
+        "shuffle_seed": args.shuffle_seed,
         "selected_request_ids": selected_ids,
         "warm_request_id": str(warm_record["request_id"]),
         "one_shot": one_shot_payload,
