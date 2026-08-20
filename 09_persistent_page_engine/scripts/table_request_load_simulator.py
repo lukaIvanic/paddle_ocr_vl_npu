@@ -59,6 +59,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--qps", type=float, default=10.0)
     parser.add_argument("--duration-s", type=float, default=10.0)
     parser.add_argument(
+        "--max-requests",
+        type=int,
+        help=(
+            "Schedule exactly this many Poisson arrivals at --qps, then wait "
+            "for every response. When set, --duration-s is not used."
+        ),
+    )
+    parser.add_argument(
         "--ocr-time-s",
         type=float,
         default=0.5,
@@ -161,13 +169,17 @@ def make_schedule(
     qps: float,
     duration_s: float,
     seed: int,
+    *,
+    max_requests: int | None = None,
 ) -> list[ScheduledRequest]:
     if not cohort:
         raise ValueError("cohort must not be empty")
     if qps <= 0:
         raise ValueError("qps must be greater than zero")
-    if duration_s <= 0:
+    if max_requests is None and duration_s <= 0:
         raise ValueError("duration-s must be greater than zero")
+    if max_requests is not None and max_requests <= 0:
+        raise ValueError("max-requests must be greater than zero")
 
     arrival_rng = random.Random(seed)
     table_rng = random.Random(seed + 1)
@@ -175,9 +187,9 @@ def make_schedule(
     schedule: list[ScheduledRequest] = []
     scheduled_offset_s = 0.0
 
-    while True:
+    while max_requests is None or len(schedule) < max_requests:
         scheduled_offset_s += arrival_rng.expovariate(qps)
-        if scheduled_offset_s >= duration_s:
+        if max_requests is None and scheduled_offset_s >= duration_s:
             break
         if not table_cycle:
             table_cycle = list(cohort)
@@ -467,6 +479,9 @@ def make_summary(
         for row in results
         if row["service_result"].get("worker_wall_s") is not None
     ]
+    last_scheduled_arrival_s = (
+        max(item.scheduled_offset_s for item in schedule) if schedule else 0.0
+    )
     return {
         "format": "table_request_load_simulator_v1",
         "mode": "http" if args.api_url else "async_sleep",
@@ -479,7 +494,13 @@ def make_summary(
         ),
         "target_qps": args.qps,
         "arrival_process": "poisson",
-        "duration_s": args.duration_s,
+        "duration_s": None if args.max_requests is not None else args.duration_s,
+        "max_requests": args.max_requests,
+        "scheduled_arrival_span_s": last_scheduled_arrival_s,
+        "drain_after_last_arrival_s": max(
+            0.0,
+            float(run_stats["run_wall_s"]) - last_scheduled_arrival_s,
+        ),
         "ocr_time_s": None if args.api_url else args.ocr_time_s,
         "seed": args.seed,
         "scheduled_request_count": len(schedule),
@@ -503,8 +524,10 @@ def default_output_dir() -> Path:
 def validate_args(args: argparse.Namespace) -> None:
     if args.qps <= 0:
         raise ValueError("--qps must be greater than zero")
-    if args.duration_s <= 0:
+    if args.max_requests is None and args.duration_s <= 0:
         raise ValueError("--duration-s must be greater than zero")
+    if args.max_requests is not None and args.max_requests <= 0:
+        raise ValueError("--max-requests must be greater than zero")
     if args.ocr_time_s < 0:
         raise ValueError("--ocr-time-s must not be negative")
     if args.request_timeout_s <= 0:
@@ -523,7 +546,13 @@ def main() -> None:
         args.cohort,
         exclude_first_record=not args.include_first_record,
     )
-    schedule = make_schedule(cohort, args.qps, args.duration_s, args.seed)
+    schedule = make_schedule(
+        cohort,
+        args.qps,
+        args.duration_s,
+        args.seed,
+        max_requests=args.max_requests,
+    )
 
     cohort_path = output_dir / "cohort.jsonl"
     schedule_path = output_dir / "schedule.jsonl"
@@ -565,9 +594,15 @@ def main() -> None:
         if args.api_url
         else f"simulated OCR time={args.ocr_time_s:g}s"
     )
+    arrival_limit = (
+        f"request limit={args.max_requests}; last scheduled arrival at "
+        f"{schedule[-1].scheduled_offset_s:.3f}s"
+        if args.max_requests is not None and schedule
+        else f"arrival duration={args.duration_s:g}s"
+    )
     print(
-        f"Scheduled {len(schedule)} Poisson arrivals at {args.qps:g} QPS over "
-        f"{args.duration_s:g}s; {mode_description}",
+        f"Scheduled {len(schedule)} Poisson arrivals at {args.qps:g} QPS; "
+        f"{arrival_limit}; {mode_description}",
         flush=True,
     )
     print(f"Writing each completion to {results_path}", flush=True)

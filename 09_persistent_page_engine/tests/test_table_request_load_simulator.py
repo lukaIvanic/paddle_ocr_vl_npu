@@ -43,6 +43,24 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
         self.assertEqual(offsets, sorted(offsets))
         self.assertTrue(all(offset < 2.0 for offset in offsets))
 
+    def test_poisson_schedule_can_use_a_fixed_request_count(self) -> None:
+        cohort = [{"request_id": f"table_{index}"} for index in range(4)]
+        schedule = MODULE.make_schedule(
+            cohort,
+            qps=2.0,
+            duration_s=0.01,
+            seed=7,
+            max_requests=50,
+        )
+        self.assertEqual(len(schedule), 50)
+        self.assertEqual(
+            [item.sequence for item in schedule],
+            list(range(1, 51)),
+        )
+        offsets = [item.scheduled_offset_s for item in schedule]
+        self.assertEqual(offsets, sorted(offsets))
+        self.assertGreater(offsets[-1], 0.01)
+
     def test_requests_overlap_and_each_result_is_written(self) -> None:
         schedule = [
             MODULE.ScheduledRequest(
