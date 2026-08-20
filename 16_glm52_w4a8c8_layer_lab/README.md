@@ -170,6 +170,25 @@ The exact summaries are:
 - `references/glm52_tp1_capacity_l16_26_tol0625_2a40c76.json`;
 - `references/glm52_tp1_capacity_l15_26_tol078125_2a40c76.json`.
 
+### Physical NPU 6 versus NPU 5 smoke
+
+A matched layers 0-11 test used physical NPU 6 as the control and physical NPU
+5 as the suspect device. NPU 6 completed one cold static graph and all timing
+windows. It measured 6.6429 ms per 12-layer stack, or 150.54 stack calls/s,
+with 44.06 GiB allocated after timing. Output max/mean absolute differences
+were 0.015625 and 0.000528, and top-k set overlap was 99.76%.
+
+NPU 5 loaded layer 0, then stalled while loading layer 1. It made no progress
+for more than two minutes, held about 0.7 GiB above idle HBM, and used 0%
+AICore. Its management health field remained `OK`. Ctrl-C did not unwind the
+blocked runtime call. Stopping only the owned benchmark PID released the device
+back to idle HBM with no remaining process.
+
+The NPU 6 summary is
+`references/first12_npu6_910b2_f13d14d.json`. The exact NPU 5 command, observed
+state, and cleanup evidence are in
+`references/first12_npu5_stall_910b2_f13d14d.md`.
+
 ## Verified layers 0-6 stack
 
 The owned seven-layer stack covers the decoder-layer variants present at the
