@@ -1,0 +1,446 @@
+{
+  "tp1": {
+    "attention_path": "absorbed_contiguous_bsnd_sparse_flash",
+    "backend": "torchair_fullgraph_static_cache_compile",
+    "batch_size": 1,
+    "cache_length": 4096,
+    "cache_prefix_mode": "deterministic_varied_bfloat16_prefix",
+    "chip": "Ascend 910B2",
+    "compile_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/16_glm52_w4a8c8_layer_lab/tp1_l2_8_b1_kv4096_bf16_src29813031488c",
+    "compile_cache_was_warm": false,
+    "continuous_last_position": 4095,
+    "decode_steps": 200,
+    "dense_layer_count": 1,
+    "dynamo": {
+      "after_measurement": {
+        "calls_captured": 923,
+        "unique_graphs": 1
+      },
+      "after_validation": {
+        "calls_captured": 923,
+        "unique_graphs": 1
+      },
+      "after_warmup": {
+        "calls_captured": 923,
+        "unique_graphs": 1
+      }
+    },
+    "effective_layer_calls_per_sec": 1792.0280576902744,
+    "final_output_abs_max": 3.78125,
+    "full_indexer_layers": [
+      2,
+      6
+    ],
+    "indexer_path": "contiguous_bsnd_lightning_indexer_with_four_layer_reuse",
+    "layer_count": 7,
+    "layers": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "load_sec": 89.2352483952418,
+    "measurement_repeats": 3,
+    "median_mean_stack_ms": 3.906188840046525,
+    "memory_after_weights": {
+      "allocated_gib": 28.82064199447632,
+      "free_gib": 28.603504180908203,
+      "reserved_gib": 31.990234375,
+      "total_gib": 60.95703125
+    },
+    "model": "Eco-Tech/GLM-5.2-w4a8c8",
+    "moe_layer_count": 6,
+    "moe_path": "w4a8_grouped_matmul_bitcast_scale_fractal_nz",
+    "parity": {
+      "index_max_abs": 0.015625,
+      "latent_max_abs": 0.046875,
+      "output_allclose_atol_5e_2_rtol_5e_2": true,
+      "output_max_abs": 0.0078125,
+      "output_mean_abs": 7.206201553344727e-05,
+      "rope_max_abs": 0.005859375,
+      "shared_topk": {
+        "count": 2048,
+        "ordered_exact": false,
+        "ordered_match_count": 77,
+        "set_exact": false,
+        "set_overlap_count": 2041,
+        "set_overlap_ratio": 0.99658203125
+      }
+    },
+    "profile": null,
+    "repeat_elapsed_sec": [
+      0.781237768009305,
+      0.7786710937507451,
+      0.7822968256659806
+    ],
+    "repeat_mean_stack_ms": [
+      3.906188840046525,
+      3.8933554687537253,
+      3.911484128329903
+    ],
+    "rope_path": "block_layout_npu_interleave_rope",
+    "shared_indexer_layers": [
+      3,
+      4,
+      5,
+      7,
+      8
+    ],
+    "stack_calls_per_sec": 256.0040082414678,
+    "tensor_parallel_size": 1,
+    "validation_first_position": 3468,
+    "validation_steps": 8,
+    "w8_weight_format": {
+      "after_format_histogram": {
+        "29": 37
+      },
+      "before_format_histogram": {
+        "2": 37
+      },
+      "quant_linear_count": 37,
+      "requested": "fractal_nz",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "weights": [
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.0.fused_qkv_a",
+          "shape_k_n": [
+            6144,
+            2624
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.0.q_b_proj",
+          "shape_k_n": [
+            2048,
+            16384
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.0.o_proj",
+          "shape_k_n": [
+            16384,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.0.mlp.gate_up",
+          "shape_k_n": [
+            6144,
+            24576
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.0.mlp.down",
+          "shape_k_n": [
+            12288,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.0.indexer.wq_b",
+          "shape_k_n": [
+            2048,
+            4096
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.1.fused_qkv_a",
+          "shape_k_n": [
+            6144,
+            2624
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.1.q_b_proj",
+          "shape_k_n": [
+            2048,
+            16384
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.1.o_proj",
+          "shape_k_n": [
+            16384,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.1.mlp.shared.gate_up",
+          "shape_k_n": [
+            6144,
+            4096
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.1.mlp.shared.down",
+          "shape_k_n": [
+            2048,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.2.fused_qkv_a",
+          "shape_k_n": [
+            6144,
+            2624
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.2.q_b_proj",
+          "shape_k_n": [
+            2048,
+            16384
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.2.o_proj",
+          "shape_k_n": [
+            16384,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.2.mlp.shared.gate_up",
+          "shape_k_n": [
+            6144,
+            4096
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.2.mlp.shared.down",
+          "shape_k_n": [
+            2048,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.3.fused_qkv_a",
+          "shape_k_n": [
+            6144,
+            2624
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.3.q_b_proj",
+          "shape_k_n": [
+            2048,
+            16384
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.3.o_proj",
+          "shape_k_n": [
+            16384,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.3.mlp.shared.gate_up",
+          "shape_k_n": [
+            6144,
+            4096
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.3.mlp.shared.down",
+          "shape_k_n": [
+            2048,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.4.fused_qkv_a",
+          "shape_k_n": [
+            6144,
+            2624
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.4.q_b_proj",
+          "shape_k_n": [
+            2048,
+            16384
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.4.o_proj",
+          "shape_k_n": [
+            16384,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.4.mlp.shared.gate_up",
+          "shape_k_n": [
+            6144,
+            4096
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.4.mlp.shared.down",
+          "shape_k_n": [
+            2048,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.4.indexer.wq_b",
+          "shape_k_n": [
+            2048,
+            4096
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.5.fused_qkv_a",
+          "shape_k_n": [
+            6144,
+            2624
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.5.q_b_proj",
+          "shape_k_n": [
+            2048,
+            16384
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.5.o_proj",
+          "shape_k_n": [
+            16384,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.5.mlp.shared.gate_up",
+          "shape_k_n": [
+            6144,
+            4096
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.5.mlp.shared.down",
+          "shape_k_n": [
+            2048,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.6.fused_qkv_a",
+          "shape_k_n": [
+            6144,
+            2624
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.6.q_b_proj",
+          "shape_k_n": [
+            2048,
+            16384
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.6.o_proj",
+          "shape_k_n": [
+            16384,
+            6144
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.6.mlp.shared.gate_up",
+          "shape_k_n": [
+            6144,
+            4096
+          ]
+        },
+        {
+          "format_after": 29,
+          "format_before": 2,
+          "name": "layers.6.mlp.shared.down",
+          "shape_k_n": [
+            2048,
+            6144
+          ]
+        }
+      ]
+    },
+    "warmup_elapsed_sec_excluded": 0.07908242382109165,
+    "warmup_steps": 20
+  }
+}

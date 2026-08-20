@@ -135,6 +135,41 @@ The exact command, parity fields, graph counts, profile totals, and remote
 artifact paths are in
 `references/optimized_tp1_layers2_6_910b2_c201ed7.json`.
 
+### TP1 MoE-layer capacity on one 910B2
+
+Commit `2a40c76` added explicit cache-parity tolerance and post-compile HBM
+snapshots to the integrated stack benchmark. Capacity runs used contiguous MoE
+layers, B1, KV4096, eight validation positions, 20 ordinary warmup calls, and
+three 200-call timing windows on physical 910B2 NPU 7.
+
+| MoE layers | Median stack time | Stack calls/s | Allocated after timing | Free after timing |
+| ---: | ---: | ---: | ---: | ---: |
+| 10 | 5.8999 ms | 169.49 | 47.61 GiB | 9.49 GiB |
+| 11 | 6.4768 ms | 154.40 | 52.36 GiB | 3.48 GiB |
+| 12 | 7.0254 ms | 142.34 | 57.10 GiB | 0.47 GiB |
+
+A preceding mixed range of one dense and six MoE layers measured 3.9062 ms and
+256.00 stack calls/s, with 28.82 GiB allocated after weight loading. Its summary
+is `references/glm52_tp1_capacity_l2_8_91fc0e6.json`.
+
+Twelve MoE layers are the measured technical maximum for this owned static B1
+path. Each additional MoE layer increased resident weight allocation by about
+4.74 GiB. The 0.47 GiB left after the twelve-layer run cannot hold a thirteenth
+layer. Eleven layers are the safer operating point.
+
+The established cache parity default remains `0.05`. The capacity runs opted
+into `0.0625` for ten and eleven layers and `0.078125` for twelve layers. Their
+maximum compiled-versus-eager cache differences were 0.050781, 0.056641, and
+0.070312 respectively. All three final outputs passed the existing
+`atol=rtol=0.05` check. Treat the wider cache limits as capacity and throughput
+evidence, not as a new correctness standard.
+
+The exact summaries are:
+
+- `references/glm52_tp1_capacity_l17_26_tol0625_2a40c76.json`;
+- `references/glm52_tp1_capacity_l16_26_tol0625_2a40c76.json`;
+- `references/glm52_tp1_capacity_l15_26_tol078125_2a40c76.json`.
+
 ## Verified layers 0-6 stack
 
 The owned seven-layer stack covers the decoder-layer variants present at the
