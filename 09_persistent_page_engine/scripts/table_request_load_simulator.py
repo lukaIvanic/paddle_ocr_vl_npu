@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import random
 import re
+import shutil
 import statistics
 import sys
 import time
@@ -32,7 +33,13 @@ LATEX_MARKUP = re.compile(
     r"\\(?:frac|pm|times|mathrm|mathbf|mathit|text|sqrt|sum|alpha|beta|gamma)\b|"
     r"[\^_]\{)"
 )
-EVENT_STYLE_CHOICES = ("foreground", "badge", "pattern")
+EVENT_STYLE_CHOICES = (
+    "foreground",
+    "badge",
+    "pattern",
+    "background",
+    "background-pattern",
+)
 EVENT_SLOT_COUNT = 48
 ANSI_256_COLORS = (
     196, 46, 226, 21, 201, 51, 208, 93, 118, 213, 39, 214,
@@ -43,6 +50,21 @@ ANSI_256_COLORS = (
 PATTERN_COLORS = (196, 46, 226, 21, 201, 51, 208, 93, 118, 213, 39, 214)
 PATTERNS = ("●●", "◆◆", "▲▲", "■■")
 BADGE_DARK_BACKGROUNDS = {21, 27, 33, 69, 75, 87, 93, 99, 129, 141}
+BACKGROUND_PATTERN_FAMILIES = (
+    (196, 203, 16),
+    (46, 82, 16),
+    (226, 220, 16),
+    (21, 27, 15),
+    (201, 207, 16),
+    (51, 45, 16),
+    (208, 214, 16),
+    (93, 99, 15),
+    (118, 154, 16),
+    (213, 219, 16),
+    (39, 81, 16),
+    (172, 215, 16),
+)
+BACKGROUND_PATTERN_LABELS = ("SOLID", "WIDE", "THIN", "PULSE")
 ANSI_RESET = "\033[0m"
 
 
@@ -79,13 +101,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--event-style",
         choices=EVENT_STYLE_CHOICES,
-        default="badge",
+        default="background-pattern",
         help="Terminal identifier style for matching SEND and RECV lines.",
     )
     parser.add_argument(
         "--preview-event-styles",
         action="store_true",
-        help="Print all terminal identifier designs and exit.",
+        help="Print the full-line terminal identifier designs and exit.",
     )
     parser.add_argument(
         "--output-dir",
@@ -264,13 +286,97 @@ def event_tag(sequence: int, style: str, enabled: bool) -> str:
         color = PATTERN_COLORS[slot % len(PATTERN_COLORS)]
         pattern = PATTERNS[slot // len(PATTERN_COLORS)]
         return f"\033[38;5;{color}m{pattern} {label}{ANSI_RESET}"
+    if style in {"background", "background-pattern"}:
+        return f"[{label}]"
     raise ValueError(f"unsupported event style: {style}")
 
 
-def style_event_line(line: str, sequence: int, style: str, enabled: bool) -> str:
+def background_pattern_uses_accent(pattern_index: int, position: int) -> bool:
+    if pattern_index == 0:
+        return False
+    if pattern_index == 1:
+        return (position // 6) % 2 == 1
+    if pattern_index == 2:
+        return (position // 2) % 2 == 1
+    if pattern_index == 3:
+        return position % 8 in {1, 2, 5}
+    raise ValueError(f"unsupported background pattern: {pattern_index}")
+
+
+def render_full_background(
+    line: str,
+    sequence: int,
+    *,
+    patterned: bool,
+    line_width: int | None = None,
+) -> str:
+    slot = event_slot(sequence)
+    if patterned:
+        family_index = slot % len(BACKGROUND_PATTERN_FAMILIES)
+        pattern_index = slot // len(BACKGROUND_PATTERN_FAMILIES)
+        base, accent, foreground = BACKGROUND_PATTERN_FAMILIES[family_index]
+        label = BACKGROUND_PATTERN_LABELS[pattern_index]
+        text = f"[{slot + 1:02d} {label:5s}] {line}"
+    else:
+        base = accent = ANSI_256_COLORS[slot]
+        foreground = 15 if base in BADGE_DARK_BACKGROUNDS else 16
+        pattern_index = 0
+        text = f"[{slot + 1:02d}] {line}"
+
+    if line_width is None:
+        line_width = max(1, shutil.get_terminal_size(fallback=(120, 24)).columns - 1)
+    text = text.ljust(max(len(text), line_width))
+
+    pieces: list[str] = []
+    current_background: int | None = None
+    run: list[str] = []
+    for position, character in enumerate(text):
+        background = (
+            accent
+            if patterned and background_pattern_uses_accent(pattern_index, position)
+            else base
+        )
+        if current_background is None:
+            current_background = background
+        if background != current_background:
+            pieces.append(
+                f"\033[48;5;{current_background};38;5;{foreground}m{''.join(run)}"
+            )
+            run = []
+            current_background = background
+        run.append(character)
+    if run:
+        pieces.append(
+            f"\033[48;5;{current_background};38;5;{foreground}m{''.join(run)}"
+        )
+    return "".join(pieces) + ANSI_RESET
+
+
+def style_event_line(
+    line: str,
+    sequence: int,
+    style: str,
+    enabled: bool,
+    *,
+    line_width: int | None = None,
+) -> str:
     tag = event_tag(sequence, style, enabled)
     if not enabled:
         return f"{tag} {line}"
+    if style == "background":
+        return render_full_background(
+            line,
+            sequence,
+            patterned=False,
+            line_width=line_width,
+        )
+    if style == "background-pattern":
+        return render_full_background(
+            line,
+            sequence,
+            patterned=True,
+            line_width=line_width,
+        )
     if style == "foreground":
         color = ANSI_256_COLORS[event_slot(sequence)]
         return f"\033[38;5;{color}m[{event_slot(sequence) + 1:02d}] {line}{ANSI_RESET}"
@@ -278,34 +384,33 @@ def style_event_line(line: str, sequence: int, style: str, enabled: bool) -> str
 
 
 def preview_event_styles() -> None:
-    for style in EVENT_STYLE_CHOICES:
+    for style in ("background", "background-pattern"):
         print(f"\n{style}")
-        for start in range(1, EVENT_SLOT_COUNT + 1, 8):
-            print(
-                "  ".join(
-                    event_tag(sequence, style, enabled=True)
-                    for sequence in range(start, min(start + 8, EVENT_SLOT_COUNT + 1))
+        preview_sequences = (
+            (1, 13, 25, 37),
+            (2, 14, 26, 38),
+            (3, 15, 27, 39),
+        )
+        for family_sequences in preview_sequences:
+            for sequence in family_sequences:
+                print(
+                    style_event_line(
+                        f"SEND #{sequence:05d} table=preview_table_{sequence:02d} active=12",
+                        sequence,
+                        style,
+                        enabled=True,
+                        line_width=96,
+                    )
                 )
-            )
-        print("  paired example")
-        for sequence in range(1, 5):
-            request_id = f"preview_table_{sequence:02d}"
+        print("paired completions")
+        for sequence in (37, 25, 13, 1):
             print(
                 style_event_line(
-                    f"SEND #{sequence:05d} table={request_id} active=4",
+                    f"RECV #{sequence:05d} table=preview_table_{sequence:02d} active=11",
                     sequence,
                     style,
                     enabled=True,
-                )
-            )
-        for sequence in range(4, 0, -1):
-            request_id = f"preview_table_{sequence:02d}"
-            print(
-                style_event_line(
-                    f"RECV #{sequence:05d} table={request_id} active=3",
-                    sequence,
-                    style,
-                    enabled=True,
+                    line_width=96,
                 )
             )
 

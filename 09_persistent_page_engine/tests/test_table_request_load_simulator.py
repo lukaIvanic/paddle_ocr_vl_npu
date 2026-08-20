@@ -61,6 +61,21 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
             }
             self.assertEqual(len(tags), 48)
 
+    def test_same_background_family_has_four_distinct_patterns(self) -> None:
+        rendered = [
+            MODULE.style_event_line(
+                "SEND table=preview",
+                sequence,
+                "background-pattern",
+                enabled=True,
+                line_width=80,
+            )
+            for sequence in (1, 13, 25, 37)
+        ]
+        self.assertEqual(len(set(rendered)), 4)
+        first_background_codes = [line.split("m", 1)[0] for line in rendered]
+        self.assertEqual(len(set(first_background_codes)), 1)
+
     def test_requests_overlap_and_each_result_is_written(self) -> None:
         schedule = [
             MODULE.ScheduledRequest(
