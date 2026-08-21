@@ -14,7 +14,7 @@ from typing import Any, Callable
 
 import numpy as np
 import torch
-import torch_npu  # noqa: F401
+import torch_npu
 
 
 BUCKET_PATTERN = re.compile(r"^(?P<width>\d+)x(?P<height>\d+)_b(?P<batch>\d+)$")
@@ -106,6 +106,7 @@ def normalize_to_fp16(device_pixels: torch.Tensor) -> torch.Tensor:
 
 def main() -> None:
     args = parse_args()
+    torch_npu.npu.set_compile_mode(jit_compile=False)
     summary = json.loads(args.summary.expanduser().resolve().read_text())
     batching = find_aggregate_vision_batching(summary)
     bucket_calls = parse_bucket_calls(batching)
@@ -195,6 +196,7 @@ def main() -> None:
     report = {
         "status": "ok",
         "physical_npu": os.environ["ASCEND_RT_VISIBLE_DEVICES"],
+        "npu_jit_compile": False,
         "device": str(device),
         "summary": str(args.summary),
         "bucket_calls": {key: count for key, *_shape, count in bucket_calls},

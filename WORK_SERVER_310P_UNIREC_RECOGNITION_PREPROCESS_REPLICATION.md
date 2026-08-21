@@ -17,6 +17,12 @@ vision encoder, or decode text. It should finish in a few minutes. If one phase
 takes longer than two minutes, inspect the live log and running process before
 waiting further.
 
+The NPU benchmark explicitly calls
+`torch_npu.npu.set_compile_mode(jit_compile=False)` before creating any NPU
+tensor. Expected graph and operator compilation count is zero. If GE, TBE, ATC,
+or TorchAir compilation appears, stop the owned run and report the first
+compiler line. Do not wait for compilation to finish.
+
 ## Exact 910B2 reference
 
 The matching run used physical Ascend 910B2 NPU 7 and source commit `f13d14d`.
@@ -42,6 +48,8 @@ All compact outputs passed exact parity. The NPU lane covered 198 input calls:
   affinity check. The runner checks `os.sched_getaffinity(0)`.
 - Do not run any other benchmark after this task.
 - Do not alter round counts or use a different page set.
+- Reject any result whose NPU JSON does not contain
+  `"npu_jit_compile": false`.
 
 ## Launch
 

@@ -215,6 +215,8 @@ compact_sixteen = threaded["results"][0]
 
 if npu["total_input_call_count"] != 198 or npu["physical_npu"] not in {"0", "1", "2", "3"}:
     raise RuntimeError("NPU workload or physical device mismatch")
+if npu.get("npu_jit_compile") is not False:
+    raise RuntimeError("NPU JIT compile was not explicitly disabled")
 if not npu["normalization_fp16_parity"]["all_exact"]:
     raise RuntimeError("NPU normalization parity failed")
 original_npu = npu["results"]["current_float32_chw"]
@@ -268,6 +270,7 @@ report = {
         "compact_one_thread_model_input_exact": True,
         "compact_sixteen_thread_bucket_output_exact": True,
         "npu_normalization_exact": True,
+        "npu_jit_compile_disabled": True,
     },
 }
 output_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
