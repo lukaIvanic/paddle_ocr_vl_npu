@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare raw eager and TorchAir UniRec lane-A B1 decode throughput."""
+"""Compare raw eager and TorchAir UniRec lane-A decode throughput."""
 
 from __future__ import annotations
 
@@ -35,12 +35,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--source-length", type=int, default=56)
     parser.add_argument("--warmup-steps", type=int, default=20)
     parser.add_argument("--measure-steps", type=int, default=100)
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--validation-steps", type=int, default=8)
     args = parser.parse_args()
+    if args.batch_size < 1:
+        parser.error("--batch-size must be positive")
     if not 1 <= args.source_length <= CROSS_CACHE_LENGTH:
         parser.error("--source-length must be within C256")
     for name in ("warmup_steps", "measure_steps", "repeats", "validation_steps"):
@@ -69,14 +72,17 @@ def configure_cross_mask_(state: dict[str, Any], source_length: int) -> None:
         raise RuntimeError("constructed a fully masked IncreFA row")
 
 
-def summarize(round_s: list[float], steps: int) -> dict[str, Any]:
+def summarize(
+    round_s: list[float], steps: int, batch_size: int
+) -> dict[str, Any]:
     median_s = statistics.median(round_s)
+    token_slots = steps * batch_size
     return {
         "round_s": round_s,
         "median_s": median_s,
         "median_step_ms": median_s * 1000.0 / steps,
-        "median_raw_tok_s": steps / median_s,
-        "round_raw_tok_s": [steps / value for value in round_s],
+        "median_raw_tok_s": token_slots / median_s,
+        "round_raw_tok_s": [token_slots / value for value in round_s],
     }
 
 
@@ -116,7 +122,7 @@ def main() -> None:
     def new_state(seed: int) -> dict[str, Any]:
         state = make_state(
             runner,
-            batch_size=1,
+            batch_size=args.batch_size,
             self_cache_length=SELF_CACHE_LENGTH,
             cross_cache_length=CROSS_CACHE_LENGTH,
             cache_position=INITIAL_CACHE_POSITION,
@@ -134,7 +140,7 @@ def main() -> None:
         self_attention_backend="increfa_all",
         compile_dynamic=False,
         cross_cache_len=CROSS_CACHE_LENGTH,
-        batch_size=1,
+        batch_size=args.batch_size,
         self_cache_len=SELF_CACHE_LENGTH,
     )
 
@@ -178,7 +184,7 @@ def main() -> None:
                 lane=lane,
                 repeat=repeat,
                 seconds=elapsed,
-                raw_tok_s=args.measure_steps / elapsed,
+                raw_tok_s=args.batch_size * args.measure_steps / elapsed,
             )
 
     validation: dict[str, dict[str, Any]] = {}
@@ -203,7 +209,7 @@ def main() -> None:
         raise RuntimeError("raw eager and compiled validation tokens differ")
 
     lanes = {
-        name: summarize(values, args.measure_steps)
+        name: summarize(values, args.measure_steps, args.batch_size)
         for name, values in round_s.items()
     }
     speedup = (
@@ -216,7 +222,7 @@ def main() -> None:
         "status": "ok",
         "scope": "full six-layer decode step plus argmax and state advance; prefill excluded",
         "shape": {
-            "batch_size": 1,
+            "batch_size": args.batch_size,
             "self_cache_length": SELF_CACHE_LENGTH,
             "cross_cache_length": CROSS_CACHE_LENGTH,
             "cache_position": INITIAL_CACHE_POSITION,
