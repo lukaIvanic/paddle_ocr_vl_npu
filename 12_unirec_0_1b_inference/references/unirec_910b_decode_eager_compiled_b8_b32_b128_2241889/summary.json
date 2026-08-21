@@ -1,0 +1,47 @@
+{
+  "commit": "2241889",
+  "physical_npu": 7,
+  "contract": "C256/S256 pos32 source56 FP16 increfa_all 6 heads 49 NZ weights LM57344 sliced56371 separate QKV",
+  "timing": "100 queued decode steps then one final device sync; compile excluded",
+  "rows": [
+    {
+      "batch_size": 8,
+      "raw_eager_step_ms": 6.611563568003476,
+      "raw_eager_tok_s": 1210.001222511999,
+      "compiled_step_ms": 0.6941595021635294,
+      "compiled_tok_s": 11524.728790812358,
+      "speedup": 9.524559625556968,
+      "token_exact": true,
+      "max_abs": 0.03125,
+      "mean_abs": 0.004079440608620644,
+      "cosine": 0.9999666810035706,
+      "first_call_s_excluded": 23.705103995278478
+    },
+    {
+      "batch_size": 32,
+      "raw_eager_step_ms": 6.482678577303886,
+      "raw_eager_tok_s": 4936.231160994664,
+      "compiled_step_ms": 1.1010425118729472,
+      "compiled_tok_s": 29063.36463391032,
+      "speedup": 5.887764103019434,
+      "token_exact": true,
+      "max_abs": 0.03515625,
+      "mean_abs": 0.006213821470737457,
+      "cosine": 1.0000497102737427,
+      "first_call_s_excluded": 22.572309941984713
+    },
+    {
+      "batch_size": 128,
+      "raw_eager_step_ms": 6.496685221791267,
+      "raw_eager_tok_s": 19702.35522119199,
+      "compiled_step_ms": 1.8558055395260453,
+      "compiled_tok_s": 68972.74378903404,
+      "speedup": 3.5007359787547876,
+      "token_exact": true,
+      "max_abs": 0.0625,
+      "mean_abs": 0.006481529679149389,
+      "cosine": 0.999454140663147,
+      "first_call_s_excluded": 5.993567455094308
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+commit=2241889a84130c9c0520756aad51a296b9426d52
+physical_npu=7
+cache_root=/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/decode_eager_compiled_batch_910b_2241889

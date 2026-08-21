@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "kind": "unirec_decode_eager_vs_compiled_b1_lab",
+  "status": "ok",
+  "scope": "full six-layer decode step plus argmax and state advance; prefill excluded",
+  "shape": {
+    "batch_size": 128,
+    "self_cache_length": 256,
+    "cross_cache_length": 256,
+    "cache_position": 32,
+    "source_length": 56,
+    "attention_backend": "increfa_all",
+    "semantic_heads": 6,
+    "semantic_vocab_size": 56371,
+    "lm_head_rows": 57344
+  },
+  "optimizations": {
+    "dtype": "float16",
+    "npu_jit_compile": false,
+    "decode_weight_format": "nz",
+    "nz_tensor_count": 49,
+    "lm_head_rows": 57344,
+    "qkv_projection": "separate"
+  },
+  "model_load_s": 3.991885904688388,
+  "nz_format_s": 6.230422409716994,
+  "compiled_first_call_s_excluded": 5.993567455094308,
+  "warmup_steps": 20,
+  "measure_steps_per_round": 100,
+  "repeats": 5,
+  "lanes": {
+    "raw_eager": {
+      "round_s": [
+        0.6570847784169018,
+        0.6526627927087247,
+        0.6496685221791267,
+        0.6486153630539775,
+        0.6453029778786004
+      ],
+      "median_s": 0.6496685221791267,
+      "median_step_ms": 6.496685221791267,
+      "median_raw_tok_s": 19702.35522119199,
+      "round_raw_tok_s": [
+        19479.982523470906,
+        19611.965233802566,
+        19702.35522119199,
+        19734.346007056865,
+        19835.643780971426
+      ]
+    },
+    "compiled_torchair": {
+      "round_s": [
+        0.18592901015654206,
+        0.18551698280498385,
+        0.18572794692590833,
+        0.1854819618165493,
+        0.18558055395260453
+      ],
+      "median_s": 0.18558055395260453,
+      "median_step_ms": 1.8558055395260453,
+      "median_raw_tok_s": 68972.74378903404,
+      "round_raw_tok_s": [
+        68843.47950447915,
+        68996.37869518074,
+        68918.00728894208,
+        69009.40595323131,
+        68972.74378903404
+      ]
+    }
+  },
+  "compiled_speedup": 3.5007359787547876,
+  "validation": {
+    "steps": 8,
+    "token_exact": true,
+    "final_logits_max_abs": 0.0625,
+    "final_logits_mean_abs": 0.006481529679149389,
+    "final_logits_cosine": 0.999454140663147
+  },
+  "compile": {
+    "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+    "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+    "backend": "torchair",
+    "fullgraph": true,
+    "dynamic": false,
+    "torchair_ge_cache": true,
+    "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/decode_eager_compiled_batch_910b_2241889/decode_selfkv256_cross256_increfa_all_b128_wnz",
+    "mask_mode": "per_step",
+    "qkv_fused": false,
+    "weights_nz": true,
+    "ge_tuning": [],
+    "prefetch_mode": "none",
+    "static_self_kv_len": 256,
+    "static_cross_kv_len": 256,
+    "self_attention_backend": "increfa_all",
+    "batch_size": 128
+  }
+}
