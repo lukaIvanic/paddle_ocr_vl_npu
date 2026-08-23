@@ -11,7 +11,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 import torch
 import torch.nn.functional as F
@@ -478,6 +478,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         dtype: torch.dtype,
         model_dir: Path,
         linear_weight_format: str,
+        setup_progress: Callable[[str, str, float | None], None] | None = None,
     ) -> PaddleOCRVLInferenceStages:
         """Assemble vision prefill, text prefill, and text decode runtimes.
 
@@ -490,8 +491,13 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
 
         setup_timing_s: dict[str, float] = {}
 
+        def progress(stage: str, status: str, elapsed_s: float | None = None) -> None:
+            if setup_progress is not None:
+                setup_progress(stage, status, elapsed_s)
+
         synchronize(device)
         started = time.perf_counter()
+        progress("vision_runtime", "start")
         vision_prefill = VisionPrefillRuntime(
             self,
             backend=vision_backend,
@@ -508,9 +514,15 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         )
         synchronize(device)
         setup_timing_s["vision_runtime_setup"] = time.perf_counter() - started
+        progress(
+            "vision_runtime",
+            "done",
+            setup_timing_s["vision_runtime_setup"],
+        )
 
         synchronize(device)
         started = time.perf_counter()
+        progress("text_prefill_runtime", "start")
         text_prefill = TextPrefillRuntime(
             self,
             backend=text_backend,
@@ -525,8 +537,14 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         )
         synchronize(device)
         setup_timing_s["text_runtime_setup"] = time.perf_counter() - started
+        progress(
+            "text_prefill_runtime",
+            "done",
+            setup_timing_s["text_runtime_setup"],
+        )
 
         started = time.perf_counter()
+        progress("text_decode_runtime", "start")
         text_decode = TextDecodeRuntime(
             self,
             backend=decode_backend,
@@ -540,6 +558,12 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             linear_weight_format=linear_weight_format,
         )
         setup_timing_s.update(text_decode.setup_timing_s)
+        progress(
+            "text_decode_runtime",
+            "done",
+            setup_timing_s["compile_wrapper"]
+            + setup_timing_s["compile_first_call"],
+        )
         return PaddleOCRVLInferenceStages(
             vision_prefill=vision_prefill,
             text_prefill=text_prefill,

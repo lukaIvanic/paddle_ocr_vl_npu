@@ -95,6 +95,25 @@ from ..model.vision_prefill import (
 from .vision_router import BatchedVisionGraphRuntime, select_profiled_vision_route
 
 
+def _emit_setup_progress(
+    stage: str,
+    status: str,
+    elapsed_s: float | None = None,
+) -> None:
+    record: dict[str, Any] = {
+        "stage": str(stage),
+        "status": str(status),
+    }
+    if elapsed_s is not None:
+        record["elapsed_s"] = round(float(elapsed_s), 6)
+    print(
+        "EXP09_SETUP "
+        + json.dumps(record, ensure_ascii=False, separators=(",", ":")),
+        file=sys.stderr,
+        flush=True,
+    )
+
+
 @dataclass
 class CpuPreparedRecognition:
     request_id: str
@@ -555,6 +574,7 @@ class ContinuousRecognizer:
         # otherwise the first real request invalidates the persistent cache
         # and recompiles the vision, text-prefill, and decode boundaries.
         runtime_started = time.perf_counter()
+        _emit_setup_progress("frontend", "start")
         import torch_npu
 
         self.vision_linear_weight_format_requested = str(
@@ -837,9 +857,11 @@ class ContinuousRecognizer:
             int(token_id) for token_id in table_cell_token_ids if token_id is not None
         )
         frontend_setup_s = time.perf_counter() - runtime_started
+        _emit_setup_progress("frontend", "done", frontend_setup_s)
 
         synchronize(self.device)
         started = time.perf_counter()
+        _emit_setup_progress("model_load", "start")
         self.model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(
             self.model_dir,
             dtype=self.dtype,
@@ -847,9 +869,12 @@ class ContinuousRecognizer:
         )
         synchronize(self.device)
         model_load_s = time.perf_counter() - started
+        _emit_setup_progress("model_load", "done", model_load_s)
 
         self.decode_vocab: dict[str, Any] = {"enabled": False}
         if self.decode_vocab_token_ids_path is not None:
+            started = time.perf_counter()
+            _emit_setup_progress("decode_compact_vocab", "start")
             if self.token_selection != TOKEN_SELECTION_GREEDY:
                 raise ValueError(
                     "--decode-vocab-token-ids currently requires "
@@ -861,9 +886,15 @@ class ContinuousRecognizer:
             )
             prepare_decode_compact_lm_head(self.model, token_ids)
             synchronize(self.device)
+            _emit_setup_progress(
+                "decode_compact_vocab",
+                "done",
+                time.perf_counter() - started,
+            )
 
         synchronize(self.device)
         started = time.perf_counter()
+        _emit_setup_progress("vision_mlp_padding", "start")
         self.vision_mlp = prepare_vision_mlp_intermediate(
             self.model,
             target_intermediate_size=(
@@ -872,30 +903,43 @@ class ContinuousRecognizer:
         )
         synchronize(self.device)
         vision_mlp_setup_s = time.perf_counter() - started
+        _emit_setup_progress("vision_mlp_padding", "done", vision_mlp_setup_s)
 
         synchronize(self.device)
         started = time.perf_counter()
+        _emit_setup_progress("vision_weight_format", "start")
         self.vision_weight_format = prepare_vision_linear_weight_format(
             self.model,
             requested=self.vision_linear_weight_format_requested,
         )
         synchronize(self.device)
         vision_weight_format_s = time.perf_counter() - started
+        _emit_setup_progress(
+            "vision_weight_format", "done", vision_weight_format_s
+        )
 
         synchronize(self.device)
         started = time.perf_counter()
+        _emit_setup_progress("decode_optimization_setup", "start")
         decode_optimization_config = prepare_decode_optimization_modules(
             self.model,
             self.decode_optimization,
         )
         synchronize(self.device)
         decode_optimization_setup_s = time.perf_counter() - started
+        _emit_setup_progress(
+            "decode_optimization_setup",
+            "done",
+            decode_optimization_setup_s,
+        )
 
         synchronize(self.device)
         started = time.perf_counter()
+        _emit_setup_progress("decode_weight_format", "start")
         self.weight_format = cast_decode_linear_weights_to_nz(self.model)
         synchronize(self.device)
         weight_format_s = time.perf_counter() - started
+        _emit_setup_progress("decode_weight_format", "done", weight_format_s)
 
         self.stages = self.model.make_inference_stages(
             vision_backend=self.vision_backend,
@@ -939,6 +983,7 @@ class ContinuousRecognizer:
             dtype=self.dtype,
             model_dir=self.model_dir,
             linear_weight_format=str(self.weight_format["effective_mode"]),
+            setup_progress=_emit_setup_progress,
         )
         self.vision_prefill = self.stages.vision_prefill
         self.text_prefill = self.stages.text_prefill
@@ -1057,6 +1102,7 @@ class ContinuousRecognizer:
         )
 
         private_cache_pool_started = time.perf_counter()
+        _emit_setup_progress("private_cache_pool", "start")
         private_cache_capacity = (
             self.ready_buffer_capacity + self.private_cache_staging_headroom
         )
@@ -1075,8 +1121,12 @@ class ContinuousRecognizer:
         private_cache_pool_setup_s = (
             time.perf_counter() - private_cache_pool_started
         )
+        _emit_setup_progress(
+            "private_cache_pool", "done", private_cache_pool_setup_s
+        )
 
         started = time.perf_counter()
+        _emit_setup_progress("decode_control", "start")
         self.decode_arena = DecodeArena(
             cache=self.text_decode.warm_cache,
             device=self.device,
@@ -1107,6 +1157,7 @@ class ContinuousRecognizer:
             diagnostic_request_id=self.diagnostic_decode_request_id,
         )
         decode_control_setup_s = time.perf_counter() - started
+        _emit_setup_progress("decode_control", "done", decode_control_setup_s)
 
         self.setup_timing_s = {
             "recognizer_frontend_setup": float(frontend_setup_s),
@@ -1126,6 +1177,11 @@ class ContinuousRecognizer:
             "decode_control_setup": float(decode_control_setup_s),
             "recognizer_runtime_total": float(time.perf_counter() - runtime_started),
         }
+        _emit_setup_progress(
+            "recognizer_runtime",
+            "done",
+            self.setup_timing_s["recognizer_runtime_total"],
+        )
 
     def _emit_scheduler_progress(self, event: str, **fields: Any) -> None:
         if not self.scheduler_progress:
