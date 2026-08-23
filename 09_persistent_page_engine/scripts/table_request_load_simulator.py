@@ -241,6 +241,319 @@ def distribution(values: list[float]) -> dict[str, float | int | None]:
     }
 
 
+def _rate(numerator: int | float, denominator_s: float) -> float | None:
+    return float(numerator) / denominator_s if denominator_s > 0 else None
+
+
+def _recognizer_stage_summary(
+    records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    vision_real = sum(
+        int((record.get("vision") or {}).get("real_vision_tokens") or 0)
+        for record in records
+    )
+    vision_physical = sum(
+        int((record.get("vision") or {}).get("physical_vision_tokens") or 0)
+        for record in records
+    )
+    vision_device_s = sum(
+        float((record.get("device_stage_s") or {}).get("vision_prefill") or 0.0)
+        for record in records
+    )
+    text_real = sum(
+        int((record.get("text_prefill") or {}).get("real_text_tokens") or 0)
+        for record in records
+    )
+    text_physical = sum(
+        int((record.get("text_prefill") or {}).get("physical_text_tokens") or 0)
+        for record in records
+    )
+    text_device_s = sum(
+        float((record.get("device_stage_s") or {}).get("text_prefill") or 0.0)
+        for record in records
+    )
+    cpu_values = [
+        float(
+            (record.get("timing_s") or {}).get(
+                "cpu_preprocess_background_service",
+                (record.get("timing_s") or {}).get(
+                    "cpu_image_and_prompt_preprocess", 0.0
+                ),
+            )
+        )
+        for record in records
+    ]
+    prefill_wall_values = [
+        float(
+            (record.get("timing_s") or {}).get(
+                "prefill_request_total",
+                (record.get("timing_s") or {}).get(
+                    "vision_and_text_prefill_wall", 0.0
+                ),
+            )
+        )
+        for record in records
+    ]
+
+    def token_stage(
+        real_tokens: int,
+        physical_tokens: int,
+        device_s: float,
+    ) -> dict[str, Any]:
+        return {
+            "real_tokens": real_tokens,
+            "physical_tokens": physical_tokens,
+            "padding_tokens": physical_tokens - real_tokens,
+            "useful_token_fraction": (
+                real_tokens / physical_tokens if physical_tokens > 0 else None
+            ),
+            "device_s": device_s,
+            "real_tok_per_s": _rate(real_tokens, device_s),
+            "physical_tok_per_s": _rate(physical_tokens, device_s),
+        }
+
+    return {
+        "request_count": len(records),
+        "cpu_preprocess_s": distribution(cpu_values),
+        "prefill_request_wall_s": distribution(prefill_wall_values),
+        "vision_prefill": token_stage(
+            vision_real, vision_physical, vision_device_s
+        ),
+        "text_prefill": token_stage(text_real, text_physical, text_device_s),
+        "device_stage_s": {
+            key: sum(
+                float((record.get("device_stage_s") or {}).get(key) or 0.0)
+                for record in records
+            )
+            for key in sorted(
+                {
+                    key
+                    for record in records
+                    for key in (record.get("device_stage_s") or {})
+                }
+            )
+        },
+    }
+
+
+def _merge_schedule_metrics(
+    schedules: list[dict[str, Any]],
+) -> dict[str, Any]:
+    if not schedules:
+        return {}
+    count_fields = (
+        "requests",
+        "graph_calls",
+        "raw_decode_token_slots",
+        "active_decode_token_slots",
+        "effective_decode_tokens",
+        "idle_decode_token_slots",
+        "lookahead_decode_token_slots",
+    )
+    result = {
+        key: sum(int(schedule.get(key, 0)) for schedule in schedules)
+        for key in count_fields
+    }
+    timing_keys = {
+        key
+        for schedule in schedules
+        for key in (schedule.get("timing_s") or {})
+    }
+    timing = {
+        key: sum(
+            float((schedule.get("timing_s") or {}).get(key) or 0.0)
+            for schedule in schedules
+        )
+        for key in sorted(timing_keys)
+    }
+    raw_slots = result["raw_decode_token_slots"]
+    effective = result["effective_decode_tokens"]
+    decode_wall = float(timing.get("continuous_decode_wall", 0.0))
+    device_wall = float(timing.get("decode_model_and_argmax_device", 0.0))
+    return {
+        "schedule_count": len(schedules),
+        "batch_size": int(schedules[0].get("batch_size", 0)),
+        **result,
+        "timing_s": timing,
+        "rates": {
+            "raw_decode_tok_per_s": _rate(raw_slots, decode_wall),
+            "effective_decode_tok_per_s": _rate(effective, decode_wall),
+            "effective_device_tok_per_s": _rate(effective, device_wall),
+            "active_slot_fraction": (
+                result["active_decode_token_slots"] / raw_slots
+                if raw_slots > 0
+                else None
+            ),
+            "idle_slot_fraction": (
+                result["idle_decode_token_slots"] / raw_slots
+                if raw_slots > 0
+                else None
+            ),
+        },
+    }
+
+
+def _http_runtime_metrics(
+    results: list[dict[str, Any]],
+    *,
+    api_configuration: dict[str, Any] | None,
+    run_wall_s: float,
+) -> dict[str, Any]:
+    responses = [
+        dict(row["service_result"].get("response") or {})
+        for row in results
+        if row.get("status") == "ok"
+    ]
+    route_counts: dict[str, int] = {}
+    for response in responses:
+        route = str(response.get("route_lane") or "ordinary")
+        route_counts[route] = route_counts.get(route, 0) + 1
+
+    ordinary = [response for response in responses if "timing_s" in response]
+    ordinary.extend(
+        dict(response["runtime_metrics"]["b1"])
+        for response in responses
+        if "b1" in (response.get("runtime_metrics") or {})
+    )
+    batch_size = int((api_configuration or {}).get("batch_size") or 0)
+    decode_tokens = sum(
+        int(response.get("decode_tokens_after_prefill_including_eos") or 0)
+        for response in ordinary
+    )
+    decode_calls = sum(
+        int(response.get("decode_calls_executed") or 0)
+        for response in ordinary
+    )
+    slot_residency_s = sum(
+        float((response.get("timing_s") or {}).get("decode_slot_residency") or 0.0)
+        for response in ordinary
+    )
+    ordinary_decode = {
+        "note": (
+            "Per-request counters only. Exact raw and idle graph slots are "
+            "written by the server service summary at shutdown."
+        ),
+        "batch_size": batch_size or None,
+        "active_decode_token_iterations": decode_calls,
+        "effective_decode_tokens": decode_tokens,
+        "effective_tok_per_run_s": _rate(decode_tokens, run_wall_s),
+        "slot_residency_s": slot_residency_s,
+        "slot_residency_fraction_over_run_wall": (
+            slot_residency_s / (batch_size * run_wall_s)
+            if batch_size > 0 and run_wall_s > 0
+            else None
+        ),
+        "ready_queue_wait_s": distribution(
+            [
+                float(
+                    (response.get("timing_s") or {}).get(
+                        "decode_ready_queue_wait", 0.0
+                    )
+                )
+                for response in ordinary
+            ]
+        ),
+        "slot_residency_per_request_s": distribution(
+            [
+                float(
+                    (response.get("timing_s") or {}).get(
+                        "decode_slot_residency", 0.0
+                    )
+                )
+                for response in ordinary
+            ]
+        ),
+    }
+
+    spec_items = [
+        dict(response.get("runtime_metrics") or {})
+        for response in responses
+        if "draft" in (response.get("runtime_metrics") or {})
+    ]
+    draft_rows = [
+        dict(row)
+        for item in spec_items
+        for row in item["draft"].get("rows") or []
+    ]
+    draft_schedules = [
+        dict(item["draft"]["schedule"]) for item in spec_items
+    ]
+    target_prefills = [
+        dict(item["target_prefill"]) for item in spec_items
+    ]
+    verifier_rows = [dict(item["verifier"]) for item in spec_items]
+    proposed = sum(
+        int(row.get("proposed_draft_tokens") or 0) for row in verifier_rows
+    )
+    accepted = sum(
+        int(row.get("accepted_draft_tokens") or 0) for row in verifier_rows
+    )
+    verifier_wall_s = sum(float(row.get("wall_s") or 0.0) for row in verifier_rows)
+    verifier_output = sum(
+        int(row.get("output_tokens_after_prefill") or 0) for row in verifier_rows
+    )
+    physical_verifier_tokens = sum(
+        int(values.get("calls", 0)) * (int(k_text) + 1)
+        for row in verifier_rows
+        for k_text, values in (row.get("per_k") or {}).items()
+    )
+    physical_verifier_tokens += sum(
+        int(row.get("fallback_calls") or 0) for row in verifier_rows
+    )
+    verifier_device_s = sum(
+        float(row.get("verifier_device_s") or 0.0) for row in verifier_rows
+    )
+
+    return {
+        "api_configuration": api_configuration,
+        "route_counts": dict(sorted(route_counts.items())),
+        "ordinary": {
+            "stages": _recognizer_stage_summary(ordinary),
+            "decode": ordinary_decode,
+        }
+        if ordinary
+        else None,
+        "speculative": {
+            "request_count": len(spec_items),
+            "draft_stages": _recognizer_stage_summary(draft_rows),
+            "draft_decode": _merge_schedule_metrics(draft_schedules),
+            "target_prefill_stages": _recognizer_stage_summary(target_prefills),
+            "verifier": {
+                "target_calls": sum(
+                    int(row.get("target_calls") or 0) for row in verifier_rows
+                ),
+                "speculative_calls": sum(
+                    int(row.get("speculative_calls") or 0)
+                    for row in verifier_rows
+                ),
+                "fallback_calls": sum(
+                    int(row.get("fallback_calls") or 0) for row in verifier_rows
+                ),
+                "proposed_draft_tokens": proposed,
+                "accepted_draft_tokens": accepted,
+                "accepted_fraction_of_proposed": (
+                    accepted / proposed if proposed > 0 else None
+                ),
+                "physical_verifier_tokens": physical_verifier_tokens,
+                "verifier_device_s": verifier_device_s,
+                "physical_verifier_tok_per_s": _rate(
+                    physical_verifier_tokens, verifier_device_s
+                ),
+                "physical_verifier_tok_per_verifier_wall_s": _rate(
+                    physical_verifier_tokens, verifier_wall_s
+                ),
+                "output_tokens_after_prefill": verifier_output,
+                "verifier_wall_s": verifier_wall_s,
+                "effective_output_tok_per_s": _rate(
+                    verifier_output, verifier_wall_s
+                ),
+            },
+        }
+        if spec_items
+        else None,
+    }
+
+
 def format_seconds(value: float | int | None) -> str:
     return "n/a" if value is None else f"{float(value):.3f}s"
 
@@ -465,6 +778,7 @@ def make_summary(
     schedule: list[ScheduledRequest],
     results: list[dict[str, Any]],
     run_stats: dict[str, Any],
+    api_configuration: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     latencies = [float(row["latency_s"]) for row in results]
     dispatch_lags = [float(row["dispatch_lag_s"]) for row in results]
@@ -482,7 +796,7 @@ def make_summary(
     last_scheduled_arrival_s = (
         max(item.scheduled_offset_s for item in schedule) if schedule else 0.0
     )
-    return {
+    summary = {
         "format": "table_request_load_simulator_v1",
         "mode": "http" if args.api_url else "async_sleep",
         "api_url": args.api_url,
@@ -514,6 +828,13 @@ def make_summary(
         "non_latex_latency_s": distribution(non_latex_latencies),
         "server_worker_latency_s": distribution(worker_latencies),
     }
+    if args.api_url:
+        summary["runtime_metrics"] = _http_runtime_metrics(
+            results,
+            api_configuration=api_configuration,
+            run_wall_s=float(run_stats["run_wall_s"]),
+        )
+    return summary
 
 
 def default_output_dir() -> Path:
@@ -562,8 +883,14 @@ def main() -> None:
     write_jsonl(schedule_path, schedule_rows(schedule))
 
     request_function: RequestFunction | None = None
+    api_configuration: dict[str, Any] | None = None
     if args.api_url:
         ready = check_api_ready(args.api_url, min(args.request_timeout_s, 10.0))
+        api_configuration = (
+            dict(ready["configuration"])
+            if isinstance(ready.get("configuration"), dict)
+            else None
+        )
         print(
             f"OCR API ready worker_pid={ready.get('worker_pid')}; "
             "preparing table crops in RAM",
@@ -625,6 +952,7 @@ def main() -> None:
         schedule=schedule,
         results=results,
         run_stats=run_stats,
+        api_configuration=api_configuration,
     )
     summary["process_wall_s"] = process_wall_s
     summary_path.write_text(

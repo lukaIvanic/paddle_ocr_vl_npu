@@ -610,6 +610,8 @@ def _run_one(
         "target_prefill": {
             "timing_s": target_prefill_timing_s,
             "device_stage_s": target_prefill_device_stage_s,
+            "vision": dict(prefilled.vision),
+            "text_prefill": dict(prefilled.text_prefill),
         },
         "draft": draft,
         "speculative": result.to_dict(),

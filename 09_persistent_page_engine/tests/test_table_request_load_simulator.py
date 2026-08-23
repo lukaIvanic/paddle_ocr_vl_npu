@@ -151,6 +151,130 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
         self.assertIn(b"source_request_id=source_table_1", writer.writes[0])
         self.assertEqual(writer.writes[1], b"png-bytes")
 
+    def test_http_runtime_metrics_aggregate_prefill_and_decode(self) -> None:
+        response = {
+            "timing_s": {
+                "cpu_preprocess_background_service": 0.1,
+                "prefill_request_total": 0.2,
+                "decode_ready_queue_wait": 0.3,
+                "decode_slot_residency": 0.5,
+            },
+            "device_stage_s": {
+                "vision_prefill": 0.04,
+                "text_prefill": 0.01,
+            },
+            "vision": {
+                "real_vision_tokens": 900,
+                "physical_vision_tokens": 1024,
+            },
+            "text_prefill": {
+                "real_text_tokens": 200,
+                "physical_text_tokens": 256,
+            },
+            "decode_calls_executed": 400,
+            "decode_tokens_after_prefill_including_eos": 399,
+        }
+        metrics = MODULE._http_runtime_metrics(
+            [
+                {
+                    "status": "ok",
+                    "service_result": {"response": response},
+                }
+            ],
+            api_configuration={"batch_size": 8},
+            run_wall_s=1.0,
+        )
+        ordinary = metrics["ordinary"]
+        self.assertEqual(
+            ordinary["stages"]["vision_prefill"]["real_tok_per_s"],
+            22500.0,
+        )
+        self.assertEqual(
+            ordinary["stages"]["text_prefill"]["physical_tok_per_s"],
+            25600.0,
+        )
+        self.assertEqual(
+            ordinary["decode"]["slot_residency_fraction_over_run_wall"],
+            0.0625,
+        )
+        self.assertEqual(
+            ordinary["decode"]["active_decode_token_iterations"],
+            400,
+        )
+
+    def test_http_runtime_metrics_aggregate_speculative_stages(self) -> None:
+        stage = {
+            "timing_s": {"prefill_request_total": 0.1},
+            "device_stage_s": {
+                "vision_prefill": 0.04,
+                "text_prefill": 0.01,
+            },
+            "vision": {
+                "real_vision_tokens": 900,
+                "physical_vision_tokens": 1024,
+            },
+            "text_prefill": {
+                "real_text_tokens": 200,
+                "physical_text_tokens": 256,
+            },
+        }
+        response = {
+            "route_lane": "spec",
+            "runtime_metrics": {
+                "draft": {
+                    "rows": [stage],
+                    "schedule": {
+                        "batch_size": 8,
+                        "requests": 8,
+                        "graph_calls": 10,
+                        "raw_decode_token_slots": 80,
+                        "active_decode_token_slots": 60,
+                        "effective_decode_tokens": 59,
+                        "idle_decode_token_slots": 20,
+                        "lookahead_decode_token_slots": 1,
+                        "timing_s": {
+                            "continuous_decode_wall": 0.02,
+                            "decode_model_and_argmax_device": 0.019,
+                        },
+                    },
+                },
+                "target_prefill": stage,
+                "verifier": {
+                    "target_calls": 2,
+                    "speculative_calls": 1,
+                    "fallback_calls": 1,
+                    "proposed_draft_tokens": 7,
+                    "accepted_draft_tokens": 6,
+                    "output_tokens_after_prefill": 7,
+                    "verifier_device_s": 0.0,
+                    "wall_s": 0.01,
+                    "per_k": {"7": {"calls": 1}},
+                },
+            },
+        }
+        metrics = MODULE._http_runtime_metrics(
+            [
+                {
+                    "status": "ok",
+                    "service_result": {"response": response},
+                }
+            ],
+            api_configuration={"lane": "height_routed_u8_adaptive_k"},
+            run_wall_s=1.0,
+        )
+        speculative = metrics["speculative"]
+        self.assertEqual(
+            speculative["draft_decode"]["rates"]["active_slot_fraction"],
+            0.75,
+        )
+        self.assertEqual(
+            speculative["verifier"]["physical_verifier_tokens"], 9
+        )
+        self.assertEqual(
+            speculative["verifier"]["accepted_fraction_of_proposed"],
+            6 / 7,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -33,7 +33,12 @@ DEFAULT_COMPACT_VOCAB = (
 )
 sys.path.insert(0, str(HERE))
 
-from serve_crop_ocr_api import _Handler, _Server, _State  # noqa: E402
+from serve_crop_ocr_api import (  # noqa: E402
+    _Handler,
+    _Server,
+    _State,
+    _write_service_summary,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,7 +110,233 @@ def parse_args() -> argparse.Namespace:
             / ".runtime_cache/09_persistent_page_engine_text_packed_torchair"
         ),
     )
+    parser.add_argument(
+        "--service-summary-output",
+        type=Path,
+        help=(
+            "Write final draft, prefill, and verifier metrics when the "
+            "server drains during shutdown."
+        ),
+    )
     return parser.parse_args()
+
+
+_SCHEDULE_COUNT_FIELDS = (
+    "requests",
+    "graph_calls",
+    "initial_admissions",
+    "hot_swap_admissions",
+    "prefill_only_completions",
+    "raw_decode_token_slots",
+    "active_decode_token_slots",
+    "effective_decode_tokens",
+    "idle_decode_token_slots",
+    "lookahead_decode_token_slots",
+    "kv_prefix_bytes_copied",
+    "initial_kv_prefix_bytes_copied",
+    "hot_swap_kv_prefix_bytes_copied",
+)
+
+
+def _sum_numeric_maps(values: list[dict[str, Any]]) -> dict[str, float]:
+    keys = {str(key) for value in values for key in value}
+    return {
+        key: sum(
+            float(value.get(key, 0.0))
+            for value in values
+            if isinstance(value.get(key, 0.0), (int, float))
+        )
+        for key in sorted(keys)
+    }
+
+
+def _merge_decode_schedules(
+    schedules: list[dict[str, Any]],
+) -> dict[str, Any]:
+    if not schedules:
+        return {}
+    counts = {
+        key: sum(int(schedule.get(key, 0)) for schedule in schedules)
+        for key in _SCHEDULE_COUNT_FIELDS
+    }
+    timing = _sum_numeric_maps(
+        [dict(schedule.get("timing_s") or {}) for schedule in schedules]
+    )
+    raw_slots = counts["raw_decode_token_slots"]
+    active_slots = counts["active_decode_token_slots"]
+    effective_tokens = counts["effective_decode_tokens"]
+    decode_wall = float(timing.get("continuous_decode_wall", 0.0))
+    device_wall = float(timing.get("decode_model_and_argmax_device", 0.0))
+    scheduler_wall = float(timing.get("run_scoped_scheduler_wall", 0.0))
+
+    def rate(numerator: int, denominator: float) -> float | None:
+        return numerator / denominator if denominator > 0 else None
+
+    return {
+        "schedule_count": len(schedules),
+        "batch_size": int(schedules[0].get("batch_size", 0)),
+        **counts,
+        "timing_s": timing,
+        "rates": {
+            "raw_decode_tok_per_s": rate(raw_slots, decode_wall),
+            "effective_decode_tok_per_s": rate(effective_tokens, decode_wall),
+            "effective_device_tok_per_s": rate(effective_tokens, device_wall),
+            "scheduler_effective_tok_per_s": rate(
+                effective_tokens, scheduler_wall
+            ),
+            "active_slot_fraction": (
+                active_slots / raw_slots if raw_slots > 0 else None
+            ),
+            "idle_slot_fraction": (
+                counts["idle_decode_token_slots"] / raw_slots
+                if raw_slots > 0
+                else None
+            ),
+        },
+    }
+
+
+def _spec_runtime_metrics(full: dict[str, Any]) -> dict[str, Any]:
+    speculative = dict(full["speculative"])
+    adaptive = dict(speculative.get("adaptive_k") or {})
+    draft_rows = []
+    for row in full["draft"]["rows"]:
+        draft_rows.append(
+            {
+                "input_tokens": int(row["input_tokens"]),
+                "projected_image_tokens": int(row["projected_image_tokens"]),
+                "generated_tokens_including_eos": int(
+                    row["generated_tokens_including_eos"]
+                ),
+                "decode_tokens_after_prefill_including_eos": int(
+                    row["decode_tokens_after_prefill_including_eos"]
+                ),
+                "decode_calls_executed": int(row["decode_calls_executed"]),
+                "timing_s": dict(row.get("timing_s") or {}),
+                "device_stage_s": dict(row.get("device_stage_s") or {}),
+                "vision": dict(row.get("vision") or {}),
+                "text_prefill": dict(row.get("text_prefill") or {}),
+            }
+        )
+    return {
+        "draft": {
+            "rows": draft_rows,
+            "schedule": dict(full["draft"]["schedule"]),
+        },
+        "target_prefill": {
+            "input_tokens": int(full["input_tokens"]),
+            "projected_image_tokens": int(full["projected_image_tokens"]),
+            **dict(full["target_prefill"]),
+        },
+        "verifier": {
+            key: speculative.get(key)
+            for key in (
+                "target_calls",
+                "speculative_calls",
+                "fully_accepted_speculative_calls",
+                "rejected_speculative_calls",
+                "fallback_calls",
+                "proposed_draft_tokens",
+                "accepted_draft_tokens",
+                "accepted_fraction_of_proposed",
+                "verifier_device_s",
+                "fallback_device_s",
+                "wall_s",
+                "effective_target_tok_per_s",
+            )
+        }
+        | {
+            "output_tokens_after_prefill": max(
+                0, len(speculative["token_ids"]) - 1
+            ),
+            "per_k": dict(adaptive.get("per_k") or {}),
+            "transitions": dict(adaptive.get("transitions") or {}),
+        },
+    }
+
+
+def _summarize_spec_service(
+    spec_metrics: list[dict[str, Any]],
+    b1_schedules: list[dict[str, Any]],
+) -> dict[str, Any]:
+    draft_schedules = [item["draft"]["schedule"] for item in spec_metrics]
+    verifier_rows = [item["verifier"] for item in spec_metrics]
+    verifier_sum_fields = (
+        "target_calls",
+        "speculative_calls",
+        "fully_accepted_speculative_calls",
+        "rejected_speculative_calls",
+        "fallback_calls",
+        "proposed_draft_tokens",
+        "accepted_draft_tokens",
+        "output_tokens_after_prefill",
+    )
+    verifier = {
+        key: sum(int(row.get(key) or 0) for row in verifier_rows)
+        for key in verifier_sum_fields
+    }
+    verifier_device_s = sum(
+        float(row.get("verifier_device_s") or 0.0) for row in verifier_rows
+    )
+    fallback_device_s = sum(
+        float(row.get("fallback_device_s") or 0.0) for row in verifier_rows
+    )
+    verifier_wall_s = sum(
+        float(row.get("wall_s") or 0.0) for row in verifier_rows
+    )
+    proposed = verifier["proposed_draft_tokens"]
+    physical_verifier_tokens = 0
+    per_k: dict[str, dict[str, float]] = {}
+    for row in verifier_rows:
+        for k_text, values in dict(row.get("per_k") or {}).items():
+            target = per_k.setdefault(k_text, {})
+            for key, value in dict(values).items():
+                if isinstance(value, (int, float)):
+                    target[key] = target.get(key, 0.0) + float(value)
+            physical_verifier_tokens += int(values.get("calls", 0)) * (
+                int(k_text) + 1
+            )
+    physical_verifier_tokens += verifier["fallback_calls"]
+    verifier.update(
+        {
+            "verifier_device_s": verifier_device_s,
+            "fallback_device_s": fallback_device_s,
+            "wall_s": verifier_wall_s,
+            "accepted_fraction_of_proposed": (
+                verifier["accepted_draft_tokens"] / proposed
+                if proposed > 0
+                else None
+            ),
+            "physical_verifier_tokens": physical_verifier_tokens,
+            "physical_verifier_tok_per_s": (
+                physical_verifier_tokens / verifier_device_s
+                if verifier_device_s > 0
+                else None
+            ),
+            "physical_verifier_tok_per_verifier_wall_s": (
+                physical_verifier_tokens / verifier_wall_s
+                if verifier_wall_s > 0
+                else None
+            ),
+            "effective_output_tok_per_s": (
+                verifier["output_tokens_after_prefill"] / verifier_wall_s
+                if verifier_wall_s > 0
+                else None
+            ),
+            "per_k": per_k,
+        }
+    )
+    return {
+        "format": "paddleocr_table_spec_service_metrics_v1",
+        "request_count": len(spec_metrics) + len(b1_schedules),
+        "route_counts": {
+            "spec": len(spec_metrics),
+            "b1": len(b1_schedules),
+        },
+        "draft_decode": _merge_decode_schedules(draft_schedules),
+        "verifier": verifier,
+        "b1_decode": _merge_decode_schedules(b1_schedules),
+    }
 
 
 def _live_args(config: dict[str, Any]) -> SimpleNamespace:
@@ -269,10 +500,21 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
             }
         )
 
+        spec_service_metrics: list[dict[str, Any]] = []
+        b1_service_schedules: list[dict[str, Any]] = []
+
         while True:
             job = jobs.get()
             if job is None:
-                results.put({"kind": "service_summary", "payload": {}})
+                results.put(
+                    {
+                        "kind": "service_summary",
+                        "payload": _summarize_spec_service(
+                            spec_service_metrics,
+                            b1_service_schedules,
+                        ),
+                    }
+                )
                 break
             internal_id = str(job["request_id"])
             try:
@@ -295,6 +537,31 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
                     stop_reason = str(full["stop_reason"])
                     exact = token_ids == fixed_lab.target_tokens(source)
                     stage_timing = {}
+                    runtime_metrics = {
+                        "b1": {
+                            "schedule": dict(full["schedule"]),
+                            "timing_s": dict(full.get("timing_s") or {}),
+                            "device_stage_s": dict(
+                                full.get("device_stage_s") or {}
+                            ),
+                            "vision": dict(full.get("vision") or {}),
+                            "text_prefill": dict(
+                                full.get("text_prefill") or {}
+                            ),
+                            "generated_tokens_including_eos": int(
+                                full["generated_tokens_including_eos"]
+                            ),
+                            "decode_tokens_after_prefill_including_eos": int(
+                                full[
+                                    "decode_tokens_after_prefill_including_eos"
+                                ]
+                            ),
+                            "decode_calls_executed": int(
+                                full["decode_calls_executed"]
+                            ),
+                        }
+                    }
+                    b1_service_schedules.append(dict(full["schedule"]))
                 else:
                     route_lane = "spec"
                     full = run_spec(source, raw_image)
@@ -305,6 +572,8 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
                     stop_reason = str(speculative["stop_reason"])
                     exact = bool(full["exact_saved_reference"])
                     stage_timing = dict(full["timing_s"])
+                    runtime_metrics = _spec_runtime_metrics(full)
+                    spec_service_metrics.append(runtime_metrics)
                 service_wall_s = time.perf_counter() - service_started
                 results.put(
                     {
@@ -327,6 +596,7 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
                                 - float(job["submitted_monotonic_s"])
                             ),
                             "stage_timing_s": stage_timing,
+                            "runtime_metrics": runtime_metrics,
                             "worker_wall_s": (
                                 time.perf_counter()
                                 - float(job["submitted_monotonic_s"])
@@ -425,10 +695,22 @@ def main() -> None:
     try:
         server.serve_forever(poll_interval=0.25)
     finally:
+        service_summary: dict[str, Any] | None = None
         try:
-            state.drain()
+            service_summary = state.drain()
         except (queue.Empty, queue.Full):
             worker.terminate()
+        if args.service_summary_output is not None and service_summary is not None:
+            _write_service_summary(
+                args.service_summary_output,
+                configuration=state.configuration,
+                worker_pid=state.worker_pid,
+                summary=service_summary,
+            )
+            print(
+                f"SERVICE_SUMMARY {args.service_summary_output.expanduser().resolve()}",
+                flush=True,
+            )
         worker.join(timeout=10.0)
         if worker.is_alive():
             worker.terminate()

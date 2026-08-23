@@ -80,7 +80,38 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--torchair-cache-dir", type=Path, default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair")
     parser.add_argument("--vision-torchair-cache-dir", type=Path, default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_vision_torchair")
     parser.add_argument("--text-torchair-cache-dir", type=Path, default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_text_torchair")
+    parser.add_argument(
+        "--service-summary-output",
+        type=Path,
+        help=(
+            "Write the final decode scheduler and stage summary when the "
+            "server drains during shutdown."
+        ),
+    )
     return parser.parse_args()
+
+
+def _write_service_summary(
+    path: Path,
+    *,
+    configuration: dict[str, Any] | None,
+    worker_pid: int | None,
+    summary: dict[str, Any],
+) -> None:
+    payload = {
+        "format": "paddleocr_crop_service_summary_v1",
+        "worker_pid": worker_pid,
+        "configuration": configuration,
+        "summary": summary,
+    }
+    path = path.expanduser().resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
 
 
 def _worker_main(
@@ -466,10 +497,22 @@ def main() -> None:
     try:
         server.serve_forever(poll_interval=0.25)
     finally:
+        service_summary: dict[str, Any] | None = None
         try:
-            state.drain()
+            service_summary = state.drain()
         except (queue.Empty, queue.Full):
             worker.terminate()
+        if args.service_summary_output is not None and service_summary is not None:
+            _write_service_summary(
+                args.service_summary_output,
+                configuration=state.configuration,
+                worker_pid=state.worker_pid,
+                summary=service_summary,
+            )
+            print(
+                f"SERVICE_SUMMARY {args.service_summary_output.expanduser().resolve()}",
+                flush=True,
+            )
         worker.join(timeout=10.0)
         if worker.is_alive():
             worker.terminate()
