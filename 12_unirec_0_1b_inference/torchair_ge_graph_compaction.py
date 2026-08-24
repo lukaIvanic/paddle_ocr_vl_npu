@@ -134,3 +134,30 @@ def compact_loaded_ge_graphs(callables: Iterable[Any]) -> dict[str, Any]:
         ),
         "graphs": reports,
     }
+
+
+def release_loaded_ge_executors(callables: Iterable[Any]) -> dict[str, Any]:
+    """Drop cache-loaded GE executors while retaining lazy cache loaders."""
+    released = []
+    seen: set[int] = set()
+    for callable_object in callables:
+        identity = id(callable_object)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        if not hasattr(callable_object, "_compiled_model"):
+            raise TypeError(
+                "executor release requires a TorchAir LazyCompiledModel, got "
+                f"{type(callable_object)!r}"
+            )
+        compiled_model = getattr(callable_object, "_compiled_model")
+        if compiled_model is None:
+            raise RuntimeError("TorchAir executor is not loaded")
+        setattr(callable_object, "_compiled_model", None)
+        released.append(
+            {
+                "callable_type": type(callable_object).__name__,
+                "compiled_model_type": type(compiled_model).__name__,
+            }
+        )
+    return {"executor_count": len(released), "executors": released}

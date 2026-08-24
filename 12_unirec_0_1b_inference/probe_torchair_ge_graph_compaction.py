@@ -12,6 +12,7 @@ import time
 
 os.environ.setdefault("TE_PARALLEL_COMPILER", "1")
 os.environ.setdefault("CANN_KNOWLEDGE_BANK_PROCESS_NUM", "0")
+os.environ.setdefault("UNIREC_DEINIT_TBE_AFTER_WARMUP", "1")
 os.environ.setdefault("UNIREC_PURGE_HOST_AFTER_WARMUP", "1")
 
 import torch
@@ -21,7 +22,10 @@ from host_memory_diagnostics import process_snapshot
 from modeling_optimized_unirec import OptimizedUniRecRunner
 from post_warmup_host_cleanup import cleanup_after_warmup
 from tbe_compiler_lifecycle import deinitialize_after_warmup
-from torchair_ge_graph_compaction import compact_loaded_ge_graphs
+from torchair_ge_graph_compaction import (
+    compact_loaded_ge_graphs,
+    release_loaded_ge_executors,
+)
 from vision_bucket_presets import resolve_vision_bucket_specs
 from vision_full_batch import BucketedFullVisionRuntime
 
@@ -33,6 +37,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--bucket-preset", default="310p_k20_l4")
     parser.add_argument("--bucket", default="960x64_b4")
     parser.add_argument("--device", default="npu:0")
+    parser.add_argument(
+        "--release-mode",
+        choices=("definitions", "executor"),
+        default="definitions",
+    )
     return parser.parse_args()
 
 
@@ -94,7 +103,12 @@ def main() -> None:
 
     tbe_report = deinitialize_after_warmup("ge_compaction_probe_warm")
     before = process_snapshot()
-    compaction = compact_loaded_ge_graphs([runtime.compiled[args.bucket]])
+    if args.release_mode == "definitions":
+        compaction = compact_loaded_ge_graphs([runtime.compiled[args.bucket]])
+    else:
+        compaction = release_loaded_ge_executors(
+            [runtime.compiled[args.bucket]]
+        )
     collected = gc.collect()
     cleanup = cleanup_after_warmup("ge_compaction_probe_compacted")
     after = process_snapshot()
@@ -113,6 +127,7 @@ def main() -> None:
         "status": "pass" if torch.equal(reference_cpu, candidate_cpu) else "fail",
         "chip": torch_npu.npu.get_device_name(0),
         "bucket": args.bucket,
+        "release_mode": args.release_mode,
         "first_call_s": first_call_s,
         "replay_s": replay_s,
         "exact": torch.equal(reference_cpu, candidate_cpu),
