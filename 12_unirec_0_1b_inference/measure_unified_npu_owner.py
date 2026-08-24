@@ -12,13 +12,14 @@ from types import SimpleNamespace
 os.environ.setdefault("TE_PARALLEL_COMPILER", "1")
 os.environ.setdefault("CANN_KNOWLEDGE_BANK_PROCESS_NUM", "0")
 os.environ.setdefault("UNIREC_DEINIT_TBE_AFTER_WARMUP", "1")
+os.environ.setdefault("UNIREC_STATIC_CACHE_LEN", "2048")
+os.environ.setdefault("UNIREC_STATIC_CROSS_CACHE_LEN", "1320")
 
 import numpy as np
 import torch
 import torch_npu
 
 from benchmark_shared_vision_streams import (
-    assign_keys_to_lanes,
     build_inputs,
     run_concurrent,
 )
@@ -44,6 +45,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--decode-cache-parent", type=Path, required=True)
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--lanes", type=int, default=4)
+    parser.add_argument("--bucket-preset", default="310p_k20_l4")
     return parser.parse_args()
 
 
@@ -66,9 +68,6 @@ def main() -> None:
     if visible.intersection({5, 6}):
         raise RuntimeError("physical NPU 5 and NPU 6 are excluded")
     torch_npu.npu.set_compile_mode(jit_compile=False)
-    os.environ["UNIREC_STATIC_CACHE_LEN"] = "2048"
-    os.environ["UNIREC_STATIC_CROSS_CACHE_LEN"] = "1320"
-
     stages: dict[str, object] = {}
     record(stages, "enter")
     runner = OptimizedUniRecRunner(
@@ -107,14 +106,23 @@ def main() -> None:
 
     vision = BucketedFullVisionRuntime(
         runner,
-        specs=resolve_vision_bucket_specs("310p_k20_l4"),
+        specs=resolve_vision_bucket_specs(args.bucket_preset),
         focal_depthwise_rewrite="constant_grouped_all",
         weight_format="torchair_internal",
-        preset_name="310p_k20_l4",
+        preset_name=args.bucket_preset,
     )
     vision_inputs = build_inputs(vision, lanes=args.lanes)
     vision_streams = [torch.npu.Stream() for _ in range(args.lanes)]
-    keys_by_lane = assign_keys_to_lanes(vision, lanes=args.lanes)
+    keys_by_lane = [[] for _ in range(args.lanes)]
+    lane_pixels = [0 for _ in range(args.lanes)]
+    for spec in sorted(
+        vision.specs,
+        key=lambda row: row.batch_size * row.width * row.height,
+        reverse=True,
+    ):
+        lane = min(range(args.lanes), key=lane_pixels.__getitem__)
+        keys_by_lane[lane].append(spec.key)
+        lane_pixels[lane] += spec.batch_size * spec.width * spec.height
     run_concurrent(vision, keys_by_lane, vision_inputs, vision_streams)
     record(stages, "after_vision_warmup")
 
@@ -164,7 +172,7 @@ def main() -> None:
         "tbe_deinit": deinit_report,
         "stages": stages,
         "layout_batch_size": 2,
-        "vision_bucket_preset": "310p_k20_l4",
+        "vision_bucket_preset": args.bucket_preset,
         "decode_batch_size": 128,
     }
     print("UNIREC_UNIFIED_OWNER_SUMMARY " + json.dumps(report, sort_keys=True))
