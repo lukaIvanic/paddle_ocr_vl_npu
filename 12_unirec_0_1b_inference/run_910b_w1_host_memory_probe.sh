@@ -29,6 +29,7 @@ REFERENCE_OUTPUT="${REFERENCE_OUTPUT:-}"
 CPUSET="${CPUSET:-0-63}"
 LIMIT="${LIMIT:-128}"
 TORCH_WARM_POOL_VALUE="${TORCH_WARM_POOL_VALUE:-0}"
+TE_PARALLEL_COMPILER_VALUE="${TE_PARALLEL_COMPILER_VALUE:-1}"
 RUN_LABEL="${RUN_LABEL:-nowarmpool}"
 
 test -x "$PYTHON_BIN"
@@ -65,6 +66,7 @@ command=(
   OPENBLAS_NUM_THREADS=1
   NUMEXPR_NUM_THREADS=1
   "TORCH_WARM_POOL=$TORCH_WARM_POOL_VALUE"
+  "TE_PARALLEL_COMPILER=$TE_PARALLEL_COMPILER_VALUE"
   "UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE=$DECODE_CACHE_PARENT"
   "$PYTHON_BIN" "$SCRIPT_DIR/run_opendoc_batched_unirec.py"
   --openocr-root "$OPENOCR_ROOT"
@@ -127,6 +129,7 @@ printf '%s\n' "$started" >"$RUN_ROOT/start.txt"
 
 monitor() {
   local peak_pss=0
+  local last_snapshot_s=0
   local pids pid rss_value now elapsed shm_bytes hbm_used
   local process_count rss pss private values
   while :; do
@@ -152,9 +155,8 @@ monitor() {
       private=$((private + ${2:-0}))
     done
     shm_bytes="$(df -B1 --output=used /dev/shm | tail -n 1 | tr -d ' ')"
-    hbm_used="$(npu-smi info -t usages -i "$ASCEND_RT_VISIBLE_DEVICES" 2>/dev/null \
-      | awk '/HBM Usage Rate/ {next} /HBM Usage/ {print $NF; exit}' \
-      | tr -cd '0-9')"
+    hbm_used="$(/usr/local/bin/npu-status 2>/dev/null \
+      | sed -n "s/^NPU $ASCEND_RT_VISIBLE_DEVICES:.*HBM=\([0-9]*\)\/.*$/\1/p")"
     now="$(date +%s.%N)"
     elapsed="$(awk -v now="$now" -v start="$started" \
       'BEGIN {printf "%.6f", now-start}')"
@@ -163,6 +165,10 @@ monitor() {
       "${shm_bytes:-0}" "${hbm_used:-0}" >>"$RUN_ROOT/memory.tsv"
     if (( pss > peak_pss )); then
       peak_pss="$pss"
+    fi
+    if awk -v elapsed="$elapsed" -v last="$last_snapshot_s" \
+      'BEGIN {exit !((elapsed-last) >= 15)}'; then
+      last_snapshot_s="$elapsed"
       {
         printf 'captured_elapsed_s=%s total_pss_kib=%s\n' "$elapsed" "$pss"
         printf 'pid\tppid\trss_kib\tpss_kib\tprivate_kib\tcommand\n'
@@ -183,7 +189,7 @@ monitor() {
         done
       } >"$RUN_ROOT/process_memory_peak.tsv"
     fi
-    sleep 1
+    sleep 2
   done
   inventory "$RUN_ROOT/om_after.txt"
   diff -u "$RUN_ROOT/om_before.txt" "$RUN_ROOT/om_after.txt" \
@@ -216,6 +222,7 @@ printf '%s\n' "$MONITOR_PID" >"$RUN_ROOT/monitor_pid.txt"
   printf 'commit=%s\n' "$(git rev-parse HEAD)"
   printf 'physical_npu=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"
   printf 'torch_warm_pool=%s\n' "$TORCH_WARM_POOL_VALUE"
+  printf 'te_parallel_compiler=%s\n' "$TE_PARALLEL_COMPILER_VALUE"
   printf 'reference_output=%s\n' "$REFERENCE_OUTPUT"
 } >"$RUN_ROOT/preflight.txt"
 
