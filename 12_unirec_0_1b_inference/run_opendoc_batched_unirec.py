@@ -29,6 +29,7 @@ from typing import Any, Iterable
 # Preserve explicit overrides for cold-cache compilation experiments.
 os.environ.setdefault("TE_PARALLEL_COMPILER", "1")
 os.environ.setdefault("CANN_KNOWLEDGE_BANK_PROCESS_NUM", "0")
+os.environ.setdefault("UNIREC_DEINIT_TBE_AFTER_WARMUP", "1")
 
 import cv2
 import numpy as np
@@ -2566,6 +2567,9 @@ def main() -> None:
             "te_parallel_compiler": os.environ.get("TE_PARALLEL_COMPILER"),
             "cann_knowledge_bank_process_num": os.environ.get(
                 "CANN_KNOWLEDGE_BANK_PROCESS_NUM"
+            ),
+            "deinit_tbe_after_warmup": os.environ.get(
+                "UNIREC_DEINIT_TBE_AFTER_WARMUP"
             ),
         },
         "openocr_root": str(openocr_root),
