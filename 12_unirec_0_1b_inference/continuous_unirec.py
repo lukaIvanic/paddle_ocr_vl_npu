@@ -71,6 +71,14 @@ class ContinuousReadyItem:
     request_id: str
     payload: Any
     prefilled: UniRecPrefilledItem | "ContinuousWorkerPrefilledItem"
+    on_admitted: Callable[[], None] | None = None
+
+    def release_source_after_admission(self) -> None:
+        callback = self.on_admitted
+        if callback is None:
+            return
+        self.on_admitted = None
+        callback()
 
 
 @dataclass
@@ -695,13 +703,8 @@ class ContinuousUniRecDecoder:
             submitted += 1
             return ready
 
-        initial: list[ContinuousReadyItem] = []
-        for _ in range(self.batch_size):
-            ready = next_ready()
-            if ready is None:
-                break
-            initial.append(ready)
-        if not initial:
+        first_ready = next_ready()
+        if first_ready is None:
             return {
                 "batch_size": self.batch_size,
                 "submitted": 0,
@@ -722,15 +725,23 @@ class ContinuousUniRecDecoder:
                 "compile": None,
             }
 
+        initial: list[ContinuousReadyItem] = [first_ready]
         direct_initial = isinstance(
-            initial[0].prefilled,
+            first_ready.prefilled,
             ContinuousWorkerPrefilledItem,
         )
         if direct_initial:
             arena_allocate_started = time.perf_counter()
             cache = self._allocate_empty_arena()
             initial_arena_allocate_s = time.perf_counter() - arena_allocate_started
-            for slot, ready in enumerate(initial):
+            for slot in range(self.batch_size):
+                if slot == 0:
+                    ready = first_ready
+                else:
+                    ready = next_ready()
+                    if ready is None:
+                        break
+                    initial.append(ready)
                 if not isinstance(ready.prefilled, ContinuousWorkerPrefilledItem):
                     raise RuntimeError("Cannot mix worker and B1 initial prefill items")
                 enqueue_s, transferred_bytes, reset_bytes = self._admit_worker_row(
@@ -743,6 +754,7 @@ class ContinuousUniRecDecoder:
                 direct_admission_count += 1
                 direct_cross_kv_bytes += transferred_bytes
                 direct_reset_bytes += reset_bytes
+                ready.release_source_after_admission()
             if len(initial) < self.batch_size:
                 # Keep inactive graph rows numerically valid, matching the old
                 # behavior that padded the initial cohort with its last item.
@@ -762,6 +774,11 @@ class ContinuousUniRecDecoder:
                         cache.cross_attention_mask[last_slot : last_slot + 1]
                     )
         else:
+            for _ in range(1, self.batch_size):
+                ready = next_ready()
+                if ready is None:
+                    break
+                initial.append(ready)
             padded_initial = list(initial)
             while len(padded_initial) < self.batch_size:
                 padded_initial.append(initial[-1])
@@ -775,6 +792,8 @@ class ContinuousUniRecDecoder:
                 [item.prefilled for item in padded_initial]
             )
             initial_cache_stack_s = time.perf_counter() - cache_stack_started
+            for ready in initial:
+                ready.release_source_after_admission()
         state_build_started = time.perf_counter()
         slots: list[ContinuousReadyItem | None] = [
             initial[index] if index < len(initial) else None
@@ -944,6 +963,7 @@ class ContinuousUniRecDecoder:
                     copy_started = time.perf_counter()
                     self._copy_cache_row(cache, slot, ready.prefilled.kv_cache)
                     cache_refill_copy_enqueue_s += time.perf_counter() - copy_started
+                ready.release_source_after_admission()
                 slots[slot] = ready
                 token_ids[slot] = self._initial_token_ids(
                     ready,

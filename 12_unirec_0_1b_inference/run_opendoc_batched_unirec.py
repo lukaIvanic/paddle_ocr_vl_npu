@@ -42,6 +42,13 @@ from modeling_optimized_unirec import (
     synchronize_device,
 )
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
+from opendoc_layout_npu import (
+    DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
+    DEFAULT_LAYOUT_WEIGHT_FORMAT,
+    LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+    LAYOUT_WEIGHT_FORMAT_CHOICES,
+)
+from shared_byte_budget import SharedByteBudget
 from text_packed_prefill import PACKED_TEXT_PREFILL_BUCKET
 from vision_atlas import (
     ATLAS_CHANNELS,
@@ -51,6 +58,7 @@ from vision_atlas import (
     UniRecVisionAtlasRuntime,
 )
 from vision_static_shape import StaticShapeUniRecVisionRuntime
+from vision_bucket_presets import VISION_BUCKET_PRESET_CHOICES
 
 
 def parse_spatial_shape(value: str) -> tuple[int, int]:
@@ -171,10 +179,30 @@ def parse_args() -> argparse.Namespace:
         default="float32",
     )
     parser.add_argument(
+        "--layout-reading-order-dtype",
+        choices=("float16", "float32"),
+        default=None,
+    )
+    parser.add_argument(
         "--layout-execution",
         choices=("eager", "torchair"),
         default="eager",
     )
+    parser.add_argument(
+        "--layout-weight-format",
+        choices=LAYOUT_WEIGHT_FORMAT_CHOICES,
+        default=DEFAULT_LAYOUT_WEIGHT_FORMAT,
+    )
+    parser.add_argument(
+        "--layout-depthwise-rewrite",
+        choices=LAYOUT_DEPTHWISE_REWRITE_CHOICES,
+        default=DEFAULT_LAYOUT_DEPTHWISE_REWRITE,
+    )
+    parser.add_argument(
+        "--layout-preformat-frozen-bn-buffers",
+        action="store_true",
+    )
+    parser.add_argument("--layout-cpu-threads", type=int, default=1)
     parser.add_argument(
         "--layout-batch-size",
         type=int,
@@ -212,6 +240,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--shared-cross-kv-budget-gib",
+        type=float,
+        default=3.5,
+        help=(
+            "Maximum live page-scoped CPU shared memory while worker prefill "
+            "streams into decode. The default leaves headroom below 5 GB."
+        ),
+    )
+    parser.add_argument(
         "--worker-empty-cache-after-page",
         action="store_true",
         help=(
@@ -220,9 +257,36 @@ def parse_args() -> argparse.Namespace:
             "scope, return unused cached allocator blocks to the device."
         ),
     )
-    parser.add_argument("--stock-encoder", type=Path, required=True)
-    parser.add_argument("--stock-decoder", type=Path, required=True)
-    parser.add_argument("--stock-tokenizer-mapping", type=Path, required=True)
+    parser.add_argument(
+        "--vision-bucket-preset",
+        choices=VISION_BUCKET_PRESET_CHOICES,
+        default="production_v1",
+    )
+    parser.add_argument(
+        "--vision-focal-depthwise-rewrite",
+        choices=(
+            "native",
+            "constant",
+            "constant_grouped",
+            "constant_grouped_all",
+            "aligned_spatial",
+        ),
+        default="native",
+    )
+    parser.add_argument(
+        "--vision-weight-format",
+        choices=("native", "focal_prepack", "torchair_internal"),
+        default="native",
+    )
+    parser.add_argument("--recognition-preprocess-threads", type=int, default=8)
+    parser.add_argument(
+        "--recognition-input-contract",
+        choices=("legacy_float_chw", "compact_uint8_hwc"),
+        default="compact_uint8_hwc",
+    )
+    parser.add_argument("--stock-encoder", type=Path)
+    parser.add_argument("--stock-decoder", type=Path)
+    parser.add_argument("--stock-tokenizer-mapping", type=Path)
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--device", default="npu:0")
@@ -244,6 +308,24 @@ def parse_args() -> argparse.Namespace:
         default=Path(".runtime_cache/12_unirec_0_1b_inference/opendoc_model_pth_decode"),
     )
     parser.add_argument("--decode-batch-size", type=int, default=4)
+    parser.add_argument("--self-cache-length", type=int, default=1024)
+    parser.add_argument("--cross-cache-length", type=int, default=512)
+    parser.add_argument(
+        "--decode-weight-format",
+        choices=("native", "nz"),
+        default="native",
+    )
+    parser.add_argument("--decode-lm-head-rows", type=int, default=0)
+    parser.add_argument(
+        "--decode-admission-prefetch-depth",
+        type=int,
+        default=0,
+    )
+    parser.add_argument(
+        "--decode-live-arena-warmup-passes",
+        type=int,
+        default=2,
+    )
     parser.add_argument(
         "--decode-scheduling",
         choices=("fixed", "continuous"),
@@ -937,6 +1019,7 @@ def page_request_from_process_payload(
     payload: dict[str, Any],
     *,
     measured_layout_s: float,
+    shared_byte_budget: SharedByteBudget | None = None,
 ) -> PageRequest:
     """Materialize a process-owned frontend result without decoding again."""
     started = time.perf_counter()
@@ -944,7 +1027,11 @@ def page_request_from_process_payload(
     image_path = Path(payload["image_path"])
     shared = payload.get("shared_memory")
     lease = (
-        SharedPageLease(str(shared["name"]))
+        SharedPageLease(
+            str(shared["name"]),
+            byte_budget=shared_byte_budget,
+            reserved_nbytes=int(shared.get("budget_nbytes", 0)),
+        )
         if isinstance(shared, dict)
         else None
     )
@@ -1087,6 +1174,46 @@ def release_page_frontend_storage(page: PageRequest) -> None:
         crop.worker_cross_kv = None
     page.frontend_storage_lease = None
     lease.close()
+
+
+@dataclass
+class PageCrossKvAdmissionTracker:
+    """Release one image-free page arena after its last crop enters NPU HBM."""
+
+    page: PageRequest
+    admitted_crops: int = 0
+    released_cross_kv_bytes: int = 0
+
+    def __post_init__(self) -> None:
+        if self.page.frontend_storage_lease is None:
+            raise ValueError("page admission tracking requires a shared arena")
+        if self.page.image is not None:
+            raise ValueError("early arena release requires image-free payloads")
+        if any(crop.image is not None for crop in self.page.crops):
+            raise ValueError("early arena release requires image-free crops")
+
+    def release_crop(
+        self,
+        crop: CropRequest,
+        item: ContinuousWorkerPrefilledItem,
+    ) -> None:
+        packed_cross_kv = item.packed_cross_kv
+        if packed_cross_kv is None or crop.worker_cross_kv is None:
+            raise RuntimeError(
+                f"crop {crop.request_id} cross-K/V was already released"
+            )
+        if packed_cross_kv is not crop.worker_cross_kv:
+            raise RuntimeError(
+                f"crop {crop.request_id} admission item does not own its page view"
+            )
+        self.released_cross_kv_bytes += int(packed_cross_kv.nbytes)
+        item.packed_cross_kv = None
+        crop.worker_cross_kv = None
+        self.admitted_crops += 1
+        if self.admitted_crops > len(self.page.crops):
+            raise RuntimeError("page admitted more crops than it owns")
+        if self.admitted_crops == len(self.page.crops):
+            release_page_frontend_storage(self.page)
 
 
 def iter_prepared_pages(
@@ -1385,6 +1512,9 @@ def warmup_full_pipeline(
             max_length=args.max_length,
             decode_mode=args.decode_mode,
             compile_backend=args.compile_backend,
+            admission_prefetch_depth=args.decode_admission_prefetch_depth,
+            self_cache_length=args.self_cache_length,
+            cross_cache_length=args.cross_cache_length,
         ).run(ready_source(), on_complete=complete_crop)
         record_direct_arena_admission_metrics(warmup_metrics, decode_summary)
     else:
@@ -1413,6 +1543,19 @@ def warmup_full_pipeline(
             pipeline=pipeline,
             infer_doc_onnx=infer_doc_onnx,
         )
+        if page.image is None:
+            if any(
+                bool(record.get("is_image", False))
+                for record in result["recognition_results"]
+            ):
+                page_image = cv2.imread(result["input_path"], cv2.IMREAD_COLOR)
+                if page_image is None:
+                    raise RuntimeError(
+                        f"failed to reload warmup page: {result['input_path']}"
+                    )
+                result["_page_image"] = page_image
+            else:
+                result["_page_image"] = np.empty((0, 0, 3), dtype=np.uint8)
         pipeline.save_to_json(result, str(warmup_dir))
         pipeline.save_to_markdown(result, str(warmup_dir))
         release_page_frontend_storage(page)
@@ -1526,6 +1669,27 @@ def recognize_cohort(
 
 def main() -> None:
     args = parse_args()
+    os.environ["UNIREC_STATIC_CACHE_LEN"] = str(args.self_cache_length)
+    os.environ["UNIREC_STATIC_CROSS_CACHE_LEN"] = str(args.cross_cache_length)
+    os.environ["UNIREC_VISION_BUCKET_PRESET"] = args.vision_bucket_preset
+    os.environ["UNIREC_RECOGNITION_PREPROCESS_THREADS"] = str(
+        args.recognition_preprocess_threads
+    )
+    os.environ["UNIREC_RECOGNITION_INPUT_CONTRACT"] = (
+        args.recognition_input_contract
+    )
+    if args.device.startswith("npu"):
+        visible_devices = [
+            int(value)
+            for value in os.environ.get(
+                "ASCEND_RT_VISIBLE_DEVICES", ""
+            ).split(",")
+            if value.strip()
+        ]
+        if 5 in visible_devices or 6 in visible_devices:
+            raise RuntimeError(
+                "physical NPU 5 and NPU 6 are excluded from UniRec experiments"
+            )
     warnings.filterwarnings(
         "once",
         message=(
@@ -1548,18 +1712,38 @@ def main() -> None:
         raise ValueError("--pipeline-warmup-pages must be >= 0")
     if args.layout_batch_size < 1:
         raise ValueError("--layout-batch-size must be >= 1")
+    if args.layout_cpu_threads < 1:
+        raise ValueError("--layout-cpu-threads must be >= 1")
+    if args.recognition_preprocess_threads < 1:
+        raise ValueError("--recognition-preprocess-threads must be >= 1")
     if args.layout_process_workers < 0:
         raise ValueError("--layout-process-workers must be >= 0")
+    if args.shared_cross_kv_budget_gib <= 0:
+        raise ValueError("--shared-cross-kv-budget-gib must be positive")
+    if args.self_cache_length < 1 or args.cross_cache_length < 1:
+        raise ValueError("decode cache lengths must be positive")
+    if args.max_length > args.self_cache_length:
+        raise ValueError("--max-length cannot exceed --self-cache-length")
+    if args.decode_lm_head_rows < 0:
+        raise ValueError("--decode-lm-head-rows must be non-negative")
+    if args.decode_admission_prefetch_depth < 0:
+        raise ValueError("--decode-admission-prefetch-depth must be non-negative")
+    if args.decode_live_arena_warmup_passes < 0:
+        raise ValueError("decode live-arena warmup passes must be non-negative")
     if args.vision_page_lookahead < 1:
         raise ValueError("--vision-page-lookahead must be >= 1")
+    if args.layout_batch_size > args.vision_page_lookahead:
+        raise ValueError(
+            "--layout-batch-size cannot exceed --vision-page-lookahead"
+        )
     if args.layout_process_workers:
         if args.layout_backend != "transformers_npu":
             raise ValueError(
                 "--layout-process-workers requires --layout-backend transformers_npu"
             )
-        if args.layout_batch_size != 1:
+        if args.layout_batch_size != 1 and not args.prefill_in_layout_workers:
             raise ValueError(
-                "--layout-process-workers requires --layout-batch-size 1"
+                "layout-only process workers require --layout-batch-size 1"
             )
         if (
             not args.preprocess_all_pages_first
@@ -1597,6 +1781,11 @@ def main() -> None:
                 "--prefill-in-layout-workers requires "
                 "--text-prefill-mode compiled_packed_s1024"
             )
+        if args.decode_admission_prefetch_depth:
+            raise ValueError(
+                "bounded streaming currently requires direct admission; "
+                "set --decode-admission-prefetch-depth 0"
+            )
     elif args.worker_empty_cache_after_page:
         raise ValueError(
             "--worker-empty-cache-after-page requires "
@@ -1628,14 +1817,6 @@ def main() -> None:
     model_path = args.model_path.expanduser().resolve()
     input_path = args.input.expanduser().resolve()
     output_dir = args.output_dir.expanduser().resolve()
-    if args.max_length > LOCAL_UNIREC_STATIC_CACHE_LEN:
-        raise ValueError(
-            "max-length exceeds the configured UniRec static self-KV cache: "
-            f"max_length={args.max_length} "
-            f"static_cache_len={LOCAL_UNIREC_STATIC_CACHE_LEN}. Set "
-            "UNIREC_STATIC_CACHE_LEN before launching the runner."
-        )
-
     if args.device.startswith("npu"):
         import torch_npu
 
@@ -1658,17 +1839,44 @@ def main() -> None:
     setup_started = time.perf_counter()
     use_onnx_layout = args.layout_backend == "onnx_cpu"
     use_layout_processes = args.layout_process_workers > 0
-    pipeline = infer_doc_onnx.OpenDocONNX(
-        layout_model_path=str(args.layout_model.expanduser().resolve()),
-        unirec_encoder_path=str(args.stock_encoder.expanduser().resolve()),
-        unirec_decoder_path=str(args.stock_decoder.expanduser().resolve()),
-        tokenizer_mapping_path=str(args.stock_tokenizer_mapping.expanduser().resolve()),
-        use_gpu=False,
-        layout_threshold=args.layout_threshold,
-        use_layout_detection=use_onnx_layout,
-        auto_download=False,
-        max_parallel_blocks=1,
-    )
+    if args.prefill_in_layout_workers:
+        pipeline = infer_doc_onnx.OpenDocONNX.__new__(infer_doc_onnx.OpenDocONNX)
+        pipeline.use_layout_detection = False
+        pipeline.use_chart_recognition = True
+        pipeline.markdown_ignore_labels = [
+            "number",
+            "footnote",
+            "header",
+            "footer",
+            "aside_text",
+            "footer_image",
+            "header_image",
+            "chart",
+        ]
+    else:
+        stock_assets = (
+            args.stock_encoder,
+            args.stock_decoder,
+            args.stock_tokenizer_mapping,
+        )
+        if any(path is None for path in stock_assets):
+            raise ValueError(
+                "stock OpenDoc assets are required unless worker prefill owns "
+                "the complete inference path"
+            )
+        pipeline = infer_doc_onnx.OpenDocONNX(
+            layout_model_path=str(args.layout_model.expanduser().resolve()),
+            unirec_encoder_path=str(args.stock_encoder.expanduser().resolve()),
+            unirec_decoder_path=str(args.stock_decoder.expanduser().resolve()),
+            tokenizer_mapping_path=str(
+                args.stock_tokenizer_mapping.expanduser().resolve()
+            ),
+            use_gpu=False,
+            layout_threshold=args.layout_threshold,
+            use_layout_detection=use_onnx_layout,
+            auto_download=False,
+            max_parallel_blocks=1,
+        )
     if not use_onnx_layout and not use_layout_processes:
         pipeline.layout_detector = PPDocLayoutV2NpuAdapter(
             model_path=args.layout_transformers_model,
@@ -1682,12 +1890,26 @@ def main() -> None:
         pipeline.use_layout_detection = True
     elif use_layout_processes:
         pipeline.use_layout_detection = True
+    runner_compile_cache = args.compile_cache_dir.expanduser().resolve()
+    decode_model_optimizations = None
+    if args.prefill_in_layout_workers:
+        from continuous_unirec import production_decode_cache_parent
+        from decode_model_optimizations import (
+            apply_decode_model_optimizations,
+            decode_cache_variant_root,
+        )
+
+        runner_compile_cache = decode_cache_variant_root(
+            production_decode_cache_parent(runner_compile_cache),
+            weight_format=args.decode_weight_format,
+            lm_head_rows=args.decode_lm_head_rows,
+        )
     runner = OptimizedUniRecRunner(
         model_path=model_path,
         device=args.device,
         dtype=args.dtype,
         compile_cache_dir=(
-            args.compile_cache_dir.expanduser().resolve()
+            runner_compile_cache
             if (
                 args.decode_mode.startswith("compiled")
                 or args.text_prefill_mode
@@ -1698,9 +1920,13 @@ def main() -> None:
             else None
         ),
     )
-    static_cross_cache_len = int(
-        os.environ.get("UNIREC_STATIC_CROSS_CACHE_LEN", "0")
-    )
+    if args.prefill_in_layout_workers:
+        decode_model_optimizations = apply_decode_model_optimizations(
+            runner,
+            weight_format=args.decode_weight_format,
+            lm_head_rows=args.decode_lm_head_rows,
+        )
+    static_cross_cache_len = args.cross_cache_length
     if static_cross_cache_len > 0:
         processor_shape = tuple(int(value) for value in runner.processor.max_side)
         runner._static_cross_cache_len_by_processor_max_side[
@@ -1738,6 +1964,15 @@ def main() -> None:
             threshold=args.layout_threshold,
             execution=args.layout_execution,
             warmup_paths=image_paths[: args.layout_process_workers],
+            layout_dtype=args.layout_dtype,
+            layout_reading_order_dtype=args.layout_reading_order_dtype,
+            layout_weight_format=args.layout_weight_format,
+            layout_depthwise_rewrite=args.layout_depthwise_rewrite,
+            layout_preformat_frozen_bn_buffers=(
+                args.layout_preformat_frozen_bn_buffers
+            ),
+            layout_batch_size=args.layout_batch_size,
+            layout_cpu_threads=args.layout_cpu_threads,
             openocr_root=openocr_root,
             prepare_pages=True,
             use_chart_recognition=pipeline.use_chart_recognition,
@@ -1748,9 +1983,19 @@ def main() -> None:
             recognition_full_vision_buckets=(
                 args.vision_prefill_mode == "compiled_full_buckets"
             ),
+            recognition_vision_focal_depthwise_rewrite=(
+                args.vision_focal_depthwise_rewrite
+            ),
+            recognition_vision_weight_format=args.vision_weight_format,
             recognition_page_lookahead=args.vision_page_lookahead,
             empty_cache_after_page=args.worker_empty_cache_after_page,
             profile_prefill_device_stages=args.prefill_device_timing,
+            retain_shared_images=not args.prefill_in_layout_workers,
+            shared_payload_budget_bytes=(
+                int(args.shared_cross_kv_budget_gib * (1024**3))
+                if args.prefill_in_layout_workers
+                else 0
+            ),
         )
         atexit.register(layout_process_pool.close)
         layout_process_setup_s = layout_process_pool.setup_wall_s
@@ -1770,6 +2015,7 @@ def main() -> None:
                 page_request_from_process_payload(
                     payload,
                     measured_layout_s=warmup_layout_page_s,
+                    shared_byte_budget=layout_process_pool.shared_byte_budget,
                 )
                 for payload in warmup_payloads
             ]
@@ -1833,6 +2079,7 @@ def main() -> None:
     precomputed_layout_page_s = 0.0
     layout_process_summary: dict[str, Any] | None = None
     layout_process_shutdown_timing: dict[str, float] = {}
+    shared_cross_kv_budget_summary: dict[str, Any] | None = None
     if layout_process_pool is not None and not args.prefill_in_layout_workers:
         try:
             page_payloads, layout_process_summary = layout_process_pool.map(
@@ -1850,6 +2097,7 @@ def main() -> None:
             page_request_from_process_payload(
                 payload,
                 measured_layout_s=precomputed_layout_page_s,
+                shared_byte_budget=layout_process_pool.shared_byte_budget,
             )
             for payload in page_payloads
         ]
@@ -1858,6 +2106,18 @@ def main() -> None:
     continuous_decode: dict[str, Any] | None = None
 
     def write_page(result: dict[str, Any]) -> tuple[float, float]:
+        if any(
+            bool(record.get("is_image", False))
+            for record in result["recognition_results"]
+        ):
+            page_image = cv2.imread(result["input_path"], cv2.IMREAD_COLOR)
+            if page_image is None:
+                raise RuntimeError(
+                    f"failed to reload output page: {result['input_path']}"
+                )
+            result["_page_image"] = page_image
+        else:
+            result["_page_image"] = np.empty((0, 0, 3), dtype=np.uint8)
         started = time.perf_counter()
         pipeline.save_to_json(result, str(output_dir))
         pipeline.save_to_markdown(result, str(output_dir))
@@ -1927,6 +2187,8 @@ def main() -> None:
             submit_page_write(page, result)
 
     if args.decode_scheduling == "continuous":
+        page_admission_trackers: dict[int, PageCrossKvAdmissionTracker] = {}
+
         def crop_source():
             nonlocal layout_process_summary
             if args.prefill_in_layout_workers:
@@ -1943,6 +2205,9 @@ def main() -> None:
                             payload,
                             measured_layout_s=float(
                                 payload["frontend_timing_s"]["layout_s"]
+                            ),
+                            shared_byte_budget=(
+                                layout_process_pool.shared_byte_budget
                             ),
                         )
                     layout_process_summary = (
@@ -1995,6 +2260,10 @@ def main() -> None:
                     page.frontend_timing_s,
                 )
                 pending_pages.append(page)
+                if args.prefill_in_layout_workers and page.crops:
+                    page_admission_trackers[page.page_index] = (
+                        PageCrossKvAdmissionTracker(page)
+                    )
                 print(
                     f"OPENDOC_CONTINUOUS_PAGE_READY "
                     f"index={page_index + 1}/{len(image_paths)} "
@@ -2012,10 +2281,26 @@ def main() -> None:
                 for crop in crops:
                     item = build_worker_prefilled_item(crop)
                     record_prefill_metrics(metrics, item)
+                    tracker = page_admission_trackers[crop.page_index]
+
+                    def release_admitted_crop(
+                        *,
+                        crop: CropRequest = crop,
+                        item: ContinuousWorkerPrefilledItem = item,
+                        tracker: PageCrossKvAdmissionTracker = tracker,
+                    ) -> None:
+                        tracker.release_crop(crop, item)
+                        if tracker.admitted_crops == len(tracker.page.crops):
+                            page_admission_trackers.pop(
+                                tracker.page.page_index,
+                                None,
+                            )
+
                     yield ContinuousReadyItem(
                         request_id=crop.request_id,
                         payload=crop,
                         prefilled=item,
+                        on_admitted=release_admitted_crop,
                     )
                 return
             if args.text_prefill_mode == "compiled_packed_s1024":
@@ -2091,11 +2376,22 @@ def main() -> None:
             max_length=args.max_length,
             decode_mode=args.decode_mode,
             compile_backend=args.compile_backend,
+            admission_prefetch_depth=args.decode_admission_prefetch_depth,
+            self_cache_length=args.self_cache_length,
+            cross_cache_length=args.cross_cache_length,
         )
         continuous_decode = continuous_runner.run(
             ready_source(),
             on_complete=complete_crop,
+            graph_warmup_passes=args.decode_live_arena_warmup_passes,
         )
+        if page_admission_trackers:
+            raise RuntimeError(
+                "decode ended with unreleased page arenas: "
+                + ",".join(
+                    str(index) for index in sorted(page_admission_trackers)
+                )
+            )
         record_direct_arena_admission_metrics(metrics, continuous_decode)
         metrics.decode_s = float(continuous_decode["decode_s"])
         metrics.raw_decode_token_slots = int(
@@ -2208,6 +2504,10 @@ def main() -> None:
 
     pipeline_wall_s = time.perf_counter() - pipeline_started
     if layout_process_pool is not None:
+        if layout_process_pool.shared_byte_budget is not None:
+            shared_cross_kv_budget_summary = (
+                layout_process_pool.shared_byte_budget.snapshot()
+            )
         shutdown_started = time.perf_counter()
         layout_process_pool.close()
         layout_process_shutdown_timing["wall_s"] = (
@@ -2238,6 +2538,20 @@ def main() -> None:
         "decode_mode": args.decode_mode,
         "decode_scheduling": args.decode_scheduling,
         "decode_batch_size": args.decode_batch_size,
+        "self_cache_length": args.self_cache_length,
+        "cross_cache_length": args.cross_cache_length,
+        "decode_weight_format": args.decode_weight_format,
+        "decode_lm_head_rows": (
+            args.decode_lm_head_rows
+            or int(runner.config.vocab_size)
+        ),
+        "decode_model_optimizations": decode_model_optimizations,
+        "decode_admission_prefetch_depth": (
+            args.decode_admission_prefetch_depth
+        ),
+        "decode_live_arena_warmup_passes": (
+            args.decode_live_arena_warmup_passes
+        ),
         "text_prefill_mode": args.text_prefill_mode,
         "vision_prefill_mode": args.vision_prefill_mode,
         "vision_page_lookahead": args.vision_page_lookahead,
@@ -2247,9 +2561,35 @@ def main() -> None:
         "layout_backend": args.layout_backend,
         "layout_dtype": args.layout_dtype if not use_onnx_layout else None,
         "layout_execution": args.layout_execution if not use_onnx_layout else None,
+        "layout_reading_order_dtype": (
+            args.layout_reading_order_dtype or args.layout_dtype
+            if not use_onnx_layout
+            else None
+        ),
+        "layout_weight_format": (
+            args.layout_weight_format if not use_onnx_layout else None
+        ),
+        "layout_depthwise_rewrite": (
+            args.layout_depthwise_rewrite if not use_onnx_layout else None
+        ),
+        "layout_preformat_frozen_bn_buffers": (
+            args.layout_preformat_frozen_bn_buffers
+            if not use_onnx_layout
+            else None
+        ),
+        "layout_cpu_threads": args.layout_cpu_threads,
         "layout_batch_size": args.layout_batch_size,
         "layout_process_workers": args.layout_process_workers,
         "prefill_in_layout_workers": args.prefill_in_layout_workers,
+        "vision_bucket_preset": args.vision_bucket_preset,
+        "vision_focal_depthwise_rewrite": (
+            args.vision_focal_depthwise_rewrite
+        ),
+        "vision_weight_format": args.vision_weight_format,
+        "recognition_preprocess_threads": args.recognition_preprocess_threads,
+        "recognition_input_contract": args.recognition_input_contract,
+        "shared_cross_kv_budget_gib": args.shared_cross_kv_budget_gib,
+        "shared_cross_kv_budget": shared_cross_kv_budget_summary,
         "worker_empty_cache_after_page": args.worker_empty_cache_after_page,
         "layout_process_setup_s": layout_process_setup_s,
         "layout_process_warmup": layout_process_warmup,

@@ -36,6 +36,7 @@ from opendoc_layout_npu import (
     DEFAULT_LAYOUT_WEIGHT_FORMAT,
     PPDocLayoutV2NpuAdapter,
 )
+from shared_byte_budget import SharedByteBudget
 
 
 FULL_VISION_PAGE_COLLECT_TIMEOUT_S = 0.02
@@ -118,13 +119,26 @@ def _resize_recognition_compact_hwc_with_timing(
 class SharedPageLease:
     """Own one page's shared frontend arena in the coordinator process."""
 
-    def __init__(self, name: str) -> None:
+    def __init__(
+        self,
+        name: str,
+        *,
+        byte_budget: SharedByteBudget | None = None,
+        reserved_nbytes: int = 0,
+    ) -> None:
+        reserved_nbytes = int(reserved_nbytes)
+        if reserved_nbytes < 0:
+            raise ValueError("reserved shared bytes cannot be negative")
+        if reserved_nbytes and byte_budget is None:
+            raise ValueError("reserved shared bytes require a byte budget")
         self.storage = SharedMemory(name=name)
         # Remove the public POSIX name immediately.  The mapping remains valid
         # until this coordinator closes its descriptor, but a later crash
         # cannot leak a named shared-memory object.
         self.storage.unlink()
         self.closed = False
+        self.byte_budget = byte_budget
+        self.reserved_nbytes = reserved_nbytes
 
     def array(self, descriptor: dict[str, Any]) -> np.ndarray:
         if self.closed:
@@ -140,13 +154,19 @@ class SharedPageLease:
         if self.closed:
             return
         self.closed = True
-        self.storage.close()
+        try:
+            self.storage.close()
+        finally:
+            if self.byte_budget is not None and self.reserved_nbytes:
+                self.byte_budget.release(self.reserved_nbytes)
+                self.reserved_nbytes = 0
 
 
 def _pack_frontend_payload_shared(
     result: dict[str, Any],
     *,
     retain_images: bool = True,
+    byte_budget: SharedByteBudget | None = None,
 ) -> tuple[dict[str, Any], float, int]:
     """Move selected frontend arrays into one aligned shared arena."""
     entries: list[tuple[str, dict[str, Any] | None, np.ndarray]] = []
@@ -198,7 +218,16 @@ def _pack_frontend_payload_shared(
     if total_bytes <= 0:
         raise RuntimeError("full frontend payload has no image bytes")
     started = time.perf_counter()
-    storage = SharedMemory(create=True, size=total_bytes)
+    budget_reserved = False
+    if byte_budget is not None:
+        byte_budget.reserve(total_bytes)
+        budget_reserved = True
+    try:
+        storage = SharedMemory(create=True, size=total_bytes)
+    except BaseException:
+        if budget_reserved:
+            byte_budget.release(total_bytes)
+        raise
     ownership_transferred = False
     try:
         descriptors = []
@@ -222,6 +251,7 @@ def _pack_frontend_payload_shared(
         result["shared_memory"] = {
             "name": storage.name,
             "nbytes": total_bytes,
+            "budget_nbytes": total_bytes if byte_budget is not None else 0,
         }
         for (descriptor_name, owner, _array), descriptor in zip(
             entries, descriptors
@@ -247,6 +277,8 @@ def _pack_frontend_payload_shared(
             resource_tracker.unregister(tracked_name, "shared_memory")
         else:
             storage.unlink()
+            if budget_reserved:
+                byte_budget.release(total_bytes)
 
 
 def _base_label(label: str) -> str:
@@ -1197,19 +1229,29 @@ def _prepare_full_vision_worker_page(
     }
 
 
-def _unlink_worker_shared_payload(result: dict[str, Any]) -> None:
+def _unlink_worker_shared_payload(
+    result: dict[str, Any],
+    *,
+    byte_budget: SharedByteBudget | None = None,
+) -> None:
     """Best-effort cleanup if a grouped page fails after shared packing."""
     shared = result.get("shared_memory")
     if shared is None:
         return
     try:
-        storage = SharedMemory(name=str(shared["name"]))
-    except FileNotFoundError:
-        return
-    try:
-        storage.unlink()
+        try:
+            storage = SharedMemory(name=str(shared["name"]))
+        except FileNotFoundError:
+            storage = None
+        if storage is not None:
+            try:
+                storage.unlink()
+            finally:
+                storage.close()
     finally:
-        storage.close()
+        reserved_nbytes = int(shared.get("budget_nbytes", 0))
+        if byte_budget is not None and reserved_nbytes:
+            byte_budget.release(reserved_nbytes)
 
 
 def _run_full_vision_worker_group(
@@ -1232,6 +1274,7 @@ def _run_full_vision_worker_group(
     profile_prefill_device_stages: bool,
     trace_prefill_iterations: bool,
     retain_shared_images: bool,
+    shared_byte_budget: SharedByteBudget | None,
     result_queue: Any,
 ) -> None:
     """Prepare, batch-prefill, pack, and publish one worker-local page group."""
@@ -1419,6 +1462,7 @@ def _run_full_vision_worker_group(
                 _pack_frontend_payload_shared(
                     result,
                     retain_images=retain_shared_images,
+                    byte_budget=shared_byte_budget,
                 )
             )
             result["frontend_timing_s"]["process_shared_pack_s"] = shared_pack_s
@@ -1440,7 +1484,10 @@ def _run_full_vision_worker_group(
             packed_contexts.append(context)
     except BaseException:
         for context in packed_contexts:
-            _unlink_worker_shared_payload(context["result"])
+            _unlink_worker_shared_payload(
+                context["result"],
+                byte_budget=shared_byte_budget,
+            )
         raise
 
     group_wall_s = time.perf_counter() - group_started
@@ -1632,6 +1679,7 @@ def _worker_main(
     profile_prefill_device_stages: bool,
     trace_prefill_iterations: bool,
     retain_shared_images: bool,
+    shared_byte_budget: SharedByteBudget | None,
     task_queue: Any,
     result_queue: Any,
 ) -> None:
@@ -1902,6 +1950,7 @@ def _worker_main(
                     ),
                     trace_prefill_iterations=trace_prefill_iterations,
                     retain_shared_images=retain_shared_images,
+                    shared_byte_budget=shared_byte_budget,
                     result_queue=result_queue,
                 )
                 if saw_shutdown:
@@ -2028,6 +2077,7 @@ def _worker_main(
                     _pack_frontend_payload_shared(
                         result,
                         retain_images=retain_shared_images,
+                        byte_budget=shared_byte_budget,
                     )
                 )
                 result["frontend_timing_s"]["process_shared_pack_s"] = (
@@ -2108,6 +2158,7 @@ class DynamicLayoutProcessPool:
         profile_prefill_device_stages: bool = False,
         trace_prefill_iterations: bool = False,
         retain_shared_images: bool = True,
+        shared_payload_budget_bytes: int = 0,
         timeout_s: float = 1800.0,
         progress_every_pages: int = 0,
         progress_heartbeat_s: float = 0.0,
@@ -2134,6 +2185,8 @@ class DynamicLayoutProcessPool:
             raise ValueError("progress page interval must be non-negative")
         if progress_heartbeat_s < 0:
             raise ValueError("progress heartbeat interval must be non-negative")
+        if shared_payload_budget_bytes < 0:
+            raise ValueError("shared payload byte budget must be non-negative")
         self.worker_count = worker_count
         self.layout_batch_size = int(layout_batch_size)
         self.layout_cpu_threads = int(layout_cpu_threads)
@@ -2163,6 +2216,11 @@ class DynamicLayoutProcessPool:
         self.progress_every_pages = int(progress_every_pages)
         self.progress_heartbeat_s = float(progress_heartbeat_s)
         self.context = mp.get_context("spawn")
+        self.shared_byte_budget = (
+            SharedByteBudget(self.context, int(shared_payload_budget_bytes))
+            if shared_payload_budget_bytes
+            else None
+        )
         self.task_queue = self.context.Queue()
         self.result_queue = self.context.Queue(maxsize=max(2, worker_count * 2))
         self.processes = [
@@ -2210,6 +2268,7 @@ class DynamicLayoutProcessPool:
                     profile_prefill_device_stages,
                     self.trace_prefill_iterations,
                     self.retain_shared_images,
+                    self.shared_byte_budget,
                     self.task_queue,
                     self.result_queue,
                 ),
@@ -2505,6 +2564,11 @@ class DynamicLayoutProcessPool:
             "ipc_delivery_mean_s": ipc_delivery_sum_s / len(paths),
             "ipc_delivery_max_s": ipc_delivery_max_s,
             "shared_payload_bytes": shared_payload_bytes,
+            "shared_payload_budget": (
+                self.shared_byte_budget.snapshot()
+                if self.shared_byte_budget is not None
+                else None
+            ),
             "scheduling": "dynamic_shared_filepath_queue",
             "layout_batch_size": self.layout_batch_size,
             "layout_batching": {
@@ -2717,6 +2781,11 @@ class DynamicLayoutProcessPool:
             "ipc_delivery_mean_s": ipc_delivery_sum_s / len(paths),
             "ipc_delivery_max_s": ipc_delivery_max_s,
             "shared_payload_bytes": shared_payload_bytes,
+            "shared_payload_budget": (
+                self.shared_byte_budget.snapshot()
+                if self.shared_byte_budget is not None
+                else None
+            ),
             "scheduling": "dynamic_completion_order_stream",
             "layout_batch_size": self.layout_batch_size,
             "layout_batching": {
