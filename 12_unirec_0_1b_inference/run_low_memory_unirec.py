@@ -50,6 +50,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-threshold", type=float, default=0.5)
     parser.add_argument("--vision-bucket-preset", default="310p_k20_l4")
     parser.add_argument("--vision-lanes", type=int, default=4)
+    parser.add_argument("--vision-same-key-shards", type=int, default=2)
+    parser.add_argument("--vision-sharded-key-count", type=int, default=4)
     parser.add_argument(
         "--recognition-schedule",
         choices=("two_phase", "streaming"),
@@ -312,7 +314,12 @@ def main() -> None:
         preset_name=args.vision_bucket_preset,
         synchronize_first_call=False,
     )
-    vision_owner = BoundedVisionOwner(vision_runtime, lanes=args.vision_lanes)
+    vision_owner = BoundedVisionOwner(
+        vision_runtime,
+        lanes=args.vision_lanes,
+        same_key_shards=args.vision_same_key_shards,
+        sharded_key_count=args.vision_sharded_key_count,
+    )
     text_runtime = runner._get_compiled_packed_text_prefill_runtime()
     encoded: list[Any] | None = None
     vision_summary: dict[str, Any] | None = None
@@ -714,6 +721,8 @@ def main() -> None:
             "layout_threshold": args.layout_threshold,
             "vision_bucket_preset": args.vision_bucket_preset,
             "vision_lanes": args.vision_lanes,
+            "vision_same_key_shards": args.vision_same_key_shards,
+            "vision_sharded_key_count": args.vision_sharded_key_count,
             "recognition_schedule": args.recognition_schedule,
             "decode_batch_size": args.decode_batch_size,
             "cross_cache_length": args.cross_cache_length,

@@ -15,8 +15,13 @@ import torch_npu
 from post_warmup_host_cleanup import purge_host_allocator_pages
 from tbe_compiler_lifecycle import deinitialize_after_warmup
 from torchair_ge_graph_compaction import release_loaded_ge_executors
-from vision_bucket_presets import plan_canvas_bucket_calls
+from vision_bucket_presets import (
+    assign_vision_bucket_cache_slots,
+    plan_canvas_bucket_calls,
+)
 from vision_full_batch import (
+    EXTENDED_FLAT_GLOBAL_CONTEXT_BUCKET_KEYS,
+    FLAT_GLOBAL_CONTEXT_BUCKET_KEYS,
     BucketedFullVisionRuntime,
     EncodedVisionItem,
     PreprocessedVisionInput,
@@ -32,11 +37,19 @@ class BoundedVisionOwner:
         runtime: BucketedFullVisionRuntime,
         *,
         lanes: int = 2,
+        same_key_shards: int = 2,
+        sharded_key_count: int = 4,
     ) -> None:
         if not 1 <= lanes <= 4:
             raise ValueError("bounded vision lanes must be in [1, 4]")
         self.runtime = runtime
         self.lanes = lanes
+        if not 1 <= same_key_shards <= lanes:
+            raise ValueError("same-key vision shards must be in [1, lanes]")
+        if sharded_key_count < 0:
+            raise ValueError("sharded vision key count cannot be negative")
+        self.same_key_shards = int(same_key_shards)
+        self.sharded_key_count = int(sharded_key_count)
         self.streams = [
             torch.npu.Stream(device=torch.device(runtime.runner.device))
             for _ in range(lanes)
@@ -48,6 +61,45 @@ class BoundedVisionOwner:
         self.early_tbe_deinit: dict[str, Any] | None = None
         self._tbe_deinit_attempted = False
         self.host_purge_statuses: list[int | None] = []
+
+    def _compile_method(self, key: str) -> Callable[..., torch.Tensor]:
+        slots = assign_vision_bucket_cache_slots(
+            self.runtime.specs,
+            slot_count=max(10, len(self.runtime.specs)),
+        )
+        slot = dict(zip((spec.key for spec in self.runtime.specs), slots))[key]
+        if key in (
+            FLAT_GLOBAL_CONTEXT_BUCKET_KEYS
+            | EXTENDED_FLAT_GLOBAL_CONTEXT_BUCKET_KEYS
+        ):
+            method_name = f"_forward_flat_bucket_slot_{slot}"
+        else:
+            method_name = f"_forward_bucket_slot_{slot}"
+        return getattr(self.runtime.modules[key], method_name)
+
+    def _clone_executor(
+        self,
+        key: str,
+    ) -> tuple[Callable[..., torch.Tensor], dict[str, Any]]:
+        cache_files = sorted(self.runtime.cache_dirs[key].rglob("compiled_module"))
+        if len(cache_files) != 1:
+            raise RuntimeError(
+                f"expected one compiled_module for {key}, found {cache_files}"
+            )
+        try:
+            from torch_npu.dynamo.torchair.inference._cache_compiler import (
+                CompiledModel,
+            )
+        except ImportError:
+            from torchair.inference._cache_compiler import CompiledModel
+        namespace = {"__name__": f"unirec_shared_vision_{key}"}
+        executor = CompiledModel.load(str(cache_files[0])).rebase(
+            self.runtime.modules[key],
+            global_vars=namespace,
+            func=self._compile_method(key),
+            cache_dir=str(cache_files[0].parent),
+        )
+        return executor, namespace
 
     @staticmethod
     def _mapping(descriptor: dict[str, Any]) -> np.memmap:
@@ -107,6 +159,7 @@ class BoundedVisionOwner:
         lane: int,
         spec: VisionBucketSpec,
         calls: Sequence[Sequence[dict[str, Any]]],
+        compiled_executor: Callable[..., torch.Tensor] | None = None,
     ) -> tuple[list[EncodedVisionItem], float]:
         torch_npu.npu.set_device(self.runtime.runner.device)
         outputs: list[EncodedVisionItem] = []
@@ -128,12 +181,88 @@ class BoundedVisionOwner:
                     )
                     for record, mapping in zip(call, mappings)
                 ]
-                outputs.extend(self.runtime._run_bucket(spec, inputs))
+                outputs.extend(
+                    self.runtime._run_bucket(
+                        spec,
+                        inputs,
+                        compiled_executor=compiled_executor,
+                    )
+                )
                 del inputs
                 for mapping in mappings:
                     del mapping
         self.streams[lane].synchronize()
         return outputs, time.perf_counter() - started
+
+    @staticmethod
+    def _split_calls(
+        calls: Sequence[Sequence[dict[str, Any]]],
+        parts: int,
+    ) -> list[list[Sequence[dict[str, Any]]]]:
+        base, extra = divmod(len(calls), parts)
+        output = []
+        offset = 0
+        for part in range(parts):
+            count = base + int(part < extra)
+            output.append(list(calls[offset : offset + count]))
+            offset += count
+        return [value for value in output if value]
+
+    def _task_groups(
+        self,
+        calls: dict[str, list[list[dict[str, Any]]]],
+        specs_by_key: dict[str, VisionBucketSpec],
+    ) -> tuple[list[list[dict[str, Any]]], list[str]]:
+        def estimated_ms(key: str) -> float:
+            spec = specs_by_key[key]
+            per_call = spec.planning_cost_ms
+            if per_call is None:
+                per_call = (
+                    spec.batch_size * spec.width * spec.height / 1_000_000.0
+                )
+            return float(per_call) * len(calls[key])
+
+        ranked = sorted(calls, key=lambda key: (-estimated_ms(key), key))
+        shard_keys = (
+            [key for key in ranked if len(calls[key]) >= self.same_key_shards][
+                : self.sharded_key_count
+            ]
+            if self.same_key_shards > 1
+            else []
+        )
+        groups: list[list[dict[str, Any]]] = []
+        keys_per_sharded_group = max(1, self.lanes // self.same_key_shards)
+        for start in range(0, len(shard_keys), keys_per_sharded_group):
+            group = []
+            for key in shard_keys[start : start + keys_per_sharded_group]:
+                partitions = self._split_calls(
+                    calls[key],
+                    self.same_key_shards,
+                )
+                for shard_index, partition in enumerate(partitions):
+                    group.append(
+                        {
+                            "key": key,
+                            "shard_index": shard_index,
+                            "shard_count": len(partitions),
+                            "calls": partition,
+                        }
+                    )
+            groups.append(group)
+        remaining = [key for key in ranked if key not in set(shard_keys)]
+        for start in range(0, len(remaining), self.lanes):
+            groups.append(
+                [
+                    {
+                        "key": key,
+                        "shard_index": 0,
+                        "shard_count": 1,
+                        "calls": calls[key],
+                    }
+                    for key in remaining[start : start + self.lanes]
+                ]
+            )
+        return groups, shard_keys
 
     def _release_loaded(self) -> dict[str, Any]:
         loaded = [
@@ -160,34 +289,40 @@ class BoundedVisionOwner:
         if not retain_outputs and on_encoded_batch is None:
             raise ValueError("non-retained vision output requires a callback")
         calls, specs_by_key, fallbacks = self._plan(records)
-        weighted = sorted(
-            calls,
-            key=lambda key: (
-                -len(calls[key])
-                * specs_by_key[key].batch_size
-                * specs_by_key[key].width
-                * specs_by_key[key].height,
-                key,
-            ),
-        )
+        task_groups, shard_keys = self._task_groups(calls, specs_by_key)
         outputs: dict[int, EncodedVisionItem] = {}
         seen_outputs: set[int] = set()
         pair_reports = []
         started = time.perf_counter()
-        for pair_start in range(0, len(weighted), self.lanes):
+        for group in task_groups:
             self._release_loaded()
-            pair = weighted[pair_start : pair_start + self.lanes]
+            primary_claimed: set[str] = set()
+            executors: list[Callable[..., torch.Tensor]] = []
+            clone_executors: list[Callable[..., torch.Tensor]] = []
+            clone_namespaces: list[dict[str, Any]] = []
+            for task in group:
+                key = str(task["key"])
+                if key not in primary_claimed:
+                    executor = self.runtime.compiled[key]
+                    primary_claimed.add(key)
+                else:
+                    executor, namespace = self._clone_executor(key)
+                    clone_executors.append(executor)
+                    clone_namespaces.append(namespace)
+                executors.append(executor)
             futures = [
                 self.pool.submit(
                     self._run_key,
                     lane,
-                    specs_by_key[key],
-                    calls[key],
+                    specs_by_key[str(task["key"])],
+                    task["calls"],
+                    executor,
                 )
-                for lane, key in enumerate(pair)
+                for lane, (task, executor) in enumerate(zip(group, executors))
             ]
             lane_reports = []
-            for key, future in zip(pair, futures):
+            for task, future in zip(group, futures):
+                key = str(task["key"])
                 encoded, lane_s = future.result()
                 for item in encoded:
                     if item.source_index in seen_outputs:
@@ -202,11 +337,21 @@ class BoundedVisionOwner:
                 lane_reports.append(
                     {
                         "key": key,
-                        "calls": len(calls[key]),
-                        "real_rows": sum(len(value) for value in calls[key]),
+                        "shard_index": int(task["shard_index"]),
+                        "shard_count": int(task["shard_count"]),
+                        "calls": len(task["calls"]),
+                        "real_rows": sum(len(value) for value in task["calls"]),
                         "wall_s": lane_s,
                     }
                 )
+            clone_executors.clear()
+            executors.clear()
+            for namespace in clone_namespaces:
+                namespace.clear()
+            clone_namespaces.clear()
+            gc.collect()
+            torch.npu.empty_cache()
+            self.host_purge_statuses.append(purge_host_allocator_pages())
             if not self._tbe_deinit_attempted:
                 self._tbe_deinit_attempted = True
                 self.early_tbe_deinit = deinitialize_after_warmup(
@@ -249,9 +394,13 @@ class BoundedVisionOwner:
         report = {
             "wall_s": time.perf_counter() - started,
             "crop_count": len(records),
-            "graph_count": len(weighted),
+            "graph_count": len(calls),
+            "task_count": sum(len(group) for group in task_groups),
             "pair_count": len(pair_reports),
             "pairs": pair_reports,
+            "same_key_shards": self.same_key_shards,
+            "sharded_key_count": self.sharded_key_count,
+            "sharded_keys": shard_keys,
             "fallback_count": len(fallbacks),
             "fallback_wall_s": fallback_s,
             "final_release": release,

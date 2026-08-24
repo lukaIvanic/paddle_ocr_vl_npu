@@ -1202,6 +1202,8 @@ class BucketedFullVisionRuntime:
         self,
         spec: VisionBucketSpec,
         items: Sequence[PreprocessedVisionInput],
+        *,
+        compiled_executor: Callable[..., torch.Tensor] | None = None,
     ) -> list[EncodedVisionItem]:
         if not items or len(items) > spec.batch_size:
             raise ValueError(
@@ -1368,7 +1370,8 @@ class BucketedFullVisionRuntime:
             cache=self._cache_snapshot(self.cache_dirs[spec.key]),
         )
         with torch.inference_mode():
-            output = self.compiled[spec.key](pixel_values, *masks)
+            executor = compiled_executor or self.compiled[spec.key]
+            output = executor(pixel_values, *masks)
         graph_device_marker = self._trace_end(graph_marker)
         graph_submit_s = time.perf_counter() - started
         self._diagnostic_log(
