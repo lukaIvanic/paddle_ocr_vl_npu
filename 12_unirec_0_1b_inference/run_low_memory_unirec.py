@@ -488,6 +488,29 @@ def main() -> None:
                 }
                 pages_by_index = {int(page.page_index): page for page in pages}
                 queued_pages: set[int] = set()
+                page_queue: Queue[int | None] = Queue(maxsize=16)
+                text_errors: list[BaseException] = []
+
+                def stream_text_prefill() -> None:
+                    try:
+                        while True:
+                            page_index = page_queue.get()
+                            if page_index is None:
+                                return
+                            queue_page_prefill(
+                                pages_by_index[page_index],
+                                encoded_items,
+                            )
+                    except BaseException as exception:
+                        text_errors.append(exception)
+                        ready_queue.put(exception)
+
+                text_thread = Thread(
+                    target=stream_text_prefill,
+                    name="unirec-lowmem-stream-text",
+                    daemon=True,
+                )
+                text_thread.start()
 
                 def on_encoded_batch(batch: list[Any]) -> None:
                     ready_pages = set()
@@ -503,14 +526,24 @@ def main() -> None:
                     for page_index in sorted(ready_pages):
                         if page_index in queued_pages:
                             raise RuntimeError(f"page {page_index} queued twice")
-                        queue_page_prefill(pages_by_index[page_index], encoded_items)
                         queued_pages.add(page_index)
+                        page_queue.put(page_index)
 
                 _unused, vision_summary = vision_owner.encode(
                     vision_records,
                     on_encoded_batch=on_encoded_batch,
                     retain_outputs=False,
                 )
+                producer_stats["vision_complete_s"] = (
+                    time.perf_counter() - started
+                )
+                page_queue.put(None)
+                text_thread.join(timeout=120.0)
+                if text_thread.is_alive():
+                    raise RuntimeError("streaming text-prefill thread did not stop")
+                if text_errors:
+                    raise RuntimeError("streaming text prefill failed") from text_errors[0]
+                producer_stats["text_complete_s"] = time.perf_counter() - started
                 if encoded_items:
                     raise RuntimeError(
                         f"streaming vision retained {len(encoded_items)} crops"
