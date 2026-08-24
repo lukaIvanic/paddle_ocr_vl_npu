@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--threads", type=int, default=8)
-    parser.add_argument("--layout-lanes", type=int, default=2)
+    parser.add_argument("--layout-lanes", type=int, default=1)
     parser.add_argument("--limit", type=int, default=8)
     return parser.parse_args()
 

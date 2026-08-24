@@ -313,6 +313,7 @@ def _worker_main(
                 )
                 if rgb_mapping is not None:
                     del rgb, rgb_mapping
+                    Path(rgb_descriptor["path"]).unlink()
         executor.shutdown(wait=True)
     except BaseException as exception:
         result_queue.put(
@@ -513,46 +514,47 @@ def _layout_owner_process_main(
                 "chip": torch_npu.npu.get_device_name(0),
             }
         )
-        page_spool_path = Path(page_spool_root) / "layout_pages_rgb.bin"
-        page_spool_path.parent.mkdir(parents=True, exist_ok=True)
+        page_spool_dir = Path(page_spool_root) / "layout_pages_rgb"
+        page_spool_dir.mkdir(parents=True, exist_ok=True)
         started = time.perf_counter()
-        with page_spool_path.open("w+b", buffering=0) as page_spool:
-            for start in range(0, len(paths), lanes * batch_size):
-                chunk = paths[start : start + lanes * batch_size]
-                page_started = []
-                prepared = []
-                descriptors = []
-                timings = []
-                for path in chunk:
-                    page_started.append(time.perf_counter())
-                    rgb, timing = decode_page_rgb(Path(path))
-                    rgb = materialize_layout_rgb(rgb)
-                    descriptors.append(
-                        _append_pixels(
-                            page_spool,
-                            path=page_spool_path,
-                            pixels=rgb,
-                        )
+        for start in range(0, len(paths), lanes * batch_size):
+            chunk = paths[start : start + lanes * batch_size]
+            page_started = []
+            prepared = []
+            descriptors = []
+            timings = []
+            for local_index, path in enumerate(chunk):
+                page_started.append(time.perf_counter())
+                rgb, timing = decode_page_rgb(Path(path))
+                rgb = materialize_layout_rgb(rgb)
+                page_index = start + local_index
+                page_spool_path = page_spool_dir / f"page_{page_index:06d}.rgb"
+                with page_spool_path.open("w+b", buffering=0) as page_spool:
+                    descriptor = _append_pixels(
+                        page_spool,
+                        path=page_spool_path,
+                        pixels=rgb,
                     )
-                    prepared.append(owner.prepare(rgb))
-                    timings.append(timing)
-                    del rgb
-                layouts = owner.predict_prepared(prepared)
-                del prepared
-                for local_index, (path, descriptor, layout, timing) in enumerate(
-                    zip(chunk, descriptors, layouts, timings)
-                ):
-                    result_queue.put(
-                        {
-                            "status": "layout_page",
-                            "page_index": start + local_index,
-                            "path": path,
-                            "rgb_descriptor": descriptor,
-                            "layout_result": layout,
-                            "started_at": page_started[local_index],
-                            "decode_timing_s": timing,
-                        }
-                    )
+                descriptors.append(descriptor)
+                prepared.append(owner.prepare(rgb))
+                timings.append(timing)
+                del rgb
+            layouts = owner.predict_prepared(prepared)
+            del prepared
+            for local_index, (path, descriptor, layout, timing) in enumerate(
+                zip(chunk, descriptors, layouts, timings)
+            ):
+                result_queue.put(
+                    {
+                        "status": "layout_page",
+                        "page_index": start + local_index,
+                        "path": path,
+                        "rgb_descriptor": descriptor,
+                        "layout_result": layout,
+                        "started_at": page_started[local_index],
+                        "decode_timing_s": timing,
+                    }
+                )
         result_queue.put(
             {
                 "status": "layout_done",
