@@ -53,6 +53,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--self-cache-length", type=int, default=2048)
     parser.add_argument("--max-length", type=int, default=2048)
     parser.add_argument("--progress-every", type=int, default=32)
+    parser.add_argument(
+        "--defer-output-write",
+        action="store_true",
+        help=(
+            "Write frontend metadata and recognition_trace.jsonl, but defer "
+            "Markdown/JSON/image materialization to a fresh CPU process."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -208,14 +216,18 @@ def main() -> None:
         f"wall_s={frontend_wall_s:.3f}",
         flush=True,
     )
+    frontend_payloads_path = args.output_dir / "frontend_payloads.json"
+    if args.defer_output_write:
+        frontend_payloads_path.write_text(
+            json.dumps(payloads, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
     # Accelerator imports start only after every frontend process has exited.
     os.environ["UNIREC_STATIC_CACHE_LEN"] = str(args.self_cache_length)
     os.environ["UNIREC_STATIC_CROSS_CACHE_LEN"] = str(args.cross_cache_length)
     os.environ["UNIREC_VISION_BUCKET_PRESET"] = args.vision_bucket_preset
     os.environ["UNIREC_RECOGNITION_INPUT_CONTRACT"] = "compact_uint8_hwc"
-    import cv2
-    import numpy as np
     import torch
     import torch_npu
 
@@ -245,22 +257,28 @@ def main() -> None:
     from vision_full_batch import BucketedFullVisionRuntime
 
     torch_npu.npu.set_compile_mode(jit_compile=False)
-    sys.path.insert(0, str(args.openocr_root.resolve()))
-    from tools import infer_doc_onnx
+    pipeline = None
+    infer_doc_onnx = None
+    if not args.defer_output_write:
+        import cv2
+        import numpy as np
 
-    pipeline = infer_doc_onnx.OpenDocONNX.__new__(infer_doc_onnx.OpenDocONNX)
-    pipeline.use_layout_detection = False
-    pipeline.use_chart_recognition = True
-    pipeline.markdown_ignore_labels = [
-        "number",
-        "footnote",
-        "header",
-        "footer",
-        "aside_text",
-        "footer_image",
-        "header_image",
-        "chart",
-    ]
+        sys.path.insert(0, str(args.openocr_root.resolve()))
+        from tools import infer_doc_onnx
+
+        pipeline = infer_doc_onnx.OpenDocONNX.__new__(infer_doc_onnx.OpenDocONNX)
+        pipeline.use_layout_detection = False
+        pipeline.use_chart_recognition = True
+        pipeline.markdown_ignore_labels = [
+            "number",
+            "footnote",
+            "header",
+            "footer",
+            "aside_text",
+            "footer_image",
+            "header_image",
+            "chart",
+        ]
     pages, vision_records = _payload_to_pages(payloads)
     del payloads
 
@@ -496,31 +514,36 @@ def main() -> None:
 
     write_started = time.perf_counter()
     written = 0
-    with Path(os.devnull).open("w", encoding="utf-8") as devnull:
-        for page in pages:
-            result = assemble_page(
-                page=page,
-                pipeline=pipeline,
-                infer_doc_onnx=infer_doc_onnx,
-            )
-            if any(bool(row.get("is_image", False)) for row in result["recognition_results"]):
-                page_image = cv2.imread(result["input_path"], cv2.IMREAD_COLOR)
-                if page_image is None:
-                    raise RuntimeError(f"failed to reload page {result['input_path']}")
-                result["_page_image"] = page_image
-            else:
-                result["_page_image"] = np.empty((0, 0, 3), dtype=np.uint8)
-            with redirect_stdout(devnull):
-                pipeline.save_to_json(result, str(args.output_dir))
-                pipeline.save_to_markdown(result, str(args.output_dir))
-            for crop in page.crops:
-                crop.result = None
-            written += 1
-            if written % args.progress_every == 0 or written == len(pages):
-                print(
-                    f"UNIREC_LOWMEM_WRITE_PROGRESS pages={written}/{len(pages)}",
-                    flush=True,
+    if not args.defer_output_write:
+        assert pipeline is not None and infer_doc_onnx is not None
+        with Path(os.devnull).open("w", encoding="utf-8") as devnull:
+            for page in pages:
+                result = assemble_page(
+                    page=page,
+                    pipeline=pipeline,
+                    infer_doc_onnx=infer_doc_onnx,
                 )
+                if any(
+                    bool(row.get("is_image", False))
+                    for row in result["recognition_results"]
+                ):
+                    page_image = cv2.imread(result["input_path"], cv2.IMREAD_COLOR)
+                    if page_image is None:
+                        raise RuntimeError(f"failed to reload page {result['input_path']}")
+                    result["_page_image"] = page_image
+                else:
+                    result["_page_image"] = np.empty((0, 0, 3), dtype=np.uint8)
+                with redirect_stdout(devnull):
+                    pipeline.save_to_json(result, str(args.output_dir))
+                    pipeline.save_to_markdown(result, str(args.output_dir))
+                for crop in page.crops:
+                    crop.result = None
+                written += 1
+                if written % args.progress_every == 0 or written == len(pages):
+                    print(
+                        f"UNIREC_LOWMEM_WRITE_PROGRESS pages={written}/{len(pages)}",
+                        flush=True,
+                    )
     write_s = time.perf_counter() - write_started
     process_wall_s = time.perf_counter() - process_started
     summary = {
@@ -536,6 +559,7 @@ def main() -> None:
         "vision_phase_wall_s": vision_wall_s,
         "decode_wall_s": decode_wall_s,
         "write_wall_s": write_s,
+        "output_write_deferred": bool(args.defer_output_write),
         "frontend": asdict(frontend_summary),
         "layout": layout.summary,
         "layout_ready_memory": layout.ready["snapshot"],
@@ -565,6 +589,11 @@ def main() -> None:
             "output_dir": str(args.output_dir.resolve()),
             "spool_dir": str(args.spool_dir.resolve()),
             "recognition_trace": str(trace_path.resolve()),
+            "frontend_payloads": (
+                str(frontend_payloads_path.resolve())
+                if args.defer_output_write
+                else None
+            ),
         },
     }
     summary_path = args.output_dir / "run_summary.json"
