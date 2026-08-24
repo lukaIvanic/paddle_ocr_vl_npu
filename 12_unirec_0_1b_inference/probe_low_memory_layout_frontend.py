@@ -34,6 +34,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--threads", type=int, default=8)
+    parser.add_argument("--layout-lanes", type=int, default=2)
     parser.add_argument("--limit", type=int, default=8)
     return parser.parse_args()
 
@@ -81,7 +82,7 @@ def main() -> None:
         model_path=args.layout_model,
         cache_dir=args.layout_cache,
         device=args.device,
-        lanes=4,
+        lanes=args.layout_lanes,
         batch_size=2,
         threshold=0.5,
         page_spool_root=args.spool_dir,
