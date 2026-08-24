@@ -66,6 +66,34 @@ def run_concurrent(
     return time.perf_counter() - started, outputs
 
 
+def load_guardless_frozen_executor(cache_file: Path) -> object:
+    """Load a frozen GE kernel without retaining the source nn.Module."""
+    try:
+        from torch_npu.dynamo.torchair.inference._cache_compiler import (
+            CompiledModel,
+        )
+    except ImportError:
+        from torchair.inference._cache_compiler import CompiledModel
+    from torchair.npu_fx_compiler import _compile_py_code
+
+    compiled_model = CompiledModel.load(str(cache_file))
+    compiled_fx = compiled_model.compiled_fx
+    if compiled_fx is None:
+        raise RuntimeError("layout cache has no compiled FX artifact")
+    if compiled_fx.input_parameters:
+        raise RuntimeError(
+            "guardless layout replay requires a frozen graph with zero "
+            f"parameter inputs, got {compiled_fx.input_parameters}"
+        )
+    ge_module = _compile_py_code(compiled_fx.py_code)
+    cache_dir = str(cache_file.parent)
+    if hasattr(ge_module, "_update_ge_cache_dir"):
+        ge_module._update_ge_cache_dir(cache_dir)
+    if hasattr(ge_module, "_update_static_kernel_cache_dir"):
+        ge_module._update_static_kernel_cache_dir(cache_dir)
+    return ge_module.kernel
+
+
 def main() -> None:
     args = parse_args()
     if args.lanes < 1 or args.repeats < 1:
@@ -140,7 +168,6 @@ def main() -> None:
             executors[index](inputs[index])
         streams[index].synchronize()
     after_all = process_snapshot()
-    deinit_report = deinitialize_after_warmup("shared_layout_executors_warm")
 
     before_drop_outputs = []
     for index, executor in enumerate(executors):
@@ -154,16 +181,31 @@ def main() -> None:
     if args.drop_source_model:
         if not args.freeze_parameters:
             raise ValueError("dropping the source model requires frozen parameters")
+        guardless_executors = [
+            load_guardless_frozen_executor(cache_files[0])
+            for _ in range(args.lanes)
+        ]
+        guardless_pre_drop_outputs = []
+        for index, executor in enumerate(guardless_executors):
+            with torch.inference_mode(), torch.npu.stream(streams[index]):
+                output = executor(inputs[index])
+            streams[index].synchronize()
+            guardless_pre_drop_outputs.append(tuple(value.cpu() for value in output))
+        deinit_report = deinitialize_after_warmup("shared_layout_executors_warm")
         before_drop = process_snapshot()
         adapter.processor = None
         adapter.model = None
         runtime.stage.model = None
+        runtime.compiled = None
+        adapter.compiled_runtime = None
+        executors.clear()
+        del adapter, runtime
         gc.collect()
         torch.npu.empty_cache()
         cleanup = cleanup_after_warmup("shared_layout_source_model_drop")
         after_drop = process_snapshot()
         after_drop_outputs = []
-        for index, executor in enumerate(executors):
+        for index, executor in enumerate(guardless_executors):
             with torch.inference_mode(), torch.npu.stream(streams[index]):
                 output = executor(inputs[index])
             streams[index].synchronize()
@@ -191,7 +233,17 @@ def main() -> None:
                 - int(after_drop["proc_bytes"]["pss"]),
             ),
             "cleanup": cleanup,
+            "guardless_pre_drop_exact": all(
+                torch.equal(left, right)
+                for reference, candidate in zip(
+                    before_drop_outputs, guardless_pre_drop_outputs
+                )
+                for left, right in zip(reference, candidate)
+            ),
         }
+        executors = guardless_executors
+    else:
+        deinit_report = deinitialize_after_warmup("shared_layout_executors_warm")
 
     references = []
     serial_started = time.perf_counter()
