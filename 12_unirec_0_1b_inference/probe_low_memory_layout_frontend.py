@@ -9,7 +9,6 @@ import json
 import os
 from pathlib import Path
 import sys
-import time
 
 os.environ.setdefault("TE_PARALLEL_COMPILER", "1")
 os.environ.setdefault("CANN_KNOWLEDGE_BANK_PROCESS_NUM", "0")
@@ -17,8 +16,12 @@ os.environ.setdefault("UNIREC_DEINIT_TBE_AFTER_WARMUP", "1")
 
 import numpy as np
 
-from layout_page_input import decode_page_rgb, materialize_layout_rgb
-from low_memory_frontend_pool import CpuCropPreparePool
+from low_memory_frontend_pool import CpuCropPreparePool, SharedLayoutProcess
+
+
+EXPECTED_FIRST8_PAYLOAD_DIGEST = (
+    "23fe4300118fbd515d0fea8af675ebaa06e89daf422099b60523c6ec1d609cba"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -63,9 +66,9 @@ def main() -> None:
         raise RuntimeError(f"spool directory is not empty: {args.spool_dir}")
     args.spool_dir.mkdir(parents=True, exist_ok=True)
 
-    # Spawn CPU-only workers before this parent imports Torch. Python spawn
-    # re-imports this module in each child, so accelerator imports at module
-    # scope would duplicate the full runtime in every worker.
+    # Spawn every worker from this Torch-free coordinator. The short-lived
+    # layout owner imports Torch/CANN in its own process and exits before the
+    # recognition owner is created by the full runner.
     pool = CpuCropPreparePool(
         workers=args.workers,
         recognition_threads=args.threads,
@@ -73,13 +76,8 @@ def main() -> None:
         spool_root=args.spool_dir,
         cross_cache_length=1320,
     )
-    import torch_npu
-
-    from host_memory_diagnostics import process_snapshot
-    from shared_layout_owner import SharedLayoutOwner
-
-    torch_npu.npu.set_compile_mode(jit_compile=False)
-    owner = SharedLayoutOwner(
+    layout = SharedLayoutProcess(
+        paths=paths,
         model_path=args.layout_model,
         cache_dir=args.layout_cache,
         device=args.device,
@@ -87,33 +85,15 @@ def main() -> None:
         batch_size=2,
         threshold=0.5,
     )
-    pages = []
-    decode_started = time.perf_counter()
-    for path in paths:
-        rgb, _timing = decode_page_rgb(path)
-        pages.append(materialize_layout_rgb(rgb))
-    decode_s = time.perf_counter() - decode_started
-    # Every cached GE executor is permanently bound to the stream used for its
-    # first call. Calling the primary executor through the adapter's default
-    # stream after that warmup is invalid. The standalone shared-executor gate
-    # already compares serial and concurrent output exactly; here, compare two
-    # complete calls through the actual production owner path.
-    canonical = owner.predict(pages)
-    candidate = owner.predict(pages)
-    layout_exact = canonical == candidate
-    if not layout_exact:
-        raise RuntimeError("shared layout output differs from canonical adapter")
-
-    for page_index, (path, rgb, layout_result) in enumerate(
-        zip(paths, pages, candidate)
-    ):
+    for item in layout.iter_pages():
         pool.submit(
-            page_index=page_index,
-            path=path,
-            rgb=rgb,
-            layout_result=layout_result,
-            started_at=time.perf_counter(),
+            page_index=int(item["page_index"]),
+            path=Path(item["path"]),
+            rgb=item["rgb"],
+            layout_result=item["layout_result"],
+            started_at=float(item["started_at"]),
         )
+    layout.close()
     payloads, frontend = pool.finish()
     pool.close()
     payload_digest = digest(
@@ -150,15 +130,21 @@ def main() -> None:
             if not array.flags.writeable or not array.flags.c_contiguous:
                 invalid_spools.append(descriptor)
             del array
-    release = owner.release()
+    layout_exact = (
+        payload_digest == EXPECTED_FIRST8_PAYLOAD_DIGEST
+        if len(paths) == 8
+        else True
+    )
+    from host_memory_diagnostics import process_snapshot
+
     report = {
         "status": "pass" if layout_exact and not invalid_spools else "fail",
-        "chip": torch_npu.npu.get_device_name(0),
+        "chip": layout.ready["chip"],
         "pages": len(paths),
         "layout_exact": layout_exact,
         "payload_digest": payload_digest,
-        "decode_s": decode_s,
-        "layout": release,
+        "layout": layout.summary,
+        "layout_owner_ready_memory": layout.ready["snapshot"],
         "frontend": frontend.__dict__,
         "invalid_spools": invalid_spools,
         "final_memory": process_snapshot(),

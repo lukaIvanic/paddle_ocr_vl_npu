@@ -458,3 +458,174 @@ class CpuCropPreparePool:
 
     def __exit__(self, *_args: Any) -> None:
         self.close()
+
+
+def _layout_owner_process_main(
+    paths: list[str],
+    model_path: str,
+    cache_dir: str,
+    device: str,
+    lanes: int,
+    batch_size: int,
+    threshold: float,
+    result_queue: Any,
+) -> None:
+    """Heavy layout process; its exit is the graph-runtime memory barrier."""
+    try:
+        import torch_npu
+
+        from host_memory_diagnostics import process_snapshot
+        from layout_page_input import decode_page_rgb, materialize_layout_rgb
+        from shared_layout_owner import SharedLayoutOwner
+
+        torch_npu.npu.set_compile_mode(jit_compile=False)
+        owner = SharedLayoutOwner(
+            model_path=Path(model_path),
+            cache_dir=Path(cache_dir),
+            device=device,
+            lanes=lanes,
+            batch_size=batch_size,
+            threshold=threshold,
+        )
+        result_queue.put(
+            {
+                "status": "layout_ready",
+                "pid": os.getpid(),
+                "snapshot": process_snapshot(),
+                "chip": torch_npu.npu.get_device_name(0),
+            }
+        )
+        decode_pool = ThreadPoolExecutor(
+            max_workers=lanes * batch_size,
+            thread_name_prefix="unirec-layout-decode",
+        )
+        started = time.perf_counter()
+        for start in range(0, len(paths), lanes * batch_size):
+            chunk = paths[start : start + lanes * batch_size]
+            page_started = [time.perf_counter() for _ in chunk]
+            decoded = list(
+                decode_pool.map(
+                    lambda value: decode_page_rgb(Path(value)),
+                    chunk,
+                )
+            )
+            rgbs = [materialize_layout_rgb(value[0]) for value in decoded]
+            layouts = owner.predict(rgbs)
+            for local_index, (path, rgb, layout, timing) in enumerate(
+                zip(chunk, rgbs, layouts, (value[1] for value in decoded))
+            ):
+                result_queue.put(
+                    {
+                        "status": "layout_page",
+                        "page_index": start + local_index,
+                        "path": path,
+                        "rgb": rgb,
+                        "layout_result": layout,
+                        "started_at": page_started[local_index],
+                        "decode_timing_s": timing,
+                    }
+                )
+        decode_pool.shutdown(wait=True)
+        result_queue.put(
+            {
+                "status": "layout_done",
+                "pages": len(paths),
+                "wall_s": time.perf_counter() - started,
+                "owner_calls": owner.calls,
+                "owner_wall_s": owner.wall_s,
+                "snapshot": process_snapshot(),
+            }
+        )
+    except BaseException as exception:
+        result_queue.put(
+            {
+                "status": "error",
+                "error": repr(exception),
+                "traceback": traceback.format_exc(),
+            }
+        )
+
+
+class SharedLayoutProcess:
+    """One short-lived NPU layout process with four cached executor lanes."""
+
+    def __init__(
+        self,
+        *,
+        paths: list[Path],
+        model_path: Path,
+        cache_dir: Path,
+        device: str,
+        lanes: int = 4,
+        batch_size: int = 2,
+        threshold: float = 0.5,
+    ) -> None:
+        self.context = mp.get_context("spawn")
+        self.result_queue = self.context.Queue(maxsize=max(8, lanes * batch_size * 2))
+        self.process = self.context.Process(
+            target=_layout_owner_process_main,
+            args=(
+                [str(path) for path in paths],
+                str(model_path),
+                str(cache_dir),
+                device,
+                lanes,
+                batch_size,
+                threshold,
+                self.result_queue,
+            ),
+            name="unirec-shared-layout-owner",
+        )
+        self.page_count = len(paths)
+        self.process.start()
+        ready = self._get(timeout=300.0)
+        if ready.get("status") != "layout_ready":
+            self.close()
+            raise RuntimeError(f"layout owner did not become ready: {ready}")
+        self.ready = ready
+        self.summary: dict[str, Any] | None = None
+        self.closed = False
+
+    def _get(self, *, timeout: float = 1800.0) -> dict[str, Any]:
+        try:
+            item = self.result_queue.get(timeout=timeout)
+        except queue.Empty as exception:
+            raise TimeoutError("shared layout owner produced no result") from exception
+        if item.get("status") == "error":
+            raise RuntimeError(
+                f"shared layout owner failed: {item.get('error')}\n{item.get('traceback')}"
+            )
+        return item
+
+    def iter_pages(self) -> Any:
+        received = 0
+        while received < self.page_count:
+            item = self._get()
+            if item.get("status") != "layout_page":
+                raise RuntimeError(f"unexpected layout owner message: {item}")
+            received += 1
+            yield item
+        summary = self._get()
+        if summary.get("status") != "layout_done":
+            raise RuntimeError(f"layout owner did not finish cleanly: {summary}")
+        self.summary = summary
+
+    def close(self) -> None:
+        if getattr(self, "closed", False):
+            return
+        self.closed = True
+        self.process.join(timeout=60.0)
+        if self.process.is_alive():
+            self.process.terminate()
+            self.process.join(timeout=5.0)
+        if self.process.exitcode not in {0, None}:
+            raise RuntimeError(
+                f"shared layout owner exited with {self.process.exitcode}"
+            )
+        self.result_queue.close()
+
+    def __enter__(self) -> "SharedLayoutProcess":
+        return self
+
+    def __exit__(self, *_args: Any) -> None:
+        self.close()
