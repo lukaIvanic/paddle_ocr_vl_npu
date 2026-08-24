@@ -13,6 +13,7 @@ from types import SimpleNamespace
 os.environ.setdefault("TE_PARALLEL_COMPILER", "1")
 os.environ.setdefault("CANN_KNOWLEDGE_BANK_PROCESS_NUM", "0")
 os.environ.setdefault("UNIREC_DEINIT_TBE_AFTER_WARMUP", "1")
+os.environ.setdefault("UNIREC_PURGE_HOST_AFTER_WARMUP", "1")
 os.environ.setdefault("UNIREC_STATIC_CACHE_LEN", "2048")
 os.environ.setdefault("UNIREC_STATIC_CROSS_CACHE_LEN", "1320")
 
@@ -31,8 +32,10 @@ from decode_model_optimizations import (
 from host_memory_diagnostics import process_snapshot
 from modeling_optimized_unirec import OptimizedUniRecRunner
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
+from post_warmup_host_cleanup import cleanup_after_warmup
 from run_opendoc_batched_unirec import warmup_configured_graphs
 from tbe_compiler_lifecycle import deinitialize_after_warmup
+from torchair_ge_graph_compaction import release_loaded_ge_executors
 from vision_bucket_presets import resolve_vision_bucket_specs
 from vision_full_batch import BucketedFullVisionRuntime
 
@@ -53,6 +56,12 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="0 loads every vision graph; positive values load only the largest N",
     )
+    parser.add_argument(
+        "--vision-resident-keys",
+        default="",
+        help="comma-separated resident keys; overrides --vision-resident-graphs",
+    )
+    parser.add_argument("--release-layout-before-vision", action="store_true")
     parser.add_argument("--reset-dynamo-after-warmup", action="store_true")
     return parser.parse_args()
 
@@ -111,6 +120,18 @@ def main() -> None:
         layout(layout_inputs, threshold=0.5)
     layout_stream.synchronize()
     record(stages, "after_layout_warmup")
+    layout_release_report = None
+    if args.release_layout_before_vision:
+        if args.reset_dynamo_after_warmup:
+            raise ValueError("Dynamo reset replay requires the layout runtime")
+        layout_release_report = release_loaded_ge_executors(
+            [layout.compiled_runtime.compiled]
+        )
+        del layout, layout_inputs
+        gc.collect()
+        torch.npu.empty_cache()
+        cleanup_after_warmup("unified_owner_layout_phase_complete")
+        record(stages, "after_layout_release")
 
     vision = BucketedFullVisionRuntime(
         runner,
@@ -130,7 +151,18 @@ def main() -> None:
     )
     if args.vision_resident_graphs < 0:
         raise ValueError("vision resident graph count must be non-negative")
-    if args.vision_resident_graphs:
+    resident_keys = [
+        value.strip()
+        for value in args.vision_resident_keys.split(",")
+        if value.strip()
+    ]
+    if resident_keys:
+        specs_by_key = {spec.key: spec for spec in sorted_specs}
+        missing = sorted(set(resident_keys) - set(specs_by_key))
+        if missing:
+            raise ValueError(f"unknown resident vision keys: {missing}")
+        sorted_specs = [specs_by_key[key] for key in resident_keys]
+    elif args.vision_resident_graphs:
         sorted_specs = sorted_specs[: args.vision_resident_graphs]
     for spec in sorted_specs:
         lane = min(range(args.lanes), key=lane_pixels.__getitem__)
@@ -209,7 +241,9 @@ def main() -> None:
             ),
         }
         record(stages, "after_dynamo_reset_replay")
-    del vision_inputs, layout_inputs
+    del vision_inputs
+    if not args.release_layout_before_vision:
+        del layout_inputs
     torch.npu.empty_cache()
     record(stages, "final")
     report = {
@@ -220,6 +254,7 @@ def main() -> None:
         "decode_optimizations": decode_optimizations,
         "decode_warmup": decode_report,
         "tbe_deinit": deinit_report,
+        "layout_release": layout_release_report,
         "dynamo_reset": dynamo_reset_report,
         "stages": stages,
         "layout_batch_size": 2,
