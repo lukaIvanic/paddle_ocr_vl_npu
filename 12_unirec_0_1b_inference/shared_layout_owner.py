@@ -71,16 +71,19 @@ class SharedLayoutOwner:
             from torchair.inference._cache_compiler import CompiledModel
 
         self.executors = [runtime.compiled]
+        self.executor_namespaces: list[dict[str, Any]] = []
         for _ in range(1, lanes):
             compiled_model = CompiledModel.load(str(cache_files[0]))
+            namespace: dict[str, Any] = {}
             self.executors.append(
                 compiled_model.rebase(
                     runtime.stage,
-                    global_vars=globals(),
+                    global_vars=namespace,
                     func=runtime.stage.forward,
                     cache_dir=str(cache_files[0].parent),
                 )
             )
+            self.executor_namespaces.append(namespace)
         self.streams = [torch.npu.Stream(device=self.device) for _ in range(lanes)]
         self.pool = ThreadPoolExecutor(
             max_workers=lanes,
@@ -204,6 +207,9 @@ class SharedLayoutOwner:
             lazy_executors
         )
         self.executors.clear()
+        for namespace in self.executor_namespaces:
+            namespace.clear()
+        self.executor_namespaces.clear()
         self.streams.clear()
         self.adapter = None
         gc.collect()
