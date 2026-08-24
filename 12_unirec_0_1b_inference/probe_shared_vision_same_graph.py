@@ -45,6 +45,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--bucket-key", default="960x64_b4")
     parser.add_argument("--lanes", type=int, default=4)
     parser.add_argument("--total-calls", type=int, default=148)
+    parser.add_argument(
+        "--executor-mode",
+        choices=("rebased", "shared"),
+        default="rebased",
+    )
     return parser.parse_args()
 
 
@@ -199,21 +204,24 @@ def main() -> None:
     except ImportError:
         from torchair.inference._cache_compiler import CompiledModel
 
-    method = compile_method_for_key(runtime, args.bucket_key)
-    module = runtime.modules[args.bucket_key]
     executors = [runtime.compiled[args.bucket_key]]
     namespaces: list[dict[str, Any]] = []
-    for _ in range(1, args.lanes):
-        namespace: dict[str, Any] = {}
-        executors.append(
-            CompiledModel.load(str(compiled_modules[0])).rebase(
-                module,
-                global_vars=namespace,
-                func=method,
-                cache_dir=str(compiled_modules[0].parent),
+    if args.executor_mode == "shared":
+        executors *= args.lanes
+    else:
+        method = compile_method_for_key(runtime, args.bucket_key)
+        module = runtime.modules[args.bucket_key]
+        for _ in range(1, args.lanes):
+            namespace: dict[str, Any] = {}
+            executors.append(
+                CompiledModel.load(str(compiled_modules[0])).rebase(
+                    module,
+                    global_vars=namespace,
+                    func=method,
+                    cache_dir=str(compiled_modules[0].parent),
+                )
             )
-        )
-        namespaces.append(namespace)
+            namespaces.append(namespace)
 
     reference_outputs = []
     for lane in range(args.lanes):
@@ -263,7 +271,8 @@ def main() -> None:
     )
     del candidate_outputs
     del reference_outputs
-    del executors[1:]
+    if args.executor_mode == "rebased":
+        del executors[1:]
     for namespace in namespaces:
         namespace.clear()
     namespaces.clear()
@@ -283,6 +292,7 @@ def main() -> None:
         else "fail",
         "chip": torch_npu.npu.get_device_name(0),
         "bucket_key": args.bucket_key,
+        "executor_mode": args.executor_mode,
         "shape": [spec.batch_size, 3, spec.height, spec.width],
         "lanes": args.lanes,
         "total_calls": args.total_calls,
