@@ -190,15 +190,9 @@ def main() -> None:
         page_spool_root=args.spool_dir.resolve(),
     )
     submitted = 0
+    layout_items = []
     for item in layout.iter_pages():
-        crop_pool.submit(
-            page_index=int(item["page_index"]),
-            path=Path(item["path"]),
-            rgb=None,
-            rgb_descriptor=None,
-            layout_result=item["layout_result"],
-            started_at=float(item["started_at"]),
-        )
+        layout_items.append(item)
         submitted += 1
         if submitted % args.progress_every == 0 or submitted == len(paths):
             print(
@@ -210,9 +204,19 @@ def main() -> None:
     layout.close()
     print(
         "UNIREC_LOWMEM_LAYOUT_RELEASED "
-        f"pages={submitted} elapsed_s={time.perf_counter() - frontend_started:.3f}",
+        f"pages={len(layout_items)} elapsed_s={time.perf_counter() - frontend_started:.3f}",
         flush=True,
     )
+    for item in layout_items:
+        crop_pool.submit(
+            page_index=int(item["page_index"]),
+            path=Path(item["path"]),
+            rgb=None,
+            rgb_descriptor=None,
+            layout_result=item["layout_result"],
+            started_at=float(item["started_at"]),
+        )
+    del layout_items
     payloads, frontend_summary = crop_pool.finish()
     crop_pool.close()
     frontend_wall_s = time.perf_counter() - frontend_started
@@ -259,7 +263,7 @@ def main() -> None:
     )
     from tbe_compiler_lifecycle import deinitialize_after_warmup
     from vision_bucket_presets import resolve_vision_bucket_specs
-    from vision_full_batch import BucketedFullVisionRuntime
+    from vision_full_batch import BucketedFullVisionRuntime, VisionBucketSpec
 
     torch_npu.npu.set_compile_mode(jit_compile=False)
     pipeline = None
@@ -311,11 +315,22 @@ def main() -> None:
         preset_name=args.vision_bucket_preset,
         synchronize_first_call=False,
     )
+    runner.compile_cache_dir = args.decode_cache_parent.resolve()
+    tall_fallback_runtime = BucketedFullVisionRuntime(
+        runner,
+        specs=(VisionBucketSpec(960, 1408, 1),),
+        focal_depthwise_rewrite="constant_grouped_all",
+        weight_format="torchair_internal",
+        preset_name="compiled_tall_fallback",
+        synchronize_first_call=False,
+    )
+    runner.compile_cache_dir = args.vision_cache.resolve()
     vision_owner = BoundedVisionOwner(
         vision_runtime,
         lanes=args.vision_lanes,
         same_key_shards=args.vision_same_key_shards,
         sharded_key_count=args.vision_sharded_key_count,
+        fallback_runtime=tall_fallback_runtime,
     )
     text_runtime = runner._get_compiled_packed_text_prefill_runtime()
     encoded: list[Any] | None = None
@@ -330,7 +345,7 @@ def main() -> None:
         # All spatial outputs are materialized. The decoder and packed text
         # graph do not use the vision encoder again.
         runner.model.encoder = None
-        del vision_owner, vision_runtime
+        del vision_owner, vision_runtime, tall_fallback_runtime
         gc.collect()
         torch.npu.empty_cache()
         post_vision_cleanup = cleanup_after_warmup("low_memory_vision_complete")
@@ -475,7 +490,7 @@ def main() -> None:
             del items, npu_exports, encoded_group
 
     def producer() -> None:
-        nonlocal vision_owner, vision_runtime, vision_summary
+        nonlocal vision_owner, vision_runtime, tall_fallback_runtime, vision_summary
         nonlocal post_vision_memory, vision_tbe_deinit, vision_wall_s
         started = time.perf_counter()
         try:
@@ -564,7 +579,7 @@ def main() -> None:
                     )
                 vision_owner.close()
                 runner.model.encoder = None
-                del vision_owner, vision_runtime
+                del vision_owner, vision_runtime, tall_fallback_runtime
                 gc.collect()
                 torch.npu.empty_cache()
                 vision_tbe_deinit = deinitialize_after_warmup(

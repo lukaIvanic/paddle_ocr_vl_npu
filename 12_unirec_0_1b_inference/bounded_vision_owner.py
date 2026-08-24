@@ -39,6 +39,7 @@ class BoundedVisionOwner:
         lanes: int = 2,
         same_key_shards: int = 1,
         sharded_key_count: int = 4,
+        fallback_runtime: BucketedFullVisionRuntime | None = None,
     ) -> None:
         if not 1 <= lanes <= 4:
             raise ValueError("bounded vision lanes must be in [1, 4]")
@@ -50,6 +51,7 @@ class BoundedVisionOwner:
             raise ValueError("sharded vision key count cannot be negative")
         self.same_key_shards = int(same_key_shards)
         self.sharded_key_count = int(sharded_key_count)
+        self.fallback_runtime = fallback_runtime
         self.streams = [
             torch.npu.Stream(device=torch.device(runtime.runner.device))
             for _ in range(lanes)
@@ -359,6 +361,9 @@ class BoundedVisionOwner:
                 )
             pair_reports.append(lane_reports)
         fallback_started = time.perf_counter()
+        fallback_release: dict[str, Any] | None = None
+        if fallbacks and self.fallback_runtime is not None:
+            self._release_loaded()
         for record in fallbacks:
             mapping = self._mapping(record["processed_pixel_values_descriptor"])
             item = PreprocessedVisionInput(
@@ -370,7 +375,19 @@ class BoundedVisionOwner:
                 image_source=str(record["request_id"]),
             )
             with torch.npu.stream(self.streams[0]):
-                output = self.runtime._run_fallback(item)
+                if self.fallback_runtime is None:
+                    output = self.runtime._run_fallback(item)
+                else:
+                    spec = self.fallback_runtime.select_bucket(
+                        item.processed_width,
+                        item.processed_height,
+                    )
+                    if spec is None:
+                        raise RuntimeError(
+                            "compiled fallback graph cannot fit "
+                            f"{item.processed_width}x{item.processed_height}"
+                        )
+                    output = self.fallback_runtime._run_bucket(spec, [item])[0]
             self.streams[0].synchronize()
             if output.source_index in seen_outputs:
                 raise RuntimeError(f"duplicate encoded source {output.source_index}")
@@ -381,6 +398,18 @@ class BoundedVisionOwner:
                 on_encoded_batch([output])
             del item, mapping
         fallback_s = time.perf_counter() - fallback_started
+        if self.fallback_runtime is not None:
+            loaded_fallbacks = [
+                value
+                for value in self.fallback_runtime.compiled.values()
+                if getattr(value, "_compiled_model", None) is not None
+            ]
+            if loaded_fallbacks:
+                torch.npu.synchronize()
+                fallback_release = release_loaded_ge_executors(loaded_fallbacks)
+                gc.collect()
+                torch.npu.empty_cache()
+                self.host_purge_statuses.append(purge_host_allocator_pages())
         release = self._release_loaded()
         if len(seen_outputs) != len(records):
             raise RuntimeError(
@@ -403,6 +432,17 @@ class BoundedVisionOwner:
             "sharded_keys": shard_keys,
             "fallback_count": len(fallbacks),
             "fallback_wall_s": fallback_s,
+            "fallback_execution": (
+                "compiled_960x1408_b1"
+                if self.fallback_runtime is not None
+                else "eager"
+            ),
+            "fallback_bucket_calls": (
+                dict(self.fallback_runtime.stats["bucket_calls"])
+                if self.fallback_runtime is not None
+                else None
+            ),
+            "fallback_release": fallback_release,
             "final_release": release,
             "early_tbe_deinit": self.early_tbe_deinit,
             "host_purge_statuses": self.host_purge_statuses,
