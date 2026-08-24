@@ -31,6 +31,8 @@ LIMIT="${LIMIT:-128}"
 TORCH_WARM_POOL_VALUE="${TORCH_WARM_POOL_VALUE:-0}"
 TE_PARALLEL_COMPILER_VALUE="${TE_PARALLEL_COMPILER_VALUE:-1}"
 CANN_KNOWLEDGE_BANK_PROCESS_NUM_VALUE="${CANN_KNOWLEDGE_BANK_PROCESS_NUM_VALUE:-0}"
+MEMORY_SAMPLE_INTERVAL_S="${MEMORY_SAMPLE_INTERVAL_S:-10}"
+PROCESS_SNAPSHOT_INTERVAL_S="${PROCESS_SNAPSHOT_INTERVAL_S:-60}"
 RUN_LABEL="${RUN_LABEL:-nowarmpool}"
 
 test -x "$PYTHON_BIN"
@@ -169,7 +171,8 @@ monitor() {
       peak_pss="$pss"
     fi
     if awk -v elapsed="$elapsed" -v last="$last_snapshot_s" \
-      'BEGIN {exit !((elapsed-last) >= 15)}'; then
+      -v interval="$PROCESS_SNAPSHOT_INTERVAL_S" \
+      'BEGIN {exit !((elapsed-last) >= interval)}'; then
       last_snapshot_s="$elapsed"
       {
         printf 'captured_elapsed_s=%s total_pss_kib=%s\n' "$elapsed" "$pss"
@@ -191,7 +194,7 @@ monitor() {
         done
       } >"$RUN_ROOT/process_memory_peak.tsv"
     fi
-    sleep 2
+    sleep "$MEMORY_SAMPLE_INTERVAL_S"
   done
   inventory "$RUN_ROOT/om_after.txt"
   diff -u "$RUN_ROOT/om_before.txt" "$RUN_ROOT/om_after.txt" \
@@ -227,6 +230,7 @@ printf '%s\n' "$MONITOR_PID" >"$RUN_ROOT/monitor_pid.txt"
   printf 'te_parallel_compiler=%s\n' "$TE_PARALLEL_COMPILER_VALUE"
   printf 'cann_knowledge_bank_process_num=%s\n' \
     "$CANN_KNOWLEDGE_BANK_PROCESS_NUM_VALUE"
+  printf 'memory_sample_interval_s=%s\n' "$MEMORY_SAMPLE_INTERVAL_S"
   printf 'reference_output=%s\n' "$REFERENCE_OUTPUT"
 } >"$RUN_ROOT/preflight.txt"
 
