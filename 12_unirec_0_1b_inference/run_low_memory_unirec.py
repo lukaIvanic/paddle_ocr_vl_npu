@@ -62,6 +62,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--self-cache-length", type=int, default=2048)
     parser.add_argument("--max-length", type=int, default=2048)
     parser.add_argument("--ready-queue-size", type=int, default=128)
+    parser.add_argument(
+        "--vision-tall-fallback",
+        choices=("compiled", "eager"),
+        default="compiled",
+    )
     parser.add_argument("--progress-every", type=int, default=32)
     parser.add_argument(
         "--defer-output-write",
@@ -315,19 +320,21 @@ def main() -> None:
         preset_name=args.vision_bucket_preset,
         synchronize_first_call=False,
     )
-    runner.compile_cache_dir = args.decode_cache_parent.resolve()
-    tall_fallback_runtime = BucketedFullVisionRuntime(
-        runner,
-        specs=(VisionBucketSpec(960, 1408, 1),),
-        focal_depthwise_rewrite="constant_grouped_all",
-        weight_format="torchair_internal",
-        preset_name="compiled_tall_fallback",
-        synchronize_first_call=False,
-        preapplied_focal_depthwise_rewrite_summary=(
-            vision_runtime.focal_depthwise_rewrite_summary
-        ),
-        preapplied_weight_format_summary=vision_runtime.weight_format_summary,
-    )
+    tall_fallback_runtime = None
+    if args.vision_tall_fallback == "compiled":
+        runner.compile_cache_dir = args.decode_cache_parent.resolve()
+        tall_fallback_runtime = BucketedFullVisionRuntime(
+            runner,
+            specs=(VisionBucketSpec(960, 1408, 1),),
+            focal_depthwise_rewrite="constant_grouped_all",
+            weight_format="torchair_internal",
+            preset_name="compiled_tall_fallback",
+            synchronize_first_call=False,
+            preapplied_focal_depthwise_rewrite_summary=(
+                vision_runtime.focal_depthwise_rewrite_summary
+            ),
+            preapplied_weight_format_summary=vision_runtime.weight_format_summary,
+        )
     runner.compile_cache_dir = args.vision_cache.resolve()
     vision_owner = BoundedVisionOwner(
         vision_runtime,
@@ -749,6 +756,7 @@ def main() -> None:
             "cross_cache_length": args.cross_cache_length,
             "self_cache_length": args.self_cache_length,
             "ready_queue_size": args.ready_queue_size,
+            "vision_tall_fallback": args.vision_tall_fallback,
         },
         "artifacts": {
             "output_dir": str(args.output_dir.resolve()),
