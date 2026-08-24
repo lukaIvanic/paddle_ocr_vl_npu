@@ -47,6 +47,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--lanes", type=int, default=4)
     parser.add_argument("--bucket-preset", default="310p_k20_l4")
+    parser.add_argument(
+        "--vision-resident-graphs",
+        type=int,
+        default=0,
+        help="0 loads every vision graph; positive values load only the largest N",
+    )
     parser.add_argument("--reset-dynamo-after-warmup", action="store_true")
     return parser.parse_args()
 
@@ -117,11 +123,16 @@ def main() -> None:
     vision_streams = [torch.npu.Stream() for _ in range(args.lanes)]
     keys_by_lane = [[] for _ in range(args.lanes)]
     lane_pixels = [0 for _ in range(args.lanes)]
-    for spec in sorted(
+    sorted_specs = sorted(
         vision.specs,
         key=lambda row: row.batch_size * row.width * row.height,
         reverse=True,
-    ):
+    )
+    if args.vision_resident_graphs < 0:
+        raise ValueError("vision resident graph count must be non-negative")
+    if args.vision_resident_graphs:
+        sorted_specs = sorted_specs[: args.vision_resident_graphs]
+    for spec in sorted_specs:
         lane = min(range(args.lanes), key=lane_pixels.__getitem__)
         keys_by_lane[lane].append(spec.key)
         lane_pixels[lane] += spec.batch_size * spec.width * spec.height
@@ -213,6 +224,7 @@ def main() -> None:
         "stages": stages,
         "layout_batch_size": 2,
         "vision_bucket_preset": args.bucket_preset,
+        "vision_resident_graphs": sum(len(keys) for keys in keys_by_lane),
         "decode_batch_size": 128,
     }
     print("UNIREC_UNIFIED_OWNER_SUMMARY " + json.dumps(report, sort_keys=True))
