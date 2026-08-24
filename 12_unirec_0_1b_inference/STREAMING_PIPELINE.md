@@ -52,6 +52,41 @@ Set `UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE` to the validated decode
 cache parent when migrating from the two-phase runner. This prevents a new OM
 namespace from being created only because the runner changed.
 
+The streaming runner also defaults `TE_PARALLEL_COMPILER=1` and
+`CANN_KNOWLEDGE_BANK_PROCESS_NUM=0` before importing Torch/NPU modules. Cached
+serving graphs do not need CANN's default eight TBE compiler workers or its
+eight-worker knowledge-bank service. Explicit environment values still win,
+so cold-cache compilation experiments can opt back into parallel compilers.
+
+## One-worker host-memory validation
+
+On physical 910B2 NPU 7, the first 128 OmniDocBench pages reached 18.28 GiB
+peak process-group PSS and 41 processes with CANN's default process services.
+Cross-KV peaked at only 67.29 MiB; it was not the host-memory problem. Each of
+the coordinator and prefill worker owned a CANN forkserver with eight TBE
+compiler workers, eight knowledge-bank workers, and one knowledge-bank daemon.
+The knowledge-bank service also owned a separate manager process.
+
+With the serving defaults above, the same run used:
+
+- 8.51 GiB peak process-group PSS;
+- 9.49 GiB summed RSS and 7.81 GiB private memory;
+- seven processes instead of 41;
+- 13,063 MiB peak HBM;
+- 67.29 MiB peak live cross-KV;
+- 39.444 s measured pipeline wall time, or 3.245 pages/s.
+
+All 128 Markdown files were byte-identical to the default-process-service
+control. The OM inventory was unchanged. The control took 40.085 s, or 3.193
+pages/s, so reducing the compiler services did not trade throughput for RAM.
+
+The evidence root is:
+
+```text
+/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/
+w1_hostmem_te1_kb0_first128_29139b1_20260824T185433/
+```
+
 ## 910B2 validation
 
 Commit `b511fdb` passed the distribution-matched 128-page set on physical NPU

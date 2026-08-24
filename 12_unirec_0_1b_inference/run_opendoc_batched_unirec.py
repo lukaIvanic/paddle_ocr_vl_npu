@@ -23,6 +23,13 @@ from itertools import islice
 from pathlib import Path
 from typing import Any, Iterable
 
+# Cached serving graphs do not need CANN's default eight TBE compiler workers or
+# its separate eight-worker knowledge-bank service.  Each spawned UniRec
+# runtime otherwise retains both process pools for the full inference window.
+# Preserve explicit overrides for cold-cache compilation experiments.
+os.environ.setdefault("TE_PARALLEL_COMPILER", "1")
+os.environ.setdefault("CANN_KNOWLEDGE_BANK_PROCESS_NUM", "0")
+
 import cv2
 import numpy as np
 import torch
@@ -2531,6 +2538,12 @@ def main() -> None:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
     summary = {
         "status": "ok",
+        "host_runtime_process_controls": {
+            "te_parallel_compiler": os.environ.get("TE_PARALLEL_COMPILER"),
+            "cann_knowledge_bank_process_num": os.environ.get(
+                "CANN_KNOWLEDGE_BANK_PROCESS_NUM"
+            ),
+        },
         "openocr_root": str(openocr_root),
         "model_path": str(model_path),
         "device": args.device,

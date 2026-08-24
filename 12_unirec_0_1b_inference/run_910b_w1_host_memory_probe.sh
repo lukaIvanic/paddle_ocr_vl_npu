@@ -137,7 +137,7 @@ monitor() {
   local pids pid rss_value now elapsed shm_bytes hbm_used
   local process_count rss pss private values
   while :; do
-    pids="$(ps -o pid= --sid "$PID" 2>/dev/null | xargs)"
+    pids="$(ps -o pid= --sid "$PID" 2>/dev/null | xargs || true)"
     test -n "$pids" || break
     process_count=0
     rss=0
