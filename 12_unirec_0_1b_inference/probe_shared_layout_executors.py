@@ -114,17 +114,20 @@ def main() -> None:
         )
     try:
         from torch_npu.dynamo.torchair.inference._cache_compiler import (
-            _NoGuardCompiledMethod,
+            CompiledModel,
         )
     except ImportError:
-        from torchair.inference._cache_compiler import _NoGuardCompiledMethod
+        from torchair.inference._cache_compiler import CompiledModel
 
     executors = [runtime.compiled]
     for _ in range(1, args.lanes):
+        compiled_model = CompiledModel.load(str(cache_files[0]))
         executors.append(
-            _NoGuardCompiledMethod.load(
-                str(cache_files[0]),
-                self=runtime.stage,
+            compiled_model.rebase(
+                runtime.stage,
+                global_vars=globals(),
+                func=runtime.stage.forward,
+                cache_dir=str(cache_files[0].parent),
             )
         )
     for index in range(1, args.lanes):
