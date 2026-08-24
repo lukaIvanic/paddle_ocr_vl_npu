@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import redirect_stdout
 from dataclasses import asdict
 import gc
 import json
@@ -495,29 +496,31 @@ def main() -> None:
 
     write_started = time.perf_counter()
     written = 0
-    for page in pages:
-        result = assemble_page(
-            page=page,
-            pipeline=pipeline,
-            infer_doc_onnx=infer_doc_onnx,
-        )
-        if any(bool(row.get("is_image", False)) for row in result["recognition_results"]):
-            page_image = cv2.imread(result["input_path"], cv2.IMREAD_COLOR)
-            if page_image is None:
-                raise RuntimeError(f"failed to reload page {result['input_path']}")
-            result["_page_image"] = page_image
-        else:
-            result["_page_image"] = np.empty((0, 0, 3), dtype=np.uint8)
-        pipeline.save_to_json(result, str(args.output_dir))
-        pipeline.save_to_markdown(result, str(args.output_dir))
-        for crop in page.crops:
-            crop.result = None
-        written += 1
-        if written % args.progress_every == 0 or written == len(pages):
-            print(
-                f"UNIREC_LOWMEM_WRITE_PROGRESS pages={written}/{len(pages)}",
-                flush=True,
+    with Path(os.devnull).open("w", encoding="utf-8") as devnull:
+        for page in pages:
+            result = assemble_page(
+                page=page,
+                pipeline=pipeline,
+                infer_doc_onnx=infer_doc_onnx,
             )
+            if any(bool(row.get("is_image", False)) for row in result["recognition_results"]):
+                page_image = cv2.imread(result["input_path"], cv2.IMREAD_COLOR)
+                if page_image is None:
+                    raise RuntimeError(f"failed to reload page {result['input_path']}")
+                result["_page_image"] = page_image
+            else:
+                result["_page_image"] = np.empty((0, 0, 3), dtype=np.uint8)
+            with redirect_stdout(devnull):
+                pipeline.save_to_json(result, str(args.output_dir))
+                pipeline.save_to_markdown(result, str(args.output_dir))
+            for crop in page.crops:
+                crop.result = None
+            written += 1
+            if written % args.progress_every == 0 or written == len(pages):
+                print(
+                    f"UNIREC_LOWMEM_WRITE_PROGRESS pages={written}/{len(pages)}",
+                    flush=True,
+                )
     write_s = time.perf_counter() - write_started
     process_wall_s = time.perf_counter() - process_started
     summary = {
