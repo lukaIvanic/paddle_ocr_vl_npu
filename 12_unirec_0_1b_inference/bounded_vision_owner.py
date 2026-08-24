@@ -37,7 +37,7 @@ class BoundedVisionOwner:
         runtime: BucketedFullVisionRuntime,
         *,
         lanes: int = 2,
-        same_key_shards: int = 2,
+        same_key_shards: int = 1,
         sharded_key_count: int = 4,
     ) -> None:
         if not 1 <= lanes <= 4:

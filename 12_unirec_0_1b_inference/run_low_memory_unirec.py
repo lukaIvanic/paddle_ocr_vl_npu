@@ -50,7 +50,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-threshold", type=float, default=0.5)
     parser.add_argument("--vision-bucket-preset", default="310p_k20_l4")
     parser.add_argument("--vision-lanes", type=int, default=4)
-    parser.add_argument("--vision-same-key-shards", type=int, default=2)
+    parser.add_argument("--vision-same-key-shards", type=int, default=1)
     parser.add_argument("--vision-sharded-key-count", type=int, default=4)
     parser.add_argument(
         "--recognition-schedule",
