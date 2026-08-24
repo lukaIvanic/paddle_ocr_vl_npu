@@ -774,6 +774,8 @@ class BucketedFullVisionRuntime:
         weight_format: str = "native",
         preset_name: str = "custom",
         synchronize_first_call: bool = True,
+        preapplied_focal_depthwise_rewrite_summary: dict[str, Any] | None = None,
+        preapplied_weight_format_summary: dict[str, Any] | None = None,
     ) -> None:
         if not specs:
             raise ValueError("bucketed UniRec vision requires at least one bucket")
@@ -805,7 +807,9 @@ class BucketedFullVisionRuntime:
         ] = []
         self.focal_depthwise_rewrite = str(focal_depthwise_rewrite)
         self.focal_depthwise_rewrite_summary = (
-            rewrite_vision_focal_depthwise_convs(
+            dict(preapplied_focal_depthwise_rewrite_summary)
+            if preapplied_focal_depthwise_rewrite_summary is not None
+            else rewrite_vision_focal_depthwise_convs(
                 runner.model.encoder.vision_encoder,
                 requested=self.focal_depthwise_rewrite,
             )
@@ -821,12 +825,16 @@ class BucketedFullVisionRuntime:
             config.experimental_config.frozen_parameter.value = True
         cache_compile, import_path = import_torchair_cache_compile()
         self.weight_format = str(weight_format)
-        self.weight_format_summary = _prepare_vision_weight_formats(
-            runner.model.encoder.vision_encoder,
-            requested=self.weight_format,
-            cache_compile=cache_compile,
-            compiler_config=config,
-            cache_root=runner.compile_cache_dir,
+        self.weight_format_summary = (
+            dict(preapplied_weight_format_summary)
+            if preapplied_weight_format_summary is not None
+            else _prepare_vision_weight_formats(
+                runner.model.encoder.vision_encoder,
+                requested=self.weight_format,
+                cache_compile=cache_compile,
+                compiler_config=config,
+                cache_root=runner.compile_cache_dir,
+            )
         )
         required_specializations = len(self.specs) + 16
         torch._dynamo.config.cache_size_limit = max(

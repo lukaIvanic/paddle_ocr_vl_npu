@@ -323,6 +323,10 @@ def main() -> None:
         weight_format="torchair_internal",
         preset_name="compiled_tall_fallback",
         synchronize_first_call=False,
+        preapplied_focal_depthwise_rewrite_summary=(
+            vision_runtime.focal_depthwise_rewrite_summary
+        ),
+        preapplied_weight_format_summary=vision_runtime.weight_format_summary,
     )
     runner.compile_cache_dir = args.vision_cache.resolve()
     vision_owner = BoundedVisionOwner(
