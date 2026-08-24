@@ -81,7 +81,12 @@ def main() -> None:
         rgb, _timing = decode_page_rgb(path)
         pages.append(materialize_layout_rgb(rgb))
     decode_s = time.perf_counter() - decode_started
-    canonical = owner.adapter(pages, threshold=0.5)
+    # Every cached GE executor is permanently bound to the stream used for its
+    # first call. Calling the primary executor through the adapter's default
+    # stream after that warmup is invalid. The standalone shared-executor gate
+    # already compares serial and concurrent output exactly; here, compare two
+    # complete calls through the actual production owner path.
+    canonical = owner.predict(pages)
     candidate = owner.predict(pages)
     layout_exact = canonical == candidate
     if not layout_exact:
