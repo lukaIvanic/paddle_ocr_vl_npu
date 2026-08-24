@@ -100,15 +100,16 @@ def build_inputs(
 
 def run_sequential(
     runtime: BucketedFullVisionRuntime,
-    calls: list[str],
-    inputs: dict[str, tuple[torch.Tensor, ...]],
-    stream: Any,
+    calls_by_lane: list[list[str]],
+    inputs_by_lane: list[dict[str, tuple[torch.Tensor, ...]]],
+    streams: list[Any],
 ) -> float:
     started = time.perf_counter()
-    with torch.inference_mode(), torch.npu.stream(stream):
-        for key in calls:
-            runtime.compiled[key](*inputs[key])
-    stream.synchronize()
+    for rank, stream in enumerate(streams):
+        with torch.inference_mode(), torch.npu.stream(stream):
+            for key in calls_by_lane[rank]:
+                runtime.compiled[key](*inputs_by_lane[rank][key])
+        stream.synchronize()
     return time.perf_counter() - started
 
 
@@ -141,46 +142,68 @@ def run_concurrent(
 def parity_probe(
     runtime: BucketedFullVisionRuntime,
     *,
-    keys: tuple[str, ...],
+    keys_by_lane: list[str],
     inputs_by_lane: list[dict[str, tuple[torch.Tensor, ...]]],
     streams: list[Any],
 ) -> dict[str, Any]:
     report: dict[str, Any] = {}
-    for key in keys:
-        references = []
-        for rank, stream in enumerate(streams):
-            with torch.inference_mode(), torch.npu.stream(stream):
-                output = runtime.compiled[key](*inputs_by_lane[rank][key])
-            stream.synchronize()
-            references.append(output.cpu())
+    references = []
+    for rank, (key, stream) in enumerate(zip(keys_by_lane, streams)):
+        with torch.inference_mode(), torch.npu.stream(stream):
+            output = runtime.compiled[key](*inputs_by_lane[rank][key])
+        stream.synchronize()
+        references.append(output.cpu())
 
-        barrier = threading.Barrier(len(streams) + 1)
+    barrier = threading.Barrier(len(streams) + 1)
 
-        def lane(rank: int) -> torch.Tensor:
-            stream = streams[rank]
-            with torch.inference_mode(), torch.npu.stream(stream):
-                barrier.wait()
-                output = runtime.compiled[key](*inputs_by_lane[rank][key])
-            stream.synchronize()
-            return output.cpu()
-
-        with ThreadPoolExecutor(max_workers=len(streams)) as executor:
-            futures = [executor.submit(lane, rank) for rank in range(len(streams))]
+    def lane(rank: int) -> torch.Tensor:
+        key = keys_by_lane[rank]
+        stream = streams[rank]
+        with torch.inference_mode(), torch.npu.stream(stream):
             barrier.wait()
-            concurrent = [future.result() for future in futures]
-        diffs = [
-            (candidate.float() - reference.float()).abs()
-            for reference, candidate in zip(references, concurrent)
-        ]
+            output = runtime.compiled[key](*inputs_by_lane[rank][key])
+        stream.synchronize()
+        return output.cpu()
+
+    with ThreadPoolExecutor(max_workers=len(streams)) as executor:
+        futures = [executor.submit(lane, rank) for rank in range(len(streams))]
+        barrier.wait()
+        concurrent = [future.result() for future in futures]
+    for key, reference, candidate in zip(
+        keys_by_lane,
+        references,
+        concurrent,
+    ):
+        diff = (candidate.float() - reference.float()).abs()
         report[key] = {
-            "max_abs": max(float(diff.max()) for diff in diffs),
-            "mean_abs": sum(float(diff.mean()) for diff in diffs) / len(diffs),
-            "exact": all(
-                torch.equal(reference, candidate)
-                for reference, candidate in zip(references, concurrent)
-            ),
+            "max_abs": float(diff.max()),
+            "mean_abs": float(diff.mean()),
+            "exact": torch.equal(reference, candidate),
         }
     return report
+
+
+def assign_keys_to_lanes(
+    runtime: BucketedFullVisionRuntime,
+    *,
+    lanes: int,
+) -> list[list[str]]:
+    """Greedily balance physical pixel work while keeping each graph on one stream."""
+    specs = {spec.key: spec for spec in runtime.specs}
+    work = {
+        key: count
+        * specs[key].batch_size
+        * specs[key].width
+        * specs[key].height
+        for key, count in REPRESENTATIVE128_BUCKET_CALLS.items()
+    }
+    assignments = [[] for _ in range(lanes)]
+    totals = [0 for _ in range(lanes)]
+    for key in sorted(work, key=work.get, reverse=True):
+        lane = min(range(lanes), key=totals.__getitem__)
+        assignments[lane].append(key)
+        totals[lane] += work[key]
+    return assignments
 
 
 def main() -> None:
@@ -209,9 +232,6 @@ def main() -> None:
         weight_format="torchair_internal",
         preset_name=args.bucket_preset,
     )
-    runtime.warmup_all(passes=1)
-    deinitialize_after_warmup("shared_vision_streams_warmup_complete")
-
     inputs_by_lane = build_inputs(runtime, lanes=args.lanes)
     streams = [torch.npu.Stream() for _ in range(args.lanes)]
     keys = {spec.key for spec in runtime.specs}
@@ -222,35 +242,48 @@ def main() -> None:
             f"extra={sorted(set(REPRESENTATIVE128_BUCKET_CALLS) - keys)}"
         )
 
-    # Establish per-stream runtime state before measured submission.
-    warmup_calls = list(REPRESENTATIVE128_BUCKET_CALLS)
+    keys_by_lane = assign_keys_to_lanes(runtime, lanes=args.lanes)
+    # Bind each graph once to its permanent stream and establish runtime state.
     run_concurrent(
         runtime,
-        [warmup_calls for _ in range(args.lanes)],
+        keys_by_lane,
         inputs_by_lane,
         streams,
     )
+    deinitialize_after_warmup("shared_vision_streams_warmup_complete")
 
     calls = [
         key
         for key, count in REPRESENTATIVE128_BUCKET_CALLS.items()
         for _ in range(count)
     ]
-    random.Random(0).shuffle(calls)
     calls *= args.repeats
-    calls_by_lane = [calls[rank :: args.lanes] for rank in range(args.lanes)]
+    calls_by_lane = []
+    for rank, lane_keys in enumerate(keys_by_lane):
+        lane_calls = [
+            key
+            for key in lane_keys
+            for _ in range(REPRESENTATIVE128_BUCKET_CALLS[key] * args.repeats)
+        ]
+        random.Random(rank).shuffle(lane_calls)
+        calls_by_lane.append(lane_calls)
 
-    sequential_s = run_sequential(runtime, calls, inputs_by_lane[0], streams[0])
+    sequential_s = run_sequential(
+        runtime,
+        calls_by_lane,
+        inputs_by_lane,
+        streams,
+    )
     concurrent_s = run_concurrent(
         runtime,
         calls_by_lane,
         inputs_by_lane,
         streams,
     )
-    probe_keys = ("960x64_b4", "960x704_b1")
+    probe_keys = [lane_keys[0] for lane_keys in keys_by_lane]
     parity = parity_probe(
         runtime,
-        keys=probe_keys,
+        keys_by_lane=probe_keys,
         inputs_by_lane=inputs_by_lane,
         streams=streams,
     )
@@ -266,6 +299,7 @@ def main() -> None:
         "sequential_calls_per_s": len(calls) / sequential_s,
         "concurrent_calls_per_s": len(calls) / concurrent_s,
         "lane_call_counts": [len(lane_calls) for lane_calls in calls_by_lane],
+        "keys_by_lane": keys_by_lane,
         "parity": parity,
         "host_memory": process_snapshot(),
     }
