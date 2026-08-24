@@ -16,12 +16,9 @@ os.environ.setdefault("CANN_KNOWLEDGE_BANK_PROCESS_NUM", "0")
 os.environ.setdefault("UNIREC_DEINIT_TBE_AFTER_WARMUP", "1")
 
 import numpy as np
-import torch_npu
 
-from host_memory_diagnostics import process_snapshot
 from layout_page_input import decode_page_rgb, materialize_layout_rgb
 from low_memory_frontend_pool import CpuCropPreparePool
-from shared_layout_owner import SharedLayoutOwner
 
 
 def parse_args() -> argparse.Namespace:
@@ -53,7 +50,6 @@ def main() -> None:
     }
     if visible.intersection({5, 6}):
         raise RuntimeError("physical NPU 5 and NPU 6 are excluded")
-    torch_npu.npu.set_compile_mode(jit_compile=False)
     sys.path.insert(0, str(args.openocr_root.resolve()))
     from tools.utils.utility import get_image_file_list
 
@@ -67,6 +63,22 @@ def main() -> None:
         raise RuntimeError(f"spool directory is not empty: {args.spool_dir}")
     args.spool_dir.mkdir(parents=True, exist_ok=True)
 
+    # Spawn CPU-only workers before this parent imports Torch. Python spawn
+    # re-imports this module in each child, so accelerator imports at module
+    # scope would duplicate the full runtime in every worker.
+    pool = CpuCropPreparePool(
+        workers=args.workers,
+        recognition_threads=args.threads,
+        openocr_root=args.openocr_root,
+        spool_root=args.spool_dir,
+        cross_cache_length=1320,
+    )
+    import torch_npu
+
+    from host_memory_diagnostics import process_snapshot
+    from shared_layout_owner import SharedLayoutOwner
+
+    torch_npu.npu.set_compile_mode(jit_compile=False)
     owner = SharedLayoutOwner(
         model_path=args.layout_model,
         cache_dir=args.layout_cache,
@@ -92,13 +104,6 @@ def main() -> None:
     if not layout_exact:
         raise RuntimeError("shared layout output differs from canonical adapter")
 
-    pool = CpuCropPreparePool(
-        workers=args.workers,
-        recognition_threads=args.threads,
-        openocr_root=args.openocr_root,
-        spool_root=args.spool_dir,
-        cross_cache_length=1320,
-    )
     for page_index, (path, rgb, layout_result) in enumerate(
         zip(paths, pages, candidate)
     ):
