@@ -23,11 +23,7 @@ os.environ.setdefault("UNIREC_DEINIT_TBE_AFTER_WARMUP", "1")
 os.environ.setdefault("UNIREC_PURGE_HOST_AFTER_WARMUP", "1")
 os.environ.setdefault("UNIREC_CROSS_KV_D2H_MODE", "packed_cohort")
 
-from low_memory_frontend_pool import (
-    CpuCropPreparePool,
-    CpuCropPrepareSummary,
-    SharedLayoutProcess,
-)
+from low_memory_frontend_pool import CpuCropPreparePool, SharedLayoutProcess
 
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
@@ -49,22 +45,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--recognition-threads", type=int, default=8)
-    parser.add_argument(
-        "--layout-crop-overlap-workers",
-        type=int,
-        default=1,
-        help=(
-            "CPU-only crop workers allowed to run while the heavy layout "
-            "process is resident. The normal --workers pool starts after "
-            "layout exits."
-        ),
-    )
-    parser.add_argument(
-        "--layout-crop-overlap-inflight",
-        type=int,
-        default=2,
-        help="Maximum crop pages queued to the layout-overlap pool.",
-    )
     parser.add_argument("--layout-lanes", type=int, default=1)
     parser.add_argument("--layout-batch-size", type=int, default=2)
     parser.add_argument("--layout-threshold", type=float, default=0.5)
@@ -184,10 +164,6 @@ def main() -> None:
     paths = image_paths(args.input.resolve(), offset=args.offset, limit=args.limit)
     if not paths:
         raise ValueError("no input pages")
-    if args.layout_crop_overlap_workers < 0:
-        raise ValueError("layout crop overlap workers must be non-negative")
-    if args.layout_crop_overlap_inflight < 1:
-        raise ValueError("layout crop overlap inflight must be positive")
     if args.spool_dir.exists() and any(args.spool_dir.iterdir()):
         raise RuntimeError(f"spool directory is not empty: {args.spool_dir}")
     args.spool_dir.mkdir(parents=True, exist_ok=True)
@@ -201,16 +177,12 @@ def main() -> None:
         flush=True,
     )
     frontend_started = time.perf_counter()
-    overlap_pool = (
-        CpuCropPreparePool(
-            workers=args.layout_crop_overlap_workers,
-            recognition_threads=args.recognition_threads,
-            openocr_root=args.openocr_root.resolve(),
-            spool_root=(args.spool_dir / "layout_overlap").resolve(),
-            cross_cache_length=args.cross_cache_length,
-        )
-        if args.layout_crop_overlap_workers
-        else None
+    crop_pool = CpuCropPreparePool(
+        workers=args.workers,
+        recognition_threads=args.recognition_threads,
+        openocr_root=args.openocr_root.resolve(),
+        spool_root=args.spool_dir.resolve(),
+        cross_cache_length=args.cross_cache_length,
     )
     layout = SharedLayoutProcess(
         paths=paths,
@@ -223,39 +195,9 @@ def main() -> None:
         page_spool_root=args.spool_dir.resolve(),
     )
     submitted = 0
-    pending_layout_items: list[dict[str, Any]] = []
-    overlap_payloads: list[dict[str, Any]] = []
-
-    def drain_overlap_results() -> None:
-        if overlap_pool is None:
-            return
-        while True:
-            result = overlap_pool.receive_nowait()
-            if result is None:
-                return
-            overlap_payloads.append(result["payload"])
-
-    def feed_overlap_pool() -> None:
-        if overlap_pool is None:
-            return
-        drain_overlap_results()
-        while (
-            pending_layout_items
-            and overlap_pool.inflight < args.layout_crop_overlap_inflight
-        ):
-            item = pending_layout_items.pop(0)
-            overlap_pool.submit(
-                page_index=int(item["page_index"]),
-                path=Path(item["path"]),
-                rgb=None,
-                rgb_descriptor=None,
-                layout_result=item["layout_result"],
-                started_at=float(item["started_at"]),
-            )
-
+    layout_items = []
     for item in layout.iter_pages():
-        pending_layout_items.append(item)
-        feed_overlap_pool()
+        layout_items.append(item)
         submitted += 1
         if submitted % args.progress_every == 0 or submitted == len(paths):
             print(
@@ -267,77 +209,22 @@ def main() -> None:
     layout.close()
     print(
         "UNIREC_LOWMEM_LAYOUT_RELEASED "
-        f"pages={submitted} overlap_submitted="
-        f"{0 if overlap_pool is None else overlap_pool.submitted} "
-        f"elapsed_s={time.perf_counter() - frontend_started:.3f}",
+        f"pages={len(layout_items)} elapsed_s={time.perf_counter() - frontend_started:.3f}",
         flush=True,
     )
-
-    # The heavyweight layout process is gone. Start the normal W4/T8 pool now,
-    # while the single overlap worker drains its last one or two pages. This
-    # preserves the four-process crop phase without co-residing it with layout.
-    crop_pool = (
-        CpuCropPreparePool(
-            workers=args.workers,
-            recognition_threads=args.recognition_threads,
-            openocr_root=args.openocr_root.resolve(),
-            spool_root=(args.spool_dir / "steady").resolve(),
-            cross_cache_length=args.cross_cache_length,
+    for item in layout_items:
+        crop_pool.submit(
+            page_index=int(item["page_index"]),
+            path=Path(item["path"]),
+            rgb=None,
+            rgb_descriptor=None,
+            layout_result=item["layout_result"],
+            started_at=float(item["started_at"]),
         )
-        if pending_layout_items
-        else None
-    )
-    overlap_summary = None
-    if overlap_pool is not None:
-        remaining, overlap_summary = overlap_pool.finish()
-        overlap_payloads.extend(remaining)
-        overlap_pool.close()
-    steady_payloads: list[dict[str, Any]] = []
-    steady_summary = CpuCropPrepareSummary(0, 0.0, 0.0, 0, 0, 0, 0)
-    if crop_pool is not None:
-        for item in pending_layout_items:
-            crop_pool.submit(
-                page_index=int(item["page_index"]),
-                path=Path(item["path"]),
-                rgb=None,
-                rgb_descriptor=None,
-                layout_result=item["layout_result"],
-                started_at=float(item["started_at"]),
-            )
-        steady_payloads, steady_summary = crop_pool.finish()
-        crop_pool.close()
+    del layout_items
+    payloads, frontend_summary = crop_pool.finish()
+    crop_pool.close()
     frontend_wall_s = time.perf_counter() - frontend_started
-    payloads = sorted(
-        [*overlap_payloads, *steady_payloads],
-        key=lambda payload: int(payload["page_index"]),
-    )
-    frontend_summary = CpuCropPrepareSummary(
-        page_count=(
-            (0 if overlap_summary is None else overlap_summary.page_count)
-            + steady_summary.page_count
-        ),
-        wall_s=frontend_wall_s,
-        worker_page_s=(
-            (0.0 if overlap_summary is None else overlap_summary.worker_page_s)
-            + steady_summary.worker_page_s
-        ),
-        worker_pss_bytes=(
-            (0 if overlap_summary is None else overlap_summary.worker_pss_bytes)
-            + steady_summary.worker_pss_bytes
-        ),
-        rejected_crops=(
-            (0 if overlap_summary is None else overlap_summary.rejected_crops)
-            + steady_summary.rejected_crops
-        ),
-        crop_count=(
-            (0 if overlap_summary is None else overlap_summary.crop_count)
-            + steady_summary.crop_count
-        ),
-        spool_bytes=(
-            (0 if overlap_summary is None else overlap_summary.spool_bytes)
-            + steady_summary.spool_bytes
-        ),
-    )
     print(
         "UNIREC_LOWMEM_FRONTEND_END "
         f"pages={len(payloads)} crops={frontend_summary.crop_count} "
@@ -857,11 +744,6 @@ def main() -> None:
         "settings": {
             "workers": args.workers,
             "recognition_threads": args.recognition_threads,
-            "layout_crop_overlap_workers": args.layout_crop_overlap_workers,
-            "layout_crop_overlap_inflight": args.layout_crop_overlap_inflight,
-            "layout_crop_overlap_pages": (
-                0 if overlap_summary is None else overlap_summary.page_count
-            ),
             "layout_lanes": args.layout_lanes,
             "layout_batch_size": args.layout_batch_size,
             "layout_threshold": args.layout_threshold,
