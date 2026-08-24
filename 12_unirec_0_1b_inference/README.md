@@ -24,6 +24,8 @@ for the official OpenDoc full-page pipeline.
 - `continuous_unirec.py`: continuous decode scheduler. Each physical batch row
   owns its cache position; an EOS or length-complete row is replaced by the
   next B1-prefilled request without waiting for the other rows.
+- `STREAMING_PIPELINE.md`: accuracy-safe K20/B128 streaming configuration,
+  shared cross-KV byte-budget contract, and the current 910B2 validation.
 
 The local model implementation is copied without architectural changes from
 `unirec_research/03_compiled_decode_single_batch` at commit `4b9a9ab`.

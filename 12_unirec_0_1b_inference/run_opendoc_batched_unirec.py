@@ -2640,9 +2640,21 @@ def main() -> None:
         ),
         "text_prefill_packing": runner.packed_text_prefill_summary(),
         "vision_prefill": (
-            vision_atlas_runtime.summary()
-            if vision_atlas_runtime is not None
-            else {"execution": "eager_per_crop"}
+            {
+                "execution": "worker_compiled_full_buckets",
+                "preset": args.vision_bucket_preset,
+                "batching": (
+                    layout_process_summary.get("vision_batching")
+                    if layout_process_summary is not None
+                    else None
+                ),
+            }
+            if args.prefill_in_layout_workers
+            else (
+                vision_atlas_runtime.summary()
+                if vision_atlas_runtime is not None
+                else {"execution": "eager_per_crop"}
+            )
         ),
         "decode_s": metrics.decode_s,
         "output_assembly_s": metrics.output_assembly_s,
