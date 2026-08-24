@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import gc
 import json
 import os
 from pathlib import Path
@@ -46,6 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--lanes", type=int, default=4)
     parser.add_argument("--bucket-preset", default="310p_k20_l4")
+    parser.add_argument("--reset-dynamo-after-warmup", action="store_true")
     return parser.parse_args()
 
 
@@ -159,6 +161,43 @@ def main() -> None:
     record(stages, "after_decode_warmup")
 
     deinit_report = deinitialize_after_warmup("unified_owner_warmup_complete")
+    dynamo_reset_report = None
+    if args.reset_dynamo_after_warmup:
+        record(stages, "before_dynamo_reset")
+        torch._dynamo.reset()
+        collected = gc.collect()
+        record(stages, "after_dynamo_reset")
+
+        # Replay every resident graph on the stream used for its first call.
+        run_concurrent(vision, keys_by_lane, vision_inputs, vision_streams)
+        with torch.npu.stream(layout_stream):
+            layout(layout_inputs, threshold=0.5)
+        layout_stream.synchronize()
+        replay_text_input = torch.zeros(
+            (1, text_runtime.bucket, runner.config.d_model),
+            dtype=runner.dtype,
+            device=torch.device(args.device),
+        )
+        replay_text_output = text_runtime.compiled(replay_text_input)
+        torch.npu.synchronize()
+        del replay_text_output, replay_text_input
+        replay_decode_report = warmup_configured_graphs(
+            args=decode_args,
+            runner=runner,
+            vision_atlas_runtime=None,
+            passes=1,
+            warmup_decode=True,
+        )
+        from te_fusion import parallel_compilation
+
+        dynamo_reset_report = {
+            "gc_collected": int(collected),
+            "replay_decode": replay_decode_report,
+            "compiler_respawned": (
+                parallel_compilation.OpCompiler.compiler is not None
+            ),
+        }
+        record(stages, "after_dynamo_reset_replay")
     del vision_inputs, layout_inputs
     torch.npu.empty_cache()
     record(stages, "final")
@@ -170,6 +209,7 @@ def main() -> None:
         "decode_optimizations": decode_optimizations,
         "decode_warmup": decode_report,
         "tbe_deinit": deinit_report,
+        "dynamo_reset": dynamo_reset_report,
         "stages": stages,
         "layout_batch_size": 2,
         "vision_bucket_preset": args.bucket_preset,
