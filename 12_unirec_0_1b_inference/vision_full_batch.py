@@ -773,6 +773,7 @@ class BucketedFullVisionRuntime:
         focal_depthwise_rewrite: str = "native",
         weight_format: str = "native",
         preset_name: str = "custom",
+        synchronize_first_call: bool = True,
     ) -> None:
         if not specs:
             raise ValueError("bucketed UniRec vision requires at least one bucket")
@@ -784,6 +785,7 @@ class BucketedFullVisionRuntime:
         if len(set(keys)) != len(keys):
             raise ValueError(f"duplicate full-vision graph keys: {keys}")
         self.preset_name = str(preset_name)
+        self.synchronize_first_call = bool(synchronize_first_call)
         self.trace_h2d_device_details = (
             os.environ.get("UNIREC_VISION_H2D_DEVICE_DETAIL_TRACE", "0") == "1"
         )
@@ -1376,7 +1378,7 @@ class BucketedFullVisionRuntime:
             first_workload_call=first_call,
             submit_wall_s=time.perf_counter() - started,
         )
-        if first_call:
+        if first_call and self.synchronize_first_call:
             self._diagnostic_log(
                 "bucket_first_call_sync_begin",
                 bucket=spec.key,
