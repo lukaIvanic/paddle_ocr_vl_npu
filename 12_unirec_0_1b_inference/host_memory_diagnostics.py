@@ -104,6 +104,14 @@ def _module_tensor_bytes(module: Any) -> dict[str, int]:
     return totals
 
 
+def process_snapshot() -> dict[str, Any]:
+    """Return process and allocator memory without requiring diagnostics output."""
+    return {
+        "proc_bytes": _proc_memory_bytes(),
+        "jemalloc_bytes": _jemalloc_stats_bytes(),
+    }
+
+
 def emit(
     label: str,
     *,
@@ -116,8 +124,7 @@ def emit(
         "label": label,
         "pid": os.getpid(),
         "ppid": os.getppid(),
-        "proc_bytes": _proc_memory_bytes(),
-        "jemalloc_bytes": _jemalloc_stats_bytes(),
+        **process_snapshot(),
     }
     if modules:
         report["module_tensor_bytes"] = {

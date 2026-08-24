@@ -28,6 +28,7 @@ from PIL import Image
 
 from host_memory_diagnostics import emit as emit_host_memory
 from tbe_compiler_lifecycle import deinitialize_after_warmup
+from post_warmup_host_cleanup import cleanup_after_warmup
 from layout_page_input import (
     decode_page_rgb as _decode_rgb,
     materialize_layout_bgr,
@@ -1921,6 +1922,9 @@ def _worker_main(
         tbe_deinit_report = deinitialize_after_warmup(
             f"worker_{worker_index}_setup_complete"
         )
+        host_cleanup_report = cleanup_after_warmup(
+            f"worker_{worker_index}_setup_complete"
+        )
         emit_host_memory(
             f"worker_{worker_index}_after_tbe_deinit",
             modules={
@@ -1931,7 +1935,10 @@ def _worker_main(
                     else None
                 ),
             },
-            extra={"tbe_deinit": tbe_deinit_report},
+            extra={
+                "tbe_deinit": tbe_deinit_report,
+                "host_cleanup": host_cleanup_report,
+            },
         )
         result_queue.put(
             {
@@ -1981,6 +1988,7 @@ def _worker_main(
                     else None
                 ),
                 "tbe_deinit": tbe_deinit_report,
+                "host_cleanup": host_cleanup_report,
             }
         )
         if full_vision_runtime is not None:
