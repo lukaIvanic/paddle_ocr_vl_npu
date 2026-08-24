@@ -36,6 +36,13 @@ def _purge_all_jemalloc_arenas() -> int | None:
     return int(mallctl(b"arena.4096.purge", None, None, None, 0))
 
 
+def purge_host_allocator_pages() -> int | None:
+    """Return currently unused jemalloc pages without the one-shot gate."""
+    if not enabled():
+        return None
+    return _purge_all_jemalloc_arenas()
+
+
 def cleanup_after_warmup(label: str) -> dict[str, Any] | None:
     """Collect dead Python objects and return unused jemalloc pages to Linux."""
     global _CLEANED

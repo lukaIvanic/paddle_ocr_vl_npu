@@ -12,6 +12,8 @@ import numpy as np
 import torch
 import torch_npu
 
+from post_warmup_host_cleanup import purge_host_allocator_pages
+from tbe_compiler_lifecycle import deinitialize_after_warmup
 from torchair_ge_graph_compaction import release_loaded_ge_executors
 from vision_bucket_presets import plan_canvas_bucket_calls
 from vision_full_batch import (
@@ -43,6 +45,8 @@ class BoundedVisionOwner:
             max_workers=lanes,
             thread_name_prefix="unirec-bounded-vision",
         )
+        self.early_tbe_deinit: dict[str, Any] | None = None
+        self.host_purge_statuses: list[int | None] = []
 
     @staticmethod
     def _mapping(descriptor: dict[str, Any]) -> np.memmap:
@@ -142,6 +146,7 @@ class BoundedVisionOwner:
         report = release_loaded_ge_executors(loaded)
         gc.collect()
         torch.npu.empty_cache()
+        self.host_purge_statuses.append(purge_host_allocator_pages())
         return report
 
     def encode(
@@ -191,6 +196,10 @@ class BoundedVisionOwner:
                         "wall_s": lane_s,
                     }
                 )
+            if self.early_tbe_deinit is None:
+                self.early_tbe_deinit = deinitialize_after_warmup(
+                    "bounded_vision_first_group_loaded"
+                )
             pair_reports.append(lane_reports)
         fallback_started = time.perf_counter()
         for record in fallbacks:
@@ -224,6 +233,8 @@ class BoundedVisionOwner:
             "fallback_count": len(fallbacks),
             "fallback_wall_s": fallback_s,
             "final_release": release,
+            "early_tbe_deinit": self.early_tbe_deinit,
+            "host_purge_statuses": self.host_purge_statuses,
             "bucket_calls": dict(self.runtime.stats["bucket_calls"]),
             "bucket_real_rows": dict(self.runtime.stats["bucket_real_rows"]),
         }
