@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+import gc
 import json
 import os
 from pathlib import Path
@@ -21,6 +22,7 @@ import torch_npu
 
 from host_memory_diagnostics import process_snapshot
 from modeling_optimized_unirec import OptimizedUniRecRunner
+from post_warmup_host_cleanup import purge_host_allocator_pages
 from tbe_compiler_lifecycle import deinitialize_after_warmup
 from vision_bucket_presets import (
     assign_vision_bucket_cache_slots,
@@ -259,6 +261,16 @@ def main() -> None:
         streams,
         call_counts,
     )
+    del candidate_outputs
+    del reference_outputs
+    del executors[1:]
+    for namespace in namespaces:
+        namespace.clear()
+    namespaces.clear()
+    gc.collect()
+    torch.npu.empty_cache()
+    purge_host_allocator_pages()
+    after_clone_release = process_snapshot()
     after = {
         "compiled_modules": compiled_module_inventory(cache_dir),
         "oms": om_inventory(cache_dir),
@@ -286,9 +298,15 @@ def main() -> None:
         "cache_after": after,
         "after_primary": after_primary,
         "after_all": after_all,
+        "after_clone_release": after_clone_release,
         "additional_executor_pss_bytes": max(
             0,
             int(after_all["proc_bytes"]["pss"])
+            - int(after_primary["proc_bytes"]["pss"]),
+        ),
+        "unreclaimed_executor_pss_bytes": max(
+            0,
+            int(after_clone_release["proc_bytes"]["pss"])
             - int(after_primary["proc_bytes"]["pss"]),
         ),
         "compiler_respawned": parallel_compilation.OpCompiler.compiler is not None,
