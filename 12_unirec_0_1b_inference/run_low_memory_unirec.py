@@ -52,7 +52,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--vision-lanes", type=int, default=4)
     parser.add_argument("--vision-same-key-shards", type=int, default=1)
     parser.add_argument("--vision-sharded-key-count", type=int, default=4)
-    parser.add_argument("--text-prefill-sync-groups", type=int, default=4)
     parser.add_argument(
         "--recognition-schedule",
         choices=("two_phase", "streaming"),
@@ -240,7 +239,6 @@ def main() -> None:
     os.environ["UNIREC_RECOGNITION_INPUT_CONTRACT"] = "compact_uint8_hwc"
     import torch
     import torch_npu
-    import torch.nn.functional as F
 
     from bounded_vision_owner import BoundedVisionOwner
     from continuous_unirec import (
@@ -393,52 +391,71 @@ def main() -> None:
     producer_stats: dict[str, Any] = {
         "groups": 0,
         "crops": 0,
-        "sync_batches": 0,
         "wall_s": 0.0,
         "cross_kv_d2h_s": 0.0,
         "cross_kv_storage": "npu_bounded_queue",
         "cross_kv_npu_bytes": 0,
         "recognition_schedule": args.recognition_schedule,
     }
-    if args.text_prefill_sync_groups < 1:
-        raise ValueError("text-prefill sync group count must be positive")
-    pending_text_groups: list[list[dict[str, Any]]] = []
-    pending_text_started: float | None = None
 
-    def flush_text_prefill() -> None:
-        nonlocal pending_text_started
-        if not pending_text_groups:
-            return
-        text_stream.synchronize()
-        synchronized_s = (
-            time.perf_counter() - pending_text_started
-            if pending_text_started is not None
-            else 0.0
-        )
-        total_members = sum(len(group) for group in pending_text_groups)
-        member_prefill_s = synchronized_s / max(1, total_members)
-        groups = list(pending_text_groups)
-        pending_text_groups.clear()
-        pending_text_started = None
-        producer_stats["sync_batches"] += 1
-        for group in groups:
-            for entry in group:
-                crop = entry["crop"]
-                packed_npu = entry["packed_cross_kv"]
-                actual_length = int(entry["actual_length"])
+    def queue_page_prefill(page: Any, encoded_items: dict[int, Any]) -> None:
+        groups = iter_greedy_text_packs(iter(page.crops), runner=runner)
+        for use_packed, crop_group in groups:
+            if not use_packed:
+                raise RuntimeError(
+                    "accuracy-safe low-memory path encountered a text "
+                    f"prefill fallback: {crop_group[0].request_id}"
+                )
+            encoded_group = []
+            for crop in crop_group:
+                index = source_index_by_request_id[crop.request_id]
+                item = encoded_items.pop(index)
+                encoded_group.append((item.hidden_states, item.prep))
+            with torch.inference_mode(), torch.npu.stream(text_stream):
+                items = runner.prefill_encoder_hidden_states_packed_for_cohort(
+                    encoded_group,
+                    profile_device_stages=False,
+                    decode_ready=False,
+                )
+                npu_exports = []
+                for item in items:
+                    actual_length = int(
+                        item.kv_cache.actual_cross_attention_length or 0
+                    )
+                    if actual_length <= 0:
+                        raise RuntimeError("text prefill produced an empty cross cache")
+                    packed_npu = torch.stack(
+                        tuple(
+                            tensor[:, :, :actual_length, :]
+                            for tensor in (
+                                *item.kv_cache.cross_key_cache,
+                                *item.kv_cache.cross_value_cache,
+                            )
+                        ),
+                        dim=0,
+                    ).contiguous()
+                    npu_exports.append((packed_npu, actual_length))
+            text_stream.synchronize()
+            producer_stats["groups"] += 1
+            for crop, item, export in zip(crop_group, items, npu_exports):
+                packed_npu, actual_length = export
                 producer_stats["cross_kv_npu_bytes"] += int(
                     packed_npu.numel() * packed_npu.element_size()
                 )
                 prefilled = ContinuousWorkerPrefilledItem(
                     packed_cross_kv=packed_npu,
-                    prep=dict(entry["prep"]),
-                    prefill_s=member_prefill_s,
-                    actual_cross_attention_length=actual_length,
-                    prefill_device_stage_s=None,
-                    text_prefill_execution="compiled_packed_s1024",
-                    text_prefill_real_source_tokens=actual_length,
+                    prep=dict(item.prep),
+                    prefill_s=float(item.prefill_s),
+                    actual_cross_attention_length=int(actual_length),
+                    prefill_device_stage_s=item.prefill_device_stage_s,
+                    text_prefill_execution=str(item.text_prefill_execution),
+                    text_prefill_real_source_tokens=int(
+                        item.text_prefill_real_source_tokens or actual_length
+                    ),
                     text_prefill_physical_source_tokens=int(
-                        entry["physical_source_tokens"]
+                        item.text_prefill_physical_source_tokens
+                        or item.text_prefill_real_source_tokens
+                        or actual_length
                     ),
                 )
 
@@ -454,68 +471,7 @@ def main() -> None:
                     )
                 )
                 producer_stats["crops"] += 1
-
-    def queue_page_prefill(page: Any, encoded_items: dict[int, Any]) -> None:
-        nonlocal pending_text_started
-        groups = iter_greedy_text_packs(iter(page.crops), runner=runner)
-        for use_packed, crop_group in groups:
-            if not use_packed:
-                raise RuntimeError(
-                    "accuracy-safe low-memory path encountered a text "
-                    f"prefill fallback: {crop_group[0].request_id}"
-                )
-            encoded_group = []
-            for crop in crop_group:
-                index = source_index_by_request_id[crop.request_id]
-                item = encoded_items.pop(index)
-                encoded_group.append((item.hidden_states, item.prep))
-            hidden_states = [hidden for hidden, _prep in encoded_group]
-            segment_lengths = [int(hidden.shape[1]) for hidden in hidden_states]
-            real_source_tokens = sum(segment_lengths)
-            if real_source_tokens > text_runtime.bucket:
-                raise RuntimeError(
-                    f"packed source length {real_source_tokens} exceeds "
-                    f"{text_runtime.bucket}"
-                )
-            if pending_text_started is None:
-                pending_text_started = time.perf_counter()
-            with torch.inference_mode(), torch.npu.stream(text_stream):
-                packed_hidden = F.pad(
-                    torch.cat(hidden_states, dim=1),
-                    (0, 0, 0, text_runtime.bucket - real_source_tokens),
-                ).contiguous()
-                flat_outputs = text_runtime.compiled(packed_hidden)
-                group_entries = []
-                offset = 0
-                for member, (crop, (_hidden, prep), actual_length) in enumerate(
-                    zip(crop_group, encoded_group, segment_lengths)
-                ):
-                    end = offset + actual_length
-                    packed_npu = torch.stack(
-                        tuple(
-                            tensor[:, :, offset:end, :].contiguous()
-                            for tensor in flat_outputs
-                        ),
-                        dim=0,
-                    ).contiguous()
-                    physical_tokens = actual_length
-                    if member == len(segment_lengths) - 1:
-                        physical_tokens += text_runtime.bucket - real_source_tokens
-                    group_entries.append(
-                        {
-                            "crop": crop,
-                            "prep": prep,
-                            "packed_cross_kv": packed_npu,
-                            "actual_length": actual_length,
-                            "physical_source_tokens": physical_tokens,
-                        }
-                    )
-                    offset = end
-            pending_text_groups.append(group_entries)
-            producer_stats["groups"] += 1
-            if len(pending_text_groups) >= args.text_prefill_sync_groups:
-                flush_text_prefill()
-            del encoded_group, hidden_states
+            del items, npu_exports, encoded_group
 
     def producer() -> None:
         nonlocal vision_owner, vision_runtime, vision_summary
@@ -530,7 +486,6 @@ def main() -> None:
                 encoded.clear()
                 for page in pages:
                     queue_page_prefill(page, encoded_items)
-                flush_text_prefill()
             else:
                 encoded_items: dict[int, Any] = {}
                 remaining = {
@@ -548,7 +503,6 @@ def main() -> None:
                         while True:
                             page_index = page_queue.get()
                             if page_index is None:
-                                flush_text_prefill()
                                 return
                             queue_page_prefill(
                                 pages_by_index[page_index],
@@ -769,7 +723,6 @@ def main() -> None:
             "vision_lanes": args.vision_lanes,
             "vision_same_key_shards": args.vision_same_key_shards,
             "vision_sharded_key_count": args.vision_sharded_key_count,
-            "text_prefill_sync_groups": args.text_prefill_sync_groups,
             "recognition_schedule": args.recognition_schedule,
             "decode_batch_size": args.decode_batch_size,
             "cross_cache_length": args.cross_cache_length,
