@@ -243,10 +243,23 @@ def _worker_main(
                     break
                 task_started = time.perf_counter()
                 page_index = int(task["page_index"])
+                rgb_descriptor = task.get("rgb_descriptor")
+                if rgb_descriptor is None:
+                    rgb = task["rgb"]
+                    rgb_mapping = None
+                else:
+                    rgb_mapping = np.memmap(
+                        rgb_descriptor["path"],
+                        mode="r+",
+                        dtype=np.uint8,
+                        offset=int(rgb_descriptor["offset"]),
+                        shape=tuple(rgb_descriptor["shape"]),
+                    )
+                    rgb = rgb_mapping
                 payload, timing = _prepare_frontend_payload(
                     page_index=page_index,
                     path=Path(task["path"]),
-                    rgb=task["rgb"],
+                    rgb=rgb,
                     layout_result=task["layout_result"],
                     use_chart_recognition=use_chart_recognition,
                     tokenize_figure_of_table=tokenize_figure_of_table,
@@ -298,6 +311,8 @@ def _worker_main(
                         "worker_page_s": time.perf_counter() - task_started,
                     }
                 )
+                if rgb_mapping is not None:
+                    del rgb, rgb_mapping
         executor.shutdown(wait=True)
     except BaseException as exception:
         result_queue.put(
@@ -397,7 +412,8 @@ class CpuCropPreparePool:
         *,
         page_index: int,
         path: Path,
-        rgb: np.ndarray,
+        rgb: np.ndarray | None,
+        rgb_descriptor: dict[str, Any] | None = None,
         layout_result: dict[str, Any],
         started_at: float,
     ) -> None:
@@ -406,6 +422,7 @@ class CpuCropPreparePool:
                 "page_index": page_index,
                 "path": str(path),
                 "rgb": rgb,
+                "rgb_descriptor": rgb_descriptor,
                 "layout_result": layout_result,
                 "started_at": started_at,
             }
@@ -468,6 +485,7 @@ def _layout_owner_process_main(
     lanes: int,
     batch_size: int,
     threshold: float,
+    page_spool_root: str,
     result_queue: Any,
 ) -> None:
     """Heavy layout process; its exit is the graph-runtime memory barrier."""
@@ -495,37 +513,46 @@ def _layout_owner_process_main(
                 "chip": torch_npu.npu.get_device_name(0),
             }
         )
-        decode_pool = ThreadPoolExecutor(
-            max_workers=lanes * batch_size,
-            thread_name_prefix="unirec-layout-decode",
-        )
+        page_spool_path = Path(page_spool_root) / "layout_pages_rgb.bin"
+        page_spool_path.parent.mkdir(parents=True, exist_ok=True)
         started = time.perf_counter()
-        for start in range(0, len(paths), lanes * batch_size):
-            chunk = paths[start : start + lanes * batch_size]
-            page_started = [time.perf_counter() for _ in chunk]
-            decoded = list(
-                decode_pool.map(
-                    lambda value: decode_page_rgb(Path(value)),
-                    chunk,
-                )
-            )
-            rgbs = [materialize_layout_rgb(value[0]) for value in decoded]
-            layouts = owner.predict(rgbs)
-            for local_index, (path, rgb, layout, timing) in enumerate(
-                zip(chunk, rgbs, layouts, (value[1] for value in decoded))
-            ):
-                result_queue.put(
-                    {
-                        "status": "layout_page",
-                        "page_index": start + local_index,
-                        "path": path,
-                        "rgb": rgb,
-                        "layout_result": layout,
-                        "started_at": page_started[local_index],
-                        "decode_timing_s": timing,
-                    }
-                )
-        decode_pool.shutdown(wait=True)
+        with page_spool_path.open("w+b", buffering=0) as page_spool:
+            for start in range(0, len(paths), lanes * batch_size):
+                chunk = paths[start : start + lanes * batch_size]
+                page_started = []
+                prepared = []
+                descriptors = []
+                timings = []
+                for path in chunk:
+                    page_started.append(time.perf_counter())
+                    rgb, timing = decode_page_rgb(Path(path))
+                    rgb = materialize_layout_rgb(rgb)
+                    descriptors.append(
+                        _append_pixels(
+                            page_spool,
+                            path=page_spool_path,
+                            pixels=rgb,
+                        )
+                    )
+                    prepared.append(owner.prepare(rgb))
+                    timings.append(timing)
+                    del rgb
+                layouts = owner.predict_prepared(prepared)
+                del prepared
+                for local_index, (path, descriptor, layout, timing) in enumerate(
+                    zip(chunk, descriptors, layouts, timings)
+                ):
+                    result_queue.put(
+                        {
+                            "status": "layout_page",
+                            "page_index": start + local_index,
+                            "path": path,
+                            "rgb_descriptor": descriptor,
+                            "layout_result": layout,
+                            "started_at": page_started[local_index],
+                            "decode_timing_s": timing,
+                        }
+                    )
         result_queue.put(
             {
                 "status": "layout_done",
@@ -559,6 +586,7 @@ class SharedLayoutProcess:
         lanes: int = 4,
         batch_size: int = 2,
         threshold: float = 0.5,
+        page_spool_root: Path,
     ) -> None:
         self.context = mp.get_context("spawn")
         self.result_queue = self.context.Queue(maxsize=max(8, lanes * batch_size * 2))
@@ -572,6 +600,7 @@ class SharedLayoutProcess:
                 lanes,
                 batch_size,
                 threshold,
+                str(page_spool_root),
                 self.result_queue,
             ),
             name="unirec-shared-layout-owner",

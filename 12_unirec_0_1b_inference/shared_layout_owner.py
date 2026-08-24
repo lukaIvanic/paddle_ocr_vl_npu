@@ -92,13 +92,25 @@ class SharedLayoutOwner:
         self.calls = 0
         self.pages = 0
         self.wall_s = 0.0
-        warm = np.zeros((800, 800, 3), dtype=np.uint8)
-        futures = [
-            self.pool.submit(self._predict_lane, lane, [warm] * batch_size)
-            for lane in range(lanes)
+        warm_inputs = [
+            torch.zeros(
+                (batch_size, 3, 800, 800),
+                dtype=torch.float32,
+                device=self.device,
+            )
+            for _ in range(lanes)
         ]
+
+        def warm_lane(lane: int) -> None:
+            torch_npu.npu.set_device(self.device)
+            with torch.inference_mode(), torch.npu.stream(self.streams[lane]):
+                self.executors[lane](warm_inputs[lane])
+            self.streams[lane].synchronize()
+
+        futures = [self.pool.submit(warm_lane, lane) for lane in range(lanes)]
         for future in futures:
             future.result()
+        del warm_inputs
         self.calls = 0
         self.pages = 0
         self.wall_s = 0.0
@@ -108,17 +120,34 @@ class SharedLayoutOwner:
         lane: int,
         images: Sequence[np.ndarray],
     ) -> list[dict[str, Any]]:
-        torch_npu.npu.set_device(self.device)
         if not images or len(images) > self.batch_size:
             raise ValueError(
                 f"layout lane needs 1..{self.batch_size} pages, got {len(images)}"
             )
-        real_count = len(images)
-        padded = list(images) + [images[-1]] * (self.batch_size - real_count)
-        target_sizes = [image.shape[:2] for image in padded]
-        inputs = prepare_layout_resized_uint8_exact(padded)
+        prepared = [self.prepare(image) for image in images]
+        return self._predict_lane_prepared(lane, prepared)
+
+    @staticmethod
+    def prepare(image: np.ndarray) -> tuple[torch.Tensor, tuple[int, int]]:
+        inputs = prepare_layout_resized_uint8_exact([image])
+        return inputs["pixel_values"], tuple(int(value) for value in image.shape[:2])
+
+    def _predict_lane_prepared(
+        self,
+        lane: int,
+        prepared: Sequence[tuple[torch.Tensor, tuple[int, int]]],
+    ) -> list[dict[str, Any]]:
+        torch_npu.npu.set_device(self.device)
+        if not prepared or len(prepared) > self.batch_size:
+            raise ValueError(
+                f"layout lane needs 1..{self.batch_size} pages, got {len(prepared)}"
+            )
+        real_count = len(prepared)
+        padded = list(prepared) + [prepared[-1]] * (self.batch_size - real_count)
+        target_sizes = [value[1] for value in padded]
+        pixel_values = torch.cat([value[0] for value in padded], dim=0)
         with torch.inference_mode(), torch.npu.stream(self.streams[lane]):
-            device_pixels = inputs["pixel_values"].to(device=self.device)
+            device_pixels = pixel_values.to(device=self.device)
             device_pixels = device_pixels.to(dtype=torch.float32).div_(255.0)
             logits, pred_boxes, order_logits = self.executors[lane](device_pixels)
         self.streams[lane].synchronize()
@@ -135,8 +164,7 @@ class SharedLayoutOwner:
             target_sizes=target_sizes,
         )
         results = []
-        for image, item in zip(images, prediction[:real_count]):
-            height, width = image.shape[:2]
+        for (height, width), item in zip(target_sizes, prediction[:real_count]):
             result_boxes = []
             for score, label_id, box, order in zip(
                 item["scores"].tolist(),
@@ -174,24 +202,30 @@ class SharedLayoutOwner:
         return results
 
     def predict(self, images: Sequence[np.ndarray]) -> list[dict[str, Any]]:
-        if not images:
+        return self.predict_prepared([self.prepare(image) for image in images])
+
+    def predict_prepared(
+        self,
+        prepared: Sequence[tuple[torch.Tensor, tuple[int, int]]],
+    ) -> list[dict[str, Any]]:
+        if not prepared:
             return []
         started = time.perf_counter()
         batches = [
-            list(images[start : start + self.batch_size])
-            for start in range(0, len(images), self.batch_size)
+            list(prepared[start : start + self.batch_size])
+            for start in range(0, len(prepared), self.batch_size)
         ]
         outputs: list[dict[str, Any]] = []
         for start in range(0, len(batches), self.lanes):
             group = batches[start : start + self.lanes]
             futures = [
-                self.pool.submit(self._predict_lane, lane, batch)
+                self.pool.submit(self._predict_lane_prepared, lane, batch)
                 for lane, batch in enumerate(group)
             ]
             for future in futures:
                 outputs.extend(future.result())
             self.calls += len(group)
-        self.pages += len(images)
+        self.pages += len(prepared)
         self.wall_s += time.perf_counter() - started
         return outputs
 

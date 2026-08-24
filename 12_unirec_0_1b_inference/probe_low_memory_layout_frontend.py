@@ -84,12 +84,14 @@ def main() -> None:
         lanes=4,
         batch_size=2,
         threshold=0.5,
+        page_spool_root=args.spool_dir,
     )
     for item in layout.iter_pages():
         pool.submit(
             page_index=int(item["page_index"]),
             path=Path(item["path"]),
-            rgb=item["rgb"],
+            rgb=None,
+            rgb_descriptor=item["rgb_descriptor"],
             layout_result=item["layout_result"],
             started_at=float(item["started_at"]),
         )
