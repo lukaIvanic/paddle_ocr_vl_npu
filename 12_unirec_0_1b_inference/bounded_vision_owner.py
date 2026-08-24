@@ -12,7 +12,6 @@ import numpy as np
 import torch
 import torch_npu
 
-from post_warmup_host_cleanup import cleanup_after_warmup
 from torchair_ge_graph_compaction import release_loaded_ge_executors
 from vision_bucket_presets import plan_canvas_bucket_calls
 from vision_full_batch import (
@@ -143,7 +142,6 @@ class BoundedVisionOwner:
         report = release_loaded_ge_executors(loaded)
         gc.collect()
         torch.npu.empty_cache()
-        cleanup_after_warmup("bounded_vision_pair_release")
         return report
 
     def encode(

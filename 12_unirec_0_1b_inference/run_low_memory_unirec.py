@@ -20,6 +20,7 @@ from typing import Any
 os.environ.setdefault("TE_PARALLEL_COMPILER", "1")
 os.environ.setdefault("CANN_KNOWLEDGE_BANK_PROCESS_NUM", "0")
 os.environ.setdefault("UNIREC_DEINIT_TBE_AFTER_WARMUP", "1")
+os.environ.setdefault("UNIREC_PURGE_HOST_AFTER_WARMUP", "1")
 os.environ.setdefault("UNIREC_CROSS_KV_D2H_MODE", "packed_cohort")
 
 from low_memory_frontend_pool import CpuCropPreparePool, SharedLayoutProcess
@@ -318,6 +319,7 @@ def main() -> None:
     gc.collect()
     torch.npu.empty_cache()
     post_vision_cleanup = cleanup_after_warmup("low_memory_vision_complete")
+    vision_tbe_deinit = deinitialize_after_warmup("low_memory_vision_complete")
     post_vision_memory = process_snapshot()
     vision_wall_s = time.perf_counter() - recognition_started
     print(
@@ -588,6 +590,7 @@ def main() -> None:
         "layout_ready_memory": layout.ready["snapshot"],
         "vision": vision_summary,
         "post_vision_cleanup": post_vision_cleanup,
+        "vision_tbe_deinit": vision_tbe_deinit,
         "post_vision_memory": post_vision_memory,
         "text_prefill": producer_stats,
         "decode": decode_summary,
