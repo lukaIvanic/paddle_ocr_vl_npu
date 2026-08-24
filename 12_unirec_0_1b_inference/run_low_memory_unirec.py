@@ -61,6 +61,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cross-cache-length", type=int, default=1320)
     parser.add_argument("--self-cache-length", type=int, default=2048)
     parser.add_argument("--max-length", type=int, default=2048)
+    parser.add_argument("--ready-queue-size", type=int, default=128)
     parser.add_argument("--progress-every", type=int, default=32)
     parser.add_argument(
         "--defer-output-write",
@@ -383,7 +384,11 @@ def main() -> None:
         post_vision_cleanup = cleanup_after_warmup("low_memory_stream_ready")
     ready_memory = process_snapshot()
 
-    ready_queue: Queue[Any] = Queue(maxsize=16)
+    if args.ready_queue_size < args.decode_batch_size:
+        raise ValueError(
+            "ready queue must hold at least one complete decode cohort"
+        )
+    ready_queue: Queue[Any] = Queue(maxsize=args.ready_queue_size)
     source_index_by_request_id = {
         str(record["request_id"]): int(record["source_index"])
         for record in vision_records
@@ -605,7 +610,8 @@ def main() -> None:
 
     def complete(item: ContinuousCompletedItem) -> None:
         nonlocal completed_crops
-        item.payload.result = item.result
+        if not args.defer_output_write:
+            item.payload.result = item.result
         trace_file.write(
             json.dumps(
                 {
@@ -727,6 +733,7 @@ def main() -> None:
             "decode_batch_size": args.decode_batch_size,
             "cross_cache_length": args.cross_cache_length,
             "self_cache_length": args.self_cache_length,
+            "ready_queue_size": args.ready_queue_size,
         },
         "artifacts": {
             "output_dir": str(args.output_dir.resolve()),
