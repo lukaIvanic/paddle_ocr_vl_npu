@@ -194,7 +194,15 @@ class SharedLayoutOwner:
 
     def release(self) -> dict[str, Any]:
         self.pool.shutdown(wait=True)
-        release = release_loaded_ge_executors(self.executors)
+        lazy_executors = [
+            executor
+            for executor in self.executors
+            if hasattr(executor, "_compiled_model")
+        ]
+        release = release_loaded_ge_executors(lazy_executors)
+        release["rebased_function_count"] = len(self.executors) - len(
+            lazy_executors
+        )
         self.executors.clear()
         self.streams.clear()
         self.adapter = None
@@ -208,4 +216,3 @@ class SharedLayoutOwner:
             "calls": self.calls,
             "wall_s": self.wall_s,
         }
-
