@@ -470,7 +470,9 @@ class CpuCropPreparePool:
         self.submitted += 1
 
     def receive(self) -> dict[str, Any]:
-        item = self._get()
+        return self._record_result(self._get())
+
+    def _record_result(self, item: dict[str, Any]) -> dict[str, Any]:
         self.completed += 1
         self.worker_page_s += float(item["worker_page_s"])
         payload = item["payload"]
@@ -481,6 +483,22 @@ class CpuCropPreparePool:
             for crop in payload["crops"]
         )
         return item
+
+    def receive_nowait(self) -> dict[str, Any] | None:
+        """Return one completed page without stalling the layout owner."""
+        try:
+            item = self.result_queue.get_nowait()
+        except queue.Empty:
+            return None
+        if item.get("status") == "error":
+            raise RuntimeError(
+                f"CPU crop worker failed: {item.get('error')}\n{item.get('traceback')}"
+            )
+        return self._record_result(item)
+
+    @property
+    def inflight(self) -> int:
+        return self.submitted - self.completed
 
     def finish(self) -> tuple[list[dict[str, Any]], CpuCropPrepareSummary]:
         results = [self.receive() for _ in range(self.submitted - self.completed)]
