@@ -41,6 +41,7 @@ from continuous_unirec import (
     ContinuousUniRecDecoder,
     ContinuousWorkerPrefilledItem,
 )
+from host_memory_diagnostics import emit as emit_host_memory
 from layout_process_pool import DynamicLayoutProcessPool, SharedPageLease
 from modeling_optimized_unirec import (
     LOCAL_UNIREC_STATIC_CACHE_LEN,
@@ -1676,6 +1677,7 @@ def recognize_cohort(
 
 def main() -> None:
     args = parse_args()
+    emit_host_memory("main_enter")
     os.environ["UNIREC_STATIC_CACHE_LEN"] = str(args.self_cache_length)
     os.environ["UNIREC_STATIC_CROSS_CACHE_LEN"] = str(args.cross_cache_length)
     os.environ["UNIREC_VISION_BUCKET_PRESET"] = args.vision_bucket_preset
@@ -1897,6 +1899,7 @@ def main() -> None:
         pipeline.use_layout_detection = True
     elif use_layout_processes:
         pipeline.use_layout_detection = True
+    emit_host_memory("main_after_pipeline_frontend")
     runner_compile_cache = args.compile_cache_dir.expanduser().resolve()
     decode_model_optimizations = None
     if args.prefill_in_layout_workers:
@@ -1927,11 +1930,20 @@ def main() -> None:
             else None
         ),
     )
+    emit_host_memory(
+        "main_after_unirec_runner",
+        modules={"unirec": runner.model},
+    )
     if args.prefill_in_layout_workers:
         decode_model_optimizations = apply_decode_model_optimizations(
             runner,
             weight_format=args.decode_weight_format,
             lm_head_rows=args.decode_lm_head_rows,
+        )
+        emit_host_memory(
+            "main_after_decode_weight_optimizations",
+            modules={"unirec": runner.model},
+            extra=decode_model_optimizations,
         )
     static_cross_cache_len = args.cross_cache_length
     if static_cross_cache_len > 0:
@@ -2006,6 +2018,7 @@ def main() -> None:
         )
         atexit.register(layout_process_pool.close)
         layout_process_setup_s = layout_process_pool.setup_wall_s
+        emit_host_memory("main_after_prefill_worker_ready")
     if args.pipeline_warmup_pages:
         warmup_layouts = None
         warmup_pages = None
@@ -2062,6 +2075,10 @@ def main() -> None:
             )
             pipeline.layout_detector.warmup_graph(layout_warmup_page.image)
     setup_s = time.perf_counter() - setup_started
+    emit_host_memory(
+        "main_setup_end",
+        modules={"unirec": runner.model},
+    )
     print(
         f"OPENDOC_BATCHED_SETUP_END setup_s={setup_s:.3f} pages={len(image_paths)} "
         f"decode_batch_size={args.decode_batch_size} "

@@ -26,6 +26,7 @@ import torch
 import cv2
 from PIL import Image
 
+from host_memory_diagnostics import emit as emit_host_memory
 from layout_page_input import (
     decode_page_rgb as _decode_rgb,
     materialize_layout_bgr,
@@ -1684,6 +1685,10 @@ def _worker_main(
     result_queue: Any,
 ) -> None:
     try:
+        emit_host_memory(
+            f"worker_{worker_index}_enter",
+            extra={"worker_index": worker_index},
+        )
         import torch_npu
 
         torch.set_num_threads(layout_cpu_threads)
@@ -1705,8 +1710,16 @@ def _worker_main(
             ),
             input_color_order="rgb",
         )
+        emit_host_memory(
+            f"worker_{worker_index}_after_layout_runtime",
+            modules={"layout": getattr(runtime, "model", None)},
+        )
         warmup_rgb, _ = _decode_rgb(Path(warmup_path))
         runtime([materialize_layout_rgb(warmup_rgb)], threshold=threshold)
+        emit_host_memory(
+            f"worker_{worker_index}_after_layout_warmup",
+            modules={"layout": getattr(runtime, "model", None)},
+        )
         runtime.reset_timing()
         tokenize_figure_of_table = None
         if prepare_pages:
@@ -1739,6 +1752,7 @@ def _worker_main(
             static_cross_cache_len = int(
                 os.environ.get("UNIREC_STATIC_CROSS_CACHE_LEN", "0")
             )
+            emit_host_memory(f"worker_{worker_index}_after_frontend_setup")
         else:
             recognition_processor = None
             recognition_preprocess_threads = 1
@@ -1756,6 +1770,13 @@ def _worker_main(
                 device="npu:0",
                 dtype=recognition_dtype,
                 compile_cache_dir=recognition_cache_dir,
+            )
+            emit_host_memory(
+                f"worker_{worker_index}_after_unirec_runner",
+                modules={
+                    "layout": getattr(runtime, "model", None),
+                    "unirec": recognition_runner.model,
+                },
             )
             if static_cross_cache_len > 0:
                 processor_shape = tuple(
@@ -1793,6 +1814,14 @@ def _worker_main(
                     weight_format=recognition_vision_weight_format,
                     preset_name=vision_bucket_preset,
                 )
+                emit_host_memory(
+                    f"worker_{worker_index}_after_vision_runtime",
+                    modules={
+                        "layout": getattr(runtime, "model", None),
+                        "unirec": recognition_runner.model,
+                    },
+                    extra={"vision_bucket_count": len(full_vision_runtime.specs)},
+                )
                 vision_atlas_runtime = None
                 warmup_started = time.perf_counter()
                 warmup_report = full_vision_runtime.warmup_all(passes=1)
@@ -1800,6 +1829,14 @@ def _worker_main(
                     full_vision_runtime.warmup_eager_fallback(passes=2)
                 )
                 warmup_wall_s = time.perf_counter() - warmup_started
+                emit_host_memory(
+                    f"worker_{worker_index}_after_vision_warmup",
+                    modules={
+                        "layout": getattr(runtime, "model", None),
+                        "unirec": recognition_runner.model,
+                    },
+                    extra={"vision_bucket_count": len(warmup_report)},
+                )
                 prefix_graph_warmup = {
                     "execution": "compiled_masked_full_encoder_buckets",
                     "shape_count": len(warmup_report),
