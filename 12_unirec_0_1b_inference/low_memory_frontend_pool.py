@@ -555,7 +555,9 @@ def _layout_owner_process_main(
             }
         )
         started = time.perf_counter()
-        for start in range(0, len(paths), lanes * batch_size):
+        chunk_size = lanes * batch_size
+
+        def prepare_chunk(start: int) -> dict[str, Any]:
             chunk = paths[start : start + lanes * batch_size]
             page_started = []
             prepared = []
@@ -569,26 +571,53 @@ def _layout_owner_process_main(
                 prepared.append(owner.prepare(rgb))
                 timings.append(timing)
                 del rgb
-            layouts = owner.predict_prepared(prepared)
-            del prepared
-            for local_index, (path, descriptor, layout, timing) in enumerate(
-                zip(chunk, descriptors, layouts, timings)
-            ):
-                result_queue.put(
-                    {
-                        "status": "layout_page",
-                        "page_index": start + local_index,
-                        "path": path,
-                        "rgb_descriptor": descriptor,
-                        "layout_result": layout,
-                        "started_at": page_started[local_index],
-                        "decode_timing_s": timing,
-                    }
-                )
-            del layouts, descriptors, timings, page_started, chunk
             if (start // max(1, lanes * batch_size) + 1) % 16 == 0:
                 gc.collect()
                 purge_host_allocator_pages()
+            return {
+                "start": start,
+                "chunk": chunk,
+                "page_started": page_started,
+                "prepared": prepared,
+                "descriptors": descriptors,
+                "timings": timings,
+            }
+
+        starts = list(range(0, len(paths), chunk_size))
+        with ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="unirec-layout-prepare",
+        ) as prepare_pool:
+            future = prepare_pool.submit(prepare_chunk, starts[0]) if starts else None
+            for position, start in enumerate(starts):
+                assert future is not None
+                chunk_data = future.result()
+                future = (
+                    prepare_pool.submit(prepare_chunk, starts[position + 1])
+                    if position + 1 < len(starts)
+                    else None
+                )
+                layouts = owner.predict_prepared(chunk_data["prepared"])
+                for local_index, (path, descriptor, layout, timing) in enumerate(
+                    zip(
+                        chunk_data["chunk"],
+                        chunk_data["descriptors"],
+                        layouts,
+                        chunk_data["timings"],
+                    )
+                ):
+                    result_queue.put(
+                        {
+                            "status": "layout_page",
+                            "page_index": start + local_index,
+                            "path": path,
+                            "rgb_descriptor": descriptor,
+                            "layout_result": layout,
+                            "started_at": chunk_data["page_started"][local_index],
+                            "decode_timing_s": timing,
+                        }
+                    )
+                del layouts, chunk_data
         result_queue.put(
             {
                 "status": "layout_done",
