@@ -50,6 +50,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-threshold", type=float, default=0.5)
     parser.add_argument("--vision-bucket-preset", default="310p_k20_l4")
     parser.add_argument("--vision-lanes", type=int, default=4)
+    parser.add_argument(
+        "--recognition-schedule",
+        choices=("two_phase", "streaming"),
+        default="two_phase",
+    )
     parser.add_argument("--decode-batch-size", type=int, default=128)
     parser.add_argument("--cross-cache-length", type=int, default=1320)
     parser.add_argument("--self-cache-length", type=int, default=2048)
@@ -308,26 +313,34 @@ def main() -> None:
         synchronize_first_call=False,
     )
     vision_owner = BoundedVisionOwner(vision_runtime, lanes=args.vision_lanes)
-    encoded, vision_summary = vision_owner.encode(vision_records)
-    vision_owner.close()
     text_runtime = runner._get_compiled_packed_text_prefill_runtime()
-    # All spatial outputs are now materialized. The decoder and packed text
-    # graph do not use the vision encoder again, so release its weights and all
-    # K20 Python/GE wrappers before the large decode arena is admitted.
-    runner.model.encoder = None
-    del vision_owner, vision_runtime
-    gc.collect()
-    torch.npu.empty_cache()
-    post_vision_cleanup = cleanup_after_warmup("low_memory_vision_complete")
-    vision_tbe_deinit = deinitialize_after_warmup("low_memory_vision_complete")
-    post_vision_memory = process_snapshot()
-    vision_wall_s = time.perf_counter() - recognition_started
-    print(
-        "UNIREC_LOWMEM_VISION_END "
-        f"crops={len(encoded)} graphs={vision_summary['graph_count']} "
-        f"wall_s={vision_summary['wall_s']:.3f}",
-        flush=True,
-    )
+    encoded: list[Any] | None = None
+    vision_summary: dict[str, Any] | None = None
+    post_vision_cleanup: dict[str, Any] | None = None
+    vision_tbe_deinit: dict[str, Any] | None = None
+    post_vision_memory: dict[str, Any] | None = None
+    vision_wall_s = 0.0
+    if args.recognition_schedule == "two_phase":
+        encoded, vision_summary = vision_owner.encode(vision_records)
+        vision_owner.close()
+        # All spatial outputs are materialized. The decoder and packed text
+        # graph do not use the vision encoder again.
+        runner.model.encoder = None
+        del vision_owner, vision_runtime
+        gc.collect()
+        torch.npu.empty_cache()
+        post_vision_cleanup = cleanup_after_warmup("low_memory_vision_complete")
+        vision_tbe_deinit = deinitialize_after_warmup(
+            "low_memory_vision_complete"
+        )
+        post_vision_memory = process_snapshot()
+        vision_wall_s = time.perf_counter() - recognition_started
+        print(
+            "UNIREC_LOWMEM_VISION_END "
+            f"crops={len(encoded)} graphs={vision_summary['graph_count']} "
+            f"wall_s={vision_summary['wall_s']:.3f}",
+            flush=True,
+        )
 
     text_stream = torch.npu.Stream(device=torch.device(args.device))
     text_input = torch.zeros(
@@ -359,6 +372,8 @@ def main() -> None:
         warmup_decode=True,
     )
     tbe_deinit = deinitialize_after_warmup("low_memory_owner_ready")
+    if args.recognition_schedule == "streaming":
+        post_vision_cleanup = cleanup_after_warmup("low_memory_stream_ready")
     ready_memory = process_snapshot()
 
     ready_queue: Queue[Any] = Queue(maxsize=16)
@@ -373,97 +388,156 @@ def main() -> None:
         "cross_kv_d2h_s": 0.0,
         "cross_kv_storage": "npu_bounded_queue",
         "cross_kv_npu_bytes": 0,
+        "recognition_schedule": args.recognition_schedule,
     }
 
+    def queue_page_prefill(page: Any, encoded_items: dict[int, Any]) -> None:
+        groups = iter_greedy_text_packs(iter(page.crops), runner=runner)
+        for use_packed, crop_group in groups:
+            if not use_packed:
+                raise RuntimeError(
+                    "accuracy-safe low-memory path encountered a text "
+                    f"prefill fallback: {crop_group[0].request_id}"
+                )
+            encoded_group = []
+            for crop in crop_group:
+                index = source_index_by_request_id[crop.request_id]
+                item = encoded_items.pop(index)
+                encoded_group.append((item.hidden_states, item.prep))
+            with torch.inference_mode(), torch.npu.stream(text_stream):
+                items = runner.prefill_encoder_hidden_states_packed_for_cohort(
+                    encoded_group,
+                    profile_device_stages=False,
+                    decode_ready=False,
+                )
+                npu_exports = []
+                for item in items:
+                    actual_length = int(
+                        item.kv_cache.actual_cross_attention_length or 0
+                    )
+                    if actual_length <= 0:
+                        raise RuntimeError("text prefill produced an empty cross cache")
+                    packed_npu = torch.stack(
+                        tuple(
+                            tensor[:, :, :actual_length, :]
+                            for tensor in (
+                                *item.kv_cache.cross_key_cache,
+                                *item.kv_cache.cross_value_cache,
+                            )
+                        ),
+                        dim=0,
+                    ).contiguous()
+                    npu_exports.append((packed_npu, actual_length))
+            text_stream.synchronize()
+            producer_stats["groups"] += 1
+            for crop, item, export in zip(crop_group, items, npu_exports):
+                packed_npu, actual_length = export
+                producer_stats["cross_kv_npu_bytes"] += int(
+                    packed_npu.numel() * packed_npu.element_size()
+                )
+                prefilled = ContinuousWorkerPrefilledItem(
+                    packed_cross_kv=packed_npu,
+                    prep=dict(item.prep),
+                    prefill_s=float(item.prefill_s),
+                    actual_cross_attention_length=int(actual_length),
+                    prefill_device_stage_s=item.prefill_device_stage_s,
+                    text_prefill_execution=str(item.text_prefill_execution),
+                    text_prefill_real_source_tokens=int(
+                        item.text_prefill_real_source_tokens or actual_length
+                    ),
+                    text_prefill_physical_source_tokens=int(
+                        item.text_prefill_physical_source_tokens
+                        or item.text_prefill_real_source_tokens
+                        or actual_length
+                    ),
+                )
+
+                def release(prefilled: Any = prefilled) -> None:
+                    prefilled.packed_cross_kv = None
+
+                ready_queue.put(
+                    ContinuousReadyItem(
+                        request_id=crop.request_id,
+                        payload=crop,
+                        prefilled=prefilled,
+                        on_admitted=release,
+                    )
+                )
+                producer_stats["crops"] += 1
+            del items, npu_exports, encoded_group
+
     def producer() -> None:
+        nonlocal vision_owner, vision_runtime, vision_summary
+        nonlocal post_vision_memory, vision_tbe_deinit, vision_wall_s
         started = time.perf_counter()
         try:
-            for page in pages:
-                groups = iter_greedy_text_packs(iter(page.crops), runner=runner)
-                for use_packed, crop_group in groups:
-                    if not use_packed:
-                        raise RuntimeError(
-                            "accuracy-safe low-memory path encountered a text "
-                            f"prefill fallback: {crop_group[0].request_id}"
-                        )
-                    encoded_group = []
-                    indices = []
-                    for crop in crop_group:
-                        index = source_index_by_request_id[crop.request_id]
-                        item = encoded[index]
-                        if item is None:
-                            raise RuntimeError(f"vision item reused: {crop.request_id}")
-                        encoded_group.append((item.hidden_states, item.prep))
-                        indices.append(index)
-                    with torch.inference_mode(), torch.npu.stream(text_stream):
-                        items = runner.prefill_encoder_hidden_states_packed_for_cohort(
-                            encoded_group,
-                            profile_device_stages=False,
-                            decode_ready=False,
-                        )
-                        npu_exports = []
-                        for item in items:
-                            actual_length = int(
-                                item.kv_cache.actual_cross_attention_length or 0
-                            )
-                            if actual_length <= 0:
-                                raise RuntimeError(
-                                    "text prefill produced an empty cross cache"
-                                )
-                            packed_npu = torch.stack(
-                                tuple(
-                                    tensor[:, :, :actual_length, :]
-                                    for tensor in (
-                                        *item.kv_cache.cross_key_cache,
-                                        *item.kv_cache.cross_value_cache,
-                                    )
-                                ),
-                                dim=0,
-                            ).contiguous()
-                            npu_exports.append((packed_npu, actual_length))
-                    text_stream.synchronize()
-                    producer_stats["groups"] += 1
-                    for crop, index, item, export in zip(
-                        crop_group,
-                        indices,
-                        items,
-                        npu_exports,
-                    ):
-                        packed_npu, actual_length = export
-                        encoded[index] = None
-                        producer_stats["cross_kv_npu_bytes"] += int(
-                            packed_npu.numel() * packed_npu.element_size()
-                        )
-                        prefilled = ContinuousWorkerPrefilledItem(
-                            packed_cross_kv=packed_npu,
-                            prep=dict(item.prep),
-                            prefill_s=float(item.prefill_s),
-                            actual_cross_attention_length=int(actual_length),
-                            prefill_device_stage_s=item.prefill_device_stage_s,
-                            text_prefill_execution=str(item.text_prefill_execution),
-                            text_prefill_real_source_tokens=int(
-                                item.text_prefill_real_source_tokens or actual_length
-                            ),
-                            text_prefill_physical_source_tokens=int(
-                                item.text_prefill_physical_source_tokens
-                                or item.text_prefill_real_source_tokens
-                                or actual_length
-                            ),
-                        )
+            if args.recognition_schedule == "two_phase":
+                assert encoded is not None
+                encoded_items = {
+                    index: item for index, item in enumerate(encoded) if item is not None
+                }
+                encoded.clear()
+                for page in pages:
+                    queue_page_prefill(page, encoded_items)
+            else:
+                encoded_items: dict[int, Any] = {}
+                remaining = {
+                    int(page.page_index): len(page.crops)
+                    for page in pages
+                    if page.crops
+                }
+                pages_by_index = {int(page.page_index): page for page in pages}
+                queued_pages: set[int] = set()
 
-                        def release(prefilled: Any = prefilled) -> None:
-                            prefilled.packed_cross_kv = None
+                def on_encoded_batch(batch: list[Any]) -> None:
+                    ready_pages = set()
+                    for item in batch:
+                        index = int(item.source_index)
+                        if index in encoded_items:
+                            raise RuntimeError(f"duplicate streamed vision item {index}")
+                        encoded_items[index] = item
+                        page_index = int(vision_records[index]["crop"].page_index)
+                        remaining[page_index] -= 1
+                        if remaining[page_index] == 0:
+                            ready_pages.add(page_index)
+                    for page_index in sorted(ready_pages):
+                        if page_index in queued_pages:
+                            raise RuntimeError(f"page {page_index} queued twice")
+                        queue_page_prefill(pages_by_index[page_index], encoded_items)
+                        queued_pages.add(page_index)
 
-                        ready_queue.put(
-                            ContinuousReadyItem(
-                                request_id=crop.request_id,
-                                payload=crop,
-                                prefilled=prefilled,
-                                on_admitted=release,
-                            )
-                        )
-                        producer_stats["crops"] += 1
-                    del items, npu_exports, encoded_group
+                _unused, vision_summary = vision_owner.encode(
+                    vision_records,
+                    on_encoded_batch=on_encoded_batch,
+                    retain_outputs=False,
+                )
+                if encoded_items:
+                    raise RuntimeError(
+                        f"streaming vision retained {len(encoded_items)} crops"
+                    )
+                expected_pages = {index for index, count in remaining.items() if count == 0}
+                if queued_pages != expected_pages:
+                    raise RuntimeError(
+                        "streaming page completion mismatch: "
+                        f"queued={len(queued_pages)} expected={len(expected_pages)}"
+                    )
+                vision_owner.close()
+                runner.model.encoder = None
+                del vision_owner, vision_runtime
+                gc.collect()
+                torch.npu.empty_cache()
+                vision_tbe_deinit = deinitialize_after_warmup(
+                    "low_memory_stream_vision_complete"
+                )
+                post_vision_memory = process_snapshot()
+                vision_wall_s = time.perf_counter() - recognition_started
+                print(
+                    "UNIREC_LOWMEM_VISION_END "
+                    f"crops={len(vision_records)} "
+                    f"graphs={vision_summary['graph_count']} "
+                    f"wall_s={vision_summary['wall_s']:.3f}",
+                    flush=True,
+                )
             producer_stats["wall_s"] = time.perf_counter() - started
             ready_queue.put(None)
         except BaseException as exception:
@@ -607,6 +681,7 @@ def main() -> None:
             "layout_threshold": args.layout_threshold,
             "vision_bucket_preset": args.vision_bucket_preset,
             "vision_lanes": args.vision_lanes,
+            "recognition_schedule": args.recognition_schedule,
             "decode_batch_size": args.decode_batch_size,
             "cross_cache_length": args.cross_cache_length,
             "self_cache_length": args.self_cache_length,

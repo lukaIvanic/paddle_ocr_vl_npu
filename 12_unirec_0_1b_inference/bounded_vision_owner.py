@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import gc
 from pathlib import Path
 import time
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 import numpy as np
 import torch
@@ -46,6 +46,7 @@ class BoundedVisionOwner:
             thread_name_prefix="unirec-bounded-vision",
         )
         self.early_tbe_deinit: dict[str, Any] | None = None
+        self._tbe_deinit_attempted = False
         self.host_purge_statuses: list[int | None] = []
 
     @staticmethod
@@ -152,7 +153,12 @@ class BoundedVisionOwner:
     def encode(
         self,
         records: Sequence[dict[str, Any]],
+        *,
+        on_encoded_batch: Callable[[list[EncodedVisionItem]], None] | None = None,
+        retain_outputs: bool = True,
     ) -> tuple[list[EncodedVisionItem], dict[str, Any]]:
+        if not retain_outputs and on_encoded_batch is None:
+            raise ValueError("non-retained vision output requires a callback")
         calls, specs_by_key, fallbacks = self._plan(records)
         weighted = sorted(
             calls,
@@ -165,6 +171,7 @@ class BoundedVisionOwner:
             ),
         )
         outputs: dict[int, EncodedVisionItem] = {}
+        seen_outputs: set[int] = set()
         pair_reports = []
         started = time.perf_counter()
         for pair_start in range(0, len(weighted), self.lanes):
@@ -183,11 +190,15 @@ class BoundedVisionOwner:
             for key, future in zip(pair, futures):
                 encoded, lane_s = future.result()
                 for item in encoded:
-                    if item.source_index in outputs:
+                    if item.source_index in seen_outputs:
                         raise RuntimeError(
                             f"duplicate encoded source {item.source_index}"
                         )
-                    outputs[item.source_index] = item
+                    seen_outputs.add(item.source_index)
+                    if retain_outputs:
+                        outputs[item.source_index] = item
+                if on_encoded_batch is not None:
+                    on_encoded_batch(encoded)
                 lane_reports.append(
                     {
                         "key": key,
@@ -196,7 +207,8 @@ class BoundedVisionOwner:
                         "wall_s": lane_s,
                     }
                 )
-            if self.early_tbe_deinit is None:
+            if not self._tbe_deinit_attempted:
+                self._tbe_deinit_attempted = True
                 self.early_tbe_deinit = deinitialize_after_warmup(
                     "bounded_vision_first_group_loaded"
                 )
@@ -215,15 +227,25 @@ class BoundedVisionOwner:
             with torch.npu.stream(self.streams[0]):
                 output = self.runtime._run_fallback(item)
             self.streams[0].synchronize()
-            outputs[output.source_index] = output
+            if output.source_index in seen_outputs:
+                raise RuntimeError(f"duplicate encoded source {output.source_index}")
+            seen_outputs.add(output.source_index)
+            if retain_outputs:
+                outputs[output.source_index] = output
+            if on_encoded_batch is not None:
+                on_encoded_batch([output])
             del item, mapping
         fallback_s = time.perf_counter() - fallback_started
         release = self._release_loaded()
-        if len(outputs) != len(records):
+        if len(seen_outputs) != len(records):
             raise RuntimeError(
-                f"bounded vision produced {len(outputs)} of {len(records)} crops"
+                f"bounded vision produced {len(seen_outputs)} of {len(records)} crops"
             )
-        ordered = [outputs[index] for index in range(len(records))]
+        ordered = (
+            [outputs[index] for index in range(len(records))]
+            if retain_outputs
+            else []
+        )
         report = {
             "wall_s": time.perf_counter() - started,
             "crop_count": len(records),
