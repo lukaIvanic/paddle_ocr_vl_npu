@@ -759,20 +759,21 @@ class ContinuousUniRecDecoder:
                 # Keep inactive graph rows numerically valid, matching the old
                 # behavior that padded the initial cohort with its last item.
                 last_slot = len(initial) - 1
-                for slot in range(len(initial), self.batch_size):
-                    for tensor_group in (
-                        cache.key_cache,
-                        cache.value_cache,
-                        cache.cross_key_cache or (),
-                        cache.cross_value_cache or (),
-                    ):
-                        for tensor in tensor_group:
-                            tensor[slot : slot + 1].copy_(
-                                tensor[last_slot : last_slot + 1]
-                            )
-                    cache.cross_attention_mask[slot : slot + 1].copy_(
-                        cache.cross_attention_mask[last_slot : last_slot + 1]
-                    )
+                with torch.inference_mode():
+                    for slot in range(len(initial), self.batch_size):
+                        for tensor_group in (
+                            cache.key_cache,
+                            cache.value_cache,
+                            cache.cross_key_cache or (),
+                            cache.cross_value_cache or (),
+                        ):
+                            for tensor in tensor_group:
+                                tensor[slot : slot + 1].copy_(
+                                    tensor[last_slot : last_slot + 1]
+                                )
+                        cache.cross_attention_mask[slot : slot + 1].copy_(
+                            cache.cross_attention_mask[last_slot : last_slot + 1]
+                        )
         else:
             for _ in range(1, self.batch_size):
                 ready = next_ready()
