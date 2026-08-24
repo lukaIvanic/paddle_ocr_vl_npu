@@ -13,6 +13,11 @@ import time
 from typing import Any
 
 
+# The shared page-assembly module imports torch, but this short-lived writer
+# performs no accelerator work. Do not make it depend on a sourced CANN shell.
+os.environ.setdefault("TORCH_DEVICE_BACKEND_AUTOLOAD", "0")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--openocr-root", type=Path, required=True)
