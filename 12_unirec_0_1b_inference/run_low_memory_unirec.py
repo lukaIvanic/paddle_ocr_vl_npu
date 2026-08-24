@@ -48,6 +48,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-batch-size", type=int, default=2)
     parser.add_argument("--layout-threshold", type=float, default=0.5)
     parser.add_argument("--vision-bucket-preset", default="310p_k20_l4")
+    parser.add_argument("--vision-lanes", type=int, default=4)
     parser.add_argument("--decode-batch-size", type=int, default=128)
     parser.add_argument("--cross-cache-length", type=int, default=1320)
     parser.add_argument("--self-cache-length", type=int, default=2048)
@@ -305,7 +306,7 @@ def main() -> None:
         preset_name=args.vision_bucket_preset,
         synchronize_first_call=False,
     )
-    vision_owner = BoundedVisionOwner(vision_runtime, lanes=2)
+    vision_owner = BoundedVisionOwner(vision_runtime, lanes=args.vision_lanes)
     encoded, vision_summary = vision_owner.encode(vision_records)
     vision_owner.close()
     text_runtime = runner._get_compiled_packed_text_prefill_runtime()
@@ -602,7 +603,7 @@ def main() -> None:
             "layout_batch_size": args.layout_batch_size,
             "layout_threshold": args.layout_threshold,
             "vision_bucket_preset": args.vision_bucket_preset,
-            "vision_lanes": 2,
+            "vision_lanes": args.vision_lanes,
             "decode_batch_size": args.decode_batch_size,
             "cross_cache_length": args.cross_cache_length,
             "self_cache_length": args.self_cache_length,

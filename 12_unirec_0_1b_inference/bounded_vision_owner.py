@@ -1,4 +1,4 @@
-"""Two-stream global K20 vision execution with bounded GE residency."""
+"""Multi-stream global K20 vision execution with bounded GE residency."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from vision_full_batch import (
 
 
 class BoundedVisionOwner:
-    """Process all K20 calls globally while loading only two graphs at once."""
+    """Process all K20 calls while loading at most ``lanes`` graphs at once."""
 
     def __init__(
         self,
@@ -32,8 +32,8 @@ class BoundedVisionOwner:
         *,
         lanes: int = 2,
     ) -> None:
-        if lanes != 2:
-            raise ValueError("bounded vision currently requires exactly two lanes")
+        if not 1 <= lanes <= 4:
+            raise ValueError("bounded vision lanes must be in [1, 4]")
         self.runtime = runtime
         self.lanes = lanes
         self.streams = [
