@@ -92,7 +92,7 @@ def main() -> None:
             page_index=int(item["page_index"]),
             path=Path(item["path"]),
             rgb=None,
-            rgb_descriptor=item["rgb_descriptor"],
+            rgb_descriptor=item.get("rgb_descriptor"),
             layout_result=item["layout_result"],
             started_at=float(item["started_at"]),
         )

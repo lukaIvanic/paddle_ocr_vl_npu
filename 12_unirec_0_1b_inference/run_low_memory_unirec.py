@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict
+import gc
 import json
 import os
 from pathlib import Path
@@ -170,15 +171,9 @@ def main() -> None:
         page_spool_root=args.spool_dir.resolve(),
     )
     submitted = 0
+    layout_items = []
     for item in layout.iter_pages():
-        crop_pool.submit(
-            page_index=int(item["page_index"]),
-            path=Path(item["path"]),
-            rgb=None,
-            rgb_descriptor=item["rgb_descriptor"],
-            layout_result=item["layout_result"],
-            started_at=float(item["started_at"]),
-        )
+        layout_items.append(item)
         submitted += 1
         if submitted % args.progress_every == 0 or submitted == len(paths):
             print(
@@ -188,6 +183,21 @@ def main() -> None:
                 flush=True,
             )
     layout.close()
+    print(
+        "UNIREC_LOWMEM_LAYOUT_RELEASED "
+        f"pages={len(layout_items)} elapsed_s={time.perf_counter() - frontend_started:.3f}",
+        flush=True,
+    )
+    for item in layout_items:
+        crop_pool.submit(
+            page_index=int(item["page_index"]),
+            path=Path(item["path"]),
+            rgb=None,
+            rgb_descriptor=None,
+            layout_result=item["layout_result"],
+            started_at=float(item["started_at"]),
+        )
+    del layout_items
     payloads, frontend_summary = crop_pool.finish()
     crop_pool.close()
     frontend_wall_s = time.perf_counter() - frontend_started
@@ -223,6 +233,7 @@ def main() -> None:
     from host_memory_diagnostics import process_snapshot
     from layout_process_pool import _copy_cross_kv_group_to_host
     from modeling_optimized_unirec import OptimizedUniRecRunner
+    from post_warmup_host_cleanup import cleanup_after_warmup
     from run_opendoc_batched_unirec import (
         assemble_page,
         iter_greedy_text_packs,
@@ -279,6 +290,16 @@ def main() -> None:
     vision_owner = BoundedVisionOwner(vision_runtime, lanes=2)
     encoded, vision_summary = vision_owner.encode(vision_records)
     vision_owner.close()
+    text_runtime = runner._get_compiled_packed_text_prefill_runtime()
+    # All spatial outputs are now materialized. The decoder and packed text
+    # graph do not use the vision encoder again, so release its weights and all
+    # K20 Python/GE wrappers before the large decode arena is admitted.
+    runner.model.encoder = None
+    del vision_owner, vision_runtime
+    gc.collect()
+    torch.npu.empty_cache()
+    post_vision_cleanup = cleanup_after_warmup("low_memory_vision_complete")
+    post_vision_memory = process_snapshot()
     vision_wall_s = time.perf_counter() - recognition_started
     print(
         "UNIREC_LOWMEM_VISION_END "
@@ -287,7 +308,6 @@ def main() -> None:
         flush=True,
     )
 
-    text_runtime = runner._get_compiled_packed_text_prefill_runtime()
     text_stream = torch.npu.Stream(device=torch.device(args.device))
     text_input = torch.zeros(
         (1, text_runtime.bucket, runner.config.d_model),
@@ -490,6 +510,8 @@ def main() -> None:
             result["_page_image"] = np.empty((0, 0, 3), dtype=np.uint8)
         pipeline.save_to_json(result, str(args.output_dir))
         pipeline.save_to_markdown(result, str(args.output_dir))
+        for crop in page.crops:
+            crop.result = None
         written += 1
         if written % args.progress_every == 0 or written == len(pages):
             print(
@@ -515,6 +537,8 @@ def main() -> None:
         "layout": layout.summary,
         "layout_ready_memory": layout.ready["snapshot"],
         "vision": vision_summary,
+        "post_vision_cleanup": post_vision_cleanup,
+        "post_vision_memory": post_vision_memory,
         "text_prefill": producer_stats,
         "decode": decode_summary,
         "decode_optimizations": decode_optimizations,

@@ -18,6 +18,21 @@ import numpy as np
 from PIL import Image
 
 
+def decode_page_rgb_cpu(path: Path) -> tuple[np.ndarray, dict[str, float]]:
+    """Decode RGB without importing Torch in the persistent CPU workers."""
+    started = time.perf_counter()
+    encoded = path.read_bytes()
+    read_s = time.perf_counter() - started
+    started = time.perf_counter()
+    from kornia_rs.image import Image as KorniaImage
+
+    rgb = KorniaImage.decode(encoded, "RGB").data
+    decode_s = time.perf_counter() - started
+    if rgb.ndim != 3 or rgb.shape[2] != 3 or rgb.dtype != np.uint8:
+        raise RuntimeError(f"unsupported decoded image: {rgb.shape} {rgb.dtype}")
+    return rgb, {"page_file_read_s": read_s, "page_image_decode_s": decode_s}
+
+
 def _base_label(label: str) -> str:
     parts = label.rsplit("_", 1)
     return parts[0] if len(parts) == 2 and parts[1].isdigit() else label
@@ -245,7 +260,16 @@ def _worker_main(
                 page_index = int(task["page_index"])
                 rgb_descriptor = task.get("rgb_descriptor")
                 if rgb_descriptor is None:
-                    rgb = task["rgb"]
+                    if task["rgb"] is None:
+                        rgb, decode_timing = decode_page_rgb_cpu(
+                            Path(task["path"])
+                        )
+                    else:
+                        rgb = task["rgb"]
+                        decode_timing = {
+                            "page_file_read_s": 0.0,
+                            "page_image_decode_s": 0.0,
+                        }
                     rgb_mapping = None
                 else:
                     rgb_mapping = np.memmap(
@@ -256,6 +280,10 @@ def _worker_main(
                         shape=tuple(rgb_descriptor["shape"]),
                     )
                     rgb = rgb_mapping
+                    decode_timing = {
+                        "page_file_read_s": 0.0,
+                        "page_image_decode_s": 0.0,
+                    }
                 payload, timing = _prepare_frontend_payload(
                     page_index=page_index,
                     path=Path(task["path"]),
@@ -297,6 +325,7 @@ def _worker_main(
                 payload["cross_capacity_rejected_crops"] = rejected
                 payload["started_at"] = float(task["started_at"])
                 payload["frontend_timing_s"] = {
+                    **decode_timing,
                     **timing,
                     "recognition_processor_resize_wall_s": resize_wall_s,
                     "recognition_processor_resize_service_sum_s": resize_service_sum_s,
@@ -514,8 +543,6 @@ def _layout_owner_process_main(
                 "chip": torch_npu.npu.get_device_name(0),
             }
         )
-        page_spool_dir = Path(page_spool_root) / "layout_pages_rgb"
-        page_spool_dir.mkdir(parents=True, exist_ok=True)
         started = time.perf_counter()
         for start in range(0, len(paths), lanes * batch_size):
             chunk = paths[start : start + lanes * batch_size]
@@ -527,15 +554,7 @@ def _layout_owner_process_main(
                 page_started.append(time.perf_counter())
                 rgb, timing = decode_page_rgb(Path(path))
                 rgb = materialize_layout_rgb(rgb)
-                page_index = start + local_index
-                page_spool_path = page_spool_dir / f"page_{page_index:06d}.rgb"
-                with page_spool_path.open("w+b", buffering=0) as page_spool:
-                    descriptor = _append_pixels(
-                        page_spool,
-                        path=page_spool_path,
-                        pixels=rgb,
-                    )
-                descriptors.append(descriptor)
+                descriptors.append(None)
                 prepared.append(owner.prepare(rgb))
                 timings.append(timing)
                 del rgb
