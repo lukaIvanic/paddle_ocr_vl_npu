@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+import gc
 import multiprocessing as mp
 import os
 from pathlib import Path
@@ -240,6 +241,7 @@ def _worker_main(
             thread_name_prefix=f"unirec-crop-{worker_index}",
         )
         from host_memory_diagnostics import process_snapshot
+        from post_warmup_host_cleanup import purge_host_allocator_pages
 
         result_queue.put(
             {
@@ -252,6 +254,7 @@ def _worker_main(
             }
         )
         with spool_path.open("w+b", buffering=0) as spool:
+            completed_tasks = 0
             while True:
                 task = task_queue.get()
                 if task is None:
@@ -340,9 +343,16 @@ def _worker_main(
                         "worker_page_s": time.perf_counter() - task_started,
                     }
                 )
+                completed_tasks += 1
                 if rgb_mapping is not None:
                     del rgb, rgb_mapping
                     Path(rgb_descriptor["path"]).unlink()
+                else:
+                    del rgb
+                del payload, prepared
+                if completed_tasks % 16 == 0:
+                    gc.collect()
+                    purge_host_allocator_pages()
         executor.shutdown(wait=True)
     except BaseException as exception:
         result_queue.put(
@@ -524,6 +534,7 @@ def _layout_owner_process_main(
 
         from host_memory_diagnostics import process_snapshot
         from layout_page_input import decode_page_rgb, materialize_layout_rgb
+        from post_warmup_host_cleanup import purge_host_allocator_pages
         from shared_layout_owner import SharedLayoutOwner
 
         torch_npu.npu.set_compile_mode(jit_compile=False)
@@ -574,6 +585,10 @@ def _layout_owner_process_main(
                         "decode_timing_s": timing,
                     }
                 )
+            del layouts, descriptors, timings, page_started, chunk
+            if (start // max(1, lanes * batch_size) + 1) % 16 == 0:
+                gc.collect()
+                purge_host_allocator_pages()
         result_queue.put(
             {
                 "status": "layout_done",

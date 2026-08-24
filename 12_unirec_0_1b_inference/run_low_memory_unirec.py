@@ -190,9 +190,15 @@ def main() -> None:
         page_spool_root=args.spool_dir.resolve(),
     )
     submitted = 0
-    layout_items = []
     for item in layout.iter_pages():
-        layout_items.append(item)
+        crop_pool.submit(
+            page_index=int(item["page_index"]),
+            path=Path(item["path"]),
+            rgb=None,
+            rgb_descriptor=None,
+            layout_result=item["layout_result"],
+            started_at=float(item["started_at"]),
+        )
         submitted += 1
         if submitted % args.progress_every == 0 or submitted == len(paths):
             print(
@@ -204,19 +210,9 @@ def main() -> None:
     layout.close()
     print(
         "UNIREC_LOWMEM_LAYOUT_RELEASED "
-        f"pages={len(layout_items)} elapsed_s={time.perf_counter() - frontend_started:.3f}",
+        f"pages={submitted} elapsed_s={time.perf_counter() - frontend_started:.3f}",
         flush=True,
     )
-    for item in layout_items:
-        crop_pool.submit(
-            page_index=int(item["page_index"]),
-            path=Path(item["path"]),
-            rgb=None,
-            rgb_descriptor=None,
-            layout_result=item["layout_result"],
-            started_at=float(item["started_at"]),
-        )
-    del layout_items
     payloads, frontend_summary = crop_pool.finish()
     crop_pool.close()
     frontend_wall_s = time.perf_counter() - frontend_started
