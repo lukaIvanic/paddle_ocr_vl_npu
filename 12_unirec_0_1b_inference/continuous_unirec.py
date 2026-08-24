@@ -83,7 +83,7 @@ class ContinuousReadyItem:
 
 @dataclass
 class ContinuousWorkerPrefilledItem:
-    """Compact CPU cross-K/V prefix ready for direct arena admission."""
+    """Compact CPU or NPU cross-K/V prefix ready for arena admission."""
 
     packed_cross_kv: Any
     prep: dict[str, Any]
@@ -459,26 +459,26 @@ class ContinuousUniRecDecoder:
         *,
         reset_reused_row: bool,
     ) -> tuple[float, int, int]:
-        """Write compact CPU cross-K/V directly into one existing arena row."""
+        """Write compact CPU or NPU cross-K/V into one existing arena row."""
         if (
             destination.cross_key_cache is None
             or destination.cross_value_cache is None
             or destination.cross_attention_mask is None
         ):
             raise RuntimeError("Continuous decode requires static cross-attention caches")
-        packed_host = source.packed_cross_kv
+        packed_source = source.packed_cross_kv
         layer_count = len(destination.key_cache)
-        if packed_host.ndim != 5 or int(packed_host.shape[0]) != 2 * layer_count:
+        if packed_source.ndim != 5 or int(packed_source.shape[0]) != 2 * layer_count:
             raise RuntimeError(
-                "unexpected worker cross-K/V shape: "
-                f"{packed_host.shape}; decoder_layers={layer_count}"
+                "unexpected compact cross-K/V shape: "
+                f"{packed_source.shape}; decoder_layers={layer_count}"
             )
-        if int(packed_host.shape[1]) != 1:
+        if int(packed_source.shape[1]) != 1:
             raise RuntimeError(
-                "worker cross-K/V must contain exactly one batch row, got "
-                f"shape={packed_host.shape}"
+                "compact cross-K/V must contain exactly one batch row, got "
+                f"shape={packed_source.shape}"
             )
-        source_len = int(packed_host.shape[-2])
+        source_len = int(packed_source.shape[-2])
         if source_len != int(source.actual_cross_attention_length):
             raise RuntimeError(
                 "worker cross-K/V length mismatch: "
@@ -495,11 +495,17 @@ class ContinuousUniRecDecoder:
             source_len,
             int(destination.cross_key_cache[0].shape[3]),
         )
-        if tuple(int(value) for value in packed_host.shape[2:]) != expected_tail:
+        if tuple(int(value) for value in packed_source.shape[2:]) != expected_tail:
             raise RuntimeError(
-                "worker cross-K/V head shape mismatch: "
-                f"tensor={tuple(packed_host.shape[2:])} expected={expected_tail}"
+                "compact cross-K/V head shape mismatch: "
+                f"tensor={tuple(packed_source.shape[2:])} expected={expected_tail}"
             )
+
+        packed_device = (
+            packed_source
+            if isinstance(packed_source, torch.Tensor)
+            else torch.from_numpy(packed_source)
+        )
 
         started = time.perf_counter()
         with torch.inference_mode():
@@ -512,23 +518,25 @@ class ContinuousUniRecDecoder:
             if destination.packed_cross_kv is not None:
                 destination.packed_cross_kv[
                     :, slot : slot + 1, :, :source_len, :
-                ].copy_(torch.from_numpy(packed_host))
+                ].copy_(packed_device)
             else:
                 for layer in range(layer_count):
                     destination.cross_key_cache[layer][
                         slot : slot + 1, :, :source_len, :
-                    ].copy_(torch.from_numpy(packed_host[layer]))
+                    ].copy_(packed_device[layer])
                     destination.cross_value_cache[layer][
                         slot : slot + 1, :, :source_len, :
-                    ].copy_(
-                        torch.from_numpy(packed_host[layer_count + layer])
-                    )
+                    ].copy_(packed_device[layer_count + layer])
         enqueue_s = time.perf_counter() - started
         source.prefill_s += enqueue_s
         stages = dict(source.prefill_device_stage_s or {})
         stages["coordinator_direct_arena_admission_enqueue"] = enqueue_s
         source.prefill_device_stage_s = stages
-        transferred_bytes = int(packed_host.nbytes)
+        transferred_bytes = int(
+            packed_source.numel() * packed_source.element_size()
+            if isinstance(packed_source, torch.Tensor)
+            else packed_source.nbytes
+        )
         reset_bytes = 0
         if reset_reused_row:
             reset_bytes = int(

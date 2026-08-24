@@ -244,7 +244,6 @@ def main() -> None:
         decode_cache_variant_root,
     )
     from host_memory_diagnostics import process_snapshot
-    from layout_process_pool import _copy_cross_kv_group_to_host
     from modeling_optimized_unirec import OptimizedUniRecRunner
     from post_warmup_host_cleanup import cleanup_after_warmup
     from run_opendoc_batched_unirec import (
@@ -369,6 +368,8 @@ def main() -> None:
         "crops": 0,
         "wall_s": 0.0,
         "cross_kv_d2h_s": 0.0,
+        "cross_kv_storage": "npu_bounded_queue",
+        "cross_kv_npu_bytes": 0,
     }
 
     def producer() -> None:
@@ -397,22 +398,43 @@ def main() -> None:
                             profile_device_stages=False,
                             decode_ready=False,
                         )
-                        host_exports, group_d2h_s = _copy_cross_kv_group_to_host(items)
+                        npu_exports = []
+                        for item in items:
+                            actual_length = int(
+                                item.kv_cache.actual_cross_attention_length or 0
+                            )
+                            if actual_length <= 0:
+                                raise RuntimeError(
+                                    "text prefill produced an empty cross cache"
+                                )
+                            packed_npu = torch.stack(
+                                tuple(
+                                    tensor[:, :, :actual_length, :]
+                                    for tensor in (
+                                        *item.kv_cache.cross_key_cache,
+                                        *item.kv_cache.cross_value_cache,
+                                    )
+                                ),
+                                dim=0,
+                            ).contiguous()
+                            npu_exports.append((packed_npu, actual_length))
                     text_stream.synchronize()
                     producer_stats["groups"] += 1
-                    producer_stats["cross_kv_d2h_s"] += group_d2h_s
                     for crop, index, item, export in zip(
                         crop_group,
                         indices,
                         items,
-                        host_exports,
+                        npu_exports,
                     ):
-                        packed_host, actual_length, item_d2h_s = export
+                        packed_npu, actual_length = export
                         encoded[index] = None
+                        producer_stats["cross_kv_npu_bytes"] += int(
+                            packed_npu.numel() * packed_npu.element_size()
+                        )
                         prefilled = ContinuousWorkerPrefilledItem(
-                            packed_cross_kv=packed_host,
+                            packed_cross_kv=packed_npu,
                             prep=dict(item.prep),
-                            prefill_s=float(item.prefill_s + item_d2h_s),
+                            prefill_s=float(item.prefill_s),
                             actual_cross_attention_length=int(actual_length),
                             prefill_device_stage_s=item.prefill_device_stage_s,
                             text_prefill_execution=str(item.text_prefill_execution),
@@ -438,7 +460,7 @@ def main() -> None:
                             )
                         )
                         producer_stats["crops"] += 1
-                    del items, host_exports, encoded_group
+                    del items, npu_exports, encoded_group
             producer_stats["wall_s"] = time.perf_counter() - started
             ready_queue.put(None)
         except BaseException as exception:
