@@ -27,6 +27,7 @@ import cv2
 from PIL import Image
 
 from host_memory_diagnostics import emit as emit_host_memory
+from tbe_compiler_lifecycle import deinitialize_after_warmup
 from layout_page_input import (
     decode_page_rgb as _decode_rgb,
     materialize_layout_bgr,
@@ -1891,11 +1892,47 @@ def _worker_main(
                         prefix_graph_call_wall_s.values()
                     ),
                 }
+            if os.environ.get("UNIREC_DEINIT_TBE_AFTER_WARMUP", "0") == "1":
+                text_runtime = (
+                    recognition_runner._get_compiled_packed_text_prefill_runtime()
+                )
+                text_input = torch.zeros(
+                    (
+                        1,
+                        text_runtime.bucket,
+                        recognition_runner.config.d_model,
+                    ),
+                    dtype=recognition_runner.dtype,
+                    device=torch.device(recognition_runner.device),
+                )
+                text_output = text_runtime.compiled(text_input)
+                torch.npu.synchronize()
+                text_runtime._first_call = False
+                del text_output, text_input
+                torch.npu.empty_cache()
+                if prefix_graph_warmup is None:
+                    prefix_graph_warmup = {}
+                prefix_graph_warmup["text_prefill_warmed_for_tbe_shutdown"] = True
         else:
             recognition_runner = None
             vision_atlas_runtime = None
             full_vision_runtime = None
             prefix_graph_warmup = None
+        tbe_deinit_report = deinitialize_after_warmup(
+            f"worker_{worker_index}_setup_complete"
+        )
+        emit_host_memory(
+            f"worker_{worker_index}_after_tbe_deinit",
+            modules={
+                "layout": getattr(runtime, "model", None),
+                "unirec": (
+                    recognition_runner.model
+                    if recognition_runner is not None
+                    else None
+                ),
+            },
+            extra={"tbe_deinit": tbe_deinit_report},
+        )
         result_queue.put(
             {
                 "status": "ready",
@@ -1943,6 +1980,7 @@ def _worker_main(
                     if full_vision_runtime is not None
                     else None
                 ),
+                "tbe_deinit": tbe_deinit_report,
             }
         )
         if full_vision_runtime is not None:

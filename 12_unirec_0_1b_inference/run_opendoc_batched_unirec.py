@@ -42,6 +42,7 @@ from continuous_unirec import (
     ContinuousWorkerPrefilledItem,
 )
 from host_memory_diagnostics import emit as emit_host_memory
+from tbe_compiler_lifecycle import deinitialize_after_warmup
 from layout_process_pool import DynamicLayoutProcessPool, SharedPageLease
 from modeling_optimized_unirec import (
     LOCAL_UNIREC_STATIC_CACHE_LEN,
@@ -2074,6 +2075,12 @@ def main() -> None:
                 decoder=args.page_image_decoder,
             )
             pipeline.layout_detector.warmup_graph(layout_warmup_page.image)
+    main_tbe_deinit_report = deinitialize_after_warmup("main_setup_complete")
+    emit_host_memory(
+        "main_after_tbe_deinit",
+        modules={"unirec": runner.model},
+        extra={"tbe_deinit": main_tbe_deinit_report},
+    )
     setup_s = time.perf_counter() - setup_started
     emit_host_memory(
         "main_setup_end",
