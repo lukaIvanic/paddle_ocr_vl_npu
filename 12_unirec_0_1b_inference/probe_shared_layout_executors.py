@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+import gc
 import json
 import os
 from pathlib import Path
@@ -20,6 +21,7 @@ import torch_npu
 
 from host_memory_diagnostics import process_snapshot
 from opendoc_layout_npu import PPDocLayoutV2NpuAdapter
+from post_warmup_host_cleanup import cleanup_after_warmup
 from tbe_compiler_lifecycle import deinitialize_after_warmup
 
 
@@ -30,6 +32,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--lanes", type=int, default=4)
     parser.add_argument("--repeats", type=int, default=20)
+    parser.add_argument("--freeze-parameters", action="store_true")
+    parser.add_argument("--drop-source-model", action="store_true")
     return parser.parse_args()
 
 
@@ -84,6 +88,7 @@ def main() -> None:
         compile_cache_dir=args.cache_dir,
         batch_size=2,
         weight_format="native",
+        freeze_parameters=args.freeze_parameters,
         depthwise_rewrite="native",
         input_color_order="rgb",
     )
@@ -136,6 +141,57 @@ def main() -> None:
         streams[index].synchronize()
     after_all = process_snapshot()
     deinit_report = deinitialize_after_warmup("shared_layout_executors_warm")
+
+    before_drop_outputs = []
+    for index, executor in enumerate(executors):
+        with torch.inference_mode(), torch.npu.stream(streams[index]):
+            output = executor(inputs[index])
+        streams[index].synchronize()
+        before_drop_outputs.append(tuple(value.cpu() for value in output))
+
+    source_model_release = None
+    source_model_parity = None
+    if args.drop_source_model:
+        if not args.freeze_parameters:
+            raise ValueError("dropping the source model requires frozen parameters")
+        before_drop = process_snapshot()
+        adapter.processor = None
+        adapter.model = None
+        runtime.stage.model = None
+        gc.collect()
+        torch.npu.empty_cache()
+        cleanup = cleanup_after_warmup("shared_layout_source_model_drop")
+        after_drop = process_snapshot()
+        after_drop_outputs = []
+        for index, executor in enumerate(executors):
+            with torch.inference_mode(), torch.npu.stream(streams[index]):
+                output = executor(inputs[index])
+            streams[index].synchronize()
+            after_drop_outputs.append(tuple(value.cpu() for value in output))
+        fields = []
+        for reference, candidate in zip(before_drop_outputs, after_drop_outputs):
+            lane_fields = []
+            for left, right in zip(reference, candidate):
+                diff = (right.float() - left.float()).abs()
+                lane_fields.append(
+                    {
+                        "exact": torch.equal(left, right),
+                        "max_abs": float(diff.max()),
+                        "mean_abs": float(diff.mean()),
+                    }
+                )
+            fields.append(lane_fields)
+        source_model_parity = fields
+        source_model_release = {
+            "before": before_drop,
+            "after": after_drop,
+            "pss_reclaimed_bytes": max(
+                0,
+                int(before_drop["proc_bytes"]["pss"])
+                - int(after_drop["proc_bytes"]["pss"]),
+            ),
+            "cleanup": cleanup,
+        }
 
     references = []
     serial_started = time.perf_counter()
@@ -190,10 +246,18 @@ def main() -> None:
         ),
         "compiler_respawned": parallel_compilation.OpCompiler.compiler is not None,
         "tbe_deinit": deinit_report,
+        "freeze_parameters": bool(args.freeze_parameters),
+        "drop_source_model": bool(args.drop_source_model),
+        "source_model_release": source_model_release,
+        "source_model_parity": source_model_parity,
         "cache_file": str(cache_files[0]),
     }
     print("UNIREC_SHARED_LAYOUT_EXECUTORS " + json.dumps(report, sort_keys=True))
-    if report["status"] != "pass" or report["compiler_respawned"]:
+    drop_exact = (
+        source_model_parity is None
+        or all(field["exact"] for lane in source_model_parity for field in lane)
+    )
+    if report["status"] != "pass" or report["compiler_respawned"] or not drop_exact:
         raise SystemExit(1)
 
 

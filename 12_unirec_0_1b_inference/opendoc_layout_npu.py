@@ -805,7 +805,8 @@ class PPDocLayoutV2NpuAdapter:
             self.compiled_runtime = LayoutFullGraphRuntime(
                 self.model,
                 cache_root=Path(compile_cache_dir) / (
-                    f"depthwise_{self.depthwise_rewrite}_"
+                    ("frozenparams1_" if self.freeze_parameters else "")
+                    + f"depthwise_{self.depthwise_rewrite}_"
                     f"weightformat_{self.weight_format}_"
                     f"readingorder_{str(self.reading_order_dtype).removeprefix('torch.')}_"
                     f"frozenbn{int(self.fuse_frozen_bn)}_"
