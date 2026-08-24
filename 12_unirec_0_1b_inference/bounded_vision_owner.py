@@ -362,6 +362,8 @@ class BoundedVisionOwner:
             pair_reports.append(lane_reports)
         fallback_started = time.perf_counter()
         fallback_release: dict[str, Any] | None = None
+        compiled_fallbacks = 0
+        eager_fallbacks = 0
         if fallbacks and self.fallback_runtime is not None:
             self._release_loaded()
         for record in fallbacks:
@@ -375,9 +377,15 @@ class BoundedVisionOwner:
                 image_source=str(record["request_id"]),
             )
             with torch.npu.stream(self.streams[0]):
-                if self.fallback_runtime is None:
+                use_compiled_fallback = (
+                    self.fallback_runtime is not None
+                    and item.processed_width not in {320, 512, 576}
+                )
+                if not use_compiled_fallback:
                     output = self.runtime._run_fallback(item)
+                    eager_fallbacks += 1
                 else:
+                    assert self.fallback_runtime is not None
                     spec = self.fallback_runtime.select_bucket(
                         item.processed_width,
                         item.processed_height,
@@ -388,6 +396,7 @@ class BoundedVisionOwner:
                             f"{item.processed_width}x{item.processed_height}"
                         )
                     output = self.fallback_runtime._run_bucket(spec, [item])[0]
+                    compiled_fallbacks += 1
             self.streams[0].synchronize()
             if output.source_index in seen_outputs:
                 raise RuntimeError(f"duplicate encoded source {output.source_index}")
@@ -433,10 +442,12 @@ class BoundedVisionOwner:
             "fallback_count": len(fallbacks),
             "fallback_wall_s": fallback_s,
             "fallback_execution": (
-                "compiled_960x1408_b1"
+                "hybrid_compiled_960x1408_b1"
                 if self.fallback_runtime is not None
                 else "eager"
             ),
+            "compiled_fallback_count": compiled_fallbacks,
+            "eager_fallback_count": eager_fallbacks,
             "fallback_bucket_calls": (
                 dict(self.fallback_runtime.stats["bucket_calls"])
                 if self.fallback_runtime is not None
