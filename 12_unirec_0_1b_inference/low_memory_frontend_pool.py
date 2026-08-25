@@ -23,6 +23,7 @@ CPU_CROP_WORKER_MALLOC_CONF = (
     "narenas:2,background_thread:true,"
     "dirty_decay_ms:1000,muzzy_decay_ms:1000"
 )
+LAYOUT_OWNER_MALLOC_CONF = CPU_CROP_WORKER_MALLOC_CONF
 
 
 def decode_page_rgb_cpu(path: Path) -> tuple[np.ndarray, dict[str, float]]:
@@ -599,6 +600,7 @@ def _layout_owner_process_main(
                 "pid": os.getpid(),
                 "snapshot": process_snapshot(),
                 "chip": torch_npu.npu.get_device_name(0),
+                "malloc_conf": os.environ.get("MALLOC_CONF", ""),
             }
         )
         started = time.perf_counter()
@@ -699,6 +701,7 @@ class SharedLayoutProcess:
         batch_size: int = 2,
         threshold: float = 0.5,
         page_spool_root: Path,
+        malloc_conf: str = LAYOUT_OWNER_MALLOC_CONF,
     ) -> None:
         self.context = mp.get_context("spawn")
         self.result_queue = self.context.Queue(maxsize=max(8, lanes * batch_size * 2))
@@ -718,11 +721,29 @@ class SharedLayoutProcess:
             name="unirec-shared-layout-owner",
         )
         self.page_count = len(paths)
-        self.process.start()
-        ready = self._get(timeout=300.0)
+        previous_malloc_conf = os.environ.get("MALLOC_CONF")
+        try:
+            if malloc_conf:
+                os.environ["MALLOC_CONF"] = malloc_conf
+            else:
+                os.environ.pop("MALLOC_CONF", None)
+            self.process.start()
+            ready = self._get(timeout=300.0)
+        finally:
+            if previous_malloc_conf is None:
+                os.environ.pop("MALLOC_CONF", None)
+            else:
+                os.environ["MALLOC_CONF"] = previous_malloc_conf
         if ready.get("status") != "layout_ready":
             self.close()
             raise RuntimeError(f"layout owner did not become ready: {ready}")
+        if str(ready.get("malloc_conf", "")) != malloc_conf:
+            self.close()
+            raise RuntimeError(
+                "layout owner allocator mismatch: "
+                f"expected {malloc_conf!r}, got {ready.get('malloc_conf')!r}"
+            )
+        self.malloc_conf = malloc_conf
         self.ready = ready
         self.summary: dict[str, Any] | None = None
         self.closed = False

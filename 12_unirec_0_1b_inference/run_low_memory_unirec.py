@@ -759,6 +759,7 @@ def main() -> None:
             "layout_lanes": args.layout_lanes,
             "layout_batch_size": args.layout_batch_size,
             "layout_threshold": args.layout_threshold,
+            "layout_owner_malloc_conf": layout.malloc_conf,
             "vision_bucket_preset": args.vision_bucket_preset,
             "vision_lanes": args.vision_lanes,
             "vision_same_key_shards": args.vision_same_key_shards,
