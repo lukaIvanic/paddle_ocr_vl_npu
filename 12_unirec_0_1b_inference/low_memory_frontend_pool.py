@@ -91,6 +91,7 @@ def _prepare_frontend_payload(
     layout_result: dict[str, Any],
     use_chart_recognition: bool,
     tokenize_figure_of_table: Any,
+    copy_source_crops: bool = True,
 ) -> tuple[dict[str, Any], dict[str, float]]:
     image_labels = ["image", "header_image", "footer_image", "seal"]
     if not use_chart_recognition:
@@ -149,7 +150,11 @@ def _prepare_frontend_payload(
             )
         elif "formula" in label and label != "formula_number":
             block_image = _crop_margin_rgb(block_image)
-        crop_rgb = np.ascontiguousarray(block_image)
+        crop_rgb = (
+            np.ascontiguousarray(block_image)
+            if copy_source_crops
+            else block_image
+        )
         crops.append(
             {
                 "crop_index": len(crops),
@@ -187,6 +192,8 @@ def _resize_crop(crop: dict[str, Any]) -> tuple[np.ndarray, tuple[int, int], flo
     image_rgb = crop["image_rgb"]
     source_height, source_width = image_rgb.shape[:2]
     target_width, target_height = _processed_size(source_width, source_height)
+    if not image_rgb.flags.c_contiguous:
+        image_rgb = np.ascontiguousarray(image_rgb)
     image = Image.fromarray(image_rgb, mode="RGB")
     resized = image.resize(
         (target_width, target_height),
@@ -223,6 +230,7 @@ def _worker_main(
     openocr_root: str,
     spool_root: str,
     recognition_threads: int,
+    resize_chunk_size: int,
     cross_cache_length: int,
     use_chart_recognition: bool,
     task_queue: Any,
@@ -294,6 +302,7 @@ def _worker_main(
                     layout_result=task["layout_result"],
                     use_chart_recognition=use_chart_recognition,
                     tokenize_figure_of_table=tokenize_figure_of_table,
+                    copy_source_crops=resize_chunk_size == 0,
                 )
                 kept_crops = []
                 kept_block_ids = []
@@ -309,22 +318,31 @@ def _worker_main(
                 payload["crops"] = kept_crops
                 payload["vlm_block_ids"] = kept_block_ids
                 resize_started = time.perf_counter()
-                prepared = list(executor.map(_resize_crop, kept_crops))
-                resize_wall_s = time.perf_counter() - resize_started
                 resize_service_sum_s = 0.0
-                for crop, (pixels, source_size, service_s) in zip(kept_crops, prepared):
-                    crop["source_image_size"] = [int(value) for value in source_size]
-                    crop["processed_pixel_values_descriptor"] = _append_pixels(
-                        spool,
-                        path=spool_path,
-                        pixels=pixels,
-                    )
-                    crop["processed_image_size"] = [
-                        int(pixels.shape[1]),
-                        int(pixels.shape[0]),
-                    ]
-                    crop.pop("image_rgb", None)
-                    resize_service_sum_s += service_s
+                chunk_size = resize_chunk_size or max(1, len(kept_crops))
+                for start in range(0, len(kept_crops), chunk_size):
+                    crop_chunk = kept_crops[start : start + chunk_size]
+                    prepared = list(executor.map(_resize_crop, crop_chunk))
+                    for crop, (pixels, source_size, service_s) in zip(
+                        crop_chunk,
+                        prepared,
+                    ):
+                        crop["source_image_size"] = [
+                            int(value) for value in source_size
+                        ]
+                        crop["processed_pixel_values_descriptor"] = _append_pixels(
+                            spool,
+                            path=spool_path,
+                            pixels=pixels,
+                        )
+                        crop["processed_image_size"] = [
+                            int(pixels.shape[1]),
+                            int(pixels.shape[0]),
+                        ]
+                        crop.pop("image_rgb", None)
+                        resize_service_sum_s += service_s
+                    del prepared
+                resize_wall_s = time.perf_counter() - resize_started
                 payload["cross_capacity_rejected_crops"] = rejected
                 payload["started_at"] = float(task["started_at"])
                 payload["frontend_timing_s"] = {
@@ -349,7 +367,7 @@ def _worker_main(
                     Path(rgb_descriptor["path"]).unlink()
                 else:
                     del rgb
-                del payload, prepared
+                del payload
                 if completed_tasks % 16 == 0:
                     gc.collect()
                     purge_host_allocator_pages()
@@ -384,12 +402,13 @@ class CpuCropPreparePool:
         *,
         workers: int,
         recognition_threads: int,
+        resize_chunk_size: int = 0,
         openocr_root: Path,
         spool_root: Path,
         cross_cache_length: int,
         use_chart_recognition: bool = True,
     ) -> None:
-        if workers < 1 or recognition_threads < 1:
+        if workers < 1 or recognition_threads < 1 or resize_chunk_size < 0:
             raise ValueError("worker and thread counts must be positive")
         self.context = mp.get_context("spawn")
         self.task_queue = self.context.Queue(maxsize=workers * 2)
@@ -405,6 +424,7 @@ class CpuCropPreparePool:
                     str(openocr_root),
                     str(spool_root),
                     recognition_threads,
+                    resize_chunk_size,
                     cross_cache_length,
                     use_chart_recognition,
                     self.task_queue,

@@ -45,6 +45,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--recognition-threads", type=int, default=8)
+    parser.add_argument(
+        "--recognition-resize-chunk-size",
+        type=int,
+        default=0,
+        help=(
+            "Maximum resized crops retained per CPU worker. Zero preserves "
+            "the original whole-page behavior."
+        ),
+    )
     parser.add_argument("--layout-lanes", type=int, default=1)
     parser.add_argument("--layout-batch-size", type=int, default=2)
     parser.add_argument("--layout-threshold", type=float, default=0.5)
@@ -180,6 +189,7 @@ def main() -> None:
     crop_pool = CpuCropPreparePool(
         workers=args.workers,
         recognition_threads=args.recognition_threads,
+        resize_chunk_size=args.recognition_resize_chunk_size,
         openocr_root=args.openocr_root.resolve(),
         spool_root=args.spool_dir.resolve(),
         cross_cache_length=args.cross_cache_length,
@@ -744,6 +754,7 @@ def main() -> None:
         "settings": {
             "workers": args.workers,
             "recognition_threads": args.recognition_threads,
+            "recognition_resize_chunk_size": args.recognition_resize_chunk_size,
             "layout_lanes": args.layout_lanes,
             "layout_batch_size": args.layout_batch_size,
             "layout_threshold": args.layout_threshold,
