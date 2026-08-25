@@ -19,6 +19,12 @@ import numpy as np
 from PIL import Image
 
 
+CPU_CROP_WORKER_MALLOC_CONF = (
+    "narenas:2,background_thread:true,"
+    "dirty_decay_ms:1000,muzzy_decay_ms:1000"
+)
+
+
 def decode_page_rgb_cpu(path: Path) -> tuple[np.ndarray, dict[str, float]]:
     """Decode RGB without importing Torch in the persistent CPU workers."""
     started = time.perf_counter()
@@ -259,6 +265,7 @@ def _worker_main(
                 "snapshot": process_snapshot(),
                 "torch_imported": "torch" in sys.modules,
                 "torch_npu_imported": "torch_npu" in sys.modules,
+                "malloc_conf": os.environ.get("MALLOC_CONF", ""),
             }
         )
         with spool_path.open("w+b", buffering=0) as spool:
@@ -403,6 +410,7 @@ class CpuCropPreparePool:
         workers: int,
         recognition_threads: int,
         resize_chunk_size: int = 0,
+        malloc_conf: str = CPU_CROP_WORKER_MALLOC_CONF,
         openocr_root: Path,
         spool_root: Path,
         cross_cache_length: int,
@@ -434,9 +442,20 @@ class CpuCropPreparePool:
             )
             for index in range(workers)
         ]
-        for process in self.processes:
-            process.start()
-        ready = [self._get(timeout=120.0) for _ in self.processes]
+        previous_malloc_conf = os.environ.get("MALLOC_CONF")
+        try:
+            if malloc_conf:
+                os.environ["MALLOC_CONF"] = malloc_conf
+            else:
+                os.environ.pop("MALLOC_CONF", None)
+            for process in self.processes:
+                process.start()
+            ready = [self._get(timeout=120.0) for _ in self.processes]
+        finally:
+            if previous_malloc_conf is None:
+                os.environ.pop("MALLOC_CONF", None)
+            else:
+                os.environ["MALLOC_CONF"] = previous_malloc_conf
         errors = [item for item in ready if item.get("status") != "ready"]
         if errors:
             self.close()
@@ -444,6 +463,14 @@ class CpuCropPreparePool:
         if any(item["torch_imported"] or item["torch_npu_imported"] for item in ready):
             self.close()
             raise RuntimeError("CPU crop worker imported Torch")
+        worker_malloc_confs = {str(item["malloc_conf"]) for item in ready}
+        if worker_malloc_confs != {malloc_conf}:
+            self.close()
+            raise RuntimeError(
+                "CPU crop worker allocator mismatch: "
+                f"expected {malloc_conf!r}, got {worker_malloc_confs}"
+            )
+        self.malloc_conf = malloc_conf
         self.worker_pss_bytes = sum(
             int(item["snapshot"]["proc_bytes"]["pss"]) for item in ready
         )

@@ -67,6 +67,7 @@ def main() -> None:
             "recognition_threads": args.recognition_threads,
             "resize_chunk_size": args.resize_chunk_size,
             "cross_cache_length": args.cross_cache_length,
+            "crop_worker_malloc_conf": pool.malloc_conf,
         },
         "summary": asdict(summary),
     }

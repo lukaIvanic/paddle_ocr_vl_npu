@@ -755,6 +755,7 @@ def main() -> None:
             "workers": args.workers,
             "recognition_threads": args.recognition_threads,
             "recognition_resize_chunk_size": args.recognition_resize_chunk_size,
+            "crop_worker_malloc_conf": crop_pool.malloc_conf,
             "layout_lanes": args.layout_lanes,
             "layout_batch_size": args.layout_batch_size,
             "layout_threshold": args.layout_threshold,
