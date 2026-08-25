@@ -1,0 +1,2 @@
+commit=45faab28e03c850614af481e249f750d8dc81c56
+physical_npu=7

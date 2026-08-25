@@ -25,6 +25,12 @@ W4/T8, layout, vision, and decode settings. It ran at 4.0191 pages/s and peaked
 at 5,421,636,608 bytes PSS. The final allocator change reduced peak PSS by
 19.4% and changed throughput by -2.1%.
 
+That is the allocator-only comparison. The original integrated monolithic W4/T8
+runner was measured later at 30,981,315,584 bytes PSS and 5.0076 cold-process
+pages/s. Relative to that architecture, this runner uses 85.9% less host PSS
+but its inference-process throughput is 21.4% lower. See
+`../unirec_910b_monolithic_w4t8_full1651_45faab2/`.
+
 The final and baseline recognition traces contain the same 32,110 request IDs,
 texts, and generated token rows. Their sorted normalized trace SHA-256 is:
 
@@ -85,4 +91,3 @@ shape, graph, weight format, or numerical path. They should therefore apply on
 - `deferred_write_summary.json`: all 1,651 pages materialized.
 - `transform_summary.json`: 1,545 image tags removed from evaluator copies.
 - `full_eval_summary.json`: frozen OmniDocBench metrics and failure counts.
-
