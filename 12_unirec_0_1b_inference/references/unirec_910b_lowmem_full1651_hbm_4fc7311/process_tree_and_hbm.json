@@ -1,0 +1,1208 @@
+{
+  "schema": "linux_process_tree_and_npu_memory_v2",
+  "command": [
+    "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python",
+    "12_unirec_0_1b_inference/run_low_memory_unirec.py",
+    "--openocr-root",
+    "/workspace/repos/OpenOCR",
+    "--model-path",
+    "/workspace/models/unirec-0.1b",
+    "--layout-model",
+    "/workspace/models/PP-DocLayoutV2_safetensors",
+    "--input",
+    "/workspace/datasets/OmniDocBench/images",
+    "--output-dir",
+    "tmp/12_unirec_0_1b_inference/lowmem_full1651_hbm_4fc7311_20260825T062544/output",
+    "--spool-dir",
+    "tmp/12_unirec_0_1b_inference/lowmem_full1651_hbm_4fc7311_20260825T062544/spool",
+    "--layout-cache",
+    ".runtime_cache/12_unirec_0_1b_inference/representative128_layout_compiled_fp32_optimized_b2_6deceef",
+    "--vision-cache",
+    ".runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e",
+    "--decode-cache-parent",
+    ".runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf",
+    "--device",
+    "npu:0",
+    "--offset",
+    "0",
+    "--limit",
+    "1651",
+    "--workers",
+    "4",
+    "--recognition-threads",
+    "8",
+    "--recognition-resize-chunk-size",
+    "0",
+    "--layout-lanes",
+    "1",
+    "--layout-batch-size",
+    "2",
+    "--layout-threshold",
+    "0.5",
+    "--vision-bucket-preset",
+    "310p_k20_l4",
+    "--vision-lanes",
+    "4",
+    "--vision-same-key-shards",
+    "1",
+    "--vision-sharded-key-count",
+    "0",
+    "--recognition-schedule",
+    "streaming",
+    "--vision-tall-fallback",
+    "eager",
+    "--decode-batch-size",
+    "128",
+    "--cross-cache-length",
+    "1320",
+    "--self-cache-length",
+    "2048",
+    "--max-length",
+    "2048",
+    "--ready-queue-size",
+    "128",
+    "--progress-every",
+    "32",
+    "--defer-output-write"
+  ],
+  "root_pid": 611333,
+  "exit_code": 0,
+  "wall_s": 423.5795478820801,
+  "interval_ms": 50.0,
+  "sample_count": 4025,
+  "peak": {
+    "process_count": 7,
+    "total_pss_bytes": 4410212352,
+    "total_rss_bytes": 4694192128,
+    "processes": [
+      {
+        "pid": 611333,
+        "pss_bytes": 66648064,
+        "rss_bytes": 100790272,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python /workspace/repos/paddle_ocr_vl_npu/12_unirec_0_1b_inference/run_low_memory_unirec.py --openocr-root /workspace/repos/OpenOCR --model-path /workspace/models/unirec-0.1b --layout-model /workspace/models/PP-DocLayoutV2_safetensors --input /workspace/datasets/OmniDocBench/images --output-dir tmp/12_unirec_0_1b_inference/lowmem_full1651_hbm_4fc7311_20260825T062544/output --spool-dir tmp/12_unirec_0_1b_inference/lowmem_full1651_hbm_4fc7311_20260825T062544/spool --layout-cache .runtime_cache/12_unirec_0_1b_inference/representative128_layout_compiled_fp32_optimized_b2_6deceef --vision-cache .runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e --decode-cache-parent .runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf --device npu:0 --offset 0 --limit 1651 --workers 4 --recognition-threads 8 --recognition-resize-chunk-size 0 --layout-lanes 1 --layout-batch-size 2 --layout-threshold 0.5 --vision-bucket-preset 310p_k20_l4 --vision-lanes 4 --vision-same-key-shards 1 --vision-sharded-key-count 0 --recognition-schedule streaming --vision-tall-fallback eager --decode-batch-size 128 --cross-cache-length 1320 --self-cache-length 2048 --max-length 2048 --ready-queue-size 128 --progress-every 32 --defer-output-write"
+      },
+      {
+        "pid": 611680,
+        "pss_bytes": 4045365248,
+        "rss_bytes": 4141367296,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=20) --multiprocessing-fork"
+      },
+      {
+        "pid": 611414,
+        "pss_bytes": 69730304,
+        "rss_bytes": 106336256,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=16) --multiprocessing-fork"
+      },
+      {
+        "pid": 611413,
+        "pss_bytes": 67047424,
+        "rss_bytes": 103714816,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=14) --multiprocessing-fork"
+      },
+      {
+        "pid": 611412,
+        "pss_bytes": 71221248,
+        "rss_bytes": 107888640,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=12) --multiprocessing-fork"
+      },
+      {
+        "pid": 611411,
+        "pss_bytes": 69924864,
+        "rss_bytes": 106532864,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=10) --multiprocessing-fork"
+      },
+      {
+        "pid": 611410,
+        "pss_bytes": 20275200,
+        "rss_bytes": 27561984,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.resource_tracker import main;main(5)"
+      }
+    ],
+    "elapsed_s": 84.63660216331482
+  },
+  "npu_hbm": {
+    "physical_npu": 7,
+    "query_command": [
+      "npu-smi",
+      "info"
+    ],
+    "interval_ms": 2000.0,
+    "query_timeout_s": 10.0,
+    "baseline": {
+      "used_mb": 3415,
+      "total_mb": 65536,
+      "raw_npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | Alarm         | 107.8       48                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3417 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 102.5       48                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3420 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.6       48                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3409 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.7       48                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          3409 / 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 101.9       47                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          3408 / 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 101.2       47                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          3398 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.1       49                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          3408 / 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 102.4       49                0    / 0             |\n| 0                         | 0000:42:00.0  | 0           0    / 0          3415 / 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 1                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 3                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 4                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 5                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 6                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 7                                                            |\n+===========================+===============+====================================================+\n"
+    },
+    "sample_count": 212,
+    "samples": [
+      {
+        "elapsed_s": 1.0559117794036865,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 3.0488855838775635,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 5.048285961151123,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 7.051745176315308,
+        "used_mb": 3414,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 9.051931381225586,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 11.052335500717163,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 13.052054166793823,
+        "used_mb": 3414,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 15.047589302062988,
+        "used_mb": 3414,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 17.05576777458191,
+        "used_mb": 3688,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 19.051491737365723,
+        "used_mb": 3715,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 21.056848526000977,
+        "used_mb": 3715,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 23.059009552001953,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 25.096253633499146,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 27.069644689559937,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 29.07187509536743,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 31.07016682624817,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 33.06302571296692,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 35.06196165084839,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 37.055100440979004,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 39.05363965034485,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 41.08352851867676,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 43.05674195289612,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 45.09350800514221,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 47.07183074951172,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 49.062251806259155,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 51.0830774307251,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 53.06229782104492,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 55.07133460044861,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 57.10610628128052,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 59.0738799571991,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 61.07081055641174,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 63.07437753677368,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 65.08694076538086,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 67.15344452857971,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 69.06248188018799,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 71.0649049282074,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 73.07417035102844,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 75.07342457771301,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 77.06162643432617,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 79.08362102508545,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 81.0516881942749,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 83.06875133514404,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 85.06928515434265,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 87.10898232460022,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 89.09708976745605,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 91.08326292037964,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 93.05779027938843,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 95.05735969543457,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 97.09428834915161,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 99.07648301124573,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 101.07161235809326,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 103.08587622642517,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 105.07131719589233,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 107.07010555267334,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 109.09175133705139,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 111.07173323631287,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 113.09441351890564,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 115.08228635787964,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 117.07860398292542,
+        "used_mb": 4074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 119.10928559303284,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 121.08685088157654,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 123.06213212013245,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 125.07725310325623,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 127.07443308830261,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 129.11709570884705,
+        "used_mb": 4075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 131.079815864563,
+        "used_mb": 3553,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 133.13009333610535,
+        "used_mb": 3553,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 135.12575459480286,
+        "used_mb": 3418,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 137.13015055656433,
+        "used_mb": 3418,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 139.07488822937012,
+        "used_mb": 3417,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 141.08365058898926,
+        "used_mb": 3417,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 143.06176114082336,
+        "used_mb": 3417,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 145.1034219264984,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 147.16334509849548,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 149.10617685317993,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 151.1174018383026,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 153.06584239006042,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 155.06792664527893,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 157.07762360572815,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 159.11811542510986,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 161.09852242469788,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 163.09541034698486,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 165.12439632415771,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 167.0589189529419,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 169.05797791481018,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 171.06248879432678,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 173.0649824142456,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 175.07775259017944,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 177.05327248573303,
+        "used_mb": 3415,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 179.06605744361877,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 181.05484819412231,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 183.06261587142944,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 185.1142544746399,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 187.10314106941223,
+        "used_mb": 3416,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 189.15492916107178,
+        "used_mb": 3923,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 191.06873226165771,
+        "used_mb": 3923,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 193.07065606117249,
+        "used_mb": 4009,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 195.05402326583862,
+        "used_mb": 11687,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 197.07592630386353,
+        "used_mb": 12015,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 199.07061219215393,
+        "used_mb": 12231,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 201.08781051635742,
+        "used_mb": 12465,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 203.05864906311035,
+        "used_mb": 12695,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 205.07327556610107,
+        "used_mb": 12852,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 207.15602040290833,
+        "used_mb": 13000,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 209.07235383987427,
+        "used_mb": 13095,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 211.09164810180664,
+        "used_mb": 13199,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 213.07514905929565,
+        "used_mb": 13303,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 215.08087873458862,
+        "used_mb": 13409,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 217.07526469230652,
+        "used_mb": 13520,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 219.06614685058594,
+        "used_mb": 13625,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 221.09557223320007,
+        "used_mb": 13735,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 223.05876994132996,
+        "used_mb": 13613,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 225.07331609725952,
+        "used_mb": 13932,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 227.07268571853638,
+        "used_mb": 14142,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 229.07118678092957,
+        "used_mb": 14313,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 231.08437585830688,
+        "used_mb": 14407,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 233.05965495109558,
+        "used_mb": 14489,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 235.05371236801147,
+        "used_mb": 14541,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 237.13067436218262,
+        "used_mb": 14565,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 239.07409620285034,
+        "used_mb": 14639,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 241.10421800613403,
+        "used_mb": 14671,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 243.0637650489807,
+        "used_mb": 14743,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 245.06455874443054,
+        "used_mb": 14783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 247.10327219963074,
+        "used_mb": 14785,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 249.07755732536316,
+        "used_mb": 14785,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 251.06756782531738,
+        "used_mb": 14795,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 253.06953144073486,
+        "used_mb": 14795,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 255.0676293373108,
+        "used_mb": 14815,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 257.0643014907837,
+        "used_mb": 14814,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 259.0582799911499,
+        "used_mb": 14903,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 261.0741744041443,
+        "used_mb": 15027,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 263.0629494190216,
+        "used_mb": 15107,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 265.07546520233154,
+        "used_mb": 15166,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 267.07954621315,
+        "used_mb": 15166,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 269.06303787231445,
+        "used_mb": 15167,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 271.0709071159363,
+        "used_mb": 15171,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 273.0635507106781,
+        "used_mb": 15185,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 275.072062253952,
+        "used_mb": 15191,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 277.1036353111267,
+        "used_mb": 15369,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 279.087717294693,
+        "used_mb": 15555,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 281.1264250278473,
+        "used_mb": 15555,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 283.1157593727112,
+        "used_mb": 15555,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 285.1105170249939,
+        "used_mb": 15554,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 287.07966685295105,
+        "used_mb": 15554,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 289.0797073841095,
+        "used_mb": 15555,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 291.0952453613281,
+        "used_mb": 15571,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 293.1222107410431,
+        "used_mb": 15571,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 295.09129786491394,
+        "used_mb": 15570,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 297.06771755218506,
+        "used_mb": 15601,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 299.07067131996155,
+        "used_mb": 15601,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 301.08342933654785,
+        "used_mb": 15601,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 303.06314516067505,
+        "used_mb": 15601,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 305.06871485710144,
+        "used_mb": 15751,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 307.0876135826111,
+        "used_mb": 15783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 309.0914890766144,
+        "used_mb": 15783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 311.1157078742981,
+        "used_mb": 15783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 313.06774044036865,
+        "used_mb": 15783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 315.0788998603821,
+        "used_mb": 15782,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 317.0834393501282,
+        "used_mb": 15783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 319.07645177841187,
+        "used_mb": 15783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 321.1001868247986,
+        "used_mb": 15783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 323.0909752845764,
+        "used_mb": 15783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 325.0704061985016,
+        "used_mb": 15782,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 327.06805205345154,
+        "used_mb": 15782,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 329.08463048934937,
+        "used_mb": 15783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 331.06374621391296,
+        "used_mb": 15959,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 333.1213867664337,
+        "used_mb": 15051,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 335.17183232307434,
+        "used_mb": 15222,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 337.1165244579315,
+        "used_mb": 15222,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 339.1174886226654,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 341.0838179588318,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 343.0681138038635,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 345.0906488895416,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 347.0923206806183,
+        "used_mb": 15222,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 349.0929434299469,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 351.06814408302307,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 353.084007024765,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 355.10102581977844,
+        "used_mb": 15222,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 357.1195785999298,
+        "used_mb": 15222,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 359.0723011493683,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 361.10373282432556,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 363.07877922058105,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 365.06775999069214,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 367.0926253795624,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 369.07388734817505,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 371.0720794200897,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 373.07616925239563,
+        "used_mb": 15223,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 375.1136953830719,
+        "used_mb": 15222,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 377.07243180274963,
+        "used_mb": 15222,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 379.10530710220337,
+        "used_mb": 15479,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 381.1391599178314,
+        "used_mb": 15481,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 383.1187264919281,
+        "used_mb": 15483,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 385.10489559173584,
+        "used_mb": 15484,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 387.0973720550537,
+        "used_mb": 15484,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 389.09977293014526,
+        "used_mb": 15485,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 391.08012318611145,
+        "used_mb": 15485,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 393.08785820007324,
+        "used_mb": 15485,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 395.09411120414734,
+        "used_mb": 15484,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 397.06862211227417,
+        "used_mb": 15704,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 399.1082446575165,
+        "used_mb": 16205,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 401.07699823379517,
+        "used_mb": 15765,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 403.0756549835205,
+        "used_mb": 13777,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 405.10112404823303,
+        "used_mb": 13776,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 407.0919711589813,
+        "used_mb": 13776,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 409.0792918205261,
+        "used_mb": 13777,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 411.0898733139038,
+        "used_mb": 13777,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 413.07324743270874,
+        "used_mb": 13777,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 415.08483028411865,
+        "used_mb": 13776,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 417.09702467918396,
+        "used_mb": 3828,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 419.08552980422974,
+        "used_mb": 3645,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 421.4646213054657,
+        "used_mb": 3692,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 423.2559862136841,
+        "used_mb": 3509,
+        "total_mb": 65536
+      }
+    ],
+    "peak": {
+      "elapsed_s": 399.1082446575165,
+      "used_mb": 16205,
+      "total_mb": 65536,
+      "raw_npu_smi": "+------------------------------------------------------------------------------------------------+\n| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |\n+---------------------------+---------------+----------------------------------------------------+\n| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n+===========================+===============+====================================================+\n| 0     910B2               | Alarm         | 107.8       48                0    / 0             |\n| 0                         | 0000:C1:00.0  | 0           0    / 0          3416 / 65536         |\n+===========================+===============+====================================================+\n| 1     910B2               | OK            | 102.6       48                0    / 0             |\n| 0                         | 0000:01:00.0  | 0           0    / 0          3420 / 65536         |\n+===========================+===============+====================================================+\n| 2     910B2               | OK            | 103.6       48                0    / 0             |\n| 0                         | 0000:C2:00.0  | 0           0    / 0          3409 / 65536         |\n+===========================+===============+====================================================+\n| 3     910B2               | OK            | 101.7       47                0    / 0             |\n| 0                         | 0000:02:00.0  | 0           0    / 0          3409 / 65536         |\n+===========================+===============+====================================================+\n| 4     910B2               | OK            | 101.7       47                0    / 0             |\n| 0                         | 0000:81:00.0  | 0           0    / 0          3408 / 65536         |\n+===========================+===============+====================================================+\n| 5     910B2               | OK            | 101.3       46                0    / 0             |\n| 0                         | 0000:41:00.0  | 0           0    / 0          3398 / 65536         |\n+===========================+===============+====================================================+\n| 6     910B2               | OK            | 102.5       49                0    / 0             |\n| 0                         | 0000:82:00.0  | 0           0    / 0          3408 / 65536         |\n+===========================+===============+====================================================+\n| 7     910B2               | OK            | 248.6       55                0    / 0             |\n| 0                         | 0000:42:00.0  | 7           0    / 0          16205/ 65536         |\n+===========================+===============+====================================================+\n+---------------------------+---------------+----------------------------------------------------+\n| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n+===========================+===============+====================================================+\n| No running processes found in NPU 0                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 1                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 2                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 3                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 4                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 5                                                            |\n+===========================+===============+====================================================+\n| No running processes found in NPU 6                                                            |\n+===========================+===============+====================================================+\n| 7       0                 | 251034        |                          | 12859                   |\n+===========================+===============+====================================================+\n"
+    },
+    "peak_increase_from_baseline_mb": 12790,
+    "errors": []
+  }
+}
