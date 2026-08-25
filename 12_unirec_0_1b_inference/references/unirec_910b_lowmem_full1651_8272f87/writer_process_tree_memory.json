@@ -1,0 +1,36 @@
+{
+  "schema": "linux_process_tree_memory_v1",
+  "command": [
+    "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python",
+    "12_unirec_0_1b_inference/write_low_memory_unirec_outputs.py",
+    "--openocr-root",
+    "/workspace/repos/OpenOCR",
+    "--frontend-payloads",
+    "tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/output/frontend_payloads.json",
+    "--recognition-trace",
+    "tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/output/recognition_trace.jsonl",
+    "--output-dir",
+    "tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/materialized_output",
+    "--progress-every",
+    "128"
+  ],
+  "root_pid": 522509,
+  "exit_code": 0,
+  "wall_s": 77.73282504081726,
+  "interval_ms": 50.0,
+  "sample_count": 1345,
+  "peak": {
+    "process_count": 1,
+    "total_pss_bytes": 1223302144,
+    "total_rss_bytes": 1229053952,
+    "processes": [
+      {
+        "pid": 522509,
+        "pss_bytes": 1223302144,
+        "rss_bytes": 1229053952,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 12_unirec_0_1b_inference/write_low_memory_unirec_outputs.py --openocr-root /workspace/repos/OpenOCR --frontend-payloads tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/output/frontend_payloads.json --recognition-trace tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/output/recognition_trace.jsonl --output-dir tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/materialized_output --progress-every 128"
+      }
+    ],
+    "elapsed_s": 52.36324143409729
+  }
+}

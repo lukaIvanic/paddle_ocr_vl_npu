@@ -1,0 +1,123 @@
+{
+  "schema": "linux_process_tree_memory_v1",
+  "command": [
+    "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python",
+    "12_unirec_0_1b_inference/run_low_memory_unirec.py",
+    "--openocr-root",
+    "/workspace/repos/OpenOCR",
+    "--model-path",
+    "/workspace/models/unirec-0.1b",
+    "--layout-model",
+    "/workspace/models/PP-DocLayoutV2_safetensors",
+    "--input",
+    "/workspace/datasets/OmniDocBench/images",
+    "--output-dir",
+    "tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/output",
+    "--spool-dir",
+    "tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/spool",
+    "--layout-cache",
+    ".runtime_cache/12_unirec_0_1b_inference/representative128_layout_compiled_fp32_optimized_b2_6deceef",
+    "--vision-cache",
+    ".runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e",
+    "--decode-cache-parent",
+    ".runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf",
+    "--device",
+    "npu:0",
+    "--offset",
+    "0",
+    "--limit",
+    "1651",
+    "--workers",
+    "4",
+    "--recognition-threads",
+    "8",
+    "--recognition-resize-chunk-size",
+    "0",
+    "--layout-lanes",
+    "1",
+    "--layout-batch-size",
+    "2",
+    "--layout-threshold",
+    "0.5",
+    "--vision-bucket-preset",
+    "310p_k20_l4",
+    "--vision-lanes",
+    "4",
+    "--vision-same-key-shards",
+    "1",
+    "--vision-sharded-key-count",
+    "0",
+    "--recognition-schedule",
+    "streaming",
+    "--vision-tall-fallback",
+    "eager",
+    "--decode-batch-size",
+    "128",
+    "--cross-cache-length",
+    "1320",
+    "--self-cache-length",
+    "2048",
+    "--max-length",
+    "2048",
+    "--ready-queue-size",
+    "128",
+    "--progress-every",
+    "32",
+    "--defer-output-write"
+  ],
+  "root_pid": 516541,
+  "exit_code": 0,
+  "wall_s": 427.90697145462036,
+  "interval_ms": 50.0,
+  "sample_count": 4063,
+  "peak": {
+    "process_count": 7,
+    "total_pss_bytes": 4368691200,
+    "total_rss_bytes": 4651995136,
+    "processes": [
+      {
+        "pid": 516541,
+        "pss_bytes": 66523136,
+        "rss_bytes": 100642816,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python /workspace/repos/paddle_ocr_vl_npu/12_unirec_0_1b_inference/run_low_memory_unirec.py --openocr-root /workspace/repos/OpenOCR --model-path /workspace/models/unirec-0.1b --layout-model /workspace/models/PP-DocLayoutV2_safetensors --input /workspace/datasets/OmniDocBench/images --output-dir tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/output --spool-dir tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/spool --layout-cache .runtime_cache/12_unirec_0_1b_inference/representative128_layout_compiled_fp32_optimized_b2_6deceef --vision-cache .runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e --decode-cache-parent .runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf --device npu:0 --offset 0 --limit 1651 --workers 4 --recognition-threads 8 --recognition-resize-chunk-size 0 --layout-lanes 1 --layout-batch-size 2 --layout-threshold 0.5 --vision-bucket-preset 310p_k20_l4 --vision-lanes 4 --vision-same-key-shards 1 --vision-sharded-key-count 0 --recognition-schedule streaming --vision-tall-fallback eager --decode-batch-size 128 --cross-cache-length 1320 --self-cache-length 2048 --max-length 2048 --ready-queue-size 128 --progress-every 32 --defer-output-write"
+      },
+      {
+        "pid": 516876,
+        "pss_bytes": 4017847296,
+        "rss_bytes": 4113616896,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=20) --multiprocessing-fork"
+      },
+      {
+        "pid": 516610,
+        "pss_bytes": 66154496,
+        "rss_bytes": 102641664,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=16) --multiprocessing-fork"
+      },
+      {
+        "pid": 516609,
+        "pss_bytes": 64935936,
+        "rss_bytes": 101474304,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=14) --multiprocessing-fork"
+      },
+      {
+        "pid": 516608,
+        "pss_bytes": 66103296,
+        "rss_bytes": 102662144,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=12) --multiprocessing-fork"
+      },
+      {
+        "pid": 516607,
+        "pss_bytes": 64963584,
+        "rss_bytes": 101519360,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=10) --multiprocessing-fork"
+      },
+      {
+        "pid": 516606,
+        "pss_bytes": 22163456,
+        "rss_bytes": 29437952,
+        "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.resource_tracker import main;main(5)"
+      }
+    ],
+    "elapsed_s": 79.66232299804688
+  }
+}

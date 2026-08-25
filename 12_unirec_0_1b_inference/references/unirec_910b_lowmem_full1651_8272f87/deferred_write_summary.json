@@ -1,0 +1,8 @@
+{
+  "schema": "unirec_deferred_output_write_v1",
+  "status": "pass",
+  "page_count": 1651,
+  "crop_count": 32110,
+  "wall_s": 76.48796095600119,
+  "output_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/materialized_output"
+}

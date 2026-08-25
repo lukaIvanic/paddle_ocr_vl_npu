@@ -1,0 +1,50 @@
+{
+  "cdm_debug": {
+    "exception_case_count": 0,
+    "exception_cases": [],
+    "sample_count": 2352,
+    "stage": "CDM",
+    "timeout_case_count": 0,
+    "timeout_cases": [],
+    "workers": 64
+  },
+  "display_formula_page_cdm": 0.9213847259033652,
+  "display_formula_page_edit": 0.13277398982305566,
+  "display_formula_sample_cdm": 0.9299923469387761,
+  "formula_pages": 313,
+  "formula_samples": 2352,
+  "lane": "lowmem_full1651_8272f87_w4t8_b128_cross1320_self2048_t05_image_tags_stripped",
+  "official_overall": 0.9018763321580616,
+  "page_match": {
+    "fallbacks": {
+      "page_timeout": {
+        "cases": [],
+        "count": 0
+      },
+      "quick_match_timeout": {
+        "cases": [],
+        "count": 0
+      }
+    },
+    "match_timeout_sec": 420,
+    "page_count": 1651,
+    "quick_match_truncated_timeout_sec": 300,
+    "workers": 12
+  },
+  "reading_order_page_edit": 0.14553294442614825,
+  "table_page_teds": 0.8380869474164264,
+  "table_page_teds_structure_only": 0.8731379914652962,
+  "table_sample_teds": 0.8367448671644558,
+  "table_teds_execution": {
+    "error_case_count": 0,
+    "error_cases": [],
+    "exception_case_count": 0,
+    "exception_cases": [],
+    "sample_count": 665,
+    "timeout_case_count": 0,
+    "timeout_cases": [],
+    "timeout_sec": 120.0,
+    "workers": 12
+  },
+  "text_block_page_edit": 0.053842676845606494
+}

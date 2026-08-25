@@ -1,0 +1,599 @@
+{
+  "schema": "unirec_low_memory_full_pipeline_v1",
+  "status": "pass",
+  "commit": "8272f87a9d1ca4cd7f58dd66525fa301daf0e6e5",
+  "chip": "Ascend910B2",
+  "page_count": 1651,
+  "crop_count": 32110,
+  "pages_per_s": 3.9349123320685204,
+  "process_wall_s": 419.57732743999804,
+  "frontend_wall_s": 164.9144016950013,
+  "vision_phase_wall_s": 227.71690928700264,
+  "decode_wall_s": 228.2494460589951,
+  "write_wall_s": 1.0431002010591328e-05,
+  "output_write_deferred": true,
+  "frontend": {
+    "page_count": 1651,
+    "wall_s": 164.15541426600248,
+    "worker_page_s": 121.32368275610497,
+    "worker_pss_bytes": 256020480,
+    "rejected_crops": 0,
+    "crop_count": 32110,
+    "spool_bytes": 7107059712
+  },
+  "layout": {
+    "status": "layout_done",
+    "pages": 1651,
+    "wall_s": 102.03646458098956,
+    "owner_calls": 826,
+    "owner_wall_s": 53.92257113488449,
+    "snapshot": {
+      "proc_bytes": {
+        "rss": 3937247232,
+        "pss": 3841477632,
+        "private": 3774795776,
+        "shared": 162451456,
+        "anonymous": 3155185664,
+        "file_pss": 686281728,
+        "anon_pss": 3155185664,
+        "shmem_pss": 10240
+      },
+      "jemalloc_bytes": {
+        "allocated": 1566400480,
+        "active": 1643577344,
+        "metadata": 14869680,
+        "resident": 1731854336,
+        "mapped": 1742405632,
+        "retained": 562364416
+      }
+    }
+  },
+  "layout_ready_memory": {
+    "proc_bytes": {
+      "rss": 2713722880,
+      "pss": 2618255360,
+      "private": 2551861248,
+      "shared": 161861632,
+      "anonymous": 1938800640,
+      "file_pss": 679450624,
+      "anon_pss": 1938800640,
+      "shmem_pss": 4096
+    },
+    "jemalloc_bytes": {
+      "allocated": 1538515424,
+      "active": 1610547200,
+      "metadata": 10932720,
+      "resident": 1629552640,
+      "mapped": 1640693760,
+      "retained": 596967424
+    }
+  },
+  "vision": {
+    "wall_s": 212.99346355300804,
+    "crop_count": 32110,
+    "graph_count": 20,
+    "task_count": 20,
+    "pair_count": 5,
+    "pairs": [
+      [
+        {
+          "key": "960x64_b4",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 1888,
+          "real_rows": 7551,
+          "wall_s": 24.40367288699781
+        },
+        {
+          "key": "512x64_b4",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 2015,
+          "real_rows": 8058,
+          "wall_s": 24.943039393998333
+        },
+        {
+          "key": "960x384_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 675,
+          "real_rows": 675,
+          "wall_s": 10.978787301995908
+        },
+        {
+          "key": "960x704_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 328,
+          "real_rows": 328,
+          "wall_s": 7.72969563199149
+        }
+      ],
+      [
+        {
+          "key": "960x128_b2",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 821,
+          "real_rows": 1642,
+          "wall_s": 11.898867178999353
+        },
+        {
+          "key": "960x512_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 404,
+          "real_rows": 404,
+          "wall_s": 8.071324037999148
+        },
+        {
+          "key": "192x64_b4",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 1634,
+          "real_rows": 6534,
+          "wall_s": 16.117867823995766
+        },
+        {
+          "key": "960x1152_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 131,
+          "real_rows": 131,
+          "wall_s": 4.167496619003941
+        }
+      ],
+      [
+        {
+          "key": "960x896_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 170,
+          "real_rows": 170,
+          "wall_s": 4.862067573994864
+        },
+        {
+          "key": "960x192_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 713,
+          "real_rows": 713,
+          "wall_s": 11.779003463001573
+        },
+        {
+          "key": "576x256_b2",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 456,
+          "real_rows": 912,
+          "wall_s": 9.008759060001466
+        },
+        {
+          "key": "960x256_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 434,
+          "real_rows": 434,
+          "wall_s": 8.368818114002352
+        }
+      ],
+      [
+        {
+          "key": "448x192_b2",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 551,
+          "real_rows": 1102,
+          "wall_s": 8.074552933001542
+        },
+        {
+          "key": "448x384_b2",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 302,
+          "real_rows": 604,
+          "wall_s": 6.313849318001303
+        },
+        {
+          "key": "512x128_b4",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 396,
+          "real_rows": 1581,
+          "wall_s": 6.88837826300005
+        },
+        {
+          "key": "960x1344_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 60,
+          "real_rows": 60,
+          "wall_s": 3.2633388829999603
+        }
+      ],
+      [
+        {
+          "key": "448x576_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 354,
+          "real_rows": 354,
+          "wall_s": 4.972533381005633
+        },
+        {
+          "key": "512x768_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 199,
+          "real_rows": 199,
+          "wall_s": 3.7194140840001637
+        },
+        {
+          "key": "320x320_b2",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 258,
+          "real_rows": 515,
+          "wall_s": 4.28020120500878
+        },
+        {
+          "key": "128x1408_b1",
+          "shard_index": 0,
+          "shard_count": 1,
+          "calls": 93,
+          "real_rows": 93,
+          "wall_s": 2.2823435500031337
+        }
+      ]
+    ],
+    "same_key_shards": 1,
+    "sharded_key_count": 0,
+    "sharded_keys": [],
+    "fallback_count": 50,
+    "fallback_wall_s": 23.777139929006808,
+    "fallback_execution": "eager",
+    "compiled_fallback_count": 0,
+    "eager_fallback_count": 50,
+    "fallback_bucket_calls": null,
+    "fallback_release": null,
+    "final_release": {
+      "executor_count": 4,
+      "executors": [
+        {
+          "callable_type": "LazyCompiledModel",
+          "compiled_model_type": "function"
+        },
+        {
+          "callable_type": "LazyCompiledModel",
+          "compiled_model_type": "function"
+        },
+        {
+          "callable_type": "LazyCompiledModel",
+          "compiled_model_type": "function"
+        },
+        {
+          "callable_type": "LazyCompiledModel",
+          "compiled_model_type": "function"
+        }
+      ]
+    },
+    "early_tbe_deinit": null,
+    "host_purge_statuses": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "bucket_calls": {
+      "128x1408_b1": 93,
+      "192x64_b4": 1634,
+      "320x320_b2": 258,
+      "448x192_b2": 551,
+      "448x384_b2": 302,
+      "448x576_b1": 354,
+      "512x64_b4": 2015,
+      "512x128_b4": 396,
+      "512x768_b1": 199,
+      "576x256_b2": 456,
+      "960x64_b4": 1888,
+      "960x128_b2": 821,
+      "960x192_b1": 713,
+      "960x256_b1": 434,
+      "960x384_b1": 675,
+      "960x512_b1": 404,
+      "960x704_b1": 328,
+      "960x896_b1": 170,
+      "960x1152_b1": 131,
+      "960x1344_b1": 60
+    },
+    "bucket_real_rows": {
+      "128x1408_b1": 93,
+      "192x64_b4": 6534,
+      "320x320_b2": 515,
+      "448x192_b2": 1102,
+      "448x384_b2": 604,
+      "448x576_b1": 354,
+      "512x64_b4": 8058,
+      "512x128_b4": 1581,
+      "512x768_b1": 199,
+      "576x256_b2": 912,
+      "960x64_b4": 7551,
+      "960x128_b2": 1642,
+      "960x192_b1": 713,
+      "960x256_b1": 434,
+      "960x384_b1": 675,
+      "960x512_b1": 404,
+      "960x704_b1": 328,
+      "960x896_b1": 170,
+      "960x1152_b1": 131,
+      "960x1344_b1": 60
+    }
+  },
+  "post_vision_cleanup": {
+    "label": "low_memory_stream_ready",
+    "pid": 516541,
+    "gc_collected": 37,
+    "jemalloc_purge_status": 0,
+    "before": {
+      "proc_bytes": {
+        "rss": 3009245184,
+        "pss": 3000596480,
+        "private": 2997817344,
+        "shared": 11427840,
+        "anonymous": 2268119040,
+        "file_pss": 732452864,
+        "anon_pss": 2268119040,
+        "shmem_pss": 24576
+      },
+      "jemalloc_bytes": {
+        "allocated": 1563691896,
+        "active": 1592721408,
+        "metadata": 20274856,
+        "resident": 1613299712,
+        "mapped": 1621491712,
+        "retained": 614072320
+      }
+    },
+    "after": {
+      "proc_bytes": {
+        "rss": 2997510144,
+        "pss": 2988861440,
+        "private": 2986082304,
+        "shared": 11427840,
+        "anonymous": 2256384000,
+        "file_pss": 732452864,
+        "anon_pss": 2256384000,
+        "shmem_pss": 24576
+      },
+      "jemalloc_bytes": {
+        "allocated": 1563691896,
+        "active": 1592721408,
+        "metadata": 20274856,
+        "resident": 1601306624,
+        "mapped": 1609498624,
+        "retained": 626065408
+      }
+    },
+    "pss_reclaimed_bytes": 11735040,
+    "wall_s": 0.5984416110004531
+  },
+  "vision_tbe_deinit": null,
+  "post_vision_memory": {
+    "proc_bytes": {
+      "rss": 3607932928,
+      "pss": 3599284224,
+      "private": 3596505088,
+      "shared": 11427840,
+      "anonymous": 2860040192,
+      "file_pss": 739219456,
+      "anon_pss": 2860040192,
+      "shmem_pss": 24576
+    },
+    "jemalloc_bytes": {
+      "allocated": 1985680600,
+      "active": 2172125184,
+      "metadata": 26158480,
+      "resident": 2274492416,
+      "mapped": 2281504768,
+      "retained": 847446016
+    }
+  },
+  "text_prefill": {
+    "groups": 2642,
+    "crops": 32110,
+    "wall_s": 214.8947935269971,
+    "cross_kv_d2h_s": 0.0,
+    "cross_kv_storage": "npu_bounded_queue",
+    "cross_kv_npu_bytes": 42642358272,
+    "recognition_schedule": "streaming",
+    "vision_complete_s": 213.32968284699018,
+    "text_complete_s": 214.02020305299084
+  },
+  "decode": {
+    "batch_size": 128,
+    "submitted": 32110,
+    "completed": 32110,
+    "decode_iterations": 19250,
+    "raw_decode_token_slots": 2464000,
+    "effective_decode_tokens": 2255835,
+    "idle_decode_token_slots": 208165,
+    "decode_s": 143.53909988231317,
+    "first_decode_step_s": 0.006129333996796049,
+    "steady_decode_s": 143.53297054831637,
+    "raw_decode_tokens_per_s": 17166.05442015603,
+    "effective_decode_tokens_per_s": 15715.822391596055,
+    "steady_raw_decode_tokens_per_s": 17165.895686459065,
+    "steady_effective_decode_tokens_per_s": 15715.601728180489,
+    "slot_refills": 31982,
+    "compile_wrap_s": 3.564100188668817e-05,
+    "compile": {
+      "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+      "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+      "backend": "torchair",
+      "fullgraph": true,
+      "dynamic": false,
+      "torchair_ge_cache": true,
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/production_decode_graph_235f9ba98956362a/decode_weight_nz_lmhead57344_semantic56371/decode_selfkv2048_cross1320_increfa_all_b128_wnz",
+      "mask_mode": "per_step",
+      "qkv_fused": false,
+      "weights_nz": true,
+      "ge_tuning": [],
+      "prefetch_mode": "none",
+      "static_self_kv_len": 2048,
+      "static_cross_kv_len": 1320,
+      "self_attention_backend": "increfa_all",
+      "batch_size": 128
+    },
+    "production_graph_warmup": {
+      "passes": 2,
+      "wall_s": 0.012656695005716756,
+      "pass_wall_s": [
+        0.006218156006070785,
+        0.005964791009319015
+      ],
+      "warnings": [],
+      "arena": "actual_admitted_decode_arena",
+      "included_in_decode_s": false
+    },
+    "timing_detail": {
+      "run_wall_s": 228.24801021399617,
+      "source_pull_s": 58.66075060456933,
+      "initial_cache_stack_s": 0.0,
+      "initial_arena_allocate_s": 0.001314342996920459,
+      "initial_arena_admission_enqueue_s": 0.03842768305912614,
+      "initial_state_build_s": 0.00021470399224199355,
+      "cache_refill_copy_enqueue_s": 0.0,
+      "cache_refill_direct_admission_enqueue_s": 10.64599195025221,
+      "cache_refill_row_bytes": 0,
+      "cache_refill_total_bytes": 0,
+      "direct_admission_count": 32110,
+      "direct_cross_kv_bytes": 42642358272,
+      "direct_reset_bytes": 168864960,
+      "admission_prefetch": null,
+      "result_build_s": 3.980873538675951,
+      "completion_callback_s": 2.14595982847095,
+      "decode_input_buffer_setup_s": 0.0005282890051603317,
+      "decode_input_host_pinned": true,
+      "decode_input_device_tensors_inference": true,
+      "decode_input_build_s": 3.221488407551078,
+      "explicit_pre_decode_sync": false,
+      "pre_decode_sync_s": 0.0,
+      "production_graph_warmup_s": 0.012656695005716756,
+      "diagnostic_step_callback_s": 0.0,
+      "decode_s": 143.53909988231317,
+      "scheduler_bookkeeping_residual_s": 6.0006686471024295
+    }
+  },
+  "decode_optimizations": {
+    "weight_format": "nz",
+    "weights_nz": true,
+    "nz_tensor_count": 49,
+    "semantic_vocab_size": 56371,
+    "lm_head_rows": 57344,
+    "lm_head_padded_rows": 973,
+    "decode_module": "SemanticVocabDecodeStepModule"
+  },
+  "decode_warmup": {
+    "passes": 2,
+    "graphs": {
+      "decode_b128": {
+        "pass_wall_s": [
+          0.12281011699815281,
+          0.006056452999473549
+        ],
+        "shape_discovery_s": 1.3860000763088465e-05,
+        "cross_cache_len": 1320,
+        "cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/production_decode_graph_235f9ba98956362a/decode_weight_nz_lmhead57344_semantic56371/decode_selfkv2048_cross1320_increfa_all_b128_wnz",
+        "production_arena_allocator": true,
+        "device_inputs_are_inference_tensors": true
+      }
+    },
+    "wall_s": 0.14975163599592634
+  },
+  "tbe_deinit": {
+    "label": "low_memory_owner_ready",
+    "pid": 516541,
+    "compiler_worker_pids": [
+      518655
+    ],
+    "compiler_worker_pss_bytes": {
+      "518655": 336883712
+    },
+    "compiler_worker_pss_total_bytes": 336883712,
+    "workers_still_alive": [],
+    "wall_s": 0.050748543013469316
+  },
+  "recognition_owner_ready_memory": {
+    "proc_bytes": {
+      "rss": 2997514240,
+      "pss": 2988865536,
+      "private": 2986086400,
+      "shared": 11427840,
+      "anonymous": 2256388096,
+      "file_pss": 732452864,
+      "anon_pss": 2256388096,
+      "shmem_pss": 24576
+    },
+    "jemalloc_bytes": {
+      "allocated": 1563697144,
+      "active": 1592786944,
+      "metadata": 20274856,
+      "resident": 1601372160,
+      "mapped": 1609564160,
+      "retained": 625999872
+    }
+  },
+  "final_memory": {
+    "proc_bytes": {
+      "rss": 3528011776,
+      "pss": 3519363072,
+      "private": 3516583936,
+      "shared": 11427840,
+      "anonymous": 2780057600,
+      "file_pss": 739280896,
+      "anon_pss": 2780057600,
+      "shmem_pss": 24576
+    },
+    "jemalloc_bytes": {
+      "allocated": 1977475120,
+      "active": 2157314048,
+      "metadata": 26101136,
+      "resident": 2171404288,
+      "mapped": 2178416640,
+      "retained": 950534144
+    }
+  },
+  "settings": {
+    "workers": 4,
+    "main_process_malloc_conf": "narenas:2,background_thread:true,dirty_decay_ms:1000,muzzy_decay_ms:1000",
+    "recognition_threads": 8,
+    "recognition_resize_chunk_size": 0,
+    "crop_worker_malloc_conf": "narenas:2,background_thread:true,dirty_decay_ms:1000,muzzy_decay_ms:1000",
+    "layout_lanes": 1,
+    "layout_batch_size": 2,
+    "layout_threshold": 0.5,
+    "layout_owner_malloc_conf": "narenas:2,background_thread:true,dirty_decay_ms:1000,muzzy_decay_ms:1000",
+    "vision_bucket_preset": "310p_k20_l4",
+    "vision_lanes": 4,
+    "vision_same_key_shards": 1,
+    "vision_sharded_key_count": 0,
+    "recognition_schedule": "streaming",
+    "decode_batch_size": 128,
+    "cross_cache_length": 1320,
+    "self_cache_length": 2048,
+    "ready_queue_size": 128,
+    "vision_tall_fallback": "eager"
+  },
+  "artifacts": {
+    "output_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/output",
+    "spool_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/spool",
+    "recognition_trace": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/output/recognition_trace.jsonl",
+    "frontend_payloads": "/workspace/repos/paddle_ocr_vl_npu/tmp/12_unirec_0_1b_inference/lowmem_full1651_8272f87/output/frontend_payloads.json"
+  }
+}
