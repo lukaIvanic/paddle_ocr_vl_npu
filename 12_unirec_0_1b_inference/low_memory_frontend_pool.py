@@ -149,14 +149,11 @@ def _prepare_frontend_payload(
             )
         elif "formula" in label and label != "formula_number":
             block_image = _crop_margin_rgb(block_image)
+        crop_rgb = np.ascontiguousarray(block_image)
         crops.append(
             {
                 "crop_index": len(crops),
-                # Keep a view into the one decoded page. Materializing every
-                # source crop here can retain more than a gigabyte on dense
-                # newspaper pages before resize starts. Pillow makes the
-                # needed compact input inside _resize_crop.
-                "image_rgb": block_image,
+                "image_rgb": crop_rgb,
                 "label": label,
                 "figure_token_map": figure_token_map,
             }
@@ -312,30 +309,22 @@ def _worker_main(
                 payload["crops"] = kept_crops
                 payload["vlm_block_ids"] = kept_block_ids
                 resize_started = time.perf_counter()
-                resize_service_sum_s = 0.0
-                for start in range(0, len(kept_crops), recognition_threads):
-                    crop_chunk = kept_crops[start : start + recognition_threads]
-                    prepared_chunk = list(executor.map(_resize_crop, crop_chunk))
-                    for crop, (pixels, source_size, service_s) in zip(
-                        crop_chunk,
-                        prepared_chunk,
-                    ):
-                        crop["source_image_size"] = [
-                            int(value) for value in source_size
-                        ]
-                        crop["processed_pixel_values_descriptor"] = _append_pixels(
-                            spool,
-                            path=spool_path,
-                            pixels=pixels,
-                        )
-                        crop["processed_image_size"] = [
-                            int(pixels.shape[1]),
-                            int(pixels.shape[0]),
-                        ]
-                        crop.pop("image_rgb", None)
-                        resize_service_sum_s += service_s
-                    del prepared_chunk
+                prepared = list(executor.map(_resize_crop, kept_crops))
                 resize_wall_s = time.perf_counter() - resize_started
+                resize_service_sum_s = 0.0
+                for crop, (pixels, source_size, service_s) in zip(kept_crops, prepared):
+                    crop["source_image_size"] = [int(value) for value in source_size]
+                    crop["processed_pixel_values_descriptor"] = _append_pixels(
+                        spool,
+                        path=spool_path,
+                        pixels=pixels,
+                    )
+                    crop["processed_image_size"] = [
+                        int(pixels.shape[1]),
+                        int(pixels.shape[0]),
+                    ]
+                    crop.pop("image_rgb", None)
+                    resize_service_sum_s += service_s
                 payload["cross_capacity_rejected_crops"] = rejected
                 payload["started_at"] = float(task["started_at"])
                 payload["frontend_timing_s"] = {
@@ -360,7 +349,7 @@ def _worker_main(
                     Path(rgb_descriptor["path"]).unlink()
                 else:
                     del rgb
-                del payload
+                del payload, prepared
                 if completed_tasks % 16 == 0:
                     gc.collect()
                     purge_host_allocator_pages()
