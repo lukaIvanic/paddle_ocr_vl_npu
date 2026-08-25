@@ -190,8 +190,6 @@ def _resize_crop(crop: dict[str, Any]) -> tuple[np.ndarray, tuple[int, int], flo
     image_rgb = crop["image_rgb"]
     source_height, source_width = image_rgb.shape[:2]
     target_width, target_height = _processed_size(source_width, source_height)
-    if not image_rgb.flags.c_contiguous:
-        image_rgb = np.ascontiguousarray(image_rgb)
     image = Image.fromarray(image_rgb, mode="RGB")
     resized = image.resize(
         (target_width, target_height),
@@ -549,7 +547,6 @@ def _layout_owner_process_main(
         from layout_page_input import decode_page_rgb, materialize_layout_rgb
         from post_warmup_host_cleanup import purge_host_allocator_pages
         from shared_layout_owner import SharedLayoutOwner
-        from tbe_compiler_lifecycle import deinitialize_after_warmup
 
         torch_npu.npu.set_compile_mode(jit_compile=False)
         owner = SharedLayoutOwner(
@@ -560,14 +557,12 @@ def _layout_owner_process_main(
             batch_size=batch_size,
             threshold=threshold,
         )
-        tbe_deinit = deinitialize_after_warmup("low_memory_layout_owner_ready")
         result_queue.put(
             {
                 "status": "layout_ready",
                 "pid": os.getpid(),
                 "snapshot": process_snapshot(),
                 "chip": torch_npu.npu.get_device_name(0),
-                "tbe_deinit": tbe_deinit,
             }
         )
         started = time.perf_counter()
@@ -634,17 +629,14 @@ def _layout_owner_process_main(
                         }
                     )
                 del layouts, chunk_data
-        owner_release = owner.release()
-        released_snapshot = process_snapshot()
         result_queue.put(
             {
                 "status": "layout_done",
                 "pages": len(paths),
                 "wall_s": time.perf_counter() - started,
-                "owner_calls": owner_release["calls"],
-                "owner_wall_s": owner_release["wall_s"],
-                "owner_release": owner_release,
-                "snapshot": released_snapshot,
+                "owner_calls": owner.calls,
+                "owner_wall_s": owner.wall_s,
+                "snapshot": process_snapshot(),
             }
         )
     except BaseException as exception:
