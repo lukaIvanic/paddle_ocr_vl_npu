@@ -167,7 +167,7 @@ class NpuHbmSampler:
         )
         peak_used = int(self.peak["used_mb"]) if self.peak is not None else None
         peak_increase = (
-            peak_used - baseline_used
+            max(0, peak_used - baseline_used)
             if peak_used is not None and baseline_used is not None
             else None
         )
