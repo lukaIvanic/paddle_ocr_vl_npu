@@ -3,15 +3,33 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+import sys
+
+
+MAIN_PROCESS_MALLOC_CONF = (
+    "narenas:2,background_thread:true,"
+    "dirty_decay_ms:1000,muzzy_decay_ms:1000"
+)
+if __name__ == "__main__" and os.environ.get(
+    "UNIREC_MAIN_MALLOC_CONF_APPLIED"
+) != MAIN_PROCESS_MALLOC_CONF:
+    environment = dict(os.environ)
+    environment["MALLOC_CONF"] = MAIN_PROCESS_MALLOC_CONF
+    environment["UNIREC_MAIN_MALLOC_CONF_APPLIED"] = MAIN_PROCESS_MALLOC_CONF
+    os.execvpe(
+        sys.executable,
+        [sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]],
+        environment,
+    )
+
 import argparse
 from contextlib import redirect_stdout
 from dataclasses import asdict
 import gc
 import json
-import os
-from pathlib import Path
 from queue import Queue
-import sys
 from threading import Thread
 import time
 from types import SimpleNamespace
@@ -753,6 +771,7 @@ def main() -> None:
         "final_memory": process_snapshot(),
         "settings": {
             "workers": args.workers,
+            "main_process_malloc_conf": os.environ.get("MALLOC_CONF", ""),
             "recognition_threads": args.recognition_threads,
             "recognition_resize_chunk_size": args.recognition_resize_chunk_size,
             "crop_worker_malloc_conf": crop_pool.malloc_conf,
