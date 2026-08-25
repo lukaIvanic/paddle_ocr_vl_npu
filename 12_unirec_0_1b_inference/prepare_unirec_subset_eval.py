@@ -84,7 +84,7 @@ def validate_summary(
     if not path.is_file():
         raise FileNotFoundError(path)
     summary = json.loads(path.read_text(encoding="utf-8"))
-    if summary.get("status") != "ok":
+    if summary.get("status") not in {"ok", "pass"}:
         raise RuntimeError(f"run is not complete: {path}")
     page_count = summary.get("page_count", summary.get("count"))
     if allow_superset:
