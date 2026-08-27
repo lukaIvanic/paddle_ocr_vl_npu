@@ -151,3 +151,10 @@ same command in a new process again for a separately labeled warm-cache result.
 - The run records setup, image loading, inference, output, and total wall time.
 - Speed is not accepted as quality evidence. Score the completed prediction set
   with the evaluator version that matches the selected OmniDocBench corpus.
+
+Prepare a completed run for the repository's pinned OmniDocBench evaluator with
+`prepare_omnidocbench_eval.py`. The tool rejects incomplete runs, missing or
+extra predictions, duplicate stems, and pages absent from the selected ground
+truth. It records the ground-truth, run-summary, input-manifest, and prediction
+hashes. Its generated config enables text edit distance, formula edit distance
+and CDM, table edit distance and TEDS, and reading-order edit distance.
