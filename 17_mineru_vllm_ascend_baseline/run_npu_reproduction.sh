@@ -14,7 +14,9 @@ IMAGES_DIR="${IMAGES_DIR:-/workspace/datasets/OmniDocBench/images}"
 IMAGE_LIST="${IMAGE_LIST:-}"
 HASH_MODEL_FILES="${HASH_MODEL_FILES:-0}"
 
+set +u
 source npu-setup
+set -u
 if [[ "${ASCEND_RT_VISIBLE_DEVICES:-}" == "5" ]]; then
   echo "physical NPU5 is quarantined; refusing to run" >&2
   exit 1

@@ -18,7 +18,9 @@ echo "[clone] source=$SOURCE_ENV"
 echo "[clone] target=$TARGET_ENV"
 cp -a "$SOURCE_ENV" "$TARGET_ENV"
 
+set +u
 source npu-setup
+set -u
 "$TARGET_ENV/bin/python" \
   "$SCRIPT_DIR/verify_environment.py" \
   --json-output "$TARGET_ENV/experiment17_environment.json"
