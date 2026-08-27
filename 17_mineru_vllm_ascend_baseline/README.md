@@ -10,7 +10,9 @@ used one 310P3 with CANN 8.0.0. This lane uses one 910B2 with CANN 9.0.0. Never
 carry a result between chips without labeling both.
 
 The first accepted one-page 910B2 smoke is recorded in
-`VERIFIED_910B_SMOKE.md`.
+`VERIFIED_910B_SMOKE.md`. The exact 981-page OmniDocBench v1.0 run, 128-page
+gate, evaluator results, and graph-cache postmortem are recorded in
+`VERIFIED_V1_0_981_BASELINE.md`.
 
 ## Source evidence
 
@@ -100,13 +102,21 @@ cd /workspace/repos/paddle_ocr_vl_npu/17_mineru_vllm_ascend_baseline
 LIMIT=1 bash run_npu_reproduction.sh
 ```
 
-Continue only after valid layout, OCR, Markdown, and a zero exit code:
+Every `compiled_async` command below starts a new engine process and captures
+all 14 ACL/NPU graphs. The vLLM compile cache does not remove that process-local
+capture. Do not run the following page ladder as separate compiled processes
+unless the repeated setup cost is intentional:
 
 ```sh
 LIMIT=10 bash run_npu_reproduction.sh
 LIMIT=32 bash run_npu_reproduction.sh
 LIMIT=128 bash run_npu_reproduction.sh
 ```
+
+For a staged gate without repeated capture, keep one engine process alive
+across the gate and continuation. The current wrapper does not implement that
+control plane. The verified v1.0 baseline used separate 128-page and 981-page
+processes, and its report labels the repeated capture explicitly.
 
 For the historical 981-page corpus, obtain its exact newline-delimited image
 list and image files first:

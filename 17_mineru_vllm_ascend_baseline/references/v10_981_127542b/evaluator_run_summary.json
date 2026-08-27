@@ -1,0 +1,242 @@
+{
+    "save_name": "predictions_quick_match",
+    "runtime_environment": {
+        "system": {
+            "platform": "Linux-5.10.0-136.12.0.86.r1526_92.hce2.aarch64-aarch64-with-glibc2.35",
+            "python_version": "3.10.12 (main, Mar  3 2026, 11:56:32) [GCC 11.4.0]",
+            "python_executable": "/workspace/venvs/omnidocbench_py310/bin/python",
+            "python_prefix": "/workspace/venvs/omnidocbench_py310",
+            "conda_env": "",
+            "conda_prefix": "",
+            "libc": "glibc 2.35",
+            "uname": "Linux liteserver-c001-4 5.10.0-136.12.0.86.r1526_92.hce2.aarch64 #1 SMP Tue Mar 26 03:00:47 UTC 2024 aarch64 aarch64",
+            "os_release": {
+                "PRETTY_NAME": "Ubuntu 22.04.5 LTS",
+                "NAME": "Ubuntu",
+                "VERSION_ID": "22.04",
+                "VERSION": "22.04.5 LTS (Jammy Jellyfish)",
+                "VERSION_CODENAME": "jammy",
+                "ID": "ubuntu",
+                "ID_LIKE": "debian",
+                "HOME_URL": "https://www.ubuntu.com/",
+                "SUPPORT_URL": "https://help.ubuntu.com/",
+                "BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/",
+                "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
+                "UBUNTU_CODENAME": "jammy"
+            }
+        },
+        "system_packages": {
+            "package_manager": "dpkg-query",
+            "tracked_packages": {
+                "ghostscript": "ghostscript=9.55.0~dfsg1-0ubuntu5.13",
+                "imagemagick": "unavailable (dpkg-query: no packages found matching imagemagick)",
+                "fontconfig": "fontconfig=2.13.1-4.2ubuntu5",
+                "python3": "python3=3.10.6-1~22.04.1",
+                "python3-pip": "python3-pip=",
+                "python3-setuptools": "python3-setuptools=",
+                "python3-wheel": "unavailable (dpkg-query: no packages found matching python3-wheel)",
+                "texlive-base": "unavailable (dpkg-query: no packages found matching texlive-base)",
+                "texlive-binaries": "texlive-binaries=",
+                "texlive-lang-chinese": "unavailable (dpkg-query: no packages found matching texlive-lang-chinese)",
+                "texlive-lang-cjk": "unavailable (dpkg-query: no packages found matching texlive-lang-cjk)",
+                "texlive-latex-base": "unavailable (dpkg-query: no packages found matching texlive-latex-base)",
+                "texlive-latex-extra": "unavailable (dpkg-query: no packages found matching texlive-latex-extra)",
+                "texlive-fonts-recommended": "unavailable (dpkg-query: no packages found matching texlive-fonts-recommended)",
+                "texlive-plain-generic": "unavailable (dpkg-query: no packages found matching texlive-plain-generic)",
+                "latexml": "latexml="
+            }
+        },
+        "python_packages": {
+            "apted": "1.0.3",
+            "beautifulsoup4": "4.11.1",
+            "evaluate": "0.4.3",
+            "func-timeout": "4.3.5",
+            "Levenshtein": "0.25.1",
+            "loguru": "0.7.2",
+            "lxml": "4.9.1",
+            "matplotlib": "3.7.5",
+            "nltk": "3.9.1",
+            "numpy": "1.24.4",
+            "pandas": "2.0.3",
+            "Pillow": "10.4.0",
+            "pylatexenc": "2.10",
+            "PyYAML": "6.0.2",
+            "scipy": "1.10.1",
+            "tabulate": "0.9.0",
+            "tqdm": "4.67.1",
+            "pip": "26.1.2",
+            "setuptools": "83.0.0",
+            "wheel": "0.47.0"
+        },
+        "external_tools": {
+            "pdflatex": {
+                "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/pdflatex",
+                "returncode": 0,
+                "output": "pdfTeX 3.141592653-2.6-1.40.28 (TeX Live 2025) | kpathsea version 6.4.1 | Copyright 2025 Han The Thanh (pdfTeX) et al. | There is NO warranty.  Redistribution of this software is | covered by the terms of both the pdfTeX copyright and"
+            },
+            "kpsewhich": {
+                "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/kpsewhich",
+                "returncode": 0,
+                "output": "kpathsea version 6.4.1 | Copyright 2023 Karl Berry & Olaf Weber. | License LGPLv2.1+: GNU Lesser GPL version 2.1 or later <https://gnu.org/licenses/lgpl.html> | This is free software: you are free to change and redistribute it. | There is NO WARRANTY, to the extent permitted by law."
+            },
+            "tlmgr": {
+                "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/bin/aarch64-linux/tlmgr",
+                "returncode": 0,
+                "output": "tlmgr revision 76773 (2025-11-06 20:43:29 +0100) | tlmgr using installation: /workspace/.tools/omnidocbench_eval/texlive/2025 | TeX Live (https://tug.org/texlive) version 2025"
+            },
+            "ghostscript": {
+                "path": "/usr/bin/gs",
+                "returncode": 0,
+                "output": "9.55.0"
+            },
+            "magick": {
+                "path": "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/magick",
+                "returncode": 0,
+                "output": "Version: ImageMagick 7.1.1-47 Q16-HDRI aarch64 c8f4e8cb7:20250329 https://imagemagick.org | Copyright: (C) 1999 ImageMagick Studio LLC | License: https://imagemagick.org/script/license.php | Features: Cipher DPC HDRI OpenMP(4.5) | Delegates (built-in): fontconfig freetype jbig jng jpeg lzma pangocairo png tiff x xml zlib"
+            },
+            "convert": {
+                "path": "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/convert",
+                "returncode": 0,
+                "output": "WARNING: The convert command is deprecated in IMv7, use \"magick\" instead of \"convert\" or \"magick convert\" | Version: ImageMagick 7.1.1-47 Q16-HDRI aarch64 c8f4e8cb7:20250329 https://imagemagick.org | Copyright: (C) 1999 ImageMagick Studio LLC | License: https://imagemagick.org/script/license.php | Features: Cipher DPC HDRI OpenMP(4.5)"
+            },
+            "identify": {
+                "path": "/workspace/.tools/omnidocbench_eval/imagemagick-7.1.1-47/bin/identify",
+                "returncode": 0,
+                "output": "Version: ImageMagick 7.1.1-47 Q16-HDRI aarch64 c8f4e8cb7:20250329 https://imagemagick.org | Copyright: (C) 1999 ImageMagick Studio LLC | License: https://imagemagick.org/script/license.php | Features: Cipher DPC HDRI OpenMP(4.5) | Delegates (built-in): fontconfig freetype jbig jng jpeg lzma pangocairo png tiff x xml zlib"
+            },
+            "latexmlc": {
+                "path": "latexmlc",
+                "returncode": null,
+                "output": "unavailable (FileNotFoundError: [Errno 2] No such file or directory: 'latexmlc')"
+            }
+        },
+        "texlive": {
+            "cjk_font_family": "gkai",
+            "cjk_sty": {
+                "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/CJK.sty",
+                "version": "4.8.5 (16-Oct-2021)",
+                "date": "2021/10/16",
+                "header": "% This is the file CJK.sty of the CJK package",
+                "status": "ok"
+            },
+            "cjk_font_fd": {
+                "path": "/workspace/.tools/omnidocbench_eval/texlive/2025/texmf-dist/tex/latex/cjk/texinput/UTF8/c70gkai.fd",
+                "version": "4.8.5 (16-Oct-2021)",
+                "date": "2021/10/16",
+                "header": "% This is the file c70gkai.fd of the CJK package",
+                "status": "ok"
+            }
+        }
+    },
+    "stage_execution": {
+        "page_match": {
+            "workers": 24,
+            "page_count": 981,
+            "quick_match_truncated_timeout_sec": 300,
+            "match_timeout_sec": 420,
+            "fallbacks": {
+                "quick_match_timeout": {
+                    "count": 0,
+                    "cases": []
+                },
+                "page_timeout": {
+                    "count": 2,
+                    "cases": [
+                        "docstructbench_enbook-zlib-o.O-17208435.pdf_105.jpg",
+                        "docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg"
+                    ]
+                }
+            }
+        },
+        "metrics": {
+            "display_formula": {
+                "CDM": {
+                    "workers": 12,
+                    "timeout_sec": null,
+                    "sample_count": 385,
+                    "timeout_case_count": 0,
+                    "timeout_cases": [],
+                    "error_case_count": 0,
+                    "error_cases": [],
+                    "exception_case_count": 0,
+                    "exception_cases": []
+                }
+            },
+            "table": {
+                "TEDS": {
+                    "workers": 12,
+                    "timeout_sec": 120.0,
+                    "sample_count": 428,
+                    "timeout_case_count": 0,
+                    "timeout_cases": [],
+                    "error_case_count": 0,
+                    "error_cases": [],
+                    "exception_case_count": 0,
+                    "exception_cases": []
+                }
+            }
+        }
+    },
+    "page_denominators": {
+        "text_block": {
+            "Edit_dist": {
+                "ALL": 921
+            }
+        },
+        "display_formula": {
+            "Edit_dist": {
+                "ALL": 53
+            },
+            "CDM": {
+                "ALL": 53
+            }
+        },
+        "table": {
+            "TEDS": {
+                "ALL": 317
+            },
+            "Edit_dist": {
+                "ALL": 317
+            },
+            "TEDS_structure_only": {
+                "ALL": 317
+            }
+        },
+        "reading_order": {
+            "Edit_dist": {
+                "ALL": 973
+            }
+        }
+    },
+    "notebook_metric_summary": {
+        "source": "tools/generate_result_tables.ipynb#cell-2",
+        "metrics": {
+            "text_block_Edit_dist": {
+                "raw": 0.057045665815939534,
+                "page_denominator": 921,
+                "notebook_value": 0.057045665815939534
+            },
+            "display_formula_CDM": {
+                "raw": 0.9419469924205772,
+                "page_denominator": 53,
+                "notebook_value": 94.19469924205772
+            },
+            "table_TEDS": {
+                "raw": 0.9254884325072018,
+                "page_denominator": 317,
+                "notebook_value": 92.54884325072018
+            },
+            "table_TEDS_structure_only": {
+                "raw": 0.9589780067962299,
+                "page_denominator": 317,
+                "notebook_value": 95.89780067962299
+            },
+            "reading_order_Edit_dist": {
+                "raw": 0.14062939465546712,
+                "page_denominator": 973,
+                "notebook_value": 0.14062939465546712
+            }
+        },
+        "overall_notebook": 93.67965863706131
+    }
+}
