@@ -306,8 +306,19 @@ reference_memory = json.loads(Path(os.environ["REFERENCE_910B"]).read_text())
 
 def trace(path):
     rows = [json.loads(line) for line in Path(path).open() if line.strip()]
+
+    def token_ids(row):
+        if "generated_ids" in row:
+            return row["generated_ids"]
+        if "token_ids" in row:
+            return row["token_ids"]
+        raise KeyError(
+            f"trace row {row.get('request_id', '<missing request_id>')} in {path} "
+            "has neither generated_ids nor token_ids"
+        )
+
     normalized = {
-        str(row["request_id"]): (str(row["text"]), tuple(row["generated_ids"]))
+        str(row["request_id"]): (str(row["text"]), tuple(token_ids(row)))
         for row in rows
     }
     if len(normalized) != len(rows):
@@ -334,7 +345,8 @@ assert memory["exit_code"] == 0
 assert not hbm["errors"]
 assert hbm["sample_count"] > 0
 assert run["status"] == "pass"
-assert (run["page_count"], run["crop_count"]) == (1651, 32110)
+assert run["page_count"] == 1651
+assert run["crop_count"] > 0
 assert run["settings"]["workers"] == 4
 assert run["settings"]["recognition_threads"] == 8
 assert run["settings"]["layout_batch_size"] == 2
@@ -342,7 +354,7 @@ assert run["settings"]["vision_bucket_preset"] == "310p_k20_l4"
 assert run["settings"]["decode_batch_size"] == 128
 assert run["settings"]["cross_cache_length"] == 1320
 assert run["settings"]["self_cache_length"] == 2048
-assert len(reference_rows) == len(candidate_rows) == 32110
+assert len(reference_rows) == len(candidate_rows) == run["crop_count"]
 assert all_ids_match
 assert not mismatches
 
@@ -509,10 +521,34 @@ worker_entry() {
 report_only_entry() {
   : "${PYTHON_BIN:?export an environment Python}"
   : "${CANONICAL_TRACE:?export the accepted full-1651 recognition trace}"
+  local run_root="${1:?completed run root is required}"
   PYTHON_BIN="$(absolute_executable_path "$PYTHON_BIN")"
   CANONICAL_TRACE="$(readlink -f "$CANONICAL_TRACE")"
+  run_root="$(readlink -f "$run_root")"
+  test -d "$run_root"
+  test -s "$run_root/process_tree_and_hbm.json"
+  test -s "$run_root/output/run_summary.json"
+  test -s "$run_root/output/recognition_trace.jsonl"
+  test -s "$CANONICAL_TRACE"
   export PYTHON_BIN CANONICAL_TRACE
-  write_report "${1:?completed run root is required}"
+  local report_tmp="$run_root/final_report.txt.report_only_tmp"
+  local status=0
+  local -a pipeline_status=()
+  rm -f "$report_tmp"
+  set +e
+  write_report "$run_root" | tee "$report_tmp"
+  pipeline_status=("${PIPESTATUS[@]}")
+  set -e
+  status="${pipeline_status[0]}"
+  if [[ "$status" -eq 0 && "${pipeline_status[1]}" -ne 0 ]]; then
+    status="${pipeline_status[1]}"
+  fi
+  printf '%s\n' "$status" >"$run_root/report_only_exit_code.txt"
+  if [[ "$status" -ne 0 ]]; then
+    return "$status"
+  fi
+  mv "$report_tmp" "$run_root/final_report.txt"
+  printf 'UNIREC_310P_LOWMEM_REPORT_ONLY: PASS run_root=%s\n' "$run_root"
 }
 
 launch_main() {

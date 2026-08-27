@@ -181,7 +181,33 @@ Preserve the run root and logs.
 
 ## Completion report
 
-Require all five lines:
+If inference completed with `process_tree_and_hbm.json.exit_code=0` and
+`output/run_summary.json.status=pass`, but the report writer failed, do not
+rerun inference. Pull the latest commit and retry only the report:
+
+```bash
+test -n "$RUN_ROOT"
+test -s "$RUN_ROOT/process_tree_and_hbm.json"
+test -s "$RUN_ROOT/output/run_summary.json"
+test -s "$RUN_ROOT/output/recognition_trace.jsonl"
+test -s "$CANONICAL_TRACE"
+
+bash 12_unirec_0_1b_inference/run_310p_lowmem_full1651_hbm_background.sh \
+  --report-only "$RUN_ROOT" | tee "$RUN_ROOT/report_only.log"
+
+test "$(cat "$RUN_ROOT/report_only_exit_code.txt")" = 0
+grep -q 'UNIREC_310P_LOWMEM_FULL1651_HBM: PASS' "$RUN_ROOT/final_report.txt"
+grep -q 'UNIREC_310P_LOWMEM_REPORT_ONLY: PASS' "$RUN_ROOT/report_only.log"
+```
+
+The retry accepts `token_ids` in the canonical trace and `generated_ids` in the
+candidate trace. It derives the expected crop count from `run_summary.json` and
+requires both traces to match it. It writes `final_report.json`, replaces
+`final_report.txt` only after success, and records the retry status in
+`report_only_exit_code.txt`. Preserve the original `exit_code.txt`; it records
+the first wrapper attempt.
+
+Require these setup and result markers:
 
 ```text
 UNIREC_310P_REAL_DECODE_CACHE_BUILT ... compiled_modules=1 oms=<nonzero>
@@ -189,8 +215,13 @@ UNIREC_310P_REAL_DECODE_CACHE_TRACE_PARITY rows=<first-32 crop count>
 UNIREC_310P_REAL_DECODE_CACHE_FRESH_REPLAY: PASS
 UNIREC_310P_LOWMEM_OM_INVENTORY_UNCHANGED
 UNIREC_310P_LOWMEM_FULL1651_HBM: PASS
-exit_code.txt = 0
 ```
+
+For a direct successful run, require `exit_code.txt = 0`. For a recovered
+report-only run, require `process_tree_and_hbm.json.exit_code = 0`,
+`run_summary.json.status = pass`, and `report_only_exit_code.txt = 0`. The
+original `exit_code.txt = 1` is expected in that case because it records the
+report-writer failure.
 
 Paste these files:
 
@@ -199,6 +230,8 @@ cat "$RUN_ROOT/preflight.txt"
 cat "$RUN_ROOT/cache_locator.log"
 cat "$RUN_ROOT/final_report.txt"
 cat "$RUN_ROOT/exit_code.txt"
+test ! -f "$RUN_ROOT/report_only_exit_code.txt" \
+  || cat "$RUN_ROOT/report_only_exit_code.txt"
 ```
 
 Also report:
