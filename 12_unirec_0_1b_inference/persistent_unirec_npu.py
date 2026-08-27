@@ -120,6 +120,10 @@ class PersistentUniRecNpuPipeline:
             "text_groups": 0,
             "text_crops": 0,
             "text_wall_s": 0.0,
+            "decode_iterations": 0,
+            "decode_raw_token_slots": 0,
+            "decode_effective_tokens": 0,
+            "decode_wall_s": 0.0,
         }
 
     def _record_error(self, exception: BaseException) -> None:
@@ -556,11 +560,26 @@ class PersistentUniRecNpuPipeline:
     def _decode_loop(self) -> None:
         try:
             torch_npu.npu.set_device(self.device)
+
+            def record_step(report: dict[str, Any]) -> None:
+                with self._condition:
+                    self._metrics["decode_iterations"] += 1
+                    self._metrics["decode_raw_token_slots"] += (
+                        self.decoder.batch_size
+                    )
+                    self._metrics["decode_effective_tokens"] += int(
+                        report["active_count"]
+                    )
+                    self._metrics["decode_wall_s"] += float(
+                        report["decode_step_s"]
+                    )
+
             self.decode_summary = self.decoder.run(
                 self.ready_queue,
                 on_complete=self._complete_crop,
                 graph_warmup_passes=0,
                 partial_batch_wait_s=0.0,
+                on_step=record_step,
                 on_idle=self._decode_idle.set,
             )
         except BaseException as exception:
