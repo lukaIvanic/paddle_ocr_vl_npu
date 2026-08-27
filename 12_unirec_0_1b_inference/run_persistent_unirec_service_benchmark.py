@@ -73,8 +73,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--vision-lanes", type=int, default=4)
     parser.add_argument("--vision-same-key-shards", type=int, default=1)
     parser.add_argument("--vision-sharded-key-count", type=int, default=4)
-    parser.add_argument("--vision-page-lookahead", type=int, default=4)
-    parser.add_argument("--vision-flush-timeout-ms", type=float, default=5.0)
+    parser.add_argument("--vision-page-lookahead", type=int, default=128)
+    parser.add_argument("--vision-queue-size", type=int, default=128)
+    parser.add_argument("--vision-flush-timeout-ms", type=float, default=50.0)
     parser.add_argument("--decode-batch-size", type=int, default=128)
     parser.add_argument("--cross-cache-length", type=int, default=1320)
     parser.add_argument("--self-cache-length", type=int, default=2048)
@@ -303,6 +304,7 @@ def main() -> None:
         on_error=npu_error,
         vision_page_lookahead=args.vision_page_lookahead,
         vision_flush_timeout_s=args.vision_flush_timeout_ms / 1000.0,
+        vision_queue_size=args.vision_queue_size,
         ready_queue_size=args.ready_queue_size,
         decode_partial_batch_wait_s=args.decode_fill_timeout_ms / 1000.0,
         on_decode_graph_warmup_complete=decode_warmup_complete,
@@ -434,6 +436,7 @@ def main() -> None:
             "vision_bucket_preset": args.vision_bucket_preset,
             "vision_lanes": args.vision_lanes,
             "vision_page_lookahead": args.vision_page_lookahead,
+            "vision_queue_size": args.vision_queue_size,
             "vision_flush_timeout_ms": args.vision_flush_timeout_ms,
             "decode_batch_size": args.decode_batch_size,
             "cross_cache_length": args.cross_cache_length,
