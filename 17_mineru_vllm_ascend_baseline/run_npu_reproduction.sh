@@ -67,7 +67,7 @@ fi
 
 printf '[exp17] run_dir=%s\n' "$RUN_DIR"
 set +e
-"${COMMAND[@]}" 2>&1 | tee "$RUN_DIR/run.log"
+(cd "$RUN_DIR" && "${COMMAND[@]}") 2>&1 | tee "$RUN_DIR/run.log"
 STATUS=${PIPESTATUS[0]}
 set -e
 printf '%s\n' "$STATUS" >"$RUN_DIR/exit_code.txt"

@@ -51,7 +51,9 @@ The shell wrapper sets `HI_PYTHON` to the fresh experiment interpreter. CANN's
 `op_compiler` otherwise invokes bare `/usr/bin/python3`, which has no NumPy in
 this container and makes every requested static-kernel compile fail. Experiment
 17 also owns its vLLM compile cache under
-`.runtime_cache/17_mineru_vllm_ascend_baseline/`.
+`.runtime_cache/17_mineru_vllm_ascend_baseline/`. The wrapper runs the engine
+from its per-run directory so CANN's transient static-kernel build trees stay
+with the other ignored run artifacts under `tmp/`.
 
 The `eager_sync` mode reproduces the photographed comparison lane. It uses the
 synchronous `LLM`, `enforce_eager=True`, no prefix cache, no chunked prefill,
