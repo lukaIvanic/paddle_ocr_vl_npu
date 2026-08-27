@@ -9,6 +9,9 @@ The result is configuration-equivalent, not hardware-identical. The source run
 used one 310P3 with CANN 8.0.0. This lane uses one 910B2 with CANN 9.0.0. Never
 carry a result between chips without labeling both.
 
+The first accepted one-page 910B2 smoke is recorded in
+`VERIFIED_910B_SMOKE.md`.
+
 ## Source evidence
 
 The seven supplied screenshots and reconstructed code are transcribed in
