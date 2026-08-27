@@ -67,6 +67,7 @@ class BoundedVisionOwner:
         self.early_tbe_deinit: dict[str, Any] | None = None
         self._tbe_deinit_attempted = False
         self.host_purge_statuses: list[int | None] = []
+        self._resident_lane_by_key: dict[str, int] = {}
 
     def _compile_method(self, key: str) -> Callable[..., torch.Tensor]:
         slots = assign_vision_bucket_cache_slots(
@@ -277,12 +278,14 @@ class BoundedVisionOwner:
             if getattr(value, "_compiled_model", None) is not None
         ]
         if not loaded:
+            self._resident_lane_by_key.clear()
             return {"executor_count": 0, "executors": []}
         torch.npu.synchronize()
         report = release_loaded_ge_executors(loaded)
         gc.collect()
         torch.npu.empty_cache()
         self.host_purge_statuses.append(purge_host_allocator_pages())
+        self._resident_lane_by_key.clear()
         return report
 
     def _release_loaded_except(self, retained_keys: set[str]) -> dict[str, Any]:
@@ -292,6 +295,8 @@ class BoundedVisionOwner:
             if getattr(value, "_compiled_model", None) is not None
         }
         released_keys = sorted(set(loaded_by_key) - retained_keys)
+        for key in released_keys:
+            self._resident_lane_by_key.pop(key, None)
         if not released_keys:
             return {
                 "executor_count": 0,
@@ -309,6 +314,40 @@ class BoundedVisionOwner:
         torch.npu.empty_cache()
         self.host_purge_statuses.append(purge_host_allocator_pages())
         return report
+
+    def _assign_group_lanes(
+        self,
+        group: Sequence[dict[str, Any]],
+    ) -> list[int]:
+        """Keep retained TorchAir executors on their first-call stream."""
+        lanes: list[int | None] = [None] * len(group)
+        used: set[int] = set()
+        claimed_keys: set[str] = set()
+        for index, task in enumerate(group):
+            key = str(task["key"])
+            if key in claimed_keys:
+                continue
+            claimed_keys.add(key)
+            resident_lane = self._resident_lane_by_key.get(key)
+            if resident_lane is None:
+                continue
+            if resident_lane in used:
+                raise RuntimeError(
+                    "two retained vision keys claim one lane: "
+                    f"key={key} lane={resident_lane}"
+                )
+            lanes[index] = resident_lane
+            used.add(resident_lane)
+        free = [lane for lane in range(self.lanes) if lane not in used]
+        for index, lane in enumerate(lanes):
+            if lane is not None:
+                continue
+            if not free:
+                raise RuntimeError("vision group has more tasks than lanes")
+            selected = free.pop(0)
+            lanes[index] = selected
+            used.add(selected)
+        return [int(value) for value in lanes]
 
     def encode(
         self,
@@ -348,6 +387,11 @@ class BoundedVisionOwner:
                     clone_executors.append(executor)
                     clone_namespaces.append(namespace)
                 executors.append(executor)
+            assigned_lanes = (
+                self._assign_group_lanes(group)
+                if retain_loaded_graphs
+                else list(range(len(group)))
+            )
             futures = [
                 self.pool.submit(
                     self._run_key,
@@ -356,12 +400,20 @@ class BoundedVisionOwner:
                     task["calls"],
                     executor,
                 )
-                for lane, (task, executor) in enumerate(zip(group, executors))
+                for lane, task, executor in zip(
+                    assigned_lanes,
+                    group,
+                    executors,
+                )
             ]
             lane_reports = []
-            for task, future in zip(group, futures):
+            reported_primary: set[str] = set()
+            for lane, task, future in zip(assigned_lanes, group, futures):
                 key = str(task["key"])
                 encoded, lane_s = future.result()
+                if retain_loaded_graphs and key not in reported_primary:
+                    self._resident_lane_by_key[key] = lane
+                    reported_primary.add(key)
                 for item in encoded:
                     if item.source_index in seen_outputs:
                         raise RuntimeError(
@@ -375,6 +427,7 @@ class BoundedVisionOwner:
                 lane_reports.append(
                     {
                         "key": key,
+                        "lane": lane,
                         "shard_index": int(task["shard_index"]),
                         "shard_count": int(task["shard_count"]),
                         "calls": len(task["calls"]),
