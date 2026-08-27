@@ -6,8 +6,9 @@ Run the persistent UniRec service over all 1,651 OmniDocBench v1.6 pages on one
 Atlas 310P. Keep all 20 K20 vision graphs resident. Measure the hot request
 window after real-page warmup, then run the frozen accuracy evaluator.
 
-Do not run a baseline. Do not build or repair a cache. Recover every path from
-the already-passed 310P low-memory and accuracy runs.
+Do not run a baseline. Reuse the passed K20 and layout caches. Build exactly one
+fresh B128 C1320 S2048 decode graph for the persistent-service runner through
+normal real requests, verify it in a fresh process, then run the full candidate.
 
 The matched 910B2 result at commit `cae401d` was:
 
@@ -34,8 +35,16 @@ implementations, decoder graph, or evaluator.
 - Preserve the validated executable named `python_nosym`. Never apply
   `readlink -f` to `PYTHON_BIN`.
 - Do not use `nproc`. Use CPU affinity `0-63`.
-- Reuse the exact passed K20, compiled-FP32 B2 layout, and B128 C1320 S2048
-  decode caches. Any new OM or visible recompilation invalidates the run.
+- Reuse the exact passed K20 and compiled-FP32 B2 layout caches without
+  modification.
+- Build exactly one fresh B128 C1320 S2048 NZ decode graph under a new,
+  commit-specific cache parent. The cold build must use this persistent-service
+  runner, the first real admitted cohort, and its long-lived decode arena. Do
+  not call a standalone or synthetic forward.
+- Enable one CANN knowledge-bank process only for the cold decode build. Use
+  zero knowledge-bank processes for the fresh replay and full run.
+- The fresh replay must create no OM and must reproduce the cold-build trace
+  exactly. The full run must also create no OM.
 - Keep the accepted 310P eager tall-crop fallback. This avoids a new graph and
   preserves the validated crop path.
 - Use 512 real pages as excluded warmup. Warmup must exercise all 20 K20 graphs
@@ -86,7 +95,7 @@ export LAYOUT_MODEL="$(read_preflight layout_model)"
 export IMAGES_DIR="$(read_preflight images)"
 export COMPILE_CACHE="$(read_preflight vision_cache)"
 export LAYOUT_CACHE_ROOT="$(read_preflight layout_cache)"
-export DECODE_CACHE_PARENT="$(read_preflight decode_cache_parent)"
+export PASSED_LOWMEM_DECODE_CACHE_PARENT="$(read_preflight decode_cache_parent)"
 export CPUSET="$(read_preflight cpuset)"
 
 test "$(basename "$PYTHON_BIN")" = python_nosym
@@ -113,7 +122,14 @@ test -f "$OPENOCR_ROOT/tools/infer_doc_onnx.py"
 test -d "$IMAGES_DIR"
 test -d "$COMPILE_CACHE"
 test -d "$LAYOUT_CACHE_ROOT"
-test -d "$DECODE_CACHE_PARENT"
+test -d "$PASSED_LOWMEM_DECODE_CACHE_PARENT"
+
+# The low-memory graph is not a valid cache-hit proof for the persistent
+# service. Give the persistent runner its own deterministic namespace. A later
+# source commit gets another directory instead of mutating this graph.
+SHORT_HEAD="$(git rev-parse --short=12 HEAD)"
+export DECODE_CACHE_PARENT="$WORK_SERVER_REPO/.runtime_cache/12_unirec_0_1b_inference/310p_persistent_service_decode_${SHORT_HEAD}"
+mkdir -p "$DECODE_CACHE_PARENT"
 
 mapfile -t DATASET_JSON_CANDIDATES < <(
   find "$(dirname "$IMAGES_DIR")" -maxdepth 2 -type f \
@@ -165,7 +181,7 @@ test -x "$OMNIDOCBENCH_EVAL_TOOLS_ROOT/imagemagick-7.1.1-47/bin/magick"
   --evaluator-root "$EVALUATOR_ROOT"
 ```
 
-## Validate caches
+## Validate immutable caches
 
 ```bash
 LOCATOR_ROOT="$WORK_SERVER_REPO/tmp/12_unirec_0_1b_inference/310p_resident_k20_locator_$(date +%Y%m%dT%H%M%S)"
@@ -178,25 +194,181 @@ mkdir -p "$LOCATOR_ROOT"
 grep -q 'buckets=20/20 missing=none' "$LOCATOR_ROOT/cache_locator.log"
 grep -q 'UNIREC_PRODUCTION_CACHE_LOCATOR: PASS' "$LOCATOR_ROOT/cache_locator.log"
 
-DECODE_SHAPE="$DECODE_CACHE_PARENT/decode_weight_nz_lmhead57344_semantic56371/decode_selfkv2048_cross1320_increfa_all_b128_wnz"
-DECODE_MODULE_COUNT="$(
-  find "$DECODE_SHAPE" -name compiled_module | wc -l | tr -d '[:space:]'
-)"
-DECODE_OM_COUNT="$(
-  find "$DECODE_SHAPE" -type f -name '*.om' | wc -l | tr -d '[:space:]'
-)"
-test "$DECODE_MODULE_COUNT" = 1
-test "$DECODE_OM_COUNT" -ge 1
 ```
 
-If the locator fails, stop and report its output. Do not build or repair a
-cache. The accepted run already proved these paths.
+If the locator fails, stop and report its output. Do not build or repair K20 or
+layout caches.
+
+## Build and verify one persistent-service decode graph
+
+The earlier failed run reused a low-memory decode OM. The persistent service did
+not accept that graph identity, entered compilation with
+`CANN_KNOWLEDGE_BANK_PROCESS_NUM=0`, and failed while retrieving tuning knowledge
+for `GatherV2_1`. The following gate uses one new cache directory and compiles
+through ordinary real-request execution.
+
+```bash
+DECODE_SHAPE="$DECODE_CACHE_PARENT/decode_weight_nz_lmhead57344_semantic56371/decode_selfkv2048_cross1320_increfa_all_b128_wnz"
+
+decode_cache_counts() {
+  local modules oms
+  if [[ ! -d "$DECODE_SHAPE" ]]; then
+    printf '0 0\n'
+    return
+  fi
+  modules="$(find "$DECODE_SHAPE" -name compiled_module 2>/dev/null | wc -l | tr -d '[:space:]')"
+  oms="$(find "$DECODE_SHAPE" -type f -name '*.om' 2>/dev/null | wc -l | tr -d '[:space:]')"
+  printf '%s %s\n' "$modules" "$oms"
+}
+
+cache_inventory() {
+  local output="$1"
+  shift
+  find "$@" -type f -name '*.om' -printf '%p %s %T@\n' 2>/dev/null \
+    | sort -u >"$output"
+}
+
+run_decode_cache_lane() {
+  local lane_root="$1"
+  local knowledge_processes="$2"
+  mkdir -p "$lane_root/output" "$lane_root/spool"
+  local command=(
+    taskset -c "$CPUSET"
+    "$PYTHON_BIN" 12_unirec_0_1b_inference/run_persistent_unirec_service_benchmark.py
+    --openocr-root "$OPENOCR_ROOT"
+    --model-path "$MODEL"
+    --layout-model "$LAYOUT_MODEL"
+    --input "$IMAGES_DIR"
+    --output-dir "$lane_root/output"
+    --spool-dir "$lane_root/spool"
+    --layout-cache "$LAYOUT_CACHE_ROOT"
+    --vision-cache "$COMPILE_CACHE"
+    --decode-cache-parent "$DECODE_CACHE_PARENT"
+    --device npu:0
+    --offset 0
+    --limit 32
+    --warmup-pages 32
+    --workers 4
+    --recognition-threads 8
+    --layout-lanes 1
+    --layout-batch-size 2
+    --layout-threshold 0.5
+    --vision-bucket-preset 310p_k20_l4
+    --vision-lanes 4
+    --vision-graph-residency all
+    --vision-same-key-shards 1
+    --vision-sharded-key-count 0
+    --vision-record-budget 128
+    --vision-max-calls-per-key 64
+    --vision-queue-size 128
+    --vision-tall-fallback eager
+    --decode-batch-size 128
+    --cross-cache-length 1320
+    --self-cache-length 2048
+    --max-length 2048
+    --ready-queue-size 128
+    --progress-every 8
+  )
+  printf '%q ' "${command[@]}" >"$lane_root/command.sh"
+  printf '\n' >>"$lane_root/command.sh"
+  PYTHONUNBUFFERED=1 \
+    CANN_KNOWLEDGE_BANK_PROCESS_NUM="$knowledge_processes" \
+    "${command[@]}" 2>&1 | tee "$lane_root/run.log"
+}
+
+npu-smi info
+export ASCEND_RT_VISIBLE_DEVICES=0  # example only; replace with a free 0-3
+[[ "$ASCEND_RT_VISIBLE_DEVICES" =~ ^[0-3]$ ]]
+
+DECODE_BUILD_ROOT="$WORK_SERVER_REPO/tmp/12_unirec_0_1b_inference/310p_persistent_decode_build_${SHORT_HEAD}_$(date +%Y%m%dT%H%M%S)"
+mkdir -p "$DECODE_BUILD_ROOT"
+export DECODE_BUILD_ROOT
+
+cache_inventory "$DECODE_BUILD_ROOT/vision_layout_before.txt" \
+  "$COMPILE_CACHE" "$LAYOUT_CACHE_ROOT"
+read -r MODULE_COUNT OM_COUNT < <(decode_cache_counts)
+
+if [[ "$MODULE_COUNT" == 0 && "$OM_COUNT" == 0 ]]; then
+  run_decode_cache_lane "$DECODE_BUILD_ROOT/cold_real_requests" 1
+  REFERENCE_LANE=cold_real_requests
+  read -r MODULE_COUNT OM_COUNT < <(decode_cache_counts)
+  test "$MODULE_COUNT" = 1
+  test "$OM_COUNT" -ge 1
+  printf 'UNIREC_310P_PERSISTENT_DECODE_CACHE_BUILT modules=%s oms=%s path=%s\n' \
+    "$MODULE_COUNT" "$OM_COUNT" "$DECODE_SHAPE"
+elif [[ "$MODULE_COUNT" == 1 && "$OM_COUNT" -ge 1 ]]; then
+  printf 'UNIREC_310P_PERSISTENT_DECODE_CACHE_BUILD skipped=complete modules=%s oms=%s\n' \
+    "$MODULE_COUNT" "$OM_COUNT"
+  cache_inventory "$DECODE_BUILD_ROOT/decode_before_reference.txt" \
+    "$DECODE_CACHE_PARENT"
+  run_decode_cache_lane "$DECODE_BUILD_ROOT/cache_reference" 0
+  cache_inventory "$DECODE_BUILD_ROOT/decode_after_reference.txt" \
+    "$DECODE_CACHE_PARENT"
+  diff -u "$DECODE_BUILD_ROOT/decode_before_reference.txt" \
+    "$DECODE_BUILD_ROOT/decode_after_reference.txt"
+  ! grep -aEq \
+    'Skip cache as LocalUniRecCachedDecodeStepModule.forward.*recompiled|Failed to retrieve tuning knowledge|UNIREC_SERVING_NPU_ERROR' \
+    "$DECODE_BUILD_ROOT/cache_reference/run.log"
+  REFERENCE_LANE=cache_reference
+else
+  printf 'partial persistent decode cache: modules=%s oms=%s path=%s\n' \
+    "$MODULE_COUNT" "$OM_COUNT" "$DECODE_SHAPE" >&2
+  exit 1
+fi
+
+cache_inventory "$DECODE_BUILD_ROOT/vision_layout_after_build.txt" \
+  "$COMPILE_CACHE" "$LAYOUT_CACHE_ROOT"
+diff -u "$DECODE_BUILD_ROOT/vision_layout_before.txt" \
+  "$DECODE_BUILD_ROOT/vision_layout_after_build.txt"
+cache_inventory "$DECODE_BUILD_ROOT/decode_before_replay.txt" \
+  "$DECODE_CACHE_PARENT"
+
+run_decode_cache_lane "$DECODE_BUILD_ROOT/fresh_replay" 0
+
+cache_inventory "$DECODE_BUILD_ROOT/decode_after_replay.txt" \
+  "$DECODE_CACHE_PARENT"
+cache_inventory "$DECODE_BUILD_ROOT/vision_layout_after_replay.txt" \
+  "$COMPILE_CACHE" "$LAYOUT_CACHE_ROOT"
+diff -u "$DECODE_BUILD_ROOT/decode_before_replay.txt" \
+  "$DECODE_BUILD_ROOT/decode_after_replay.txt"
+diff -u "$DECODE_BUILD_ROOT/vision_layout_before.txt" \
+  "$DECODE_BUILD_ROOT/vision_layout_after_replay.txt"
+! grep -aEq \
+  'Skip cache as LocalUniRecCachedDecodeStepModule.forward.*recompiled|Failed to retrieve tuning knowledge|UNIREC_SERVING_NPU_ERROR' \
+  "$DECODE_BUILD_ROOT/fresh_replay/run.log"
+
+"$PYTHON_BIN" - \
+  "$DECODE_BUILD_ROOT/$REFERENCE_LANE/output/recognition_trace.jsonl" \
+  "$DECODE_BUILD_ROOT/fresh_replay/output/recognition_trace.jsonl" <<'PY'
+import json
+import sys
+
+def load(path):
+    rows = [json.loads(line) for line in open(path) if line.strip()]
+    return {
+        str(row["request_id"]): (
+            str(row["text"]),
+            tuple(int(token) for token in row["generated_ids"]),
+        )
+        for row in rows
+    }
+
+cold = load(sys.argv[1])
+replay = load(sys.argv[2])
+assert cold == replay, "cold-build and fresh-replay traces differ"
+print(f"UNIREC_310P_PERSISTENT_DECODE_CACHE_TRACE_PARITY rows={len(cold)}")
+PY
+printf 'UNIREC_310P_PERSISTENT_DECODE_CACHE_FRESH_REPLAY: PASS\n'
+```
+
+The cold run may compile one decode graph. The fresh replay must not compile.
+If the cold run fails, preserve its directory and report the last 100 log lines.
+Do not delete or repair a partial cache.
 
 ## Select one free 310P and launch
 
 ```bash
 npu-smi info
-export ASCEND_RT_VISIBLE_DEVICES=0  # example only; replace with a free 0-3
 [[ "$ASCEND_RT_VISIBLE_DEVICES" =~ ^[0-3]$ ]]
 
 RUN_ROOT="$WORK_SERVER_REPO/tmp/12_unirec_0_1b_inference/310p_persistent_resident_k20_full1651_$(git rev-parse --short=12 HEAD)_$(date +%Y%m%dT%H%M%S)"
