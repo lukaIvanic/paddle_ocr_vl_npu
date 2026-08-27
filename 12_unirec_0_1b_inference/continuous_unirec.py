@@ -21,6 +21,30 @@ from modeling_optimized_unirec import (
     OptimizedUniRecRunner,
     UniRecPrefilledItem,
 )
+from persistent_ready_queue import PersistentReadyQueue, ReadyQueuePull
+
+
+class _IteratorReadySource:
+    """Adapt the historical finite iterable to the queue pull contract."""
+
+    def __init__(self, source: Iterable["ContinuousReadyItem"]) -> None:
+        self.iterator = iter(source)
+        self.closed = False
+
+    def pull(
+        self,
+        *,
+        wait: bool,
+        timeout: float | None = None,
+    ) -> ReadyQueuePull["ContinuousReadyItem"]:
+        del wait, timeout
+        if self.closed:
+            return ReadyQueuePull(closed=True)
+        try:
+            return ReadyQueuePull(item=next(self.iterator))
+        except StopIteration:
+            self.closed = True
+            return ReadyQueuePull(closed=True)
 
 
 def production_decode_cache_parent(base: str | Path) -> Path:
@@ -661,21 +685,34 @@ class ContinuousUniRecDecoder:
 
     def run(
         self,
-        source: Iterable[ContinuousReadyItem],
+        source: Iterable[ContinuousReadyItem]
+        | PersistentReadyQueue[ContinuousReadyItem],
         *,
         on_complete: Callable[[ContinuousCompletedItem], None],
         graph_warmup_passes: int = 0,
+        partial_batch_wait_s: float = 0.0,
         on_graph_warmup_complete: Callable[[dict[str, Any]], None] | None = None,
         on_step: Callable[[dict[str, Any]], None] | None = None,
+        on_idle: Callable[[], None] | None = None,
     ) -> dict[str, Any]:
         if graph_warmup_passes < 0:
             raise ValueError("graph_warmup_passes must be non-negative")
+        if partial_batch_wait_s < 0:
+            raise ValueError("partial_batch_wait_s must be non-negative")
         run_started = time.perf_counter()
-        iterator = iter(source)
-        source_exhausted = False
+        persistent_source = isinstance(source, PersistentReadyQueue)
+        if persistent_source and self.admission_prefetch_depth:
+            raise ValueError(
+                "persistent decode sources do not yet support admission prefetch"
+            )
+        source_adapter = source if persistent_source else _IteratorReadySource(source)
+        source_closed = False
         submitted = 0
         completed = 0
         source_pull_s = 0.0
+        source_wait_s = 0.0
+        source_idle_polls = 0
+        source_waits = 0
         initial_cache_stack_s = 0.0
         initial_arena_allocate_s = 0.0
         initial_arena_admission_enqueue_s = 0.0
@@ -706,23 +743,43 @@ class ContinuousUniRecDecoder:
         }
         diagnostic_step_callback_s = 0.0
 
-        def next_ready() -> ContinuousReadyItem | None:
-            nonlocal source_exhausted, source_pull_s, submitted
-            if source_exhausted:
-                return None
+        def pull_ready(
+            *,
+            wait: bool,
+            timeout: float | None = None,
+        ) -> tuple[ContinuousReadyItem | None, str]:
+            nonlocal source_closed, source_pull_s, source_wait_s
+            nonlocal source_idle_polls, source_waits, submitted
+            if source_closed:
+                return None, "closed"
             pull_started = time.perf_counter()
-            try:
-                ready = next(iterator)
-            except StopIteration:
-                source_exhausted = True
-                source_pull_s += time.perf_counter() - pull_started
-                return None
-            source_pull_s += time.perf_counter() - pull_started
+            pulled = source_adapter.pull(wait=wait, timeout=timeout)
+            pull_s = time.perf_counter() - pull_started
+            source_pull_s += pull_s
+            if wait:
+                source_wait_s += pull_s
+                source_waits += 1
+            if pulled.closed:
+                source_closed = True
+                return None, "closed"
+            if pulled.idle:
+                source_idle_polls += 1
+                return None, "idle"
+            ready = pulled.item
+            if isinstance(ready, BaseException):
+                raise ready
+            if not isinstance(ready, ContinuousReadyItem):
+                raise TypeError(
+                    "continuous decode source returned an unexpected item: "
+                    f"{type(ready)!r}"
+                )
             submitted += 1
-            return ready
+            return ready, "item"
 
-        first_ready = next_ready()
+        first_ready, first_state = pull_ready(wait=True)
         if first_ready is None:
+            if first_state != "closed":
+                raise RuntimeError("blocking decode source pull returned idle")
             return {
                 "batch_size": self.batch_size,
                 "submitted": 0,
@@ -741,7 +798,33 @@ class ContinuousUniRecDecoder:
                 "slot_refills": 0,
                 "compile_wrap_s": None,
                 "compile": None,
+                "source_mode": (
+                    "persistent_queue"
+                    if persistent_source
+                    else "finite_iterable"
+                ),
+                "partial_batch_wait_s": float(partial_batch_wait_s),
             }
+
+        initial_fill_deadline = (
+            time.perf_counter() + partial_batch_wait_s
+            if persistent_source and partial_batch_wait_s > 0
+            else None
+        )
+
+        def pull_initial_extra() -> ContinuousReadyItem | None:
+            if not persistent_source:
+                ready, _state = pull_ready(wait=True)
+                return ready
+            if partial_batch_wait_s == 0:
+                ready, _state = pull_ready(wait=False)
+                return ready
+            assert initial_fill_deadline is not None
+            remaining = initial_fill_deadline - time.perf_counter()
+            if remaining <= 0:
+                return None
+            ready, _state = pull_ready(wait=True, timeout=remaining)
+            return ready
 
         initial: list[ContinuousReadyItem] = [first_ready]
         direct_initial = isinstance(
@@ -756,7 +839,7 @@ class ContinuousUniRecDecoder:
                 if slot == 0:
                     ready = first_ready
                 else:
-                    ready = next_ready()
+                    ready = pull_initial_extra()
                     if ready is None:
                         break
                     initial.append(ready)
@@ -794,7 +877,7 @@ class ContinuousUniRecDecoder:
                         )
         else:
             for _ in range(1, self.batch_size):
-                ready = next_ready()
+                ready = pull_initial_extra()
                 if ready is None:
                     break
                 initial.append(ready)
@@ -873,8 +956,13 @@ class ContinuousUniRecDecoder:
         if direct_initial and self.admission_prefetch_depth:
             if cache.packed_cross_kv is None:
                 raise RuntimeError("admission prefetch requires a packed arena")
+
+            def next_ready_for_prefetch() -> ContinuousReadyItem | None:
+                ready, _state = pull_ready(wait=True)
+                return ready
+
             admission_prefetcher = _WorkerAdmissionPrefetcher(
-                next_ready=next_ready,
+                next_ready=next_ready_for_prefetch,
                 device=self.runner.device,
                 dtype=self.runner.dtype,
                 max_elements=int(
@@ -914,7 +1002,12 @@ class ContinuousUniRecDecoder:
             completed += 1
             slots[slot] = None
 
-        def refill_slot(slot: int) -> None:
+        def refill_slot(
+            slot: int,
+            *,
+            wait_for_item: bool = False,
+            timeout: float | None = None,
+        ) -> str:
             nonlocal cache_refill_copy_enqueue_s, cache_refill_row_bytes
             nonlocal cache_refill_direct_admission_enqueue_s
             nonlocal direct_admission_count, direct_cross_kv_bytes, direct_reset_bytes
@@ -923,14 +1016,21 @@ class ContinuousUniRecDecoder:
             while slots[slot] is None:
                 staged: _StagedWorkerAdmission | None = None
                 if admission_prefetcher is None:
-                    ready = next_ready()
+                    ready, pull_state = pull_ready(
+                        wait=(wait_for_item or not persistent_source),
+                        timeout=timeout,
+                    )
                 elif admission_prefetch_exhausted:
                     ready = None
+                    pull_state = "closed"
                 else:
                     staged = admission_prefetcher.take()
                     ready = staged.ready if staged is not None else None
                     if staged is None:
                         admission_prefetch_exhausted = True
+                        pull_state = "closed"
+                    else:
+                        pull_state = "item"
                 if ready is None:
                     token_ids[slot] = [
                         int(self.runner.config.decoder_start_token_id),
@@ -938,7 +1038,7 @@ class ContinuousUniRecDecoder:
                     ]
                     last_tokens[slot] = eos_token_id
                     cache_positions[slot] = 1
-                    return
+                    return pull_state
                 if isinstance(ready.prefilled, ContinuousWorkerPrefilledItem):
                     if staged is None:
                         enqueue_s, transferred_bytes, reset_bytes = (
@@ -998,8 +1098,9 @@ class ContinuousUniRecDecoder:
                 next_admission_index += 1
                 slot_refills += 1
                 if last_tokens[slot] != eos_token_id:
-                    return
+                    return "item"
                 complete_slot(slot)
+            return "item"
 
         # A request may produce EOS directly from B1 prefill. Complete and
         # refill it without launching a useless decode iteration.
@@ -1129,9 +1230,51 @@ class ContinuousUniRecDecoder:
             if on_graph_warmup_complete is not None:
                 on_graph_warmup_complete(production_graph_warmup_report)
 
+        def wait_for_next_cohort() -> bool:
+            """Admit later service work after every active row became idle."""
+            empty_slots = [
+                index for index, ready in enumerate(slots) if ready is None
+            ]
+            if not empty_slots:
+                return True
+            first_state = refill_slot(empty_slots[0], wait_for_item=True)
+            if first_state == "closed":
+                return False
+            if slots[empty_slots[0]] is None:
+                raise RuntimeError(
+                    "blocking persistent decode pull returned no request"
+                )
+            fill_deadline = (
+                time.perf_counter() + partial_batch_wait_s
+                if partial_batch_wait_s > 0
+                else None
+            )
+            for slot in empty_slots[1:]:
+                if fill_deadline is None:
+                    state = refill_slot(slot)
+                else:
+                    remaining = fill_deadline - time.perf_counter()
+                    if remaining <= 0:
+                        break
+                    state = refill_slot(
+                        slot,
+                        wait_for_item=True,
+                        timeout=remaining,
+                    )
+                if state != "item":
+                    break
+            return True
+
         try:
             with torch.inference_mode():
-                while any(slot is not None for slot in slots):
+                while True:
+                    if not any(slot is not None for slot in slots):
+                        if on_idle is not None:
+                            on_idle()
+                        if source_closed or not persistent_source:
+                            break
+                        if not wait_for_next_cohort():
+                            break
                     iteration_started = time.perf_counter()
                     active_slots = [slot is not None for slot in slots]
                     active_positions = [
@@ -1355,10 +1498,17 @@ class ContinuousUniRecDecoder:
             "slot_refills": slot_refills,
             "compile_wrap_s": compile_wrap_s,
             "compile": compile_meta,
+            "source_mode": (
+                "persistent_queue" if persistent_source else "finite_iterable"
+            ),
+            "partial_batch_wait_s": float(partial_batch_wait_s),
             "production_graph_warmup": production_graph_warmup_report,
             "timing_detail": {
                 "run_wall_s": run_wall_s,
                 "source_pull_s": source_pull_s,
+                "source_wait_s": source_wait_s,
+                "source_waits": source_waits,
+                "source_idle_polls": source_idle_polls,
                 "initial_cache_stack_s": initial_cache_stack_s,
                 "initial_arena_allocate_s": initial_arena_allocate_s,
                 "initial_arena_admission_enqueue_s": (

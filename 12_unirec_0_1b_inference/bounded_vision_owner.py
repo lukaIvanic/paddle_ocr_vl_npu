@@ -285,12 +285,38 @@ class BoundedVisionOwner:
         self.host_purge_statuses.append(purge_host_allocator_pages())
         return report
 
+    def _release_loaded_except(self, retained_keys: set[str]) -> dict[str, Any]:
+        loaded_by_key = {
+            key: value
+            for key, value in self.runtime.compiled.items()
+            if getattr(value, "_compiled_model", None) is not None
+        }
+        released_keys = sorted(set(loaded_by_key) - retained_keys)
+        if not released_keys:
+            return {
+                "executor_count": 0,
+                "executors": [],
+                "released_keys": [],
+                "retained_keys": sorted(set(loaded_by_key) & retained_keys),
+            }
+        torch.npu.synchronize()
+        report = release_loaded_ge_executors(
+            [loaded_by_key[key] for key in released_keys]
+        )
+        report["released_keys"] = released_keys
+        report["retained_keys"] = sorted(set(loaded_by_key) & retained_keys)
+        gc.collect()
+        torch.npu.empty_cache()
+        self.host_purge_statuses.append(purge_host_allocator_pages())
+        return report
+
     def encode(
         self,
         records: Sequence[dict[str, Any]],
         *,
         on_encoded_batch: Callable[[list[EncodedVisionItem]], None] | None = None,
         retain_outputs: bool = True,
+        retain_loaded_graphs: bool = False,
     ) -> tuple[list[EncodedVisionItem], dict[str, Any]]:
         if not retain_outputs and on_encoded_batch is None:
             raise ValueError("non-retained vision output requires a callback")
@@ -299,9 +325,15 @@ class BoundedVisionOwner:
         outputs: dict[int, EncodedVisionItem] = {}
         seen_outputs: set[int] = set()
         pair_reports = []
+        residency_reports = []
         started = time.perf_counter()
         for group in task_groups:
-            self._release_loaded()
+            group_keys = {str(task["key"]) for task in group}
+            residency_reports.append(
+                self._release_loaded_except(group_keys)
+                if retain_loaded_graphs
+                else self._release_loaded()
+            )
             primary_claimed: set[str] = set()
             executors: list[Callable[..., torch.Tensor]] = []
             clone_executors: list[Callable[..., torch.Tensor]] = []
@@ -426,7 +458,25 @@ class BoundedVisionOwner:
                 gc.collect()
                 torch.npu.empty_cache()
                 self.host_purge_statuses.append(purge_host_allocator_pages())
-        release = self._release_loaded()
+        release = (
+            {
+                "executor_count": 0,
+                "executors": [],
+                "retained_for_next_window": True,
+            }
+            if retain_loaded_graphs and not fallbacks
+            else self._release_loaded()
+        )
+        resident_keys = sorted(
+            key
+            for key, value in self.runtime.compiled.items()
+            if getattr(value, "_compiled_model", None) is not None
+        )
+        if len(resident_keys) > self.lanes:
+            raise RuntimeError(
+                "bounded vision retained more graphs than lanes: "
+                f"{resident_keys}"
+            )
         if len(seen_outputs) != len(records):
             raise RuntimeError(
                 f"bounded vision produced {len(seen_outputs)} of {len(records)} crops"
@@ -443,6 +493,9 @@ class BoundedVisionOwner:
             "task_count": sum(len(group) for group in task_groups),
             "pair_count": len(pair_reports),
             "pairs": pair_reports,
+            "graph_residency": residency_reports,
+            "retain_loaded_graphs": bool(retain_loaded_graphs),
+            "resident_keys": resident_keys,
             "same_key_shards": self.same_key_shards,
             "sharded_key_count": self.sharded_key_count,
             "sharded_keys": shard_keys,
@@ -470,4 +523,5 @@ class BoundedVisionOwner:
         return ordered, report
 
     def close(self) -> None:
+        self._release_loaded()
         self.pool.shutdown(wait=True)

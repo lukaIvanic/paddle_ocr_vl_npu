@@ -26,6 +26,19 @@ CPU_CROP_WORKER_MALLOC_CONF = (
 LAYOUT_OWNER_MALLOC_CONF = CPU_CROP_WORKER_MALLOC_CONF
 
 
+def release_page_pixel_spools(payload: dict[str, Any]) -> int:
+    """Delete per-page pixel files after the vision owner consumed them."""
+    released = 0
+    for value in payload.get("pixel_spool_paths", []):
+        path = Path(value)
+        if not path.exists():
+            continue
+        released += path.stat().st_size
+        path.unlink()
+    payload["pixel_spool_paths"] = []
+    return released
+
+
 def decode_page_rgb_cpu(path: Path) -> tuple[np.ndarray, dict[str, float]]:
     """Decode RGB without importing Torch in the persistent CPU workers."""
     started = time.perf_counter()
@@ -240,6 +253,7 @@ def _worker_main(
     resize_chunk_size: int,
     cross_cache_length: int,
     use_chart_recognition: bool,
+    spool_mode: str,
     task_queue: Any,
     result_queue: Any,
 ) -> None:
@@ -277,6 +291,17 @@ def _worker_main(
                     break
                 task_started = time.perf_counter()
                 page_index = int(task["page_index"])
+                request_id = str(task.get("request_id", page_index))
+                active_spool = spool
+                active_spool_path = spool_path
+                page_spool = None
+                if spool_mode == "per_page":
+                    active_spool_path = (
+                        Path(spool_root)
+                        / f"worker_{worker_index:02d}_page_{page_index:012d}.bin"
+                    )
+                    page_spool = active_spool_path.open("w+b", buffering=0)
+                    active_spool = page_spool
                 rgb_descriptor = task.get("rgb_descriptor")
                 if rgb_descriptor is None:
                     if task["rgb"] is None:
@@ -339,8 +364,8 @@ def _worker_main(
                             int(value) for value in source_size
                         ]
                         crop["processed_pixel_values_descriptor"] = _append_pixels(
-                            spool,
-                            path=spool_path,
+                            active_spool,
+                            path=active_spool_path,
                             pixels=pixels,
                         )
                         crop["processed_image_size"] = [
@@ -352,6 +377,15 @@ def _worker_main(
                     del prepared
                 resize_wall_s = time.perf_counter() - resize_started
                 payload["cross_capacity_rejected_crops"] = rejected
+                payload["request_id"] = request_id
+                payload["pixel_spool_paths"] = sorted(
+                    {
+                        str(
+                            crop["processed_pixel_values_descriptor"]["path"]
+                        )
+                        for crop in kept_crops
+                    }
+                )
                 payload["started_at"] = float(task["started_at"])
                 payload["frontend_timing_s"] = {
                     **decode_timing,
@@ -360,10 +394,13 @@ def _worker_main(
                     "recognition_processor_resize_service_sum_s": resize_service_sum_s,
                     "recognition_input_prepare_worker_s": resize_wall_s,
                 }
+                if page_spool is not None:
+                    page_spool.close()
                 result_queue.put(
                     {
                         "status": "ok",
                         "worker": worker_index,
+                        "request_id": request_id,
                         "page_index": page_index,
                         "payload": payload,
                         "worker_page_s": time.perf_counter() - task_started,
@@ -416,9 +453,12 @@ class CpuCropPreparePool:
         spool_root: Path,
         cross_cache_length: int,
         use_chart_recognition: bool = True,
+        spool_mode: str = "append_worker",
     ) -> None:
         if workers < 1 or recognition_threads < 1 or resize_chunk_size < 0:
             raise ValueError("worker and thread counts must be positive")
+        if spool_mode not in {"append_worker", "per_page"}:
+            raise ValueError(f"unsupported crop spool mode: {spool_mode}")
         self.context = mp.get_context("spawn")
         self.task_queue = self.context.Queue(maxsize=workers * 2)
         # Results contain metadata and spool descriptors only. Keep this queue
@@ -436,6 +476,7 @@ class CpuCropPreparePool:
                     resize_chunk_size,
                     cross_cache_length,
                     use_chart_recognition,
+                    spool_mode,
                     self.task_queue,
                     self.result_queue,
                 ),
@@ -472,6 +513,7 @@ class CpuCropPreparePool:
                 f"expected {malloc_conf!r}, got {worker_malloc_confs}"
             )
         self.malloc_conf = malloc_conf
+        self.spool_mode = spool_mode
         self.worker_pss_bytes = sum(
             int(item["snapshot"]["proc_bytes"]["pss"]) for item in ready
         )
@@ -504,9 +546,13 @@ class CpuCropPreparePool:
         rgb_descriptor: dict[str, Any] | None = None,
         layout_result: dict[str, Any],
         started_at: float,
+        request_id: str | None = None,
     ) -> None:
         self.task_queue.put(
             {
+                "request_id": (
+                    str(page_index) if request_id is None else str(request_id)
+                ),
                 "page_index": page_index,
                 "path": str(path),
                 "rgb": rgb,
@@ -517,8 +563,8 @@ class CpuCropPreparePool:
         )
         self.submitted += 1
 
-    def receive(self) -> dict[str, Any]:
-        item = self._get()
+    def receive(self, *, timeout: float = 1800.0) -> dict[str, Any]:
+        item = self._get(timeout=timeout)
         self.completed += 1
         self.worker_page_s += float(item["worker_page_s"])
         payload = item["payload"]
@@ -685,6 +731,271 @@ def _layout_owner_process_main(
                 "traceback": traceback.format_exc(),
             }
         )
+
+
+def _persistent_layout_owner_process_main(
+    model_path: str,
+    cache_dir: str,
+    device: str,
+    lanes: int,
+    batch_size: int,
+    threshold: float,
+    flush_timeout_s: float,
+    task_queue: Any,
+    result_queue: Any,
+) -> None:
+    """Own one hot layout runtime and accept requests until explicit close."""
+    try:
+        import torch_npu
+
+        from host_memory_diagnostics import process_snapshot
+        from layout_page_input import decode_page_rgb, materialize_layout_rgb
+        from post_warmup_host_cleanup import purge_host_allocator_pages
+        from shared_layout_owner import SharedLayoutOwner
+
+        torch_npu.npu.set_compile_mode(jit_compile=False)
+        owner = SharedLayoutOwner(
+            model_path=Path(model_path),
+            cache_dir=Path(cache_dir),
+            device=device,
+            lanes=lanes,
+            batch_size=batch_size,
+            threshold=threshold,
+        )
+        result_queue.put(
+            {
+                "status": "layout_ready",
+                "pid": os.getpid(),
+                "snapshot": process_snapshot(),
+                "chip": torch_npu.npu.get_device_name(0),
+                "malloc_conf": os.environ.get("MALLOC_CONF", ""),
+            }
+        )
+        started = time.perf_counter()
+        completed = 0
+        batch_calls = 0
+        closing = False
+        max_group_size = lanes * batch_size
+        while not closing:
+            first = task_queue.get()
+            if first is None:
+                break
+            tasks = [first]
+            deadline = time.perf_counter() + flush_timeout_s
+            while len(tasks) < max_group_size:
+                remaining = deadline - time.perf_counter()
+                if remaining <= 0:
+                    break
+                try:
+                    task = task_queue.get(timeout=remaining)
+                except queue.Empty:
+                    break
+                if task is None:
+                    closing = True
+                    break
+                tasks.append(task)
+
+            prepared = []
+            timings = []
+            for task in tasks:
+                rgb, timing = decode_page_rgb(Path(task["path"]))
+                rgb = materialize_layout_rgb(rgb)
+                prepared.append(owner.prepare(rgb))
+                timings.append(timing)
+                del rgb
+            layouts = owner.predict_prepared(prepared)
+            batch_calls += (len(tasks) + batch_size - 1) // batch_size
+            for task, layout, timing in zip(tasks, layouts, timings):
+                result_queue.put(
+                    {
+                        "status": "layout_page",
+                        "request_id": str(task["request_id"]),
+                        "page_index": int(task["page_index"]),
+                        "path": str(task["path"]),
+                        "rgb_descriptor": None,
+                        "layout_result": layout,
+                        "started_at": float(task["started_at"]),
+                        "decode_timing_s": timing,
+                        "ready_at": time.perf_counter(),
+                    }
+                )
+                completed += 1
+            del layouts, prepared, timings
+            if completed % 32 == 0:
+                gc.collect()
+                purge_host_allocator_pages()
+        result_queue.put(
+            {
+                "status": "layout_closed",
+                "pages": completed,
+                "batch_calls": batch_calls,
+                "wall_s": time.perf_counter() - started,
+                "owner_calls": owner.calls,
+                "owner_wall_s": owner.wall_s,
+                "snapshot": process_snapshot(),
+            }
+        )
+    except BaseException as exception:
+        result_queue.put(
+            {
+                "status": "error",
+                "error": repr(exception),
+                "traceback": traceback.format_exc(),
+            }
+        )
+
+
+class PersistentSharedLayoutProcess:
+    """Persistent B2 layout service with bounded request backpressure."""
+
+    def __init__(
+        self,
+        *,
+        model_path: Path,
+        cache_dir: Path,
+        device: str,
+        lanes: int = 1,
+        batch_size: int = 2,
+        threshold: float = 0.5,
+        flush_timeout_s: float = 0.005,
+        queue_size: int = 32,
+        malloc_conf: str = LAYOUT_OWNER_MALLOC_CONF,
+    ) -> None:
+        if lanes < 1 or batch_size < 1 or queue_size < 1:
+            raise ValueError("layout lanes, batch size, and queue size must be positive")
+        if flush_timeout_s < 0:
+            raise ValueError("layout flush timeout cannot be negative")
+        self.context = mp.get_context("spawn")
+        self.task_queue = self.context.Queue(maxsize=queue_size)
+        self.result_queue = self.context.Queue(maxsize=queue_size)
+        self.submitted = 0
+        self.received = 0
+        self.close_requested = False
+        self.closed = False
+        self.summary: dict[str, Any] | None = None
+        self.process = self.context.Process(
+            target=_persistent_layout_owner_process_main,
+            args=(
+                str(model_path),
+                str(cache_dir),
+                device,
+                lanes,
+                batch_size,
+                threshold,
+                flush_timeout_s,
+                self.task_queue,
+                self.result_queue,
+            ),
+            name="unirec-persistent-layout-owner",
+        )
+        previous_malloc_conf = os.environ.get("MALLOC_CONF")
+        try:
+            if malloc_conf:
+                os.environ["MALLOC_CONF"] = malloc_conf
+            else:
+                os.environ.pop("MALLOC_CONF", None)
+            self.process.start()
+            ready = self._get(timeout=300.0)
+        finally:
+            if previous_malloc_conf is None:
+                os.environ.pop("MALLOC_CONF", None)
+            else:
+                os.environ["MALLOC_CONF"] = previous_malloc_conf
+        if ready.get("status") != "layout_ready":
+            self.close()
+            raise RuntimeError(f"persistent layout owner was not ready: {ready}")
+        if str(ready.get("malloc_conf", "")) != malloc_conf:
+            self.close()
+            raise RuntimeError(
+                "persistent layout allocator mismatch: "
+                f"expected {malloc_conf!r}, got {ready.get('malloc_conf')!r}"
+            )
+        self.ready = ready
+        self.malloc_conf = malloc_conf
+
+    def _get(self, *, timeout: float = 1800.0) -> dict[str, Any]:
+        try:
+            item = self.result_queue.get(timeout=timeout)
+        except queue.Empty as exception:
+            raise TimeoutError("persistent layout owner produced no result") from exception
+        if item.get("status") == "error":
+            raise RuntimeError(
+                f"persistent layout owner failed: {item.get('error')}\n"
+                f"{item.get('traceback')}"
+            )
+        return item
+
+    def submit(
+        self,
+        *,
+        request_id: str,
+        page_index: int,
+        path: Path,
+        started_at: float,
+    ) -> None:
+        if self.close_requested:
+            raise RuntimeError("cannot submit after persistent layout close")
+        self.task_queue.put(
+            {
+                "request_id": str(request_id),
+                "page_index": int(page_index),
+                "path": str(path),
+                "started_at": float(started_at),
+            }
+        )
+        self.submitted += 1
+
+    def receive(self, *, timeout: float = 1800.0) -> dict[str, Any]:
+        item = self.receive_event(timeout=timeout)
+        if item.get("status") != "layout_page":
+            raise RuntimeError(f"unexpected persistent layout message: {item}")
+        return item
+
+    def receive_event(self, *, timeout: float = 1800.0) -> dict[str, Any]:
+        item = self._get(timeout=timeout)
+        status = item.get("status")
+        if status == "layout_page":
+            self.received += 1
+        elif status == "layout_closed":
+            self.summary = item
+        else:
+            raise RuntimeError(f"unexpected persistent layout message: {item}")
+        return item
+
+    def request_close(self) -> None:
+        if self.close_requested:
+            return
+        self.close_requested = True
+        self.task_queue.put(None)
+
+    def finish(self) -> dict[str, Any]:
+        self.request_close()
+        while self.received < self.submitted:
+            self.receive()
+        summary = self.summary or self._get()
+        if summary.get("status") != "layout_closed":
+            raise RuntimeError(f"persistent layout owner did not close: {summary}")
+        self.summary = summary
+        return summary
+
+    def close(self) -> None:
+        if getattr(self, "closed", False):
+            return
+        self.closed = True
+        if self.process.is_alive():
+            self.request_close()
+            self.process.join(timeout=60.0)
+        if self.process.is_alive():
+            self.process.terminate()
+            self.process.join(timeout=5.0)
+        self.task_queue.close()
+        self.result_queue.close()
+
+    def __enter__(self) -> "PersistentSharedLayoutProcess":
+        return self
+
+    def __exit__(self, *_args: Any) -> None:
+        self.close()
 
 
 class SharedLayoutProcess:
