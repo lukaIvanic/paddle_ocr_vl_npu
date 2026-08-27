@@ -41,6 +41,7 @@ class BoundedVisionOwner:
         sharded_key_count: int = 4,
         fallback_runtime: BucketedFullVisionRuntime | None = None,
         deinitialize_tbe_after_first_group: bool = True,
+        keep_all_loaded_graphs: bool = False,
     ) -> None:
         if not 1 <= lanes <= 4:
             raise ValueError("bounded vision lanes must be in [1, 4]")
@@ -53,12 +54,22 @@ class BoundedVisionOwner:
         self.same_key_shards = int(same_key_shards)
         self.sharded_key_count = int(sharded_key_count)
         self.fallback_runtime = fallback_runtime
+        self.keep_all_loaded_graphs = bool(keep_all_loaded_graphs)
+        if self.keep_all_loaded_graphs and self.same_key_shards != 1:
+            raise ValueError(
+                "keep-all graph residency does not support same-key shards"
+            )
         self.deinitialize_tbe_after_first_group = bool(
             deinitialize_tbe_after_first_group
         )
+        graph_keys = tuple(dict.fromkeys(spec.key for spec in runtime.specs))
+        self._stream_index_by_key = {
+            key: index for index, key in enumerate(graph_keys)
+        }
+        stream_count = len(graph_keys) if self.keep_all_loaded_graphs else lanes
         self.streams = [
             torch.npu.Stream(device=torch.device(runtime.runner.device))
-            for _ in range(lanes)
+            for _ in range(stream_count)
         ]
         self.pool = ThreadPoolExecutor(
             max_workers=lanes,
@@ -329,6 +340,10 @@ class BoundedVisionOwner:
         group: Sequence[dict[str, Any]],
     ) -> list[int]:
         """Keep retained TorchAir executors on their first-call stream."""
+        if self.keep_all_loaded_graphs:
+            return [
+                self._stream_index_by_key[str(task["key"])] for task in group
+            ]
         lanes: list[int | None] = [None] * len(group)
         used: set[int] = set()
         claimed_keys: set[str] = set()
@@ -377,11 +392,27 @@ class BoundedVisionOwner:
         started = time.perf_counter()
         for group in task_groups:
             group_keys = {str(task["key"]) for task in group}
-            residency_reports.append(
-                self._release_loaded_except(group_keys)
-                if retain_loaded_graphs
-                else self._release_loaded()
-            )
+            if self.keep_all_loaded_graphs and retain_loaded_graphs:
+                residency_reports.append(
+                    {
+                        "executor_count": 0,
+                        "executors": [],
+                        "released_keys": [],
+                        "retained_keys": sorted(
+                            key
+                            for key, value in self.runtime.compiled.items()
+                            if getattr(value, "_compiled_model", None) is not None
+                        ),
+                        "mode": "keep_all",
+                        "wall_s": 0.0,
+                    }
+                )
+            else:
+                residency_reports.append(
+                    self._release_loaded_except(group_keys)
+                    if retain_loaded_graphs
+                    else self._release_loaded()
+                )
             primary_claimed: set[str] = set()
             executors: list[Callable[..., torch.Tensor]] = []
             clone_executors: list[Callable[..., torch.Tensor]] = []
@@ -462,7 +493,11 @@ class BoundedVisionOwner:
         fallback_release: dict[str, Any] | None = None
         compiled_fallbacks = 0
         eager_fallbacks = 0
-        if fallbacks and self.fallback_runtime is not None:
+        if (
+            fallbacks
+            and self.fallback_runtime is not None
+            and not self.keep_all_loaded_graphs
+        ):
             self._release_loaded()
         for record in fallbacks:
             mapping = self._mapping(record["processed_pixel_values_descriptor"])
@@ -511,7 +546,7 @@ class BoundedVisionOwner:
                 for value in self.fallback_runtime.compiled.values()
                 if getattr(value, "_compiled_model", None) is not None
             ]
-            if loaded_fallbacks:
+            if loaded_fallbacks and not self.keep_all_loaded_graphs:
                 torch.npu.synchronize()
                 fallback_release = release_loaded_ge_executors(loaded_fallbacks)
                 gc.collect()
@@ -523,7 +558,8 @@ class BoundedVisionOwner:
                 "executors": [],
                 "retained_for_next_window": True,
             }
-            if retain_loaded_graphs and not fallbacks
+            if retain_loaded_graphs
+            and (not fallbacks or self.keep_all_loaded_graphs)
             else self._release_loaded()
         )
         resident_keys = sorted(
@@ -531,7 +567,7 @@ class BoundedVisionOwner:
             for key, value in self.runtime.compiled.items()
             if getattr(value, "_compiled_model", None) is not None
         )
-        if len(resident_keys) > self.lanes:
+        if not self.keep_all_loaded_graphs and len(resident_keys) > self.lanes:
             raise RuntimeError(
                 "bounded vision retained more graphs than lanes: "
                 f"{resident_keys}"
@@ -553,6 +589,9 @@ class BoundedVisionOwner:
             "pair_count": len(pair_reports),
             "pairs": pair_reports,
             "graph_residency": residency_reports,
+            "graph_residency_mode": (
+                "keep_all" if self.keep_all_loaded_graphs else "bounded"
+            ),
             "retain_loaded_graphs": bool(retain_loaded_graphs),
             "resident_keys": resident_keys,
             "same_key_shards": self.same_key_shards,
@@ -583,4 +622,13 @@ class BoundedVisionOwner:
 
     def close(self) -> None:
         self._release_loaded()
+        if self.fallback_runtime is not None:
+            loaded_fallbacks = [
+                value
+                for value in self.fallback_runtime.compiled.values()
+                if getattr(value, "_compiled_model", None) is not None
+            ]
+            if loaded_fallbacks:
+                torch.npu.synchronize()
+                release_loaded_ge_executors(loaded_fallbacks)
         self.pool.shutdown(wait=True)

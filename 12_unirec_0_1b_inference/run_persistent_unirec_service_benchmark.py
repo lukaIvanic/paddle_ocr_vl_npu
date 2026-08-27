@@ -70,6 +70,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-threshold", type=float, default=0.5)
     parser.add_argument("--vision-bucket-preset", default="310p_k20_l4")
     parser.add_argument("--vision-lanes", type=int, default=4)
+    parser.add_argument(
+        "--vision-graph-residency",
+        choices=("bounded", "all"),
+        default="bounded",
+    )
     parser.add_argument("--vision-same-key-shards", type=int, default=1)
     parser.add_argument("--vision-sharded-key-count", type=int, default=4)
     parser.add_argument("--vision-record-budget", type=int, default=128)
@@ -221,6 +226,7 @@ def main() -> None:
         sharded_key_count=args.vision_sharded_key_count,
         fallback_runtime=tall_fallback_runtime,
         deinitialize_tbe_after_first_group=False,
+        keep_all_loaded_graphs=args.vision_graph_residency == "all",
     )
     text_runtime = runner._get_compiled_packed_text_prefill_runtime()
     runner.compile_cache_dir = decode_cache_variant_root(
@@ -429,6 +435,7 @@ def main() -> None:
             "layout_batch_size": args.layout_batch_size,
             "vision_bucket_preset": args.vision_bucket_preset,
             "vision_lanes": args.vision_lanes,
+            "vision_graph_residency": args.vision_graph_residency,
             "vision_record_budget": args.vision_record_budget,
             "vision_max_calls_per_key": args.vision_max_calls_per_key,
             "vision_queue_size": args.vision_queue_size,
