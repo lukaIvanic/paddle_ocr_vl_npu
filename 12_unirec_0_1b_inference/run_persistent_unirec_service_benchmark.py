@@ -75,6 +75,14 @@ def parse_args() -> argparse.Namespace:
         choices=("bounded", "all"),
         default="bounded",
     )
+    parser.add_argument(
+        "--require-all-warmup-vision-graphs",
+        action="store_true",
+        help=(
+            "fail before the hot window unless real-page warmup exercised "
+            "every graph in the selected vision preset"
+        ),
+    )
     parser.add_argument("--vision-same-key-shards", type=int, default=1)
     parser.add_argument("--vision-sharded-key-count", type=int, default=4)
     parser.add_argument("--vision-record-budget", type=int, default=128)
@@ -334,6 +342,33 @@ def main() -> None:
     )
     host_cleanup = cleanup_after_warmup("persistent_service_hot")
     prior_metrics = service.reset_measurement()
+    warmup_vision_keys = sorted(
+        {
+            str(call["key"])
+            for dispatch in prior_metrics["npu"]["vision_dispatch_details"]
+            for call in dispatch.get("lane_calls", [])
+        }
+    )
+    expected_vision_keys = sorted(spec.key for spec in vision_runtime.specs)
+    if args.require_all_warmup_vision_graphs:
+        missing_vision_keys = sorted(
+            set(expected_vision_keys) - set(warmup_vision_keys)
+        )
+        unexpected_vision_keys = sorted(
+            set(warmup_vision_keys) - set(expected_vision_keys)
+        )
+        if missing_vision_keys or unexpected_vision_keys:
+            raise RuntimeError(
+                "real-page warmup did not exercise the complete vision preset: "
+                f"missing={missing_vision_keys} "
+                f"unexpected={unexpected_vision_keys}"
+            )
+    print(
+        "UNIREC_SERVING_WARMUP_GRAPHS "
+        f"used={len(warmup_vision_keys)}/{len(expected_vision_keys)} "
+        f"keys={','.join(warmup_vision_keys)}",
+        flush=True,
+    )
     spool_leftovers = [
         path
         for path in args.spool_dir.iterdir()
@@ -436,6 +471,9 @@ def main() -> None:
             "vision_bucket_preset": args.vision_bucket_preset,
             "vision_lanes": args.vision_lanes,
             "vision_graph_residency": args.vision_graph_residency,
+            "require_all_warmup_vision_graphs": (
+                args.require_all_warmup_vision_graphs
+            ),
             "vision_record_budget": args.vision_record_budget,
             "vision_max_calls_per_key": args.vision_max_calls_per_key,
             "vision_queue_size": args.vision_queue_size,
