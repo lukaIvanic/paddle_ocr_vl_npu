@@ -33,16 +33,23 @@ The matched 910B2 result at commit `4fc7311` was:
   The runner uses `taskset -c 0-63` and records the effective affinity.
 - `/dev/shm` exposes about 64 GiB. Record it but do not reject the run because
   of that limit.
-- Reuse the current K20 and compiled-FP32 B2 layout caches without modification.
+- Reuse the current K20 and compiled-FP32 B2 layout caches. If the locator
+  reports only `128x1408_b1` missing because both the accepted `58bd81c1...`
+  and stray `84df4019...` cache identities exist, first follow
+  `WORK_SERVER_310P_UNIREC_K20_SINGLE_BUCKET_RECOVERY.md`. It quarantines the
+  stray identity outside the locator root. It permits one targeted graph rebuild
+  only if the accepted identity is incomplete. Never rebuild all K20 graphs.
 - Build exactly one fresh B128 C1320 S2048 NZ decode graph. The build uses the
   first 32 real pages, the real cross-KV rows, the production arena allocator,
   and the long-lived production decode input tensors. It does not call a
   standalone or synthetic forward probe.
 - Enable one CANN knowledge-bank process only for the cold first-32 build. The
   fresh replay and measured full run use zero knowledge-bank processes.
-- K20 and layout OM inventories must remain unchanged. After the cold build,
-  neither the fresh replay nor the measured full run may create an OM.
-- Do not delete, rename, or repair a cache after failure.
+- After the single-bucket recovery, K20 and layout OM inventories must remain
+  unchanged. Neither the fresh replay nor the measured full run may create an
+  OM.
+- Do not delete a failed cache. Preserve it or move the one confirmed stray
+  identity to the recovery brief's quarantine directory.
 - The inference run should take roughly 10 to 15 minutes. The runner prints a
   heartbeat every 15 seconds. If the marker does not change for 30 seconds,
   inspect the process, compiler count, HBM, and last log line before waiting.
