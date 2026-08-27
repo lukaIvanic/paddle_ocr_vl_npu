@@ -37,6 +37,17 @@ class PersistentUniRecService:
             self._completed += 1
             self._condition.notify_all()
 
+    def fail(self, exception: BaseException) -> None:
+        """Fail every request still owned by the service."""
+        with self._condition:
+            pending = list(self._futures.values())
+            self._futures.clear()
+            for future in pending:
+                if not future.done():
+                    future.set_exception(exception)
+                    self._completed += 1
+            self._condition.notify_all()
+
     def submit(
         self,
         path: Path,

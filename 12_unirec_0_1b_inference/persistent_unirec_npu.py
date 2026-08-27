@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from queue import Empty, Queue
 from threading import Condition, Event, Thread
+import sys
 import time
+import traceback
 from typing import Any, Callable
 
 import torch
@@ -35,6 +37,7 @@ class PersistentUniRecNpuPipeline:
         device: str,
         on_page_complete: Callable[[str, dict[str, Any]], None],
         response_builder: Callable[[Any], dict[str, Any]],
+        on_error: Callable[[BaseException], None] | None = None,
         vision_page_lookahead: int = 4,
         vision_flush_timeout_s: float = 0.005,
         vision_queue_size: int = 16,
@@ -57,6 +60,7 @@ class PersistentUniRecNpuPipeline:
         self.device = device
         self.on_page_complete = on_page_complete
         self.response_builder = response_builder
+        self.on_error = on_error
         self.vision_page_lookahead = int(vision_page_lookahead)
         self.vision_flush_timeout_s = float(vision_flush_timeout_s)
         self.decode_partial_batch_wait_s = float(decode_partial_batch_wait_s)
@@ -134,10 +138,22 @@ class PersistentUniRecNpuPipeline:
         }
 
     def _record_error(self, exception: BaseException) -> None:
+        first_error = False
         with self._condition:
             if self._error is None:
                 self._error = exception
+                first_error = True
             self._condition.notify_all()
+        if first_error:
+            print(
+                "UNIREC_SERVING_NPU_ERROR "
+                f"type={type(exception).__name__} error={exception!r}",
+                flush=True,
+            )
+            traceback.print_exception(exception)
+            sys.stderr.flush()
+            if self.on_error is not None:
+                self.on_error(exception)
         try:
             self.ready_queue.close()
         except BaseException:

@@ -278,6 +278,11 @@ def main() -> None:
                 flush=True,
             )
 
+    def npu_error(exception: BaseException) -> None:
+        service = holder.get("service")
+        if service is not None:
+            service.fail(exception)
+
     def decode_warmup_complete(report: dict[str, Any]) -> None:
         deinitialize_after_warmup("persistent_service_decode_warmup_complete")
         cleanup_after_warmup("persistent_service_hot")
@@ -295,6 +300,7 @@ def main() -> None:
         device=args.device,
         on_page_complete=page_complete,
         response_builder=response_builder,
+        on_error=npu_error,
         vision_page_lookahead=args.vision_page_lookahead,
         vision_flush_timeout_s=args.vision_flush_timeout_ms / 1000.0,
         ready_queue_size=args.ready_queue_size,
