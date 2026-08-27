@@ -61,7 +61,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="npu:0")
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int)
-    parser.add_argument("--warmup-pages", type=int, default=32)
+    parser.add_argument("--warmup-pages", type=int, default=512)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--recognition-threads", type=int, default=8)
     parser.add_argument("--recognition-resize-chunk-size", type=int, default=0)
@@ -73,18 +73,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--vision-graph-residency",
         choices=("bounded", "all"),
-        default="bounded",
+        default="all",
     )
     parser.add_argument(
         "--require-all-warmup-vision-graphs",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=(
             "fail before the hot window unless real-page warmup exercised "
             "every graph in the selected vision preset"
         ),
     )
     parser.add_argument("--vision-same-key-shards", type=int, default=1)
-    parser.add_argument("--vision-sharded-key-count", type=int, default=4)
+    parser.add_argument("--vision-sharded-key-count", type=int, default=0)
     parser.add_argument("--vision-record-budget", type=int, default=128)
     parser.add_argument("--vision-max-calls-per-key", type=int, default=64)
     parser.add_argument("--vision-queue-size", type=int, default=128)
@@ -93,8 +94,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--self-cache-length", type=int, default=2048)
     parser.add_argument("--max-length", type=int, default=2048)
     parser.add_argument("--ready-queue-size", type=int, default=128)
-    parser.add_argument("--vision-tall-fallback", choices=("compiled", "eager"), default="compiled")
-    parser.add_argument("--progress-every", type=int, default=32)
+    parser.add_argument(
+        "--vision-tall-fallback",
+        choices=("compiled", "eager"),
+        default="eager",
+    )
+    parser.add_argument("--progress-every", type=int, default=16)
     parser.add_argument("--write-outputs", action="store_true")
     return parser.parse_args()
 
@@ -464,22 +469,37 @@ def main() -> None:
         "decode_optimizations": decode_optimizations,
         "final_memory": process_snapshot(),
         "settings": {
+            "device": args.device,
+            "offset": args.offset,
+            "limit": args.limit,
+            "warmup_pages": args.warmup_pages,
             "workers": args.workers,
             "recognition_threads": args.recognition_threads,
+            "recognition_resize_chunk_size": (
+                args.recognition_resize_chunk_size
+            ),
             "layout_lanes": args.layout_lanes,
             "layout_batch_size": args.layout_batch_size,
+            "layout_threshold": args.layout_threshold,
             "vision_bucket_preset": args.vision_bucket_preset,
             "vision_lanes": args.vision_lanes,
             "vision_graph_residency": args.vision_graph_residency,
             "require_all_warmup_vision_graphs": (
                 args.require_all_warmup_vision_graphs
             ),
+            "vision_same_key_shards": args.vision_same_key_shards,
+            "vision_sharded_key_count": args.vision_sharded_key_count,
             "vision_record_budget": args.vision_record_budget,
             "vision_max_calls_per_key": args.vision_max_calls_per_key,
             "vision_queue_size": args.vision_queue_size,
+            "vision_tall_fallback": args.vision_tall_fallback,
             "decode_batch_size": args.decode_batch_size,
             "cross_cache_length": args.cross_cache_length,
             "self_cache_length": args.self_cache_length,
+            "max_length": args.max_length,
+            "ready_queue_size": args.ready_queue_size,
+            "progress_every": args.progress_every,
+            "write_outputs": args.write_outputs,
         },
         "artifacts": {
             "output_dir": str(args.output_dir.resolve()),

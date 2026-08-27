@@ -23,10 +23,10 @@ The matched 910B2 result at commit `cae401d` was:
 | Peak host PSS | 9.654 GB |
 | HBM baseline / peak | 3,396 / 16,490 MB |
 
-The accepted earlier 310P low-memory run reached about 1.99 pages/s. The
-accepted accuracy runs scored about 90.2% Overall. This run changes the serving
-schedule and K20 residency. It does not change the model, threshold, K20 graph
-implementations, decoder graph, or evaluator.
+The completed persistent 310P run reported 3.2 pages/s, 90.22% Overall, 7.993 GB
+peak process-tree PSS, 9.350 GB peak process-tree RSS, and 16.330 GB peak HBM.
+The stable record is
+`references/unirec_persistent_service_canonical_20260827/README.md`.
 
 ## Constraints
 
@@ -256,6 +256,7 @@ run_decode_cache_lane() {
     --vision-bucket-preset 310p_k20_l4
     --vision-lanes 4
     --vision-graph-residency all
+    --no-require-all-warmup-vision-graphs
     --vision-same-key-shards 1
     --vision-sharded-key-count 0
     --vision-record-budget 128
