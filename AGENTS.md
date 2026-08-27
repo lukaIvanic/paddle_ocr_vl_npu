@@ -91,6 +91,9 @@ was reached. **09 is the active PaddleOCR-VL engine**; 01–08 are historical an
   vLLM token parity, and captured second-half replay for MoE optimization.
 - `16_glm52_w4a8c8_layer_lab/`: owned GLM-5.2 W4A8C8 layer-3 eager and static
   TorchAir compile lab on one 910B2, with exact multi-position KV parity.
+- `17_mineru_vllm_ascend_baseline/`: stock vLLM-Ascend MinerU2.5-Pro
+  OmniDocBench baseline on one 910B2, with a fresh environment clone and the
+  photographed 310P configuration reproduced as a labeled cross-chip lane.
 
 Supporting artifacts:
 

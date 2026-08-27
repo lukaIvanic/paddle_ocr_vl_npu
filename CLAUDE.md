@@ -12,9 +12,9 @@ plus adaptive MLP projector plus an ERNIE-4.5-0.3B decoder-only multimodal LM.
 Visual embeddings replace `<image>` token embeddings before decoder inference;
 there is no encoder-decoder cross-attention.
 
-Work is organized as a ladder of numbered experiments, `01_` through `16_`.
+Work is organized as a ladder of numbered experiments, `01_` through `17_`.
 **`09_persistent_page_engine/` is the active PaddleOCR-VL engine**; experiments
-10–16 are self-contained sibling model/runtime investigations. Read
+10–17 are self-contained sibling model/runtime investigations. Read
 [09_persistent_page_engine/README.md](09_persistent_page_engine/README.md) before
 interpreting any 09 throughput or parity claim.
 
