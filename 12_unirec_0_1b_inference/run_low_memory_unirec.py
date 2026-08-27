@@ -32,7 +32,6 @@ import json
 from queue import Queue
 from threading import Thread
 import time
-from types import SimpleNamespace
 from typing import Any
 
 os.environ.setdefault("TE_PARALLEL_COMPILER", "1")
@@ -292,7 +291,6 @@ def main() -> None:
     from run_opendoc_batched_unirec import (
         assemble_page,
         iter_greedy_text_packs,
-        warmup_configured_graphs,
     )
     from tbe_compiler_lifecycle import deinitialize_after_warmup
     from vision_bucket_presets import resolve_vision_bucket_specs
@@ -370,6 +368,9 @@ def main() -> None:
         same_key_shards=args.vision_same_key_shards,
         sharded_key_count=args.vision_sharded_key_count,
         fallback_runtime=tall_fallback_runtime,
+        # Decode may need to create its one static graph from the first real
+        # admitted cohort. Keep the compiler alive until that warmup finishes.
+        deinitialize_tbe_after_first_group=False,
     )
     text_runtime = runner._get_compiled_packed_text_prefill_runtime()
     encoded: list[Any] | None = None
@@ -388,9 +389,8 @@ def main() -> None:
         gc.collect()
         torch.npu.empty_cache()
         post_vision_cleanup = cleanup_after_warmup("low_memory_vision_complete")
-        vision_tbe_deinit = deinitialize_after_warmup(
-            "low_memory_vision_complete"
-        )
+        # Decode may still need to compile on its first real admitted cohort.
+        # Keep the process-local compiler alive until that warmup completes.
         post_vision_memory = process_snapshot()
         vision_wall_s = time.perf_counter() - recognition_started
         print(
@@ -417,22 +417,14 @@ def main() -> None:
         weight_format="nz",
         lm_head_rows=57344,
     )
-    decode_warmup = warmup_configured_graphs(
-        args=SimpleNamespace(
-            text_prefill_mode="eager",
-            decode_mode="compiled_ifa",
-            compile_backend="torchair",
-            decode_batch_size=args.decode_batch_size,
-        ),
-        runner=runner,
-        vision_atlas_runtime=None,
-        passes=2,
-        warmup_decode=True,
-    )
-    tbe_deinit = deinitialize_after_warmup("low_memory_owner_ready")
+    # Do not call the graph with a synthetic arena. ContinuousUniRecDecoder.run
+    # performs both warmup passes on the first real admitted B128 cohort and on
+    # the exact long-lived input tensors used by the measured decode loop.
+    decode_warmup: dict[str, Any] | None = None
+    tbe_deinit: dict[str, Any] | None = None
     if args.recognition_schedule == "streaming":
-        post_vision_cleanup = cleanup_after_warmup("low_memory_stream_ready")
-    ready_memory = process_snapshot()
+        post_vision_cleanup = cleanup_after_warmup("low_memory_stream_setup")
+    ready_memory: dict[str, Any] | None = None
 
     if args.ready_queue_size < args.decode_batch_size:
         raise ValueError(
@@ -621,9 +613,8 @@ def main() -> None:
                 del vision_owner, vision_runtime, tall_fallback_runtime
                 gc.collect()
                 torch.npu.empty_cache()
-                vision_tbe_deinit = deinitialize_after_warmup(
-                    "low_memory_stream_vision_complete"
-                )
+                # Decode owns final compiler teardown after its real admitted-
+                # arena warmup. Vision completion can precede that warmup.
                 post_vision_memory = process_snapshot()
                 vision_wall_s = time.perf_counter() - recognition_started
                 print(
@@ -687,6 +678,16 @@ def main() -> None:
             )
 
     decode_started = time.perf_counter()
+
+    def finish_real_decode_warmup(report: dict[str, Any]) -> None:
+        nonlocal tbe_deinit, ready_memory
+        if report.get("arena") != "actual_admitted_decode_arena":
+            raise RuntimeError(f"unexpected decode warmup arena: {report}")
+        tbe_deinit = deinitialize_after_warmup(
+            "low_memory_real_decode_warmup_complete"
+        )
+        ready_memory = process_snapshot()
+
     decode_summary = ContinuousUniRecDecoder(
         runner=runner,
         batch_size=args.decode_batch_size,
@@ -700,7 +701,23 @@ def main() -> None:
         ready_source(),
         on_complete=complete,
         graph_warmup_passes=2,
+        on_graph_warmup_complete=finish_real_decode_warmup,
     )
+    actual_warmup = decode_summary["production_graph_warmup"]
+    decode_warmup = {
+        "passes": int(actual_warmup["passes"]),
+        "graphs": {
+            f"decode_b{args.decode_batch_size}": {
+                "pass_wall_s": list(actual_warmup["pass_wall_s"]),
+                "cross_cache_len": args.cross_cache_length,
+                "cache_dir": actual_warmup.get("cache_dir"),
+                "production_arena_allocator": True,
+                "arena": actual_warmup["arena"],
+            }
+        },
+        "wall_s": float(actual_warmup["wall_s"]),
+        "source": "actual_admitted_decode_arena",
+    }
     decode_wall_s = time.perf_counter() - decode_started
     producer_thread.join(timeout=60.0)
     if producer_thread.is_alive():

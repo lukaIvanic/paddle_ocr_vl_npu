@@ -40,6 +40,7 @@ class BoundedVisionOwner:
         same_key_shards: int = 1,
         sharded_key_count: int = 4,
         fallback_runtime: BucketedFullVisionRuntime | None = None,
+        deinitialize_tbe_after_first_group: bool = True,
     ) -> None:
         if not 1 <= lanes <= 4:
             raise ValueError("bounded vision lanes must be in [1, 4]")
@@ -52,6 +53,9 @@ class BoundedVisionOwner:
         self.same_key_shards = int(same_key_shards)
         self.sharded_key_count = int(sharded_key_count)
         self.fallback_runtime = fallback_runtime
+        self.deinitialize_tbe_after_first_group = bool(
+            deinitialize_tbe_after_first_group
+        )
         self.streams = [
             torch.npu.Stream(device=torch.device(runtime.runner.device))
             for _ in range(lanes)
@@ -354,7 +358,10 @@ class BoundedVisionOwner:
             gc.collect()
             torch.npu.empty_cache()
             self.host_purge_statuses.append(purge_host_allocator_pages())
-            if not self._tbe_deinit_attempted:
+            if (
+                self.deinitialize_tbe_after_first_group
+                and not self._tbe_deinit_attempted
+            ):
                 self._tbe_deinit_attempted = True
                 self.early_tbe_deinit = deinitialize_after_warmup(
                     "bounded_vision_first_group_loaded"

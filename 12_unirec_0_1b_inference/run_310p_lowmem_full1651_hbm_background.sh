@@ -32,6 +32,7 @@ resolve_inputs() {
   : "${ASCEND_RT_VISIBLE_DEVICES:?select one free physical 310P device from 0-3}"
   : "${CPUSET:=0-63}"
   : "${NPU_HBM_INTERVAL_MS:=2000}"
+  : "${ALLOW_DECODE_CACHE_BUILD:=0}"
 
   PYTHON_BIN="$(absolute_executable_path "$PYTHON_BIN")"
   MODEL="$(readlink -f "$MODEL")"
@@ -40,6 +41,7 @@ resolve_inputs() {
   IMAGES_DIR="$(readlink -f "$IMAGES_DIR")"
   COMPILE_CACHE="$(readlink -f "$COMPILE_CACHE")"
   LAYOUT_CACHE_ROOT="$(readlink -f "$LAYOUT_CACHE_ROOT")"
+  mkdir -p "$DECODE_CACHE_PARENT"
   DECODE_CACHE_PARENT="$(readlink -f "$DECODE_CACHE_PARENT")"
   CANONICAL_TRACE="$(readlink -f "$CANONICAL_TRACE")"
 
@@ -58,12 +60,39 @@ resolve_inputs() {
   test -f "$CACHE_LOCATOR"
   [[ "$ASCEND_RT_VISIBLE_DEVICES" =~ ^[0-3]$ ]]
   [[ "$NPU_HBM_INTERVAL_MS" =~ ^[1-9][0-9]*$ ]]
+  [[ "$ALLOW_DECODE_CACHE_BUILD" =~ ^[01]$ ]]
   taskset -c "$CPUSET" true
 
   export PYTHON_BIN MODEL LAYOUT_MODEL OPENOCR_ROOT IMAGES_DIR
   export COMPILE_CACHE LAYOUT_CACHE_ROOT DECODE_CACHE_PARENT CANONICAL_TRACE
   export ASCEND_RT_VISIBLE_DEVICES CPUSET NPU_HBM_INTERVAL_MS
+  export ALLOW_DECODE_CACHE_BUILD
   export UNIREC_PRODUCTION_DECODE_CACHE_PARENT_OVERRIDE="$DECODE_CACHE_PARENT"
+}
+
+decode_shape_path() {
+  printf '%s/%s/%s\n' \
+    "$DECODE_CACHE_PARENT" \
+    decode_weight_nz_lmhead57344_semantic56371 \
+    decode_selfkv2048_cross1320_increfa_all_b128_wnz
+}
+
+decode_cache_counts() {
+  local decode_shape="$1"
+  local module_count=0 om_count=0
+  if [[ -d "$decode_shape" ]]; then
+    module_count="$(find "$decode_shape" -name compiled_module | wc -l)"
+    om_count="$(find "$decode_shape" -type f -name '*.om' | wc -l)"
+  fi
+  printf '%s %s\n' "$module_count" "$om_count"
+}
+
+vision_layout_om_inventory() {
+  local output="$1"
+  {
+    find "$COMPILE_CACHE" -type f -name '*.om' -printf 'vision %p %s %T@\n'
+    find "$LAYOUT_CACHE_ROOT" -type f -name '*.om' -printf 'layout %p %s %T@\n'
+  } | sort -u >"$output"
 }
 
 om_inventory() {
@@ -118,15 +147,24 @@ PY
   test "$(readlink -f "$selected_vision")" = "$COMPILE_CACHE"
   test "$(readlink -f "$selected_layout")" = "$LAYOUT_CACHE_ROOT"
 
-  local decode_shape decode_module_count decode_om_count
-  decode_shape="$DECODE_CACHE_PARENT/decode_weight_nz_lmhead57344_semantic56371/decode_selfkv2048_cross1320_increfa_all_b128_wnz"
-  test -d "$decode_shape"
-  decode_module_count="$(find "$decode_shape" -name compiled_module | wc -l)"
-  decode_om_count="$(find "$decode_shape" -type f -name '*.om' | wc -l)"
-  test "$decode_module_count" -ge 1
-  test "$decode_module_count" -eq "$decode_om_count"
-  printf 'UNIREC_310P_DECODE_CACHE_PREFLIGHT path=%s compiled_modules=%s oms=%s\n' \
-    "$decode_shape" "$decode_module_count" "$decode_om_count"
+  local decode_shape decode_module_count decode_om_count decode_cache_mode
+  decode_shape="$(decode_shape_path)"
+  read -r decode_module_count decode_om_count < <(
+    decode_cache_counts "$decode_shape"
+  )
+  if [[ "$decode_module_count" == 0 && "$decode_om_count" == 0 ]]; then
+    test "$ALLOW_DECODE_CACHE_BUILD" = 1
+    decode_cache_mode=cold_real_arena_build
+  elif [[ "$decode_module_count" == 1 && "$decode_om_count" -ge 1 ]]; then
+    decode_cache_mode=hot_reuse
+  else
+    printf 'UNIREC_310P_DECODE_CACHE_INCOMPLETE path=%s compiled_modules=%s oms=%s\n' \
+      "$decode_shape" "$decode_module_count" "$decode_om_count" >&2
+    return 1
+  fi
+  export DECODE_CACHE_MODE="$decode_cache_mode"
+  printf 'UNIREC_310P_DECODE_CACHE_PREFLIGHT path=%s mode=%s compiled_modules=%s oms=%s\n' \
+    "$decode_shape" "$decode_cache_mode" "$decode_module_count" "$decode_om_count"
 
   {
     printf 'project_commit=%s\n' "$(git -C "$REPO" rev-parse HEAD)"
@@ -139,6 +177,7 @@ PY
     printf 'vision_cache=%s\n' "$COMPILE_CACHE"
     printf 'layout_cache=%s\n' "$LAYOUT_CACHE_ROOT"
     printf 'decode_cache_parent=%s\n' "$DECODE_CACHE_PARENT"
+    printf 'decode_cache_mode=%s\n' "$DECODE_CACHE_MODE"
     printf 'canonical_trace=%s\n' "$CANONICAL_TRACE"
     printf 'hbm_interval_ms=%s\n' "$NPU_HBM_INTERVAL_MS"
     taskset -pc $$
@@ -149,6 +188,106 @@ PY
     fi
     "$PYTHON_BIN" -c 'import torch, torch_npu; print(f"torch={torch.__version__} torch_npu={torch_npu.__version__}")'
   } >"$run_root/preflight.txt"
+}
+
+run_real_decode_cache_lane() {
+  local run_root="$1"
+  local label="$2"
+  local knowledge_processes="$3"
+  local lane_root="$run_root/$label"
+  mkdir -p "$lane_root"
+  local command=(
+    taskset -c "$CPUSET"
+    "$PYTHON_BIN" "$LOWMEM_RUNNER"
+    --openocr-root "$OPENOCR_ROOT"
+    --model-path "$MODEL"
+    --layout-model "$LAYOUT_MODEL"
+    --input "$IMAGES_DIR"
+    --output-dir "$lane_root/output"
+    --spool-dir "$lane_root/spool"
+    --layout-cache "$LAYOUT_CACHE_ROOT"
+    --vision-cache "$COMPILE_CACHE"
+    --decode-cache-parent "$DECODE_CACHE_PARENT"
+    --device npu:0
+    --offset 0
+    --limit 32
+    --workers 4
+    --recognition-threads 8
+    --recognition-resize-chunk-size 0
+    --layout-lanes 1
+    --layout-batch-size 2
+    --layout-threshold 0.5
+    --vision-bucket-preset 310p_k20_l4
+    --vision-lanes 4
+    --vision-same-key-shards 1
+    --vision-sharded-key-count 0
+    --recognition-schedule streaming
+    --vision-tall-fallback eager
+    --decode-batch-size 128
+    --cross-cache-length 1320
+    --self-cache-length 2048
+    --max-length 2048
+    --ready-queue-size 128
+    --progress-every 8
+    --defer-output-write
+  )
+  printf '%q ' "${command[@]}" >"$lane_root/command.sh"
+  printf '\n' >>"$lane_root/command.sh"
+  printf 'UNIREC_310P_REAL_DECODE_CACHE_LANE_BEGIN label=%s knowledge_processes=%s\n' \
+    "$label" "$knowledge_processes"
+  CANN_KNOWLEDGE_BANK_PROCESS_NUM="$knowledge_processes" \
+    "${command[@]}" 2>&1 | tee "$lane_root/run.log"
+  printf 'UNIREC_310P_REAL_DECODE_CACHE_LANE_END label=%s\n' "$label"
+}
+
+prepare_real_decode_cache() {
+  local run_root="$1"
+  if [[ "$DECODE_CACHE_MODE" == hot_reuse ]]; then
+    printf 'UNIREC_310P_REAL_DECODE_CACHE_BUILD skipped=already_hot\n'
+    return
+  fi
+
+  local decode_shape module_count om_count
+  decode_shape="$(decode_shape_path)"
+  vision_layout_om_inventory "$run_root/vision_layout_before_decode_build.txt"
+  run_real_decode_cache_lane "$run_root" decode_cache_cold_build 1
+  read -r module_count om_count < <(decode_cache_counts "$decode_shape")
+  test "$module_count" = 1
+  test "$om_count" -ge 1
+  printf 'UNIREC_310P_REAL_DECODE_CACHE_BUILT path=%s compiled_modules=%s oms=%s\n' \
+    "$decode_shape" "$module_count" "$om_count"
+  om_inventory "$run_root/om_after_decode_build.txt"
+
+  run_real_decode_cache_lane "$run_root" decode_cache_fresh_replay 0
+  vision_layout_om_inventory "$run_root/vision_layout_after_decode_replay.txt"
+  diff -u \
+    "$run_root/vision_layout_before_decode_build.txt" \
+    "$run_root/vision_layout_after_decode_replay.txt" \
+    >"$run_root/vision_layout_decode_build.diff"
+  om_inventory "$run_root/om_after_decode_replay.txt"
+  diff -u \
+    "$run_root/om_after_decode_build.txt" \
+    "$run_root/om_after_decode_replay.txt" \
+    >"$run_root/decode_fresh_replay_om.diff"
+  "$PYTHON_BIN" - \
+    "$run_root/decode_cache_cold_build/output/recognition_trace.jsonl" \
+    "$run_root/decode_cache_fresh_replay/output/recognition_trace.jsonl" <<'PY'
+import json
+import sys
+
+def load(path):
+    rows = [json.loads(line) for line in open(path) if line.strip()]
+    return {
+        str(row["request_id"]): (str(row["text"]), tuple(row["generated_ids"]))
+        for row in rows
+    }
+
+left = load(sys.argv[1])
+right = load(sys.argv[2])
+assert left == right, "cold-build and fresh-replay traces differ"
+print(f"UNIREC_310P_REAL_DECODE_CACHE_TRACE_PARITY rows={len(left)}")
+PY
+  printf 'UNIREC_310P_REAL_DECODE_CACHE_FRESH_REPLAY: PASS\n'
 }
 
 write_report() {
@@ -282,6 +421,7 @@ worker_main() {
 
   resolve_inputs
   preflight "$run_root"
+  prepare_real_decode_cache "$run_root"
   om_inventory "$run_root/om_before.txt"
 
   local command=(
@@ -331,7 +471,7 @@ worker_main() {
   export UNIREC_VISION_DIAGNOSTIC_GRAPH_LOG=1
 
   started="$SECONDS"
-  "${command[@]}" &
+  CANN_KNOWLEDGE_BANK_PROCESS_NUM=0 "${command[@]}" &
   target_pid="$!"
   printf '%s\n' "$target_pid" >"$run_root/target_pid.txt"
   taskset -pc "$target_pid" >"$run_root/target_affinity.txt"

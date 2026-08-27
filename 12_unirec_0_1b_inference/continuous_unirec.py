@@ -665,6 +665,7 @@ class ContinuousUniRecDecoder:
         *,
         on_complete: Callable[[ContinuousCompletedItem], None],
         graph_warmup_passes: int = 0,
+        on_graph_warmup_complete: Callable[[dict[str, Any]], None] | None = None,
         on_step: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
         if graph_warmup_passes < 0:
@@ -694,6 +695,15 @@ class ContinuousUniRecDecoder:
         production_graph_warmup_s = 0.0
         production_graph_warmup_pass_s: list[float] = []
         production_graph_warmup_warnings: list[str] = []
+        production_graph_warmup_report: dict[str, Any] = {
+            "passes": int(graph_warmup_passes),
+            "wall_s": 0.0,
+            "pass_wall_s": [],
+            "warnings": [],
+            "arena": "actual_admitted_decode_arena",
+            "included_in_decode_s": False,
+            "cache_dir": None,
+        }
         diagnostic_step_callback_s = 0.0
 
         def next_ready() -> ContinuousReadyItem | None:
@@ -1103,6 +1113,21 @@ class ContinuousUniRecDecoder:
                     "cache; refusing to enter the slow decode loop: "
                     + recompile_warnings[0]
                 )
+            production_graph_warmup_report = {
+                "passes": int(graph_warmup_passes),
+                "wall_s": production_graph_warmup_s,
+                "pass_wall_s": list(production_graph_warmup_pass_s),
+                "warnings": list(production_graph_warmup_warnings),
+                "arena": "actual_admitted_decode_arena",
+                "included_in_decode_s": False,
+                "cache_dir": (
+                    compile_meta.get("torchair_cache_dir")
+                    if compile_meta is not None
+                    else None
+                ),
+            }
+            if on_graph_warmup_complete is not None:
+                on_graph_warmup_complete(production_graph_warmup_report)
 
         try:
             with torch.inference_mode():
@@ -1330,14 +1355,7 @@ class ContinuousUniRecDecoder:
             "slot_refills": slot_refills,
             "compile_wrap_s": compile_wrap_s,
             "compile": compile_meta,
-            "production_graph_warmup": {
-                "passes": int(graph_warmup_passes),
-                "wall_s": production_graph_warmup_s,
-                "pass_wall_s": production_graph_warmup_pass_s,
-                "warnings": production_graph_warmup_warnings,
-                "arena": "actual_admitted_decode_arena",
-                "included_in_decode_s": False,
-            },
+            "production_graph_warmup": production_graph_warmup_report,
             "timing_detail": {
                 "run_wall_s": run_wall_s,
                 "source_pull_s": source_pull_s,
