@@ -71,6 +71,9 @@ class FakeFrontend:
     def snapshot(self) -> dict[str, int]:
         return {"submitted": self.submitted}
 
+    def reset_metrics(self) -> dict[str, int]:
+        return self.snapshot()
+
     def close(self) -> None:
         self.closed = True
 

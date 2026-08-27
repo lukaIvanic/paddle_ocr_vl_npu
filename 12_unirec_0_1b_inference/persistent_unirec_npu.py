@@ -116,6 +116,7 @@ class PersistentUniRecNpuPipeline:
             "vision_max_pending_records": 0,
             "vision_wall_s": 0.0,
             "vision_graph_wall_s": 0.0,
+            "vision_dispatch_details": [],
             "vision_spool_bytes_released": 0,
             "text_groups": 0,
             "text_crops": 0,
@@ -412,6 +413,24 @@ class PersistentUniRecNpuPipeline:
                     self._metrics["vision_wall_s"] += vision_s
                     self._metrics["vision_graph_wall_s"] += float(
                         summary["wall_s"]
+                    )
+                    self._metrics["vision_dispatch_details"].append(
+                        {
+                            "records": len(selected_records),
+                            "wall_s": vision_s,
+                            "keys": sorted(previous_dispatch_keys),
+                            "lane_calls": [
+                                {
+                                    "key": lane["key"],
+                                    "calls": lane["calls"],
+                                    "real_rows": lane["real_rows"],
+                                    "wall_s": lane["wall_s"],
+                                }
+                                for group in summary["pairs"]
+                                for lane in group
+                            ],
+                            "residency": summary["graph_residency"],
+                        }
                     )
                     continue
 

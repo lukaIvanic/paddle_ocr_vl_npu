@@ -241,12 +241,14 @@ def main() -> None:
 
     holder: dict[str, Any] = {}
     phase = {"name": "warmup", "completed": 0, "total": len(warmup_paths)}
+    table_converter_stdout = Path(os.devnull).open("w", encoding="utf-8")
 
     def response_builder(page: Any) -> dict[str, Any]:
         result = assemble_page(
             page=page,
             pipeline=pipeline,
             infer_doc_onnx=infer_doc_onnx,
+            table_converter_stdout=table_converter_stdout,
         )
         trace = [
             {
@@ -360,6 +362,7 @@ def main() -> None:
 
     shutdown_started = time.perf_counter()
     decode_summary = service.close()
+    table_converter_stdout.close()
     shutdown_wall_s = time.perf_counter() - shutdown_started
 
     write_started = time.perf_counter()

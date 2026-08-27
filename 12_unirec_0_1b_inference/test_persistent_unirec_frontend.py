@@ -36,11 +36,23 @@ class FakeLayout:
     def close(self) -> None:
         self.closed = True
 
+    @staticmethod
+    def snapshot() -> dict[str, float]:
+        return {
+            "batch_count": 0.0,
+            "prepare_s": 0.0,
+            "predict_s": 0.0,
+            "batch_wall_s": 0.0,
+        }
+
 
 class FakeCropPool:
     def __init__(self) -> None:
         self.results: Queue[dict[str, object]] = Queue()
         self.closed = False
+        self.worker_page_s = 0.0
+        self.crop_count = 0
+        self.spool_bytes = 0
 
     def submit(self, **task: object) -> None:
         self.results.put(

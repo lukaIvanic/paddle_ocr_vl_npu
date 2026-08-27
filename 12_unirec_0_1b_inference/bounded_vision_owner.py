@@ -272,6 +272,7 @@ class BoundedVisionOwner:
         return groups, shard_keys
 
     def _release_loaded(self) -> dict[str, Any]:
+        started = time.perf_counter()
         loaded = [
             value
             for value in self.runtime.compiled.values()
@@ -279,16 +280,22 @@ class BoundedVisionOwner:
         ]
         if not loaded:
             self._resident_lane_by_key.clear()
-            return {"executor_count": 0, "executors": []}
+            return {
+                "executor_count": 0,
+                "executors": [],
+                "wall_s": time.perf_counter() - started,
+            }
         torch.npu.synchronize()
         report = release_loaded_ge_executors(loaded)
         gc.collect()
         torch.npu.empty_cache()
         self.host_purge_statuses.append(purge_host_allocator_pages())
         self._resident_lane_by_key.clear()
+        report["wall_s"] = time.perf_counter() - started
         return report
 
     def _release_loaded_except(self, retained_keys: set[str]) -> dict[str, Any]:
+        started = time.perf_counter()
         loaded_by_key = {
             key: value
             for key, value in self.runtime.compiled.items()
@@ -303,6 +310,7 @@ class BoundedVisionOwner:
                 "executors": [],
                 "released_keys": [],
                 "retained_keys": sorted(set(loaded_by_key) & retained_keys),
+                "wall_s": time.perf_counter() - started,
             }
         torch.npu.synchronize()
         report = release_loaded_ge_executors(
@@ -313,6 +321,7 @@ class BoundedVisionOwner:
         gc.collect()
         torch.npu.empty_cache()
         self.host_purge_statuses.append(purge_host_allocator_pages())
+        report["wall_s"] = time.perf_counter() - started
         return report
 
     def _assign_group_lanes(

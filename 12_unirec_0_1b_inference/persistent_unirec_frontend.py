@@ -41,6 +41,18 @@ class PersistentUniRecFrontend:
         self._layout_closed = False
         self._close_requested = False
         self._error: BaseException | None = None
+        self._metric_base: dict[str, float] = {
+            "submitted": 0.0,
+            "layout_completed": 0.0,
+            "crop_completed": 0.0,
+            "layout_batch_count": 0.0,
+            "layout_prepare_s": 0.0,
+            "layout_predict_s": 0.0,
+            "layout_batch_wall_s": 0.0,
+            "crop_worker_page_s": 0.0,
+            "crop_count": 0.0,
+            "crop_spool_bytes": 0.0,
+        }
         self._layout_thread = Thread(
             target=self._layout_results_loop,
             name="unirec-serving-layout-results",
@@ -175,12 +187,37 @@ class PersistentUniRecFrontend:
                     )
                 self._condition.wait(timeout=remaining)
 
+    def _raw_metrics(self) -> dict[str, float]:
+        layout = self.layout.snapshot()
+        return {
+            "submitted": float(self._submitted),
+            "layout_completed": float(self._layout_completed),
+            "crop_completed": float(self._crop_completed),
+            "layout_batch_count": float(layout["batch_count"]),
+            "layout_prepare_s": float(layout["prepare_s"]),
+            "layout_predict_s": float(layout["predict_s"]),
+            "layout_batch_wall_s": float(layout["batch_wall_s"]),
+            "crop_worker_page_s": float(self.crop_pool.worker_page_s),
+            "crop_count": float(self.crop_pool.crop_count),
+            "crop_spool_bytes": float(self.crop_pool.spool_bytes),
+        }
+
+    def reset_metrics(self) -> dict[str, Any]:
+        self.wait_idle()
+        previous = self.snapshot()
+        with self._condition:
+            self._metric_base = self._raw_metrics()
+        return previous
+
     def snapshot(self) -> dict[str, Any]:
         with self._condition:
+            raw = self._raw_metrics()
+            measured = {
+                key: raw[key] - self._metric_base[key]
+                for key in self._metric_base
+            }
             return {
-                "submitted": self._submitted,
-                "layout_completed": self._layout_completed,
-                "crop_completed": self._crop_completed,
+                **measured,
                 "inflight": self._submitted - self._crop_completed,
                 "close_requested": self._close_requested,
                 "layout_closed": self._layout_closed,

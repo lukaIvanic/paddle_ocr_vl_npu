@@ -772,6 +772,7 @@ def _persistent_layout_owner_process_main(
         started = time.perf_counter()
         completed = 0
         batch_calls = 0
+        batch_index = 0
         closing = False
         max_group_size = lanes * batch_size
         while not closing:
@@ -789,15 +790,21 @@ def _persistent_layout_owner_process_main(
                     break
                 tasks.append(task)
 
+            batch_started = time.perf_counter()
             prepared = []
             timings = []
+            prepare_started = time.perf_counter()
             for task in tasks:
                 rgb, timing = decode_page_rgb(Path(task["path"]))
                 rgb = materialize_layout_rgb(rgb)
                 prepared.append(owner.prepare(rgb))
                 timings.append(timing)
                 del rgb
+            prepare_s = time.perf_counter() - prepare_started
+            predict_started = time.perf_counter()
             layouts = owner.predict_prepared(prepared)
+            predict_s = time.perf_counter() - predict_started
+            batch_s = time.perf_counter() - batch_started
             batch_calls += (len(tasks) + batch_size - 1) // batch_size
             for task, layout, timing in zip(tasks, layouts, timings):
                 result_queue.put(
@@ -810,10 +817,16 @@ def _persistent_layout_owner_process_main(
                         "layout_result": layout,
                         "started_at": float(task["started_at"]),
                         "decode_timing_s": timing,
+                        "layout_batch_index": batch_index,
+                        "layout_batch_size": len(tasks),
+                        "layout_prepare_batch_s": prepare_s,
+                        "layout_predict_batch_s": predict_s,
+                        "layout_batch_wall_s": batch_s,
                         "ready_at": time.perf_counter(),
                     }
                 )
                 completed += 1
+            batch_index += 1
             del layouts, prepared, timings
         result_queue.put(
             {
@@ -861,6 +874,11 @@ class PersistentSharedLayoutProcess:
         self.close_requested = False
         self.closed = False
         self.summary: dict[str, Any] | None = None
+        self._seen_batch_indices: set[int] = set()
+        self.layout_prepare_s = 0.0
+        self.layout_predict_s = 0.0
+        self.layout_batch_wall_s = 0.0
+        self.layout_batch_count = 0
         self.process = self.context.Process(
             target=_persistent_layout_owner_process_main,
             args=(
@@ -943,11 +961,28 @@ class PersistentSharedLayoutProcess:
         status = item.get("status")
         if status == "layout_page":
             self.received += 1
+            batch_index = int(item["layout_batch_index"])
+            if batch_index not in self._seen_batch_indices:
+                self._seen_batch_indices.add(batch_index)
+                self.layout_batch_count += 1
+                self.layout_prepare_s += float(item["layout_prepare_batch_s"])
+                self.layout_predict_s += float(item["layout_predict_batch_s"])
+                self.layout_batch_wall_s += float(item["layout_batch_wall_s"])
         elif status == "layout_closed":
             self.summary = item
         else:
             raise RuntimeError(f"unexpected persistent layout message: {item}")
         return item
+
+    def snapshot(self) -> dict[str, Any]:
+        return {
+            "submitted": self.submitted,
+            "received": self.received,
+            "batch_count": self.layout_batch_count,
+            "prepare_s": self.layout_prepare_s,
+            "predict_s": self.layout_predict_s,
+            "batch_wall_s": self.layout_batch_wall_s,
+        }
 
     def request_close(self) -> None:
         if self.close_requested:

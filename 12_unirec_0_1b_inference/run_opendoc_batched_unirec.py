@@ -18,6 +18,7 @@ import time
 import warnings
 from collections import deque
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextlib import nullcontext, redirect_stdout
 from dataclasses import dataclass, field
 from itertools import islice
 from pathlib import Path
@@ -1323,6 +1324,7 @@ def assemble_page(
     page: PageRequest,
     pipeline: Any,
     infer_doc_onnx: Any,
+    table_converter_stdout: Any | None = None,
 ) -> dict[str, Any]:
     recognition_results = []
     current_crop = 0
@@ -1362,7 +1364,13 @@ def assemble_page(
                 if label == "formula_number":
                     content = content.replace("$", "")
             if "table" in label:
-                html = infer_doc_onnx.convert_otsl_to_html(content)
+                output_context = (
+                    redirect_stdout(table_converter_stdout)
+                    if table_converter_stdout is not None
+                    else nullcontext()
+                )
+                with output_context:
+                    html = infer_doc_onnx.convert_otsl_to_html(content)
                 if html:
                     content = html
                 content = infer_doc_onnx.untokenize_figure_of_table(

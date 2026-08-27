@@ -143,6 +143,7 @@ class PersistentUniRecService:
 
     def reset_measurement(self) -> dict[str, Any]:
         self.wait_idle()
+        prior_frontend_metrics = self.frontend.reset_metrics()
         prior_npu_metrics = self.npu_pipeline.reset_metrics()
         with self._condition:
             if self._futures:
@@ -150,7 +151,10 @@ class PersistentUniRecService:
             self._measurement_submitted_base = self._submitted
             self._measurement_completed_base = self._completed
             self._measurement_started_at = time.perf_counter()
-        return prior_npu_metrics
+        return {
+            "frontend": prior_frontend_metrics,
+            "npu": prior_npu_metrics,
+        }
 
     def measurement(self) -> dict[str, Any]:
         with self._condition:
