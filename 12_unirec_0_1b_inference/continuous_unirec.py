@@ -742,6 +742,7 @@ class ContinuousUniRecDecoder:
             "cache_dir": None,
         }
         diagnostic_step_callback_s = 0.0
+        opportunistic_slot_refills = 0
 
         def pull_ready(
             *,
@@ -1265,6 +1266,20 @@ class ContinuousUniRecDecoder:
                     break
             return True
 
+        def admit_available_service_rows() -> None:
+            """Grow a partial live cohort without waiting for a completion."""
+            nonlocal opportunistic_slot_refills
+            if not persistent_source or source.qsize() == 0:
+                return
+            for slot, ready in enumerate(slots):
+                if ready is not None:
+                    continue
+                refills_before = slot_refills
+                state = refill_slot(slot)
+                opportunistic_slot_refills += slot_refills - refills_before
+                if state != "item":
+                    break
+
         try:
             with torch.inference_mode():
                 while True:
@@ -1275,6 +1290,7 @@ class ContinuousUniRecDecoder:
                             break
                         if not wait_for_next_cohort():
                             break
+                    admit_available_service_rows()
                     iteration_started = time.perf_counter()
                     active_slots = [slot is not None for slot in slots]
                     active_positions = [
@@ -1496,6 +1512,7 @@ class ContinuousUniRecDecoder:
                 else None
             ),
             "slot_refills": slot_refills,
+            "opportunistic_slot_refills": opportunistic_slot_refills,
             "compile_wrap_s": compile_wrap_s,
             "compile": compile_meta,
             "source_mode": (

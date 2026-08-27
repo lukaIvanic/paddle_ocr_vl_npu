@@ -65,6 +65,27 @@ class FakeDecodeModel:
         )
 
 
+class DelayedFakeDecodeModel(FakeDecodeModel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.cache_positions = torch.zeros(1, dtype=torch.int64)
+        self.decode_started = threading.Event()
+
+    def forward_cached_logits(self, **kwargs: object) -> torch.Tensor:
+        self.decode_started.set()
+        time.sleep(0.002)
+        self.cache_positions = kwargs["cache_position"].detach().cpu().clone()
+        batch = int(kwargs["decoder_input_ids"].shape[0])
+        return torch.zeros((batch, 1), dtype=torch.float32)
+
+    def select_next_token(self, logits: torch.Tensor) -> torch.Tensor:
+        return torch.where(
+            self.cache_positions >= 5,
+            torch.full_like(self.cache_positions, 2),
+            torch.full_like(self.cache_positions, 3),
+        ).to(device=logits.device)
+
+
 class FakeDecodeRunner:
     def __init__(self) -> None:
         self.config = types.SimpleNamespace(
@@ -207,6 +228,54 @@ class ContinuousDecodeInputContractTest(unittest.TestCase):
         self.assertEqual(summary["submitted"], 2)
         self.assertEqual(summary["completed"], 2)
         self.assertEqual(summary["source_mode"], "persistent_queue")
+
+    def test_persistent_decoder_fills_inactive_slots_while_decoding(self) -> None:
+        source: PersistentReadyQueue[ContinuousReadyItem] = (
+            PersistentReadyQueue(maxsize=4)
+        )
+        runner = FakeDecodeRunner()
+        runner.model = DelayedFakeDecodeModel()
+        decoder = ContinuousUniRecDecoder(
+            runner=runner,
+            batch_size=4,
+            max_length=8,
+            decode_mode="eager",
+            compile_backend="eager",
+            self_cache_length=8,
+            cross_cache_length=4,
+        )
+        completed: list[str] = []
+
+        def publish() -> None:
+            source.put(ready_item("first"))
+            if not runner.model.decode_started.wait(timeout=1.0):
+                source.close()
+                return
+            source.put(ready_item("second"))
+            source.close()
+
+        thread = threading.Thread(target=publish)
+        thread.start()
+        real_empty = torch.empty
+
+        def cpu_safe_empty(*args: object, **kwargs: object) -> torch.Tensor:
+            kwargs.pop("pin_memory", None)
+            return real_empty(*args, **kwargs)
+
+        with unittest.mock.patch.object(
+            torch,
+            "empty",
+            side_effect=cpu_safe_empty,
+        ):
+            summary = decoder.run(
+                source,
+                on_complete=lambda item: completed.append(item.request_id),
+                partial_batch_wait_s=0.0,
+            )
+        thread.join(timeout=1.0)
+
+        self.assertEqual(sorted(completed), ["first", "second"])
+        self.assertGreaterEqual(summary["opportunistic_slot_refills"], 1)
 
 
 if __name__ == "__main__":
