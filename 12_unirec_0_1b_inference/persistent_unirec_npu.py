@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from queue import Empty, Queue
+from collections import deque
+from queue import Queue
 from threading import Condition, Event, Thread
 import sys
 import time
@@ -22,6 +23,7 @@ from low_memory_frontend_pool import release_page_pixel_spools
 from persistent_ready_queue import PersistentReadyQueue
 from run_low_memory_unirec import _payload_to_pages
 from run_opendoc_batched_unirec import iter_greedy_text_packs
+from vision_bucket_presets import plan_canvas_bucket_calls
 
 
 class PersistentUniRecNpuPipeline:
@@ -38,21 +40,14 @@ class PersistentUniRecNpuPipeline:
         on_page_complete: Callable[[str, dict[str, Any]], None],
         response_builder: Callable[[Any], dict[str, Any]],
         on_error: Callable[[BaseException], None] | None = None,
-        vision_page_lookahead: int = 4,
-        vision_flush_timeout_s: float = 0.005,
+        vision_record_budget: int = 128,
+        vision_max_calls_per_key: int = 64,
         vision_queue_size: int = 16,
         text_queue_size: int = 8,
         ready_queue_size: int = 128,
-        decode_partial_batch_wait_s: float = 0.005,
-        decode_graph_warmup_passes: int = 2,
-        on_decode_graph_warmup_complete: (
-            Callable[[dict[str, Any]], None] | None
-        ) = None,
     ) -> None:
-        if vision_page_lookahead < 1:
-            raise ValueError("vision page lookahead must be positive")
-        if vision_flush_timeout_s < 0 or decode_partial_batch_wait_s < 0:
-            raise ValueError("service flush timeouts cannot be negative")
+        if vision_record_budget < 1 or vision_max_calls_per_key < 1:
+            raise ValueError("vision scheduling budgets must be positive")
         self.runner = runner
         self.vision_owner = vision_owner
         self.decoder = decoder
@@ -61,15 +56,10 @@ class PersistentUniRecNpuPipeline:
         self.on_page_complete = on_page_complete
         self.response_builder = response_builder
         self.on_error = on_error
-        self.vision_page_lookahead = int(vision_page_lookahead)
-        self.vision_flush_timeout_s = float(vision_flush_timeout_s)
-        self.decode_partial_batch_wait_s = float(decode_partial_batch_wait_s)
-        self.decode_graph_warmup_passes = int(decode_graph_warmup_passes)
-        self.on_decode_graph_warmup_complete = (
-            on_decode_graph_warmup_complete
-        )
-        self.vision_queue: Queue[dict[str, Any] | None] = Queue(
-            maxsize=vision_queue_size
+        self.vision_record_budget = int(vision_record_budget)
+        self.vision_max_calls_per_key = int(vision_max_calls_per_key)
+        self.vision_queue: PersistentReadyQueue[dict[str, Any]] = (
+            PersistentReadyQueue(maxsize=vision_queue_size)
         )
         self.text_queue: Queue[tuple[Any, dict[str, Any]] | None] = Queue(
             maxsize=text_queue_size
@@ -86,22 +76,15 @@ class PersistentUniRecNpuPipeline:
         self._completed_crops = 0
         self._close_requested = False
         self._error: BaseException | None = None
+        self._registered_request_ids: set[str] = set()
+        self._accepted_request_ids: set[str] = set()
+        self._upstream_completed_request_ids: set[str] = set()
         self._page_request_ids: dict[int, str] = {}
         self._pages: dict[int, Any] = {}
         self._remaining_crops: dict[int, int] = {}
         self._metrics = self._new_metrics()
 
         self.text_stream = torch.npu.Stream(device=torch.device(device))
-        text_input = torch.zeros(
-            (1, self.text_runtime.bucket, runner.config.d_model),
-            dtype=runner.dtype,
-            device=torch.device(device),
-        )
-        with torch.inference_mode(), torch.npu.stream(self.text_stream):
-            self.text_runtime.compiled(text_input)
-        self.text_stream.synchronize()
-        self.text_runtime._first_call = False
-        del text_input
 
         self._vision_thread = Thread(
             target=self._vision_loop,
@@ -127,8 +110,10 @@ class PersistentUniRecNpuPipeline:
         return {
             "started_at": time.perf_counter(),
             "vision_windows": 0,
+            "vision_dispatches": 0,
             "vision_pages": 0,
             "vision_crops": 0,
+            "vision_max_pending_records": 0,
             "vision_wall_s": 0.0,
             "vision_graph_wall_s": 0.0,
             "vision_spool_bytes_released": 0,
@@ -158,10 +143,64 @@ class PersistentUniRecNpuPipeline:
             self.ready_queue.close()
         except BaseException:
             pass
+        try:
+            self.vision_queue.close()
+        except BaseException:
+            pass
+
+    def register_request(self, request_id: str) -> None:
+        """Tell both NPU schedulers that one page can still publish work."""
+        identifier = str(request_id)
+        with self._condition:
+            if self._close_requested:
+                raise RuntimeError("cannot register after NPU pipeline close")
+            if identifier in self._registered_request_ids:
+                raise RuntimeError(f"duplicate service request id {identifier}")
+            self._registered_request_ids.add(identifier)
+        try:
+            self.vision_queue.register_upstream()
+            self.ready_queue.register_upstream()
+        except BaseException:
+            with self._condition:
+                self._registered_request_ids.discard(identifier)
+            raise
+
+    def cancel_request(self, request_id: str) -> None:
+        """Cancel a request that failed before its frontend payload existed."""
+        identifier = str(request_id)
+        with self._condition:
+            if identifier not in self._registered_request_ids:
+                return
+            if identifier in self._accepted_request_ids:
+                return
+            self._registered_request_ids.remove(identifier)
+        self.vision_queue.complete_upstream()
+        self.ready_queue.complete_upstream()
+
+    def _complete_upstream_request(self, request_id: str) -> None:
+        identifier = str(request_id)
+        with self._condition:
+            if identifier in self._upstream_completed_request_ids:
+                raise RuntimeError(
+                    f"request upstream completed twice: {identifier}"
+                )
+            self._upstream_completed_request_ids.add(identifier)
+        self.ready_queue.complete_upstream()
+
+    def _retire_request(self, request_id: str) -> None:
+        identifier = str(request_id)
+        with self._condition:
+            self._registered_request_ids.discard(identifier)
+            self._accepted_request_ids.discard(identifier)
+            self._upstream_completed_request_ids.discard(identifier)
 
     def submit(self, payload: dict[str, Any]) -> None:
         page_index = int(payload["page_index"])
         request_id = str(payload["request_id"])
+        with self._condition:
+            registered = request_id in self._registered_request_ids
+        if not registered:
+            self.register_request(request_id)
         with self._condition:
             if self._close_requested:
                 raise RuntimeError("cannot submit after NPU pipeline close")
@@ -169,38 +208,24 @@ class PersistentUniRecNpuPipeline:
                 raise RuntimeError("persistent NPU pipeline failed") from self._error
             if page_index in self._page_request_ids:
                 raise RuntimeError(f"duplicate service page index {page_index}")
+            if request_id in self._accepted_request_ids:
+                raise RuntimeError(f"NPU request accepted twice: {request_id}")
             self._page_request_ids[page_index] = request_id
+            self._accepted_request_ids.add(request_id)
             self._submitted_pages += 1
             self._submitted_crops += len(payload["crops"])
         self.vision_queue.put(payload)
-
-    def _next_vision_window(
-        self,
-        first: dict[str, Any],
-    ) -> tuple[list[dict[str, Any]], bool]:
-        payloads = [first]
-        deadline = time.perf_counter() + self.vision_flush_timeout_s
-        closing = False
-        while len(payloads) < self.vision_page_lookahead:
-            remaining = deadline - time.perf_counter()
-            if remaining <= 0:
-                break
-            try:
-                payload = self.vision_queue.get(timeout=remaining)
-            except Empty:
-                break
-            if payload is None:
-                closing = True
-                break
-            payloads.append(payload)
-        return payloads, closing
+        self.vision_queue.complete_upstream()
 
     def _finish_empty_page(self, page: Any) -> None:
         page_index = int(page.page_index)
+        request_id = self._page_request_ids[page_index]
+        self._complete_upstream_request(request_id)
         response = self.response_builder(page)
         request_id = self._page_request_ids.pop(page_index)
         self._pages.pop(page_index, None)
         self.on_page_complete(request_id, response)
+        self._retire_request(request_id)
         with self._condition:
             self._completed_pages += 1
             self._condition.notify_all()
@@ -208,60 +233,204 @@ class PersistentUniRecNpuPipeline:
     def _vision_loop(self) -> None:
         try:
             torch_npu.npu.set_device(self.device)
+            runtime = self.vision_owner.runtime
+            pending_by_canvas: dict[tuple[int, int], deque[dict[str, Any]]] = {
+                canvas: deque() for canvas in runtime.specs_by_canvas
+            }
+            fallbacks: deque[dict[str, Any]] = deque()
+            record_by_source: dict[int, dict[str, Any]] = {}
+            page_payloads: dict[int, dict[str, Any]] = {}
+            page_encoded: dict[int, dict[str, Any]] = {}
+            page_vision_remaining: dict[int, int] = {}
+            next_source_index = 0
+            previous_dispatch_keys: set[str] = set()
             closing = False
-            while not closing:
-                first = self.vision_queue.get()
-                if first is None:
-                    break
-                payloads, closing = self._next_vision_window(first)
-                pages, records = _payload_to_pages(payloads)
-                pages_by_index = {
-                    int(page.page_index): page for page in pages
-                }
-                self._pages.update(pages_by_index)
-                for page in pages:
-                    if not page.crops:
-                        self._finish_empty_page(page)
-                if records:
+
+            def pending_count() -> int:
+                return len(fallbacks) + sum(
+                    len(records) for records in pending_by_canvas.values()
+                )
+
+            def ingest(payload: dict[str, Any]) -> None:
+                nonlocal next_source_index
+                pages, records = _payload_to_pages([payload])
+                if len(pages) != 1:
+                    raise RuntimeError(
+                        f"one service payload produced {len(pages)} pages"
+                    )
+                page = pages[0]
+                page_index = int(page.page_index)
+                self._pages[page_index] = page
+                self._metrics["vision_pages"] += 1
+                self._metrics["vision_crops"] += len(records)
+                if not records:
+                    self._metrics["vision_spool_bytes_released"] += (
+                        release_page_pixel_spools(payload)
+                    )
+                    self._finish_empty_page(page)
+                    return
+                page_payloads[page_index] = payload
+                page_encoded[page_index] = {}
+                page_vision_remaining[page_index] = len(records)
+                for record in records:
+                    record["source_index"] = next_source_index
+                    record_by_source[next_source_index] = record
+                    next_source_index += 1
+                    width, height = (
+                        int(record["processed_image_size"][0]),
+                        int(record["processed_image_size"][1]),
+                    )
+                    canvas = runtime.select_canvas(width, height)
+                    if canvas is None:
+                        fallbacks.append(record)
+                    else:
+                        pending_by_canvas[canvas].append(record)
+                self._metrics["vision_max_pending_records"] = max(
+                    self._metrics["vision_max_pending_records"],
+                    pending_count(),
+                )
+
+            def drain_ready_payloads() -> None:
+                nonlocal closing
+                while not closing:
+                    pulled = self.vision_queue.pull(wait=False)
+                    if pulled.closed:
+                        closing = True
+                        return
+                    if pulled.idle:
+                        return
+                    assert pulled.item is not None
+                    ingest(pulled.item)
+
+            def candidate_calls(
+                *,
+                flush_partials: bool,
+            ) -> list[tuple[str, tuple[int, int], Any, int]]:
+                candidates = []
+                resident = set(self.vision_owner._resident_lane_by_key)
+                for canvas, records in pending_by_canvas.items():
+                    if not records:
+                        continue
+                    specs = runtime.specs_by_canvas[canvas]
+                    minimum_batch = min(spec.batch_size for spec in specs)
+                    if len(records) < minimum_batch and not flush_partials:
+                        continue
+                    plan = plan_canvas_bucket_calls(specs, len(records))
+                    first_spec = plan[0]
+                    call_count = 0
+                    rows = 0
+                    remaining = len(records)
+                    for spec in plan:
+                        if spec.key != first_spec.key:
+                            break
+                        if call_count >= self.vision_max_calls_per_key:
+                            break
+                        call_count += 1
+                        real_rows = min(spec.batch_size, remaining)
+                        rows += real_rows
+                        remaining -= real_rows
+                    oldest = int(records[0]["source_index"])
+                    candidates.append(
+                        (
+                            first_spec.key,
+                            canvas,
+                            first_spec,
+                            rows,
+                            first_spec.key in resident,
+                            first_spec.key in previous_dispatch_keys,
+                            oldest,
+                        )
+                    )
+                candidates.sort(
+                    key=lambda item: (
+                        item[5],
+                        not item[4],
+                        item[6],
+                        item[0],
+                    )
+                )
+                return [item[:4] for item in candidates[: self.vision_owner.lanes]]
+
+            def complete_encoded_batch(batch: list[Any]) -> None:
+                ready_pages = []
+                for item in batch:
+                    source_index = int(item.source_index)
+                    record = record_by_source.pop(source_index)
+                    crop = record["crop"]
+                    page_index = int(crop.page_index)
+                    page_encoded[page_index][crop.request_id] = item
+                    page_vision_remaining[page_index] -= 1
+                    if page_vision_remaining[page_index] == 0:
+                        ready_pages.append(page_index)
+                for page_index in sorted(ready_pages):
+                    page = self._pages[page_index]
+                    items = page_encoded.pop(page_index)
+                    del page_vision_remaining[page_index]
+                    payload = page_payloads.pop(page_index)
+                    self._metrics["vision_spool_bytes_released"] += (
+                        release_page_pixel_spools(payload)
+                    )
+                    self.text_queue.put((page, items))
+
+            while True:
+                drain_ready_payloads()
+                outstanding_upstream = self.vision_queue.upstream_pending
+                total_pending = pending_count()
+                flush_partials = closing or outstanding_upstream == 0
+                have_budget = total_pending >= self.vision_record_budget
+                calls = candidate_calls(flush_partials=flush_partials)
+
+                selected_records: list[dict[str, Any]] = []
+                if calls and (have_budget or flush_partials):
+                    selected_keys = set()
+                    for key, canvas, _spec, rows in calls:
+                        selected_keys.add(key)
+                        for _ in range(rows):
+                            selected_records.append(
+                                pending_by_canvas[canvas].popleft()
+                            )
+                    previous_dispatch_keys = selected_keys
+                elif fallbacks and (have_budget or flush_partials):
+                    selected_records.append(fallbacks.popleft())
+                    previous_dispatch_keys = set()
+
+                if selected_records:
                     started = time.perf_counter()
-                    encoded, summary = self.vision_owner.encode(
-                        records,
+                    _unused, summary = self.vision_owner.encode(
+                        selected_records,
+                        on_encoded_batch=complete_encoded_batch,
+                        retain_outputs=False,
                         retain_loaded_graphs=True,
                     )
                     vision_s = time.perf_counter() - started
-                    by_page: dict[int, dict[str, Any]] = {
-                        int(page.page_index): {}
-                        for page in pages
-                        if page.crops
-                    }
-                    for record, item in zip(records, encoded):
-                        crop = record["crop"]
-                        by_page[int(crop.page_index)][crop.request_id] = item
-                    for payload in payloads:
-                        self._metrics["vision_spool_bytes_released"] += (
-                            release_page_pixel_spools(payload)
-                        )
-                    for page_index, items in by_page.items():
-                        page = pages_by_index[page_index]
-                        if len(items) != len(page.crops):
-                            raise RuntimeError(
-                                "vision page output mismatch: "
-                                f"page={page_index} outputs={len(items)} "
-                                f"crops={len(page.crops)}"
-                            )
-                        self.text_queue.put((page, items))
+                    self._metrics["vision_dispatches"] += 1
                     self._metrics["vision_windows"] += 1
-                    self._metrics["vision_pages"] += len(pages)
-                    self._metrics["vision_crops"] += len(records)
                     self._metrics["vision_wall_s"] += vision_s
                     self._metrics["vision_graph_wall_s"] += float(
                         summary["wall_s"]
                     )
-                else:
-                    for payload in payloads:
-                        self._metrics["vision_spool_bytes_released"] += (
-                            release_page_pixel_spools(payload)
+                    continue
+
+                if closing:
+                    if total_pending:
+                        raise RuntimeError(
+                            "closed vision scheduler cannot dispatch "
+                            f"{total_pending} pending records"
                         )
+                    break
+                pulled = self.vision_queue.pull(wait=True)
+                if pulled.closed:
+                    closing = True
+                else:
+                    assert pulled.item is not None
+                    ingest(pulled.item)
+
+            if record_by_source or page_vision_remaining:
+                raise RuntimeError(
+                    "vision scheduler closed with incomplete pages: "
+                    f"records={len(record_by_source)} "
+                    f"pages={len(page_vision_remaining)}"
+                )
             self.text_queue.put(None)
         except BaseException as exception:
             self._record_error(exception)
@@ -309,7 +478,8 @@ class PersistentUniRecNpuPipeline:
                         dim=0,
                     ).contiguous()
                     exports.append((packed, actual_length))
-            self.text_stream.synchronize()
+                ready_event = torch.npu.Event()
+                ready_event.record(self.text_stream)
             for crop, item, (packed, actual_length) in zip(
                 crop_group,
                 items,
@@ -330,6 +500,7 @@ class PersistentUniRecNpuPipeline:
                         or item.text_prefill_real_source_tokens
                         or actual_length
                     ),
+                    ready_event=ready_event,
                 )
 
                 def release(prefilled: Any = prefilled) -> None:
@@ -348,6 +519,7 @@ class PersistentUniRecNpuPipeline:
             self._metrics["text_groups"] += 1
             del items, exports, encoded_group
         self._metrics["text_wall_s"] += time.perf_counter() - started
+        self._complete_upstream_request(self._page_request_ids[page_index])
 
     def _text_loop(self) -> None:
         try:
@@ -376,6 +548,7 @@ class PersistentUniRecNpuPipeline:
         response = self.response_builder(page)
         request_id = self._page_request_ids.pop(page_index)
         self.on_page_complete(request_id, response)
+        self._retire_request(request_id)
         with self._condition:
             self._completed_pages += 1
             self._condition.notify_all()
@@ -386,11 +559,8 @@ class PersistentUniRecNpuPipeline:
             self.decode_summary = self.decoder.run(
                 self.ready_queue,
                 on_complete=self._complete_crop,
-                graph_warmup_passes=self.decode_graph_warmup_passes,
-                partial_batch_wait_s=self.decode_partial_batch_wait_s,
-                on_graph_warmup_complete=(
-                    self.on_decode_graph_warmup_complete
-                ),
+                graph_warmup_passes=0,
+                partial_batch_wait_s=0.0,
                 on_idle=self._decode_idle.set,
             )
         except BaseException as exception:
@@ -434,6 +604,8 @@ class PersistentUniRecNpuPipeline:
                 "vision_queue_depth": self.vision_queue.qsize(),
                 "text_queue_depth": self.text_queue.qsize(),
                 "ready_queue_depth": self.ready_queue.qsize(),
+                "frontend_requests_pending": self.vision_queue.upstream_pending,
+                "decode_upstream_pages_pending": self.ready_queue.upstream_pending,
                 "failed": self._error is not None,
             }
 
@@ -442,7 +614,7 @@ class PersistentUniRecNpuPipeline:
             if self._close_requested:
                 return
             self._close_requested = True
-        self.vision_queue.put(None)
+        self.vision_queue.close()
 
     def close(self) -> dict[str, Any]:
         self.request_close()

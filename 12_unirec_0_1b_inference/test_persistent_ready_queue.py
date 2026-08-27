@@ -65,6 +65,60 @@ class PersistentReadyQueueTest(unittest.TestCase):
         source.put(3)
         self.assertEqual(source.pull(wait=False).item, 3)
 
+    def test_dispatch_waits_for_full_batch_while_upstream_exists(self) -> None:
+        source: PersistentReadyQueue[int] = PersistentReadyQueue(maxsize=4)
+        source.register_upstream(2)
+        source.put(1)
+        dispatched = threading.Event()
+
+        def wait_for_batch() -> None:
+            self.assertTrue(source.wait_until_dispatchable(2))
+            dispatched.set()
+
+        thread = threading.Thread(target=wait_for_batch)
+        thread.start()
+        time.sleep(0.02)
+        self.assertFalse(dispatched.is_set())
+        source.put(2)
+        thread.join(timeout=1.0)
+        self.assertTrue(dispatched.is_set())
+
+    def test_upstream_drain_releases_partial_batch_without_timer(self) -> None:
+        source: PersistentReadyQueue[int] = PersistentReadyQueue(maxsize=4)
+        source.register_upstream()
+        source.put(1)
+        dispatched = threading.Event()
+
+        def wait_for_batch() -> None:
+            self.assertTrue(source.wait_until_dispatchable(4))
+            dispatched.set()
+
+        thread = threading.Thread(target=wait_for_batch)
+        thread.start()
+        time.sleep(0.02)
+        self.assertFalse(dispatched.is_set())
+        source.complete_upstream()
+        thread.join(timeout=1.0)
+        self.assertTrue(dispatched.is_set())
+
+    def test_open_idle_service_waits_for_new_upstream_work(self) -> None:
+        source: PersistentReadyQueue[int] = PersistentReadyQueue(maxsize=4)
+        dispatched = threading.Event()
+
+        def wait_for_batch() -> None:
+            self.assertTrue(source.wait_until_dispatchable(4))
+            dispatched.set()
+
+        thread = threading.Thread(target=wait_for_batch)
+        thread.start()
+        time.sleep(0.02)
+        self.assertFalse(dispatched.is_set())
+        source.register_upstream()
+        source.put(9)
+        source.complete_upstream()
+        thread.join(timeout=1.0)
+        self.assertTrue(dispatched.is_set())
+
 
 if __name__ == "__main__":
     unittest.main()

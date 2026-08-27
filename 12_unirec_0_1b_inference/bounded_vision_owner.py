@@ -440,9 +440,6 @@ class BoundedVisionOwner:
             for namespace in clone_namespaces:
                 namespace.clear()
             clone_namespaces.clear()
-            gc.collect()
-            torch.npu.empty_cache()
-            self.host_purge_statuses.append(purge_host_allocator_pages())
             if (
                 self.deinitialize_tbe_after_first_group
                 and not self._tbe_deinit_attempted

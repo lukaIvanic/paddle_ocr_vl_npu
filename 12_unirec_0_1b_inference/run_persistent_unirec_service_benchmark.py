@@ -68,20 +68,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--layout-lanes", type=int, default=1)
     parser.add_argument("--layout-batch-size", type=int, default=2)
     parser.add_argument("--layout-threshold", type=float, default=0.5)
-    parser.add_argument("--layout-flush-timeout-ms", type=float, default=5.0)
     parser.add_argument("--vision-bucket-preset", default="310p_k20_l4")
     parser.add_argument("--vision-lanes", type=int, default=4)
     parser.add_argument("--vision-same-key-shards", type=int, default=1)
     parser.add_argument("--vision-sharded-key-count", type=int, default=4)
-    parser.add_argument("--vision-page-lookahead", type=int, default=128)
+    parser.add_argument("--vision-record-budget", type=int, default=128)
+    parser.add_argument("--vision-max-calls-per-key", type=int, default=64)
     parser.add_argument("--vision-queue-size", type=int, default=128)
-    parser.add_argument("--vision-flush-timeout-ms", type=float, default=50.0)
     parser.add_argument("--decode-batch-size", type=int, default=128)
     parser.add_argument("--cross-cache-length", type=int, default=1320)
     parser.add_argument("--self-cache-length", type=int, default=2048)
     parser.add_argument("--max-length", type=int, default=2048)
     parser.add_argument("--ready-queue-size", type=int, default=128)
-    parser.add_argument("--decode-fill-timeout-ms", type=float, default=5.0)
     parser.add_argument("--vision-tall-fallback", choices=("compiled", "eager"), default="compiled")
     parser.add_argument("--progress-every", type=int, default=32)
     parser.add_argument("--write-outputs", action="store_true")
@@ -132,7 +130,6 @@ def main() -> None:
         lanes=args.layout_lanes,
         batch_size=args.layout_batch_size,
         threshold=args.layout_threshold,
-        flush_timeout_s=args.layout_flush_timeout_ms / 1000.0,
     )
 
     os.environ["UNIREC_STATIC_CACHE_LEN"] = str(args.self_cache_length)
@@ -284,15 +281,6 @@ def main() -> None:
         if service is not None:
             service.fail(exception)
 
-    def decode_warmup_complete(report: dict[str, Any]) -> None:
-        deinitialize_after_warmup("persistent_service_decode_warmup_complete")
-        cleanup_after_warmup("persistent_service_hot")
-        print(
-            "UNIREC_SERVING_DECODE_WARMUP "
-            + json.dumps(report, ensure_ascii=False),
-            flush=True,
-        )
-
     npu_pipeline = PersistentUniRecNpuPipeline(
         runner=runner,
         vision_owner=vision_owner,
@@ -302,12 +290,10 @@ def main() -> None:
         on_page_complete=page_complete,
         response_builder=response_builder,
         on_error=npu_error,
-        vision_page_lookahead=args.vision_page_lookahead,
-        vision_flush_timeout_s=args.vision_flush_timeout_ms / 1000.0,
+        vision_record_budget=args.vision_record_budget,
+        vision_max_calls_per_key=args.vision_max_calls_per_key,
         vision_queue_size=args.vision_queue_size,
         ready_queue_size=args.ready_queue_size,
-        decode_partial_batch_wait_s=args.decode_fill_timeout_ms / 1000.0,
-        on_decode_graph_warmup_complete=decode_warmup_complete,
     )
     frontend = PersistentUniRecFrontend(
         layout=layout,
@@ -335,6 +321,10 @@ def main() -> None:
     service.wait_idle()
     warmup_wall_s = time.perf_counter() - warmup_started
     del warmup_futures
+    compiler_cleanup = deinitialize_after_warmup(
+        "persistent_service_real_request_warmup_complete"
+    )
+    host_cleanup = cleanup_after_warmup("persistent_service_hot")
     prior_metrics = service.reset_measurement()
     spool_leftovers = [
         path
@@ -348,7 +338,9 @@ def main() -> None:
         )
     print(
         "UNIREC_SERVING_WARMUP_END "
-        f"pages={len(warmup_paths)} wall_s={warmup_wall_s:.3f}",
+        f"pages={len(warmup_paths)} wall_s={warmup_wall_s:.3f} "
+        f"compiler_cleanup={json.dumps(compiler_cleanup, ensure_ascii=False)} "
+        f"host_cleanup={json.dumps(host_cleanup, ensure_ascii=False)}",
         flush=True,
     )
 
@@ -411,7 +403,7 @@ def main() -> None:
     write_wall_s = time.perf_counter() - write_started
 
     summary = {
-        "schema": "unirec_persistent_service_benchmark_v1",
+        "schema": "unirec_persistent_service_benchmark_v2",
         "status": "pass",
         "chip": torch_npu.npu.get_device_name(0),
         "page_count": len(paths),
@@ -432,16 +424,14 @@ def main() -> None:
             "recognition_threads": args.recognition_threads,
             "layout_lanes": args.layout_lanes,
             "layout_batch_size": args.layout_batch_size,
-            "layout_flush_timeout_ms": args.layout_flush_timeout_ms,
             "vision_bucket_preset": args.vision_bucket_preset,
             "vision_lanes": args.vision_lanes,
-            "vision_page_lookahead": args.vision_page_lookahead,
+            "vision_record_budget": args.vision_record_budget,
+            "vision_max_calls_per_key": args.vision_max_calls_per_key,
             "vision_queue_size": args.vision_queue_size,
-            "vision_flush_timeout_ms": args.vision_flush_timeout_ms,
             "decode_batch_size": args.decode_batch_size,
             "cross_cache_length": args.cross_cache_length,
             "self_cache_length": args.self_cache_length,
-            "decode_fill_timeout_ms": args.decode_fill_timeout_ms,
         },
         "artifacts": {
             "output_dir": str(args.output_dir.resolve()),

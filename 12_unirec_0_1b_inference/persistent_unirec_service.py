@@ -65,11 +65,13 @@ class PersistentUniRecService:
             self._futures[identifier] = future
             self._submitted += 1
         try:
+            self.npu_pipeline.register_request(identifier)
             frontend_future = self.frontend.submit(
                 path,
                 request_id=identifier,
             )
         except BaseException as exception:
+            self.npu_pipeline.cancel_request(identifier)
             with self._condition:
                 self._futures.pop(identifier, None)
                 future.set_exception(exception)
@@ -81,6 +83,7 @@ class PersistentUniRecService:
             exception = completed.exception()
             if exception is None:
                 return
+            self.npu_pipeline.cancel_request(identifier)
             with self._condition:
                 pending = self._futures.pop(identifier, None)
                 if pending is not None and not pending.done():

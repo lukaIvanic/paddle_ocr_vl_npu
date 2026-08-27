@@ -628,7 +628,6 @@ def _layout_owner_process_main(
 
         from host_memory_diagnostics import process_snapshot
         from layout_page_input import decode_page_rgb, materialize_layout_rgb
-        from post_warmup_host_cleanup import purge_host_allocator_pages
         from shared_layout_owner import SharedLayoutOwner
 
         torch_npu.npu.set_compile_mode(jit_compile=False)
@@ -740,7 +739,6 @@ def _persistent_layout_owner_process_main(
     lanes: int,
     batch_size: int,
     threshold: float,
-    flush_timeout_s: float,
     task_queue: Any,
     result_queue: Any,
 ) -> None:
@@ -781,13 +779,9 @@ def _persistent_layout_owner_process_main(
             if first is None:
                 break
             tasks = [first]
-            deadline = time.perf_counter() + flush_timeout_s
             while len(tasks) < max_group_size:
-                remaining = deadline - time.perf_counter()
-                if remaining <= 0:
-                    break
                 try:
-                    task = task_queue.get(timeout=remaining)
+                    task = task_queue.get_nowait()
                 except queue.Empty:
                     break
                 if task is None:
@@ -821,9 +815,6 @@ def _persistent_layout_owner_process_main(
                 )
                 completed += 1
             del layouts, prepared, timings
-            if completed % 32 == 0:
-                gc.collect()
-                purge_host_allocator_pages()
         result_queue.put(
             {
                 "status": "layout_closed",
@@ -857,14 +848,11 @@ class PersistentSharedLayoutProcess:
         lanes: int = 1,
         batch_size: int = 2,
         threshold: float = 0.5,
-        flush_timeout_s: float = 0.005,
         queue_size: int = 32,
         malloc_conf: str = LAYOUT_OWNER_MALLOC_CONF,
     ) -> None:
         if lanes < 1 or batch_size < 1 or queue_size < 1:
             raise ValueError("layout lanes, batch size, and queue size must be positive")
-        if flush_timeout_s < 0:
-            raise ValueError("layout flush timeout cannot be negative")
         self.context = mp.get_context("spawn")
         self.task_queue = self.context.Queue(maxsize=queue_size)
         self.result_queue = self.context.Queue(maxsize=queue_size)
@@ -882,7 +870,6 @@ class PersistentSharedLayoutProcess:
                 lanes,
                 batch_size,
                 threshold,
-                flush_timeout_s,
                 self.task_queue,
                 self.result_queue,
             ),

@@ -117,6 +117,7 @@ class ContinuousWorkerPrefilledItem:
     text_prefill_execution: str = "eager"
     text_prefill_real_source_tokens: int | None = None
     text_prefill_physical_source_tokens: int | None = None
+    ready_event: Any | None = None
 
 
 @dataclass
@@ -532,6 +533,13 @@ class ContinuousUniRecDecoder:
         )
 
         started = time.perf_counter()
+        if source.ready_event is not None or packed_device.device.type == "npu":
+            current_stream = torch.npu.current_stream(
+                torch.device(self.runner.device)
+            )
+            if source.ready_event is not None:
+                current_stream.wait_event(source.ready_event)
+            packed_device.record_stream(current_stream)
         with torch.inference_mode():
             self._write_cross_attention_mask(destination, slot, source_len)
             # Reused self-K/V is safe without clearing: every decode layer
@@ -701,6 +709,14 @@ class ContinuousUniRecDecoder:
             raise ValueError("partial_batch_wait_s must be non-negative")
         run_started = time.perf_counter()
         persistent_source = isinstance(source, PersistentReadyQueue)
+        if persistent_source and partial_batch_wait_s:
+            raise ValueError(
+                "persistent decode uses upstream-state batching, not a timer"
+            )
+        if persistent_source and graph_warmup_passes:
+            raise ValueError(
+                "persistent decode must warm through real service requests"
+            )
         if persistent_source and self.admission_prefetch_depth:
             raise ValueError(
                 "persistent decode sources do not yet support admission prefetch"
@@ -777,7 +793,15 @@ class ContinuousUniRecDecoder:
             submitted += 1
             return ready, "item"
 
-        first_ready, first_state = pull_ready(wait=True)
+        if persistent_source:
+            dispatchable = source.wait_until_dispatchable(self.batch_size)
+            first_ready, first_state = (
+                pull_ready(wait=False)
+                if dispatchable
+                else (None, "closed")
+            )
+        else:
+            first_ready, first_state = pull_ready(wait=True)
         if first_ready is None:
             if first_state != "closed":
                 raise RuntimeError("blocking decode source pull returned idle")
@@ -807,24 +831,11 @@ class ContinuousUniRecDecoder:
                 "partial_batch_wait_s": float(partial_batch_wait_s),
             }
 
-        initial_fill_deadline = (
-            time.perf_counter() + partial_batch_wait_s
-            if persistent_source and partial_batch_wait_s > 0
-            else None
-        )
-
         def pull_initial_extra() -> ContinuousReadyItem | None:
             if not persistent_source:
                 ready, _state = pull_ready(wait=True)
                 return ready
-            if partial_batch_wait_s == 0:
-                ready, _state = pull_ready(wait=False)
-                return ready
-            assert initial_fill_deadline is not None
-            remaining = initial_fill_deadline - time.perf_counter()
-            if remaining <= 0:
-                return None
-            ready, _state = pull_ready(wait=True, timeout=remaining)
+            ready, _state = pull_ready(wait=False)
             return ready
 
         initial: list[ContinuousReadyItem] = [first_ready]
@@ -1231,54 +1242,32 @@ class ContinuousUniRecDecoder:
             if on_graph_warmup_complete is not None:
                 on_graph_warmup_complete(production_graph_warmup_report)
 
-        def wait_for_next_cohort() -> bool:
-            """Admit later service work after every active row became idle."""
-            empty_slots = [
-                index for index, ready in enumerate(slots) if ready is None
-            ]
-            if not empty_slots:
-                return True
-            first_state = refill_slot(empty_slots[0], wait_for_item=True)
-            if first_state == "closed":
-                return False
-            if slots[empty_slots[0]] is None:
-                raise RuntimeError(
-                    "blocking persistent decode pull returned no request"
-                )
-            fill_deadline = (
-                time.perf_counter() + partial_batch_wait_s
-                if partial_batch_wait_s > 0
-                else None
-            )
-            for slot in empty_slots[1:]:
-                if fill_deadline is None:
+        def fill_service_rows() -> bool:
+            """Fill empty rows using explicit upstream state, without a timer."""
+            nonlocal source_closed, opportunistic_slot_refills
+            while True:
+                empty_slots = [
+                    index for index, ready in enumerate(slots) if ready is None
+                ]
+                if not empty_slots or not persistent_source:
+                    return True
+                active_count = self.batch_size - len(empty_slots)
+                if not source.wait_until_dispatchable(
+                    len(empty_slots),
+                    active_count=active_count,
+                ):
+                    source_closed = True
+                    return bool(active_count)
+                for slot in empty_slots:
+                    refills_before = slot_refills
                     state = refill_slot(slot)
-                else:
-                    remaining = fill_deadline - time.perf_counter()
-                    if remaining <= 0:
+                    opportunistic_slot_refills += slot_refills - refills_before
+                    if state != "item":
                         break
-                    state = refill_slot(
-                        slot,
-                        wait_for_item=True,
-                        timeout=remaining,
-                    )
-                if state != "item":
-                    break
-            return True
-
-        def admit_available_service_rows() -> None:
-            """Grow a partial live cohort without waiting for a completion."""
-            nonlocal opportunistic_slot_refills
-            if not persistent_source or source.qsize() == 0:
-                return
-            for slot, ready in enumerate(slots):
-                if ready is not None:
-                    continue
-                refills_before = slot_refills
-                state = refill_slot(slot)
-                opportunistic_slot_refills += slot_refills - refills_before
-                if state != "item":
-                    break
+                if source_closed:
+                    return any(slot is not None for slot in slots)
+                if source.upstream_pending == 0:
+                    return any(slot is not None for slot in slots)
 
         try:
             with torch.inference_mode():
@@ -1288,9 +1277,14 @@ class ContinuousUniRecDecoder:
                             on_idle()
                         if source_closed or not persistent_source:
                             break
-                        if not wait_for_next_cohort():
+                        if not fill_service_rows():
                             break
-                    admit_available_service_rows()
+                    elif persistent_source and any(
+                        slot is None for slot in slots
+                    ):
+                        if not fill_service_rows():
+                            if not any(slot is not None for slot in slots):
+                                break
                     iteration_started = time.perf_counter()
                     active_slots = [slot is not None for slot in slots]
                     active_positions = [
@@ -1517,6 +1511,11 @@ class ContinuousUniRecDecoder:
             "compile": compile_meta,
             "source_mode": (
                 "persistent_queue" if persistent_source else "finite_iterable"
+            ),
+            "batch_fill_policy": (
+                "full_while_upstream_pending_else_partial"
+                if persistent_source
+                else "finite_iterable"
             ),
             "partial_batch_wait_s": float(partial_batch_wait_s),
             "production_graph_warmup": production_graph_warmup_report,

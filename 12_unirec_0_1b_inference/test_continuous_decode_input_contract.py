@@ -218,7 +218,7 @@ class ContinuousDecodeInputContractTest(unittest.TestCase):
             summary = decoder.run(
                 source,
                 on_complete=complete,
-                partial_batch_wait_s=0.005,
+                partial_batch_wait_s=0.0,
             )
         thread.join(timeout=2.0)
 
@@ -228,6 +228,10 @@ class ContinuousDecodeInputContractTest(unittest.TestCase):
         self.assertEqual(summary["submitted"], 2)
         self.assertEqual(summary["completed"], 2)
         self.assertEqual(summary["source_mode"], "persistent_queue")
+        self.assertEqual(
+            summary["batch_fill_policy"],
+            "full_while_upstream_pending_else_partial",
+        )
 
     def test_persistent_decoder_fills_inactive_slots_while_decoding(self) -> None:
         source: PersistentReadyQueue[ContinuousReadyItem] = (
@@ -276,6 +280,67 @@ class ContinuousDecodeInputContractTest(unittest.TestCase):
 
         self.assertEqual(sorted(completed), ["first", "second"])
         self.assertGreaterEqual(summary["opportunistic_slot_refills"], 1)
+
+    def test_persistent_decoder_waits_for_full_batch_while_upstream_runs(self) -> None:
+        source: PersistentReadyQueue[ContinuousReadyItem] = (
+            PersistentReadyQueue(maxsize=4)
+        )
+        source.register_upstream()
+        runner = FakeDecodeRunner()
+        runner.model = DelayedFakeDecodeModel()
+        decoder = ContinuousUniRecDecoder(
+            runner=runner,
+            batch_size=4,
+            max_length=8,
+            decode_mode="eager",
+            compile_backend="eager",
+            self_cache_length=8,
+            cross_cache_length=4,
+        )
+        completed: list[str] = []
+        reports: list[dict[str, object]] = []
+        errors: list[BaseException] = []
+        real_empty = torch.empty
+
+        def cpu_safe_empty(*args: object, **kwargs: object) -> torch.Tensor:
+            kwargs.pop("pin_memory", None)
+            return real_empty(*args, **kwargs)
+
+        def run_decoder() -> None:
+            try:
+                reports.append(
+                    decoder.run(
+                        source,
+                        on_complete=lambda item: completed.append(
+                            item.request_id
+                        ),
+                    )
+                )
+            except BaseException as exception:
+                errors.append(exception)
+
+        with unittest.mock.patch.object(
+            torch,
+            "empty",
+            side_effect=cpu_safe_empty,
+        ):
+            thread = threading.Thread(target=run_decoder)
+            thread.start()
+            source.put(ready_item("one"))
+            time.sleep(0.02)
+            self.assertFalse(runner.model.decode_started.is_set())
+            source.put(ready_item("two"))
+            source.put(ready_item("three"))
+            source.put(ready_item("four"))
+            source.complete_upstream()
+            source.close()
+            thread.join(timeout=2.0)
+
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(sorted(completed), ["four", "one", "three", "two"])
+        self.assertEqual(reports[0]["decode_iterations"], 6)
+        self.assertEqual(reports[0]["idle_decode_token_slots"], 0)
 
 
 if __name__ == "__main__":

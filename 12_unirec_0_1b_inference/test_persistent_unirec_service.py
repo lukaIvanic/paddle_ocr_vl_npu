@@ -16,9 +16,17 @@ class FakeNpuPipeline:
         self.complete = None
         self.payloads = []
         self.resets = 0
+        self.registered: set[str] = set()
+
+    def register_request(self, request_id: str) -> None:
+        self.registered.add(request_id)
+
+    def cancel_request(self, request_id: str) -> None:
+        self.registered.discard(request_id)
 
     def submit(self, payload: dict[str, object]) -> None:
         self.payloads.append(payload)
+        self.registered.discard(str(payload["request_id"]))
         assert self.complete is not None
         self.complete(
             str(payload["request_id"]),
