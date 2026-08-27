@@ -29,6 +29,9 @@ MODES = (MODE_COMPILED_ASYNC, MODE_EAGER_SYNC)
 DEFAULT_MODEL = Path("/workspace/models/MinerU2.5-Pro-2605-1.2B")
 DEFAULT_DATASET_JSON = Path("/workspace/datasets/OmniDocBench/OmniDocBench.json")
 DEFAULT_IMAGES_DIR = Path("/workspace/datasets/OmniDocBench/images")
+DEFAULT_COMPILE_CACHE_DIR = Path(
+    "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/17_mineru_vllm_ascend_baseline/vllm_compile"
+)
 CAPTURE_SIZES = [1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 28, 32]
 PACKAGE_NAMES = (
     "vllm",
@@ -197,6 +200,7 @@ def preset_spec(mode: str) -> dict[str, Any]:
             "fuse_norm_quant": False,
             "cudagraph_mode": "FULL_DECODE_ONLY",
             "cudagraph_capture_sizes": CAPTURE_SIZES,
+            "compile_cache_dir": str(DEFAULT_COMPILE_CACHE_DIR),
         }
     return {
         **common,
@@ -252,6 +256,7 @@ def build_engine_kwargs(mode: str, model: Path, logits_processor: Any) -> dict[s
                 "compilation_config": {
                     "cudagraph_mode": "FULL_DECODE_ONLY",
                     "cudagraph_capture_sizes": CAPTURE_SIZES,
+                    "cache_dir": str(DEFAULT_COMPILE_CACHE_DIR),
                 },
             }
         )

@@ -27,6 +27,7 @@ def main() -> None:
     args = parser.parse_args()
 
     from mineru_vl_utils import MinerUClient
+    import numpy
     from vllm import AsyncEngineArgs
 
     actual = {name: version(name) for name in EXPECTED}
@@ -51,6 +52,7 @@ def main() -> None:
     result = {
         "status": "ENVIRONMENT_READY",
         "packages": actual,
+        "numpy": numpy.__version__,
         "async_engine_required_parameters": sorted(required_engine_parameters),
         "mineru_concurrent_two_step_extract": True,
     }

@@ -44,6 +44,12 @@ The runner also retains two compatibility corrections already established in
 experiment 11. It forces tied embeddings at both Hugging Face config levels and
 bypasses `mineru-vl-utils` 1.0.5's second multimodal prompt render.
 
+The shell wrapper sets `HI_PYTHON` to the fresh experiment interpreter. CANN's
+`op_compiler` otherwise invokes bare `/usr/bin/python3`, which has no NumPy in
+this container and makes every requested static-kernel compile fail. Experiment
+17 also owns its vLLM compile cache under
+`.runtime_cache/17_mineru_vllm_ascend_baseline/`.
+
 The `eager_sync` mode reproduces the photographed comparison lane. It uses the
 synchronous `LLM`, `enforce_eager=True`, no prefix cache, no chunked prefill,
 and one `two_step_extract` call per page. This is a faithful comparison, not a

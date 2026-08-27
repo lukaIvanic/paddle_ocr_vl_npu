@@ -25,6 +25,7 @@ if [[ ! -x "$PYTHON" ]]; then
   echo "experiment environment is missing: $PYTHON" >&2
   exit 1
 fi
+export HI_PYTHON="$PYTHON"
 
 "$PYTHON" "$SCRIPT_DIR/verify_environment.py"
 

@@ -29,6 +29,9 @@ class RunnerContractTest(unittest.TestCase):
         self.assertTrue(spec["enable_npugraph_ex"])
         self.assertTrue(spec["enable_static_kernel"])
         self.assertEqual(spec["cudagraph_capture_sizes"], RUNNER.CAPTURE_SIZES)
+        self.assertEqual(
+            spec["compile_cache_dir"], str(RUNNER.DEFAULT_COMPILE_CACHE_DIR)
+        )
         self.assertTrue(spec["image_analysis"])
 
     def test_eager_sync_preset_omits_tuned_scheduler_limits(self) -> None:
@@ -56,6 +59,10 @@ class RunnerContractTest(unittest.TestCase):
         self.assertFalse(ascend["fuse_norm_quant"])
         self.assertTrue(ascend["enable_npugraph_ex"])
         self.assertTrue(ascend["enable_static_kernel"])
+        self.assertEqual(
+            kwargs["compilation_config"]["cache_dir"],
+            str(RUNNER.DEFAULT_COMPILE_CACHE_DIR),
+        )
 
     def test_dataset_selection_is_ordered_and_explicit(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
