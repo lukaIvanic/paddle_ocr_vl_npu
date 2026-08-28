@@ -1,0 +1,51 @@
+{
+  "root": "/workspace/models/MinerU2.5-Pro-2605-1.2B",
+  "full_hash": false,
+  "files": [
+    {
+      "path": "added_tokens.json",
+      "size": 800,
+      "sha256": "14155f41a9e51bee8ee7e5ff1b458418928d9ea86822ea5e98ae7bbdf1912ec8"
+    },
+    {
+      "path": "config.json",
+      "size": 2840,
+      "sha256": "22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28"
+    },
+    {
+      "path": "configuration.json",
+      "size": 55,
+      "sha256": "26726b583ef39126b03b84fffd5011c2544c50d236a16472f6575373b17f3986"
+    },
+    {
+      "path": "generation_config.json",
+      "size": 215,
+      "sha256": "405a603af8aed51b82ef71a5e16e7c053d11576fdc2db3c168d32bac2fd75f0d"
+    },
+    {
+      "path": "preprocessor_config.json",
+      "size": 316,
+      "sha256": "7070ae84a684ce2eb8d239c2cb38ff848085075784b213ea28a5ef5b3cdb445f"
+    },
+    {
+      "path": "special_tokens_map.json",
+      "size": 919,
+      "sha256": "badbadb9452d98337219d280879a65eafe224d661a0216114c7cbd3e40ff4984"
+    },
+    {
+      "path": "tokenizer.json",
+      "size": 11423550,
+      "sha256": "dceac5fc54a795ee7570d17902b47bd05412dc2afa62bdf325c3f97fcb5b87fe"
+    },
+    {
+      "path": "tokenizer_config.json",
+      "size": 6596,
+      "sha256": "d762430b9c668b5c3ad95e26626e3982d5b2a59c18ff214d621d1de4318ff376"
+    },
+    {
+      "path": "vocab.json",
+      "size": 2776833,
+      "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  ]
+}

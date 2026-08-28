@@ -15,7 +15,9 @@ gate, evaluator results, and graph-cache postmortem are recorded in
 `VERIFIED_V1_0_981_BASELINE.md`. The complete 1,651-page OmniDocBench
 `v1.6_full` run, recovery, official evaluator score, SOTA comparison, and
 online-serving graph-cache behavior are recorded in
-`VERIFIED_V1_6_1651_BASELINE.md`.
+`VERIFIED_V1_6_1651_BASELINE.md`. The matched 128-page
+`enable_static_kernel` on/off result is recorded in
+`STATIC_KERNEL_AB_128.md`.
 
 ## Source evidence
 

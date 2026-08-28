@@ -1,0 +1,81 @@
+{
+  "experiment": "17_mineru_vllm_ascend_baseline",
+  "comparison": "enable_static_kernel_off_vs_on",
+  "source_commit": "a2397dff411999610e1327416a1575979266c41b",
+  "evaluator_commit": "2b161d010d2e3aff77a0edef359ea3a6411d23cd",
+  "hardware": "Ascend 910B2",
+  "physical_device": 6,
+  "model": "MinerU2.5-Pro-2605-1.2B",
+  "dataset": "OmniDocBench v1.6_full first 128 pages",
+  "input_manifest_sha256": "77ca4566d1454cb133e099dc4233a9efd1323d1444e140bf0b3307a9c589b80e",
+  "static_off": {
+    "engine_setup_s": 85.33280140100396,
+    "graph_capture_s_reported": 3,
+    "image_load_s": 10.8069256109884,
+    "inference_s": 277.8090902190015,
+    "output_write_s": 0.11025886400602758,
+    "benchmark_wall_s": 288.752935187993,
+    "pages_per_s": 0.4432855372246361,
+    "inference_pages_per_s": 0.46074806227217213,
+    "quality": {
+      "overall": 90.45365327584612,
+      "text_edit_distance": 0.08374318489389893,
+      "formula_cdm": 0.9833017621145377,
+      "table_teds": 0.8140510210547449,
+      "table_structure_teds": 0.9219620958751393,
+      "reading_order_edit_distance": 0.03556213449675022
+    }
+  },
+  "static_on": {
+    "engine_setup_s": 528.9862165600061,
+    "graph_capture_s_reported": 367,
+    "image_load_s": 10.90088600901072,
+    "inference_s": 275.60634002200095,
+    "output_write_s": 0.11040338700695429,
+    "benchmark_wall_s": 286.64566100400407,
+    "pages_per_s": 0.4465443486975092,
+    "inference_pages_per_s": 0.4644305351966217,
+    "quality": {
+      "overall": 90.44971403794408,
+      "text_edit_distance": 0.08381070123800885,
+      "formula_cdm": 0.9832511013215861,
+      "table_teds": 0.8140510210547449,
+      "table_structure_teds": 0.9219620958751393,
+      "reading_order_edit_distance": 0.035054133480748186
+    }
+  },
+  "delta_on_minus_off": {
+    "engine_setup_s": 443.6534151590022,
+    "graph_capture_s_reported": 364,
+    "inference_s": -2.2027501970005687,
+    "benchmark_wall_s": -2.1072741839889204,
+    "inference_pages_per_s_percent": 0.799237853826118,
+    "pages_per_s_percent": 0.7351495140753173,
+    "quality_overall_points": -0.003939237902045534,
+    "text_edit_distance": 0.00006751634410992469,
+    "formula_cdm_points": -0.005066079295157344,
+    "table_teds_points": 0,
+    "table_structure_teds_points": 0,
+    "reading_order_edit_distance": -0.000508001016002034
+  },
+  "output_parity": {
+    "markdown_exact": 110,
+    "markdown_different": 18,
+    "content_list_exact": 104,
+    "content_list_different": 24
+  },
+  "evaluation": {
+    "pages": 128,
+    "formula_samples": 908,
+    "table_samples": 4,
+    "page_match_fallbacks_each": 0,
+    "timeouts_each": 0,
+    "errors_each": 0,
+    "exceptions_each": 0
+  },
+  "derived": {
+    "observed_time_saved_per_page_s": 0.017208985914066943,
+    "naive_setup_break_even_pages": 25780.33460974314,
+    "repeatability_note": "One matched pair cannot resolve a sub-1-percent throughput difference from run-to-run variance."
+  }
+}

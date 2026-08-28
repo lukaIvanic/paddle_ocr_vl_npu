@@ -1,0 +1,770 @@
+[
+  {
+    "image": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-d1561665-5359-42fe-920c-d6e3bff81953.md",
+    "bytes": 3445,
+    "sha256": "8040d1e0b8035ce9b46260d3591b89d845abd03bb87bcf61bd69cf4576230f1b"
+  },
+  {
+    "image": "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.md",
+    "bytes": 2366,
+    "sha256": "c01551eeda2bd49f202e15d42357aa3366fec8034b590af5a5f51fc258a26c2e"
+  },
+  {
+    "image": "page-affbb0cc-d616-481d-b493-80ed1ccb5a10.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-affbb0cc-d616-481d-b493-80ed1ccb5a10.md",
+    "bytes": 2863,
+    "sha256": "9b7243d89ff300cc2058022cbd9d0850bcc8a70522f81174509559ba02a6f86c"
+  },
+  {
+    "image": "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.md",
+    "bytes": 1178,
+    "sha256": "95860d02d996eca5fb33bf6d3d021c308ecaa4d3ed6c0b0e855706e441d34ac0"
+  },
+  {
+    "image": "page-ba4443e6-f432-435f-89e7-ddf0a571d2cd.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-ba4443e6-f432-435f-89e7-ddf0a571d2cd.md",
+    "bytes": 577,
+    "sha256": "547669e858fa6e76e305d7e82437b2601ad9f726e61fa30e80fbb8179b26018d"
+  },
+  {
+    "image": "page-1c08a4a2-8163-44d3-93f0-9449457dbba3.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-1c08a4a2-8163-44d3-93f0-9449457dbba3.md",
+    "bytes": 3050,
+    "sha256": "b4b00d5d0440b30c89c0cbdaf6568283b96a6b7622592f559a5c8e12c12544b8"
+  },
+  {
+    "image": "page-74c7629d-b064-4b8f-8667-bf943f5ba367.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-74c7629d-b064-4b8f-8667-bf943f5ba367.md",
+    "bytes": 3844,
+    "sha256": "a99455fdb45c4d385ddf883eb269d53e2be8d3c6a7434644c75b7bbef6750a91"
+  },
+  {
+    "image": "page-c9654418-0624-48d4-8be7-6065f45dd1f9.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-c9654418-0624-48d4-8be7-6065f45dd1f9.md",
+    "bytes": 2685,
+    "sha256": "ac79d27303c4aa665fabc7cdcb2510230484c6e37d49863c800d03ffe7dc7b98"
+  },
+  {
+    "image": "page-0a262e27-b24d-4429-9b21-90563d4fada7.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-0a262e27-b24d-4429-9b21-90563d4fada7.md",
+    "bytes": 2732,
+    "sha256": "11a845f7ba829cacd9ef52e207c80c86b4f6a204f48cf770fac407a55bf53a05"
+  },
+  {
+    "image": "page-99c0fd2f-608e-479c-9af5-5b012de4f6af.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-99c0fd2f-608e-479c-9af5-5b012de4f6af.md",
+    "bytes": 2862,
+    "sha256": "955fe443244f0a2f8e0c924eedc1976e4df2f68ba8dba9d543d76fd7632ad8b2"
+  },
+  {
+    "image": "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-f9583127-1277-4424-be9d-35430e0aedd6.md",
+    "bytes": 4022,
+    "sha256": "3c34e7214cc4ee7463fb012662c72ff55fbccf491ce5a611f7804c679e9dbb79"
+  },
+  {
+    "image": "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-573c437e-c309-4483-a038-ef2f440b104a.md",
+    "bytes": 2137,
+    "sha256": "4e7ffa9dc21db9e17ba57a6065d89fa045f44321fb296f521fce96c0a89967a1"
+  },
+  {
+    "image": "page-062fc21c-6b9c-40be-8d0e-7a617509a9bc.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-062fc21c-6b9c-40be-8d0e-7a617509a9bc.md",
+    "bytes": 1589,
+    "sha256": "893eec03a98f199c6c2e968f171862da67f1990558b8bc375323f8f2e6910bbd"
+  },
+  {
+    "image": "page-52875b3d-f4dc-44c2-a9bb-514b0763833d.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-52875b3d-f4dc-44c2-a9bb-514b0763833d.md",
+    "bytes": 2218,
+    "sha256": "8dc321875e6356de5e6dd3b350c23d3b5f1f3fff4e23ee49d1699feb6b229ab7"
+  },
+  {
+    "image": "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-cdd33cf6-76ce-42bb-a99c-342c861afed0.md",
+    "bytes": 1876,
+    "sha256": "938fcdf135e4321077e8564646b91733166bea23b03ca3d10775f4a5487e722e"
+  },
+  {
+    "image": "page-39d18b46-ad1b-4c7a-b7e2-132471c27c15.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-39d18b46-ad1b-4c7a-b7e2-132471c27c15.md",
+    "bytes": 1421,
+    "sha256": "89097f829883c69637eb9c70ba1f76e3a183713fa74d0fa8a83feb1cdad8870d"
+  },
+  {
+    "image": "page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-e2fbf592-51f5-431a-8ae6-0c62e3349e89.md",
+    "bytes": 4669,
+    "sha256": "82edfc6c68b047220596c35847086970b0bdff4f3e393b89ad7f67e394b28869"
+  },
+  {
+    "image": "page-7dfc88d8-6d95-446c-b910-2410e8552f76.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-7dfc88d8-6d95-446c-b910-2410e8552f76.md",
+    "bytes": 2197,
+    "sha256": "90ff67e2b9796eff17624bedd36f5916bbcb96f9e271f970ab5f991403839ff8"
+  },
+  {
+    "image": "page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-4b8f8a9d-e061-4207-a42e-ebf9b7090099.md",
+    "bytes": 2194,
+    "sha256": "d309f4c1933bab3e7fefd90898e9aed04c9fec2d04c22414b5e48f19ecfe588c"
+  },
+  {
+    "image": "page-bb98165a-8033-4ea4-a527-58ac974f2c32.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-bb98165a-8033-4ea4-a527-58ac974f2c32.md",
+    "bytes": 1438,
+    "sha256": "28744027292eaf477394ccc226fe551012b9a635f026ef5e32052b8dacc4d630"
+  },
+  {
+    "image": "page-8c21f73a-b849-4f71-9573-57d50fbcc180.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-8c21f73a-b849-4f71-9573-57d50fbcc180.md",
+    "bytes": 2849,
+    "sha256": "e6db7b2e204fd08ddee0c4c9ada482d3cd8e90121e55d6bd3a1fc2ef9c3f0178"
+  },
+  {
+    "image": "page-1853e666-6f83-432c-afc8-923ce8cf0fea.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-1853e666-6f83-432c-afc8-923ce8cf0fea.md",
+    "bytes": 2590,
+    "sha256": "6bb3c3201e02d15a172d3a768198cb80c4bcee380e307087d129d1764ecac0c7"
+  },
+  {
+    "image": "page-4431f432-9e71-46d3-a5ea-4d705ad163a8.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-4431f432-9e71-46d3-a5ea-4d705ad163a8.md",
+    "bytes": 2094,
+    "sha256": "afac588a803338ebf9aa751e25342b857c9b2bd31a0602c897c861933ecdaa38"
+  },
+  {
+    "image": "page-9bcba6da-bdb0-4403-97cb-8874898ac8ab.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-9bcba6da-bdb0-4403-97cb-8874898ac8ab.md",
+    "bytes": 1613,
+    "sha256": "5727bab0e96748e2356a112e0783c731b4419ae24b18931ddd13fc04773dd8ce"
+  },
+  {
+    "image": "page-b21c7247-a843-4316-a44d-c3365077f077.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-b21c7247-a843-4316-a44d-c3365077f077.md",
+    "bytes": 1860,
+    "sha256": "f9c757c1a233f751605cc7b65ceee1e8b47f43e1bb477ced16591a0e3e9ce044"
+  },
+  {
+    "image": "page-0c8b5994-685d-4b1b-816a-74f43aff8a53.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-0c8b5994-685d-4b1b-816a-74f43aff8a53.md",
+    "bytes": 1733,
+    "sha256": "bcda31f94576eed07caa05656bc93ce365c1f6f943e4e77e7e06ee67411a2e5e"
+  },
+  {
+    "image": "page-d43b98f8-6a96-44f8-a3cf-65de9397f582.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-d43b98f8-6a96-44f8-a3cf-65de9397f582.md",
+    "bytes": 2094,
+    "sha256": "4336d4ffa90c35874e4121e93d7f0b2d946aac562e46321f951f517363d0a2b3"
+  },
+  {
+    "image": "page-44a14308-9d3e-4044-9508-5c3e30141a19.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-44a14308-9d3e-4044-9508-5c3e30141a19.md",
+    "bytes": 1462,
+    "sha256": "03d0bd0eb86bb49ecbfe692f40ed0e6b755ccc6e7488dacbcddaa0a502df11d5"
+  },
+  {
+    "image": "page-67013be9-58e5-4842-809d-7a3c1fc91fc7.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-67013be9-58e5-4842-809d-7a3c1fc91fc7.md",
+    "bytes": 2806,
+    "sha256": "9b1d3309fcf3e586e0f0baf1bbfcbd369bb230fdac5e79ed4e533d401cde648c"
+  },
+  {
+    "image": "page-39551bb3-1b65-4562-b258-1bc97898cdf9.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-39551bb3-1b65-4562-b258-1bc97898cdf9.md",
+    "bytes": 933,
+    "sha256": "63a0c46ffcb4a5105ec02f52d69d3c2f2f8d8f666d2fd7a84c70b4b7b12df56a"
+  },
+  {
+    "image": "page-374e9c4b-6fdb-4176-8ac7-519b86d97e40.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-374e9c4b-6fdb-4176-8ac7-519b86d97e40.md",
+    "bytes": 1517,
+    "sha256": "e5725cc14e7a82ed878b5ffb1d2f04a058fdbd297fc5e7e01a980a40685ebe05"
+  },
+  {
+    "image": "page-49776237-a9be-441d-a326-002eb7084385.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-49776237-a9be-441d-a326-002eb7084385.md",
+    "bytes": 3037,
+    "sha256": "b52893fd665a9792b4c6731da7222b13d36bd7ef3d2fc722a7fcb6ce3d9a0c5c"
+  },
+  {
+    "image": "page-30aa7cae-34fd-4b0b-b01a-fd35ff3bdfea.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-30aa7cae-34fd-4b0b-b01a-fd35ff3bdfea.md",
+    "bytes": 1660,
+    "sha256": "db1d4df38443653c2a6a60a93a39d8abfe0d026cae740234bdb8f6e84391cc3b"
+  },
+  {
+    "image": "page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.md",
+    "bytes": 2332,
+    "sha256": "34f8413d21c02a003df9fdddc7fb44a607083b1e5daadac56e1df077250a41d6"
+  },
+  {
+    "image": "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-21967f5d-667d-488e-a5b3-76b9d6f53656.md",
+    "bytes": 5958,
+    "sha256": "a1919a1f063e645bc47572813d029d9ffdb9df7a3753dd37ec0c4ffddba049ac"
+  },
+  {
+    "image": "page-c1c135ad-427e-482b-b01c-05c0ccbc6e76.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-c1c135ad-427e-482b-b01c-05c0ccbc6e76.md",
+    "bytes": 4011,
+    "sha256": "5ce14a672c7f5c02a97559c58e443e927d78f71aa4cb893592b33f2eb8d6e0f1"
+  },
+  {
+    "image": "page-085e8c3e-54f9-4f46-b59b-163ee783dbfd.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-085e8c3e-54f9-4f46-b59b-163ee783dbfd.md",
+    "bytes": 2929,
+    "sha256": "ba4da5d7634a1ed41e73cbf255269a84d1403d0becbe513d47baec736fbc14a6"
+  },
+  {
+    "image": "page-37a801d0-4422-4ddb-8b45-73b259396212.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-37a801d0-4422-4ddb-8b45-73b259396212.md",
+    "bytes": 4012,
+    "sha256": "74df88c16d2e2b58f3ccb39ebfbbc65d935951ee9d738e73da6fab1392e4178a"
+  },
+  {
+    "image": "page-9477c155-19b3-4f2d-ac18-ee3f8997d2f8.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-9477c155-19b3-4f2d-ac18-ee3f8997d2f8.md",
+    "bytes": 4327,
+    "sha256": "cec8f34ed3a56c2c5191b0832cad0a0f035a294833143bd7986cac521f74503e"
+  },
+  {
+    "image": "page-cdb92c2f-f43f-45ef-ace7-91d4664a7834.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-cdb92c2f-f43f-45ef-ace7-91d4664a7834.md",
+    "bytes": 7702,
+    "sha256": "3e05298d5923b5abc6d2c13a7c0977efe72c17e80e55fd43fe3be0f36ce37ca5"
+  },
+  {
+    "image": "page-1ce383cc-63a3-43c9-b6f2-7498a952b65c.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-1ce383cc-63a3-43c9-b6f2-7498a952b65c.md",
+    "bytes": 5532,
+    "sha256": "a6d4c8e285f7885a138da111e9c7a909bdcfd9fca4748fd23e191cd0ff53938b"
+  },
+  {
+    "image": "page-a6d06208-475c-4c6e-9d84-858f7e2ecf72.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-a6d06208-475c-4c6e-9d84-858f7e2ecf72.md",
+    "bytes": 5953,
+    "sha256": "b22f2b6c632f7ffa8f097364cb489e3a3cf35016adfdcf28cea8da8140abd17a"
+  },
+  {
+    "image": "page-e721a819-6dbf-453a-a7ad-857c24f9aa3e.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-e721a819-6dbf-453a-a7ad-857c24f9aa3e.md",
+    "bytes": 5273,
+    "sha256": "6676c43744f17feaa04f926c4b42edfa37b8051df3f051069b570ff0b4e674c2"
+  },
+  {
+    "image": "page-e4053f20-e6e6-430e-83ef-db298a3199aa.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-e4053f20-e6e6-430e-83ef-db298a3199aa.md",
+    "bytes": 5500,
+    "sha256": "1dbe61f443d727d5eb5b15d1e38c9ea9a911c644e258bda258f8a9ea4f9ac801"
+  },
+  {
+    "image": "page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.md",
+    "bytes": 3859,
+    "sha256": "da8a24d5618a03d4f444c3beb457b3bca4824264185b9f3d4eea89de26389f0d"
+  },
+  {
+    "image": "page-29ccb4ce-9266-4938-8f2d-b2b69ceb43cd.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-29ccb4ce-9266-4938-8f2d-b2b69ceb43cd.md",
+    "bytes": 3779,
+    "sha256": "d93638c2244c625cdcdb938b56feacf826b562c36e791d76273aebb1eecfe440"
+  },
+  {
+    "image": "page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-60d560a3-cd92-4b7d-b6c5-f0d6ce6dc3f1.md",
+    "bytes": 5514,
+    "sha256": "588117ec7765b6cd723fcee65d523bd4eda22b7e23f0bfe48b123101afa8ad84"
+  },
+  {
+    "image": "page-f108020f-edc5-4a27-85d9-d9d9c5d67309.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-f108020f-edc5-4a27-85d9-d9d9c5d67309.md",
+    "bytes": 6799,
+    "sha256": "4719a97417ea10eccd8685fddadfd35f764a37772903d76e44af3e17d1939fa9"
+  },
+  {
+    "image": "page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.md",
+    "bytes": 5375,
+    "sha256": "9574a6ed7b63e92217d35940682d4d2e3cd85fd228c6d047fc5bdbd6db0e2f2c"
+  },
+  {
+    "image": "page-47977c29-59ca-4534-9a00-becad3bfdaa4.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-47977c29-59ca-4534-9a00-becad3bfdaa4.md",
+    "bytes": 4360,
+    "sha256": "94977d5106135b1a66aa145fe3ffa2bd448cbdbc3793c393daf0673665def4a9"
+  },
+  {
+    "image": "page-87c18f88-ea2f-4044-b092-02e9b2a7436d.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-87c18f88-ea2f-4044-b092-02e9b2a7436d.md",
+    "bytes": 3515,
+    "sha256": "328986ccda3fe666ceb9b410cde950dcc319c7ecc9dbcc6d4b4074c6aa3404ad"
+  },
+  {
+    "image": "page-7050793e-109f-4066-be91-107f94b617b9.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-7050793e-109f-4066-be91-107f94b617b9.md",
+    "bytes": 6085,
+    "sha256": "2c5bff89f0cd7b7e31649a6d608abc7f63963cb58adbf9223e32608c032c58e7"
+  },
+  {
+    "image": "page-c6168ed8-ca6a-4ddd-8bfc-92dec77f1870.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-c6168ed8-ca6a-4ddd-8bfc-92dec77f1870.md",
+    "bytes": 3935,
+    "sha256": "675da8db1682c46b7bb4b239030b549703ddfc0e628737c2f151c860dc3a24b0"
+  },
+  {
+    "image": "page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-e9e8bc8e-e22d-4d1a-a3fb-5d175e5e4d70.md",
+    "bytes": 3467,
+    "sha256": "391737078a409b81f5bdbf0e9d45a6f9ee88e1c39aaa5a332c113a8f8d4c8dce"
+  },
+  {
+    "image": "page-85377cdf-d6a2-4611-bd50-08795bf7acb6.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-85377cdf-d6a2-4611-bd50-08795bf7acb6.md",
+    "bytes": 4382,
+    "sha256": "2f61db154b4bfb9c65e9c50b0b11b5ce3773dd27099bbc660a6068363b045b20"
+  },
+  {
+    "image": "page-d2816bbe-3c28-4905-ad6d-5f873b525de3.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-d2816bbe-3c28-4905-ad6d-5f873b525de3.md",
+    "bytes": 6090,
+    "sha256": "4bd8af21c6d9a318ec417a63269256a9d75f5f80a9c3fbbfa250ee469bb417b4"
+  },
+  {
+    "image": "page-7a7566fd-43d8-46e4-8a4f-0330e1f27a88.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-7a7566fd-43d8-46e4-8a4f-0330e1f27a88.md",
+    "bytes": 3387,
+    "sha256": "1beee0500bead4bdfb0c33b268ae9db0d621d3118fbbbbff7ee6773d1d7015fc"
+  },
+  {
+    "image": "page-c7fec126-2adb-4094-8110-5d81a92e05b0.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-c7fec126-2adb-4094-8110-5d81a92e05b0.md",
+    "bytes": 6184,
+    "sha256": "694a09a54d53a957ab75a756cce9cc825bf544909f84d54efe3176cd69641f73"
+  },
+  {
+    "image": "page-fb79f57d-9d7e-4129-a08c-6fc189e84a21.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-fb79f57d-9d7e-4129-a08c-6fc189e84a21.md",
+    "bytes": 5232,
+    "sha256": "da3d7c69180938e97b31930d442329d4ec1363912b7350b0738be2a4827f8a92"
+  },
+  {
+    "image": "page-d9a27df2-127e-4f76-bb61-e7e741078bef.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-d9a27df2-127e-4f76-bb61-e7e741078bef.md",
+    "bytes": 4150,
+    "sha256": "151420246e3249c789c6b8a7db6e3e4568d06cc4e89dd890ceacff63a8cb2e1f"
+  },
+  {
+    "image": "page-b0bdb7a8-c7de-4e6c-9e9c-bf979f3a3227.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-b0bdb7a8-c7de-4e6c-9e9c-bf979f3a3227.md",
+    "bytes": 6864,
+    "sha256": "bee0756179dccc17ed63967806d97e52f3273b899218766ec4c69f40264cf094"
+  },
+  {
+    "image": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.md",
+    "bytes": 5724,
+    "sha256": "e063da9df09441ca67865fd38cf05430f5c7ea516106daf6fa41b9d4ed991fd8"
+  },
+  {
+    "image": "page-7d2d833d-37b1-4c18-9ee6-4e09d352e265.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-7d2d833d-37b1-4c18-9ee6-4e09d352e265.md",
+    "bytes": 5003,
+    "sha256": "f5ba4ec2c6718733ec673ac13e380762c65036c85b1390d829d58139aaf5e751"
+  },
+  {
+    "image": "page-83a675ab-0021-4979-8293-8af0d36146a0.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-83a675ab-0021-4979-8293-8af0d36146a0.md",
+    "bytes": 3564,
+    "sha256": "011dfad70e9762977147acaaf9a093c548ae375aa5bbad5f4f64e6b27b814fa5"
+  },
+  {
+    "image": "page-9b70f2f0-2a0e-4337-8750-84e79503e939.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-9b70f2f0-2a0e-4337-8750-84e79503e939.md",
+    "bytes": 2716,
+    "sha256": "b31ac2486895e1aa5aced7149b4e463061c735dbcc67b5d69a20329c187cf5d6"
+  },
+  {
+    "image": "page-b3394f89-fe60-4f69-a0ee-aca79889950d.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-b3394f89-fe60-4f69-a0ee-aca79889950d.md",
+    "bytes": 3684,
+    "sha256": "dce4fdd3078d3cfeeec348dc1e1f8374f08a69b45db925b74359b714a02b20cb"
+  },
+  {
+    "image": "page-6486c98f-3fc3-4c8f-b35c-ce6005ecb876.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-6486c98f-3fc3-4c8f-b35c-ce6005ecb876.md",
+    "bytes": 5482,
+    "sha256": "4213ea21b1aa73f33f9605bc780f3afbb0d874b9a1a0affb7f8d59232e0a3380"
+  },
+  {
+    "image": "page-3ec8e45c-1c38-41d2-bb9d-c50745232f2a.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-3ec8e45c-1c38-41d2-bb9d-c50745232f2a.md",
+    "bytes": 4582,
+    "sha256": "f90fe97a353764d968b06308097dc4f53519706beb858bcef736115c6cdef4a7"
+  },
+  {
+    "image": "page-a32698bb-e3ae-49bc-b3af-203fb77b2bdf.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-a32698bb-e3ae-49bc-b3af-203fb77b2bdf.md",
+    "bytes": 3783,
+    "sha256": "c947b10f19fe701b1c8aeda7419926dd57db8383e4f28f8b3b8a14fe28def1bd"
+  },
+  {
+    "image": "page-ae356bde-652d-44a9-9e21-76cadf5a9dea.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-ae356bde-652d-44a9-9e21-76cadf5a9dea.md",
+    "bytes": 3783,
+    "sha256": "7dcdec129b03d95ca09f5d6521a9e6f63f7dae3bf4deb35a05aeb65b6d269ab3"
+  },
+  {
+    "image": "page-b2cc5729-a6b2-49ba-af62-788bf069b617.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-b2cc5729-a6b2-49ba-af62-788bf069b617.md",
+    "bytes": 6208,
+    "sha256": "0f2bdafaeb92cf04832aab15bec3d2b70e1e32f3c01cbb4805af9c0c972d7af8"
+  },
+  {
+    "image": "page-f029e208-32a7-49e6-a0a1-675590a3e55e.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-f029e208-32a7-49e6-a0a1-675590a3e55e.md",
+    "bytes": 3621,
+    "sha256": "0b67d93788b48078277bf71a3ba421c542b73bca71c36759ececd7fdbf37732e"
+  },
+  {
+    "image": "page-796ae342-1329-4bd4-9e64-4d1379cdd26e.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-796ae342-1329-4bd4-9e64-4d1379cdd26e.md",
+    "bytes": 2810,
+    "sha256": "0588d0c7f4c62384799d94aa466ab1b8ee1e71378bb5dff76b50336a83413399"
+  },
+  {
+    "image": "page-aae359c6-5e6e-4e18-9187-2e9d55b6e9bd.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-aae359c6-5e6e-4e18-9187-2e9d55b6e9bd.md",
+    "bytes": 4269,
+    "sha256": "46c5ae5bbb4b535478dca14075a43bfb69e6839399393f0a9814e36642ceb361"
+  },
+  {
+    "image": "page-9cca07f9-2e06-4da7-b4f4-496c6e305543.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-9cca07f9-2e06-4da7-b4f4-496c6e305543.md",
+    "bytes": 4538,
+    "sha256": "e1936e53e6b76618f51342d72c6f355b3e5b1f073940a1b3034dca60fbcb1bd6"
+  },
+  {
+    "image": "page-d209d5c0-fe1e-4cf0-90d8-6d610948b235.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-d209d5c0-fe1e-4cf0-90d8-6d610948b235.md",
+    "bytes": 4495,
+    "sha256": "d0704519fd2a20a372a9cf8e636c730469d02d56fab9ba4e1e81868bf708c526"
+  },
+  {
+    "image": "page-617783f8-bbd6-4faf-bca6-a05222c29314.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-617783f8-bbd6-4faf-bca6-a05222c29314.md",
+    "bytes": 5779,
+    "sha256": "5381ba9c4b23806bca5659a8a53431bcc56f05926d6e37ec8662529fe70b00e0"
+  },
+  {
+    "image": "page-8cbbe0d4-a3a8-4533-a620-048bebfa714b.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-8cbbe0d4-a3a8-4533-a620-048bebfa714b.md",
+    "bytes": 3745,
+    "sha256": "5dff234a55e010d3103c7f6012e0d3cba49304fe54af1a5537e5a264e7161544"
+  },
+  {
+    "image": "page-05746fc5-2045-4dea-94e7-4bbab648d702.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-05746fc5-2045-4dea-94e7-4bbab648d702.md",
+    "bytes": 4006,
+    "sha256": "030480f609599dccad2405e9824d9a03d007b66955bc76cabdd43c4953951ee6"
+  },
+  {
+    "image": "page-3e0da562-e549-4a04-8335-e76db83d57e6.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-3e0da562-e549-4a04-8335-e76db83d57e6.md",
+    "bytes": 4583,
+    "sha256": "80d28cdd866101c8e0929f3ea8ca44d1263323ca6a49ee0f36d97a177b34a2dc"
+  },
+  {
+    "image": "page-d5c82c0e-2a7d-4573-9dce-bff939504367.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-d5c82c0e-2a7d-4573-9dce-bff939504367.md",
+    "bytes": 7322,
+    "sha256": "14f394f55f4a3f6b195ce175850ed32e65049b5592096f5d087697f56c05ad8a"
+  },
+  {
+    "image": "page-57d5842c-85c2-41c9-9d37-65aad59c1277.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-57d5842c-85c2-41c9-9d37-65aad59c1277.md",
+    "bytes": 5357,
+    "sha256": "3efda1ee455f834cd6b9af1456fcf386840137f451d53a1f1bc83f55531da5f9"
+  },
+  {
+    "image": "page-cc37a835-903b-4079-88fc-ae04625c9b5d.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-cc37a835-903b-4079-88fc-ae04625c9b5d.md",
+    "bytes": 5431,
+    "sha256": "cd6808acdcc41bdd918126140b6448f11a1e52af65904b303c94f08f92953a5a"
+  },
+  {
+    "image": "page-2329f04a-41b3-435b-993a-a0652294b07d.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-2329f04a-41b3-435b-993a-a0652294b07d.md",
+    "bytes": 2583,
+    "sha256": "a031b60d41a10737767b6f90a61cfa7438ff359f3f88b00d2bd773832be9ff0b"
+  },
+  {
+    "image": "page-f6ad0f1c-acb7-43c0-b08d-5606ca82fc1b.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-f6ad0f1c-acb7-43c0-b08d-5606ca82fc1b.md",
+    "bytes": 5902,
+    "sha256": "95c59015fdc9db0cd6961dd3787a6f2a815bafdc28dbbbba63a17f2126e8fbb2"
+  },
+  {
+    "image": "page-404e0471-bd71-426a-8e5a-81b8327f88e5.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-404e0471-bd71-426a-8e5a-81b8327f88e5.md",
+    "bytes": 6704,
+    "sha256": "c64c2dd710b225bba51516ef8a96ae155903098495bfa7e72a488c798d938536"
+  },
+  {
+    "image": "page-dad0f4e5-290f-496f-bbdd-099ad75c6ff0.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-dad0f4e5-290f-496f-bbdd-099ad75c6ff0.md",
+    "bytes": 6036,
+    "sha256": "0f26a3875b8b4aecb612328a20884016ba4c039d43a961fcb20c99b362a7757e"
+  },
+  {
+    "image": "page-80a540c8-88d4-4643-b40e-282489353fb8.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-80a540c8-88d4-4643-b40e-282489353fb8.md",
+    "bytes": 4465,
+    "sha256": "0594ba3636b05048b5f12de45d6fcfa1a96336476c1ad0eaf1d46ea4c3fe4d07"
+  },
+  {
+    "image": "page-a976a26e-4dbb-492a-a380-b923b87ed496.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-a976a26e-4dbb-492a-a380-b923b87ed496.md",
+    "bytes": 4848,
+    "sha256": "ffffc33cdcbc6688c7f856f6caa02084011a1164a36d8d34fa0aabf26e7ab920"
+  },
+  {
+    "image": "page-bbe2b2d5-1e02-4d53-ba1c-158eaab2e6d5.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-bbe2b2d5-1e02-4d53-ba1c-158eaab2e6d5.md",
+    "bytes": 4215,
+    "sha256": "a07c5bf33ceef22f01628ca7e5ae3796f2d8ad051023fc222390ad3d0e872682"
+  },
+  {
+    "image": "page-27a46d41-49b5-4562-a546-6cbbafd23a81.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-27a46d41-49b5-4562-a546-6cbbafd23a81.md",
+    "bytes": 5279,
+    "sha256": "02ba520ec7c76a860c28f2c1ca107e396638b1b030112823c5e9f2f0187b3e7b"
+  },
+  {
+    "image": "page-5b2f2dec-8e96-450f-aea0-b73d46eac172.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-5b2f2dec-8e96-450f-aea0-b73d46eac172.md",
+    "bytes": 4004,
+    "sha256": "2083bd0dff1c38e8ca768c34720a814b9e6065c5c1e9fedcd5bdfe976ddca133"
+  },
+  {
+    "image": "page-39f38730-0ae6-4cfe-8b99-c65d06d09544.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-39f38730-0ae6-4cfe-8b99-c65d06d09544.md",
+    "bytes": 6301,
+    "sha256": "9210a27bf2ed500be73ba8cdbb2cb802ca63b40d7a6c332020ca5a8c2ec92dbf"
+  },
+  {
+    "image": "page-4009495f-1a7c-46dc-9f52-7f80f5f0cc5c.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-4009495f-1a7c-46dc-9f52-7f80f5f0cc5c.md",
+    "bytes": 5762,
+    "sha256": "2647852fadda192832974713111fdc3dc588ff94652feecc116dcd206a366ad2"
+  },
+  {
+    "image": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-8524b54d-6372-4f9e-a662-5254349cfda3.md",
+    "bytes": 4919,
+    "sha256": "9abdd8378078a73f68f36b6c9c52a5b743f462227ef3a8e34e5c48ad15d1ac72"
+  },
+  {
+    "image": "page-b4b6b1d1-5fa6-42ce-8a62-8a6ddd4608f6.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-b4b6b1d1-5fa6-42ce-8a62-8a6ddd4608f6.md",
+    "bytes": 4220,
+    "sha256": "fdcff5952de61debf9c7ce70dc96b4228ea0fce8bc1ff312aee6f231ccd7c797"
+  },
+  {
+    "image": "page-e13fef95-c179-4a0f-94f9-1cc970aab788.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-e13fef95-c179-4a0f-94f9-1cc970aab788.md",
+    "bytes": 4548,
+    "sha256": "0a75a31a8afa702e64592ddc6381c9a25a829e93b80810301d27fafd01f8d8b7"
+  },
+  {
+    "image": "page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-175b8afd-8077-4f65-bdbf-40682e0a9a4b.md",
+    "bytes": 2938,
+    "sha256": "529a12cd30ffeb708465de1717b466709f11f98c93ed39b7762c34e7fc3f3e85"
+  },
+  {
+    "image": "page-4089ffa0-27f5-4a20-ba2f-c68e3ad46ce2.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-4089ffa0-27f5-4a20-ba2f-c68e3ad46ce2.md",
+    "bytes": 3597,
+    "sha256": "8d7910fa2a9a4e53cfe42dcae2f092bcd518b9fbe32a00b430cb82d4f17b0325"
+  },
+  {
+    "image": "page-268266af-56c0-4b3b-9d07-73c6e50feb58.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-268266af-56c0-4b3b-9d07-73c6e50feb58.md",
+    "bytes": 4428,
+    "sha256": "52acb9ade18c091afa8526b1b0d9c3c3eccd55b53007d59d7cb51faa16c210d4"
+  },
+  {
+    "image": "page-dad79c54-8125-4927-9988-ee1d2a139d7b.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-dad79c54-8125-4927-9988-ee1d2a139d7b.md",
+    "bytes": 1985,
+    "sha256": "320c1ddc8cb5f63170bf6ad7e3cee0e2656257f0a715905a0d90c9233f0d8df0"
+  },
+  {
+    "image": "page-5a104368-22a2-440a-a1aa-49b7d1eb57f0.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-5a104368-22a2-440a-a1aa-49b7d1eb57f0.md",
+    "bytes": 4954,
+    "sha256": "43bafad01ceaf6ba76ec2fa7c6702ca23bfae804fe11bc83eb9deec46dae43ec"
+  },
+  {
+    "image": "page-9d14b692-a01c-45bd-9726-929bd3c4b726.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-9d14b692-a01c-45bd-9726-929bd3c4b726.md",
+    "bytes": 269,
+    "sha256": "39c1b00d413bb567d8e132c23c6ed52e84d2ec8b3aa3efc5b2326a8192d6c2c3"
+  },
+  {
+    "image": "page-87866578-c897-404e-b751-51fd444f59b2.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-87866578-c897-404e-b751-51fd444f59b2.md",
+    "bytes": 300,
+    "sha256": "0ba4ae63495e61f0aa613fe1c15fc918585e39192aea2a4299a99ae6b22c01fa"
+  },
+  {
+    "image": "page-07b33434-d7fe-4ada-b764-ba2df172d1fb.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-07b33434-d7fe-4ada-b764-ba2df172d1fb.md",
+    "bytes": 1506,
+    "sha256": "e0f5fbec4b5f24c87f525c0f403fc3e2ede16c270820af051091eedca7efdd52"
+  },
+  {
+    "image": "page-6eaea9af-1dfa-4166-9881-b5047bbd0a4f.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-6eaea9af-1dfa-4166-9881-b5047bbd0a4f.md",
+    "bytes": 293,
+    "sha256": "e0de624fc7298886ce85e132b0ff292728985566c4405f719562b30a27137ff0"
+  },
+  {
+    "image": "page-0b20ed47-7c6c-4578-bbdf-057a89a083ec.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-0b20ed47-7c6c-4578-bbdf-057a89a083ec.md",
+    "bytes": 2191,
+    "sha256": "9b493225e4fb6a13b19dff38b4dc5a8ae4b75e2e9c44a79d8c5c71d5c180b3ad"
+  },
+  {
+    "image": "page-24b49b01-6c1f-46d2-a389-6e537f9902e1.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-24b49b01-6c1f-46d2-a389-6e537f9902e1.md",
+    "bytes": 556,
+    "sha256": "375959892069594105469d31a40ebc3f04480fa88b83a81ecdc428e590771dd3"
+  },
+  {
+    "image": "page-59ff417b-63b3-40a4-a6ac-8fc2cdf71b5f.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-59ff417b-63b3-40a4-a6ac-8fc2cdf71b5f.md",
+    "bytes": 868,
+    "sha256": "493845efd03268aef6a62c122f4100b1d972e6a2a46e678de041db88279a77e4"
+  },
+  {
+    "image": "page-6788acda-bfb0-479c-bc2a-9b471ec2cc33.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-6788acda-bfb0-479c-bc2a-9b471ec2cc33.md",
+    "bytes": 2739,
+    "sha256": "d8ecd948be9f813bbd20b101e72dc627f5b78e3b5d8ed862e31ac5ccac9d1743"
+  },
+  {
+    "image": "page-07088b2f-f9d6-4c38-9c97-d7f98bc3d556.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-07088b2f-f9d6-4c38-9c97-d7f98bc3d556.md",
+    "bytes": 1250,
+    "sha256": "d32a1d14d673dd3a77bf6ca7e7dc8027243771954b62c02196e19191c06cc627"
+  },
+  {
+    "image": "page-942ac90d-4704-43f3-9286-719c7be9e655.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-942ac90d-4704-43f3-9286-719c7be9e655.md",
+    "bytes": 1879,
+    "sha256": "aa2b09620ca232c7be1a1dfbafe7c241df5ac57d50b7e3b4ba09bfe7db7b4816"
+  },
+  {
+    "image": "page-b1b8cc79-a7b3-4ac5-a7c2-49416b195ccb.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-b1b8cc79-a7b3-4ac5-a7c2-49416b195ccb.md",
+    "bytes": 333,
+    "sha256": "23d8b8963ede4c43bb03df0325da44691c6e64fbae48057450be522e52a07d71"
+  },
+  {
+    "image": "page-bea34248-acae-4578-9ff2-3149a84d7c38.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-bea34248-acae-4578-9ff2-3149a84d7c38.md",
+    "bytes": 1262,
+    "sha256": "34dfe5b3f90f6a6b3fc441ac10265dac14f80a1351fd89e46ad23c2629a578f7"
+  },
+  {
+    "image": "page-4c92c2ac-d7f7-43a5-b323-f242f31ddbf8.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-4c92c2ac-d7f7-43a5-b323-f242f31ddbf8.md",
+    "bytes": 738,
+    "sha256": "98c581ee96177235f2107b02e1aadeb5878d9082d17d34e91fde75631fccabdb"
+  },
+  {
+    "image": "page-39abce32-298b-42ab-8c46-b4fbfbcaa674.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-39abce32-298b-42ab-8c46-b4fbfbcaa674.md",
+    "bytes": 1386,
+    "sha256": "c2a0e36d824989c5516d4bd9a586b765b543883ae881d5b97de0194fb8b117c9"
+  },
+  {
+    "image": "page-c7a51204-5142-4c7a-bc9d-1faf1fe1be02.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-c7a51204-5142-4c7a-bc9d-1faf1fe1be02.md",
+    "bytes": 568,
+    "sha256": "dacd8674422a9b65e069492be6138366c96745106e50d63d179c51569368cabb"
+  },
+  {
+    "image": "page-15cc8cbe-9ce3-4ad8-8737-9159b061ca95.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-15cc8cbe-9ce3-4ad8-8737-9159b061ca95.md",
+    "bytes": 1209,
+    "sha256": "c399afb5f429e01dbb3728e60c1e2c54aeae58fb9c029c2a55c70ff98db6b858"
+  },
+  {
+    "image": "page-01a2352e-2a3b-4a56-b3fc-d86b170f1f60.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-01a2352e-2a3b-4a56-b3fc-d86b170f1f60.md",
+    "bytes": 3033,
+    "sha256": "6748588d4ffc53b17021b2a941563770b9538ebe4e5d150a3c7e373a00a21e58"
+  },
+  {
+    "image": "page-0c28f48b-33da-489c-bfc1-1fe82e5be68f.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-0c28f48b-33da-489c-bfc1-1fe82e5be68f.md",
+    "bytes": 883,
+    "sha256": "e3a616f46d6b3e13df43ace11b6afccaea060e2acaeb14332db28d0ed7398573"
+  },
+  {
+    "image": "page-430a31db-08e2-41e9-9812-8bd807b8e1c1.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-430a31db-08e2-41e9-9812-8bd807b8e1c1.md",
+    "bytes": 794,
+    "sha256": "ff6d72f4b41147ed3bc376bacf8ae9a08b11ecba36a98dde1a367fc07cc70dd3"
+  },
+  {
+    "image": "page-51757cee-c153-4baf-8616-ac106b543885.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-51757cee-c153-4baf-8616-ac106b543885.md",
+    "bytes": 2365,
+    "sha256": "c53b1b4e1b7443c3fb5560204724e84fd4c1d0ab1dd193767e7cfe4eaab5476d"
+  },
+  {
+    "image": "page-89180317-baf8-4c13-9b21-722e7d634eeb.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-89180317-baf8-4c13-9b21-722e7d634eeb.md",
+    "bytes": 2182,
+    "sha256": "c3cf99c09ac3326af163a7b3c168bcedbfc078dfe2836e42e7465ed05cc00236"
+  },
+  {
+    "image": "page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-8e2f7ce3-83c4-4977-b6dc-278394c4bd64.md",
+    "bytes": 1178,
+    "sha256": "8d2418c4c9c8b702ed130e837e07cd2dc82d0a537205b9d2edccca80948e5890"
+  },
+  {
+    "image": "page-fbfad23e-60e1-40d5-ba55-e7a1bcb26c97.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-fbfad23e-60e1-40d5-ba55-e7a1bcb26c97.md",
+    "bytes": 2456,
+    "sha256": "188b719bfe94419753bd4670695b9710dd37c96f280b47c08d15bd83e7f3eae9"
+  },
+  {
+    "image": "page-b145da5c-182f-4d4e-813a-28b8d6971b0f.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-b145da5c-182f-4d4e-813a-28b8d6971b0f.md",
+    "bytes": 829,
+    "sha256": "dfa000b00bded5eb94e24c040c0c6cd7d3ff0272ff4c0e24847cc4318a81c3e5"
+  },
+  {
+    "image": "page-4540d82a-19d8-44ef-8f18-6d42fdb2a2de.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-4540d82a-19d8-44ef-8f18-6d42fdb2a2de.md",
+    "bytes": 1135,
+    "sha256": "184be6cda4019fee2719378971472f4f370be9640e46a5564067913159868e9d"
+  },
+  {
+    "image": "page-8f6792bd-b5e4-435e-b1b0-1b2daa3f7234.png",
+    "source": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output/predictions/page-8f6792bd-b5e4-435e-b1b0-1b2daa3f7234.md",
+    "bytes": 760,
+    "sha256": "4fbc40896d7c128b0111896c50c53ef0d881fc47d9df70853b75857c780a67a6"
+  }
+]

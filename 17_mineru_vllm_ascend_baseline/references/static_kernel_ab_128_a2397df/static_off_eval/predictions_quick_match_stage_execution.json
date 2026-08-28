@@ -1,0 +1,46 @@
+{
+    "page_match": {
+        "workers": 24,
+        "page_count": 128,
+        "quick_match_truncated_timeout_sec": 300,
+        "match_timeout_sec": 420,
+        "fallbacks": {
+            "quick_match_timeout": {
+                "count": 0,
+                "cases": []
+            },
+            "page_timeout": {
+                "count": 0,
+                "cases": []
+            }
+        }
+    },
+    "metrics": {
+        "display_formula": {
+            "CDM": {
+                "workers": 12,
+                "timeout_sec": null,
+                "sample_count": 908,
+                "timeout_case_count": 0,
+                "timeout_cases": [],
+                "error_case_count": 0,
+                "error_cases": [],
+                "exception_case_count": 0,
+                "exception_cases": []
+            }
+        },
+        "table": {
+            "TEDS": {
+                "workers": 12,
+                "timeout_sec": 120.0,
+                "sample_count": 4,
+                "timeout_case_count": 0,
+                "timeout_cases": [],
+                "error_case_count": 0,
+                "error_cases": [],
+                "exception_case_count": 0,
+                "exception_cases": []
+            }
+        }
+    }
+}

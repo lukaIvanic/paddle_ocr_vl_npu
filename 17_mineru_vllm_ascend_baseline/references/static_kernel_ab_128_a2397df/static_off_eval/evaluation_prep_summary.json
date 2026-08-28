@@ -1,0 +1,19 @@
+{
+  "status": "ok",
+  "page_count": 128,
+  "source_run_output": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/output",
+  "source_run_commit": "a2397dff411999610e1327416a1575979266c41b",
+  "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "dataset_pages": 1651,
+  "dataset_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "input_manifest_sha256": "77ca4566d1454cb133e099dc4233a9efd1323d1444e140bf0b3307a9c589b80e",
+  "run_summary_sha256": "86c4a09026a7ecbb2b9b20b713bd8451690f6399ce53a451f9a06753f91117d0",
+  "prediction_manifest": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/evaluation_static_kernel_ab_128_a2397df/prediction_manifest.json",
+  "prediction_manifest_sha256": "e1d88839f33eb7126319ecc620735f74fcf5b823f29e9b818ebb46ad20ae249a",
+  "config": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n128_20260828T101303Z_a2397dff/evaluation_static_kernel_ab_128_a2397df/work/config.yaml",
+  "evaluator_root": "/workspace/repos/OmniDocBench_eval",
+  "evaluator_commit": "2b161d010d2e3aff77a0edef359ea3a6411d23cd",
+  "match_workers": 24,
+  "teds_workers": 12,
+  "cdm_workers": 12
+}
