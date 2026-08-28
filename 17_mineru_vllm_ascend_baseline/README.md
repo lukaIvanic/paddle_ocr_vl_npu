@@ -116,6 +116,17 @@ LIMIT=32 bash run_npu_reproduction.sh
 LIMIT=128 bash run_npu_reproduction.sh
 ```
 
+Run the controlled 128-page static-kernel A/B with the committed matrix runner:
+
+```sh
+bash run_static_kernel_ab_128.sh
+```
+
+It selects one free physical NPU once, warms the isolated static-off compile
+cache with one page, then runs the same first 128 canonical OmniDocBench pages
+with static kernels off and on. The accepted reproduction default remains
+`STATIC_KERNEL=on`.
+
 For a staged gate without repeated capture, keep one engine process alive
 across the gate and continuation. The current wrapper does not implement that
 control plane. The verified v1.0 baseline used separate 128-page and 981-page

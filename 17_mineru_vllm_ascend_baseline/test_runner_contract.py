@@ -41,6 +41,27 @@ class RunnerContractTest(unittest.TestCase):
         )
         self.assertTrue(spec["image_analysis"])
 
+    def test_static_kernel_ab_changes_only_flag_and_compile_cache(self) -> None:
+        enabled = RUNNER.preset_spec(
+            RUNNER.MODE_COMPILED_ASYNC,
+            enable_static_kernel=True,
+        )
+        disabled = RUNNER.preset_spec(
+            RUNNER.MODE_COMPILED_ASYNC,
+            enable_static_kernel=False,
+        )
+        self.assertTrue(enabled["enable_static_kernel"])
+        self.assertFalse(disabled["enable_static_kernel"])
+        self.assertNotEqual(
+            enabled["compile_cache_dir"],
+            disabled["compile_cache_dir"],
+        )
+        ignored = {"enable_static_kernel", "compile_cache_dir"}
+        self.assertEqual(
+            {key: value for key, value in enabled.items() if key not in ignored},
+            {key: value for key, value in disabled.items() if key not in ignored},
+        )
+
     def test_eager_sync_preset_omits_tuned_scheduler_limits(self) -> None:
         spec = RUNNER.preset_spec(RUNNER.MODE_EAGER_SYNC)
         self.assertEqual(spec["engine"], "LLM")
@@ -69,6 +90,20 @@ class RunnerContractTest(unittest.TestCase):
         self.assertEqual(
             kwargs["compilation_config"]["cache_dir"],
             str(RUNNER.DEFAULT_COMPILE_CACHE_DIR),
+        )
+
+    def test_static_kernel_off_engine_kwargs_are_isolated(self) -> None:
+        kwargs = RUNNER.build_engine_kwargs(
+            RUNNER.MODE_COMPILED_ASYNC,
+            Path("/model"),
+            object(),
+            enable_static_kernel=False,
+        )
+        ascend = kwargs["additional_config"]["ascend_compilation_config"]
+        self.assertFalse(ascend["enable_static_kernel"])
+        self.assertEqual(
+            kwargs["compilation_config"]["cache_dir"],
+            str(RUNNER.DEFAULT_STATIC_OFF_COMPILE_CACHE_DIR),
         )
 
     def test_dataset_selection_is_ordered_and_explicit(self) -> None:

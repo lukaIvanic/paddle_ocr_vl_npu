@@ -32,7 +32,13 @@ DEFAULT_IMAGES_DIR = Path("/workspace/datasets/OmniDocBench/images")
 DEFAULT_COMPILE_CACHE_DIR = Path(
     "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/17_mineru_vllm_ascend_baseline/vllm_compile"
 )
+DEFAULT_STATIC_OFF_COMPILE_CACHE_DIR = Path(
+    "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/17_mineru_vllm_ascend_baseline/vllm_compile_static_kernel_off"
+)
 CAPTURE_SIZES = [1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 28, 32]
+STATIC_KERNEL_ON = "on"
+STATIC_KERNEL_OFF = "off"
+STATIC_KERNEL_CHOICES = (STATIC_KERNEL_ON, STATIC_KERNEL_OFF)
 PACKAGE_NAMES = (
     "vllm",
     "vllm-ascend",
@@ -69,6 +75,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--layout-image-size", type=int, nargs=2, default=(1036, 1036))
     parser.add_argument("--hash-model-files", action="store_true")
+    parser.add_argument(
+        "--static-kernel",
+        choices=STATIC_KERNEL_CHOICES,
+        default=STATIC_KERNEL_ON,
+        help=(
+            "Enable or disable fixed-shape static-kernel compilation in the "
+            "compiled_async lane. The accepted baseline default remains on."
+        ),
+    )
     parser.add_argument(
         "--allow-physical-npu5",
         action="store_true",
@@ -172,7 +187,15 @@ def load_input_pages(
     return pages, source
 
 
-def preset_spec(mode: str) -> dict[str, Any]:
+def compile_cache_dir(enable_static_kernel: bool) -> Path:
+    return (
+        DEFAULT_COMPILE_CACHE_DIR
+        if enable_static_kernel
+        else DEFAULT_STATIC_OFF_COMPILE_CACHE_DIR
+    )
+
+
+def preset_spec(mode: str, *, enable_static_kernel: bool = True) -> dict[str, Any]:
     if mode not in MODES:
         raise ValueError(f"unsupported mode: {mode}")
     common = {
@@ -197,11 +220,11 @@ def preset_spec(mode: str) -> dict[str, Any]:
             "enable_prefix_caching": True,
             "enable_chunked_prefill": True,
             "enable_npugraph_ex": True,
-            "enable_static_kernel": True,
+            "enable_static_kernel": enable_static_kernel,
             "fuse_norm_quant": False,
             "cudagraph_mode": "FULL_DECODE_ONLY",
             "cudagraph_capture_sizes": CAPTURE_SIZES,
-            "compile_cache_dir": str(DEFAULT_COMPILE_CACHE_DIR),
+            "compile_cache_dir": str(compile_cache_dir(enable_static_kernel)),
         }
     return {
         **common,
@@ -222,8 +245,14 @@ def preset_spec(mode: str) -> dict[str, Any]:
     }
 
 
-def build_engine_kwargs(mode: str, model: Path, logits_processor: Any) -> dict[str, Any]:
-    spec = preset_spec(mode)
+def build_engine_kwargs(
+    mode: str,
+    model: Path,
+    logits_processor: Any,
+    *,
+    enable_static_kernel: bool = True,
+) -> dict[str, Any]:
+    spec = preset_spec(mode, enable_static_kernel=enable_static_kernel)
     kwargs: dict[str, Any] = {
         "model": str(model),
         "trust_remote_code": True,
@@ -251,13 +280,13 @@ def build_engine_kwargs(mode: str, model: Path, logits_processor: Any) -> dict[s
                     "ascend_compilation_config": {
                         "fuse_norm_quant": False,
                         "enable_npugraph_ex": True,
-                        "enable_static_kernel": True,
+                        "enable_static_kernel": enable_static_kernel,
                     }
                 },
                 "compilation_config": {
                     "cudagraph_mode": "FULL_DECODE_ONLY",
                     "cudagraph_capture_sizes": CAPTURE_SIZES,
-                    "cache_dir": str(DEFAULT_COMPILE_CACHE_DIR),
+                    "cache_dir": str(compile_cache_dir(enable_static_kernel)),
                 },
             }
         )
@@ -335,11 +364,21 @@ def patch_vllm_prompt_renderer(mode: str) -> None:
         VllmEngineVlmClient._render_vllm_cmpl_inputs = keep_raw_prompts
 
 
-def create_engine(mode: str, model_dir: Path) -> Any:
+def create_engine(
+    mode: str,
+    model_dir: Path,
+    *,
+    enable_static_kernel: bool = True,
+) -> Any:
     from mineru_vl_utils import MinerULogitsProcessor
 
     patch_vllm_prompt_renderer(mode)
-    kwargs = build_engine_kwargs(mode, model_dir, MinerULogitsProcessor)
+    kwargs = build_engine_kwargs(
+        mode,
+        model_dir,
+        MinerULogitsProcessor,
+        enable_static_kernel=enable_static_kernel,
+    )
     if mode == MODE_COMPILED_ASYNC:
         from vllm import AsyncEngineArgs
         from vllm.v1.engine.async_llm import AsyncLLM
@@ -395,6 +434,7 @@ def run_two_step(mode: str, client: Any, images: list[Image.Image]) -> tuple[lis
 
 def main() -> None:
     args = parse_args()
+    enable_static_kernel = args.static_kernel == STATIC_KERNEL_ON
     model_dir = args.model.expanduser().resolve()
     dataset_json = args.dataset_json.expanduser().resolve()
     image_list = args.image_list.expanduser().resolve() if args.image_list else None
@@ -430,7 +470,11 @@ def main() -> None:
         "created_at": datetime.now(timezone.utc).isoformat(),
         "argv": sys.argv,
         "mode": args.mode,
-        "preset": preset_spec(args.mode),
+        "preset": preset_spec(
+            args.mode,
+            enable_static_kernel=enable_static_kernel,
+        ),
+        "static_kernel": args.static_kernel,
         "git_commit": git_commit(),
         "hostname": platform.node(),
         "platform": platform.platform(),
@@ -446,7 +490,11 @@ def main() -> None:
     write_json(output_dir / "run_manifest.json", environment)
 
     setup_started = time.perf_counter()
-    engine = create_engine(args.mode, model_dir)
+    engine = create_engine(
+        args.mode,
+        model_dir,
+        enable_static_kernel=enable_static_kernel,
+    )
     torch.npu.synchronize()
     engine_setup_s = time.perf_counter() - setup_started
 

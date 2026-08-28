@@ -13,10 +13,23 @@ DATASET_JSON="${DATASET_JSON:-/workspace/datasets/OmniDocBench/OmniDocBench.json
 IMAGES_DIR="${IMAGES_DIR:-/workspace/datasets/OmniDocBench/images}"
 IMAGE_LIST="${IMAGE_LIST:-}"
 HASH_MODEL_FILES="${HASH_MODEL_FILES:-0}"
+STATIC_KERNEL="${STATIC_KERNEL:-on}"
+EXP17_NPU_SETUP_ALREADY_SOURCED="${EXP17_NPU_SETUP_ALREADY_SOURCED:-0}"
 
-set +u
-source npu-setup
-set -u
+if [[ "$STATIC_KERNEL" != "on" && "$STATIC_KERNEL" != "off" ]]; then
+  echo "STATIC_KERNEL must be on or off, got: $STATIC_KERNEL" >&2
+  exit 2
+fi
+if [[ "$EXP17_NPU_SETUP_ALREADY_SOURCED" == "1" ]]; then
+  if [[ -z "${ASCEND_RT_VISIBLE_DEVICES:-}" ]]; then
+    echo "EXP17_NPU_SETUP_ALREADY_SOURCED=1 but ASCEND_RT_VISIBLE_DEVICES is unset" >&2
+    exit 2
+  fi
+else
+  set +u
+  source npu-setup
+  set -u
+fi
 if [[ "${ASCEND_RT_VISIBLE_DEVICES:-}" == "5" ]]; then
   echo "physical NPU5 is quarantined; refusing to run" >&2
   exit 1
@@ -32,7 +45,7 @@ export HI_PYTHON="$PYTHON"
 COMMIT="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 LIMIT_LABEL="${LIMIT//[^a-zA-Z0-9_-]/_}"
-RUN_DIR="$REPO_ROOT/tmp/$EXPERIMENT_NAME/${MODE}_n${LIMIT_LABEL}_${STAMP}_${COMMIT}"
+RUN_DIR="$REPO_ROOT/tmp/$EXPERIMENT_NAME/${MODE}_static_kernel_${STATIC_KERNEL}_n${LIMIT_LABEL}_${STAMP}_${COMMIT}"
 OUTPUT_DIR="$RUN_DIR/output"
 mkdir -p "$RUN_DIR"
 
@@ -45,6 +58,7 @@ COMMAND=(
   --images-dir "$IMAGES_DIR"
   --output-dir "$OUTPUT_DIR"
   --offset "$OFFSET"
+  --static-kernel "$STATIC_KERNEL"
 )
 if [[ "$LIMIT" != "all" ]]; then
   COMMAND+=(--limit "$LIMIT")
