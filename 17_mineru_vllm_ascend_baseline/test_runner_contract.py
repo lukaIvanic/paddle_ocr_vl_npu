@@ -64,12 +64,66 @@ class RunnerContractTest(unittest.TestCase):
         )
 
     def test_eager_sync_preset_omits_tuned_scheduler_limits(self) -> None:
-        spec = RUNNER.preset_spec(RUNNER.MODE_EAGER_SYNC)
+        spec = RUNNER.preset_spec(RUNNER.MODE_EAGER_SYNC, block_size=128)
         self.assertEqual(spec["engine"], "LLM")
         self.assertTrue(spec["enforce_eager"])
         self.assertFalse(spec["enable_prefix_caching"])
         self.assertIsNone(spec["max_num_seqs"])
         self.assertIsNone(spec["max_num_batched_tokens"])
+        self.assertEqual(spec["block_size"], 128)
+
+    def test_eager_async_keeps_async_scheduler_without_graphs(self) -> None:
+        spec = RUNNER.preset_spec(RUNNER.MODE_EAGER_ASYNC, block_size=128)
+        self.assertEqual(spec["engine"], "AsyncLLM")
+        self.assertTrue(spec["enforce_eager"])
+        self.assertTrue(spec["enable_prefix_caching"])
+        self.assertTrue(spec["enable_chunked_prefill"])
+        self.assertFalse(spec["enable_npugraph_ex"])
+        self.assertIsNone(spec["cudagraph_mode"])
+        self.assertEqual(spec["block_size"], 128)
+
+    def test_aclgraph_async_disables_npugraph_and_static_kernels(self) -> None:
+        spec = RUNNER.preset_spec(RUNNER.MODE_ACLGRAPH_ASYNC, block_size=128)
+        self.assertEqual(spec["engine"], "AsyncLLM")
+        self.assertFalse(spec["enforce_eager"])
+        self.assertFalse(spec["enable_npugraph_ex"])
+        self.assertFalse(spec["enable_static_kernel"])
+        self.assertEqual(spec["cudagraph_mode"], "FULL_DECODE_ONLY")
+        self.assertEqual(
+            spec["compile_cache_dir"],
+            str(RUNNER.DEFAULT_ACLGRAPH_NO_NPUGRAPH_CACHE_DIR),
+        )
+        self.assertEqual(spec["block_size"], 128)
+
+    def test_310p_engine_kwargs_apply_block_size_to_all_diagnostic_modes(self) -> None:
+        for mode in (
+            RUNNER.MODE_EAGER_SYNC,
+            RUNNER.MODE_EAGER_ASYNC,
+            RUNNER.MODE_ACLGRAPH_ASYNC,
+        ):
+            with self.subTest(mode=mode):
+                kwargs = RUNNER.build_engine_kwargs(
+                    mode,
+                    Path("/model"),
+                    object(),
+                    block_size=128,
+                )
+                self.assertEqual(kwargs["block_size"], 128)
+
+    def test_aclgraph_engine_kwargs_disable_npugraph(self) -> None:
+        kwargs = RUNNER.build_engine_kwargs(
+            RUNNER.MODE_ACLGRAPH_ASYNC,
+            Path("/model"),
+            object(),
+            block_size=128,
+        )
+        ascend = kwargs["additional_config"]["ascend_compilation_config"]
+        self.assertFalse(ascend["enable_npugraph_ex"])
+        self.assertFalse(ascend["enable_static_kernel"])
+        self.assertEqual(
+            kwargs["compilation_config"]["cudagraph_mode"],
+            "FULL_DECODE_ONLY",
+        )
 
     def test_engine_kwargs_have_required_compatibility_overrides(self) -> None:
         sentinel = object()

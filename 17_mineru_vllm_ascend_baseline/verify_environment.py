@@ -71,6 +71,7 @@ def main() -> None:
     required_engine_parameters = {
         "enable_prefix_caching",
         "enable_chunked_prefill",
+        "block_size",
         "max_num_seqs",
         "max_num_batched_tokens",
         "additional_config",

@@ -24,7 +24,14 @@ from PIL import Image
 EXPERIMENT = "17_mineru_vllm_ascend_baseline"
 MODE_COMPILED_ASYNC = "compiled_async"
 MODE_EAGER_SYNC = "eager_sync"
-MODES = (MODE_COMPILED_ASYNC, MODE_EAGER_SYNC)
+MODE_EAGER_ASYNC = "eager_async"
+MODE_ACLGRAPH_ASYNC = "aclgraph_async"
+ASYNC_MODES = (
+    MODE_COMPILED_ASYNC,
+    MODE_EAGER_ASYNC,
+    MODE_ACLGRAPH_ASYNC,
+)
+MODES = (*ASYNC_MODES, MODE_EAGER_SYNC)
 
 DEFAULT_MODEL = Path("/workspace/models/MinerU2.5-Pro-2605-1.2B")
 DEFAULT_DATASET_JSON = Path("/workspace/datasets/OmniDocBench/OmniDocBench.json")
@@ -34,6 +41,9 @@ DEFAULT_COMPILE_CACHE_DIR = Path(
 )
 DEFAULT_STATIC_OFF_COMPILE_CACHE_DIR = Path(
     "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/17_mineru_vllm_ascend_baseline/vllm_compile_static_kernel_off"
+)
+DEFAULT_ACLGRAPH_NO_NPUGRAPH_CACHE_DIR = Path(
+    "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/17_mineru_vllm_ascend_baseline/vllm_compile_aclgraph_no_npugraph"
 )
 CAPTURE_SIZES = [1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 28, 32]
 STATIC_KERNEL_ON = "on"
@@ -74,6 +84,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int)
+    parser.add_argument(
+        "--block-size",
+        type=int,
+        help=(
+            "Physical KV-cache block size. Leave unset for the historical "
+            "910B baseline. The 310P compatibility ladder requires 128."
+        ),
+    )
     parser.add_argument("--layout-image-size", type=int, nargs=2, default=(1036, 1036))
     parser.add_argument("--hash-model-files", action="store_true")
     parser.add_argument(
@@ -196,7 +214,16 @@ def compile_cache_dir(enable_static_kernel: bool) -> Path:
     )
 
 
-def preset_spec(mode: str, *, enable_static_kernel: bool = False) -> dict[str, Any]:
+def is_async_mode(mode: str) -> bool:
+    return mode in ASYNC_MODES
+
+
+def preset_spec(
+    mode: str,
+    *,
+    enable_static_kernel: bool = False,
+    block_size: int | None = None,
+) -> dict[str, Any]:
     if mode not in MODES:
         raise ValueError(f"unsupported mode: {mode}")
     common = {
@@ -205,6 +232,7 @@ def preset_spec(mode: str, *, enable_static_kernel: bool = False) -> dict[str, A
         "dtype": "float16",
         "gpu_memory_utilization": 0.9,
         "max_model_len": 8192,
+        "block_size": block_size,
         "quantization": None,
         "batch_size": 0,
     }
@@ -227,6 +255,44 @@ def preset_spec(mode: str, *, enable_static_kernel: bool = False) -> dict[str, A
             "cudagraph_capture_sizes": CAPTURE_SIZES,
             "compile_cache_dir": str(compile_cache_dir(enable_static_kernel)),
         }
+    if mode == MODE_EAGER_ASYNC:
+        return {
+            **common,
+            "engine": "AsyncLLM",
+            "client_backend": "vllm-async-engine",
+            "two_step_method": "concurrent_two_step_extract",
+            "image_analysis": True,
+            "max_num_seqs": 512,
+            "max_num_batched_tokens": 16384,
+            "enforce_eager": True,
+            "enable_prefix_caching": True,
+            "enable_chunked_prefill": True,
+            "enable_npugraph_ex": False,
+            "enable_static_kernel": False,
+            "fuse_norm_quant": False,
+            "cudagraph_mode": None,
+            "cudagraph_capture_sizes": None,
+            "compile_cache_dir": None,
+        }
+    if mode == MODE_ACLGRAPH_ASYNC:
+        return {
+            **common,
+            "engine": "AsyncLLM",
+            "client_backend": "vllm-async-engine",
+            "two_step_method": "concurrent_two_step_extract",
+            "image_analysis": True,
+            "max_num_seqs": 512,
+            "max_num_batched_tokens": 16384,
+            "enforce_eager": False,
+            "enable_prefix_caching": True,
+            "enable_chunked_prefill": True,
+            "enable_npugraph_ex": False,
+            "enable_static_kernel": False,
+            "fuse_norm_quant": False,
+            "cudagraph_mode": "FULL_DECODE_ONLY",
+            "cudagraph_capture_sizes": CAPTURE_SIZES,
+            "compile_cache_dir": str(DEFAULT_ACLGRAPH_NO_NPUGRAPH_CACHE_DIR),
+        }
     return {
         **common,
         "engine": "LLM",
@@ -243,6 +309,7 @@ def preset_spec(mode: str, *, enable_static_kernel: bool = False) -> dict[str, A
         "fuse_norm_quant": None,
         "cudagraph_mode": None,
         "cudagraph_capture_sizes": None,
+        "compile_cache_dir": None,
     }
 
 
@@ -252,8 +319,13 @@ def build_engine_kwargs(
     logits_processor: Any,
     *,
     enable_static_kernel: bool = False,
+    block_size: int | None = None,
 ) -> dict[str, Any]:
-    spec = preset_spec(mode, enable_static_kernel=enable_static_kernel)
+    spec = preset_spec(
+        mode,
+        enable_static_kernel=enable_static_kernel,
+        block_size=block_size,
+    )
     kwargs: dict[str, Any] = {
         "model": str(model),
         "trust_remote_code": True,
@@ -272,7 +344,9 @@ def build_engine_kwargs(
         "enable_prefix_caching": bool(spec["enable_prefix_caching"]),
         "enable_chunked_prefill": bool(spec["enable_chunked_prefill"]),
     }
-    if mode == MODE_COMPILED_ASYNC:
+    if block_size is not None:
+        kwargs["block_size"] = block_size
+    if is_async_mode(mode):
         kwargs.update(
             {
                 "max_num_seqs": 512,
@@ -280,17 +354,18 @@ def build_engine_kwargs(
                 "additional_config": {
                     "ascend_compilation_config": {
                         "fuse_norm_quant": False,
-                        "enable_npugraph_ex": True,
-                        "enable_static_kernel": enable_static_kernel,
+                        "enable_npugraph_ex": bool(spec["enable_npugraph_ex"]),
+                        "enable_static_kernel": bool(spec["enable_static_kernel"]),
                     }
-                },
-                "compilation_config": {
-                    "cudagraph_mode": "FULL_DECODE_ONLY",
-                    "cudagraph_capture_sizes": CAPTURE_SIZES,
-                    "cache_dir": str(compile_cache_dir(enable_static_kernel)),
                 },
             }
         )
+    if spec["cudagraph_mode"] is not None:
+        kwargs["compilation_config"] = {
+            "cudagraph_mode": spec["cudagraph_mode"],
+            "cudagraph_capture_sizes": spec["cudagraph_capture_sizes"],
+            "cache_dir": spec["compile_cache_dir"],
+        }
     return kwargs
 
 
@@ -347,7 +422,7 @@ def configure_npu(allow_physical_npu5: bool) -> tuple[Any, Any]:
 
 
 def patch_vllm_prompt_renderer(mode: str) -> None:
-    if mode == MODE_COMPILED_ASYNC:
+    if is_async_mode(mode):
         from mineru_vl_utils.vlm_client.vllm_async_engine_client import (
             VllmAsyncEngineVlmClient,
         )
@@ -370,6 +445,7 @@ def create_engine(
     model_dir: Path,
     *,
     enable_static_kernel: bool = False,
+    block_size: int | None = None,
 ) -> Any:
     from mineru_vl_utils import MinerULogitsProcessor
 
@@ -379,8 +455,9 @@ def create_engine(
         model_dir,
         MinerULogitsProcessor,
         enable_static_kernel=enable_static_kernel,
+        block_size=block_size,
     )
-    if mode == MODE_COMPILED_ASYNC:
+    if is_async_mode(mode):
         from vllm import AsyncEngineArgs
         from vllm.v1.engine.async_llm import AsyncLLM
 
@@ -393,7 +470,7 @@ def create_engine(
 def create_client(mode: str, engine: Any, layout_image_size: tuple[int, int]) -> Any:
     from mineru_vl_utils import MinerUClient
 
-    if mode == MODE_COMPILED_ASYNC:
+    if is_async_mode(mode):
         return MinerUClient(
             backend="vllm-async-engine",
             vllm_async_llm=engine,
@@ -422,7 +499,7 @@ def open_images(pages: list[InputPage]) -> list[Image.Image]:
 
 
 def run_two_step(mode: str, client: Any, images: list[Image.Image]) -> tuple[list[Any], list[float]]:
-    if mode == MODE_COMPILED_ASYNC:
+    if is_async_mode(mode):
         return client.concurrent_two_step_extract(images), []
     results: list[Any] = []
     page_times: list[float] = []
@@ -436,6 +513,10 @@ def run_two_step(mode: str, client: Any, images: list[Image.Image]) -> tuple[lis
 def main() -> None:
     args = parse_args()
     enable_static_kernel = args.static_kernel == STATIC_KERNEL_ON
+    if args.block_size is not None and args.block_size <= 0:
+        raise ValueError("block size must be positive")
+    if args.mode != MODE_COMPILED_ASYNC and enable_static_kernel:
+        raise ValueError("static kernels are only configurable in compiled_async mode")
     model_dir = args.model.expanduser().resolve()
     dataset_json = args.dataset_json.expanduser().resolve()
     image_list = args.image_list.expanduser().resolve() if args.image_list else None
@@ -474,6 +555,7 @@ def main() -> None:
         "preset": preset_spec(
             args.mode,
             enable_static_kernel=enable_static_kernel,
+            block_size=args.block_size,
         ),
         "static_kernel": args.static_kernel,
         "git_commit": git_commit(),
@@ -487,6 +569,9 @@ def main() -> None:
         "offset": args.offset,
         "limit": args.limit,
         "layout_image_size": list(args.layout_image_size),
+        "vllm_worker_multiproc_method": os.environ.get(
+            "VLLM_WORKER_MULTIPROC_METHOD"
+        ),
     }
     write_json(output_dir / "run_manifest.json", environment)
 
@@ -495,6 +580,7 @@ def main() -> None:
         args.mode,
         model_dir,
         enable_static_kernel=enable_static_kernel,
+        block_size=args.block_size,
     )
     torch.npu.synchronize()
     engine_setup_s = time.perf_counter() - setup_started

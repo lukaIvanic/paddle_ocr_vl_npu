@@ -14,10 +14,20 @@ IMAGES_DIR="${IMAGES_DIR:-/workspace/datasets/OmniDocBench/images}"
 IMAGE_LIST="${IMAGE_LIST:-}"
 HASH_MODEL_FILES="${HASH_MODEL_FILES:-0}"
 STATIC_KERNEL="${STATIC_KERNEL:-off}"
+BLOCK_SIZE="${BLOCK_SIZE:-}"
+ALLOW_VLLM_VERSION_DRIFT="${ALLOW_VLLM_VERSION_DRIFT:-0}"
 EXP17_NPU_SETUP_ALREADY_SOURCED="${EXP17_NPU_SETUP_ALREADY_SOURCED:-0}"
 
 if [[ "$STATIC_KERNEL" != "on" && "$STATIC_KERNEL" != "off" ]]; then
   echo "STATIC_KERNEL must be on or off, got: $STATIC_KERNEL" >&2
+  exit 2
+fi
+if [[ -n "$BLOCK_SIZE" && ! "$BLOCK_SIZE" =~ ^[1-9][0-9]*$ ]]; then
+  echo "BLOCK_SIZE must be a positive integer, got: $BLOCK_SIZE" >&2
+  exit 2
+fi
+if [[ "$ALLOW_VLLM_VERSION_DRIFT" != "0" && "$ALLOW_VLLM_VERSION_DRIFT" != "1" ]]; then
+  echo "ALLOW_VLLM_VERSION_DRIFT must be 0 or 1" >&2
   exit 2
 fi
 if [[ "$EXP17_NPU_SETUP_ALREADY_SOURCED" == "1" ]]; then
@@ -40,12 +50,17 @@ if [[ ! -x "$PYTHON" ]]; then
 fi
 export HI_PYTHON="$PYTHON"
 
-"$PYTHON" "$SCRIPT_DIR/verify_environment.py"
+VERIFY_COMMAND=("$PYTHON" "$SCRIPT_DIR/verify_environment.py")
+if [[ "$ALLOW_VLLM_VERSION_DRIFT" == "1" ]]; then
+  VERIFY_COMMAND+=(--allow-vllm-version-drift)
+fi
+"${VERIFY_COMMAND[@]}"
 
 COMMIT="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 LIMIT_LABEL="${LIMIT//[^a-zA-Z0-9_-]/_}"
-RUN_DIR="$REPO_ROOT/tmp/$EXPERIMENT_NAME/${MODE}_static_kernel_${STATIC_KERNEL}_n${LIMIT_LABEL}_${STAMP}_${COMMIT}"
+BLOCK_LABEL="${BLOCK_SIZE:-default}"
+RUN_DIR="$REPO_ROOT/tmp/$EXPERIMENT_NAME/${MODE}_block_${BLOCK_LABEL}_static_kernel_${STATIC_KERNEL}_n${LIMIT_LABEL}_${STAMP}_${COMMIT}"
 OUTPUT_DIR="$RUN_DIR/output"
 mkdir -p "$RUN_DIR"
 
@@ -60,6 +75,9 @@ COMMAND=(
   --offset "$OFFSET"
   --static-kernel "$STATIC_KERNEL"
 )
+if [[ -n "$BLOCK_SIZE" ]]; then
+  COMMAND+=(--block-size "$BLOCK_SIZE")
+fi
 if [[ "$LIMIT" != "all" ]]; then
   COMMAND+=(--limit "$LIMIT")
 fi
