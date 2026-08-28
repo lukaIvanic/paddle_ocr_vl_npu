@@ -26,9 +26,9 @@ The seven supplied screenshots and reconstructed code are transcribed in
 source result is 981 pages in 6,144 seconds, or 0.1597 pages/s. It has no
 preserved command, log, input manifest, output hashes, or accuracy score.
 
-## Fixed compiled and asynchronous contract
+## Compiled and asynchronous contract
 
-The `compiled_async` mode fixes these values:
+The current `compiled_async` operational default fixes these values:
 
 ```text
 AsyncLLM, tensor_parallel_size=1
@@ -41,7 +41,7 @@ enforce_eager=False
 enable_prefix_caching=True
 enable_chunked_prefill=True
 enable_npugraph_ex=True
-enable_static_kernel=True
+enable_static_kernel=False
 fuse_norm_quant=False
 cudagraph_mode=FULL_DECODE_ONLY
 cudagraph_capture_sizes=1,2,3,4,5,6,7,8,12,16,20,24,28,32
@@ -49,6 +49,11 @@ MinerUClient backend=vllm-async-engine
 batch_size=0, image_analysis=True
 one concurrent_two_step_extract call over the selected corpus
 ```
+
+The photographed 310P source contract used `enable_static_kernel=True`.
+Historical accepted runs retain that setting in their manifests. Pass
+`STATIC_KERNEL=on` only when reproducing that source contract or running an
+explicit A/B.
 
 The runner also retains two compatibility corrections already established in
 experiment 11. It forces tied embeddings at both Hugging Face config levels and
@@ -126,8 +131,12 @@ bash run_static_kernel_ab_128.sh
 
 It selects one free physical NPU once, warms the isolated static-off compile
 cache with one page, then runs the same first 128 canonical OmniDocBench pages
-with static kernels off and on. The accepted reproduction default remains
-`STATIC_KERNEL=on`.
+with static kernels off and on. Normal runs default to `STATIC_KERNEL=off`.
+
+The pull-only 310P environment and one-page compatibility smoke are specified
+in `WORK_SERVER_310P_MINERU_STOCK_SMOKE.md`. The handoff verifies the exact
+model, full 1,651-page dataset view, and pinned OmniDocBench repository before
+loading the model.
 
 For a staged gate without repeated capture, keep one engine process alive
 across the gate and continuation. The current wrapper does not implement that

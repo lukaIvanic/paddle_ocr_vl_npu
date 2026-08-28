@@ -13,7 +13,7 @@ DATASET_JSON="${DATASET_JSON:-/workspace/datasets/OmniDocBench/OmniDocBench.json
 IMAGES_DIR="${IMAGES_DIR:-/workspace/datasets/OmniDocBench/images}"
 IMAGE_LIST="${IMAGE_LIST:-}"
 HASH_MODEL_FILES="${HASH_MODEL_FILES:-0}"
-STATIC_KERNEL="${STATIC_KERNEL:-on}"
+STATIC_KERNEL="${STATIC_KERNEL:-off}"
 EXP17_NPU_SETUP_ALREADY_SOURCED="${EXP17_NPU_SETUP_ALREADY_SOURCED:-0}"
 
 if [[ "$STATIC_KERNEL" != "on" && "$STATIC_KERNEL" != "off" ]]; then

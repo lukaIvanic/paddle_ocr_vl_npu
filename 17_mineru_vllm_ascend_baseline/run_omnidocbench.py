@@ -39,6 +39,7 @@ CAPTURE_SIZES = [1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 28, 32]
 STATIC_KERNEL_ON = "on"
 STATIC_KERNEL_OFF = "off"
 STATIC_KERNEL_CHOICES = (STATIC_KERNEL_ON, STATIC_KERNEL_OFF)
+DEFAULT_STATIC_KERNEL = STATIC_KERNEL_OFF
 PACKAGE_NAMES = (
     "vllm",
     "vllm-ascend",
@@ -78,10 +79,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--static-kernel",
         choices=STATIC_KERNEL_CHOICES,
-        default=STATIC_KERNEL_ON,
+        default=DEFAULT_STATIC_KERNEL,
         help=(
             "Enable or disable fixed-shape static-kernel compilation in the "
-            "compiled_async lane. The accepted baseline default remains on."
+            "compiled_async lane. The operational default is off."
         ),
     )
     parser.add_argument(
@@ -195,7 +196,7 @@ def compile_cache_dir(enable_static_kernel: bool) -> Path:
     )
 
 
-def preset_spec(mode: str, *, enable_static_kernel: bool = True) -> dict[str, Any]:
+def preset_spec(mode: str, *, enable_static_kernel: bool = False) -> dict[str, Any]:
     if mode not in MODES:
         raise ValueError(f"unsupported mode: {mode}")
     common = {
@@ -250,7 +251,7 @@ def build_engine_kwargs(
     model: Path,
     logits_processor: Any,
     *,
-    enable_static_kernel: bool = True,
+    enable_static_kernel: bool = False,
 ) -> dict[str, Any]:
     spec = preset_spec(mode, enable_static_kernel=enable_static_kernel)
     kwargs: dict[str, Any] = {
@@ -368,7 +369,7 @@ def create_engine(
     mode: str,
     model_dir: Path,
     *,
-    enable_static_kernel: bool = True,
+    enable_static_kernel: bool = False,
 ) -> Any:
     from mineru_vl_utils import MinerULogitsProcessor
 

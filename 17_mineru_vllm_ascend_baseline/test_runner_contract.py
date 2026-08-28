@@ -26,7 +26,7 @@ class RunnerContractTest(unittest.TestCase):
             self.assertEqual(json.loads(path.read_text()), {"status": "ok"})
             self.assertEqual(list(path.parent.glob(".tmp-*")), [])
 
-    def test_compiled_async_preset_matches_reference(self) -> None:
+    def test_compiled_async_preset_uses_static_kernel_off_default(self) -> None:
         spec = RUNNER.preset_spec(RUNNER.MODE_COMPILED_ASYNC)
         self.assertEqual(spec["engine"], "AsyncLLM")
         self.assertEqual(spec["max_num_seqs"], 512)
@@ -34,10 +34,11 @@ class RunnerContractTest(unittest.TestCase):
         self.assertTrue(spec["enable_prefix_caching"])
         self.assertTrue(spec["enable_chunked_prefill"])
         self.assertTrue(spec["enable_npugraph_ex"])
-        self.assertTrue(spec["enable_static_kernel"])
+        self.assertFalse(spec["enable_static_kernel"])
         self.assertEqual(spec["cudagraph_capture_sizes"], RUNNER.CAPTURE_SIZES)
         self.assertEqual(
-            spec["compile_cache_dir"], str(RUNNER.DEFAULT_COMPILE_CACHE_DIR)
+            spec["compile_cache_dir"],
+            str(RUNNER.DEFAULT_STATIC_OFF_COMPILE_CACHE_DIR),
         )
         self.assertTrue(spec["image_analysis"])
 
@@ -86,24 +87,24 @@ class RunnerContractTest(unittest.TestCase):
         ascend = kwargs["additional_config"]["ascend_compilation_config"]
         self.assertFalse(ascend["fuse_norm_quant"])
         self.assertTrue(ascend["enable_npugraph_ex"])
-        self.assertTrue(ascend["enable_static_kernel"])
-        self.assertEqual(
-            kwargs["compilation_config"]["cache_dir"],
-            str(RUNNER.DEFAULT_COMPILE_CACHE_DIR),
-        )
-
-    def test_static_kernel_off_engine_kwargs_are_isolated(self) -> None:
-        kwargs = RUNNER.build_engine_kwargs(
-            RUNNER.MODE_COMPILED_ASYNC,
-            Path("/model"),
-            object(),
-            enable_static_kernel=False,
-        )
-        ascend = kwargs["additional_config"]["ascend_compilation_config"]
         self.assertFalse(ascend["enable_static_kernel"])
         self.assertEqual(
             kwargs["compilation_config"]["cache_dir"],
             str(RUNNER.DEFAULT_STATIC_OFF_COMPILE_CACHE_DIR),
+        )
+
+    def test_static_kernel_on_engine_kwargs_use_reference_cache(self) -> None:
+        kwargs = RUNNER.build_engine_kwargs(
+            RUNNER.MODE_COMPILED_ASYNC,
+            Path("/model"),
+            object(),
+            enable_static_kernel=True,
+        )
+        ascend = kwargs["additional_config"]["ascend_compilation_config"]
+        self.assertTrue(ascend["enable_static_kernel"])
+        self.assertEqual(
+            kwargs["compilation_config"]["cache_dir"],
+            str(RUNNER.DEFAULT_COMPILE_CACHE_DIR),
         )
 
     def test_dataset_selection_is_ordered_and_explicit(self) -> None:
