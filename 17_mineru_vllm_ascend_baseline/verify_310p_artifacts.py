@@ -202,7 +202,21 @@ def git_output(repo: Path, *args: str) -> str:
         ["git", "-C", str(repo), *args],
         text=True,
         stderr=subprocess.STDOUT,
-    ).strip()
+    ).rstrip("\n")
+
+
+def source_status_changes(status_lines: Iterable[str]) -> tuple[list[str], int]:
+    source_dirty = []
+    ignored_result_changes = 0
+    for line in status_lines:
+        path = line[3:]
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        if path == "result" or path.startswith("result/"):
+            ignored_result_changes += 1
+        else:
+            source_dirty.append(line)
+    return source_dirty, ignored_result_changes
 
 
 def verify_omnidocbench_repo(repo: Path) -> dict[str, Any]:
@@ -218,20 +232,14 @@ def verify_omnidocbench_repo(repo: Path) -> dict[str, Any]:
         ).splitlines()
         if line
     ]
-    source_dirty = []
-    for line in status_lines:
-        path = line[3:]
-        if " -> " in path:
-            path = path.split(" -> ", 1)[1]
-        if path != "result" and not path.startswith("result/"):
-            source_dirty.append(line)
+    source_dirty, ignored_result_changes = source_status_changes(status_lines)
     return {
         "path": str(repo),
         "commit": commit,
         "expected_commit": EXPECTED_OMNIDOCBENCH_COMMIT,
         "origin": remote,
         "tracked_source_changes": source_dirty,
-        "ignored_result_changes": len(status_lines) - len(source_dirty),
+        "ignored_result_changes": ignored_result_changes,
         "match": (
             commit == EXPECTED_OMNIDOCBENCH_COMMIT
             and EXPECTED_OMNIDOCBENCH_REMOTE_FRAGMENT in remote

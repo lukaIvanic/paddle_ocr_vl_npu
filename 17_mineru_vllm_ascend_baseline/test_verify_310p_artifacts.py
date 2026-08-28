@@ -32,6 +32,16 @@ class Verify310PArtifactsTest(unittest.TestCase):
             VERIFY.EXPECTED_IMAGE_MANIFEST_SHA256,
         )
 
+    def test_result_status_changes_do_not_count_as_source_changes(self) -> None:
+        source, ignored = VERIFY.source_status_changes(
+            [
+                " M result/end2end_metric_result.json",
+                "M  src/core/pipeline.py",
+            ]
+        )
+        self.assertEqual(source, ["M  src/core/pipeline.py"])
+        self.assertEqual(ignored, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
