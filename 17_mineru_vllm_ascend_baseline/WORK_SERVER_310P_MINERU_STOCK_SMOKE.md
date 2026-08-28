@@ -22,7 +22,7 @@ pages or the full corpus in this task.
   system packages.
 - You may create one experiment venv under `$HOME/.venvs`. Install only
   `mineru-vl-utils==1.0.5` and `httpx-retries==0.6.0` with `--no-deps` through
-  the committed setup script.
+  the committed requirements file.
 - Use one free physical Atlas 310P device. Do not terminate another user's
   process. Do not fall back to CPU or CUDA.
 - Do not download a model, dataset, or evaluator repository. Find and verify
@@ -56,12 +56,11 @@ Path-independent 1651-image manifest SHA-256:
 OmniDocBench Git remote: opendatalab/OmniDocBench
 OmniDocBench Git commit:
 2b161d010d2e3aff77a0edef359ea3a6411d23cd
-
-Reference vLLM Git commit:
-ad7125a431e176d4161099480a66f0169609a690
-Reference vLLM-Ascend Git commit:
-80610e4438dba05011b05f89fc45d91e96992671
 ```
+
+The 310P work environment intentionally has its own vLLM and vLLM-Ascend
+versions. Record their versions, source paths, Git commits, and remotes. Do not
+compare them to the 910B versions and do not change them.
 
 The committed verifier recalculates the model, dataset, image, and
 OmniDocBench repository identities. Do not replace that verification with
@@ -169,14 +168,15 @@ git -C "$VLLM_WORKSPACE/vllm" diff --quiet
 git -C "$VLLM_WORKSPACE/vllm" diff --cached --quiet
 git -C "$VLLM_WORKSPACE/vllm-ascend" diff --quiet
 git -C "$VLLM_WORKSPACE/vllm-ascend" diff --cached --quiet
-test "$(git -C "$VLLM_WORKSPACE/vllm" rev-parse HEAD)" = \
-  ad7125a431e176d4161099480a66f0169609a690
-test "$(git -C "$VLLM_WORKSPACE/vllm-ascend" rev-parse HEAD)" = \
-  80610e4438dba05011b05f89fc45d91e96992671
+git -C "$VLLM_WORKSPACE/vllm" remote -v
+git -C "$VLLM_WORKSPACE/vllm-ascend" remote -v
+git -C "$VLLM_WORKSPACE/vllm" status --short
+git -C "$VLLM_WORKSPACE/vllm-ascend" status --short
 ```
 
-Require the two commits listed under `Reference identities`. Untracked files do
-not change the source identity, but print them with `git status --short`.
+Tracked source must be clean. The commits may differ from the 910B reference.
+Untracked files do not change the source identity, but include them in the
+direct success reply.
 
 Run the complete artifact verification in the foreground. It prints progress
 while hashing the 2.3 GB model and all 1,651 images. It writes no report file.
@@ -223,15 +223,16 @@ For each plausible interpreter, run this directly in the terminal:
 
 Choose `BASE_PYTHON` only when the command succeeds, vLLM resolves below
 `$VLLM_WORKSPACE/vllm`, vLLM-Ascend resolves below
-`$VLLM_WORKSPACE/vllm-ascend`, and the core versions are:
+`$VLLM_WORKSPACE/vllm-ascend`, and these non-vLLM versions match:
 
 ```text
-vllm=0.21.0+empty
-vllm-ascend=0.21.0rc1
 torch=2.10.0+cpu
 torch-npu=2.10.0
 transformers=5.5.4
 ```
+
+Print and retain the installed vLLM and vLLM-Ascend versions. They are
+work-server identities, not mismatches.
 
 Create one fresh experiment venv if it does not already exist:
 
@@ -242,14 +243,15 @@ export EXP17_310P_ENV="$HOME/.venvs/mineru_vllm_ascend_exp17_310p_py312"
 if test -e "$EXP17_310P_ENV"; then
   test -x "$EXP17_310P_ENV/bin/python"
 else
-  BASE_PYTHON="$BASE_PYTHON" \
-  VENV="$EXP17_310P_ENV" \
-  bash "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/setup_official_vllm_env.sh"
+  "$BASE_PYTHON" -m venv --system-site-packages "$EXP17_310P_ENV"
+  "$EXP17_310P_ENV/bin/python" -m pip install --no-deps \
+    -r "$WORK_SERVER_REPO/11_mineru_2_5_pro_inference/requirements_official_vllm.txt"
 fi
 
 export PYTHON_BIN="$EXP17_310P_ENV/bin/python"
 "$PYTHON_BIN" \
-  "$WORK_SERVER_REPO/17_mineru_vllm_ascend_baseline/verify_environment.py"
+  "$WORK_SERVER_REPO/17_mineru_vllm_ascend_baseline/verify_environment.py" \
+  --allow-vllm-version-drift
 
 "$PYTHON_BIN" -c \
   'import sys,vllm,vllm_ascend,torch,torch_npu,mineru_vl_utils; print("PYTHON",sys.executable); print("VLLM_SOURCE",vllm.__file__); print("VLLM_ASCEND_SOURCE",vllm_ascend.__file__); print("TORCH_SOURCE",torch.__file__); print("TORCH_NPU_SOURCE",torch_npu.__file__); print("MINERU_UTILS_SOURCE",mineru_vl_utils.__file__)'

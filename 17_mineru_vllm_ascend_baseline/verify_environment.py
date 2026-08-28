@@ -19,20 +19,53 @@ EXPECTED = {
     "mineru-vl-utils": "1.0.5",
     "httpx-retries": "0.6.0",
 }
+VLLM_PACKAGES = {"vllm", "vllm-ascend"}
+
+
+def version_mismatches(
+    actual: dict[str, str],
+    *,
+    allow_vllm_version_drift: bool,
+) -> dict[str, dict[str, str]]:
+    checked = (
+        set(EXPECTED) - VLLM_PACKAGES
+        if allow_vllm_version_drift
+        else set(EXPECTED)
+    )
+    return {
+        name: {"expected": EXPECTED[name], "actual": actual[name]}
+        for name in sorted(checked)
+        if actual[name] != EXPECTED[name]
+    }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json-output", type=Path)
+    parser.add_argument(
+        "--allow-vllm-version-drift",
+        action="store_true",
+        help=(
+            "Record the installed vLLM and vLLM-Ascend versions without "
+            "requiring the 910B reference versions. Required APIs and every "
+            "other package version remain strict."
+        ),
+    )
     args = parser.parse_args()
 
     from mineru_vl_utils import MinerUClient
     import numpy
+    import vllm
+    import vllm_ascend
     from vllm import AsyncEngineArgs
 
     actual = {name: version(name) for name in EXPECTED}
-    if actual != EXPECTED:
-        raise RuntimeError(f"environment mismatch: actual={actual} expected={EXPECTED}")
+    mismatches = version_mismatches(
+        actual,
+        allow_vllm_version_drift=args.allow_vllm_version_drift,
+    )
+    if mismatches:
+        raise RuntimeError(f"environment mismatch: {mismatches}")
 
     engine_parameters = inspect.signature(AsyncEngineArgs).parameters
     required_engine_parameters = {
@@ -52,6 +85,13 @@ def main() -> None:
     result = {
         "status": "ENVIRONMENT_READY",
         "packages": actual,
+        "version_policy": (
+            "record_vllm_versions_require_other_versions_exact"
+            if args.allow_vllm_version_drift
+            else "require_all_reference_versions_exact"
+        ),
+        "vllm_source": vllm.__file__,
+        "vllm_ascend_source": vllm_ascend.__file__,
         "numpy": numpy.__version__,
         "async_engine_required_parameters": sorted(required_engine_parameters),
         "mineru_concurrent_two_step_extract": True,
