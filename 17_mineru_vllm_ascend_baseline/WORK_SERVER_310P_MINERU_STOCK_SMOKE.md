@@ -7,11 +7,14 @@ Read the repository `CLAUDE.md` and `AGENTS.md` first. Then execute this brief.
 
 Set up an experiment-owned Python environment over the server's stock
 `/vllm-workspace`, verify every required artifact against the 910B reference,
-and run one real OmniDocBench page through stock vLLM-Ascend and MinerU.
+and run one real OmniDocBench page through three stock vLLM-Ascend execution
+modes.
 
-Use `enable_static_kernel=False`. This is a compatibility smoke, not a
-performance benchmark and not a static-kernel ablation. Do not continue to 128
-pages or the full corpus in this task.
+Use KV-cache `block_size=128`, `VLLM_WORKER_MULTIPROC_METHOD=spawn`, and
+`enable_static_kernel=False`. First run synchronous eager. Then run AsyncLLM
+eager. Finally run AsyncLLM with `FULL_DECODE_ONLY` ACLGraph while
+`enable_npugraph_ex=False`. This is a compatibility smoke, not a performance
+benchmark. Do not continue to 128 pages or the full corpus in this task.
 
 ## Rules
 
@@ -20,6 +23,8 @@ pages or the full corpus in this task.
 - Do not edit either stock repository under `/vllm-workspace`.
 - Do not replace or upgrade vLLM, vLLM-Ascend, PyTorch, torch-npu, CANN, or
   system packages.
+- Do not use, rebuild, replace, or patch a shared library. Run the committed
+  ladder against the stock libraries resolved by the verified interpreter.
 - You may create one experiment venv under `$HOME/.venvs`. Install only
   `mineru-vl-utils==1.0.5` and `httpx-retries==0.6.0` with `--no-deps` through
   the committed requirements file.
@@ -279,60 +284,137 @@ The device name must identify a 310P. If environment creation, verification,
 module-path validation, or the NPU operation fails, stop and send the
 plain-text issue reply.
 
-## Phase 5: run one real page with static kernels off
+## Phase 5: run the one-page compatibility ladder
 
-Run exactly one first-page smoke. Keep the selected device and environment in
-the same shell. Run `npu-smi info` once more immediately before launch. If
-another process has taken the selected device, stop and send the plain-text
-issue reply.
+Keep the selected device and environment in the same shell. The ladder starts a
+fresh engine process for each gate and stops at the first failure. Run
+`npu-smi info` immediately before launch. If another process has taken the
+selected device, stop and send the plain-text issue reply.
 
 ```bash
 cd "$WORK_SERVER_REPO"
 npu-smi info
 
-PYTHON="$PYTHON_BIN" \
-MODEL_DIR="$MODEL_DIR" \
-DATASET_JSON="$DATASET_JSON" \
-IMAGES_DIR="$IMAGES_DIR" \
-LIMIT=1 \
-OFFSET=0 \
-HASH_MODEL_FILES=1 \
-STATIC_KERNEL=off \
-EXP17_NPU_SETUP_ALREADY_SOURCED=1 \
-bash 17_mineru_vllm_ascend_baseline/run_npu_reproduction.sh
+export PYTHON="$PYTHON_BIN"
+export MODEL_DIR
+export DATASET_JSON
+export IMAGES_DIR
+export LIMIT=1
+export OFFSET=0
+export HASH_MODEL_FILES=0
+export STATIC_KERNEL=off
+export BLOCK_SIZE=128
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
+export ALLOW_VLLM_VERSION_DRIFT=1
+export EXP17_NPU_SETUP_ALREADY_SOURCED=1
+
+bash 17_mineru_vllm_ascend_baseline/run_310p_compatibility_ladder.sh
 ```
 
 Do not rerun automatically if it fails. Send the plain-text issue reply with
-the first causal error from the printed log.
+the passed gates, failed gate, failing run directory, and first causal error
+from that run's printed log.
 
-After exit zero, identify the run created by this command and validate it:
+After exit zero, identify and validate all three runs:
 
 ```bash
-RUN_DIR="$(ls -1dt \
-  "$WORK_SERVER_REPO"/tmp/17_mineru_vllm_ascend_baseline/compiled_async_static_kernel_off_n1_* \
+EAGER_SYNC_RUN_DIR="$(ls -1dt \
+  "$WORK_SERVER_REPO"/tmp/17_mineru_vllm_ascend_baseline/eager_sync_block_128_static_kernel_off_n1_* \
   | head -n 1)"
-export RUN_DIR
-printf 'RUN_DIR=%s\n' "$RUN_DIR"
+EAGER_ASYNC_RUN_DIR="$(ls -1dt \
+  "$WORK_SERVER_REPO"/tmp/17_mineru_vllm_ascend_baseline/eager_async_block_128_static_kernel_off_n1_* \
+  | head -n 1)"
+ACLGRAPH_RUN_DIR="$(ls -1dt \
+  "$WORK_SERVER_REPO"/tmp/17_mineru_vllm_ascend_baseline/aclgraph_async_block_128_static_kernel_off_n1_* \
+  | head -n 1)"
+export EAGER_SYNC_RUN_DIR EAGER_ASYNC_RUN_DIR ACLGRAPH_RUN_DIR
 
-test "$(cat "$RUN_DIR/exit_code.txt")" = 0
-test -s "$RUN_DIR/output/run_summary.json"
-test "$(find "$RUN_DIR/output/predictions" -type f -name '*.md' | wc -l)" = 1
-test "$(find "$RUN_DIR/output/content_lists" -type f -name '*.json' | wc -l)" = 1
-find "$RUN_DIR/output/predictions" -type f -name '*.md' -exec test -s {} \;
-find "$RUN_DIR/output/content_lists" -type f -name '*.json' -exec test -s {} \;
+"$PYTHON_BIN" - <<'PY'
+import hashlib
+import json
+import os
+from pathlib import Path
 
-"$PYTHON_BIN" -c \
-  'import json,os,pathlib; p=pathlib.Path(os.environ["RUN_DIR"])/"output"/"run_summary.json"; s=json.loads(p.read_text()); assert s["static_kernel"]=="off"; assert s["preset"]["enable_static_kernel"] is False; assert s["completed"]==1; assert s["failed"]==0; print("SMOKE_SUMMARY",json.dumps(s,sort_keys=True))'
+expected = (
+    ("eager_sync", Path(os.environ["EAGER_SYNC_RUN_DIR"]), True, None),
+    ("eager_async", Path(os.environ["EAGER_ASYNC_RUN_DIR"]), True, None),
+    (
+        "aclgraph_async",
+        Path(os.environ["ACLGRAPH_RUN_DIR"]),
+        False,
+        "FULL_DECODE_ONLY",
+    ),
+)
+markdown_hashes = set()
+content_hashes = set()
+for mode, root, enforce_eager, graph_mode in expected:
+    assert (root / "exit_code.txt").read_text().strip() == "0"
+    summary = json.loads((root / "output/run_summary.json").read_text())
+    assert summary["mode"] == mode
+    assert summary["completed"] == 1
+    assert summary["failed"] == 0
+    assert summary["static_kernel"] == "off"
+    assert summary["preset"]["block_size"] == 128
+    assert summary["preset"]["enforce_eager"] is enforce_eager
+    assert summary["preset"]["enable_npugraph_ex"] is False
+    assert summary["preset"]["enable_static_kernel"] is False
+    assert summary["preset"]["cudagraph_mode"] == graph_mode
+    assert summary["vllm_worker_multiproc_method"] == "spawn"
+    predictions = list((root / "output/predictions").glob("*.md"))
+    content_lists = list((root / "output/content_lists").glob("*.json"))
+    assert len(predictions) == 1 and predictions[0].stat().st_size > 0
+    assert len(content_lists) == 1 and content_lists[0].stat().st_size > 0
+    assert isinstance(json.loads(content_lists[0].read_text()), list)
+    markdown_hashes.add(hashlib.sha256(predictions[0].read_bytes()).hexdigest())
+    content_hashes.add(hashlib.sha256(content_lists[0].read_bytes()).hexdigest())
+    print(
+        "GATE_SUMMARY",
+        json.dumps(
+            {
+                "mode": mode,
+                "run_dir": str(root),
+                "engine_setup_s": summary["engine_setup_s"],
+                "inference_s": summary["inference_s"],
+                "benchmark_wall_s": summary["benchmark_wall_s"],
+                "markdown_bytes": predictions[0].stat().st_size,
+                "content_json_bytes": content_lists[0].stat().st_size,
+            },
+            sort_keys=True,
+        ),
+    )
 
-grep -q "'enable_static_kernel': False" "$RUN_DIR/run.log"
-if grep -q 'Starting static kernel compilation' "$RUN_DIR/run.log"; then
-  printf 'unexpected static-kernel compilation in %s\n' "$RUN_DIR/run.log" >&2
-  exit 1
-fi
+assert len(markdown_hashes) == 1, markdown_hashes
+assert len(content_hashes) == 1, content_hashes
+print("MARKDOWN_SHA256", next(iter(markdown_hashes)))
+print("CONTENT_SHA256", next(iter(content_hashes)))
+PY
+
+grep -q 'Cudagraph is disabled under eager mode' "$EAGER_SYNC_RUN_DIR/run.log"
+grep -q 'Cudagraph is disabled under eager mode' "$EAGER_ASYNC_RUN_DIR/run.log"
+grep -q 'Replaying aclgraph' "$ACLGRAPH_RUN_DIR/run.log"
+
+for run_dir in \
+  "$EAGER_SYNC_RUN_DIR" \
+  "$EAGER_ASYNC_RUN_DIR" \
+  "$ACLGRAPH_RUN_DIR"
+do
+  if grep -E -q \
+    'Starting static kernel compilation|IndexPut|AICPU|aicpu execution is abnormal|Traceback' \
+    "$run_dir/run.log"
+  then
+    printf 'unexpected failure signature in %s\n' "$run_dir/run.log" >&2
+    exit 1
+  fi
+done
 ```
 
-Finally, run `npu-smi info`. Confirm that the smoke process exited and released
-the selected device.
+Finally, run `npu-smi info`. Confirm that all three engine processes exited and
+released the selected device.
+
+The same source code at commit
+`f93e05754cdcde4993764632006cb3464a85202a` passed this ladder on one Ascend
+910B2. The three 910B2 outputs were byte-identical. This confirms the runner,
+not 310P support.
 
 ## Direct reply to Luka
 
@@ -341,7 +423,7 @@ Do not create a report file. Reply directly in the chat as plain text.
 For success, include exactly these fields:
 
 ```text
-310P MINERU STOCK SMOKE: PASS
+310P MINERU STOCK COMPATIBILITY LADDER: PASS
 repo_commit=
 hostname=
 physical_npu=
@@ -363,13 +445,22 @@ images_dir=
 image_manifest_sha256=
 omnidocbench_repo=
 omnidocbench_commit=
-run_dir=
-engine_setup_s=
-inference_s=
-benchmark_wall_s=
-pages_per_s_smoke_only=
+eager_sync_run_dir=
+eager_sync_engine_setup_s=
+eager_sync_inference_s=
+eager_async_run_dir=
+eager_async_engine_setup_s=
+eager_async_inference_s=
+aclgraph_async_run_dir=
+aclgraph_async_engine_setup_s=
+aclgraph_async_inference_s=
 markdown_bytes=
 content_json_bytes=
+markdown_sha256=
+content_json_sha256=
+block_size=128
+multiproc_method=spawn
+npugraph_ex=off
 static_kernel=off
 npu_released=yes
 ```
@@ -377,11 +468,14 @@ npu_released=yes
 If any phase fails, stop and reply with only:
 
 ```text
-310P MINERU STOCK SMOKE: ISSUE
+310P MINERU STOCK COMPATIBILITY LADDER: ISSUE
 phase=
+passed_gates=
+failed_gate=
 command=
 exit_code=
 first_causal_error=
+run_dir=
 paths_checked=
 ```
 

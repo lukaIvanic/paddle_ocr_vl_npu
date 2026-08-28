@@ -72,6 +72,19 @@ synchronous `LLM`, `enforce_eager=True`, no prefix cache, no chunked prefill,
 and one `two_step_extract` call per page. This is a faithful comparison, not a
 compilation-only ablation, because it changes the engine and scheduling too.
 
+The 310P compatibility ladder keeps the operational static-kernel default off
+and fixes the 310P KV-cache block size at 128. It starts a fresh process for
+each of these gates:
+
+```text
+eager_sync: synchronous LLM, eager execution
+eager_async: AsyncLLM with eager execution
+aclgraph_async: AsyncLLM, FULL_DECODE_ONLY ACLGraph, npugraph_ex disabled
+```
+
+Both async gates use `VLLM_WORKER_MULTIPROC_METHOD=spawn`. The ladder stops on
+the first failure and does not retry with another configuration.
+
 ## Fresh environment clone
 
 The known environment is `/workspace/venvs/mineru_pro_vllm_py312`. Clone it to
@@ -137,6 +150,22 @@ The pull-only 310P environment and one-page compatibility smoke are specified
 in `WORK_SERVER_310P_MINERU_STOCK_SMOKE.md`. The handoff verifies the exact
 model, full 1,651-page dataset view, and pinned OmniDocBench repository before
 loading the model.
+
+Run the same three-gate compatibility ladder directly with:
+
+```sh
+BLOCK_SIZE=128 LIMIT=1 STATIC_KERNEL=off \
+VLLM_WORKER_MULTIPROC_METHOD=spawn \
+bash run_310p_compatibility_ladder.sh
+```
+
+The source at commit `f93e05754cdcde4993764632006cb3464a85202a` passed all
+three one-page gates on one Ascend 910B2, physical NPU 6. All modes produced
+the same 3,447-byte Markdown SHA-256
+`662a9da2b132467f51569b2dc184e4d599e99c37e59f9bc3f24fbbd70561ddb2`
+and the same 5,608-byte content-list SHA-256
+`293f88348cbd509027cdeec83faa120c70a38eef3a23f9337cae5103d62ec69b`.
+This validates the runner on 910B2. It does not establish 310P compatibility.
 
 For a staged gate without repeated capture, keep one engine process alive
 across the gate and continuation. The current wrapper does not implement that
