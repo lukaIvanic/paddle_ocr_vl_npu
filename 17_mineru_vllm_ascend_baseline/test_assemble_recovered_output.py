@@ -42,7 +42,8 @@ class AssembleRecoveredOutputTest(unittest.TestCase):
             )
             for name in names[:2]:
                 stem = Path(name).stem
-                (primary / "predictions" / f"{stem}.md").write_text(stem)
+                markdown = "" if name == "b.png" else stem
+                (primary / "predictions" / f"{stem}.md").write_text(markdown)
                 (primary / "content_lists" / f"{stem}.json").write_text("[]")
             suffix_manifest = {"count": 2, "pages": manifest["pages"][2:]}
             (recovery / "input_manifest.json").write_text(
@@ -74,6 +75,7 @@ class AssembleRecoveredOutputTest(unittest.TestCase):
             self.assertEqual(summary["completed"], 4)
             self.assertTrue(summary["accuracy_only"])
             self.assertFalse(summary["throughput_comparable"])
+            self.assertEqual((combined / "predictions" / "b.md").stat().st_size, 0)
             for name in names:
                 stem = Path(name).stem
                 self.assertTrue((combined / "predictions" / f"{stem}.md").is_symlink())

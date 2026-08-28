@@ -141,8 +141,6 @@ def prepare_evaluation(
     prediction_manifest = []
     for name, stem in zip(selected_names, selected_stems):
         source = prediction_by_stem[stem].resolve()
-        if source.stat().st_size == 0:
-            raise RuntimeError(f"empty prediction: {source}")
         target = predictions / f"{stem}.md"
         os.symlink(source, target)
         prediction_manifest.append(

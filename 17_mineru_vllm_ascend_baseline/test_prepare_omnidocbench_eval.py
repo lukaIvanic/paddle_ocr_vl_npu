@@ -90,6 +90,26 @@ class PrepareOmniDocBenchEvalTest(unittest.TestCase):
                     evaluator_root=None,
                 )
 
+    def test_preserves_empty_prediction_for_scoring(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            dataset_path, output = self.make_completed_run(root)
+            (output / "predictions" / "b.md").write_text("")
+            evaluation = root / "evaluation"
+            PREP.prepare_evaluation(
+                dataset_json=dataset_path,
+                run_output=output,
+                evaluation_root=evaluation,
+                expected_pages=2,
+                match_workers=4,
+                teds_workers=3,
+                cdm_workers=2,
+                evaluator_root=None,
+            )
+            target = evaluation / "predictions" / "b.md"
+            self.assertTrue(target.is_symlink())
+            self.assertEqual(target.stat().st_size, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

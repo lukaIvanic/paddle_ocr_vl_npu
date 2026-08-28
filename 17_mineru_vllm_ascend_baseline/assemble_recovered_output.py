@@ -60,8 +60,8 @@ def _require_output_pair(output: Path, image_name: str) -> tuple[Path, Path]:
     markdown = output / "predictions" / f"{stem}.md"
     content = output / "content_lists" / f"{stem}.json"
     for path in (markdown, content):
-        if not path.is_file() or path.stat().st_size == 0:
-            raise RuntimeError(f"missing or empty recovery component: {path}")
+        if not path.is_file():
+            raise RuntimeError(f"missing recovery component: {path}")
     return markdown.resolve(), content.resolve()
 
 
