@@ -1,0 +1,29 @@
+{
+  "experiment": "17_mineru_vllm_ascend_baseline",
+  "created_at": "2026-08-28T09:25:00.005871+00:00",
+  "mode": "compiled_async_recovered_stitch",
+  "git_commit": "d9b83b882cbeeea7f1693ee4f35eaabe442a9be2",
+  "input_source": "dataset_json:/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "selected_pages": 1651,
+  "offset": 0,
+  "limit": 1651,
+  "completed": 1651,
+  "failed": 0,
+  "accuracy_only": true,
+  "throughput_comparable": false,
+  "recovery_offset": 1491,
+  "component_runs": [
+    {
+      "role": "primary_prefix_after_completed_inference",
+      "output": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_n1651_20260828T081412Z_d703317/output",
+      "saved_pages": 1491,
+      "failure_sha256": "c9f0ac1c9468fb8601d9b36dd7fc759456d13cbf3c62f38e062f964849a5d8e7"
+    },
+    {
+      "role": "recovery_suffix",
+      "output": "/workspace/repos/paddle_ocr_vl_npu/tmp/17_mineru_vllm_ascend_baseline/compiled_async_n160_20260828T090645Z_d9b83b8/output",
+      "saved_pages": 160,
+      "run_summary_sha256": "2fad2ae417062083a505b4610fb0bb26af178f54031e0319928b4f0241d89828"
+    }
+  ]
+}

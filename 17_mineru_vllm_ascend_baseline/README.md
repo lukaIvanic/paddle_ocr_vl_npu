@@ -12,7 +12,10 @@ carry a result between chips without labeling both.
 The first accepted one-page 910B2 smoke is recorded in
 `VERIFIED_910B_SMOKE.md`. The exact 981-page OmniDocBench v1.0 run, 128-page
 gate, evaluator results, and graph-cache postmortem are recorded in
-`VERIFIED_V1_0_981_BASELINE.md`.
+`VERIFIED_V1_0_981_BASELINE.md`. The complete 1,651-page OmniDocBench
+`v1.6_full` run, recovery, official evaluator score, SOTA comparison, and
+online-serving graph-cache behavior are recorded in
+`VERIFIED_V1_6_1651_BASELINE.md`.
 
 ## Source evidence
 

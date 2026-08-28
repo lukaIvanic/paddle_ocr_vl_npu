@@ -1,0 +1,966 @@
+{
+  "source": "dataset_json:/workspace/datasets/OmniDocBench/OmniDocBench.json",
+  "count": 160,
+  "pages": [
+    {
+      "dataset_index": 1491,
+      "image": "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第09讲第九课写作Part9小作文详解_【8054】第九课写作Part9小作文详解_page_001.png",
+      "size": 926377,
+      "sha256": "e50bedfce6755d6987307c35bf2b6f08207af5ec9088bb5a36e6cc005a9972aa"
+    },
+    {
+      "dataset_index": 1492,
+      "image": "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET阅读25分【10讲 褚连一 】_第01讲第一课阅读题型综述_第一课阅读题型综述_page_004.png",
+      "size": 324325,
+      "sha256": "b5991d5873f8fd816e63ce18b6b84f23cbfd05750716395ba4bece09ae0afcfc"
+    },
+    {
+      "dataset_index": 1493,
+      "image": "color_textbook_教材全解1+1二年级上册英语上海牛津版_page_058.png",
+      "size": 836087,
+      "sha256": "838d37c32c6d1d0d29acac76a338f87bdb6119663dd36fa2620d30ee66621f77"
+    },
+    {
+      "dataset_index": 1494,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语上册_课本_人教新起点英语5A电子课本_page_006.png",
+      "size": 2533320,
+      "sha256": "20e7ec86ca4aaf8c99e540b403dc5276223bbe87a4a473a3fa4f0776da2ca887"
+    },
+    {
+      "dataset_index": 1495,
+      "image": "color_textbook_教材全解1+1二年级上册英语上海牛津版_page_067.png",
+      "size": 887429,
+      "sha256": "8e5971f59e54975956239af6ca034deea74e186841b212c3be016ee5b7fb8836"
+    },
+    {
+      "dataset_index": 1496,
+      "image": "color_textbook_教材全解1+1二年级下册英语上海牛津版_page_006.png",
+      "size": 898347,
+      "sha256": "b3321bae056bd6c0550629afc2c86fe027fe826d08663f6d5bcc24e8a05b7f8f"
+    },
+    {
+      "dataset_index": 1497,
+      "image": "color_textbook_教材全解1+1二年级下册英语上海牛津版_page_045.png",
+      "size": 936291,
+      "sha256": "12ccd5e7ec7c99481312e3ee2236def1eb29cffef478f646c946a52ed0fd7795"
+    },
+    {
+      "dataset_index": 1498,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语下册_课本_人教新起点英语5B电子课本_page_011.png",
+      "size": 2384425,
+      "sha256": "d3e3c30b691f7ba43381e83fbbfe5fd6807910e62942d719d0919351f1326e25"
+    },
+    {
+      "dataset_index": 1499,
+      "image": "color_textbook_教材全解1+1二年级下册英语上海牛津版_page_081.png",
+      "size": 745160,
+      "sha256": "f9c2415c83e216fb90f0c8bf1e9061e473d581df3265a2b3b84d421ec54807dc"
+    },
+    {
+      "dataset_index": 1500,
+      "image": "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第04讲第四课KET分类词汇训练二_第四课KET分类词汇训练二_page_003.png",
+      "size": 319801,
+      "sha256": "c3c359458792507d1118ee16c0ceef7cd504dd902111506446ad72173808e591"
+    },
+    {
+      "dataset_index": 1501,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语下册_课本_人教新起点英语5B电子课本_page_027.png",
+      "size": 2095863,
+      "sha256": "39aed341a8302e272166b95d450d30723a55ac8a1b30af43ac9d57b5b40f3fd1"
+    },
+    {
+      "dataset_index": 1502,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语下册_课本_人教新起点英语5B电子课本_page_034.png",
+      "size": 2256093,
+      "sha256": "4638d29d96ff18d0a13a816a17bceaef23def9552183430d43b65171ea2a5410"
+    },
+    {
+      "dataset_index": 1503,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语下册_课本_人教新起点英语5B电子课本_page_036.png",
+      "size": 2593986,
+      "sha256": "6d1a568f177ba5f0d5dfbdd4b467eb30d94a912a3657f887f6acd82fda582f74"
+    },
+    {
+      "dataset_index": 1504,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点四年级英语上册_课本_人教新起点英语4A电子课本_page_091.png",
+      "size": 2144356,
+      "sha256": "175d591c6559f87bd62ca3b23aa57866d78656a9ccffbeff8cfd9ffe7a62152f"
+    },
+    {
+      "dataset_index": 1505,
+      "image": "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET口语25分【10 褚连一】_第04讲第四课口语部分Part2详解下_第四课口语部分Part2详解下_page_001.png",
+      "size": 416723,
+      "sha256": "9c314537a4140dc65b7806a9bac746356405cbcf1bc6fe4b1dffdde293f67d86"
+    },
+    {
+      "dataset_index": 1506,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语上册_课本_人教新起点英语5A电子课本_page_056.png",
+      "size": 2446103,
+      "sha256": "d4e28a2d7bd0b2609679746932ec04b8ce690bc3fc31c911a05aa74caebd8bf4"
+    },
+    {
+      "dataset_index": 1507,
+      "image": "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_010.png",
+      "size": 607783,
+      "sha256": "d4a40c302062790dc348c70625ba54539834b33bbe5218672c7cbfcffd857d2b"
+    },
+    {
+      "dataset_index": 1508,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语下册_课本_人教新起点英语5B电子课本_page_043.png",
+      "size": 2774717,
+      "sha256": "84ae7659f112a02aab716699b86f72552ca8d4d6c3c1aea4b366a3331926141e"
+    },
+    {
+      "dataset_index": 1509,
+      "image": "color_textbook_教材全解1+1二年级上册英语上海牛津版_page_030.png",
+      "size": 519917,
+      "sha256": "f1045d616cd5c06b8c770d32b3c0aa15b61c0c7784f770f35b2501cf7736597a"
+    },
+    {
+      "dataset_index": 1510,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语上册_课本_人教新起点英语5A电子课本_page_010.png",
+      "size": 1479834,
+      "sha256": "c3efb22e8fd5a146454f4c699197981e97f8fb7fb171021c29fae06db5807d5c"
+    },
+    {
+      "dataset_index": 1511,
+      "image": "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_020.png",
+      "size": 623612,
+      "sha256": "3003e011317866aa8ed894851b9e54c6325a94148b903c7ec76144f24e5d3c27"
+    },
+    {
+      "dataset_index": 1512,
+      "image": "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET口语25分【10 褚连一】_第09讲第九课口语部分Part2模拟三_第九课口语部分Part2模拟三_page_001.png",
+      "size": 269837,
+      "sha256": "bc055360cca95029474c4c44010e627202544bdd9c093f9fa38718dc20901f45"
+    },
+    {
+      "dataset_index": 1513,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点四年级英语下册_课本_人教新起点英语4B电子课本_page_043.png",
+      "size": 7571189,
+      "sha256": "79e2fc174c7b3960706fb6a62af101dd8101c23183459025bc10ff1b98ae0baf"
+    },
+    {
+      "dataset_index": 1514,
+      "image": "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET口语25分【10 褚连一】_第02讲第二课口语部分Part1详解_第二课口语部分Part1详解_page_002.png",
+      "size": 177652,
+      "sha256": "6be7c4806c8c8d88665f9197bca44be59b3ebf3f52a11dbb24dfa9efb65f288a"
+    },
+    {
+      "dataset_index": 1515,
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点四年级英语上册_课本_人教新起点英语4A电子课本_page_072.png",
+      "size": 2211243,
+      "sha256": "3bad0b56aa23eacb05488db8ed35e72fa1d88b94a8ad431c56a8ad354144b059"
+    },
+    {
+      "dataset_index": 1516,
+      "image": "color_textbook_教材全解1+1二年级下册英语上海牛津版_page_066.png",
+      "size": 818402,
+      "sha256": "860f871ee624d0d862643de011d7cff8d9348debc74506a2666c985fdbde940c"
+    },
+    {
+      "dataset_index": 1517,
+      "image": "exam_paper_en-file-putnam-archive_2000_Solutions_2000s_page_002.png",
+      "size": 518419,
+      "sha256": "61e73c27c2f169905b811d3356b18e932d83856d087f9d632866d49592451930"
+    },
+    {
+      "dataset_index": 1518,
+      "image": "exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+      "size": 4442794,
+      "sha256": "628e197f69dd34bea8a0166d327d23ea3afe7037980392353268d5db268f4a02"
+    },
+    {
+      "dataset_index": 1519,
+      "image": "exam_paper_2004-2019上海高考英语听力原文和答案_page_002.png",
+      "size": 5126642,
+      "sha256": "31c0d2828a3fddb21654a622f915c132251b39eaeb9aa58fc884f30b95e6acfa"
+    },
+    {
+      "dataset_index": 1520,
+      "image": "exam_paper_en-file-putnam-archive_1997_Solutions_1997s_page_001.png",
+      "size": 443948,
+      "sha256": "5aca389186db82ef8df239e00b49b24db72f6ee327e66bc6b5ce0a78a16753da"
+    },
+    {
+      "dataset_index": 1521,
+      "image": "exam_paper_2004-2019上海高考英语听力原文和答案_page_050.png",
+      "size": 4921169,
+      "sha256": "0f69c46def894afc60ba0d36901578d9aa65705ad3a9510274e8915fb710f88e"
+    },
+    {
+      "dataset_index": 1522,
+      "image": "exam_paper_2018年广西北海、钦州、南宁、来宾、崇左、防城港、北部湾经济区中考英语试题（空白卷）_page_003.png",
+      "size": 581200,
+      "sha256": "946c3d563f79ed89494ceccc7b5f5c921cf3202aafbb92f114393c52f9b533cb"
+    },
+    {
+      "dataset_index": 1523,
+      "image": "exam_paper_en-file-putnam-archive_1996_Solutions_1996s_page_002.png",
+      "size": 513446,
+      "sha256": "eb14b3589bdbbf8b1ed67942ec6d1ed46ebd51be8ce181d567e02b208d88780a"
+    },
+    {
+      "dataset_index": 1524,
+      "image": "exam_paper_en-file-putnam-archive_2007_Problems_2007_page_001.png",
+      "size": 361923,
+      "sha256": "a834b2330ae91de4ba0f127fe4c64a1f6eff585243289cd9d500d8035eb23576"
+    },
+    {
+      "dataset_index": 1525,
+      "image": "exam_paper_en-file-putnam-archive_2013_Problems_2013_page_002.png",
+      "size": 173261,
+      "sha256": "5bf98977353643999616d974a9fe3168b56dc770a60181bc2aa8d849b464d91d"
+    },
+    {
+      "dataset_index": 1526,
+      "image": "exam_paper_en-file-putnam-archive_2004_Problems_2004_page_001.png",
+      "size": 419949,
+      "sha256": "8977b05c678636c039317ac251e095721034f613a6698ea0541e2672455baf77"
+    },
+    {
+      "dataset_index": 1527,
+      "image": "exam_paper_en-file-putnam-archive_2008_Problems_2008_page_001.png",
+      "size": 398792,
+      "sha256": "785485ae08425d1eb09b2c457757c6983ce5b05b1a982cfb8801c07dba95012e"
+    },
+    {
+      "dataset_index": 1528,
+      "image": "exam_paper_en-file-putnam-archive_2008_Solutions_2008s_page_007.png",
+      "size": 289032,
+      "sha256": "a2710b49aa1fcdb7159e606b20b5b2d3c9884f0c9315e20387b2a8651da138c6"
+    },
+    {
+      "dataset_index": 1529,
+      "image": "exam_paper_en-file-putnam-archive_1996_Solutions_1996s_page_003.png",
+      "size": 500030,
+      "sha256": "ecb05137a7a1e01b07dcd827e0ab96c217bd8e6de35eb18ceed1b606eeab8418"
+    },
+    {
+      "dataset_index": 1530,
+      "image": "exam_paper_en-file-putnam-archive_1999_Solutions_1999s_page_001.png",
+      "size": 404713,
+      "sha256": "ed674c0ae4b0d0df02bd3041305da502cd53568bd7270fe7113ec69392f8b292"
+    },
+    {
+      "dataset_index": 1531,
+      "image": "exam_paper_en-file-putnam-archive_2005_Solutions_2005s_page_007.png",
+      "size": 216556,
+      "sha256": "37edceb9745fbb62c06ede0652c45d9cb8a166c3d2cd58551e00c6ff4243b744"
+    },
+    {
+      "dataset_index": 1532,
+      "image": "exam_paper_en-file-putnam-archive_2007_Solutions_2007s_page_005.png",
+      "size": 113184,
+      "sha256": "5dcebf4db6c5520de49b4e75c760c5f18d54b9a0ca9d1b51cd586d80e6bdca6b"
+    },
+    {
+      "dataset_index": 1533,
+      "image": "exam_paper_en-file-putnam-archive_2009_Problems_2009_page_001.png",
+      "size": 402696,
+      "sha256": "9ac7640c4b32c438ef83d676dd6d69c7ecc0fa845ec9b408af87bfd818191b5d"
+    },
+    {
+      "dataset_index": 1534,
+      "image": "exam_paper_en-file-putnam-archive_2014_Problems_2014_page_001.png",
+      "size": 384668,
+      "sha256": "ca4008e8f1155b1149d488e0aea377f31cf18c15e9d73f000bb724072162ceca"
+    },
+    {
+      "dataset_index": 1535,
+      "image": "exam_paper_en-file-putnam-archive_1997_Solutions_1997s_page_003.png",
+      "size": 360671,
+      "sha256": "500760b19a42a72b1d112a28937eba7aa3d23421e3b659f21afce2eb880fb8b1"
+    },
+    {
+      "dataset_index": 1536,
+      "image": "exam_paper_en-file-putnam-archive_1999_Solutions_1999s_page_003.png",
+      "size": 496840,
+      "sha256": "396afd7cad623b0000e3a6ce9ef3ef65d5e10e8984597321979cfc0f175a0b8d"
+    },
+    {
+      "dataset_index": 1537,
+      "image": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_007.png",
+      "size": 317534,
+      "sha256": "22dc66ab90ada30c3a323139908e556ea74d9a9fdaa8a90afba9ca9aaaec81af"
+    },
+    {
+      "dataset_index": 1538,
+      "image": "exam_paper_en-file-putnam-archive_2007_Solutions_2007s_page_004.png",
+      "size": 531500,
+      "sha256": "3fbbb9177bdd20e230bab8cff621461cf72a779b3ad19f8e3ff0b31be7ed2b25"
+    },
+    {
+      "dataset_index": 1539,
+      "image": "exam_paper_en-file-putnam-archive_2014_Solutions_2014s_page_003.png",
+      "size": 546623,
+      "sha256": "ab27476816ea41cb1a788df74f5425d936f91bf0dbb70bfd8613b7feff153ce9"
+    },
+    {
+      "dataset_index": 1540,
+      "image": "exam_paper_en-file-putnam-archive_1997_Problems_1997_page_001.png",
+      "size": 356108,
+      "sha256": "6581d6d2d027c4cce78e0536bbce49bce2a471c92e803c37fd53a34c0d5ca21d"
+    },
+    {
+      "dataset_index": 1541,
+      "image": "exam_paper_en-file-putnam-archive_2003_Solutions_2003s_page_001.png",
+      "size": 445590,
+      "sha256": "10404b1890795b9ec83fd2465f8e1b26c2362474a6e8bcc10a6c512bbc93abc2"
+    },
+    {
+      "dataset_index": 1542,
+      "image": "exam_paper_en-file-putnam-archive_1993_Problems_1993_page_001.png",
+      "size": 412041,
+      "sha256": "e505ff738b039510bd6ba62a141ab1ad8bccde828d2ce2132421cc4b93dcafae"
+    },
+    {
+      "dataset_index": 1543,
+      "image": "exam_paper_en-file-putnam-archive_2000_Solutions_2000s_page_001.png",
+      "size": 481008,
+      "sha256": "c58cd18ea24c09a6996cfc12f92aebc6e9101ec7d0d5b0340b1d2fdb546b3e45"
+    },
+    {
+      "dataset_index": 1544,
+      "image": "exam_paper_en-file-putnam-archive_1995_Solutions_1995s_page_002.png",
+      "size": 581191,
+      "sha256": "efd4c8aed9c70d40e5e5928c1190265c1b9d7e6ed441f05ceaf2f9a9c1be2b3d"
+    },
+    {
+      "dataset_index": 1545,
+      "image": "exam_paper_en-file-putnam-archive_2016_Solutions_2016s_page_002.png",
+      "size": 536147,
+      "sha256": "792c01b5d3d1c98c6d9848eba9a1fdc1a55542af1ae50c106c140b0fcfcd2909"
+    },
+    {
+      "dataset_index": 1546,
+      "image": "exam_paper_2016年安徽省中考英语试题（解析）_page_015.png",
+      "size": 325362,
+      "sha256": "5314538abb2bca3b5e02c18ccf7e284f81998afe725c4beb4396f7326af23b4a"
+    },
+    {
+      "dataset_index": 1547,
+      "image": "exam_paper_en-file-putnam-archive_2000_Solutions_2000s_page_003.png",
+      "size": 130048,
+      "sha256": "e3ed4b7c965e0b79f94ee430ac7a4316ee795161b077c5a3ef6ec01be986eec9"
+    },
+    {
+      "dataset_index": 1548,
+      "image": "exam_paper_en-file-putnam-archive_2004_Solutions_2004s_page_004.png",
+      "size": 492657,
+      "sha256": "141e90d1d7bf91a3d1e8b6518c6c8f09e5f0f849ed4a9dddceb2898f727a9429"
+    },
+    {
+      "dataset_index": 1549,
+      "image": "exam_paper_en-file-putnam-archive_2005_Solutions_2005s_page_006.png",
+      "size": 502772,
+      "sha256": "b964cb28398983abc9ef46ce41e24599110adfc7ef8ddcb668e73f3073c7d84b"
+    },
+    {
+      "dataset_index": 1550,
+      "image": "exam_paper_en-file-putnam-archive_2015_Problems_2015_page_001.png",
+      "size": 360916,
+      "sha256": "6d5ec98945db887e128c11a45e601e7934ffe6ff7c1d071049e731dd0a4bca56"
+    },
+    {
+      "dataset_index": 1551,
+      "image": "exam_paper_en-file-putnam-archive_1996_Solutions_1996s_page_001.png",
+      "size": 548926,
+      "sha256": "8a0559c5e7586f8c610e3c93bed405e39e659107aa8652dc6dea8bf076e2c249"
+    },
+    {
+      "dataset_index": 1552,
+      "image": "exam_paper_en-file-putnam-archive_1997_Solutions_1997s_page_002.png",
+      "size": 498128,
+      "sha256": "3bbc72fbc87234f6c256ad28ad5f8cd0a075f159fb9fe683bd4b596ee946ed7e"
+    },
+    {
+      "dataset_index": 1553,
+      "image": "exam_paper_2016年安徽省中考英语试题（解析）_page_012.png",
+      "size": 436467,
+      "sha256": "d80812021584b35f00d5ec502df476aa7ae8db00e7fa64054a2fb4b1da2d776e"
+    },
+    {
+      "dataset_index": 1554,
+      "image": "exam_paper_2016年安徽省中考英语试题（解析）_page_003.png",
+      "size": 303007,
+      "sha256": "11485df0351fbc277beb14493273db2600a9ecc60fcf446fb078a8411e0b56b2"
+    },
+    {
+      "dataset_index": 1555,
+      "image": "exam_paper_en-file-putnam-archive_2002_Solutions_2002s_page_001.png",
+      "size": 474612,
+      "sha256": "1b9befb6afbc5ef4a6702653d1d3236c9da9a4238e20e2b81b4955229e186b08"
+    },
+    {
+      "dataset_index": 1556,
+      "image": "exam_paper_en-file-putnam-archive_2006_Problems_2006_page_001.png",
+      "size": 413380,
+      "sha256": "96deb0821472f0e9d21a3d2a052a632039f9c6acd19c84a3469ea7ee3dccbf1c"
+    },
+    {
+      "dataset_index": 1557,
+      "image": "exam_paper_en-file-putnam-archive_2007_Solutions_2007s_page_003.png",
+      "size": 656285,
+      "sha256": "47a43a55eacc3167ad0ca2666a06803bcb8afa9e6cc1f1d38687a5b5ead89f0c"
+    },
+    {
+      "dataset_index": 1558,
+      "image": "exam_paper_en-file-putnam-archive_2008_Solutions_2008s_page_004.png",
+      "size": 554129,
+      "sha256": "e1df9ffaa5a12c8ba0de55108ce6f8de5b9f523af5f54accfcc43d6ed76f0d54"
+    },
+    {
+      "dataset_index": 1559,
+      "image": "exam_paper_en-file-putnam-archive_1998_Solutions_1998s_page_002.png",
+      "size": 628698,
+      "sha256": "1aa316fea20aa384f6b261471a8214f77b23306eda4ad54599250b08820c99ad"
+    },
+    {
+      "dataset_index": 1560,
+      "image": "exam_paper_en-file-putnam-archive_2001_Solutions_2001s_page_001.png",
+      "size": 540422,
+      "sha256": "0587626d74cdb2f6903e7ee21f47d2b0ef327155a3185490325d107341a3ba5a"
+    },
+    {
+      "dataset_index": 1561,
+      "image": "exam_paper_en-file-putnam-archive_2015_Solutions_2015s_page_006.png",
+      "size": 433527,
+      "sha256": "a6e25100b7e4c5a58a52a2fc39f661c7da8e0023fae8fd089488e02c8127c050"
+    },
+    {
+      "dataset_index": 1562,
+      "image": "exam_paper_en-file-putnam-archive_2002_Solutions_2002s_page_004.png",
+      "size": 347891,
+      "sha256": "5ade5caa7343c0989b8ebfacf6f5bc7cd12817a1eadd61b00ae24b38f61a4fce"
+    },
+    {
+      "dataset_index": 1563,
+      "image": "exam_paper_en-file-putnam-archive_2005_Solutions_2005s_page_004.png",
+      "size": 613774,
+      "sha256": "dc109ee18fe2873cce3ec23f75b3984e457d93e38e87547f1325537cc90d6dee"
+    },
+    {
+      "dataset_index": 1564,
+      "image": "exam_paper_en-file-putnam-archive_2010_Solutions_2010s_page_005.png",
+      "size": 437502,
+      "sha256": "a11f9962325f8737a81813c20b851370753e3c910a798ddb05b795ecd225b856"
+    },
+    {
+      "dataset_index": 1565,
+      "image": "exam_paper_en-file-putnam-archive_2015_Solutions_2015s_page_005.png",
+      "size": 554795,
+      "sha256": "62a84a3041582db04a1f6997ea4fe83541a0e3be188fe3cb9977a454cedb4306"
+    },
+    {
+      "dataset_index": 1566,
+      "image": "exam_paper_en-file-putnam-archive_2003_Solutions_2003s_page_008.png",
+      "size": 221648,
+      "sha256": "e0499b03656b29b6dacab03435517911d82fc33e1be7fa06d63dbfbfa6806f8f"
+    },
+    {
+      "dataset_index": 1567,
+      "image": "exam_paper_2004-2019上海高考英语听力原文和答案_page_017.png",
+      "size": 2949374,
+      "sha256": "08f6998e6dd6ab570fc1db7845703c70682f46b6d64e4a9c7a62ff6c37a30f72"
+    },
+    {
+      "dataset_index": 1568,
+      "image": "exam_paper_en-file-putnam-archive_2002_Solutions_2002s_page_002.png",
+      "size": 457258,
+      "sha256": "0590a39f7e2ffe0d672a118ae517d90a9968bdb12b4810b5dd840d5e5b6af60c"
+    },
+    {
+      "dataset_index": 1569,
+      "image": "exam_paper_en-file-putnam-archive_2009_Solutions_2009s_page_003.png",
+      "size": 592858,
+      "sha256": "bfc6bdf631c08d172d18a0f8dc761385e13829a29d95503fdbba521b731da5c9"
+    },
+    {
+      "dataset_index": 1570,
+      "image": "exam_paper_en-file-putnam-archive_2011_Solutions_2011s_page_002.png",
+      "size": 547263,
+      "sha256": "1766cb29b6b1a16d4f8f5c0da33c67d08ed51e1f1cbf68f3a493f40526fb5d4a"
+    },
+    {
+      "dataset_index": 1571,
+      "image": "exam_paper_en-file-putnam-archive_1994_Problems_1994_page_001.png",
+      "size": 341226,
+      "sha256": "0e900403738a5aa6e50db1bf072d34a6fecf57e04b527cbdd9bac9fcf8850f15"
+    },
+    {
+      "dataset_index": 1572,
+      "image": "exam_paper_en-file-putnam-archive_1991_Problems_1991_page_001.png",
+      "size": 398812,
+      "sha256": "aecd0f995c6b453d6dbd4f6cb7f4bf47d2a0ed9d5a6d15af5ddef913c8f440d1"
+    },
+    {
+      "dataset_index": 1573,
+      "image": "exam_paper_en-file-putnam-archive_2000_Problems_2000_page_001.png",
+      "size": 318857,
+      "sha256": "ec68cbea73d32d551a3f979e6c87ef258ab38d3f679c4e98f5b99135bc76c21b"
+    },
+    {
+      "dataset_index": 1574,
+      "image": "exam_paper_en-file-putnam-archive_2009_Solutions_2009s_page_002.png",
+      "size": 541198,
+      "sha256": "74cac6931fe6e86e26c094f68984f76ba4e0f4f51c3ded4c6fcbe483134507a3"
+    },
+    {
+      "dataset_index": 1575,
+      "image": "exam_paper_2018年广西北海、钦州、南宁、来宾、崇左、防城港、北部湾经济区中考英语试题（空白卷）_page_001.png",
+      "size": 248166,
+      "sha256": "fd348e3efe10dfe25ccab55bb180051a2e0e925d6c3f841b39a69b53ddf4637b"
+    },
+    {
+      "dataset_index": 1576,
+      "image": "exam_paper_en-file-putnam-archive_1996_Problems_1996_page_001.png",
+      "size": 391462,
+      "sha256": "5e2237d1e9a02c9874efee5858a8f1c9b0fafbea7ef1e244a9f2c7fe33b30d7a"
+    },
+    {
+      "dataset_index": 1577,
+      "image": "exam_paper_en-file-putnam-archive_2001_Solutions_2001s_page_002.png",
+      "size": 458633,
+      "sha256": "197fd72772f4a418dca2cd8c235b4a6eac09399c85b2b0d79b4bcf15bec5284b"
+    },
+    {
+      "dataset_index": 1578,
+      "image": "exam_paper_en-file-putnam-archive_2006_Solutions_2006s_page_006.png",
+      "size": 512626,
+      "sha256": "23b39a76fa16b9f35d716f0ee493f2b8f29d71ffb8c92f434ba6339f9a5563c7"
+    },
+    {
+      "dataset_index": 1579,
+      "image": "exam_paper_en-file-putnam-archive_2007_Solutions_2007s_page_001.png",
+      "size": 529867,
+      "sha256": "4b6ec25ff6c7019b66c3ab44f362ff9de58b5f78ea5f34b0fcc4675159f6fecb"
+    },
+    {
+      "dataset_index": 1580,
+      "image": "exam_paper_en-file-putnam-archive_1999_Solutions_1999s_page_002.png",
+      "size": 439204,
+      "sha256": "e8892bd5331f17866882bd463186cd760b7bc3e0c14ea9f496ce6367d065a035"
+    },
+    {
+      "dataset_index": 1581,
+      "image": "exam_paper_en-file-putnam-archive_2009_Solutions_2009s_page_001.png",
+      "size": 500647,
+      "sha256": "db98a66703e33e7dd34256c8aabd064421695f3bef78af64bdb3d1d2b7bea0cc"
+    },
+    {
+      "dataset_index": 1582,
+      "image": "exam_paper_en-file-putnam-archive_2011_Problems_2011_page_001.png",
+      "size": 471082,
+      "sha256": "6ca241a5ea416d543a8fdff9d78a11c425ea9ab9856a4220fa1427eedc9d05b5"
+    },
+    {
+      "dataset_index": 1583,
+      "image": "exam_paper_en-file-putnam-archive_2012_Solutions_2012s_page_001.png",
+      "size": 565134,
+      "sha256": "c7d957e9c20ae16f8c68d69d59640a43173727d652344ed33b5db50f15fed9ff"
+    },
+    {
+      "dataset_index": 1584,
+      "image": "exam_paper_en-file-putnam-archive_2008_Solutions_2008s_page_005.png",
+      "size": 593048,
+      "sha256": "53b26dafe97cfc39b2df09549f2ac01a97c4b53a020b4e7d09b2c9ff143812ed"
+    },
+    {
+      "dataset_index": 1585,
+      "image": "exam_paper_en-file-putnam-archive_2010_Solutions_2010s_page_001.png",
+      "size": 500658,
+      "sha256": "82e66f6bfb653ed44545b8cc3613d9cccd7a9384bbecb909df556a9562f669b8"
+    },
+    {
+      "dataset_index": 1586,
+      "image": "exam_paper_en-file-putnam-archive_2011_Solutions_2011s_page_003.png",
+      "size": 500416,
+      "sha256": "757de4d69efc00502dc884f1e2da5f016b6951b20bb97f1288291e660e97846f"
+    },
+    {
+      "dataset_index": 1587,
+      "image": "magazine_TheEconomist.2023.12.02_page_028.png",
+      "size": 5010827,
+      "sha256": "7d7e9f47a70138a3eaa49ab49006cc24fda048d7298ea4fa19b127805b9e26a7"
+    },
+    {
+      "dataset_index": 1588,
+      "image": "magazine_TheEconomist.2024.03.02_page_025.png",
+      "size": 6695031,
+      "sha256": "9a0f121f09882848f76dbd09c0617b6ba859856d4ed7af618ff7ee37b5ea9f37"
+    },
+    {
+      "dataset_index": 1589,
+      "image": "magazine_TheEconomist.2023.11.25_page_006.png",
+      "size": 2562497,
+      "sha256": "4b07bb93eeaa79ab72490308aaa38fe27a322c7db189c356c5a9b26f6e252f0e"
+    },
+    {
+      "dataset_index": 1590,
+      "image": "magazine_TheEconomist.2023.11.18_page_071.png",
+      "size": 5397589,
+      "sha256": "bcc18202b4bd03c1c9d9fd0ba3d9796d5da80e5789c5e60b6c0cc3db32c6ed36"
+    },
+    {
+      "dataset_index": 1591,
+      "image": "magazine_TheEconomist.2023.12.23_page_024.png",
+      "size": 18175600,
+      "sha256": "55053b88d1900f46a3c7ff75521f8c0e83ccabcb5fae854fc14b6b81ef828543"
+    },
+    {
+      "dataset_index": 1592,
+      "image": "magazine_TheEconomist.2023.12.02_page_031.png",
+      "size": 4948757,
+      "sha256": "37ab3d001ad36a1caf0ccc4c2730bbd8768050dd9e388372098e5f16e7369125"
+    },
+    {
+      "dataset_index": 1593,
+      "image": "magazine_TheEconomist.2023.12.16_page_026.png",
+      "size": 5081451,
+      "sha256": "820ff0ebcaba8b1308ef8c430dec8c61f9f696131a75b594636f7f43bfb7976e"
+    },
+    {
+      "dataset_index": 1594,
+      "image": "magazine_TheEconomist.2024.02.24_page_007.png",
+      "size": 6278242,
+      "sha256": "ee7a0f9b313d31d6b9d8eb85cfbcc3f953b02569b43c1a8738e1ce3ccbbf1668"
+    },
+    {
+      "dataset_index": 1595,
+      "image": "magazine_TheEconomist.2024.02.24_page_076.png",
+      "size": 4924041,
+      "sha256": "76e50d3cfceb2a6c9ecefb293380d3c8f3221246c4f78f34d3af658a9b15ea58"
+    },
+    {
+      "dataset_index": 1596,
+      "image": "magazine_TheEconomist.2023.12.23_page_012.png",
+      "size": 14967311,
+      "sha256": "e5b73e9ba51b884d79c2a9ea312dd8d23d14ac633f8e9b360d9702b23f602285"
+    },
+    {
+      "dataset_index": 1597,
+      "image": "magazine_TheEconomist.2023.11.18_page_082.png",
+      "size": 4835536,
+      "sha256": "5962d372b626732e758ab6d10bd0ffe76dfa4e7fab520c524c2c439b183fb967"
+    },
+    {
+      "dataset_index": 1598,
+      "image": "magazine_TheEconomist.2024.03.02_page_075.png",
+      "size": 7300019,
+      "sha256": "7956a7221d6203c3e8904d063b9e5fc7589776359cf3a82e05366c642ad57024"
+    },
+    {
+      "dataset_index": 1599,
+      "image": "magazine_TheEconomist.2024.03.09_page_016.png",
+      "size": 3325385,
+      "sha256": "2f525045c23916a3b4b48894bec7a3311e91e93f9cea098ba63af1092c1e3180"
+    },
+    {
+      "dataset_index": 1600,
+      "image": "magazine_TheEconomist.2024.03.09_page_029.png",
+      "size": 5851784,
+      "sha256": "97f3d3a3c10caf447d583f17dfa3c2e293745b4f423dddf86a30886255fb31e0"
+    },
+    {
+      "dataset_index": 1601,
+      "image": "magazine_TheEconomist.2023.11.25_page_093.png",
+      "size": 4218421,
+      "sha256": "d3af8e3a8d7374806d888d0ea515e97b88192778464224c0de7abc4c6e98fde1"
+    },
+    {
+      "dataset_index": 1602,
+      "image": "magazine_TheEconomist.2024.03.02_page_032.png",
+      "size": 6191091,
+      "sha256": "7a3b5fc3b1d88dad0e177073a69b017bc0b46864eb677bc304d3d5c29a515f8f"
+    },
+    {
+      "dataset_index": 1603,
+      "image": "magazine_TheEconomist.2024.03.09_page_079.png",
+      "size": 6599842,
+      "sha256": "45979ad458b9b64ed57d7c8faadc015fe38f5bc329f84cccb0267b81ae138c94"
+    },
+    {
+      "dataset_index": 1604,
+      "image": "magazine_TheEconomist.2023.11.25_page_069.png",
+      "size": 5801379,
+      "sha256": "0e3d310e57dc459a91b728814f21efedbc2fe1ab7019ea7b55d6a9233263d38b"
+    },
+    {
+      "dataset_index": 1605,
+      "image": "magazine_TheEconomist.2023.12.09_page_082.png",
+      "size": 811320,
+      "sha256": "b35255d3b2c19e3c3b8ff991cb9eccdc9e9ea1d1f9cffe4a33bd102f0e8f91f5"
+    },
+    {
+      "dataset_index": 1606,
+      "image": "magazine_TheEconomist.2023.12.16_page_062.png",
+      "size": 4685897,
+      "sha256": "2687dadaf67639462fad81d6d6a311dd249508bc3833d5c8df834abe3c769e28"
+    },
+    {
+      "dataset_index": 1607,
+      "image": "magazine_TheEconomist.2023.12.09_page_015.png",
+      "size": 1164223,
+      "sha256": "1913041a65d57578db5cc1a38237b3ca7e19a7d6f2207137a7b72d51a9b1f08d"
+    },
+    {
+      "dataset_index": 1608,
+      "image": "magazine_TheEconomist.2023.12.09_page_009.png",
+      "size": 769210,
+      "sha256": "eff1c820227bcb675d91c437ce3319d5d940db4075e15ebe80068684ccf72bc0"
+    },
+    {
+      "dataset_index": 1609,
+      "image": "magazine_TheEconomist.2023.12.23_page_052.png",
+      "size": 20267913,
+      "sha256": "09d92dbc7e1335085ed9858b86ee3eb5d53a3a37c22ce12da28e0d5b0d09a4fc"
+    },
+    {
+      "dataset_index": 1610,
+      "image": "magazine_TheEconomist.2023.12.02_page_062.png",
+      "size": 5113883,
+      "sha256": "ae58071f420a13198bf7a322cb75bc431e7c9c9c6f4ed3e7352286b9396f977c"
+    },
+    {
+      "dataset_index": 1611,
+      "image": "magazine_TheEconomist.2023.12.23_page_060.png",
+      "size": 1114470,
+      "sha256": "bc920c0b751797682c805b5b937d67853a0b584169f263df8f1bd0461f9adb3d"
+    },
+    {
+      "dataset_index": 1612,
+      "image": "magazine_TheEconomist.2023.12.23_page_104.png",
+      "size": 15508408,
+      "sha256": "d8e1ba61d922eae4fd6dc50b377dc2f5556c542552df6f2815bad5df101fcc9b"
+    },
+    {
+      "dataset_index": 1613,
+      "image": "magazine_TheEconomist.2023.11.25_page_068.png",
+      "size": 5244414,
+      "sha256": "3e1ae4a9f18408c1ba51ad0e2fdc096a3d3e618128c0da23072f18a85bc3c27b"
+    },
+    {
+      "dataset_index": 1614,
+      "image": "magazine_TheEconomist.2023.12.09_page_048.png",
+      "size": 767364,
+      "sha256": "00b2577c94cb3f7ce4effe563c5bd49f280b64d4466a83187fea05cedb0c2a2f"
+    },
+    {
+      "dataset_index": 1615,
+      "image": "magazine_TheEconomist.2023.12.09_page_045.png",
+      "size": 855610,
+      "sha256": "3d3d5be39343c8c7b72a1a515a033a47c5ce24995d9aeb77e8a4ad1b233daaf9"
+    },
+    {
+      "dataset_index": 1616,
+      "image": "magazine_TheEconomist.2024.02.24_page_033.png",
+      "size": 6076846,
+      "sha256": "9a6eb90cb7e30c8373ed68ca3e52affe083c76ccc554bf8d42c2f335e0ba86bf"
+    },
+    {
+      "dataset_index": 1617,
+      "image": "magazine_TheEconomist.2024.02.24_page_068.png",
+      "size": 6517510,
+      "sha256": "bbcc998991b981e3b4fabed9794516ad905f7d01f8f79bb7c5c7260d97667de9"
+    },
+    {
+      "dataset_index": 1618,
+      "image": "magazine_TheEconomist.2023.12.16_page_037.png",
+      "size": 7101055,
+      "sha256": "716ea279a4dae0683fd14fcd193609cfbfad32dcdb641a7a1f11338928e42929"
+    },
+    {
+      "dataset_index": 1619,
+      "image": "magazine_TheEconomist.2024.03.02_page_031.png",
+      "size": 7359468,
+      "sha256": "496d1cb47e276c8d2b57d8c3a6a56e053b6c3992f3dea0132604c8f2158d711c"
+    },
+    {
+      "dataset_index": 1620,
+      "image": "magazine_TheEconomist.2023.12.16_page_019.png",
+      "size": 10274994,
+      "sha256": "1cf6737ad4bca84fc82cb93d446aaef001357d7dd08e46a509875f2ed7e6b436"
+    },
+    {
+      "dataset_index": 1621,
+      "image": "magazine_TheEconomist.2023.12.16_page_049.png",
+      "size": 4714088,
+      "sha256": "16d5612ef68dfa30991407cb86aa63a7ca8285e6a61cbeb8ec8dd98ace17ce03"
+    },
+    {
+      "dataset_index": 1622,
+      "image": "magazine_TheEconomist.2023.11.18_page_030.png",
+      "size": 9026666,
+      "sha256": "18659b82a253e73bddae6b2403d2557f55eaa538fb17057c6ecb5355ee0df74a"
+    },
+    {
+      "dataset_index": 1623,
+      "image": "magazine_TheEconomist.2023.12.02_page_023.png",
+      "size": 5418755,
+      "sha256": "c475a22fda032a902aa6c848ed3f406fddd1f46a52a6ce379c5b00438c9cab38"
+    },
+    {
+      "dataset_index": 1624,
+      "image": "magazine_TheEconomist.2024.03.02_page_028.png",
+      "size": 6589786,
+      "sha256": "a0efdec4d2a37be8aaa8fee7bb7c9676b04afd1c3b5f2db073709b2f44e17a79"
+    },
+    {
+      "dataset_index": 1625,
+      "image": "magazine_TheEconomist.2023.11.18_page_068.png",
+      "size": 4259300,
+      "sha256": "cf6ffdb197d5536ec79b6e109bd39e7e1ff73a5dcb7aded058e664a07f934b11"
+    },
+    {
+      "dataset_index": 1626,
+      "image": "magazine_TheEconomist.2023.12.02_page_056.png",
+      "size": 5465926,
+      "sha256": "298c283d4873ecbdd0acc61a17cb276d50c11bc65d14044d4131d9be885d149f"
+    },
+    {
+      "dataset_index": 1627,
+      "image": "magazine_TheEconomist.2024.02.24_page_008.png",
+      "size": 5433033,
+      "sha256": "2ed9ef3c5a6c885aa2c9669ad9ea8746e74fe96d15639f0e3aaf54a61ab1131d"
+    },
+    {
+      "dataset_index": 1628,
+      "image": "magazine_TheEconomist.2024.03.09_page_064.png",
+      "size": 5165841,
+      "sha256": "e15ecb523faa95dacdc0ead1585d9f7c462ce36fb6541f4a1f385e9f907cebf2"
+    },
+    {
+      "dataset_index": 1629,
+      "image": "PPT_1637904769_page_008.png",
+      "size": 337482,
+      "sha256": "840ab1611a71a2883201c921a272b57149e15a615ade494ff83823586e7881f4"
+    },
+    {
+      "dataset_index": 1630,
+      "image": "PPT_13 fallacies LALT2012_page_001.png",
+      "size": 746231,
+      "sha256": "8d8818a721a0542c0c851e0a284f2b1c26748ecbed9f9209d031803823b4d4d4"
+    },
+    {
+      "dataset_index": 1631,
+      "image": "PPT_11.2013EvaluatingTraineeteacherproficiency_page_029.png",
+      "size": 114328,
+      "sha256": "dbeaf73292b948b705881254a85a853c7bf740ac80b849dc97417e9bd85dcff2"
+    },
+    {
+      "dataset_index": 1632,
+      "image": "PPT_8076_MEYER_Chapter_2_-_Language_Change_page_012.png",
+      "size": 260249,
+      "sha256": "f7c9c7cba308d517aa921c2ddfe82b0950d66d924694b8f281bf5073728ddd0f"
+    },
+    {
+      "dataset_index": 1633,
+      "image": "PPT_BaharMartonosi_page_006.png",
+      "size": 227221,
+      "sha256": "5643016f758e7a8d8b81aa29f50b4066c37a58dd8a56bb9818164b60fe5d2dd3"
+    },
+    {
+      "dataset_index": 1634,
+      "image": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_004.png",
+      "size": 1297210,
+      "sha256": "c1a214fc821eeba1bf33a795ec80a724a54f42151e5892012c24e936276efaf3"
+    },
+    {
+      "dataset_index": 1635,
+      "image": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_008.png",
+      "size": 1265945,
+      "sha256": "4988ac9b139062038f1d06eb88832f0cee7a43da72bcce332b50e8b3b232d1fc"
+    },
+    {
+      "dataset_index": 1636,
+      "image": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_010.png",
+      "size": 1333401,
+      "sha256": "c3beae0d576da26fba82e8784f10678ecd43685e63baecee767acc2d650034f3"
+    },
+    {
+      "dataset_index": 1637,
+      "image": "PPT_PresentationSpecification_page_010.png",
+      "size": 197533,
+      "sha256": "270087ff55290eacb8ef19bc9e37844e022001658f71b77e85525a880fe04be0"
+    },
+    {
+      "dataset_index": 1638,
+      "image": "PPT_The Right Moves_page_010.png",
+      "size": 367696,
+      "sha256": "7b9ab4e221ba331764d0684ac849ba31bcf2449924dd40c5c12f4f4e6cafc5f1"
+    },
+    {
+      "dataset_index": 1639,
+      "image": "PPT_lay_linalg5_01_05_page_009.png",
+      "size": 114078,
+      "sha256": "b18da2772edcba34e77ce7d707bee7e0315a186ec9b7b20d9c968b29d8c2a09a"
+    },
+    {
+      "dataset_index": 1640,
+      "image": "PPT_BaharMartonosi_page_010.png",
+      "size": 327805,
+      "sha256": "880ebc5739d0b8a709ba462d206b642f44ad1f37e9fe4ceaecd01dea2b49d839"
+    },
+    {
+      "dataset_index": 1641,
+      "image": "PPT_CalculusReview_page_009.png",
+      "size": 331304,
+      "sha256": "271586573b129abdbb6fea1b9266e4a266b90cfaaba1b42e62dff124c1826081"
+    },
+    {
+      "dataset_index": 1642,
+      "image": "PPT_CalculusReview_page_033.png",
+      "size": 87658,
+      "sha256": "244cdc43067438180612694466e158212dee2565457b224ba2a84bd2a6a845da"
+    },
+    {
+      "dataset_index": 1643,
+      "image": "PPT_StewartCalcET7e_03_02_page_014.png",
+      "size": 177154,
+      "sha256": "68d20780573d33cbb26248823a9c2aa9bed5d51364282c72975a7a7d6b7444c3"
+    },
+    {
+      "dataset_index": 1644,
+      "image": "PPT_all655920_page_008.png",
+      "size": 124506,
+      "sha256": "eca90b0daa6bc026aca47557b15be7f357ca89bdb3aefd84e9f671b6e70f5d99"
+    },
+    {
+      "dataset_index": 1645,
+      "image": "PPT_lecture1_page_007.png",
+      "size": 115771,
+      "sha256": "95a3151c2c9f5f3d9e36392065ecd1e7ab6cf49ae9c591b698cff7196ab78601"
+    },
+    {
+      "dataset_index": 1646,
+      "image": "PPT_B14_Claeys_Consistent Presentation of Images_v2_page_013.png",
+      "size": 417494,
+      "sha256": "ac60ad889038a28314bd9eb8b4f8c90a59c138d19e3846008fa1ae580758cc1b"
+    },
+    {
+      "dataset_index": 1647,
+      "image": "PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png",
+      "size": 582974,
+      "sha256": "fc04b85b0e0ee1d163d9adb9ad1063adedcd6eaaa7b16feadb291fa134f83a68"
+    },
+    {
+      "dataset_index": 1648,
+      "image": "PPT_EnglishtoAmericanTransition_page_005.png",
+      "size": 144623,
+      "sha256": "af0f8a14ee618fe3066deb61bf2301aea07b11e37dde59065e4a3097fdd6c008"
+    },
+    {
+      "dataset_index": 1649,
+      "image": "PPT_Keuk Chan Narith_page_019.png",
+      "size": 586791,
+      "sha256": "acf4898f87424c531f9b4bd35ba7edc1745e9faa8a65f95cce610dd892690d1f"
+    },
+    {
+      "dataset_index": 1650,
+      "image": "PPT_PresentationSpecification_page_025.png",
+      "size": 148145,
+      "sha256": "e33983f9e8b82565509cf7eea3824129ef12fff8e4cb4f049dcf3738f49ac86f"
+    }
+  ]
+}
