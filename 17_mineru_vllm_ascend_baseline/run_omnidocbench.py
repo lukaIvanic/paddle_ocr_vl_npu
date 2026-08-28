@@ -108,7 +108,8 @@ def sha256_file(path: Path) -> str:
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
+    name_digest = hashlib.sha256(path.name.encode("utf-8")).hexdigest()[:16]
+    temporary = path.with_name(f".tmp-{os.getpid()}-{name_digest}")
     temporary.write_text(
         json.dumps(value, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",

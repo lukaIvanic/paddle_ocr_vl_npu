@@ -19,6 +19,13 @@ SPEC.loader.exec_module(RUNNER)
 
 
 class RunnerContractTest(unittest.TestCase):
+    def test_atomic_json_write_supports_maximum_length_final_name(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / ("x" * 250 + ".json")
+            RUNNER.write_json(path, {"status": "ok"})
+            self.assertEqual(json.loads(path.read_text()), {"status": "ok"})
+            self.assertEqual(list(path.parent.glob(".tmp-*")), [])
+
     def test_compiled_async_preset_matches_reference(self) -> None:
         spec = RUNNER.preset_spec(RUNNER.MODE_COMPILED_ASYNC)
         self.assertEqual(spec["engine"], "AsyncLLM")
