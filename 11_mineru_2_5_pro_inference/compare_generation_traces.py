@@ -24,9 +24,19 @@ def load_trace(path):
     return records
 
 
-def compare(reference: Path, candidate: Path):
+def compare(reference: Path, candidate: Path, first_pages: int | None = None):
     left = load_trace(reference / "generation_trace.jsonl")
     right = load_trace(candidate / "generation_trace.jsonl")
+    selected_pages = None
+    if first_pages is not None:
+        if first_pages < 1:
+            raise ValueError("first-pages must be positive")
+        progress = [json.loads(line) for path in reference.glob("progress_shard_*.jsonl")
+                    for line in path.read_text().splitlines()]
+        selected_pages = {record["image"] for record in sorted(progress, key=lambda x: x["dataset_index"])[:first_pages]}
+        if len(selected_pages) != first_pages:
+            raise ValueError("reference does not contain requested page prefix")
+        left = {key: record for key, record in left.items() if record["page"] in selected_pages}
     totals = Counter()
     differences = []
     unexpected_input_changes = []
@@ -60,6 +70,9 @@ def compare(reference: Path, candidate: Path):
                                 "candidate_length": len(b["generated_token_ids"]),
                                 "reference_stop": a["stop_reason"], "candidate_stop": b["stop_reason"]})
     a_pages = {path.name: path for path in (reference / "predictions").glob("*.md")}
+    if selected_pages is not None:
+        selected_markdown = {Path(page).stem + ".md" for page in selected_pages}
+        a_pages = {name: path for name, path in a_pages.items() if name in selected_markdown}
     b_pages = {path.name: path for path in (candidate / "predictions").glob("*.md")}
     pages_changed = [name for name in sorted(a_pages.keys() & b_pages.keys()) if a_pages[name].read_bytes() != b_pages[name].read_bytes()]
     return {"reference": str(reference), "candidate": str(candidate),
@@ -86,8 +99,9 @@ def main():
     parser.add_argument("reference", type=Path)
     parser.add_argument("candidate", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--first-pages", type=int, help="Explicitly compare only this reference prefix for a smaller smoke run.")
     args = parser.parse_args()
-    result = compare(args.reference, args.candidate)
+    result = compare(args.reference, args.candidate, args.first_pages)
     args.output.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
     print(json.dumps({key: value for key, value in result.items() if key not in ("differences", "changed_pages")}, indent=2))
     print(f"changed_pages={len(result['changed_pages'])} differing_requests={len(result['differences'])}")
