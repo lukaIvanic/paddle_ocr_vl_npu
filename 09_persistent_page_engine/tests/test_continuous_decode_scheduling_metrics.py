@@ -21,11 +21,11 @@ from paddleocr_vl.serving.scheduling_metrics import RequestSchedulingMetrics
 from paddleocr_vl.serving.engine import _OpenPrefillSource
 
 
-def cache(batch_size):
+def cache(batch_size, length=32):
     return LocalPaddleOCRVLStaticCache(
-        key_caches=(torch.zeros((batch_size, 1, 32, 1)),),
-        value_caches=(torch.zeros((batch_size, 1, 32, 1)),),
-        cache_length=32,
+        key_caches=(torch.zeros((batch_size, 1, length, 1)),),
+        value_caches=(torch.zeros((batch_size, 1, length, 1)),),
+        cache_length=length,
     )
 
 
@@ -82,6 +82,132 @@ def run_case(batch_size, collect):
 
 
 class ContinuousDecodeMetricsTest(unittest.TestCase):
+    def run_capped_case(self, limit, *, collect=True, length=32, fail=False):
+        recorder = RequestSchedulingMetrics(2) if collect else None
+        arena = DecodeArena(
+            cache=cache(2, length), device=torch.device("cpu"), batch_size=2,
+            eos_token_id=15, decode_token_id_map=torch.arange(16),
+        )
+        candidates = deque([
+            ("long", 1), ("short0", 14), ("short1", 14), ("short2", 14),
+            ("long2", 1), ("short3", 14), ("empty", 15),
+            ("short4", 14), ("short5", 14), ("short6", 14),
+        ])
+        available = deque(candidates.popleft() for _ in range(2))
+        emitted, events, shapes, errors = [], [], [], []
+
+        class Requests:
+            @property
+            def closed(self):
+                return not available and not candidates
+
+            def pull(self, *, block):
+                if not available:
+                    return None
+                name, token = available.popleft()
+                events.append(("pull", name))
+                return SimpleNamespace(
+                    request_id=name, first_token=token,
+                    submitted_at=time.perf_counter(),
+                )
+
+        class Recognizer:
+            cpu_preprocess_max_pending = 2
+            decode_scheduler = SimpleNamespace(arena=arena)
+
+            def _prepare_cpu(self, request, submitted_at):
+                if fail and request.request_id in {"short1", "short2"}:
+                    raise ValueError("test preparation failure")
+                return ReadyDecodeRequest(
+                    request_id=request.request_id, payload=None,
+                    cache=cache(1, length),
+                    rope_deltas=torch.zeros((1, 1), dtype=torch.int64),
+                    cache_position=torch.ones(1, dtype=torch.int64),
+                    first_token_tensor=torch.tensor([[request.first_token]]),
+                    first_token=request.first_token, prompt_length=1,
+                )
+
+            def _prepared_group(self, members):
+                return members[0][0]
+
+            def _stage_prefill_group(self, group):
+                return group
+
+            def _enqueue_staged_prefill_group(self, group):
+                events.append(("prefill", group.request_id))
+                return group
+
+            def _finalize_prefill_group(self, group):
+                return [group]
+
+            def _ready_from_prefilled(self, state):
+                return state
+
+        def refill_client():
+            if candidates:
+                available.append(candidates.popleft())
+
+        def complete(completion):
+            emitted.append(completion)
+            events.append(("complete", completion.ready.request_id))
+            refill_client()
+
+        def error(request_id, exc):
+            errors.append(request_id)
+            refill_client()
+
+        def decode(tokens, *unused):
+            shapes.append(tuple(tokens.shape))
+            return torch.where(tokens >= 14, torch.full_like(tokens, 15), tokens + 1)
+
+        source = _OpenPrefillSource(
+            Recognizer(), Requests(), on_request_error=error,
+            scheduling_metrics=recorder, max_prefill_interruptions=limit,
+        )
+        scheduler = ContinuousDecodeScheduler(arena=arena, decode_fn=decode, max_new_tokens=30)
+        try:
+            result = scheduler.run_stream(
+                source, on_completion=complete, scheduling_metrics=recorder,
+            )
+            self.assertTrue(source.closed)
+        finally:
+            source.close()
+        self.assertTrue(all(shape == (2, 1) for shape in shapes))
+        self.assertEqual(result.submitted_requests, len(emitted))
+        self.assertEqual(len(emitted) + len(errors), 10)
+        return result, emitted, events
+
+    def test_two_interruptions_then_decode_to_completion(self):
+        plain, before, _ = self.run_capped_case(None)
+        capped, after, events = self.run_capped_case(2)
+        outputs = lambda rows: {row.ready.request_id: row.token_ids for row in rows}
+        self.assertEqual(outputs(before), outputs(after))
+        self.assertGreater(capped.idle_decode_token_slots, plain.idle_decode_token_slots)
+        metrics = {r.ready.request_id: r.scheduling_metrics for r in after}
+        self.assertEqual(metrics["long"]["decode_other_prefill_count"], 2)
+        self.assertEqual(metrics["long2"]["decode_other_prefill_count"], 2)
+        self.assertTrue(all(m["decode_other_prefill_count"] <= 2 for m in metrics.values()))
+        self.assertLess(events.index(("complete", "long")), events.index(("pull", "long2")))
+
+    def test_cap_does_not_depend_on_logging(self):
+        _, measured, _ = self.run_capped_case(2)
+        _, plain, _ = self.run_capped_case(2, collect=False)
+        self.assertEqual(
+            [(r.ready.request_id, r.token_ids) for r in measured],
+            [(r.ready.request_id, r.token_ids) for r in plain],
+        )
+
+    def test_zero_cap_and_cache_boundary_still_drain(self):
+        _, emitted, _ = self.run_capped_case(0, length=8)
+        self.assertIn("kv_cache_full", [r.stop_reason for r in emitted])
+        self.assertTrue(all(r.scheduling_metrics["decode_other_prefill_count"] == 0 for r in emitted))
+
+    def test_failed_preparation_counts_and_rechecks_cap(self):
+        _, emitted, events = self.run_capped_case(2, fail=True)
+        long = next(r for r in emitted if r.ready.request_id == "long")
+        self.assertEqual(long.scheduling_metrics["decode_other_prefill_count"], 2)
+        self.assertLess(events.index(("complete", "long")), events.index(("pull", "long2")))
+
     def test_open_source_tracks_preparation_but_not_empty_polls(self):
         recorder = RequestSchedulingMetrics(2)
         arrived = time.perf_counter()

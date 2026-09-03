@@ -75,6 +75,13 @@ def parse_args() -> argparse.Namespace:
         "--request-scheduling-metrics", action="store_true",
         help="Include per-request prefill interruption and decode occupancy records.",
     )
+    parser.add_argument(
+        "--max-prefill-interruptions", type=int,
+        help=(
+            "Optional maximum other-request prefills during a table's decode. "
+            "At the limit, defer new preparation/prefill until protected requests finish."
+        ),
+    )
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--max-new-tokens", type=int, default=4096)
     parser.add_argument("--min-pixels", type=int, default=28224)
@@ -92,7 +99,10 @@ def parse_args() -> argparse.Namespace:
             "server drains during shutdown."
         ),
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.max_prefill_interruptions is not None and args.max_prefill_interruptions < 0:
+        parser.error("--max-prefill-interruptions must be nonnegative")
+    return args
 
 
 def _write_service_summary(
@@ -168,6 +178,7 @@ def _worker_main(
         )
         configuration = recognizer.configuration()
         configuration["request_scheduling_metrics"] = config["request_scheduling_metrics"]
+        configuration["max_prefill_interruptions"] = config["max_prefill_interruptions"]
         results.put(
             {
                 "kind": "ready",
@@ -270,6 +281,7 @@ def _worker_main(
                 emit_result=emit_result,
                 on_request_error=emit_error,
                 collect_scheduling_metrics=config["request_scheduling_metrics"],
+                max_prefill_interruptions=config["max_prefill_interruptions"],
             )
             results.put(
                 {
@@ -469,6 +481,7 @@ def main() -> None:
         "token_selection": args.token_selection,
         "decode_batch_size": args.decode_batch_size,
         "request_scheduling_metrics": args.request_scheduling_metrics,
+        "max_prefill_interruptions": args.max_prefill_interruptions,
         "cache_length": args.cache_length,
         "max_new_tokens": args.max_new_tokens,
         "min_pixels": args.min_pixels,

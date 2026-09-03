@@ -23,6 +23,14 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CropApiServiceSummaryTest(unittest.TestCase):
+    def test_prefill_interruption_limit_is_opt_in(self) -> None:
+        with patch.object(sys, "argv", ["serve_crop_ocr_api.py"]):
+            self.assertIsNone(MODULE.parse_args().max_prefill_interruptions)
+        with patch.object(sys, "argv", [
+            "serve_crop_ocr_api.py", "--max-prefill-interruptions", "2",
+        ]):
+            self.assertEqual(MODULE.parse_args().max_prefill_interruptions, 2)
+
     def test_scheduling_metrics_are_opt_in(self) -> None:
         with patch.object(sys, "argv", ["serve_crop_ocr_api.py"]):
             self.assertFalse(MODULE.parse_args().request_scheduling_metrics)

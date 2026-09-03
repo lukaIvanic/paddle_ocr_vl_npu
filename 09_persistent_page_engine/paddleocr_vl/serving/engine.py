@@ -438,11 +438,15 @@ class _OpenPrefillSource:
         *,
         on_request_error: Callable[[str, BaseException], None],
         scheduling_metrics: RequestSchedulingMetrics | None = None,
+        max_prefill_interruptions: int | None = None,
     ):
+        if max_prefill_interruptions is not None and max_prefill_interruptions < 0:
+            raise ValueError("max_prefill_interruptions must be nonnegative")
         self.recognizer = recognizer
         self.requests = requests
         self.on_request_error = on_request_error
         self.scheduling_metrics = scheduling_metrics
+        self.max_prefill_interruptions = max_prefill_interruptions
         self.pending: deque[tuple[str, Future[CpuPreparedRecognition]]] = deque()
         self.executor = ThreadPoolExecutor(
             max_workers=1,
@@ -481,6 +485,20 @@ class _OpenPrefillSource:
 
     def pull(self, *, block: bool) -> ReadyDecodeRequest | None:
         while True:
+            active = ()
+            if self.max_prefill_interruptions is not None:
+                active = tuple(
+                    state for state in self.recognizer.decode_scheduler.arena.slots
+                    if state is not None and state.first_decode_launched_at is not None
+                )
+                if any(
+                    state.prefill_interruptions >= self.max_prefill_interruptions
+                    for state in active
+                ):
+                    # Temporarily unavailable, not exhausted. The scheduler
+                    # keeps decoding and retries after retiring sampled tokens.
+                    # Check before pulling images or submitting CPU preparation.
+                    return None
             pull_started = (
                 time.perf_counter() if self.scheduling_metrics is not None else 0.0
             )
@@ -488,6 +506,8 @@ class _OpenPrefillSource:
             if not self.pending:
                 return None
             request_id, future = self.pending.popleft()
+            for state in active:
+                state.prefill_interruptions += 1
             wait_started = time.perf_counter()
             try:
                 prepared = future.result()
@@ -1577,6 +1597,7 @@ class ContinuousRecognizer:
         emit_result: Callable[[RecognitionResult], None],
         on_request_error: Callable[[str, BaseException], None],
         collect_scheduling_metrics: bool = False,
+        max_prefill_interruptions: int | None = None,
     ) -> ContinuousDecodeResult:
         """Serve an open stream whose input can be temporarily empty.
 
@@ -1600,6 +1621,7 @@ class ContinuousRecognizer:
             requests,
             on_request_error=on_request_error,
             scheduling_metrics=scheduling_metrics,
+            max_prefill_interruptions=max_prefill_interruptions,
         )
         try:
             return self._decode_ready_source(

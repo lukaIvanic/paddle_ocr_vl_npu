@@ -62,6 +62,8 @@ class DecodeSlotState:
     admitted_at: float
     first_decode_launched_at: float | None = None
     iterations_launched: int = 0
+    # Host-only, request-local count for the optional open-serving prefill cap.
+    prefill_interruptions: int = 0
     repetition_tracker: ExactCycleTracker = field(
         default_factory=ExactCycleTracker,
     )

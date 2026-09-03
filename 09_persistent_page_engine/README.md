@@ -1270,6 +1270,18 @@ An already enqueued decode can overlap them. Do not add them to existing device
 stage times or decode residency. Logging adds no device synchronization or
 graph operations. It is opt-in; without the flag the response metrics are empty.
 
+For an interruption-cap experiment, add `--max-prefill-interruptions 2` to
+the crop API command. Once any decoding request has experienced two other
+request preparations/prefills, the open source defers new CPU preparation and
+NPU prefill until that request finishes. Decode continues at the same fixed
+batch size. Initial filling and empty source polls do not count; failed CPU
+preparation attempts do count. Counters belong to requests, not reusable slot
+indices. Already-submitted CPU work can finish, and already-prefilled requests
+can still enter free slots. The default has no cap. This policy changes only
+open crop serving, not offline runs or model graphs. Compare client wall
+latency, achieved QPS, and interruption counts on the same sample and order;
+waiting for the policy remains inside each request's latency.
+
 Table scoring uses the evaluator wrapper's parent-owned process scheduler.
 The parent runs at most `--teds-workers` direct TEDS children and owns their
 timeouts; it does not fork subprocesses from a thread pool. If generation is
