@@ -34,6 +34,7 @@ def args(limit: int) -> argparse.Namespace:
     return argparse.Namespace(
         api_url="http://unused/v1/ocr", client_label="test", set="a",
         request_timeout_s=1.0, start_at_epoch_s=None, max_in_flight=limit,
+        shuffle_seed=None,
     )
 
 
@@ -177,6 +178,24 @@ class ClosedLoopClientTest(unittest.TestCase):
             warm_args.source_jsonl, warm_args.count = Path("unused"), 1
             self.assertNotIn(CLIENT.select_tables(warm_args)[0]["request_id"],
                              {r["request_id"] for r in selections[0]})
+
+    def test_shuffle_preserves_top_fifty_and_is_identical_across_limits(self) -> None:
+        records = [{"request_id": str(i), "worker_wall_s": float(i)} for i in range(666)]
+        with patch.object(CLIENT.load, "read_jsonl", return_value=records):
+            shuffled = []
+            for limit in CLIENT.IN_FLIGHT_LIMITS:
+                selected_args = args(limit)
+                selected_args.set, selected_args.count = "p90", 50
+                selected_args.source_jsonl = Path("unused")
+                selected_args.shuffle_seed = 1
+                shuffled.append(CLIENT.select_tables(selected_args))
+            self.assertTrue(all(rows == shuffled[0] for rows in shuffled))
+            ranks = [row["tail_rank"] for row in shuffled[0]]
+            self.assertEqual(sorted(ranks), list(range(1, 51)))
+            self.assertNotEqual(ranks, sorted(ranks))
+            self.assertEqual(CLIENT.select_tables(selected_args), shuffled[0])
+            selected_args.shuffle_seed = 2
+            self.assertNotEqual(CLIENT.select_tables(selected_args), shuffled[0])
 
 
 if __name__ == "__main__":

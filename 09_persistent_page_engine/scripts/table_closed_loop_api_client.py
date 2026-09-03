@@ -8,6 +8,7 @@ import asyncio
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import random
 import statistics
 import time
 from typing import Any
@@ -26,6 +27,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--set", choices=("a", "b", "p90", "warm"), required=True)
     parser.add_argument("--count", type=int, default=32)
+    parser.add_argument(
+        "--shuffle-seed", type=int,
+        help="Shuffle the selected subset with this seed; default is rank order.",
+    )
     parser.add_argument(
         "--max-in-flight", type=int, choices=IN_FLIGHT_LIMITS, default=1,
         help="Client-side outstanding-request limit. Refill after any response.",
@@ -66,6 +71,8 @@ def select_tables(args: argparse.Namespace) -> list[dict[str, Any]]:
         raise ValueError(
             f"set {args.set!r} has {len(selected)} tables, requested {args.count}"
         )
+    if args.shuffle_seed is not None:
+        random.Random(args.shuffle_seed).shuffle(selected)
     return selected
 
 
@@ -202,6 +209,8 @@ def main() -> None:
         "api_url": args.api_url,
         "client_label": args.client_label,
         "set": args.set,
+        "shuffle_seed": args.shuffle_seed,
+        "dispatch_request_ids": [str(row["request_id"]) for row in selected],
         "requested_request_count": len(selected),
         "request_count": len(results),
         "failed_request_count": len(failures),

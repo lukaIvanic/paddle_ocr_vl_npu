@@ -1223,6 +1223,12 @@ P90 cohort. It is not a random P90 sample. Sets `a` and `b` retain their origina
 32-table selections. `p90` allows at most 64 tables; `warm` reserves rank 65
 onward, outside all measured sets.
 
+Add `--shuffle-seed 1` to select those same top 50 first, then shuffle their
+dispatch order reproducibly. Use the same seed for each concurrency limit.
+The saved `tables.jsonl` and summary `dispatch_request_ids` preserve that order;
+`results.jsonl` remains in response-completion order. Without this flag,
+dispatch remains ranked slowest first.
+
 The client preloads crop PNG bodies before timing, prints `SEND`/`RECV`, and
 flushes each response to `results.jsonl` in completion order. It records the
 observed outstanding-request maximum, dispatch/completion offsets, complete
