@@ -240,6 +240,7 @@ def make_local_fixed_batch_vlm_client(
         def __init__(self, **kwargs: Any) -> None:
             super().__init__(**kwargs)
             self.generation_metrics: list[dict[str, Any]] = []
+            self.generation_trace = None
 
         def _prepare_cpu_inputs(
             self,
@@ -276,6 +277,9 @@ def make_local_fixed_batch_vlm_client(
             rope_deltas,
         ) -> PreparedGeneration:
             params = self.build_sampling_params(sampling_param)
+            trace_prompt_ids = (
+                inputs.input_ids[0].tolist() if self.generation_trace is not None else None
+            )
             inputs = inputs.to(device=model.device, dtype=model.dtype)
             position_ids = position_ids.to(device=model.device)
             rope_deltas = rope_deltas.to(device=model.device)
@@ -291,6 +295,8 @@ def make_local_fixed_batch_vlm_client(
             )
             if max_new_tokens <= 0:
                 raise ValueError("prepared request leaves no room in the static KV cache")
+            if self.generation_trace is not None:
+                self.generation_trace.prepared(trace_prompt_ids, max_new_tokens)
             return PreparedGeneration(
                 input_ids=inputs.input_ids,
                 attention_mask=inputs.attention_mask,
@@ -320,15 +326,18 @@ def make_local_fixed_batch_vlm_client(
         def _decode_outputs(self, generated, metrics):
             self.generation_metrics.append(metrics)
             rows = [tensor[0].detach().cpu().tolist() for tensor in generated]
-            rows = [
+            filtered_rows = [
                 [token_id for token_id in row if token_id not in self.skip_token_ids]
                 for row in rows
             ]
-            return self.processor.batch_decode(
-                rows,
+            texts = self.processor.batch_decode(
+                filtered_rows,
                 skip_special_tokens=False,
                 clean_up_tokenization_spaces=False,
             )
+            if self.generation_trace is not None:
+                self.generation_trace.finish_batch(rows, texts)
+            return texts
 
         def _predict_one_batch(
             self,
@@ -424,6 +433,8 @@ def make_local_fixed_batch_vlm_client(
 
             if not isinstance(sampling_params, Sequence):
                 sampling_params = [sampling_params] * len(images)
+            if self.generation_trace is not None:
+                self.generation_trace.begin_batch(image_objs, chat_prompts)
             prefetch_depth = min(
                 max(0, int(prepare_prefetch_depth)),
                 len(image_objs),

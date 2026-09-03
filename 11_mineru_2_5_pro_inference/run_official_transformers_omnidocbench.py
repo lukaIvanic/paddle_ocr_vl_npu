@@ -130,6 +130,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--fail-fast", action="store_true")
     parser.add_argument("--hash-model-files", action="store_true")
+    parser.add_argument("--token-trace", action="store_true",
+                        help="Record lossless layout/crop generations for the global custom stream.")
     parser.add_argument(
         "--processor-min-pixels",
         type=int,
@@ -560,6 +562,8 @@ def main() -> None:
         raise ValueError(
             "global-request-stream currently requires local-continuous-client"
         )
+    if args.token_trace and (not args.global_request_stream or args.layout_only):
+        raise ValueError("token-trace requires the full global custom stream")
     capture_sizes = [
         int(value)
         for value in args.vllm_cudagraph_capture_sizes.split(",")
@@ -1002,6 +1006,10 @@ def main() -> None:
     }
     if args.hash_model_files:
         model_hashes["model.safetensors"] = sha256(model_dir / "model.safetensors")
+    if args.token_trace:
+        for path in sorted(model_dir.glob("*.json")):
+            model_hashes[path.name] = sha256(path)
+        model_hashes["dataset_json"] = sha256(dataset_json)
     manifest = {
         "schema_version": 1,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -1184,6 +1192,14 @@ def main() -> None:
             continue
         pending.append((shard_position, dataset_index, sample))
 
+    generation_trace = None
+    if args.token_trace:
+        from generation_trace import GenerationTrace, install_stepping_trace
+        generation_trace = GenerationTrace(
+            args.output_dir / "generation_trace.jsonl",
+            eos_token_id=local_model.config.eos_token_id,
+        )
+        install_stepping_trace(client, generation_trace)
     if args.global_request_stream:
         page_groups = [pending] if pending else []
     elif args.page_batch_size == 1:
@@ -1196,6 +1212,8 @@ def main() -> None:
 
     for group_index, group in enumerate(page_groups, start=1):
         names = [image_name(sample) for _, _, sample in group]
+        if generation_trace is not None:
+            generation_trace.pages = names
         dataset_indices = [dataset_index for _, dataset_index, _ in group]
         print(
             f"[group {group_index}/{len(page_groups)}] START pages={len(group)} "
@@ -1308,6 +1326,10 @@ def main() -> None:
         summary["local_compiled_vision"] = local_vision_runtime.metadata()
     if local_text_runtime is not None:
         summary["local_compiled_text_prefill"] = local_text_runtime.metadata()
+    if generation_trace is not None:
+        generation_trace.close()
+        summary["generation_trace"] = {"file": "generation_trace.jsonl",
+                                       "requests": generation_trace.written}
     generation_metrics = getattr(client.client, "generation_metrics", None)
     if generation_metrics is not None:
         decode_calls = sum(int(item["decode_calls"]) for item in generation_metrics)
