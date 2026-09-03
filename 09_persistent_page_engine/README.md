@@ -1237,6 +1237,15 @@ LaTeX filter. The default source contains 665 tables. The seed fixes both sample
 membership and order. Check that the separate warmup crop is not in the sample.
 The summary records the source count and sampling method.
 
+Counts larger than the corpus use freshly shuffled cycles. For example,
+`--set random --count 1000 --shuffle-seed 1 --max-in-flight 2` sends all 665
+tables once, then 335 distinct tables from the next shuffle. Each occurrence
+gets its own HTTP request ID. Crop payloads are prepared once per distinct table
+before timing, with progress printed every 50 crops. The summary records
+`selection_method="shuffled_cycles"` and the distinct-table count. The separate
+warmup remains outside timing; with full-corpus cycles its table also appears
+among measured requests.
+
 The client preloads crop PNG bodies before timing, prints `SEND`/`RECV`, and
 flushes each response to `results.jsonl` in completion order. It records the
 observed outstanding-request maximum, dispatch/completion offsets, complete

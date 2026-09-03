@@ -214,12 +214,46 @@ class ClosedLoopClientTest(unittest.TestCase):
             selected_args.count = 665
             self.assertEqual({row["request_id"] for row in CLIENT.select_tables(selected_args)},
                              {str(i) for i in range(665)})
-            selected_args.count = 666
-            with self.assertRaises(ValueError):
-                CLIENT.select_tables(selected_args)
             selected_args.count, selected_args.shuffle_seed = 100, None
             with self.assertRaisesRegex(ValueError, "requires --shuffle-seed"):
                 CLIENT.select_tables(selected_args)
+
+    def test_thousand_requests_cover_full_pool_before_repeating(self) -> None:
+        records = [{"request_id": str(i), "worker_wall_s": float(i)} for i in range(665)]
+        selected_args = args(2)
+        selected_args.set, selected_args.count = "random", 1000
+        selected_args.source_jsonl, selected_args.shuffle_seed = Path("unused"), 1
+        with patch.object(CLIENT.load, "read_jsonl", return_value=records):
+            selected = CLIENT.select_tables(selected_args)
+            self.assertEqual(selected, CLIENT.select_tables(selected_args))
+        ids = [row["request_id"] for row in selected]
+        self.assertEqual(len(ids), 1000)
+        self.assertEqual(set(ids[:665]), {str(i) for i in range(665)})
+        self.assertEqual(len(set(ids[665:])), 335)
+        self.assertTrue(all(ids.count(value) in (1, 2) for value in set(ids)))
+        rng = CLIENT.random.Random(1)
+        expected = rng.sample(records, 665) + rng.sample(records, 335)
+        self.assertEqual(ids, [row["request_id"] for row in expected])
+        with patch.object(CLIENT.load, "read_jsonl", return_value=[]):
+            with self.assertRaisesRegex(ValueError, "no tables"):
+                CLIENT.select_tables(selected_args)
+
+    def test_repeated_table_requests_have_unique_api_ids(self) -> None:
+        sent_ids = []
+
+        async def post(url, request_id, *unused, **kwargs):
+            sent_ids.append(request_id)
+            await asyncio.sleep(0)
+            return {"response": {"token_ids": [1, 2]}}
+
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(CLIENT.load, "post_table_ocr", post):
+                rows, _, _, stats = asyncio.run(CLIENT.run_closed_loop(
+                    args(2), tables(1) * 3, {"0": b"image"}, Path(directory) / "results.jsonl",
+                ))
+        self.assertEqual(len(set(sent_ids)), 3)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(stats["observed_max_in_flight"], 2)
 
     def test_random_sample_rejects_duplicate_source_ids(self) -> None:
         selected_args = args(1)

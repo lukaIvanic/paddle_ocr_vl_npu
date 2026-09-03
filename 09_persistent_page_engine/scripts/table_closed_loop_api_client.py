@@ -29,8 +29,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--count", type=int, default=32)
     parser.add_argument(
         "--shuffle-seed", type=int,
-        help=("Shuffle a fixed subset, or sample without replacement from all "
-              "source tables for --set random. Required for random sampling."),
+        help=("Shuffle a fixed subset, or sample shuffled cycles from all source "
+              "tables for --set random. Required for random sampling."),
     )
     parser.add_argument(
         "--max-in-flight", type=int, choices=IN_FLIGHT_LIMITS, default=1,
@@ -59,6 +59,8 @@ def select_tables(args: argparse.Namespace) -> list[dict[str, Any]]:
     if args.set == "random":
         if args.shuffle_seed is None:
             raise ValueError("--set random requires --shuffle-seed")
+        if not records:
+            raise ValueError("source contains no tables")
         if any(row.get("request_id") is None or row.get("worker_wall_s") is None
                for row in records):
             raise ValueError("every source table must have request_id and worker_wall_s")
@@ -68,7 +70,10 @@ def select_tables(args: argparse.Namespace) -> list[dict[str, Any]]:
         ranks = {str(row["request_id"]): rank for rank, row in enumerate(ranked, 1)}
         # Include the first source table: its historical cold latency does not
         # make it an invalid crop. Sampling is independent of source latency.
-        selected = random.Random(args.shuffle_seed).sample(records, args.count)
+        rng = random.Random(args.shuffle_seed)
+        selected = []
+        while len(selected) < args.count:
+            selected.extend(rng.sample(records, min(len(records), args.count - len(selected))))
         return [{
             "request_id": str(row["request_id"]),
             "tail_rank": ranks[str(row["request_id"])],
@@ -206,12 +211,17 @@ def main() -> None:
     selected = select_tables(args)
     load.write_jsonl(output_dir / "tables.jsonl", selected)
     ready = load.check_api_ready(args.api_url, min(args.request_timeout_s, 10.0))
+    unique_selected = list({str(row["request_id"]): row for row in selected}.values())
     print(
         f"{args.client_label} API ready worker_pid={ready.get('worker_pid')}; "
-        f"preloading {len(selected)} crops",
+        f"preloading {len(unique_selected)} distinct crops for {len(selected)} requests",
         flush=True,
     )
-    payloads = load.prepare_http_payloads(selected, args.images_dir)
+    payloads = {}
+    for start in range(0, len(unique_selected), 50):
+        chunk = unique_selected[start:start + 50]
+        payloads.update(load.prepare_http_payloads(chunk, args.images_dir))
+        print(f"{args.client_label} crops preloaded {len(payloads)}/{len(unique_selected)}", flush=True)
     print(
         f"{args.client_label} payloads ready bytes={sum(map(len, payloads.values()))}",
         flush=True,
@@ -235,7 +245,9 @@ def main() -> None:
         "set": args.set,
         "shuffle_seed": args.shuffle_seed,
         "source_record_count": len(load.read_jsonl(args.source_jsonl)),
-        "selection_method": ("uniform_without_replacement" if args.set == "random"
+        "unique_table_count": len(unique_selected),
+        "selection_method": (("shuffled_cycles" if len(selected) > len(unique_selected)
+                              else "uniform_without_replacement") if args.set == "random"
                              else "fixed_ranked_subset"),
         "dispatch_request_ids": [str(row["request_id"]) for row in selected],
         "requested_request_count": len(selected),
