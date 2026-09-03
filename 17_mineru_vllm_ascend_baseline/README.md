@@ -222,3 +222,14 @@ extra predictions, duplicate stems, and pages absent from the selected ground
 truth. It records the ground-truth, run-summary, input-manifest, and prediction
 hashes. Its generated config enables text edit distance, formula edit distance
 and CDM, table edit distance and TEDS, and reading-order edit distance.
+
+For a completed full 1,651-page run, execute the same pinned, process-isolated
+evaluation protocol used by the custom experiment-11 comparison:
+
+```sh
+LIMIT=1651 RUN_ROOT=/absolute/path/to/the/run \
+  bash 17_mineru_vllm_ascend_baseline/run_full_accuracy.sh
+```
+
+The launcher validates exact page membership and prediction hashes before
+scoring. It does not alter Markdown predictions.
