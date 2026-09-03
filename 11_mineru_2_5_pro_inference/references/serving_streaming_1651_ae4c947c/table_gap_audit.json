@@ -1,0 +1,23 @@
+{
+  "reference": "17_mineru_vllm_ascend_baseline/references/v16_1651_b626658",
+  "comparison": "page-weighted TEDS on the same 458 table pages",
+  "all": {
+    "pages": 458,
+    "stock_mean": 0.936840773711146,
+    "custom_mean": 0.9230337630807992,
+    "contribution_to_full_TEDS_delta_points": -1.380701063034633
+  },
+  "pages_with_length_capped_layout_or_table_requests": {
+    "pages": 21,
+    "stock_mean": 0.8422486160804312,
+    "custom_mean": 0.6188113255246707,
+    "contribution_to_full_TEDS_delta_points": -1.024494127002395
+  },
+  "other_pages": {
+    "pages": 437,
+    "stock_mean": 0.9413863922700593,
+    "custom_mean": 0.9376531479519177,
+    "contribution_to_full_TEDS_delta_points": -0.35620693603223785
+  },
+  "interpretation": "Most of the net table gap is on capped pages. This association is not a controlled KV-capacity ablation."
+}

@@ -37,6 +37,12 @@ On the 910B validation host, `MODE=streaming LIMIT=384 bash
 settings and existing graph caches. This is not an HTTP server; the page inbox
 and callback API is the serving boundary.
 
+The [full 1,651-page v1.6 result](references/serving_streaming_1651_ae4c947c/RESULTS.md)
+on one 910B2 is 95.1131 overall accuracy and 0.81331 hot pages/s, with zero
+failed pages and 99.77% decode-slot occupancy. This keeps KV4096; 39 requests
+hit that capacity, and their unchanged predictions remain in the score.
+The result directory preserves full token traces and evaluation evidence.
+
 ## Included surfaces
 
 ```text

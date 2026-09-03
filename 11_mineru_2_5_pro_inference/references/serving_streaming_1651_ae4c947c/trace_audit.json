@@ -1,0 +1,52 @@
+{
+  "inference_commit": "ae4c947c15d43d9858dfe3608e25bdbb6fa43565",
+  "hardware": "Ascend 910B2",
+  "physical_device": 4,
+  "pages": 1651,
+  "failed": 0,
+  "skipped": 0,
+  "pipeline_s": 2029.965940847993,
+  "pages_per_s": 0.8133141383201313,
+  "trace_sha256": "c626235e19cdd523a34bd45b80fd584a47f8e81db205ba0d63a22c111f5befbb",
+  "requests": 36936,
+  "layout_requests": 1651,
+  "recognition_requests": 35285,
+  "generated_tokens_including_eos": 2577276,
+  "eos_completions": 36897,
+  "eos_token_id": 151645,
+  "length_completions": 39,
+  "length_capped_pages": 37,
+  "length_caps_by_type": {"layout": 12, "table": 20, "text": 5, "equation": 2},
+  "all_length_caps_have_prompt_plus_generated_tokens_equal_to_4096": true,
+  "duplicate_or_empty_or_negative_token_records": [],
+  "request_count_reconciles": true,
+  "generated_tokens_minus_requests_equals_decode_calls": true,
+  "active_slot_fraction": 0.9976820023040618,
+  "decode_time_weighted_active_fraction": 0.997741941350441,
+  "idle_rows_with_ready_work": 0,
+  "max_live_pages": 32,
+  "max_cpu_preparation_queue": 64,
+  "max_live_generation_requests": 63,
+  "writer_max_pending_pages": 2,
+  "prefix384_reference": "serving_streaming_384_cb8e36ab",
+  "prefix384_matched_requests": 5486,
+  "prefix384_token_exact_layout_requests": 384,
+  "prefix384_token_exact_recognition_requests": 5100,
+  "prefix384_byte_identical_markdown_pages": 384,
+  "prefix384_nonidentical_tokens_are_verified_table_placeholder_renaming": [
+    "page-d5f79be0-5d57-4849-9897-6106dd32117a.png:recognition:4",
+    "page-d29fe4d2-832a-4ad6-ac80-dc01cf8b0e16.png:recognition:2"
+  ],
+  "empty_predictions": [
+    {
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语上册_课本_人教新起点英语5A电子课本_page_001.png",
+      "ground_truth_categories": {"figure": 1, "text_mask": 5},
+      "ground_truth_text": []
+    },
+    {
+      "image": "color_textbook_zhonggaokao_小学_13.人教新起点英语（4-5年级）_人教新起点五年级英语上册_课本_人教新起点英语5A电子课本_page_004.png",
+      "ground_truth_categories": {"figure": 1, "text_mask": 9},
+      "ground_truth_text": []
+    }
+  ]
+}

@@ -73,6 +73,12 @@ OmniDocBench accuracy score or full-1651 benchmark.
 Frozen evidence: `references/serving_anchor_384_13061fc4/` and
 `references/serving_streaming_384_cb8e36ab/`.
 
+The subsequent full-1,651 run completed at `ae4c947c`: 0.81331 hot pages/s,
+99.77% decode-slot occupancy and 95.1131 overall OmniDocBench v1.6 accuracy.
+All 384 prefix Markdown files match the earlier streaming run byte-for-byte.
+See [the full result](references/serving_streaming_1651_ae4c947c/RESULTS.md) for
+the KV4096 cap audit and checksum-protected predictions, tokens and scores.
+
 ## Serving API
 
 `PageInbox` accepts live submissions with bounded backpressure. Its empty state
