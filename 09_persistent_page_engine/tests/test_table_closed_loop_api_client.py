@@ -197,6 +197,41 @@ class ClosedLoopClientTest(unittest.TestCase):
             selected_args.shuffle_seed = 2
             self.assertNotEqual(CLIENT.select_tables(selected_args), shuffled[0])
 
+    def test_random_sample_uses_all_tables_and_is_identical_across_limits(self) -> None:
+        records = [{"request_id": str(i), "worker_wall_s": float(i)} for i in range(665)]
+        with patch.object(CLIENT.load, "read_jsonl", return_value=records):
+            selections = []
+            for limit in CLIENT.IN_FLIGHT_LIMITS:
+                selected_args = args(limit)
+                selected_args.set, selected_args.count = "random", 100
+                selected_args.source_jsonl = Path("unused")
+                selected_args.shuffle_seed = 1
+                selections.append(CLIENT.select_tables(selected_args))
+            self.assertTrue(all(rows == selections[0] for rows in selections))
+            ids = [row["request_id"] for row in selections[0]]
+            self.assertEqual(len(set(ids)), 100)
+            self.assertEqual(ids, [row["request_id"] for row in CLIENT.random.Random(1).sample(records, 100)])
+            selected_args.count = 665
+            self.assertEqual({row["request_id"] for row in CLIENT.select_tables(selected_args)},
+                             {str(i) for i in range(665)})
+            selected_args.count = 666
+            with self.assertRaises(ValueError):
+                CLIENT.select_tables(selected_args)
+            selected_args.count, selected_args.shuffle_seed = 100, None
+            with self.assertRaisesRegex(ValueError, "requires --shuffle-seed"):
+                CLIENT.select_tables(selected_args)
+
+    def test_random_sample_rejects_duplicate_source_ids(self) -> None:
+        selected_args = args(1)
+        selected_args.set, selected_args.count = "random", 1
+        selected_args.source_jsonl, selected_args.shuffle_seed = Path("unused"), 1
+        with patch.object(CLIENT.load, "read_jsonl", return_value=[
+            {"request_id": "same", "worker_wall_s": 1.0},
+            {"request_id": "same", "worker_wall_s": 2.0},
+        ]):
+            with self.assertRaisesRegex(ValueError, "duplicate"):
+                CLIENT.select_tables(selected_args)
+
 
 if __name__ == "__main__":
     unittest.main()

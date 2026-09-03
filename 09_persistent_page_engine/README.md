@@ -1229,6 +1229,14 @@ The saved `tables.jsonl` and summary `dispatch_request_ids` preserve that order;
 `results.jsonl` remains in response-completion order. Without this flag,
 dispatch remains ranked slowest first.
 
+To sample across the full corpus instead, use
+`--set random --count 100 --shuffle-seed 1` for every concurrency limit.
+This samples 100 distinct tables without replacement, in random dispatch order,
+from all source records, including the first record. There is no difficulty or
+LaTeX filter. The default source contains 665 tables. The seed fixes both sample
+membership and order. Check that the separate warmup crop is not in the sample.
+The summary records the source count and sampling method.
+
 The client preloads crop PNG bodies before timing, prints `SEND`/`RECV`, and
 flushes each response to `results.jsonl` in completion order. It records the
 observed outstanding-request maximum, dispatch/completion offsets, complete

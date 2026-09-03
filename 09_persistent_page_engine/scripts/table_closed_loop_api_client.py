@@ -25,11 +25,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--api-url", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--set", choices=("a", "b", "p90", "warm"), required=True)
+    parser.add_argument("--set", choices=("a", "b", "p90", "warm", "random"), required=True)
     parser.add_argument("--count", type=int, default=32)
     parser.add_argument(
         "--shuffle-seed", type=int,
-        help="Shuffle the selected subset with this seed; default is rank order.",
+        help=("Shuffle a fixed subset, or sample without replacement from all "
+              "source tables for --set random. Required for random sampling."),
     )
     parser.add_argument(
         "--max-in-flight", type=int, choices=IN_FLIGHT_LIMITS, default=1,
@@ -53,6 +54,31 @@ def parse_args() -> argparse.Namespace:
 
 def select_tables(args: argparse.Namespace) -> list[dict[str, Any]]:
     records = load.read_jsonl(args.source_jsonl)
+    if args.count <= 0:
+        raise ValueError("--count must be positive")
+    if args.set == "random":
+        if args.shuffle_seed is None:
+            raise ValueError("--set random requires --shuffle-seed")
+        if any(row.get("request_id") is None or row.get("worker_wall_s") is None
+               for row in records):
+            raise ValueError("every source table must have request_id and worker_wall_s")
+        if len({str(row["request_id"]) for row in records}) != len(records):
+            raise ValueError("source contains duplicate request_id values")
+        ranked = sorted(records, key=lambda row: (-float(row["worker_wall_s"]), str(row["request_id"])))
+        ranks = {str(row["request_id"]): rank for rank, row in enumerate(ranked, 1)}
+        # Include the first source table: its historical cold latency does not
+        # make it an invalid crop. Sampling is independent of source latency.
+        selected = random.Random(args.shuffle_seed).sample(records, args.count)
+        return [{
+            "request_id": str(row["request_id"]),
+            "tail_rank": ranks[str(row["request_id"])],
+            "baseline_b1_latency_s": float(row["worker_wall_s"]),
+            "has_latex_markup": load.has_latex_markup(row),
+            "output_tokens": row.get("output_tokens"),
+            "real_vision_tokens": (row.get("vision") or {}).get("real_vision_tokens"),
+            "page_name": row.get("page_name"),
+            "bbox_xyxy": row.get("bbox_xyxy"),
+        } for row in selected]
     cohort = load.freeze_tail_cohort(records, "p90", exclude_first_record=True)
     if len(cohort) < 65:
         raise ValueError(f"P90 cohort has only {len(cohort)} tables")
@@ -64,8 +90,6 @@ def select_tables(args: argparse.Namespace) -> list[dict[str, Any]]:
         selected = cohort[:64]
     else:
         selected = cohort[64:]
-    if args.count <= 0:
-        raise ValueError("--count must be positive")
     selected = selected[: args.count]
     if len(selected) != args.count:
         raise ValueError(
@@ -210,6 +234,9 @@ def main() -> None:
         "client_label": args.client_label,
         "set": args.set,
         "shuffle_seed": args.shuffle_seed,
+        "source_record_count": len(load.read_jsonl(args.source_jsonl)),
+        "selection_method": ("uniform_without_replacement" if args.set == "random"
+                             else "fixed_ranked_subset"),
         "dispatch_request_ids": [str(row["request_id"]) for row in selected],
         "requested_request_count": len(selected),
         "request_count": len(results),
