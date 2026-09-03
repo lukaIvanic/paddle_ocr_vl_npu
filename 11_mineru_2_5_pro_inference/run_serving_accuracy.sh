@@ -5,6 +5,7 @@ cd "$(git rev-parse --show-toplevel)"
 mineru_repo="$PWD"
 mineru_root="${RUN_ROOT:?Set RUN_ROOT to the completed run directory}"
 mineru_root="$(cd "$mineru_root" && pwd)"
+mineru_dataset_json="${DATASET_JSON:-/workspace/datasets/OmniDocBench/OmniDocBench.json}"
 source 09_persistent_page_engine/scripts/omnidocbench_eval_env.sh
 mineru_eval="$mineru_root/evaluation"
 mineru_eval_commit="$(git -C "$OMNIDOCBENCH_EVALUATOR_ROOT" rev-parse HEAD)"
@@ -14,7 +15,7 @@ test -z "$(git -C "$OMNIDOCBENCH_EVALUATOR_ROOT" status --porcelain --untracked-
 test "$(cat "$mineru_root/exit_code.txt")" = 0
 "$OMNIDOCBENCH_EVAL_PYTHON" 11_mineru_2_5_pro_inference/prepare_serving_eval.py \
   --run-output "$mineru_root/output" \
-  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --dataset-json "$mineru_dataset_json" \
   --evaluation-root "$mineru_eval" --expected-pages "${LIMIT:-1651}" \
   --evaluator-root "$OMNIDOCBENCH_EVALUATOR_ROOT"
 git rev-parse HEAD > "$mineru_eval/authoring_commit.txt"

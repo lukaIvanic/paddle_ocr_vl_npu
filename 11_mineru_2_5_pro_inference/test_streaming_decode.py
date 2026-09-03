@@ -13,6 +13,7 @@ except ImportError:
     torch = None
 
 from streaming_decode import run_decode_stream
+from fixed_batch_engine import FixedBatchDecodeEngine
 
 
 class RefillRegressionTests(unittest.TestCase):
@@ -95,19 +96,51 @@ class FakeEngine:
     def __init__(self):
         self.model = SimpleNamespace(device=torch.device("cpu"))
         self.compiled_decoder = SimpleNamespace(compiled_decode_for=lambda **kw: (self.decode, {}))
+        self.key_cache = torch.zeros((self.batch_size, 1, 4, 1))
+        self.value_cache = torch.zeros((self.batch_size, 1, 4, 1))
+        self.arena = SimpleNamespace(
+            flat_tensors=lambda: (self.key_cache, self.value_cache)
+        )
+        self.decode_inputs = []
 
     def _arena_for_batch(self):
-        return SimpleNamespace(flat_tensors=lambda: ())
+        return self.arena
+
+    def _duplicate_cache_row_(self, arena, source_slot, destination_slots):
+        for tensor in arena.flat_tensors():
+            for destination_slot in destination_slots:
+                tensor[destination_slot : destination_slot + 1].copy_(
+                    tensor[source_slot : source_slot + 1]
+                )
 
     def _prepare_vision_window(self, window):
         return 0.0, {}
 
     def _prefill_slots(self, arena, entries):
-        return {slot: {"token_id": req.first, "token": torch.tensor([[req.first]]),
-                       "cache_position": torch.tensor([1]), "rope_delta": torch.tensor([[0]])}
-                for slot, i, req in entries}, 0.0, {}
+        states = {}
+        for slot, _i, req in entries:
+            self.key_cache[slot].fill_(req.first)
+            self.value_cache[slot].fill_(-req.first)
+            states[slot] = {
+                "token_id": req.first,
+                "token": torch.tensor([[req.first]]),
+                "cache_position": torch.tensor([1]),
+                "rope_delta": torch.tensor([[req.first + 100]]),
+            }
+        return states, 0.0, {}
 
-    def decode(self, next_token, cache_position, rope_delta):
+    def decode(self, next_token, cache_position, rope_delta, *cache_tensors):
+        self.decode_inputs.append(
+            tuple(
+                tensor.clone()
+                for tensor in (
+                    next_token,
+                    cache_position,
+                    rope_delta,
+                    *cache_tensors,
+                )
+            )
+        )
         logits = torch.zeros((self.batch_size, 1, 128))
         for i, value in enumerate(next_token[:, 0].tolist()):
             token = 99 if value % 10 >= 3 else value + 1
@@ -123,10 +156,44 @@ class FakeEngine:
 
 @unittest.skipIf(torch is None, "CPU torch is required; run these tests in the validated 910B environment")
 class DecodeTests(unittest.TestCase):
-    def run_source(self, source):
+    def run_source(self, source, engine=None):
         sync_module = SimpleNamespace(maybe_sync_device=lambda device: None)
         with patch.dict(sys.modules, {"run_local_model_two_step_extract": sync_module}):
-            return run_decode_stream(FakeEngine(), source)
+            return run_decode_stream(engine or FakeEngine(), source)
+
+    def test_partial_initial_batch_duplicates_a_real_row_for_increfa(self):
+        engine = FakeEngine()
+        source = FakeSource([(0, 11, 10)])
+        report = self.run_source(source, engine)
+        next_token, cache_position, rope_delta, key_cache, value_cache = (
+            engine.decode_inputs[0]
+        )
+        self.assertEqual(next_token[:, 0].tolist(), [11, 11, 11])
+        self.assertEqual(cache_position.tolist(), [1, 1, 1])
+        self.assertEqual(rope_delta[:, 0].tolist(), [111, 111, 111])
+        self.assertTrue(torch.equal(key_cache[0:1], key_cache[1:2]))
+        self.assertTrue(torch.equal(key_cache[0:1], key_cache[2:3]))
+        self.assertTrue(torch.equal(value_cache[0:1], value_cache[1:2]))
+        self.assertTrue(torch.equal(value_cache[0:1], value_cache[2:3]))
+        self.assertEqual(
+            report["inactive_filler_policy"],
+            "duplicate_first_real_row_retain_controls",
+        )
+        self.assertEqual(report["initial_inactive_filler_rows"], 2)
+        self.assertEqual(report["initial_filler_source_slot"], 0)
+
+    def test_cache_row_filler_copies_every_kv_tensor(self):
+        keys = (torch.arange(12).reshape(3, 1, 4, 1).float(),)
+        values = (-torch.arange(12).reshape(3, 1, 4, 1).float(),)
+        arena = SimpleNamespace(
+            key_caches=keys,
+            value_caches=values,
+            flat_tensors=lambda: (*keys, *values),
+        )
+        FixedBatchDecodeEngine._duplicate_cache_row_(arena, 1, (0, 2))
+        for tensor in arena.flat_tensors():
+            self.assertTrue(torch.equal(tensor[0:1], tensor[1:2]))
+            self.assertTrue(torch.equal(tensor[2:3], tensor[1:2]))
 
     def test_windows_epochs_and_caps(self):
         requests = [(i, 1 + (i % 7)*10, 3 if i % 4 == 0 else 10) for i in range(100)]

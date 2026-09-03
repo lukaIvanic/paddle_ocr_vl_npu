@@ -41,6 +41,8 @@ def run_decode_stream(engine, source):
     max_live_requests = 0
     idle_rows_with_ready_work = 0
     seen_requests = set()
+    initial_inactive_filler_rows = 0
+    initial_filler_source_slot = None
 
     def complete(index):
         nonlocal completed, effective_tokens
@@ -78,6 +80,7 @@ def run_decode_stream(engine, source):
     def admit_free():
         nonlocal prefill_s, immediate, refill_count, safety_s
         nonlocal next_token, cache_position, rope_delta
+        nonlocal initial_inactive_filler_rows, initial_filler_source_slot
         available = [i for i, request in enumerate(slots) if request is None]
         replacements = {}
         synchronized = False
@@ -115,14 +118,20 @@ def run_decode_stream(engine, source):
         if not replacements:
             return
         if next_token is None:
-            template = next(iter(replacements.values()))
+            initial_filler_source_slot = next(iter(replacements))
+            template = replacements[initial_filler_source_slot]
+            filler_slots = [slot for slot in range(batch) if slot not in replacements]
+            engine._duplicate_cache_row_(
+                arena,
+                source_slot=initial_filler_source_slot,
+                destination_slots=filler_slots,
+            )
+            initial_inactive_filler_rows = len(filler_slots)
 
             def value(slot, key):
                 if slot in replacements:
                     return replacements[slot][key]
-                if key == "token":
-                    return torch.full_like(template[key], engine.pad_token_id)
-                return torch.zeros_like(template[key])
+                return template[key]
 
             next_token = torch.cat([value(i, "token") for i in range(batch)], dim=0)
             cache_position = torch.cat([value(i, "cache_position") for i in range(batch)], dim=0)
@@ -180,9 +189,6 @@ def run_decode_stream(engine, source):
                 if index is not None:
                     next_token[slot:slot + 1].copy_(candidate[slot:slot + 1])
                     cache_position[slot].add_(1)
-                else:
-                    next_token[slot].fill_(engine.pad_token_id)
-                    cache_position[slot].zero_()
             if pending is not None:
                 row, elapsed = engine._wait_token_copy(pending)
                 copy_wait_s += elapsed
@@ -192,9 +198,6 @@ def run_decode_stream(engine, source):
                     tokens[index].append(row[slot])
                     if row[slot] == engine.eos_token_id or len(tokens[index]) >= limits[index]:
                         slots[slot] = None
-                        next_token[slot].fill_(engine.pad_token_id)
-                        cache_position[slot].zero_()
-                        rope_delta[slot].zero_()
                         complete(index)
             pending = current
             if graph_calls % 1024 == 0:
@@ -220,6 +223,9 @@ def run_decode_stream(engine, source):
         "decode_seconds_by_active_rows": dict(sorted(decode_by_occupancy.items())),
         "idle_rows_with_ready_work": idle_rows_with_ready_work,
         "max_live_generation_requests": max_live_requests,
+        "inactive_filler_policy": "duplicate_first_real_row_retain_controls",
+        "initial_inactive_filler_rows": initial_inactive_filler_rows,
+        "initial_filler_source_slot": initial_filler_source_slot,
         "final_drain_wall_s": time.perf_counter() - drain_started if drain_started else 0,
         "refill_count": refill_count, "immediate_completion_count": immediate,
         "decode_s": decode_s, "prefill_s": prefill_s,

@@ -12,6 +12,12 @@ frontend, post-processing, B32 decode, KV4096, packed text prefill, compiled
 vision prefill, and bounded streaming scheduler as the accepted 1,651-page
 910B2 run.
 
+The B32 decode graph must never receive zero-KV inactive rows. Before its first
+IncreFA call, the scheduler copies one admitted real request's KV row, token,
+cache position, and rope delta into every unused physical row. An inactive row
+keeps valid physical state until a real request replaces it. This is the same
+safe filler contract used by the repository's UniRec scheduler on 310P.
+
 This custom pipeline does not import or invoke vLLM or vLLM-Ascend. Do not use
 Experiment 17's stock engine runner. The only Experiment 17 component reused
 here is the generic artifact verifier for the model, dataset, images, and
@@ -39,6 +45,8 @@ Do not continue to 128 pages or the full corpus.
   process. Do not fall back to CPU or CUDA.
 - Use fresh, 310P-only TorchAir caches. Do not copy, rename, delete, repair, or
   reuse a 910B cache. Do not run two processes against the same cache.
+- Do not reuse the run root or cache from an older failed smoke. This revision
+  changes the inactive-row contract, and Phase 5 creates a fresh cache identity.
 - Run the two-page command once. If it fails, do not retry it, change flags, or
   delete the partial cache.
 - Normal command, log, cache, and output artifacts are allowed. Do not create a
@@ -467,6 +475,10 @@ assert summary["global_request_stream"] is True
 assert summary["streaming_pages"] is True
 assert summary["streaming_page_window"] == 2
 assert summary["generation_trace"]["requests"] > 0
+decode = summary["streaming"]["decode"]
+assert decode["inactive_filler_policy"] == "duplicate_first_real_row_retain_controls"
+assert decode["initial_inactive_filler_rows"] > 0
+assert decode["initial_filler_source_slot"] is not None
 
 predictions = sorted((root / "output/predictions").glob("*.md"))
 content_lists = sorted((root / "output/content_lists").glob("*.json"))
@@ -567,6 +579,9 @@ prefill_s=
 decode_s=
 decode_effective_tok_s=
 decode_active_slot_fraction=
+inactive_filler_policy=duplicate_first_real_row_retain_controls
+initial_inactive_filler_rows=
+initial_filler_source_slot=
 compiled_first_call_s=
 om_before=
 om_after=

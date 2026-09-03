@@ -101,6 +101,31 @@ class FixedBatchDecodeEngine:
             cache_length=arena.cache_length,
         )
 
+    @staticmethod
+    @torch.inference_mode()
+    def _duplicate_cache_row_(
+        arena: LocalMinerUStaticCache,
+        source_slot: int,
+        destination_slots: Sequence[int],
+    ) -> None:
+        """Give inactive static-batch rows valid KV state for 310P IncreFA."""
+        batch_size = int(arena.key_caches[0].shape[0])
+        source_slot = int(source_slot)
+        destinations = tuple(int(slot) for slot in destination_slots)
+        if not 0 <= source_slot < batch_size:
+            raise ValueError(f"invalid source slot: {source_slot}")
+        if len(set(destinations)) != len(destinations):
+            raise ValueError(f"duplicate destination slots: {destinations}")
+        if source_slot in destinations:
+            raise ValueError("source slot cannot also be a destination")
+        if any(not 0 <= slot < batch_size for slot in destinations):
+            raise ValueError(f"invalid destination slots: {destinations}")
+        source = slice(source_slot, source_slot + 1)
+        for tensor in arena.flat_tensors():
+            for destination_slot in destinations:
+                destination = slice(destination_slot, destination_slot + 1)
+                tensor[destination].copy_(tensor[source])
+
     def _build_group_inputs_embeds(
         self,
         entries: Sequence[tuple[int, int, PreparedGeneration]],
@@ -914,7 +939,11 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
 
         initial_state_map = admit_many(range(self.batch_size))
         initial_states = [initial_state_map.get(slot) for slot in range(self.batch_size)]
-        template = next((state for state in initial_states if state is not None), None)
+        template_slot = next(
+            (slot for slot, state in enumerate(initial_states) if state is not None),
+            None,
+        )
+        template = initial_states[template_slot] if template_slot is not None else None
         if template is None:
             if not all(output is not None for output in outputs):
                 raise RuntimeError("continuous scheduler lost an immediate result")
@@ -939,22 +968,29 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                 "compiled_first_call_s": 0.0,
             }
 
-        def state_or_dummy(state: dict[str, Any] | None, key: str) -> torch.Tensor:
+        filler_slots = [
+            slot for slot, state in enumerate(initial_states) if state is None
+        ]
+        self._duplicate_cache_row_(
+            arena,
+            source_slot=template_slot,
+            destination_slots=filler_slots,
+        )
+
+        def state_or_filler(state: dict[str, Any] | None, key: str) -> torch.Tensor:
             if state is not None:
                 return state[key]
-            if key == "token":
-                return torch.full_like(template["token"], self.pad_token_id)
-            return torch.zeros_like(template[key])
+            return template[key]
 
         next_token = torch.cat(
-            [state_or_dummy(state, "token") for state in initial_states], dim=0
+            [state_or_filler(state, "token") for state in initial_states], dim=0
         )
         cache_position = torch.cat(
-            [state_or_dummy(state, "cache_position") for state in initial_states],
+            [state_or_filler(state, "cache_position") for state in initial_states],
             dim=0,
         )
         rope_delta = torch.cat(
-            [state_or_dummy(state, "rope_delta") for state in initial_states], dim=0
+            [state_or_filler(state, "rope_delta") for state in initial_states], dim=0
         )
 
         compile_started = time.perf_counter()
@@ -1010,9 +1046,6 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                 if request_index is not None:
                     next_token[slot : slot + 1].copy_(candidate[slot : slot + 1])
                     cache_position[slot].add_(1)
-                else:
-                    next_token[slot].fill_(self.pad_token_id)
-                    cache_position[slot].zero_()
 
             if pending is not None:
                 candidate_ids, wait_s = self._wait_token_copy(pending)
@@ -1053,11 +1086,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                 replacements = admit_many(finished_slots)
                 for slot in finished_slots:
                     replacement = replacements.get(slot)
-                    if replacement is None:
-                        next_token[slot].fill_(self.pad_token_id)
-                        cache_position[slot].zero_()
-                        rope_delta[slot].zero_()
-                    else:
+                    if replacement is not None:
                         next_token[slot : slot + 1].copy_(replacement["token"])
                         cache_position[slot : slot + 1].copy_(
                             replacement["cache_position"]
@@ -1100,6 +1129,9 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             "idle_decode_token_slots": (
                 raw_decode_token_slots - active_decode_token_slots
             ),
+            "inactive_filler_policy": "duplicate_first_real_row_retain_controls",
+            "initial_inactive_filler_rows": len(filler_slots),
+            "initial_filler_source_slot": template_slot,
             "refill_count": refill_count,
             "vision_lookahead": self.vision_lookahead,
             "immediate_completion_count": immediate_completion_count,
