@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 SCRIPT = (
@@ -22,6 +23,17 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CropApiServiceSummaryTest(unittest.TestCase):
+    def test_scheduling_metrics_are_opt_in(self) -> None:
+        with patch.object(sys, "argv", ["serve_crop_ocr_api.py"]):
+            self.assertFalse(MODULE.parse_args().request_scheduling_metrics)
+        with patch.object(sys, "argv", [
+            "serve_crop_ocr_api.py", "--decode-batch-size", "2",
+            "--request-scheduling-metrics",
+        ]):
+            args = MODULE.parse_args()
+            self.assertTrue(args.request_scheduling_metrics)
+            self.assertEqual(args.decode_batch_size, 2)
+
     def test_writer_preserves_configuration_and_scheduler_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "service_summary.json"

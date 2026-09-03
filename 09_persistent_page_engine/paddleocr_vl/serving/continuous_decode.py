@@ -22,6 +22,7 @@ from ..model.token_selection import (
     select_token_ids,
 )
 from .repetition import ExactCycleTracker, RepetitionEvidence
+from .scheduling_metrics import RequestSchedulingMetrics
 from utils.timing import stream_synchronize, synchronize
 from utils.timeline import TimelineRecorder
 
@@ -83,6 +84,7 @@ class DecodeCompletion:
     completed_at: float
     iterations_launched: int
     repetition_evidence: dict[str, int | str | None] | None = None
+    scheduling_metrics: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -904,6 +906,7 @@ class ContinuousDecodeScheduler:
         on_completion: Callable[[DecodeCompletion], None] | None = None,
         ready_buffer_capacity: int | None = None,
         ready_buffer_low_watermark: int | None = None,
+        scheduling_metrics: RequestSchedulingMetrics | None = None,
     ) -> ContinuousDecodeRun:
         """Decode a bounded, lazily produced request stream.
 
@@ -986,6 +989,10 @@ class ContinuousDecodeScheduler:
 
         def record_completion(completion: DecodeCompletion) -> None:
             nonlocal completion_callback_wall_s
+            if scheduling_metrics is not None:
+                completion.scheduling_metrics = scheduling_metrics.finish(
+                    completion.ready.request_id, completion.completed_at,
+                )
             completions.append(completion)
             if self.timeline is not None:
                 if completion.admitted_at is not None:
@@ -1320,6 +1327,14 @@ class ContinuousDecodeScheduler:
                 )
             started = time.perf_counter()
             completed_before = len(completions)
+            if scheduling_metrics is not None:
+                scheduling_metrics.consume(
+                    state.ready.request_id
+                    for slot_index, was_active in enumerate(pending_copy.active_slots)
+                    if was_active
+                    and (state := self.arena.slots[slot_index]) is not None
+                    and state.epoch == pending_copy.slot_epochs[slot_index]
+                )
             for slot_index, was_active in enumerate(pending_copy.active_slots):
                 if not was_active:
                     continue
@@ -1479,6 +1494,11 @@ class ContinuousDecodeScheduler:
                 pending = None
                 continue
             progress("decode_step_begin", iteration=iteration)
+            if scheduling_metrics is not None:
+                scheduling_metrics.step(
+                    (state.ready.request_id for state in self.arena.slots if state is not None),
+                    time.perf_counter(),
+                )
             step = self.arena.step(self.decode_fn, iteration=iteration)
             progress("decode_step_end", iteration=iteration)
             graph_calls += 1

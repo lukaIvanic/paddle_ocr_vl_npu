@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Send one fixed table set sequentially to a running crop OCR API."""
+"""Send a fixed table set with a bounded number of outstanding OCR requests."""
 
 from __future__ import annotations
 
@@ -25,6 +25,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--set", choices=("a", "b", "warm"), required=True)
     parser.add_argument("--count", type=int, default=32)
+    parser.add_argument(
+        "--max-in-flight", type=int, choices=(1, 2), default=1,
+        help="Client-side outstanding-request limit. Refill after any response.",
+    )
     parser.add_argument("--client-label", default="client")
     parser.add_argument("--source-jsonl", type=Path, default=load.DEFAULT_SOURCE)
     parser.add_argument(
@@ -62,12 +66,14 @@ def select_tables(args: argparse.Namespace) -> list[dict[str, Any]]:
     return selected
 
 
-async def run_sequential(
+async def run_closed_loop(
     args: argparse.Namespace,
     selected: list[dict[str, Any]],
     payloads: dict[str, bytes],
     results_path: Path,
-) -> tuple[list[dict[str, Any]], float, float]:
+) -> tuple[list[dict[str, Any]], float, float, dict[str, Any]]:
+    if args.max_in_flight not in (1, 2):
+        raise ValueError("--max-in-flight must be 1 or 2")
     if args.start_at_epoch_s is not None:
         remaining = args.start_at_epoch_s - time.time()
         if remaining > 0:
@@ -75,10 +81,30 @@ async def run_sequential(
     actual_start_epoch_s = time.time()
     started = time.perf_counter()
     results: list[dict[str, Any]] = []
+    pending = iter(enumerate(selected, start=1))
+    active = 0
+    peak_active = 0
+    stop_sending = False
     with results_path.open("w", encoding="utf-8") as handle:
-        for index, table in enumerate(selected, start=1):
+        async def worker() -> None:
+            while not stop_sending:
+                item = next(pending, None)
+                if item is None:
+                    return
+                index, table = item
+                await send_one(index, table)
+
+        async def send_one(index: int, table: dict[str, Any]) -> None:
+            nonlocal active, peak_active, stop_sending
             request_id = str(table["request_id"])
             request_started = time.perf_counter()
+            active += 1
+            active_at_send = active
+            peak_active = max(peak_active, active)
+            print(
+                f"SEND {args.client_label} {index:02d}/{len(selected)} "
+                f"table={request_id} active={active}", flush=True,
+            )
             error: str | None = None
             service_result: dict[str, Any] = {}
             try:
@@ -91,7 +117,11 @@ async def run_sequential(
                 )
             except Exception as exc:
                 error = f"{type(exc).__name__}: {exc}"
+                # A timed-out HTTP request may still be executing on the server.
+                # Do not replace it and exceed the intended server workload.
+                stop_sending = True
             completed = time.perf_counter()
+            active -= 1
             record = {
                 "sequence": index,
                 "client_label": args.client_label,
@@ -103,7 +133,10 @@ async def run_sequential(
                 "source_output_tokens": table.get("output_tokens"),
                 "source_real_vision_tokens": table.get("real_vision_tokens"),
                 "latency_s": completed - request_started,
+                "dispatch_offset_s": request_started - started,
                 "completion_offset_s": completed - started,
+                "active_at_send": active_at_send,
+                "active_after_response": active,
                 "status": "ok" if error is None else "error",
                 "error": error,
                 "service_result": service_result,
@@ -113,12 +146,20 @@ async def run_sequential(
             handle.write("\n")
             handle.flush()
             print(
-                f"{args.client_label} {index:02d}/{len(selected)} "
+                f"RECV {args.client_label} {index:02d}/{len(selected)} "
                 f"rank={table['tail_rank']:02d} id={request_id} "
-                f"latency={record['latency_s']:.4f}s status={record['status']}",
+                f"latency={record['latency_s']:.4f}s status={record['status']} "
+                f"active={active}",
                 flush=True,
             )
-    return results, time.perf_counter() - started, actual_start_epoch_s
+        await asyncio.gather(*(worker() for _ in range(args.max_in_flight)))
+    stats = {
+        "max_in_flight": args.max_in_flight,
+        "observed_max_in_flight": peak_active,
+        "stopped_sending_after_error": stop_sending,
+        "unsent_request_count": len(selected) - len(results),
+    }
+    return results, time.perf_counter() - started, actual_start_epoch_s, stats
 
 
 def main() -> None:
@@ -142,8 +183,8 @@ def main() -> None:
         flush=True,
     )
 
-    results, run_wall_s, actual_start_epoch_s = asyncio.run(
-        run_sequential(
+    results, run_wall_s, actual_start_epoch_s, client_stats = asyncio.run(
+        run_closed_loop(
             args,
             selected,
             payloads,
@@ -153,15 +194,20 @@ def main() -> None:
     latencies = [float(row["latency_s"]) for row in results]
     failures = [row for row in results if row["status"] != "ok"]
     summary = {
-        "format": "table_closed_loop_api_client_v1",
+        "format": "table_closed_loop_api_client_v2",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "api_url": args.api_url,
         "client_label": args.client_label,
         "set": args.set,
+        "requested_request_count": len(selected),
         "request_count": len(results),
         "failed_request_count": len(failures),
+        **client_stats,
         "run_wall_s": run_wall_s,
         "completion_qps": len(results) / run_wall_s if run_wall_s else None,
+        "successful_completion_qps": (
+            (len(results) - len(failures)) / run_wall_s if run_wall_s else None
+        ),
         "requested_start_epoch_s": args.start_at_epoch_s,
         "actual_start_epoch_s": actual_start_epoch_s,
         "start_lag_s": (
@@ -175,6 +221,10 @@ def main() -> None:
             "median": statistics.median(latencies),
         },
         "api_configuration": ready.get("configuration"),
+        "scheduling_metrics_request_count": sum(
+            bool(row["service_result"].get("response", {}).get("scheduling_metrics"))
+            for row in results
+        ),
         "request_ids": [str(row["request_id"]) for row in results],
     }
     (output_dir / "summary.json").write_text(
@@ -183,12 +233,15 @@ def main() -> None:
     )
     print(
         f"DONE {args.client_label} requests={len(results)} failures={len(failures)} "
+        f"max_in_flight={client_stats['observed_max_in_flight']} "
         f"wall={run_wall_s:.4f}s qps={summary['completion_qps']:.4f} "
         f"p50={summary['latency_s']['p50']:.4f}s "
         f"p95={summary['latency_s']['p95']:.4f}s "
         f"max={summary['latency_s']['max']:.4f}s",
         flush=True,
     )
+    if failures or client_stats["unsent_request_count"]:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

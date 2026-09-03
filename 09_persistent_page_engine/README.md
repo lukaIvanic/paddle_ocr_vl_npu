@@ -1188,6 +1188,54 @@ prompt selection, vision preparation, MRoPE construction, and inference stay
 inside the API worker. The caller supplies an already-cropped image and its
 type; this endpoint does not run page layout detection.
 
+### Closed-loop B1/B2 table comparison
+
+Keep the optimized model, vocabulary, KV capacity, and vision/text buckets
+identical between runs. Set `--decode-batch-size 1` or `2` on the existing crop
+API command and add `--request-scheduling-metrics`. This adds logging only, not
+an admission guard. The decode graph retains its configured batch size when a
+slot is idle. Warm the server with a complete request outside measured timing.
+
+From the repository root, send the same frozen P90 set in both runs:
+
+```sh
+# B1 server, one outstanding request.
+python 09_persistent_page_engine/scripts/table_closed_loop_api_client.py \
+  --api-url http://127.0.0.1:8767/v1/ocr \
+  --set a --count 32 --max-in-flight 1 \
+  --output-dir tmp/table_closed_loop_b1
+
+# B2 server, up to two outstanding requests, refill after either response.
+python 09_persistent_page_engine/scripts/table_closed_loop_api_client.py \
+  --api-url http://127.0.0.1:8767/v1/ocr \
+  --set a --count 32 --max-in-flight 2 \
+  --output-dir tmp/table_closed_loop_b2
+```
+
+The client preloads crop PNG bodies before timing, prints `SEND`/`RECV`, and
+flushes each response to `results.jsonl` in completion order. It records the
+observed outstanding-request maximum, dispatch/completion offsets, complete
+responses including native IDs, latency percentiles, and achieved QPS. It does
+not prescribe an arrival QPS. After a request error it stops new submissions
+and drains the other outstanding request. A timeout might leave server work
+running, so replacing it would violate the intended concurrency limit.
+
+Each response's `scheduling_metrics` records other-table prefill counts,
+individual host spans and total seconds, split into `before_first_decode` and
+`during_decode`. The initial category includes delays during initial batch
+filling and time since API submission before the worker pulls the request.
+Own preparation/prefill is excluded. Empty source polls are not interruptions.
+The response also records own-prefill-ready to first-decode delay and iteration
+histograms by occupied slots. `launched_decode_iterations_by_active_slots`
+includes completion look-ahead; `consumed_decode_iterations_by_useful_slots`
+filters stale slot epochs and counts output tokens before repetition trimming.
+Prefill's first output token is not a decode iteration.
+
+These are host-side decode-submission pauses, not exclusive NPU stall times.
+An already enqueued decode can overlap them. Do not add them to existing device
+stage times or decode residency. Logging adds no device synchronization or
+graph operations. It is opt-in; without the flag the response metrics are empty.
+
 Table scoring uses the evaluator wrapper's parent-owned process scheduler.
 The parent runs at most `--teds-workers` direct TEDS children and owns their
 timeouts; it does not fork subprocesses from a thread pool. If generation is

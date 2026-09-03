@@ -24,6 +24,7 @@ from .continuous_decode import (
     ReadyDecodeRequest,
 )
 from .prefill_cache_pool import PrefillKVCacheLease, PrefillKVCachePool
+from .scheduling_metrics import RequestSchedulingMetrics
 from ..model.modeling import (
     LocalPaddleOCRVLForConditionalGeneration,
     _resolve_model_dir,
@@ -436,10 +437,12 @@ class _OpenPrefillSource:
         requests: Any,
         *,
         on_request_error: Callable[[str, BaseException], None],
+        scheduling_metrics: RequestSchedulingMetrics | None = None,
     ):
         self.recognizer = recognizer
         self.requests = requests
         self.on_request_error = on_request_error
+        self.scheduling_metrics = scheduling_metrics
         self.pending: deque[tuple[str, Future[CpuPreparedRecognition]]] = deque()
         self.executor = ThreadPoolExecutor(
             max_workers=1,
@@ -460,6 +463,11 @@ class _OpenPrefillSource:
             if request is None:
                 break
             submitted_at = time.perf_counter()
+            if self.scheduling_metrics is not None:
+                self.scheduling_metrics.register(
+                    request.request_id,
+                    submitted_at if request.submitted_at is None else request.submitted_at,
+                )
             self.pending.append(
                 (
                     request.request_id,
@@ -473,6 +481,9 @@ class _OpenPrefillSource:
 
     def pull(self, *, block: bool) -> ReadyDecodeRequest | None:
         while True:
+            pull_started = (
+                time.perf_counter() if self.scheduling_metrics is not None else 0.0
+            )
             self._submit_available(block_for_first=block and not self.pending)
             if not self.pending:
                 return None
@@ -481,6 +492,10 @@ class _OpenPrefillSource:
             try:
                 prepared = future.result()
             except BaseException as exc:
+                if self.scheduling_metrics is not None:
+                    self.scheduling_metrics.record_prefill(
+                        request_id, pull_started, time.perf_counter(), status="error",
+                    )
                 self.on_request_error(request_id, exc)
                 block = False
                 continue
@@ -498,6 +513,10 @@ class _OpenPrefillSource:
                 raise RuntimeError(
                     "open single-crop prefill produced "
                     f"{len(finalized)} ready states"
+                )
+            if self.scheduling_metrics is not None:
+                self.scheduling_metrics.record_prefill(
+                    request_id, pull_started, time.perf_counter(),
                 )
             return self.recognizer._ready_from_prefilled(finalized[0])
 
@@ -1283,6 +1302,7 @@ class ContinuousRecognizer:
         *,
         schedule_id: str,
         emit_result: Callable[[RecognitionResult], None],
+        scheduling_metrics: RequestSchedulingMetrics | None = None,
     ) -> ContinuousDecodeResult:
         def handle_completion(completion: DecodeCompletion) -> None:
             result = self._result_from_completion(
@@ -1296,6 +1316,7 @@ class ContinuousRecognizer:
             on_completion=handle_completion,
             ready_buffer_capacity=self.ready_buffer_capacity,
             ready_buffer_low_watermark=self.ready_buffer_low_watermark,
+            scheduling_metrics=scheduling_metrics,
         )
         decode_wall_s = decoded.timing_s["continuous_decode_wall"]
         private_cache_pool_stats = self.prefill_cache_pool.stats()
@@ -1555,6 +1576,7 @@ class ContinuousRecognizer:
         schedule_id: str,
         emit_result: Callable[[RecognitionResult], None],
         on_request_error: Callable[[str, BaseException], None],
+        collect_scheduling_metrics: bool = False,
     ) -> ContinuousDecodeResult:
         """Serve an open stream whose input can be temporarily empty.
 
@@ -1569,16 +1591,22 @@ class ContinuousRecognizer:
                 "text prefill (vision_packing='off', text_packing='off')"
             )
         self._begin_decode_schedule()
+        scheduling_metrics = (
+            RequestSchedulingMetrics(self.batch_size)
+            if collect_scheduling_metrics else None
+        )
         ready_source = _OpenPrefillSource(
             self,
             requests,
             on_request_error=on_request_error,
+            scheduling_metrics=scheduling_metrics,
         )
         try:
             return self._decode_ready_source(
                 ready_source,
                 schedule_id=schedule_id,
                 emit_result=emit_result,
+                scheduling_metrics=scheduling_metrics,
             )
         finally:
             ready_source.close()
@@ -2181,6 +2209,7 @@ class ContinuousRecognizer:
             vision=dict(state.vision),
             text_prefill=dict(state.text_prefill),
             input_fingerprints=dict(state.input_fingerprints),
+            scheduling_metrics=dict(completion.scheduling_metrics),
             repetition=(
                 dict(completion.repetition_evidence)
                 if completion.repetition_evidence is not None

@@ -71,6 +71,10 @@ def parse_args() -> argparse.Namespace:
         help="Direct-logit token selection policy; validated in the NPU worker.",
     )
     parser.add_argument("--decode-batch-size", type=int, default=64)
+    parser.add_argument(
+        "--request-scheduling-metrics", action="store_true",
+        help="Include per-request prefill interruption and decode occupancy records.",
+    )
     parser.add_argument("--cache-length", type=int, default=4096)
     parser.add_argument("--max-new-tokens", type=int, default=4096)
     parser.add_argument("--min-pixels", type=int, default=28224)
@@ -162,10 +166,12 @@ def _worker_main(
             preprocessor_min_pixels=config["min_pixels"],
             preprocessor_max_pixels=config["max_pixels"],
         )
+        configuration = recognizer.configuration()
+        configuration["request_scheduling_metrics"] = config["request_scheduling_metrics"]
         results.put(
             {
                 "kind": "ready",
-                "configuration": recognizer.configuration(),
+                "configuration": configuration,
                 "worker_pid": __import__("os").getpid(),
             }
         )
@@ -213,6 +219,7 @@ def _worker_main(
                         min_pixels=config["min_pixels"],
                         max_pixels=config["max_pixels"],
                         source_crop_size=crop.size,
+                        submitted_at=job["submitted_monotonic_s"],
                     )
                 return None
 
@@ -262,6 +269,7 @@ def _worker_main(
                 schedule_id="http:open",
                 emit_result=emit_result,
                 on_request_error=emit_error,
+                collect_scheduling_metrics=config["request_scheduling_metrics"],
             )
             results.put(
                 {
@@ -460,6 +468,7 @@ def main() -> None:
         ),
         "token_selection": args.token_selection,
         "decode_batch_size": args.decode_batch_size,
+        "request_scheduling_metrics": args.request_scheduling_metrics,
         "cache_length": args.cache_length,
         "max_new_tokens": args.max_new_tokens,
         "min_pixels": args.min_pixels,

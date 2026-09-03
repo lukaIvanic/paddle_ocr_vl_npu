@@ -17,6 +17,7 @@ class RecognitionRequest:
     min_pixels: int | None = None
     max_pixels: int | None = None
     source_crop_size: tuple[int, int] | None = None
+    submitted_at: float | None = None
 
 
 @dataclass
@@ -42,6 +43,7 @@ class RecognitionResult:
     text_prefill: dict[str, Any] = field(default_factory=dict)
     input_fingerprints: dict[str, Any] = field(default_factory=dict)
     repetition: dict[str, Any] = field(default_factory=dict)
+    scheduling_metrics: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
