@@ -29,12 +29,20 @@ def compare(reference: Path, candidate: Path):
     right = load_trace(candidate / "generation_trace.jsonl")
     totals = Counter()
     differences = []
+    unexpected_input_changes = []
+    unchanged_layout_pages = {
+        record["page"] for key, record in left.items()
+        if record["phase"] == "layout" and key in right
+        and record["raw_text"] == right[key]["raw_text"]
+    }
     fields = ("page", "phase", "block_index", "block_type", "bbox", "angle",
               "image_sha256", "chat_prompt", "prompt_token_ids", "max_new_tokens")
     for key in sorted(left.keys() & right.keys()):
         a, b = left[key], right[key]
         phase = a["phase"]
         changed_inputs = [field for field in fields if a.get(field) != b.get(field)]
+        if changed_inputs and (phase == "layout" or a["page"] in unchanged_layout_pages):
+            unexpected_input_changes.append(key)
         same_tokens = a["generated_token_ids"] == b["generated_token_ids"]
         totals[f"{phase}_matched_requests"] += 1
         totals[f"{phase}_input_exact"] += not changed_inputs
@@ -60,6 +68,11 @@ def compare(reference: Path, candidate: Path):
             "reference_requests": len(left), "candidate_requests": len(right),
             "missing_requests": sorted(left.keys() - right.keys()),
             "extra_requests": sorted(right.keys() - left.keys()),
+            "missing_requests_with_unchanged_layout": sorted(key for key in left.keys() - right.keys()
+                if left[key]["page"] in unchanged_layout_pages),
+            "extra_requests_with_unchanged_layout": sorted(key for key in right.keys() - left.keys()
+                if right[key]["page"] in unchanged_layout_pages),
+            "unexpected_input_changes": unexpected_input_changes,
             "counts": dict(totals), "differences": differences,
             "missing_pages": sorted(a_pages.keys() - b_pages.keys()),
             "extra_pages": sorted(b_pages.keys() - a_pages.keys()),
@@ -78,7 +91,9 @@ def main():
     args.output.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
     print(json.dumps({key: value for key, value in result.items() if key not in ("differences", "changed_pages")}, indent=2))
     print(f"changed_pages={len(result['changed_pages'])} differing_requests={len(result['differences'])}")
-    if result["missing_pages"] or result["extra_pages"] or result["empty_pages"]:
+    if any(result[key] for key in ("missing_pages", "extra_pages", "empty_pages",
+           "missing_requests_with_unchanged_layout", "extra_requests_with_unchanged_layout",
+           "unexpected_input_changes")):
         raise SystemExit(1)
 
 

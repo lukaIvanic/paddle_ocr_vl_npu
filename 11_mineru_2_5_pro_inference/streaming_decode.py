@@ -40,6 +40,7 @@ def run_decode_stream(engine, source):
     compile_wrapper_s = 0.0
     max_live_requests = 0
     idle_rows_with_ready_work = 0
+    seen_requests = set()
 
     def complete(index):
         nonlocal completed, effective_tokens
@@ -61,8 +62,9 @@ def run_decode_stream(engine, source):
             if item is None:
                 break
             index, request = item
-            if index in tokens or index in limits:
-                raise ValueError(f"duplicate live request id: {index}")
+            if index in seen_requests:
+                raise ValueError(f"duplicate request id: {index}")
+            seen_requests.add(index)
             limits[index] = request.max_new_tokens
             window.append((index, request))
             request_count += 1
