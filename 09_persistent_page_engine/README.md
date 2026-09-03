@@ -1217,6 +1217,12 @@ For B4/B8/B16, match the server's `--decode-batch-size` with the client's
 response-driven refill applies at each size; it does not wait for a whole batch
 of responses before sending the next request.
 
+To measure an intentionally underfilled B4 decoder, keep the server at
+`--decode-batch-size 4` and run the client with `--max-in-flight 3`. The server
+still submits the static B4 decode graph, but at most three rows contain useful
+requests and one row remains idle. Label this lane **B4 decode / C3 admission**,
+not B3 decoding.
+
 For a larger matched test, use `--set p90 --count 50` in every client run.
 This selects original B1 tail ranks 1 through 50, in that order, from the frozen
 P90 cohort. It is not a random P90 sample. Sets `a` and `b` retain their original

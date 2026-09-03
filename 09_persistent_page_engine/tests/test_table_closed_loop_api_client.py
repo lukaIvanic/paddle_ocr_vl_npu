@@ -94,7 +94,7 @@ class ClosedLoopClientTest(unittest.TestCase):
             self.assertEqual(peak, limit)
             return result
 
-        for limit in (4, 8, 16):
+        for limit in (3, 4, 8, 16):
             with self.subTest(limit=limit), tempfile.TemporaryDirectory() as directory:
                 rows, _, _, stats = asyncio.run(scenario(Path(directory) / "results.jsonl", limit))
                 self.assertEqual(

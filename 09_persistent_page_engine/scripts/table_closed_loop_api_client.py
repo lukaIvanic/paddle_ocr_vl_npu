@@ -21,7 +21,7 @@ import table_request_load_simulator as load
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
-IN_FLIGHT_LIMITS = (1, 2, 4, 8, 16)
+IN_FLIGHT_LIMITS = (1, 2, 3, 4, 8, 16)
 
 
 def parse_args() -> argparse.Namespace:
