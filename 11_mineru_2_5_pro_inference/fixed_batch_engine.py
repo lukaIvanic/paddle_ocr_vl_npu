@@ -891,7 +891,9 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
                 )
                 prefill_s += elapsed_s
                 accumulate_prefill_metrics(group_metrics)
-                retry_slots: list[int] = []
+                # Keep slots not assigned at this vision-window boundary.
+                # They are still free, even though no request just ended there.
+                retry_slots: list[int] = available[len(entries):]
                 for slot, request_index, request in entries:
                     state = states[slot]
                     token_id = int(state["token_id"])

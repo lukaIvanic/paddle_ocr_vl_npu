@@ -132,6 +132,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hash-model-files", action="store_true")
     parser.add_argument("--token-trace", action="store_true",
                         help="Record lossless layout/crop generations for the global custom stream.")
+    parser.add_argument("--streaming-pages", action="store_true",
+                        help="Use bounded pages and one open layout/recognition request scheduler.")
+    parser.add_argument("--streaming-page-window", type=int, default=32)
     parser.add_argument(
         "--processor-min-pixels",
         type=int,
@@ -564,6 +567,10 @@ def main() -> None:
         )
     if args.token_trace and (not args.global_request_stream or args.layout_only):
         raise ValueError("token-trace requires the full global custom stream")
+    if args.streaming_pages and (args.backend != "local-continuous-client" or args.layout_only):
+        raise ValueError("streaming-pages requires the full local continuous backend")
+    if args.streaming_page_window < 1:
+        raise ValueError("streaming-page-window must be positive")
     capture_sizes = [
         int(value)
         for value in args.vllm_cudagraph_capture_sizes.split(",")
@@ -1036,6 +1043,8 @@ def main() -> None:
         "batch_size": args.batch_size,
         "page_batch_size": args.page_batch_size,
         "global_request_stream": bool(args.global_request_stream),
+        "streaming_pages": bool(args.streaming_pages),
+        "streaming_page_window": args.streaming_page_window if args.streaming_pages else None,
         "layout_image_size": [int(value) for value in args.layout_image_size],
         "layout_only": bool(args.layout_only),
         "local_compiled_cache_length": (
@@ -1199,8 +1208,63 @@ def main() -> None:
             args.output_dir / "generation_trace.jsonl",
             eos_token_id=local_model.config.eos_token_id,
         )
-        install_stepping_trace(client, generation_trace)
-    if args.global_request_stream:
+        if not args.streaming_pages:
+            install_stepping_trace(client, generation_trace)
+    streaming_report = None
+    if args.streaming_pages:
+        from streaming_pipeline import MinerUPageSource, BoundedWriter
+        from streaming_decode import run_decode_stream
+
+        page_lookup = {image_name(sample): (position, index) for position, index, sample in pending}
+        if len(page_lookup) != len(pending):
+            raise ValueError("duplicate page image names")
+
+        def load_page(path):
+            with Image.open(path) as source_image:
+                return source_image.convert("RGB")
+
+        def write_page(name, blocks):
+            nonlocal completed
+            position, dataset_index = page_lookup[name]
+            stem = Path(name).stem
+            markdown = json2md(blocks)
+            atomic_write_text(predictions_dir / f"{stem}.md", markdown)
+            atomic_write_text(content_dir / f"{stem}.json", json.dumps(list(blocks), ensure_ascii=False, indent=2) + "\n")
+            record = {"status": "completed", "dataset_index": dataset_index, "image": name,
+                      "shard_position": position, "block_count": len(blocks),
+                      "block_types": dict(collections.Counter(block["type"] for block in blocks)),
+                      "markdown_chars": len(markdown), "pipeline_elapsed_s": time.perf_counter() - shard_started,
+                      "completed_at": datetime.now(timezone.utc).isoformat()}
+            atomic_write_text(progress_dir / f"{stem}.json", json.dumps(record, ensure_ascii=False, indent=2) + "\n")
+            append_jsonl(progress_path, record)
+            completed += 1
+            if completed == 1 or completed % 16 == 0:
+                print(f"[stream] completed={completed}/{len(pending)} elapsed_s={time.perf_counter() - shard_started:.3f}", flush=True)
+
+        writer = BoundedWriter(write_page)
+        page_source = None
+        try:
+            page_source = MinerUPageSource(
+                client, ((name, lambda path=images_dir / name: load_page(path)) for name in page_lookup),
+                on_page=writer.submit, page_window=args.streaming_page_window,
+                prepare_depth=max(1, args.local_prepare_prefetch_depth), trace=generation_trace)
+            streaming_metrics = run_decode_stream(engine, page_source)
+            streaming_report = {**page_source.metadata(), "decode": streaming_metrics}
+            client.client.generation_metrics.append(streaming_metrics)
+        finally:
+            try:
+                if page_source is not None:
+                    page_source.close()
+            finally:
+                writer.close()
+                if generation_trace is not None:
+                    generation_trace.close()
+        streaming_report["writer_max_pending_pages"] = writer.max_pending
+        if completed != len(pending):
+            raise RuntimeError("streaming runner did not persist every input page")
+        batch_times.append(time.perf_counter() - shard_started)
+        page_groups = []
+    elif args.global_request_stream:
         page_groups = [pending] if pending else []
     elif args.page_batch_size == 1:
         page_groups = [[item] for item in pending]
@@ -1322,6 +1386,8 @@ def main() -> None:
         "measured_group_wall_s": sum(batch_times),
         "measured_group_pages_per_s": completed / sum(batch_times) if batch_times else None,
     }
+    if streaming_report is not None:
+        summary["streaming"] = streaming_report
     if local_vision_runtime is not None:
         summary["local_compiled_vision"] = local_vision_runtime.metadata()
     if local_text_runtime is not None:
@@ -1420,7 +1486,7 @@ def main() -> None:
                 {
                     "call_index": call_index,
                     "group_index": call_index // 2,
-                    "phase": "layout" if call_index % 2 == 0 else "recognition",
+                    "phase": "mixed_stream" if args.streaming_pages else ("layout" if call_index % 2 == 0 else "recognition"),
                     "request_count": int(item.get("request_count", 0)),
                     "graph_calls": int(item.get("graph_calls", 0)),
                     "decode_calls": int(item.get("decode_calls", 0)),

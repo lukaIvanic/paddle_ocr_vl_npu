@@ -13,7 +13,7 @@ esac
 export PYTHONUNBUFFERED=1
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 mineru_python=/workspace/venvs/mineru_pro_vllm_py312/bin/python
-mineru_mode="${MODE:-anchor}"
+mineru_mode="${MODE:-streaming}"
 mineru_limit="${LIMIT:-384}"
 mineru_root="${RUN_ROOT:-tmp/11_mineru_2_5_pro_inference/serving_${mineru_mode}_${mineru_limit}_$(date -u +%Y%m%dT%H%M%S)_$(git rev-parse --short HEAD)}"
 test ! -e "$mineru_root/output"
@@ -44,7 +44,9 @@ mineru_args=(
   --token-trace --hash-model-files
 )
 case "$mineru_mode" in
-  anchor) ;;
+  anchor) echo 'The unchanged anchor must run at trace-only commit 13061fc4.' >&2; exit 2 ;;
+  stepping) ;;
+  streaming) mineru_args+=(--streaming-pages --streaming-page-window "${PAGE_WINDOW:-32}") ;;
   *) echo "Unknown validation mode: $mineru_mode" >&2; exit 2 ;;
 esac
 printf '%q ' "$mineru_python" "${mineru_args[@]}" > "$mineru_root/command.txt"
