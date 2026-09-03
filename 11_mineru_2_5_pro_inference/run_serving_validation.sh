@@ -45,7 +45,7 @@ mineru_args=(
 )
 case "$mineru_mode" in
   anchor) echo 'The unchanged anchor must run at trace-only commit 13061fc4.' >&2; exit 2 ;;
-  stepping) ;;
+  stepping) mineru_args+=(--no-streaming-pages) ;;
   streaming) mineru_args+=(--streaming-pages --streaming-page-window "${PAGE_WINDOW:-32}") ;;
   *) echo "Unknown validation mode: $mineru_mode" >&2; exit 2 ;;
 esac

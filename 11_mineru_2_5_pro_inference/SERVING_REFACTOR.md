@@ -32,10 +32,46 @@ serving refactor must reject unsupported enabled cross-page merge explicitly.
 
 ## Status
 
-Trace-only reference commit: `13061fc4`. The new source and scheduler have CPU
-coverage for vision-window refill, mixed layout/recognition arrivals, immediate
-EOS, length caps, idle live input, empty pages, page-window bounds and writer
-errors. 910B comparison is pending.
+Trace-only reference commit: `13061fc4`. Streaming runtime validated at
+`cb8e36ab` on physical 910B2 NPU4. The suite now has 23 tests covering
+vision-window refill, mixed layout/recognition arrivals, immediate EOS, length
+caps, idle live input, empty pages, page-window bounds, writer errors, CLI
+defaults and comparison gates. CPU tests also passed in the validation host's
+Torch environment.
+
+The first-384 streaming run completed in 363.509 s, or 1.05637 pages/s, including
+token recording and the final page-writer drain. Setup and warmup are excluded.
+The earlier untraced run took 540.304 s, or 0.71071 pages/s. The trace-only anchor
+took 551.485 s, or 0.69630 pages/s. This is 48.6% higher throughput than the
+earlier untraced run, or 51.7% higher than the trace-only anchor. These are single
+runs on a shared host, not an isolated attribution of each refactor component.
+
+Average decode-slot occupancy increased from 25.72% to 96.57%; device-time-
+weighted occupancy is 96.66%. Decode device time fell from 227.081 s in the
+anchor to 61.833 s. Empty slots despite prepared work: zero. Maximum live pages:
+32. Maximum CPU preparation queue: 64. Maximum live generation requests: 63.
+The first page was durable after 13.057 s. Final drain was 1.774 s.
+
+All 5,486 request identities are present exactly once. All 384 layout sequences
+are token-exact; 5,099 of 5,102 recognition sequences are token-exact. All final
+Markdown files except one are byte-identical. That page changes the Chinese
+character `度` to `座` in two occurrences of the same short text region. This is
+an output difference, not a claim that either reading is more accurate.
+
+The other two raw-sequence differences are random table-image labels generated
+by the installed helper. They change two crop-image hashes. After bijective
+placeholder normalization their raw table text is exact, and both final
+Markdown and block JSON are byte-identical. The comparison requires explicit
+`--allow-table-image-placeholders` for this narrow case; other input changes
+still fail. See the archived result's `RESULTS.md` for source provenance.
+
+Both runs contain the same 18 length-capped recognition requests with identical
+output IDs. There are no new caps, missing pages, empty pages or lost requests.
+This validates preservation of the existing output contract, not a new
+OmniDocBench accuracy score or full-1651 benchmark.
+
+Frozen evidence: `references/serving_anchor_384_13061fc4/` and
+`references/serving_streaming_384_cb8e36ab/`.
 
 ## Serving API
 
@@ -64,7 +100,9 @@ preserves official reading order within each result. The single bounded writer
 persists pages in completion-submission order, keyed by the original page name.
 
 The benchmark entrypoint adds `--streaming-pages` and
-`--streaming-page-window 32`. `MODE=streaming LIMIT=384 bash
+`--streaming-page-window 32`. Streaming is now the default for the local
+continuous backend; `--no-streaming-pages` selects the legacy orchestration.
+`MODE=streaming LIMIT=384 bash
 11_mineru_2_5_pro_inference/run_serving_validation.sh` records a new run on the
 same free physical NPU4 and uses the existing graph-cache directories. Set
 `MODE=stepping` only for the legacy orchestration with repaired refill logic.

@@ -18,6 +18,25 @@ opendatalab/MinerU2.5-Pro-2605-1.2B
 Pass a local checkpoint directory to every runner; these scripts do not
 download model weights.
 
+## Persistent page serving
+
+The `local-continuous-client` page runner now defaults to bounded streaming.
+Layout and crop requests share one persistent B32 decode scheduler, and each
+page is written after its own last crop completes. `PageInbox` supports live
+arrivals and explicit input closure. CPU preparation and page buffering are
+bounded; model kernels, prompts and crop/postprocessing policy remain unchanged.
+
+See [SERVING_REFACTOR.md](SERVING_REFACTOR.md) for the API, validation and timing
+contract. The checksum-protected pre-refactor 384-page token reference is in
+`references/serving_anchor_384_13061fc4/`. Use `--token-trace` for token-level
+comparison. Use `--no-streaming-pages` explicitly to retain the older stepping
+orchestration described in the historical sections below.
+
+On the 910B validation host, `MODE=streaming LIMIT=384 bash
+11_mineru_2_5_pro_inference/run_serving_validation.sh` uses the pinned B32/KV4096
+settings and existing graph caches. This is not an HTTP server; the page inbox
+and callback API is the serving boundary.
+
 ## Included surfaces
 
 ```text

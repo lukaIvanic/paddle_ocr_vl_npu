@@ -132,8 +132,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hash-model-files", action="store_true")
     parser.add_argument("--token-trace", action="store_true",
                         help="Record lossless layout/crop generations for the global custom stream.")
-    parser.add_argument("--streaming-pages", action="store_true",
-                        help="Use bounded pages and one open layout/recognition request scheduler.")
+    parser.add_argument("--streaming-pages", action=argparse.BooleanOptionalAction, default=None,
+                        help="Bounded open page scheduling, enabled by default for local-continuous-client.")
     parser.add_argument("--streaming-page-window", type=int, default=32)
     parser.add_argument(
         "--processor-min-pixels",
@@ -269,7 +269,10 @@ def parse_args() -> argparse.Namespace:
         default="1,2,4,8,16,32,64,128",
         help="Comma-separated batch sizes captured by FULL_DECODE_ONLY.",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.streaming_pages is None:
+        args.streaming_pages = args.backend == "local-continuous-client"
+    return args
 
 
 def atomic_write_text(path: Path, value: str) -> None:
@@ -565,8 +568,8 @@ def main() -> None:
         raise ValueError(
             "global-request-stream currently requires local-continuous-client"
         )
-    if args.token_trace and (not args.global_request_stream or args.layout_only):
-        raise ValueError("token-trace requires the full global custom stream")
+    if args.token_trace and (not (args.global_request_stream or args.streaming_pages) or args.layout_only):
+        raise ValueError("token-trace requires the full global or streaming custom pipeline")
     if args.streaming_pages and (args.backend != "local-continuous-client" or args.layout_only):
         raise ValueError("streaming-pages requires the full local continuous backend")
     if args.streaming_page_window < 1:
