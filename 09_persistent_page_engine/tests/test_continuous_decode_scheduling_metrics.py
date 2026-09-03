@@ -37,6 +37,8 @@ def run_case(batch_size, collect):
         decode_token_id_map=torch.arange(10),
     )
     candidates = deque([("a", 1), ("b", 4), ("c", 3)])
+    if batch_size == 4:
+        candidates.extend([("d", 4), ("e", 3)])
     submitted = time.perf_counter()
     available = deque((candidates.popleft(), submitted) for _ in range(batch_size))
     emitted = []
@@ -134,8 +136,8 @@ class ContinuousDecodeMetricsTest(unittest.TestCase):
         finally:
             source.close()
 
-    def test_logging_preserves_tokens_and_fixed_batch_for_one_and_two(self):
-        for batch_size in (1, 2):
+    def test_logging_preserves_tokens_and_fixed_batch(self):
+        for batch_size in (1, 2, 4):
             with self.subTest(batch_size=batch_size):
                 before, plain, _ = run_case(batch_size, False)
                 after, measured, shapes = run_case(batch_size, True)
@@ -143,9 +145,12 @@ class ContinuousDecodeMetricsTest(unittest.TestCase):
                 self.assertEqual(outputs(plain), outputs(measured))
                 self.assertEqual(before.graph_calls, after.graph_calls)
                 self.assertTrue(all(shape == (batch_size, 1) for shape in shapes))
-                self.assertEqual(outputs(measured), {
+                expected = {
                     "a": [1, 2, 3, 4, 5, 9], "b": [4, 5, 9], "c": [3, 4, 5, 9],
-                })
+                }
+                if batch_size == 4:
+                    expected.update({"d": [4, 5, 9], "e": [3, 4, 5, 9]})
+                self.assertEqual(outputs(measured), expected)
                 for item in measured:
                     metrics = item.scheduling_metrics
                     self.assertEqual(

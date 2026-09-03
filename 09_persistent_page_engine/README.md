@@ -1188,15 +1188,15 @@ prompt selection, vision preparation, MRoPE construction, and inference stay
 inside the API worker. The caller supplies an already-cropped image and its
 type; this endpoint does not run page layout detection.
 
-### Closed-loop B1/B2 table comparison
+### Closed-loop B1/B2/B4 table comparison
 
 Keep the optimized model, vocabulary, KV capacity, and vision/text buckets
-identical between runs. Set `--decode-batch-size 1` or `2` on the existing crop
+identical between runs. Set `--decode-batch-size 1`, `2`, or `4` on the existing crop
 API command and add `--request-scheduling-metrics`. This adds logging only, not
 an admission guard. The decode graph retains its configured batch size when a
 slot is idle. Warm the server with a complete request outside measured timing.
 
-From the repository root, send the same frozen P90 set in both runs:
+From the repository root, send the same frozen P90 set in each run:
 
 ```sh
 # B1 server, one outstanding request.
@@ -1211,6 +1211,11 @@ python 09_persistent_page_engine/scripts/table_closed_loop_api_client.py \
   --set a --count 32 --max-in-flight 2 \
   --output-dir tmp/table_closed_loop_b2
 ```
+
+For B4, start the server with `--decode-batch-size 4`, use
+`--max-in-flight 4` in the client, and choose a separate output directory.
+The same response-driven refill applies; the client does not wait for all four
+requests to finish before replacing a completed request.
 
 The client preloads crop PNG bodies before timing, prints `SEND`/`RECV`, and
 flushes each response to `results.jsonl` in completion order. It records the

@@ -38,6 +38,37 @@ def args(limit: int) -> argparse.Namespace:
 
 
 class ClosedLoopClientTest(unittest.TestCase):
+    def test_four_requests_refill_while_three_partners_wait(self) -> None:
+        async def scenario(path):
+            release_partners = asyncio.Event()
+            active, peak = 0, 0
+
+            async def post(*unused, source_request_id, **kwargs):
+                nonlocal active, peak
+                active += 1
+                peak = max(peak, active)
+                if int(source_request_id) < 3:
+                    await asyncio.wait_for(release_partners.wait(), 2)
+                elif source_request_id == "6":
+                    saved = [json.loads(line) for line in path.read_text().splitlines()]
+                    self.assertEqual([r["request_id"] for r in saved], ["3", "4", "5"])
+                    release_partners.set()
+                active -= 1
+                return {"response": {"token_ids": [1, 2]}}
+
+            with patch.object(CLIENT.load, "post_table_ocr", post):
+                result = await CLIENT.run_closed_loop(
+                    args(4), tables(7), {str(i): b"image" for i in range(7)}, path,
+                )
+            self.assertEqual(peak, 4)
+            return result
+
+        with tempfile.TemporaryDirectory() as directory:
+            rows, _, _, stats = asyncio.run(scenario(Path(directory) / "results.jsonl"))
+        self.assertEqual([r["request_id"] for r in rows[:4]], ["3", "4", "5", "6"])
+        self.assertEqual(stats["observed_max_in_flight"], 4)
+        self.assertEqual(stats["unsent_request_count"], 0)
+
     def test_two_requests_refill_without_waiting_for_slow_partner(self) -> None:
         async def scenario(path):
             release_first = asyncio.Event()
@@ -114,6 +145,9 @@ class ClosedLoopClientTest(unittest.TestCase):
             two = args(2)
             two.source_jsonl, two.count = Path("unused"), 32
             self.assertEqual(CLIENT.select_tables(one), CLIENT.select_tables(two))
+            four = args(4)
+            four.source_jsonl, four.count = Path("unused"), 32
+            self.assertEqual(CLIENT.select_tables(one), CLIENT.select_tables(four))
 
     def test_invalid_limit_rejected(self) -> None:
         with self.assertRaises(ValueError):

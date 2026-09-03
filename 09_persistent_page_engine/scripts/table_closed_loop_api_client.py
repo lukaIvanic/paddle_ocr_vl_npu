@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--set", choices=("a", "b", "warm"), required=True)
     parser.add_argument("--count", type=int, default=32)
     parser.add_argument(
-        "--max-in-flight", type=int, choices=(1, 2), default=1,
+        "--max-in-flight", type=int, choices=(1, 2, 4), default=1,
         help="Client-side outstanding-request limit. Refill after any response.",
     )
     parser.add_argument("--client-label", default="client")
@@ -72,8 +72,8 @@ async def run_closed_loop(
     payloads: dict[str, bytes],
     results_path: Path,
 ) -> tuple[list[dict[str, Any]], float, float, dict[str, Any]]:
-    if args.max_in_flight not in (1, 2):
-        raise ValueError("--max-in-flight must be 1 or 2")
+    if args.max_in_flight not in (1, 2, 4):
+        raise ValueError("--max-in-flight must be 1, 2, or 4")
     if args.start_at_epoch_s is not None:
         remaining = args.start_at_epoch_s - time.time()
         if remaining > 0:
