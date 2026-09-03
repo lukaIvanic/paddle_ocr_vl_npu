@@ -38,8 +38,8 @@ def args(limit: int) -> argparse.Namespace:
 
 
 class ClosedLoopClientTest(unittest.TestCase):
-    def test_four_requests_refill_while_three_partners_wait(self) -> None:
-        async def scenario(path):
+    def test_large_limits_refill_while_other_partners_wait(self) -> None:
+        async def scenario(path, limit):
             release_partners = asyncio.Event()
             active, peak = 0, 0
 
@@ -47,27 +47,35 @@ class ClosedLoopClientTest(unittest.TestCase):
                 nonlocal active, peak
                 active += 1
                 peak = max(peak, active)
-                if int(source_request_id) < 3:
+                if int(source_request_id) < limit - 1:
                     await asyncio.wait_for(release_partners.wait(), 2)
-                elif source_request_id == "6":
+                elif int(source_request_id) == limit + 2:
                     saved = [json.loads(line) for line in path.read_text().splitlines()]
-                    self.assertEqual([r["request_id"] for r in saved], ["3", "4", "5"])
+                    self.assertEqual(
+                        [r["request_id"] for r in saved],
+                        [str(i) for i in range(limit - 1, limit + 2)],
+                    )
                     release_partners.set()
                 active -= 1
                 return {"response": {"token_ids": [1, 2]}}
 
             with patch.object(CLIENT.load, "post_table_ocr", post):
                 result = await CLIENT.run_closed_loop(
-                    args(4), tables(7), {str(i): b"image" for i in range(7)}, path,
+                    args(limit), tables(limit + 3),
+                    {str(i): b"image" for i in range(limit + 3)}, path,
                 )
-            self.assertEqual(peak, 4)
+            self.assertEqual(peak, limit)
             return result
 
-        with tempfile.TemporaryDirectory() as directory:
-            rows, _, _, stats = asyncio.run(scenario(Path(directory) / "results.jsonl"))
-        self.assertEqual([r["request_id"] for r in rows[:4]], ["3", "4", "5", "6"])
-        self.assertEqual(stats["observed_max_in_flight"], 4)
-        self.assertEqual(stats["unsent_request_count"], 0)
+        for limit in (4, 8, 16):
+            with self.subTest(limit=limit), tempfile.TemporaryDirectory() as directory:
+                rows, _, _, stats = asyncio.run(scenario(Path(directory) / "results.jsonl", limit))
+                self.assertEqual(
+                    [r["request_id"] for r in rows[:4]],
+                    [str(i) for i in range(limit - 1, limit + 3)],
+                )
+                self.assertEqual(stats["observed_max_in_flight"], limit)
+                self.assertEqual(stats["unsent_request_count"], 0)
 
     def test_two_requests_refill_without_waiting_for_slow_partner(self) -> None:
         async def scenario(path):
@@ -152,6 +160,23 @@ class ClosedLoopClientTest(unittest.TestCase):
     def test_invalid_limit_rejected(self) -> None:
         with self.assertRaises(ValueError):
             asyncio.run(CLIENT.run_closed_loop(args(0), [], {}, Path("unused")))
+
+    def test_fifty_table_set_is_fixed_and_disjoint_from_warmup(self) -> None:
+        records = [{"request_id": str(i), "worker_wall_s": float(i)} for i in range(666)]
+        with patch.object(CLIENT.load, "read_jsonl", return_value=records):
+            selections = []
+            for limit in CLIENT.IN_FLIGHT_LIMITS:
+                selected_args = args(limit)
+                selected_args.set = "p90"
+                selected_args.source_jsonl, selected_args.count = Path("unused"), 50
+                selections.append(CLIENT.select_tables(selected_args))
+            self.assertTrue(all(s == selections[0] for s in selections))
+            self.assertEqual([r["tail_rank"] for r in selections[0]], list(range(1, 51)))
+            warm_args = args(1)
+            warm_args.set = "warm"
+            warm_args.source_jsonl, warm_args.count = Path("unused"), 1
+            self.assertNotIn(CLIENT.select_tables(warm_args)[0]["request_id"],
+                             {r["request_id"] for r in selections[0]})
 
 
 if __name__ == "__main__":

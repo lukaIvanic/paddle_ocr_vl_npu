@@ -1188,10 +1188,10 @@ prompt selection, vision preparation, MRoPE construction, and inference stay
 inside the API worker. The caller supplies an already-cropped image and its
 type; this endpoint does not run page layout detection.
 
-### Closed-loop B1/B2/B4 table comparison
+### Closed-loop table concurrency comparison
 
 Keep the optimized model, vocabulary, KV capacity, and vision/text buckets
-identical between runs. Set `--decode-batch-size 1`, `2`, or `4` on the existing crop
+identical between runs. Set `--decode-batch-size` to `1`, `2`, `4`, `8`, or `16` on the crop
 API command and add `--request-scheduling-metrics`. This adds logging only, not
 an admission guard. The decode graph retains its configured batch size when a
 slot is idle. Warm the server with a complete request outside measured timing.
@@ -1212,17 +1212,23 @@ python 09_persistent_page_engine/scripts/table_closed_loop_api_client.py \
   --output-dir tmp/table_closed_loop_b2
 ```
 
-For B4, start the server with `--decode-batch-size 4`, use
-`--max-in-flight 4` in the client, and choose a separate output directory.
-The same response-driven refill applies; the client does not wait for all four
-requests to finish before replacing a completed request.
+For B4/B8/B16, match the server's `--decode-batch-size` with the client's
+`--max-in-flight`, and choose a separate output directory. The same
+response-driven refill applies at each size; it does not wait for a whole batch
+of responses before sending the next request.
+
+For a larger matched test, use `--set p90 --count 50` in every client run.
+This selects original B1 tail ranks 1 through 50, in that order, from the frozen
+P90 cohort. It is not a random P90 sample. Sets `a` and `b` retain their original
+32-table selections. `p90` allows at most 64 tables; `warm` reserves rank 65
+onward, outside all measured sets.
 
 The client preloads crop PNG bodies before timing, prints `SEND`/`RECV`, and
 flushes each response to `results.jsonl` in completion order. It records the
 observed outstanding-request maximum, dispatch/completion offsets, complete
 responses including native IDs, latency percentiles, and achieved QPS. It does
 not prescribe an arrival QPS. After a request error it stops new submissions
-and drains the other outstanding request. A timeout might leave server work
+and drains the other outstanding requests. A timeout might leave server work
 running, so replacing it would violate the intended concurrency limit.
 
 Each response's `scheduling_metrics` records other-table prefill counts,

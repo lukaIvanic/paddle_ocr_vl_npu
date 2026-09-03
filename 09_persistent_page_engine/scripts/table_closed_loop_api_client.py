@@ -17,16 +17,17 @@ import table_request_load_simulator as load
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
+IN_FLIGHT_LIMITS = (1, 2, 4, 8, 16)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--api-url", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--set", choices=("a", "b", "warm"), required=True)
+    parser.add_argument("--set", choices=("a", "b", "p90", "warm"), required=True)
     parser.add_argument("--count", type=int, default=32)
     parser.add_argument(
-        "--max-in-flight", type=int, choices=(1, 2, 4), default=1,
+        "--max-in-flight", type=int, choices=IN_FLIGHT_LIMITS, default=1,
         help="Client-side outstanding-request limit. Refill after any response.",
     )
     parser.add_argument("--client-label", default="client")
@@ -54,6 +55,8 @@ def select_tables(args: argparse.Namespace) -> list[dict[str, Any]]:
         selected = cohort[:64:2]
     elif args.set == "b":
         selected = cohort[1:64:2]
+    elif args.set == "p90":
+        selected = cohort[:64]
     else:
         selected = cohort[64:]
     if args.count <= 0:
@@ -72,8 +75,8 @@ async def run_closed_loop(
     payloads: dict[str, bytes],
     results_path: Path,
 ) -> tuple[list[dict[str, Any]], float, float, dict[str, Any]]:
-    if args.max_in_flight not in (1, 2, 4):
-        raise ValueError("--max-in-flight must be 1, 2, or 4")
+    if args.max_in_flight not in IN_FLIGHT_LIMITS:
+        raise ValueError(f"--max-in-flight must be one of {IN_FLIGHT_LIMITS}")
     if args.start_at_epoch_s is not None:
         remaining = args.start_at_epoch_s - time.time()
         if remaining > 0:
