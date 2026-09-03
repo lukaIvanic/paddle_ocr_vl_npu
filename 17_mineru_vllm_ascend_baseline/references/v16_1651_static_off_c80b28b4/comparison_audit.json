@@ -1,0 +1,44 @@
+{
+  "stock_run": {
+    "source_commit": "c80b28b44e366d93408b4228d148768972e3bf49",
+    "hardware": "Ascend 910B2",
+    "physical_device": 4,
+    "static_kernel": false,
+    "pages": 1651,
+    "failed": 0,
+    "benchmark_wall_s": 2282.1487189909676,
+    "pages_per_s": 0.7234410212889085,
+    "inference_s": 2168.4659398830263,
+    "inference_pages_per_s": 0.7613677345050022,
+    "engine_setup_s": 83.58010648202617,
+    "overall_accuracy": 95.49958520132026
+  },
+  "custom_run": {
+    "source_commit": "ae4c947c15d43d9858dfe3608e25bdbb6fa43565",
+    "hardware": "Ascend 910B2",
+    "physical_device": 4,
+    "pages": 1651,
+    "failed": 0,
+    "pipeline_wall_s": 2029.965940847993,
+    "pages_per_s": 0.8133141383201313,
+    "overall_accuracy": 95.11312625606774
+  },
+  "comparison": {
+    "custom_pages_per_s_advantage_percent": 12.423005384889784,
+    "custom_wall_time_saved_s": 252.1827781429746,
+    "stock_accuracy_advantage_points": 0.3864589452525138,
+    "same_hardware_and_corpus": true,
+    "isolated_framework_ablation": false,
+    "reason_not_isolated": "Stock uses image_analysis=true and model length 8192. Custom uses image_analysis=false, KV4096, and token tracing."
+  },
+  "prior_stock_static_on_output_comparison": {
+    "prior_overall": 95.50638103519013,
+    "current_static_off_overall": 95.49958520132026,
+    "current_minus_prior_points": -0.006795833869869483,
+    "byte_identical_markdown_pages": 1521,
+    "changed_markdown_pages": 130,
+    "missing_pages": 0,
+    "extra_pages": 0,
+    "current_empty_pages": 1
+  }
+}

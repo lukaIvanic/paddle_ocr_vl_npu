@@ -19,6 +19,11 @@ online-serving graph-cache behavior are recorded in
 `enable_static_kernel` on/off result is recorded in
 `STATIC_KERNEL_AB_128.md`.
 
+The clean [static-off full-1,651 result](references/v16_1651_static_off_c80b28b4/RESULTS.md)
+on one 910B2 is 0.72344 hot pages/s and 95.4996 overall accuracy. It preserves
+all predictions and provides the direct same-hardware comparison with the
+custom experiment-11 run.
+
 ## Source evidence
 
 The seven supplied screenshots and reconstructed code are transcribed in
