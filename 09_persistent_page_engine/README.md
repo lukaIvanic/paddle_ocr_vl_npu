@@ -1258,9 +1258,14 @@ For the stock vLLM-Ascend reference, run
 `scripts/serve_vllm_table_reference.sh` inside the existing vLLM container,
 with `ASCEND_RT_VISIBLE_DEVICES` set to one manually verified free device.
 It uses PaddleOCR-VL-1.6 FP16, `FULL_AND_PIECEWISE`, context 4096, at most
-four sequences, and the same 28,224 to 802,816 image pixel limits. Prefix
+four sequences by default, and the same 28,224 to 802,816 image pixel limits. Prefix
 and image-processor caching are disabled, matching the earlier vLLM baseline.
 The launcher requires the container's initialized CANN environment.
+For the higher-concurrency comparison, set `TABLE_VLLM_MAX_SEQS=16` before
+launching. Values 4, 8, and 16 are supported. The launcher captures every batch
+size from one through that maximum; other model and scheduler settings stay
+unchanged. Use client limits 8 and 16 with the 16-sequence server and record the
+server capacity alongside the client limit.
 
 Use the same client with `--api-kind vllm` and
 `--api-url http://127.0.0.1:18081/v1/chat/completions`. Selection, shuffle,
