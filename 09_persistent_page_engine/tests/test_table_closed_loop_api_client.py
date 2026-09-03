@@ -39,6 +39,32 @@ def args(limit: int) -> argparse.Namespace:
 
 
 class ClosedLoopClientTest(unittest.TestCase):
+    def test_vllm_body_requests_native_ids_and_remaining_context(self) -> None:
+        body = json.loads(CLIENT.vllm_payload(b"png", "PaddleOCR-VL-1.6"))
+        self.assertTrue(body["return_token_ids"])
+        self.assertEqual(body["temperature"], 0)
+        self.assertNotIn("max_tokens", body)
+        self.assertEqual(body["messages"][0]["content"][1]["text"], "Table Recognition:")
+        self.assertEqual(CLIENT.vllm_endpoint("http://localhost:18081/v1/chat/completions", "/metrics"),
+                         "http://localhost:18081/metrics")
+
+    def test_vllm_uses_same_closed_loop_limit_and_saves_native_ids(self) -> None:
+        async def post(*unused):
+            await asyncio.sleep(0)
+            return {"response": {"token_ids": [93980, 2]}}
+
+        selected_args = args(2)
+        selected_args.api_kind = "vllm"
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(CLIENT, "post_vllm", post):
+                rows, _, _, stats = asyncio.run(CLIENT.run_closed_loop(
+                    selected_args, tables(4), {str(i): b"json" for i in range(4)},
+                    Path(directory) / "results.jsonl",
+                ))
+        self.assertEqual(stats["observed_max_in_flight"], 2)
+        self.assertEqual(len(rows), 4)
+        self.assertTrue(all(row["service_result"]["response"]["token_ids"] == [93980, 2] for row in rows))
+
     def test_large_limits_refill_while_other_partners_wait(self) -> None:
         async def scenario(path, limit):
             release_partners = asyncio.Event()

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -12,6 +13,8 @@ import random
 import statistics
 import time
 from typing import Any
+from urllib.parse import urlparse, urlunparse
+from urllib.request import Request, urlopen
 
 import table_request_load_simulator as load
 
@@ -24,6 +27,8 @@ IN_FLIGHT_LIMITS = (1, 2, 4, 8, 16)
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--api-url", required=True)
+    parser.add_argument("--api-kind", choices=("crop", "vllm"), default="crop")
+    parser.add_argument("--vllm-model", default="PaddleOCR-VL-1.6")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--set", choices=("a", "b", "p90", "warm", "random"), required=True)
     parser.add_argument("--count", type=int, default=32)
@@ -50,6 +55,55 @@ def parse_args() -> argparse.Namespace:
         help="Wait until this wall-clock epoch after all payloads are ready.",
     )
     return parser.parse_args()
+
+
+def vllm_endpoint(api_url: str, path: str) -> str:
+    parsed = urlparse(api_url)
+    if parsed.scheme != "http" or not parsed.hostname:
+        raise ValueError("--api-url must be an http:// URL")
+    return urlunparse(parsed._replace(path=path, query="", fragment=""))
+
+
+def vllm_payload(image_bytes: bytes, model: str) -> bytes:
+    # Omit max_tokens: vLLM uses the remaining model context, verified in 0.23.
+    # return_token_ids returns native generated IDs, never re-encoded text.
+    return json.dumps({
+        "model": model, "temperature": 0.0, "return_token_ids": True,
+        "messages": [{"role": "user", "content": [
+            {"type": "image_url", "image_url": {
+                "url": "data:image/png;base64," + base64.b64encode(image_bytes).decode("ascii"),
+            }},
+            {"type": "text", "text": "Table Recognition:"},
+        ]}],
+    }, separators=(",", ":")).encode("utf-8")
+
+
+async def post_vllm(api_url: str, request_id: str, body: bytes, timeout_s: float) -> dict[str, Any]:
+    def request() -> dict[str, Any]:
+        req = Request(vllm_endpoint(api_url, "/v1/chat/completions"), data=body,
+                      headers={"Content-Type": "application/json", "X-Request-Id": request_id})
+        with urlopen(req, timeout=timeout_s) as response:
+            payload = json.load(response)
+            status = response.status
+        choice = payload["choices"][0]
+        return {
+            "http_status": status,
+            "output_tokens": payload["usage"]["completion_tokens"],
+            "stop_reason": choice["finish_reason"],
+            "response": {
+                "text": choice["message"]["content"],
+                "token_ids": choice.get("token_ids"),
+                "input_tokens": payload["usage"]["prompt_tokens"],
+                "stop_reason": choice["finish_reason"],
+            },
+            "vllm_response": payload,
+        }
+    return await asyncio.to_thread(request)
+
+
+def save_vllm_metrics(api_url: str, destination: Path, timeout_s: float) -> None:
+    with urlopen(vllm_endpoint(api_url, "/metrics"), timeout=timeout_s) as response:
+        destination.write_bytes(response.read())
 
 
 def select_tables(args: argparse.Namespace) -> list[dict[str, Any]]:
@@ -147,13 +201,16 @@ async def run_closed_loop(
             error: str | None = None
             service_result: dict[str, Any] = {}
             try:
-                service_result = await load.post_table_ocr(
-                    args.api_url,
-                    f"{args.client_label}-{index:03d}-{request_id}",
-                    payloads[request_id],
-                    args.request_timeout_s,
-                    source_request_id=request_id,
-                )
+                http_id = f"{args.client_label}-{index:03d}-{request_id}"
+                if getattr(args, "api_kind", "crop") == "vllm":
+                    service_result = await post_vllm(
+                        args.api_url, http_id, payloads[request_id], args.request_timeout_s,
+                    )
+                else:
+                    service_result = await load.post_table_ocr(
+                        args.api_url, http_id, payloads[request_id], args.request_timeout_s,
+                        source_request_id=request_id,
+                    )
             except Exception as exc:
                 error = f"{type(exc).__name__}: {exc}"
                 # A timed-out HTTP request may still be executing on the server.
@@ -210,7 +267,14 @@ def main() -> None:
 
     selected = select_tables(args)
     load.write_jsonl(output_dir / "tables.jsonl", selected)
-    ready = load.check_api_ready(args.api_url, min(args.request_timeout_s, 10.0))
+    if args.api_kind == "vllm":
+        with urlopen(vllm_endpoint(args.api_url, "/v1/models"), timeout=10) as response:
+            models = json.load(response)
+        if args.vllm_model not in {entry["id"] for entry in models["data"]}:
+            raise ValueError(f"vLLM does not serve {args.vllm_model}")
+        ready = {"configuration": models}
+    else:
+        ready = load.check_api_ready(args.api_url, min(args.request_timeout_s, 10.0))
     unique_selected = list({str(row["request_id"]): row for row in selected}.values())
     print(
         f"{args.client_label} API ready worker_pid={ready.get('worker_pid')}; "
@@ -227,6 +291,10 @@ def main() -> None:
         flush=True,
     )
 
+    if args.api_kind == "vllm":
+        payloads = {rid: vllm_payload(body, args.vllm_model) for rid, body in payloads.items()}
+        save_vllm_metrics(args.api_url, output_dir / "metrics_before.txt", 10)
+
     results, run_wall_s, actual_start_epoch_s, client_stats = asyncio.run(
         run_closed_loop(
             args,
@@ -235,12 +303,15 @@ def main() -> None:
             output_dir / "results.jsonl",
         )
     )
+    if args.api_kind == "vllm":
+        save_vllm_metrics(args.api_url, output_dir / "metrics_after.txt", 10)
     latencies = [float(row["latency_s"]) for row in results]
     failures = [row for row in results if row["status"] != "ok"]
     summary = {
         "format": "table_closed_loop_api_client_v2",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "api_url": args.api_url,
+        "api_kind": args.api_kind,
         "client_label": args.client_label,
         "set": args.set,
         "shuffle_seed": args.shuffle_seed,

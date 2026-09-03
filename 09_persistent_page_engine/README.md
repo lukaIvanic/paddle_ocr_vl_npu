@@ -1254,6 +1254,24 @@ not prescribe an arrival QPS. After a request error it stops new submissions
 and drains the other outstanding requests. A timeout might leave server work
 running, so replacing it would violate the intended concurrency limit.
 
+For the stock vLLM-Ascend reference, run
+`scripts/serve_vllm_table_reference.sh` inside the existing vLLM container,
+with `ASCEND_RT_VISIBLE_DEVICES` set to one manually verified free device.
+It uses PaddleOCR-VL-1.6 FP16, `FULL_AND_PIECEWISE`, context 4096, at most
+four sequences, and the same 28,224 to 802,816 image pixel limits. Prefix
+and image-processor caching are disabled, matching the earlier vLLM baseline.
+The launcher requires the container's initialized CANN environment.
+
+Use the same client with `--api-kind vllm` and
+`--api-url http://127.0.0.1:18081/v1/chat/completions`. Selection, shuffle,
+closed-loop refill, timing, and incremental saving are unchanged. vLLM chooses
+its own dynamic batches; the client controls outstanding requests. The client
+requests greedy decoding and native generated token IDs. It leaves the output
+limit unset so vLLM uses the remaining 4096-token context, as verified in 0.23.
+Whole-run Prometheus snapshots are saved outside timing. With concurrency,
+their deltas are aggregate measurements, not individual request stage times.
+vLLM does not provide the custom scheduler's interruption counters.
+
 Each response's `scheduling_metrics` records other-table prefill counts,
 individual host spans and total seconds, split into `before_first_decode` and
 `during_decode`. The initial category includes delays during initial batch
