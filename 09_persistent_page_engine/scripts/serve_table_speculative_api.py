@@ -79,6 +79,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--k-values", default="7,15,31,63")
     parser.add_argument("--initial-k", type=int, default=15)
+    parser.add_argument(
+        "--allow-compile",
+        action="store_true",
+        help=(
+            "Compile missing production graphs during server startup. "
+            "Compilation finishes before the ready endpoint becomes available."
+        ),
+    )
     parser.add_argument("--min-pixels", type=int, default=28224)
     parser.add_argument("--max-pixels", type=int, default=802816)
     parser.add_argument(
@@ -367,7 +375,7 @@ def _live_args(config: dict[str, Any]) -> SimpleNamespace:
         initial_k=config["initial_k"],
         verifier_optimization=config["verifier_optimization"],
         per_call_device_timing=False,
-        allow_compile=False,
+        allow_compile=bool(config["allow_compile"]),
         token_selection="greedy",
         min_pixels=config["min_pixels"],
         max_pixels=config["max_pixels"],
@@ -428,7 +436,10 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
                 alternate_preferred_token_id=b1_recognizer.math_slash_token_id,
                 cell_start_token_ids=b1_recognizer.table_cell_token_ids,
             )
-            if not spec_cache.is_dir() or not any(spec_cache.iterdir()):
+            if (
+                not args.allow_compile
+                and (not spec_cache.is_dir() or not any(spec_cache.iterdir()))
+            ):
                 raise RuntimeError(f"missing K{value} verifier cache: {spec_cache}")
         runtime = adaptive_lab.AdaptiveKTableSpeculativeDecodeRuntime(
             b1_recognizer,
@@ -646,6 +657,7 @@ def main() -> None:
         "verifier_optimization": args.verifier_optimization,
         "k_values": args.k_values,
         "initial_k": args.initial_k,
+        "allow_compile": args.allow_compile,
         "min_pixels": args.min_pixels,
         "max_pixels": args.max_pixels,
         "decode_cache_dir": str(args.decode_cache_dir.expanduser().resolve()),
