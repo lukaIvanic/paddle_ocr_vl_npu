@@ -1,0 +1,14 @@
+2026-09-04T08:59:07+00:00
+liteserver-c001-4
+90b3b3c06669a7e816547c1ddefd9efa149c5619
+declare -x ASCEND_RT_VISIBLE_DEVICES="6"
+SPEC_VERIFY_ATTENTION=manual_grouped_legal_scaled_masked_softmax_fp16_combined_qkv_post_rope
+server=serve_table_speculative_api.py --allow-compile optimized committed defaults; client=random100 seed1 max-in-flight1
+server_pid=1947828
+    PID                  STARTED COMMAND
+1947828 Fri Sep  4 08:59:07 2026 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/serve_table_speculative_api.py --allow-compile --host 127.0.0.1 --port 8765 --request-timeout-s 3600 --queue-capacity 64 --service-summary-output tmp/09_persistent_page_engine/table_spec_closed_loop_random100_c1_manual_postrope_90b3b3c0_20260904/service_summary.json
+b1_warm_status=0
+MEASURE 2026-09-04T09:00:41+00:00
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python 09_persistent_page_engine/scripts/table_closed_loop_api_client.py --api-url http://127.0.0.1:8765/v1/ocr --set random --count 100 --shuffle-seed 1 --max-in-flight 1 --client-label spec-c1 --output-dir tmp/09_persistent_page_engine/table_spec_closed_loop_random100_c1_manual_postrope_90b3b3c0_20260904/measured
+measure_status=0
+server_status=0

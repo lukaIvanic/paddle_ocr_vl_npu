@@ -1,0 +1,1 @@
+{"ready":true,"worker_pid":1947834,"configuration":{"lane":"height_routed_u8_adaptive_k","height_threshold_px":384,"draft_rows":8,"adaptive_k":[7,15,31,63],"initial_k":15,"decode_optimization":"combined_apply_complete_layer_prefetch1_rope_lut","verifier_optimization":"combined_apply_spec_prefetch_mrope"},"startup_error":null}

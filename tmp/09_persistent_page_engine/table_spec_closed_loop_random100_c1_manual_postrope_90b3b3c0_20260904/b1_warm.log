@@ -1,0 +1,6 @@
+spec-b1-warm API ready worker_pid=1947834; preloading 1 distinct crops for 1 requests
+spec-b1-warm crops preloaded 1/1
+spec-b1-warm payloads ready bytes=50837
+SEND spec-b1-warm 01/1 table=page_000010_table_box_id_1 active=1
+RECV spec-b1-warm 01/1 rank=01 id=page_000010_table_box_id_1 latency=0.2832s status=ok active=0
+DONE spec-b1-warm requests=1 failures=0 max_in_flight=1 wall=0.2839s qps=3.5228 p50=0.2832s p95=0.2832s max=0.2832s
