@@ -32,6 +32,7 @@ from paddleocr_vl.model.text_decode import (  # noqa: E402
     torchair_cache_dir_for_shape,
 )
 from paddleocr_vl.model.text_spec_verify import (  # noqa: E402
+    SPEC_VERIFY_ATTENTION,
     TextSpecVerifyRuntime,
     torchair_cache_dir_for_spec_shape,
 )
@@ -223,12 +224,13 @@ def main(argv: Sequence[str] | None = None) -> None:
             "fully_accepted_tokens_per_call": "draft_length + 1",
             "decode_optimization": args.decode_optimization,
             "spec_optimization": args.spec_optimization,
-            "spec_attention": "PromptFA GQA over persistent KV arena",
+            "spec_attention": SPEC_VERIFY_ATTENTION,
             "warmup": int(args.warmup),
             "repeats": int(args.repeats),
         },
         "setup": {},
         "decode_b1": None,
+        "decode_q1": [],
         "spec_verify": [],
     }
     _write_progress(output_path, result)
@@ -257,6 +259,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         prepare_decode_compact_lm_head(model, token_ids)
         synchronize(device)
 
+    # Production owns fixed-Q1 decode and multi-token verification on the same
+    # weights. Materialize modules required by both presets before converting
+    # the complete decoder to FRACTAL_NZ.
+    prepare_decode_optimization_modules(model, args.decode_optimization)
     prepare_decode_optimization_modules(model, args.spec_optimization)
     started = time.perf_counter()
     weight_format = cast_decode_linear_weights_to_nz(model)
@@ -272,7 +278,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     }
     _write_progress(output_path, result)
 
-    decode_cache_dir = torchair_cache_dir_for_shape(
+    decode_b1_cache_dir = torchair_cache_dir_for_shape(
         args.cache_dir,
         batch_size=1,
         cache_length=args.cache_length,
@@ -282,13 +288,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         linear_weight_format=linear_weight_format,
         optimization=args.decode_optimization,
     )
-    if not decode_cache_dir.is_dir() and not args.allow_compile:
+    if not decode_b1_cache_dir.is_dir() and not args.allow_compile:
         raise RuntimeError(
             "missing B1 decode graph cache; rerun with --allow-compile:\n"
-            f"  - {decode_cache_dir}"
+            f"  - {decode_b1_cache_dir}"
         )
-    print("SPEC_VERIFY_PROGRESS lane=decode_b1 status=setup_begin", flush=True)
-    decode_runtime = TextDecodeRuntime(
+    decode_b1_runtime = TextDecodeRuntime(
         model,
         backend="torchair",
         device=device,
@@ -300,11 +305,6 @@ def main(argv: Sequence[str] | None = None) -> None:
         linear_weight_format=linear_weight_format,
         optimization=args.decode_optimization,
     )
-    decode_input = torch.ones((1, 1), device=device, dtype=torch.int64)
-    decode_position = torch.tensor(
-        [args.profile_position], device=device, dtype=torch.int64
-    )
-    rope_deltas = torch.zeros((1, 1), device=device, dtype=torch.int64)
     compact_decode_output = hasattr(model, "decode_token_id_map")
 
     def decode_target_ids(output: torch.Tensor) -> torch.Tensor:
@@ -312,36 +312,143 @@ def main(argv: Sequence[str] | None = None) -> None:
             return output
         return torch.argmax(output, dim=-1)
 
-    def decode_step() -> torch.Tensor:
-        output = decode_runtime.fn(
-            decode_input,
-            decode_position,
-            rope_deltas,
-            *decode_runtime.warm_cache.flat_tensors(),
+    decode_lane_count = len(args.batch_sizes)
+    for decode_lane_index, batch_size in enumerate(args.batch_sizes, start=1):
+        decode_cache_dir = torchair_cache_dir_for_shape(
+            args.cache_dir,
+            batch_size=batch_size,
+            cache_length=args.cache_length,
+            dtype=dtype,
+            device=device,
+            model_dir=model_dir,
+            linear_weight_format=linear_weight_format,
+            optimization=args.decode_optimization,
         )
-        return decode_target_ids(output)
+        cache_hit = decode_cache_dir.is_dir() and any(decode_cache_dir.iterdir())
+        if not cache_hit and not args.allow_compile:
+            raise RuntimeError(
+                f"missing B{batch_size} Q1 decode graph cache; rerun with "
+                f"--allow-compile:\n  - {decode_cache_dir}"
+            )
+        print(
+            "SPEC_VERIFY_PROGRESS "
+            f"lane=decode_q1_{decode_lane_index}/{decode_lane_count} "
+            f"batch=B{batch_size} query=1 "
+            f"cache={'hit' if cache_hit else 'compile'} status=setup_begin",
+            flush=True,
+        )
+        lane_started = time.perf_counter()
+        decode_runtime = (
+            decode_b1_runtime
+            if batch_size == 1
+            else TextDecodeRuntime(
+                model,
+                backend="torchair",
+                device=device,
+                cache_root=args.cache_dir,
+                batch_size=batch_size,
+                cache_length=args.cache_length,
+                dtype=dtype,
+                model_dir=model_dir,
+                linear_weight_format=linear_weight_format,
+                optimization=args.decode_optimization,
+            )
+        )
+        decode_input = torch.arange(
+            1,
+            batch_size + 1,
+            device=device,
+            dtype=torch.int64,
+        ).view(batch_size, 1)
+        decode_position = torch.full(
+            (batch_size,),
+            args.profile_position,
+            device=device,
+            dtype=torch.int64,
+        )
+        decode_rope_deltas = torch.zeros(
+            (batch_size, 1), device=device, dtype=torch.int64
+        )
+        _zero_cache(decode_runtime.warm_cache)
 
-    durations, _decode_output, host_wall_s = _measure(
-        device,
-        decode_step,
-        warmup=args.warmup,
-        repeats=args.repeats,
-    )
-    result["decode_b1"] = {
-        **_timing_summary(
+        def decode_step() -> torch.Tensor:
+            output = decode_runtime.fn(
+                decode_input,
+                decode_position,
+                decode_rope_deltas,
+                *decode_runtime.warm_cache.flat_tensors(),
+            )
+            return decode_target_ids(output)
+
+        durations, decode_output, host_wall_s = _measure(
+            device,
+            decode_step,
+            warmup=args.warmup,
+            repeats=args.repeats,
+        )
+        decode_output = decode_output.clone()
+        b1_outputs = []
+        for row_index in range(batch_size):
+            _zero_cache(decode_b1_runtime.warm_cache)
+            row_output = decode_b1_runtime.fn(
+                decode_input[row_index : row_index + 1],
+                decode_position[row_index : row_index + 1],
+                decode_rope_deltas[row_index : row_index + 1],
+                *decode_b1_runtime.warm_cache.flat_tensors(),
+            )
+            b1_outputs.append(decode_target_ids(row_output).clone())
+        synchronize(device)
+        b1_output = torch.cat(b1_outputs, dim=0)
+        agreement = decode_output.detach().cpu() == b1_output.detach().cpu()
+        exact_positions = int(agreement.sum().item())
+        position_count = int(agreement.numel())
+        timing = _timing_summary(
             durations,
             recovered_tokens_per_call=1,
             host_wall_s=host_wall_s,
-        ),
-        "runtime": decode_runtime.metadata,
-    }
-    print(
-        "SPEC_VERIFY_RESULT lane=decode_b1 "
-        f"latency_ms={result['decode_b1']['latency_ms']['median']:.3f} "
-        f"tok_s={result['decode_b1']['effective_recovered_tok_per_s']:.1f}",
-        flush=True,
-    )
-    _write_progress(output_path, result)
+        )
+        calls = len(durations)
+        lane_result = {
+            "batch_size": int(batch_size),
+            "query_length": 1,
+            "physical_generated_tokens_per_call": int(batch_size),
+            "physical_generated_tok_per_s": (
+                calls * int(batch_size) / timing["device_s"]
+            ),
+            "host_physical_generated_tok_per_s": (
+                calls * int(batch_size) / host_wall_s
+            ),
+            "cache_was_warm": bool(cache_hit),
+            **timing,
+            "batch_vs_b1_decode_target_agreement": {
+                "comparison": "exact_token_id",
+                "distinct_input_token_per_row": True,
+                "exact_positions": exact_positions,
+                "positions": position_count,
+                "fraction": exact_positions / position_count,
+            },
+            "runtime": decode_runtime.metadata,
+            "lane_wall_s": time.perf_counter() - lane_started,
+        }
+        result["decode_q1"].append(lane_result)
+        if batch_size == 1:
+            result["decode_b1"] = lane_result
+        _write_progress(output_path, result)
+        print(
+            "SPEC_VERIFY_RESULT "
+            f"batch=B{batch_size} query=1 "
+            f"latency_ms={lane_result['latency_ms']['median']:.3f} "
+            f"calls_s={lane_result['graph_calls_per_s']:.1f} "
+            f"physical_tok_s={lane_result['physical_generated_tok_per_s']:.1f} "
+            f"b1_target_match={exact_positions}/{position_count} "
+            f"lane_wall_s={lane_result['lane_wall_s']:.1f}",
+            flush=True,
+        )
+        if batch_size != 1:
+            del decode_runtime
+
+    if result["decode_b1"] is None:
+        raise AssertionError("Q1 sweep did not produce the required B1 reference")
 
     reference_cache = model.allocate_static_cache(
         batch_size=1,
@@ -349,6 +456,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         device=device,
         dtype=dtype,
         init_mode="zeros",
+    )
+    reference_rope_deltas = torch.zeros(
+        (1, 1), device=device, dtype=torch.int64
     )
 
     total_lanes = len(args.batch_sizes) * len(args.draft_lengths)
@@ -547,10 +657,10 @@ def main(argv: Sequence[str] | None = None) -> None:
                         device=device,
                         dtype=torch.int64,
                     )
-                    decode_output = decode_runtime.fn(
+                    decode_output = decode_b1_runtime.fn(
                         input_ids[:, query_index : query_index + 1],
                         position,
-                        rope_deltas,
+                        reference_rope_deltas,
                         *reference_cache.flat_tensors(),
                     )
                     serial_targets.append(decode_target_ids(decode_output))
