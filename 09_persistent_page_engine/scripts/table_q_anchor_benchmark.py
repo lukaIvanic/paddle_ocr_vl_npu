@@ -49,6 +49,13 @@ from paddleocr_vl.model.text_decode import (  # noqa: E402
     resolve_decode_optimization,
     torchair_cache_dir_for_shape,
 )
+from paddleocr_vl.model.text_mixed_q import (  # noqa: E402
+    MIXED_M16_OPTIMIZATION,
+    PACKED_TOKEN_COUNT,
+    TextMixedM16Stage,
+    mixed_m16_contract,
+    torchair_cache_dir_for_mixed_m16,
+)
 from paddleocr_vl.model.text_spec_verify import (  # noqa: E402
     SPEC_VERIFY_ATTENTION,
     TextSpecVerifyStage,
@@ -67,8 +74,14 @@ DEFAULT_COMPACT_VOCAB = (
     EXPERIMENT_ROOT
     / "presets/table_compact_vocab/b1_verifier_topfreq_16384.json"
 )
+DEFAULT_REFERENCE_ANCHORS = (
+    REPO_ROOT
+    / "tmp/09_persistent_page_engine/"
+    "table_q_anchor_ab925dd5_20260904T0948Z"
+)
 DECODE_OPTIMIZATION = "combined_apply_complete_layer_prefetch1_rope_lut"
 SPEC_OPTIMIZATION = "combined_apply_spec_prefetch_mrope"
+MIXED_LANE = "mixed_m16"
 DRAFT_POSITIONS = (128, 155, 173, 189, 205, 225, 270, 382)
 VERIFIER_POSITION = 1249
 WARMUPS = 10
@@ -123,10 +136,19 @@ LANES = {
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--lane", required=True, choices=tuple(LANES))
+    parser.add_argument(
+        "--lane",
+        required=True,
+        choices=(*tuple(LANES), MIXED_LANE),
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_ROOT)
+    parser.add_argument(
+        "--reference-anchor-dir",
+        type=Path,
+        default=DEFAULT_REFERENCE_ANCHORS,
+    )
     parser.add_argument(
         "--decode-vocab-token-ids",
         type=Path,
@@ -259,6 +281,63 @@ def _anchor_warnings(lane: Lane, timing: dict[str, Any]) -> list[str]:
                 "B8Q1 throughput is outside the expected 5.5k-7.6k band"
             )
     return warnings
+
+
+def _mixed_reference_comparison(
+    anchor_dir: Path,
+    native_ids: list[int],
+) -> tuple[dict[str, Any], list[str]]:
+    paths = {
+        "verifier": anchor_dir.expanduser().resolve() / "b1q8.json",
+        "draft": anchor_dir.expanduser().resolve() / "b8q1.json",
+    }
+    comparison: dict[str, Any] = {
+        "anchor_dir": str(anchor_dir.expanduser().resolve()),
+        "available": all(path.is_file() for path in paths.values()),
+        "branches": {},
+    }
+    warnings: list[str] = []
+    if not comparison["available"]:
+        comparison["missing"] = [
+            str(path) for path in paths.values() if not path.is_file()
+        ]
+        warnings.append("mixed M16 reference anchor outputs are unavailable")
+        return comparison, warnings
+
+    actual_by_branch = {
+        "verifier": native_ids[:8],
+        "draft": native_ids[8:],
+    }
+    for branch, path in paths.items():
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        expected = [
+            int(value)
+            for value in payload["result"]["native_output_token_ids"]
+        ]
+        actual = actual_by_branch[branch]
+        mismatches = [
+            {
+                "index": index,
+                "expected": int(expected_value),
+                "actual": int(actual_value),
+            }
+            for index, (expected_value, actual_value) in enumerate(
+                zip(expected, actual, strict=True)
+            )
+            if int(expected_value) != int(actual_value)
+        ]
+        comparison["branches"][branch] = {
+            "path": str(path),
+            "expected_native_ids": expected,
+            "actual_native_ids": actual,
+            "exact_match": not mismatches,
+            "mismatches": mismatches,
+        }
+        if mismatches:
+            warnings.append(
+                f"mixed M16 {branch} IDs differ from its isolated anchor"
+            )
+    return comparison, warnings
 
 
 def _build_decode_lane(
@@ -439,32 +518,160 @@ def _build_spec_lane(
     }, (VERIFIER_POSITION,)
 
 
+def _build_mixed_m16_lane(
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    *,
+    device: torch.device,
+    dtype: torch.dtype,
+    model_dir: Path,
+    cache_root: Path,
+    linear_weight_format: str,
+) -> tuple[Callable[[], torch.Tensor], dict[str, Any], tuple[int, ...]]:
+    optimization = resolve_decode_optimization(MIXED_M16_OPTIMIZATION)
+    prepare_decode_rope_factor_lut(
+        model,
+        optimization,
+        cache_length=4096,
+        dtype=dtype,
+    )
+    prepare_decode_weight_prefetch(model, optimization)
+    _register_scaled_masked_softmax_torchair_converter()
+    stage = TextMixedM16Stage(model, optimization=optimization).eval()
+    cache_dir = torchair_cache_dir_for_mixed_m16(
+        cache_root,
+        dtype=dtype,
+        device=device,
+        model_dir=model_dir,
+        linear_weight_format=linear_weight_format,
+    )
+    cache_was_warm = cache_dir.is_dir() and any(cache_dir.iterdir())
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    torchair, CompilerConfig = import_torchair()
+    wrapper_started = time.perf_counter()
+    fn = torchair.inference.cache_compile(
+        stage.forward,
+        config=CompilerConfig(),
+        dynamic=False,
+        cache_dir=str(cache_dir),
+        ge_cache=True,
+    )
+    synchronize(device)
+    compile_wrapper_s = time.perf_counter() - wrapper_started
+
+    verifier_cache = model.allocate_static_cache(
+        batch_size=1,
+        cache_length=4096,
+        device=device,
+        dtype=dtype,
+        init_mode="zeros",
+    )
+    draft_cache = model.allocate_static_cache(
+        batch_size=8,
+        cache_length=768,
+        device=device,
+        dtype=dtype,
+        init_mode="zeros",
+    )
+    verifier_input_ids = torch.arange(
+        1, 9, device=device, dtype=torch.int64
+    ).view(1, 8)
+    verifier_cache_position = torch.tensor(
+        (VERIFIER_POSITION,), device=device, dtype=torch.int64
+    )
+    verifier_rope_deltas = torch.zeros(
+        (1, 1), device=device, dtype=torch.int64
+    )
+    draft_input_ids = torch.arange(
+        1, 9, device=device, dtype=torch.int64
+    ).view(8, 1)
+    draft_cache_position = _draft_positions(8, device)
+    draft_rope_deltas = torch.zeros(
+        (8, 1), device=device, dtype=torch.int64
+    )
+
+    def call() -> torch.Tensor:
+        return fn(
+            verifier_input_ids,
+            verifier_cache_position,
+            verifier_rope_deltas,
+            draft_input_ids,
+            draft_cache_position,
+            draft_rope_deltas,
+            *verifier_cache.flat_tensors(),
+            *draft_cache.flat_tensors(),
+        )
+
+    verifier_cache_bytes = sum(
+        int(tensor.numel()) * int(tensor.element_size())
+        for tensor in verifier_cache.flat_tensors()
+    )
+    draft_cache_bytes = sum(
+        int(tensor.numel()) * int(tensor.element_size())
+        for tensor in draft_cache.flat_tensors()
+    )
+    return call, {
+        "boundary": "two_embeddings_one_transformer_two_attentions_one_lm_head",
+        "optimization": optimization.name,
+        "contract": mixed_m16_contract(),
+        "torchair_cache_dir": str(cache_dir),
+        "cache_was_warm_before_setup": bool(cache_was_warm),
+        "compile_wrapper_s": float(compile_wrapper_s),
+        "verifier_cache_allocated_bytes": verifier_cache_bytes,
+        "draft_cache_allocated_bytes": draft_cache_bytes,
+        "cache_allocated_bytes": verifier_cache_bytes + draft_cache_bytes,
+    }, (
+        VERIFIER_POSITION,
+        *tuple(int(value) for value in draft_cache_position.cpu().tolist()),
+    )
+
+
 @torch.inference_mode()
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
-    lane = LANES[args.lane]
-    output_path = args.output_dir.expanduser().resolve() / f"{lane.name}.json"
-    payload: dict[str, Any] = {
-        "schema_version": 1,
-        "kind": "table_q_anchor_single_lane",
-        "status": "setup",
-        "contract": {
+    mixed_lane = args.lane == MIXED_LANE
+    lane = None if mixed_lane else LANES[args.lane]
+    lane_name = MIXED_LANE if mixed_lane else lane.name
+    optimization_name = (
+        MIXED_M16_OPTIMIZATION if mixed_lane else lane.optimization
+    )
+    physical_positions_per_call = (
+        PACKED_TOKEN_COUNT
+        if mixed_lane
+        else lane.batch_size * lane.query_length
+    )
+    if mixed_lane:
+        contract: dict[str, Any] = {
+            "lane": lane_name,
+            "kind": "mixed_m16",
+            "physical_positions_per_call": PACKED_TOKEN_COUNT,
+            **mixed_m16_contract(),
+        }
+    else:
+        contract = {
             "lane": lane.name,
             "kind": lane.kind,
             "batch_size": lane.batch_size,
             "query_length": lane.query_length,
-            "physical_positions_per_call": (
-                lane.batch_size * lane.query_length
-            ),
+            "physical_positions_per_call": physical_positions_per_call,
             "cache_length": lane.cache_length,
             "optimization": lane.optimization,
             "spec_attention": MANUAL_SPEC_ATTENTION,
+        }
+    contract.update(
+        {
             "dtype": "torch.float16",
             "linear_weight_format": "decode_nz",
             "compact_vocab": str(args.decode_vocab_token_ids.resolve()),
             "warmups": int(args.warmups),
             "repeats": int(args.repeats),
-        },
+        }
+    )
+    output_path = args.output_dir.expanduser().resolve() / f"{lane_name}.json"
+    payload: dict[str, Any] = {
+        "schema_version": 1,
+        "kind": "table_q_anchor_single_lane",
+        "status": "setup",
+        "contract": contract,
         "provenance": {
             "started_utc": datetime.now(timezone.utc).isoformat(),
             "hostname": socket.gethostname(),
@@ -492,7 +699,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     cache_root = args.cache_dir.expanduser().resolve()
     setup_started = time.perf_counter()
 
-    print(f"TABLE_Q_ANCHOR lane={lane.name} stage=model_load", flush=True)
+    print(f"TABLE_Q_ANCHOR lane={lane_name} stage=model_load", flush=True)
     started = time.perf_counter()
     model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(
         model_dir,
@@ -507,7 +714,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         full_vocab_size=int(model.lm_head.weight.shape[0]),
     )
     prepare_decode_compact_lm_head(model, token_ids)
-    optimization = prepare_decode_optimization_modules(model, lane.optimization)
+    optimization = prepare_decode_optimization_modules(model, optimization_name)
     prepare_decode_weight_prefetch(model, optimization)
     started = time.perf_counter()
     weight_format = cast_decode_linear_weights_to_nz(model)
@@ -515,8 +722,17 @@ def main(argv: Sequence[str] | None = None) -> None:
     weight_format_s = time.perf_counter() - started
     linear_weight_format = str(weight_format["effective_mode"])
 
-    print(f"TABLE_Q_ANCHOR lane={lane.name} stage=graph_wrapper", flush=True)
-    if lane.kind == "decode_q1":
+    print(f"TABLE_Q_ANCHOR lane={lane_name} stage=graph_wrapper", flush=True)
+    if mixed_lane:
+        call, runtime_metadata, positions = _build_mixed_m16_lane(
+            model,
+            device=device,
+            dtype=dtype,
+            model_dir=model_dir,
+            cache_root=cache_root,
+            linear_weight_format=linear_weight_format,
+        )
+    elif lane.kind == "decode_q1":
         call, runtime_metadata, positions = _build_decode_lane(
             model,
             lane,
@@ -550,7 +766,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     _write(output_path, payload)
 
     print(
-        f"TABLE_Q_ANCHOR lane={lane.name} "
+        f"TABLE_Q_ANCHOR lane={lane_name} "
         f"warmups={args.warmups} repeats={args.repeats}",
         flush=True,
     )
@@ -562,10 +778,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     synchronize(device)
     native_ids = output.detach().cpu().reshape(-1).tolist()
-    expected_count = lane.batch_size * lane.query_length
+    expected_count = physical_positions_per_call
     if len(native_ids) != expected_count:
         raise RuntimeError(
-            f"lane {lane.name} produced {len(native_ids)} IDs, "
+            f"lane {lane_name} produced {len(native_ids)} IDs, "
             f"expected {expected_count}"
         )
     full_vocab_size = int(model.config.text_config.vocab_size)
@@ -577,7 +793,14 @@ def main(argv: Sequence[str] | None = None) -> None:
         host_wall_s=host_wall_s,
         physical_positions_per_call=expected_count,
     )
-    warnings = _anchor_warnings(lane, timing)
+    if mixed_lane:
+        reference_comparison, warnings = _mixed_reference_comparison(
+            args.reference_anchor_dir,
+            [int(value) for value in native_ids],
+        )
+    else:
+        reference_comparison = None
+        warnings = _anchor_warnings(lane, timing)
     payload["status"] = "complete"
     payload["result"] = {
         "timing": timing,
@@ -593,6 +816,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         },
         "native_output_token_ids": [int(value) for value in native_ids],
     }
+    if reference_comparison is not None:
+        payload["result"]["reference_comparison"] = reference_comparison
     payload["warnings"] = warnings
     payload["setup"]["total_process_setup_and_benchmark_s"] = (
         time.perf_counter() - setup_started
@@ -600,7 +825,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     _write(output_path, payload)
     print(
         "TABLE_Q_ANCHOR_RESULT "
-        f"lane={lane.name} "
+        f"lane={lane_name} "
         f"median_ms={timing['latency_ms']['median']:.4f} "
         f"p95_ms={timing['latency_ms']['p95']:.4f} "
         f"iters_s={timing['graph_calls_per_s']:.1f} "
