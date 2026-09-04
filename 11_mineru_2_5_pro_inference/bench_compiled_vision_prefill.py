@@ -47,7 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--layer-norm-impl",
         choices=VISION_LAYER_NORM_IMPL_CHOICES,
-        default="module",
+        default="manual_fp32",
     )
     parser.add_argument(
         "--projection-impl",

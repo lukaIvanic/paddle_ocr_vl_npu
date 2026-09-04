@@ -30,7 +30,7 @@ from local_modeling_mineru import (
 DEFAULT_VISION_BUCKETS = (384, 512, 768, 1024, 1536, 2048, 3072, 4224, 5632)
 VISION_MASK_SPARSE_MODE = 1
 VISION_ATTENTION_IMPL_CHOICES = ("prompt_flash_attention", "manual")
-VISION_LAYER_NORM_IMPL_CHOICES = ("module", "manual_fp32")
+VISION_LAYER_NORM_IMPL_CHOICES = ("manual_fp32", "module")
 VISION_PROJECTION_IMPL_CHOICES = (
     "linear",
     "grouped_qkv",
@@ -101,7 +101,7 @@ class StaticMinerUVisionBlocks(nn.Module):
         visual: nn.Module,
         *,
         attention_impl: str = "prompt_flash_attention",
-        layer_norm_impl: str = "module",
+        layer_norm_impl: str = "manual_fp32",
         projection_impl: str = "linear",
         promptfa_pad_head_dim_to: int = 0,
     ) -> None:
@@ -344,7 +344,7 @@ class MinerUVisionPrefillRuntime:
         device: torch.device,
         dtype: torch.dtype,
         attention_impl: str = "prompt_flash_attention",
-        layer_norm_impl: str = "module",
+        layer_norm_impl: str = "manual_fp32",
         projection_impl: str = "linear",
         promptfa_pad_head_dim_to: int = 0,
     ) -> None:

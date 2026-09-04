@@ -27,6 +27,11 @@ def _fake_grouped_matmul(inputs, weights, *, bias, **_kwargs):
 
 
 class VisionPrefillContractTests(unittest.TestCase):
+    def test_compiled_vision_defaults_to_manual_fp32_layer_norm(self):
+        wrapper = StaticMinerUVisionBlocks(_Visual())
+
+        self.assertEqual(wrapper.layer_norm_impl, "manual_fp32")
+
     def test_manual_fp32_layer_norm_tracks_module(self):
         torch.manual_seed(0)
         layer_norm = nn.LayerNorm(16, eps=1e-6).half()

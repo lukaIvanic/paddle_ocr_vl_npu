@@ -253,6 +253,16 @@ mask that isolates real rows from padding. Real rows are sliced before the
 unchanged 2x2 patch merger. Sequences above the largest configured bucket use
 the same eager unpadded blocks instead of being truncated or resized.
 
+The compiled 32-block vision path always expands both encoder LayerNorms per
+block into explicit FP32 mean, variance, normalization, scale, and bias math.
+It then converts the normalized result back to the model dtype before the
+unchanged `nn.Linear` projections. This is the production default on every
+vision bucket and on both 910B and 310P. It avoids the 310P
+`MatmulLayerNormReduce` compilation failure. The stock `nn.LayerNorm` form
+remains available only through the isolated diagnostic runner; it is not a
+production setting. Native D80 PromptFA and ordinary `nn.Linear` remain the
+default attention and projection contracts.
+
 The first 910B validation at commit `9511b2e` used FP16 PromptFA. A fixed layout
 request routed 5,476 real tokens to the 5,632 bucket: full vision time changed
 from 178.1 ms eager to 153.6 ms compiled (1.16x, 35.6K effective tok/s). A real
