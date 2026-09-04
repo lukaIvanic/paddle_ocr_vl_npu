@@ -77,6 +77,32 @@ class VisionPrefillContractTests(unittest.TestCase):
                 promptfa_pad_head_dim_to=96,
             )
 
+    def test_manual_attention_3d_bmm_tracks_4d_reference(self):
+        torch.manual_seed(2)
+        query = torch.randn(1, 2, 5, 8, dtype=torch.float16)
+        key = torch.randn(1, 2, 5, 8, dtype=torch.float16)
+        value = torch.randn(1, 2, 5, 8, dtype=torch.float16)
+        mask = torch.zeros(1, 1, 5, 5, dtype=torch.bool)
+        mask[..., :3, 3:] = True
+        mask[..., 3:, :3] = True
+        scale = 8**-0.5
+
+        scores = torch.matmul(query, key.transpose(2, 3)) * scale
+        scores = scores.masked_fill(mask, torch.finfo(scores.dtype).min)
+        expected = torch.matmul(
+            torch.softmax(scores, dim=-1, dtype=torch.float32).to(query.dtype),
+            value,
+        )
+        actual = StaticMinerUVisionBlocks._manual_attention(
+            query,
+            key,
+            value,
+            mask,
+            scale=scale,
+        )
+
+        torch.testing.assert_close(actual, expected)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -219,6 +219,39 @@ class StaticMinerUVisionBlocks(nn.Module):
             return tensor
         return F.pad(tensor, (0, pad_width)).contiguous()
 
+    @staticmethod
+    def _manual_attention(
+        query_states: torch.Tensor,
+        key_states: torch.Tensor,
+        value_states: torch.Tensor,
+        attention_mask: torch.Tensor,
+        *,
+        scale: float,
+    ) -> torch.Tensor:
+        """Run full attention through explicit 3D BMMs for TorchAir."""
+        batch_size, num_heads, seq_len, head_dim = query_states.shape
+        flat_batch = batch_size * num_heads
+        query_3d = query_states.reshape(flat_batch, seq_len, head_dim)
+        key_3d = key_states.reshape(flat_batch, seq_len, head_dim)
+        value_3d = value_states.reshape(flat_batch, seq_len, head_dim)
+        scores = torch.bmm(query_3d, key_3d.transpose(1, 2)) * float(scale)
+        mask_3d = attention_mask.expand(
+            batch_size,
+            num_heads,
+            seq_len,
+            seq_len,
+        ).reshape(flat_batch, seq_len, seq_len)
+        scores = scores.masked_fill(mask_3d, torch.finfo(scores.dtype).min)
+        probabilities = F.softmax(scores, dim=-1, dtype=torch.float32).to(
+            query_states.dtype
+        )
+        return torch.bmm(probabilities, value_3d).reshape(
+            batch_size,
+            num_heads,
+            seq_len,
+            head_dim,
+        )
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -260,18 +293,13 @@ class StaticMinerUVisionBlocks(nn.Module):
                 if self.promptfa_call_head_dim != self.head_dim:
                     attention_output = attention_output[..., : self.head_dim].contiguous()
             else:
-                scores = torch.matmul(
+                attention_output = self._manual_attention(
                     query_states,
-                    key_states.transpose(2, 3),
-                ) * float(block.attn.scaling)
-                scores = scores.masked_fill(
+                    key_states,
+                    value_states,
                     attention_mask,
-                    torch.finfo(scores.dtype).min,
+                    scale=float(block.attn.scaling),
                 )
-                probabilities = F.softmax(scores, dim=-1, dtype=torch.float32).to(
-                    query_states.dtype
-                )
-                attention_output = torch.matmul(probabilities, value_states)
             attention_output = (
                 attention_output.transpose(1, 2)
                 .contiguous()
