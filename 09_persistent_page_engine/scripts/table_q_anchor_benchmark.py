@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 import math
 import os
 from dataclasses import dataclass
 from pathlib import Path
+import socket
 import statistics
+import subprocess
 import sys
 import time
 from typing import Any, Callable, Sequence
@@ -160,6 +163,17 @@ def _write(path: Path, payload: dict[str, Any]) -> None:
         encoding="utf-8",
     )
     temporary.replace(path)
+
+
+def _git_commit() -> str | None:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO_ROOT,
+            text=True,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
 
 
 def _draft_positions(batch_size: int, device: torch.device) -> torch.Tensor:
@@ -450,6 +464,15 @@ def main(argv: Sequence[str] | None = None) -> None:
             "compact_vocab": str(args.decode_vocab_token_ids.resolve()),
             "warmups": int(args.warmups),
             "repeats": int(args.repeats),
+        },
+        "provenance": {
+            "started_utc": datetime.now(timezone.utc).isoformat(),
+            "hostname": socket.gethostname(),
+            "git_commit": _git_commit(),
+            "ascend_rt_visible_devices": os.environ.get(
+                "ASCEND_RT_VISIBLE_DEVICES"
+            ),
+            "argv": list(sys.argv),
         },
         "setup": {},
         "result": None,
