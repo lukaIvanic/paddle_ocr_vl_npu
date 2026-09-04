@@ -125,8 +125,10 @@ class BatchedAdaptiveKTableSpeculativeDecodeRuntime:
     ) -> None:
         if int(batch_size) <= 1:
             raise ValueError("batched speculative verification requires batch_size > 1")
-        if int(recognizer.batch_size) != 1:
-            raise ValueError("target prefill recognizer must remain B1")
+        if int(recognizer.batch_size) not in (1, int(batch_size)):
+            raise ValueError(
+                "target recognizer batch size must be one or the verifier batch size"
+            )
         normalized_k = tuple(sorted({int(value) for value in k_values}))
         if not normalized_k or any(value <= 0 for value in normalized_k):
             raise ValueError("k_values must contain positive integers")

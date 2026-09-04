@@ -229,7 +229,10 @@ def main() -> None:
     print("TABLE_SPEC_BATCH setup=draft_recognizer", flush=True)
     draft_recognizer = row_lab.build_recognizer(live_lab._draft_args(compat))
     print("TABLE_SPEC_BATCH setup=target_recognizer", flush=True)
-    target_recognizer = fixed_lab.build_recognizer(live_lab._b1_args(compat))
+    target_recognizer = fixed_lab.build_recognizer(
+        live_lab._b1_args(compat),
+        batch_size=args.batch_size,
+    )
     k_values = tuple(
         sorted({int(value.strip()) for value in args.k_values.split(",") if value.strip()})
     )
