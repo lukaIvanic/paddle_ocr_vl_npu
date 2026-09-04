@@ -263,16 +263,23 @@ def _timing(
     }
 
 
-def _profile_one_call(
+def _profile_calls(
     device: torch.device,
     fn: Callable[[], torch.Tensor],
     profile_dir: Path,
 ) -> dict[str, Any]:
     import torch_npu.profiler as npu_prof
 
+    profiler_warmup_calls = 1
+    captured_calls = 5
     resolved = profile_dir.expanduser().resolve()
     resolved.mkdir(parents=True, exist_ok=False)
-    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+    schedule = npu_prof.schedule(
+        wait=0,
+        warmup=profiler_warmup_calls,
+        active=captured_calls,
+        repeat=1,
+    )
     synchronize(device)
     started = time.perf_counter()
     with npu_prof.profile(
@@ -291,15 +298,19 @@ def _profile_one_call(
         with_modules=False,
         with_flops=False,
     ) as profiler:
-        with torch.profiler.record_function("table_q_anchor.profiled_call"):
-            fn()
-            synchronize(device)
-        profiler.step()
+        for index in range(profiler_warmup_calls + captured_calls):
+            with torch.profiler.record_function(
+                f"table_q_anchor.profiled_call_{index}"
+            ):
+                fn()
+                synchronize(device)
+            profiler.step()
     synchronize(device)
     return {
         "path": str(resolved),
         "wall_s": time.perf_counter() - started,
-        "captured_calls": 1,
+        "profiler_warmup_calls": profiler_warmup_calls,
+        "captured_calls": captured_calls,
         "outside_measured_timing": True,
     }
 
@@ -836,7 +847,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         physical_positions_per_call=expected_count,
     )
     profile_metadata = (
-        _profile_one_call(device, call, args.profile_dir)
+        _profile_calls(device, call, args.profile_dir)
         if args.profile_dir is not None
         else None
     )
