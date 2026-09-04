@@ -53,10 +53,12 @@ from paddleocr_vl.model.text_mixed_q import (  # noqa: E402
     DEFAULT_MIXED_M16_ATTENTION_ORDER,
     DEFAULT_MIXED_M16_LAYOUT,
     DEFAULT_MIXED_M16_PREFETCH,
+    DEFAULT_MIXED_M16_ROTARY_MODE,
     MIXED_M16_OPTIMIZATION,
     MIXED_M16_LAYOUTS,
     MIXED_M16_ATTENTION_ORDERS,
     MIXED_M16_PREFETCH_MODES,
+    MIXED_M16_ROTARY_MODES,
     PACKED_TOKEN_COUNT,
     TextMixedM16Stage,
     mixed_m16_contract,
@@ -180,6 +182,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         choices=MIXED_M16_ATTENTION_ORDERS,
         default=DEFAULT_MIXED_M16_ATTENTION_ORDER,
         help="attention branch order used only by the mixed_m16 lane",
+    )
+    parser.add_argument(
+        "--mixed-rotary",
+        choices=MIXED_M16_ROTARY_MODES,
+        default=DEFAULT_MIXED_M16_ROTARY_MODE,
+        help="shared or per-lane ApplyRotary used only by mixed_m16",
     )
     args = parser.parse_args(argv)
     if args.warmups < 1:
@@ -616,6 +624,7 @@ def _build_mixed_m16_lane(
     layout: str,
     prefetch_mode: str,
     attention_order: str,
+    rotary_mode: str,
 ) -> tuple[Callable[[], torch.Tensor], dict[str, Any], tuple[int, ...]]:
     optimization = resolve_decode_optimization(MIXED_M16_OPTIMIZATION)
     prepare_decode_rope_factor_lut(
@@ -632,6 +641,7 @@ def _build_mixed_m16_lane(
         layout=layout,
         prefetch_mode=prefetch_mode,
         attention_order=attention_order,
+        rotary_mode=rotary_mode,
     ).eval()
     cache_dir = torchair_cache_dir_for_mixed_m16(
         cache_root,
@@ -642,6 +652,7 @@ def _build_mixed_m16_lane(
         layout=layout,
         prefetch_mode=prefetch_mode,
         attention_order=attention_order,
+        rotary_mode=rotary_mode,
     )
     cache_was_warm = cache_dir.is_dir() and any(cache_dir.iterdir())
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -711,7 +722,12 @@ def _build_mixed_m16_lane(
     return call, {
         "boundary": "two_embeddings_one_transformer_two_attentions_one_lm_head",
         "optimization": optimization.name,
-        "contract": mixed_m16_contract(layout, prefetch_mode, attention_order),
+        "contract": mixed_m16_contract(
+            layout,
+            prefetch_mode,
+            attention_order,
+            rotary_mode,
+        ),
         "torchair_cache_dir": str(cache_dir),
         "cache_was_warm_before_setup": bool(cache_was_warm),
         "compile_wrapper_s": float(compile_wrapper_s),
@@ -747,6 +763,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 args.mixed_layout,
                 args.mixed_prefetch,
                 args.mixed_attention_order,
+                args.mixed_rotary,
             ),
         }
     else:
@@ -779,6 +796,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         and args.mixed_attention_order != DEFAULT_MIXED_M16_ATTENTION_ORDER
     ):
         output_stem = f"{output_stem}_{args.mixed_attention_order}"
+    if mixed_lane and args.mixed_rotary != DEFAULT_MIXED_M16_ROTARY_MODE:
+        output_stem = f"{output_stem}_rotary_{args.mixed_rotary}"
     output_path = args.output_dir.expanduser().resolve() / f"{output_stem}.json"
     payload: dict[str, Any] = {
         "schema_version": 1,
@@ -847,6 +866,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             layout=args.mixed_layout,
             prefetch_mode=args.mixed_prefetch,
             attention_order=args.mixed_attention_order,
+            rotary_mode=args.mixed_rotary,
         )
     elif lane.kind == "decode_q1":
         call, runtime_metadata, positions = _build_decode_lane(

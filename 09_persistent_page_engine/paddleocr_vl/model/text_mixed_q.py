@@ -62,6 +62,10 @@ MIXED_M16_ATTENTION_ORDERS = (
     MIXED_ATTENTION_DRAFT_THEN_VERIFIER,
 )
 DEFAULT_MIXED_M16_ATTENTION_ORDER = MIXED_ATTENTION_VERIFIER_THEN_DRAFT
+MIXED_ROTARY_SHARED_M16 = "shared_m16"
+MIXED_ROTARY_PER_LANE = "per_lane"
+MIXED_M16_ROTARY_MODES = (MIXED_ROTARY_SHARED_M16, MIXED_ROTARY_PER_LANE)
+DEFAULT_MIXED_M16_ROTARY_MODE = MIXED_ROTARY_SHARED_M16
 
 
 def _query_positions(cache_position: torch.Tensor, query_length: int) -> torch.Tensor:
@@ -186,6 +190,7 @@ def _mixed_attention(
     layout: str,
     prefetch_mode: str,
     attention_order: str,
+    rotary_mode: str,
 ) -> torch.Tensor:
     """Run one M16 projection body and two cache-specific attention calls."""
     import torch_npu
@@ -194,6 +199,13 @@ def _mixed_attention(
         raise ValueError("mixed M16 hidden states must have shape [1,16,H]")
     if attention_order not in MIXED_M16_ATTENTION_ORDERS:
         raise ValueError(f"unsupported mixed attention order {attention_order!r}")
+    if rotary_mode not in MIXED_M16_ROTARY_MODES:
+        raise ValueError(f"unsupported mixed rotary mode {rotary_mode!r}")
+    if (
+        rotary_mode == MIXED_ROTARY_PER_LANE
+        and layout == MIXED_LAYOUT_PACK_ALL_THEN_SPLIT_LANES
+    ):
+        raise ValueError("per-lane rotary does not support pack-all layout")
     query_heads = int(attention.num_heads)
     kv_heads = int(attention.num_key_value_heads)
     head_dim = int(attention.head_dim)
@@ -210,20 +222,17 @@ def _mixed_attention(
     key_bsnd = key_flat.view(1, PACKED_TOKEN_COUNT, kv_heads, head_dim)
     value_bsnd = value_flat.view(1, PACKED_TOKEN_COUNT, kv_heads, head_dim)
     cosine, sine = packed_factors
-    query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
-        query_bsnd,
-        key_bsnd,
-        cosine,
-        sine,
-        layout="BSND",
-        rotary_mode="half",
-    )
-
-    if layout in (
-        MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER,
-        MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV,
-    ):
-        # Keep the draft lane out of the verifier's QKV packing and transpose.
+    lanes_are_split = rotary_mode == MIXED_ROTARY_PER_LANE
+    if rotary_mode == MIXED_ROTARY_SHARED_M16:
+        query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
+            query_bsnd,
+            key_bsnd,
+            cosine,
+            sine,
+            layout="BSND",
+            rotary_mode="half",
+        )
+    else:
         verifier_query_bsnd, draft_query_bsnd = query_bsnd.split(
             (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
         )
@@ -233,6 +242,60 @@ def _mixed_attention(
         verifier_value_bsnd, draft_value_bsnd = value_bsnd.split(
             (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
         )
+        verifier_cosine, draft_cosine = cosine.split(
+            (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+        )
+        verifier_sine, draft_sine = sine.split(
+            (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+        )
+        verifier_query_bsnd, verifier_key_bsnd = (
+            torch_npu.npu_apply_rotary_pos_emb(
+                verifier_query_bsnd,
+                verifier_key_bsnd,
+                verifier_cosine,
+                verifier_sine,
+                layout="BSND",
+                rotary_mode="half",
+            )
+        )
+        draft_query, draft_key = torch_npu.npu_apply_rotary_pos_emb(
+            draft_query_bsnd.reshape(
+                DRAFT_BATCH_SIZE, DRAFT_QUERY_LENGTH, query_heads, head_dim
+            ),
+            draft_key_bsnd.reshape(
+                DRAFT_BATCH_SIZE, DRAFT_QUERY_LENGTH, kv_heads, head_dim
+            ),
+            draft_cosine.reshape(
+                DRAFT_BATCH_SIZE, DRAFT_QUERY_LENGTH, 1, head_dim
+            ),
+            draft_sine.reshape(
+                DRAFT_BATCH_SIZE, DRAFT_QUERY_LENGTH, 1, head_dim
+            ),
+            layout="BSND",
+            rotary_mode="half",
+        )
+        draft_query_bsnd = draft_query.reshape(
+            1, DRAFT_BATCH_SIZE, query_heads, head_dim
+        )
+        draft_key_bsnd = draft_key.reshape(
+            1, DRAFT_BATCH_SIZE, kv_heads, head_dim
+        )
+
+    if layout in (
+        MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER,
+        MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV,
+    ):
+        # Keep the draft lane out of the verifier's QKV packing and transpose.
+        if not lanes_are_split:
+            verifier_query_bsnd, draft_query_bsnd = query_bsnd.split(
+                (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+            )
+            verifier_key_bsnd, draft_key_bsnd = key_bsnd.split(
+                (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+            )
+            verifier_value_bsnd, draft_value_bsnd = value_bsnd.split(
+                (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+            )
         if layout == MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER:
             verifier_packed_bsnd = torch.cat(
                 (
@@ -406,6 +469,7 @@ def run_text_mixed_m16_transformer(
     layout: str = DEFAULT_MIXED_M16_LAYOUT,
     prefetch_mode: str = DEFAULT_MIXED_M16_PREFETCH,
     attention_order: str = DEFAULT_MIXED_M16_ATTENTION_ORDER,
+    rotary_mode: str = DEFAULT_MIXED_M16_ROTARY_MODE,
 ) -> torch.Tensor:
     optimization = resolve_decode_optimization(optimization)
     if optimization.name != MIXED_M16_OPTIMIZATION:
@@ -416,6 +480,8 @@ def run_text_mixed_m16_transformer(
         raise ValueError(f"unsupported mixed M16 prefetch mode {prefetch_mode!r}")
     if attention_order not in MIXED_M16_ATTENTION_ORDERS:
         raise ValueError(f"unsupported mixed attention order {attention_order!r}")
+    if rotary_mode not in MIXED_M16_ROTARY_MODES:
+        raise ValueError(f"unsupported mixed rotary mode {rotary_mode!r}")
 
     verifier_positions = _query_positions(
         verifier_cache_position, VERIFIER_QUERY_LENGTH
@@ -546,6 +612,7 @@ def run_text_mixed_m16_transformer(
             layout,
             prefetch_mode,
             attention_order,
+            rotary_mode,
         )
         mlp_input, residual = _decode_add_with_optional_rms_norm(
             attention_output,
@@ -574,6 +641,7 @@ class TextMixedM16Stage(nn.Module):
         layout: str = DEFAULT_MIXED_M16_LAYOUT,
         prefetch_mode: str = DEFAULT_MIXED_M16_PREFETCH,
         attention_order: str = DEFAULT_MIXED_M16_ATTENTION_ORDER,
+        rotary_mode: str = DEFAULT_MIXED_M16_ROTARY_MODE,
     ) -> None:
         super().__init__()
         self.model = model
@@ -592,6 +660,9 @@ class TextMixedM16Stage(nn.Module):
         if attention_order not in MIXED_M16_ATTENTION_ORDERS:
             raise ValueError(f"unsupported mixed attention order {attention_order!r}")
         self.attention_order = attention_order
+        if rotary_mode not in MIXED_M16_ROTARY_MODES:
+            raise ValueError(f"unsupported mixed rotary mode {rotary_mode!r}")
+        self.rotary_mode = rotary_mode
         if not hasattr(model, "decode_token_id_map"):
             raise ValueError("mixed M16 stage requires the compact output vocabulary")
 
@@ -641,6 +712,7 @@ class TextMixedM16Stage(nn.Module):
             layout=self.layout,
             prefetch_mode=self.prefetch_mode,
             attention_order=self.attention_order,
+            rotary_mode=self.rotary_mode,
         )
         output_head = self.model.decode_lm_head
         logits = _linear_tokenwise(output_head, hidden_states)
@@ -676,6 +748,7 @@ def torchair_cache_dir_for_mixed_m16(
     layout: str = DEFAULT_MIXED_M16_LAYOUT,
     prefetch_mode: str = DEFAULT_MIXED_M16_PREFETCH,
     attention_order: str = DEFAULT_MIXED_M16_ATTENTION_ORDER,
+    rotary_mode: str = DEFAULT_MIXED_M16_ROTARY_MODE,
 ) -> Path:
     if layout not in MIXED_M16_LAYOUTS:
         raise ValueError(f"unsupported mixed M16 layout {layout!r}")
@@ -683,6 +756,8 @@ def torchair_cache_dir_for_mixed_m16(
         raise ValueError(f"unsupported mixed M16 prefetch mode {prefetch_mode!r}")
     if attention_order not in MIXED_M16_ATTENTION_ORDERS:
         raise ValueError(f"unsupported mixed attention order {attention_order!r}")
+    if rotary_mode not in MIXED_M16_ROTARY_MODES:
+        raise ValueError(f"unsupported mixed rotary mode {rotary_mode!r}")
     shape_key = "_".join(
         (
             "text_mixed_m16",
@@ -696,6 +771,7 @@ def torchair_cache_dir_for_mixed_m16(
             f"layout{cache_key_part(layout)}",
             f"prefetch{cache_key_part(prefetch_mode)}",
             f"order{cache_key_part(attention_order)}",
+            f"rotary{cache_key_part(rotary_mode)}",
             f"model{short_file_hash(model_dir / 'config.json')}",
             f"torch{cache_key_part(torch.__version__)}",
             f"torchnpu{torch_npu_version_label(device)}",
@@ -712,6 +788,7 @@ def mixed_m16_contract(
     layout: str = DEFAULT_MIXED_M16_LAYOUT,
     prefetch_mode: str = DEFAULT_MIXED_M16_PREFETCH,
     attention_order: str = DEFAULT_MIXED_M16_ATTENTION_ORDER,
+    rotary_mode: str = DEFAULT_MIXED_M16_ROTARY_MODE,
 ) -> dict[str, Any]:
     if layout not in MIXED_M16_LAYOUTS:
         raise ValueError(f"unsupported mixed M16 layout {layout!r}")
@@ -719,6 +796,8 @@ def mixed_m16_contract(
         raise ValueError(f"unsupported mixed M16 prefetch mode {prefetch_mode!r}")
     if attention_order not in MIXED_M16_ATTENTION_ORDERS:
         raise ValueError(f"unsupported mixed attention order {attention_order!r}")
+    if rotary_mode not in MIXED_M16_ROTARY_MODES:
+        raise ValueError(f"unsupported mixed rotary mode {rotary_mode!r}")
     return {
         "packed_token_count": PACKED_TOKEN_COUNT,
         "verifier": {
@@ -737,4 +816,5 @@ def mixed_m16_contract(
         "layout": layout,
         "prefetch_mode": prefetch_mode,
         "attention_order": attention_order,
+        "rotary_mode": rotary_mode,
     }
