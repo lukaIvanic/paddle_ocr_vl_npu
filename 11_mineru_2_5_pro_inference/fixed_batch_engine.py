@@ -64,6 +64,10 @@ class FixedBatchDecodeEngine:
         packed_text_prefill_runtime: Any | None = None,
         vision_pack_target: int = 768,
         vision_lookahead: int = 32,
+        decode_diagnostic_steps: int = 0,
+        decode_diagnostic_sync: bool = False,
+        decode_diagnostic_boundary_period: int = 1280,
+        decode_filler_control: str = "retain",
     ) -> None:
         if int(batch_size) <= 1:
             raise ValueError("fixed batch engine requires batch_size > 1")
@@ -81,6 +85,18 @@ class FixedBatchDecodeEngine:
         self.vision_lookahead = int(vision_lookahead)
         if self.vision_lookahead <= 0:
             raise ValueError("vision_lookahead must be positive")
+        self.decode_diagnostic_steps = int(decode_diagnostic_steps)
+        if self.decode_diagnostic_steps < 0:
+            raise ValueError("decode_diagnostic_steps must be non-negative")
+        self.decode_diagnostic_sync = bool(decode_diagnostic_sync)
+        self.decode_diagnostic_boundary_period = int(
+            decode_diagnostic_boundary_period
+        )
+        if self.decode_diagnostic_boundary_period <= 0:
+            raise ValueError("decode_diagnostic_boundary_period must be positive")
+        self.decode_filler_control = str(decode_filler_control)
+        if self.decode_filler_control not in ("retain", "advance"):
+            raise ValueError("decode_filler_control must be 'retain' or 'advance'")
         self._arena: LocalMinerUStaticCache | None = None
 
     def _arena_for_batch(self) -> LocalMinerUStaticCache:

@@ -172,6 +172,38 @@ def parse_args() -> argparse.Namespace:
         help="RoPE implementation used only by static one-token decode.",
     )
     parser.add_argument(
+        "--local-decode-diagnostic-steps",
+        type=int,
+        default=0,
+        help=(
+            "Emit detailed production decode events for the first N graph calls. "
+            "Zero disables per-step events."
+        ),
+    )
+    parser.add_argument(
+        "--local-decode-diagnostic-sync",
+        action="store_true",
+        help=(
+            "Synchronize after each logged decode graph call so its finish event "
+            "proves device completion. Diagnostic only."
+        ),
+    )
+    parser.add_argument(
+        "--local-decode-diagnostic-boundary-period",
+        type=int,
+        default=1280,
+        help="Report effective-length residues and exact hits for this suspected boundary period.",
+    )
+    parser.add_argument(
+        "--local-decode-filler-control",
+        choices=("retain", "advance"),
+        default="retain",
+        help=(
+            "Keep inactive filler positions fixed, or advance their tokens and "
+            "positions with every real production graph call."
+        ),
+    )
+    parser.add_argument(
         "--local-prepare-prefetch-depth",
         type=int,
         default=64,
@@ -823,6 +855,12 @@ def main() -> None:
                 packed_text_prefill_runtime=local_text_runtime,
                 vision_pack_target=args.local_vision_pack_target,
                 vision_lookahead=args.local_vision_lookahead,
+                decode_diagnostic_steps=args.local_decode_diagnostic_steps,
+                decode_diagnostic_sync=args.local_decode_diagnostic_sync,
+                decode_diagnostic_boundary_period=(
+                    args.local_decode_diagnostic_boundary_period
+                ),
+                decode_filler_control=args.local_decode_filler_control,
             )
             client.client = make_local_fixed_batch_vlm_client(
                 local_model,
@@ -1068,6 +1106,26 @@ def main() -> None:
         ),
         "local_decode_rotary_impl": (
             args.local_decode_rotary_impl if local_decode_setup is not None else None
+        ),
+        "local_decode_diagnostic_steps": (
+            args.local_decode_diagnostic_steps
+            if args.backend == "local-continuous-client"
+            else None
+        ),
+        "local_decode_diagnostic_sync": (
+            args.local_decode_diagnostic_sync
+            if args.backend == "local-continuous-client"
+            else None
+        ),
+        "local_decode_diagnostic_boundary_period": (
+            args.local_decode_diagnostic_boundary_period
+            if args.backend == "local-continuous-client"
+            else None
+        ),
+        "local_decode_filler_control": (
+            args.local_decode_filler_control
+            if args.backend == "local-continuous-client"
+            else None
         ),
         "local_decode_setup": local_decode_setup,
         "local_prepare_prefetch_depth": (

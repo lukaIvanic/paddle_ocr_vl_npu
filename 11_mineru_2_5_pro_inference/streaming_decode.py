@@ -33,6 +33,35 @@ def decode_mask_preflight(cache_position, cache_length):
     }
 
 
+def decode_step_state(cache_position, *, cache_length, boundary_period):
+    """Return the exact per-row state used by one production decode call."""
+    positions = [int(value) for value in cache_position.detach().cpu().reshape(-1).tolist()]
+    if not positions:
+        raise ValueError("decode step has no cache positions")
+    if any(value < 0 or value >= int(cache_length) for value in positions):
+        raise ValueError(
+            "decode step has an invalid cache position: "
+            f"positions={positions} cache_length={int(cache_length)}"
+        )
+    period = int(boundary_period)
+    if period <= 0:
+        raise ValueError("decode diagnostic boundary period must be positive")
+    effective_lengths = [value + 1 for value in positions]
+    position_histogram = dict(sorted(Counter(positions).items()))
+    effective_length_histogram = dict(sorted(Counter(effective_lengths).items()))
+    return {
+        "cache_positions": positions,
+        "position_histogram": position_histogram,
+        "effective_lengths": effective_lengths,
+        "effective_length_histogram": effective_length_histogram,
+        "boundary_period": period,
+        "effective_length_residues": [value % period for value in effective_lengths],
+        "boundary_rows": [
+            index for index, value in enumerate(effective_lengths) if value % period == 0
+        ],
+    }
+
+
 def run_decode_stream(engine, source):
     import torch
     from prefill_timing import PrefillDeviceTimeline
@@ -66,6 +95,17 @@ def run_decode_stream(engine, source):
     seen_requests = set()
     initial_inactive_filler_rows = 0
     initial_filler_source_slot = None
+    diagnostic_steps = max(0, int(getattr(engine, "decode_diagnostic_steps", 0)))
+    diagnostic_sync = bool(getattr(engine, "decode_diagnostic_sync", False))
+    diagnostic_boundary_period = int(
+        getattr(engine, "decode_diagnostic_boundary_period", 1280)
+    )
+    filler_control = str(getattr(engine, "decode_filler_control", "retain"))
+    if filler_control not in ("retain", "advance"):
+        raise ValueError(f"unsupported decode filler control: {filler_control!r}")
+
+    def log_step(step):
+        return int(step) < diagnostic_steps
 
     def complete(index):
         nonlocal completed, effective_tokens
@@ -198,6 +238,26 @@ def run_decode_stream(engine, source):
             occupancy[active] += 1
             active_slots_total += active
             first_graph_call = graph_calls == 0
+            detailed_step = log_step(graph_calls)
+            if detailed_step:
+                state = decode_step_state(
+                    cache_position,
+                    cache_length=engine.cache_length,
+                    boundary_period=diagnostic_boundary_period,
+                )
+                log_phase(
+                    "decode_step_state",
+                    "finish",
+                    step=int(graph_calls),
+                    active_rows=int(active),
+                    inactive_rows=int(batch - active),
+                    active_slots=[
+                        slot for slot, request in enumerate(launched_requests)
+                        if request is not None
+                    ],
+                    filler_control=filler_control,
+                    **state,
+                )
             if first_graph_call:
                 preflight = decode_mask_preflight(cache_position, engine.cache_length)
                 log_phase(
@@ -221,12 +281,32 @@ def run_decode_stream(engine, source):
                     cache_was_warm=compile_meta.get("cache_was_warm"),
                     attention=compile_meta.get("decode_attention"),
                 )
+            if detailed_step:
+                log_phase(
+                    "decode_step_graph",
+                    "start",
+                    step=int(graph_calls),
+                    active_rows=int(active),
+                    diagnostic_sync=diagnostic_sync,
+                )
             begin = time.perf_counter()
             candidate = decode_timeline.measure(str(active), lambda: torch.argmax(
                 compiled_decode(next_token, cache_position, rope_delta, *arena.flat_tensors())[:, -1, :].float(),
                 dim=-1, keepdim=True))
-            if first_graph_call:
+            if detailed_step and diagnostic_sync:
                 maybe_sync_device(engine.model.device)
+            if detailed_step:
+                log_phase(
+                    "decode_step_graph",
+                    "finish",
+                    step=int(graph_calls),
+                    active_rows=int(active),
+                    diagnostic_sync=diagnostic_sync,
+                    elapsed_s=float(time.perf_counter() - begin),
+                )
+            if first_graph_call:
+                if not (detailed_step and diagnostic_sync):
+                    maybe_sync_device(engine.model.device)
                 first_call_s = time.perf_counter() - begin
                 log_phase(
                     "decode_graph_first_call",
@@ -238,17 +318,56 @@ def run_decode_stream(engine, source):
                     elapsed_s=float(first_call_s),
                 )
             begin = time.perf_counter()
+            if detailed_step:
+                log_phase(
+                    "decode_step_token_copy_submit",
+                    "start",
+                    step=int(graph_calls),
+                )
             current = engine._schedule_token_copy(candidate, iteration=graph_calls,
                 slot_requests=launched_requests, slot_epochs=launched_epochs)
             copy_submit_s += time.perf_counter() - begin
+            if detailed_step:
+                log_phase(
+                    "decode_step_token_copy_submit",
+                    "finish",
+                    step=int(graph_calls),
+                    elapsed_s=float(time.perf_counter() - begin),
+                )
             graph_calls += 1
-            for slot, index in enumerate(launched_requests):
-                if index is not None:
-                    next_token[slot:slot + 1].copy_(candidate[slot:slot + 1])
-                    cache_position[slot].add_(1)
+            if filler_control == "advance":
+                next_token.copy_(candidate)
+                cache_position.add_(1)
+            else:
+                for slot, index in enumerate(launched_requests):
+                    if index is not None:
+                        next_token[slot:slot + 1].copy_(candidate[slot:slot + 1])
+                        cache_position[slot].add_(1)
+            if detailed_step:
+                log_phase(
+                    "decode_step_control_update",
+                    "finish",
+                    step=int(graph_calls - 1),
+                    filler_control=filler_control,
+                )
             if pending is not None:
+                if detailed_step:
+                    log_phase(
+                        "decode_step_previous_token_copy_wait",
+                        "start",
+                        step=int(graph_calls - 1),
+                        pending_step=int(pending.iteration),
+                    )
                 row, elapsed = engine._wait_token_copy(pending)
                 copy_wait_s += elapsed
+                if detailed_step:
+                    log_phase(
+                        "decode_step_previous_token_copy_wait",
+                        "finish",
+                        step=int(graph_calls - 1),
+                        pending_step=int(pending.iteration),
+                        elapsed_s=float(elapsed),
+                    )
                 for slot, index in enumerate(pending.slot_requests):
                     if index is None or slots[slot] != index or epochs[slot] != pending.slot_epochs[slot]:
                         continue
@@ -280,9 +399,13 @@ def run_decode_stream(engine, source):
         "decode_seconds_by_active_rows": dict(sorted(decode_by_occupancy.items())),
         "idle_rows_with_ready_work": idle_rows_with_ready_work,
         "max_live_generation_requests": max_live_requests,
-        "inactive_filler_policy": "duplicate_first_real_row_retain_controls",
+        "inactive_filler_policy": f"duplicate_first_real_row_{filler_control}_controls",
         "initial_inactive_filler_rows": initial_inactive_filler_rows,
         "initial_filler_source_slot": initial_filler_source_slot,
+        "filler_control": filler_control,
+        "decode_diagnostic_steps": diagnostic_steps,
+        "decode_diagnostic_sync": diagnostic_sync,
+        "decode_diagnostic_boundary_period": diagnostic_boundary_period,
         "final_drain_wall_s": time.perf_counter() - drain_started if drain_started else 0,
         "refill_count": refill_count, "immediate_completion_count": immediate,
         "decode_s": decode_s, "prefill_s": prefill_s,

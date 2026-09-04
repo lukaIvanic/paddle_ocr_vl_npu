@@ -12,7 +12,7 @@ try:
 except ImportError:
     torch = None
 
-from streaming_decode import decode_mask_preflight, run_decode_stream
+from streaming_decode import decode_mask_preflight, decode_step_state, run_decode_stream
 from fixed_batch_engine import FixedBatchDecodeEngine
 
 
@@ -24,6 +24,18 @@ class RefillRegressionTests(unittest.TestCase):
         self.assertTrue(report["all_rows_have_finite_attention"])
         with self.assertRaisesRegex(ValueError, "invalid attention rows"):
             decode_mask_preflight(torch.tensor([-1, 7, 63]), 64)
+
+    @unittest.skipIf(torch is None, "CPU torch is required")
+    def test_decode_step_state_reports_mixed_boundaries(self):
+        report = decode_step_state(
+            torch.tensor([1278, 1279, 1280]),
+            cache_length=4096,
+            boundary_period=1280,
+        )
+        self.assertEqual(report["effective_lengths"], [1279, 1280, 1281])
+        self.assertEqual(report["effective_length_residues"], [1279, 0, 1])
+        self.assertEqual(report["boundary_rows"], [1])
+        self.assertEqual(report["position_histogram"], {1278: 1, 1279: 1, 1280: 1})
 
     def test_legacy_window_does_not_lose_free_slots(self):
         tree = ast.parse(Path(__file__).with_name("fixed_batch_engine.py").read_text())
@@ -202,6 +214,48 @@ class DecodeTests(unittest.TestCase):
         for tensor in arena.flat_tensors():
             self.assertTrue(torch.equal(tensor[0:1], tensor[1:2]))
             self.assertTrue(torch.equal(tensor[2:3], tensor[1:2]))
+
+    def test_advance_filler_control_keeps_positions_uniform(self):
+        engine = FakeEngine()
+        engine.decode_filler_control = "advance"
+        source = FakeSource([(0, 11, 10)])
+        self.run_source(source, engine)
+        self.assertGreaterEqual(len(engine.decode_inputs), 2)
+        self.assertEqual(engine.decode_inputs[0][1].tolist(), [1, 1, 1])
+        self.assertEqual(engine.decode_inputs[1][1].tolist(), [2, 2, 2])
+
+    def test_retain_filler_control_creates_mixed_second_step(self):
+        engine = FakeEngine()
+        engine.decode_filler_control = "retain"
+        source = FakeSource([(0, 11, 10)])
+        self.run_source(source, engine)
+        self.assertGreaterEqual(len(engine.decode_inputs), 2)
+        self.assertEqual(engine.decode_inputs[0][1].tolist(), [1, 1, 1])
+        self.assertEqual(engine.decode_inputs[1][1].tolist(), [2, 1, 1])
+
+    def test_diagnostic_events_expose_second_step_state(self):
+        engine = FakeEngine()
+        engine.decode_diagnostic_steps = 2
+        engine.decode_diagnostic_sync = False
+        engine.decode_diagnostic_boundary_period = 2
+        source = FakeSource([(0, 11, 10)])
+        with patch("streaming_decode.log_phase") as phase:
+            report = self.run_source(source, engine)
+        states = [
+            call.kwargs
+            for call in phase.call_args_list
+            if call.args[:2] == ("decode_step_state", "finish")
+        ]
+        self.assertEqual(len(states), 2)
+        self.assertEqual(states[0]["step"], 0)
+        self.assertEqual(states[0]["cache_positions"], [1, 1, 1])
+        self.assertEqual(states[0]["boundary_rows"], [0, 1, 2])
+        self.assertEqual(states[1]["step"], 1)
+        self.assertEqual(states[1]["cache_positions"], [2, 1, 1])
+        self.assertEqual(states[1]["effective_lengths"], [3, 2, 2])
+        self.assertEqual(states[1]["boundary_rows"], [1, 2])
+        self.assertEqual(report["decode_diagnostic_steps"], 2)
+        self.assertEqual(report["decode_diagnostic_boundary_period"], 2)
 
     def test_windows_epochs_and_caps(self):
         requests = [(i, 1 + (i % 7)*10, 3 if i % 4 == 0 else 10) for i in range(100)]
