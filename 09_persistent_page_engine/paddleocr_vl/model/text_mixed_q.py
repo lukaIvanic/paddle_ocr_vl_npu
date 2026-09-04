@@ -55,6 +55,13 @@ MIXED_PREFETCH_FULL = "full"
 MIXED_PREFETCH_NONE = "none"
 MIXED_M16_PREFETCH_MODES = (MIXED_PREFETCH_FULL, MIXED_PREFETCH_NONE)
 DEFAULT_MIXED_M16_PREFETCH = MIXED_PREFETCH_FULL
+MIXED_ATTENTION_VERIFIER_THEN_DRAFT = "verifier_then_draft"
+MIXED_ATTENTION_DRAFT_THEN_VERIFIER = "draft_then_verifier"
+MIXED_M16_ATTENTION_ORDERS = (
+    MIXED_ATTENTION_VERIFIER_THEN_DRAFT,
+    MIXED_ATTENTION_DRAFT_THEN_VERIFIER,
+)
+DEFAULT_MIXED_M16_ATTENTION_ORDER = MIXED_ATTENTION_VERIFIER_THEN_DRAFT
 
 
 def _query_positions(cache_position: torch.Tensor, query_length: int) -> torch.Tensor:
@@ -178,12 +185,15 @@ def _mixed_attention(
     optimization: DecodeOptimizationConfig,
     layout: str,
     prefetch_mode: str,
+    attention_order: str,
 ) -> torch.Tensor:
     """Run one M16 projection body and two cache-specific attention calls."""
     import torch_npu
 
     if tuple(hidden_states.shape[:2]) != (1, PACKED_TOKEN_COUNT):
         raise ValueError("mixed M16 hidden states must have shape [1,16,H]")
+    if attention_order not in MIXED_M16_ATTENTION_ORDERS:
+        raise ValueError(f"unsupported mixed attention order {attention_order!r}")
     query_heads = int(attention.num_heads)
     kv_heads = int(attention.num_key_value_heads)
     head_dim = int(attention.head_dim)
@@ -248,6 +258,46 @@ def _mixed_attention(
     else:
         raise ValueError(f"unsupported mixed M16 layout {layout!r}")
 
+    draft_output: torch.Tensor | None = None
+    if attention_order == MIXED_ATTENTION_DRAFT_THEN_VERIFIER:
+        draft_query = draft_query_bsnd.reshape(
+            DRAFT_BATCH_SIZE, query_heads, DRAFT_QUERY_LENGTH, head_dim
+        )
+        draft_key = draft_key_bsnd.reshape(
+            DRAFT_BATCH_SIZE, kv_heads, DRAFT_QUERY_LENGTH, head_dim
+        )
+        draft_value = draft_value_bsnd.reshape(
+            DRAFT_BATCH_SIZE, kv_heads, DRAFT_QUERY_LENGTH, head_dim
+        )
+        draft_key_cache, draft_value_cache = update_decode_kv_cache_(
+            draft_key_cache,
+            draft_value_cache,
+            draft_cache_position,
+            draft_key,
+            draft_value,
+        )
+        if (
+            prefetch_mode == MIXED_PREFETCH_FULL
+            and optimization.post_scatter_kv_prefetch
+        ):
+            torch_npu.npu_prefetch(
+                draft_key_cache,
+                draft_key,
+                int(draft_key_cache.numel() * draft_key_cache.element_size()),
+            )
+            torch_npu.npu_prefetch(
+                draft_value_cache,
+                draft_value,
+                int(draft_value_cache.numel() * draft_value_cache.element_size()),
+            )
+        draft_output = _draft_increfa_attention(
+            attention,
+            draft_query,
+            draft_key_cache,
+            draft_value_cache,
+            draft_attention_mask,
+        )
+
     if layout == MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV:
         verifier_query = verifier_query_bsnd.transpose(1, 2).contiguous()
         verifier_key = verifier_key_bsnd.transpose(1, 2).contiguous()
@@ -286,45 +336,46 @@ def _mixed_attention(
         verifier_legal_mask,
     )
 
-    # Q=1 makes BSND and BNSD physically identical after the batch reshape.
-    # Keep these as views instead of concatenating and transposing draft QKV.
-    draft_query = draft_query_bsnd.reshape(
-        DRAFT_BATCH_SIZE, query_heads, DRAFT_QUERY_LENGTH, head_dim
-    )
-    draft_key = draft_key_bsnd.reshape(
-        DRAFT_BATCH_SIZE, kv_heads, DRAFT_QUERY_LENGTH, head_dim
-    )
-    draft_value = draft_value_bsnd.reshape(
-        DRAFT_BATCH_SIZE, kv_heads, DRAFT_QUERY_LENGTH, head_dim
-    )
-    draft_key_cache, draft_value_cache = update_decode_kv_cache_(
-        draft_key_cache,
-        draft_value_cache,
-        draft_cache_position,
-        draft_key,
-        draft_value,
-    )
-    if (
-        prefetch_mode == MIXED_PREFETCH_FULL
-        and optimization.post_scatter_kv_prefetch
-    ):
-        torch_npu.npu_prefetch(
+    if draft_output is None:
+        # Q=1 makes BSND and BNSD physically identical after the batch reshape.
+        # Keep these as views instead of concatenating and transposing draft QKV.
+        draft_query = draft_query_bsnd.reshape(
+            DRAFT_BATCH_SIZE, query_heads, DRAFT_QUERY_LENGTH, head_dim
+        )
+        draft_key = draft_key_bsnd.reshape(
+            DRAFT_BATCH_SIZE, kv_heads, DRAFT_QUERY_LENGTH, head_dim
+        )
+        draft_value = draft_value_bsnd.reshape(
+            DRAFT_BATCH_SIZE, kv_heads, DRAFT_QUERY_LENGTH, head_dim
+        )
+        draft_key_cache, draft_value_cache = update_decode_kv_cache_(
             draft_key_cache,
-            draft_key,
-            int(draft_key_cache.numel() * draft_key_cache.element_size()),
-        )
-        torch_npu.npu_prefetch(
             draft_value_cache,
+            draft_cache_position,
+            draft_key,
             draft_value,
-            int(draft_value_cache.numel() * draft_value_cache.element_size()),
         )
-    draft_output = _draft_increfa_attention(
-        attention,
-        draft_query,
-        draft_key_cache,
-        draft_value_cache,
-        draft_attention_mask,
-    )
+        if (
+            prefetch_mode == MIXED_PREFETCH_FULL
+            and optimization.post_scatter_kv_prefetch
+        ):
+            torch_npu.npu_prefetch(
+                draft_key_cache,
+                draft_key,
+                int(draft_key_cache.numel() * draft_key_cache.element_size()),
+            )
+            torch_npu.npu_prefetch(
+                draft_value_cache,
+                draft_value,
+                int(draft_value_cache.numel() * draft_value_cache.element_size()),
+            )
+        draft_output = _draft_increfa_attention(
+            attention,
+            draft_query,
+            draft_key_cache,
+            draft_value_cache,
+            draft_attention_mask,
+        )
 
     verifier_tokens = verifier_output.transpose(1, 2).contiguous().reshape(
         VERIFIER_QUERY_LENGTH, query_heads * head_dim
@@ -354,6 +405,7 @@ def run_text_mixed_m16_transformer(
     optimization: str | DecodeOptimizationConfig = MIXED_M16_OPTIMIZATION,
     layout: str = DEFAULT_MIXED_M16_LAYOUT,
     prefetch_mode: str = DEFAULT_MIXED_M16_PREFETCH,
+    attention_order: str = DEFAULT_MIXED_M16_ATTENTION_ORDER,
 ) -> torch.Tensor:
     optimization = resolve_decode_optimization(optimization)
     if optimization.name != MIXED_M16_OPTIMIZATION:
@@ -362,6 +414,8 @@ def run_text_mixed_m16_transformer(
         raise ValueError(f"unsupported mixed M16 layout {layout!r}")
     if prefetch_mode not in MIXED_M16_PREFETCH_MODES:
         raise ValueError(f"unsupported mixed M16 prefetch mode {prefetch_mode!r}")
+    if attention_order not in MIXED_M16_ATTENTION_ORDERS:
+        raise ValueError(f"unsupported mixed attention order {attention_order!r}")
 
     verifier_positions = _query_positions(
         verifier_cache_position, VERIFIER_QUERY_LENGTH
@@ -491,6 +545,7 @@ def run_text_mixed_m16_transformer(
             optimization,
             layout,
             prefetch_mode,
+            attention_order,
         )
         mlp_input, residual = _decode_add_with_optional_rms_norm(
             attention_output,
@@ -518,6 +573,7 @@ class TextMixedM16Stage(nn.Module):
         optimization: str | DecodeOptimizationConfig = MIXED_M16_OPTIMIZATION,
         layout: str = DEFAULT_MIXED_M16_LAYOUT,
         prefetch_mode: str = DEFAULT_MIXED_M16_PREFETCH,
+        attention_order: str = DEFAULT_MIXED_M16_ATTENTION_ORDER,
     ) -> None:
         super().__init__()
         self.model = model
@@ -533,6 +589,9 @@ class TextMixedM16Stage(nn.Module):
             )
         self.layout = layout
         self.prefetch_mode = prefetch_mode
+        if attention_order not in MIXED_M16_ATTENTION_ORDERS:
+            raise ValueError(f"unsupported mixed attention order {attention_order!r}")
+        self.attention_order = attention_order
         if not hasattr(model, "decode_token_id_map"):
             raise ValueError("mixed M16 stage requires the compact output vocabulary")
 
@@ -581,6 +640,7 @@ class TextMixedM16Stage(nn.Module):
             optimization=self.optimization,
             layout=self.layout,
             prefetch_mode=self.prefetch_mode,
+            attention_order=self.attention_order,
         )
         output_head = self.model.decode_lm_head
         logits = _linear_tokenwise(output_head, hidden_states)
@@ -615,11 +675,14 @@ def torchair_cache_dir_for_mixed_m16(
     linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
     layout: str = DEFAULT_MIXED_M16_LAYOUT,
     prefetch_mode: str = DEFAULT_MIXED_M16_PREFETCH,
+    attention_order: str = DEFAULT_MIXED_M16_ATTENTION_ORDER,
 ) -> Path:
     if layout not in MIXED_M16_LAYOUTS:
         raise ValueError(f"unsupported mixed M16 layout {layout!r}")
     if prefetch_mode not in MIXED_M16_PREFETCH_MODES:
         raise ValueError(f"unsupported mixed M16 prefetch mode {prefetch_mode!r}")
+    if attention_order not in MIXED_M16_ATTENTION_ORDERS:
+        raise ValueError(f"unsupported mixed attention order {attention_order!r}")
     shape_key = "_".join(
         (
             "text_mixed_m16",
@@ -632,6 +695,7 @@ def torchair_cache_dir_for_mixed_m16(
             "draft_b8q1_kv768",
             f"layout{cache_key_part(layout)}",
             f"prefetch{cache_key_part(prefetch_mode)}",
+            f"order{cache_key_part(attention_order)}",
             f"model{short_file_hash(model_dir / 'config.json')}",
             f"torch{cache_key_part(torch.__version__)}",
             f"torchnpu{torch_npu_version_label(device)}",
@@ -647,11 +711,14 @@ def torchair_cache_dir_for_mixed_m16(
 def mixed_m16_contract(
     layout: str = DEFAULT_MIXED_M16_LAYOUT,
     prefetch_mode: str = DEFAULT_MIXED_M16_PREFETCH,
+    attention_order: str = DEFAULT_MIXED_M16_ATTENTION_ORDER,
 ) -> dict[str, Any]:
     if layout not in MIXED_M16_LAYOUTS:
         raise ValueError(f"unsupported mixed M16 layout {layout!r}")
     if prefetch_mode not in MIXED_M16_PREFETCH_MODES:
         raise ValueError(f"unsupported mixed M16 prefetch mode {prefetch_mode!r}")
+    if attention_order not in MIXED_M16_ATTENTION_ORDERS:
+        raise ValueError(f"unsupported mixed attention order {attention_order!r}")
     return {
         "packed_token_count": PACKED_TOKEN_COUNT,
         "verifier": {
@@ -669,4 +736,5 @@ def mixed_m16_contract(
         "optimization": MIXED_M16_OPTIMIZATION,
         "layout": layout,
         "prefetch_mode": prefetch_mode,
+        "attention_order": attention_order,
     }
