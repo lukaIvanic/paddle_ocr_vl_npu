@@ -9,6 +9,29 @@ from __future__ import annotations
 from collections import Counter, deque
 import time
 
+from phase_logging import log_phase
+
+
+def decode_mask_preflight(cache_position, cache_length):
+    """Make the first decode mask contract host-visible before graph replay."""
+    positions = [int(value) for value in cache_position.detach().cpu().reshape(-1).tolist()]
+    invalid = [value for value in positions if value < 0 or value >= int(cache_length)]
+    if invalid:
+        raise ValueError(
+            "decode cache positions would create invalid attention rows: "
+            f"positions={positions} cache_length={int(cache_length)}"
+        )
+    valid_key_counts = [value + 1 for value in positions]
+    if not valid_key_counts or min(valid_key_counts) <= 0:
+        raise ValueError("decode attention contains a fully masked query row")
+    return {
+        "cache_positions": positions,
+        "valid_key_counts": valid_key_counts,
+        "min_valid_keys": min(valid_key_counts),
+        "max_valid_keys": max(valid_key_counts),
+        "all_rows_have_finite_attention": True,
+    }
+
 
 def run_decode_stream(engine, source):
     import torch
@@ -174,12 +197,46 @@ def run_decode_stream(engine, source):
             launched_requests, launched_epochs = tuple(slots), tuple(epochs)
             occupancy[active] += 1
             active_slots_total += active
+            first_graph_call = graph_calls == 0
+            if first_graph_call:
+                preflight = decode_mask_preflight(cache_position, engine.cache_length)
+                log_phase(
+                    "decode_mask_preflight",
+                    "finish",
+                    batch_size=int(batch),
+                    active_rows=int(active),
+                    inactive_filler_rows=int(batch - active),
+                    filler_source_slot=initial_filler_source_slot,
+                    cache_length=int(engine.cache_length),
+                    **preflight,
+                )
+                log_phase(
+                    "decode_graph_first_call",
+                    "start",
+                    batch_size=int(batch),
+                    active_rows=int(active),
+                    inactive_filler_rows=int(batch - active),
+                    cache_length=int(engine.cache_length),
+                    cache_dir=compile_meta.get("torchair_cache_dir"),
+                    cache_was_warm=compile_meta.get("cache_was_warm"),
+                    attention=compile_meta.get("decode_attention"),
+                )
             begin = time.perf_counter()
             candidate = decode_timeline.measure(str(active), lambda: torch.argmax(
                 compiled_decode(next_token, cache_position, rope_delta, *arena.flat_tensors())[:, -1, :].float(),
                 dim=-1, keepdim=True))
-            if graph_calls == 0:
+            if first_graph_call:
+                maybe_sync_device(engine.model.device)
                 first_call_s = time.perf_counter() - begin
+                log_phase(
+                    "decode_graph_first_call",
+                    "finish",
+                    batch_size=int(batch),
+                    active_rows=int(active),
+                    cache_length=int(engine.cache_length),
+                    cache_dir=compile_meta.get("torchair_cache_dir"),
+                    elapsed_s=float(first_call_s),
+                )
             begin = time.perf_counter()
             current = engine._schedule_token_copy(candidate, iteration=graph_calls,
                 slot_requests=launched_requests, slot_epochs=launched_epochs)

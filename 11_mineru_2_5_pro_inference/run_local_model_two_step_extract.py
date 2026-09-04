@@ -31,6 +31,7 @@ from local_modeling_mineru import (
     configure_decode_rotary_impl,
     configure_decode_weight_format,
 )
+from phase_logging import log_phase
 
 
 DEFAULT_IMAGE = Path(__file__).resolve().parents[1] / "crops" / "crop_01_text_block_en.png"
@@ -316,7 +317,18 @@ def compile_static_decode(
             decode_rotary_impl=decode_rotary_impl,
             decode_attention_impl=decode_attention_impl,
         )
+        cache_was_warm = shape_cache_dir.is_dir() and any(shape_cache_dir.iterdir())
         shape_cache_dir.mkdir(parents=True, exist_ok=True)
+        log_phase(
+            "decode_cache_wrapper",
+            "start",
+            batch_size=int(batch_size),
+            cache_length=int(cache_length),
+            decode_attention=str(decode_attention_impl),
+            cache_dir=str(shape_cache_dir),
+            cache_was_warm=bool(cache_was_warm),
+        )
+        wrapper_started = time.perf_counter()
         compiled_decode = torchair.inference.cache_compile(
             flat_decode.forward,
             config=config,
@@ -325,12 +337,25 @@ def compile_static_decode(
             ge_cache=True,
             fullgraph=True,
         )
+        wrapper_s = float(time.perf_counter() - wrapper_started)
+        log_phase(
+            "decode_cache_wrapper",
+            "finish",
+            batch_size=int(batch_size),
+            cache_length=int(cache_length),
+            decode_attention=str(decode_attention_impl),
+            cache_dir=str(shape_cache_dir),
+            cache_was_warm=bool(cache_was_warm),
+            elapsed_s=wrapper_s,
+        )
         return compiled_decode, {
             "backend": "torchair",
             "compile_api": "torchair.inference.cache_compile",
             "fullgraph": True,
             "dynamic": False,
             "torchair_cache_dir": str(shape_cache_dir),
+            "cache_was_warm": bool(cache_was_warm),
+            "compile_wrapper_s": wrapper_s,
             "torchair_ge_cache": True,
             "batch_size": int(batch_size),
             "cache_length": int(cache_length),

@@ -26,6 +26,7 @@ from local_modeling_mineru import (
     linear_last_dim,
     repeat_kv,
 )
+from phase_logging import log_phase
 
 
 DEFAULT_TEXT_PREFILL_BUCKETS = (128, 256, 512, 1024)
@@ -45,6 +46,32 @@ def parse_text_prefill_buckets(value: str | Iterable[int]) -> tuple[int, ...]:
 
 def select_text_prefill_bucket(real_tokens: int, buckets: Sequence[int]) -> int | None:
     return next((bucket for bucket in buckets if real_tokens <= bucket), None)
+
+
+def build_packed_text_allowed_mask(
+    segment_ids: torch.Tensor,
+    local_positions: torch.Tensor,
+) -> torch.Tensor:
+    """Return a valid block-causal mask with attention-isolated padding.
+
+    Real query rows attend earlier real keys in the same request. Padding query
+    rows attend padding keys only, so no softmax row is fully masked and no
+    padding value can influence a real token.
+    """
+    if segment_ids.ndim != 1 or local_positions.ndim != 1:
+        raise ValueError("segment_ids and local_positions must be one-dimensional")
+    if segment_ids.shape != local_positions.shape:
+        raise ValueError("segment_ids and local_positions must have the same shape")
+    valid = segment_ids >= 0
+    real_allowed = (
+        valid[:, None]
+        & valid[None, :]
+        & (segment_ids[:, None] == segment_ids[None, :])
+        & (local_positions[:, None] >= local_positions[None, :])
+    )
+    padding = ~valid
+    padding_allowed = padding[:, None] & padding[None, :]
+    return real_allowed | padding_allowed
 
 
 def _sync(device: torch.device) -> None:
@@ -193,13 +220,7 @@ class PackedMinerUTextPrefillStage(nn.Module):
     ) -> torch.Tensor:
         key_caches = tuple(flat_cache_tensors[: self.num_layers])
         value_caches = tuple(flat_cache_tensors[self.num_layers :])
-        valid = segment_ids >= 0
-        allowed = (
-            valid[:, None]
-            & valid[None, :]
-            & (segment_ids[:, None] == segment_ids[None, :])
-            & (local_positions[:, None] >= local_positions[None, :])
-        )
+        allowed = build_packed_text_allowed_mask(segment_ids, local_positions)
         attention_mask = torch.zeros(
             (1, 1, inputs_embeds.shape[1], inputs_embeds.shape[1]),
             device=inputs_embeds.device,
@@ -290,6 +311,13 @@ class MinerUPackedTextPrefillRuntime:
         cache_dir = self._cache_dir(bucket)
         cache_was_warm = cache_dir.is_dir() and any(cache_dir.iterdir())
         cache_dir.mkdir(parents=True, exist_ok=True)
+        log_phase(
+            "packed_text_cache_wrapper",
+            "start",
+            bucket=int(bucket),
+            cache_dir=str(cache_dir),
+            cache_was_warm=bool(cache_was_warm),
+        )
         _sync(self.device)
         started = time.perf_counter()
         compiled = torchair.inference.cache_compile(
@@ -301,6 +329,15 @@ class MinerUPackedTextPrefillRuntime:
             fullgraph=True,
         )
         _sync(self.device)
+        wrapper_s = float(time.perf_counter() - started)
+        log_phase(
+            "packed_text_cache_wrapper",
+            "finish",
+            bucket=int(bucket),
+            cache_dir=str(cache_dir),
+            cache_was_warm=bool(cache_was_warm),
+            elapsed_s=wrapper_s,
+        )
         scratch = self.model.allocate_static_cache(
             batch_size=1,
             cache_length=bucket,
@@ -314,7 +351,7 @@ class MinerUPackedTextPrefillRuntime:
         self.compile_records[str(bucket)] = {
             "cache_dir": str(cache_dir),
             "cache_was_warm": cache_was_warm,
-            "compile_wrapper_s": float(time.perf_counter() - started),
+            "compile_wrapper_s": wrapper_s,
             "first_call_s": None,
         }
         return compiled
@@ -404,6 +441,18 @@ class MinerUPackedTextPrefillRuntime:
         if first_call:
             _sync(self.device)
             started = time.perf_counter()
+            log_phase(
+                "packed_text_graph_first_call",
+                "start",
+                bucket=int(prepared.physical_tokens),
+                real_tokens=int(prepared.real_tokens),
+                padding_tokens=int(prepared.physical_tokens - prepared.real_tokens),
+                members=len(prepared.lengths),
+                member_lengths=list(prepared.lengths),
+                cache_dir=str(record["cache_dir"]),
+                cache_was_warm=bool(record["cache_was_warm"]),
+                padding_policy="padding_queries_attend_padding_keys_only",
+            )
         hidden_states = compiled(
             prepared.inputs_embeds,
             prepared.position_ids,
@@ -413,7 +462,18 @@ class MinerUPackedTextPrefillRuntime:
         )
         if first_call:
             _sync(self.device)
-            record["first_call_s"] = float(time.perf_counter() - started)
+            first_call_s = float(time.perf_counter() - started)
+            record["first_call_s"] = first_call_s
+            log_phase(
+                "packed_text_graph_first_call",
+                "finish",
+                bucket=int(prepared.physical_tokens),
+                real_tokens=int(prepared.real_tokens),
+                padding_tokens=int(prepared.physical_tokens - prepared.real_tokens),
+                members=len(prepared.lengths),
+                cache_dir=str(record["cache_dir"]),
+                elapsed_s=first_call_s,
+            )
         self.pack_count += 1
         self.real_tokens += prepared.real_tokens
         self.physical_tokens += prepared.physical_tokens

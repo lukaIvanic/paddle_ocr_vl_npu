@@ -20,6 +20,7 @@ import torch
 import torch.nn.functional as F
 
 from local_modeling_mineru import LocalMinerUStaticCache
+from phase_logging import log_phase
 from prefill_timing import PrefillDeviceTimeline
 from run_local_model_two_step_extract import maybe_sync_device
 
@@ -142,6 +143,80 @@ class FixedBatchDecodeEngine:
                 "vision_pack_target must be one of the compiled vision buckets: "
                 f"target={target} buckets={runtime.buckets}"
             )
+
+        def ensure_vision_compiled(bucket: int):
+            if int(bucket) in runtime.compiled:
+                return runtime.compiled[int(bucket)]
+            cache_dir = runtime._cache_dir(int(bucket))
+            cache_was_warm = cache_dir.is_dir() and any(cache_dir.iterdir())
+            log_phase(
+                "vision_cache_wrapper",
+                "start",
+                bucket=int(bucket),
+                cache_dir=str(cache_dir),
+                cache_was_warm=bool(cache_was_warm),
+            )
+            wrapper_started = time.perf_counter()
+            compiled = runtime._compiled_for_bucket(int(bucket))
+            log_phase(
+                "vision_cache_wrapper",
+                "finish",
+                bucket=int(bucket),
+                cache_dir=str(cache_dir),
+                cache_was_warm=bool(cache_was_warm),
+                elapsed_s=float(time.perf_counter() - wrapper_started),
+            )
+            return compiled
+
+        def run_single_vision(hidden, positions, cu_seqlens):
+            real_tokens = int(hidden.shape[0])
+            bucket = next(
+                (int(value) for value in runtime.buckets if real_tokens <= int(value)),
+                None,
+            )
+            if bucket is None:
+                log_phase(
+                    "vision_eager_overflow",
+                    "start",
+                    real_tokens=real_tokens,
+                )
+                eager_started = time.perf_counter()
+                output = runtime.run(hidden, positions, cu_seqlens)
+                maybe_sync_device(self.model.device)
+                log_phase(
+                    "vision_eager_overflow",
+                    "finish",
+                    real_tokens=real_tokens,
+                    elapsed_s=float(time.perf_counter() - eager_started),
+                )
+                return output
+            ensure_vision_compiled(bucket)
+            record = runtime.compile_records[str(bucket)]
+            first_call = record["first_call_s"] is None
+            if first_call:
+                log_phase(
+                    "vision_graph_first_call",
+                    "start",
+                    bucket=bucket,
+                    real_tokens=real_tokens,
+                    padding_tokens=bucket - real_tokens,
+                    members=1,
+                    cache_dir=str(record["cache_dir"]),
+                    padding_policy="real_and_padding_attention_components",
+                )
+            output = runtime.run(hidden, positions, cu_seqlens)
+            if first_call:
+                log_phase(
+                    "vision_graph_first_call",
+                    "finish",
+                    bucket=bucket,
+                    real_tokens=real_tokens,
+                    padding_tokens=bucket - real_tokens,
+                    members=1,
+                    cache_dir=str(record["cache_dir"]),
+                    elapsed_s=float(record["first_call_s"]),
+                )
+            return output
         token_embeds: list[torch.Tensor] = []
         vision_inputs: dict[
             int,
@@ -224,8 +299,8 @@ class FixedBatchDecodeEngine:
                 hidden, positions, cu_seqlens = vision_inputs[index]
                 packed_outputs[index] = timeline.measure(
                     "vision_transformer_blocks",
-                    lambda hidden=hidden, positions=positions, cu_seqlens=cu_seqlens: runtime.run(
-                        hidden, positions, cu_seqlens
+                    lambda hidden=hidden, positions=positions, cu_seqlens=cu_seqlens: run_single_vision(
+                        hidden, positions, cu_seqlens,
                     ),
                 )
                 continue
@@ -272,11 +347,40 @@ class FixedBatchDecodeEngine:
             mask = (segment_ids[:, None] != segment_ids[None, :]).view(
                 1, 1, target, target
             ).contiguous()
-            compiled = runtime._compiled_for_bucket(target)
+            compiled = ensure_vision_compiled(target)
+            record = runtime.compile_records[str(target)]
+            first_call = record["first_call_s"] is None
+            if first_call:
+                maybe_sync_device(self.model.device)
+                first_call_started = time.perf_counter()
+                log_phase(
+                    "vision_graph_first_call",
+                    "start",
+                    bucket=int(target),
+                    real_tokens=int(real_tokens),
+                    padding_tokens=int(pad_tokens),
+                    members=len(members),
+                    member_lengths=[int(vision_inputs[index][0].shape[0]) for index in members],
+                    cache_dir=str(record["cache_dir"]),
+                    padding_policy="segment_isolated_with_shared_padding_component",
+                )
             packed = timeline.measure(
                 "vision_transformer_blocks",
                 lambda: compiled(hidden, rope_cos, rope_sin, mask),
             )[0, :real_tokens]
+            if first_call:
+                maybe_sync_device(self.model.device)
+                record["first_call_s"] = float(time.perf_counter() - first_call_started)
+                log_phase(
+                    "vision_graph_first_call",
+                    "finish",
+                    bucket=int(target),
+                    real_tokens=int(real_tokens),
+                    padding_tokens=int(pad_tokens),
+                    members=len(members),
+                    cache_dir=str(record["cache_dir"]),
+                    elapsed_s=float(record["first_call_s"]),
+                )
             runtime.route_counts[f"packed_{target}"] = (
                 runtime.route_counts.get(f"packed_{target}", 0) + 1
             )
@@ -293,8 +397,8 @@ class FixedBatchDecodeEngine:
                 continue
             packed_outputs[index] = timeline.measure(
                 "vision_transformer_blocks",
-                lambda hidden=hidden, positions=positions, cu_seqlens=cu_seqlens: runtime.run(
-                    hidden, positions, cu_seqlens
+                lambda hidden=hidden, positions=positions, cu_seqlens=cu_seqlens: run_single_vision(
+                    hidden, positions, cu_seqlens,
                 ),
             )
 
@@ -632,6 +736,12 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
         if not requests:
             return 0.0, {}
         started = time.perf_counter()
+        log_phase(
+            "vision_prefill_window",
+            "start",
+            request_count=len(requests),
+            request_ids=[int(request_index) for request_index, _request in requests],
+        )
         timeline = PrefillDeviceTimeline(self.model.device)
         entries = [
             (0, request_index, request)
@@ -649,7 +759,14 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             "vision_prepare_request_count": len(requests),
             **timeline.resolve(),
         }
-        return float(time.perf_counter() - started), metrics
+        elapsed_s = float(time.perf_counter() - started)
+        log_phase(
+            "vision_prefill_window",
+            "finish",
+            request_count=len(requests),
+            elapsed_s=elapsed_s,
+        )
+        return elapsed_s, metrics
 
     @torch.inference_mode()
     def _prefill_slot(

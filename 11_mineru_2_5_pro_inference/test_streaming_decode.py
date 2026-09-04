@@ -12,11 +12,19 @@ try:
 except ImportError:
     torch = None
 
-from streaming_decode import run_decode_stream
+from streaming_decode import decode_mask_preflight, run_decode_stream
 from fixed_batch_engine import FixedBatchDecodeEngine
 
 
 class RefillRegressionTests(unittest.TestCase):
+    @unittest.skipIf(torch is None, "CPU torch is required")
+    def test_decode_mask_preflight_rejects_fully_masked_rows(self):
+        report = decode_mask_preflight(torch.tensor([0, 7, 63]), 64)
+        self.assertEqual(report["valid_key_counts"], [1, 8, 64])
+        self.assertTrue(report["all_rows_have_finite_attention"])
+        with self.assertRaisesRegex(ValueError, "invalid attention rows"):
+            decode_mask_preflight(torch.tensor([-1, 7, 63]), 64)
+
     def test_legacy_window_does_not_lose_free_slots(self):
         tree = ast.parse(Path(__file__).with_name("fixed_batch_engine.py").read_text())
         method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_generate_continuous")

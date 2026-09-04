@@ -5,7 +5,7 @@ collection boundaries, never barriers between independent model requests.
 """
 from __future__ import annotations
 
-from collections import deque
+from collections import Counter, deque
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable
@@ -13,6 +13,7 @@ from threading import Condition
 import time
 
 from generation_trace import image_fingerprint, request_identity
+from phase_logging import log_phase
 
 
 @dataclass
@@ -143,6 +144,17 @@ class MinerUPageSource:
         self.cpu_prepare_worker_s = 0.0
         self.cpu_mrope_prepare_s = 0.0
         self.request_h2d_submit_s = 0.0
+        self.phase_admitted = Counter()
+        self.phase_completed = Counter()
+        self.phase_started = set()
+        self.close_logged = False
+        log_phase(
+            "page_pipeline",
+            "start",
+            page_window=int(self.page_window),
+            prepare_depth=int(self.prepare_depth),
+            live_input=bool(self.inbox is not None),
+        )
         try:
             self._fill_pages()
         except BaseException:
@@ -276,11 +288,31 @@ class MinerUPageSource:
         index = self.next_id
         self.next_id += 1
         self.inflight[index] = record
+        phase = str(record["phase"])
+        self.phase_admitted[phase] += 1
+        if phase not in self.phase_started:
+            self.phase_started.add(phase)
+            log_phase(
+                f"request_phase_{phase}",
+                "start",
+                first_request_id=record.get("request_id"),
+                first_page=record.get("page"),
+            )
         self._pump(block=False)
         return index, request
 
     def complete(self, index: int, ids: list[int]):
         record = self.inflight.pop(index)
+        phase = str(record["phase"])
+        self.phase_completed[phase] += 1
+        if self.phase_completed[phase] == 1:
+            log_phase(
+                f"request_phase_{phase}",
+                "first_finish",
+                first_request_id=record.get("request_id"),
+                first_page=record.get("page"),
+                generated_tokens=len(ids),
+            )
         filtered = [token for token in ids if token not in self.adapter.skip_token_ids]
         text = self.adapter.processor.batch_decode(
             [filtered], skip_special_tokens=False, clean_up_tokenization_spaces=False)[0]
@@ -302,6 +334,23 @@ class MinerUPageSource:
                 self._finish_page(name)
 
     def close(self):
+        if not self.close_logged:
+            self.close_logged = True
+            clean_finish = bool(self.closed and not self.inflight)
+            for phase in sorted(self.phase_started):
+                log_phase(
+                    f"request_phase_{phase}",
+                    "finish" if clean_finish else "stop",
+                    admitted=int(self.phase_admitted[phase]),
+                    completed=int(self.phase_completed[phase]),
+                )
+            log_phase(
+                "page_pipeline",
+                "finish" if clean_finish else "stop",
+                pages_completed=int(self.completed_pages),
+                pages_seen=len(self.seen_pages),
+                remaining_inflight=len(self.inflight),
+            )
         if self.inbox is not None and not self.closed:
             self.inbox.fail(RuntimeError("page stream stopped before input drained"))
         self.frontend.shutdown(wait=True, cancel_futures=True)

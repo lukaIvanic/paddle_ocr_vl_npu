@@ -9,6 +9,20 @@ import math
 import time
 from pathlib import Path
 
+from phase_logging import log_phase
+
+
+VARIANTS = (
+    "mask_b1",
+    "mask_bn",
+    "mask_b1_actual_full",
+    "mask_bn_actual_full",
+    "actual_per_row",
+    "mask_b1_inner_precise_0",
+    "mask_bn_inner_precise_0",
+    "mha_mask_b1",
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -21,6 +35,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--valid-lengths",
         help="Comma-separated per-row valid KV lengths. Defaults to a varied range.",
+    )
+    parser.add_argument(
+        "--valid-length",
+        type=int,
+        help="Use one valid KV length for every row, matching duplicated fillers.",
+    )
+    parser.add_argument(
+        "--variant",
+        choices=("all", *VARIANTS),
+        default="all",
+        help="Run one independently timeout-safe call, or the full matrix.",
     )
     parser.add_argument("--seed", type=int, default=1234)
     parser.add_argument("--output", type=Path, required=True)
@@ -48,8 +73,12 @@ def main() -> None:
     head_dim = int(args.head_dim)
     if num_heads % num_kv_heads:
         raise ValueError("num_heads must be divisible by num_kv_heads")
+    if args.valid_lengths and args.valid_length is not None:
+        raise ValueError("use only one of --valid-lengths and --valid-length")
     if args.valid_lengths:
         valid_lengths = [int(value) for value in args.valid_lengths.split(",")]
+    elif args.valid_length is not None:
+        valid_lengths = [int(args.valid_length)] * batch
     else:
         valid_lengths = [
             128 + (cache_length - 129) * row // max(1, batch - 1)
@@ -100,16 +129,37 @@ def main() -> None:
             "atten_mask": expanded_mask,
             "inner_precise": 0,
         },
+        "mha_mask_b1": {
+            "atten_mask": mask,
+            "_mha": True,
+        },
     }
+    selected = list(variants) if args.variant == "all" else [args.variant]
     results = {}
-    for name, options in variants.items():
+    for name in selected:
+        options = dict(variants[name])
+        use_mha = bool(options.pop("_mha", False))
+        call_key = repeated_key if use_mha else key
+        call_value = repeated_value if use_mha else value
+        call_kv_heads = num_heads if use_mha else num_kv_heads
+        log_phase(
+            "increfa_contract_call",
+            "start",
+            variant=name,
+            batch_size=batch,
+            cache_length=cache_length,
+            num_heads=num_heads,
+            num_kv_heads=call_kv_heads,
+            valid_lengths=valid_lengths,
+            mask_shape=list(options["atten_mask"].shape) if "atten_mask" in options else None,
+        )
         started = time.perf_counter()
         output = torch_npu.npu_incre_flash_attention(
             query,
-            key,
-            value,
+            call_key,
+            call_value,
             num_heads=num_heads,
-            num_key_value_heads=num_kv_heads,
+            num_key_value_heads=call_kv_heads,
             input_layout="BNSD",
             scale_value=scale,
             **options,
@@ -126,6 +176,12 @@ def main() -> None:
                 ).item()
             ),
         }
+        log_phase(
+            "increfa_contract_call",
+            "finish",
+            variant=name,
+            **results[name],
+        )
         print(name, json.dumps(results[name], sort_keys=True), flush=True)
 
     payload = {
@@ -139,6 +195,7 @@ def main() -> None:
         "valid_lengths": valid_lengths,
         "mask_shape": list(mask.shape),
         "expanded_mask_shape": list(expanded_mask.shape),
+        "selected_variant": args.variant,
         "results": results,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
