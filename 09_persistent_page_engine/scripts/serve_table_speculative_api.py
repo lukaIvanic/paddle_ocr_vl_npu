@@ -401,6 +401,7 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
         import table_spec_decode_lab as fixed_lab
         import table_spec_live_u8_adaptive_lab as live_lab
         from paddleocr_vl.model.text_spec_verify import (
+            SPEC_VERIFY_ATTENTION,
             torchair_cache_dir_for_spec_shape,
         )
         from pipeline.layout_output import normalize_recognition_text
@@ -506,6 +507,8 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
                     "initial_k": args.initial_k,
                     "decode_optimization": args.b1_decode_optimization,
                     "verifier_optimization": args.verifier_optimization,
+                    "spec_verify_attention": SPEC_VERIFY_ATTENTION,
+                    "allow_compile": args.allow_compile,
                 },
                 "worker_pid": __import__("os").getpid(),
             }

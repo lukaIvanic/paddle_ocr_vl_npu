@@ -10,10 +10,20 @@ import unittest
 EXPERIMENT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(EXPERIMENT_ROOT))
 
-from paddleocr_vl.model.text_spec_verify import bounded_spec_cache_component
+from paddleocr_vl.model.text_spec_verify import (
+    DEFAULT_SPEC_VERIFY_ATTENTION,
+    _COMBINED_QKV_POST_ROPE_ATTENTION,
+    bounded_spec_cache_component,
+)
 
 
 class SpecCacheKeyTest(unittest.TestCase):
+    def test_production_default_uses_combined_post_rope_attention(self) -> None:
+        self.assertEqual(
+            DEFAULT_SPEC_VERIFY_ATTENTION,
+            _COMBINED_QKV_POST_ROPE_ATTENTION,
+        )
+
     def test_short_key_is_preserved(self) -> None:
         self.assertEqual(bounded_spec_cache_component("short_key"), "short_key")
 

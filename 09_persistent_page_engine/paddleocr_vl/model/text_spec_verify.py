@@ -54,14 +54,15 @@ if TYPE_CHECKING:
 
 
 FULL_ATTENTION_TOKENS = (1 << 31) - 1
-SPEC_VERIFY_ATTENTION = os.environ.get(
-    "SPEC_VERIFY_ATTENTION", "promptfa_gqa"
-)
 _COMBINED_QKV_LAYOUT_ATTENTION = (
     "manual_grouped_legal_scaled_masked_softmax_fp16_combined_qkv_rotary_mul"
 )
 _COMBINED_QKV_POST_ROPE_ATTENTION = (
     "manual_grouped_legal_scaled_masked_softmax_fp16_combined_qkv_post_rope"
+)
+DEFAULT_SPEC_VERIFY_ATTENTION = _COMBINED_QKV_POST_ROPE_ATTENTION
+SPEC_VERIFY_ATTENTION = os.environ.get(
+    "SPEC_VERIFY_ATTENTION", DEFAULT_SPEC_VERIFY_ATTENTION
 )
 if SPEC_VERIFY_ATTENTION not in (
     "promptfa_gqa",
