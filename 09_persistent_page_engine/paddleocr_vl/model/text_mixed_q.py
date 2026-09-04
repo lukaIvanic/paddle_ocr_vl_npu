@@ -233,26 +233,16 @@ def _mixed_attention(
         verifier_legal_mask,
     )
 
-    draft_packed_qkv = (
-        torch.cat(
-            (
-                query_bsnd[:, VERIFIER_QUERY_LENGTH:],
-                key_bsnd[:, VERIFIER_QUERY_LENGTH:],
-                value_bsnd[:, VERIFIER_QUERY_LENGTH:],
-            ),
-            dim=2,
-        )
-        .reshape(
-            DRAFT_BATCH_SIZE,
-            DRAFT_QUERY_LENGTH,
-            query_heads + (2 * kv_heads),
-            head_dim,
-        )
-        .transpose(1, 2)
-        .contiguous()
+    # Q=1 makes BSND and BNSD physically identical after the batch reshape.
+    # Keep these as views instead of concatenating and transposing draft QKV.
+    draft_query = query_bsnd[:, VERIFIER_QUERY_LENGTH:].reshape(
+        DRAFT_BATCH_SIZE, query_heads, DRAFT_QUERY_LENGTH, head_dim
     )
-    draft_query, draft_key, draft_value = draft_packed_qkv.split(
-        (query_heads, kv_heads, kv_heads), dim=1
+    draft_key = key_bsnd[:, VERIFIER_QUERY_LENGTH:].reshape(
+        DRAFT_BATCH_SIZE, kv_heads, DRAFT_QUERY_LENGTH, head_dim
+    )
+    draft_value = value_bsnd[:, VERIFIER_QUERY_LENGTH:].reshape(
+        DRAFT_BATCH_SIZE, kv_heads, DRAFT_QUERY_LENGTH, head_dim
     )
     draft_key_cache, draft_value_cache = update_decode_kv_cache_(
         draft_key_cache,
