@@ -192,12 +192,24 @@ def _mixed_attention(
         rotary_mode="half",
     )
 
+    # Split both mixed lanes once per tensor. Direct token slices lower to six
+    # independent StridedSlice kernels per layer on the 910B TorchAir graph.
+    verifier_query_bsnd, draft_query_bsnd = query_bsnd.split(
+        (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+    )
+    verifier_key_bsnd, draft_key_bsnd = key_bsnd.split(
+        (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+    )
+    verifier_value_bsnd, draft_value_bsnd = value_bsnd.split(
+        (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+    )
+
     verifier_packed_qkv = (
         torch.cat(
             (
-                query_bsnd[:, :VERIFIER_QUERY_LENGTH],
-                key_bsnd[:, :VERIFIER_QUERY_LENGTH],
-                value_bsnd[:, :VERIFIER_QUERY_LENGTH],
+                verifier_query_bsnd,
+                verifier_key_bsnd,
+                verifier_value_bsnd,
             ),
             dim=2,
         )
@@ -235,13 +247,13 @@ def _mixed_attention(
 
     # Q=1 makes BSND and BNSD physically identical after the batch reshape.
     # Keep these as views instead of concatenating and transposing draft QKV.
-    draft_query = query_bsnd[:, VERIFIER_QUERY_LENGTH:].reshape(
+    draft_query = draft_query_bsnd.reshape(
         DRAFT_BATCH_SIZE, query_heads, DRAFT_QUERY_LENGTH, head_dim
     )
-    draft_key = key_bsnd[:, VERIFIER_QUERY_LENGTH:].reshape(
+    draft_key = draft_key_bsnd.reshape(
         DRAFT_BATCH_SIZE, kv_heads, DRAFT_QUERY_LENGTH, head_dim
     )
-    draft_value = value_bsnd[:, VERIFIER_QUERY_LENGTH:].reshape(
+    draft_value = draft_value_bsnd.reshape(
         DRAFT_BATCH_SIZE, kv_heads, DRAFT_QUERY_LENGTH, head_dim
     )
     draft_key_cache, draft_value_cache = update_decode_kv_cache_(
