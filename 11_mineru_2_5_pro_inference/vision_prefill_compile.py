@@ -29,6 +29,13 @@ from local_modeling_mineru import (
 
 DEFAULT_VISION_BUCKETS = (384, 512, 768, 1024, 1536, 2048, 3072, 4224, 5632)
 VISION_MASK_SPARSE_MODE = 1
+VISION_ATTENTION_IMPL_CHOICES = ("prompt_flash_attention", "manual")
+VISION_LAYER_NORM_IMPL_CHOICES = ("module", "manual_fp32")
+VISION_PROJECTION_IMPL_CHOICES = (
+    "linear",
+    "grouped_qkv",
+    "grouped_qkv_mlp_fc1",
+)
 
 
 def parse_vision_buckets(value: str | Iterable[int]) -> tuple[int, ...]:
@@ -89,11 +96,128 @@ def _short_hash(path: Path) -> str:
 class StaticMinerUVisionBlocks(nn.Module):
     """Compiler-safe equivalent of the stock MinerU vision block stack."""
 
-    def __init__(self, visual: nn.Module) -> None:
+    def __init__(
+        self,
+        visual: nn.Module,
+        *,
+        attention_impl: str = "prompt_flash_attention",
+        layer_norm_impl: str = "module",
+        projection_impl: str = "linear",
+        promptfa_pad_head_dim_to: int = 0,
+    ) -> None:
         super().__init__()
+        if attention_impl not in VISION_ATTENTION_IMPL_CHOICES:
+            raise ValueError(
+                f"attention_impl must be one of {VISION_ATTENTION_IMPL_CHOICES}, "
+                f"got {attention_impl!r}"
+            )
+        if layer_norm_impl not in VISION_LAYER_NORM_IMPL_CHOICES:
+            raise ValueError(
+                f"layer_norm_impl must be one of {VISION_LAYER_NORM_IMPL_CHOICES}, "
+                f"got {layer_norm_impl!r}"
+            )
+        if projection_impl not in VISION_PROJECTION_IMPL_CHOICES:
+            raise ValueError(
+                f"projection_impl must be one of {VISION_PROJECTION_IMPL_CHOICES}, "
+                f"got {projection_impl!r}"
+            )
         self.blocks = visual.blocks
         self.num_heads = int(visual.config.num_heads)
         self.head_dim = int(visual.config.embed_dim) // self.num_heads
+        requested_call_head_dim = int(promptfa_pad_head_dim_to)
+        if requested_call_head_dim not in (0,) and requested_call_head_dim < self.head_dim:
+            raise ValueError(
+                "promptfa_pad_head_dim_to must be zero or at least the native "
+                f"head dimension {self.head_dim}, got {requested_call_head_dim}"
+            )
+        if attention_impl != "prompt_flash_attention" and requested_call_head_dim:
+            raise ValueError(
+                "promptfa_pad_head_dim_to is only valid with prompt_flash_attention"
+            )
+        self.attention_impl = attention_impl
+        self.layer_norm_impl = layer_norm_impl
+        self.projection_impl = projection_impl
+        self.promptfa_call_head_dim = requested_call_head_dim or self.head_dim
+
+    def _layer_norm(
+        self,
+        layer_norm: nn.LayerNorm,
+        hidden_states: torch.Tensor,
+    ) -> torch.Tensor:
+        if self.layer_norm_impl == "module":
+            return layer_norm(hidden_states)
+        source_dtype = hidden_states.dtype
+        values = hidden_states.float()
+        mean = values.mean(dim=-1, keepdim=True)
+        centered = values - mean
+        variance = centered.square().mean(dim=-1, keepdim=True)
+        output = (centered * torch.rsqrt(variance + float(layer_norm.eps))).to(
+            dtype=source_dtype
+        )
+        if layer_norm.weight is not None:
+            output = output * layer_norm.weight
+        if layer_norm.bias is not None:
+            output = output + layer_norm.bias
+        return output
+
+    @staticmethod
+    def _grouped_linear(
+        hidden_states: torch.Tensor,
+        linear: nn.Linear,
+    ) -> torch.Tensor:
+        """Apply one Linear through the 310P-tested 3D-weight grouped-MatMul API."""
+        import torch_npu
+
+        input_shape = tuple(hidden_states.shape)
+        flat_hidden = hidden_states.reshape(-1, input_shape[-1]).contiguous()
+        group_list = torch.full(
+            (1,),
+            flat_hidden.shape[0],
+            dtype=torch.int64,
+            device=flat_hidden.device,
+        )
+        weight_3d = linear.weight.transpose(0, 1).contiguous().unsqueeze(0)
+        bias_arg = (
+            None
+            if linear.bias is None
+            else [linear.bias.contiguous().unsqueeze(0)]
+        )
+        output = torch_npu.npu_grouped_matmul(
+            [flat_hidden],
+            [weight_3d],
+            bias=bias_arg,
+            group_list=group_list,
+            split_item=2,
+            group_type=0,
+            group_list_type=1,
+        )[0]
+        return output.reshape(*input_shape[:-1], int(linear.out_features))
+
+    def _qkv_projection(
+        self,
+        attention: nn.Module,
+        hidden_states: torch.Tensor,
+    ) -> torch.Tensor:
+        if self.projection_impl in ("grouped_qkv", "grouped_qkv_mlp_fc1"):
+            return self._grouped_linear(hidden_states, attention.qkv)
+        return attention.qkv(hidden_states)
+
+    def _mlp(
+        self,
+        mlp: nn.Module,
+        hidden_states: torch.Tensor,
+    ) -> torch.Tensor:
+        if self.projection_impl == "grouped_qkv_mlp_fc1":
+            intermediate = self._grouped_linear(hidden_states, mlp.fc1)
+        else:
+            intermediate = mlp.fc1(hidden_states)
+        return mlp.fc2(_activation(mlp.hidden_act, intermediate))
+
+    def _pad_promptfa_head_dim(self, tensor: torch.Tensor) -> torch.Tensor:
+        pad_width = self.promptfa_call_head_dim - self.head_dim
+        if not pad_width:
+            return tensor
+        return F.pad(tensor, (0, pad_width)).contiguous()
 
     def forward(
         self,
@@ -105,8 +229,8 @@ class StaticMinerUVisionBlocks(nn.Module):
         batch_size, seq_len, _ = hidden_states.shape
         for block in self.blocks:
             residual = hidden_states
-            normed = block.norm1(hidden_states)
-            qkv = block.attn.qkv(normed).view(
+            normed = self._layer_norm(block.norm1, hidden_states)
+            qkv = self._qkv_projection(block.attn, normed).view(
                 batch_size,
                 seq_len,
                 3,
@@ -123,25 +247,39 @@ class StaticMinerUVisionBlocks(nn.Module):
             query_states = query_states.transpose(1, 2).contiguous()
             key_states = key_states.transpose(1, 2).contiguous()
             value_states = value_states.transpose(1, 2).contiguous()
-            attention_output = vision_prompt_flash_attention_bnsd(
-                query_states,
-                key_states,
-                value_states,
-                num_heads=self.num_heads,
-                scale=float(block.attn.scaling),
-                atten_mask=attention_mask,
-                sparse_mode=VISION_MASK_SPARSE_MODE,
-            )
+            if self.attention_impl == "prompt_flash_attention":
+                attention_output = vision_prompt_flash_attention_bnsd(
+                    self._pad_promptfa_head_dim(query_states),
+                    self._pad_promptfa_head_dim(key_states),
+                    self._pad_promptfa_head_dim(value_states),
+                    num_heads=self.num_heads,
+                    scale=float(block.attn.scaling),
+                    atten_mask=attention_mask,
+                    sparse_mode=VISION_MASK_SPARSE_MODE,
+                )
+                if self.promptfa_call_head_dim != self.head_dim:
+                    attention_output = attention_output[..., : self.head_dim].contiguous()
+            else:
+                scores = torch.matmul(
+                    query_states,
+                    key_states.transpose(2, 3),
+                ) * float(block.attn.scaling)
+                scores = scores.masked_fill(
+                    attention_mask,
+                    torch.finfo(scores.dtype).min,
+                )
+                probabilities = F.softmax(scores, dim=-1, dtype=torch.float32).to(
+                    query_states.dtype
+                )
+                attention_output = torch.matmul(probabilities, value_states)
             attention_output = (
                 attention_output.transpose(1, 2)
                 .contiguous()
                 .view(batch_size, seq_len, -1)
             )
             hidden_states = residual + block.attn.proj(attention_output)
-            mlp_input = block.norm2(hidden_states)
-            hidden_states = hidden_states + block.mlp.fc2(
-                _activation(block.mlp.hidden_act, block.mlp.fc1(mlp_input))
-            )
+            mlp_input = self._layer_norm(block.norm2, hidden_states)
+            hidden_states = hidden_states + self._mlp(block.mlp, mlp_input)
         return hidden_states
 
 
@@ -177,15 +315,38 @@ class MinerUVisionPrefillRuntime:
         model_dir: Path,
         device: torch.device,
         dtype: torch.dtype,
+        attention_impl: str = "prompt_flash_attention",
+        layer_norm_impl: str = "module",
+        projection_impl: str = "linear",
+        promptfa_pad_head_dim_to: int = 0,
     ) -> None:
         if device.type != "npu":
             raise ValueError("MinerU compiled vision prefill requires an NPU device")
+        if attention_impl not in VISION_ATTENTION_IMPL_CHOICES:
+            raise ValueError(
+                f"attention_impl must be one of {VISION_ATTENTION_IMPL_CHOICES}, "
+                f"got {attention_impl!r}"
+            )
+        if layer_norm_impl not in VISION_LAYER_NORM_IMPL_CHOICES:
+            raise ValueError(
+                f"layer_norm_impl must be one of {VISION_LAYER_NORM_IMPL_CHOICES}, "
+                f"got {layer_norm_impl!r}"
+            )
+        if projection_impl not in VISION_PROJECTION_IMPL_CHOICES:
+            raise ValueError(
+                f"projection_impl must be one of {VISION_PROJECTION_IMPL_CHOICES}, "
+                f"got {projection_impl!r}"
+            )
         self.visual = visual
         self.buckets = parse_vision_buckets(buckets)
         self.cache_root = cache_root.expanduser().resolve()
         self.model_dir = model_dir.expanduser().resolve()
         self.device = device
         self.dtype = dtype
+        self.attention_impl = attention_impl
+        self.layer_norm_impl = layer_norm_impl
+        self.projection_impl = projection_impl
+        self.promptfa_pad_head_dim_to = int(promptfa_pad_head_dim_to)
         self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
         self.modules: dict[int, StaticMinerUVisionBlocks] = {}
         self.compile_records: dict[str, dict[str, Any]] = {}
@@ -204,7 +365,12 @@ class MinerUVisionPrefillRuntime:
             torch_npu_version = "unknown"
         key = "_".join(
             (
-                "mineru_vision_blocks_promptfa_mask_sparse1",
+                "mineru_vision_blocks",
+                f"attn{self.attention_impl}",
+                f"ln{self.layer_norm_impl}",
+                f"proj{self.projection_impl}",
+                f"pfad{self.promptfa_pad_head_dim_to or 'native'}",
+                "mask_sparse1",
                 "bs1",
                 f"seq{int(bucket)}",
                 f"dtype{str(self.dtype).replace('torch.', '')}",
@@ -216,17 +382,43 @@ class MinerUVisionPrefillRuntime:
         )
         return self.cache_root / key.replace("/", "_")
 
+    def _phase(self, event: str, bucket: int, **fields: Any) -> None:
+        values = {
+            "event": str(event),
+            "bucket": int(bucket),
+            "attention": self.attention_impl,
+            "layer_norm": self.layer_norm_impl,
+            "projection": self.projection_impl,
+            "promptfa_call_head_dim": int(
+                self.promptfa_pad_head_dim_to
+                or self.visual.config.embed_dim // self.visual.config.num_heads
+            ),
+            **fields,
+        }
+        print(
+            "MINERU_VISION_COMPILE "
+            + " ".join(f"{key}={value}" for key, value in values.items()),
+            flush=True,
+        )
+
     def _compiled_for_bucket(self, bucket: int) -> Callable[..., torch.Tensor]:
         if bucket in self.compiled:
             return self.compiled[bucket]
         torchair, CompilerConfig = _import_torchair()
-        module = StaticMinerUVisionBlocks(self.visual).eval()
+        module = StaticMinerUVisionBlocks(
+            self.visual,
+            attention_impl=self.attention_impl,
+            layer_norm_impl=self.layer_norm_impl,
+            projection_impl=self.projection_impl,
+            promptfa_pad_head_dim_to=self.promptfa_pad_head_dim_to,
+        ).eval()
         entrypoint = _unique_bucket_forward(module, bucket)
         cache_dir = self._cache_dir(bucket)
         cache_dir.mkdir(parents=True, exist_ok=True)
         config = CompilerConfig()
         _synchronize(self.device)
         started = time.perf_counter()
+        self._phase("cache_compile_start", bucket, cache_dir=cache_dir)
         compiled = torchair.inference.cache_compile(
             entrypoint,
             config=config,
@@ -236,10 +428,17 @@ class MinerUVisionPrefillRuntime:
             fullgraph=True,
         )
         _synchronize(self.device)
+        compile_wrapper_s = float(time.perf_counter() - started)
+        self._phase(
+            "cache_compile_finish",
+            bucket,
+            cache_dir=cache_dir,
+            elapsed_s=f"{compile_wrapper_s:.6f}",
+        )
         self.modules[bucket] = module
         self.compiled[bucket] = compiled
         self.compile_records[str(bucket)] = {
-            "compile_wrapper_s": float(time.perf_counter() - started),
+            "compile_wrapper_s": compile_wrapper_s,
             "first_call_s": None,
             "cache_dir": str(cache_dir),
         }
@@ -302,10 +501,16 @@ class MinerUVisionPrefillRuntime:
         if first_call:
             _synchronize(self.device)
             started = time.perf_counter()
+            self._phase("first_call_start", bucket)
         output = compiled(*prepared)
         if first_call:
             _synchronize(self.device)
             record["first_call_s"] = float(time.perf_counter() - started)
+            self._phase(
+                "first_call_finish",
+                bucket,
+                elapsed_s=f"{record['first_call_s']:.6f}",
+            )
         key = str(bucket)
         self.route_counts[key] = self.route_counts.get(key, 0) + 1
         self.real_tokens += real_seq_len
@@ -317,8 +522,14 @@ class MinerUVisionPrefillRuntime:
             "backend": "torchair",
             "boundary": "32_vision_transformer_blocks",
             "batch_size": 1,
-            "attention": "prompt_flash_attention",
+            "attention": self.attention_impl,
             "mask_sparse_mode": VISION_MASK_SPARSE_MODE,
+            "layer_norm_impl": self.layer_norm_impl,
+            "projection_impl": self.projection_impl,
+            "promptfa_pad_head_dim_to": int(self.promptfa_pad_head_dim_to),
+            "native_head_dim": int(
+                self.visual.config.embed_dim // self.visual.config.num_heads
+            ),
             "padding": "bucket",
             "buckets": list(self.buckets),
             "overflow": "eager_unpadded",

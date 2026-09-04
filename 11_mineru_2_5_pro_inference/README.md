@@ -275,6 +275,32 @@ $PYTHON 11_mineru_2_5_pro_inference/bench_compiled_vision_prefill.py \
   --output tmp/11_mineru_2_5_pro_inference/compiled_vision_crop/result.json
 ```
 
+For a 310P compiler failure at the full 32-block vision boundary, use the
+committed contract matrix instead of reducing PromptFA to a synthetic operator
+probe:
+
+```sh
+BUCKET=1024 bash 11_mineru_2_5_pro_inference/run_vision_prefill_contract_matrix.sh
+```
+
+Every lane runs in a separate Python process and receives its own TorchAir cache
+identity. The matrix holds the real image preparation, RoPE, 32 vision blocks,
+padding mask, output projection, and MLPs constant while testing:
+
+- stock `nn.LayerNorm` versus explicit FP32 LayerNorm math;
+- stock `nn.Linear` versus `npu_grouped_matmul` with a 3D weight for QKV, and
+  optionally for the LayerNorm-fed MLP FC1;
+- native D80 PromptFA versus a D80-to-D96 pad/call/slice compiler boundary;
+- PromptFA versus a full-graph manual-attention control;
+- the combined historical Paddle 310P workarounds.
+
+`MINERU_VISION_COMPILE` markers identify cache-compile and first-call
+start/finish boundaries. A timeout or failure in one lane is recorded under its
+own output directory and does not suppress the remaining discriminator lanes.
+The default eager reference for this matrix is manual attention. Interpret
+feature differences and token parity before treating a terminating lane as a
+usable replacement.
+
 For corpus-level vision work, use `vision_prefill_lab.py`. It replays real
 OmniDocBench pages, keeps CPU image preparation and H2D outside the headline
 vision throughput, records patch/position/transformer/merger device times, and

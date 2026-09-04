@@ -14,7 +14,12 @@ from PIL import Image
 
 from local_modeling_mineru import LocalMinerU2_5ForConditionalGeneration
 from run_transformers_recognition_smoke import configure_npu, synchronize
-from vision_prefill_compile import MinerUVisionPrefillRuntime
+from vision_prefill_compile import (
+    VISION_ATTENTION_IMPL_CHOICES,
+    VISION_LAYER_NORM_IMPL_CHOICES,
+    VISION_PROJECTION_IMPL_CHOICES,
+    MinerUVisionPrefillRuntime,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -29,6 +34,28 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup", type=int, default=2)
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--generation-tokens", type=int, default=64)
+    parser.add_argument(
+        "--eager-reference-attention",
+        choices=("manual", "prompt_flash_attention"),
+        default="prompt_flash_attention",
+    )
+    parser.add_argument(
+        "--compiled-attention",
+        choices=VISION_ATTENTION_IMPL_CHOICES,
+        default="prompt_flash_attention",
+    )
+    parser.add_argument(
+        "--layer-norm-impl",
+        choices=VISION_LAYER_NORM_IMPL_CHOICES,
+        default="module",
+    )
+    parser.add_argument(
+        "--projection-impl",
+        choices=VISION_PROJECTION_IMPL_CHOICES,
+        default="linear",
+    )
+    parser.add_argument("--promptfa-pad-head-dim-to", type=int, default=0)
+    parser.add_argument("--skip-generation", action="store_true")
     return parser.parse_args()
 
 
@@ -96,7 +123,7 @@ def main() -> None:
         dtype=torch.float16,
         device="npu:0",
     )
-    model.set_vision_attention_impl("prompt_flash_attention")
+    model.set_vision_attention_impl(args.eager_reference_attention)
     print("[setup] model loaded", flush=True)
 
     with Image.open(args.image) as source:
@@ -140,6 +167,10 @@ def main() -> None:
         model_dir=model_dir,
         device=model.device,
         dtype=model.dtype,
+        attention_impl=args.compiled_attention,
+        layer_norm_impl=args.layer_norm_impl,
+        projection_impl=args.projection_impl,
+        promptfa_pad_head_dim_to=args.promptfa_pad_head_dim_to,
     )
     model.set_vision_prefill_runtime(runtime)
     print("[compiled] first call may compile or restore the static graph", flush=True)
@@ -172,10 +203,30 @@ def main() -> None:
         synchronize()
         return tokens.detach().cpu(), time.perf_counter() - started
 
-    print("[accuracy] eager generation", flush=True)
-    eager_tokens, eager_generation_s = generate(None)
-    print("[accuracy] compiled-vision generation", flush=True)
-    compiled_tokens, compiled_generation_s = generate(runtime)
+    generation_comparison = None
+    if not args.skip_generation:
+        print("[accuracy] eager generation", flush=True)
+        eager_tokens, eager_generation_s = generate(None)
+        print("[accuracy] compiled-vision generation", flush=True)
+        compiled_tokens, compiled_generation_s = generate(runtime)
+        generation_comparison = {
+            "requested_tokens": int(args.generation_tokens),
+            "eager_tokens": eager_tokens.tolist(),
+            "compiled_tokens": compiled_tokens.tolist(),
+            "exact": bool(torch.equal(eager_tokens, compiled_tokens)),
+            "first_difference": next(
+                (
+                    index
+                    for index, (left, right) in enumerate(
+                        zip(eager_tokens[0].tolist(), compiled_tokens[0].tolist())
+                    )
+                    if left != right
+                ),
+                None,
+            ),
+            "eager_generation_s": eager_generation_s,
+            "compiled_generation_s": compiled_generation_s,
+        }
     eager_timing = summarize(eager_samples)
     compiled_timing = summarize(compiled_samples)
     result = {
@@ -188,6 +239,13 @@ def main() -> None:
         "real_vision_tokens": real_tokens,
         "physical_vision_tokens": int(args.bucket),
         "useful_token_fraction": real_tokens / int(args.bucket),
+        "diagnostic_contract": {
+            "eager_reference_attention": args.eager_reference_attention,
+            "compiled_attention": args.compiled_attention,
+            "layer_norm_impl": args.layer_norm_impl,
+            "projection_impl": args.projection_impl,
+            "promptfa_pad_head_dim_to": int(args.promptfa_pad_head_dim_to),
+        },
         "eager_full_vision": {
             **eager_timing,
             "effective_tok_s": real_tokens / eager_timing["mean_s"],
@@ -211,24 +269,7 @@ def main() -> None:
             "nonfinite_eager": int((~torch.isfinite(eager_features)).sum().item()),
             "nonfinite_compiled": int((~torch.isfinite(compiled_features)).sum().item()),
         },
-        "generation_comparison": {
-            "requested_tokens": int(args.generation_tokens),
-            "eager_tokens": eager_tokens.tolist(),
-            "compiled_tokens": compiled_tokens.tolist(),
-            "exact": bool(torch.equal(eager_tokens, compiled_tokens)),
-            "first_difference": next(
-                (
-                    index
-                    for index, (left, right) in enumerate(
-                        zip(eager_tokens[0].tolist(), compiled_tokens[0].tolist())
-                    )
-                    if left != right
-                ),
-                None,
-            ),
-            "eager_generation_s": eager_generation_s,
-            "compiled_generation_s": compiled_generation_s,
-        },
+        "generation_comparison": generation_comparison,
         "runtime": runtime.metadata(),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
