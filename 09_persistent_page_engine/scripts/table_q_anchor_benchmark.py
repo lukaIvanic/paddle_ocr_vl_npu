@@ -156,6 +156,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--warmups", type=int, default=WARMUPS)
     parser.add_argument("--repeats", type=int, default=REPEATS)
+    parser.add_argument("--profile-dir", type=Path)
     args = parser.parse_args(argv)
     if args.warmups < 1:
         parser.error("--warmups must be positive")
@@ -259,6 +260,47 @@ def _timing(
         "host_physical_positions_per_s": (
             calls * int(physical_positions_per_call) / host_wall_s
         ),
+    }
+
+
+def _profile_one_call(
+    device: torch.device,
+    fn: Callable[[], torch.Tensor],
+    profile_dir: Path,
+) -> dict[str, Any]:
+    import torch_npu.profiler as npu_prof
+
+    resolved = profile_dir.expanduser().resolve()
+    resolved.mkdir(parents=True, exist_ok=False)
+    schedule = npu_prof.schedule(wait=0, warmup=0, active=1, repeat=1)
+    synchronize(device)
+    started = time.perf_counter()
+    with npu_prof.profile(
+        activities=[
+            npu_prof.ProfilerActivity.CPU,
+            npu_prof.ProfilerActivity.NPU,
+        ],
+        schedule=schedule,
+        on_trace_ready=npu_prof.tensorboard_trace_handler(
+            str(resolved),
+            analyse_flag=True,
+        ),
+        record_shapes=True,
+        profile_memory=False,
+        with_stack=False,
+        with_modules=False,
+        with_flops=False,
+    ) as profiler:
+        with torch.profiler.record_function("table_q_anchor.profiled_call"):
+            fn()
+            synchronize(device)
+        profiler.step()
+    synchronize(device)
+    return {
+        "path": str(resolved),
+        "wall_s": time.perf_counter() - started,
+        "captured_calls": 1,
+        "outside_measured_timing": True,
     }
 
 
@@ -793,6 +835,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         host_wall_s=host_wall_s,
         physical_positions_per_call=expected_count,
     )
+    profile_metadata = (
+        _profile_one_call(device, call, args.profile_dir)
+        if args.profile_dir is not None
+        else None
+    )
     if mixed_lane:
         reference_comparison, warnings = _mixed_reference_comparison(
             args.reference_anchor_dir,
@@ -818,6 +865,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     }
     if reference_comparison is not None:
         payload["result"]["reference_comparison"] = reference_comparison
+    if profile_metadata is not None:
+        payload["result"]["profile"] = profile_metadata
     payload["warnings"] = warnings
     payload["setup"]["total_process_setup_and_benchmark_s"] = (
         time.perf_counter() - setup_started
