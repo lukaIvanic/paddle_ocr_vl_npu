@@ -26,6 +26,8 @@ from paddleocr_vl.model.modeling import (  # noqa: E402
 from paddleocr_vl.model.text_decode import (  # noqa: E402
     TextDecodeRuntime,
     cast_decode_linear_weights_to_nz,
+    load_decode_vocab_token_ids,
+    prepare_decode_compact_lm_head,
     prepare_decode_optimization_modules,
     torchair_cache_dir_for_shape,
 )
@@ -66,6 +68,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--cache-length", type=int, default=768)
     parser.add_argument("--profile-position", type=int, default=256)
+    parser.add_argument("--decode-vocab-token-ids", type=Path)
+    parser.add_argument(
+        "--decode-optimization",
+        default=DECODE_OPTIMIZATION,
+    )
+    parser.add_argument(
+        "--spec-optimization",
+        default=SPEC_OPTIMIZATION,
+    )
     parser.add_argument(
         "--draft-lengths",
         type=_parse_ints,
@@ -210,8 +221,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             "draft_lengths": list(args.draft_lengths),
             "query_length": "draft_length + 1",
             "fully_accepted_tokens_per_call": "draft_length + 1",
-            "decode_optimization": DECODE_OPTIMIZATION,
-            "spec_optimization": SPEC_OPTIMIZATION,
+            "decode_optimization": args.decode_optimization,
+            "spec_optimization": args.spec_optimization,
             "spec_attention": "PromptFA GQA over persistent KV arena",
             "warmup": int(args.warmup),
             "repeats": int(args.repeats),
@@ -237,7 +248,16 @@ def main(argv: Sequence[str] | None = None) -> None:
         flush=True,
     )
 
-    prepare_decode_optimization_modules(model, SPEC_OPTIMIZATION)
+    decode_vocab: dict[str, Any] = {"enabled": False}
+    if args.decode_vocab_token_ids is not None:
+        token_ids, decode_vocab = load_decode_vocab_token_ids(
+            args.decode_vocab_token_ids,
+            full_vocab_size=int(model.lm_head.weight.shape[0]),
+        )
+        prepare_decode_compact_lm_head(model, token_ids)
+        synchronize(device)
+
+    prepare_decode_optimization_modules(model, args.spec_optimization)
     started = time.perf_counter()
     weight_format = cast_decode_linear_weights_to_nz(model)
     synchronize(device)
@@ -248,6 +268,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         "model_load_s": model_load_s,
         "weight_format_s": weight_format_s,
         "weight_format": weight_format,
+        "decode_vocab": decode_vocab,
     }
     _write_progress(output_path, result)
 
@@ -259,7 +280,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         device=device,
         model_dir=model_dir,
         linear_weight_format=linear_weight_format,
-        optimization=DECODE_OPTIMIZATION,
+        optimization=args.decode_optimization,
     )
     if not decode_cache_dir.is_dir() and not args.allow_compile:
         raise RuntimeError(
@@ -277,7 +298,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         dtype=dtype,
         model_dir=model_dir,
         linear_weight_format=linear_weight_format,
-        optimization=DECODE_OPTIMIZATION,
+        optimization=args.decode_optimization,
     )
     decode_input = torch.ones((1, 1), device=device, dtype=torch.int64)
     decode_position = torch.tensor(
@@ -345,7 +366,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 device=device,
                 model_dir=model_dir,
                 linear_weight_format=linear_weight_format,
-                optimization=SPEC_OPTIMIZATION,
+                optimization=args.spec_optimization,
             )
             cache_hit = cache_dir.is_dir() and any(cache_dir.iterdir())
             if not cache_hit and not args.allow_compile:
@@ -373,7 +394,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                 dtype=dtype,
                 model_dir=model_dir,
                 linear_weight_format=linear_weight_format,
-                optimization=SPEC_OPTIMIZATION,
+                optimization=args.spec_optimization,
             )
             # Give every row a different deterministic sequence. This catches
             # cross-row cache or indexing errors that identical rows can hide.
@@ -430,7 +451,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                     device=device,
                     model_dir=model_dir,
                     linear_weight_format=linear_weight_format,
-                    optimization=SPEC_OPTIMIZATION,
+                    optimization=args.spec_optimization,
                 )
                 b1_cache_hit = b1_cache_dir.is_dir() and any(
                     b1_cache_dir.iterdir()
@@ -450,7 +471,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                     dtype=dtype,
                     model_dir=model_dir,
                     linear_weight_format=linear_weight_format,
-                    optimization=SPEC_OPTIMIZATION,
+                    optimization=args.spec_optimization,
                 )
 
             # Compare every row against the same B1 graph using exact integer
