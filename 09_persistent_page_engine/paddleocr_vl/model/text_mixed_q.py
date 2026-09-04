@@ -42,9 +42,13 @@ DRAFT_QUERY_LENGTH = 1
 PACKED_TOKEN_COUNT = 16
 MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER = "split_lanes_then_pack_verifier"
 MIXED_LAYOUT_PACK_ALL_THEN_SPLIT_LANES = "pack_all_then_split_lanes"
+MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV = (
+    "split_lanes_then_transpose_qkv_separately"
+)
 MIXED_M16_LAYOUTS = (
     MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER,
     MIXED_LAYOUT_PACK_ALL_THEN_SPLIT_LANES,
+    MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV,
 )
 DEFAULT_MIXED_M16_LAYOUT = MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER
 
@@ -200,7 +204,10 @@ def _mixed_attention(
         rotary_mode="half",
     )
 
-    if layout == MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER:
+    if layout in (
+        MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER,
+        MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV,
+    ):
         # Keep the draft lane out of the verifier's QKV packing and transpose.
         verifier_query_bsnd, draft_query_bsnd = query_bsnd.split(
             (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
@@ -211,14 +218,15 @@ def _mixed_attention(
         verifier_value_bsnd, draft_value_bsnd = value_bsnd.split(
             (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
         )
-        verifier_packed_bsnd = torch.cat(
-            (
-                verifier_query_bsnd,
-                verifier_key_bsnd,
-                verifier_value_bsnd,
-            ),
-            dim=2,
-        )
+        if layout == MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER:
+            verifier_packed_bsnd = torch.cat(
+                (
+                    verifier_query_bsnd,
+                    verifier_key_bsnd,
+                    verifier_value_bsnd,
+                ),
+                dim=2,
+            )
     elif layout == MIXED_LAYOUT_PACK_ALL_THEN_SPLIT_LANES:
         # Test whether one packed lane split is cheaper than separate Q/K/V
         # lane splits. This moves all 16 tokens through the QKV concatenation.
@@ -235,10 +243,15 @@ def _mixed_attention(
     else:
         raise ValueError(f"unsupported mixed M16 layout {layout!r}")
 
-    verifier_packed_qkv = verifier_packed_bsnd.transpose(1, 2).contiguous()
-    verifier_query, verifier_key, verifier_value = verifier_packed_qkv.split(
-        (query_heads, kv_heads, kv_heads), dim=1
-    )
+    if layout == MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV:
+        verifier_query = verifier_query_bsnd.transpose(1, 2).contiguous()
+        verifier_key = verifier_key_bsnd.transpose(1, 2).contiguous()
+        verifier_value = verifier_value_bsnd.transpose(1, 2).contiguous()
+    else:
+        verifier_packed_qkv = verifier_packed_bsnd.transpose(1, 2).contiguous()
+        verifier_query, verifier_key, verifier_value = verifier_packed_qkv.split(
+            (query_heads, kv_heads, kv_heads), dim=1
+        )
     _update_spec_kv_cache_(
         verifier_key_cache,
         verifier_value_cache,
