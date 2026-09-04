@@ -1,0 +1,281 @@
+{
+  "contract": {
+    "compact_vocab": "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json",
+    "draft": {
+      "attention": "increfa",
+      "batch_size": 8,
+      "cache_length": 768,
+      "query_length": 1
+    },
+    "dtype": "torch.float16",
+    "kind": "mixed_m16",
+    "lane": "mixed_m16",
+    "linear_weight_format": "decode_nz",
+    "optimization": "combined_apply_mixed_m16",
+    "packed_token_count": 16,
+    "physical_positions_per_call": 16,
+    "repeats": 50,
+    "verifier": {
+      "attention": "manual_grouped_legal_scaled_masked_softmax_fp16",
+      "batch_size": 1,
+      "cache_length": 4096,
+      "query_length": 8
+    },
+    "warmups": 10
+  },
+  "kind": "table_q_anchor_single_lane",
+  "provenance": {
+    "argv": [
+      "09_persistent_page_engine/scripts/table_q_anchor_benchmark.py",
+      "--lane",
+      "mixed_m16",
+      "--output-dir",
+      "tmp/09_persistent_page_engine/table_q_anchor_mixed_m16_profile_7d163a52_20260904",
+      "--profile-dir",
+      "tmp/09_persistent_page_engine/table_q_anchor_mixed_m16_profile_7d163a52_20260904/profile"
+    ],
+    "ascend_rt_visible_devices": "6",
+    "git_commit": "7d163a524ea00d447c7dbb332f2ce9ce73877363",
+    "hostname": "liteserver-c001-4",
+    "started_utc": "2026-09-04T10:20:06.452563+00:00"
+  },
+  "result": {
+    "native_output_token_ids": [
+      176,
+      50015,
+      3,
+      96748,
+      3,
+      9,
+      5,
+      8,
+      185,
+      62942,
+      93953,
+      3,
+      93976,
+      3,
+      93952,
+      7
+    ],
+    "profile": {
+      "captured_calls": 1,
+      "outside_measured_timing": true,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_q_anchor_mixed_m16_profile_7d163a52_20260904/profile",
+      "wall_s": 5.976311751990579
+    },
+    "reference_comparison": {
+      "anchor_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_q_anchor_ab925dd5_20260904T0948Z",
+      "available": true,
+      "branches": {
+        "draft": {
+          "actual_native_ids": [
+            185,
+            62942,
+            93953,
+            3,
+            93976,
+            3,
+            93952,
+            7
+          ],
+          "exact_match": true,
+          "expected_native_ids": [
+            185,
+            62942,
+            93953,
+            3,
+            93976,
+            3,
+            93952,
+            7
+          ],
+          "mismatches": [],
+          "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_q_anchor_ab925dd5_20260904T0948Z/b8q1.json"
+        },
+        "verifier": {
+          "actual_native_ids": [
+            176,
+            50015,
+            3,
+            96748,
+            3,
+            9,
+            5,
+            8
+          ],
+          "exact_match": true,
+          "expected_native_ids": [
+            176,
+            50015,
+            3,
+            96748,
+            3,
+            9,
+            5,
+            8
+          ],
+          "mismatches": [],
+          "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_q_anchor_ab925dd5_20260904T0948Z/b1q8.json"
+        }
+      }
+    },
+    "timing": {
+      "device_s": 0.12256416082382203,
+      "graph_calls_per_s": 407.94959687988836,
+      "host_graph_calls_per_s": 402.654650417905,
+      "host_physical_positions_per_s": 6442.47440668648,
+      "host_wall_s": 0.12417589104734361,
+      "latency_ms": {
+        "max": 2.601560115814209,
+        "mean": 2.4512832164764404,
+        "median": 2.448480010032654,
+        "min": 2.440040111541748,
+        "p95": 2.457742047309875
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 6527.193550078214
+    },
+    "warmup_wall_s": {
+      "all": [
+        0.482390359044075,
+        0.0028978590853512287,
+        0.0026587549364194274,
+        0.0026158950058743358,
+        0.0026283650659024715,
+        0.0026145940646529198,
+        0.0026147039607167244,
+        0.0026129549369215965,
+        0.0026138139655813575,
+        0.0026195250684395432
+      ],
+      "calls": 10,
+      "first": 0.482390359044075,
+      "remaining_mean": 0.002652940676651067
+    }
+  },
+  "schema_version": 1,
+  "setup": {
+    "cache_positions": [
+      1249,
+      128,
+      155,
+      173,
+      189,
+      205,
+      225,
+      270,
+      382
+    ],
+    "compact_vocab": {
+      "enabled": true,
+      "full_vocab_size": 103424,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json",
+      "selected_vocab_size": 16384,
+      "selection": null,
+      "source": null,
+      "token_ids_sha256": "9c48e5c3b92776ba250f75359fccb407448c4da8419fe927f5ea381d345712c3"
+    },
+    "model_dir": "/workspace/models/PaddleOCR-VL-1.6",
+    "model_load_s": 18.63407906901557,
+    "runtime": {
+      "boundary": "two_embeddings_one_transformer_two_attentions_one_lm_head",
+      "cache_allocated_bytes": 188743680,
+      "cache_was_warm_before_setup": true,
+      "compile_wrapper_s": 0.0004576179198920727,
+      "contract": {
+        "draft": {
+          "attention": "increfa",
+          "batch_size": 8,
+          "cache_length": 768,
+          "query_length": 1
+        },
+        "optimization": "combined_apply_mixed_m16",
+        "packed_token_count": 16,
+        "verifier": {
+          "attention": "manual_grouped_legal_scaled_masked_softmax_fp16",
+          "batch_size": 1,
+          "cache_length": 4096,
+          "query_length": 8
+        }
+      },
+      "draft_cache_allocated_bytes": 113246208,
+      "optimization": "combined_apply_mixed_m16",
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/text_mixed_m16_decode_nz_manual_q8_increfa_q1_optcombined_apply_mixed_m16_modeinference_dtypefloat16_verifier_b1q8_kv4096_draft_b8q1_kv768_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src87f1fa0a774c",
+      "verifier_cache_allocated_bytes": 75497472
+    },
+    "setup_before_warmups_s": 26.211524683982134,
+    "total_process_setup_and_benchmark_s": 32.82267355499789,
+    "weight_format": {
+      "after_formats_sample": {
+        "model.layers.0.mlp.down_proj": 29,
+        "model.layers.0.mlp.gate_proj": 29,
+        "model.layers.0.mlp.up_proj": 29,
+        "model.layers.0.self_attn.decode_qkv_proj": 29,
+        "model.layers.0.self_attn.k_proj": 29,
+        "model.layers.0.self_attn.o_proj": 29,
+        "model.layers.0.self_attn.q_proj": 29,
+        "model.layers.0.self_attn.v_proj": 29,
+        "model.layers.1.mlp.down_proj": 29,
+        "model.layers.1.mlp.gate_proj": 29,
+        "model.layers.1.mlp.up_proj": 29,
+        "model.layers.1.self_attn.decode_qkv_proj": 29,
+        "model.layers.1.self_attn.k_proj": 29,
+        "model.layers.1.self_attn.o_proj": 29,
+        "model.layers.1.self_attn.q_proj": 29,
+        "model.layers.1.self_attn.v_proj": 29
+      },
+      "all_after_are_nz": true,
+      "already_nz_count": 0,
+      "before_formats_sample": {
+        "model.layers.0.mlp.down_proj": 2,
+        "model.layers.0.mlp.gate_proj": 2,
+        "model.layers.0.mlp.up_proj": 2,
+        "model.layers.0.self_attn.decode_qkv_proj": 2,
+        "model.layers.0.self_attn.k_proj": 2,
+        "model.layers.0.self_attn.o_proj": 2,
+        "model.layers.0.self_attn.q_proj": 2,
+        "model.layers.0.self_attn.v_proj": 2,
+        "model.layers.1.mlp.down_proj": 2,
+        "model.layers.1.mlp.gate_proj": 2,
+        "model.layers.1.mlp.up_proj": 2,
+        "model.layers.1.self_attn.decode_qkv_proj": 2,
+        "model.layers.1.self_attn.k_proj": 2,
+        "model.layers.1.self_attn.o_proj": 2,
+        "model.layers.1.self_attn.q_proj": 2,
+        "model.layers.1.self_attn.v_proj": 2
+      },
+      "cast_count": 146,
+      "converted_count": 146,
+      "converted_modules_sample": [
+        "model.layers.0.self_attn.q_proj",
+        "model.layers.0.self_attn.k_proj",
+        "model.layers.0.self_attn.v_proj",
+        "model.layers.0.self_attn.o_proj",
+        "model.layers.0.self_attn.decode_qkv_proj",
+        "model.layers.0.mlp.gate_proj",
+        "model.layers.0.mlp.up_proj",
+        "model.layers.0.mlp.down_proj",
+        "model.layers.1.self_attn.q_proj",
+        "model.layers.1.self_attn.k_proj",
+        "model.layers.1.self_attn.v_proj",
+        "model.layers.1.self_attn.o_proj",
+        "model.layers.1.self_attn.decode_qkv_proj",
+        "model.layers.1.mlp.gate_proj",
+        "model.layers.1.mlp.up_proj",
+        "model.layers.1.mlp.down_proj"
+      ],
+      "effective_mode": "decode_nz",
+      "failures_sample": [],
+      "fallback_reason": null,
+      "mode": "decode_nz",
+      "requested_mode": "decode_nz",
+      "target_count": 146,
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29
+    },
+    "weight_format_s": 6.0044689499773085
+  },
+  "status": "complete",
+  "warnings": []
+}
