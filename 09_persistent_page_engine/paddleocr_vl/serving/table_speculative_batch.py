@@ -214,13 +214,21 @@ class BatchedAdaptiveKTableSpeculativeDecodeRuntime:
         source_slot: int,
         destination_cache: Any,
         destination_slot: int,
+        *,
+        prefix_length: int,
     ) -> int:
+        prefix_length = int(prefix_length)
+        if not 0 < prefix_length <= self.cache_length:
+            raise ValueError(
+                f"invalid KV prefix length {prefix_length} for "
+                f"cache length {self.cache_length}"
+            )
         source_tensors = tuple(
-            tensor[source_slot : source_slot + 1]
+            tensor[source_slot : source_slot + 1, :, :prefix_length, :]
             for tensor in source_cache.logical_tensors()
         )
         destination_tensors = tuple(
-            tensor[destination_slot : destination_slot + 1]
+            tensor[destination_slot : destination_slot + 1, :, :prefix_length, :]
             for tensor in destination_cache.logical_tensors()
         )
         if len(source_tensors) != len(destination_tensors):
@@ -256,7 +264,13 @@ class BatchedAdaptiveKTableSpeculativeDecodeRuntime:
         position = int(cache_position.detach().cpu().reshape(-1)[0].item())
         pool = self.pools[self.initial_k]
         slot = pool.free_slot()
-        copied_bytes = self._copy_cache_row(cache, 0, pool.cache, slot)
+        copied_bytes = self._copy_cache_row(
+            cache,
+            0,
+            pool.cache,
+            slot,
+            prefix_length=position,
+        )
         pool.rope_deltas[slot : slot + 1].copy_(rope_deltas)
         pool.cache_position[slot : slot + 1].copy_(cache_position.reshape(1))
         if cache_release is not None:
@@ -308,6 +322,7 @@ class BatchedAdaptiveKTableSpeculativeDecodeRuntime:
             int(source_slot),
             destination.cache,
             destination_slot,
+            prefix_length=state.position,
         )
         destination.rope_deltas[destination_slot : destination_slot + 1].copy_(
             source.rope_deltas[int(source_slot) : int(source_slot) + 1]

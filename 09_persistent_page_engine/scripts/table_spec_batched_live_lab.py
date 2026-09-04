@@ -126,7 +126,7 @@ def _live_compatible_args(args: argparse.Namespace) -> SimpleNamespace:
         draft_decode_vocab_token_ids=args.decode_vocab_token_ids,
         draft_cache_length=args.draft_cache_length,
         draft_row_count=args.draft_row_count,
-        draft_batch_size=args.draft_row_count,
+        draft_batch_size=args.batch_size * args.draft_row_count,
         draft_vision_packing="greedy",
         draft_vision_pack_target=2304,
         draft_prefill_layout="packed_b1",
@@ -164,6 +164,54 @@ def _write(path: Path, payload: dict[str, Any]) -> None:
         encoding="utf-8",
     )
     temporary.replace(path)
+
+
+def _run_batched_drafts(
+    recognizer: Any,
+    prepared: list[dict[str, Any]],
+    *,
+    draft_row_count: int,
+    pass_index: int,
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any], float]:
+    request_map: dict[str, tuple[int, int]] = {}
+    all_requests = []
+    rows_by_table: list[list[dict[str, Any]]] = [[] for _ in prepared]
+    for table_index, row in enumerate(prepared):
+        for row_index, request in enumerate(row["row_requests"]):
+            request_map[str(request.request_id)] = (table_index, row_index)
+            all_requests.append(request)
+
+    def emit(result: Any) -> None:
+        table_index, row_index = request_map[str(result.request_id)]
+        source_row = prepared[table_index]
+        payload = asdict(result)
+        payload["raw_text"] = payload["text"]
+        payload["row_index"] = row_index
+        payload["row_y"] = list(source_row["row_crops"][row_index][:2])
+        rows_by_table[table_index].append(payload)
+
+    started = time.perf_counter()
+    schedule = recognizer.run(
+        all_requests,
+        schedule_id=f"live-u{draft_row_count}:batched:pass{pass_index}",
+        emit_result=emit,
+    )
+    wall_s = time.perf_counter() - started
+    schedule_payload = asdict(schedule)
+    drafts: dict[str, dict[str, Any]] = {}
+    strategy_name = f"uniform_{draft_row_count}_snapped"
+    for table_index, source_row in enumerate(prepared):
+        source = source_row["source"]
+        rows = rows_by_table[table_index]
+        rows.sort(key=lambda item: int(item["row_index"]))
+        drafts[str(source["request_id"])] = {
+            "request_id": str(source["request_id"]),
+            "strategy": strategy_name,
+            "page_name": source["page_name"],
+            "rows": rows,
+            "schedule": schedule_payload,
+        }
+    return drafts, schedule_payload, wall_s
 
 
 @torch.inference_mode()
@@ -221,6 +269,7 @@ def main() -> None:
         pass_started = time.perf_counter()
         prepared_batch: list[tuple[Any, TableDraftMatcher]] = []
         preparation_rows: list[dict[str, Any]] = []
+        source_preparation: list[dict[str, Any]] = []
         for source in selected:
             request_id = str(source["request_id"])
             raw_image = live_lab.load_crop(source, args.images_dir)
@@ -228,17 +277,30 @@ def main() -> None:
             row_requests, row_crops, row_timing = live_lab._prepare_rows(
                 source, raw_image, compat
             )
-            draft_started = time.perf_counter()
-            draft, draft_wall_s = live_lab._run_draft(
-                draft_recognizer,
-                source,
-                row_requests,
-                row_crops,
-                draft_row_count=args.draft_row_count,
-            )
             target_request = fixed_lab.request_for(source, target_crop, compat)
+            source_preparation.append(
+                {
+                    "source": source,
+                    "request_id": request_id,
+                    "row_requests": row_requests,
+                    "row_crops": row_crops,
+                    "row_timing_s": row_timing,
+                    "target_request": target_request,
+                }
+            )
+
+        drafts, draft_schedule, draft_batch_wall_s = _run_batched_drafts(
+            draft_recognizer,
+            source_preparation,
+            draft_row_count=args.draft_row_count,
+            pass_index=pass_index,
+        )
+        for source_row in source_preparation:
+            source = source_row["source"]
+            request_id = str(source["request_id"])
+            draft = drafts[request_id]
             target_prefill_started = time.perf_counter()
-            prefilled = target_recognizer.prefill_one(target_request)
+            prefilled = target_recognizer.prefill_one(source_row["target_request"])
             target_prefill_wall_s = time.perf_counter() - target_prefill_started
             matcher = TableDraftMatcher(
                 draft,
@@ -250,9 +312,7 @@ def main() -> None:
             preparation_rows.append(
                 {
                     "request_id": request_id,
-                    "row_timing_s": row_timing,
-                    "draft_wall_s": draft_wall_s,
-                    "draft_elapsed_s": time.perf_counter() - draft_started,
+                    "row_timing_s": source_row["row_timing_s"],
                     "target_prefill_wall_s": target_prefill_wall_s,
                     "draft": draft,
                     "target_prefill": {
@@ -288,6 +348,8 @@ def main() -> None:
             "pass_index": pass_index,
             "measured": pass_index == args.passes - 1,
             "wall_s": time.perf_counter() - pass_started,
+            "draft_batch_wall_s": draft_batch_wall_s,
+            "draft_schedule": draft_schedule,
             "verify_wall_s": verify_wall_s,
             "preparation": preparation_rows,
             "results": result_rows,
