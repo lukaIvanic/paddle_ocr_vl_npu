@@ -52,8 +52,15 @@ MIXED_M16_LAYOUTS = (
 )
 DEFAULT_MIXED_M16_LAYOUT = MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER
 MIXED_PREFETCH_FULL = "full"
+MIXED_PREFETCH_WEIGHTS_ONLY = "weights_only"
+MIXED_PREFETCH_KV_ONLY = "kv_only"
 MIXED_PREFETCH_NONE = "none"
-MIXED_M16_PREFETCH_MODES = (MIXED_PREFETCH_FULL, MIXED_PREFETCH_NONE)
+MIXED_M16_PREFETCH_MODES = (
+    MIXED_PREFETCH_FULL,
+    MIXED_PREFETCH_WEIGHTS_ONLY,
+    MIXED_PREFETCH_KV_ONLY,
+    MIXED_PREFETCH_NONE,
+)
 DEFAULT_MIXED_M16_PREFETCH = MIXED_PREFETCH_FULL
 MIXED_ATTENTION_VERIFIER_THEN_DRAFT = "verifier_then_draft"
 MIXED_ATTENTION_DRAFT_THEN_VERIFIER = "draft_then_verifier"
@@ -340,7 +347,7 @@ def _mixed_attention(
             draft_value,
         )
         if (
-            prefetch_mode == MIXED_PREFETCH_FULL
+            prefetch_mode in (MIXED_PREFETCH_FULL, MIXED_PREFETCH_KV_ONLY)
             and optimization.post_scatter_kv_prefetch
         ):
             torch_npu.npu_prefetch(
@@ -378,7 +385,7 @@ def _mixed_attention(
         verifier_value,
     )
     if (
-        prefetch_mode == MIXED_PREFETCH_FULL
+        prefetch_mode in (MIXED_PREFETCH_FULL, MIXED_PREFETCH_KV_ONLY)
         and optimization.post_scatter_kv_prefetch
     ):
         torch_npu.npu_prefetch(
@@ -419,7 +426,7 @@ def _mixed_attention(
             draft_value,
         )
         if (
-            prefetch_mode == MIXED_PREFETCH_FULL
+            prefetch_mode in (MIXED_PREFETCH_FULL, MIXED_PREFETCH_KV_ONLY)
             and optimization.post_scatter_kv_prefetch
         ):
             torch_npu.npu_prefetch(
@@ -571,7 +578,7 @@ def run_text_mixed_m16_transformer(
     residual: torch.Tensor | None = None
     for layer_index, layer in enumerate(text_model.layers):
         if (
-            prefetch_mode == MIXED_PREFETCH_FULL
+            prefetch_mode in (MIXED_PREFETCH_FULL, MIXED_PREFETCH_WEIGHTS_ONLY)
             and optimization.complete_layer_prefetch_ahead
         ):
             import torch_npu
