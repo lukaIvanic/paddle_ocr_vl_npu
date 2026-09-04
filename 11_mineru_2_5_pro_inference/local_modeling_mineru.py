@@ -34,8 +34,48 @@ DECODE_ROTARY_IMPL_CHOICES = (
 DECODE_ATTENTION_MANUAL = "manual"
 DECODE_ATTENTION_INCREFA = "increfa"
 DECODE_ATTENTION_CHOICES = (DECODE_ATTENTION_MANUAL, DECODE_ATTENTION_INCREFA)
+INCREFA_LENGTH_MODE_NONE = "none"
+INCREFA_LENGTH_MODE_PSE_SENTINEL_310P = "pse_sentinel_310p"
+INCREFA_LENGTH_MODE_CHOICES = (
+    INCREFA_LENGTH_MODE_NONE,
+    INCREFA_LENGTH_MODE_PSE_SENTINEL_310P,
+)
 VISION_ATTENTION_CHOICES = ("manual", "prompt_flash_attention")
 VISION_PROMPT_FA_FULL_ATTENTION_TOKENS = (1 << 31) - 1
+
+
+def increfa_310p_inner_tile_size(
+    *,
+    num_attention_heads: int,
+    num_key_value_heads: int,
+    query_sequence_length: int = 1,
+) -> int:
+    """Reproduce CANN IncreFA's 310P GQA S2 tile calculation."""
+    num_attention_heads = int(num_attention_heads)
+    num_key_value_heads = int(num_key_value_heads)
+    query_sequence_length = int(query_sequence_length)
+    if num_attention_heads <= 0 or num_key_value_heads <= 0:
+        raise ValueError("attention head counts must be positive")
+    if num_attention_heads % num_key_value_heads:
+        raise ValueError(
+            "num_attention_heads must be divisible by num_key_value_heads"
+        )
+    if query_sequence_length <= 0:
+        raise ValueError("query_sequence_length must be positive")
+    query_heads_per_kv_head = num_attention_heads // num_key_value_heads
+    if query_heads_per_kv_head * query_sequence_length <= 1:
+        return 8192
+    # CANN ops-transformer v9.0.0, IncreFA CalcInnerSize on SOC_ASCEND_310P:
+    # 40 KiB FP32 BMM1 buffer, divided by G and S1, capped at 8192, then
+    # rounded down to a 128-token boundary.
+    tile = min(
+        (40 * 1024)
+        // query_heads_per_kv_head
+        // query_sequence_length
+        // 4,
+        8192,
+    )
+    return (tile // 128) * 128
 
 
 def _resolve_model_dir(model_dir: str | Path) -> Path:
@@ -190,6 +230,46 @@ def build_static_decode_mask(
         dtype=inputs_embeds.dtype,
     )
     return mask.masked_fill(~allowed, torch.finfo(inputs_embeds.dtype).min)
+
+
+def apply_increfa_310p_pse_sentinel(
+    attention_mask: torch.Tensor,
+    inputs_embeds: torch.Tensor,
+    cache_position: torch.Tensor,
+    *,
+    cache_length: int,
+    num_attention_heads: int,
+    num_key_value_heads: int,
+) -> tuple[torch.Tensor, torch.Tensor, int]:
+    """Move exact 310P GQA tile boundaries from bool mask to additive PSE."""
+    tile_size = increfa_310p_inner_tile_size(
+        num_attention_heads=num_attention_heads,
+        num_key_value_heads=num_key_value_heads,
+        query_sequence_length=1,
+    )
+    batch_size = int(inputs_embeds.shape[0])
+    cache_length = int(cache_length)
+    effective_lengths = cache_position.reshape(batch_size, 1, 1, 1) + 1
+    physical_positions = torch.arange(
+        cache_length,
+        device=inputs_embeds.device,
+        dtype=torch.int64,
+    ).view(1, 1, 1, cache_length)
+    boundary = (
+        (effective_lengths.remainder(tile_size) == 0)
+        & (effective_lengths < cache_length)
+    )
+    sentinel = boundary & (physical_positions == effective_lengths)
+    adjusted_mask = attention_mask.masked_fill(sentinel, 0)
+    pse_shift = torch.zeros(
+        (batch_size, int(num_attention_heads), 1, cache_length),
+        device=inputs_embeds.device,
+        dtype=inputs_embeds.dtype,
+    ).masked_fill(
+        sentinel.expand(batch_size, int(num_attention_heads), 1, cache_length),
+        torch.finfo(inputs_embeds.dtype).min,
+    )
+    return adjusted_mask, pse_shift, tile_size
 
 
 def update_prefill_kv_cache_(
@@ -410,6 +490,48 @@ def configure_decode_attention_impl(
         "effective_mode": str(mode),
         "scope": "decode_static_only",
         "updated_attention_layers": int(updated_layers),
+    }
+
+
+def configure_decode_increfa_length_mode(
+    model: "LocalMinerU2_5ForConditionalGeneration",
+    mode: str,
+) -> dict[str, object]:
+    """Select the 310P IncreFA exact-tile workaround for static decode."""
+    if mode not in INCREFA_LENGTH_MODE_CHOICES:
+        raise ValueError(
+            f"unsupported IncreFA length mode {mode!r}; expected "
+            f"{INCREFA_LENGTH_MODE_CHOICES}"
+        )
+    attention_layers = [
+        module for module in model.modules() if isinstance(module, MinerUAttention)
+    ]
+    if (
+        mode == INCREFA_LENGTH_MODE_PSE_SENTINEL_310P
+        and any(
+            module.decode_attention_impl != DECODE_ATTENTION_INCREFA
+            for module in attention_layers
+        )
+    ):
+        raise ValueError("pse_sentinel_310p requires IncreFA static decode attention")
+    for module in attention_layers:
+        module.decode_increfa_length_mode = str(mode)
+    text_config = model.config.text_config
+    tile_size = increfa_310p_inner_tile_size(
+        num_attention_heads=int(text_config.num_attention_heads),
+        num_key_value_heads=int(text_config.num_key_value_heads),
+    )
+    return {
+        "requested_mode": str(mode),
+        "effective_mode": str(mode),
+        "scope": "decode_static_only",
+        "updated_attention_layers": len(attention_layers),
+        "num_attention_heads": int(text_config.num_attention_heads),
+        "num_key_value_heads": int(text_config.num_key_value_heads),
+        "query_heads_per_kv_head": int(
+            text_config.num_attention_heads // text_config.num_key_value_heads
+        ),
+        "ascend_310p_inner_tile_size": int(tile_size),
     }
 
 
@@ -636,6 +758,7 @@ class MinerUAttention(nn.Module):
         self.mrope_section = list((config.rope_scaling or {}).get("mrope_section", [8, 12, 12]))
         self.decode_rotary_impl = DECODE_ROTARY_IMPL_MANUAL
         self.decode_attention_impl = DECODE_ATTENTION_MANUAL
+        self.decode_increfa_length_mode = INCREFA_LENGTH_MODE_NONE
         self.q_proj = nn.Linear(config.hidden_size, config.num_attention_heads * self.head_dim, bias=True)
         self.k_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * self.head_dim, bias=True)
         self.v_proj = nn.Linear(config.hidden_size, config.num_key_value_heads * self.head_dim, bias=True)
@@ -748,6 +871,7 @@ class MinerUAttention(nn.Module):
         key_states: torch.Tensor,
         value_states: torch.Tensor,
         attention_mask: torch.Tensor | None,
+        pse_shift: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Compile-friendly equivalent of rank-4 attention for one-token decode."""
         batch, heads, query_length, head_dim = query_states.shape
@@ -759,6 +883,9 @@ class MinerUAttention(nn.Module):
             bool_mask = None
             if attention_mask is not None:
                 bool_mask = (attention_mask < 0).to(torch.bool).contiguous()
+            pse_kwargs = {}
+            if pse_shift is not None:
+                pse_kwargs["pse_shift"] = pse_shift
             attn_output = torch_npu.npu_incre_flash_attention(
                 query_states.contiguous(),
                 key_states.contiguous(),
@@ -769,6 +896,7 @@ class MinerUAttention(nn.Module):
                 num_key_value_heads=int(self.num_key_value_heads),
                 input_layout="BNSD",
                 scale_value=float(self.scaling),
+                **pse_kwargs,
             )
             attn_output = (
                 attn_output.transpose(1, 2)
@@ -834,6 +962,7 @@ class MinerUAttention(nn.Module):
         key_cache: torch.Tensor,
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
+        pse_shift: torch.Tensor | None = None,
     ) -> torch.Tensor:
         query_states, key_states, value_states = self.project_qkv_decode_static(hidden_states)
         query_states, key_states = self.apply_decode_rotary(query_states, key_states, position_embeddings)
@@ -844,7 +973,13 @@ class MinerUAttention(nn.Module):
             key_states,
             value_states,
         )
-        return self.attend_static_decode(query_states, key_cache, value_cache, attention_mask)
+        return self.attend_static_decode(
+            query_states,
+            key_cache,
+            value_cache,
+            attention_mask,
+            pse_shift,
+        )
 
 
 class MinerUDecoderLayer(nn.Module):
@@ -919,6 +1054,7 @@ class MinerUDecoderLayer(nn.Module):
         key_cache: torch.Tensor,
         value_cache: torch.Tensor,
         cache_position: torch.Tensor,
+        pse_shift: torch.Tensor | None = None,
     ) -> torch.Tensor:
         residual = hidden_states
         hidden_states = self.input_layernorm(hidden_states)
@@ -929,6 +1065,7 @@ class MinerUDecoderLayer(nn.Module):
             key_cache,
             value_cache,
             cache_position,
+            pse_shift,
         )
         return self.apply_decode_blocks(residual, attn_output)
 
@@ -1024,6 +1161,19 @@ class MinerUTextModel(nn.Module):
             raise ValueError(f"cache_position must be scalar or batch-shaped, got {tuple(cache_position.shape)}")
         if attention_mask is None:
             attention_mask = build_static_decode_mask(inputs_embeds, cache_position, cache_length)
+        pse_shift: torch.Tensor | None = None
+        length_mode = self.layers[0].self_attn.decode_increfa_length_mode
+        if length_mode == INCREFA_LENGTH_MODE_PSE_SENTINEL_310P:
+            attention_mask, pse_shift, _tile_size = apply_increfa_310p_pse_sentinel(
+                attention_mask,
+                inputs_embeds,
+                cache_position,
+                cache_length=cache_length,
+                num_attention_heads=int(self.config.num_attention_heads),
+                num_key_value_heads=int(self.config.num_key_value_heads),
+            )
+        elif length_mode != INCREFA_LENGTH_MODE_NONE:
+            raise ValueError(f"unsupported IncreFA length mode: {length_mode!r}")
         position_ids = cache_position.view(batch_size, 1) + rope_deltas.to(device=inputs_embeds.device, dtype=torch.int64)
         position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
         position_embeddings = prepare_multimodal_rotary_factors(
@@ -1049,6 +1199,7 @@ class MinerUTextModel(nn.Module):
                 key_caches[layer_idx],
                 value_caches[layer_idx],
                 cache_position,
+                pse_shift,
             )
             mlp_input, residual = _decode_add_rms_norm(
                 attention_output,

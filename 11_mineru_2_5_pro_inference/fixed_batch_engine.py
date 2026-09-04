@@ -66,7 +66,7 @@ class FixedBatchDecodeEngine:
         vision_lookahead: int = 32,
         decode_diagnostic_steps: int = 0,
         decode_diagnostic_sync: bool = False,
-        decode_diagnostic_boundary_period: int = 1280,
+        decode_diagnostic_boundary_period: int = 1408,
         decode_filler_control: str = "retain",
     ) -> None:
         if int(batch_size) <= 1:

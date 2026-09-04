@@ -160,6 +160,15 @@ def parse_args() -> argparse.Namespace:
         help="Attention implementation used only by static one-token decode.",
     )
     parser.add_argument(
+        "--local-decode-increfa-length-mode",
+        choices=("none", "pse_sentinel_310p"),
+        default="none",
+        help=(
+            "Optional 310P exact-GQA-tile workaround. pse_sentinel_310p "
+            "requires --local-decode-attention increfa."
+        ),
+    )
+    parser.add_argument(
         "--local-decode-weight-format",
         choices=("none", "decode_nz"),
         default="none",
@@ -191,8 +200,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--local-decode-diagnostic-boundary-period",
         type=int,
-        default=1280,
-        help="Report effective-length residues and exact hits for this suspected boundary period.",
+        default=1408,
+        help="Report effective-length residues and exact hits for this boundary period.",
     )
     parser.add_argument(
         "--local-decode-filler-control",
@@ -704,6 +713,7 @@ def main() -> None:
             from local_modeling_mineru import (
                 LocalMinerU2_5ForConditionalGeneration,
                 configure_decode_attention_impl,
+                configure_decode_increfa_length_mode,
                 configure_decode_packed_projections,
                 configure_decode_rotary_impl,
                 configure_decode_weight_format,
@@ -737,12 +747,16 @@ def main() -> None:
                 decode_attention = configure_decode_attention_impl(
                     local_model, args.local_decode_attention
                 )
+                decode_increfa_length_mode = configure_decode_increfa_length_mode(
+                    local_model, args.local_decode_increfa_length_mode
+                )
                 synchronize()
                 local_decode_setup = {
                     "packed_projections": packed_projections,
                     "weight_format": decode_weight_format,
                     "rotary_impl": decode_rotary_impl,
                     "attention": decode_attention,
+                    "increfa_length_mode": decode_increfa_length_mode,
                     "setup_s": time.perf_counter() - decode_setup_started,
                 }
             local_model.set_vision_attention_impl(args.local_vision_attention)
@@ -795,6 +809,7 @@ def main() -> None:
                 decode_weight_format=args.local_decode_weight_format,
                 decode_rotary_impl=args.local_decode_rotary_impl,
                 decode_attention_impl=args.local_decode_attention,
+                decode_increfa_length_mode=args.local_decode_increfa_length_mode,
             )
             client.client = make_local_compiled_vlm_client(
                 local_model,
@@ -822,6 +837,7 @@ def main() -> None:
                 decode_weight_format=args.local_decode_weight_format,
                 decode_rotary_impl=args.local_decode_rotary_impl,
                 decode_attention_impl=args.local_decode_attention,
+                decode_increfa_length_mode=args.local_decode_increfa_length_mode,
             )
             if args.local_text_backend == "torchair-packed":
                 if args.backend != "local-continuous-client":
@@ -1100,6 +1116,11 @@ def main() -> None:
         ),
         "local_decode_attention": (
             args.local_decode_attention if local_decode_setup is not None else None
+        ),
+        "local_decode_increfa_length_mode": (
+            args.local_decode_increfa_length_mode
+            if local_decode_setup is not None
+            else None
         ),
         "local_decode_weight_format": (
             args.local_decode_weight_format if local_decode_setup is not None else None

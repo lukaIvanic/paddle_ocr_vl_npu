@@ -98,7 +98,7 @@ def run_decode_stream(engine, source):
     diagnostic_steps = max(0, int(getattr(engine, "decode_diagnostic_steps", 0)))
     diagnostic_sync = bool(getattr(engine, "decode_diagnostic_sync", False))
     diagnostic_boundary_period = int(
-        getattr(engine, "decode_diagnostic_boundary_period", 1280)
+        getattr(engine, "decode_diagnostic_boundary_period", 1408)
     )
     filler_control = str(getattr(engine, "decode_filler_control", "retain"))
     if filler_control not in ("retain", "advance"):
@@ -280,6 +280,9 @@ def run_decode_stream(engine, source):
                     cache_dir=compile_meta.get("torchair_cache_dir"),
                     cache_was_warm=compile_meta.get("cache_was_warm"),
                     attention=compile_meta.get("decode_attention"),
+                    increfa_length_mode=compile_meta.get(
+                        "decode_increfa_length_mode"
+                    ),
                 )
             if detailed_step:
                 log_phase(

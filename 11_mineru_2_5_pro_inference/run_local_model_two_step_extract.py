@@ -283,10 +283,17 @@ def torchair_cache_dir_for_shape(
     decode_weight_format: str,
     decode_rotary_impl: str = "manual",
     decode_attention_impl: str = "manual",
+    decode_increfa_length_mode: str = "none",
 ) -> Path:
+    length_suffix = (
+        ""
+        if str(decode_increfa_length_mode) == "none"
+        else f"_length_{str(decode_increfa_length_mode)}"
+    )
     shape_key = (
         f"mineru_{str(decode_attention_impl)}_attention_{str(decode_weight_format)}"
         f"_rotary_{str(decode_rotary_impl)}"
+        f"{length_suffix}"
         f"_bs{int(batch_size)}_cache{int(cache_length)}"
     )
     return cache_root.expanduser().resolve() / shape_key
@@ -302,6 +309,7 @@ def compile_static_decode(
     decode_weight_format: str,
     decode_rotary_impl: str = "manual",
     decode_attention_impl: str = "manual",
+    decode_increfa_length_mode: str = "none",
 ) -> tuple[Callable[..., Any], dict[str, Any]]:
     import torch
 
@@ -316,6 +324,7 @@ def compile_static_decode(
             decode_weight_format=decode_weight_format,
             decode_rotary_impl=decode_rotary_impl,
             decode_attention_impl=decode_attention_impl,
+            decode_increfa_length_mode=decode_increfa_length_mode,
         )
         cache_was_warm = shape_cache_dir.is_dir() and any(shape_cache_dir.iterdir())
         shape_cache_dir.mkdir(parents=True, exist_ok=True)
@@ -325,6 +334,7 @@ def compile_static_decode(
             batch_size=int(batch_size),
             cache_length=int(cache_length),
             decode_attention=str(decode_attention_impl),
+            decode_increfa_length_mode=str(decode_increfa_length_mode),
             cache_dir=str(shape_cache_dir),
             cache_was_warm=bool(cache_was_warm),
         )
@@ -344,6 +354,7 @@ def compile_static_decode(
             batch_size=int(batch_size),
             cache_length=int(cache_length),
             decode_attention=str(decode_attention_impl),
+            decode_increfa_length_mode=str(decode_increfa_length_mode),
             cache_dir=str(shape_cache_dir),
             cache_was_warm=bool(cache_was_warm),
             elapsed_s=wrapper_s,
@@ -360,6 +371,7 @@ def compile_static_decode(
             "batch_size": int(batch_size),
             "cache_length": int(cache_length),
             "decode_attention": str(decode_attention_impl),
+            "decode_increfa_length_mode": str(decode_increfa_length_mode),
             "decode_weight_format": str(decode_weight_format),
             "decode_rotary_impl": str(decode_rotary_impl),
         }
@@ -373,6 +385,7 @@ def compile_static_decode(
         "batch_size": int(batch_size),
         "cache_length": int(cache_length),
         "decode_attention": str(decode_attention_impl),
+        "decode_increfa_length_mode": str(decode_increfa_length_mode),
         "decode_weight_format": str(decode_weight_format),
         "decode_rotary_impl": str(decode_rotary_impl),
     }
@@ -602,6 +615,7 @@ class CompiledSingleBatchRecognitionDecoder:
         decode_weight_format: str,
         decode_rotary_impl: str = "manual",
         decode_attention_impl: str = "manual",
+        decode_increfa_length_mode: str = "none",
     ) -> None:
         self.model = model
         self.cache_root = cache_root
@@ -609,9 +623,10 @@ class CompiledSingleBatchRecognitionDecoder:
         self.decode_weight_format = str(decode_weight_format)
         self.decode_rotary_impl = str(decode_rotary_impl)
         self.decode_attention_impl = str(decode_attention_impl)
-        self._flat_decode_by_shape: dict[tuple[int, int, str, str], Any] = {}
-        self._compiled_by_shape: dict[tuple[int, int, str, str], tuple[Callable[..., Any], dict[str, Any]]] = {}
-        self._warmup_by_shape: dict[tuple[int, int, str, str], dict[str, Any]] = {}
+        self.decode_increfa_length_mode = str(decode_increfa_length_mode)
+        self._flat_decode_by_shape: dict[tuple[int, int, str, str, str], Any] = {}
+        self._compiled_by_shape: dict[tuple[int, int, str, str, str], tuple[Callable[..., Any], dict[str, Any]]] = {}
+        self._warmup_by_shape: dict[tuple[int, int, str, str, str], dict[str, Any]] = {}
 
     def resolve_cache_length(self, input_ids: Any, max_new_tokens: int) -> int:
         return int(self.cache_length or (int(input_ids.shape[1]) + int(max_new_tokens)))
@@ -627,7 +642,13 @@ class CompiledSingleBatchRecognitionDecoder:
 
     @torch.inference_mode()
     def compiled_decode_for(self, *, batch_size: int, cache_length: int) -> tuple[Callable[..., Any], dict[str, Any]]:
-        key = (int(batch_size), int(cache_length), self.decode_weight_format, self.decode_rotary_impl)
+        key = (
+            int(batch_size),
+            int(cache_length),
+            self.decode_weight_format,
+            self.decode_rotary_impl,
+            self.decode_increfa_length_mode,
+        )
         if key not in self._compiled_by_shape:
             flat_decode = self._flat_decode_by_shape.get(key)
             if flat_decode is None:
@@ -642,6 +663,7 @@ class CompiledSingleBatchRecognitionDecoder:
                 decode_weight_format=self.decode_weight_format,
                 decode_rotary_impl=self.decode_rotary_impl,
                 decode_attention_impl=self.decode_attention_impl,
+                decode_increfa_length_mode=self.decode_increfa_length_mode,
             )
             self._compiled_by_shape[key] = (compiled_decode, compile_meta)
         return self._compiled_by_shape[key]
@@ -656,7 +678,13 @@ class CompiledSingleBatchRecognitionDecoder:
         *,
         cache_length: int,
     ) -> dict[str, Any]:
-        key = (int(input_ids.shape[0]), int(cache_length), self.decode_weight_format, self.decode_rotary_impl)
+        key = (
+            int(input_ids.shape[0]),
+            int(cache_length),
+            self.decode_weight_format,
+            self.decode_rotary_impl,
+            self.decode_increfa_length_mode,
+        )
         if key in self._warmup_by_shape:
             previous = dict(self._warmup_by_shape[key])
             previous["ran_this_call"] = False
