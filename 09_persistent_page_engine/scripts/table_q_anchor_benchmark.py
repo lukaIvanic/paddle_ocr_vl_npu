@@ -51,8 +51,10 @@ from paddleocr_vl.model.text_decode import (  # noqa: E402
 )
 from paddleocr_vl.model.text_mixed_q import (  # noqa: E402
     DEFAULT_MIXED_M16_LAYOUT,
+    DEFAULT_MIXED_M16_PREFETCH,
     MIXED_M16_OPTIMIZATION,
     MIXED_M16_LAYOUTS,
+    MIXED_M16_PREFETCH_MODES,
     PACKED_TOKEN_COUNT,
     TextMixedM16Stage,
     mixed_m16_contract,
@@ -164,6 +166,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         choices=MIXED_M16_LAYOUTS,
         default=DEFAULT_MIXED_M16_LAYOUT,
         help="QKV/lane layout used only by the mixed_m16 lane",
+    )
+    parser.add_argument(
+        "--mixed-prefetch",
+        choices=MIXED_M16_PREFETCH_MODES,
+        default=DEFAULT_MIXED_M16_PREFETCH,
+        help="prefetch schedule used only by the mixed_m16 lane",
     )
     args = parser.parse_args(argv)
     if args.warmups < 1:
@@ -598,6 +606,7 @@ def _build_mixed_m16_lane(
     cache_root: Path,
     linear_weight_format: str,
     layout: str,
+    prefetch_mode: str,
 ) -> tuple[Callable[[], torch.Tensor], dict[str, Any], tuple[int, ...]]:
     optimization = resolve_decode_optimization(MIXED_M16_OPTIMIZATION)
     prepare_decode_rope_factor_lut(
@@ -612,6 +621,7 @@ def _build_mixed_m16_lane(
         model,
         optimization=optimization,
         layout=layout,
+        prefetch_mode=prefetch_mode,
     ).eval()
     cache_dir = torchair_cache_dir_for_mixed_m16(
         cache_root,
@@ -620,6 +630,7 @@ def _build_mixed_m16_lane(
         model_dir=model_dir,
         linear_weight_format=linear_weight_format,
         layout=layout,
+        prefetch_mode=prefetch_mode,
     )
     cache_was_warm = cache_dir.is_dir() and any(cache_dir.iterdir())
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -689,7 +700,7 @@ def _build_mixed_m16_lane(
     return call, {
         "boundary": "two_embeddings_one_transformer_two_attentions_one_lm_head",
         "optimization": optimization.name,
-        "contract": mixed_m16_contract(layout),
+        "contract": mixed_m16_contract(layout, prefetch_mode),
         "torchair_cache_dir": str(cache_dir),
         "cache_was_warm_before_setup": bool(cache_was_warm),
         "compile_wrapper_s": float(compile_wrapper_s),
@@ -721,7 +732,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "lane": lane_name,
             "kind": "mixed_m16",
             "physical_positions_per_call": PACKED_TOKEN_COUNT,
-            **mixed_m16_contract(args.mixed_layout),
+            **mixed_m16_contract(args.mixed_layout, args.mixed_prefetch),
         }
     else:
         contract = {
@@ -746,6 +757,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     output_stem = lane_name
     if mixed_lane and args.mixed_layout != DEFAULT_MIXED_M16_LAYOUT:
         output_stem = f"{lane_name}_{args.mixed_layout}"
+    if mixed_lane and args.mixed_prefetch != DEFAULT_MIXED_M16_PREFETCH:
+        output_stem = f"{output_stem}_prefetch_{args.mixed_prefetch}"
     output_path = args.output_dir.expanduser().resolve() / f"{output_stem}.json"
     payload: dict[str, Any] = {
         "schema_version": 1,
@@ -812,6 +825,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             cache_root=cache_root,
             linear_weight_format=linear_weight_format,
             layout=args.mixed_layout,
+            prefetch_mode=args.mixed_prefetch,
         )
     elif lane.kind == "decode_q1":
         call, runtime_metadata, positions = _build_decode_lane(
