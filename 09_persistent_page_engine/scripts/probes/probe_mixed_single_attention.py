@@ -4,15 +4,21 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import statistics
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+import sys
 from typing import Callable
 
 import torch
+
+
+EXPERIMENT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(EXPERIMENT_ROOT))
 
 
 QUERY_HEADS = 16
@@ -42,6 +48,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lane", choices=LANES, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--profile-dir", type=Path, required=True)
+    parser.add_argument("--backend", choices=("eager", "torchair"), default="eager")
+    parser.add_argument(
+        "--cache-dir",
+        type=Path,
+        default=EXPERIMENT_ROOT.parent
+        / ".runtime_cache/09_persistent_page_engine_torchair/mixed_single_attention",
+    )
     parser.add_argument("--warmups", type=int, default=20)
     parser.add_argument("--repeats", type=int, default=100)
     parser.add_argument("--profile-warmups", type=int, default=10)
@@ -234,6 +247,100 @@ def _promptfa_bsnd(
     )
 
 
+class CurrentTwoCallStage(torch.nn.Module):
+    def forward(
+        self,
+        query_bsnd: torch.Tensor,
+        verifier_key_bnsd: torch.Tensor,
+        verifier_value_bnsd: torch.Tensor,
+        draft_key_bnsd: torch.Tensor,
+        draft_value_bnsd: torch.Tensor,
+        verifier_mask: torch.Tensor,
+        draft_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        return _current_two_call(
+            query_bsnd,
+            verifier_key_bnsd,
+            verifier_value_bnsd,
+            draft_key_bnsd,
+            draft_value_bnsd,
+            verifier_mask,
+            draft_mask,
+        )
+
+
+class PackedBsndPromptFaStage(torch.nn.Module):
+    def forward(
+        self,
+        query_bsnd: torch.Tensor,
+        packed_key_bsnd: torch.Tensor,
+        packed_value_bsnd: torch.Tensor,
+        packed_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        return _promptfa_bsnd(
+            query_bsnd,
+            packed_key_bsnd,
+            packed_value_bsnd,
+            packed_mask,
+        )
+
+
+class PaddedB9PromptFaStage(torch.nn.Module):
+    def forward(
+        self,
+        padded_query: torch.Tensor,
+        padded_key: torch.Tensor,
+        padded_value: torch.Tensor,
+        padded_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        output = _promptfa_bsnd(
+            padded_query,
+            padded_key,
+            padded_value,
+            padded_mask,
+        )
+        return torch.cat(
+            (
+                output[:1],
+                output[1:, :1].reshape(
+                    1, DRAFT_BATCH, QUERY_HEADS, HEAD_DIM
+                ),
+            ),
+            dim=1,
+        )
+
+
+def _compiled_call(
+    stage: torch.nn.Module,
+    stage_args: tuple[torch.Tensor, ...],
+    *,
+    lane: str,
+    cache_root: Path,
+) -> tuple[Callable[[], torch.Tensor], dict[str, object]]:
+    from paddleocr_vl.model.compile_utils import import_torchair
+    from paddleocr_vl.model.text_spec_verify import (
+        _register_scaled_masked_softmax_torchair_converter,
+    )
+
+    _register_scaled_masked_softmax_torchair_converter()
+    source_hash = hashlib.sha1(Path(__file__).read_bytes()).hexdigest()[:12]
+    cache_dir = cache_root.expanduser().resolve() / f"{lane}_{source_hash}"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_was_warm = any(cache_dir.iterdir())
+    torchair, CompilerConfig = import_torchair()
+    compiled = torchair.inference.cache_compile(
+        stage.forward,
+        config=CompilerConfig(),
+        dynamic=False,
+        cache_dir=str(cache_dir),
+        ge_cache=True,
+    )
+    return lambda: compiled(*stage_args), {
+        "cache_dir": str(cache_dir),
+        "cache_was_warm_before_setup": cache_was_warm,
+    }
+
+
 def _measure(
     call: Callable[[], torch.Tensor],
     *,
@@ -326,6 +433,8 @@ def main() -> None:
 
     if not torch_npu.npu.is_available():
         raise RuntimeError("this probe requires an Ascend NPU")
+    torch.npu.config.allow_internal_format = True
+    torch.npu.set_compile_mode(jit_compile=False)
     device = torch.device("npu:0")
     torch.manual_seed(args.seed)
     query_bsnd = torch.randn(
@@ -399,26 +508,39 @@ def main() -> None:
     )
     reference = reference_call().detach()
     if args.lane == "current_two_call":
-        call = reference_call
+        stage = CurrentTwoCallStage().eval()
+        stage_args = (
+            query_bsnd,
+            verifier_key_bnsd,
+            verifier_value_bnsd,
+            draft_key_bnsd,
+            draft_value_bnsd,
+            verifier_mask,
+            draft_mask,
+        )
     elif args.lane == "packed_bsnd_promptfa":
-        call = lambda: _promptfa_bsnd(
+        stage = PackedBsndPromptFaStage().eval()
+        stage_args = (
             query_bsnd,
             packed_key_bsnd,
             packed_value_bsnd,
             packed_mask,
         )
     else:
-        def call() -> torch.Tensor:
-            output = _promptfa_bsnd(
-                padded_query,
-                padded_key,
-                padded_value,
-                padded_mask,
-            )
-            return torch.cat(
-                (output[:1], output[1:, :1].reshape(1, DRAFT_BATCH, QUERY_HEADS, HEAD_DIM)),
-                dim=1,
-            )
+        stage = PaddedB9PromptFaStage().eval()
+        stage_args = (padded_query, padded_key, padded_value, padded_mask)
+
+    setup: dict[str, object] = {"backend": args.backend}
+    if args.backend == "torchair":
+        call, compile_metadata = _compiled_call(
+            stage,
+            stage_args,
+            lane=args.lane,
+            cache_root=args.cache_dir,
+        )
+        setup["compile"] = compile_metadata
+    else:
+        call = lambda: stage(*stage_args)
 
     timing, output = _measure(
         call,
@@ -440,6 +562,7 @@ def main() -> None:
         "lane": args.lane,
         "device": str(device),
         "seed": args.seed,
+        "setup": setup,
         "contract": {
             "query_heads": QUERY_HEADS,
             "kv_heads": KV_HEADS,
