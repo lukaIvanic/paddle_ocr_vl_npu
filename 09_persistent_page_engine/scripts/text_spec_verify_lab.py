@@ -305,15 +305,21 @@ def main(argv: Sequence[str] | None = None) -> None:
         [args.profile_position], device=device, dtype=torch.int64
     )
     rope_deltas = torch.zeros((1, 1), device=device, dtype=torch.int64)
+    compact_decode_output = hasattr(model, "decode_token_id_map")
+
+    def decode_target_ids(output: torch.Tensor) -> torch.Tensor:
+        if compact_decode_output:
+            return output
+        return torch.argmax(output, dim=-1)
 
     def decode_step() -> torch.Tensor:
-        logits = decode_runtime.fn(
+        output = decode_runtime.fn(
             decode_input,
             decode_position,
             rope_deltas,
             *decode_runtime.warm_cache.flat_tensors(),
         )
-        return torch.argmax(logits, dim=-1)
+        return decode_target_ids(output)
 
     durations, _decode_output, host_wall_s = _measure(
         device,
@@ -541,13 +547,13 @@ def main(argv: Sequence[str] | None = None) -> None:
                         device=device,
                         dtype=torch.int64,
                     )
-                    logits = decode_runtime.fn(
+                    decode_output = decode_runtime.fn(
                         input_ids[:, query_index : query_index + 1],
                         position,
                         rope_deltas,
                         *reference_cache.flat_tensors(),
                     )
-                    serial_targets.append(torch.argmax(logits, dim=-1))
+                    serial_targets.append(decode_target_ids(decode_output))
                 serial_targets_tensor = torch.cat(serial_targets, dim=1)
                 synchronize(device)
                 serial_cpu = serial_targets_tensor.detach().cpu()
