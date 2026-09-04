@@ -81,7 +81,7 @@ def _verifier_legal_mask(device: torch.device) -> torch.Tensor:
         VERIFIER_Q, device=device, dtype=torch.int64
     )
     kv_positions = torch.arange(VERIFIER_KV, device=device, dtype=torch.int64)
-    future = kv_positions.view(1, 1, 1, VERIFIER_Q, VERIFIER_KV) > (
+    future = kv_positions.view(1, 1, 1, 1, VERIFIER_KV) > (
         query_positions.view(1, 1, 1, VERIFIER_Q, 1)
     )
     return (
