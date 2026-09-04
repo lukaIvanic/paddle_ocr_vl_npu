@@ -1,0 +1,10 @@
+started_utc=2026-09-04T08:26:03Z
+host=liteserver-c001-4
+chip=Ascend-910B2
+physical_npu=6
+logical_device=npu:0
+git_commit=54a5cf60
+npu_preflight=No process in device
+npu_postflight=No process in device
+command=source npu-setup; ALLOW_COMPILE=1 09_persistent_page_engine/scripts/run_table_q1_q8_batch_sweep.sh
+result_sha256=8e5b8d2d8e7476b951cb9de13772784ee6d8f30565fca96f9cf57c50176f77d3
