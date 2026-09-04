@@ -40,6 +40,13 @@ VERIFIER_QUERY_LENGTH = 8
 DRAFT_BATCH_SIZE = 8
 DRAFT_QUERY_LENGTH = 1
 PACKED_TOKEN_COUNT = 16
+MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER = "split_lanes_then_pack_verifier"
+MIXED_LAYOUT_PACK_ALL_THEN_SPLIT_LANES = "pack_all_then_split_lanes"
+MIXED_M16_LAYOUTS = (
+    MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER,
+    MIXED_LAYOUT_PACK_ALL_THEN_SPLIT_LANES,
+)
+DEFAULT_MIXED_M16_LAYOUT = MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER
 
 
 def _query_positions(cache_position: torch.Tensor, query_length: int) -> torch.Tensor:
@@ -161,6 +168,7 @@ def _mixed_attention(
     draft_cache_position: torch.Tensor,
     draft_attention_mask: torch.Tensor,
     optimization: DecodeOptimizationConfig,
+    layout: str,
 ) -> torch.Tensor:
     """Run one M16 projection body and two cache-specific attention calls."""
     import torch_npu
@@ -192,20 +200,18 @@ def _mixed_attention(
         rotary_mode="half",
     )
 
-    # Split both mixed lanes once per tensor. Direct token slices lower to six
-    # independent StridedSlice kernels per layer on the 910B TorchAir graph.
-    verifier_query_bsnd, draft_query_bsnd = query_bsnd.split(
-        (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
-    )
-    verifier_key_bsnd, draft_key_bsnd = key_bsnd.split(
-        (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
-    )
-    verifier_value_bsnd, draft_value_bsnd = value_bsnd.split(
-        (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
-    )
-
-    verifier_packed_qkv = (
-        torch.cat(
+    if layout == MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER:
+        # Keep the draft lane out of the verifier's QKV packing and transpose.
+        verifier_query_bsnd, draft_query_bsnd = query_bsnd.split(
+            (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+        )
+        verifier_key_bsnd, draft_key_bsnd = key_bsnd.split(
+            (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+        )
+        verifier_value_bsnd, draft_value_bsnd = value_bsnd.split(
+            (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+        )
+        verifier_packed_bsnd = torch.cat(
             (
                 verifier_query_bsnd,
                 verifier_key_bsnd,
@@ -213,9 +219,23 @@ def _mixed_attention(
             ),
             dim=2,
         )
-        .transpose(1, 2)
-        .contiguous()
-    )
+    elif layout == MIXED_LAYOUT_PACK_ALL_THEN_SPLIT_LANES:
+        # Test whether one packed lane split is cheaper than separate Q/K/V
+        # lane splits. This moves all 16 tokens through the QKV concatenation.
+        packed_qkv_bsnd = torch.cat(
+            (query_bsnd, key_bsnd, value_bsnd),
+            dim=2,
+        )
+        verifier_packed_bsnd, draft_packed_bsnd = packed_qkv_bsnd.split(
+            (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+        )
+        draft_query_bsnd, draft_key_bsnd, draft_value_bsnd = (
+            draft_packed_bsnd.split((query_heads, kv_heads, kv_heads), dim=2)
+        )
+    else:
+        raise ValueError(f"unsupported mixed M16 layout {layout!r}")
+
+    verifier_packed_qkv = verifier_packed_bsnd.transpose(1, 2).contiguous()
     verifier_query, verifier_key, verifier_value = verifier_packed_qkv.split(
         (query_heads, kv_heads, kv_heads), dim=1
     )
@@ -308,10 +328,13 @@ def run_text_mixed_m16_transformer(
     draft_key_caches: tuple[torch.Tensor, ...],
     draft_value_caches: tuple[torch.Tensor, ...],
     optimization: str | DecodeOptimizationConfig = MIXED_M16_OPTIMIZATION,
+    layout: str = DEFAULT_MIXED_M16_LAYOUT,
 ) -> torch.Tensor:
     optimization = resolve_decode_optimization(optimization)
     if optimization.name != MIXED_M16_OPTIMIZATION:
         raise ValueError("mixed M16 requires its locked optimization preset")
+    if layout not in MIXED_M16_LAYOUTS:
+        raise ValueError(f"unsupported mixed M16 layout {layout!r}")
 
     verifier_positions = _query_positions(
         verifier_cache_position, VERIFIER_QUERY_LENGTH
@@ -436,6 +459,7 @@ def run_text_mixed_m16_transformer(
             draft_cache_position,
             draft_attention_mask,
             optimization,
+            layout,
         )
         mlp_input, residual = _decode_add_with_optional_rms_norm(
             attention_output,
@@ -461,6 +485,7 @@ class TextMixedM16Stage(nn.Module):
         model: "LocalPaddleOCRVLForConditionalGeneration",
         *,
         optimization: str | DecodeOptimizationConfig = MIXED_M16_OPTIMIZATION,
+        layout: str = DEFAULT_MIXED_M16_LAYOUT,
     ) -> None:
         super().__init__()
         self.model = model
@@ -468,6 +493,9 @@ class TextMixedM16Stage(nn.Module):
         self.optimization = resolve_decode_optimization(optimization)
         if self.optimization.name != MIXED_M16_OPTIMIZATION:
             raise ValueError("mixed M16 stage requires its locked preset")
+        if layout not in MIXED_M16_LAYOUTS:
+            raise ValueError(f"unsupported mixed M16 layout {layout!r}")
+        self.layout = layout
         if not hasattr(model, "decode_token_id_map"):
             raise ValueError("mixed M16 stage requires the compact output vocabulary")
 
@@ -514,6 +542,7 @@ class TextMixedM16Stage(nn.Module):
             draft_key_caches=draft_key_caches,
             draft_value_caches=draft_value_caches,
             optimization=self.optimization,
+            layout=self.layout,
         )
         output_head = self.model.decode_lm_head
         logits = _linear_tokenwise(output_head, hidden_states)
@@ -546,7 +575,10 @@ def torchair_cache_dir_for_mixed_m16(
     device: torch.device,
     model_dir: Path,
     linear_weight_format: str = DECODE_LINEAR_WEIGHT_FORMAT,
+    layout: str = DEFAULT_MIXED_M16_LAYOUT,
 ) -> Path:
+    if layout not in MIXED_M16_LAYOUTS:
+        raise ValueError(f"unsupported mixed M16 layout {layout!r}")
     shape_key = "_".join(
         (
             "text_mixed_m16",
@@ -557,6 +589,7 @@ def torchair_cache_dir_for_mixed_m16(
             f"dtype{cache_key_part(dtype)}",
             "verifier_b1q8_kv4096",
             "draft_b8q1_kv768",
+            f"layout{cache_key_part(layout)}",
             f"model{short_file_hash(model_dir / 'config.json')}",
             f"torch{cache_key_part(torch.__version__)}",
             f"torchnpu{torch_npu_version_label(device)}",
@@ -569,7 +602,11 @@ def torchair_cache_dir_for_mixed_m16(
     return cache_root.expanduser().resolve() / shape_key
 
 
-def mixed_m16_contract() -> dict[str, Any]:
+def mixed_m16_contract(
+    layout: str = DEFAULT_MIXED_M16_LAYOUT,
+) -> dict[str, Any]:
+    if layout not in MIXED_M16_LAYOUTS:
+        raise ValueError(f"unsupported mixed M16 layout {layout!r}")
     return {
         "packed_token_count": PACKED_TOKEN_COUNT,
         "verifier": {
@@ -585,4 +622,5 @@ def mixed_m16_contract() -> dict[str, Any]:
             "attention": "increfa",
         },
         "optimization": MIXED_M16_OPTIMIZATION,
+        "layout": layout,
     }

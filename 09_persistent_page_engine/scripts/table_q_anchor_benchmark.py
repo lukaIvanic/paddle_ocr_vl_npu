@@ -50,7 +50,9 @@ from paddleocr_vl.model.text_decode import (  # noqa: E402
     torchair_cache_dir_for_shape,
 )
 from paddleocr_vl.model.text_mixed_q import (  # noqa: E402
+    DEFAULT_MIXED_M16_LAYOUT,
     MIXED_M16_OPTIMIZATION,
+    MIXED_M16_LAYOUTS,
     PACKED_TOKEN_COUNT,
     TextMixedM16Stage,
     mixed_m16_contract,
@@ -157,6 +159,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--warmups", type=int, default=WARMUPS)
     parser.add_argument("--repeats", type=int, default=REPEATS)
     parser.add_argument("--profile-dir", type=Path)
+    parser.add_argument(
+        "--mixed-layout",
+        choices=MIXED_M16_LAYOUTS,
+        default=DEFAULT_MIXED_M16_LAYOUT,
+        help="QKV/lane layout used only by the mixed_m16 lane",
+    )
     args = parser.parse_args(argv)
     if args.warmups < 1:
         parser.error("--warmups must be positive")
@@ -294,9 +302,16 @@ def _profile_calls(
         ),
         record_shapes=True,
         profile_memory=False,
-        with_stack=False,
+        with_stack=True,
         with_modules=False,
         with_flops=False,
+        experimental_config=npu_prof._ExperimentalConfig(
+            profiler_level=npu_prof.ProfilerLevel.Level1,
+            aic_metrics=npu_prof.AiCMetrics.PipeUtilization,
+            l2_cache=False,
+            export_type=npu_prof.ExportType.Text,
+            data_simplification=False,
+        ),
     ) as profiler:
         for index in range(profiler_warmup_calls + captured_calls):
             with torch.profiler.record_function(
@@ -579,6 +594,7 @@ def _build_mixed_m16_lane(
     model_dir: Path,
     cache_root: Path,
     linear_weight_format: str,
+    layout: str,
 ) -> tuple[Callable[[], torch.Tensor], dict[str, Any], tuple[int, ...]]:
     optimization = resolve_decode_optimization(MIXED_M16_OPTIMIZATION)
     prepare_decode_rope_factor_lut(
@@ -589,13 +605,18 @@ def _build_mixed_m16_lane(
     )
     prepare_decode_weight_prefetch(model, optimization)
     _register_scaled_masked_softmax_torchair_converter()
-    stage = TextMixedM16Stage(model, optimization=optimization).eval()
+    stage = TextMixedM16Stage(
+        model,
+        optimization=optimization,
+        layout=layout,
+    ).eval()
     cache_dir = torchair_cache_dir_for_mixed_m16(
         cache_root,
         dtype=dtype,
         device=device,
         model_dir=model_dir,
         linear_weight_format=linear_weight_format,
+        layout=layout,
     )
     cache_was_warm = cache_dir.is_dir() and any(cache_dir.iterdir())
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -665,7 +686,7 @@ def _build_mixed_m16_lane(
     return call, {
         "boundary": "two_embeddings_one_transformer_two_attentions_one_lm_head",
         "optimization": optimization.name,
-        "contract": mixed_m16_contract(),
+        "contract": mixed_m16_contract(layout),
         "torchair_cache_dir": str(cache_dir),
         "cache_was_warm_before_setup": bool(cache_was_warm),
         "compile_wrapper_s": float(compile_wrapper_s),
@@ -697,7 +718,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             "lane": lane_name,
             "kind": "mixed_m16",
             "physical_positions_per_call": PACKED_TOKEN_COUNT,
-            **mixed_m16_contract(),
+            **mixed_m16_contract(args.mixed_layout),
         }
     else:
         contract = {
@@ -719,7 +740,10 @@ def main(argv: Sequence[str] | None = None) -> None:
             "repeats": int(args.repeats),
         }
     )
-    output_path = args.output_dir.expanduser().resolve() / f"{lane_name}.json"
+    output_stem = lane_name
+    if mixed_lane and args.mixed_layout != DEFAULT_MIXED_M16_LAYOUT:
+        output_stem = f"{lane_name}_{args.mixed_layout}"
+    output_path = args.output_dir.expanduser().resolve() / f"{output_stem}.json"
     payload: dict[str, Any] = {
         "schema_version": 1,
         "kind": "table_q_anchor_single_lane",
@@ -784,6 +808,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             model_dir=model_dir,
             cache_root=cache_root,
             linear_weight_format=linear_weight_format,
+            layout=args.mixed_layout,
         )
     elif lane.kind == "decode_q1":
         call, runtime_metadata, positions = _build_decode_lane(
