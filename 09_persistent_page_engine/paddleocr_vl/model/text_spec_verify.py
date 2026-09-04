@@ -169,8 +169,6 @@ def _spec_attention(
     optimization: DecodeOptimizationConfig,
 ) -> torch.Tensor:
     if SPEC_VERIFY_ATTENTION == _COMBINED_QKV_POST_ROPE_ATTENTION:
-        if int(hidden_states.shape[0]) != 1:
-            raise ValueError("combined-QKV verifier layout currently requires B1")
         if not optimization.packed_qkv or optimization.rotary != "npu_apply":
             raise ValueError(
                 "combined-QKV verifier layout requires packed QKV and NPU ApplyRotary"
