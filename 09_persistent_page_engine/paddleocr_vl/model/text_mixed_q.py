@@ -177,9 +177,7 @@ def _draft_increfa_attention(
 def _mixed_attention(
     attention: nn.Module,
     hidden_states: torch.Tensor,
-    packed_factors: tuple[torch.Tensor, torch.Tensor] | None,
-    verifier_factors: tuple[torch.Tensor, torch.Tensor],
-    draft_factors: tuple[torch.Tensor, torch.Tensor],
+    packed_factors: tuple[torch.Tensor, torch.Tensor],
     verifier_key_cache: torch.Tensor,
     verifier_value_cache: torch.Tensor,
     verifier_positions: torch.Tensor,
@@ -223,11 +221,9 @@ def _mixed_attention(
     query_bsnd = query_flat.view(1, PACKED_TOKEN_COUNT, query_heads, head_dim)
     key_bsnd = key_flat.view(1, PACKED_TOKEN_COUNT, kv_heads, head_dim)
     value_bsnd = value_flat.view(1, PACKED_TOKEN_COUNT, kv_heads, head_dim)
+    cosine, sine = packed_factors
     lanes_are_split = rotary_mode == MIXED_ROTARY_PER_LANE
     if rotary_mode == MIXED_ROTARY_SHARED_M16:
-        if packed_factors is None:
-            raise ValueError("shared M16 rotary requires packed factors")
-        cosine, sine = packed_factors
         query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
             query_bsnd,
             key_bsnd,
@@ -246,8 +242,12 @@ def _mixed_attention(
         verifier_value_bsnd, draft_value_bsnd = value_bsnd.split(
             (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
         )
-        verifier_cosine, verifier_sine = verifier_factors
-        draft_cosine, draft_sine = draft_factors
+        verifier_cosine, draft_cosine = cosine.split(
+            (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+        )
+        verifier_sine, draft_sine = sine.split(
+            (VERIFIER_QUERY_LENGTH, DRAFT_BATCH_SIZE), dim=1
+        )
         verifier_query_bsnd, verifier_key_bsnd = (
             torch_npu.npu_apply_rotary_pos_emb(
                 verifier_query_bsnd,
@@ -544,24 +544,22 @@ def run_text_mixed_m16_transformer(
         text_model.rotary_emb,
         draft_decode_positions,
     )
-    packed_factors: tuple[torch.Tensor, torch.Tensor] | None = None
-    if rotary_mode == MIXED_ROTARY_SHARED_M16:
-        packed_factors = (
-            torch.cat(
-                (
-                    verifier_factors[0],
-                    draft_factors[0].reshape(1, DRAFT_BATCH_SIZE, 1, -1),
-                ),
-                dim=1,
+    packed_factors = (
+        torch.cat(
+            (
+                verifier_factors[0],
+                draft_factors[0].reshape(1, DRAFT_BATCH_SIZE, 1, -1),
             ),
-            torch.cat(
-                (
-                    verifier_factors[1],
-                    draft_factors[1].reshape(1, DRAFT_BATCH_SIZE, 1, -1),
-                ),
-                dim=1,
+            dim=1,
+        ),
+        torch.cat(
+            (
+                verifier_factors[1],
+                draft_factors[1].reshape(1, DRAFT_BATCH_SIZE, 1, -1),
             ),
-        )
+            dim=1,
+        ),
+    )
 
     hidden_states = torch.cat(
         (
@@ -602,8 +600,6 @@ def run_text_mixed_m16_transformer(
             layer.self_attn,
             attention_input,
             packed_factors,
-            verifier_factors,
-            draft_factors,
             verifier_key_caches[layer_index],
             verifier_value_caches[layer_index],
             verifier_positions,
