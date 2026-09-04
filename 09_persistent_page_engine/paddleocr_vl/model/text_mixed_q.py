@@ -192,14 +192,20 @@ def _mixed_attention(
         rotary_mode="half",
     )
 
-    verifier_query = (
-        query_bsnd[:, :VERIFIER_QUERY_LENGTH].transpose(1, 2).contiguous()
+    verifier_packed_qkv = (
+        torch.cat(
+            (
+                query_bsnd[:, :VERIFIER_QUERY_LENGTH],
+                key_bsnd[:, :VERIFIER_QUERY_LENGTH],
+                value_bsnd[:, :VERIFIER_QUERY_LENGTH],
+            ),
+            dim=2,
+        )
+        .transpose(1, 2)
+        .contiguous()
     )
-    verifier_key = (
-        key_bsnd[:, :VERIFIER_QUERY_LENGTH].transpose(1, 2).contiguous()
-    )
-    verifier_value = (
-        value_bsnd[:, :VERIFIER_QUERY_LENGTH].transpose(1, 2).contiguous()
+    verifier_query, verifier_key, verifier_value = verifier_packed_qkv.split(
+        (query_heads, kv_heads, kv_heads), dim=1
     )
     _update_spec_kv_cache_(
         verifier_key_cache,
@@ -227,20 +233,26 @@ def _mixed_attention(
         verifier_legal_mask,
     )
 
-    draft_query = (
-        query_bsnd[:, VERIFIER_QUERY_LENGTH:]
-        .reshape(DRAFT_BATCH_SIZE, DRAFT_QUERY_LENGTH, query_heads, head_dim)
+    draft_packed_qkv = (
+        torch.cat(
+            (
+                query_bsnd[:, VERIFIER_QUERY_LENGTH:],
+                key_bsnd[:, VERIFIER_QUERY_LENGTH:],
+                value_bsnd[:, VERIFIER_QUERY_LENGTH:],
+            ),
+            dim=2,
+        )
+        .reshape(
+            DRAFT_BATCH_SIZE,
+            DRAFT_QUERY_LENGTH,
+            query_heads + (2 * kv_heads),
+            head_dim,
+        )
         .transpose(1, 2)
+        .contiguous()
     )
-    draft_key = (
-        key_bsnd[:, VERIFIER_QUERY_LENGTH:]
-        .reshape(DRAFT_BATCH_SIZE, DRAFT_QUERY_LENGTH, kv_heads, head_dim)
-        .transpose(1, 2)
-    )
-    draft_value = (
-        value_bsnd[:, VERIFIER_QUERY_LENGTH:]
-        .reshape(DRAFT_BATCH_SIZE, DRAFT_QUERY_LENGTH, kv_heads, head_dim)
-        .transpose(1, 2)
+    draft_query, draft_key, draft_value = draft_packed_qkv.split(
+        (query_heads, kv_heads, kv_heads), dim=1
     )
     draft_key_cache, draft_value_cache = update_decode_kv_cache_(
         draft_key_cache,
