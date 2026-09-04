@@ -11,12 +11,22 @@ WARMUP="${WARMUP:-0}"
 REPEATS="${REPEATS:-1}"
 GENERATION_TOKENS="${GENERATION_TOKENS:-8}"
 LANE_TIMEOUT_S="${LANE_TIMEOUT_S:-1200}"
+LAYOUT_SIZE_W="${LAYOUT_SIZE_W:-}"
+LAYOUT_SIZE_H="${LAYOUT_SIZE_H:-}"
 RUN_TAG="${RUN_TAG:-$(date -u +%Y%m%dT%H%M%SZ)}"
 CACHE_ROOT="${CACHE_ROOT:-$REPO_ROOT/.runtime_cache/11_mineru_2_5_pro_inference/vision_contract_matrix}"
 OUT_ROOT="${OUT_ROOT:-$REPO_ROOT/tmp/11_mineru_2_5_pro_inference/vision_contract_matrix_${RUN_TAG}}"
 
 mkdir -p "$CACHE_ROOT" "$OUT_ROOT"
 OVERALL_EXIT=0
+LAYOUT_ARGS=()
+if [[ -n "$LAYOUT_SIZE_W" || -n "$LAYOUT_SIZE_H" ]]; then
+  if [[ -z "$LAYOUT_SIZE_W" || -z "$LAYOUT_SIZE_H" ]]; then
+    printf 'LAYOUT_SIZE_W and LAYOUT_SIZE_H must be set together\n' >&2
+    exit 2
+  fi
+  LAYOUT_ARGS=(--layout-size "$LAYOUT_SIZE_W" "$LAYOUT_SIZE_H")
+fi
 
 run_lane() {
   local lane="$1"
@@ -30,6 +40,7 @@ run_lane() {
       --model "$MODEL" \
       --image "$IMAGE" \
       --prompt "Text Recognition:" \
+      "${LAYOUT_ARGS[@]}" \
       --bucket "$BUCKET" \
       --cache-dir "$CACHE_ROOT" \
       --output "$lane_root/result.json" \
