@@ -1,0 +1,214 @@
+{
+  "captured_calls_per_lane": 5,
+  "comparison": {
+    "argmax": {
+      "mixed_us": 11.659999999999998,
+      "saving_us": 8.508000000000001,
+      "separate_us": 20.168
+    },
+    "cast": {
+      "mixed_us": 14.212,
+      "saving_us": 6.916000000000004,
+      "separate_us": 21.128000000000004
+    },
+    "embedding_gather": {
+      "mixed_us": 35.959999999999994,
+      "saving_us": 11.268000000000008,
+      "separate_us": 47.228
+    },
+    "kv_scatter": {
+      "mixed_us": 130.98400000000007,
+      "saving_us": -5.824000000000069,
+      "separate_us": 125.16
+    },
+    "layout": {
+      "mixed_us": 439.3800000000008,
+      "saving_us": -256.46400000000085,
+      "separate_us": 182.91599999999994
+    },
+    "mask_build": {
+      "mixed_us": 55.312000000000005,
+      "saving_us": -1.176000000000009,
+      "separate_us": 54.135999999999996
+    },
+    "mlp_activation": {
+      "mixed_us": 144.31199999999995,
+      "saving_us": -38.16799999999995,
+      "separate_us": 106.144
+    },
+    "other": {
+      "mixed_us": 20.712000000000003,
+      "saving_us": 1.5879999999999974,
+      "separate_us": 22.3
+    },
+    "q1_increfa": {
+      "mixed_us": 384.56,
+      "saving_us": -79.80400000000003,
+      "separate_us": 304.756
+    },
+    "q8_qk_pv_batch_matmuls": {
+      "mixed_us": 299.90000000000026,
+      "saving_us": 27.543999999999755,
+      "separate_us": 327.444
+    },
+    "q8_scaled_masked_softmax": {
+      "mixed_us": 173.5680000000001,
+      "saving_us": -57.89600000000007,
+      "separate_us": 115.67200000000003
+    },
+    "rms_norm": {
+      "mixed_us": 148.1879999999999,
+      "saving_us": 35.004000000000104,
+      "separate_us": 183.192
+    },
+    "rope": {
+      "mixed_us": 101.36799999999998,
+      "saving_us": 22.672000000000025,
+      "separate_us": 124.04
+    },
+    "transformer_matmuls_including_lm_head": {
+      "mixed_us": 510.7240000000002,
+      "saving_us": 350.20399999999967,
+      "separate_us": 860.9279999999999
+    }
+  },
+  "lanes": {
+    "b1q8": {
+      "device_total_us_per_call": 1376.288000000001,
+      "groups_us_per_call": {
+        "argmax": 9.32,
+        "cast": 11.644000000000002,
+        "embedding_gather": 29.776,
+        "kv_scatter": 45.092,
+        "layout": 160.31199999999995,
+        "mask_build": 36.22,
+        "mlp_activation": 40.116,
+        "other": 19.176000000000002,
+        "q8_qk_pv_batch_matmuls": 327.444,
+        "q8_scaled_masked_softmax": 115.67200000000003,
+        "rms_norm": 94.41199999999999,
+        "rope": 57.816,
+        "transformer_matmuls_including_lm_head": 429.2879999999998
+      },
+      "matmuls_us_per_call": {
+        "lm_head": 17.148,
+        "mlp_down": 91.26399999999998,
+        "mlp_gate": 77.96000000000005,
+        "mlp_up": 76.29599999999998,
+        "o_proj": 72.564,
+        "qkv": 94.05599999999995
+      },
+      "raw_kernel_rows": 1915,
+      "raw_matmul_counts": {
+        "lm_head": 5,
+        "mlp_down": 90,
+        "mlp_gate": 90,
+        "mlp_up": 90,
+        "o_proj": 90,
+        "qkv": 90
+      }
+    },
+    "b8q1": {
+      "device_total_us_per_call": 1118.9240000000007,
+      "groups_us_per_call": {
+        "argmax": 10.848,
+        "cast": 9.484000000000002,
+        "embedding_gather": 17.452,
+        "kv_scatter": 80.068,
+        "layout": 22.603999999999996,
+        "mask_build": 17.915999999999997,
+        "mlp_activation": 66.028,
+        "other": 3.1239999999999997,
+        "q1_increfa": 304.756,
+        "rms_norm": 88.78,
+        "rope": 66.224,
+        "transformer_matmuls_including_lm_head": 431.64000000000016
+      },
+      "matmuls_us_per_call": {
+        "lm_head": 17.560000000000002,
+        "mlp_down": 88.71999999999997,
+        "mlp_gate": 80.488,
+        "mlp_up": 75.664,
+        "o_proj": 72.068,
+        "qkv": 97.14
+      },
+      "raw_kernel_rows": 1240,
+      "raw_matmul_counts": {
+        "lm_head": 5,
+        "mlp_down": 90,
+        "mlp_gate": 90,
+        "mlp_up": 90,
+        "o_proj": 90,
+        "qkv": 90
+      }
+    },
+    "mixed_m16": {
+      "device_total_us_per_call": 2470.8399999999956,
+      "groups_us_per_call": {
+        "argmax": 11.659999999999998,
+        "cast": 14.212,
+        "embedding_gather": 35.959999999999994,
+        "kv_scatter": 130.98400000000007,
+        "layout": 439.3800000000008,
+        "mask_build": 55.312000000000005,
+        "mlp_activation": 144.31199999999995,
+        "other": 20.712000000000003,
+        "q1_increfa": 384.56,
+        "q8_qk_pv_batch_matmuls": 299.90000000000026,
+        "q8_scaled_masked_softmax": 173.5680000000001,
+        "rms_norm": 148.1879999999999,
+        "rope": 101.36799999999998,
+        "transformer_matmuls_including_lm_head": 510.7240000000002
+      },
+      "matmuls_us_per_call": {
+        "lm_head": 17.036,
+        "mlp_down": 121.81599999999999,
+        "mlp_gate": 93.53199999999998,
+        "mlp_up": 80.15199999999996,
+        "o_proj": 78.148,
+        "qkv": 120.03999999999998
+      },
+      "raw_kernel_rows": 2760,
+      "raw_matmul_counts": {
+        "lm_head": 5,
+        "mlp_down": 90,
+        "mlp_gate": 90,
+        "mlp_up": 90,
+        "o_proj": 90,
+        "qkv": 90
+      }
+    }
+  },
+  "matmul_comparison": {
+    "lm_head": {
+      "mixed_us": 17.036,
+      "saving_us": 17.671999999999997,
+      "separate_us": 34.708
+    },
+    "mlp_down": {
+      "mixed_us": 121.81599999999999,
+      "saving_us": 58.167999999999964,
+      "separate_us": 179.98399999999995
+    },
+    "mlp_gate": {
+      "mixed_us": 93.53199999999998,
+      "saving_us": 64.91600000000005,
+      "separate_us": 158.44800000000004
+    },
+    "mlp_up": {
+      "mixed_us": 80.15199999999996,
+      "saving_us": 71.80800000000002,
+      "separate_us": 151.95999999999998
+    },
+    "o_proj": {
+      "mixed_us": 78.148,
+      "saving_us": 66.48400000000001,
+      "separate_us": 144.632
+    },
+    "qkv": {
+      "mixed_us": 120.03999999999998,
+      "saving_us": 71.15599999999999,
+      "separate_us": 191.19599999999997
+    }
+  }
+}

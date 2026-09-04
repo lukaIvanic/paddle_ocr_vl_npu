@@ -1,0 +1,185 @@
+{
+  "contract": {
+    "batch_size": 1,
+    "cache_length": 4096,
+    "compact_vocab": "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json",
+    "dtype": "torch.float16",
+    "kind": "spec_verify",
+    "lane": "b1q8",
+    "linear_weight_format": "decode_nz",
+    "optimization": "combined_apply_spec_prefetch_mrope",
+    "physical_positions_per_call": 8,
+    "query_length": 8,
+    "repeats": 50,
+    "spec_attention": "manual_grouped_legal_scaled_masked_softmax_fp16_combined_qkv_post_rope",
+    "warmups": 10
+  },
+  "kind": "table_q_anchor_single_lane",
+  "provenance": {
+    "argv": [
+      "09_persistent_page_engine/scripts/table_q_anchor_benchmark.py",
+      "--lane",
+      "b1q8",
+      "--output-dir",
+      "tmp/09_persistent_page_engine/table_q_profile_compare5_830f5a9a_20260904/b1q8",
+      "--profile-dir",
+      "tmp/09_persistent_page_engine/table_q_profile_compare5_830f5a9a_20260904/b1q8/profile"
+    ],
+    "ascend_rt_visible_devices": "6",
+    "git_commit": "830f5a9aec3bca0fed33f23f1d29c4a8daa6b4ee",
+    "hostname": "liteserver-c001-4",
+    "started_utc": "2026-09-04T10:45:44.298602+00:00"
+  },
+  "result": {
+    "native_output_token_ids": [
+      176,
+      50015,
+      3,
+      96748,
+      3,
+      9,
+      5,
+      8
+    ],
+    "profile": {
+      "captured_calls": 5,
+      "outside_measured_timing": true,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_q_profile_compare5_830f5a9a_20260904/b1q8/profile",
+      "profiler_warmup_calls": 1,
+      "wall_s": 5.959393264027312
+    },
+    "timing": {
+      "device_s": 0.06654369986057282,
+      "graph_calls_per_s": 751.385932924734,
+      "host_graph_calls_per_s": 734.50973627688,
+      "host_physical_positions_per_s": 5876.07789021504,
+      "host_wall_s": 0.0680726170539856,
+      "latency_ms": {
+        "max": 1.4532999992370605,
+        "mean": 1.3308739972114563,
+        "median": 1.327750027179718,
+        "min": 1.3157999515533447,
+        "p95": 1.338692981004715
+      },
+      "physical_positions_per_call": 8,
+      "physical_positions_per_s": 6011.087463397872
+    },
+    "warmup_wall_s": {
+      "all": [
+        0.3223612190922722,
+        0.0017216990236192942,
+        0.001511816051788628,
+        0.0014927649172022939,
+        0.0014951849589124322,
+        0.0014884360134601593,
+        0.0014974951045587659,
+        0.0014835649635642767,
+        0.0014966060407459736,
+        0.0014883150579407811
+      ],
+      "calls": 10,
+      "first": 0.3223612190922722,
+      "remaining_mean": 0.0015195424590880673
+    }
+  },
+  "schema_version": 1,
+  "setup": {
+    "cache_positions": [
+      1249
+    ],
+    "compact_vocab": {
+      "enabled": true,
+      "full_vocab_size": 103424,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json",
+      "selected_vocab_size": 16384,
+      "selection": null,
+      "source": null,
+      "token_ids_sha256": "9c48e5c3b92776ba250f75359fccb407448c4da8419fe927f5ea381d345712c3"
+    },
+    "model_dir": "/workspace/models/PaddleOCR-VL-1.6",
+    "model_load_s": 11.345432593952864,
+    "runtime": {
+      "attention": "manual_grouped_legal_scaled_masked_softmax_fp16_combined_qkv_post_rope",
+      "boundary": "token_embedding_text_transformer_lm_head_argmax",
+      "cache_allocated_bytes": 75497472,
+      "cache_update": "npu_scatter",
+      "cache_was_warm_before_setup": true,
+      "compile_wrapper_s": 0.00044786802027374506,
+      "optimization": "combined_apply_spec_prefetch_mrope",
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/text_spec_verify_keyb87a4a7da3b28e1dd519"
+    },
+    "setup_before_warmups_s": 19.095811576000415,
+    "total_process_setup_and_benchmark_s": 25.462158857029863,
+    "weight_format": {
+      "after_formats_sample": {
+        "model.layers.0.mlp.down_proj": 29,
+        "model.layers.0.mlp.gate_proj": 29,
+        "model.layers.0.mlp.up_proj": 29,
+        "model.layers.0.self_attn.decode_qkv_proj": 29,
+        "model.layers.0.self_attn.k_proj": 29,
+        "model.layers.0.self_attn.o_proj": 29,
+        "model.layers.0.self_attn.q_proj": 29,
+        "model.layers.0.self_attn.v_proj": 29,
+        "model.layers.1.mlp.down_proj": 29,
+        "model.layers.1.mlp.gate_proj": 29,
+        "model.layers.1.mlp.up_proj": 29,
+        "model.layers.1.self_attn.decode_qkv_proj": 29,
+        "model.layers.1.self_attn.k_proj": 29,
+        "model.layers.1.self_attn.o_proj": 29,
+        "model.layers.1.self_attn.q_proj": 29,
+        "model.layers.1.self_attn.v_proj": 29
+      },
+      "all_after_are_nz": true,
+      "already_nz_count": 0,
+      "before_formats_sample": {
+        "model.layers.0.mlp.down_proj": 2,
+        "model.layers.0.mlp.gate_proj": 2,
+        "model.layers.0.mlp.up_proj": 2,
+        "model.layers.0.self_attn.decode_qkv_proj": 2,
+        "model.layers.0.self_attn.k_proj": 2,
+        "model.layers.0.self_attn.o_proj": 2,
+        "model.layers.0.self_attn.q_proj": 2,
+        "model.layers.0.self_attn.v_proj": 2,
+        "model.layers.1.mlp.down_proj": 2,
+        "model.layers.1.mlp.gate_proj": 2,
+        "model.layers.1.mlp.up_proj": 2,
+        "model.layers.1.self_attn.decode_qkv_proj": 2,
+        "model.layers.1.self_attn.k_proj": 2,
+        "model.layers.1.self_attn.o_proj": 2,
+        "model.layers.1.self_attn.q_proj": 2,
+        "model.layers.1.self_attn.v_proj": 2
+      },
+      "cast_count": 146,
+      "converted_count": 146,
+      "converted_modules_sample": [
+        "model.layers.0.self_attn.q_proj",
+        "model.layers.0.self_attn.k_proj",
+        "model.layers.0.self_attn.v_proj",
+        "model.layers.0.self_attn.o_proj",
+        "model.layers.0.self_attn.decode_qkv_proj",
+        "model.layers.0.mlp.gate_proj",
+        "model.layers.0.mlp.up_proj",
+        "model.layers.0.mlp.down_proj",
+        "model.layers.1.self_attn.q_proj",
+        "model.layers.1.self_attn.k_proj",
+        "model.layers.1.self_attn.v_proj",
+        "model.layers.1.self_attn.o_proj",
+        "model.layers.1.self_attn.decode_qkv_proj",
+        "model.layers.1.mlp.gate_proj",
+        "model.layers.1.mlp.up_proj",
+        "model.layers.1.mlp.down_proj"
+      ],
+      "effective_mode": "decode_nz",
+      "failures_sample": [],
+      "fallback_reason": null,
+      "mode": "decode_nz",
+      "requested_mode": "decode_nz",
+      "target_count": 146,
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29
+    },
+    "weight_format_s": 6.21560902800411
+  },
+  "status": "complete",
+  "warnings": []
+}
