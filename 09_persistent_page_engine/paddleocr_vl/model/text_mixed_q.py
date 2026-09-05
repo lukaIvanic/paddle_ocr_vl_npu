@@ -49,10 +49,13 @@ MIXED_LAYOUT_PACKED_BSND_PROMPTFA = "packed_bsnd_promptfa"
 MIXED_LAYOUT_B2_BSND_PROMPTFA = "b2_bsnd_promptfa"
 MIXED_LAYOUT_B9_BSND_PROMPTFA = "b9_bsnd_promptfa"
 MIXED_LAYOUT_B16_INCREFA = "b16_replicated_increfa"
+MIXED_LAYOUT_B16_INCREFA_SCATTER = "b16_replicated_increfa_scatter"
+MIXED_REPLICATED_INCREFA_LAYOUTS = (MIXED_LAYOUT_B16_INCREFA, MIXED_LAYOUT_B16_INCREFA_SCATTER)
 MIXED_SINGLE_ATTENTION_LAYOUTS = (
     MIXED_LAYOUT_PACKED_BSND_PROMPTFA, MIXED_LAYOUT_B2_BSND_PROMPTFA,
     MIXED_LAYOUT_B9_BSND_PROMPTFA,
     MIXED_LAYOUT_B16_INCREFA,
+    MIXED_LAYOUT_B16_INCREFA_SCATTER,
 )
 MIXED_M16_LAYOUTS = (
     MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER,
@@ -62,6 +65,7 @@ MIXED_M16_LAYOUTS = (
     MIXED_LAYOUT_B2_BSND_PROMPTFA,
     MIXED_LAYOUT_B9_BSND_PROMPTFA,
     MIXED_LAYOUT_B16_INCREFA,
+    MIXED_LAYOUT_B16_INCREFA_SCATTER,
 )
 DEFAULT_MIXED_M16_LAYOUT = MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER
 MIXED_PREFETCH_FULL = "full"
@@ -252,7 +256,24 @@ def _mixed_attention(
             query_bsnd, key_bsnd, cosine, sine,
             layout="BSND", rotary_mode="half",
         )
-        if layout == MIXED_LAYOUT_B16_INCREFA:
+        if layout == MIXED_LAYOUT_B16_INCREFA_SCATTER:
+            # One uniform Q8 write block per physical row permits dedicated
+            # Scatter KV writes. Draft rows have one real update and seven
+            # zero future updates, always hidden by their Q1 causal mask.
+            key_updates = torch.cat((
+                key_bsnd[:, :8].transpose(1, 2).expand(8, kv_heads, 8, head_dim),
+                torch.cat((key_bsnd[:, 8:].reshape(8, kv_heads, 1, head_dim),
+                           key_bsnd.new_zeros((8, kv_heads, 7, head_dim))), dim=2),
+            ), dim=0).contiguous()
+            value_updates = torch.cat((
+                value_bsnd[:, :8].transpose(1, 2).expand(8, kv_heads, 8, head_dim),
+                torch.cat((value_bsnd[:, 8:].reshape(8, kv_heads, 1, head_dim),
+                           value_bsnd.new_zeros((8, kv_heads, 7, head_dim))), dim=2),
+            ), dim=0).contiguous()
+            starts = torch.cat((verifier_positions[:, 0].expand(8), draft_cache_position.reshape(-1))).contiguous()
+            torch_npu.scatter_update_(verifier_key_cache, starts, key_updates, 2)
+            torch_npu.scatter_update_(verifier_value_cache, starts, value_updates, 2)
+        elif layout == MIXED_LAYOUT_B16_INCREFA:
             # Eight verifier queries share one logical history. Replicate only
             # the new Q8 block into eight persistent physical histories. Each
             # row's mask imposes its own causal endpoint.
@@ -267,8 +288,9 @@ def _mixed_attention(
         else:
             key_updates = key_bsnd.reshape(PACKED_TOKEN_COUNT, kv_heads, head_dim).contiguous()
             value_updates = value_bsnd.reshape(PACKED_TOKEN_COUNT, kv_heads, head_dim).contiguous()
-        torch_npu.npu_scatter_nd_update_(verifier_key_cache, packed_write_indices, key_updates)
-        torch_npu.npu_scatter_nd_update_(verifier_value_cache, packed_write_indices, value_updates)
+        if layout != MIXED_LAYOUT_B16_INCREFA_SCATTER:
+            torch_npu.npu_scatter_nd_update_(verifier_key_cache, packed_write_indices, key_updates)
+            torch_npu.npu_scatter_nd_update_(verifier_value_cache, packed_write_indices, value_updates)
         if (
             prefetch_mode in (MIXED_PREFETCH_FULL, MIXED_PREFETCH_KV_ONLY)
             and optimization.post_scatter_kv_prefetch
@@ -281,7 +303,7 @@ def _mixed_attention(
                 verifier_value_cache, value_bsnd,
                 verifier_value_cache.numel() * verifier_value_cache.element_size(),
             )
-        if layout == MIXED_LAYOUT_B16_INCREFA:
+        if layout in MIXED_REPLICATED_INCREFA_LAYOUTS:
             output = torch_npu.npu_incre_flash_attention(
                 query_bsnd.reshape(16, query_heads, 1, head_dim).contiguous(),
                 verifier_key_cache, verifier_value_cache,
@@ -644,7 +666,7 @@ def run_text_mixed_m16_transformer(
             packed_attention_mask = (
                 verifier_kv_positions.view(1, 1, 1, 4096) > query_limits.view(9, 1, 8, 1)
             ).contiguous()
-        if layout == MIXED_LAYOUT_B16_INCREFA:
+        if layout in MIXED_REPLICATED_INCREFA_LAYOUTS:
             rows = torch.arange(8, device=draft_positions.device, dtype=torch.int64)
             heads = torch.arange(2, device=draft_positions.device, dtype=torch.int64)
             verifier_indices = torch.stack((
@@ -956,7 +978,7 @@ def mixed_m16_contract(
         raise ValueError(f"unsupported mixed rotary mode {rotary_mode!r}")
     return {
         "attention_boundary": (
-            ("single_increfa_persistent_replicated_b16kv4096" if layout == MIXED_LAYOUT_B16_INCREFA
+            ("single_increfa_persistent_replicated_b16kv4096" if layout in MIXED_REPLICATED_INCREFA_LAYOUTS
              else "single_promptfa_persistent_bsnd_b9kv4096" if layout == MIXED_LAYOUT_B9_BSND_PROMPTFA
              else "single_promptfa_persistent_bsnd_b2kv6144" if layout == MIXED_LAYOUT_B2_BSND_PROMPTFA
              else "single_promptfa_persistent_bsnd_b1kv10240")
@@ -968,14 +990,14 @@ def mixed_m16_contract(
             "batch_size": VERIFIER_BATCH_SIZE,
             "query_length": VERIFIER_QUERY_LENGTH,
             "cache_length": 4096,
-            "attention": ("increfa" if layout == MIXED_LAYOUT_B16_INCREFA else "promptfa" if layout in MIXED_SINGLE_ATTENTION_LAYOUTS
+            "attention": ("increfa" if layout in MIXED_REPLICATED_INCREFA_LAYOUTS else "promptfa" if layout in MIXED_SINGLE_ATTENTION_LAYOUTS
                           else "manual_grouped_legal_scaled_masked_softmax_fp16"),
         },
         "draft": {
             "batch_size": DRAFT_BATCH_SIZE,
             "query_length": DRAFT_QUERY_LENGTH,
             "cache_length": 768,
-            "attention": "promptfa" if layout in MIXED_SINGLE_ATTENTION_LAYOUTS and layout != MIXED_LAYOUT_B16_INCREFA else "increfa",
+            "attention": "promptfa" if layout in MIXED_SINGLE_ATTENTION_LAYOUTS and layout not in MIXED_REPLICATED_INCREFA_LAYOUTS else "increfa",
         },
         "optimization": MIXED_M16_OPTIMIZATION,
         "layout": layout,

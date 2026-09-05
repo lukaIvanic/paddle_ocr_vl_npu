@@ -63,6 +63,7 @@ from paddleocr_vl.model.text_mixed_q import (  # noqa: E402
     MIXED_LAYOUT_B2_BSND_PROMPTFA,
     MIXED_LAYOUT_B9_BSND_PROMPTFA,
     MIXED_LAYOUT_B16_INCREFA,
+    MIXED_REPLICATED_INCREFA_LAYOUTS,
     MIXED_SINGLE_ATTENTION_LAYOUTS,
     PACKED_TOKEN_COUNT,
     TextMixedM16Stage,
@@ -706,7 +707,7 @@ def _build_mixed_m16_lane(
     packed_cache = layout in MIXED_SINGLE_ATTENTION_LAYOUTS
     packed_b2 = layout == MIXED_LAYOUT_B2_BSND_PROMPTFA
     packed_b9 = layout == MIXED_LAYOUT_B9_BSND_PROMPTFA
-    replicated_increfa = layout == MIXED_LAYOUT_B16_INCREFA
+    replicated_increfa = layout in MIXED_REPLICATED_INCREFA_LAYOUTS
     if packed_cache:
         cache_shape = (9, 4096, 2, 128) if packed_b9 else (2, 6144, 2, 128) if packed_b2 else (1, 10240, 2, 128)
         if replicated_increfa:
