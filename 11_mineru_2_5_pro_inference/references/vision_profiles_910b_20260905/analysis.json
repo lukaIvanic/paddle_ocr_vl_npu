@@ -1,0 +1,471 @@
+[
+  {
+    "route": "bucket_384",
+    "real_tokens": 152,
+    "physical_tokens": 384,
+    "members": [
+      152
+    ],
+    "device_mean_ms": 14.524932670593262,
+    "device_p50_ms": 14.50448989868164,
+    "device_p99_ms": 15.083201990127561,
+    "device_max_ms": 15.4514799118042,
+    "real_tok_s": 10464.76451541387,
+    "physical_tok_s": 26437.29982841399,
+    "captures": {
+      "pipe": {
+        "kernel_ms": 14.47803999999999,
+        "attention_ms": 1.7190333333333327,
+        "attention_share_pct": 11.873384334711979,
+        "kernels_per_forward": 1322.3333333333333,
+        "groups_ms": {
+          "attention": 1.7190333333333327,
+          "rotary_elementwise_slice_cast": 4.4826200000000025,
+          "mlp_fc2": 1.1009066666666663,
+          "manual_layernorm": 2.6071133333333316,
+          "mlp_fc1": 0.8757799999999999,
+          "qkv_split_and_attention_layout": 1.3126666666666662,
+          "qkv_linear": 0.7899266666666668,
+          "residual_add": 0.560473333333333,
+          "attention_output_linear": 0.4589666666666665,
+          "mlp_activation": 0.4408933333333333,
+          "other_cast_padding_mask_misc": 0.12965999999999997
+        },
+        "profiler_wall_ms": 18.030113036123414,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 43434.119999999966,
+          "Free": 10109.520000001045,
+          "Overlapped": 0.0,
+          "Preparing": 618.0,
+          "Stage": 53543.5
+        }
+      },
+      "memory": {
+        "kernel_ms": 14.485666666666681,
+        "attention_ms": 1.7224799999999998,
+        "attention_share_pct": 11.890926663138261,
+        "kernels_per_forward": 1322.0,
+        "groups_ms": {
+          "attention": 1.7224799999999998,
+          "rotary_elementwise_slice_cast": 4.4831,
+          "mlp_fc2": 1.1023133333333333,
+          "manual_layernorm": 2.606366666666665,
+          "mlp_fc1": 0.8761733333333331,
+          "qkv_split_and_attention_layout": 1.3162066666666665,
+          "qkv_linear": 0.7890866666666667,
+          "residual_add": 0.5602399999999998,
+          "attention_output_linear": 0.4599266666666666,
+          "mlp_activation": 0.44043999999999983,
+          "other_cast_padding_mask_misc": 0.12933333333333333
+        },
+        "profiler_wall_ms": 18.20795932629456,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 43457.000000000044,
+          "Free": 10331.340000001082,
+          "Overlapped": 0.0,
+          "Preparing": 839.25,
+          "Stage": 53788.25
+        }
+      }
+    }
+  },
+  {
+    "route": "bucket_768",
+    "real_tokens": 640,
+    "physical_tokens": 768,
+    "members": [
+      640
+    ],
+    "device_mean_ms": 17.889577039082845,
+    "device_p50_ms": 17.862939834594727,
+    "device_p99_ms": 18.43933835983276,
+    "device_max_ms": 19.045740127563477,
+    "real_tok_s": 35775.021321175474,
+    "physical_tok_s": 42930.02558541057,
+    "captures": {
+      "pipe": {
+        "kernel_ms": 17.804433333333257,
+        "attention_ms": 2.662493333333334,
+        "attention_share_pct": 14.95410319152727,
+        "kernels_per_forward": 1322.3333333333333,
+        "groups_ms": {
+          "attention": 2.662493333333334,
+          "rotary_elementwise_slice_cast": 5.170766666666667,
+          "mlp_fc2": 1.4621266666666668,
+          "mlp_fc1": 1.3281999999999996,
+          "qkv_linear": 1.1108266666666669,
+          "qkv_split_and_attention_layout": 1.5148466666666685,
+          "manual_layernorm": 2.575386666666666,
+          "residual_add": 0.6653600000000011,
+          "attention_output_linear": 0.6548000000000002,
+          "mlp_activation": 0.5352333333333331,
+          "other_cast_padding_mask_misc": 0.12439333333333334
+        },
+        "profiler_wall_ms": 21.853848360478878,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 53413.300000000076,
+          "Free": 11994.700000000394,
+          "Overlapped": 0.0,
+          "Preparing": 2535.75,
+          "Stage": 65408.0
+        }
+      },
+      "memory": {
+        "kernel_ms": 17.78819333333329,
+        "attention_ms": 2.6641,
+        "attention_share_pct": 14.976787974345568,
+        "kernels_per_forward": 1322.0,
+        "groups_ms": {
+          "attention": 2.6641,
+          "rotary_elementwise_slice_cast": 5.188739999999999,
+          "mlp_fc2": 1.4512866666666668,
+          "mlp_fc1": 1.3214266666666672,
+          "qkv_linear": 1.1011466666666665,
+          "qkv_split_and_attention_layout": 1.5075333333333358,
+          "manual_layernorm": 2.5763466666666655,
+          "residual_add": 0.666146666666668,
+          "attention_output_linear": 0.6525666666666667,
+          "mlp_activation": 0.5365600000000005,
+          "other_cast_padding_mask_misc": 0.12233999999999999
+        },
+        "profiler_wall_ms": 22.091595300783712,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 53364.58000000001,
+          "Free": 12385.919999999918,
+          "Overlapped": 0.0,
+          "Preparing": 3214.0,
+          "Stage": 65750.5
+        }
+      }
+    }
+  },
+  {
+    "route": "packed_768",
+    "real_tokens": 672,
+    "physical_tokens": 768,
+    "members": [
+      480,
+      192
+    ],
+    "device_mean_ms": 17.605331897735596,
+    "device_p50_ms": 17.588520050048828,
+    "device_p99_ms": 17.99909324645996,
+    "device_max_ms": 18.356679916381836,
+    "real_tok_s": 38170.254551488055,
+    "physical_tok_s": 43623.14805884349,
+    "captures": {
+      "pipe": {
+        "kernel_ms": 17.663266666666654,
+        "attention_ms": 2.6551199999999997,
+        "attention_share_pct": 15.031874058781133,
+        "kernels_per_forward": 1313.3333333333333,
+        "groups_ms": {
+          "attention": 2.6551199999999997,
+          "rotary_elementwise_slice_cast": 5.195299999999998,
+          "mlp_fc2": 1.4499666666666668,
+          "mlp_fc1": 1.3212666666666664,
+          "qkv_linear": 1.099626666666667,
+          "qkv_split_and_attention_layout": 1.504806666666668,
+          "manual_layernorm": 2.5703933333333335,
+          "residual_add": 0.664600000000001,
+          "attention_output_linear": 0.6548333333333333,
+          "mlp_activation": 0.536806666666667,
+          "other_cast_padding_mask_misc": 0.010546666666666666
+        },
+        "profiler_wall_ms": 18.98663231016447,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 17662.120000000017,
+          "Free": 1599.300000000001,
+          "Overlapped": 0.0,
+          "Preparing": 1785.0,
+          "Stage": 19261.25
+        }
+      },
+      "memory": {
+        "kernel_ms": 17.660853333333307,
+        "attention_ms": 2.654873333333333,
+        "attention_share_pct": 15.032531459408553,
+        "kernels_per_forward": 1313.0,
+        "groups_ms": {
+          "attention": 2.654873333333333,
+          "rotary_elementwise_slice_cast": 5.195286666666664,
+          "mlp_fc2": 1.4485133333333333,
+          "mlp_fc1": 1.3209533333333332,
+          "qkv_linear": 1.0998999999999997,
+          "qkv_split_and_attention_layout": 1.5041866666666674,
+          "manual_layernorm": 2.5711666666666666,
+          "residual_add": 0.6645866666666678,
+          "attention_output_linear": 0.6554333333333334,
+          "mlp_activation": 0.5370066666666669,
+          "other_cast_padding_mask_misc": 0.008946666666666665
+        },
+        "profiler_wall_ms": 19.046687016574044,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 52982.559999999925,
+          "Free": 3129.439999999946,
+          "Overlapped": 0.0,
+          "Preparing": 2083.5,
+          "Stage": 56112.0
+        }
+      }
+    }
+  },
+  {
+    "route": "bucket_1536",
+    "real_tokens": 1088,
+    "physical_tokens": 1536,
+    "members": [
+      1088
+    ],
+    "device_mean_ms": 26.011672592163087,
+    "device_p50_ms": 25.984329223632812,
+    "device_p99_ms": 26.63168949127197,
+    "device_max_ms": 27.247520446777344,
+    "real_tok_s": 41827.37561935165,
+    "physical_tok_s": 59050.41263908469,
+    "captures": {
+      "pipe": {
+        "kernel_ms": 25.90133333333333,
+        "attention_ms": 5.682826666666665,
+        "attention_share_pct": 21.940286214351897,
+        "kernels_per_forward": 1322.3333333333333,
+        "groups_ms": {
+          "attention": 5.682826666666665,
+          "rotary_elementwise_slice_cast": 6.159500000000001,
+          "mlp_fc2": 2.377986666666667,
+          "mlp_fc1": 2.3081733333333334,
+          "qkv_linear": 1.7793799999999997,
+          "manual_layernorm": 3.455940000000002,
+          "qkv_split_and_attention_layout": 1.790866666666669,
+          "attention_output_linear": 0.8239666666666664,
+          "mlp_activation": 0.759486666666667,
+          "residual_add": 0.6349666666666669,
+          "other_cast_padding_mask_misc": 0.12824000000000002
+        },
+        "profiler_wall_ms": 29.77387929180016,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 77703.99999999997,
+          "Free": 11413.47999999992,
+          "Overlapped": 0.0,
+          "Preparing": 2601.0,
+          "Stage": 89117.0
+        }
+      },
+      "memory": {
+        "kernel_ms": 25.904553333333315,
+        "attention_ms": 5.6908666666666665,
+        "attention_share_pct": 21.968595997151606,
+        "kernels_per_forward": 1322.0,
+        "groups_ms": {
+          "attention": 5.6908666666666665,
+          "rotary_elementwise_slice_cast": 6.157146666666667,
+          "mlp_fc2": 2.3774733333333344,
+          "mlp_fc1": 2.309160000000001,
+          "qkv_linear": 1.7800066666666667,
+          "manual_layernorm": 3.454986666666667,
+          "qkv_split_and_attention_layout": 1.7897933333333342,
+          "attention_output_linear": 0.824193333333333,
+          "mlp_activation": 0.7588333333333334,
+          "residual_add": 0.6340533333333335,
+          "other_cast_padding_mask_misc": 0.12804000000000001
+        },
+        "profiler_wall_ms": 30.165696050971746,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 77713.66,
+          "Free": 11643.439999999919,
+          "Overlapped": 0.0,
+          "Preparing": 3752.25,
+          "Stage": 89356.5
+        }
+      }
+    }
+  },
+  {
+    "route": "bucket_3072",
+    "real_tokens": 2160,
+    "physical_tokens": 3072,
+    "members": [
+      2160
+    ],
+    "device_mean_ms": 48.654392369588216,
+    "device_p50_ms": 48.47869110107422,
+    "device_p99_ms": 50.64660007476806,
+    "device_max_ms": 51.70151901245117,
+    "real_tok_s": 44394.75851619357,
+    "physical_tok_s": 63139.21211191975,
+    "captures": {
+      "pipe": {
+        "kernel_ms": 48.31955333333324,
+        "attention_ms": 16.72612,
+        "attention_share_pct": 34.61563455401706,
+        "kernels_per_forward": 1322.3333333333333,
+        "groups_ms": {
+          "attention": 16.72612,
+          "rotary_elementwise_slice_cast": 9.031013333333334,
+          "mlp_fc1": 4.198526666666666,
+          "mlp_fc2": 4.117719999999999,
+          "qkv_linear": 3.228926666666666,
+          "attention_output_linear": 2.1040666666666668,
+          "manual_layernorm": 4.347919999999999,
+          "mlp_activation": 1.2764533333333343,
+          "qkv_split_and_attention_layout": 2.3129599999999995,
+          "residual_add": 0.8293733333333329,
+          "other_cast_padding_mask_misc": 0.14647333333333332
+        },
+        "profiler_wall_ms": 52.13649601986011,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 144958.6600000001,
+          "Free": 11212.499999999922,
+          "Overlapped": 0.0,
+          "Preparing": 2612.75,
+          "Stage": 156171.25
+        }
+      },
+      "memory": {
+        "kernel_ms": 48.31006000000008,
+        "attention_ms": 16.72225333333334,
+        "attention_share_pct": 34.61443296351384,
+        "kernels_per_forward": 1322.0,
+        "groups_ms": {
+          "attention": 16.72225333333334,
+          "rotary_elementwise_slice_cast": 9.025233333333333,
+          "mlp_fc1": 4.200640000000001,
+          "mlp_fc2": 4.119233333333332,
+          "qkv_linear": 3.2299466666666667,
+          "attention_output_linear": 2.1038599999999996,
+          "manual_layernorm": 4.348140000000002,
+          "mlp_activation": 1.2759800000000008,
+          "qkv_split_and_attention_layout": 2.3106733333333325,
+          "residual_add": 0.8283666666666666,
+          "other_cast_padding_mask_misc": 0.14573333333333335
+        },
+        "profiler_wall_ms": 52.96028032898903,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 144930.18,
+          "Free": 13472.720000000378,
+          "Overlapped": 0.0,
+          "Preparing": 3060.25,
+          "Stage": 158403.0
+        }
+      }
+    }
+  },
+  {
+    "route": "bucket_5632",
+    "real_tokens": 5476,
+    "physical_tokens": 5632,
+    "members": [
+      5476
+    ],
+    "device_mean_ms": 105.00707092285157,
+    "device_p50_ms": 104.9028205871582,
+    "device_p99_ms": 106.27639427185058,
+    "device_max_ms": 106.77584075927734,
+    "real_tok_s": 52148.86913685273,
+    "physical_tok_s": 53634.483378150944,
+    "captures": {
+      "pipe": {
+        "kernel_ms": 104.83216666666667,
+        "attention_ms": 54.78057333333332,
+        "attention_share_pct": 52.255500458669644,
+        "kernels_per_forward": 1322.3333333333333,
+        "groups_ms": {
+          "attention": 54.78057333333332,
+          "mlp_fc2": 7.796813333333335,
+          "rotary_elementwise_slice_cast": 13.929520000000004,
+          "mlp_fc1": 7.459380000000001,
+          "qkv_linear": 5.685479999999999,
+          "manual_layernorm": 6.326466666666667,
+          "mlp_activation": 2.2637999999999994,
+          "attention_output_linear": 2.119013333333333,
+          "qkv_split_and_attention_layout": 2.981440000000002,
+          "residual_add": 1.2670533333333325,
+          "other_cast_padding_mask_misc": 0.22262666666666667
+        },
+        "profiler_wall_ms": 108.55664867752542,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 314496.5,
+          "Free": 10517.820000001057,
+          "Overlapped": 0.0,
+          "Preparing": 765.5,
+          "Stage": 325014.5
+        }
+      },
+      "memory": {
+        "kernel_ms": 104.85473999999988,
+        "attention_ms": 54.797206666666646,
+        "attention_share_pct": 52.26011400788053,
+        "kernels_per_forward": 1322.0,
+        "groups_ms": {
+          "attention": 54.797206666666646,
+          "mlp_fc2": 7.794653333333332,
+          "rotary_elementwise_slice_cast": 13.93561333333334,
+          "mlp_fc1": 7.4551733333333345,
+          "qkv_linear": 5.686086666666669,
+          "manual_layernorm": 6.331013333333333,
+          "mlp_activation": 2.2658933333333344,
+          "attention_output_linear": 2.1192599999999997,
+          "qkv_split_and_attention_layout": 2.9763866666666674,
+          "residual_add": 1.2676200000000002,
+          "other_cast_padding_mask_misc": 0.22583333333333333
+        },
+        "profiler_wall_ms": 109.01249231149752,
+        "trace_totals_us": {
+          "Bubble": 0.0,
+          "Communication": 0.0,
+          "Communication(Not Overlapped and Exclude Receive)": 0.0,
+          "Communication(Not Overlapped)": 0.0,
+          "Computing": 314564.2199999996,
+          "Free": 11578.06000000105,
+          "Overlapped": 0.0,
+          "Preparing": 879.0,
+          "Stage": 326142.25
+        }
+      }
+    }
+  }
+]
