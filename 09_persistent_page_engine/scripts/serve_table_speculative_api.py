@@ -7,6 +7,8 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, replace
 import io
+import hashlib
+import json
 import multiprocessing as mp
 from pathlib import Path
 import queue
@@ -69,6 +71,10 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_COMPACT_VOCAB,
     )
     parser.add_argument("--height-threshold-px", type=int, default=384)
+    parser.add_argument("--experimental-oracle-token-counts", type=Path,
+                        help="Benchmark-only frozen ordinary-B1 output-length map; never output token IDs.")
+    parser.add_argument("--oracle-min-output-tokens", type=int,
+                        help="Speculate only at/above this oracle count AND the existing height threshold.")
     parser.add_argument("--cold-request-id", default="page_000010_table_box_id_1")
     parser.add_argument("--draft-cache-length", type=int, default=768)
     parser.add_argument("--cache-length", type=int, default=4096)
@@ -130,7 +136,39 @@ def parse_args() -> argparse.Namespace:
             "server drains during shutdown."
         ),
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if (args.experimental_oracle_token_counts is None) != (args.oracle_min_output_tokens is None):
+        parser.error("oracle count map and minimum token count must be supplied together")
+    if args.oracle_min_output_tokens is not None:
+        if args.interleaved_tables is None or args.oracle_min_output_tokens < 0:
+            parser.error("oracle routing requires --interleaved-tables and a nonnegative threshold")
+    return args
+
+
+def _oracle_counts(path: Path) -> tuple[dict[str, int], str]:
+    payload = path.read_bytes()
+    document = json.loads(payload)
+    if document.get("format") != "ordinary_b1_output_length_oracle_v1":
+        raise ValueError("unsupported oracle map format")
+    counts = document.get("token_counts")
+    if not isinstance(counts, dict) or not counts:
+        raise ValueError("oracle map must contain nonempty token_counts")
+    if any(not isinstance(k, str) or type(v) is not int or v < 1 for k, v in counts.items()):
+        raise ValueError("oracle lengths must be positive integer native-token counts")
+    return counts, hashlib.sha256(payload).hexdigest()
+
+
+def _table_route(height: int, height_threshold: int, source_id: str,
+                 counts: dict[str, int] | None, minimum: int | None) -> tuple[str, dict[str, Any]]:
+    count = None if counts is None else counts[source_id]  # Missing IDs fail, never silently fall back.
+    eligible = height >= height_threshold
+    selected = eligible and (minimum is None or count >= minimum)
+    return ("spec" if selected else "b1"), {
+        "height_px": height, "height_eligible": eligible,
+        "oracle_b1_output_tokens": count, "oracle_min_output_tokens": minimum,
+        "reason": "below_height" if not eligible else (
+            "below_oracle_token_threshold" if not selected else "spec_eligible"),
+    }
 
 
 _SCHEDULE_COUNT_FIELDS = (
@@ -665,6 +703,13 @@ def _interleaved_worker_loop(
     from pipeline.layout_output import normalize_recognition_text
 
     capacity = int(config["interleaved_tables"])
+    counts = config.get("oracle_token_counts")
+    oracle_metadata = {
+        "enabled": counts is not None,
+        "minimum_output_tokens": config.get("oracle_min_output_tokens"),
+        "count_map_sha256": config.get("oracle_count_map_sha256"),
+        "contract": "benchmark oracle only; position/companion invariant; no saved token IDs used",
+    }
     with torch.inference_mode():
         runtime = InterleavedTableRuntime(b1, draft, args, capacity=capacity)
         policy, ledger = TablePhasePolicy(), PhaseLedger()
@@ -680,6 +725,7 @@ def _interleaved_worker_loop(
                 "lane": "interleaved_height_routed_u8_reference",
                 "table_slots": capacity, "draft_rows": 8,
                 "height_threshold_px": config["height_threshold_px"],
+                "experimental_oracle_routing": oracle_metadata,
                 "adaptive_k": list(runtime.k_values), "initial_k": args.initial_k,
                 "mixed_execution": "separate_fairly_alternating_calls",
                 "batching": "immediate_matching_phase_and_query_only",
@@ -719,7 +765,8 @@ def _interleaved_worker_loop(
             with Image.open(io.BytesIO(job["image_bytes"])) as opened:
                 raw = opened.convert("RGB")
             crop = live_lab._exact_target_crop_from_raw(source, raw)
-            route = "b1" if crop.height < config["height_threshold_px"] else "spec"
+            route, routing = _table_route(crop.height, config["height_threshold_px"], source_id,
+                                          counts, config.get("oracle_min_output_tokens"))
             row_requests = None
             row_preparation = None
             if route == "spec":
@@ -733,7 +780,8 @@ def _interleaved_worker_loop(
             groups = draft._iter_packed_prefill_groups(row_requests) if row_requests is not None else None
             return {
                 "route": route, "source": source, "prepared": prepared, "groups": groups,
-                "metadata": {"job": job, "source_id": source_id, "row_preparation": row_preparation},
+                "metadata": {"job": job, "source_id": source_id, "row_preparation": row_preparation,
+                             "routing": routing},
                 "timing": {"started": started, "finished": time.perf_counter(),
                            "thread_s": time.thread_time() - cpu_started,
                            "contract": "background CPU span may overlap decode; not additive to E2E"},
@@ -810,6 +858,7 @@ def _interleaved_worker_loop(
                         "worker_wall_s": time.perf_counter() - float(info["job"]["submitted_monotonic_s"]),
                         "stage_timing_s": {},
                         "runtime_metrics": {
+                            "routing": info["routing"],
                             "phase_accounting": scheduling,
                             "prefills": state["prefill_records"],
                             "adaptive_trace": state["trace"],
@@ -844,6 +893,7 @@ def _interleaved_worker_loop(
             results.put({"kind": "service_summary", "payload": {
                 "completed_requests": completed, **ledger.summary(), "graph_contracts": runtime.metadata,
                 "q1_pipeline": runtime.pipeline_statistics(),
+                "experimental_oracle_routing": oracle_metadata,
             }})
         except BaseException as exc:
             for key in list(runtime.jobs) + list(preparing):
@@ -858,6 +908,8 @@ def _interleaved_worker_loop(
 
 def main() -> None:
     args = parse_args()
+    counts, count_hash = (None, None) if args.experimental_oracle_token_counts is None else _oracle_counts(
+        args.experimental_oracle_token_counts.expanduser().resolve())
     context = mp.get_context("spawn")
     jobs = context.Queue(maxsize=args.queue_capacity)
     results = context.Queue()
@@ -869,6 +921,9 @@ def main() -> None:
             args.decode_vocab_token_ids.expanduser().resolve()
         ),
         "height_threshold_px": args.height_threshold_px,
+        "oracle_token_counts": counts,
+        "oracle_count_map_sha256": count_hash,
+        "oracle_min_output_tokens": args.oracle_min_output_tokens,
         "cold_request_id": args.cold_request_id,
         "draft_cache_length": args.draft_cache_length,
         "cache_length": args.cache_length,

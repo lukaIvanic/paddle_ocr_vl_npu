@@ -22,6 +22,22 @@ SPEC.loader.exec_module(MODULE)
 
 
 class TableSpeculativeApiMetricsTest(unittest.TestCase):
+    def test_oracle_only_changes_height_eligible_routes(self) -> None:
+        counts = {"short": 511, "boundary": 512, "long": 1532}
+        for key, expected in [("short", "b1"), ("boundary", "spec"), ("long", "spec")]:
+            route, evidence = MODULE._table_route(384, 384, key, counts, 512)
+            self.assertEqual(route, expected)
+            self.assertEqual(evidence["oracle_b1_output_tokens"], counts[key])
+            self.assertEqual(MODULE._table_route(383, 384, key, counts, 512)[0], "b1")
+        self.assertEqual(MODULE._table_route(384, 384, "unknown", None, None)[0], "spec")
+        with self.assertRaises(KeyError):
+            MODULE._table_route(384, 384, "unknown", counts, 512)
+
+    def test_oracle_decisions_do_not_depend_on_dispatch_order(self) -> None:
+        counts = {"a": 90, "b": 1768, "c": 138}
+        decisions = lambda order: {k: MODULE._table_route(600, 384, k, counts, 1024)[0] for k in order}
+        self.assertEqual(decisions(counts), decisions(reversed(counts)))
+
     def test_summary_merges_draft_slots_and_verifier_shapes(self) -> None:
         schedule = {
             "batch_size": 8,
