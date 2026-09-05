@@ -1,0 +1,13 @@
+Direct-host observation at 2026-09-06T02:19:05+08:00, retained from the SSH tool output.
+Commands: ps -ww -p 1775912,1775914 -o pid,ppid,lstart,args; grep '^NSpid:' /proc/1775914/status
+
+PID 1775912, PPID 1728105, started Sun Sep 6 02:15:42 2026:
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/serve_crop_ocr_api.py --host 127.0.0.1 --port 8767 --request-timeout-s 3600 --queue-capacity 64 --model /workspace/models/PaddleOCR-VL-1.6 --decode-backend torchair --decode-optimization combined_apply_complete_layer_prefetch1_rope_lut --decode-vocab-token-ids 09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json --token-selection greedy --cache-length 4096 --max-new-tokens 4096 --min-pixels 28224 --max-pixels 802816 --request-scheduling-metrics --decode-batch-size 2 --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096 --text-buckets 128,256,512,1024,1152 --service-summary-output tmp/09_persistent_page_engine/table_cpu_image_f0f9df06_20260905/service.json
+PID 1775914, PPID 1775912, started Sun Sep 6 02:15:42 2026:
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=10) --multiprocessing-fork
+NSpid: 1775914 2470812
+
+The live command output was also tee-appended to the monitor file, but its open
+non-append writer subsequently overwrote that insertion. This separate record
+preserves the actually observed tool output, not a later /proc query. Future
+monitors should open their output in append mode before adding manual evidence.

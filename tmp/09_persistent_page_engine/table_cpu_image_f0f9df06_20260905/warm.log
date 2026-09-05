@@ -1,0 +1,6 @@
+cpu-image-warm API ready worker_pid=2470812; preloading 1 distinct crops for 1 requests
+cpu-image-warm crops preloaded 1/1
+cpu-image-warm payloads ready bytes=792999
+SEND cpu-image-warm 01/1 table=page_001272_table_1 active=1
+RECV cpu-image-warm 01/1 rank=65 id=page_001272_table_1 latency=2.5771s status=ok active=0
+DONE cpu-image-warm requests=1 failures=0 max_in_flight=1 wall=2.5779s qps=0.3879 p50=2.5771s p95=2.5771s max=2.5771s

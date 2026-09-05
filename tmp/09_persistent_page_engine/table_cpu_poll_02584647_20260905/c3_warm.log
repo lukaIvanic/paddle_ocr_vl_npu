@@ -1,0 +1,6 @@
+cpu-poll-c3-warm API ready worker_pid=2461476; preloading 1 distinct crops for 1 requests
+cpu-poll-c3-warm crops preloaded 1/1
+cpu-poll-c3-warm payloads ready bytes=792999
+SEND cpu-poll-c3-warm 01/1 table=page_001272_table_1 active=1
+RECV cpu-poll-c3-warm 01/1 rank=65 id=page_001272_table_1 latency=2.7286s status=ok active=0
+DONE cpu-poll-c3-warm requests=1 failures=0 max_in_flight=1 wall=2.7295s qps=0.3664 p50=2.7286s p95=2.7286s max=2.7286s
