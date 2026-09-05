@@ -120,6 +120,7 @@ def main():
                 wall = []
                 with prof.profile(
                     activities=[prof.ProfilerActivity.CPU, prof.ProfilerActivity.NPU],
+                    schedule=prof.schedule(wait=0, warmup=0, active=args.profile_steps, repeat=1),
                     experimental_config=npu_profiler_config(metric),
                     on_trace_ready=prof.tensorboard_trace_handler(str(destination/'raw'), analyse_flag=True),
                     record_shapes=True, profile_memory=False, with_stack=True,
