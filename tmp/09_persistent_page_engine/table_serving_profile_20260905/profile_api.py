@@ -100,7 +100,24 @@ def profiled_worker(jobs, results, config):
         original_step = arena.step
         if os.environ.get("TABLE_SERVING_PROFILE_COMPONENT") == "cadence":
             import csv
+            import gc
+            import threading
             observations = []
+            gc_events, gc_starts = [], []
+
+            def record_gc(phase, info):
+                if phase == "start":
+                    gc_starts.append((time.perf_counter_ns(), time.thread_time_ns(),
+                                      threading.get_ident(), info["generation"]))
+                else:
+                    wall, cpu, thread_id, generation = gc_starts.pop()
+                    gc_events.append({"start_ns": wall, "end_ns": time.perf_counter_ns(),
+                                      "thread_cpu_ns": time.thread_time_ns()-cpu,
+                                      "thread_id": thread_id, "generation": generation,
+                                      "collected": info["collected"],
+                                      "uncollectable": info["uncollectable"]})
+
+            gc.callbacks.append(record_gc)
 
             def timed_step(decode_fn, *step_args, **step_kwargs):
                 call_times = []
@@ -129,6 +146,8 @@ def profiled_worker(jobs, results, config):
                 return original_serve(self, *args, **kwargs)
             finally:
                 arena.step = original_step
+                gc.callbacks.remove(record_gc)
+                (destination / "gc_events.json").write_text(json.dumps(gc_events, indent=2)+"\n")
                 # The normal serve shutdown has already completed device work
                 # and resolved timings. Reuse its existing event pairs; no new
                 # event, profiler collection, or per-step sync is introduced.
