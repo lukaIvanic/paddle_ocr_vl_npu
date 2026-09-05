@@ -579,6 +579,7 @@ class ContinuousRecognizer:
         vision_backend: str = DEFAULT_VISION_BACKEND,
         vision_attention: str = "manual",
         vision_attention_weight_padding: bool = False,
+        vision_linear_patch_projection: bool = False,
         vision_buckets: str | Iterable[int] = OPTIMIZED_VISION_BUCKETS,
         vision_torchair_cache_dir: Path | None = None,
         vision_padding: str = "auto",
@@ -712,6 +713,7 @@ class ContinuousRecognizer:
         self.decode_device_timing = bool(decode_device_timing)
         self.compact_decode_control = bool(compact_decode_control)
         self.vision_attention_weight_padding = bool(vision_attention_weight_padding)
+        self.vision_linear_patch_projection = bool(vision_linear_patch_projection)
         if self.vision_attention_weight_padding and (
             self.vision_attention != "prompt_flash_attention" or str(vision_packing) != "off"
         ):
@@ -962,6 +964,7 @@ class ContinuousRecognizer:
         vision_mlp_setup_s = time.perf_counter() - started
         _emit_setup_progress("vision_mlp_padding", "done", vision_mlp_setup_s)
 
+        self.model.visual.vision_model.embeddings.linear_patch_projection = self.vision_linear_patch_projection
         if self.vision_attention_weight_padding:
             started = time.perf_counter()
             _emit_setup_progress("vision_attention_weight_padding", "start")
@@ -3743,6 +3746,7 @@ class ContinuousRecognizer:
             "decode_device_timing": self.decode_device_timing,
             "compact_decode_control": self.compact_decode_control,
             "vision_attention_weight_padding": self.vision_attention_weight_padding,
+            "vision_linear_patch_projection": self.vision_linear_patch_projection,
             "vision_promptfa_align_128": self.vision_promptfa_align_128,
             "vision_sequence_alignment": self.vision_seq_alignment,
             "vision_packing": {

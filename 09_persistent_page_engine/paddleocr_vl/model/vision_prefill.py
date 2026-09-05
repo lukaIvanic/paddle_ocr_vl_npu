@@ -527,6 +527,21 @@ class PaddleOCRVisionEmbeddings(nn.Module):
         )
         self.num_patches = (self.image_size // self.patch_size) ** 2
         self.position_embedding = nn.Embedding(self.num_patches, self.embed_dim)
+        self.linear_patch_projection = False
+
+    def project_patches(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        pixels = pixel_values.to(dtype=self.patch_embedding.weight.dtype)
+        if not self.linear_patch_projection:
+            return self.patch_embedding(pixels).flatten(-2).squeeze(-1)
+        conv = self.patch_embedding
+        if (tuple(pixels.shape[1:]) != (conv.in_channels, *conv.kernel_size)
+                or conv.padding != (0, 0) or conv.dilation != (1, 1)
+                or conv.groups != 1 or conv.stride != conv.kernel_size):
+            raise ValueError("linear patch projection requires one complete non-overlapping patch per input")
+        # Preserve channel/row/column order, original parameter storage and bias.
+        # One patch covers the entire convolution kernel, so there is exactly
+        # one spatial output. No pixels or vision tokens are added or removed.
+        return F.linear(pixels.flatten(1), conv.weight.flatten(1), conv.bias)
 
     def interpolate_pos_encoding(
         self,
@@ -555,12 +570,10 @@ class PaddleOCRVisionEmbeddings(nn.Module):
         image_grid_thw: torch.Tensor,
     ) -> torch.Tensor:
         batch_size, sequence_len, channel, height, width = pixel_values.shape
-        target_dtype = self.patch_embedding.weight.dtype
         pixel_values = pixel_values.reshape(
             batch_size * sequence_len, channel, height, width
         )
-        patch_embeds = self.patch_embedding(pixel_values.to(dtype=target_dtype))
-        embeddings = patch_embeds.flatten(-2).squeeze(-1)
+        embeddings = self.project_patches(pixel_values)
         embeddings = embeddings.reshape(batch_size, sequence_len, -1).squeeze(0)
         start = 0
         tmp_embeddings = []

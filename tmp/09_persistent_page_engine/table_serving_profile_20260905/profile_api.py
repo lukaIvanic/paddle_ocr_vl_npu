@@ -36,6 +36,26 @@ def profiled_worker(jobs, results, config):
             nonlocal calls
             index = calls
             calls += 1
+            if index == 0 and module.linear_patch_projection:
+                patches = pixels.reshape(-1, *pixels.shape[-3:])
+                module.linear_patch_projection = False
+                try:
+                    reference = module.project_patches(patches).detach().float().cpu()
+                finally:
+                    module.linear_patch_projection = True
+                candidate = module.project_patches(patches).detach().float().cpu()
+                delta = candidate - reference
+                comparison = {
+                    "scope": "same real input, original Conv2D versus linear patch projection",
+                    "shape": list(reference.shape),
+                    "all_finite": bool(torch.isfinite(candidate).all()),
+                    "max_abs": float(delta.abs().max()),
+                    "mean_abs": float(delta.abs().mean()),
+                    "different_fraction": float((delta != 0).float().mean()),
+                    "relative_l2": float(delta.norm()/reference.norm().clamp_min(1e-12)),
+                }
+                (destination / "patch_comparison.json").write_text(json.dumps(comparison, indent=2)+"\n")
+                print("SERVING_PROFILE patch comparison " + json.dumps(comparison), flush=True)
             if index < 5 or index >= 8:
                 return original_forward(module, pixels, image_grid_thw)
             # Five complete real requests precede three separately captured
