@@ -95,6 +95,20 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(len(self.executed), 1)
         self.assertIsNone(self.call.pending)
 
+    def test_pending_ownership_is_per_arena_and_slot(self):
+        row = SimpleNamespace(slot=0, position=1, tokens=[10])
+        self.call.run_pipelined(self.arena, 0, [row])
+        self.assertTrue(self.call.conflicts(self.arena, {0}))
+        self.assertFalse(self.call.conflicts(self.arena, {1}))
+        self.assertFalse(self.call.conflicts(SimpleNamespace(), {0}))
+        # Unrelated work did not consume/discard this result.
+        row.tokens.append(12)
+        row.position += 1
+        result, _ = self.call.run_pipelined(self.arena, 0, [row])
+        self.assertEqual(result[0], [15])
+        self.assertEqual(self.call.reused_lookaheads, 1)
+        self.call.drain()
+
 
 class RequestIdentityTests(unittest.TestCase):
     def test_source_identity_survives_preprocessing_but_runtime_ids_are_unique(self):

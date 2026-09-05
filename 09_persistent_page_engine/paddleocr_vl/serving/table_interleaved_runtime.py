@@ -182,6 +182,13 @@ class _Q1Pipeline(_Call):
             self.pending = None
             self.discarded_lookaheads += 1
 
+    def conflicts(self, arena: _Arena, slots: set[int]) -> bool:
+        if self.pending is None:
+            return False
+        identity, _positions = self.pending[0]
+        arena_id, _first, owners = identity
+        return arena_id == id(arena) and any(slot in slots for slot, _epoch in owners)
+
     def _launch(self, ids: Any, position: Any, arena: _Arena, first: int) -> dict[str, Any]:
         batch = self.ids.shape[0]
         view_key = id(arena), first
@@ -256,7 +263,6 @@ class InterleavedTableRuntime:
         self.jobs: dict[str, dict[str, Any]] = {}
         self.calls: dict[tuple[str, int, int], _Call] = {}
         self.metadata: dict[str, Any] = {}
-        self.active_pipeline: _Q1Pipeline | None = None
         for batch in range(1, capacity + 1):
             for kind, recognizer, physical_batch in (("target", b1, batch), ("draft", draft, 8 * batch)):
                 print(f"TABLE_PHASE setup=decode kind={kind} B={physical_batch} KV={recognizer.cache_length}", flush=True)
@@ -297,9 +303,10 @@ class InterleavedTableRuntime:
             self.metadata[f"{kind}_b{batch}q{query}"]["q1_feedback"] = "queue_depth_one_for_draft_and_ordinary_only"
 
     def drain_decode(self) -> None:
-        if self.active_pipeline is not None:
-            self.active_pipeline.drain()
-            self.active_pipeline = None
+        # Admission/retirement boundaries must finish outstanding KV writers.
+        for call in self.calls.values():
+            if isinstance(call, _Q1Pipeline):
+                call.drain()
 
     def pipeline_statistics(self) -> dict[str, Any]:
         return {
@@ -405,13 +412,23 @@ class InterleavedTableRuntime:
             proposals = {job["slot"]: job["proposal"] for job in selected if query > 1}
             kind = "target"
         call = self.calls[kind, batch, query]
+        selected_slots = {state.slot for state in states}
+        for other in self.calls.values():
+            if not isinstance(other, _Q1Pipeline):
+                continue
+            if other is call:
+                # Synchronous Q1 verifier fallback must not overwrite this
+                # call's shared staging buffers while it has a pending token.
+                if phase not in ("draft", "ordinary"):
+                    other.drain()
+            elif other.conflicts(arena, selected_slots):
+                # Batch/shape changes may touch the same request's KV slots.
+                other.drain()
         if phase in ("draft", "ordinary"):
-            if self.active_pipeline is not call:
-                self.drain_decode()
-            self.active_pipeline = call
             output, device_s = call.run_pipelined(arena, first, states)
         else:
-            self.drain_decode()
+            # Independent phases have disjoint KV ownership. Keep their
+            # already-launched Q1 result for the next scheduled turn.
             output, device_s = call.run(arena, first, states, proposals)
         for state in states:
             predictions = output[state.slot - first]
