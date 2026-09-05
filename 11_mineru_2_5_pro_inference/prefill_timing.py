@@ -11,9 +11,10 @@ import torch
 class PrefillDeviceTimeline:
     """Measure queued device work and synchronize once at prefill completion."""
 
-    def __init__(self, device: torch.device):
+    def __init__(self, device: torch.device, samples: list[dict[str, Any]] | None = None):
         self.device = device
-        self._events: list[tuple[str, Any, Any]] = []
+        self.samples = samples
+        self._events: list[tuple[str, Any, Any, dict[str, Any] | None]] = []
 
     def _event(self) -> Any | None:
         if self.device.type == "cuda":
@@ -24,7 +25,7 @@ class PrefillDeviceTimeline:
             return torch_npu.npu.Event(enable_timing=True)
         return None
 
-    def measure(self, name: str, fn: Callable[[], Any]) -> Any:
+    def measure(self, name: str, fn: Callable[[], Any], *, tags: dict[str, Any] | None = None) -> Any:
         start = self._event()
         end = self._event()
         if start is None or end is None:
@@ -32,7 +33,7 @@ class PrefillDeviceTimeline:
         start.record()
         result = fn()
         end.record()
-        self._events.append((name, start, end))
+        self._events.append((name, start, end, tags))
         return result
 
     def resolve(self) -> dict[str, float]:
@@ -40,6 +41,10 @@ class PrefillDeviceTimeline:
             return {}
         self._events[-1][2].synchronize()
         totals: dict[str, float] = {}
-        for name, start, end in self._events:
-            totals[name] = totals.get(name, 0.0) + float(start.elapsed_time(end)) / 1000.0
+        for name, start, end, tags in self._events:
+            elapsed_s = float(start.elapsed_time(end)) / 1000.0
+            totals[name] = totals.get(name, 0.0) + elapsed_s
+            if tags is not None and self.samples is not None:
+                self.samples.append({**tags, "stage": name, "device_s": elapsed_s})
+        self._events.clear()
         return totals

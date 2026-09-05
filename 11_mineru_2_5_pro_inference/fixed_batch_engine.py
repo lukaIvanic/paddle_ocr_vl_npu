@@ -68,6 +68,7 @@ class FixedBatchDecodeEngine:
         decode_diagnostic_sync: bool = False,
         decode_diagnostic_boundary_period: int = 1408,
         decode_filler_control: str = "retain",
+        vision_timing_samples: list[dict[str, Any]] | None = None,
     ) -> None:
         if int(batch_size) <= 1:
             raise ValueError("fixed batch engine requires batch_size > 1")
@@ -78,6 +79,7 @@ class FixedBatchDecodeEngine:
         self.eos_token_id = int(eos_token_id)
         self.pad_token_id = int(pad_token_id)
         self.collect_prefill_metrics = bool(collect_prefill_metrics)
+        self.vision_timing_samples = vision_timing_samples
         self.packed_text_prefill_runtime = packed_text_prefill_runtime
         self.vision_pack_target = int(vision_pack_target)
         if self.vision_pack_target <= 0:
@@ -281,6 +283,27 @@ class FixedBatchDecodeEngine:
             vision_inputs[index] = (hidden, positions, cu_seqlens)
 
         packed_outputs: dict[int, torch.Tensor] = {}
+        def vision_tags(indices, real_tokens, physical_tokens, route):
+            return {
+                "route": route,
+                "real_tokens": int(real_tokens),
+                "physical_tokens": int(physical_tokens),
+                "members": len(indices),
+                "member_lengths": [int(vision_inputs[i][0].shape[0]) for i in indices],
+                "request_ids": [int(entries[i][1]) for i in indices],
+                "hidden_shape": [int(physical_tokens), int(visual.config.embed_dim)],
+                "graph_batch_size": 1 if route != "eager_overflow" else None,
+                "num_heads": int(visual.config.num_heads),
+                "head_dim": int(visual.config.embed_dim // visual.config.num_heads),
+                "dtype": str(visual.dtype),
+            }
+
+        def single_tags(index):
+            real = int(vision_inputs[index][0].shape[0])
+            bucket = next((int(b) for b in runtime.buckets if real <= int(b)), None)
+            return vision_tags([index], real, bucket or real,
+                               f"bucket_{bucket}" if bucket else "eager_overflow")
+
         eligible = [
             index
             for index, (hidden, _positions, _cu) in vision_inputs.items()
@@ -318,6 +341,7 @@ class FixedBatchDecodeEngine:
                     lambda hidden=hidden, positions=positions, cu_seqlens=cu_seqlens: run_single_vision(
                         hidden, positions, cu_seqlens,
                     ),
+                    tags=single_tags(index),
                 )
                 continue
             hidden = torch.cat(
@@ -383,6 +407,7 @@ class FixedBatchDecodeEngine:
             packed = timeline.measure(
                 "vision_transformer_blocks",
                 lambda: compiled(hidden, rope_cos, rope_sin, mask),
+                tags=vision_tags(members, real_tokens, target, f"packed_{target}"),
             )[0, :real_tokens]
             if first_call:
                 maybe_sync_device(self.model.device)
@@ -416,6 +441,7 @@ class FixedBatchDecodeEngine:
                 lambda hidden=hidden, positions=positions, cu_seqlens=cu_seqlens: run_single_vision(
                     hidden, positions, cu_seqlens,
                 ),
+                tags=single_tags(index),
             )
 
         for index, image_hidden in packed_outputs.items():
@@ -758,7 +784,7 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             request_count=len(requests),
             request_ids=[int(request_index) for request_index, _request in requests],
         )
-        timeline = PrefillDeviceTimeline(self.model.device)
+        timeline = PrefillDeviceTimeline(self.model.device, self.vision_timing_samples)
         entries = [
             (0, request_index, request)
             for request_index, request in requests

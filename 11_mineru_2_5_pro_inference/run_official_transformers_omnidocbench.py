@@ -591,6 +591,7 @@ def warm_all_static_buckets(
 
 def main() -> None:
     args = parse_args()
+    vision_timing_samples: list[dict[str, Any]] = []
     if args.offset < 0 or (args.limit is not None and args.limit < 0):
         raise ValueError("offset and limit must be non-negative")
     if args.warmup_pages < 0:
@@ -877,6 +878,7 @@ def main() -> None:
                     args.local_decode_diagnostic_boundary_period
                 ),
                 decode_filler_control=args.local_decode_filler_control,
+                vision_timing_samples=vision_timing_samples if args.local_prefill_metrics else None,
             )
             client.client = make_local_fixed_batch_vlm_client(
                 local_model,
@@ -1057,6 +1059,7 @@ def main() -> None:
         if local_text_runtime is not None:
             warmup_report["text_runtime"] = local_text_runtime.metadata()
         reset_measurement_counters(client, local_vision_runtime, local_text_runtime)
+        vision_timing_samples.clear()
         warmup_report["measurement_counters_reset"] = True
         print(
             f"[warmup] DONE pages={warmup_count} "
@@ -1642,6 +1645,18 @@ def main() -> None:
                 }
                 for call_index, item in enumerate(generation_metrics)
             ]
+    if vision_timing_samples:
+        from vision_timing_report import summarize_vision_samples
+
+        sample_name = f"vision_timing_shard_{args.shard_index:02d}.jsonl"
+        atomic_write_text(output_dir / sample_name, "".join(
+            json.dumps({"call_index": i, **row}) + "\n"
+            for i, row in enumerate(vision_timing_samples)
+        ))
+        summary["vision_timing"] = {
+            "raw_samples_file": sample_name,
+            **summarize_vision_samples(vision_timing_samples),
+        }
     summary_path = output_dir / f"run_summary_shard_{args.shard_index:02d}.json"
     atomic_write_text(summary_path, json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
     print(f"[summary] {json.dumps(summary, ensure_ascii=False)}", flush=True)
