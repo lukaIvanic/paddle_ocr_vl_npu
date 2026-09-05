@@ -113,7 +113,10 @@ class _Call:
         self.positions = self.host_pos.numpy()
         self.device_ids = torch.empty((batch, query), dtype=torch.int64, device=device)
         self.device_pos = torch.empty(batch, dtype=torch.int64, device=device)
-        self.host_result = torch.empty_like(self.host_ids)
+        # empty_like(pinned_tensor) is NOT pinned on this torch-npu stack.
+        self.host_result = torch.empty((batch, query), dtype=torch.int64, pin_memory=True)
+        if device.type == "npu" and not self.host_result.is_pinned():
+            raise RuntimeError("native result D2H requires a pinned host buffer")
         self.stream = torch.npu.current_stream(device)
         self.begin = torch.npu.Event(enable_timing=True) if record_device_timing else None
         self.end = torch.npu.Event(enable_timing=True) if record_device_timing else None
@@ -163,7 +166,9 @@ class _Q1Pipeline(_Call):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.copy_stream = torch.npu.Stream(device=self.device_ids.device)
-        self.host_ring = [torch.empty_like(self.host_ids), torch.empty_like(self.host_ids)]
+        self.host_ring = [torch.empty(self.host_ids.shape, dtype=torch.int64, pin_memory=True) for _ in range(2)]
+        if self.device_ids.device.type == "npu" and not all(t.is_pinned() for t in self.host_ring):
+            raise RuntimeError("Q1 overlap requires pinned token-ring buffers")
         self.ring_index = 0
         self.pending: Any = None
         self.graph_calls = 0
