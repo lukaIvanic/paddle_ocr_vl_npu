@@ -47,8 +47,10 @@ MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV = (
 )
 MIXED_LAYOUT_PACKED_BSND_PROMPTFA = "packed_bsnd_promptfa"
 MIXED_LAYOUT_B2_BSND_PROMPTFA = "b2_bsnd_promptfa"
+MIXED_LAYOUT_B9_BSND_PROMPTFA = "b9_bsnd_promptfa"
 MIXED_SINGLE_ATTENTION_LAYOUTS = (
     MIXED_LAYOUT_PACKED_BSND_PROMPTFA, MIXED_LAYOUT_B2_BSND_PROMPTFA,
+    MIXED_LAYOUT_B9_BSND_PROMPTFA,
 )
 MIXED_M16_LAYOUTS = (
     MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER,
@@ -56,6 +58,7 @@ MIXED_M16_LAYOUTS = (
     MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV,
     MIXED_LAYOUT_PACKED_BSND_PROMPTFA,
     MIXED_LAYOUT_B2_BSND_PROMPTFA,
+    MIXED_LAYOUT_B9_BSND_PROMPTFA,
 )
 DEFAULT_MIXED_M16_LAYOUT = MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER
 MIXED_PREFETCH_FULL = "full"
@@ -266,17 +269,29 @@ def _mixed_attention(
                 verifier_value_cache, value_bsnd,
                 verifier_value_cache.numel() * verifier_value_cache.element_size(),
             )
-        packed_output = torch_npu.npu_prompt_flash_attention(
-            query_bsnd.reshape(
+        if layout == MIXED_LAYOUT_B9_BSND_PROMPTFA:
+            draft_queries = query_bsnd[:, 8:].reshape(8, 1, query_heads, head_dim)
+            attention_query = torch.cat((
+                query_bsnd[:, :8],
+                torch.cat((draft_queries, draft_queries.new_zeros((8, 7, query_heads, head_dim))), dim=1),
+            ), dim=0)
+        else:
+            attention_query = query_bsnd.reshape(
                 2 if layout == MIXED_LAYOUT_B2_BSND_PROMPTFA else 1,
                 8 if layout == MIXED_LAYOUT_B2_BSND_PROMPTFA else 16,
                 query_heads, head_dim,
-            ).contiguous(), verifier_key_cache, verifier_value_cache,
+            )
+        packed_output = torch_npu.npu_prompt_flash_attention(
+            attention_query.contiguous(), verifier_key_cache, verifier_value_cache,
             atten_mask=packed_attention_mask,
             num_heads=query_heads, num_key_value_heads=kv_heads,
             input_layout="BSND", scale_value=float(attention.scaling),
             pre_tokens=2147483647, next_tokens=2147483647, sparse_mode=0,
         )
+        if layout == MIXED_LAYOUT_B9_BSND_PROMPTFA:
+            packed_output = torch.cat((
+                packed_output[:1], packed_output[1:, :1].reshape(1, 8, query_heads, head_dim),
+            ), dim=1)
         return _linear_tokenwise(
             attention.o_proj,
             packed_output.reshape(1, PACKED_TOKEN_COUNT, query_heads * head_dim),
@@ -595,6 +610,19 @@ def run_text_mixed_m16_transformer(
             torch.full_like(draft_positions, attention_batch - 1),
         ))
         packed_write_indices = torch.stack((batch_indices, limits), dim=1)
+        if layout == MIXED_LAYOUT_B9_BSND_PROMPTFA:
+            batch_indices = torch.cat((
+                torch.zeros_like(verifier_positions.reshape(-1)),
+                torch.arange(1, 9, device=draft_positions.device, dtype=torch.int64),
+            ))
+            write_positions = torch.cat((verifier_positions.reshape(-1), draft_positions))
+            packed_write_indices = torch.stack((batch_indices, write_positions), dim=1)
+            query_limits = torch.cat((verifier_positions, draft_positions.view(8, 1).expand(8, 8)))
+            # Dummy queries use the same legal prefix as their real draft row.
+            # They never enter RoPE, the MLP, the output projection or KV writes.
+            packed_attention_mask = (
+                verifier_kv_positions.view(1, 1, 1, 4096) > query_limits.view(9, 1, 8, 1)
+            ).contiguous()
 
     verifier_decode_positions = verifier_positions + verifier_rope_deltas.to(
         device=verifier_inputs_embeds.device,
@@ -889,7 +917,8 @@ def mixed_m16_contract(
         raise ValueError(f"unsupported mixed rotary mode {rotary_mode!r}")
     return {
         "attention_boundary": (
-            ("single_promptfa_persistent_bsnd_b2kv6144" if layout == MIXED_LAYOUT_B2_BSND_PROMPTFA
+            ("single_promptfa_persistent_bsnd_b9kv4096" if layout == MIXED_LAYOUT_B9_BSND_PROMPTFA
+             else "single_promptfa_persistent_bsnd_b2kv6144" if layout == MIXED_LAYOUT_B2_BSND_PROMPTFA
              else "single_promptfa_persistent_bsnd_b1kv10240")
             if layout in MIXED_SINGLE_ATTENTION_LAYOUTS
             else "manual_q8_plus_increfa_q1"

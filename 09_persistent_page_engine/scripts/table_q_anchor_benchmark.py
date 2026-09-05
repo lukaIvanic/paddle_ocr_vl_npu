@@ -61,6 +61,7 @@ from paddleocr_vl.model.text_mixed_q import (  # noqa: E402
     MIXED_M16_ROTARY_MODES,
     MIXED_LAYOUT_PACKED_BSND_PROMPTFA,
     MIXED_LAYOUT_B2_BSND_PROMPTFA,
+    MIXED_LAYOUT_B9_BSND_PROMPTFA,
     MIXED_SINGLE_ATTENTION_LAYOUTS,
     PACKED_TOKEN_COUNT,
     TextMixedM16Stage,
@@ -703,9 +704,11 @@ def _build_mixed_m16_lane(
     )
     packed_cache = layout in MIXED_SINGLE_ATTENTION_LAYOUTS
     packed_b2 = layout == MIXED_LAYOUT_B2_BSND_PROMPTFA
+    packed_b9 = layout == MIXED_LAYOUT_B9_BSND_PROMPTFA
     if packed_cache:
+        cache_shape = (9, 4096, 2, 128) if packed_b9 else (2, 6144, 2, 128) if packed_b2 else (1, 10240, 2, 128)
         flat_caches = tuple(
-            torch.zeros((2, 6144, 2, 128) if packed_b2 else (1, 10240, 2, 128), device=device, dtype=dtype)
+            torch.zeros(cache_shape, device=device, dtype=dtype)
             for _ in range(2 * int(model.config.text_config.num_hidden_layers))
         )
     else:
@@ -744,6 +747,8 @@ def _build_mixed_m16_lane(
             actual = flat_caches[i]
             actual_v = actual[:1, :4096].transpose(1, 2)
             draft_segment = actual[1:] if packed_b2 else actual[:, 4096:]
+            if packed_b9:
+                draft_segment = actual[1:, :768]
             actual_d = draft_segment.reshape(8, 768, 2, 128).transpose(1, 2)
             differences.append({
                 "tensor": i,
