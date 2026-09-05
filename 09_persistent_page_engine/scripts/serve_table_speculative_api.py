@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import io
 import multiprocessing as mp
 from pathlib import Path
@@ -708,20 +708,25 @@ def _interleaved_worker_loop(
             if job.get("crop_type") != "table":
                 raise ValueError("speculative server accepts only table crops")
             source = dict(targets_by_id[source_id])
-            # Identity scopes cache ownership and draft rows, not model decisions.
-            source["request_id"] = key
+            # Keep source identity for the existing orientation/preprocessing
+            # contract. HTTP identity is applied only to prepared work items.
             with Image.open(io.BytesIO(job["image_bytes"])) as opened:
                 raw = opened.convert("RGB")
             crop = live_lab._exact_target_crop_from_raw(source, raw)
             route = "b1" if crop.height < config["height_threshold_px"] else "spec"
             row_requests = None
+            row_preparation = None
             if route == "spec":
-                row_requests, _, _ = live_lab._prepare_rows(source, raw, args)
-            request = fixed_lab.request_for(source, crop, live_lab._b1_args(args))
+                row_requests, _, row_preparation = live_lab._prepare_rows(source, raw, args)
+                row_requests = [replace(row, request_id=f"{key}:row_{index:04d}")
+                                for index, row in enumerate(row_requests)]
+            request = replace(
+                fixed_lab.request_for(source, crop, live_lab._b1_args(args)), request_id=key,
+            )
             prepared = b1._prepare_cpu(request, time.perf_counter())
             groups = draft._iter_packed_prefill_groups(row_requests) if row_requests is not None else None
             runtime.add(key, route=route, payload=source, target_prepared=prepared, row_groups=groups)
-            metadata[key] = {"job": job, "source_id": source_id}
+            metadata[key] = {"job": job, "source_id": source_id, "row_preparation": row_preparation}
             print(f"TABLE_PHASE admitted id={key} route={route} active={len(runtime.jobs)}", flush=True)
 
         def matcher_factory(record: dict[str, Any]) -> Any:
@@ -785,6 +790,7 @@ def _interleaved_worker_loop(
                             "draft_rows": [{"row_index": row.slot % 8, "token_ids": row.tokens, "stop_reason": row.stop} for row in state["draft_states"]],
                             "target_calls": target.calls,
                             "matcher_timing": state["matcher_timing"],
+                            "row_preparation": info["row_preparation"],
                         },
                     }
                     runtime.retire(key)

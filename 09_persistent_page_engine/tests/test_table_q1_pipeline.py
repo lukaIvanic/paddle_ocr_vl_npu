@@ -2,12 +2,16 @@
 import ast
 import contextlib
 import __future__
+from dataclasses import dataclass, replace
+import io
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+import time
 
 import torch
+from PIL import Image
 
 
 class Event:
@@ -90,6 +94,45 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(result[1], [10])
         self.assertEqual(len(self.executed), 1)
         self.assertIsNone(self.call.pending)
+
+
+class RequestIdentityTests(unittest.TestCase):
+    def test_source_identity_survives_preprocessing_but_runtime_ids_are_unique(self):
+        source_path = Path(__file__).resolve().parents[1] / "scripts/serve_table_speculative_api.py"
+        worker = next(node for node in ast.parse(source_path.read_text()).body
+                      if isinstance(node, ast.FunctionDef) and node.name == "_interleaved_worker_loop")
+        mode = next(node for node in worker.body if isinstance(node, ast.With))
+        prepare = next(node for node in mode.body if isinstance(node, ast.FunctionDef) and node.name == "prepare")
+        @dataclass
+        class Request:
+            request_id: str
+        sources = {"rotated-source": {"request_id": "rotated-source"}}
+        observed = []
+        def rows(source, image, args):
+            observed.append(source["request_id"])
+            return [Request("row0"), Request("row1")], [], {"row_draft_rotation_cw": 90}
+        live = SimpleNamespace(_exact_target_crop_from_raw=lambda source, image: image,
+                               _prepare_rows=rows, _b1_args=lambda args: args)
+        b1, draft, runtime = Mock(), Mock(), Mock()
+        runtime.jobs = {}
+        metadata = {}
+        namespace = dict(Image=Image, io=io, time=time, replace=replace,
+                         targets_by_id=sources, config={"height_threshold_px": 0},
+                         live_lab=live, args=None, b1=b1, draft=draft, runtime=runtime,
+                         fixed_lab=SimpleNamespace(request_for=lambda source, *_: Request(source["request_id"])),
+                         metadata=metadata)
+        exec(compile(ast.Module(body=[prepare], type_ignores=[]), str(source_path), "exec",
+                     flags=__future__.annotations.compiler_flag), namespace)
+        blob = io.BytesIO()
+        Image.new("RGB", (8, 8)).save(blob, format="PNG")
+        for key in ("http-a", "http-b"):
+            namespace["prepare"]({"request_id": key, "source_request_id": "rotated-source",
+                                  "crop_type": "table", "image_bytes": blob.getvalue()})
+        self.assertEqual(observed, ["rotated-source", "rotated-source"])
+        self.assertEqual(sources["rotated-source"]["request_id"], "rotated-source")
+        self.assertEqual([call.args[0].request_id for call in b1._prepare_cpu.call_args_list], ["http-a", "http-b"])
+        self.assertEqual([[r.request_id for r in call.args[0]] for call in draft._iter_packed_prefill_groups.call_args_list],
+                         [["http-a:row_0000", "http-a:row_0001"], ["http-b:row_0000", "http-b:row_0001"]])
 
 
 if __name__ == "__main__":
