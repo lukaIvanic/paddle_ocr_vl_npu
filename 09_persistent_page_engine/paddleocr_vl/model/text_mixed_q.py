@@ -48,9 +48,11 @@ MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV = (
 MIXED_LAYOUT_PACKED_BSND_PROMPTFA = "packed_bsnd_promptfa"
 MIXED_LAYOUT_B2_BSND_PROMPTFA = "b2_bsnd_promptfa"
 MIXED_LAYOUT_B9_BSND_PROMPTFA = "b9_bsnd_promptfa"
+MIXED_LAYOUT_B16_INCREFA = "b16_replicated_increfa"
 MIXED_SINGLE_ATTENTION_LAYOUTS = (
     MIXED_LAYOUT_PACKED_BSND_PROMPTFA, MIXED_LAYOUT_B2_BSND_PROMPTFA,
     MIXED_LAYOUT_B9_BSND_PROMPTFA,
+    MIXED_LAYOUT_B16_INCREFA,
 )
 MIXED_M16_LAYOUTS = (
     MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER,
@@ -59,6 +61,7 @@ MIXED_M16_LAYOUTS = (
     MIXED_LAYOUT_PACKED_BSND_PROMPTFA,
     MIXED_LAYOUT_B2_BSND_PROMPTFA,
     MIXED_LAYOUT_B9_BSND_PROMPTFA,
+    MIXED_LAYOUT_B16_INCREFA,
 )
 DEFAULT_MIXED_M16_LAYOUT = MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER
 MIXED_PREFETCH_FULL = "full"
@@ -249,14 +252,23 @@ def _mixed_attention(
             query_bsnd, key_bsnd, cosine, sine,
             layout="BSND", rotary_mode="half",
         )
-        torch_npu.npu_scatter_nd_update_(
-            verifier_key_cache, packed_write_indices,
-            key_bsnd.reshape(PACKED_TOKEN_COUNT, kv_heads, head_dim).contiguous(),
-        )
-        torch_npu.npu_scatter_nd_update_(
-            verifier_value_cache, packed_write_indices,
-            value_bsnd.reshape(PACKED_TOKEN_COUNT, kv_heads, head_dim).contiguous(),
-        )
+        if layout == MIXED_LAYOUT_B16_INCREFA:
+            # Eight verifier queries share one logical history. Replicate only
+            # the new Q8 block into eight persistent physical histories. Each
+            # row's mask imposes its own causal endpoint.
+            key_updates = torch.cat((
+                key_bsnd[:, :8].expand(8, 8, kv_heads, head_dim).reshape(-1, head_dim),
+                key_bsnd[:, 8:].reshape(-1, head_dim),
+            ))
+            value_updates = torch.cat((
+                value_bsnd[:, :8].expand(8, 8, kv_heads, head_dim).reshape(-1, head_dim),
+                value_bsnd[:, 8:].reshape(-1, head_dim),
+            ))
+        else:
+            key_updates = key_bsnd.reshape(PACKED_TOKEN_COUNT, kv_heads, head_dim).contiguous()
+            value_updates = value_bsnd.reshape(PACKED_TOKEN_COUNT, kv_heads, head_dim).contiguous()
+        torch_npu.npu_scatter_nd_update_(verifier_key_cache, packed_write_indices, key_updates)
+        torch_npu.npu_scatter_nd_update_(verifier_value_cache, packed_write_indices, value_updates)
         if (
             prefetch_mode in (MIXED_PREFETCH_FULL, MIXED_PREFETCH_KV_ONLY)
             and optimization.post_scatter_kv_prefetch
@@ -269,6 +281,15 @@ def _mixed_attention(
                 verifier_value_cache, value_bsnd,
                 verifier_value_cache.numel() * verifier_value_cache.element_size(),
             )
+        if layout == MIXED_LAYOUT_B16_INCREFA:
+            output = torch_npu.npu_incre_flash_attention(
+                query_bsnd.reshape(16, query_heads, 1, head_dim).contiguous(),
+                verifier_key_cache, verifier_value_cache,
+                atten_mask=packed_attention_mask,
+                num_heads=query_heads, num_key_value_heads=kv_heads,
+                input_layout="BNSD", scale_value=float(attention.scaling),
+            )
+            return _linear_tokenwise(attention.o_proj, output.reshape(1, 16, query_heads * head_dim))
         if layout == MIXED_LAYOUT_B9_BSND_PROMPTFA:
             draft_queries = query_bsnd[:, 8:].reshape(8, 1, query_heads, head_dim)
             attention_query = torch.cat((
@@ -623,6 +644,24 @@ def run_text_mixed_m16_transformer(
             packed_attention_mask = (
                 verifier_kv_positions.view(1, 1, 1, 4096) > query_limits.view(9, 1, 8, 1)
             ).contiguous()
+        if layout == MIXED_LAYOUT_B16_INCREFA:
+            rows = torch.arange(8, device=draft_positions.device, dtype=torch.int64)
+            heads = torch.arange(2, device=draft_positions.device, dtype=torch.int64)
+            verifier_indices = torch.stack((
+                rows.view(8, 1, 1).expand(8, 8, 2),
+                heads.view(1, 1, 2).expand(8, 8, 2),
+                verifier_positions.view(1, 8, 1).expand(8, 8, 2),
+            ), dim=-1).reshape(-1, 3)
+            draft_indices = torch.stack((
+                (rows + 8).view(8, 1).expand(8, 2),
+                heads.view(1, 2).expand(8, 2),
+                draft_positions.view(8, 1).expand(8, 2),
+            ), dim=-1).reshape(-1, 3)
+            packed_write_indices = torch.cat((verifier_indices, draft_indices))
+            query_limits = torch.cat((verifier_positions.reshape(-1), draft_positions))
+            packed_attention_mask = (
+                verifier_kv_positions.view(1, 1, 1, 4096) > query_limits.view(16, 1, 1, 1)
+            ).contiguous()
 
     verifier_decode_positions = verifier_positions + verifier_rope_deltas.to(
         device=verifier_inputs_embeds.device,
@@ -917,7 +956,8 @@ def mixed_m16_contract(
         raise ValueError(f"unsupported mixed rotary mode {rotary_mode!r}")
     return {
         "attention_boundary": (
-            ("single_promptfa_persistent_bsnd_b9kv4096" if layout == MIXED_LAYOUT_B9_BSND_PROMPTFA
+            ("single_increfa_persistent_replicated_b16kv4096" if layout == MIXED_LAYOUT_B16_INCREFA
+             else "single_promptfa_persistent_bsnd_b9kv4096" if layout == MIXED_LAYOUT_B9_BSND_PROMPTFA
              else "single_promptfa_persistent_bsnd_b2kv6144" if layout == MIXED_LAYOUT_B2_BSND_PROMPTFA
              else "single_promptfa_persistent_bsnd_b1kv10240")
             if layout in MIXED_SINGLE_ATTENTION_LAYOUTS
@@ -928,14 +968,14 @@ def mixed_m16_contract(
             "batch_size": VERIFIER_BATCH_SIZE,
             "query_length": VERIFIER_QUERY_LENGTH,
             "cache_length": 4096,
-            "attention": ("promptfa" if layout in MIXED_SINGLE_ATTENTION_LAYOUTS
+            "attention": ("increfa" if layout == MIXED_LAYOUT_B16_INCREFA else "promptfa" if layout in MIXED_SINGLE_ATTENTION_LAYOUTS
                           else "manual_grouped_legal_scaled_masked_softmax_fp16"),
         },
         "draft": {
             "batch_size": DRAFT_BATCH_SIZE,
             "query_length": DRAFT_QUERY_LENGTH,
             "cache_length": 768,
-            "attention": "promptfa" if layout in MIXED_SINGLE_ATTENTION_LAYOUTS else "increfa",
+            "attention": "promptfa" if layout in MIXED_SINGLE_ATTENTION_LAYOUTS and layout != MIXED_LAYOUT_B16_INCREFA else "increfa",
         },
         "optimization": MIXED_M16_OPTIMIZATION,
         "layout": layout,
