@@ -1,0 +1,18 @@
+2026-09-05T20:50:32+00:00
+02fe5645b53f03c8bde0fd4284a3c2ac0c1649de
+declare -x ASCEND_RT_VISIBLE_DEVICES="6"
+declare -x table_py="/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python"
+declare -a table_matrix_common=([0]="09_persistent_page_engine/scripts/serve_crop_ocr_api.py" [1]="--host" [2]="127.0.0.1" [3]="--port" [4]="8767" [5]="--request-timeout-s" [6]="3600" [7]="--queue-capacity" [8]="64" [9]="--model" [10]="/workspace/models/PaddleOCR-VL-1.6" [11]="--decode-backend" [12]="torchair" [13]="--decode-optimization" [14]="combined_apply_complete_layer_prefetch1_rope_lut" [15]="--decode-vocab-token-ids" [16]="09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json" [17]="--token-selection" [18]="greedy" [19]="--cache-length" [20]="4096" [21]="--max-new-tokens" [22]="4096" [23]="--min-pixels" [24]="28224" [25]="--max-pixels" [26]="802816" [27]="--request-scheduling-metrics" [28]="--decode-batch-size" [29]="1")
+--vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096 --text-buckets 128,256,512,1024,1152 --vision-attention-weight-padding; ordinary API, no oracle, no caps; random1000 seed3; B1C1 B2C2 B4C3 B4C4 B8C8 B16C16
+
+Clarification: "no caps" above means no prefill-interruption caps. KV capacity
+and maximum new tokens both remain 4096, as recorded in the argument array.
+
+Client entrypoint: 09_persistent_page_engine/scripts/table_closed_loop_api_client.py
+Common client arguments: --api-url http://127.0.0.1:8767/v1/ocr
+Warmup for each lane: --set warm --count 1 --max-in-flight 1 --output-dir <lane>/warm
+Measured for each lane: --set random --count 1000 --shuffle-seed 3 --max-in-flight <C> --output-dir <lane>/measured
+Lanes (B,C): b1=(1,1), b2=(2,2), b4c3=(4,3), b4c4=(4,4), b8=(8,8), b16=(16,16).
+B4/C3 and B4/C4 share one cached server, with separate warmups and client runs.
+No source pull occurred between measured lanes. Exact server process arguments,
+host/container PID mappings and physical-NPU snapshots are in host_npu6_monitor.log.

@@ -1,0 +1,9 @@
+client API ready worker_pid=2496283; preloading 665 distinct crops for 1000 requests
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/table_closed_loop_api_client.py", line 370, in <module>
+    main()
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/table_closed_loop_api_client.py", line 266, in main
+    output_dir.mkdir(parents=True, exist_ok=False)
+  File "/usr/local/python3.12.13/lib/python3.12/pathlib.py", line 1311, in mkdir
+    os.mkdir(self, mode)
+FileExistsError: [Errno 17] File exists: '/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_1000_matrix_02fe5645_20260905/b1/client'

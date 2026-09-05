@@ -1,0 +1,30 @@
+Waiting for NPU worker pid=2516914
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":7.070668}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":11.129577}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.025816}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.028889}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"done","elapsed_s":0.069428}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":6.019149}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.520242}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016237}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":6.409899}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":3.282576}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+.EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":13.685003}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.006381}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.003821}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":49.121832}
+READY http://127.0.0.1:8767 worker_pid=2516914
+SERVICE_SUMMARY /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_1000_matrix_02fe5645_20260905/b8/setup_service.json

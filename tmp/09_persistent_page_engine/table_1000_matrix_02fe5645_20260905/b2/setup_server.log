@@ -1,0 +1,30 @@
+Waiting for NPU worker pid=2499285
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":7.017394}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":11.153892}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.02558}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.027863}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"done","elapsed_s":0.066443}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":5.996383}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.524744}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016551}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":6.409699}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":3.284805}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+.EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":13.854056}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.00615}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.003553}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":49.236693}
+READY http://127.0.0.1:8767 worker_pid=2499285
+SERVICE_SUMMARY /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_1000_matrix_02fe5645_20260905/b2/setup_service.json
