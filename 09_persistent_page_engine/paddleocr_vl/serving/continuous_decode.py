@@ -200,12 +200,16 @@ class DecodeArena:
         decode_token_id_map: torch.Tensor | None = None,
         timeline: TimelineRecorder | None = None,
         decode_device_timing: bool = True,
+        compact_step_control: bool = False,
     ) -> None:
         self.cache = cache
         self.device = device
         self.batch_size = int(batch_size)
         self.eos_token_id = int(eos_token_id)
         self.decode_device_timing = bool(decode_device_timing)
+        self.compact_step_control = bool(compact_step_control)
+        if self.compact_step_control and token_selection != TOKEN_SELECTION_GREEDY:
+            raise ValueError("compact step control is validated for greedy serving only")
         if timeline is not None and not self.decode_device_timing:
             raise ValueError("decode timeline requires decode device timing")
         self.token_selection = str(token_selection)
@@ -252,6 +256,7 @@ class DecodeArena:
             device=self.device,
             dtype=torch.bool,
         )
+        self.active_increment = torch.zeros_like(self.cache_position)
         self.token_selection_policy_mask = torch.zeros(
             (self.batch_size,),
             device=self.device,
@@ -285,6 +290,7 @@ class DecodeArena:
         self.cache_position.zero_()
         self.rope_deltas.zero_()
         self.active_mask.zero_()
+        self.active_increment.zero_()
         self.token_selection_policy_mask.zero_()
         self.token_selection_override_used.zero_()
         self.token_selection_math_open.zero_()
@@ -488,6 +494,7 @@ class DecodeArena:
             )
             self.next_token[slot_index : slot_index + 1].copy_(source_first_token)
             self.active_mask[slot_index].fill_(True)
+            self.active_increment[slot_index].fill_(1)
             self.token_selection_policy_mask[slot_index].fill_(
                 bool(ready.token_selection_policy_active)
             )
@@ -537,6 +544,7 @@ class DecodeArena:
             raise RuntimeError(f"decode slot {slot_index} is already free")
         self.slots[slot_index] = None
         self.active_mask[slot_index].fill_(False)
+        self.active_increment[slot_index].zero_()
         self.token_selection_policy_mask[slot_index].fill_(False)
         self.token_selection_override_used[slot_index].fill_(False)
         self.token_selection_math_open[slot_index].fill_(False)
@@ -687,16 +695,26 @@ class DecodeArena:
                 "request_ids": list(request_ids),
             },
         )
-        self.next_token = torch.where(
-            self.active_mask.view(-1, 1),
-            sampled,
-            torch.full_like(sampled, self.eos_token_id),
-        )
-        self.cache_position = torch.where(
-            self.active_mask,
-            self.cache_position + 1,
-            torch.zeros_like(self.cache_position),
-        )
+        if self.compact_step_control:
+            # Do NOT alias sampled: the copy stream may still be reading it
+            # when retirement overwrites a slot in next_token. These buffers
+            # retain their identities; all writes run after decode on its stream.
+            self.next_token.copy_(sampled)
+            # Inactive positions start at zero and retirement resets them.
+            # Their dummy token/KV-at-zero is unobservable and overwritten on
+            # admission. No per-iteration EOS/zero filling is necessary.
+            self.cache_position.add_(self.active_increment)
+        else:
+            self.next_token = torch.where(
+                self.active_mask.view(-1, 1),
+                sampled,
+                torch.full_like(sampled, self.eos_token_id),
+            )
+            self.cache_position = torch.where(
+                self.active_mask,
+                self.cache_position + 1,
+                torch.zeros_like(self.cache_position),
+            )
         return DecodeStep(
             sampled=sampled,
             active_slots=active_slots,

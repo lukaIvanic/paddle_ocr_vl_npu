@@ -31,13 +31,14 @@ def cache(batch_size, length=32):
     )
 
 
-def run_case(batch_size, collect, device_timing=True):
+def run_case(batch_size, collect, device_timing=True, compact=False):
     recorder = RequestSchedulingMetrics(batch_size) if collect else None
     arena = DecodeArena(
         cache=cache(batch_size), device=torch.device("cpu"),
         batch_size=batch_size, eos_token_id=9,
         decode_token_id_map=torch.arange(10),
         decode_device_timing=device_timing,
+        compact_step_control=compact,
     )
     candidates = deque([("a", 1), ("b", 4), ("c", 3)])
     if batch_size >= 4:
@@ -85,6 +86,36 @@ def run_case(batch_size, collect, device_timing=True):
 
 
 class ContinuousDecodeMetricsTest(unittest.TestCase):
+    def test_compact_control_matches_full_scheduler_across_refills(self):
+        for batch in (1, 2, 4, 8):
+            control, old, old_shapes = run_case(batch, True)
+            candidate, new, new_shapes = run_case(batch, True, compact=True)
+            self.assertEqual([x.token_ids for x in old], [x.token_ids for x in new])
+            self.assertEqual([x.stop_reason for x in old], [x.stop_reason for x in new])
+            self.assertEqual(old_shapes, new_shapes)
+            self.assertEqual(control.graph_calls, candidate.graph_calls)
+            self.assertEqual(control.hot_swap_admissions, candidate.hot_swap_admissions)
+
+    def test_compact_control_keeps_output_storage_separate_and_positions_stable(self):
+        arena = DecodeArena(cache=cache(2), device=torch.device("cpu"), batch_size=2,
+                            eos_token_id=9, decode_token_id_map=torch.arange(10),
+                            compact_step_control=True)
+        ready = ReadyDecodeRequest("a", None, cache(1), torch.zeros((1, 1), dtype=torch.long),
+                                   torch.ones(1, dtype=torch.long), torch.tensor([[2]]), 2, 1)
+        arena.admit(0, ready, hot_swap=False)
+        token_ptr, position_ptr = arena.next_token.data_ptr(), arena.cache_position.data_ptr()
+        step = arena.step(lambda tokens, *args: tokens + 1, iteration=0)
+        saved = step.sampled.clone()
+        self.assertNotEqual(step.sampled.data_ptr(), arena.next_token.data_ptr())
+        self.assertEqual(arena.next_token.data_ptr(), token_ptr)
+        self.assertEqual(arena.cache_position.data_ptr(), position_ptr)
+        self.assertEqual(arena.cache_position.tolist(), [2, 0])
+        arena.release(0)
+        self.assertTrue(torch.equal(step.sampled, saved))
+        self.assertEqual(arena.active_increment.tolist(), [0, 0])
+        arena.step(lambda tokens, *args: tokens + 1, iteration=1)
+        self.assertEqual(arena.cache_position.tolist(), [0, 0])
+
     def test_disabling_profiler_events_preserves_outputs_and_reports_unavailable(self):
         from utils.metrics import per_second
         for batch in (1, 2, 4):

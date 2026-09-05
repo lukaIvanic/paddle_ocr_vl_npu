@@ -575,6 +575,7 @@ class ContinuousRecognizer:
         max_new_tokens: int,
         torchair_cache_dir: Path,
         decode_device_timing: bool = True,
+        compact_decode_control: bool = False,
         vision_backend: str = DEFAULT_VISION_BACKEND,
         vision_attention: str = "manual",
         vision_attention_weight_padding: bool = False,
@@ -709,6 +710,7 @@ class ContinuousRecognizer:
         )
         self.vision_attention = str(vision_attention)
         self.decode_device_timing = bool(decode_device_timing)
+        self.compact_decode_control = bool(compact_decode_control)
         self.vision_attention_weight_padding = bool(vision_attention_weight_padding)
         if self.vision_attention_weight_padding and (
             self.vision_attention != "prompt_flash_attention" or str(vision_packing) != "off"
@@ -1204,6 +1206,7 @@ class ContinuousRecognizer:
             ),
             timeline=self.timeline,
             decode_device_timing=self.decode_device_timing,
+            compact_step_control=self.compact_decode_control,
         )
         self.decode_scheduler = ContinuousDecodeScheduler(
             arena=self.decode_arena,
@@ -3736,6 +3739,7 @@ class ContinuousRecognizer:
             "vision_backend": self.vision_backend,
             "vision_attention": vision_attention,
             "decode_device_timing": self.decode_device_timing,
+            "compact_decode_control": self.compact_decode_control,
             "vision_attention_weight_padding": self.vision_attention_weight_padding,
             "vision_promptfa_align_128": self.vision_promptfa_align_128,
             "vision_sequence_alignment": self.vision_seq_alignment,
