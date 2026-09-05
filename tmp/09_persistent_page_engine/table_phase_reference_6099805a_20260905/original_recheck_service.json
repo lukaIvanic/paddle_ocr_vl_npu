@@ -1,0 +1,156 @@
+{
+  "format": "paddleocr_crop_service_summary_v1",
+  "worker_pid": 2391389,
+  "configuration": {
+    "lane": "height_routed_u8_adaptive_k",
+    "height_threshold_px": 384,
+    "draft_rows": 8,
+    "adaptive_k": [
+      7,
+      15,
+      31,
+      63
+    ],
+    "initial_k": 15,
+    "decode_optimization": "combined_apply_complete_layer_prefetch1_rope_lut",
+    "verifier_optimization": "combined_apply_spec_prefetch_mrope",
+    "spec_verify_attention": "manual_grouped_legal_scaled_masked_softmax_fp16_combined_qkv_post_rope",
+    "allow_compile": true
+  },
+  "summary": {
+    "format": "paddleocr_table_spec_service_metrics_v1",
+    "request_count": 102,
+    "route_counts": {
+      "spec": 63,
+      "b1": 39
+    },
+    "draft_decode": {
+      "schedule_count": 63,
+      "batch_size": 8,
+      "requests": 504,
+      "graph_calls": 8537,
+      "initial_admissions": 504,
+      "hot_swap_admissions": 0,
+      "prefill_only_completions": 0,
+      "raw_decode_token_slots": 68296,
+      "active_decode_token_slots": 40495,
+      "effective_decode_tokens": 39867,
+      "idle_decode_token_slots": 27801,
+      "lookahead_decode_token_slots": 628,
+      "kv_prefix_bytes_copied": 1287917568,
+      "initial_kv_prefix_bytes_copied": 1287917568,
+      "hot_swap_kv_prefix_bytes_copied": 0,
+      "timing_s": {
+        "completion_callback_wall": 0.11554524104576558,
+        "continuous_decode_wall": 10.529618966742419,
+        "d2h_wait_wall": 1.1149157950421795,
+        "decode_host_exclusive_wall": 10.529618966742419,
+        "decode_model_and_argmax_device": 9.932988976240159,
+        "hot_swap_safety_sync_wall": 0.0,
+        "ready_source_wall": 12.615796311292797,
+        "retire_and_refill_host_wall": 0.8380779339931905,
+        "run_scoped_scheduler_wall": 23.26096051908098,
+        "slot_admission_device": 0.21834464032948017,
+        "slot_admission_enqueue_wall": 0.2593226406024769
+      },
+      "rates": {
+        "raw_decode_tok_per_s": 6486.084654697524,
+        "effective_decode_tok_per_s": 3786.17689072312,
+        "effective_device_tok_per_s": 4013.59551443804,
+        "scheduler_effective_tok_per_s": 1713.9017095745928,
+        "active_slot_fraction": 0.5929337003631252,
+        "idle_slot_fraction": 0.4070662996368748
+      }
+    },
+    "verifier": {
+      "target_calls": 5066,
+      "speculative_calls": 4417,
+      "fully_accepted_speculative_calls": 1027,
+      "rejected_speculative_calls": 3390,
+      "fallback_calls": 649,
+      "proposed_draft_tokens": 60504,
+      "accepted_draft_tokens": 32531,
+      "output_tokens_after_prefill": 37597,
+      "verifier_device_s": 0.0,
+      "fallback_device_s": 0.0,
+      "wall_s": 9.745111222146079,
+      "accepted_fraction_of_proposed": 0.5376669311119926,
+      "physical_verifier_tokens": 66817,
+      "physical_verifier_tok_per_s": null,
+      "physical_verifier_tok_per_verifier_wall_s": 6856.463561765844,
+      "effective_output_tok_per_s": 3858.0370344629428,
+      "per_k": {
+        "7": {
+          "calls": 3057.0,
+          "fully_accepted_calls": 425.0,
+          "rejected_calls": 2632.0,
+          "proposed_tokens": 21298.0,
+          "accepted_tokens": 6151.0,
+          "verifier_device_s": 0.0
+        },
+        "15": {
+          "calls": 711.0,
+          "fully_accepted_calls": 271.0,
+          "rejected_calls": 440.0,
+          "proposed_tokens": 10555.0,
+          "accepted_tokens": 5529.0,
+          "verifier_device_s": 0.0
+        },
+        "31": {
+          "calls": 350.0,
+          "fully_accepted_calls": 119.0,
+          "rejected_calls": 231.0,
+          "proposed_tokens": 10591.0,
+          "accepted_tokens": 5752.0,
+          "verifier_device_s": 0.0
+        },
+        "63": {
+          "calls": 299.0,
+          "fully_accepted_calls": 212.0,
+          "rejected_calls": 87.0,
+          "proposed_tokens": 18060.0,
+          "accepted_tokens": 15099.0,
+          "verifier_device_s": 0.0
+        }
+      }
+    },
+    "b1_decode": {
+      "schedule_count": 39,
+      "batch_size": 1,
+      "requests": 39,
+      "graph_calls": 5274,
+      "initial_admissions": 39,
+      "hot_swap_admissions": 0,
+      "prefill_only_completions": 0,
+      "raw_decode_token_slots": 5274,
+      "active_decode_token_slots": 5274,
+      "effective_decode_tokens": 5235,
+      "idle_decode_token_slots": 0,
+      "lookahead_decode_token_slots": 39,
+      "kv_prefix_bytes_copied": 229312512,
+      "initial_kv_prefix_bytes_copied": 229312512,
+      "hot_swap_kv_prefix_bytes_copied": 0,
+      "timing_s": {
+        "completion_callback_wall": 0.00751962058711797,
+        "continuous_decode_wall": 6.086783401900902,
+        "d2h_wait_wall": 0.9595840061083436,
+        "decode_host_exclusive_wall": 6.086783401900902,
+        "decode_model_and_argmax_device": 5.972819761395454,
+        "hot_swap_safety_sync_wall": 0.0,
+        "ready_source_wall": 4.682073489646427,
+        "retire_and_refill_host_wall": 0.2639101784443483,
+        "run_scoped_scheduler_wall": 10.776376512134448,
+        "slot_admission_device": 0.02022413995862007,
+        "slot_admission_enqueue_wall": 0.02412788092624396
+      },
+      "rates": {
+        "raw_decode_tok_per_s": 866.4675004457904,
+        "effective_decode_tok_per_s": 860.0601753571697,
+        "effective_device_tok_per_s": 876.4704459752401,
+        "scheduler_effective_tok_per_s": 485.7848084748403,
+        "active_slot_fraction": 1.0,
+        "idle_slot_fraction": 0.0
+      }
+    }
+  }
+}

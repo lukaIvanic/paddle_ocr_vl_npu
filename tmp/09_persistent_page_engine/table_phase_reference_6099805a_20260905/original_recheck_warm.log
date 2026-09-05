@@ -1,0 +1,8 @@
+original-recheck-warm API ready worker_pid=2391389; preloading 2 distinct crops for 2 requests
+original-recheck-warm crops preloaded 2/2
+original-recheck-warm payloads ready bytes=1493896
+SEND original-recheck-warm 01/2 table=page_001272_table_1 active=1
+RECV original-recheck-warm 01/2 rank=65 id=page_001272_table_1 latency=2.3717s status=ok active=0
+SEND original-recheck-warm 02/2 table=page_001137_table_9 active=1
+RECV original-recheck-warm 02/2 rank=66 id=page_001137_table_9 latency=0.6906s status=ok active=0
+DONE original-recheck-warm requests=2 failures=0 max_in_flight=1 wall=3.0653s qps=0.6525 p50=1.5311s p95=2.2876s max=2.3717s

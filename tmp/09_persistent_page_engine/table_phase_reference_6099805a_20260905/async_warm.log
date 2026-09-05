@@ -1,0 +1,8 @@
+async-warm API ready worker_pid=2365559; preloading 2 distinct crops for 2 requests
+async-warm crops preloaded 2/2
+async-warm payloads ready bytes=1493896
+SEND async-warm 01/2 table=page_001272_table_1 active=1
+RECV async-warm 01/2 rank=65 id=page_001272_table_1 latency=2.4363s status=ok active=0
+SEND async-warm 02/2 table=page_001137_table_9 active=1
+RECV async-warm 02/2 rank=66 id=page_001137_table_9 latency=0.6993s status=ok active=0
+DONE async-warm requests=2 failures=0 max_in_flight=1 wall=3.1384s qps=0.6373 p50=1.5678s p95=2.3494s max=2.4363s

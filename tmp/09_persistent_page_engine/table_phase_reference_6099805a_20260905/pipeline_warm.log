@@ -1,0 +1,8 @@
+pipeline-warm API ready worker_pid=2275469; preloading 2 distinct crops for 2 requests
+pipeline-warm crops preloaded 2/2
+pipeline-warm payloads ready bytes=1493896
+SEND pipeline-warm 01/2 table=page_001272_table_1 active=1
+RECV pipeline-warm 01/2 rank=65 id=page_001272_table_1 latency=3.0098s status=ok active=0
+SEND pipeline-warm 02/2 table=page_001137_table_9 active=1
+RECV pipeline-warm 02/2 rank=66 id=page_001137_table_9 latency=0.8053s status=ok active=0
+DONE pipeline-warm requests=2 failures=0 max_in_flight=1 wall=3.8185s qps=0.5238 p50=1.9076s p95=2.8996s max=3.0098s

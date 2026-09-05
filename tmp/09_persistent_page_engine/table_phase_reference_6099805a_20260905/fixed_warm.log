@@ -1,0 +1,8 @@
+phase-fixed-warm API ready worker_pid=2199792; preloading 2 distinct crops for 2 requests
+phase-fixed-warm crops preloaded 2/2
+phase-fixed-warm payloads ready bytes=1493896
+SEND phase-fixed-warm 01/2 table=page_001272_table_1 active=1
+SEND phase-fixed-warm 02/2 table=page_001137_table_9 active=2
+RECV phase-fixed-warm 02/2 rank=66 id=page_001137_table_9 latency=2.7040s status=ok active=1
+RECV phase-fixed-warm 01/2 rank=65 id=page_001272_table_1 latency=3.7406s status=ok active=0
+DONE phase-fixed-warm requests=2 failures=0 max_in_flight=2 wall=3.7429s qps=0.5344 p50=3.2223s p95=3.6888s max=3.7406s

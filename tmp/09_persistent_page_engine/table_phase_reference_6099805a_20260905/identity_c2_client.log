@@ -1,0 +1,205 @@
+identity-c2 API ready worker_pid=2314225; preloading 100 distinct crops for 100 requests
+identity-c2 crops preloaded 50/100
+identity-c2 crops preloaded 100/100
+identity-c2 payloads ready bytes=34840674
+SEND identity-c2 01/100 table=page_000287_table_box_id_8 active=1
+SEND identity-c2 02/100 table=page_001367_table_51 active=2
+RECV identity-c2 02/100 rank=65 id=page_001367_table_51 latency=0.9229s status=ok active=1
+SEND identity-c2 03/100 table=page_000236_table_box_id_1 active=2
+RECV identity-c2 03/100 rank=324 id=page_000236_table_box_id_1 latency=0.6489s status=ok active=1
+SEND identity-c2 04/100 table=page_000634_table_11 active=2
+RECV identity-c2 01/100 rank=24 id=page_000287_table_box_id_8 latency=2.3890s status=ok active=1
+SEND identity-c2 05/100 table=page_000272_table_box_id_1 active=2
+RECV identity-c2 04/100 rank=225 id=page_000634_table_11 latency=1.2584s status=ok active=1
+SEND identity-c2 06/100 table=page_001172_table_16 active=2
+RECV identity-c2 06/100 rank=337 id=page_001172_table_16 latency=1.2994s status=ok active=1
+SEND identity-c2 07/100 table=page_001137_table_2 active=2
+RECV identity-c2 07/100 rank=151 id=page_001137_table_2 latency=0.5737s status=ok active=1
+SEND identity-c2 08/100 table=page_001150_table_box_id_9 active=2
+RECV identity-c2 08/100 rank=255 id=page_001150_table_box_id_9 latency=0.5157s status=ok active=1
+SEND identity-c2 09/100 table=page_000920_table_8 active=2
+RECV identity-c2 09/100 rank=368 id=page_000920_table_8 latency=1.0134s status=ok active=1
+SEND identity-c2 10/100 table=page_000524_table_0 active=2
+RECV identity-c2 05/100 rank=09 id=page_000272_table_box_id_1 latency=4.4421s status=ok active=1
+SEND identity-c2 11/100 table=page_000256_table_box_id_8 active=2
+RECV identity-c2 10/100 rank=140 id=page_000524_table_0 latency=1.3307s status=ok active=1
+SEND identity-c2 12/100 table=page_001166_table_9 active=2
+RECV identity-c2 11/100 rank=336 id=page_000256_table_box_id_8 latency=1.0041s status=ok active=1
+SEND identity-c2 13/100 table=page_000211_table_box_id_3 active=2
+RECV identity-c2 12/100 rank=436 id=page_001166_table_9 latency=0.8350s status=ok active=1
+SEND identity-c2 14/100 table=page_000933_table_10 active=2
+RECV identity-c2 13/100 rank=201 id=page_000211_table_box_id_3 latency=1.1963s status=ok active=1
+SEND identity-c2 15/100 table=page_001129_table_8 active=2
+RECV identity-c2 14/100 rank=504 id=page_000933_table_10 latency=0.9699s status=ok active=1
+SEND identity-c2 16/100 table=page_001375_table_7 active=2
+RECV identity-c2 16/100 rank=458 id=page_001375_table_7 latency=0.4093s status=ok active=1
+SEND identity-c2 17/100 table=page_000106_table_box_id_2 active=2
+RECV identity-c2 15/100 rank=107 id=page_001129_table_8 latency=1.5156s status=ok active=1
+SEND identity-c2 18/100 table=page_001134_table_10 active=2
+RECV identity-c2 17/100 rank=208 id=page_000106_table_box_id_2 latency=1.6528s status=ok active=1
+SEND identity-c2 19/100 table=page_000642_table_8 active=2
+RECV identity-c2 18/100 rank=134 id=page_001134_table_10 latency=1.0317s status=ok active=1
+SEND identity-c2 20/100 table=page_000564_table_7 active=2
+RECV identity-c2 20/100 rank=334 id=page_000564_table_7 latency=0.8181s status=ok active=1
+SEND identity-c2 21/100 table=page_001368_table_box_id_242 active=2
+RECV identity-c2 19/100 rank=128 id=page_000642_table_8 latency=1.7187s status=ok active=1
+SEND identity-c2 22/100 table=page_000263_table_box_id_7 active=2
+RECV identity-c2 21/100 rank=497 id=page_001368_table_box_id_242 latency=1.2009s status=ok active=1
+SEND identity-c2 23/100 table=page_000746_table_18 active=2
+RECV identity-c2 23/100 rank=161 id=page_000746_table_18 latency=2.0655s status=ok active=1
+SEND identity-c2 24/100 table=page_000213_table_box_id_5 active=2
+RECV identity-c2 24/100 rank=215 id=page_000213_table_box_id_5 latency=0.9158s status=ok active=1
+SEND identity-c2 25/100 table=page_000206_table_box_id_1 active=2
+RECV identity-c2 25/100 rank=309 id=page_000206_table_box_id_1 latency=1.3482s status=ok active=1
+SEND identity-c2 26/100 table=page_000209_table_box_id_1 active=2
+RECV identity-c2 26/100 rank=432 id=page_000209_table_box_id_1 latency=0.7318s status=ok active=1
+SEND identity-c2 27/100 table=page_001216_table_2 active=2
+RECV identity-c2 27/100 rank=186 id=page_001216_table_2 latency=1.0823s status=ok active=1
+SEND identity-c2 28/100 table=page_000188_table_box_id_6 active=2
+RECV identity-c2 28/100 rank=240 id=page_000188_table_box_id_6 latency=1.2072s status=ok active=1
+SEND identity-c2 29/100 table=page_000921_table_9 active=2
+RECV identity-c2 22/100 rank=31 id=page_000263_table_box_id_7 latency=8.2926s status=ok active=1
+SEND identity-c2 30/100 table=page_000533_table_8 active=2
+RECV identity-c2 30/100 rank=399 id=page_000533_table_8 latency=0.4218s status=ok active=1
+SEND identity-c2 31/100 table=page_001123_table_14 active=2
+RECV identity-c2 31/100 rank=413 id=page_001123_table_14 latency=1.1175s status=ok active=1
+SEND identity-c2 32/100 table=page_001503_table_5 active=2
+RECV identity-c2 32/100 rank=526 id=page_001503_table_5 latency=0.3749s status=ok active=1
+SEND identity-c2 33/100 table=page_001197_table_5 active=2
+RECV identity-c2 33/100 rank=118 id=page_001197_table_5 latency=0.6165s status=ok active=1
+SEND identity-c2 34/100 table=page_000542_table_0 active=2
+RECV identity-c2 34/100 rank=219 id=page_000542_table_0 latency=0.5409s status=ok active=1
+SEND identity-c2 35/100 table=page_001130_table_1 active=2
+RECV identity-c2 35/100 rank=572 id=page_001130_table_1 latency=0.3883s status=ok active=1
+SEND identity-c2 36/100 table=page_001595_table_box_id_9 active=2
+RECV identity-c2 36/100 rank=561 id=page_001595_table_box_id_9 latency=0.3659s status=ok active=1
+SEND identity-c2 37/100 table=page_001233_table_6 active=2
+RECV identity-c2 29/100 rank=460 id=page_000921_table_9 latency=4.8171s status=ok active=1
+SEND identity-c2 38/100 table=page_000585_table_1 active=2
+RECV identity-c2 38/100 rank=159 id=page_000585_table_1 latency=1.3158s status=ok active=1
+SEND identity-c2 39/100 table=page_000821_table_box_id_26 active=2
+RECV identity-c2 39/100 rank=617 id=page_000821_table_box_id_26 latency=0.1519s status=ok active=1
+SEND identity-c2 40/100 table=page_000566_table_3 active=2
+RECV identity-c2 37/100 rank=241 id=page_001233_table_6 latency=2.8467s status=ok active=1
+SEND identity-c2 41/100 table=page_000534_table_4 active=2
+RECV identity-c2 41/100 rank=221 id=page_000534_table_4 latency=0.7942s status=ok active=1
+SEND identity-c2 42/100 table=page_001141_table_13 active=2
+RECV identity-c2 40/100 rank=167 id=page_000566_table_3 latency=1.8651s status=ok active=1
+SEND identity-c2 43/100 table=page_000665_table_3 active=2
+RECV identity-c2 43/100 rank=662 id=page_000665_table_3 latency=0.1040s status=ok active=1
+SEND identity-c2 44/100 table=page_001417_table_2 active=2
+RECV identity-c2 44/100 rank=587 id=page_001417_table_2 latency=0.1754s status=ok active=1
+SEND identity-c2 45/100 table=page_001117_table_box_id_7 active=2
+RECV identity-c2 45/100 rank=483 id=page_001117_table_box_id_7 latency=0.2482s status=ok active=1
+SEND identity-c2 46/100 table=page_001270_table_box_id_1 active=2
+RECV identity-c2 42/100 rank=280 id=page_001141_table_13 latency=1.5141s status=ok active=1
+SEND identity-c2 47/100 table=page_000261_table_box_id_3 active=2
+RECV identity-c2 46/100 rank=95 id=page_001270_table_box_id_1 latency=2.9753s status=ok active=1
+SEND identity-c2 48/100 table=page_000505_table_1 active=2
+RECV identity-c2 47/100 rank=54 id=page_000261_table_box_id_3 latency=2.8708s status=ok active=1
+SEND identity-c2 49/100 table=page_000682_table_15 active=2
+RECV identity-c2 49/100 rank=507 id=page_000682_table_15 latency=0.5654s status=ok active=1
+SEND identity-c2 50/100 table=page_000275_table_box_id_1 active=2
+RECV identity-c2 48/100 rank=121 id=page_000505_table_1 latency=2.1039s status=ok active=1
+SEND identity-c2 51/100 table=page_000789_table_34 active=2
+RECV identity-c2 51/100 rank=639 id=page_000789_table_34 latency=0.2597s status=ok active=1
+SEND identity-c2 52/100 table=page_001177_table_2 active=2
+RECV identity-c2 52/100 rank=229 id=page_001177_table_2 latency=0.4922s status=ok active=1
+SEND identity-c2 53/100 table=page_001398_table_box-13qv1ztw active=2
+RECV identity-c2 53/100 rank=511 id=page_001398_table_box-13qv1ztw latency=0.4497s status=ok active=1
+SEND identity-c2 54/100 table=page_001183_table_11 active=2
+RECV identity-c2 54/100 rank=395 id=page_001183_table_11 latency=1.0649s status=ok active=1
+SEND identity-c2 55/100 table=page_000507_table_0 active=2
+RECV identity-c2 55/100 rank=396 id=page_000507_table_0 latency=0.4286s status=ok active=1
+SEND identity-c2 56/100 table=page_000710_table_9 active=2
+RECV identity-c2 56/100 rank=514 id=page_000710_table_9 latency=0.6326s status=ok active=1
+SEND identity-c2 57/100 table=page_000657_table_6 active=2
+RECV identity-c2 57/100 rank=659 id=page_000657_table_6 latency=0.1552s status=ok active=1
+SEND identity-c2 58/100 table=page_001368_table_box_id_227 active=2
+RECV identity-c2 50/100 rank=12 id=page_000275_table_box_id_1 latency=4.3609s status=ok active=1
+SEND identity-c2 59/100 table=page_001176_table_4 active=2
+RECV identity-c2 59/100 rank=122 id=page_001176_table_4 latency=1.3851s status=ok active=1
+SEND identity-c2 60/100 table=page_001181_table_6 active=2
+RECV identity-c2 58/100 rank=264 id=page_001368_table_box_id_227 latency=2.9052s status=ok active=1
+SEND identity-c2 61/100 table=page_000937_table_0 active=2
+RECV identity-c2 60/100 rank=72 id=page_001181_table_6 latency=2.2766s status=ok active=1
+SEND identity-c2 62/100 table=page_001368_table_box_id_237 active=2
+RECV identity-c2 61/100 rank=350 id=page_000937_table_0 latency=0.9196s status=ok active=1
+SEND identity-c2 63/100 table=page_000217_table_box_id_0 active=2
+RECV identity-c2 62/100 rank=468 id=page_001368_table_box_id_237 latency=1.2235s status=ok active=1
+SEND identity-c2 64/100 table=page_001159_table_5 active=2
+RECV identity-c2 64/100 rank=224 id=page_001159_table_5 latency=0.7515s status=ok active=1
+SEND identity-c2 65/100 table=page_000626_table_box_id_1 active=2
+RECV identity-c2 63/100 rank=391 id=page_000217_table_box_id_0 latency=3.3778s status=ok active=1
+SEND identity-c2 66/100 table=page_000984_table_2 active=2
+RECV identity-c2 66/100 rank=625 id=page_000984_table_2 latency=0.2453s status=ok active=1
+SEND identity-c2 67/100 table=page_001082_table_34 active=2
+RECV identity-c2 65/100 rank=44 id=page_000626_table_box_id_1 latency=2.6884s status=ok active=1
+SEND identity-c2 68/100 table=page_000467_table_17 active=2
+RECV identity-c2 67/100 rank=171 id=page_001082_table_34 latency=1.4776s status=ok active=1
+SEND identity-c2 69/100 table=page_000866_table_14 active=2
+RECV identity-c2 69/100 rank=419 id=page_000866_table_14 latency=1.0461s status=ok active=1
+SEND identity-c2 70/100 table=page_001227_table_10 active=2
+RECV identity-c2 68/100 rank=120 id=page_000467_table_17 latency=2.1099s status=ok active=1
+SEND identity-c2 71/100 table=page_000916_table_7 active=2
+RECV identity-c2 71/100 rank=265 id=page_000916_table_7 latency=0.8436s status=ok active=1
+SEND identity-c2 72/100 table=page_000251_table_box_id_7 active=2
+RECV identity-c2 70/100 rank=75 id=page_001227_table_10 latency=2.2115s status=ok active=1
+SEND identity-c2 73/100 table=page_001131_table_15 active=2
+RECV identity-c2 72/100 rank=184 id=page_000251_table_box_id_7 latency=1.3858s status=ok active=1
+SEND identity-c2 74/100 table=page_001183_table_12 active=2
+RECV identity-c2 73/100 rank=469 id=page_001131_table_15 latency=0.7262s status=ok active=1
+SEND identity-c2 75/100 table=page_000266_table_box_id_7 active=2
+RECV identity-c2 75/100 rank=509 id=page_000266_table_box_id_7 latency=0.2312s status=ok active=1
+SEND identity-c2 76/100 table=page_000447_table_12 active=2
+RECV identity-c2 76/100 rank=371 id=page_000447_table_12 latency=0.6505s status=ok active=1
+SEND identity-c2 77/100 table=page_001193_table_4 active=2
+RECV identity-c2 74/100 rank=285 id=page_001183_table_12 latency=1.5430s status=ok active=1
+SEND identity-c2 78/100 table=page_001368_table_box_id_239 active=2
+RECV identity-c2 77/100 rank=342 id=page_001193_table_4 latency=0.7469s status=ok active=1
+SEND identity-c2 79/100 table=page_000903_table_15 active=2
+RECV identity-c2 78/100 rank=512 id=page_001368_table_box_id_239 latency=1.0445s status=ok active=1
+SEND identity-c2 80/100 table=page_001167_table_2 active=2
+RECV identity-c2 79/100 rank=522 id=page_000903_table_15 latency=1.3579s status=ok active=1
+SEND identity-c2 81/100 table=page_000212_table_box_id_1 active=2
+RECV identity-c2 80/100 rank=422 id=page_001167_table_2 latency=1.5448s status=ok active=1
+SEND identity-c2 82/100 table=page_001147_table_10 active=2
+RECV identity-c2 82/100 rank=90 id=page_001147_table_10 latency=1.1881s status=ok active=1
+SEND identity-c2 83/100 table=page_000223_table_box_id_2 active=2
+RECV identity-c2 81/100 rank=113 id=page_000212_table_box_id_1 latency=2.6118s status=ok active=1
+SEND identity-c2 84/100 table=page_000716_table_0 active=2
+RECV identity-c2 84/100 rank=588 id=page_000716_table_0 latency=0.4039s status=ok active=1
+SEND identity-c2 85/100 table=page_000937_table_1 active=2
+RECV identity-c2 85/100 rank=415 id=page_000937_table_1 latency=0.7056s status=ok active=1
+SEND identity-c2 86/100 table=page_000465_table_10 active=2
+RECV identity-c2 83/100 rank=114 id=page_000223_table_box_id_2 latency=1.9164s status=ok active=1
+SEND identity-c2 87/100 table=page_000465_table_8 active=2
+RECV identity-c2 86/100 rank=339 id=page_000465_table_10 latency=0.6828s status=ok active=1
+SEND identity-c2 88/100 table=page_001179_table_6 active=2
+RECV identity-c2 87/100 rank=331 id=page_000465_table_8 latency=0.9609s status=ok active=1
+SEND identity-c2 89/100 table=page_000554_table_12 active=2
+RECV identity-c2 89/100 rank=538 id=page_000554_table_12 latency=0.5932s status=ok active=1
+SEND identity-c2 90/100 table=page_000199_table_box_id_0 active=2
+RECV identity-c2 88/100 rank=61 id=page_001179_table_6 latency=2.1274s status=ok active=1
+SEND identity-c2 91/100 table=page_000516_table_0 active=2
+RECV identity-c2 91/100 rank=125 id=page_000516_table_0 latency=1.1361s status=ok active=1
+SEND identity-c2 92/100 table=page_001214_table_8 active=2
+RECV identity-c2 90/100 rank=80 id=page_000199_table_box_id_0 latency=2.7012s status=ok active=1
+SEND identity-c2 93/100 table=page_001368_table_box_id_161 active=2
+RECV identity-c2 93/100 rank=332 id=page_001368_table_box_id_161 latency=0.6061s status=ok active=1
+SEND identity-c2 94/100 table=page_000577_table_3 active=2
+RECV identity-c2 94/100 rank=382 id=page_000577_table_3 latency=0.6524s status=ok active=1
+SEND identity-c2 95/100 table=page_000984_table_3 active=2
+RECV identity-c2 92/100 rank=359 id=page_001214_table_8 latency=2.2056s status=ok active=1
+SEND identity-c2 96/100 table=page_001187_table_0 active=2
+RECV identity-c2 95/100 rank=238 id=page_000984_table_3 latency=1.3150s status=ok active=1
+SEND identity-c2 97/100 table=page_000821_table_box_id_14 active=2
+RECV identity-c2 97/100 rank=585 id=page_000821_table_box_id_14 latency=0.4132s status=ok active=1
+SEND identity-c2 98/100 table=page_000833_table_4 active=2
+RECV identity-c2 98/100 rank=352 id=page_000833_table_4 latency=0.7973s status=ok active=1
+SEND identity-c2 99/100 table=page_001375_table_31 active=2
+RECV identity-c2 99/100 rank=631 id=page_001375_table_31 latency=0.2521s status=ok active=1
+SEND identity-c2 100/100 table=page_000645_table_7 active=2
+RECV identity-c2 96/100 rank=28 id=page_001187_table_0 latency=2.8604s status=ok active=1
+RECV identity-c2 100/100 rank=533 id=page_000645_table_7 latency=0.4378s status=ok active=0
+DONE identity-c2 requests=100 failures=0 max_in_flight=2 wall=66.8917s qps=1.4950 p50=1.0381s p95=2.9954s max=8.2926s

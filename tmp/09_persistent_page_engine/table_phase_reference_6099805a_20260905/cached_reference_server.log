@@ -1,0 +1,377 @@
+Waiting for NPU worker pid=2248354
+TABLE_SPEC_API setup=draft_recognizer
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.866956}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":14.389536}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.025943}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.028032}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":6.072656}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.519047}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016974}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":9.210841}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":0.615057}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.241883}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.001532}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.003905}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":35.866021}
+TABLE_SPEC_API setup=b1_recognizer
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.889541}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":14.380195}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.022395}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.023253}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":0.021232}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.005723}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016517}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":0.815869}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":0.664896}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.237154}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.001295}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.000546}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":17.088047}
+TABLE_PHASE setup=decode kind=target B=1 KV=4096
+TABLE_PHASE setup=decode kind=draft B=8 KV=768
+TABLE_PHASE setup=verifier B=1 Q=8 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=16 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=32 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=64 KV=4096
+TABLE_PHASE setup=decode kind=target B=2 KV=4096
+.TABLE_PHASE setup=decode kind=draft B=16 KV=768
+.TABLE_PHASE setup=verifier B=2 Q=8 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=16 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=32 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=64 KV=4096
+TABLE_PHASE ready; perform complete client warmups outside measurement
+READY http://127.0.0.1:8765 worker_pid=2248354
+HTTP 127.0.0.1 "GET /health HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-warm-001-page_001272_table_1:83fd8ff5ec604f979d169dc47129baff route=spec active=1
+.TABLE_PHASE complete id=cached-warm-001-page_001272_table_1:83fd8ff5ec604f979d169dc47129baff wall_s=3.0253 tokens=952 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-warm-001-page_001272_table_1&source_request_id=page_001272_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-warm-002-page_001137_table_9:1966edcea6514ac3af694e7e59f6e78f route=spec active=1
+TABLE_PHASE complete id=cached-warm-002-page_001137_table_9:1966edcea6514ac3af694e7e59f6e78f wall_s=0.7822 tokens=966 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-warm-002-page_001137_table_9&source_request_id=page_001137_table_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-001-page_000287_table_box_id_8:d0d7c54b89ff487888a19ffb92399789 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-001-page_000287_table_box_id_8:d0d7c54b89ff487888a19ffb92399789 wall_s=1.1291 tokens=1768 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-001-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-002-page_001367_table_51:470c986aab2443c2b6a5435e6d710403 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-002-page_001367_table_51:470c986aab2443c2b6a5435e6d710403 wall_s=0.4749 tokens=405 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-002-page_001367_table_51&source_request_id=page_001367_table_51 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-003-page_000236_table_box_id_1:7217f155597f4177a234157941cf4b98 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-003-page_000236_table_box_id_1:7217f155597f4177a234157941cf4b98 wall_s=0.5572 tokens=202 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-003-page_000236_table_box_id_1&source_request_id=page_000236_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-004-page_000634_table_11:7805ad544a5b458e9d10bded36c754a0 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-004-page_000634_table_11:7805ad544a5b458e9d10bded36c754a0 wall_s=0.6049 tokens=358 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-004-page_000634_table_11&source_request_id=page_000634_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-005-page_000272_table_box_id_1:19445b6df9f44ea3889ca0b2c2b2fb44 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-005-page_000272_table_box_id_1:19445b6df9f44ea3889ca0b2c2b2fb44 wall_s=1.8946 tokens=3025 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-005-page_000272_table_box_id_1&source_request_id=page_000272_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-006-page_001172_table_16:565e50800ac64f5eb42ff7eedd7e11e9 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-006-page_001172_table_16:565e50800ac64f5eb42ff7eedd7e11e9 wall_s=0.5300 tokens=212 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-006-page_001172_table_16&source_request_id=page_001172_table_16 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-007-page_001137_table_2:57611de066294aacb9e1afdf0fae76ca route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-007-page_001137_table_2:57611de066294aacb9e1afdf0fae76ca wall_s=0.5685 tokens=567 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-007-page_001137_table_2&source_request_id=page_001137_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-008-page_001150_table_box_id_9:f9cbe83d980b456e84ada10ec66f0e41 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-008-page_001150_table_box_id_9:f9cbe83d980b456e84ada10ec66f0e41 wall_s=0.4917 tokens=307 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-008-page_001150_table_box_id_9&source_request_id=page_001150_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-009-page_000920_table_8:3be37463ae01418697d72140d0445851 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-009-page_000920_table_8:3be37463ae01418697d72140d0445851 wall_s=0.6545 tokens=150 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-009-page_000920_table_8&source_request_id=page_000920_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-010-page_000524_table_0:77d8111b231c46ef9c125309a4da8fad route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-010-page_000524_table_0:77d8111b231c46ef9c125309a4da8fad wall_s=0.7786 tokens=569 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-010-page_000524_table_0&source_request_id=page_000524_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-011-page_000256_table_box_id_8:c56a9adb6e8043b481fc7917b59c6576 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-011-page_000256_table_box_id_8:c56a9adb6e8043b481fc7917b59c6576 wall_s=0.5139 tokens=214 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-011-page_000256_table_box_id_8&source_request_id=page_000256_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-012-page_001166_table_9:93775c0f1d374584bd5db6b79e3502a9 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-012-page_001166_table_9:93775c0f1d374584bd5db6b79e3502a9 wall_s=0.3731 tokens=149 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-012-page_001166_table_9&source_request_id=page_001166_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-013-page_000211_table_box_id_3:4ba14ecdcaaa493ba7966a2d4bab2945 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-013-page_000211_table_box_id_3:4ba14ecdcaaa493ba7966a2d4bab2945 wall_s=0.7412 tokens=348 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-013-page_000211_table_box_id_3&source_request_id=page_000211_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-014-page_000933_table_10:0cd5765948e94eb1903fdfc7a09856cc route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-014-page_000933_table_10:0cd5765948e94eb1903fdfc7a09856cc wall_s=0.2806 tokens=83 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-014-page_000933_table_10&source_request_id=page_000933_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-015-page_001129_table_8:1c1e125ab64a44a2951a567d53af950b route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-015-page_001129_table_8:1c1e125ab64a44a2951a567d53af950b wall_s=0.7957 tokens=723 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-015-page_001129_table_8&source_request_id=page_001129_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-016-page_001375_table_7:7298b8c1098b48308084b545dc211965 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-016-page_001375_table_7:7298b8c1098b48308084b545dc211965 wall_s=0.4082 tokens=122 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-016-page_001375_table_7&source_request_id=page_001375_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-017-page_000106_table_box_id_2:55a797cf596b43919d72cf999c9f2c53 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-017-page_000106_table_box_id_2:55a797cf596b43919d72cf999c9f2c53 wall_s=0.8365 tokens=405 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-017-page_000106_table_box_id_2&source_request_id=page_000106_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-018-page_001134_table_10:1fa5a7d0da7d4e1bbb56766c2c7ecb7f route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-018-page_001134_table_10:1fa5a7d0da7d4e1bbb56766c2c7ecb7f wall_s=0.6214 tokens=635 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-018-page_001134_table_10&source_request_id=page_001134_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-019-page_000642_table_8:e3ebba9a4b324119b95ee6092fe465ab route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-019-page_000642_table_8:e3ebba9a4b324119b95ee6092fe465ab wall_s=0.7951 tokens=640 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-019-page_000642_table_8&source_request_id=page_000642_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-020-page_000564_table_7:512049fafe5644559df57e4aa3b4c590 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-020-page_000564_table_7:512049fafe5644559df57e4aa3b4c590 wall_s=0.5975 tokens=176 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-020-page_000564_table_7&source_request_id=page_000564_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-021-page_001368_table_box_id_242:97deb28ff431448bb3e04daed9a17cf7 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-021-page_001368_table_box_id_242:97deb28ff431448bb3e04daed9a17cf7 wall_s=0.3163 tokens=131 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-021-page_001368_table_box_id_242&source_request_id=page_001368_table_box_id_242 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-022-page_000263_table_box_id_7:6e3e16cefb6d49a5b6988121b61fb7e3 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-022-page_000263_table_box_id_7:6e3e16cefb6d49a5b6988121b61fb7e3 wall_s=3.0297 tokens=1500 exact=False active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-022-page_000263_table_box_id_7&source_request_id=page_000263_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-023-page_000746_table_18:b94d2cb73fdd43bea58e730ab2c56948 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-023-page_000746_table_18:b94d2cb73fdd43bea58e730ab2c56948 wall_s=1.2848 tokens=458 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-023-page_000746_table_18&source_request_id=page_000746_table_18 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-024-page_000213_table_box_id_5:e0add7e9c45541b798727bfd3e192193 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-024-page_000213_table_box_id_5:e0add7e9c45541b798727bfd3e192193 wall_s=0.6817 tokens=328 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-024-page_000213_table_box_id_5&source_request_id=page_000213_table_box_id_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-025-page_000206_table_box_id_1:1a97e7b776364577ace31e49d197e713 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-025-page_000206_table_box_id_1:1a97e7b776364577ace31e49d197e713 wall_s=0.5771 tokens=282 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-025-page_000206_table_box_id_1&source_request_id=page_000206_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-026-page_000209_table_box_id_1:527f22a7e23f450d95c17bcfbabe44c4 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-026-page_000209_table_box_id_1:527f22a7e23f450d95c17bcfbabe44c4 wall_s=0.3730 tokens=135 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-026-page_000209_table_box_id_1&source_request_id=page_000209_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-027-page_001216_table_2:91bd088d75e347d3a4f60d6893678a47 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-027-page_001216_table_2:91bd088d75e347d3a4f60d6893678a47 wall_s=0.7228 tokens=446 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-027-page_001216_table_2&source_request_id=page_001216_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-028-page_000188_table_box_id_6:15a0861172b2401cabe93917dfc7cb30 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-028-page_000188_table_box_id_6:15a0861172b2401cabe93917dfc7cb30 wall_s=1.0493 tokens=110 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-028-page_000188_table_box_id_6&source_request_id=page_000188_table_box_id_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-029-page_000921_table_9:fa0163ea8cab4da1a2bdff885fceea2e route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-029-page_000921_table_9:fa0163ea8cab4da1a2bdff885fceea2e wall_s=1.6310 tokens=90 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-029-page_000921_table_9&source_request_id=page_000921_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-030-page_000533_table_8:95fbbb2373a449cb93caca5a78a35611 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-030-page_000533_table_8:95fbbb2373a449cb93caca5a78a35611 wall_s=0.4173 tokens=171 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-030-page_000533_table_8&source_request_id=page_000533_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-031-page_001123_table_14:1ad2f07e78b842d4884d0895c3a64f90 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-031-page_001123_table_14:1ad2f07e78b842d4884d0895c3a64f90 wall_s=0.4308 tokens=186 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-031-page_001123_table_14&source_request_id=page_001123_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-032-page_001503_table_5:8c048c8362154eba8005eec002514a51 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-032-page_001503_table_5:8c048c8362154eba8005eec002514a51 wall_s=0.2217 tokens=42 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-032-page_001503_table_5&source_request_id=page_001503_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-033-page_001197_table_5:a469c5a77438426baad544d44520df93 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-033-page_001197_table_5:a469c5a77438426baad544d44520df93 wall_s=0.6096 tokens=727 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-033-page_001197_table_5&source_request_id=page_001197_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-034-page_000542_table_0:7a7c9fd9a52d46298e8acdaec0a03cd5 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-034-page_000542_table_0:7a7c9fd9a52d46298e8acdaec0a03cd5 wall_s=0.5294 tokens=341 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-034-page_000542_table_0&source_request_id=page_000542_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-035-page_001130_table_1:f7852793874c4f6297d418710fd21b77 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-035-page_001130_table_1:f7852793874c4f6297d418710fd21b77 wall_s=0.2004 tokens=51 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-035-page_001130_table_1&source_request_id=page_001130_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-036-page_001595_table_box_id_9:c6866717d4fe4f8fa9559588ac42b3a2 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-036-page_001595_table_box_id_9:c6866717d4fe4f8fa9559588ac42b3a2 wall_s=0.1998 tokens=45 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-036-page_001595_table_box_id_9&source_request_id=page_001595_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-037-page_001233_table_6:c318298c6fd840a38efdda2dccb3adc6 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-037-page_001233_table_6:c318298c6fd840a38efdda2dccb3adc6 wall_s=0.7112 tokens=347 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-037-page_001233_table_6&source_request_id=page_001233_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-038-page_000585_table_1:8fac5569a0664019bef4e73c50bae5fd route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-038-page_000585_table_1:8fac5569a0664019bef4e73c50bae5fd wall_s=0.8684 tokens=457 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-038-page_000585_table_1&source_request_id=page_000585_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-039-page_000821_table_box_id_26:3ad7fc4be5f94822a6694903f2f7fb64 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-039-page_000821_table_box_id_26:3ad7fc4be5f94822a6694903f2f7fb64 wall_s=0.1724 tokens=46 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-039-page_000821_table_box_id_26&source_request_id=page_000821_table_box_id_26 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-040-page_000566_table_3:4c891bb562e24a57aa93895c4772876c route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-040-page_000566_table_3:4c891bb562e24a57aa93895c4772876c wall_s=0.8696 tokens=446 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-040-page_000566_table_3&source_request_id=page_000566_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-041-page_000534_table_4:ed5679a80d4f4357ab41b0e518940e13 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-041-page_000534_table_4:ed5679a80d4f4357ab41b0e518940e13 wall_s=0.6015 tokens=317 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-041-page_000534_table_4&source_request_id=page_000534_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-042-page_001141_table_13:c16f362dc6c74d56b23d402b78a66fca route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-042-page_001141_table_13:c16f362dc6c74d56b23d402b78a66fca wall_s=0.6321 tokens=301 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-042-page_001141_table_13&source_request_id=page_001141_table_13 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-043-page_000665_table_3:5f50b79d9cba46b0a4574ee0f6dbaade route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-043-page_000665_table_3:5f50b79d9cba46b0a4574ee0f6dbaade wall_s=0.1085 tokens=11 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-043-page_000665_table_3&source_request_id=page_000665_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-044-page_001417_table_2:be35165a63da44459cbe5915d100e3bb route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-044-page_001417_table_2:be35165a63da44459cbe5915d100e3bb wall_s=0.2114 tokens=68 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-044-page_001417_table_2&source_request_id=page_001417_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-045-page_001117_table_box_id_7:466f90ec490c409e906d35eb40222d4d route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-045-page_001117_table_box_id_7:466f90ec490c409e906d35eb40222d4d wall_s=0.3024 tokens=119 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-045-page_001117_table_box_id_7&source_request_id=page_001117_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-046-page_001270_table_box_id_1:76c2e7a77a66426fbad854b2f01151e7 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-046-page_001270_table_box_id_1:76c2e7a77a66426fbad854b2f01151e7 wall_s=1.6199 tokens=789 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-046-page_001270_table_box_id_1&source_request_id=page_001270_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-047-page_000261_table_box_id_3:e5ad6771807a48f1890f57e4a3a0873d route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-047-page_000261_table_box_id_3:e5ad6771807a48f1890f57e4a3a0873d wall_s=1.9529 tokens=1106 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-047-page_000261_table_box_id_3&source_request_id=page_000261_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-048-page_000505_table_1:b5f530bff23947438c84a4839b123c33 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-048-page_000505_table_1:b5f530bff23947438c84a4839b123c33 wall_s=0.9501 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-048-page_000505_table_1&source_request_id=page_000505_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-049-page_000682_table_15:42cf1e4d57ca4e0fbf8c1a0a8845d754 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-049-page_000682_table_15:42cf1e4d57ca4e0fbf8c1a0a8845d754 wall_s=0.2562 tokens=63 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-049-page_000682_table_15&source_request_id=page_000682_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-050-page_000275_table_box_id_1:cd319159ff6442b49bd9e9087d871951 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-050-page_000275_table_box_id_1:cd319159ff6442b49bd9e9087d871951 wall_s=1.6415 tokens=2852 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-050-page_000275_table_box_id_1&source_request_id=page_000275_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-051-page_000789_table_34:82bb45b080614289acc5571832017956 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-051-page_000789_table_34:82bb45b080614289acc5571832017956 wall_s=0.1549 tokens=32 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-051-page_000789_table_34&source_request_id=page_000789_table_34 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-052-page_001177_table_2:e9737b7a43ee4b48a257af2ed9e20482 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-052-page_001177_table_2:e9737b7a43ee4b48a257af2ed9e20482 wall_s=0.4841 tokens=355 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-052-page_001177_table_2&source_request_id=page_001177_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-053-page_001398_table_box-13qv1ztw:5f71949917904821830cbf57ccec6bc9 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-053-page_001398_table_box-13qv1ztw:5f71949917904821830cbf57ccec6bc9 wall_s=0.3351 tokens=126 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-053-page_001398_table_box-13qv1ztw&source_request_id=page_001398_table_box-13qv1ztw HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-054-page_001183_table_11:838aa83356294dda914713bdd8e04d1a route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-054-page_001183_table_11:838aa83356294dda914713bdd8e04d1a wall_s=0.4470 tokens=169 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-054-page_001183_table_11&source_request_id=page_001183_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-055-page_000507_table_0:299c532f6b4c4466b5963bff8e0e8b1c route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-055-page_000507_table_0:299c532f6b4c4466b5963bff8e0e8b1c wall_s=0.4217 tokens=167 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-055-page_000507_table_0&source_request_id=page_000507_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-056-page_000710_table_9:2c654648e20c49409fbf76485f4425d8 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-056-page_000710_table_9:2c654648e20c49409fbf76485f4425d8 wall_s=0.2441 tokens=60 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-056-page_000710_table_9&source_request_id=page_000710_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-057-page_000657_table_6:4ed2f7ff5b3a4c5ab98efb94c77b4955 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-057-page_000657_table_6:4ed2f7ff5b3a4c5ab98efb94c77b4955 wall_s=0.1078 tokens=11 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-057-page_000657_table_6&source_request_id=page_000657_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-058-page_001368_table_box_id_227:bb4a6ffe9ddf44478531e1d0560fa7eb route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-058-page_001368_table_box_id_227:bb4a6ffe9ddf44478531e1d0560fa7eb wall_s=0.6752 tokens=345 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-058-page_001368_table_box_id_227&source_request_id=page_001368_table_box_id_227 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-059-page_001176_table_4:6adf8a761f7944909093a8e0ae301f73 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-059-page_001176_table_4:6adf8a761f7944909093a8e0ae301f73 wall_s=0.7970 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-059-page_001176_table_4&source_request_id=page_001176_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-060-page_001181_table_6:39b423ef9fc146f69ffa4c21832a655c route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-060-page_001181_table_6:39b423ef9fc146f69ffa4c21832a655c wall_s=1.0945 tokens=906 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-060-page_001181_table_6&source_request_id=page_001181_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-061-page_000937_table_0:bb23e079a43542b9bbbcad193603b408 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-061-page_000937_table_0:bb23e079a43542b9bbbcad193603b408 wall_s=0.6094 tokens=164 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-061-page_000937_table_0&source_request_id=page_000937_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-062-page_001368_table_box_id_237:9fd55e2bfb6b49179bcd0f3df190d998 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-062-page_001368_table_box_id_237:9fd55e2bfb6b49179bcd0f3df190d998 wall_s=0.3482 tokens=151 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-062-page_001368_table_box_id_237&source_request_id=page_001368_table_box_id_237 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-063-page_000217_table_box_id_0:f9aa2116a5bd4cb4a3ca865595e55fe5 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-063-page_000217_table_box_id_0:f9aa2116a5bd4cb4a3ca865595e55fe5 wall_s=1.6417 tokens=138 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-063-page_000217_table_box_id_0&source_request_id=page_000217_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-064-page_001159_table_5:3d7326065ce145ffb9913b112f7d9b6e route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-064-page_001159_table_5:3d7326065ce145ffb9913b112f7d9b6e wall_s=0.6907 tokens=314 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-064-page_001159_table_5&source_request_id=page_001159_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-065-page_000626_table_box_id_1:82ba2925db3e43189d0c39ebaa7c3a27 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-065-page_000626_table_box_id_1:82ba2925db3e43189d0c39ebaa7c3a27 wall_s=1.5012 tokens=1352 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-065-page_000626_table_box_id_1&source_request_id=page_000626_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-066-page_000984_table_2:f73479e7bfbc4aad89e0b7719da5d91f route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-066-page_000984_table_2:f73479e7bfbc4aad89e0b7719da5d91f wall_s=0.1568 tokens=32 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-066-page_000984_table_2&source_request_id=page_000984_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-067-page_001082_table_34:926d0bc1ab1445fea52dc360c0eed848 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-067-page_001082_table_34:926d0bc1ab1445fea52dc360c0eed848 wall_s=0.7900 tokens=483 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-067-page_001082_table_34&source_request_id=page_001082_table_34 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-068-page_000467_table_17:27f0c19d5ce14ae79553867e4dc25f3f route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-068-page_000467_table_17:27f0c19d5ce14ae79553867e4dc25f3f wall_s=0.8504 tokens=723 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-068-page_000467_table_17&source_request_id=page_000467_table_17 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-069-page_000866_table_14:72231c8ebca7423c8a3f30d7f1763809 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-069-page_000866_table_14:72231c8ebca7423c8a3f30d7f1763809 wall_s=0.4144 tokens=167 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-069-page_000866_table_14&source_request_id=page_000866_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-070-page_001227_table_10:62132accc1c34aef8c53286c27cacc04 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-070-page_001227_table_10:62132accc1c34aef8c53286c27cacc04 wall_s=0.9394 tokens=842 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-070-page_001227_table_10&source_request_id=page_001227_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-071-page_000916_table_7:21b31dc735ed468797c769fec6707208 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-071-page_000916_table_7:21b31dc735ed468797c769fec6707208 wall_s=0.6896 tokens=230 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-071-page_000916_table_7&source_request_id=page_000916_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-072-page_000251_table_box_id_7:088af55f636044648a55dc87a000f263 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-072-page_000251_table_box_id_7:088af55f636044648a55dc87a000f263 wall_s=0.7835 tokens=404 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-072-page_000251_table_box_id_7&source_request_id=page_000251_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-073-page_001131_table_15:7830fe6ed72645558e9546d11af781d3 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-073-page_001131_table_15:7830fe6ed72645558e9546d11af781d3 wall_s=0.3293 tokens=131 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-073-page_001131_table_15&source_request_id=page_001131_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-074-page_001183_table_12:ff3ab6f51ba3491e87f229b25ebe7a94 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-074-page_001183_table_12:ff3ab6f51ba3491e87f229b25ebe7a94 wall_s=0.5855 tokens=268 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-074-page_001183_table_12&source_request_id=page_001183_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-075-page_000266_table_box_id_7:72145cc94ee14b4c98c5330cc1929f3d route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-075-page_000266_table_box_id_7:72145cc94ee14b4c98c5330cc1929f3d wall_s=0.2728 tokens=96 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-075-page_000266_table_box_id_7&source_request_id=page_000266_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-076-page_000447_table_12:aa23e25d7acf4b8c8b0fed5ca1d709d2 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-076-page_000447_table_12:aa23e25d7acf4b8c8b0fed5ca1d709d2 wall_s=0.4344 tokens=221 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-076-page_000447_table_12&source_request_id=page_000447_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-077-page_001193_table_4:4864ebc649204fb9bb6821e908db3e42 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-077-page_001193_table_4:4864ebc649204fb9bb6821e908db3e42 wall_s=0.4814 tokens=210 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-077-page_001193_table_4&source_request_id=page_001193_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-078-page_001368_table_box_id_239:5b5684aff50642f695c0caff811095b7 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-078-page_001368_table_box_id_239:5b5684aff50642f695c0caff811095b7 wall_s=0.2978 tokens=120 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-078-page_001368_table_box_id_239&source_request_id=page_001368_table_box_id_239 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-079-page_000903_table_15:38bd312d873044ee9942a6cb18228bf4 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-079-page_000903_table_15:38bd312d873044ee9942a6cb18228bf4 wall_s=0.6432 tokens=71 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-079-page_000903_table_15&source_request_id=page_000903_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-080-page_001167_table_2:be881ba0db7b49da96a88245cc7b9576 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-080-page_001167_table_2:be881ba0db7b49da96a88245cc7b9576 wall_s=0.4189 tokens=176 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-080-page_001167_table_2&source_request_id=page_001167_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-081-page_000212_table_box_id_1:ee782a7051754d8e8ef67149ce2f7e3e route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-081-page_000212_table_box_id_1:ee782a7051754d8e8ef67149ce2f7e3e wall_s=1.1776 tokens=647 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-081-page_000212_table_box_id_1&source_request_id=page_000212_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-082-page_001147_table_10:92719eb073fb40f88c47f0ef13007b44 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-082-page_001147_table_10:92719eb073fb40f88c47f0ef13007b44 wall_s=0.7632 tokens=862 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-082-page_001147_table_10&source_request_id=page_001147_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-083-page_000223_table_box_id_2:d2d71f48ec82481784f0ae55e634a1ee route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-083-page_000223_table_box_id_2:d2d71f48ec82481784f0ae55e634a1ee wall_s=0.8730 tokens=679 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-083-page_000223_table_box_id_2&source_request_id=page_000223_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-084-page_000716_table_0:fa4c1cc183c945089346a9db15644e33 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-084-page_000716_table_0:fa4c1cc183c945089346a9db15644e33 wall_s=0.1982 tokens=57 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-084-page_000716_table_0&source_request_id=page_000716_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-085-page_000937_table_1:33ca43d893564a0b8155b991e5aeb58d route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-085-page_000937_table_1:33ca43d893564a0b8155b991e5aeb58d wall_s=0.5115 tokens=121 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-085-page_000937_table_1&source_request_id=page_000937_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-086-page_000465_table_10:0bf364804f474ea4908136ecd98c7bec route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-086-page_000465_table_10:0bf364804f474ea4908136ecd98c7bec wall_s=0.5238 tokens=230 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-086-page_000465_table_10&source_request_id=page_000465_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-087-page_000465_table_8:0e8f92c033bd4341aeabb0db512216c3 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-087-page_000465_table_8:0e8f92c033bd4341aeabb0db512216c3 wall_s=0.5361 tokens=237 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-087-page_000465_table_8&source_request_id=page_000465_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-088-page_001179_table_6:79e75ef4668f4f04ba4b7bba921c4831 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-088-page_001179_table_6:79e75ef4668f4f04ba4b7bba921c4831 wall_s=0.9528 tokens=1093 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-088-page_001179_table_6&source_request_id=page_001179_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-089-page_000554_table_12:33da4ed4b5fb4ad792cdacbdf3c4ee1c route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-089-page_000554_table_12:33da4ed4b5fb4ad792cdacbdf3c4ee1c wall_s=0.2583 tokens=93 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-089-page_000554_table_12&source_request_id=page_000554_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-090-page_000199_table_box_id_0:0c5ca5c7d61f446185b31e5dac1ca98c route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-090-page_000199_table_box_id_0:0c5ca5c7d61f446185b31e5dac1ca98c wall_s=1.3052 tokens=855 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-090-page_000199_table_box_id_0&source_request_id=page_000199_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-091-page_000516_table_0:ef6443144fbd471680be43ef8ecb820e route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-091-page_000516_table_0:ef6443144fbd471680be43ef8ecb820e wall_s=0.7940 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-091-page_000516_table_0&source_request_id=page_000516_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-092-page_001214_table_8:53f2d6084fe74e03a436d37b294c0892 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-092-page_001214_table_8:53f2d6084fe74e03a436d37b294c0892 wall_s=0.5254 tokens=232 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-092-page_001214_table_8&source_request_id=page_001214_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-093-page_001368_table_box_id_161:35f6d28cc9524e6fbf37683e8e777fcd route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-093-page_001368_table_box_id_161:35f6d28cc9524e6fbf37683e8e777fcd wall_s=0.3950 tokens=253 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-093-page_001368_table_box_id_161&source_request_id=page_001368_table_box_id_161 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-094-page_000577_table_3:6e528c7c5a434a808b03f66b08d9e748 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-094-page_000577_table_3:6e528c7c5a434a808b03f66b08d9e748 wall_s=0.5194 tokens=139 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-094-page_000577_table_3&source_request_id=page_000577_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-095-page_000984_table_3:0d4d73aa20364c3193d81445d971a8d5 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-095-page_000984_table_3:0d4d73aa20364c3193d81445d971a8d5 wall_s=0.7137 tokens=299 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-095-page_000984_table_3&source_request_id=page_000984_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-096-page_001187_table_0:56b61f33133e406ca29680c5ea293d35 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-096-page_001187_table_0:56b61f33133e406ca29680c5ea293d35 wall_s=1.2325 tokens=1553 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-096-page_001187_table_0&source_request_id=page_001187_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-097-page_000821_table_box_id_14:4b594bf4407541e6af671c98041658b4 route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-097-page_000821_table_box_id_14:4b594bf4407541e6af671c98041658b4 wall_s=0.2049 tokens=59 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-097-page_000821_table_box_id_14&source_request_id=page_000821_table_box_id_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-098-page_000833_table_4:534d26e8007c4e8da4456baceaaeba81 route=spec active=1
+TABLE_PHASE complete id=cached-reference-c1-098-page_000833_table_4:534d26e8007c4e8da4456baceaaeba81 wall_s=0.6830 tokens=107 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-098-page_000833_table_4&source_request_id=page_000833_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-099-page_001375_table_31:318884e226634bc3af0620403630cf6a route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-099-page_001375_table_31:318884e226634bc3af0620403630cf6a wall_s=0.1483 tokens=34 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-099-page_001375_table_31&source_request_id=page_001375_table_31 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=cached-reference-c1-100-page_000645_table_7:1453c75de8d84109ad6ad830f9ceaf8b route=b1 active=1
+TABLE_PHASE complete id=cached-reference-c1-100-page_000645_table_7:1453c75de8d84109ad6ad830f9ceaf8b wall_s=0.2488 tokens=89 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=cached-reference-c1-100-page_000645_table_7&source_request_id=page_000645_table_7 HTTP/1.1" 200 -
+SERVICE_SUMMARY /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_phase_reference_6099805a_20260905/cached_reference_service.json

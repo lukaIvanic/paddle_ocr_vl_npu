@@ -1,0 +1,376 @@
+Waiting for NPU worker pid=2262087
+TABLE_SPEC_API setup=draft_recognizer
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.879483}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":9.870813}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.025682}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.027979}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":6.005974}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.524274}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016621}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":9.107127}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":0.614093}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.239406}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.001398}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.003403}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":31.134632}
+TABLE_SPEC_API setup=b1_recognizer
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.896024}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":9.853081}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.020627}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.023067}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":0.021442}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.005741}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016586}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":0.807137}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":0.674608}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.239316}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.001209}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.000554}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":12.56919}
+TABLE_PHASE setup=decode kind=target B=1 KV=4096
+TABLE_PHASE setup=decode kind=draft B=8 KV=768
+TABLE_PHASE setup=verifier B=1 Q=8 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=16 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=32 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=64 KV=4096
+TABLE_PHASE setup=decode kind=target B=2 KV=4096
+TABLE_PHASE setup=decode kind=draft B=16 KV=768
+TABLE_PHASE setup=verifier B=2 Q=8 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=16 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=32 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=64 KV=4096
+TABLE_PHASE ready; perform complete client warmups outside measurement
+READY http://127.0.0.1:8765 worker_pid=2262087
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-warm-001-page_001272_table_1:b45b0f786c9e44938e23e53491c87349 route=spec active=1
+.TABLE_PHASE complete id=overlap-warm-001-page_001272_table_1:b45b0f786c9e44938e23e53491c87349 wall_s=3.0126 tokens=952 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-warm-001-page_001272_table_1&source_request_id=page_001272_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-warm-002-page_001137_table_9:380a0449dffb4816bb2c4c50bffa3043 route=spec active=1
+TABLE_PHASE complete id=overlap-warm-002-page_001137_table_9:380a0449dffb4816bb2c4c50bffa3043 wall_s=0.7668 tokens=966 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-warm-002-page_001137_table_9&source_request_id=page_001137_table_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-001-page_000287_table_box_id_8:4e77ad6034344e3b93dba674580eb7a7 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-001-page_000287_table_box_id_8:4e77ad6034344e3b93dba674580eb7a7 wall_s=1.1323 tokens=1768 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-001-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-002-page_001367_table_51:1dd787e7a8a44803acfc3f6bd55bd996 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-002-page_001367_table_51:1dd787e7a8a44803acfc3f6bd55bd996 wall_s=0.5766 tokens=405 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-002-page_001367_table_51&source_request_id=page_001367_table_51 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-003-page_000236_table_box_id_1:e2a7b3a1c43a4a98b80f7845bd75b5d0 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-003-page_000236_table_box_id_1:e2a7b3a1c43a4a98b80f7845bd75b5d0 wall_s=0.6483 tokens=202 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-003-page_000236_table_box_id_1&source_request_id=page_000236_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-004-page_000634_table_11:44cc04bad98446e292fe8cc7db355265 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-004-page_000634_table_11:44cc04bad98446e292fe8cc7db355265 wall_s=0.5770 tokens=358 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-004-page_000634_table_11&source_request_id=page_000634_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-005-page_000272_table_box_id_1:796c1e5a779d46f3b1c462b94d69ab05 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-005-page_000272_table_box_id_1:796c1e5a779d46f3b1c462b94d69ab05 wall_s=1.6627 tokens=3025 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-005-page_000272_table_box_id_1&source_request_id=page_000272_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-006-page_001172_table_16:9b16de91b06548189fb8e90445d9aa26 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-006-page_001172_table_16:9b16de91b06548189fb8e90445d9aa26 wall_s=0.4856 tokens=212 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-006-page_001172_table_16&source_request_id=page_001172_table_16 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-007-page_001137_table_2:abd23e15a9ac4b0a9174a997f1a41951 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-007-page_001137_table_2:abd23e15a9ac4b0a9174a997f1a41951 wall_s=0.5460 tokens=567 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-007-page_001137_table_2&source_request_id=page_001137_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-008-page_001150_table_box_id_9:f6a76639daff48489db232edcc79e9ad route=spec active=1
+TABLE_PHASE complete id=overlap-c1-008-page_001150_table_box_id_9:f6a76639daff48489db232edcc79e9ad wall_s=0.4914 tokens=307 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-008-page_001150_table_box_id_9&source_request_id=page_001150_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-009-page_000920_table_8:4fd28ee480c24129ac3fbddbeee81f91 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-009-page_000920_table_8:4fd28ee480c24129ac3fbddbeee81f91 wall_s=0.6636 tokens=150 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-009-page_000920_table_8&source_request_id=page_000920_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-010-page_000524_table_0:bcf8e7587d804aed848fa617a3c16430 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-010-page_000524_table_0:bcf8e7587d804aed848fa617a3c16430 wall_s=0.7368 tokens=569 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-010-page_000524_table_0&source_request_id=page_000524_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-011-page_000256_table_box_id_8:03d38493a1264dfd8871dab325684888 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-011-page_000256_table_box_id_8:03d38493a1264dfd8871dab325684888 wall_s=0.4753 tokens=214 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-011-page_000256_table_box_id_8&source_request_id=page_000256_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-012-page_001166_table_9:f346c5a649a7435082ed6608cb07bd73 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-012-page_001166_table_9:f346c5a649a7435082ed6608cb07bd73 wall_s=0.3471 tokens=149 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-012-page_001166_table_9&source_request_id=page_001166_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-013-page_000211_table_box_id_3:dc788f419b12464e979363788981b4ab route=spec active=1
+TABLE_PHASE complete id=overlap-c1-013-page_000211_table_box_id_3:dc788f419b12464e979363788981b4ab wall_s=0.7029 tokens=348 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-013-page_000211_table_box_id_3&source_request_id=page_000211_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-014-page_000933_table_10:8957264351444ab8b5d7f45ef5c38e6b route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-014-page_000933_table_10:8957264351444ab8b5d7f45ef5c38e6b wall_s=0.2605 tokens=83 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-014-page_000933_table_10&source_request_id=page_000933_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-015-page_001129_table_8:0c5309ae7d6042d5b998ab75db9caff4 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-015-page_001129_table_8:0c5309ae7d6042d5b998ab75db9caff4 wall_s=0.7453 tokens=723 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-015-page_001129_table_8&source_request_id=page_001129_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-016-page_001375_table_7:5fac223dd89a4febb21774fb44eb960d route=spec active=1
+TABLE_PHASE complete id=overlap-c1-016-page_001375_table_7:5fac223dd89a4febb21774fb44eb960d wall_s=0.3916 tokens=122 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-016-page_001375_table_7&source_request_id=page_001375_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-017-page_000106_table_box_id_2:17a2f013bb6e4d85a7e47d2324e750be route=spec active=1
+TABLE_PHASE complete id=overlap-c1-017-page_000106_table_box_id_2:17a2f013bb6e4d85a7e47d2324e750be wall_s=0.7831 tokens=405 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-017-page_000106_table_box_id_2&source_request_id=page_000106_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-018-page_001134_table_10:98a45a44358a48388e453c4338cf70e4 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-018-page_001134_table_10:98a45a44358a48388e453c4338cf70e4 wall_s=0.5817 tokens=635 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-018-page_001134_table_10&source_request_id=page_001134_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-019-page_000642_table_8:a524235c4cf44f99b974870cbfda3c56 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-019-page_000642_table_8:a524235c4cf44f99b974870cbfda3c56 wall_s=0.7475 tokens=640 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-019-page_000642_table_8&source_request_id=page_000642_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-020-page_000564_table_7:f486532106494eff8298e65466f5aa92 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-020-page_000564_table_7:f486532106494eff8298e65466f5aa92 wall_s=0.5748 tokens=176 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-020-page_000564_table_7&source_request_id=page_000564_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-021-page_001368_table_box_id_242:6e73e2b386b747c2b17622920d9aff02 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-021-page_001368_table_box_id_242:6e73e2b386b747c2b17622920d9aff02 wall_s=0.2870 tokens=131 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-021-page_001368_table_box_id_242&source_request_id=page_001368_table_box_id_242 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-022-page_000263_table_box_id_7:cfcbd0ae73c94a3cb5f35668c069fff4 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-022-page_000263_table_box_id_7:cfcbd0ae73c94a3cb5f35668c069fff4 wall_s=2.6832 tokens=1500 exact=False active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-022-page_000263_table_box_id_7&source_request_id=page_000263_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-023-page_000746_table_18:8744701bc20c4801acb9c8feb00e6563 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-023-page_000746_table_18:8744701bc20c4801acb9c8feb00e6563 wall_s=1.2416 tokens=458 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-023-page_000746_table_18&source_request_id=page_000746_table_18 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-024-page_000213_table_box_id_5:f600eee39292404caf30303f4533aa82 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-024-page_000213_table_box_id_5:f600eee39292404caf30303f4533aa82 wall_s=0.6594 tokens=328 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-024-page_000213_table_box_id_5&source_request_id=page_000213_table_box_id_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-025-page_000206_table_box_id_1:68a8b9306eb0475fab445b85b74b996f route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-025-page_000206_table_box_id_1:68a8b9306eb0475fab445b85b74b996f wall_s=0.5302 tokens=282 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-025-page_000206_table_box_id_1&source_request_id=page_000206_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-026-page_000209_table_box_id_1:2b30218fd1074ce5965099d7edb92b85 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-026-page_000209_table_box_id_1:2b30218fd1074ce5965099d7edb92b85 wall_s=0.3441 tokens=135 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-026-page_000209_table_box_id_1&source_request_id=page_000209_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-027-page_001216_table_2:22701961723f438cb28c8422f58b3883 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-027-page_001216_table_2:22701961723f438cb28c8422f58b3883 wall_s=0.6668 tokens=446 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-027-page_001216_table_2&source_request_id=page_001216_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-028-page_000188_table_box_id_6:7c999affbec34b38a6933bdd2981143a route=spec active=1
+TABLE_PHASE complete id=overlap-c1-028-page_000188_table_box_id_6:7c999affbec34b38a6933bdd2981143a wall_s=1.0133 tokens=110 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-028-page_000188_table_box_id_6&source_request_id=page_000188_table_box_id_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-029-page_000921_table_9:644b98e69f2f40baa2ef5e89dfb7b7f9 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-029-page_000921_table_9:644b98e69f2f40baa2ef5e89dfb7b7f9 wall_s=1.4459 tokens=90 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-029-page_000921_table_9&source_request_id=page_000921_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-030-page_000533_table_8:d5f73360ac2b41c78ed87e478ac23016 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-030-page_000533_table_8:d5f73360ac2b41c78ed87e478ac23016 wall_s=0.4131 tokens=171 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-030-page_000533_table_8&source_request_id=page_000533_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-031-page_001123_table_14:e58cd63c8c2a47e6865ae18656d8fd6f route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-031-page_001123_table_14:e58cd63c8c2a47e6865ae18656d8fd6f wall_s=0.4122 tokens=186 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-031-page_001123_table_14&source_request_id=page_001123_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-032-page_001503_table_5:8ee943ea49df4f5ab1886dfd83b62269 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-032-page_001503_table_5:8ee943ea49df4f5ab1886dfd83b62269 wall_s=0.2185 tokens=42 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-032-page_001503_table_5&source_request_id=page_001503_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-033-page_001197_table_5:a814a4e4a2a6429196d2bef2d02e9113 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-033-page_001197_table_5:a814a4e4a2a6429196d2bef2d02e9113 wall_s=0.6094 tokens=727 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-033-page_001197_table_5&source_request_id=page_001197_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-034-page_000542_table_0:683feb5577d545df8f7e93a66ba025ea route=spec active=1
+TABLE_PHASE complete id=overlap-c1-034-page_000542_table_0:683feb5577d545df8f7e93a66ba025ea wall_s=0.5167 tokens=341 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-034-page_000542_table_0&source_request_id=page_000542_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-035-page_001130_table_1:d9d11480a2664a5e8fc5e83a92c51002 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-035-page_001130_table_1:d9d11480a2664a5e8fc5e83a92c51002 wall_s=0.1924 tokens=51 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-035-page_001130_table_1&source_request_id=page_001130_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-036-page_001595_table_box_id_9:c50d2b705bf149e09cc0fe7ce98d751e route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-036-page_001595_table_box_id_9:c50d2b705bf149e09cc0fe7ce98d751e wall_s=0.1923 tokens=45 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-036-page_001595_table_box_id_9&source_request_id=page_001595_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-037-page_001233_table_6:843d840a52a647f891213ec4f658497c route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-037-page_001233_table_6:843d840a52a647f891213ec4f658497c wall_s=0.6595 tokens=347 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-037-page_001233_table_6&source_request_id=page_001233_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-038-page_000585_table_1:97f949fa92b846e4a7e5a16aec8dd213 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-038-page_000585_table_1:97f949fa92b846e4a7e5a16aec8dd213 wall_s=0.8314 tokens=457 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-038-page_000585_table_1&source_request_id=page_000585_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-039-page_000821_table_box_id_26:24ca851221a248d2a1f4b686f4df12bb route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-039-page_000821_table_box_id_26:24ca851221a248d2a1f4b686f4df12bb wall_s=0.1649 tokens=46 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-039-page_000821_table_box_id_26&source_request_id=page_000821_table_box_id_26 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-040-page_000566_table_3:4f25740a71074bbfa40414b60be9a79f route=spec active=1
+TABLE_PHASE complete id=overlap-c1-040-page_000566_table_3:4f25740a71074bbfa40414b60be9a79f wall_s=0.8515 tokens=446 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-040-page_000566_table_3&source_request_id=page_000566_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-041-page_000534_table_4:1d261a9993fc41e793e8c9b8ab4c5b5b route=spec active=1
+TABLE_PHASE complete id=overlap-c1-041-page_000534_table_4:1d261a9993fc41e793e8c9b8ab4c5b5b wall_s=0.5951 tokens=317 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-041-page_000534_table_4&source_request_id=page_000534_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-042-page_001141_table_13:908c0a17277e43bc82dfa6926ed88faa route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-042-page_001141_table_13:908c0a17277e43bc82dfa6926ed88faa wall_s=0.5701 tokens=301 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-042-page_001141_table_13&source_request_id=page_001141_table_13 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-043-page_000665_table_3:792a4306776a41539eed8b9d8ee5bcf5 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-043-page_000665_table_3:792a4306776a41539eed8b9d8ee5bcf5 wall_s=0.1041 tokens=11 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-043-page_000665_table_3&source_request_id=page_000665_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-044-page_001417_table_2:f3de0a34d5cb47e4af70190fc48c438f route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-044-page_001417_table_2:f3de0a34d5cb47e4af70190fc48c438f wall_s=0.1912 tokens=68 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-044-page_001417_table_2&source_request_id=page_001417_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-045-page_001117_table_box_id_7:6b708e86940b49ceaa89c1abdba0b58f route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-045-page_001117_table_box_id_7:6b708e86940b49ceaa89c1abdba0b58f wall_s=0.2813 tokens=119 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-045-page_001117_table_box_id_7&source_request_id=page_001117_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-046-page_001270_table_box_id_1:746fb4758d2748868a6f4ee025b613b5 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-046-page_001270_table_box_id_1:746fb4758d2748868a6f4ee025b613b5 wall_s=1.5087 tokens=789 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-046-page_001270_table_box_id_1&source_request_id=page_001270_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-047-page_000261_table_box_id_3:7a3ceac1cb1a475fb564e70e052e2871 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-047-page_000261_table_box_id_3:7a3ceac1cb1a475fb564e70e052e2871 wall_s=1.8233 tokens=1106 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-047-page_000261_table_box_id_3&source_request_id=page_000261_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-048-page_000505_table_1:94a313d6e99b4150af283ffec90059dd route=spec active=1
+TABLE_PHASE complete id=overlap-c1-048-page_000505_table_1:94a313d6e99b4150af283ffec90059dd wall_s=0.9503 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-048-page_000505_table_1&source_request_id=page_000505_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-049-page_000682_table_15:e2d9b1903f7842e3b66ce1f8521d2807 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-049-page_000682_table_15:e2d9b1903f7842e3b66ce1f8521d2807 wall_s=0.2426 tokens=63 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-049-page_000682_table_15&source_request_id=page_000682_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-050-page_000275_table_box_id_1:5cb396a7c04b46c79937ea493a490916 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-050-page_000275_table_box_id_1:5cb396a7c04b46c79937ea493a490916 wall_s=1.5189 tokens=2852 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-050-page_000275_table_box_id_1&source_request_id=page_000275_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-051-page_000789_table_34:3fdab2912d364b3b8eeea28adb90e451 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-051-page_000789_table_34:3fdab2912d364b3b8eeea28adb90e451 wall_s=0.1481 tokens=32 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-051-page_000789_table_34&source_request_id=page_000789_table_34 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-052-page_001177_table_2:9a72631f0f6442bcb185527532f84fd5 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-052-page_001177_table_2:9a72631f0f6442bcb185527532f84fd5 wall_s=0.4667 tokens=355 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-052-page_001177_table_2&source_request_id=page_001177_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-053-page_001398_table_box-13qv1ztw:e3fa40d749f64cad8a6fb05f95ba3dee route=spec active=1
+TABLE_PHASE complete id=overlap-c1-053-page_001398_table_box-13qv1ztw:e3fa40d749f64cad8a6fb05f95ba3dee wall_s=0.3280 tokens=126 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-053-page_001398_table_box-13qv1ztw&source_request_id=page_001398_table_box-13qv1ztw HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-054-page_001183_table_11:859579c1cfb1417680d6fb9371b94b52 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-054-page_001183_table_11:859579c1cfb1417680d6fb9371b94b52 wall_s=0.4118 tokens=169 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-054-page_001183_table_11&source_request_id=page_001183_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-055-page_000507_table_0:7af287c7c95b425c96c9495890801f23 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-055-page_000507_table_0:7af287c7c95b425c96c9495890801f23 wall_s=0.4118 tokens=167 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-055-page_000507_table_0&source_request_id=page_000507_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-056-page_000710_table_9:1507751e46bb4bf78550a286d4f77b9f route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-056-page_000710_table_9:1507751e46bb4bf78550a286d4f77b9f wall_s=0.2321 tokens=60 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-056-page_000710_table_9&source_request_id=page_000710_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-057-page_000657_table_6:dd2fb48b52864ef68eefec7b5854f2a3 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-057-page_000657_table_6:dd2fb48b52864ef68eefec7b5854f2a3 wall_s=0.1032 tokens=11 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-057-page_000657_table_6&source_request_id=page_000657_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-058-page_001368_table_box_id_227:923b6c98407f4fb499577ad476c69fdc route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-058-page_001368_table_box_id_227:923b6c98407f4fb499577ad476c69fdc wall_s=0.6083 tokens=345 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-058-page_001368_table_box_id_227&source_request_id=page_001368_table_box_id_227 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-059-page_001176_table_4:aa1b198f103f4611a124365652068165 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-059-page_001176_table_4:aa1b198f103f4611a124365652068165 wall_s=0.7639 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-059-page_001176_table_4&source_request_id=page_001176_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-060-page_001181_table_6:b04bc42df8684cbf9e60805e7740925d route=spec active=1
+TABLE_PHASE complete id=overlap-c1-060-page_001181_table_6:b04bc42df8684cbf9e60805e7740925d wall_s=1.0343 tokens=906 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-060-page_001181_table_6&source_request_id=page_001181_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-061-page_000937_table_0:dc442d677fc842fc93afe4196929188f route=spec active=1
+TABLE_PHASE complete id=overlap-c1-061-page_000937_table_0:dc442d677fc842fc93afe4196929188f wall_s=0.5951 tokens=164 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-061-page_000937_table_0&source_request_id=page_000937_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-062-page_001368_table_box_id_237:4465d4f800414977a9cff699bac9cd3f route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-062-page_001368_table_box_id_237:4465d4f800414977a9cff699bac9cd3f wall_s=0.3177 tokens=151 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-062-page_001368_table_box_id_237&source_request_id=page_001368_table_box_id_237 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-063-page_000217_table_box_id_0:06396e37f59a4dfca01dc57541e70729 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-063-page_000217_table_box_id_0:06396e37f59a4dfca01dc57541e70729 wall_s=1.4984 tokens=138 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-063-page_000217_table_box_id_0&source_request_id=page_000217_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-064-page_001159_table_5:a45809de1e9e44928046fd10124cc875 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-064-page_001159_table_5:a45809de1e9e44928046fd10124cc875 wall_s=0.6748 tokens=314 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-064-page_001159_table_5&source_request_id=page_001159_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-065-page_000626_table_box_id_1:5b3f7175bff8442389ecf80657930f7f route=spec active=1
+TABLE_PHASE complete id=overlap-c1-065-page_000626_table_box_id_1:5b3f7175bff8442389ecf80657930f7f wall_s=1.4329 tokens=1352 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-065-page_000626_table_box_id_1&source_request_id=page_000626_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-066-page_000984_table_2:5e7e76a442f14ceab6eb1be7c49c0586 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-066-page_000984_table_2:5e7e76a442f14ceab6eb1be7c49c0586 wall_s=0.1770 tokens=32 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-066-page_000984_table_2&source_request_id=page_000984_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-067-page_001082_table_34:d97cf8ed057545d8b2a54fc1b8193634 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-067-page_001082_table_34:d97cf8ed057545d8b2a54fc1b8193634 wall_s=0.7461 tokens=483 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-067-page_001082_table_34&source_request_id=page_001082_table_34 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-068-page_000467_table_17:959c1edfd15945ef8771e43c941858b9 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-068-page_000467_table_17:959c1edfd15945ef8771e43c941858b9 wall_s=0.7962 tokens=723 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-068-page_000467_table_17&source_request_id=page_000467_table_17 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-069-page_000866_table_14:8085bad2ba7a4baa8b09b60c661ffaed route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-069-page_000866_table_14:8085bad2ba7a4baa8b09b60c661ffaed wall_s=0.3848 tokens=167 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-069-page_000866_table_14&source_request_id=page_000866_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-070-page_001227_table_10:532a8ea632d0412a8f16400469c87118 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-070-page_001227_table_10:532a8ea632d0412a8f16400469c87118 wall_s=0.8837 tokens=842 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-070-page_001227_table_10&source_request_id=page_001227_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-071-page_000916_table_7:8dd53b2706f0449b9a6621d2031c6a15 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-071-page_000916_table_7:8dd53b2706f0449b9a6621d2031c6a15 wall_s=0.6580 tokens=230 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-071-page_000916_table_7&source_request_id=page_000916_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-072-page_000251_table_box_id_7:6f9ef1273bd74137a269299c5fd4328d route=spec active=1
+TABLE_PHASE complete id=overlap-c1-072-page_000251_table_box_id_7:6f9ef1273bd74137a269299c5fd4328d wall_s=0.7460 tokens=404 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-072-page_000251_table_box_id_7&source_request_id=page_000251_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-073-page_001131_table_15:110e2417ad0049708160c50786e2245f route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-073-page_001131_table_15:110e2417ad0049708160c50786e2245f wall_s=0.3081 tokens=131 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-073-page_001131_table_15&source_request_id=page_001131_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-074-page_001183_table_12:6c8eb2905aef43a99163ce68091847f1 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-074-page_001183_table_12:6c8eb2905aef43a99163ce68091847f1 wall_s=0.5467 tokens=268 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-074-page_001183_table_12&source_request_id=page_001183_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-075-page_000266_table_box_id_7:136ea72fdb0640cfa05f5aeec4db2ae4 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-075-page_000266_table_box_id_7:136ea72fdb0640cfa05f5aeec4db2ae4 wall_s=0.2585 tokens=96 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-075-page_000266_table_box_id_7&source_request_id=page_000266_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-076-page_000447_table_12:68a222cc908542c5b5b8258f92fb881a route=spec active=1
+TABLE_PHASE complete id=overlap-c1-076-page_000447_table_12:68a222cc908542c5b5b8258f92fb881a wall_s=0.4074 tokens=221 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-076-page_000447_table_12&source_request_id=page_000447_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-077-page_001193_table_4:04bb998613ae4529b29d982edcd302fd route=spec active=1
+TABLE_PHASE complete id=overlap-c1-077-page_001193_table_4:04bb998613ae4529b29d982edcd302fd wall_s=0.4498 tokens=210 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-077-page_001193_table_4&source_request_id=page_001193_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-078-page_001368_table_box_id_239:52b304ebfb054cd08c83a3e750385038 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-078-page_001368_table_box_id_239:52b304ebfb054cd08c83a3e750385038 wall_s=0.2657 tokens=120 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-078-page_001368_table_box_id_239&source_request_id=page_001368_table_box_id_239 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-079-page_000903_table_15:a7aec78db3b54bcd96d9334533e09e7e route=spec active=1
+TABLE_PHASE complete id=overlap-c1-079-page_000903_table_15:a7aec78db3b54bcd96d9334533e09e7e wall_s=0.6002 tokens=71 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-079-page_000903_table_15&source_request_id=page_000903_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-080-page_001167_table_2:cc67dc9d599b4f05ae110791346d2962 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-080-page_001167_table_2:cc67dc9d599b4f05ae110791346d2962 wall_s=0.3755 tokens=176 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-080-page_001167_table_2&source_request_id=page_001167_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-081-page_000212_table_box_id_1:bde4b25290974f75a33bfe76af52a174 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-081-page_000212_table_box_id_1:bde4b25290974f75a33bfe76af52a174 wall_s=1.1320 tokens=647 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-081-page_000212_table_box_id_1&source_request_id=page_000212_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-082-page_001147_table_10:ec26dd27819e4c60b7102f9e83b6dfda route=spec active=1
+TABLE_PHASE complete id=overlap-c1-082-page_001147_table_10:ec26dd27819e4c60b7102f9e83b6dfda wall_s=0.7324 tokens=862 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-082-page_001147_table_10&source_request_id=page_001147_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-083-page_000223_table_box_id_2:04cccf567c3846209d724d96e05de415 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-083-page_000223_table_box_id_2:04cccf567c3846209d724d96e05de415 wall_s=0.8458 tokens=679 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-083-page_000223_table_box_id_2&source_request_id=page_000223_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-084-page_000716_table_0:761f2737e438468b8a67444fb3c4cf86 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-084-page_000716_table_0:761f2737e438468b8a67444fb3c4cf86 wall_s=0.1897 tokens=57 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-084-page_000716_table_0&source_request_id=page_000716_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-085-page_000937_table_1:02c2e1debe5843c786678184db5f823c route=spec active=1
+TABLE_PHASE complete id=overlap-c1-085-page_000937_table_1:02c2e1debe5843c786678184db5f823c wall_s=0.5082 tokens=121 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-085-page_000937_table_1&source_request_id=page_000937_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-086-page_000465_table_10:885fc778536b49588aefb1902d0847d6 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-086-page_000465_table_10:885fc778536b49588aefb1902d0847d6 wall_s=0.4768 tokens=230 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-086-page_000465_table_10&source_request_id=page_000465_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-087-page_000465_table_8:f72629f1b08044a9b391e7eae8856968 route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-087-page_000465_table_8:f72629f1b08044a9b391e7eae8856968 wall_s=0.4868 tokens=237 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-087-page_000465_table_8&source_request_id=page_000465_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-088-page_001179_table_6:cfaad1260afa4cfcaf5d9dc57f7ceacd route=spec active=1
+TABLE_PHASE complete id=overlap-c1-088-page_001179_table_6:cfaad1260afa4cfcaf5d9dc57f7ceacd wall_s=0.9021 tokens=1093 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-088-page_001179_table_6&source_request_id=page_001179_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-089-page_000554_table_12:e6fbd4db93a14506b42519ec2627bf1c route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-089-page_000554_table_12:e6fbd4db93a14506b42519ec2627bf1c wall_s=0.2439 tokens=93 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-089-page_000554_table_12&source_request_id=page_000554_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-090-page_000199_table_box_id_0:a35e3783eaf7493bbebdc1f796cac496 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-090-page_000199_table_box_id_0:a35e3783eaf7493bbebdc1f796cac496 wall_s=1.2268 tokens=855 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-090-page_000199_table_box_id_0&source_request_id=page_000199_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-091-page_000516_table_0:43a6abf1d70c4925add1d40005239f51 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-091-page_000516_table_0:43a6abf1d70c4925add1d40005239f51 wall_s=0.7497 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-091-page_000516_table_0&source_request_id=page_000516_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-092-page_001214_table_8:4f6d4de6061c4b64b672c88b1094613f route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-092-page_001214_table_8:4f6d4de6061c4b64b672c88b1094613f wall_s=0.4784 tokens=232 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-092-page_001214_table_8&source_request_id=page_001214_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-093-page_001368_table_box_id_161:634a603177a54a529bfd49d40009ebce route=spec active=1
+TABLE_PHASE complete id=overlap-c1-093-page_001368_table_box_id_161:634a603177a54a529bfd49d40009ebce wall_s=0.3818 tokens=253 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-093-page_001368_table_box_id_161&source_request_id=page_001368_table_box_id_161 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-094-page_000577_table_3:e34b1e877c954e308d78f7bd7a2c3248 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-094-page_000577_table_3:e34b1e877c954e308d78f7bd7a2c3248 wall_s=0.5348 tokens=139 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-094-page_000577_table_3&source_request_id=page_000577_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-095-page_000984_table_3:20b5dca9407e4d488952c62f656f17e1 route=spec active=1
+TABLE_PHASE complete id=overlap-c1-095-page_000984_table_3:20b5dca9407e4d488952c62f656f17e1 wall_s=0.6780 tokens=299 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-095-page_000984_table_3&source_request_id=page_000984_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-096-page_001187_table_0:d039b071c8a6460182300899caa8582c route=spec active=1
+TABLE_PHASE complete id=overlap-c1-096-page_001187_table_0:d039b071c8a6460182300899caa8582c wall_s=1.1511 tokens=1553 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-096-page_001187_table_0&source_request_id=page_001187_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-097-page_000821_table_box_id_14:c8cfe86ad14c4eb2bb08ef591935b14b route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-097-page_000821_table_box_id_14:c8cfe86ad14c4eb2bb08ef591935b14b wall_s=0.1960 tokens=59 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-097-page_000821_table_box_id_14&source_request_id=page_000821_table_box_id_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-098-page_000833_table_4:7d5e4862b44848099cadf25fdc0e6b8b route=spec active=1
+TABLE_PHASE complete id=overlap-c1-098-page_000833_table_4:7d5e4862b44848099cadf25fdc0e6b8b wall_s=0.6518 tokens=107 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-098-page_000833_table_4&source_request_id=page_000833_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-099-page_001375_table_31:fe449cabd9d242b89ecbba8cbbe5fd1f route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-099-page_001375_table_31:fe449cabd9d242b89ecbba8cbbe5fd1f wall_s=0.1400 tokens=34 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-099-page_001375_table_31&source_request_id=page_001375_table_31 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=overlap-c1-100-page_000645_table_7:e5e900457e944c5ba0371acea3ffdd3f route=b1 active=1
+TABLE_PHASE complete id=overlap-c1-100-page_000645_table_7:e5e900457e944c5ba0371acea3ffdd3f wall_s=0.2331 tokens=89 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=overlap-c1-100-page_000645_table_7&source_request_id=page_000645_table_7 HTTP/1.1" 200 -
+SERVICE_SUMMARY /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_phase_reference_6099805a_20260905/overlap_service.json

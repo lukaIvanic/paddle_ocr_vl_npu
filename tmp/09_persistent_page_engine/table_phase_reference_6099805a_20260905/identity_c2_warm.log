@@ -1,0 +1,8 @@
+identity-c2-warm API ready worker_pid=2314225; preloading 2 distinct crops for 2 requests
+identity-c2-warm crops preloaded 2/2
+identity-c2-warm payloads ready bytes=1493896
+SEND identity-c2-warm 01/2 table=page_001272_table_1 active=1
+SEND identity-c2-warm 02/2 table=page_001137_table_9 active=2
+RECV identity-c2-warm 02/2 rank=66 id=page_001137_table_9 latency=1.2920s status=ok active=1
+RECV identity-c2-warm 01/2 rank=65 id=page_001272_table_1 latency=1.5465s status=ok active=0
+DONE identity-c2-warm requests=2 failures=0 max_in_flight=2 wall=1.5481s qps=1.2919 p50=1.4193s p95=1.5338s max=1.5465s

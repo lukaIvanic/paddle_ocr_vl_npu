@@ -1,0 +1,8 @@
+phase-c1-warm API ready worker_pid=2152453; preloading 2 distinct crops for 2 requests
+phase-c1-warm crops preloaded 2/2
+phase-c1-warm payloads ready bytes=1493896
+SEND phase-c1-warm 01/2 table=page_001272_table_1 active=1
+RECV phase-c1-warm 01/2 rank=65 id=page_001272_table_1 latency=3.2918s status=ok active=0
+SEND phase-c1-warm 02/2 table=page_001137_table_9 active=1
+RECV phase-c1-warm 02/2 rank=66 id=page_001137_table_9 latency=0.9934s status=ok active=0
+DONE phase-c1-warm requests=2 failures=0 max_in_flight=1 wall=4.2887s qps=0.4663 p50=2.1426s p95=3.1769s max=3.2918s

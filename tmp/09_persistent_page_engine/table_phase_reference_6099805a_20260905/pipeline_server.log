@@ -1,0 +1,376 @@
+Waiting for NPU worker pid=2275469
+TABLE_SPEC_API setup=draft_recognizer
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.873853}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":9.843317}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.025548}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.028778}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":5.988257}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.522229}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016537}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":9.158424}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":0.617419}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.242076}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.001535}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.003476}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":31.144978}
+TABLE_SPEC_API setup=b1_recognizer
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.894325}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":9.857589}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.020349}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.024483}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":0.021158}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.006061}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016604}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":0.788301}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":0.669276}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.237268}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.00131}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.000579}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":12.546485}
+TABLE_PHASE setup=decode kind=target B=1 KV=4096
+TABLE_PHASE setup=decode kind=draft B=8 KV=768
+TABLE_PHASE setup=verifier B=1 Q=8 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=16 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=32 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=64 KV=4096
+TABLE_PHASE setup=decode kind=target B=2 KV=4096
+TABLE_PHASE setup=decode kind=draft B=16 KV=768
+TABLE_PHASE setup=verifier B=2 Q=8 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=16 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=32 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=64 KV=4096
+TABLE_PHASE ready; perform complete client warmups outside measurement
+READY http://127.0.0.1:8765 worker_pid=2275469
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-warm-001-page_001272_table_1:b2d281692eb44bd1853bb531299dbed9 route=spec active=1
+.TABLE_PHASE complete id=pipeline-warm-001-page_001272_table_1:b2d281692eb44bd1853bb531299dbed9 wall_s=3.0003 tokens=952 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-warm-001-page_001272_table_1&source_request_id=page_001272_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-warm-002-page_001137_table_9:299b5fd0e2654c7782a98cf623dde27f route=spec active=1
+TABLE_PHASE complete id=pipeline-warm-002-page_001137_table_9:299b5fd0e2654c7782a98cf623dde27f wall_s=0.7997 tokens=966 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-warm-002-page_001137_table_9&source_request_id=page_001137_table_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-001-page_000287_table_box_id_8:494555d7c97d443e8b748b74aac701af route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-001-page_000287_table_box_id_8:494555d7c97d443e8b748b74aac701af wall_s=1.1358 tokens=1768 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-001-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-002-page_001367_table_51:f73c10d1cc9d44d2a8b856e71d77e567 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-002-page_001367_table_51:f73c10d1cc9d44d2a8b856e71d77e567 wall_s=0.4836 tokens=405 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-002-page_001367_table_51&source_request_id=page_001367_table_51 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-003-page_000236_table_box_id_1:d96047d45b6b47988638efa326099ed2 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-003-page_000236_table_box_id_1:d96047d45b6b47988638efa326099ed2 wall_s=0.5597 tokens=202 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-003-page_000236_table_box_id_1&source_request_id=page_000236_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-004-page_000634_table_11:b2b47a06d4ea4e4f80e38932a170215e route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-004-page_000634_table_11:b2b47a06d4ea4e4f80e38932a170215e wall_s=0.5717 tokens=358 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-004-page_000634_table_11&source_request_id=page_000634_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-005-page_000272_table_box_id_1:96c53257db334b5aa5bce3c86f1b3729 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-005-page_000272_table_box_id_1:96c53257db334b5aa5bce3c86f1b3729 wall_s=1.8054 tokens=3025 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-005-page_000272_table_box_id_1&source_request_id=page_000272_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-006-page_001172_table_16:13e6270f4f83437696c0b69998f7f898 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-006-page_001172_table_16:13e6270f4f83437696c0b69998f7f898 wall_s=0.5340 tokens=212 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-006-page_001172_table_16&source_request_id=page_001172_table_16 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-007-page_001137_table_2:46602ba1159f4789b38d3e77a9c2d2af route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-007-page_001137_table_2:46602ba1159f4789b38d3e77a9c2d2af wall_s=0.5814 tokens=567 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-007-page_001137_table_2&source_request_id=page_001137_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-008-page_001150_table_box_id_9:3ecc2ba213d6492cac4a935350a6dd63 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-008-page_001150_table_box_id_9:3ecc2ba213d6492cac4a935350a6dd63 wall_s=0.5032 tokens=307 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-008-page_001150_table_box_id_9&source_request_id=page_001150_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-009-page_000920_table_8:1df6284377964ecd9318cc27dc59e85e route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-009-page_000920_table_8:1df6284377964ecd9318cc27dc59e85e wall_s=0.6474 tokens=150 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-009-page_000920_table_8&source_request_id=page_000920_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-010-page_000524_table_0:3ec133b2139f496ebab70c406431099c route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-010-page_000524_table_0:3ec133b2139f496ebab70c406431099c wall_s=0.7602 tokens=569 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-010-page_000524_table_0&source_request_id=page_000524_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-011-page_000256_table_box_id_8:baedcf80f36f4bd58a5d5cf5627e28f8 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-011-page_000256_table_box_id_8:baedcf80f36f4bd58a5d5cf5627e28f8 wall_s=0.5335 tokens=214 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-011-page_000256_table_box_id_8&source_request_id=page_000256_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-012-page_001166_table_9:c3a17edb41e04e3b825947648b01c9f6 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-012-page_001166_table_9:c3a17edb41e04e3b825947648b01c9f6 wall_s=0.3916 tokens=149 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-012-page_001166_table_9&source_request_id=page_001166_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-013-page_000211_table_box_id_3:95ca0e6ad1e54703a4d7f255c2eb93f5 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-013-page_000211_table_box_id_3:95ca0e6ad1e54703a4d7f255c2eb93f5 wall_s=0.7309 tokens=348 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-013-page_000211_table_box_id_3&source_request_id=page_000211_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-014-page_000933_table_10:7648d4a949ae4e6b9459441e2022237b route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-014-page_000933_table_10:7648d4a949ae4e6b9459441e2022237b wall_s=0.2842 tokens=83 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-014-page_000933_table_10&source_request_id=page_000933_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-015-page_001129_table_8:cdf94967f54e479fbc5110b36385c626 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-015-page_001129_table_8:cdf94967f54e479fbc5110b36385c626 wall_s=0.7949 tokens=723 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-015-page_001129_table_8&source_request_id=page_001129_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-016-page_001375_table_7:e2c3bf3764964a27a85ee0f9e8d6a9ed route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-016-page_001375_table_7:e2c3bf3764964a27a85ee0f9e8d6a9ed wall_s=0.3938 tokens=122 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-016-page_001375_table_7&source_request_id=page_001375_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-017-page_000106_table_box_id_2:9b1f66b4ba40490c99b63c503d0a5874 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-017-page_000106_table_box_id_2:9b1f66b4ba40490c99b63c503d0a5874 wall_s=0.7955 tokens=405 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-017-page_000106_table_box_id_2&source_request_id=page_000106_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-018-page_001134_table_10:2025c9e8e7c94b56b66ad7acd9c53375 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-018-page_001134_table_10:2025c9e8e7c94b56b66ad7acd9c53375 wall_s=0.6036 tokens=635 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-018-page_001134_table_10&source_request_id=page_001134_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-019-page_000642_table_8:8375bee515fc4237afe867060135ab23 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-019-page_000642_table_8:8375bee515fc4237afe867060135ab23 wall_s=0.7796 tokens=640 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-019-page_000642_table_8&source_request_id=page_000642_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-020-page_000564_table_7:65e688f3ef5d48e3b5096ebb46e3e617 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-020-page_000564_table_7:65e688f3ef5d48e3b5096ebb46e3e617 wall_s=0.5866 tokens=176 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-020-page_000564_table_7&source_request_id=page_000564_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-021-page_001368_table_box_id_242:7b2907a312214c10a7ebd4f5a265ed95 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-021-page_001368_table_box_id_242:7b2907a312214c10a7ebd4f5a265ed95 wall_s=0.3221 tokens=131 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-021-page_001368_table_box_id_242&source_request_id=page_001368_table_box_id_242 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-022-page_000263_table_box_id_7:31904797734441a0a17b8db771eea64e route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-022-page_000263_table_box_id_7:31904797734441a0a17b8db771eea64e wall_s=2.7968 tokens=1500 exact=False active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-022-page_000263_table_box_id_7&source_request_id=page_000263_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-023-page_000746_table_18:3ff2eabd9abd4fe195bdf2cf0bbe781d route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-023-page_000746_table_18:3ff2eabd9abd4fe195bdf2cf0bbe781d wall_s=1.2583 tokens=458 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-023-page_000746_table_18&source_request_id=page_000746_table_18 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-024-page_000213_table_box_id_5:702004423dca43ebae70fea858b7cae1 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-024-page_000213_table_box_id_5:702004423dca43ebae70fea858b7cae1 wall_s=0.6884 tokens=328 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-024-page_000213_table_box_id_5&source_request_id=page_000213_table_box_id_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-025-page_000206_table_box_id_1:c69b029288b74ff482bdb212390a096d route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-025-page_000206_table_box_id_1:c69b029288b74ff482bdb212390a096d wall_s=0.6002 tokens=282 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-025-page_000206_table_box_id_1&source_request_id=page_000206_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-026-page_000209_table_box_id_1:94f09cc3bfd04bb39442d93998c6f676 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-026-page_000209_table_box_id_1:94f09cc3bfd04bb39442d93998c6f676 wall_s=0.3767 tokens=135 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-026-page_000209_table_box_id_1&source_request_id=page_000209_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-027-page_001216_table_2:bd35b221b2664aa386ccd8b4a4b4704f route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-027-page_001216_table_2:bd35b221b2664aa386ccd8b4a4b4704f wall_s=0.7067 tokens=446 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-027-page_001216_table_2&source_request_id=page_001216_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-028-page_000188_table_box_id_6:56626f3264084264b46843f3c1874c0e route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-028-page_000188_table_box_id_6:56626f3264084264b46843f3c1874c0e wall_s=1.0251 tokens=110 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-028-page_000188_table_box_id_6&source_request_id=page_000188_table_box_id_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-029-page_000921_table_9:016f1004baf44062814df302cce110a2 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-029-page_000921_table_9:016f1004baf44062814df302cce110a2 wall_s=1.6295 tokens=90 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-029-page_000921_table_9&source_request_id=page_000921_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-030-page_000533_table_8:f763cfb7f4db44b598d1f4226ae1f27a route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-030-page_000533_table_8:f763cfb7f4db44b598d1f4226ae1f27a wall_s=0.4182 tokens=171 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-030-page_000533_table_8&source_request_id=page_000533_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-031-page_001123_table_14:71bd5e2e504e437c80ca840707c93eb8 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-031-page_001123_table_14:71bd5e2e504e437c80ca840707c93eb8 wall_s=0.4525 tokens=186 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-031-page_001123_table_14&source_request_id=page_001123_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-032-page_001503_table_5:2e5dfe411d034529a0b5e445ca43dacf route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-032-page_001503_table_5:2e5dfe411d034529a0b5e445ca43dacf wall_s=0.2244 tokens=42 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-032-page_001503_table_5&source_request_id=page_001503_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-033-page_001197_table_5:bc9d7b681d7544d1b228b37340c7919b route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-033-page_001197_table_5:bc9d7b681d7544d1b228b37340c7919b wall_s=0.6212 tokens=727 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-033-page_001197_table_5&source_request_id=page_001197_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-034-page_000542_table_0:4068a3bf126248ceb9a0021c0936c9f9 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-034-page_000542_table_0:4068a3bf126248ceb9a0021c0936c9f9 wall_s=0.5263 tokens=341 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-034-page_000542_table_0&source_request_id=page_000542_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-035-page_001130_table_1:b360fef182c14ccea9a51b2cc13f7da3 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-035-page_001130_table_1:b360fef182c14ccea9a51b2cc13f7da3 wall_s=0.2037 tokens=51 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-035-page_001130_table_1&source_request_id=page_001130_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-036-page_001595_table_box_id_9:c61fca2641754fb28ca43cebdf389525 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-036-page_001595_table_box_id_9:c61fca2641754fb28ca43cebdf389525 wall_s=0.2043 tokens=45 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-036-page_001595_table_box_id_9&source_request_id=page_001595_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-037-page_001233_table_6:633536a3f4c74bff9e5db9afd085c840 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-037-page_001233_table_6:633536a3f4c74bff9e5db9afd085c840 wall_s=0.7502 tokens=347 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-037-page_001233_table_6&source_request_id=page_001233_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-038-page_000585_table_1:c870900d987b4e5e9290ecb8cb396ea8 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-038-page_000585_table_1:c870900d987b4e5e9290ecb8cb396ea8 wall_s=0.8446 tokens=457 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-038-page_000585_table_1&source_request_id=page_000585_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-039-page_000821_table_box_id_26:2b3ad712ae224fd4a1dd096e872d4305 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-039-page_000821_table_box_id_26:2b3ad712ae224fd4a1dd096e872d4305 wall_s=0.1756 tokens=46 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-039-page_000821_table_box_id_26&source_request_id=page_000821_table_box_id_26 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-040-page_000566_table_3:ee7ffda7ae1c407cb9273347ab199e72 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-040-page_000566_table_3:ee7ffda7ae1c407cb9273347ab199e72 wall_s=0.8621 tokens=446 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-040-page_000566_table_3&source_request_id=page_000566_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-041-page_000534_table_4:a0978c65ec2a47fe9bcf4d041337b6e4 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-041-page_000534_table_4:a0978c65ec2a47fe9bcf4d041337b6e4 wall_s=0.6188 tokens=317 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-041-page_000534_table_4&source_request_id=page_000534_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-042-page_001141_table_13:3e18bb84f3cb4b25a0dac094eb3cc909 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-042-page_001141_table_13:3e18bb84f3cb4b25a0dac094eb3cc909 wall_s=0.6444 tokens=301 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-042-page_001141_table_13&source_request_id=page_001141_table_13 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-043-page_000665_table_3:4947ddf4014b4495a19393f06c6c08a6 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-043-page_000665_table_3:4947ddf4014b4495a19393f06c6c08a6 wall_s=0.1106 tokens=11 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-043-page_000665_table_3&source_request_id=page_000665_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-044-page_001417_table_2:b56bb7e3b24d4ab39cafac59c22131f6 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-044-page_001417_table_2:b56bb7e3b24d4ab39cafac59c22131f6 wall_s=0.2118 tokens=68 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-044-page_001417_table_2&source_request_id=page_001417_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-045-page_001117_table_box_id_7:c369a793cc114637b8a3c988429e3a69 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-045-page_001117_table_box_id_7:c369a793cc114637b8a3c988429e3a69 wall_s=0.3120 tokens=119 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-045-page_001117_table_box_id_7&source_request_id=page_001117_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-046-page_001270_table_box_id_1:8d345f53640041478535ab635e3b652a route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-046-page_001270_table_box_id_1:8d345f53640041478535ab635e3b652a wall_s=1.5736 tokens=789 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-046-page_001270_table_box_id_1&source_request_id=page_001270_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-047-page_000261_table_box_id_3:8e37d17af570479aba9aa0c53a3bf97c route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-047-page_000261_table_box_id_3:8e37d17af570479aba9aa0c53a3bf97c wall_s=1.8392 tokens=1106 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-047-page_000261_table_box_id_3&source_request_id=page_000261_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-048-page_000505_table_1:92362258b76a42a7b1e85cdfb3599809 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-048-page_000505_table_1:92362258b76a42a7b1e85cdfb3599809 wall_s=0.9305 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-048-page_000505_table_1&source_request_id=page_000505_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-049-page_000682_table_15:cddaeb734da64905a4d1e50f1a663a83 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-049-page_000682_table_15:cddaeb734da64905a4d1e50f1a663a83 wall_s=0.2540 tokens=63 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-049-page_000682_table_15&source_request_id=page_000682_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-050-page_000275_table_box_id_1:d921224e3e534f37b316c3e6319f1658 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-050-page_000275_table_box_id_1:d921224e3e534f37b316c3e6319f1658 wall_s=1.6542 tokens=2852 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-050-page_000275_table_box_id_1&source_request_id=page_000275_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-051-page_000789_table_34:c972e68fc63c4ba7b0fa41108a62fdb7 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-051-page_000789_table_34:c972e68fc63c4ba7b0fa41108a62fdb7 wall_s=0.1521 tokens=32 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-051-page_000789_table_34&source_request_id=page_000789_table_34 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-052-page_001177_table_2:ec165b7486a84503924ed0b8dd382649 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-052-page_001177_table_2:ec165b7486a84503924ed0b8dd382649 wall_s=0.4983 tokens=355 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-052-page_001177_table_2&source_request_id=page_001177_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-053-page_001398_table_box-13qv1ztw:7c9ee2d060a841cc8f248d262593f8bf route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-053-page_001398_table_box-13qv1ztw:7c9ee2d060a841cc8f248d262593f8bf wall_s=0.3378 tokens=126 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-053-page_001398_table_box-13qv1ztw&source_request_id=page_001398_table_box-13qv1ztw HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-054-page_001183_table_11:2521898f2d254d48960332a2f88f47c7 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-054-page_001183_table_11:2521898f2d254d48960332a2f88f47c7 wall_s=0.4477 tokens=169 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-054-page_001183_table_11&source_request_id=page_001183_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-055-page_000507_table_0:63a760037e9f4f4e86cd4abfc549ebf6 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-055-page_000507_table_0:63a760037e9f4f4e86cd4abfc549ebf6 wall_s=0.4256 tokens=167 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-055-page_000507_table_0&source_request_id=page_000507_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-056-page_000710_table_9:3f486d5fc148404fac60e8504540cac7 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-056-page_000710_table_9:3f486d5fc148404fac60e8504540cac7 wall_s=0.2517 tokens=60 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-056-page_000710_table_9&source_request_id=page_000710_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-057-page_000657_table_6:5916f1da90ba49f0a2ff5e48b7f1c064 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-057-page_000657_table_6:5916f1da90ba49f0a2ff5e48b7f1c064 wall_s=0.1078 tokens=11 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-057-page_000657_table_6&source_request_id=page_000657_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-058-page_001368_table_box_id_227:e86a371c35c94c93b223495b7ed2397d route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-058-page_001368_table_box_id_227:e86a371c35c94c93b223495b7ed2397d wall_s=0.7051 tokens=345 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-058-page_001368_table_box_id_227&source_request_id=page_001368_table_box_id_227 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-059-page_001176_table_4:5da53fc6b2464a23bb9f859e8aaddcac route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-059-page_001176_table_4:5da53fc6b2464a23bb9f859e8aaddcac wall_s=0.8015 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-059-page_001176_table_4&source_request_id=page_001176_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-060-page_001181_table_6:8874ecda031e4ca8b52dad8f7c9fd7de route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-060-page_001181_table_6:8874ecda031e4ca8b52dad8f7c9fd7de wall_s=1.0825 tokens=906 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-060-page_001181_table_6&source_request_id=page_001181_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-061-page_000937_table_0:080f5256fc0c4d8b9f7bfd7f5239d250 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-061-page_000937_table_0:080f5256fc0c4d8b9f7bfd7f5239d250 wall_s=0.6216 tokens=164 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-061-page_000937_table_0&source_request_id=page_000937_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-062-page_001368_table_box_id_237:d8ba4414f0834a04981304c982f3228e route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-062-page_001368_table_box_id_237:d8ba4414f0834a04981304c982f3228e wall_s=0.3613 tokens=151 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-062-page_001368_table_box_id_237&source_request_id=page_001368_table_box_id_237 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-063-page_000217_table_box_id_0:72ca5244fa83496790d1ce3278bfa3f0 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-063-page_000217_table_box_id_0:72ca5244fa83496790d1ce3278bfa3f0 wall_s=1.6786 tokens=138 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-063-page_000217_table_box_id_0&source_request_id=page_000217_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-064-page_001159_table_5:9267d85f1a154fe88ba7d750922c4265 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-064-page_001159_table_5:9267d85f1a154fe88ba7d750922c4265 wall_s=0.6979 tokens=314 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-064-page_001159_table_5&source_request_id=page_001159_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-065-page_000626_table_box_id_1:3bcce29ee87b40ddb41f64900c2dfe34 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-065-page_000626_table_box_id_1:3bcce29ee87b40ddb41f64900c2dfe34 wall_s=1.4358 tokens=1352 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-065-page_000626_table_box_id_1&source_request_id=page_000626_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-066-page_000984_table_2:4b0c79f8b3bb45c0913fcddc685ab863 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-066-page_000984_table_2:4b0c79f8b3bb45c0913fcddc685ab863 wall_s=0.1579 tokens=32 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-066-page_000984_table_2&source_request_id=page_000984_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-067-page_001082_table_34:6f4f708a86ad413a94fe18ca8f529c6e route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-067-page_001082_table_34:6f4f708a86ad413a94fe18ca8f529c6e wall_s=0.7762 tokens=483 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-067-page_001082_table_34&source_request_id=page_001082_table_34 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-068-page_000467_table_17:4a9721055a314b0f8f0740d16c1ec70d route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-068-page_000467_table_17:4a9721055a314b0f8f0740d16c1ec70d wall_s=0.8334 tokens=723 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-068-page_000467_table_17&source_request_id=page_000467_table_17 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-069-page_000866_table_14:2d2b2b3fbe054aeda9ea040cce88ddbc route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-069-page_000866_table_14:2d2b2b3fbe054aeda9ea040cce88ddbc wall_s=0.4247 tokens=167 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-069-page_000866_table_14&source_request_id=page_000866_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-070-page_001227_table_10:62f456ef5fe94812899f2dc82aa4b01e route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-070-page_001227_table_10:62f456ef5fe94812899f2dc82aa4b01e wall_s=0.9458 tokens=842 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-070-page_001227_table_10&source_request_id=page_001227_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-071-page_000916_table_7:fdd0107a763447778df29b244e151ca7 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-071-page_000916_table_7:fdd0107a763447778df29b244e151ca7 wall_s=0.6813 tokens=230 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-071-page_000916_table_7&source_request_id=page_000916_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-072-page_000251_table_box_id_7:9c6adf5f614f413faa56ec00c43c5e21 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-072-page_000251_table_box_id_7:9c6adf5f614f413faa56ec00c43c5e21 wall_s=0.7783 tokens=404 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-072-page_000251_table_box_id_7&source_request_id=page_000251_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-073-page_001131_table_15:6de1d1e8971f4e85b033aa67795e57ba route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-073-page_001131_table_15:6de1d1e8971f4e85b033aa67795e57ba wall_s=0.3375 tokens=131 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-073-page_001131_table_15&source_request_id=page_001131_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-074-page_001183_table_12:9a788c1fe8e64c88bd13de9af525ef60 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-074-page_001183_table_12:9a788c1fe8e64c88bd13de9af525ef60 wall_s=0.6028 tokens=268 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-074-page_001183_table_12&source_request_id=page_001183_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-075-page_000266_table_box_id_7:6a4e79c14e8c4f5891a9744efa280a30 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-075-page_000266_table_box_id_7:6a4e79c14e8c4f5891a9744efa280a30 wall_s=0.2841 tokens=96 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-075-page_000266_table_box_id_7&source_request_id=page_000266_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-076-page_000447_table_12:d09314303c984e49be90f0c12ec74e8d route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-076-page_000447_table_12:d09314303c984e49be90f0c12ec74e8d wall_s=0.4330 tokens=221 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-076-page_000447_table_12&source_request_id=page_000447_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-077-page_001193_table_4:9b18714ec49a4507ad42c76753a7558f route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-077-page_001193_table_4:9b18714ec49a4507ad42c76753a7558f wall_s=0.4741 tokens=210 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-077-page_001193_table_4&source_request_id=page_001193_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-078-page_001368_table_box_id_239:9739bb6677b2459fb25e02ea54f49e02 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-078-page_001368_table_box_id_239:9739bb6677b2459fb25e02ea54f49e02 wall_s=0.2999 tokens=120 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-078-page_001368_table_box_id_239&source_request_id=page_001368_table_box_id_239 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-079-page_000903_table_15:b15c2d7ff0ce4a85a5d0862e0bc20a60 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-079-page_000903_table_15:b15c2d7ff0ce4a85a5d0862e0bc20a60 wall_s=0.6552 tokens=71 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-079-page_000903_table_15&source_request_id=page_000903_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-080-page_001167_table_2:e5a549de92fd44e7ac6be4d5f19465db route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-080-page_001167_table_2:e5a549de92fd44e7ac6be4d5f19465db wall_s=0.4275 tokens=176 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-080-page_001167_table_2&source_request_id=page_001167_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-081-page_000212_table_box_id_1:8fe97243c9d64d56a881a3b010920aa6 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-081-page_000212_table_box_id_1:8fe97243c9d64d56a881a3b010920aa6 wall_s=1.1489 tokens=647 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-081-page_000212_table_box_id_1&source_request_id=page_000212_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-082-page_001147_table_10:90645831b1db47529a1979311dc47099 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-082-page_001147_table_10:90645831b1db47529a1979311dc47099 wall_s=0.7576 tokens=862 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-082-page_001147_table_10&source_request_id=page_001147_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-083-page_000223_table_box_id_2:c978deddc3994fa58ca60bd4280c7287 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-083-page_000223_table_box_id_2:c978deddc3994fa58ca60bd4280c7287 wall_s=0.8694 tokens=679 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-083-page_000223_table_box_id_2&source_request_id=page_000223_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-084-page_000716_table_0:1f369af3bf6a4aba8326146419381a7c route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-084-page_000716_table_0:1f369af3bf6a4aba8326146419381a7c wall_s=0.2004 tokens=57 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-084-page_000716_table_0&source_request_id=page_000716_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-085-page_000937_table_1:755edf24d300475c99956e11551c85d5 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-085-page_000937_table_1:755edf24d300475c99956e11551c85d5 wall_s=0.5189 tokens=121 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-085-page_000937_table_1&source_request_id=page_000937_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-086-page_000465_table_10:7e6d9ede08f34a1e9afe572136dd0338 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-086-page_000465_table_10:7e6d9ede08f34a1e9afe572136dd0338 wall_s=0.5301 tokens=230 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-086-page_000465_table_10&source_request_id=page_000465_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-087-page_000465_table_8:bd06c733b20d4e29b5b8e096d157e9b9 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-087-page_000465_table_8:bd06c733b20d4e29b5b8e096d157e9b9 wall_s=0.5450 tokens=237 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-087-page_000465_table_8&source_request_id=page_000465_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-088-page_001179_table_6:70cb3bbad06e4d3a851b8148060fe8ea route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-088-page_001179_table_6:70cb3bbad06e4d3a851b8148060fe8ea wall_s=0.9510 tokens=1093 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-088-page_001179_table_6&source_request_id=page_001179_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-089-page_000554_table_12:b3b6faba9da847c594fc1535837dc30c route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-089-page_000554_table_12:b3b6faba9da847c594fc1535837dc30c wall_s=0.2611 tokens=93 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-089-page_000554_table_12&source_request_id=page_000554_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-090-page_000199_table_box_id_0:8a88cb85508340d18567e1447960d2ac route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-090-page_000199_table_box_id_0:8a88cb85508340d18567e1447960d2ac wall_s=1.2541 tokens=855 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-090-page_000199_table_box_id_0&source_request_id=page_000199_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-091-page_000516_table_0:adc00a9860564876ba91730ab04c2076 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-091-page_000516_table_0:adc00a9860564876ba91730ab04c2076 wall_s=0.7762 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-091-page_000516_table_0&source_request_id=page_000516_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-092-page_001214_table_8:cde525223337424abc110ffcbdf3114e route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-092-page_001214_table_8:cde525223337424abc110ffcbdf3114e wall_s=0.5293 tokens=232 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-092-page_001214_table_8&source_request_id=page_001214_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-093-page_001368_table_box_id_161:6c32c1404e6c4998ae00f39e90c1cba1 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-093-page_001368_table_box_id_161:6c32c1404e6c4998ae00f39e90c1cba1 wall_s=0.4055 tokens=253 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-093-page_001368_table_box_id_161&source_request_id=page_001368_table_box_id_161 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-094-page_000577_table_3:ac32de5d0f4d400a9c6d5c1ced16858b route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-094-page_000577_table_3:ac32de5d0f4d400a9c6d5c1ced16858b wall_s=0.5234 tokens=139 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-094-page_000577_table_3&source_request_id=page_000577_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-095-page_000984_table_3:d494315e646142f9903144f77b672685 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-095-page_000984_table_3:d494315e646142f9903144f77b672685 wall_s=0.7065 tokens=299 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-095-page_000984_table_3&source_request_id=page_000984_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-096-page_001187_table_0:f105c96f5a984d18805fec34ae90c0d2 route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-096-page_001187_table_0:f105c96f5a984d18805fec34ae90c0d2 wall_s=1.2268 tokens=1553 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-096-page_001187_table_0&source_request_id=page_001187_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-097-page_000821_table_box_id_14:eaff94b955e3432689f1b226738c2942 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-097-page_000821_table_box_id_14:eaff94b955e3432689f1b226738c2942 wall_s=0.2094 tokens=59 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-097-page_000821_table_box_id_14&source_request_id=page_000821_table_box_id_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-098-page_000833_table_4:6d361aaa65a54ead944536d253c7ab9b route=spec active=1
+TABLE_PHASE complete id=pipeline-c1-098-page_000833_table_4:6d361aaa65a54ead944536d253c7ab9b wall_s=0.6783 tokens=107 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-098-page_000833_table_4&source_request_id=page_000833_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-099-page_001375_table_31:2ac0b728177a4c8b962bc18a2820dfc9 route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-099-page_001375_table_31:2ac0b728177a4c8b962bc18a2820dfc9 wall_s=0.1483 tokens=34 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-099-page_001375_table_31&source_request_id=page_001375_table_31 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=pipeline-c1-100-page_000645_table_7:c799679f2c6e4119a1ed9caf2db90c5d route=b1 active=1
+TABLE_PHASE complete id=pipeline-c1-100-page_000645_table_7:c799679f2c6e4119a1ed9caf2db90c5d wall_s=0.2568 tokens=89 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=pipeline-c1-100-page_000645_table_7&source_request_id=page_000645_table_7 HTTP/1.1" 200 -
+SERVICE_SUMMARY /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_phase_reference_6099805a_20260905/pipeline_service.json

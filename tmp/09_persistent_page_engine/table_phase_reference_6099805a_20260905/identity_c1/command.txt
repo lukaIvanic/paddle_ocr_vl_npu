@@ -1,0 +1,16 @@
+Source commit: b26e0563
+Host: liteserver-c001-4 (Blue Zone research container)
+Hardware: Ascend 910B2, physical NPU 6
+ASCEND_RT_VISIBLE_DEVICES=6
+Initialized persistent shell with source npu-setup; no model-policy overrides.
+Working directory: /workspace/repos/paddle_ocr_vl_npu
+
+Server:
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/serve_table_speculative_api.py --interleaved-tables 2 --allow-compile --host 127.0.0.1 --port 8765 --request-timeout-s 3600 --queue-capacity 64 --service-summary-output tmp/09_persistent_page_engine/table_phase_reference_6099805a_20260905/identity_service.json
+
+Measured client:
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/table_closed_loop_api_client.py --api-url http://127.0.0.1:8765/v1/ocr --set random --count 100 --shuffle-seed 1 --max-in-flight 1 --client-label identity-c1 --output-dir tmp/09_persistent_page_engine/table_phase_reference_6099805a_20260905/identity_c1
+
+Warmup: two complete requests (--set warm --count 2) at this client's concurrency, outside measurement. The pinned_c1_repeat run is the retained repeat after pinned_c1, with no additional warmup. C2 used the same server after its successful C1 calibration and its external C2 warmup; it was not a fresh uncalibrated implementation. See associated *_warm.log and *_server.log.
+Results: summary.json and per-response-flushed results.jsonl.
+Commands reconstructed from the executed persistent-terminal invocations; shell return-code files were not captured. Completion is verified by the client DONE line, 100 successful records, final summary and absence of a subsequent client traceback.

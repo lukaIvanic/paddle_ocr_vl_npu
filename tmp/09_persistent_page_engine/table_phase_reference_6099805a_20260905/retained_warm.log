@@ -1,0 +1,8 @@
+retained-warm API ready worker_pid=2339892; preloading 2 distinct crops for 2 requests
+retained-warm crops preloaded 2/2
+retained-warm payloads ready bytes=1493896
+SEND retained-warm 01/2 table=page_001272_table_1 active=1
+RECV retained-warm 01/2 rank=65 id=page_001272_table_1 latency=2.4421s status=ok active=0
+SEND retained-warm 02/2 table=page_001137_table_9 active=1
+RECV retained-warm 02/2 rank=66 id=page_001137_table_9 latency=0.6933s status=ok active=0
+DONE retained-warm requests=2 failures=0 max_in_flight=1 wall=3.1381s qps=0.6373 p50=1.5677s p95=2.3546s max=2.4421s

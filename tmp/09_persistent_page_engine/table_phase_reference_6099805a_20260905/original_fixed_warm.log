@@ -1,0 +1,8 @@
+original-fixed-warm API ready worker_pid=2214939; preloading 2 distinct crops for 2 requests
+original-fixed-warm crops preloaded 2/2
+original-fixed-warm payloads ready bytes=1493896
+SEND original-fixed-warm 01/2 table=page_001272_table_1 active=1
+RECV original-fixed-warm 01/2 rank=65 id=page_001272_table_1 latency=0.8893s status=ok active=0
+SEND original-fixed-warm 02/2 table=page_001137_table_9 active=1
+RECV original-fixed-warm 02/2 rank=66 id=page_001137_table_9 latency=0.6889s status=ok active=0
+DONE original-fixed-warm requests=2 failures=0 max_in_flight=1 wall=1.5812s qps=1.2649 p50=0.7891s p95=0.8793s max=0.8893s

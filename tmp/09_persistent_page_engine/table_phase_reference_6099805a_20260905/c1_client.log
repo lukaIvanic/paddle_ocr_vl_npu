@@ -1,0 +1,205 @@
+phase-c1 API ready worker_pid=2152453; preloading 100 distinct crops for 100 requests
+phase-c1 crops preloaded 50/100
+phase-c1 crops preloaded 100/100
+phase-c1 payloads ready bytes=34840674
+SEND phase-c1 01/100 table=page_000287_table_box_id_8 active=1
+RECV phase-c1 01/100 rank=24 id=page_000287_table_box_id_8 latency=1.2847s status=ok active=0
+SEND phase-c1 02/100 table=page_001367_table_51 active=1
+RECV phase-c1 02/100 rank=65 id=page_001367_table_51 latency=0.5314s status=ok active=0
+SEND phase-c1 03/100 table=page_000236_table_box_id_1 active=1
+RECV phase-c1 03/100 rank=324 id=page_000236_table_box_id_1 latency=0.6081s status=ok active=0
+SEND phase-c1 04/100 table=page_000634_table_11 active=1
+RECV phase-c1 04/100 rank=225 id=page_000634_table_11 latency=0.6197s status=ok active=0
+SEND phase-c1 05/100 table=page_000272_table_box_id_1 active=1
+RECV phase-c1 05/100 rank=09 id=page_000272_table_box_id_1 latency=1.9769s status=ok active=0
+SEND phase-c1 06/100 table=page_001172_table_16 active=1
+RECV phase-c1 06/100 rank=337 id=page_001172_table_16 latency=0.6324s status=ok active=0
+SEND phase-c1 07/100 table=page_001137_table_2 active=1
+RECV phase-c1 07/100 rank=151 id=page_001137_table_2 latency=0.5881s status=ok active=0
+SEND phase-c1 08/100 table=page_001150_table_box_id_9 active=1
+RECV phase-c1 08/100 rank=255 id=page_001150_table_box_id_9 latency=0.5190s status=ok active=0
+SEND phase-c1 09/100 table=page_000920_table_8 active=1
+RECV phase-c1 09/100 rank=368 id=page_000920_table_8 latency=0.6874s status=ok active=0
+SEND phase-c1 10/100 table=page_000524_table_0 active=1
+RECV phase-c1 10/100 rank=140 id=page_000524_table_0 latency=0.8042s status=ok active=0
+SEND phase-c1 11/100 table=page_000256_table_box_id_8 active=1
+RECV phase-c1 11/100 rank=336 id=page_000256_table_box_id_8 latency=0.6123s status=ok active=0
+SEND phase-c1 12/100 table=page_001166_table_9 active=1
+RECV phase-c1 12/100 rank=436 id=page_001166_table_9 latency=0.4418s status=ok active=0
+SEND phase-c1 13/100 table=page_000211_table_box_id_3 active=1
+RECV phase-c1 13/100 rank=201 id=page_000211_table_box_id_3 latency=0.7663s status=ok active=0
+SEND phase-c1 14/100 table=page_000933_table_10 active=1
+RECV phase-c1 14/100 rank=504 id=page_000933_table_10 latency=0.3168s status=ok active=0
+SEND phase-c1 15/100 table=page_001129_table_8 active=1
+RECV phase-c1 15/100 rank=107 id=page_001129_table_8 latency=0.8306s status=ok active=0
+SEND phase-c1 16/100 table=page_001375_table_7 active=1
+RECV phase-c1 16/100 rank=458 id=page_001375_table_7 latency=0.4027s status=ok active=0
+SEND phase-c1 17/100 table=page_000106_table_box_id_2 active=1
+RECV phase-c1 17/100 rank=208 id=page_000106_table_box_id_2 latency=0.9003s status=ok active=0
+SEND phase-c1 18/100 table=page_001134_table_10 active=1
+RECV phase-c1 18/100 rank=134 id=page_001134_table_10 latency=0.6153s status=ok active=0
+SEND phase-c1 19/100 table=page_000642_table_8 active=1
+RECV phase-c1 19/100 rank=128 id=page_000642_table_8 latency=0.8180s status=ok active=0
+SEND phase-c1 20/100 table=page_000564_table_7 active=1
+RECV phase-c1 20/100 rank=334 id=page_000564_table_7 latency=0.6024s status=ok active=0
+SEND phase-c1 21/100 table=page_001368_table_box_id_242 active=1
+RECV phase-c1 21/100 rank=497 id=page_001368_table_box_id_242 latency=0.3686s status=ok active=0
+SEND phase-c1 22/100 table=page_000263_table_box_id_7 active=1
+RECV phase-c1 22/100 rank=31 id=page_000263_table_box_id_7 latency=3.3764s status=ok active=0
+SEND phase-c1 23/100 table=page_000746_table_18 active=1
+RECV phase-c1 23/100 rank=161 id=page_000746_table_18 latency=1.4121s status=ok active=0
+SEND phase-c1 24/100 table=page_000213_table_box_id_5 active=1
+RECV phase-c1 24/100 rank=215 id=page_000213_table_box_id_5 latency=0.6989s status=ok active=0
+SEND phase-c1 25/100 table=page_000206_table_box_id_1 active=1
+RECV phase-c1 25/100 rank=309 id=page_000206_table_box_id_1 latency=0.7063s status=ok active=0
+SEND phase-c1 26/100 table=page_000209_table_box_id_1 active=1
+RECV phase-c1 26/100 rank=432 id=page_000209_table_box_id_1 latency=0.4263s status=ok active=0
+SEND phase-c1 27/100 table=page_001216_table_2 active=1
+RECV phase-c1 27/100 rank=186 id=page_001216_table_2 latency=0.7374s status=ok active=0
+SEND phase-c1 28/100 table=page_000188_table_box_id_6 active=1
+RECV phase-c1 28/100 rank=240 id=page_000188_table_box_id_6 latency=1.0585s status=ok active=0
+SEND phase-c1 29/100 table=page_000921_table_9 active=1
+RECV phase-c1 29/100 rank=460 id=page_000921_table_9 latency=1.6525s status=ok active=0
+SEND phase-c1 30/100 table=page_000533_table_8 active=1
+RECV phase-c1 30/100 rank=399 id=page_000533_table_8 latency=0.4277s status=ok active=0
+SEND phase-c1 31/100 table=page_001123_table_14 active=1
+RECV phase-c1 31/100 rank=413 id=page_001123_table_14 latency=0.5242s status=ok active=0
+SEND phase-c1 32/100 table=page_001503_table_5 active=1
+RECV phase-c1 32/100 rank=526 id=page_001503_table_5 latency=0.2462s status=ok active=0
+SEND phase-c1 33/100 table=page_001197_table_5 active=1
+RECV phase-c1 33/100 rank=118 id=page_001197_table_5 latency=0.6523s status=ok active=0
+SEND phase-c1 34/100 table=page_000542_table_0 active=1
+RECV phase-c1 34/100 rank=219 id=page_000542_table_0 latency=0.5337s status=ok active=0
+SEND phase-c1 35/100 table=page_001130_table_1 active=1
+RECV phase-c1 35/100 rank=572 id=page_001130_table_1 latency=0.2271s status=ok active=0
+SEND phase-c1 36/100 table=page_001595_table_box_id_9 active=1
+RECV phase-c1 36/100 rank=561 id=page_001595_table_box_id_9 latency=0.2230s status=ok active=0
+SEND phase-c1 37/100 table=page_001233_table_6 active=1
+RECV phase-c1 37/100 rank=241 id=page_001233_table_6 latency=0.8814s status=ok active=0
+SEND phase-c1 38/100 table=page_000585_table_1 active=1
+RECV phase-c1 38/100 rank=159 id=page_000585_table_1 latency=0.8949s status=ok active=0
+SEND phase-c1 39/100 table=page_000821_table_box_id_26 active=1
+RECV phase-c1 39/100 rank=617 id=page_000821_table_box_id_26 latency=0.1983s status=ok active=0
+SEND phase-c1 40/100 table=page_000566_table_3 active=1
+RECV phase-c1 40/100 rank=167 id=page_000566_table_3 latency=0.9184s status=ok active=0
+SEND phase-c1 41/100 table=page_000534_table_4 active=1
+RECV phase-c1 41/100 rank=221 id=page_000534_table_4 latency=0.6291s status=ok active=0
+SEND phase-c1 42/100 table=page_001141_table_13 active=1
+RECV phase-c1 42/100 rank=280 id=page_001141_table_13 latency=0.7557s status=ok active=0
+SEND phase-c1 43/100 table=page_000665_table_3 active=1
+RECV phase-c1 43/100 rank=662 id=page_000665_table_3 latency=0.1128s status=ok active=0
+SEND phase-c1 44/100 table=page_001417_table_2 active=1
+RECV phase-c1 44/100 rank=587 id=page_001417_table_2 latency=0.2369s status=ok active=0
+SEND phase-c1 45/100 table=page_001117_table_box_id_7 active=1
+RECV phase-c1 45/100 rank=483 id=page_001117_table_box_id_7 latency=0.3549s status=ok active=0
+SEND phase-c1 46/100 table=page_001270_table_box_id_1 active=1
+RECV phase-c1 46/100 rank=95 id=page_001270_table_box_id_1 latency=1.8073s status=ok active=0
+SEND phase-c1 47/100 table=page_000261_table_box_id_3 active=1
+RECV phase-c1 47/100 rank=54 id=page_000261_table_box_id_3 latency=2.1374s status=ok active=0
+SEND phase-c1 48/100 table=page_000505_table_1 active=1
+RECV phase-c1 48/100 rank=121 id=page_000505_table_1 latency=1.0090s status=ok active=0
+SEND phase-c1 49/100 table=page_000682_table_15 active=1
+RECV phase-c1 49/100 rank=507 id=page_000682_table_15 latency=0.2777s status=ok active=0
+SEND phase-c1 50/100 table=page_000275_table_box_id_1 active=1
+RECV phase-c1 50/100 rank=12 id=page_000275_table_box_id_1 latency=2.5438s status=ok active=0
+SEND phase-c1 51/100 table=page_000789_table_34 active=1
+RECV phase-c1 51/100 rank=639 id=page_000789_table_34 latency=0.1712s status=ok active=0
+SEND phase-c1 52/100 table=page_001177_table_2 active=1
+RECV phase-c1 52/100 rank=229 id=page_001177_table_2 latency=0.5129s status=ok active=0
+SEND phase-c1 53/100 table=page_001398_table_box-13qv1ztw active=1
+RECV phase-c1 53/100 rank=511 id=page_001398_table_box-13qv1ztw latency=0.3759s status=ok active=0
+SEND phase-c1 54/100 table=page_001183_table_11 active=1
+RECV phase-c1 54/100 rank=395 id=page_001183_table_11 latency=0.5310s status=ok active=0
+SEND phase-c1 55/100 table=page_000507_table_0 active=1
+RECV phase-c1 55/100 rank=396 id=page_000507_table_0 latency=0.4360s status=ok active=0
+SEND phase-c1 56/100 table=page_000710_table_9 active=1
+RECV phase-c1 56/100 rank=514 id=page_000710_table_9 latency=0.2813s status=ok active=0
+SEND phase-c1 57/100 table=page_000657_table_6 active=1
+RECV phase-c1 57/100 rank=659 id=page_000657_table_6 latency=0.1129s status=ok active=0
+SEND phase-c1 58/100 table=page_001368_table_box_id_227 active=1
+RECV phase-c1 58/100 rank=264 id=page_001368_table_box_id_227 latency=0.8417s status=ok active=0
+SEND phase-c1 59/100 table=page_001176_table_4 active=1
+RECV phase-c1 59/100 rank=122 id=page_001176_table_4 latency=0.8528s status=ok active=0
+SEND phase-c1 60/100 table=page_001181_table_6 active=1
+RECV phase-c1 60/100 rank=72 id=page_001181_table_6 latency=1.1949s status=ok active=0
+SEND phase-c1 61/100 table=page_000937_table_0 active=1
+RECV phase-c1 61/100 rank=350 id=page_000937_table_0 latency=0.6548s status=ok active=0
+SEND phase-c1 62/100 table=page_001368_table_box_id_237 active=1
+RECV phase-c1 62/100 rank=468 id=page_001368_table_box_id_237 latency=0.4222s status=ok active=0
+SEND phase-c1 63/100 table=page_000217_table_box_id_0 active=1
+RECV phase-c1 63/100 rank=391 id=page_000217_table_box_id_0 latency=1.7921s status=ok active=0
+SEND phase-c1 64/100 table=page_001159_table_5 active=1
+RECV phase-c1 64/100 rank=224 id=page_001159_table_5 latency=0.7116s status=ok active=0
+SEND phase-c1 65/100 table=page_000626_table_box_id_1 active=1
+RECV phase-c1 65/100 rank=44 id=page_000626_table_box_id_1 latency=1.6110s status=ok active=0
+SEND phase-c1 66/100 table=page_000984_table_2 active=1
+RECV phase-c1 66/100 rank=625 id=page_000984_table_2 latency=0.1685s status=ok active=0
+SEND phase-c1 67/100 table=page_001082_table_34 active=1
+RECV phase-c1 67/100 rank=171 id=page_001082_table_34 latency=0.8141s status=ok active=0
+SEND phase-c1 68/100 table=page_000467_table_17 active=1
+RECV phase-c1 68/100 rank=120 id=page_000467_table_17 latency=0.9131s status=ok active=0
+SEND phase-c1 69/100 table=page_000866_table_14 active=1
+RECV phase-c1 69/100 rank=419 id=page_000866_table_14 latency=0.4826s status=ok active=0
+SEND phase-c1 70/100 table=page_001227_table_10 active=1
+RECV phase-c1 70/100 rank=75 id=page_001227_table_10 latency=1.0060s status=ok active=0
+SEND phase-c1 71/100 table=page_000916_table_7 active=1
+RECV phase-c1 71/100 rank=265 id=page_000916_table_7 latency=0.7621s status=ok active=0
+SEND phase-c1 72/100 table=page_000251_table_box_id_7 active=1
+RECV phase-c1 72/100 rank=184 id=page_000251_table_box_id_7 latency=0.8494s status=ok active=0
+SEND phase-c1 73/100 table=page_001131_table_15 active=1
+RECV phase-c1 73/100 rank=469 id=page_001131_table_15 latency=0.3838s status=ok active=0
+SEND phase-c1 74/100 table=page_001183_table_12 active=1
+RECV phase-c1 74/100 rank=285 id=page_001183_table_12 latency=0.6970s status=ok active=0
+SEND phase-c1 75/100 table=page_000266_table_box_id_7 active=1
+RECV phase-c1 75/100 rank=509 id=page_000266_table_box_id_7 latency=0.3187s status=ok active=0
+SEND phase-c1 76/100 table=page_000447_table_12 active=1
+RECV phase-c1 76/100 rank=371 id=page_000447_table_12 latency=0.4262s status=ok active=0
+SEND phase-c1 77/100 table=page_001193_table_4 active=1
+RECV phase-c1 77/100 rank=342 id=page_001193_table_4 latency=0.4788s status=ok active=0
+SEND phase-c1 78/100 table=page_001368_table_box_id_239 active=1
+RECV phase-c1 78/100 rank=512 id=page_001368_table_box_id_239 latency=0.3435s status=ok active=0
+SEND phase-c1 79/100 table=page_000903_table_15 active=1
+RECV phase-c1 79/100 rank=522 id=page_000903_table_15 latency=0.6567s status=ok active=0
+SEND phase-c1 80/100 table=page_001167_table_2 active=1
+RECV phase-c1 80/100 rank=422 id=page_001167_table_2 latency=0.4923s status=ok active=0
+SEND phase-c1 81/100 table=page_000212_table_box_id_1 active=1
+RECV phase-c1 81/100 rank=113 id=page_000212_table_box_id_1 latency=1.2516s status=ok active=0
+SEND phase-c1 82/100 table=page_001147_table_10 active=1
+RECV phase-c1 82/100 rank=90 id=page_001147_table_10 latency=0.7833s status=ok active=0
+SEND phase-c1 83/100 table=page_000223_table_box_id_2 active=1
+RECV phase-c1 83/100 rank=114 id=page_000223_table_box_id_2 latency=0.9092s status=ok active=0
+SEND phase-c1 84/100 table=page_000716_table_0 active=1
+RECV phase-c1 84/100 rank=588 id=page_000716_table_0 latency=0.2268s status=ok active=0
+SEND phase-c1 85/100 table=page_000937_table_1 active=1
+RECV phase-c1 85/100 rank=415 id=page_000937_table_1 latency=0.5317s status=ok active=0
+SEND phase-c1 86/100 table=page_000465_table_10 active=1
+RECV phase-c1 86/100 rank=339 id=page_000465_table_10 latency=0.6223s status=ok active=0
+SEND phase-c1 87/100 table=page_000465_table_8 active=1
+RECV phase-c1 87/100 rank=331 id=page_000465_table_8 latency=0.6422s status=ok active=0
+SEND phase-c1 88/100 table=page_001179_table_6 active=1
+RECV phase-c1 88/100 rank=61 id=page_001179_table_6 latency=0.9969s status=ok active=0
+SEND phase-c1 89/100 table=page_000554_table_12 active=1
+RECV phase-c1 89/100 rank=538 id=page_000554_table_12 latency=0.2979s status=ok active=0
+SEND phase-c1 90/100 table=page_000199_table_box_id_0 active=1
+RECV phase-c1 90/100 rank=80 id=page_000199_table_box_id_0 latency=1.3973s status=ok active=0
+SEND phase-c1 91/100 table=page_000516_table_0 active=1
+RECV phase-c1 91/100 rank=125 id=page_000516_table_0 latency=0.8305s status=ok active=0
+SEND phase-c1 92/100 table=page_001214_table_8 active=1
+RECV phase-c1 92/100 rank=359 id=page_001214_table_8 latency=0.6167s status=ok active=0
+SEND phase-c1 93/100 table=page_001368_table_box_id_161 active=1
+RECV phase-c1 93/100 rank=332 id=page_001368_table_box_id_161 latency=0.4123s status=ok active=0
+SEND phase-c1 94/100 table=page_000577_table_3 active=1
+RECV phase-c1 94/100 rank=382 id=page_000577_table_3 latency=0.5432s status=ok active=0
+SEND phase-c1 95/100 table=page_000984_table_3 active=1
+RECV phase-c1 95/100 rank=238 id=page_000984_table_3 latency=0.7908s status=ok active=0
+SEND phase-c1 96/100 table=page_001187_table_0 active=1
+RECV phase-c1 96/100 rank=28 id=page_001187_table_0 latency=1.3514s status=ok active=0
+SEND phase-c1 97/100 table=page_000821_table_box_id_14 active=1
+RECV phase-c1 97/100 rank=585 id=page_000821_table_box_id_14 latency=0.2392s status=ok active=0
+SEND phase-c1 98/100 table=page_000833_table_4 active=1
+RECV phase-c1 98/100 rank=352 id=page_000833_table_4 latency=0.6873s status=ok active=0
+SEND phase-c1 99/100 table=page_001375_table_31 active=1
+RECV phase-c1 99/100 rank=631 id=page_001375_table_31 latency=0.1644s status=ok active=0
+SEND phase-c1 100/100 table=page_000645_table_7 active=1
+RECV phase-c1 100/100 rank=533 id=page_000645_table_7 latency=0.2951s status=ok active=0
+DONE phase-c1 requests=100 failures=0 max_in_flight=1 wall=73.5478s qps=1.3597 p50=0.6257s p95=1.7929s max=3.3764s

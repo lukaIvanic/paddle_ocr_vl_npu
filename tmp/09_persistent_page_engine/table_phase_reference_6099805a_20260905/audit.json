@@ -1,0 +1,126 @@
+{
+  "frozen_selection_hash": "1f77a0233333ba8dbf01434dc7de3b6b3dee75e611e38554de47d6a29bf1ba85",
+  "checks": {
+    "identity_c1": {
+      "identical_selection": true,
+      "complete_100_no_errors": true,
+      "all_eos": true,
+      "native_parity_100": true,
+      "dispatch_order_matches": true,
+      "interval_cap_matches_client": true,
+      "original_splits_and_rotations": true
+    },
+    "identity_c2": {
+      "identical_selection": true,
+      "complete_100_no_errors": true,
+      "all_eos": true,
+      "native_parity_100": true,
+      "dispatch_order_matches": true,
+      "interval_cap_matches_client": true,
+      "original_splits_and_rotations": true
+    },
+    "retained_c1": {
+      "identical_selection": true,
+      "complete_100_no_errors": true,
+      "all_eos": true,
+      "native_parity_100": true,
+      "dispatch_order_matches": true,
+      "interval_cap_matches_client": true,
+      "original_splits_and_rotations": true
+    },
+    "retained_c2": {
+      "identical_selection": true,
+      "complete_100_no_errors": true,
+      "all_eos": true,
+      "native_parity_100": true,
+      "dispatch_order_matches": true,
+      "interval_cap_matches_client": true,
+      "original_splits_and_rotations": true
+    },
+    "async_c1": {
+      "identical_selection": true,
+      "complete_100_no_errors": true,
+      "all_eos": true,
+      "native_parity_100": true,
+      "dispatch_order_matches": true,
+      "interval_cap_matches_client": true,
+      "original_splits_and_rotations": true
+    },
+    "async_c2": {
+      "identical_selection": true,
+      "complete_100_no_errors": true,
+      "all_eos": true,
+      "native_parity_100": true,
+      "dispatch_order_matches": true,
+      "interval_cap_matches_client": true,
+      "original_splits_and_rotations": true
+    },
+    "original_recheck": {
+      "identical_selection": true,
+      "complete_100_no_errors": true,
+      "all_eos": true,
+      "native_parity_100": true,
+      "dispatch_order_matches": true,
+      "interval_cap_matches_client": true
+    }
+  },
+  "host_checks": {
+    "identity": {
+      "expected_host_worker_pid": "1553489",
+      "samples": 70,
+      "checks": {
+        "only_expected_pid_in_samples": true,
+        "identity_c1_window_bracketed": true,
+        "identity_c2_window_bracketed": true,
+        "no_cache_rejection_or_traceback_log": true
+      }
+    },
+    "retained": {
+      "expected_host_worker_pid": "1583178",
+      "samples": 75,
+      "checks": {
+        "only_expected_pid_in_samples": true,
+        "retained_c1_window_bracketed": true,
+        "retained_c2_window_bracketed": true,
+        "no_cache_rejection_or_traceback_log": true
+      }
+    },
+    "async": {
+      "expected_host_worker_pid": "1613266",
+      "samples": 91,
+      "checks": {
+        "only_expected_pid_in_samples": true,
+        "async_c1_window_bracketed": true,
+        "async_c2_window_bracketed": true,
+        "no_cache_rejection_or_traceback_log": true
+      }
+    },
+    "original_recheck": {
+      "expected_host_worker_pid": "1643932",
+      "samples": 32,
+      "checks": {
+        "only_expected_pid_in_samples": true,
+        "original_recheck_window_bracketed": true,
+        "no_cache_rejection_or_traceback_log": true
+      }
+    }
+  },
+  "whole_pipeline_admission": {
+    "async-c1": {
+      "records": 100,
+      "peak": 1,
+      "passes": true
+    },
+    "async-c2": {
+      "records": 100,
+      "peak": 2,
+      "passes": true
+    }
+  },
+  "all_data_checks_pass": true,
+  "limitations": [
+    "Host sampling is approximately every five seconds, not continuous process tracing.",
+    "Host action attribution is not an isolated kernel profile; pending work and background CPU overlap.",
+    "Final NPU release is separately documented from the direct-host terminal check."
+  ]
+}

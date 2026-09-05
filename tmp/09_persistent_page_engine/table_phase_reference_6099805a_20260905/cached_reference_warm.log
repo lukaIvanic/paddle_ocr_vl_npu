@@ -1,0 +1,8 @@
+cached-warm API ready worker_pid=2248354; preloading 2 distinct crops for 2 requests
+cached-warm crops preloaded 2/2
+cached-warm payloads ready bytes=1493896
+SEND cached-warm 01/2 table=page_001272_table_1 active=1
+RECV cached-warm 01/2 rank=65 id=page_001272_table_1 latency=3.0349s status=ok active=0
+SEND cached-warm 02/2 table=page_001137_table_9 active=1
+RECV cached-warm 02/2 rank=66 id=page_001137_table_9 latency=0.7877s status=ok active=0
+DONE cached-warm requests=2 failures=0 max_in_flight=1 wall=3.8260s qps=0.5227 p50=1.9113s p95=2.9225s max=3.0349s

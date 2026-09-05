@@ -1,0 +1,684 @@
+Waiting for NPU worker pid=2339892
+TABLE_SPEC_API setup=draft_recognizer
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.87229}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":9.904955}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.025773}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.028243}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":5.989703}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.524799}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016859}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":9.136079}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":0.612727}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.239798}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.001458}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.003424}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":31.180282}
+TABLE_SPEC_API setup=b1_recognizer
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.888833}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":10.114008}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.020849}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.024892}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":0.022261}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.006319}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.017369}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":0.821971}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":0.687824}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.243776}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.001433}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.000643}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":12.860513}
+TABLE_PHASE setup=decode kind=target B=1 KV=4096
+TABLE_PHASE setup=decode kind=draft B=8 KV=768
+TABLE_PHASE setup=verifier B=1 Q=8 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=16 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=32 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=64 KV=4096
+TABLE_PHASE setup=decode kind=target B=2 KV=4096
+TABLE_PHASE setup=decode kind=draft B=16 KV=768
+TABLE_PHASE setup=verifier B=2 Q=8 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=16 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=32 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=64 KV=4096
+TABLE_PHASE ready; perform complete client warmups outside measurement
+READY http://127.0.0.1:8765 worker_pid=2339892
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-warm-001-page_001272_table_1:a7bab8202e444047b8fdc197fbeaba95 route=spec active=1
+.TABLE_PHASE complete id=retained-warm-001-page_001272_table_1:a7bab8202e444047b8fdc197fbeaba95 wall_s=2.4344 tokens=952 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-warm-001-page_001272_table_1&source_request_id=page_001272_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-warm-002-page_001137_table_9:b199c614253a4139a908da29744469fe route=spec active=1
+TABLE_PHASE complete id=retained-warm-002-page_001137_table_9:b199c614253a4139a908da29744469fe wall_s=0.6876 tokens=966 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-warm-002-page_001137_table_9&source_request_id=page_001137_table_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-001-page_000287_table_box_id_8:c8214240279c434d9c6aa19a83ba5bb7 route=spec active=1
+TABLE_PHASE complete id=retained-c1-001-page_000287_table_box_id_8:c8214240279c434d9c6aa19a83ba5bb7 wall_s=0.9432 tokens=1768 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-001-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-002-page_001367_table_51:7a002e23d0df40488b6801b52f270f9a route=spec active=1
+TABLE_PHASE complete id=retained-c1-002-page_001367_table_51:7a002e23d0df40488b6801b52f270f9a wall_s=0.4177 tokens=405 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-002-page_001367_table_51&source_request_id=page_001367_table_51 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-003-page_000236_table_box_id_1:e9c9e89a8b94483796d7d73e8fdae174 route=spec active=1
+TABLE_PHASE complete id=retained-c1-003-page_000236_table_box_id_1:e9c9e89a8b94483796d7d73e8fdae174 wall_s=0.5246 tokens=202 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-003-page_000236_table_box_id_1&source_request_id=page_000236_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-004-page_000634_table_11:dad012425e54432ebdd615afe97682a2 route=spec active=1
+TABLE_PHASE complete id=retained-c1-004-page_000634_table_11:dad012425e54432ebdd615afe97682a2 wall_s=0.5142 tokens=358 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-004-page_000634_table_11&source_request_id=page_000634_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-005-page_000272_table_box_id_1:73a3e6c08d934e4fb29eef6094962de8 route=spec active=1
+TABLE_PHASE complete id=retained-c1-005-page_000272_table_box_id_1:73a3e6c08d934e4fb29eef6094962de8 wall_s=1.4384 tokens=3025 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-005-page_000272_table_box_id_1&source_request_id=page_000272_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-006-page_001172_table_16:a4921f0d5a744c2b9df4be5a177caac3 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-006-page_001172_table_16:a4921f0d5a744c2b9df4be5a177caac3 wall_s=0.3956 tokens=212 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-006-page_001172_table_16&source_request_id=page_001172_table_16 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-007-page_001137_table_2:cbeff7c73f8a4bc1aaaf0844485ac690 route=spec active=1
+TABLE_PHASE complete id=retained-c1-007-page_001137_table_2:cbeff7c73f8a4bc1aaaf0844485ac690 wall_s=0.5010 tokens=567 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-007-page_001137_table_2&source_request_id=page_001137_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-008-page_001150_table_box_id_9:d015e1c2f96a4e6d9ed58429b6bf8474 route=spec active=1
+TABLE_PHASE complete id=retained-c1-008-page_001150_table_box_id_9:d015e1c2f96a4e6d9ed58429b6bf8474 wall_s=0.4516 tokens=307 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-008-page_001150_table_box_id_9&source_request_id=page_001150_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-009-page_000920_table_8:a556046154584690ab62077f35ed4018 route=spec active=1
+TABLE_PHASE complete id=retained-c1-009-page_000920_table_8:a556046154584690ab62077f35ed4018 wall_s=0.6226 tokens=150 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-009-page_000920_table_8&source_request_id=page_000920_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-010-page_000524_table_0:893f90e8a13a440bbdf570e1345623ef route=spec active=1
+TABLE_PHASE complete id=retained-c1-010-page_000524_table_0:893f90e8a13a440bbdf570e1345623ef wall_s=0.7028 tokens=569 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-010-page_000524_table_0&source_request_id=page_000524_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-011-page_000256_table_box_id_8:79553bd451ad49a4a39975222efbe3ab route=b1 active=1
+TABLE_PHASE complete id=retained-c1-011-page_000256_table_box_id_8:79553bd451ad49a4a39975222efbe3ab wall_s=0.4048 tokens=214 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-011-page_000256_table_box_id_8&source_request_id=page_000256_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-012-page_001166_table_9:3f0c67ef76b746d6b6a75ae6a3458366 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-012-page_001166_table_9:3f0c67ef76b746d6b6a75ae6a3458366 wall_s=0.3173 tokens=149 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-012-page_001166_table_9&source_request_id=page_001166_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-013-page_000211_table_box_id_3:63054d4182a24efc8850d3cc0016b017 route=spec active=1
+TABLE_PHASE complete id=retained-c1-013-page_000211_table_box_id_3:63054d4182a24efc8850d3cc0016b017 wall_s=0.7085 tokens=348 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-013-page_000211_table_box_id_3&source_request_id=page_000211_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-014-page_000933_table_10:0ad791925f754ee8897836334e753ee5 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-014-page_000933_table_10:0ad791925f754ee8897836334e753ee5 wall_s=0.2447 tokens=83 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-014-page_000933_table_10&source_request_id=page_000933_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-015-page_001129_table_8:5188ffc70e414d10b936537d5534edda route=spec active=1
+TABLE_PHASE complete id=retained-c1-015-page_001129_table_8:5188ffc70e414d10b936537d5534edda wall_s=0.7172 tokens=723 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-015-page_001129_table_8&source_request_id=page_001129_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-016-page_001375_table_7:dfdbf06b3b584912b89e8d3950c26df5 route=spec active=1
+TABLE_PHASE complete id=retained-c1-016-page_001375_table_7:dfdbf06b3b584912b89e8d3950c26df5 wall_s=0.3909 tokens=122 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-016-page_001375_table_7&source_request_id=page_001375_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-017-page_000106_table_box_id_2:915138e8a0474c668dd6a0ad5e6a9876 route=spec active=1
+TABLE_PHASE complete id=retained-c1-017-page_000106_table_box_id_2:915138e8a0474c668dd6a0ad5e6a9876 wall_s=0.7602 tokens=405 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-017-page_000106_table_box_id_2&source_request_id=page_000106_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-018-page_001134_table_10:54827dcb0b2d4e56b4e028b37eae43f4 route=spec active=1
+TABLE_PHASE complete id=retained-c1-018-page_001134_table_10:54827dcb0b2d4e56b4e028b37eae43f4 wall_s=0.5540 tokens=635 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-018-page_001134_table_10&source_request_id=page_001134_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-019-page_000642_table_8:b689b203f5524337b0bfcb5533103b56 route=spec active=1
+TABLE_PHASE complete id=retained-c1-019-page_000642_table_8:b689b203f5524337b0bfcb5533103b56 wall_s=0.7309 tokens=640 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-019-page_000642_table_8&source_request_id=page_000642_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-020-page_000564_table_7:23e89df3976e4c7bb78d230909f3f52e route=spec active=1
+TABLE_PHASE complete id=retained-c1-020-page_000564_table_7:23e89df3976e4c7bb78d230909f3f52e wall_s=0.5852 tokens=176 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-020-page_000564_table_7&source_request_id=page_000564_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-021-page_001368_table_box_id_242:810c14238bbc40038e507668e4d50195 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-021-page_001368_table_box_id_242:810c14238bbc40038e507668e4d50195 wall_s=0.2399 tokens=131 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-021-page_001368_table_box_id_242&source_request_id=page_001368_table_box_id_242 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-022-page_000263_table_box_id_7:6370f0a7d32f494ab1def00b1214490b route=spec active=1
+TABLE_PHASE complete id=retained-c1-022-page_000263_table_box_id_7:6370f0a7d32f494ab1def00b1214490b wall_s=2.5812 tokens=1500 exact=False active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-022-page_000263_table_box_id_7&source_request_id=page_000263_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-023-page_000746_table_18:259a9f6176464b15bf537bc4dca0167f route=spec active=1
+TABLE_PHASE complete id=retained-c1-023-page_000746_table_18:259a9f6176464b15bf537bc4dca0167f wall_s=1.2034 tokens=458 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-023-page_000746_table_18&source_request_id=page_000746_table_18 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-024-page_000213_table_box_id_5:e0680207b7a14a73a6607c62659e30c8 route=spec active=1
+TABLE_PHASE complete id=retained-c1-024-page_000213_table_box_id_5:e0680207b7a14a73a6607c62659e30c8 wall_s=0.6491 tokens=328 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-024-page_000213_table_box_id_5&source_request_id=page_000213_table_box_id_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-025-page_000206_table_box_id_1:9f2252994a214439904626a655ef4ba1 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-025-page_000206_table_box_id_1:9f2252994a214439904626a655ef4ba1 wall_s=0.4207 tokens=282 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-025-page_000206_table_box_id_1&source_request_id=page_000206_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-026-page_000209_table_box_id_1:e39e20d4f3b94913a90fa81b4ddd8bf1 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-026-page_000209_table_box_id_1:e39e20d4f3b94913a90fa81b4ddd8bf1 wall_s=0.2938 tokens=135 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-026-page_000209_table_box_id_1&source_request_id=page_000209_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-027-page_001216_table_2:489432056d864d30ab5ebc8692216856 route=spec active=1
+TABLE_PHASE complete id=retained-c1-027-page_001216_table_2:489432056d864d30ab5ebc8692216856 wall_s=0.6524 tokens=446 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-027-page_001216_table_2&source_request_id=page_001216_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-028-page_000188_table_box_id_6:66bd8abd001e4b5a9595e6edb4a89b15 route=spec active=1
+TABLE_PHASE complete id=retained-c1-028-page_000188_table_box_id_6:66bd8abd001e4b5a9595e6edb4a89b15 wall_s=1.0297 tokens=110 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-028-page_000188_table_box_id_6&source_request_id=page_000188_table_box_id_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-029-page_000921_table_9:3dfd2bea34ba40ce9e59e39a5e238ca5 route=spec active=1
+TABLE_PHASE complete id=retained-c1-029-page_000921_table_9:3dfd2bea34ba40ce9e59e39a5e238ca5 wall_s=1.1955 tokens=90 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-029-page_000921_table_9&source_request_id=page_000921_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-030-page_000533_table_8:9dfeec9bb59c4647a5d7b5a3fe93b387 route=spec active=1
+TABLE_PHASE complete id=retained-c1-030-page_000533_table_8:9dfeec9bb59c4647a5d7b5a3fe93b387 wall_s=0.4174 tokens=171 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-030-page_000533_table_8&source_request_id=page_000533_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-031-page_001123_table_14:d547d72df35646c892c42d5d02e9355c route=b1 active=1
+TABLE_PHASE complete id=retained-c1-031-page_001123_table_14:d547d72df35646c892c42d5d02e9355c wall_s=0.3314 tokens=186 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-031-page_001123_table_14&source_request_id=page_001123_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-032-page_001503_table_5:6ff67b758f5f494d87f8d058abc04c7d route=b1 active=1
+TABLE_PHASE complete id=retained-c1-032-page_001503_table_5:6ff67b758f5f494d87f8d058abc04c7d wall_s=0.1984 tokens=42 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-032-page_001503_table_5&source_request_id=page_001503_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-033-page_001197_table_5:dd5699a54b224c06a8e54ca3d0f63602 route=spec active=1
+TABLE_PHASE complete id=retained-c1-033-page_001197_table_5:dd5699a54b224c06a8e54ca3d0f63602 wall_s=0.5507 tokens=727 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-033-page_001197_table_5&source_request_id=page_001197_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-034-page_000542_table_0:1e6627c2a67a421f8bbfa782a0e4dd73 route=spec active=1
+TABLE_PHASE complete id=retained-c1-034-page_000542_table_0:1e6627c2a67a421f8bbfa782a0e4dd73 wall_s=0.5106 tokens=341 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-034-page_000542_table_0&source_request_id=page_000542_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-035-page_001130_table_1:d34f28d56a884fc09e4a3c7e14bc7144 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-035-page_001130_table_1:d34f28d56a884fc09e4a3c7e14bc7144 wall_s=0.1756 tokens=51 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-035-page_001130_table_1&source_request_id=page_001130_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-036-page_001595_table_box_id_9:dd2391db8a934b0abb90f416b73c8d98 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-036-page_001595_table_box_id_9:dd2391db8a934b0abb90f416b73c8d98 wall_s=0.1798 tokens=45 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-036-page_001595_table_box_id_9&source_request_id=page_001595_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-037-page_001233_table_6:7c98aeb06f4346cfa10492e3f924594b route=b1 active=1
+TABLE_PHASE complete id=retained-c1-037-page_001233_table_6:7c98aeb06f4346cfa10492e3f924594b wall_s=0.5200 tokens=347 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-037-page_001233_table_6&source_request_id=page_001233_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-038-page_000585_table_1:d1f2c92b058a4e52b0ed1e17f8865fa4 route=spec active=1
+TABLE_PHASE complete id=retained-c1-038-page_000585_table_1:d1f2c92b058a4e52b0ed1e17f8865fa4 wall_s=0.8219 tokens=457 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-038-page_000585_table_1&source_request_id=page_000585_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-039-page_000821_table_box_id_26:4ffd32285bad4d00a71ba85eb275a78b route=b1 active=1
+TABLE_PHASE complete id=retained-c1-039-page_000821_table_box_id_26:4ffd32285bad4d00a71ba85eb275a78b wall_s=0.1478 tokens=46 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-039-page_000821_table_box_id_26&source_request_id=page_000821_table_box_id_26 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-040-page_000566_table_3:6739bccfddc54b8db901953b10619bc4 route=spec active=1
+TABLE_PHASE complete id=retained-c1-040-page_000566_table_3:6739bccfddc54b8db901953b10619bc4 wall_s=0.8167 tokens=446 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-040-page_000566_table_3&source_request_id=page_000566_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-041-page_000534_table_4:04e468d6859142a7bee0e3756adfaddf route=spec active=1
+TABLE_PHASE complete id=retained-c1-041-page_000534_table_4:04e468d6859142a7bee0e3756adfaddf wall_s=0.6001 tokens=317 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-041-page_000534_table_4&source_request_id=page_000534_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-042-page_001141_table_13:0792812d99c04c729d3ab26d0441c6f8 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-042-page_001141_table_13:0792812d99c04c729d3ab26d0441c6f8 wall_s=0.4610 tokens=301 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-042-page_001141_table_13&source_request_id=page_001141_table_13 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-043-page_000665_table_3:3b230af7435f441ca4239bf6a9ad0693 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-043-page_000665_table_3:3b230af7435f441ca4239bf6a9ad0693 wall_s=0.1021 tokens=11 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-043-page_000665_table_3&source_request_id=page_000665_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-044-page_001417_table_2:b366e9fb1121470195b09a7b6bf984ce route=b1 active=1
+TABLE_PHASE complete id=retained-c1-044-page_001417_table_2:b366e9fb1121470195b09a7b6bf984ce wall_s=0.1679 tokens=68 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-044-page_001417_table_2&source_request_id=page_001417_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-045-page_001117_table_box_id_7:3e05a46c1cdc4bfdb3076c99c579f15f route=b1 active=1
+TABLE_PHASE complete id=retained-c1-045-page_001117_table_box_id_7:3e05a46c1cdc4bfdb3076c99c579f15f wall_s=0.2370 tokens=119 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-045-page_001117_table_box_id_7&source_request_id=page_001117_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-046-page_001270_table_box_id_1:cdda792a5373428ca36f1f7667f24883 route=spec active=1
+TABLE_PHASE complete id=retained-c1-046-page_001270_table_box_id_1:cdda792a5373428ca36f1f7667f24883 wall_s=1.2638 tokens=789 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-046-page_001270_table_box_id_1&source_request_id=page_001270_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-047-page_000261_table_box_id_3:134d4316f8b0456bbd16ea976245768b route=spec active=1
+TABLE_PHASE complete id=retained-c1-047-page_000261_table_box_id_3:134d4316f8b0456bbd16ea976245768b wall_s=1.3146 tokens=1106 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-047-page_000261_table_box_id_3&source_request_id=page_000261_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-048-page_000505_table_1:c2e50af2a1b64a838f326f99107d53ea route=spec active=1
+TABLE_PHASE complete id=retained-c1-048-page_000505_table_1:c2e50af2a1b64a838f326f99107d53ea wall_s=0.9119 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-048-page_000505_table_1&source_request_id=page_000505_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-049-page_000682_table_15:d0ed6e49ff224f9ca48465038d2336ea route=b1 active=1
+TABLE_PHASE complete id=retained-c1-049-page_000682_table_15:d0ed6e49ff224f9ca48465038d2336ea wall_s=0.2242 tokens=63 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-049-page_000682_table_15&source_request_id=page_000682_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-050-page_000275_table_box_id_1:cbfc92996a8a4a23bd62d4102af2088a route=spec active=1
+TABLE_PHASE complete id=retained-c1-050-page_000275_table_box_id_1:cbfc92996a8a4a23bd62d4102af2088a wall_s=1.3115 tokens=2852 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-050-page_000275_table_box_id_1&source_request_id=page_000275_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-051-page_000789_table_34:bf19a0e3d16b478492ce2e774ec23ae4 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-051-page_000789_table_34:bf19a0e3d16b478492ce2e774ec23ae4 wall_s=0.1316 tokens=32 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-051-page_000789_table_34&source_request_id=page_000789_table_34 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-052-page_001177_table_2:25fc240e0522490f8895ee416b0d9ff0 route=spec active=1
+TABLE_PHASE complete id=retained-c1-052-page_001177_table_2:25fc240e0522490f8895ee416b0d9ff0 wall_s=0.4462 tokens=355 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-052-page_001177_table_2&source_request_id=page_001177_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-053-page_001398_table_box-13qv1ztw:feb4719876424029a1d770e8b55f01e0 route=spec active=1
+TABLE_PHASE complete id=retained-c1-053-page_001398_table_box-13qv1ztw:feb4719876424029a1d770e8b55f01e0 wall_s=0.3153 tokens=126 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-053-page_001398_table_box-13qv1ztw&source_request_id=page_001398_table_box-13qv1ztw HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-054-page_001183_table_11:52faeced9bfb459db8490c722e69f240 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-054-page_001183_table_11:52faeced9bfb459db8490c722e69f240 wall_s=0.3411 tokens=169 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-054-page_001183_table_11&source_request_id=page_001183_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-055-page_000507_table_0:344ca75f2e084b438154bd6c46b2b1c9 route=spec active=1
+TABLE_PHASE complete id=retained-c1-055-page_000507_table_0:344ca75f2e084b438154bd6c46b2b1c9 wall_s=0.4087 tokens=167 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-055-page_000507_table_0&source_request_id=page_000507_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-056-page_000710_table_9:5afc4f9f880d4cefa0503693aedd77e0 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-056-page_000710_table_9:5afc4f9f880d4cefa0503693aedd77e0 wall_s=0.2175 tokens=60 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-056-page_000710_table_9&source_request_id=page_000710_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-057-page_000657_table_6:8348d1a6fb4945caa2cd46e02a7186cd route=b1 active=1
+TABLE_PHASE complete id=retained-c1-057-page_000657_table_6:8348d1a6fb4945caa2cd46e02a7186cd wall_s=0.1004 tokens=11 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-057-page_000657_table_6&source_request_id=page_000657_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-058-page_001368_table_box_id_227:693a9526b1cc471ba54b269231542335 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-058-page_001368_table_box_id_227:693a9526b1cc471ba54b269231542335 wall_s=0.4821 tokens=345 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-058-page_001368_table_box_id_227&source_request_id=page_001368_table_box_id_227 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-059-page_001176_table_4:c48fefa61b5a43f1b6c0ab3f3c7959c7 route=spec active=1
+TABLE_PHASE complete id=retained-c1-059-page_001176_table_4:c48fefa61b5a43f1b6c0ab3f3c7959c7 wall_s=0.7356 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-059-page_001176_table_4&source_request_id=page_001176_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-060-page_001181_table_6:d93ff6b949364a2f9615b903d2732351 route=spec active=1
+TABLE_PHASE complete id=retained-c1-060-page_001181_table_6:d93ff6b949364a2f9615b903d2732351 wall_s=0.9886 tokens=906 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-060-page_001181_table_6&source_request_id=page_001181_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-061-page_000937_table_0:7feaf8730be44340bc687933aa420927 route=spec active=1
+TABLE_PHASE complete id=retained-c1-061-page_000937_table_0:7feaf8730be44340bc687933aa420927 wall_s=0.5954 tokens=164 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-061-page_000937_table_0&source_request_id=page_000937_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-062-page_001368_table_box_id_237:541c2df98a54452c884eb30eae26ca7c route=b1 active=1
+TABLE_PHASE complete id=retained-c1-062-page_001368_table_box_id_237:541c2df98a54452c884eb30eae26ca7c wall_s=0.2689 tokens=151 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-062-page_001368_table_box_id_237&source_request_id=page_001368_table_box_id_237 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-063-page_000217_table_box_id_0:d30a168dc9224d2b89fb80fd3c924ebd route=spec active=1
+TABLE_PHASE complete id=retained-c1-063-page_000217_table_box_id_0:d30a168dc9224d2b89fb80fd3c924ebd wall_s=1.2805 tokens=138 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-063-page_000217_table_box_id_0&source_request_id=page_000217_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-064-page_001159_table_5:60ba2b4246744f70a10eda2287b05138 route=spec active=1
+TABLE_PHASE complete id=retained-c1-064-page_001159_table_5:60ba2b4246744f70a10eda2287b05138 wall_s=0.6459 tokens=314 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-064-page_001159_table_5&source_request_id=page_001159_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-065-page_000626_table_box_id_1:9edacc4a8bfa4bb0a278886e611235a8 route=spec active=1
+TABLE_PHASE complete id=retained-c1-065-page_000626_table_box_id_1:9edacc4a8bfa4bb0a278886e611235a8 wall_s=1.2634 tokens=1352 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-065-page_000626_table_box_id_1&source_request_id=page_000626_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-066-page_000984_table_2:c605db1468ae4da29f80a6d3532849f2 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-066-page_000984_table_2:c605db1468ae4da29f80a6d3532849f2 wall_s=0.1400 tokens=32 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-066-page_000984_table_2&source_request_id=page_000984_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-067-page_001082_table_34:b49e54437db443c595c19a76f4b4415e route=spec active=1
+TABLE_PHASE complete id=retained-c1-067-page_001082_table_34:b49e54437db443c595c19a76f4b4415e wall_s=0.6978 tokens=483 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-067-page_001082_table_34&source_request_id=page_001082_table_34 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-068-page_000467_table_17:777d3a5d83b441eab9eec4bc82608863 route=spec active=1
+TABLE_PHASE complete id=retained-c1-068-page_000467_table_17:777d3a5d83b441eab9eec4bc82608863 wall_s=0.7370 tokens=723 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-068-page_000467_table_17&source_request_id=page_000467_table_17 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-069-page_000866_table_14:8000f4f3442c451c9413f6a0b33c1577 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-069-page_000866_table_14:8000f4f3442c451c9413f6a0b33c1577 wall_s=0.3219 tokens=167 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-069-page_000866_table_14&source_request_id=page_000866_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-070-page_001227_table_10:e1b573d2b40e4f0c8f6b4ab0cc8f5ff1 route=spec active=1
+TABLE_PHASE complete id=retained-c1-070-page_001227_table_10:e1b573d2b40e4f0c8f6b4ab0cc8f5ff1 wall_s=0.8247 tokens=842 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-070-page_001227_table_10&source_request_id=page_001227_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-071-page_000916_table_7:a5324f7e98be4380a0d6196c2f878989 route=spec active=1
+TABLE_PHASE complete id=retained-c1-071-page_000916_table_7:a5324f7e98be4380a0d6196c2f878989 wall_s=0.6532 tokens=230 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-071-page_000916_table_7&source_request_id=page_000916_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-072-page_000251_table_box_id_7:3099231b212740d580545776546138df route=spec active=1
+TABLE_PHASE complete id=retained-c1-072-page_000251_table_box_id_7:3099231b212740d580545776546138df wall_s=0.7618 tokens=404 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-072-page_000251_table_box_id_7&source_request_id=page_000251_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-073-page_001131_table_15:24667257b02b4500940cc57d04efc819 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-073-page_001131_table_15:24667257b02b4500940cc57d04efc819 wall_s=0.2713 tokens=131 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-073-page_001131_table_15&source_request_id=page_001131_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-074-page_001183_table_12:0684164c7430429f8329f796d8109484 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-074-page_001183_table_12:0684164c7430429f8329f796d8109484 wall_s=0.4382 tokens=268 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-074-page_001183_table_12&source_request_id=page_001183_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-075-page_000266_table_box_id_7:681432c81d7041c697ca8412be33a4f8 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-075-page_000266_table_box_id_7:681432c81d7041c697ca8412be33a4f8 wall_s=0.2229 tokens=96 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-075-page_000266_table_box_id_7&source_request_id=page_000266_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-076-page_000447_table_12:a5f4a5d59f5242d29feb6125c3873955 route=spec active=1
+TABLE_PHASE complete id=retained-c1-076-page_000447_table_12:a5f4a5d59f5242d29feb6125c3873955 wall_s=0.3891 tokens=221 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-076-page_000447_table_12&source_request_id=page_000447_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-077-page_001193_table_4:9d7f4bfcacb549fda7954f776af99c27 route=spec active=1
+TABLE_PHASE complete id=retained-c1-077-page_001193_table_4:9d7f4bfcacb549fda7954f776af99c27 wall_s=0.4439 tokens=210 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-077-page_001193_table_4&source_request_id=page_001193_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-078-page_001368_table_box_id_239:7773eb1823aa420dbcff92f2447001a7 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-078-page_001368_table_box_id_239:7773eb1823aa420dbcff92f2447001a7 wall_s=0.2237 tokens=120 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-078-page_001368_table_box_id_239&source_request_id=page_001368_table_box_id_239 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-079-page_000903_table_15:95eb384dad474c309a63a2f124a033ac route=spec active=1
+TABLE_PHASE complete id=retained-c1-079-page_000903_table_15:95eb384dad474c309a63a2f124a033ac wall_s=0.5544 tokens=71 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-079-page_000903_table_15&source_request_id=page_000903_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-080-page_001167_table_2:337898c0d86649afbd6da811831ae37c route=b1 active=1
+TABLE_PHASE complete id=retained-c1-080-page_001167_table_2:337898c0d86649afbd6da811831ae37c wall_s=0.3169 tokens=176 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-080-page_001167_table_2&source_request_id=page_001167_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-081-page_000212_table_box_id_1:f089c1109e6545b586fa84f2dbf7cfb8 route=spec active=1
+TABLE_PHASE complete id=retained-c1-081-page_000212_table_box_id_1:f089c1109e6545b586fa84f2dbf7cfb8 wall_s=1.1156 tokens=647 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-081-page_000212_table_box_id_1&source_request_id=page_000212_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-082-page_001147_table_10:64f4f63fa9dd45409968897236f3ebc2 route=spec active=1
+TABLE_PHASE complete id=retained-c1-082-page_001147_table_10:64f4f63fa9dd45409968897236f3ebc2 wall_s=0.6889 tokens=862 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-082-page_001147_table_10&source_request_id=page_001147_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-083-page_000223_table_box_id_2:cdc431d390fa4ea7b07b36068fd724e5 route=spec active=1
+TABLE_PHASE complete id=retained-c1-083-page_000223_table_box_id_2:cdc431d390fa4ea7b07b36068fd724e5 wall_s=0.8361 tokens=679 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-083-page_000223_table_box_id_2&source_request_id=page_000223_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-084-page_000716_table_0:a652fb79b78048089b40a491ec7a51e4 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-084-page_000716_table_0:a652fb79b78048089b40a491ec7a51e4 wall_s=0.1788 tokens=57 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-084-page_000716_table_0&source_request_id=page_000716_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-085-page_000937_table_1:983aab6b889e4200b90e511f0fdb929f route=spec active=1
+TABLE_PHASE complete id=retained-c1-085-page_000937_table_1:983aab6b889e4200b90e511f0fdb929f wall_s=0.5119 tokens=121 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-085-page_000937_table_1&source_request_id=page_000937_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-086-page_000465_table_10:27b70c3761894a5d88228761b36f19cd route=b1 active=1
+TABLE_PHASE complete id=retained-c1-086-page_000465_table_10:27b70c3761894a5d88228761b36f19cd wall_s=0.3932 tokens=230 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-086-page_000465_table_10&source_request_id=page_000465_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-087-page_000465_table_8:0b0a984864ed4dd99e39c7368b3ff3c1 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-087-page_000465_table_8:0b0a984864ed4dd99e39c7368b3ff3c1 wall_s=0.4036 tokens=237 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-087-page_000465_table_8&source_request_id=page_000465_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-088-page_001179_table_6:ee61fcd3f262429ea4161163814d32f3 route=spec active=1
+TABLE_PHASE complete id=retained-c1-088-page_001179_table_6:ee61fcd3f262429ea4161163814d32f3 wall_s=0.8574 tokens=1093 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-088-page_001179_table_6&source_request_id=page_001179_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-089-page_000554_table_12:977ee16139c64a859b7ca39c586785bc route=b1 active=1
+TABLE_PHASE complete id=retained-c1-089-page_000554_table_12:977ee16139c64a859b7ca39c586785bc wall_s=0.2063 tokens=93 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-089-page_000554_table_12&source_request_id=page_000554_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-090-page_000199_table_box_id_0:032b4a59483049169975daf187d68db4 route=spec active=1
+TABLE_PHASE complete id=retained-c1-090-page_000199_table_box_id_0:032b4a59483049169975daf187d68db4 wall_s=1.1695 tokens=855 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-090-page_000199_table_box_id_0&source_request_id=page_000199_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-091-page_000516_table_0:a47ff2bb10de4c1c90df29e450c645a0 route=spec active=1
+TABLE_PHASE complete id=retained-c1-091-page_000516_table_0:a47ff2bb10de4c1c90df29e450c645a0 wall_s=0.7301 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-091-page_000516_table_0&source_request_id=page_000516_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-092-page_001214_table_8:71c4910f13504ebea5e1c53c292db82e route=b1 active=1
+TABLE_PHASE complete id=retained-c1-092-page_001214_table_8:71c4910f13504ebea5e1c53c292db82e wall_s=0.3885 tokens=232 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-092-page_001214_table_8&source_request_id=page_001214_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-093-page_001368_table_box_id_161:bc8aa8d5c47b4411a769b32f61efcf12 route=spec active=1
+TABLE_PHASE complete id=retained-c1-093-page_001368_table_box_id_161:bc8aa8d5c47b4411a769b32f61efcf12 wall_s=0.3723 tokens=253 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-093-page_001368_table_box_id_161&source_request_id=page_001368_table_box_id_161 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-094-page_000577_table_3:0a112c9619644194afee6a36e692cb04 route=spec active=1
+TABLE_PHASE complete id=retained-c1-094-page_000577_table_3:0a112c9619644194afee6a36e692cb04 wall_s=0.5275 tokens=139 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-094-page_000577_table_3&source_request_id=page_000577_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-095-page_000984_table_3:73fbcc49d9bf4b888d19e17d7538eee3 route=spec active=1
+TABLE_PHASE complete id=retained-c1-095-page_000984_table_3:73fbcc49d9bf4b888d19e17d7538eee3 wall_s=0.6645 tokens=299 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-095-page_000984_table_3&source_request_id=page_000984_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-096-page_001187_table_0:165dbcc1c1004d00b192972e5057c518 route=spec active=1
+TABLE_PHASE complete id=retained-c1-096-page_001187_table_0:165dbcc1c1004d00b192972e5057c518 wall_s=1.0785 tokens=1553 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-096-page_001187_table_0&source_request_id=page_001187_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-097-page_000821_table_box_id_14:499493c8ff5343059f0fe517efa14785 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-097-page_000821_table_box_id_14:499493c8ff5343059f0fe517efa14785 wall_s=0.1781 tokens=59 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-097-page_000821_table_box_id_14&source_request_id=page_000821_table_box_id_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-098-page_000833_table_4:4443ba04e4314fda8ca148cf4329fb2b route=spec active=1
+TABLE_PHASE complete id=retained-c1-098-page_000833_table_4:4443ba04e4314fda8ca148cf4329fb2b wall_s=0.6654 tokens=107 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-098-page_000833_table_4&source_request_id=page_000833_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-099-page_001375_table_31:cc712a4809fe486fb995a8c676e25d9a route=b1 active=1
+TABLE_PHASE complete id=retained-c1-099-page_001375_table_31:cc712a4809fe486fb995a8c676e25d9a wall_s=0.1304 tokens=34 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-099-page_001375_table_31&source_request_id=page_001375_table_31 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c1-100-page_000645_table_7:77b8e6f8d16449ec84b1773d3fb992f8 route=b1 active=1
+TABLE_PHASE complete id=retained-c1-100-page_000645_table_7:77b8e6f8d16449ec84b1773d3fb992f8 wall_s=0.2031 tokens=89 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c1-100-page_000645_table_7&source_request_id=page_000645_table_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-warm-002-page_001137_table_9:f55e266feec94d28831950b7881314e6 route=spec active=1
+TABLE_PHASE admitted id=retained-c2-warm-001-page_001272_table_1:4b29132b608640c89cc54426b4b26835 route=spec active=2
+TABLE_PHASE complete id=retained-c2-warm-002-page_001137_table_9:f55e266feec94d28831950b7881314e6 wall_s=1.2975 tokens=966 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-warm-002-page_001137_table_9&source_request_id=page_001137_table_9 HTTP/1.1" 200 -
+TABLE_PHASE complete id=retained-c2-warm-001-page_001272_table_1:4b29132b608640c89cc54426b4b26835 wall_s=1.5497 tokens=952 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-warm-001-page_001272_table_1&source_request_id=page_001272_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-002-page_001367_table_51:e41dd175199c485b9897b4eab5084b69 route=spec active=1
+TABLE_PHASE admitted id=retained-c2-001-page_000287_table_box_id_8:0bb8782647cf40a2b3784ea35a2694c2 route=spec active=2
+TABLE_PHASE complete id=retained-c2-002-page_001367_table_51:e41dd175199c485b9897b4eab5084b69 wall_s=0.8868 tokens=405 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-002-page_001367_table_51&source_request_id=page_001367_table_51 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-003-page_000236_table_box_id_1:5bb138b99d144522aa83cb13bab57390 route=spec active=2
+TABLE_PHASE complete id=retained-c2-003-page_000236_table_box_id_1:5bb138b99d144522aa83cb13bab57390 wall_s=0.6098 tokens=202 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-003-page_000236_table_box_id_1&source_request_id=page_000236_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-004-page_000634_table_11:6c837719c5b6403287aab433895fed0d route=spec active=2
+TABLE_PHASE complete id=retained-c2-001-page_000287_table_box_id_8:0bb8782647cf40a2b3784ea35a2694c2 wall_s=2.3094 tokens=1768 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-001-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE complete id=retained-c2-004-page_000634_table_11:6c837719c5b6403287aab433895fed0d wall_s=0.8170 tokens=358 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-004-page_000634_table_11&source_request_id=page_000634_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-005-page_000272_table_box_id_1:e5568d0a6cfc4fd3988310d3d24766db route=spec active=1
+TABLE_PHASE admitted id=retained-c2-006-page_001172_table_16:6cd3993defa44248ad9029da5e550440 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-006-page_001172_table_16:6cd3993defa44248ad9029da5e550440 wall_s=1.0953 tokens=212 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-006-page_001172_table_16&source_request_id=page_001172_table_16 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-007-page_001137_table_2:e84f9850cabb41c0a13f7f5281c4928f route=spec active=2
+TABLE_PHASE complete id=retained-c2-007-page_001137_table_2:e84f9850cabb41c0a13f7f5281c4928f wall_s=0.5549 tokens=567 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-007-page_001137_table_2&source_request_id=page_001137_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-008-page_001150_table_box_id_9:697c647d09104abd92b5b2bb1598c58e route=spec active=2
+TABLE_PHASE complete id=retained-c2-008-page_001150_table_box_id_9:697c647d09104abd92b5b2bb1598c58e wall_s=0.5157 tokens=307 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-008-page_001150_table_box_id_9&source_request_id=page_001150_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-009-page_000920_table_8:b24d450a17894cb09854fb7a67a467bb route=spec active=2
+TABLE_PHASE complete id=retained-c2-009-page_000920_table_8:b24d450a17894cb09854fb7a67a467bb wall_s=1.0229 tokens=150 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-009-page_000920_table_8&source_request_id=page_000920_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-010-page_000524_table_0:e6ee6eeb9895478dba200959292320a0 route=spec active=2
+TABLE_PHASE complete id=retained-c2-005-page_000272_table_box_id_1:e5568d0a6cfc4fd3988310d3d24766db wall_s=3.7756 tokens=3025 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-005-page_000272_table_box_id_1&source_request_id=page_000272_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-011-page_000256_table_box_id_8:ec32bde28be94b34812babbf9f31672b route=b1 active=2
+TABLE_PHASE complete id=retained-c2-010-page_000524_table_0:e6ee6eeb9895478dba200959292320a0 wall_s=1.1320 tokens=569 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-010-page_000524_table_0&source_request_id=page_000524_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-012-page_001166_table_9:445d12b6e51c463ea8077fbcb5623642 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-011-page_000256_table_box_id_8:ec32bde28be94b34812babbf9f31672b wall_s=0.8233 tokens=214 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-011-page_000256_table_box_id_8&source_request_id=page_000256_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-013-page_000211_table_box_id_3:92c801b3da154528a67f373deea7e2aa route=spec active=2
+TABLE_PHASE complete id=retained-c2-012-page_001166_table_9:445d12b6e51c463ea8077fbcb5623642 wall_s=0.7368 tokens=149 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-012-page_001166_table_9&source_request_id=page_001166_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-014-page_000933_table_10:cf3c7a7210384e7c9e83d1f4138f3cb0 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-014-page_000933_table_10:cf3c7a7210384e7c9e83d1f4138f3cb0 wall_s=0.4830 tokens=83 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-014-page_000933_table_10&source_request_id=page_000933_table_10 HTTP/1.1" 200 -
+TABLE_PHASE complete id=retained-c2-013-page_000211_table_box_id_3:92c801b3da154528a67f373deea7e2aa wall_s=0.9553 tokens=348 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-013-page_000211_table_box_id_3&source_request_id=page_000211_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-015-page_001129_table_8:6ea2cb89163349c28c0a6926d5964a03 route=spec active=1
+TABLE_PHASE admitted id=retained-c2-016-page_001375_table_7:35d7aa42ac614839874d648203f5f416 route=spec active=2
+TABLE_PHASE complete id=retained-c2-016-page_001375_table_7:35d7aa42ac614839874d648203f5f416 wall_s=0.7088 tokens=122 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-016-page_001375_table_7&source_request_id=page_001375_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-017-page_000106_table_box_id_2:2b464c84edf546fda28a55b94f10c2e0 route=spec active=2
+TABLE_PHASE complete id=retained-c2-015-page_001129_table_8:6ea2cb89163349c28c0a6926d5964a03 wall_s=1.4793 tokens=723 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-015-page_001129_table_8&source_request_id=page_001129_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-018-page_001134_table_10:2396abb5dec842dfac7c6285037c77fe route=spec active=2
+TABLE_PHASE complete id=retained-c2-017-page_000106_table_box_id_2:2b464c84edf546fda28a55b94f10c2e0 wall_s=1.5276 tokens=405 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-017-page_000106_table_box_id_2&source_request_id=page_000106_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-019-page_000642_table_8:570ffbd0ca4d49c1ad080bf0007db8c9 route=spec active=2
+TABLE_PHASE complete id=retained-c2-018-page_001134_table_10:2396abb5dec842dfac7c6285037c77fe wall_s=1.0932 tokens=635 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-018-page_001134_table_10&source_request_id=page_001134_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-020-page_000564_table_7:1de4c8477d1f4f1da3c8b98842188319 route=spec active=2
+TABLE_PHASE complete id=retained-c2-020-page_000564_table_7:1de4c8477d1f4f1da3c8b98842188319 wall_s=0.6289 tokens=176 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-020-page_000564_table_7&source_request_id=page_000564_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-021-page_001368_table_box_id_242:c8291d69376346c494b68cdb05f7d6a6 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-019-page_000642_table_8:570ffbd0ca4d49c1ad080bf0007db8c9 wall_s=1.4969 tokens=640 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-019-page_000642_table_8&source_request_id=page_000642_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-022-page_000263_table_box_id_7:8d77871ad3af4a90b725c4714a53c8e9 route=spec active=2
+TABLE_PHASE complete id=retained-c2-021-page_001368_table_box_id_242:c8291d69376346c494b68cdb05f7d6a6 wall_s=0.9631 tokens=131 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-021-page_001368_table_box_id_242&source_request_id=page_001368_table_box_id_242 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-023-page_000746_table_18:7584f5f36232473f80c4b9853d6c2882 route=spec active=2
+TABLE_PHASE complete id=retained-c2-023-page_000746_table_18:7584f5f36232473f80c4b9853d6c2882 wall_s=1.7545 tokens=458 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-023-page_000746_table_18&source_request_id=page_000746_table_18 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-024-page_000213_table_box_id_5:9151d267ba184f299f81b746240cc7c0 route=spec active=2
+TABLE_PHASE complete id=retained-c2-024-page_000213_table_box_id_5:9151d267ba184f299f81b746240cc7c0 wall_s=0.8377 tokens=328 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-024-page_000213_table_box_id_5&source_request_id=page_000213_table_box_id_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-025-page_000206_table_box_id_1:49b1af03c05c43ef9be66c7fe61e10c0 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-025-page_000206_table_box_id_1:49b1af03c05c43ef9be66c7fe61e10c0 wall_s=1.0360 tokens=282 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-025-page_000206_table_box_id_1&source_request_id=page_000206_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-026-page_000209_table_box_id_1:a284661449314390b00e70b82db4ffc3 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-026-page_000209_table_box_id_1:a284661449314390b00e70b82db4ffc3 wall_s=0.5923 tokens=135 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-026-page_000209_table_box_id_1&source_request_id=page_000209_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-027-page_001216_table_2:86a9fc55f5044fe78dd407385a9510ff route=spec active=2
+TABLE_PHASE complete id=retained-c2-027-page_001216_table_2:86a9fc55f5044fe78dd407385a9510ff wall_s=0.9499 tokens=446 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-027-page_001216_table_2&source_request_id=page_001216_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-028-page_000188_table_box_id_6:0cdb125eb6614843a8984dbae73f75fa route=spec active=2
+TABLE_PHASE complete id=retained-c2-028-page_000188_table_box_id_6:0cdb125eb6614843a8984dbae73f75fa wall_s=1.1639 tokens=110 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-028-page_000188_table_box_id_6&source_request_id=page_000188_table_box_id_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-029-page_000921_table_9:9c9dcb5c9ac846f487fcc0660adede1a route=spec active=2
+TABLE_PHASE complete id=retained-c2-022-page_000263_table_box_id_7:8d77871ad3af4a90b725c4714a53c8e9 wall_s=7.2098 tokens=1500 exact=False active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-022-page_000263_table_box_id_7&source_request_id=page_000263_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-030-page_000533_table_8:0328027ec4aa4e63900b4d1dfd0cce3b route=spec active=2
+TABLE_PHASE complete id=retained-c2-030-page_000533_table_8:0328027ec4aa4e63900b4d1dfd0cce3b wall_s=0.4322 tokens=171 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-030-page_000533_table_8&source_request_id=page_000533_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-031-page_001123_table_14:e54b2b7beb42426797aa9f9d0ff6c307 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-031-page_001123_table_14:e54b2b7beb42426797aa9f9d0ff6c307 wall_s=0.5533 tokens=186 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-031-page_001123_table_14&source_request_id=page_001123_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-032-page_001503_table_5:30d3aaf9bc8849fc957ee4c7511ec758 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-032-page_001503_table_5:30d3aaf9bc8849fc957ee4c7511ec758 wall_s=0.2544 tokens=42 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-032-page_001503_table_5&source_request_id=page_001503_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-033-page_001197_table_5:7856618473a24105bd638307d5a7d397 route=spec active=2
+TABLE_PHASE complete id=retained-c2-033-page_001197_table_5:7856618473a24105bd638307d5a7d397 wall_s=0.6040 tokens=727 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-033-page_001197_table_5&source_request_id=page_001197_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-034-page_000542_table_0:e337c2f8c60a45ac8d6d2a17879efc07 route=spec active=2
+TABLE_PHASE complete id=retained-c2-034-page_000542_table_0:e337c2f8c60a45ac8d6d2a17879efc07 wall_s=0.5541 tokens=341 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-034-page_000542_table_0&source_request_id=page_000542_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-035-page_001130_table_1:4846b14ac0104785a21d40aace629a3f route=b1 active=2
+TABLE_PHASE complete id=retained-c2-035-page_001130_table_1:4846b14ac0104785a21d40aace629a3f wall_s=0.2344 tokens=51 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-035-page_001130_table_1&source_request_id=page_001130_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-036-page_001595_table_box_id_9:0ecc2ff337c542559cae6a08543aea13 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-036-page_001595_table_box_id_9:0ecc2ff337c542559cae6a08543aea13 wall_s=0.2299 tokens=45 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-036-page_001595_table_box_id_9&source_request_id=page_001595_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-037-page_001233_table_6:feef12c967d44b8a876aa9da79eb5a92 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-029-page_000921_table_9:9c9dcb5c9ac846f487fcc0660adede1a wall_s=3.7384 tokens=90 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-029-page_000921_table_9&source_request_id=page_000921_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-038-page_000585_table_1:0e7148b0860b4b6d978610d2fa263762 route=spec active=2
+TABLE_PHASE complete id=retained-c2-038-page_000585_table_1:0e7148b0860b4b6d978610d2fa263762 wall_s=1.0068 tokens=457 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-038-page_000585_table_1&source_request_id=page_000585_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-039-page_000821_table_box_id_26:efc4d0741d874f9cb8ae21f8465b056a route=b1 active=2
+TABLE_PHASE complete id=retained-c2-039-page_000821_table_box_id_26:efc4d0741d874f9cb8ae21f8465b056a wall_s=0.1505 tokens=46 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-039-page_000821_table_box_id_26&source_request_id=page_000821_table_box_id_26 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-040-page_000566_table_3:a5612483c2954aac8b5657af0097e4c9 route=spec active=2
+TABLE_PHASE complete id=retained-c2-037-page_001233_table_6:feef12c967d44b8a876aa9da79eb5a92 wall_s=2.1949 tokens=347 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-037-page_001233_table_6&source_request_id=page_001233_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-041-page_000534_table_4:a6265a03f9c8416db93d1d264ed38600 route=spec active=2
+TABLE_PHASE complete id=retained-c2-041-page_000534_table_4:a6265a03f9c8416db93d1d264ed38600 wall_s=0.7295 tokens=317 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-041-page_000534_table_4&source_request_id=page_000534_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-042-page_001141_table_13:6739e93e680d47eb981df398cda4a544 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-040-page_000566_table_3:a5612483c2954aac8b5657af0097e4c9 wall_s=1.5875 tokens=446 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-040-page_000566_table_3&source_request_id=page_000566_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-043-page_000665_table_3:fcb10e68bdec4f80a7b4bf7a806969dd route=b1 active=2
+TABLE_PHASE complete id=retained-c2-043-page_000665_table_3:fcb10e68bdec4f80a7b4bf7a806969dd wall_s=0.1014 tokens=11 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-043-page_000665_table_3&source_request_id=page_000665_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-044-page_001417_table_2:c416d24637ed43509419dc0207459cb0 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-044-page_001417_table_2:c416d24637ed43509419dc0207459cb0 wall_s=0.1716 tokens=68 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-044-page_001417_table_2&source_request_id=page_001417_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-045-page_001117_table_box_id_7:d24c6c036f5046bc810d07f15ab36682 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-045-page_001117_table_box_id_7:d24c6c036f5046bc810d07f15ab36682 wall_s=0.2459 tokens=119 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-045-page_001117_table_box_id_7&source_request_id=page_001117_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-046-page_001270_table_box_id_1:042d66f9a31b45dfa96154048085356a route=spec active=2
+TABLE_PHASE complete id=retained-c2-042-page_001141_table_13:6739e93e680d47eb981df398cda4a544 wall_s=1.2981 tokens=301 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-042-page_001141_table_13&source_request_id=page_001141_table_13 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-047-page_000261_table_box_id_3:015f5cb9d1f245d3aa5c6151ce779ced route=spec active=2
+TABLE_PHASE complete id=retained-c2-046-page_001270_table_box_id_1:042d66f9a31b45dfa96154048085356a wall_s=2.4487 tokens=789 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-046-page_001270_table_box_id_1&source_request_id=page_001270_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-048-page_000505_table_1:d331825c862c4f718d39b215cdaaaf4d route=spec active=2
+TABLE_PHASE complete id=retained-c2-047-page_000261_table_box_id_3:015f5cb9d1f245d3aa5c6151ce779ced wall_s=2.4467 tokens=1106 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-047-page_000261_table_box_id_3&source_request_id=page_000261_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-049-page_000682_table_15:2bfe123183b0457c84ddfd4e9d266771 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-049-page_000682_table_15:2bfe123183b0457c84ddfd4e9d266771 wall_s=0.3024 tokens=63 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-049-page_000682_table_15&source_request_id=page_000682_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-050-page_000275_table_box_id_1:8f3d6bbf7f554401ad760cd464167ef5 route=spec active=2
+TABLE_PHASE complete id=retained-c2-048-page_000505_table_1:d331825c862c4f718d39b215cdaaaf4d wall_s=1.7247 tokens=630 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-048-page_000505_table_1&source_request_id=page_000505_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-051-page_000789_table_34:f43c9e2a8620433a80e3fe3cbc7066dd route=b1 active=2
+TABLE_PHASE complete id=retained-c2-051-page_000789_table_34:f43c9e2a8620433a80e3fe3cbc7066dd wall_s=0.1635 tokens=32 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-051-page_000789_table_34&source_request_id=page_000789_table_34 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-052-page_001177_table_2:b0fb538ce187429383059de7cccf8f33 route=spec active=2
+TABLE_PHASE complete id=retained-c2-052-page_001177_table_2:b0fb538ce187429383059de7cccf8f33 wall_s=0.4842 tokens=355 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-052-page_001177_table_2&source_request_id=page_001177_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-053-page_001398_table_box-13qv1ztw:4acd6614837b4e3d9cae7f8e2ab33c02 route=spec active=2
+TABLE_PHASE complete id=retained-c2-053-page_001398_table_box-13qv1ztw:4acd6614837b4e3d9cae7f8e2ab33c02 wall_s=0.3955 tokens=126 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-053-page_001398_table_box-13qv1ztw&source_request_id=page_001398_table_box-13qv1ztw HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-054-page_001183_table_11:77d25c4eba244faa9bcd31599010b18c route=b1 active=2
+TABLE_PHASE complete id=retained-c2-054-page_001183_table_11:77d25c4eba244faa9bcd31599010b18c wall_s=0.5463 tokens=169 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-054-page_001183_table_11&source_request_id=page_001183_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-055-page_000507_table_0:814aaaddb2394f61879049d0da5890bd route=spec active=2
+TABLE_PHASE complete id=retained-c2-055-page_000507_table_0:814aaaddb2394f61879049d0da5890bd wall_s=0.6156 tokens=167 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-055-page_000507_table_0&source_request_id=page_000507_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-056-page_000710_table_9:cd1dba769e7b467fa9d719a85339d4ad route=b1 active=2
+TABLE_PHASE complete id=retained-c2-050-page_000275_table_box_id_1:8f3d6bbf7f554401ad760cd464167ef5 wall_s=3.4992 tokens=2852 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-050-page_000275_table_box_id_1&source_request_id=page_000275_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-057-page_000657_table_6:8aa252964ce448df956a42698933ca1b route=b1 active=2
+TABLE_PHASE complete id=retained-c2-057-page_000657_table_6:8aa252964ce448df956a42698933ca1b wall_s=0.1073 tokens=11 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-057-page_000657_table_6&source_request_id=page_000657_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-058-page_001368_table_box_id_227:a6cbec1c387049b4b8ef358ec1288f86 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-056-page_000710_table_9:cd1dba769e7b467fa9d719a85339d4ad wall_s=0.5736 tokens=60 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-056-page_000710_table_9&source_request_id=page_000710_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-059-page_001176_table_4:31021d8138464d66acb1c349e0ac869c route=spec active=2
+TABLE_PHASE complete id=retained-c2-059-page_001176_table_4:31021d8138464d66acb1c349e0ac869c wall_s=0.9173 tokens=630 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-059-page_001176_table_4&source_request_id=page_001176_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-060-page_001181_table_6:9d3f5fed27f748759f00394f53648799 route=spec active=2
+TABLE_PHASE complete id=retained-c2-058-page_001368_table_box_id_227:a6cbec1c387049b4b8ef358ec1288f86 wall_s=2.0393 tokens=345 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-058-page_001368_table_box_id_227&source_request_id=page_001368_table_box_id_227 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-061-page_000937_table_0:e9ac8cce39b643f39a472fd62d7652de route=spec active=2
+TABLE_PHASE complete id=retained-c2-060-page_001181_table_6:9d3f5fed27f748759f00394f53648799 wall_s=1.7772 tokens=906 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-060-page_001181_table_6&source_request_id=page_001181_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-062-page_001368_table_box_id_237:07c14826dc1342f0ba47a0fad8e7325c route=b1 active=2
+TABLE_PHASE complete id=retained-c2-061-page_000937_table_0:e9ac8cce39b643f39a472fd62d7652de wall_s=0.8786 tokens=164 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-061-page_000937_table_0&source_request_id=page_000937_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-063-page_000217_table_box_id_0:6f6c4f5debfd487a894ae20d0e3bd1cb route=spec active=2
+TABLE_PHASE complete id=retained-c2-062-page_001368_table_box_id_237:07c14826dc1342f0ba47a0fad8e7325c wall_s=0.8421 tokens=151 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-062-page_001368_table_box_id_237&source_request_id=page_001368_table_box_id_237 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-064-page_001159_table_5:ee582d261acd4327ac67bee5193bb39c route=spec active=2
+TABLE_PHASE complete id=retained-c2-064-page_001159_table_5:ee582d261acd4327ac67bee5193bb39c wall_s=0.7215 tokens=314 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-064-page_001159_table_5&source_request_id=page_001159_table_5 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-065-page_000626_table_box_id_1:a6180bbec7c8407fb7377d46989bffd7 route=spec active=2
+TABLE_PHASE complete id=retained-c2-063-page_000217_table_box_id_0:6f6c4f5debfd487a894ae20d0e3bd1cb wall_s=2.8025 tokens=138 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-063-page_000217_table_box_id_0&source_request_id=page_000217_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-066-page_000984_table_2:9f2e581897e84564bd7e676e3e98fbf0 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-066-page_000984_table_2:9f2e581897e84564bd7e676e3e98fbf0 wall_s=0.2034 tokens=32 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-066-page_000984_table_2&source_request_id=page_000984_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-067-page_001082_table_34:e588c27b59004968b490b2d8393f13a5 route=spec active=2
+TABLE_PHASE complete id=retained-c2-065-page_000626_table_box_id_1:a6180bbec7c8407fb7377d46989bffd7 wall_s=2.3485 tokens=1352 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-065-page_000626_table_box_id_1&source_request_id=page_000626_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-068-page_000467_table_17:130269cf896d49fab137873105e08873 route=spec active=2
+TABLE_PHASE complete id=retained-c2-067-page_001082_table_34:e588c27b59004968b490b2d8393f13a5 wall_s=1.2591 tokens=483 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-067-page_001082_table_34&source_request_id=page_001082_table_34 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-069-page_000866_table_14:3aee5fc846cc41a591596af58bf070be route=b1 active=2
+TABLE_PHASE complete id=retained-c2-069-page_000866_table_14:3aee5fc846cc41a591596af58bf070be wall_s=0.7240 tokens=167 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-069-page_000866_table_14&source_request_id=page_000866_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-070-page_001227_table_10:f1b99c1eb9d94bf1909f44a30ccf6bf2 route=spec active=2
+TABLE_PHASE complete id=retained-c2-068-page_000467_table_17:130269cf896d49fab137873105e08873 wall_s=1.6600 tokens=723 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-068-page_000467_table_17&source_request_id=page_000467_table_17 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-071-page_000916_table_7:592293719b7046169b5e536087b3dc6e route=spec active=2
+TABLE_PHASE complete id=retained-c2-071-page_000916_table_7:592293719b7046169b5e536087b3dc6e wall_s=0.7572 tokens=230 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-071-page_000916_table_7&source_request_id=page_000916_table_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-072-page_000251_table_box_id_7:815215aeb88c4cdb91cbde9c87d1af1e route=spec active=2
+TABLE_PHASE complete id=retained-c2-070-page_001227_table_10:f1b99c1eb9d94bf1909f44a30ccf6bf2 wall_s=2.0151 tokens=842 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-070-page_001227_table_10&source_request_id=page_001227_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-073-page_001131_table_15:b801f8cf863e45b7bf2fd8926a7d50e2 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-072-page_000251_table_box_id_7:815215aeb88c4cdb91cbde9c87d1af1e wall_s=1.2443 tokens=404 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-072-page_000251_table_box_id_7&source_request_id=page_000251_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-074-page_001183_table_12:a4b715fc26f64eb0ab9d04e34f2201bc route=b1 active=2
+TABLE_PHASE complete id=retained-c2-073-page_001131_table_15:b801f8cf863e45b7bf2fd8926a7d50e2 wall_s=0.6713 tokens=131 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-073-page_001131_table_15&source_request_id=page_001131_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-075-page_000266_table_box_id_7:bfe3a570dae24d2b9a1a1c80d33c1476 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-075-page_000266_table_box_id_7:bfe3a570dae24d2b9a1a1c80d33c1476 wall_s=0.2329 tokens=96 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-075-page_000266_table_box_id_7&source_request_id=page_000266_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-076-page_000447_table_12:4a013bd7af124d2b8fcb2012039f6be5 route=spec active=2
+TABLE_PHASE complete id=retained-c2-076-page_000447_table_12:4a013bd7af124d2b8fcb2012039f6be5 wall_s=0.4848 tokens=221 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-076-page_000447_table_12&source_request_id=page_000447_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-077-page_001193_table_4:b4b8379fd4dc4602946880cc02d9f569 route=spec active=2
+TABLE_PHASE complete id=retained-c2-074-page_001183_table_12:a4b715fc26f64eb0ab9d04e34f2201bc wall_s=1.2939 tokens=268 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-074-page_001183_table_12&source_request_id=page_001183_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-078-page_001368_table_box_id_239:70580ed53c8e438b87550dfa980c6f9b route=b1 active=2
+TABLE_PHASE complete id=retained-c2-077-page_001193_table_4:b4b8379fd4dc4602946880cc02d9f569 wall_s=0.6033 tokens=210 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-077-page_001193_table_4&source_request_id=page_001193_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-079-page_000903_table_15:fc4fe1371d1f484193af4268fc5cf92e route=spec active=2
+TABLE_PHASE complete id=retained-c2-078-page_001368_table_box_id_239:70580ed53c8e438b87550dfa980c6f9b wall_s=0.7175 tokens=120 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-078-page_001368_table_box_id_239&source_request_id=page_001368_table_box_id_239 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-080-page_001167_table_2:e10ca2eaf6084101942636b3e3596d6f route=b1 active=2
+TABLE_PHASE complete id=retained-c2-079-page_000903_table_15:fc4fe1371d1f484193af4268fc5cf92e wall_s=0.8807 tokens=71 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-079-page_000903_table_15&source_request_id=page_000903_table_15 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-081-page_000212_table_box_id_1:6b7819a8f8094ff0a53c7eb5ee65ca50 route=spec active=2
+TABLE_PHASE complete id=retained-c2-080-page_001167_table_2:e10ca2eaf6084101942636b3e3596d6f wall_s=1.0885 tokens=176 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-080-page_001167_table_2&source_request_id=page_001167_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-082-page_001147_table_10:5ea7981e5ab648eeba5d48f4bb1ab08d route=spec active=2
+TABLE_PHASE complete id=retained-c2-082-page_001147_table_10:5ea7981e5ab648eeba5d48f4bb1ab08d wall_s=1.0390 tokens=862 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-082-page_001147_table_10&source_request_id=page_001147_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-083-page_000223_table_box_id_2:f28582f8f36e447282d40edbf0310fde route=spec active=2
+TABLE_PHASE complete id=retained-c2-081-page_000212_table_box_id_1:6b7819a8f8094ff0a53c7eb5ee65ca50 wall_s=2.1924 tokens=647 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-081-page_000212_table_box_id_1&source_request_id=page_000212_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-084-page_000716_table_0:34b8a4ad9c494795800a43d7251a3078 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-084-page_000716_table_0:34b8a4ad9c494795800a43d7251a3078 wall_s=0.2356 tokens=57 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-084-page_000716_table_0&source_request_id=page_000716_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-085-page_000937_table_1:8d2714c91890430f84880519840145da route=spec active=2
+TABLE_PHASE complete id=retained-c2-085-page_000937_table_1:8d2714c91890430f84880519840145da wall_s=0.6881 tokens=121 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-085-page_000937_table_1&source_request_id=page_000937_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-086-page_000465_table_10:8341deb0a3944d8eb860431fb7b3e6b3 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-083-page_000223_table_box_id_2:f28582f8f36e447282d40edbf0310fde wall_s=1.6721 tokens=679 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-083-page_000223_table_box_id_2&source_request_id=page_000223_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-087-page_000465_table_8:6c064440616741a693af4a003133ccd2 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-086-page_000465_table_10:8341deb0a3944d8eb860431fb7b3e6b3 wall_s=0.6319 tokens=230 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-086-page_000465_table_10&source_request_id=page_000465_table_10 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-088-page_001179_table_6:0acc87ad36954d449fb43811bc2b2721 route=spec active=2
+TABLE_PHASE complete id=retained-c2-087-page_000465_table_8:6c064440616741a693af4a003133ccd2 wall_s=0.8435 tokens=237 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-087-page_000465_table_8&source_request_id=page_000465_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-089-page_000554_table_12:28eae95395654f088a2cbb1943dd4603 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-089-page_000554_table_12:28eae95395654f088a2cbb1943dd4603 wall_s=0.3195 tokens=93 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-089-page_000554_table_12&source_request_id=page_000554_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-090-page_000199_table_box_id_0:3e110668ea884b90914c1c767c8bb77b route=spec active=2
+TABLE_PHASE complete id=retained-c2-088-page_001179_table_6:0acc87ad36954d449fb43811bc2b2721 wall_s=1.6611 tokens=1093 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-088-page_001179_table_6&source_request_id=page_001179_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-091-page_000516_table_0:053dc17032d64687985f0455d572f1eb route=spec active=2
+TABLE_PHASE complete id=retained-c2-091-page_000516_table_0:053dc17032d64687985f0455d572f1eb wall_s=1.0418 tokens=630 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-091-page_000516_table_0&source_request_id=page_000516_table_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-092-page_001214_table_8:9a78f0a7b739446891d3fd11c4826d69 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-090-page_000199_table_box_id_0:3e110668ea884b90914c1c767c8bb77b wall_s=2.4148 tokens=855 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-090-page_000199_table_box_id_0&source_request_id=page_000199_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-093-page_001368_table_box_id_161:4d7d28caa3134462ad24db83e4188d3a route=spec active=2
+TABLE_PHASE complete id=retained-c2-093-page_001368_table_box_id_161:4d7d28caa3134462ad24db83e4188d3a wall_s=0.4573 tokens=253 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-093-page_001368_table_box_id_161&source_request_id=page_001368_table_box_id_161 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-094-page_000577_table_3:aa7ca97f8e5242f78dc2ff47ad450af1 route=spec active=2
+TABLE_PHASE complete id=retained-c2-094-page_000577_table_3:aa7ca97f8e5242f78dc2ff47ad450af1 wall_s=0.5705 tokens=139 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-094-page_000577_table_3&source_request_id=page_000577_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-095-page_000984_table_3:1ea28640759d492590c5587e787e5259 route=spec active=2
+TABLE_PHASE complete id=retained-c2-092-page_001214_table_8:9a78f0a7b739446891d3fd11c4826d69 wall_s=1.8747 tokens=232 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-092-page_001214_table_8&source_request_id=page_001214_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-096-page_001187_table_0:b4dc66d99ca44dfaadd75ad7a78d5ca1 route=spec active=2
+TABLE_PHASE complete id=retained-c2-095-page_000984_table_3:1ea28640759d492590c5587e787e5259 wall_s=1.2137 tokens=299 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-095-page_000984_table_3&source_request_id=page_000984_table_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-097-page_000821_table_box_id_14:0d7d61a6ca1b4953873984ee99f74d0c route=b1 active=2
+TABLE_PHASE complete id=retained-c2-097-page_000821_table_box_id_14:0d7d61a6ca1b4953873984ee99f74d0c wall_s=0.2445 tokens=59 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-097-page_000821_table_box_id_14&source_request_id=page_000821_table_box_id_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-098-page_000833_table_4:d9b87e38e325468b91ec06ac2a6a9bae route=spec active=2
+TABLE_PHASE complete id=retained-c2-098-page_000833_table_4:d9b87e38e325468b91ec06ac2a6a9bae wall_s=0.8088 tokens=107 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-098-page_000833_table_4&source_request_id=page_000833_table_4 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-099-page_001375_table_31:24eaf7ed0e5446db9327e4cb8f2f2840 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-099-page_001375_table_31:24eaf7ed0e5446db9327e4cb8f2f2840 wall_s=0.2051 tokens=34 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-099-page_001375_table_31&source_request_id=page_001375_table_31 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=retained-c2-100-page_000645_table_7:f48a8e9a10e0407d854d0edbf99f0b21 route=b1 active=2
+TABLE_PHASE complete id=retained-c2-096-page_001187_table_0:b4dc66d99ca44dfaadd75ad7a78d5ca1 wall_s=2.4768 tokens=1553 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-096-page_001187_table_0&source_request_id=page_001187_table_0 HTTP/1.1" 200 -
+TABLE_PHASE complete id=retained-c2-100-page_000645_table_7:f48a8e9a10e0407d854d0edbf99f0b21 wall_s=0.3586 tokens=89 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=retained-c2-100-page_000645_table_7&source_request_id=page_000645_table_7 HTTP/1.1" 200 -
+SERVICE_SUMMARY /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_phase_reference_6099805a_20260905/retained_service.json

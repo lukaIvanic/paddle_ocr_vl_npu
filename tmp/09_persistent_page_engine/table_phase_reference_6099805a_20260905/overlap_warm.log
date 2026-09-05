@@ -1,0 +1,8 @@
+overlap-warm API ready worker_pid=2262087; preloading 2 distinct crops for 2 requests
+overlap-warm crops preloaded 2/2
+overlap-warm payloads ready bytes=1493896
+SEND overlap-warm 01/2 table=page_001272_table_1 active=1
+RECV overlap-warm 01/2 rank=65 id=page_001272_table_1 latency=3.0230s status=ok active=0
+SEND overlap-warm 02/2 table=page_001137_table_9 active=1
+RECV overlap-warm 02/2 rank=66 id=page_001137_table_9 latency=0.7728s status=ok active=0
+DONE overlap-warm requests=2 failures=0 max_in_flight=1 wall=3.7993s qps=0.5264 p50=1.8979s p95=2.9105s max=3.0230s
