@@ -122,6 +122,7 @@ class DecodeOptimizationConfig:
     post_scatter_kv_prefetch: bool = False
     weight_prefetch_timing: str = "before_attention"
     complete_layer_prefetch_ahead: int = 0
+    prefetch_next_iteration: bool = False
     zero_residual_first_rms_norm: bool = False
     packed_kv_scatter: bool = False
     vector_add_rms_norm: bool = False
@@ -840,6 +841,15 @@ def decode_optimization_names() -> tuple[str, ...]:
     return tuple(DECODE_OPTIMIZATION_PRESETS)
 
 
+DECODE_OPTIMIZATION_PRESETS[
+    "combined_apply_complete_layer_prefetch1_rope_lut_loop_prefetch"
+] = replace(
+    DECODE_OPTIMIZATION_PRESETS["combined_apply_complete_layer_prefetch1_rope_lut"],
+    name="combined_apply_complete_layer_prefetch1_rope_lut_loop_prefetch",
+    prefetch_next_iteration=True,
+)
+
+
 def resolve_decode_optimization(
     optimization: str | DecodeOptimizationConfig,
 ) -> DecodeOptimizationConfig:
@@ -1161,6 +1171,10 @@ def prepare_decode_weight_prefetch(
                 future_weights.extend(complete_layer_weights(layers[future_index]))
         if index + 1 >= len(layers):
             future_weights.append(decode_lm_head.weight)
+            if config.prefetch_next_iteration:
+                # The autoregressive loop revisits layer zero next. This is
+                # only a cache hint: no future request/token/KV is consumed.
+                future_weights.extend(complete_layer_weights(layers[0]))
         layer._decode_prefetch_future_layers = tuple(future_weights)
 
 
@@ -2789,6 +2803,7 @@ def compile_text_decode_stage(
             "complete_layer_prefetch_ahead": (
                 optimization.complete_layer_prefetch_ahead
             ),
+            "prefetch_next_iteration": optimization.prefetch_next_iteration,
             "zero_residual_first_rms_norm": (
                 optimization.zero_residual_first_rms_norm
             ),
