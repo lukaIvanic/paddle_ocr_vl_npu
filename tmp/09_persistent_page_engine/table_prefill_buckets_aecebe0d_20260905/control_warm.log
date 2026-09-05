@@ -1,0 +1,6 @@
+bucket-control-warm API ready worker_pid=2455009; preloading 1 distinct crops for 1 requests
+bucket-control-warm crops preloaded 1/1
+bucket-control-warm payloads ready bytes=792999
+SEND bucket-control-warm 01/1 table=page_001272_table_1 active=1
+RECV bucket-control-warm 01/1 rank=65 id=page_001272_table_1 latency=2.8607s status=ok active=0
+DONE bucket-control-warm requests=1 failures=0 max_in_flight=1 wall=2.8615s qps=0.3495 p50=2.8607s p95=2.8607s max=2.8607s

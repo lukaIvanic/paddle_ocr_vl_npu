@@ -1,0 +1,6 @@
+bucket-small-warm API ready worker_pid=2456152; preloading 1 distinct crops for 1 requests
+bucket-small-warm crops preloaded 1/1
+bucket-small-warm payloads ready bytes=792999
+SEND bucket-small-warm 01/1 table=page_001272_table_1 active=1
+RECV bucket-small-warm 01/1 rank=65 id=page_001272_table_1 latency=2.6814s status=ok active=0
+DONE bucket-small-warm requests=1 failures=0 max_in_flight=1 wall=2.6823s qps=0.3728 p50=2.6814s p95=2.6814s max=2.6814s
