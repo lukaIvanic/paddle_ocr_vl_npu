@@ -340,6 +340,79 @@ class ContinuousDecodeMetricsTest(unittest.TestCase):
         finally:
             source.close()
 
+    def test_scheduler_decodes_while_second_request_is_preparing(self):
+        arena = DecodeArena(cache=cache(2), device=torch.device("cpu"), batch_size=2,
+                            eos_token_id=9, decode_token_id_map=torch.arange(10))
+        incoming = deque(["first", "second"])
+        emitted, calls = [], []
+
+        def ready(name):
+            return ReadyDecodeRequest(
+                request_id=name, payload=None, cache=cache(1),
+                rope_deltas=torch.zeros((1, 1), dtype=torch.int64),
+                cache_position=torch.ones(1, dtype=torch.int64),
+                first_token_tensor=torch.tensor([[1]]), first_token=1, prompt_length=1,
+            )
+
+        class UnfinishedFuture(Future):
+            def result(self, timeout=None):
+                # An accidental wait must fail this test, not hang forever.
+                if not self.done():
+                    raise AssertionError("decoder waited for CPU before making progress")
+                return super().result(timeout)
+
+        second = UnfinishedFuture()
+
+        class Executor:
+            def submit(self, fn, request, submitted):
+                if request.request_id == "second":
+                    return second
+                done = Future()
+                done.set_result(ready(request.request_id))
+                return done
+
+            def shutdown(self, **kwargs):
+                pass
+
+        class Requests:
+            @property
+            def closed(self):
+                return not incoming
+
+            def pull(self, **kwargs):
+                return (SimpleNamespace(request_id=incoming.popleft(), submitted_at=None)
+                        if incoming else None)
+        recognizer = SimpleNamespace(
+            cpu_preprocess_max_pending=2, _prepare_cpu=None,
+            _prepared_group=lambda members: members[0][0],
+            _stage_prefill_group=lambda group: group,
+            _enqueue_staged_prefill_group=lambda group: group,
+            _finalize_prefill_group=lambda group: [group],
+            _ready_from_prefilled=lambda item: item,
+        )
+        with patch("paddleocr_vl.serving.engine.ThreadPoolExecutor", return_value=Executor()):
+            source = _OpenPrefillSource(recognizer, Requests(),
+                                        on_request_error=lambda *args: self.fail(str(args)))
+
+        def decode(tokens, *unused):
+            calls.append(tuple(tokens.shape))
+            if len(calls) == 3:
+                self.assertEqual([s.ready.request_id for s in arena.slots if s is not None], ["first"])
+                self.assertEqual(len(source.pending), 1)
+                second.set_result(ready("second"))
+            return torch.where(tokens >= 5, torch.full_like(tokens, 9), tokens + 1)
+
+        scheduler = ContinuousDecodeScheduler(arena=arena, decode_fn=decode, max_new_tokens=20)
+        try:
+            result = scheduler.run_stream(source, on_completion=emitted.append)
+            self.assertEqual(result.submitted_requests, 2)
+            self.assertEqual({r.ready.request_id: r.token_ids for r in emitted},
+                             {name: [1, 2, 3, 4, 5, 9] for name in ("first", "second")})
+            self.assertTrue(all(shape == (2, 1) for shape in calls))
+            self.assertTrue(source.closed)
+        finally:
+            source.close()
+
     def test_logging_preserves_tokens_and_fixed_batch(self):
         for batch_size in (1, 2, 4, 8, 16):
             with self.subTest(batch_size=batch_size):

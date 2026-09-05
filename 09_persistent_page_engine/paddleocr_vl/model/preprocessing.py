@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -161,6 +162,39 @@ def image_grid_thw_from_size(
     )
 
 
+@lru_cache(maxsize=16)
+def _uint8_normalization_table(rescale: bool, factor: float, mean: float, std: float) -> np.ndarray:
+    # There are only 256 possible channel values after Pillow resampling.
+    # Keep exactly the reference float32 operation order, not a fused affine
+    # expression, so the table preserves every rounding bit.
+    values = np.arange(256, dtype=np.uint8).astype(np.float32)
+    if rescale:
+        values = values * factor
+    values = (values - np.float32(mean)) / np.float32(std)
+    values.flags.writeable = False
+    return values
+
+
+def _normalize_image_array(array: np.ndarray, cfg: dict) -> np.ndarray:
+    mean = np.asarray(cfg["image_mean"], dtype=np.float32)
+    std = np.asarray(cfg["image_std"], dtype=np.float32)
+    if (array.dtype == np.uint8 and array.ndim == 3 and array.shape[-1] == 3
+            and cfg["do_normalize"] and mean.size in (1, 3) and std.size in (1, 3)
+            and np.all(mean == mean.flat[0])
+            and np.all(std == std.flat[0]) and std.flat[0] != 0):
+        table = _uint8_normalization_table(bool(cfg["do_rescale"]), float(cfg["rescale_factor"]),
+                                           float(mean.flat[0]), float(std.flat[0]))
+        return table[array]
+    # Preserve the generic recipe for nonuniform per-channel normalization or
+    # non-uint8 images; this optimization changes neither resampling nor shapes.
+    array = array.astype(np.float32)
+    if cfg["do_rescale"]:
+        array = array * float(cfg["rescale_factor"])
+    if cfg["do_normalize"]:
+        array = (array - mean) / std
+    return array
+
+
 def preprocess_pil_image(
     image: Image.Image,
     cfg: dict,
@@ -214,14 +248,7 @@ def preprocess_pil_image(
 
     array = resized_array if resized_array is not None else np.asarray(image)
     if not defer_normalization:
-        if cfg["do_rescale"]:
-            array = array.astype(np.float32) * float(cfg["rescale_factor"])
-        else:
-            array = array.astype(np.float32)
-        if cfg["do_normalize"]:
-            mean = np.array(cfg["image_mean"], dtype=np.float32)
-            std = np.array(cfg["image_std"], dtype=np.float32)
-            array = (array - mean) / std
+        array = _normalize_image_array(array, cfg)
 
     patches = array.transpose(2, 0, 1)[None, ...]
     channel = patches.shape[1]
