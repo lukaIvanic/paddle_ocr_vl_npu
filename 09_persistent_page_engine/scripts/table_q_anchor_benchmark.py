@@ -113,6 +113,14 @@ class Lane:
 
 
 LANES = {
+    "b16q1_kv4096": Lane(
+        name="b16q1_kv4096",
+        kind="decode_q1",
+        batch_size=16,
+        query_length=1,
+        cache_length=4096,
+        optimization=DECODE_OPTIMIZATION,
+    ),
     "b8q1": Lane(
         name="b8q1",
         kind="decode_q1",
@@ -506,6 +514,12 @@ def _build_decode_lane(
         dtype=torch.int64,
     ).view(lane.batch_size, 1)
     cache_position = _draft_positions(lane.batch_size, device)
+    if lane.name == "b16q1_kv4096":
+        cache_position = torch.cat((
+            torch.arange(VERIFIER_POSITION, VERIFIER_POSITION + 8, device=device, dtype=torch.int64),
+            _draft_positions(8, device),
+        ))
+        input_ids = torch.arange(1, 9, device=device, dtype=torch.int64).repeat(2).view(16, 1)
     rope_deltas = torch.zeros(
         (lane.batch_size, 1), device=device, dtype=torch.int64
     )
