@@ -152,6 +152,88 @@ class _Call:
         return self.host_result.numpy().tolist(), device_s
 
 
+class _Q1Pipeline(_Call):
+    """The ordinary decoder's queue-depth-one feedback/copy overlap.
+
+    Only Q1 draft/ordinary work may speculate one uncommitted step. Verifier
+    fallback stays synchronous because its next step may be a Q>1 proposal.
+    A changed cohort drains the old launch before any KV slot can be reused.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.copy_stream = torch.npu.Stream(device=self.device_ids.device)
+        self.host_ring = [torch.empty_like(self.host_ids), torch.empty_like(self.host_ids)]
+        self.ring_index = 0
+        self.pending: Any = None
+        self.graph_calls = 0
+        self.reused_lookaheads = 0
+        self.discarded_lookaheads = 0
+
+    def drain(self) -> None:
+        if self.pending is not None:
+            self.stream.synchronize()
+            self.pending[1]["done"].synchronize()
+            self.pending = None
+            self.discarded_lookaheads += 1
+
+    def _launch(self, ids: Any, position: Any, arena: _Arena, first: int) -> dict[str, Any]:
+        batch = self.ids.shape[0]
+        view_key = id(arena), first
+        if view_key not in self.rope_views:
+            self.rope_views[view_key] = arena.rope[first:first + batch]
+        sampled = self.runtime.fn(ids, position, self.rope_views[view_key], *arena.tensors(first, batch))
+        if sampled.dtype != torch.int64 or sampled.numel() != batch:
+            raise RuntimeError("Q1 pipeline requires native compact-head IDs")
+        sampled = sampled.reshape(batch, 1)
+        ready = self.stream.record_event()
+        host = self.host_ring[self.ring_index]
+        self.ring_index ^= 1
+        with torch.npu.stream(self.copy_stream):
+            self.copy_stream.wait_event(ready)
+            host.copy_(sampled, non_blocking=True)
+            done = self.copy_stream.record_event()
+        self.graph_calls += 1
+        return {"sampled": sampled, "position": position, "host": host, "done": done}
+
+    def run_pipelined(self, arena: _Arena, first: int, sequences: list[_Sequence]) -> tuple[list[list[int]], float]:
+        identity = (id(arena), first, tuple((state.slot, id(state)) for state in sequences))
+        positions = tuple(state.position for state in sequences)
+        signature = identity, positions
+        if self.pending is not None and self.pending[0] == signature:
+            current = self.pending[1]
+            self.pending = None
+            self.reused_lookaheads += 1
+        else:
+            self.drain()
+            self.ids.fill(int(arena.recognizer.model.config.eos_token_id))
+            self.positions.fill(0)
+            active = [False] * self.ids.shape[0]
+            for state in sequences:
+                row = state.slot - first
+                self.ids[row, 0] = state.tokens[-1]
+                self.positions[row] = state.position
+                active[row] = True
+            self.active = torch.tensor(active, device=self.device_ids.device, dtype=torch.bool)
+            self.device_ids.copy_(self.host_ids, non_blocking=True)
+            self.device_pos.copy_(self.host_pos, non_blocking=True)
+            current = self._launch(self.device_ids, self.device_pos, arena, first)
+
+        # Do not issue an out-of-bounds lookahead at the physical cache end.
+        if all(position + 1 < arena.cache.cache_length for position in positions):
+            next_ids = torch.where(
+                self.active.view(-1, 1), current["sampled"],
+                torch.full_like(current["sampled"], int(arena.recognizer.model.config.eos_token_id)),
+            )
+            next_position = torch.where(
+                self.active, current["position"] + 1, torch.zeros_like(current["position"]),
+            )
+            future = self._launch(next_ids, next_position, arena, first)
+            self.pending = ((identity, tuple(position + 1 for position in positions)), future)
+        current["done"].synchronize()
+        return current["host"].numpy().tolist(), 0.0
+
+
 class InterleavedTableRuntime:
     """Step API used by the existing HTTP worker, with C1 or C2 capacity."""
 
@@ -169,6 +251,7 @@ class InterleavedTableRuntime:
         self.jobs: dict[str, dict[str, Any]] = {}
         self.calls: dict[tuple[str, int, int], _Call] = {}
         self.metadata: dict[str, Any] = {}
+        self.active_pipeline: _Q1Pipeline | None = None
         for batch in range(1, capacity + 1):
             for kind, recognizer, physical_batch in (("target", b1, batch), ("draft", draft, 8 * batch)):
                 print(f"TABLE_PHASE setup=decode kind={kind} B={physical_batch} KV={recognizer.cache_length}", flush=True)
@@ -199,11 +282,31 @@ class InterleavedTableRuntime:
                 self._add_call("target", batch, k + 1, runtime, b1.device)
 
     def _add_call(self, kind: str, batch: int, query: int, runtime: Any, device: Any) -> None:
-        self.calls[kind, batch, query] = _Call(
+        call_type = _Q1Pipeline if query == 1 else _Call
+        self.calls[kind, batch, query] = call_type(
             runtime, batch, query, device, record_device_timing=bool(self.args.per_call_device_timing),
         )
         self.metadata[f"{kind}_b{batch}q{query}"] = dict(runtime.metadata)
         self.metadata[f"{kind}_b{batch}q{query}"]["per_call_device_timing"] = bool(self.args.per_call_device_timing)
+        if query == 1:
+            self.metadata[f"{kind}_b{batch}q{query}"]["q1_feedback"] = "queue_depth_one_for_draft_and_ordinary_only"
+
+    def drain_decode(self) -> None:
+        if self.active_pipeline is not None:
+            self.active_pipeline.drain()
+            self.active_pipeline = None
+
+    def pipeline_statistics(self) -> dict[str, Any]:
+        return {
+            f"{kind}_b{batch}q{query}": {
+                "physical_pipelined_graph_calls": call.graph_calls,
+                "reused_lookaheads": call.reused_lookaheads,
+                "discarded_lookaheads": call.discarded_lookaheads,
+                "contract": "physical calls include uncommitted lookahead; algorithm call counts do not",
+            }
+            for (kind, batch, query), call in self.calls.items()
+            if isinstance(call, _Q1Pipeline)
+        }
 
     def add(self, request_id: str, *, route: str, payload: Any, target_prepared: Any, row_groups: Any = None) -> None:
         if request_id in self.jobs or len(self.jobs) >= self.capacity:
@@ -239,6 +342,7 @@ class InterleavedTableRuntime:
         return result
 
     def prefill(self, request_id: str) -> None:
+        self.drain_decode()
         job = self.jobs[request_id]
         if job["phase"] == "draft_prefill":
             # Use the established impatient vision-pack former and exact prefill
@@ -295,7 +399,15 @@ class InterleavedTableRuntime:
             states = [job["target"] for job in selected]
             proposals = {job["slot"]: job["proposal"] for job in selected if query > 1}
             kind = "target"
-        output, device_s = self.calls[kind, batch, query].run(arena, first, states, proposals)
+        call = self.calls[kind, batch, query]
+        if phase in ("draft", "ordinary"):
+            if self.active_pipeline is not call:
+                self.drain_decode()
+            self.active_pipeline = call
+            output, device_s = call.run_pipelined(arena, first, states)
+        else:
+            self.drain_decode()
+            output, device_s = call.run(arena, first, states, proposals)
         for state in states:
             predictions = output[state.slot - first]
             state.calls += 1
@@ -325,12 +437,14 @@ class InterleavedTableRuntime:
         entries = self.jobs.items() if request_id is None else [(request_id, self.jobs[request_id])]
         for request_id, job in entries:
             if job["phase"] == "draft" and all(state.stop is not None for state in job["draft_states"]):
+                self.drain_decode()
                 rows = [{"row_index": state.slot % 8, "token_ids": state.tokens} for state in job["draft_states"]]
                 job["matcher_future"] = make_matcher({"request_id": request_id, "rows": rows})
                 for state in job["draft_states"]:
                     del self.draft_arena.states[state.slot]
                 job["phase"] = "target_prefill"
             if job["target"] is not None and job["target"].stop is not None:
+                self.drain_decode()
                 job["phase"] = "done"
                 done.append(request_id)
         return done
@@ -341,6 +455,7 @@ class InterleavedTableRuntime:
         return job
 
     def close(self) -> None:
+        self.drain_decode()
         for job in self.jobs.values():
             groups = job.get("row_groups")
             if groups is not None:

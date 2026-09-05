@@ -810,6 +810,7 @@ def _interleaved_worker_loop(
                                   wall_s=time.perf_counter() - started, device_s=device_s, decode=True)
             results.put({"kind": "service_summary", "payload": {
                 "completed_requests": completed, **ledger.summary(), "graph_contracts": runtime.metadata,
+                "q1_pipeline": runtime.pipeline_statistics(),
             }})
         except BaseException as exc:
             for key in list(runtime.jobs):
