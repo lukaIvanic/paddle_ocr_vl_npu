@@ -239,6 +239,12 @@ def replay(args):
     phase('model_load_start', variant=args.variant)
     model = LocalMinerU2_5ForConditionalGeneration.from_pretrained(model_path, dtype=torch.float16, device='npu:0')
     model.set_vision_attention_impl('prompt_flash_attention')
+    result['vision_weights'] = [dict(layer=index, projection=name,
+        shape=list(linear.weight.shape), dtype=str(linear.weight.dtype),
+        format=int(torch_npu.get_npu_format(linear.weight)))
+        for index, block in enumerate(model.visual.blocks)
+        for name, linear in (('qkv', block.attn.qkv), ('out', block.attn.proj),
+                             ('fc1', block.mlp.fc1), ('fc2', block.mlp.fc2))]
     inputs = [v.to('npu:0') for v in bundle['inputs']]
     expected = bundle['expected'].to('npu:0')
     module = StaticMinerUVisionBlocks(model.visual,
@@ -287,11 +293,16 @@ def replay(args):
     phase('first_call_finish', elapsed_s=result['first_call_s'], parity=result['full_encoder_parity'])
     if result['full_encoder_parity']['nonfinite']:
         raise RuntimeError('nonfinite candidate features')
+    if args.variant == 'baseline' and not result['full_encoder_parity']['exact']:
+        raise RuntimeError('baseline differs from its own production capture; investigate before ablations')
     for _ in range(2):
         fn(*inputs)
     timing, output = measure(lambda: fn(*inputs), args.steps)
     result['timing'] = timing
     result['repeat_parity'] = differences(candidate, output)
+    if result['repeat_parity']['nonfinite'] or not result['repeat_parity']['exact']:
+        write_json(root / 'result.json', result)
+        raise RuntimeError('same-input candidate replay is nonfinite or nondeterministic')
     result['real_tok_s'] = entry['tags']['real_tokens'] * 1000 / timing['device_ms']['mean']
     result['physical_tok_s'] = entry['tags']['physical_tokens'] * 1000 / timing['device_ms']['mean']
     result['status'] = 'completed'

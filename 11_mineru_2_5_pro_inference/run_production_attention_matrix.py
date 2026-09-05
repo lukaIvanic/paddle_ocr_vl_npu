@@ -2,8 +2,10 @@
 """Sequential subprocess driver; separate logs, deadlines and heartbeat per lane."""
 import argparse
 import json
+import os
 from pathlib import Path
 import shlex
+import signal
 import subprocess
 import sys
 import time
@@ -34,19 +36,25 @@ def main():
         start = time.monotonic()
         print(f'MATRIX start lane={name} log={log}', flush=True)
         with log.open('w') as out:
-            child = subprocess.Popen(command, stdout=out, stderr=subprocess.STDOUT)
+            child = subprocess.Popen(command, stdout=out, stderr=subprocess.STDOUT, start_new_session=True)
             while child.poll() is None:
                 try:
                     child.wait(timeout=15)
                 except subprocess.TimeoutExpired:
                     print(f'MATRIX heartbeat lane={name} elapsed_s={time.monotonic()-start:.1f} log_bytes={log.stat().st_size}', flush=True)
                 if child.poll() is None and time.monotonic() - start > args.timeout_s:
-                    child.terminate()
+                    os.killpg(child.pid, signal.SIGTERM)
                     try:
                         child.wait(timeout=15)
                     except subprocess.TimeoutExpired:
-                        child.kill()
+                        os.killpg(child.pid, signal.SIGKILL)
                         child.wait()
+                    # The Python parent may exit before its compiler children.
+                    # This group was created solely for this diagnostic lane.
+                    try:
+                        os.killpg(child.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
                     summary['lanes'].append(dict(name=name, status='timeout', log=str(log)))
                     (root / 'summary.json').write_text(json.dumps(summary, indent=2))
                     raise RuntimeError('lane timed out; stop matrix and inspect NPU health before any retry')
