@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -39,6 +40,24 @@ def args(limit: int) -> argparse.Namespace:
 
 
 class ClosedLoopClientTest(unittest.TestCase):
+    def test_goal_gate_manifests_are_frozen_and_reproduce_existing_selection(self) -> None:
+        manifest = json.loads((SCRIPTS.parent / "presets/table_serving_goal_validation.json").read_text())
+        source = SCRIPTS.parent.parent / manifest["source"]
+        self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(), manifest["source_sha256"])
+        for gate in manifest["gates"]:
+            selected_args = argparse.Namespace(source_jsonl=source, set="random",
+                                               count=gate["count"], shuffle_seed=gate["seed"])
+            rows = CLIENT.select_tables(selected_args)
+            serialized = "".join(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n"
+                                 for row in rows).encode()
+            self.assertEqual(hashlib.sha256(serialized).hexdigest(), gate["tables_jsonl_sha256"])
+            self.assertEqual([row["request_id"] for row in rows], gate["dispatch_request_ids"])
+        final_ids = manifest["gates"][-1]["dispatch_request_ids"]
+        self.assertEqual(len(final_ids), 1000)
+        self.assertEqual(len(set(final_ids[:665])), 665)
+        self.assertEqual(len(set(final_ids[665:])), 335)
+        self.assertLessEqual(set(final_ids[665:]), set(final_ids[:665]))
+
     def test_vllm_body_requests_native_ids_and_remaining_context(self) -> None:
         body = json.loads(CLIENT.vllm_payload(b"png", "PaddleOCR-VL-1.6"))
         self.assertTrue(body["return_token_ids"])
