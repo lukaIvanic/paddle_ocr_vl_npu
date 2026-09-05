@@ -6,6 +6,7 @@ import hashlib
 import importlib
 import json
 import time
+import types
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -2884,8 +2885,21 @@ def compile_text_decode_stage(
             optimization=optimization,
         )
         shape_cache_dir.mkdir(parents=True, exist_ok=True)
+        # Multiple resident decode shapes must not share a Dynamo code object.
+        # Otherwise constructing B1 after B8 invalidates B8's cached code and
+        # TorchAir repeatedly rejects/scrubs the cache on subsequent calls.
+        # This mirrors unique_spec_verify_forward; model math is unchanged.
+        original = stage.forward.__func__
+        name = f"text_decode_b{int(batch_size)}_kv{int(cache_length)}"
+        function = types.FunctionType(
+            original.__code__.replace(co_name=name), original.__globals__,
+            name, original.__defaults__, original.__closure__,
+        )
+        function.__annotations__ = dict(original.__annotations__)
+        function.__kwdefaults__ = original.__kwdefaults__
+        entrypoint = types.MethodType(function, stage)
         compiled_decode = torchair.inference.cache_compile(
-            stage.forward,
+            entrypoint,
             config=CompilerConfig(),
             dynamic=False,
             cache_dir=str(shape_cache_dir),
