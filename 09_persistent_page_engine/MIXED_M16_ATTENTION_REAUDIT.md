@@ -144,3 +144,78 @@ captures, including both control runs. The NPU was free after the experiments;
 the final snapshot is retained as `npu6_after.txt`.
 
 The candidate layouts are benchmark options; no serving default is changed.
+
+## Replicated IncreFA follow-up
+
+Later on 2026-09-05, the full-model BSH implementation improved beyond the
+two-attention control. Same device, FP16/NZ/compact head, separate processes,
+10 warmups and 50 repeats, with a separate 10/50 profiler window for each
+successful run.
+
+| Full forward | Cache capacity | Median |
+|---|---|---:|
+| Ordinary B16Q1, saved earlier anchor | KV768 | 1.3567 ms |
+| Ordinary B16Q1, current matched-position control | KV4096 | 2.0900 ms |
+| Replicated IncreFA with dedicated BNSD Scatter, preceding audit | KV4096 | 2.6815 ms |
+| Replicated IncreFA with direct gathered BSH writes | KV4096 | 2.3996 ms |
+| BSH with hoisted starts and one complete RoPE lookup | KV4096 | 2.2314 ms |
+| Same final BSH implementation, separate-process repeat | KV4096 | 2.2550 ms |
+
+The current ordinary B16 control uses the same input IDs and positions as the
+mixed candidate: first eight positions 1249 through 1256, remaining positions
+128,155,173,189,205,225,270,382. It still performs ordinary independent Q1
+writes, so it is a cost reference rather than a semantic verifier substitute.
+The KV768 historical anchor uses shorter draft positions throughout; the two
+ordinary rows are not a pure one-variable cache-capacity sweep.
+
+The final implementation keeps persistent caches in BSH `[16,4096,256]`.
+Gathering from the 16 projected K or V rows directly constructs each uniform
+Q8 write block. Draft rows repeat their one new token into seven future slots;
+the causal mask hides those slots and later iterations overwrite them before
+use. Scatter writes along axis 1. IncreFA consumes BSH directly, so neither
+cache-update preparation nor attention needs a transpose.
+
+The cache-start vector is constructed once before all 18 layers. The profile
+showed that relying on compiler common-subexpression elimination had instead
+left 18 repeated gathers, broadcasts and concatenations. The final variant
+also uses the existing scalar RoPE lookup for all 16 generated positions. The
+earlier mixed implementation used lookup only on the draft side despite its
+optimization preset specifying lookup. All generated-text position axes are
+identical after applying the corresponding request's rope delta, permitting
+this single lookup without changing the intended MRoPE semantics.
+
+| Profile group | Ordinary B16 KV4096 | First gathered BSH | Final BSH |
+|---|---:|---:|---:|
+| IncreFA | 997.8 us | 1037.1 us | 1024.9 us |
+| Matmuls + LM head | 507.8 us | 541.1 us | 506.0 us |
+| KV Scatter | 162.7 us | 103.4 us | 114.5 us |
+| GatherV2 | 21.5 us / 4 calls | 201.4 us / 70 calls | 149.7 us / 40 calls |
+| Transpose | 0 | 8.2 us / 1 call | 0 |
+| ConcatV2D | 0 | 38.5 us / 22 calls | 3.4 us / 2 calls |
+| BroadcastTo | 0 | 25.4 us / 21 calls | 3.0 us / 2 calls |
+
+The final candidate is about 16.4% faster than its preceding BNSD/Scatter
+implementation and 5.6% faster than the mean of the two original best
+two-attention control medians. It is about 7.3% slower than the matched-position
+ordinary B16 control. Most of that remaining difference is the additional
+per-layer gather for replicating verifier updates. KV storage remains
+1,152 MiB, versus 180 MiB for the two-attention mixed representation.
+
+Validation now covers three advancing teacher-forced steps. The final repeat
+uses independent nonzero histories (`normal(0,0.02)`, seed 74), verifier starts
+1249,1250,1254, and draft advances of one token. All 48 native output IDs match
+the full eager two-attention reference. Valid-prefix cache maximum absolute
+differences are 0.140625 for the verifier and zero for drafts; all caches are
+finite. Future slots are reported separately because the physical filler
+writes intentionally differ from the reference. These remain synthetic
+full-forward and cache-contract tests, not a real-table serving evaluation.
+
+The first BSH attempt failed compilation because TorchAir lacks the
+`aten.repeat_interleave.self_int` converter. Reshape/expand replaced it; the
+subsequent full graphs compiled normally. That failed attempt's log is retained
+and has no reported timing.
+
+Follow-up JSON, commands and raw kernel/step-trace CSV archive:
+`tmp/09_persistent_page_engine/mixed_increfa_followup_20260905/`.
+The final measured model source is commit `b6416dbf`; the stronger validation
+is commit `5bc32272`. NPU 6 was released after the repeat.

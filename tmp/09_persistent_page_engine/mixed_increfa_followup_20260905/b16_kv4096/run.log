@@ -1,0 +1,8 @@
+TABLE_Q_ANCHOR lane=b16q1_kv4096 stage=model_load
+TABLE_Q_ANCHOR lane=b16q1_kv4096 stage=graph_wrapper
+TABLE_Q_ANCHOR lane=b16q1_kv4096 warmups=10 repeats=50
+.TABLE_Q_ANCHOR timing_complete median_ms=2.090020 profile=True
+[2026-09-05 09:37:36] [INFO] [2133520] profiler.py: Start parsing profiling data in sync mode at: /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/mixed_increfa_followup_20260905/b16_kv4096/liteserver-c001-4_2132701_20260905093735475_ascend_pt
+|/-\|/-[2026-09-05 09:37:42] [INFO] [2133546] profiler.py: CANN profiling data parsed in a total time of 0:00:06.040103
+\|/-\[2026-09-05 09:37:47] [INFO] [2133520] profiler.py: All profiling data parsed in a total time of 0:00:11.540018
+TABLE_Q_ANCHOR_RESULT lane=b16q1_kv4096 median_ms=2.0900 p95_ms=2.0990 iters_s=476.9 physical_positions_s=7630.7 warnings=0 output=/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/mixed_increfa_followup_20260905/b16_kv4096/b16q1_kv4096.json

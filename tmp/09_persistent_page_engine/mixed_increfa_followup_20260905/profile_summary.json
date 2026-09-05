@@ -1,0 +1,509 @@
+{
+  "bsh_retry": {
+    "provenance": {
+      "argv": [
+        "09_persistent_page_engine/scripts/table_q_anchor_benchmark.py",
+        "--lane",
+        "mixed_m16",
+        "--mixed-layout",
+        "b16_replicated_increfa_bsh",
+        "--warmups",
+        "10",
+        "--repeats",
+        "50",
+        "--output-dir",
+        "tmp/09_persistent_page_engine/mixed_increfa_followup_20260905/bsh_retry",
+        "--profile-dir",
+        ".runtime_cache/mixed_increfa_followup_20260905/bsh_retry"
+      ],
+      "ascend_rt_visible_devices": "6",
+      "git_commit": "9bc93294179af403117fbba92a3de37772e95e85",
+      "hostname": "liteserver-c001-4",
+      "started_utc": "2026-09-05T09:43:57.352692+00:00"
+    },
+    "status": "complete",
+    "timing": {
+      "device_s": 0.12036462020874024,
+      "graph_calls_per_s": 415.40445949389755,
+      "host_graph_calls_per_s": 410.44537202619375,
+      "host_physical_positions_per_s": 6567.1259524191,
+      "host_wall_s": 0.12181889091152698,
+      "latency_ms": {
+        "max": 2.7376201152801514,
+        "mean": 2.4072924041748047,
+        "median": 2.3996100425720215,
+        "min": 2.385999917984009,
+        "p95": 2.4185659646987916
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 6646.471351902361
+    },
+    "profile": {
+      "captured_calls": 50,
+      "groups": {
+        "Range": {
+          "us_per_call": 21.454,
+          "count_per_call": 3
+        },
+        "Cast": {
+          "us_per_call": 15.6136,
+          "count_per_call": 6
+        },
+        "GatherV2": {
+          "us_per_call": 201.3508,
+          "count_per_call": 70
+        },
+        "RmsNorm": {
+          "us_per_call": 11.6464,
+          "count_per_call": 1
+        },
+        "MatMul": {
+          "us_per_call": 541.0512,
+          "count_per_call": 91
+        },
+        "SplitVD": {
+          "us_per_call": 46.3616,
+          "count_per_call": 20
+        },
+        "Tile": {
+          "us_per_call": 1.1252,
+          "count_per_call": 1
+        },
+        "Add": {
+          "us_per_call": 4.9652,
+          "count_per_call": 3
+        },
+        "BroadcastTo": {
+          "us_per_call": 25.3784,
+          "count_per_call": 21
+        },
+        "Mul": {
+          "us_per_call": 11.3816,
+          "count_per_call": 3
+        },
+        "Transpose": {
+          "us_per_call": 8.1856,
+          "count_per_call": 1
+        },
+        "ConcatV2D": {
+          "us_per_call": 38.4892,
+          "count_per_call": 22
+        },
+        "Cos": {
+          "us_per_call": 2.6348,
+          "count_per_call": 1
+        },
+        "Sin": {
+          "us_per_call": 2.5352,
+          "count_per_call": 1
+        },
+        "Unpack": {
+          "us_per_call": 1.1704,
+          "count_per_call": 1
+        },
+        "Greater": {
+          "us_per_call": 11.8864,
+          "count_per_call": 1
+        },
+        "Scatter": {
+          "us_per_call": 103.4064,
+          "count_per_call": 36
+        },
+        "ApplyRotaryPosEmb": {
+          "us_per_call": 98.5036,
+          "count_per_call": 18
+        },
+        "IncreFlashAttention": {
+          "us_per_call": 1037.112,
+          "count_per_call": 18
+        },
+        "InplaceAddRmsNorm": {
+          "us_per_call": 119.6396,
+          "count_per_call": 36
+        },
+        "AutomaticBufferFusionOp": {
+          "us_per_call": 118.2168,
+          "count_per_call": 18
+        },
+        "ArgMaxV2": {
+          "us_per_call": 9.9424,
+          "count_per_call": 1
+        }
+      },
+      "matmul_formats": {
+        "ND;FRACTAL_NZ": 4550
+      }
+    }
+  },
+  "b16_kv4096": {
+    "provenance": {
+      "argv": [
+        "09_persistent_page_engine/scripts/table_q_anchor_benchmark.py",
+        "--lane",
+        "b16q1_kv4096",
+        "--warmups",
+        "10",
+        "--repeats",
+        "50",
+        "--output-dir",
+        "tmp/09_persistent_page_engine/mixed_increfa_followup_20260905/b16_kv4096",
+        "--profile-dir",
+        ".runtime_cache/mixed_increfa_followup_20260905/b16_kv4096"
+      ],
+      "ascend_rt_visible_devices": "6",
+      "git_commit": "2ef2ec7d6b738cfd5fa4c31bfa5ff69f81c082c7",
+      "hostname": "liteserver-c001-4",
+      "started_utc": "2026-09-05T09:36:52.394445+00:00"
+    },
+    "status": "complete",
+    "timing": {
+      "device_s": 0.10483973884582519,
+      "graph_calls_per_s": 476.91839516625276,
+      "host_graph_calls_per_s": 470.0524950524984,
+      "host_physical_positions_per_s": 7520.839920839974,
+      "host_wall_s": 0.10637109796516597,
+      "latency_ms": {
+        "max": 2.464099884033203,
+        "mean": 2.0967947769165036,
+        "median": 2.090019941329956,
+        "min": 2.0747599601745605,
+        "p95": 2.0990409374237062
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 7630.694322660044
+    },
+    "profile": {
+      "captured_calls": 50,
+      "groups": {
+        "Range": {
+          "us_per_call": 10.0032,
+          "count_per_call": 1
+        },
+        "Cast": {
+          "us_per_call": 11.1376,
+          "count_per_call": 3
+        },
+        "GatherV2": {
+          "us_per_call": 21.4572,
+          "count_per_call": 4
+        },
+        "RmsNorm": {
+          "us_per_call": 11.278,
+          "count_per_call": 1
+        },
+        "MatMul": {
+          "us_per_call": 507.812,
+          "count_per_call": 91
+        },
+        "SplitVD": {
+          "us_per_call": 37.346,
+          "count_per_call": 18
+        },
+        "Add": {
+          "us_per_call": 1.6012,
+          "count_per_call": 1
+        },
+        "Scatter": {
+          "us_per_call": 162.6892,
+          "count_per_call": 36
+        },
+        "Greater": {
+          "us_per_call": 11.1728,
+          "count_per_call": 1
+        },
+        "Unpack": {
+          "us_per_call": 1.2004,
+          "count_per_call": 1
+        },
+        "ApplyRotaryPosEmb": {
+          "us_per_call": 80.3616,
+          "count_per_call": 18
+        },
+        "IncreFlashAttention": {
+          "us_per_call": 997.7596,
+          "count_per_call": 18
+        },
+        "InplaceAddRmsNorm": {
+          "us_per_call": 107.496,
+          "count_per_call": 36
+        },
+        "AutomaticBufferFusionOp": {
+          "us_per_call": 106.026,
+          "count_per_call": 18
+        },
+        "ArgMaxV2": {
+          "us_per_call": 9.008,
+          "count_per_call": 1
+        }
+      },
+      "matmul_formats": {
+        "ND;FRACTAL_NZ": 4550
+      }
+    }
+  },
+  "bsh_repeat": {
+    "provenance": {
+      "argv": [
+        "09_persistent_page_engine/scripts/table_q_anchor_benchmark.py",
+        "--lane",
+        "mixed_m16",
+        "--mixed-layout",
+        "b16_replicated_increfa_bsh",
+        "--warmups",
+        "10",
+        "--repeats",
+        "50",
+        "--output-dir",
+        "tmp/09_persistent_page_engine/mixed_increfa_followup_20260905/bsh_repeat",
+        "--profile-dir",
+        ".runtime_cache/mixed_increfa_followup_20260905/bsh_repeat"
+      ],
+      "ascend_rt_visible_devices": "6",
+      "git_commit": "5bc32272e1fb642da501d14f767aa854b1d67c9c",
+      "hostname": "liteserver-c001-4",
+      "started_utc": "2026-09-05T09:56:07.077743+00:00"
+    },
+    "status": "complete",
+    "timing": {
+      "device_s": 0.11290225958824157,
+      "graph_calls_per_s": 442.86093283120925,
+      "host_graph_calls_per_s": 436.89992054861045,
+      "host_physical_positions_per_s": 6990.398728777767,
+      "host_wall_s": 0.11444268503692001,
+      "latency_ms": {
+        "max": 2.3833398818969727,
+        "mean": 2.2580451917648316,
+        "median": 2.2550199031829834,
+        "min": 2.2325599193573,
+        "p95": 2.2992649912834167
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 7085.774925299348
+    },
+    "profile": {
+      "captured_calls": 50,
+      "groups": {
+        "GatherV2": {
+          "us_per_call": 163.0376,
+          "count_per_call": 40
+        },
+        "RmsNorm": {
+          "us_per_call": 11.5332,
+          "count_per_call": 1
+        },
+        "MatMul": {
+          "us_per_call": 517.4868,
+          "count_per_call": 91
+        },
+        "Range": {
+          "us_per_call": 21.3696,
+          "count_per_call": 3
+        },
+        "Cast": {
+          "us_per_call": 14.6236,
+          "count_per_call": 5
+        },
+        "Tile": {
+          "us_per_call": 1.1924,
+          "count_per_call": 1
+        },
+        "Add": {
+          "us_per_call": 3.776,
+          "count_per_call": 2
+        },
+        "ConcatV2D": {
+          "us_per_call": 3.546,
+          "count_per_call": 2
+        },
+        "SplitVD": {
+          "us_per_call": 35.7224,
+          "count_per_call": 18
+        },
+        "Greater": {
+          "us_per_call": 12.702,
+          "count_per_call": 1
+        },
+        "BroadcastTo": {
+          "us_per_call": 2.964,
+          "count_per_call": 2
+        },
+        "Unpack": {
+          "us_per_call": 1.192,
+          "count_per_call": 1
+        },
+        "ApplyRotaryPosEmb": {
+          "us_per_call": 93.7252,
+          "count_per_call": 18
+        },
+        "Scatter": {
+          "us_per_call": 126.1476,
+          "count_per_call": 36
+        },
+        "IncreFlashAttention": {
+          "us_per_call": 1013.276,
+          "count_per_call": 18
+        },
+        "InplaceAddRmsNorm": {
+          "us_per_call": 118.1772,
+          "count_per_call": 36
+        },
+        "AutomaticBufferFusionOp": {
+          "us_per_call": 109.6984,
+          "count_per_call": 18
+        },
+        "ArgMaxV2": {
+          "us_per_call": 10.6192,
+          "count_per_call": 1
+        }
+      },
+      "matmul_formats": {
+        "ND;FRACTAL_NZ": 4550
+      }
+    }
+  },
+  "bsh_hoisted": {
+    "provenance": {
+      "argv": [
+        "09_persistent_page_engine/scripts/table_q_anchor_benchmark.py",
+        "--lane",
+        "mixed_m16",
+        "--mixed-layout",
+        "b16_replicated_increfa_bsh",
+        "--warmups",
+        "10",
+        "--repeats",
+        "50",
+        "--output-dir",
+        "tmp/09_persistent_page_engine/mixed_increfa_followup_20260905/bsh_hoisted",
+        "--profile-dir",
+        ".runtime_cache/mixed_increfa_followup_20260905/bsh_hoisted"
+      ],
+      "ascend_rt_visible_devices": "6",
+      "git_commit": "b6416dbfe068a430a86834ea62afbd3d0614f7ca",
+      "hostname": "liteserver-c001-4",
+      "started_utc": "2026-09-05T09:50:09.711801+00:00"
+    },
+    "status": "complete",
+    "timing": {
+      "device_s": 0.11171738004684448,
+      "graph_calls_per_s": 447.5579357395813,
+      "host_graph_calls_per_s": 441.2535500813576,
+      "host_physical_positions_per_s": 7060.056801301722,
+      "host_wall_s": 0.11331353592686355,
+      "latency_ms": {
+        "max": 2.3966000080108643,
+        "mean": 2.2343476009368897,
+        "median": 2.231369972229004,
+        "min": 2.202320098876953,
+        "p95": 2.254738056659699
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 7160.926971833301
+    },
+    "profile": {
+      "captured_calls": 50,
+      "groups": {
+        "GatherV2": {
+          "us_per_call": 149.7096,
+          "count_per_call": 40
+        },
+        "RmsNorm": {
+          "us_per_call": 12.844,
+          "count_per_call": 1
+        },
+        "MatMul": {
+          "us_per_call": 506.0196,
+          "count_per_call": 91
+        },
+        "Range": {
+          "us_per_call": 20.7684,
+          "count_per_call": 3
+        },
+        "Cast": {
+          "us_per_call": 13.4684,
+          "count_per_call": 5
+        },
+        "Tile": {
+          "us_per_call": 1.2168,
+          "count_per_call": 1
+        },
+        "Add": {
+          "us_per_call": 3.8128,
+          "count_per_call": 2
+        },
+        "ConcatV2D": {
+          "us_per_call": 3.4012,
+          "count_per_call": 2
+        },
+        "SplitVD": {
+          "us_per_call": 35.3336,
+          "count_per_call": 18
+        },
+        "Greater": {
+          "us_per_call": 10.1584,
+          "count_per_call": 1
+        },
+        "BroadcastTo": {
+          "us_per_call": 2.984,
+          "count_per_call": 2
+        },
+        "Unpack": {
+          "us_per_call": 1.212,
+          "count_per_call": 1
+        },
+        "ApplyRotaryPosEmb": {
+          "us_per_call": 94.8728,
+          "count_per_call": 18
+        },
+        "Scatter": {
+          "us_per_call": 114.4744,
+          "count_per_call": 36
+        },
+        "IncreFlashAttention": {
+          "us_per_call": 1024.9076,
+          "count_per_call": 18
+        },
+        "InplaceAddRmsNorm": {
+          "us_per_call": 120.0652,
+          "count_per_call": 36
+        },
+        "AutomaticBufferFusionOp": {
+          "us_per_call": 100.4176,
+          "count_per_call": 18
+        },
+        "ArgMaxV2": {
+          "us_per_call": 9.6836,
+          "count_per_call": 1
+        }
+      },
+      "matmul_formats": {
+        "ND;FRACTAL_NZ": 4550
+      }
+    }
+  },
+  "bsh": {
+    "provenance": {
+      "argv": [
+        "09_persistent_page_engine/scripts/table_q_anchor_benchmark.py",
+        "--lane",
+        "mixed_m16",
+        "--mixed-layout",
+        "b16_replicated_increfa_bsh",
+        "--warmups",
+        "10",
+        "--repeats",
+        "50",
+        "--output-dir",
+        "tmp/09_persistent_page_engine/mixed_increfa_followup_20260905/bsh",
+        "--profile-dir",
+        ".runtime_cache/mixed_increfa_followup_20260905/bsh"
+      ],
+      "ascend_rt_visible_devices": "6",
+      "git_commit": "dab58271a335690e3315ceffbb144b34eb2da1cf",
+      "hostname": "liteserver-c001-4",
+      "started_utc": "2026-09-05T09:39:28.319075+00:00"
+    },
+    "status": "setup",
+    "timing": null
+  }
+}

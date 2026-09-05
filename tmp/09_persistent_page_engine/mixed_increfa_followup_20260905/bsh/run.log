@@ -1,0 +1,152 @@
+TABLE_Q_ANCHOR lane=mixed_m16 stage=model_load
+TABLE_Q_ANCHOR lane=mixed_m16 stage=graph_wrapper
+TABLE_Q_ANCHOR lane=mixed_m16 warmups=10 repeats=50
+Traceback (most recent call last):
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/table_q_anchor_benchmark.py", line 1104, in <module>
+    main()
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/table_q_anchor_benchmark.py", line 1017, in main
+    durations, output, host_wall_s, warmup_wall_s = _measure(
+                                                    ^^^^^^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/table_q_anchor_benchmark.py", line 268, in _measure
+    output = fn()
+             ^^^^
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/table_q_anchor_benchmark.py", line 740, in call
+    return fn(
+           ^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 599, in __call__
+    return self._compiled_model(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 524, in __call__
+    return self.compiled_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 967, in compile_wrapper
+    raise e.remove_dynamo_frames() from None  # see TORCHDYNAMO_VERBOSE=1
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/output_graph.py", line 2437, in _call_user_compiler
+    raise BackendCompilerFailed(
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/output_graph.py", line 2412, in _call_user_compiler
+    compiled_fn = compiler_fn(gm, example_inputs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_dynamo/repro/after_dynamo.py", line 156, in __call__
+    compiled_gm = compiler_fn(gm, example_inputs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/__init__.py", line 2509, in __call__
+    return self.compiler_fn(model_, inputs_, **self.kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 399, in __call__
+    return _compile_graph_with_aot(gm, self.fw_compiler, inputs, self.config, decompositions,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 999, in _compile_graph_with_aot
+    return aot_module_simplified(gm, example_inputs, **aot_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py", line 1115, in aot_module_simplified
+    compiled_fn, _ = aot_stage2_compile(
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/graph_compile.py", line 357, in aot_stage2_compile
+    return aot_stage2_inference(aot_state, aot_graph_capture)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/graph_compile.py", line 431, in aot_stage2_inference
+    compiled_fw = _aot_stage2b_inference_compile(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/graph_compile.py", line 400, in _aot_stage2b_inference_compile
+    return _aot_stage2b_compile_forward_or_inference(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/graph_compile.py", line 2300, in _aot_stage2b_compile_forward_or_inference
+    compiled_fw_func = compiler(fw_module, adjusted_flat_args)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/graph_transform_observer.py", line 135, in wrapped
+    with DebugContext(phase):
+         ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/graph_transform_observer.py", line 114, in __exit__
+    raise exc_val.with_traceback(exc_tb)
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/graph_transform_observer.py", line 136, in wrapped
+    return compiler(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 822, in _wrap_custom_attr_compiler
+    return compiler(gm, example_inputs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 768, in wrapped_compiler
+    return compiler(gm, example_inputs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/inference/_cache_compiler.py", line 405, in fw_compiler
+    py_code = self.compiler(gm, example_inputs).get_code(self.extend_config)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py", line 46, in wapper
+    raise type(e)("\n".join(msg))
+torch._dynamo.exc.BackendCompilerFailed: backend='<torchair.inference._cache_compiler.CacheBackend object at 0xfffe6d719820>' raised:
+NotImplementedError: torch.ops.aten.repeat_interleave.self_int ge_converter is not implemented!
+
+While executing %repeat_interleave : [num_users=1] = call_function[target=torch.ops.aten.repeat_interleave.self_int](args = (%arange_8, 8), kwargs = {})
+Original traceback:
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_mixed_q.py", line 899, in forward
+    hidden_states = run_text_mixed_m16_transformer(
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_mixed_q.py", line 707, in run_text_mixed_m16_transformer
+    torch.arange(8, 16, device=draft_positions.device, dtype=torch.int64).repeat_interleave(8),
+
+Use tlparse to see full graph. (https://github.com/pytorch/tlparse?tab=readme-ov-file#tlparse-parse-structured-pt2-logs)
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_utils/error_code.py", line 43, in wapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 592, in __call__
+    return self._get_compiled_gm(gm, example_inputs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 633, in _get_compiled_gm
+    return _CompiledFxGraph(self._gen_compiled_gm(gm, example_inputs, observer), self.config)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 681, in _gen_compiled_gm
+    concrete_graph: ConcreteGraphBase = _NpuGraphConverter(
+                                        ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 161, in run
+    super().run(*args, **kwargs)
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/fx/interpreter.py", line 200, in run
+    self.env[node] = self.run_node(node)
+                     ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 146, in run_node
+    return super().run_node(n)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch/fx/interpreter.py", line 295, in run_node
+    return getattr(self, n.op)(n.target, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 116, in inner
+    result = f(self, target, args, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 239, in call_function
+    return self._wrap('call_function')(target, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/npu_fx_compiler.py", line 204, in inner
+    npu_outputs = self._graph.parse_node(target, args_npu, kwargs_npu, meta_outputs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_ge_concrete_graph/continguous_utils.py", line 175, in wrapper
+    return func(self, target, args_new, kwargs_new, meta_outputs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/scope/_scope_attr.py", line 72, in wrapper
+    ge_outputs = func(self, target, args, kwargs, meta_outputs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_ge_concrete_graph/fx2ge_converter.py", line 1437, in parse_node
+    ge_outputs = converter(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_ge_concrete_graph/fx2ge_converter.py", line 293, in wrapped_converter
+    ge_outputs = converter(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/site-packages/torch_npu/dynamo/torchair/_ge_concrete_graph/ge_converter/aten/repeat_interleave.py", line 35, in conveter_aten_repeat_interleave_self_int
+    raise NotImplementedError("torch.ops.aten.repeat_interleave.self_int ge_converter is not implemented!")
+NotImplementedError: torch.ops.aten.repeat_interleave.self_int ge_converter is not implemented!
+
+While executing %repeat_interleave : [num_users=1] = call_function[target=torch.ops.aten.repeat_interleave.self_int](args = (%arange_8, 8), kwargs = {})
+Original traceback:
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_mixed_q.py", line 899, in forward
+    hidden_states = run_text_mixed_m16_transformer(
+  File "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/paddleocr_vl/model/text_mixed_q.py", line 707, in run_text_mixed_m16_transformer
+    torch.arange(8, 16, device=draft_positions.device, dtype=torch.int64).repeat_interleave(8),
+
+Use tlparse to see full graph. (https://github.com/pytorch/tlparse?tab=readme-ov-file#tlparse-parse-structured-pt2-logs)
+
+
+[ERROR] 2026-09-05-09:40:06 (PID:2134288, Device:0, RankID:-1) ERR03007 GRAPH feature not supported
+
+Set TORCHDYNAMO_VERBOSE=1 for the internal stack trace (please do this especially if you're reporting a bug to PyTorch). For even more developer context, set TORCH_LOGS="+dynamo"
+
