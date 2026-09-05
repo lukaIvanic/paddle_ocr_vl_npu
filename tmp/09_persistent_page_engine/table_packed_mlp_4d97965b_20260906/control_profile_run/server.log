@@ -1,0 +1,40 @@
+Waiting for NPU worker pid=2540917
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.888011}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":11.562197}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.026298}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.028885}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"done","elapsed_s":0.073219}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":5.855139}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.524008}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.017038}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":6.383924}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":3.259338}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.235765}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.006224}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.003748}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":29.731561}
+READY http://127.0.0.1:8767 worker_pid=2540917
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-001-page_001272_table_1&source_request_id=page_001272_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+SERVING_PROFILE start: actual B2; warmup=5 active=20
+[2026-09-05 23:35:42] [INFO] [2541334] profiler.py: Start parsing profiling data in sync mode at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_packed_mlp_4d97965b_20260906/control_profile_run/profile/liteserver-c001-4_2540917_20260905233542015_ascend_pt
+|/-\|/-[2026-09-05 23:35:48] [INFO] [2541360] profiler.py: CANN profiling data parsed in a total time of 0:00:06.038791
+\[2026-09-05 23:35:50] [INFO] [2541334] profiler.py: All profiling data parsed in a total time of 0:00:07.828681
+SERVING_PROFILE done: restored ordinary loop
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-002-page_001367_table_51&source_request_id=page_001367_table_51 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-001-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+SERVICE_SUMMARY /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_packed_mlp_4d97965b_20260906/control_profile_run/service.json

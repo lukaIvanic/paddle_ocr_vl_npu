@@ -7,8 +7,9 @@ from difflib import SequenceMatcher
 from pathlib import Path
 import re
 from statistics import mean
+import sys
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent
 records, configurations, report = {}, {}, {}
 monitor = (ROOT / "host_npu6_monitor.log").read_text()
 samples = [(datetime.fromisoformat(block.splitlines()[0]).timestamp(),
@@ -28,7 +29,6 @@ for mode in ("control", "candidate"):
     config = summary["api_configuration"]
     configurations[mode] = config
     assert config == service["configuration"]
-    assert config["vision_linear_patch_projection"] == (mode == "candidate")
     active = peak = 0
     for _, change in sorted([(r["dispatch_offset_s"], 1) for r in rows]
                             + [(r["completion_offset_s"], -1) for r in rows]):
@@ -51,8 +51,19 @@ for mode in ("control", "candidate"):
         "mean_embedding_device_s": mean(o["device_stage_s"]["vision_embeddings"] for o in outputs),
         "mean_prefill_wall_s": mean(o["timing_s"]["vision_and_text_prefill_wall"] for o in outputs),
         "decode_device_s_lifetime_including_warmup": service["summary"]["timing_s"]["decode_model_and_argmax_device"],
+        "graph_calls_including_warmup": service["summary"]["graph_calls"],
+        "mean_decode_device_event_interval_ms_including_warmup": 1000 * service["summary"]["timing_s"]["decode_model_and_argmax_device"] / service["summary"]["graph_calls"],
+        "device_interval_note": "Device events bracket submission/execution; this is not the sum of kernel durations. Whole-server totals include the separate warm request.",
     }
-for field in ("decode_optimization", "decode_vocab", "token_selection", "cache_length", "max_new_tokens",
+before_config, after_config = configurations["control"], configurations["candidate"]
+packed_comparison = after_config["decode_optimization"] == before_config["decode_optimization"] + "_packed_mlp"
+if packed_comparison:
+    assert before_config["vision_linear_patch_projection"] == after_config["vision_linear_patch_projection"]
+else:
+    assert before_config["decode_optimization"] == after_config["decode_optimization"]
+    assert not before_config["vision_linear_patch_projection"] and after_config["vision_linear_patch_projection"]
+report["comparison_kind"] = "packed_mlp" if packed_comparison else "linear_patch_projection"
+for field in ("decode_vocab", "token_selection", "cache_length", "max_new_tokens",
               "batch_size", "preprocessor", "vision_attention_weight_padding", "max_prefill_interruptions"):
     assert configurations["control"][field] == configurations["candidate"][field], field
 differences = []

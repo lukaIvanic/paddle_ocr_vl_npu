@@ -1,0 +1,8 @@
+{
+  "source": "Exit statuses printed by the persistent container shell after each completed command or wait",
+  "initial_invalid_argument_profile_launch": 2,
+  "candidate_profile": {"warm_client": 0, "profile_client": 0, "server": 0},
+  "candidate_100": {"warm_client": 0, "client": 0, "server": 0},
+  "control_100": {"warm_client": 0, "client": 0, "server": 0},
+  "control_profile": {"warm_client": 0, "profile_client": 0, "server": 0}
+}

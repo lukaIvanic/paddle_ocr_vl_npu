@@ -1,0 +1,108 @@
+{
+  "packed_mlp": true,
+  "warmups": 5,
+  "captured_real_b2_iterations": 20,
+  "discarded_prior_partial_graph_rows": 66,
+  "actual_positions_start": [
+    266,
+    1010
+  ],
+  "actual_positions_end": [
+    285,
+    1029
+  ],
+  "mean_model_kernel_sum_us": 1046.796,
+  "mean_model_device_envelope_us": 1124.7125,
+  "mean_control_kernel_sum_us": 12.257,
+  "mean_profiled_device_start_cadence_us": 2182.0789473684213,
+  "model_kernel_types": {
+    "IncreFlashAttention": {
+      "count": 360,
+      "mean_us_per_iteration": 393.3679999999998
+    },
+    "MatMul": {
+      "count": 1460,
+      "mean_us_per_iteration": 368.1729999999999
+    },
+    "InplaceAddRmsNorm": {
+      "count": 720,
+      "mean_us_per_iteration": 61.23999999999997
+    },
+    "Scatter": {
+      "count": 720,
+      "mean_us_per_iteration": 49.17799999999999
+    },
+    "ApplyRotaryPosEmb": {
+      "count": 360,
+      "mean_us_per_iteration": 48.030000000000044
+    },
+    "SwiGlu": {
+      "count": 360,
+      "mean_us_per_iteration": 43.24699999999999
+    },
+    "SplitVD": {
+      "count": 360,
+      "mean_us_per_iteration": 18.883999999999983
+    },
+    "GatherV2": {
+      "count": 80,
+      "mean_us_per_iteration": 12.638000000000003
+    },
+    "Range": {
+      "count": 20,
+      "mean_us_per_iteration": 9.925
+    },
+    "RmsNorm": {
+      "count": 20,
+      "mean_us_per_iteration": 9.539999999999997
+    },
+    "Cast": {
+      "count": 60,
+      "mean_us_per_iteration": 9.243000000000002
+    },
+    "ArgMaxV2": {
+      "count": 20,
+      "mean_us_per_iteration": 8.620000000000001
+    },
+    "Greater": {
+      "count": 20,
+      "mean_us_per_iteration": 7.131
+    },
+    "Data": {
+      "count": 20,
+      "mean_us_per_iteration": 4.351999999999999
+    },
+    "Add": {
+      "count": 20,
+      "mean_us_per_iteration": 2.0490000000000004
+    },
+    "Unpack": {
+      "count": 20,
+      "mean_us_per_iteration": 1.1780000000000002
+    }
+  },
+  "host_nested_scopes_not_additive": {
+    "serving.decode_step": {
+      "count": 20,
+      "mean_us_per_iteration": 1242.0735
+    },
+    "cache_compiler inference": {
+      "count": 20,
+      "mean_us_per_iteration": 542.9369999999999
+    },
+    "TorchNpuGraphBase::Run": {
+      "count": 20,
+      "mean_us_per_iteration": 147.06499999999997
+    },
+    "Event::record": {
+      "count": 80,
+      "mean_us_per_iteration": 396.2594999999999
+    }
+  },
+  "frequency_observations_mhz": [
+    1800,
+    1800
+  ],
+  "raw_trace_sha256": "65d30dd762061d3195adedcbf2b232a3cdcb228ff694a686ee3e27fc47b59687",
+  "profiled_latencies_are_not_goal_measurements": true
+}

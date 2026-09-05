@@ -6,10 +6,12 @@ import hashlib
 import json
 from pathlib import Path
 import statistics
+import sys
 
-ROOT = Path(__file__).resolve().parent / "capture_1e32b233"
+ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent / "capture_1e32b233"
 inputs = ROOT / "analysis_input"
 capture = json.loads((ROOT / "capture.json").read_text())
+packed_mlp = capture["configuration"]["decode_optimization"].endswith("_packed_mlp")
 assert capture["warmups"] == 5 and capture["repeats"] == 20
 assert len(capture["observations"]) == 25
 assert all(x["active_slots"] == 2 for x in capture["observations"])
@@ -28,7 +30,7 @@ for block in blocks:
     model = [row for row in block if row["Model ID"] == model_id]
     count = Counter(row["Type"] for row in model)
     assert count["IncreFlashAttention"] == 18
-    assert count["MatMul"] == 91 and count["ArgMaxV2"] == 1
+    assert count["MatMul"] == (73 if packed_mlp else 91) and count["ArgMaxV2"] == 1
     start = float(model[0]["Start Time(us)"])
     end = max(float(row["Start Time(us)"]) + float(row["Duration(us)"]) for row in model)
     model_spans.append(end - start)
@@ -47,6 +49,7 @@ for event in trace:
         host_count[event["name"]] += 1
 assert host_count["serving.decode_step"] == 20
 report = {
+    "packed_mlp": packed_mlp,
     "warmups": 5, "captured_real_b2_iterations": 20,
     "discarded_prior_partial_graph_rows": starts[0],
     "actual_positions_start": capture["observations"][5]["positions"],

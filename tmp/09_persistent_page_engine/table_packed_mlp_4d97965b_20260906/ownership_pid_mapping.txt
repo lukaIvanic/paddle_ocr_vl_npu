@@ -1,0 +1,17 @@
+Manual direct-host inspection, physical NPU6 only, Ascend 910B2.
+Common monitor PID1956204, /tmp/table_packed_mlp_20260906_npu6.log.
+Initial profile parent1956689/container2537538, worker:
+NSpid: 1956691 2537540
+Candidate parent1962437/container2539734, worker:
+NSpid: 1962441 2539736
+Control parent1965029/container2540228, worker:
+NSpid: 1965031 2540230
+Follow-up control profile parent1967848/container2540915, worker:
+NSpid: 1967850 2540917
+Each measured window was manually checked and sampled by the monitor.
+Profile, candidate and control servers were shut down gracefully, exit0;
+their worker/parent PIDs were absent and NPU6 free before starting the next.
+The control profile also completed and shut down with exit0. NPU6 was verified
+empty at2026-09-06T07:37:34+08:00 after that final inference process stopped.
+At2026-09-06T07:38:45+08:00 the monitor was stopped; all listed workers,
+parents and the monitor were absent, and NPU6 was again confirmed empty.
