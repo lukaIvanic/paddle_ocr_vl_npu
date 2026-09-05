@@ -48,9 +48,12 @@ def build_command(reference, output, limit):
         command.extend(str(v) for v in value) if isinstance(value, list) else command.append(str(value))
     for key in ('model', 'dataset_json', 'images_dir', 'local_text_torchair_cache_dir',
                 'local_vision_torchair_cache_dir', 'local_torchair_cache_dir'):
-        path = Path(reference[key])
-        if not path.is_absolute() or not path.exists():
-            raise ValueError(f'missing absolute reference path: {key}={path}')
+        path = Path(reference[key]).expanduser()
+        if not path.is_absolute():
+            path = Path(__file__).resolve().parent.parent / path
+        path = path.resolve()
+        if not path.exists():
+            raise ValueError(f'missing reference path: {key}={path}')
         command.extend(['--' + key.replace('_', '-'), str(path)])
     return command
 
@@ -83,6 +86,7 @@ def validate(output, reference, limit):
 
 
 def main():
+    os.chdir(Path(__file__).resolve().parent.parent)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--reference-summary', type=Path, required=True)
     parser.add_argument('--run-root', type=Path, required=True)
