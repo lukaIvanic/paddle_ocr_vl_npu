@@ -1,0 +1,467 @@
+2026-09-06T04:07:52+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:07:57+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:08:03+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:08:08+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:08:14+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:08:19+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:08:25+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:08:30+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:08:36+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:08:42+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):105
+	Chip ID                        : 0
+
+2026-09-06T04:08:47+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):105
+	Chip ID                        : 0
+
+2026-09-06T04:08:53+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):105
+	Chip ID                        : 0
+
+2026-09-06T04:08:58+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):3855
+	Chip ID                        : 0
+
+2026-09-06T04:09:04+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):3873
+	Chip ID                        : 0
+
+2026-09-06T04:09:09+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):4179
+	Chip ID                        : 0
+
+2026-09-06T04:09:15+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):4363
+	Chip ID                        : 0
+
+2026-09-06T04:09:20+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):4363
+	Chip ID                        : 0
+
+2026-09-06T04:09:26+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:09:31+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:09:37+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:09:42+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:09:48+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:09:53+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:09:59+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:10:04+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:10:10+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:10:15+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:10:20+08:00
+    PID    PPID                  STARTED COMMAND
+1827050 1827048 Sun Sep  6 04:08:28 2026 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=10) --multiprocessing-fork
+NSpid:	1827050	2489734
+2026-09-06T04:10:21+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T04:10:26+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:10:32+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:10:37+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:10:43+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:10:48+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:10:54+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:11:00+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:11:05+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:11:11+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:11:16+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:11:22+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:11:27+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:11:33+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:11:38+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:11:44+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):6965
+	Chip ID                        : 0
+
+2026-09-06T04:11:49+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1827050 Process name:python            Process memory(MB):303
+	Chip ID                        : 0
+
+2026-09-06T04:11:55+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:00+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:06+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:11+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:17+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:22+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:28+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:33+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:39+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:44+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:50+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:12:55+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:13:01+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:13:06+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:13:12+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:13:17+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:13:23+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:13:28+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:13:34+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:13:39+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:13:45+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T04:13:49+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+    PID    PPID COMMAND
