@@ -51,7 +51,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-image-bytes", type=int, default=64 * 1024 * 1024)
     parser.add_argument("--queue-capacity", type=int, default=256)
     parser.add_argument(
-        "--interleaved-tables", type=int, choices=(1, 2), default=None,
+        "--interleaved-tables", type=int, choices=(1, 2, 4), default=None,
         help="Opt-in step-level reference with independent table slots; client controls in-flight requests.",
     )
     parser.add_argument("--targets", type=Path, default=DEFAULT_TARGETS)
@@ -730,6 +730,7 @@ def _interleaved_worker_loop(
                 "mixed_execution": "separate_fairly_alternating_calls",
                 "batching": "immediate_matching_phase_and_query_only",
                 "kv_policy": "stable_request_slots_no_k_migration",
+                "nonadjacent_batch_policy": "smallest_covering_power_of_two_with_dummy_prefix_preservation",
                 "cpu_preparation": "one_background_worker_with_reserved_table_slots",
                 "warmup": "client_must_send_complete_requests_before_measurement",
                 "graph_contracts": runtime.metadata,
@@ -893,6 +894,8 @@ def _interleaved_worker_loop(
             results.put({"kind": "service_summary", "payload": {
                 "completed_requests": completed, **ledger.summary(), "graph_contracts": runtime.metadata,
                 "q1_pipeline": runtime.pipeline_statistics(),
+                "kv_prefix_preservation": runtime.cache_guard_statistics(),
+                "batch_composition": runtime.batch_composition,
                 "experimental_oracle_routing": oracle_metadata,
             }})
         except BaseException as exc:

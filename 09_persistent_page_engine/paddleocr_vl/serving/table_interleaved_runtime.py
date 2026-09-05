@@ -1,8 +1,8 @@
-"""Real two-table reference runtime; no cross-phase fused graph or trace replay.
+"""Real interleaved table runtime; no cross-phase fused graph or trace replay.
 
 Each request owns stable target and eight draft slots. Different K graphs read
 the same target storage: changing K never copies the historical KV cache.
-Single-request and paired graphs use contiguous views of those stable slots.
+Non-adjacent owners use padded contiguous views, preserving dummy-write prefixes.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import torch
 from ..model.text_decode import TextDecodeRuntime
 from ..model.text_spec_verify import TextSpecVerifyRuntime
 from .repetition import ExactCycleTracker
-from .table_phase_scheduler import PhaseWork, accept_native_proposal
+from .table_phase_scheduler import PhaseWork, accept_native_proposal, covering_batch
 
 
 @dataclass
@@ -52,7 +52,7 @@ class _Sequence:
 
 
 class _Arena:
-    def __init__(self, recognizer: Any, capacity: int) -> None:
+    def __init__(self, recognizer: Any, capacity: int, *, prefix_capacity: int = 0) -> None:
         self.recognizer = recognizer
         self.capacity = capacity
         self.cache = recognizer.model.allocate_static_cache(
@@ -62,6 +62,37 @@ class _Arena:
         self.rope = torch.zeros((capacity, 1), device=recognizer.device, dtype=torch.int64)
         self.states: dict[int, _Sequence] = {}
         self.views: dict[tuple[int, int], tuple[Any, ...]] = {}
+        self.prefix_backup = tuple(torch.empty_like(t[:, :, :prefix_capacity])
+                                   for t in self.cache.flat_tensors()) if prefix_capacity else ()
+        self.prefix_views: dict[Any, Any] = {}
+        self.prefix_calls = 0
+        self.prefix_bytes = 0
+
+    def save_prefix(self, query: int, slots: tuple[int, ...]) -> tuple[Any, Any]:
+        """Save only dummy rows' [0:Q] writes; all operations use the compute stream."""
+        if not slots or not self.prefix_backup or query > self.prefix_backup[0].shape[2]:
+            raise ValueError("invalid dummy KV prefix preservation")
+        key = query, slots
+        if key not in self.prefix_views:
+            spans = []
+            for slot in sorted(set(slots)):
+                if spans and spans[-1][1] == slot:
+                    spans[-1] = spans[-1][0], slot + 1
+                else:
+                    spans.append((slot, slot + 1))
+            source = tuple(t[lo:hi, :, :query] for t in self.cache.flat_tensors() for lo, hi in spans)
+            saved = tuple(t[lo:hi, :, :query] for t in self.prefix_backup for lo, hi in spans)
+            self.prefix_views[key] = source, saved
+        source, saved = self.prefix_views[key]
+        torch._foreach_copy_(saved, source)
+        self.prefix_calls += 1
+        self.prefix_bytes += 2 * sum(t.numel() * t.element_size() for t in source)
+        return source, saved
+
+    @staticmethod
+    def restore_prefix(views: tuple[Any, Any]) -> None:
+        source, saved = views
+        torch._foreach_copy_(source, saved)
 
     def tensors(self, first: int, batch: int) -> tuple[Any, ...]:
         key = first, batch
@@ -121,6 +152,7 @@ class _Call:
         self.begin = torch.npu.Event(enable_timing=True) if record_device_timing else None
         self.end = torch.npu.Event(enable_timing=True) if record_device_timing else None
         self.rope_views: dict[tuple[int, int], Any] = {}
+        self.protected_slots: tuple[int, ...] = ()
 
     def run(self, arena: _Arena, first: int, sequences: list[_Sequence], proposals: dict[int, Any]) -> tuple[list[list[int]], float]:
         batch, query = self.ids.shape
@@ -140,10 +172,15 @@ class _Call:
             self.rope_views[view_key] = arena.rope[first:first + batch]
         if self.begin is not None:
             self.begin.record()
-        output = self.runtime.fn(
-            self.device_ids, self.device_pos, self.rope_views[view_key],
-            *arena.tensors(first, batch),
-        )
+        saved = arena.save_prefix(query, self.protected_slots) if self.protected_slots else None
+        try:
+            output = self.runtime.fn(
+                self.device_ids, self.device_pos, self.rope_views[view_key],
+                *arena.tensors(first, batch),
+            )
+        finally:
+            if saved is not None:
+                arena.restore_prefix(saved)
         if self.end is not None:
             self.end.record()
         # These locked optimized graphs map compact argmax back to native IDs.
@@ -194,7 +231,12 @@ class _Q1Pipeline(_Call):
         view_key = id(arena), first
         if view_key not in self.rope_views:
             self.rope_views[view_key] = arena.rope[first:first + batch]
-        sampled = self.runtime.fn(ids, position, self.rope_views[view_key], *arena.tensors(first, batch))
+        saved = arena.save_prefix(1, self.protected_slots) if self.protected_slots else None
+        try:
+            sampled = self.runtime.fn(ids, position, self.rope_views[view_key], *arena.tensors(first, batch))
+        finally:
+            if saved is not None:
+                arena.restore_prefix(saved)
         if sampled.dtype != torch.int64 or sampled.numel() != batch:
             raise RuntimeError("Q1 pipeline requires native compact-head IDs")
         sampled = sampled.reshape(batch, 1)
@@ -247,23 +289,24 @@ class _Q1Pipeline(_Call):
 
 
 class InterleavedTableRuntime:
-    """Step API used by the existing HTTP worker, with C1 or C2 capacity."""
+    """Step API used by the existing HTTP worker, with C1/C2/C4 capacity."""
 
     def __init__(self, b1: Any, draft: Any, args: Any, *, capacity: int) -> None:
-        if capacity not in (1, 2):
-            raise ValueError("reference supports one or two active tables")
+        if capacity not in (1, 2, 4):
+            raise ValueError("reference supports one, two or four active tables")
         if not hasattr(b1.model, "decode_token_id_map") or not hasattr(draft.model, "decode_token_id_map"):
             raise ValueError("reference requires the production compact vocabulary")
         self.capacity, self.b1, self.draft, self.args = capacity, b1, draft, args
         self.k_values = tuple(sorted(int(k) for k in args.k_values.split(",")))
         if self.k_values != (7, 15, 31, 63) or args.initial_k not in self.k_values:
             raise ValueError("reference preserves the production adaptive K policy")
-        self.target_arena = _Arena(b1, capacity)
-        self.draft_arena = _Arena(draft, 8 * capacity)
+        self.target_arena = _Arena(b1, capacity, prefix_capacity=64 if capacity > 2 else 0)
+        self.draft_arena = _Arena(draft, 8 * capacity, prefix_capacity=1 if capacity > 2 else 0)
         self.jobs: dict[str, dict[str, Any]] = {}
         self.calls: dict[tuple[str, int, int], _Call] = {}
         self.metadata: dict[str, Any] = {}
-        for batch in range(1, capacity + 1):
+        self.batch_composition: dict[str, int] = {}
+        for batch in (b for b in (1, 2, 4) if b <= capacity):
             for kind, recognizer, physical_batch in (("target", b1, batch), ("draft", draft, 8 * batch)):
                 print(f"TABLE_PHASE setup=decode kind={kind} B={physical_batch} KV={recognizer.cache_length}", flush=True)
                 runtime = recognizer.text_decode if physical_batch == recognizer.batch_size else TextDecodeRuntime(
@@ -319,6 +362,12 @@ class InterleavedTableRuntime:
             for (kind, batch, query), call in self.calls.items()
             if isinstance(call, _Q1Pipeline)
         }
+
+    def cache_guard_statistics(self) -> dict[str, Any]:
+        return {kind: {"protected_physical_calls": arena.prefix_calls,
+                       "copied_bytes_save_plus_restore": arena.prefix_bytes,
+                       "contract": "only dummy rows' first Q KV positions, never full-cache repacking"}
+                for kind, arena in (("target", self.target_arena), ("draft", self.draft_arena))}
 
     def add(self, request_id: str, *, route: str, payload: Any, target_prepared: Any, row_groups: Any = None) -> None:
         if request_id in self.jobs or len(self.jobs) >= self.capacity:
@@ -399,19 +448,22 @@ class InterleavedTableRuntime:
         phase, query = work[0].key
         if any(item.key != work[0].key for item in work):
             raise ValueError("only identical shapes can share a reference call")
+        table_first, table_batch, holes = covering_batch((job["slot"] for job in selected), self.capacity)
         if phase == "draft":
-            arena, batch = self.draft_arena, 8 * len(selected)
-            first = 0 if len(selected) == 2 else 8 * selected[0]["slot"]
+            arena, batch = self.draft_arena, 8 * table_batch
+            first = 8 * table_first
+            protected = tuple(8 * slot + row for slot in holes for row in range(8))
             states = [state for job in selected for state in job["draft_states"] if state.stop is None]
             proposals = {}
             kind = "draft"
         else:
-            arena, batch = self.target_arena, len(selected)
-            first = 0 if batch == 2 else selected[0]["slot"]
+            arena, batch = self.target_arena, table_batch
+            first, protected = table_first, holes
             states = [job["target"] for job in selected]
             proposals = {job["slot"]: job["proposal"] for job in selected if query > 1}
             kind = "target"
         call = self.calls[kind, batch, query]
+        call.protected_slots = protected
         selected_slots = {state.slot for state in states}
         for other in self.calls.values():
             if not isinstance(other, _Q1Pipeline):
@@ -430,6 +482,8 @@ class InterleavedTableRuntime:
             # Independent phases have disjoint KV ownership. Keep their
             # already-launched Q1 result for the next scheduled turn.
             output, device_s = call.run(arena, first, states, proposals)
+        composition = f"{phase}:B{batch}:Q{query}:requests{len(selected)}:dummy_table_slots{len(holes)}"
+        self.batch_composition[composition] = self.batch_composition.get(composition, 0) + 1
         for state in states:
             predictions = output[state.slot - first]
             state.calls += 1

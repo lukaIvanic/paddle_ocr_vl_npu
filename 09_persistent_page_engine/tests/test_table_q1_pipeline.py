@@ -35,10 +35,11 @@ class PipelineTests(unittest.TestCase):
         # Load the actual control classes without importing model/TorchAir code.
         source = Path(__file__).resolve().parents[1] / "paddleocr_vl/serving/table_interleaved_runtime.py"
         nodes = [node for node in ast.parse(source.read_text()).body
-                 if isinstance(node, ast.ClassDef) and node.name in ("_Call", "_Q1Pipeline")]
+                 if isinstance(node, ast.ClassDef) and node.name in ("_Arena", "_Call", "_Q1Pipeline")]
         namespace = {"torch": torch}
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), "exec",
                      flags=__future__.annotations.compiler_flag), namespace)
+        self.classes = namespace
         empty = torch.empty
         def unpinned(*args, **kwargs):
             kwargs.pop("pin_memory", None)
@@ -64,6 +65,53 @@ class PipelineTests(unittest.TestCase):
                 model=SimpleNamespace(config=SimpleNamespace(eos_token_id=99)),
             ),
         )
+
+    def guarded_arena(self):
+        tensors = tuple(torch.arange(4*2*6*4, dtype=torch.float32).reshape(4,2,6,4).clone() for _ in range(2))
+        cache = SimpleNamespace(cache_length=6, flat_tensors=lambda: tensors)
+        recognizer = SimpleNamespace(cache_length=6, device=torch.device('cpu'), dtype=torch.float32,
+            model=SimpleNamespace(allocate_static_cache=lambda **_:cache,
+                                  config=SimpleNamespace(eos_token_id=99)))
+        arena = self.classes['_Arena'](recognizer,4,prefix_capacity=4)
+        def forward(ids, positions, rope, *kv):
+            q=ids.shape[1]
+            for row, position in enumerate(positions.tolist()):
+                for t in kv:
+                    t[row,:,position:position+q].fill_(int(ids[row,0])+1)
+            return ids+1
+        return arena, tensors, forward
+
+    def test_nonadjacent_verifier_restores_all_unselected_kv(self):
+        arena,tensors,forward=self.guarded_arena()
+        original=[t.clone() for t in tensors]
+        call=self.classes['_Call'](SimpleNamespace(fn=forward),4,4,torch.device('cpu'),record_device_timing=False)
+        call.protected_slots=(1,2)
+        rows=[SimpleNamespace(slot=0,position=2,tokens=[10]),SimpleNamespace(slot=3,position=1,tokens=[20])]
+        out,_=call.run(arena,0,rows,{})
+        for a,b in zip(tensors,original):
+            self.assertTrue(torch.equal(a[1:3],b[1:3]))
+            self.assertTrue(torch.equal(a[0,:,:2],b[0,:,:2]))
+            self.assertTrue(torch.all(a[0,:,2:6]==11))
+            self.assertTrue(torch.all(a[3,:,1:5]==21))
+        self.assertEqual(out[0][0],11)
+        self.assertEqual(out[3][0],21)
+        self.assertEqual(arena.prefix_calls,1)
+
+    def test_nonadjacent_q1_lookahead_restores_dummy_prefix_each_launch(self):
+        arena,tensors,forward=self.guarded_arena()
+        original=[t.clone() for t in tensors]
+        call=self.classes['_Q1Pipeline'](SimpleNamespace(fn=forward),4,1,torch.device('cpu'),record_device_timing=False)
+        call.protected_slots=(1,2)
+        rows=[SimpleNamespace(slot=0,position=1,tokens=[10]),SimpleNamespace(slot=3,position=2,tokens=[20])]
+        for _ in range(2):
+            out,_=call.run_pipelined(arena,0,rows)
+            for a,b in zip(tensors,original):
+                self.assertTrue(torch.equal(a[1:3],b[1:3]))
+            for row in rows:
+                row.tokens.append(out[row.slot][0]); row.position+=1
+        self.assertEqual(call.reused_lookaheads,1)
+        self.assertEqual(arena.prefix_calls,3)
+        call.drain()
 
     def test_independent_tokens_and_reused_lookahead(self):
         rows = [SimpleNamespace(slot=0, position=1, tokens=[10]),

@@ -11,6 +11,16 @@ from dataclasses import dataclass
 from typing import Any, Iterable
 
 
+def covering_batch(slots: Iterable[int], capacity: int) -> tuple[int, int, tuple[int, ...]]:
+    """Smallest power-of-two contiguous cache view, plus non-owner holes."""
+    selected = set(slots)
+    if capacity not in (1, 2, 4) or not selected or min(selected) < 0 or max(selected) >= capacity:
+        raise ValueError("invalid table slots/capacity")
+    batch = 1 << (max(selected) - min(selected)).bit_length()
+    first = min(min(selected), capacity - batch)
+    return first, batch, tuple(slot for slot in range(first, first + batch) if slot not in selected)
+
+
 def accept_native_proposal(proposal: Iterable[int], targets: Iterable[int]) -> tuple[list[int], int]:
     """Commit only the matching prefix plus the authoritative next token."""
     proposed = [int(value) for value in proposal]

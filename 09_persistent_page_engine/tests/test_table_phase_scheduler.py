@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 import sys
 import unittest
+from itertools import combinations
 
 PATH = Path(__file__).resolve().parents[1] / "paddleocr_vl/serving/table_phase_scheduler.py"
 SPEC = importlib.util.spec_from_file_location("table_phase_policy_tested", PATH)
@@ -16,6 +17,18 @@ PhaseLedger = MODULE.PhaseLedger
 
 
 class PolicyTests(unittest.TestCase):
+    def test_every_c4_slot_subset_has_correct_cover_and_holes(self):
+        for size in range(1, 5):
+            for slots in combinations(range(4), size):
+                first, batch, holes = MODULE.covering_batch(slots, 4)
+                self.assertIn(batch, (1, 2, 4))
+                self.assertTrue(0 <= first <= 4-batch)
+                self.assertEqual(set(slots) | set(holes), set(range(first, first+batch)))
+                self.assertFalse(set(slots) & set(holes))
+        self.assertEqual(MODULE.covering_batch([0,3],4), (0,4,(1,2)))
+        self.assertEqual(MODULE.covering_batch([1,2],4), (1,2,()))
+        self.assertEqual(MODULE.covering_batch([0,1],4), (0,2,()))
+
     def test_one_request_never_waits_for_a_partner(self):
         policy = TablePhasePolicy()
         for phase, q in (("draft", 1), ("verify", 8), ("ordinary", 1)):
