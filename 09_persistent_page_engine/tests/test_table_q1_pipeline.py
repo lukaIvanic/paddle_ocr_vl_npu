@@ -113,7 +113,10 @@ class PipelineTests(unittest.TestCase):
 class RequestIdentityTests(unittest.TestCase):
     def test_source_identity_survives_preprocessing_but_runtime_ids_are_unique(self):
         source_path = Path(__file__).resolve().parents[1] / "scripts/serve_table_speculative_api.py"
-        worker = next(node for node in ast.parse(source_path.read_text()).body
+        module = ast.parse(source_path.read_text())
+        route = next(node for node in module.body
+                     if isinstance(node, ast.FunctionDef) and node.name == "_table_route")
+        worker = next(node for node in module.body
                       if isinstance(node, ast.FunctionDef) and node.name == "_interleaved_worker_loop")
         mode = next(node for node in worker.body if isinstance(node, ast.With))
         prepare = next(node for node in mode.body if isinstance(node, ast.FunctionDef) and node.name == "prepare")
@@ -131,11 +134,11 @@ class RequestIdentityTests(unittest.TestCase):
         runtime.jobs = {}
         metadata = {}
         namespace = dict(Image=Image, io=io, time=time, replace=replace,
-                         targets_by_id=sources, config={"height_threshold_px": 0},
+                         targets_by_id=sources, config={"height_threshold_px": 0}, counts=None,
                          live_lab=live, args=None, b1=b1, draft=draft, runtime=runtime,
                          fixed_lab=SimpleNamespace(request_for=lambda source, *_: Request(source["request_id"])),
                          metadata=metadata)
-        exec(compile(ast.Module(body=[prepare], type_ignores=[]), str(source_path), "exec",
+        exec(compile(ast.Module(body=[route, prepare], type_ignores=[]), str(source_path), "exec",
                      flags=__future__.annotations.compiler_flag), namespace)
         blob = io.BytesIO()
         Image.new("RGB", (8, 8)).save(blob, format="PNG")

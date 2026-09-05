@@ -1,0 +1,37 @@
+{
+  "checks": {
+    "control": {
+      "same_graph_contract_excluding_setup_durations": true,
+      "whole_pipeline_admission_records": 100,
+      "peak_admitted": 2,
+      "only_owned_npu_pid_in_measured_samples": true,
+      "measured_samples": 9,
+      "host_worker_pid": 1689638,
+      "monitor_covers_measured_window": true
+    },
+    "t512": {
+      "same_graph_contract_excluding_setup_durations": true,
+      "whole_pipeline_admission_records": 100,
+      "peak_admitted": 2,
+      "only_owned_npu_pid_in_measured_samples": true,
+      "measured_samples": 7,
+      "host_worker_pid": 1704968,
+      "monitor_covers_measured_window": true
+    },
+    "t1024": {
+      "same_graph_contract_excluding_setup_durations": true,
+      "whole_pipeline_admission_records": 100,
+      "peak_admitted": 2,
+      "only_owned_npu_pid_in_measured_samples": true,
+      "measured_samples": 8,
+      "host_worker_pid": 1713251,
+      "monitor_covers_measured_window": true
+    }
+  },
+  "all_checks_pass": true,
+  "limitations": [
+    "NPU process sampling every five seconds, not continuous tracing.",
+    "Single measured run per threshold, not a repeatability guarantee.",
+    "Oracle uses saved historical B1 lengths, not a measured image estimator."
+  ]
+}

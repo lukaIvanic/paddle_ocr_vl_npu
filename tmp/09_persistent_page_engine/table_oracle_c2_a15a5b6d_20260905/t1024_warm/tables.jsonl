@@ -1,0 +1,2 @@
+{"request_id":"page_000279_table_box_id_0","tail_rank":1,"baseline_b1_latency_s":5.331040614983067,"has_latex_markup":false,"output_tokens":3096,"real_vision_tokens":3952,"page_name":"page-c7771a62-5b6b-48f0-b591-6b657d26e125.png","bbox_xyxy":[73,207,1538,1225]}
+{"request_id":"page_000283_table_box_id_1","tail_rank":3,"baseline_b1_latency_s":4.82310260203667,"has_latex_markup":true,"output_tokens":3098,"real_vision_tokens":3944,"page_name":"page-213e6a57-ba81-4afb-8184-2e1cf2a7664d.png","bbox_xyxy":[145,253,1603,1957]}

@@ -1,0 +1,18 @@
+Source commit: a15a5b6d
+Machine: liteserver-c001-4, Ascend 910B2, physical NPU 6
+Container: research_vllm_ascend_021_external_workspace
+Working directory: /workspace/repos/paddle_ocr_vl_npu
+Environment: initialized persistent shell via source npu-setup; ASCEND_RT_VISIBLE_DEVICES=6; no SPEC_VERIFY_ATTENTION override.
+
+Server:
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/serve_table_speculative_api.py --interleaved-tables 2 --allow-compile --host 127.0.0.1 --port 8765 --request-timeout-s 3600 --queue-capacity 64 --experimental-oracle-token-counts tmp/09_persistent_page_engine/table_token_oracle_screen_20260905/oracle_counts.json --oracle-min-output-tokens 1024 --service-summary-output tmp/09_persistent_page_engine/table_oracle_c2_a15a5b6d_20260905/t1024_service.json > tmp/09_persistent_page_engine/table_oracle_c2_a15a5b6d_20260905/t1024_server.log 2>&1
+
+External full-request warmup, outside timing (same two long tables in all three runs):
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/table_closed_loop_api_client.py --api-url http://127.0.0.1:8765/v1/ocr --set a --count 2 --max-in-flight 2 --client-label oracle-t1024-warm --output-dir tmp/09_persistent_page_engine/table_oracle_c2_a15a5b6d_20260905/t1024_warm > tmp/09_persistent_page_engine/table_oracle_c2_a15a5b6d_20260905/t1024_warm.log 2>&1
+
+Measured:
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/table_closed_loop_api_client.py --api-url http://127.0.0.1:8765/v1/ocr --set random --count 100 --shuffle-seed 1 --max-in-flight 2 --client-label oracle-t1024 --output-dir tmp/09_persistent_page_engine/table_oracle_c2_a15a5b6d_20260905/t1024 > tmp/09_persistent_page_engine/table_oracle_c2_a15a5b6d_20260905/t1024_client.log 2>&1
+
+Client and server exit statuses are recorded from the persistent terminal after each command/wait.
+Server is stopped gracefully using SIGINT to the exact owned server PID; no other process is signalled.
+

@@ -1,0 +1,8 @@
+oracle-t1024-warm API ready worker_pid=2444532; preloading 2 distinct crops for 2 requests
+oracle-t1024-warm crops preloaded 2/2
+oracle-t1024-warm payloads ready bytes=965236
+SEND oracle-t1024-warm 01/2 table=page_000279_table_box_id_0 active=1
+SEND oracle-t1024-warm 02/2 table=page_000283_table_box_id_1 active=2
+RECV oracle-t1024-warm 02/2 rank=03 id=page_000283_table_box_id_1 latency=3.7799s status=ok active=1
+RECV oracle-t1024-warm 01/2 rank=01 id=page_000279_table_box_id_0 latency=5.7492s status=ok active=0
+DONE oracle-t1024-warm requests=2 failures=0 max_in_flight=2 wall=5.7539s qps=0.3476 p50=4.7646s p95=5.6508s max=5.7492s

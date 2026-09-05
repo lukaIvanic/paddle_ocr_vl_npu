@@ -1,0 +1,8 @@
+{
+  "source": "Explicit status prints after each client invocation and owned-server wait in persistent container terminal 27208",
+  "control": {"warmup": 0, "client": 0, "server": 0},
+  "t512": {"warmup": 0, "client": 0, "server": 0},
+  "t1024": {"warmup": 0, "client": 0, "server": 0},
+  "server_shutdown": "SIGINT to exact owned server PID, then wait; clean exit",
+  "monitor_shutdown": "SIGTERM to exact owned read-only monitor loop after all runs and NPU release"
+}

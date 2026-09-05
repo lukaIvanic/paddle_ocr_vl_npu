@@ -1,0 +1,479 @@
+Waiting for NPU worker pid=2424371
+TABLE_SPEC_API setup=draft_recognizer
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.876297}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":10.085483}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.025704}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.028389}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":6.039683}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.512455}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016148}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":9.052598}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":0.61307}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.236722}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.00156}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.00378}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":31.304202}
+TABLE_SPEC_API setup=b1_recognizer
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.877894}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":10.188291}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.02051}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.023498}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":0.02132}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.005862}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.0163}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":0.810871}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":0.745906}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.337114}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.004176}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.000594}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":13.066588}
+TABLE_PHASE setup=decode kind=target B=1 KV=4096
+TABLE_PHASE setup=decode kind=draft B=8 KV=768
+TABLE_PHASE setup=verifier B=1 Q=8 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=16 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=32 KV=4096
+TABLE_PHASE setup=verifier B=1 Q=64 KV=4096
+TABLE_PHASE setup=decode kind=target B=2 KV=4096
+TABLE_PHASE setup=decode kind=draft B=16 KV=768
+TABLE_PHASE setup=verifier B=2 Q=8 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=16 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=32 KV=4096
+TABLE_PHASE setup=verifier B=2 Q=64 KV=4096
+TABLE_PHASE ready; perform complete client warmups outside measurement
+READY http://127.0.0.1:8765 worker_pid=2424371
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-warm-002-page_000283_table_box_id_1:68ed30d3c39a43b18997fbbb733c6948 admitted=1
+TABLE_PHASE preparing id=oracle-control-warm-001-page_000279_table_box_id_0:36107325e9ce4c17892fd9cd2b39325d admitted=2
+TABLE_PHASE admitted id=oracle-control-warm-002-page_000283_table_box_id_1:68ed30d3c39a43b18997fbbb733c6948 route=spec active=1
+.TABLE_PHASE admitted id=oracle-control-warm-001-page_000279_table_box_id_0:36107325e9ce4c17892fd9cd2b39325d route=spec active=2
+TABLE_PHASE complete id=oracle-control-warm-002-page_000283_table_box_id_1:68ed30d3c39a43b18997fbbb733c6948 wall_s=3.8692 tokens=3098 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-warm-002-page_000283_table_box_id_1&source_request_id=page_000283_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE complete id=oracle-control-warm-001-page_000279_table_box_id_0:36107325e9ce4c17892fd9cd2b39325d wall_s=5.8790 tokens=3060 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-warm-001-page_000279_table_box_id_0&source_request_id=page_000279_table_box_id_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-002-page_001367_table_51:fb46ef9ad1d04adb9cb742b4e3329f62 admitted=1
+TABLE_PHASE preparing id=oracle-control-001-page_000287_table_box_id_8:f1b666e0b3ab463b844c93c3b605db56 admitted=2
+TABLE_PHASE admitted id=oracle-control-002-page_001367_table_51:fb46ef9ad1d04adb9cb742b4e3329f62 route=spec active=1
+TABLE_PHASE admitted id=oracle-control-001-page_000287_table_box_id_8:f1b666e0b3ab463b844c93c3b605db56 route=spec active=2
+TABLE_PHASE complete id=oracle-control-002-page_001367_table_51:fb46ef9ad1d04adb9cb742b4e3329f62 wall_s=0.7401 tokens=405 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-002-page_001367_table_51&source_request_id=page_001367_table_51 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-003-page_000236_table_box_id_1:33e5d206229340c888e49ef69d03ed08 admitted=2
+TABLE_PHASE admitted id=oracle-control-003-page_000236_table_box_id_1:33e5d206229340c888e49ef69d03ed08 route=spec active=2
+TABLE_PHASE complete id=oracle-control-003-page_000236_table_box_id_1:33e5d206229340c888e49ef69d03ed08 wall_s=0.6743 tokens=202 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-003-page_000236_table_box_id_1&source_request_id=page_000236_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-004-page_000634_table_11:55e24a2c6e7b43c2ac0873aa4a4524e5 admitted=2
+TABLE_PHASE admitted id=oracle-control-004-page_000634_table_11:55e24a2c6e7b43c2ac0873aa4a4524e5 route=spec active=2
+TABLE_PHASE complete id=oracle-control-001-page_000287_table_box_id_8:f1b666e0b3ab463b844c93c3b605db56 wall_s=2.0445 tokens=1768 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-001-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-005-page_000272_table_box_id_1:00dbba2297a541599a72003041e240a9 admitted=2
+TABLE_PHASE complete id=oracle-control-004-page_000634_table_11:55e24a2c6e7b43c2ac0873aa4a4524e5 wall_s=0.8401 tokens=358 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-004-page_000634_table_11&source_request_id=page_000634_table_11 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-005-page_000272_table_box_id_1:00dbba2297a541599a72003041e240a9 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-006-page_001172_table_16:f8f3db5a03b7430dbe40c32e4fa07fdc admitted=2
+TABLE_PHASE admitted id=oracle-control-006-page_001172_table_16:f8f3db5a03b7430dbe40c32e4fa07fdc route=b1 active=2
+TABLE_PHASE complete id=oracle-control-006-page_001172_table_16:f8f3db5a03b7430dbe40c32e4fa07fdc wall_s=0.8302 tokens=212 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-006-page_001172_table_16&source_request_id=page_001172_table_16 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-007-page_001137_table_2:f056fb5fc73f4cba91409b4295217337 admitted=2
+TABLE_PHASE admitted id=oracle-control-007-page_001137_table_2:f056fb5fc73f4cba91409b4295217337 route=spec active=2
+TABLE_PHASE complete id=oracle-control-007-page_001137_table_2:f056fb5fc73f4cba91409b4295217337 wall_s=0.5831 tokens=567 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-007-page_001137_table_2&source_request_id=page_001137_table_2 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-008-page_001150_table_box_id_9:9c56e8db133f4fffab6150da75dd9fcf admitted=2
+TABLE_PHASE admitted id=oracle-control-008-page_001150_table_box_id_9:9c56e8db133f4fffab6150da75dd9fcf route=spec active=2
+TABLE_PHASE complete id=oracle-control-008-page_001150_table_box_id_9:9c56e8db133f4fffab6150da75dd9fcf wall_s=0.7405 tokens=307 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-008-page_001150_table_box_id_9&source_request_id=page_001150_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-009-page_000920_table_8:ef33b80ff36644aca3c1f99cb53ead59 admitted=2
+TABLE_PHASE admitted id=oracle-control-009-page_000920_table_8:ef33b80ff36644aca3c1f99cb53ead59 route=spec active=2
+TABLE_PHASE complete id=oracle-control-005-page_000272_table_box_id_1:00dbba2297a541599a72003041e240a9 wall_s=2.7499 tokens=3025 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-005-page_000272_table_box_id_1&source_request_id=page_000272_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-010-page_000524_table_0:42246987c3064609827205aa572770b5 admitted=2
+TABLE_PHASE admitted id=oracle-control-010-page_000524_table_0:42246987c3064609827205aa572770b5 route=spec active=2
+TABLE_PHASE complete id=oracle-control-009-page_000920_table_8:ef33b80ff36644aca3c1f99cb53ead59 wall_s=0.9283 tokens=150 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-009-page_000920_table_8&source_request_id=page_000920_table_8 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-011-page_000256_table_box_id_8:38eede51d0ef4ad9a9650aff7508199a admitted=2
+TABLE_PHASE admitted id=oracle-control-011-page_000256_table_box_id_8:38eede51d0ef4ad9a9650aff7508199a route=b1 active=2
+TABLE_PHASE complete id=oracle-control-010-page_000524_table_0:42246987c3064609827205aa572770b5 wall_s=0.9786 tokens=569 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-010-page_000524_table_0&source_request_id=page_000524_table_0 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-012-page_001166_table_9:bcdeda7fec084621b2a05c17ca1b3d12 admitted=2
+TABLE_PHASE admitted id=oracle-control-012-page_001166_table_9:bcdeda7fec084621b2a05c17ca1b3d12 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-011-page_000256_table_box_id_8:38eede51d0ef4ad9a9650aff7508199a wall_s=0.7205 tokens=214 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-011-page_000256_table_box_id_8&source_request_id=page_000256_table_box_id_8 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-013-page_000211_table_box_id_3:1737b6e44379480398a704529d5d1a98 admitted=2
+TABLE_PHASE complete id=oracle-control-012-page_001166_table_9:bcdeda7fec084621b2a05c17ca1b3d12 wall_s=0.3093 tokens=149 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-012-page_001166_table_9&source_request_id=page_001166_table_9 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-013-page_000211_table_box_id_3:1737b6e44379480398a704529d5d1a98 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-014-page_000933_table_10:e9c9c736f807421db0c6ce1e4fae4844 admitted=2
+TABLE_PHASE admitted id=oracle-control-014-page_000933_table_10:e9c9c736f807421db0c6ce1e4fae4844 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-014-page_000933_table_10:e9c9c736f807421db0c6ce1e4fae4844 wall_s=0.7833 tokens=83 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-014-page_000933_table_10&source_request_id=page_000933_table_10 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-015-page_001129_table_8:db76ceeee45d4a52881dd7f1f856a160 admitted=2
+TABLE_PHASE complete id=oracle-control-013-page_000211_table_box_id_3:1737b6e44379480398a704529d5d1a98 wall_s=0.8760 tokens=348 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-013-page_000211_table_box_id_3&source_request_id=page_000211_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-015-page_001129_table_8:db76ceeee45d4a52881dd7f1f856a160 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-016-page_001375_table_7:56af6335ddf34eccb39b27d90073dd32 admitted=2
+TABLE_PHASE admitted id=oracle-control-016-page_001375_table_7:56af6335ddf34eccb39b27d90073dd32 route=spec active=2
+TABLE_PHASE complete id=oracle-control-016-page_001375_table_7:56af6335ddf34eccb39b27d90073dd32 wall_s=0.6112 tokens=122 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-016-page_001375_table_7&source_request_id=page_001375_table_7 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-017-page_000106_table_box_id_2:313c64ec55164838a636f2dfe7ce178c admitted=2
+TABLE_PHASE admitted id=oracle-control-017-page_000106_table_box_id_2:313c64ec55164838a636f2dfe7ce178c route=spec active=2
+TABLE_PHASE complete id=oracle-control-015-page_001129_table_8:db76ceeee45d4a52881dd7f1f856a160 wall_s=1.2730 tokens=723 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-015-page_001129_table_8&source_request_id=page_001129_table_8 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-018-page_001134_table_10:545c1300449a4b46949c7f04465216d4 admitted=2
+TABLE_PHASE admitted id=oracle-control-018-page_001134_table_10:545c1300449a4b46949c7f04465216d4 route=spec active=2
+TABLE_PHASE complete id=oracle-control-018-page_001134_table_10:545c1300449a4b46949c7f04465216d4 wall_s=0.7610 tokens=635 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-018-page_001134_table_10&source_request_id=page_001134_table_10 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-019-page_000642_table_8:43af5beda0084aea84d6bf8b5a3267ff admitted=2
+TABLE_PHASE complete id=oracle-control-017-page_000106_table_box_id_2:313c64ec55164838a636f2dfe7ce178c wall_s=1.4681 tokens=405 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-017-page_000106_table_box_id_2&source_request_id=page_000106_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-019-page_000642_table_8:43af5beda0084aea84d6bf8b5a3267ff route=spec active=1
+TABLE_PHASE preparing id=oracle-control-020-page_000564_table_7:9c76c67dcd564cbc803185a7c1f17a74 admitted=2
+TABLE_PHASE admitted id=oracle-control-020-page_000564_table_7:9c76c67dcd564cbc803185a7c1f17a74 route=spec active=2
+TABLE_PHASE complete id=oracle-control-020-page_000564_table_7:9c76c67dcd564cbc803185a7c1f17a74 wall_s=0.7688 tokens=176 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-020-page_000564_table_7&source_request_id=page_000564_table_7 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-021-page_001368_table_box_id_242:7de35a9cf69541d48ce6d379667a643e admitted=2
+TABLE_PHASE admitted id=oracle-control-021-page_001368_table_box_id_242:7de35a9cf69541d48ce6d379667a643e route=b1 active=2
+TABLE_PHASE complete id=oracle-control-019-page_000642_table_8:43af5beda0084aea84d6bf8b5a3267ff wall_s=1.3521 tokens=640 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-019-page_000642_table_8&source_request_id=page_000642_table_8 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-022-page_000263_table_box_id_7:0d5c106890fe43c1bf337c23484f3e85 admitted=2
+TABLE_PHASE complete id=oracle-control-021-page_001368_table_box_id_242:7de35a9cf69541d48ce6d379667a643e wall_s=0.5370 tokens=131 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-021-page_001368_table_box_id_242&source_request_id=page_001368_table_box_id_242 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-022-page_000263_table_box_id_7:0d5c106890fe43c1bf337c23484f3e85 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-023-page_000746_table_18:94c886a50ac140c7b59890bfd6f078b5 admitted=2
+TABLE_PHASE admitted id=oracle-control-023-page_000746_table_18:94c886a50ac140c7b59890bfd6f078b5 route=spec active=2
+TABLE_PHASE complete id=oracle-control-023-page_000746_table_18:94c886a50ac140c7b59890bfd6f078b5 wall_s=1.9577 tokens=458 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-023-page_000746_table_18&source_request_id=page_000746_table_18 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-024-page_000213_table_box_id_5:ad313e7529b346c8a3274c48e3bf5d1a admitted=2
+TABLE_PHASE admitted id=oracle-control-024-page_000213_table_box_id_5:ad313e7529b346c8a3274c48e3bf5d1a route=spec active=2
+TABLE_PHASE complete id=oracle-control-024-page_000213_table_box_id_5:ad313e7529b346c8a3274c48e3bf5d1a wall_s=0.8448 tokens=328 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-024-page_000213_table_box_id_5&source_request_id=page_000213_table_box_id_5 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-025-page_000206_table_box_id_1:a36522825b024efeb378ed0d0cd4b0e8 admitted=2
+TABLE_PHASE admitted id=oracle-control-025-page_000206_table_box_id_1:a36522825b024efeb378ed0d0cd4b0e8 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-025-page_000206_table_box_id_1:a36522825b024efeb378ed0d0cd4b0e8 wall_s=1.0737 tokens=282 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-025-page_000206_table_box_id_1&source_request_id=page_000206_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-026-page_000209_table_box_id_1:65fb12299f394a67b23a44addcccfc3f admitted=2
+TABLE_PHASE admitted id=oracle-control-026-page_000209_table_box_id_1:65fb12299f394a67b23a44addcccfc3f route=b1 active=2
+TABLE_PHASE complete id=oracle-control-026-page_000209_table_box_id_1:65fb12299f394a67b23a44addcccfc3f wall_s=0.5960 tokens=135 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-026-page_000209_table_box_id_1&source_request_id=page_000209_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-027-page_001216_table_2:55a4567da9834d97bd34fa2f36a32ae3 admitted=2
+TABLE_PHASE admitted id=oracle-control-027-page_001216_table_2:55a4567da9834d97bd34fa2f36a32ae3 route=spec active=2
+TABLE_PHASE complete id=oracle-control-022-page_000263_table_box_id_7:0d5c106890fe43c1bf337c23484f3e85 wall_s=5.0516 tokens=1500 exact=False active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-022-page_000263_table_box_id_7&source_request_id=page_000263_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-028-page_000188_table_box_id_6:1abe8d3ce2eb4a0f96efe9eadf5f8aaf admitted=2
+TABLE_PHASE complete id=oracle-control-027-page_001216_table_2:55a4567da9834d97bd34fa2f36a32ae3 wall_s=0.7803 tokens=446 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-027-page_001216_table_2&source_request_id=page_001216_table_2 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-028-page_000188_table_box_id_6:1abe8d3ce2eb4a0f96efe9eadf5f8aaf route=spec active=1
+TABLE_PHASE preparing id=oracle-control-029-page_000921_table_9:ac7c5dc312f94dfdbc09a5171df03591 admitted=2
+TABLE_PHASE admitted id=oracle-control-029-page_000921_table_9:ac7c5dc312f94dfdbc09a5171df03591 route=spec active=2
+TABLE_PHASE complete id=oracle-control-028-page_000188_table_box_id_6:1abe8d3ce2eb4a0f96efe9eadf5f8aaf wall_s=1.2432 tokens=110 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-028-page_000188_table_box_id_6&source_request_id=page_000188_table_box_id_6 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-030-page_000533_table_8:77f7017816204fa18199d896bb22d395 admitted=2
+TABLE_PHASE admitted id=oracle-control-030-page_000533_table_8:77f7017816204fa18199d896bb22d395 route=spec active=2
+TABLE_PHASE complete id=oracle-control-030-page_000533_table_8:77f7017816204fa18199d896bb22d395 wall_s=0.4345 tokens=171 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-030-page_000533_table_8&source_request_id=page_000533_table_8 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-031-page_001123_table_14:f6dbf773f8ae48309ec758b36c7505e0 admitted=2
+TABLE_PHASE admitted id=oracle-control-031-page_001123_table_14:f6dbf773f8ae48309ec758b36c7505e0 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-031-page_001123_table_14:f6dbf773f8ae48309ec758b36c7505e0 wall_s=0.5490 tokens=186 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-031-page_001123_table_14&source_request_id=page_001123_table_14 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-032-page_001503_table_5:0663c258f98c4efca6dbbf6903e5c11d admitted=2
+TABLE_PHASE admitted id=oracle-control-032-page_001503_table_5:0663c258f98c4efca6dbbf6903e5c11d route=b1 active=2
+TABLE_PHASE complete id=oracle-control-032-page_001503_table_5:0663c258f98c4efca6dbbf6903e5c11d wall_s=0.2478 tokens=42 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-032-page_001503_table_5&source_request_id=page_001503_table_5 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-033-page_001197_table_5:bb600b17beda43e2bbaccb8de98b50b9 admitted=2
+TABLE_PHASE admitted id=oracle-control-033-page_001197_table_5:bb600b17beda43e2bbaccb8de98b50b9 route=spec active=2
+TABLE_PHASE complete id=oracle-control-029-page_000921_table_9:ac7c5dc312f94dfdbc09a5171df03591 wall_s=2.7601 tokens=90 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-029-page_000921_table_9&source_request_id=page_000921_table_9 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-034-page_000542_table_0:e6ebab59980e4256b7db622e62bafb0d admitted=2
+TABLE_PHASE admitted id=oracle-control-034-page_000542_table_0:e6ebab59980e4256b7db622e62bafb0d route=spec active=2
+TABLE_PHASE complete id=oracle-control-033-page_001197_table_5:bb600b17beda43e2bbaccb8de98b50b9 wall_s=0.9083 tokens=727 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-033-page_001197_table_5&source_request_id=page_001197_table_5 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-035-page_001130_table_1:997ce28e32854b9da27102c4624adf69 admitted=2
+TABLE_PHASE admitted id=oracle-control-035-page_001130_table_1:997ce28e32854b9da27102c4624adf69 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-034-page_000542_table_0:e6ebab59980e4256b7db622e62bafb0d wall_s=0.6750 tokens=341 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-034-page_000542_table_0&source_request_id=page_000542_table_0 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-036-page_001595_table_box_id_9:11a52038de374316a6eeaf2e6e3d7af2 admitted=2
+TABLE_PHASE complete id=oracle-control-035-page_001130_table_1:997ce28e32854b9da27102c4624adf69 wall_s=0.3342 tokens=51 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-035-page_001130_table_1&source_request_id=page_001130_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-036-page_001595_table_box_id_9:11a52038de374316a6eeaf2e6e3d7af2 route=b1 active=1
+TABLE_PHASE preparing id=oracle-control-037-page_001233_table_6:7094fcb947964ef9a2eeca951ee29334 admitted=2
+TABLE_PHASE admitted id=oracle-control-037-page_001233_table_6:7094fcb947964ef9a2eeca951ee29334 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-036-page_001595_table_box_id_9:11a52038de374316a6eeaf2e6e3d7af2 wall_s=0.2646 tokens=45 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-036-page_001595_table_box_id_9&source_request_id=page_001595_table_box_id_9 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-038-page_000585_table_1:5b21cb6e82fe4f5b80383fc4040ebdfb admitted=2
+TABLE_PHASE admitted id=oracle-control-038-page_000585_table_1:5b21cb6e82fe4f5b80383fc4040ebdfb route=spec active=2
+TABLE_PHASE complete id=oracle-control-037-page_001233_table_6:7094fcb947964ef9a2eeca951ee29334 wall_s=1.1291 tokens=347 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-037-page_001233_table_6&source_request_id=page_001233_table_6 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-039-page_000821_table_box_id_26:07fa6c9367f441639480d692a2d0efac admitted=2
+TABLE_PHASE admitted id=oracle-control-039-page_000821_table_box_id_26:07fa6c9367f441639480d692a2d0efac route=b1 active=2
+TABLE_PHASE complete id=oracle-control-038-page_000585_table_1:5b21cb6e82fe4f5b80383fc4040ebdfb wall_s=1.0854 tokens=457 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-038-page_000585_table_1&source_request_id=page_000585_table_1 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-040-page_000566_table_3:27db03eee0d94a5788bdd359c5e0e3a0 admitted=2
+TABLE_PHASE complete id=oracle-control-039-page_000821_table_box_id_26:07fa6c9367f441639480d692a2d0efac wall_s=0.2164 tokens=46 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-039-page_000821_table_box_id_26&source_request_id=page_000821_table_box_id_26 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-040-page_000566_table_3:27db03eee0d94a5788bdd359c5e0e3a0 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-041-page_000534_table_4:7d7ac516a0944143a1c6584e3d27a287 admitted=2
+TABLE_PHASE admitted id=oracle-control-041-page_000534_table_4:7d7ac516a0944143a1c6584e3d27a287 route=spec active=2
+TABLE_PHASE complete id=oracle-control-041-page_000534_table_4:7d7ac516a0944143a1c6584e3d27a287 wall_s=0.8918 tokens=317 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-041-page_000534_table_4&source_request_id=page_000534_table_4 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-042-page_001141_table_13:a227c703127043b5adb80b879bf4fb27 admitted=2
+TABLE_PHASE admitted id=oracle-control-042-page_001141_table_13:a227c703127043b5adb80b879bf4fb27 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-040-page_000566_table_3:27db03eee0d94a5788bdd359c5e0e3a0 wall_s=1.3263 tokens=446 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-040-page_000566_table_3&source_request_id=page_000566_table_3 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-043-page_000665_table_3:86a7fe23010c4f54be91dbf172fa13e4 admitted=2
+TABLE_PHASE admitted id=oracle-control-043-page_000665_table_3:86a7fe23010c4f54be91dbf172fa13e4 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-043-page_000665_table_3:86a7fe23010c4f54be91dbf172fa13e4 wall_s=0.1106 tokens=11 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-043-page_000665_table_3&source_request_id=page_000665_table_3 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-044-page_001417_table_2:57d6b6a9271c42148069056377d02ea4 admitted=2
+TABLE_PHASE admitted id=oracle-control-044-page_001417_table_2:57d6b6a9271c42148069056377d02ea4 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-044-page_001417_table_2:57d6b6a9271c42148069056377d02ea4 wall_s=0.1781 tokens=68 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-044-page_001417_table_2&source_request_id=page_001417_table_2 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-045-page_001117_table_box_id_7:7dce8d579b9c4ceb9acfedf7c6302f1b admitted=2
+TABLE_PHASE admitted id=oracle-control-045-page_001117_table_box_id_7:7dce8d579b9c4ceb9acfedf7c6302f1b route=b1 active=2
+TABLE_PHASE complete id=oracle-control-045-page_001117_table_box_id_7:7dce8d579b9c4ceb9acfedf7c6302f1b wall_s=0.2521 tokens=119 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-045-page_001117_table_box_id_7&source_request_id=page_001117_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-046-page_001270_table_box_id_1:18c7a8994c124e0086ea85b720bcfb44 admitted=2
+TABLE_PHASE complete id=oracle-control-042-page_001141_table_13:a227c703127043b5adb80b879bf4fb27 wall_s=0.9760 tokens=301 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-042-page_001141_table_13&source_request_id=page_001141_table_13 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-046-page_001270_table_box_id_1:18c7a8994c124e0086ea85b720bcfb44 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-047-page_000261_table_box_id_3:6124fd498d494f5ab7f473fdbc2ebf0e admitted=2
+TABLE_PHASE admitted id=oracle-control-047-page_000261_table_box_id_3:6124fd498d494f5ab7f473fdbc2ebf0e route=spec active=2
+TABLE_PHASE complete id=oracle-control-046-page_001270_table_box_id_1:18c7a8994c124e0086ea85b720bcfb44 wall_s=2.0110 tokens=789 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-046-page_001270_table_box_id_1&source_request_id=page_001270_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-048-page_000505_table_1:2d5158478e9949f6806e1475910aa0e3 admitted=2
+TABLE_PHASE admitted id=oracle-control-048-page_000505_table_1:2d5158478e9949f6806e1475910aa0e3 route=spec active=2
+TABLE_PHASE complete id=oracle-control-047-page_000261_table_box_id_3:6124fd498d494f5ab7f473fdbc2ebf0e wall_s=2.5184 tokens=1106 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-047-page_000261_table_box_id_3&source_request_id=page_000261_table_box_id_3 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-049-page_000682_table_15:e287d317b89b43b4a7f45cbf20d4fdf4 admitted=2
+TABLE_PHASE admitted id=oracle-control-049-page_000682_table_15:e287d317b89b43b4a7f45cbf20d4fdf4 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-049-page_000682_table_15:e287d317b89b43b4a7f45cbf20d4fdf4 wall_s=0.4543 tokens=63 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-049-page_000682_table_15&source_request_id=page_000682_table_15 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-050-page_000275_table_box_id_1:f6e616216f6d4eacb6ad0f5d4f547cd6 admitted=2
+TABLE_PHASE complete id=oracle-control-048-page_000505_table_1:2d5158478e9949f6806e1475910aa0e3 wall_s=1.1474 tokens=630 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-048-page_000505_table_1&source_request_id=page_000505_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-050-page_000275_table_box_id_1:f6e616216f6d4eacb6ad0f5d4f547cd6 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-051-page_000789_table_34:47159fbcbf3e42c4903cd75ace499c99 admitted=2
+TABLE_PHASE admitted id=oracle-control-051-page_000789_table_34:47159fbcbf3e42c4903cd75ace499c99 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-051-page_000789_table_34:47159fbcbf3e42c4903cd75ace499c99 wall_s=0.3704 tokens=32 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-051-page_000789_table_34&source_request_id=page_000789_table_34 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-052-page_001177_table_2:234a1d0168cd49319918f7d22e38594a admitted=2
+TABLE_PHASE admitted id=oracle-control-052-page_001177_table_2:234a1d0168cd49319918f7d22e38594a route=spec active=2
+TABLE_PHASE complete id=oracle-control-052-page_001177_table_2:234a1d0168cd49319918f7d22e38594a wall_s=0.4950 tokens=355 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-052-page_001177_table_2&source_request_id=page_001177_table_2 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-053-page_001398_table_box-13qv1ztw:e4a36912add24899add5ed0ef525be40 admitted=2
+TABLE_PHASE admitted id=oracle-control-053-page_001398_table_box-13qv1ztw:e4a36912add24899add5ed0ef525be40 route=spec active=2
+TABLE_PHASE complete id=oracle-control-053-page_001398_table_box-13qv1ztw:e4a36912add24899add5ed0ef525be40 wall_s=0.3940 tokens=126 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-053-page_001398_table_box-13qv1ztw&source_request_id=page_001398_table_box-13qv1ztw HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-054-page_001183_table_11:63443fdf89fe4fe1a9c17b023a60fd1c admitted=2
+TABLE_PHASE admitted id=oracle-control-054-page_001183_table_11:63443fdf89fe4fe1a9c17b023a60fd1c route=b1 active=2
+TABLE_PHASE complete id=oracle-control-054-page_001183_table_11:63443fdf89fe4fe1a9c17b023a60fd1c wall_s=0.5440 tokens=169 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-054-page_001183_table_11&source_request_id=page_001183_table_11 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-055-page_000507_table_0:7db8c26763d647809f0c50811c6eb9bf admitted=2
+TABLE_PHASE admitted id=oracle-control-055-page_000507_table_0:7db8c26763d647809f0c50811c6eb9bf route=spec active=2
+TABLE_PHASE complete id=oracle-control-055-page_000507_table_0:7db8c26763d647809f0c50811c6eb9bf wall_s=0.5650 tokens=167 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-055-page_000507_table_0&source_request_id=page_000507_table_0 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-056-page_000710_table_9:fb10ba81861c4bacafdf83d9d320778a admitted=2
+TABLE_PHASE admitted id=oracle-control-056-page_000710_table_9:fb10ba81861c4bacafdf83d9d320778a route=b1 active=2
+TABLE_PHASE complete id=oracle-control-050-page_000275_table_box_id_1:f6e616216f6d4eacb6ad0f5d4f547cd6 wall_s=2.7853 tokens=2852 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-050-page_000275_table_box_id_1&source_request_id=page_000275_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-057-page_000657_table_6:f81a715c0bab4a5bbeb209740a3ffc51 admitted=2
+TABLE_PHASE admitted id=oracle-control-057-page_000657_table_6:f81a715c0bab4a5bbeb209740a3ffc51 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-057-page_000657_table_6:f81a715c0bab4a5bbeb209740a3ffc51 wall_s=0.1111 tokens=11 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-057-page_000657_table_6&source_request_id=page_000657_table_6 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-058-page_001368_table_box_id_227:f220be21de0f41529d45d196063d5675 admitted=2
+TABLE_PHASE admitted id=oracle-control-058-page_001368_table_box_id_227:f220be21de0f41529d45d196063d5675 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-056-page_000710_table_9:fb10ba81861c4bacafdf83d9d320778a wall_s=0.4658 tokens=60 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-056-page_000710_table_9&source_request_id=page_000710_table_9 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-059-page_001176_table_4:167d596f5d984c1f9cb13a3c6c545a72 admitted=2
+TABLE_PHASE admitted id=oracle-control-059-page_001176_table_4:167d596f5d984c1f9cb13a3c6c545a72 route=spec active=2
+TABLE_PHASE complete id=oracle-control-059-page_001176_table_4:167d596f5d984c1f9cb13a3c6c545a72 wall_s=0.9540 tokens=630 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-059-page_001176_table_4&source_request_id=page_001176_table_4 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-060-page_001181_table_6:f72a18e452d541a3b97167c38b0cc398 admitted=2
+TABLE_PHASE complete id=oracle-control-058-page_001368_table_box_id_227:f220be21de0f41529d45d196063d5675 wall_s=1.0913 tokens=345 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-058-page_001368_table_box_id_227&source_request_id=page_001368_table_box_id_227 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-060-page_001181_table_6:f72a18e452d541a3b97167c38b0cc398 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-061-page_000937_table_0:c5e3b570128d48b484abf87395e9570d admitted=2
+TABLE_PHASE admitted id=oracle-control-061-page_000937_table_0:c5e3b570128d48b484abf87395e9570d route=spec active=2
+TABLE_PHASE complete id=oracle-control-061-page_000937_table_0:c5e3b570128d48b484abf87395e9570d wall_s=0.9327 tokens=164 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-061-page_000937_table_0&source_request_id=page_000937_table_0 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-062-page_001368_table_box_id_237:3c4e8877b3064aad8d61a791744a0e53 admitted=2
+TABLE_PHASE admitted id=oracle-control-062-page_001368_table_box_id_237:3c4e8877b3064aad8d61a791744a0e53 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-062-page_001368_table_box_id_237:3c4e8877b3064aad8d61a791744a0e53 wall_s=0.6772 tokens=151 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-062-page_001368_table_box_id_237&source_request_id=page_001368_table_box_id_237 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-063-page_000217_table_box_id_0:3d7e9ad1552f4142af52eb70c36e91c9 admitted=2
+TABLE_PHASE complete id=oracle-control-060-page_001181_table_6:f72a18e452d541a3b97167c38b0cc398 wall_s=1.6879 tokens=906 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-060-page_001181_table_6&source_request_id=page_001181_table_6 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-063-page_000217_table_box_id_0:3d7e9ad1552f4142af52eb70c36e91c9 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-064-page_001159_table_5:63afe7a0b19c48dea80678e7d4a7273e admitted=2
+TABLE_PHASE admitted id=oracle-control-064-page_001159_table_5:63afe7a0b19c48dea80678e7d4a7273e route=spec active=2
+TABLE_PHASE complete id=oracle-control-064-page_001159_table_5:63afe7a0b19c48dea80678e7d4a7273e wall_s=0.8821 tokens=314 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-064-page_001159_table_5&source_request_id=page_001159_table_5 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-065-page_000626_table_box_id_1:0b233e858f2543c08bd26933cacf6c1f admitted=2
+TABLE_PHASE admitted id=oracle-control-065-page_000626_table_box_id_1:0b233e858f2543c08bd26933cacf6c1f route=spec active=2
+TABLE_PHASE complete id=oracle-control-063-page_000217_table_box_id_0:3d7e9ad1552f4142af52eb70c36e91c9 wall_s=2.4102 tokens=138 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-063-page_000217_table_box_id_0&source_request_id=page_000217_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-066-page_000984_table_2:91a5cf93d3074e878de02e7bcf58f489 admitted=2
+TABLE_PHASE admitted id=oracle-control-066-page_000984_table_2:91a5cf93d3074e878de02e7bcf58f489 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-066-page_000984_table_2:91a5cf93d3074e878de02e7bcf58f489 wall_s=0.2011 tokens=32 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-066-page_000984_table_2&source_request_id=page_000984_table_2 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-067-page_001082_table_34:1789c60387fe447199847b9e0f620c1b admitted=2
+TABLE_PHASE admitted id=oracle-control-067-page_001082_table_34:1789c60387fe447199847b9e0f620c1b route=spec active=2
+TABLE_PHASE complete id=oracle-control-065-page_000626_table_box_id_1:0b233e858f2543c08bd26933cacf6c1f wall_s=2.0093 tokens=1352 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-065-page_000626_table_box_id_1&source_request_id=page_000626_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-068-page_000467_table_17:ad191e0a466a4626a7903c59e6066d7d admitted=2
+TABLE_PHASE admitted id=oracle-control-068-page_000467_table_17:ad191e0a466a4626a7903c59e6066d7d route=spec active=2
+TABLE_PHASE complete id=oracle-control-067-page_001082_table_34:1789c60387fe447199847b9e0f620c1b wall_s=1.0107 tokens=483 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-067-page_001082_table_34&source_request_id=page_001082_table_34 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-069-page_000866_table_14:5a710c5a37a2420baf320a18e76af133 admitted=2
+TABLE_PHASE admitted id=oracle-control-069-page_000866_table_14:5a710c5a37a2420baf320a18e76af133 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-068-page_000467_table_17:ad191e0a466a4626a7903c59e6066d7d wall_s=1.3183 tokens=723 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-068-page_000467_table_17&source_request_id=page_000467_table_17 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-070-page_001227_table_10:8e25e06fb9c24dc3a99ce46a763eea38 admitted=2
+TABLE_PHASE complete id=oracle-control-069-page_000866_table_14:5a710c5a37a2420baf320a18e76af133 wall_s=0.6820 tokens=167 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-069-page_000866_table_14&source_request_id=page_000866_table_14 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-070-page_001227_table_10:8e25e06fb9c24dc3a99ce46a763eea38 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-071-page_000916_table_7:0871189f56a64542aac21e640a924aba admitted=2
+TABLE_PHASE admitted id=oracle-control-071-page_000916_table_7:0871189f56a64542aac21e640a924aba route=spec active=2
+TABLE_PHASE complete id=oracle-control-071-page_000916_table_7:0871189f56a64542aac21e640a924aba wall_s=0.9700 tokens=230 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-071-page_000916_table_7&source_request_id=page_000916_table_7 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-072-page_000251_table_box_id_7:19d41f022d1c44b899d49c4c858c48ea admitted=2
+TABLE_PHASE admitted id=oracle-control-072-page_000251_table_box_id_7:19d41f022d1c44b899d49c4c858c48ea route=spec active=2
+TABLE_PHASE complete id=oracle-control-070-page_001227_table_10:8e25e06fb9c24dc3a99ce46a763eea38 wall_s=1.5661 tokens=842 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-070-page_001227_table_10&source_request_id=page_001227_table_10 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-073-page_001131_table_15:23831ff31a554ae790083a92aa890fab admitted=2
+TABLE_PHASE admitted id=oracle-control-073-page_001131_table_15:23831ff31a554ae790083a92aa890fab route=b1 active=2
+TABLE_PHASE complete id=oracle-control-072-page_000251_table_box_id_7:19d41f022d1c44b899d49c4c858c48ea wall_s=1.0858 tokens=404 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-072-page_000251_table_box_id_7&source_request_id=page_000251_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-074-page_001183_table_12:347206c94153420b9be39d73c24c805f admitted=2
+TABLE_PHASE admitted id=oracle-control-074-page_001183_table_12:347206c94153420b9be39d73c24c805f route=b1 active=2
+TABLE_PHASE complete id=oracle-control-073-page_001131_table_15:23831ff31a554ae790083a92aa890fab wall_s=0.6676 tokens=131 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-073-page_001131_table_15&source_request_id=page_001131_table_15 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-075-page_000266_table_box_id_7:ce160617bf5347e6b9edfd21c22f3110 admitted=2
+TABLE_PHASE admitted id=oracle-control-075-page_000266_table_box_id_7:ce160617bf5347e6b9edfd21c22f3110 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-075-page_000266_table_box_id_7:ce160617bf5347e6b9edfd21c22f3110 wall_s=0.2315 tokens=96 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-075-page_000266_table_box_id_7&source_request_id=page_000266_table_box_id_7 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-076-page_000447_table_12:1ca39f1ca9cf43bfb28e7d98e93851c9 admitted=2
+TABLE_PHASE admitted id=oracle-control-076-page_000447_table_12:1ca39f1ca9cf43bfb28e7d98e93851c9 route=spec active=2
+TABLE_PHASE complete id=oracle-control-076-page_000447_table_12:1ca39f1ca9cf43bfb28e7d98e93851c9 wall_s=0.4866 tokens=221 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-076-page_000447_table_12&source_request_id=page_000447_table_12 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-077-page_001193_table_4:868b289f8fbc4a2d9f4d132e71430316 admitted=2
+TABLE_PHASE complete id=oracle-control-074-page_001183_table_12:347206c94153420b9be39d73c24c805f wall_s=0.9110 tokens=268 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-074-page_001183_table_12&source_request_id=page_001183_table_12 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-077-page_001193_table_4:868b289f8fbc4a2d9f4d132e71430316 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-078-page_001368_table_box_id_239:5dee09dd50574caca5aa007179e58ac1 admitted=2
+TABLE_PHASE admitted id=oracle-control-078-page_001368_table_box_id_239:5dee09dd50574caca5aa007179e58ac1 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-077-page_001193_table_4:868b289f8fbc4a2d9f4d132e71430316 wall_s=0.6167 tokens=210 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-077-page_001193_table_4&source_request_id=page_001193_table_4 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-079-page_000903_table_15:b5f630cc97684d82ae1786fed6cf3fe1 admitted=2
+TABLE_PHASE complete id=oracle-control-078-page_001368_table_box_id_239:5dee09dd50574caca5aa007179e58ac1 wall_s=0.6610 tokens=120 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-078-page_001368_table_box_id_239&source_request_id=page_001368_table_box_id_239 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-079-page_000903_table_15:b5f630cc97684d82ae1786fed6cf3fe1 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-080-page_001167_table_2:bd0e4b050fae43d2bf5d9b96e96c3efe admitted=2
+TABLE_PHASE admitted id=oracle-control-080-page_001167_table_2:bd0e4b050fae43d2bf5d9b96e96c3efe route=b1 active=2
+TABLE_PHASE complete id=oracle-control-080-page_001167_table_2:bd0e4b050fae43d2bf5d9b96e96c3efe wall_s=0.7962 tokens=176 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-080-page_001167_table_2&source_request_id=page_001167_table_2 HTTP/1.1" 200 -
+TABLE_PHASE complete id=oracle-control-079-page_000903_table_15:b5f630cc97684d82ae1786fed6cf3fe1 wall_s=0.8833 tokens=71 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-079-page_000903_table_15&source_request_id=page_000903_table_15 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-081-page_000212_table_box_id_1:92d7cd1a735e4f7d8171eb0d4783d690 admitted=1
+TABLE_PHASE admitted id=oracle-control-081-page_000212_table_box_id_1:92d7cd1a735e4f7d8171eb0d4783d690 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-082-page_001147_table_10:9ebee02203614e0080c4a2e0ccf5b577 admitted=2
+TABLE_PHASE admitted id=oracle-control-082-page_001147_table_10:9ebee02203614e0080c4a2e0ccf5b577 route=spec active=2
+TABLE_PHASE complete id=oracle-control-082-page_001147_table_10:9ebee02203614e0080c4a2e0ccf5b577 wall_s=1.2314 tokens=862 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-082-page_001147_table_10&source_request_id=page_001147_table_10 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-083-page_000223_table_box_id_2:ffbf8681b0cb47baa2cc050307109061 admitted=2
+TABLE_PHASE admitted id=oracle-control-083-page_000223_table_box_id_2:ffbf8681b0cb47baa2cc050307109061 route=spec active=2
+TABLE_PHASE complete id=oracle-control-081-page_000212_table_box_id_1:92d7cd1a735e4f7d8171eb0d4783d690 wall_s=1.7136 tokens=647 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-081-page_000212_table_box_id_1&source_request_id=page_000212_table_box_id_1 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-084-page_000716_table_0:ec5e522be0c04b06b63898e830055420 admitted=2
+TABLE_PHASE admitted id=oracle-control-084-page_000716_table_0:ec5e522be0c04b06b63898e830055420 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-084-page_000716_table_0:ec5e522be0c04b06b63898e830055420 wall_s=0.2453 tokens=57 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-084-page_000716_table_0&source_request_id=page_000716_table_0 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-085-page_000937_table_1:77d8dfdb28c94d328387b9037120ab5c admitted=2
+TABLE_PHASE admitted id=oracle-control-085-page_000937_table_1:77d8dfdb28c94d328387b9037120ab5c route=spec active=2
+TABLE_PHASE complete id=oracle-control-083-page_000223_table_box_id_2:ffbf8681b0cb47baa2cc050307109061 wall_s=1.3848 tokens=679 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-083-page_000223_table_box_id_2&source_request_id=page_000223_table_box_id_2 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-086-page_000465_table_10:0d8b1a2184f647c8b218b4c5aef9881d admitted=2
+TABLE_PHASE complete id=oracle-control-085-page_000937_table_1:77d8dfdb28c94d328387b9037120ab5c wall_s=0.6726 tokens=121 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-085-page_000937_table_1&source_request_id=page_000937_table_1 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-086-page_000465_table_10:0d8b1a2184f647c8b218b4c5aef9881d route=b1 active=1
+TABLE_PHASE preparing id=oracle-control-087-page_000465_table_8:5187075ad1ab448ca0895fc9d180460b admitted=2
+TABLE_PHASE admitted id=oracle-control-087-page_000465_table_8:5187075ad1ab448ca0895fc9d180460b route=b1 active=2
+TABLE_PHASE complete id=oracle-control-086-page_000465_table_10:0d8b1a2184f647c8b218b4c5aef9881d wall_s=0.5032 tokens=230 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-086-page_000465_table_10&source_request_id=page_000465_table_10 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-088-page_001179_table_6:c81d704b6ede452dad808c65ef73ab50 admitted=2
+TABLE_PHASE complete id=oracle-control-087-page_000465_table_8:5187075ad1ab448ca0895fc9d180460b wall_s=0.5398 tokens=237 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-087-page_000465_table_8&source_request_id=page_000465_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-088-page_001179_table_6:c81d704b6ede452dad808c65ef73ab50 route=spec active=1
+TABLE_PHASE preparing id=oracle-control-089-page_000554_table_12:9cdf3f66cbaa49d298406246032c3bee admitted=2
+TABLE_PHASE admitted id=oracle-control-089-page_000554_table_12:9cdf3f66cbaa49d298406246032c3bee route=b1 active=2
+TABLE_PHASE complete id=oracle-control-089-page_000554_table_12:9cdf3f66cbaa49d298406246032c3bee wall_s=0.6071 tokens=93 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-089-page_000554_table_12&source_request_id=page_000554_table_12 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-090-page_000199_table_box_id_0:e220d8cbf87646e18f57de8249358327 admitted=2
+TABLE_PHASE admitted id=oracle-control-090-page_000199_table_box_id_0:e220d8cbf87646e18f57de8249358327 route=spec active=2
+TABLE_PHASE complete id=oracle-control-088-page_001179_table_6:c81d704b6ede452dad808c65ef73ab50 wall_s=1.3071 tokens=1093 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-088-page_001179_table_6&source_request_id=page_001179_table_6 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-091-page_000516_table_0:55bef040f7034f409a39a2c93c4ebc06 admitted=2
+TABLE_PHASE admitted id=oracle-control-091-page_000516_table_0:55bef040f7034f409a39a2c93c4ebc06 route=spec active=2
+TABLE_PHASE complete id=oracle-control-091-page_000516_table_0:55bef040f7034f409a39a2c93c4ebc06 wall_s=1.1125 tokens=630 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-091-page_000516_table_0&source_request_id=page_000516_table_0 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-092-page_001214_table_8:964e10b5629346a684f5d49cac4c0442 admitted=2
+TABLE_PHASE admitted id=oracle-control-092-page_001214_table_8:964e10b5629346a684f5d49cac4c0442 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-090-page_000199_table_box_id_0:e220d8cbf87646e18f57de8249358327 wall_s=2.0565 tokens=855 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-090-page_000199_table_box_id_0&source_request_id=page_000199_table_box_id_0 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-093-page_001368_table_box_id_161:9a693a95e09b47cabe80576c126dbaea admitted=2
+TABLE_PHASE admitted id=oracle-control-093-page_001368_table_box_id_161:9a693a95e09b47cabe80576c126dbaea route=spec active=2
+TABLE_PHASE complete id=oracle-control-093-page_001368_table_box_id_161:9a693a95e09b47cabe80576c126dbaea wall_s=0.4743 tokens=253 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-093-page_001368_table_box_id_161&source_request_id=page_001368_table_box_id_161 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-094-page_000577_table_3:37f563a7e07144d49569031a8ac5952f admitted=2
+TABLE_PHASE complete id=oracle-control-092-page_001214_table_8:964e10b5629346a684f5d49cac4c0442 wall_s=0.8669 tokens=232 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-092-page_001214_table_8&source_request_id=page_001214_table_8 HTTP/1.1" 200 -
+TABLE_PHASE admitted id=oracle-control-094-page_000577_table_3:37f563a7e07144d49569031a8ac5952f route=spec active=1
+TABLE_PHASE preparing id=oracle-control-095-page_000984_table_3:c046560651134a0f9cb30c78e9fa7f64 admitted=2
+TABLE_PHASE admitted id=oracle-control-095-page_000984_table_3:c046560651134a0f9cb30c78e9fa7f64 route=spec active=2
+TABLE_PHASE complete id=oracle-control-094-page_000577_table_3:37f563a7e07144d49569031a8ac5952f wall_s=0.7739 tokens=139 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-094-page_000577_table_3&source_request_id=page_000577_table_3 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-096-page_001187_table_0:4fb25ca9ddb74c79be4f6816acd85039 admitted=2
+TABLE_PHASE admitted id=oracle-control-096-page_001187_table_0:4fb25ca9ddb74c79be4f6816acd85039 route=spec active=2
+TABLE_PHASE complete id=oracle-control-095-page_000984_table_3:c046560651134a0f9cb30c78e9fa7f64 wall_s=1.2260 tokens=299 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-095-page_000984_table_3&source_request_id=page_000984_table_3 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-097-page_000821_table_box_id_14:202bc52997344a6c88f55a6f000a68e6 admitted=2
+TABLE_PHASE admitted id=oracle-control-097-page_000821_table_box_id_14:202bc52997344a6c88f55a6f000a68e6 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-097-page_000821_table_box_id_14:202bc52997344a6c88f55a6f000a68e6 wall_s=0.2420 tokens=59 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-097-page_000821_table_box_id_14&source_request_id=page_000821_table_box_id_14 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-098-page_000833_table_4:4a0ac80f11504a07b2bffc011b499810 admitted=2
+TABLE_PHASE admitted id=oracle-control-098-page_000833_table_4:4a0ac80f11504a07b2bffc011b499810 route=spec active=2
+TABLE_PHASE complete id=oracle-control-098-page_000833_table_4:4a0ac80f11504a07b2bffc011b499810 wall_s=0.7394 tokens=107 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-098-page_000833_table_4&source_request_id=page_000833_table_4 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-099-page_001375_table_31:a21639613e914883bc7ca22433731cb8 admitted=2
+TABLE_PHASE admitted id=oracle-control-099-page_001375_table_31:a21639613e914883bc7ca22433731cb8 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-099-page_001375_table_31:a21639613e914883bc7ca22433731cb8 wall_s=0.2188 tokens=34 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-099-page_001375_table_31&source_request_id=page_001375_table_31 HTTP/1.1" 200 -
+TABLE_PHASE preparing id=oracle-control-100-page_000645_table_7:5e8a4719c4fd4cfeb3520d27302aec29 admitted=2
+TABLE_PHASE admitted id=oracle-control-100-page_000645_table_7:5e8a4719c4fd4cfeb3520d27302aec29 route=b1 active=2
+TABLE_PHASE complete id=oracle-control-096-page_001187_table_0:4fb25ca9ddb74c79be4f6816acd85039 wall_s=1.9037 tokens=1553 exact=True active=1
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-096-page_001187_table_0&source_request_id=page_001187_table_0 HTTP/1.1" 200 -
+TABLE_PHASE complete id=oracle-control-100-page_000645_table_7:5e8a4719c4fd4cfeb3520d27302aec29 wall_s=0.2423 tokens=89 exact=True active=0
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=oracle-control-100-page_000645_table_7&source_request_id=page_000645_table_7 HTTP/1.1" 200 -
+SERVICE_SUMMARY /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_oracle_c2_a15a5b6d_20260905/control_service.json
