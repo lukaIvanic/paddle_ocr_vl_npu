@@ -1,0 +1,668 @@
+2026-09-06T02:38:28+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T02:38:33+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T02:38:39+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T02:38:44+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T02:38:50+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T02:38:55+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):105
+	Chip ID                        : 0
+
+2026-09-06T02:39:01+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3853
+	Chip ID                        : 0
+
+2026-09-06T02:39:06+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3855
+	Chip ID                        : 0
+
+2026-09-06T02:39:12+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3855
+	Chip ID                        : 0
+
+2026-09-06T02:39:13+08:00
+    PID    PPID                  STARTED COMMAND
+1782757 1782755 Sun Sep  6 02:38:40 2026 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=10) --multiprocessing-fork
+NSpid:	1782757	2472013
+    PID    PPID                  STARTED COMMAND
+1782755 1728105 Sun Sep  6 02:38:40 2026 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/serve_crop_ocr_api.py --host 127.0.0.1 --port 8767 --request-timeout-s 3600 --queue-capacity 64 --model /workspace/models/PaddleOCR-VL-1.6 --decode-backend torchair --decode-optimization combined_apply_complete_layer_prefetch1_rope_lut --decode-vocab-token-ids 09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json --token-selection greedy --cache-length 4096 --max-new-tokens 4096 --min-pixels 28224 --max-pixels 802816 --request-scheduling-metrics --decode-batch-size 2 --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096 --text-buckets 128,256,512,1024,1152 --vision-attention-weight-padding --service-summary-output tmp/09_persistent_page_engine/table_vision_3b222363_20260905/service.json
+2026-09-06T02:39:17+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3855
+	Chip ID                        : 0
+
+2026-09-06T02:39:23+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3857
+	Chip ID                        : 0
+
+2026-09-06T02:39:28+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3857
+	Chip ID                        : 0
+
+2026-09-06T02:39:34+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3857
+	Chip ID                        : 0
+
+2026-09-06T02:39:39+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3857
+	Chip ID                        : 0
+
+2026-09-06T02:39:45+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3867
+	Chip ID                        : 0
+
+2026-09-06T02:39:50+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3867
+	Chip ID                        : 0
+
+2026-09-06T02:39:56+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3867
+	Chip ID                        : 0
+
+2026-09-06T02:40:01+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3867
+	Chip ID                        : 0
+
+2026-09-06T02:40:07+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3867
+	Chip ID                        : 0
+
+2026-09-06T02:40:12+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3869
+	Chip ID                        : 0
+
+2026-09-06T02:40:18+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3869
+	Chip ID                        : 0
+
+2026-09-06T02:40:23+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3869
+	Chip ID                        : 0
+
+2026-09-06T02:40:29+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3869
+	Chip ID                        : 0
+
+2026-09-06T02:40:35+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3869
+	Chip ID                        : 0
+
+2026-09-06T02:40:40+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3871
+	Chip ID                        : 0
+
+2026-09-06T02:40:46+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3871
+	Chip ID                        : 0
+
+2026-09-06T02:40:51+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3871
+	Chip ID                        : 0
+
+2026-09-06T02:40:57+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3871
+	Chip ID                        : 0
+
+2026-09-06T02:41:02+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3871
+	Chip ID                        : 0
+
+2026-09-06T02:41:08+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3871
+	Chip ID                        : 0
+
+2026-09-06T02:41:13+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3873
+	Chip ID                        : 0
+
+2026-09-06T02:41:19+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3873
+	Chip ID                        : 0
+
+2026-09-06T02:41:24+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3873
+	Chip ID                        : 0
+
+2026-09-06T02:41:30+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3873
+	Chip ID                        : 0
+
+2026-09-06T02:41:35+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3873
+	Chip ID                        : 0
+
+2026-09-06T02:41:41+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3875
+	Chip ID                        : 0
+
+2026-09-06T02:41:46+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3875
+	Chip ID                        : 0
+
+2026-09-06T02:41:52+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3875
+	Chip ID                        : 0
+
+2026-09-06T02:41:57+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3875
+	Chip ID                        : 0
+
+2026-09-06T02:42:03+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3875
+	Chip ID                        : 0
+
+2026-09-06T02:42:08+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3879
+	Chip ID                        : 0
+
+2026-09-06T02:42:14+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3879
+	Chip ID                        : 0
+
+2026-09-06T02:42:19+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3879
+	Chip ID                        : 0
+
+2026-09-06T02:42:25+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3879
+	Chip ID                        : 0
+
+2026-09-06T02:42:30+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3879
+	Chip ID                        : 0
+
+2026-09-06T02:42:36+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3879
+	Chip ID                        : 0
+
+2026-09-06T02:42:41+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3881
+	Chip ID                        : 0
+
+2026-09-06T02:42:47+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3881
+	Chip ID                        : 0
+
+2026-09-06T02:42:52+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3881
+	Chip ID                        : 0
+
+2026-09-06T02:42:58+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3881
+	Chip ID                        : 0
+
+2026-09-06T02:43:03+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3883
+	Chip ID                        : 0
+
+2026-09-06T02:43:09+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3883
+	Chip ID                        : 0
+
+2026-09-06T02:43:14+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3883
+	Chip ID                        : 0
+
+2026-09-06T02:43:20+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3883
+	Chip ID                        : 0
+
+2026-09-06T02:43:25+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):3883
+	Chip ID                        : 0
+
+2026-09-06T02:43:31+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):4009
+	Chip ID                        : 0
+
+2026-09-06T02:43:36+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):4009
+	Chip ID                        : 0
+
+2026-09-06T02:43:42+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):4009
+	Chip ID                        : 0
+
+2026-09-06T02:43:47+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):4009
+	Chip ID                        : 0
+
+2026-09-06T02:43:53+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):4009
+	Chip ID                        : 0
+
+2026-09-06T02:43:59+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):4169
+	Chip ID                        : 0
+
+2026-09-06T02:44:04+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):4363
+	Chip ID                        : 0
+
+2026-09-06T02:44:10+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):4363
+	Chip ID                        : 0
+
+2026-09-06T02:44:15+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):4363
+	Chip ID                        : 0
+
+2026-09-06T02:44:21+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T02:44:26+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T02:44:32+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T02:44:37+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6895
+	Chip ID                        : 0
+
+2026-09-06T02:44:43+08:00
+2026-09-06T02:44:43+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6917
+	Chip ID                        : 0
+
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6953
+	Chip ID                        : 0
+
+    PID    PPID                  STARTED COMMAND
+1782755 1728105 Sun Sep  6 02:38:40 2026 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/serve_crop_ocr_api.py --host 127.0.0.1 --port 8767 --request-timeout-s 3600 --queue-capacity 64 --model /workspace/models/PaddleOCR-VL-1.6 --decode-backend torchair --decode-optimization combined_apply_complete_layer_prefetch1_rope_lut --decode-vocab-token-ids 09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json --token-selection greedy --cache-length 4096 --max-new-tokens 4096 --min-pixels 28224 --max-pixels 802816 --request-scheduling-metrics --decode-batch-size 2 --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096 --text-buckets 128,256,512,1024,1152 --vision-attention-weight-padding --service-summary-output tmp/09_persistent_page_engine/table_vision_3b222363_20260905/service.json
+1782757 1782755 Sun Sep  6 02:38:40 2026 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=10) --multiprocessing-fork
+2026-09-06T02:44:48+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6961
+	Chip ID                        : 0
+
+2026-09-06T02:44:54+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6961
+	Chip ID                        : 0
+
+2026-09-06T02:44:59+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6961
+	Chip ID                        : 0
+
+2026-09-06T02:45:05+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6961
+	Chip ID                        : 0
+
+2026-09-06T02:45:10+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6961
+	Chip ID                        : 0
+
+2026-09-06T02:45:16+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6961
+	Chip ID                        : 0
+
+2026-09-06T02:45:21+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6961
+	Chip ID                        : 0
+
+2026-09-06T02:45:27+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6961
+	Chip ID                        : 0
+
+2026-09-06T02:45:32+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6961
+	Chip ID                        : 0
+
+2026-09-06T02:45:38+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6961
+	Chip ID                        : 0
+
+2026-09-06T02:45:43+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6987
+	Chip ID                        : 0
+
+2026-09-06T02:45:49+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6987
+	Chip ID                        : 0
+
+2026-09-06T02:45:54+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6987
+	Chip ID                        : 0
+
+2026-09-06T02:46:00+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6987
+	Chip ID                        : 0
+
+2026-09-06T02:46:05+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6987
+	Chip ID                        : 0
+
+2026-09-06T02:46:11+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6987
+	Chip ID                        : 0
+
+2026-09-06T02:46:16+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6987
+	Chip ID                        : 0
+
+2026-09-06T02:46:22+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6987
+	Chip ID                        : 0
+
+2026-09-06T02:46:28+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6987
+	Chip ID                        : 0
+
+2026-09-06T02:46:33+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1782757 Process name:python            Process memory(MB):6987
+	Chip ID                        : 0
+
+2026-09-06T02:46:39+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T02:46:44+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T02:46:50+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T02:46:51+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+    PID    PPID COMMAND

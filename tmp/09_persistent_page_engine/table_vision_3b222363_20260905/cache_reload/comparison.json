@@ -1,0 +1,91 @@
+{
+  "completed_tables_per_s": 2.8926129443484783,
+  "latency_s": {
+    "count": 100,
+    "mean": 0.6787642507557757,
+    "p50": 0.41303315007826313,
+    "p90": 1.3345897404477007,
+    "p95": 1.9431582124438127,
+    "p99": 4.137940303158248,
+    "max": 4.325045167002827,
+    "sum": 67.87642507557757,
+    "median": 0.41303315007826313
+  },
+  "run_wall_s": 34.57081950607244,
+  "performance_target_pass": false,
+  "all_100_eos": true,
+  "native_token_identical": 99,
+  "differences": [
+    {
+      "request_id": "page_001417_table_2",
+      "baseline_text": "<table><tr><td></td><td>$ \\Delta U $</td><td>持续时间</td></tr><tr><td rowspan=\"2\">电压降落</td><td>30%</td><td>0.5 s</td></tr><tr><td>60%</td><td>0.5 s</td></tr><tr><td rowspan=\"3\">电压初赛</td><td>100%</td><td>电票波形一个周期</td></tr><tr><td></td><td>0.5 s</td></tr><tr><td></td><td>60.0 s</td></tr></table>",
+      "candidate_text": "<table><tr><td></td><td>$ \\Delta U $</td><td>持续时间</td></tr><tr><td rowspan=\"2\">电压降落</td><td>30%</td><td>0.5 s</td></tr><tr><td>60%</td><td>0.5 s</td></tr><tr><td rowspan=\"3\">电压初转</td><td>100%</td><td>电源波形一个周期</td></tr><tr><td></td><td>0.5 s</td></tr><tr><td></td><td>60.0 s</td></tr></table>",
+      "id_edits": [
+        {
+          "kind": "replace",
+          "baseline_offset": 38,
+          "candidate_offset": 38,
+          "baseline_ids": [
+            94964
+          ],
+          "candidate_ids": [
+            94489
+          ]
+        },
+        {
+          "kind": "replace",
+          "baseline_offset": 45,
+          "candidate_offset": 45,
+          "baseline_ids": [
+            94176,
+            95172
+          ],
+          "candidate_ids": [
+            11512
+          ]
+        }
+      ]
+    }
+  ],
+  "input_sizes_and_real_tokens_match": true,
+  "peak_client_outstanding": 2,
+  "during_measurement_ownership_samples": 6,
+  "only_owned_pid_in_samples": true,
+  "timing_totals_s": {
+    "cpu_image_decode": 1.742223301785998,
+    "cpu_image_and_prompt_preprocess": 3.6740600673947483,
+    "cpu_mrope_index": 0.25638019444886595,
+    "cpu_pin_memory": 0.24346551019698381,
+    "cpu_preprocess_background_queue_wait": 0.031221085344441235,
+    "cpu_preprocess_background_service": 5.937167008640245,
+    "cpu_preprocess_background_consumer_wait": 0.29554756393190473,
+    "cpu_preprocess_background_ready_wait": 0.21015808207448572,
+    "prefill_h2d_submit_host": 0.3253726247930899,
+    "prefill_enqueue_host": 5.463326345779933,
+    "recognizer_h2d": 0.308201159477234,
+    "first_token_d2h": 0.01791558228433132,
+    "prefill_resolve_wait": 0.03203762124758214,
+    "vision_and_text_prefill_wall": 5.496875033597462,
+    "time_to_first_token": 12.00241046573501,
+    "prefill_request_total": 9.996897547399623,
+    "decode_ready_queue_wait": 0.4281787375221029,
+    "decode_slot_residency": 54.65694896283094,
+    "detokenize": 0.02413991664070636,
+    "request_total": 67.11167808272876
+  },
+  "device_totals_s": {
+    "recognition_inputs_h2d": 0.308201159477234,
+    "vision_embeddings": 0.5907178188562392,
+    "adaptive_mlp_projector": 0.02298202007263898,
+    "text_token_embedding": 0.0026001200117170818,
+    "image_embed_scatter": 0.050219080194830894,
+    "static_cache_alloc": 1.5579999759211213e-05,
+    "text_prefill_input_prep": 0.03385924005508422,
+    "text_prefill": 1.1068360195159914,
+    "text_kv_redistribute": 0.0,
+    "prefill_lm_head": 0.028843239977955824,
+    "prefill_argmax": 0.017904179856181143,
+    "vision_prefill_input_prep": 0.04400058001279831,
+    "vision_prefill": 3.505438642501831
+  }
+}
