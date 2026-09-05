@@ -85,6 +85,8 @@ class PhaseLedger:
         self.global_wall: Counter[str] = Counter()
         self.global_device: Counter[str] = Counter()
         self.calls: Counter[str] = Counter()
+        self.decode_combinations: Counter[str] = Counter()
+        self.same_phase_unbatched: Counter[str] = Counter()
 
     def admit(self, request_id: str) -> None:
         if request_id in self.rows:
@@ -115,6 +117,10 @@ class PhaseLedger:
         self.global_device[action] += device_s
         self.calls[action] += 1
         combination = "+".join(sorted(phases.values()))
+        if decode:
+            self.decode_combinations[combination] += wall_s
+            if len(phases) > 1 and len(set(phases.values())) == 1 and len(selected) == 1:
+                self.same_phase_unbatched[combination] += wall_s
         for request_id in phases:
             row = self.rows[request_id]
             bucket = "own_action_wall_s" if request_id in selected else "other_action_wait_s"
@@ -132,5 +138,7 @@ class PhaseLedger:
             "action_host_wall_s": dict(self.global_wall),
             "action_device_s": dict(self.global_device),
             "action_calls": dict(self.calls),
+            "decode_phase_combination_wall_s": dict(self.decode_combinations),
+            "same_phase_unbatched_wall_s": dict(self.same_phase_unbatched),
             "timing_contract": "disjoint host actions; device times overlap host actions",
         }
