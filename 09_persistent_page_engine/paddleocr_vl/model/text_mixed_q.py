@@ -50,12 +50,14 @@ MIXED_LAYOUT_B2_BSND_PROMPTFA = "b2_bsnd_promptfa"
 MIXED_LAYOUT_B9_BSND_PROMPTFA = "b9_bsnd_promptfa"
 MIXED_LAYOUT_B16_INCREFA = "b16_replicated_increfa"
 MIXED_LAYOUT_B16_INCREFA_SCATTER = "b16_replicated_increfa_scatter"
-MIXED_REPLICATED_INCREFA_LAYOUTS = (MIXED_LAYOUT_B16_INCREFA, MIXED_LAYOUT_B16_INCREFA_SCATTER)
+MIXED_LAYOUT_B16_INCREFA_BSH = "b16_replicated_increfa_bsh"
+MIXED_REPLICATED_INCREFA_LAYOUTS = (MIXED_LAYOUT_B16_INCREFA, MIXED_LAYOUT_B16_INCREFA_SCATTER, MIXED_LAYOUT_B16_INCREFA_BSH)
 MIXED_SINGLE_ATTENTION_LAYOUTS = (
     MIXED_LAYOUT_PACKED_BSND_PROMPTFA, MIXED_LAYOUT_B2_BSND_PROMPTFA,
     MIXED_LAYOUT_B9_BSND_PROMPTFA,
     MIXED_LAYOUT_B16_INCREFA,
     MIXED_LAYOUT_B16_INCREFA_SCATTER,
+    MIXED_LAYOUT_B16_INCREFA_BSH,
 )
 MIXED_M16_LAYOUTS = (
     MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER,
@@ -66,6 +68,7 @@ MIXED_M16_LAYOUTS = (
     MIXED_LAYOUT_B9_BSND_PROMPTFA,
     MIXED_LAYOUT_B16_INCREFA,
     MIXED_LAYOUT_B16_INCREFA_SCATTER,
+    MIXED_LAYOUT_B16_INCREFA_BSH,
 )
 DEFAULT_MIXED_M16_LAYOUT = MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER
 MIXED_PREFETCH_FULL = "full"
@@ -256,7 +259,20 @@ def _mixed_attention(
             query_bsnd, key_bsnd, cosine, sine,
             layout="BSND", rotary_mode="half",
         )
-        if layout == MIXED_LAYOUT_B16_INCREFA_SCATTER:
+        if layout == MIXED_LAYOUT_B16_INCREFA_BSH:
+            # Select directly from projection order into [B,Q,KV-head*D].
+            # Repeating the draft token into seven future slots avoids padding
+            # assembly; Q1 masks hide these slots and later steps overwrite them.
+            key_updates = key_bsnd.reshape(16, kv_heads * head_dim).index_select(
+                0, packed_write_indices
+            ).reshape(16, 8, kv_heads * head_dim)
+            value_updates = value_bsnd.reshape(16, kv_heads * head_dim).index_select(
+                0, packed_write_indices
+            ).reshape(16, 8, kv_heads * head_dim)
+            starts = torch.cat((verifier_positions[:, 0].expand(8), draft_cache_position.reshape(-1))).contiguous()
+            torch_npu.scatter_update_(verifier_key_cache, starts, key_updates, 1)
+            torch_npu.scatter_update_(verifier_value_cache, starts, value_updates, 1)
+        elif layout == MIXED_LAYOUT_B16_INCREFA_SCATTER:
             # One uniform Q8 write block per physical row permits dedicated
             # Scatter KV writes. Draft rows have one real update and seven
             # zero future updates, always hidden by their Q1 causal mask.
@@ -288,7 +304,7 @@ def _mixed_attention(
         else:
             key_updates = key_bsnd.reshape(PACKED_TOKEN_COUNT, kv_heads, head_dim).contiguous()
             value_updates = value_bsnd.reshape(PACKED_TOKEN_COUNT, kv_heads, head_dim).contiguous()
-        if layout != MIXED_LAYOUT_B16_INCREFA_SCATTER:
+        if layout not in (MIXED_LAYOUT_B16_INCREFA_SCATTER, MIXED_LAYOUT_B16_INCREFA_BSH):
             torch_npu.npu_scatter_nd_update_(verifier_key_cache, packed_write_indices, key_updates)
             torch_npu.npu_scatter_nd_update_(verifier_value_cache, packed_write_indices, value_updates)
         if (
@@ -304,12 +320,13 @@ def _mixed_attention(
                 verifier_value_cache.numel() * verifier_value_cache.element_size(),
             )
         if layout in MIXED_REPLICATED_INCREFA_LAYOUTS:
+            use_bsh = layout == MIXED_LAYOUT_B16_INCREFA_BSH
             output = torch_npu.npu_incre_flash_attention(
-                query_bsnd.reshape(16, query_heads, 1, head_dim).contiguous(),
+                query_bsnd.reshape((16, 1, query_heads * head_dim) if use_bsh else (16, query_heads, 1, head_dim)).contiguous(),
                 verifier_key_cache, verifier_value_cache,
                 atten_mask=packed_attention_mask,
                 num_heads=query_heads, num_key_value_heads=kv_heads,
-                input_layout="BNSD", scale_value=float(attention.scaling),
+                input_layout="BSH" if use_bsh else "BNSD", scale_value=float(attention.scaling),
             )
             return _linear_tokenwise(attention.o_proj, output.reshape(1, 16, query_heads * head_dim))
         if layout == MIXED_LAYOUT_B9_BSND_PROMPTFA:
@@ -684,6 +701,11 @@ def run_text_mixed_m16_transformer(
             packed_attention_mask = (
                 verifier_kv_positions.view(1, 1, 1, 4096) > query_limits.view(16, 1, 1, 1)
             ).contiguous()
+        if layout == MIXED_LAYOUT_B16_INCREFA_BSH:
+            packed_write_indices = torch.cat((
+                torch.arange(8, device=draft_positions.device, dtype=torch.int64).repeat(8),
+                torch.arange(8, 16, device=draft_positions.device, dtype=torch.int64).repeat_interleave(8),
+            ))
 
     verifier_decode_positions = verifier_positions + verifier_rope_deltas.to(
         device=verifier_inputs_embeds.device,

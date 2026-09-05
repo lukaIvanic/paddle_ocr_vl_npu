@@ -63,6 +63,7 @@ from paddleocr_vl.model.text_mixed_q import (  # noqa: E402
     MIXED_LAYOUT_B2_BSND_PROMPTFA,
     MIXED_LAYOUT_B9_BSND_PROMPTFA,
     MIXED_LAYOUT_B16_INCREFA,
+    MIXED_LAYOUT_B16_INCREFA_BSH,
     MIXED_REPLICATED_INCREFA_LAYOUTS,
     MIXED_SINGLE_ATTENTION_LAYOUTS,
     PACKED_TOKEN_COUNT,
@@ -726,6 +727,8 @@ def _build_mixed_m16_lane(
         cache_shape = (9, 4096, 2, 128) if packed_b9 else (2, 6144, 2, 128) if packed_b2 else (1, 10240, 2, 128)
         if replicated_increfa:
             cache_shape = (16, 2, 4096, 128)
+        if layout == MIXED_LAYOUT_B16_INCREFA_BSH:
+            cache_shape = (16, 4096, 256)
         flat_caches = tuple(
             torch.zeros(cache_shape, device=device, dtype=dtype)
             for _ in range(2 * int(model.config.text_config.num_hidden_layers))
@@ -751,19 +754,32 @@ def _build_mixed_m16_lane(
             model, optimization=optimization, prefetch_mode=prefetch_mode,
             attention_order="draft_then_verifier", rotary_mode="per_lane",
         ).eval()
-        reference_ids = reference(
-            verifier_input_ids, verifier_cache_position, verifier_rope_deltas,
-            draft_input_ids, draft_cache_position, draft_rope_deltas,
-            *verifier_cache.flat_tensors(), *draft_cache.flat_tensors(),
-        )
-        candidate_ids = call()
-        synchronize(device)
+        steps = []
+        for step in range(3):
+            if step:
+                verifier_cache_position.add_(8)
+                draft_cache_position.add_(1)
+            reference_ids = reference(
+                verifier_input_ids, verifier_cache_position, verifier_rope_deltas,
+                draft_input_ids, draft_cache_position, draft_rope_deltas,
+                *verifier_cache.flat_tensors(), *draft_cache.flat_tensors(),
+            )
+            candidate_ids = call()
+            synchronize(device)
+            steps.append({
+                "step": step,
+                "candidate_ids": candidate_ids.cpu().tolist(),
+                "reference_ids": reference_ids.cpu().tolist(),
+                "matching_ids": int((candidate_ids == reference_ids).sum().item()),
+            })
         differences = []
         layers = int(model.config.text_config.num_hidden_layers)
         for i in range(2 * layers):
             expected_v = verifier_cache.flat_tensors()[i]
             expected_d = draft_cache.flat_tensors()[i]
             actual = flat_caches[i]
+            if layout == MIXED_LAYOUT_B16_INCREFA_BSH:
+                actual = actual.view(16, 4096, 2, 128).transpose(1, 2)
             if replicated_increfa:
                 actual_v = actual[:8]
                 actual_d = actual[8:, :, :768]
@@ -773,10 +789,15 @@ def _build_mixed_m16_lane(
                 if packed_b9:
                     draft_segment = actual[1:, :768]
                 actual_d = draft_segment.reshape(8, 768, 2, 128).transpose(1, 2)
+            verifier_diff = (actual_v - expected_v).abs()
+            draft_diff = (actual_d - expected_d).abs()
+            verifier_future = torch.arange(4096, device=device).view(1, 1, -1, 1) > (verifier_cache_position.reshape(1, 1, 1, 1) + 7)
+            draft_future = torch.arange(768, device=device).view(1, 1, -1, 1) > draft_cache_position.view(8, 1, 1, 1)
             differences.append({
                 "tensor": i,
-                "verifier_max_abs": float((actual_v - expected_v).abs().max().item()),
-                "draft_max_abs": float((actual_d - expected_d).abs().max().item()),
+                "verifier_max_abs": float(verifier_diff.masked_fill(verifier_future, 0).max().item()),
+                "draft_max_abs": float(draft_diff.masked_fill(draft_future, 0).max().item()),
+                "draft_future_max_abs": float(draft_diff.masked_fill(~draft_future, 0).max().item()),
                 "verifier_finite": bool(torch.isfinite(actual_v).all().item()),
                 "draft_finite": bool(torch.isfinite(actual_d).all().item()),
             })
@@ -786,6 +807,8 @@ def _build_mixed_m16_lane(
             "reference_ids": reference_ids.cpu().tolist(),
             "matching_ids": int((candidate_ids == reference_ids).sum().item()),
             "total_ids": 16,
+            "teacher_forced_steps": steps,
+            "cache_difference_scope": "valid_prefix_after_three_advancing_steps; future slots reported separately",
             "cache_differences": differences,
         }
 
