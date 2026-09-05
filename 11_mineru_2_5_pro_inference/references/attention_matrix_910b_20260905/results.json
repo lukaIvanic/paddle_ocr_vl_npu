@@ -1,0 +1,2045 @@
+{
+  "chip": "910B2",
+  "physical_device": 4,
+  "source_commit": "6c7238d3",
+  "scope": "32 production vision blocks; captured real inputs, not E2E OCR",
+  "rows": [
+    {
+      "variant": "baseline",
+      "route": "bucket_5632",
+      "tags": {
+        "route": "bucket_5632",
+        "real_tokens": 5476,
+        "physical_tokens": 5632,
+        "members": 1,
+        "member_lengths": [
+          5476
+        ],
+        "request_ids": [
+          0
+        ],
+        "hidden_shape": [
+          5632,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        5476,
+        156
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "completed",
+      "source_capture_sha256": "dc774a0d09d3838c55137b10c29184ae642de282037d3d259052d4897b152b37",
+      "first_call_s": 5.37098517396953,
+      "first_layer_eager_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 105.38436321076006,
+          "p50": 105.32351501751691,
+          "p90": 105.83874789299443,
+          "p99": 106.26399707631208,
+          "min": 104.99854502268136,
+          "max": 106.3112469855696
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 105.07083206176758,
+          "p50": 105.05360794067383,
+          "p90": 105.2483299255371,
+          "p99": 105.50226448059082,
+          "min": 104.87332153320312,
+          "max": 105.53047943115234
+        },
+        "wall_samples_ms": [
+          106.3112469855696,
+          105.50442291423678,
+          105.43610202148557,
+          105.78624799381942,
+          105.40517093613744,
+          105.24185909889638,
+          105.01772502902895,
+          105.06713599897921,
+          105.07517610676587,
+          104.99854502268136
+        ],
+        "device_samples_ms": [
+          105.00293731689453,
+          105.21697998046875,
+          105.15615844726562,
+          105.53047943115234,
+          105.17822265625,
+          105.10427856445312,
+          104.87576293945312,
+          104.89096069335938,
+          104.87921905517578,
+          104.87332153320312
+        ]
+      },
+      "real_tok_s": 52117.22313934704,
+      "physical_tok_s": 53601.93585113268,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/baseline_bucket_5632/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 104.9221533333333,
+        "attention_types": [
+          {
+            "name": "PromptFlashAttention",
+            "calls_per_forward": 32,
+            "ms_per_forward": 54.80633333333332
+          }
+        ]
+      }
+    },
+    {
+      "variant": "baseline",
+      "route": "bucket_768",
+      "tags": {
+        "route": "bucket_768",
+        "real_tokens": 640,
+        "physical_tokens": 768,
+        "members": 1,
+        "member_lengths": [
+          640
+        ],
+        "request_ids": [
+          21
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        640,
+        128
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "completed",
+      "source_capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "first_call_s": 5.013076191069558,
+      "first_layer_eager_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 0.9999999403953552,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 18.360614916309714,
+          "p50": 17.36522000283003,
+          "p90": 19.219002430327233,
+          "p99": 25.62075161607936,
+          "min": 17.26108300499618,
+          "max": 26.33205708116293
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 18.11989803314209,
+          "p50": 17.22407054901123,
+          "p90": 18.263777732849118,
+          "p99": 25.402129840850833,
+          "min": 17.132200241088867,
+          "max": 26.195280075073242
+        },
+        "wall_samples_ms": [
+          18.428663024678826,
+          17.380225006490946,
+          17.370655084960163,
+          17.326245084404945,
+          17.26108300499618,
+          17.303674016147852,
+          26.33205708116293,
+          17.531707999296486,
+          17.359784920699894,
+          17.31205394025892
+        ],
+        "device_samples_ms": [
+          17.30739974975586,
+          17.21500015258789,
+          17.24683952331543,
+          17.203960418701172,
+          17.132200241088867,
+          17.139419555664062,
+          26.195280075073242,
+          17.38249969482422,
+          17.23314094543457,
+          17.143239974975586
+        ]
+      },
+      "real_tok_s": 35320.2870584267,
+      "physical_tok_s": 42384.344470112046,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/baseline_bucket_768/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 17.222246666666663,
+        "attention_types": [
+          {
+            "name": "PromptFlashAttention",
+            "calls_per_forward": 32,
+            "ms_per_forward": 2.64366
+          }
+        ]
+      }
+    },
+    {
+      "variant": "baseline",
+      "route": "packed_768",
+      "tags": {
+        "route": "packed_768",
+        "real_tokens": 672,
+        "physical_tokens": 768,
+        "members": 2,
+        "member_lengths": [
+          480,
+          192
+        ],
+        "request_ids": [
+          20,
+          18
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        480,
+        192,
+        96
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "completed",
+      "source_capture_sha256": "fe53eb21e6152c6c227e2a6603fb93db644b88f107406795fd5e3dcc6a810f02",
+      "first_call_s": 4.825328849954531,
+      "first_layer_eager_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 18.529189692344517,
+          "p50": 18.412408011499792,
+          "p90": 18.658406531903893,
+          "p99": 19.320026641944423,
+          "min": 18.3737319894135,
+          "max": 19.393539987504482
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 18.255288124084473,
+          "p50": 18.235480308532715,
+          "p90": 18.3236385345459,
+          "p99": 18.37092643737793,
+          "min": 18.21295928955078,
+          "max": 18.37618064880371
+        },
+        "wall_samples_ms": [
+          19.393539987504482,
+          18.57672503683716,
+          18.50418490357697,
+          18.43608298804611,
+          18.3737319894135,
+          18.387931981123984,
+          18.40046199504286,
+          18.394422018900514,
+          18.402713001705706,
+          18.42210302129388
+        ],
+        "device_samples_ms": [
+          18.26296043395996,
+          18.37618064880371,
+          18.317800521850586,
+          18.25029945373535,
+          18.21295928955078,
+          18.215360641479492,
+          18.23702049255371,
+          18.223560333251953,
+          18.22279930114746,
+          18.23394012451172
+        ]
+      },
+      "real_tok_s": 36811.25137178309,
+      "physical_tok_s": 42070.00156775209,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/baseline_packed_768/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 18.23520666666659,
+        "attention_types": [
+          {
+            "name": "PromptFlashAttention",
+            "calls_per_forward": 32,
+            "ms_per_forward": 2.6989933333333327
+          }
+        ]
+      }
+    },
+    {
+      "variant": "eager_pfa",
+      "route": "bucket_5632",
+      "tags": {
+        "route": "bucket_5632",
+        "real_tokens": 5476,
+        "physical_tokens": 5632,
+        "members": 1,
+        "member_lengths": [
+          5476
+        ],
+        "request_ids": [
+          0
+        ],
+        "hidden_shape": [
+          5632,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        5476,
+        156
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "raw_eager",
+      "status": "completed",
+      "source_capture_sha256": "dc774a0d09d3838c55137b10c29184ae642de282037d3d259052d4897b152b37",
+      "first_call_s": 0.11728769401088357,
+      "first_layer_eager_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 116.5926615241915,
+          "p50": 116.51761556277052,
+          "p90": 116.70879482990131,
+          "p99": 117.11397132487036,
+          "min": 116.42309802118689,
+          "max": 117.15899093542248
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 116.38802490234374,
+          "p50": 116.36123275756836,
+          "p90": 116.4712287902832,
+          "p99": 116.50045310974122,
+          "min": 116.29785919189453,
+          "max": 116.50370025634766
+        },
+        "wall_samples_ms": [
+          117.15899093542248,
+          116.48922006133944,
+          116.5285500464961,
+          116.6019020602107,
+          116.50668107904494,
+          116.49098992347717,
+          116.48037901613861,
+          116.42309802118689,
+          116.5880310581997,
+          116.65877304039896
+        ],
+        "device_samples_ms": [
+          116.35706329345703,
+          116.34278106689453,
+          116.3870620727539,
+          116.46762084960938,
+          116.36540222167969,
+          116.35626220703125,
+          116.34384155273438,
+          116.29785919189453,
+          116.45865631103516,
+          116.50370025634766
+        ]
+      },
+      "real_tok_s": 47049.51393921049,
+      "physical_tok_s": 48389.85801782935,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/eager_pfa_bucket_5632/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 116.2807799999998,
+        "attention_types": [
+          {
+            "name": "PromptFlashAttention",
+            "calls_per_forward": 32,
+            "ms_per_forward": 55.009800000000006
+          }
+        ]
+      }
+    },
+    {
+      "variant": "eager_pfa",
+      "route": "bucket_768",
+      "tags": {
+        "route": "bucket_768",
+        "real_tokens": 640,
+        "physical_tokens": 768,
+        "members": 1,
+        "member_lengths": [
+          640
+        ],
+        "request_ids": [
+          21
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        640,
+        128
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "raw_eager",
+      "status": "completed",
+      "source_capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "first_call_s": 0.05443985597230494,
+      "first_layer_eager_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 0.9999999403953552,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 51.18315687868744,
+          "p50": 51.093038462568074,
+          "p90": 51.378072309307754,
+          "p99": 52.03628068091348,
+          "min": 50.94720597844571,
+          "max": 52.109414944425225
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 50.98500785827637,
+          "p50": 50.963470458984375,
+          "p90": 51.169036102294925,
+          "p99": 51.268957443237305,
+          "min": 50.81850051879883,
+          "max": 51.280059814453125
+        },
+        "wall_samples_ms": [
+          52.109414944425225,
+          51.10891896765679,
+          51.06196796987206,
+          51.296812016516924,
+          50.94720597844571,
+          51.00551701616496,
+          51.10402894206345,
+          50.96652603242546,
+          51.149128936231136,
+          51.0820479830727
+        ],
+        "device_samples_ms": [
+          51.280059814453125,
+          50.96622085571289,
+          50.93119812011719,
+          51.156700134277344,
+          50.81850051879883,
+          50.88785934448242,
+          50.97669982910156,
+          50.851478576660156,
+          51.0206413269043,
+          50.96072006225586
+        ]
+      },
+      "real_tok_s": 12552.70964709892,
+      "physical_tok_s": 15063.251576518704,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/eager_pfa_bucket_768/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 25.164933333333355,
+        "attention_types": [
+          {
+            "name": "PromptFlashAttention",
+            "calls_per_forward": 32,
+            "ms_per_forward": 2.6547533333333324
+          }
+        ]
+      }
+    },
+    {
+      "variant": "eager_pfa",
+      "route": "packed_768",
+      "tags": {
+        "route": "packed_768",
+        "real_tokens": 672,
+        "physical_tokens": 768,
+        "members": 2,
+        "member_lengths": [
+          480,
+          192
+        ],
+        "request_ids": [
+          20,
+          18
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        480,
+        192,
+        96
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "raw_eager",
+      "status": "completed",
+      "source_capture_sha256": "fe53eb21e6152c6c227e2a6603fb93db644b88f107406795fd5e3dcc6a810f02",
+      "first_call_s": 0.06624973600264639,
+      "first_layer_eager_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 63.093290221877396,
+          "p50": 62.70159053383395,
+          "p90": 64.06387989409268,
+          "p99": 65.47582248458639,
+          "min": 62.46462103445083,
+          "max": 65.63270499464124
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 62.878099060058595,
+          "p50": 62.56816864013672,
+          "p90": 63.278297424316406,
+          "p99": 65.27233657836913,
+          "min": 62.333560943603516,
+          "max": 65.493896484375
+        },
+        "wall_samples_ms": [
+          63.88956599403173,
+          62.909409054555,
+          62.615233939141035,
+          62.79754708521068,
+          62.745806062594056,
+          62.657375005073845,
+          62.65428499318659,
+          62.56635405588895,
+          65.63270499464124,
+          62.46462103445083
+        ],
+        "device_samples_ms": [
+          63.03211975097656,
+          62.73667907714844,
+          62.46540069580078,
+          62.6402587890625,
+          62.608558654785156,
+          62.52777862548828,
+          62.50217819213867,
+          62.44055938720703,
+          65.493896484375,
+          62.333560943603516
+        ]
+      },
+      "real_tok_s": 10687.345992411969,
+      "physical_tok_s": 12214.109705613679,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/eager_pfa_packed_768/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 25.705179999999977,
+        "attention_types": [
+          {
+            "name": "PromptFlashAttention",
+            "calls_per_forward": 32,
+            "ms_per_forward": 2.8429999999999995
+          }
+        ]
+      }
+    },
+    {
+      "variant": "pfa_approx",
+      "route": "bucket_5632",
+      "tags": {
+        "route": "bucket_5632",
+        "real_tokens": 5476,
+        "physical_tokens": 5632,
+        "members": 1,
+        "member_lengths": [
+          5476
+        ],
+        "request_ids": [
+          0
+        ],
+        "hidden_shape": [
+          5632,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        5476,
+        156
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "unsupported_on_this_device",
+      "source_capture_sha256": "dc774a0d09d3838c55137b10c29184ae642de282037d3d259052d4897b152b37",
+      "reason": "innerPrecise=4 is 310P-only",
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/pfa_approx_bucket_5632/result.json"
+    },
+    {
+      "variant": "pfa_approx",
+      "route": "bucket_768",
+      "tags": {
+        "route": "bucket_768",
+        "real_tokens": 640,
+        "physical_tokens": 768,
+        "members": 1,
+        "member_lengths": [
+          640
+        ],
+        "request_ids": [
+          21
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        640,
+        128
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "unsupported_on_this_device",
+      "source_capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "reason": "innerPrecise=4 is 310P-only",
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/pfa_approx_bucket_768/result.json"
+    },
+    {
+      "variant": "pfa_approx",
+      "route": "packed_768",
+      "tags": {
+        "route": "packed_768",
+        "real_tokens": 672,
+        "physical_tokens": 768,
+        "members": 2,
+        "member_lengths": [
+          480,
+          192
+        ],
+        "request_ids": [
+          20,
+          18
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        480,
+        192,
+        96
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "unsupported_on_this_device",
+      "source_capture_sha256": "fe53eb21e6152c6c227e2a6603fb93db644b88f107406795fd5e3dcc6a810f02",
+      "reason": "innerPrecise=4 is 310P-only",
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/pfa_approx_packed_768/result.json"
+    },
+    {
+      "variant": "pfa_d128_approx",
+      "route": "bucket_5632",
+      "tags": {
+        "route": "bucket_5632",
+        "real_tokens": 5476,
+        "physical_tokens": 5632,
+        "members": 1,
+        "member_lengths": [
+          5476
+        ],
+        "request_ids": [
+          0
+        ],
+        "hidden_shape": [
+          5632,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        5476,
+        156
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "unsupported_on_this_device",
+      "source_capture_sha256": "dc774a0d09d3838c55137b10c29184ae642de282037d3d259052d4897b152b37",
+      "reason": "innerPrecise=4 is 310P-only",
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/pfa_d128_approx_bucket_5632/result.json"
+    },
+    {
+      "variant": "pfa_d128_approx",
+      "route": "bucket_768",
+      "tags": {
+        "route": "bucket_768",
+        "real_tokens": 640,
+        "physical_tokens": 768,
+        "members": 1,
+        "member_lengths": [
+          640
+        ],
+        "request_ids": [
+          21
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        640,
+        128
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "unsupported_on_this_device",
+      "source_capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "reason": "innerPrecise=4 is 310P-only",
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/pfa_d128_approx_bucket_768/result.json"
+    },
+    {
+      "variant": "pfa_d128_approx",
+      "route": "packed_768",
+      "tags": {
+        "route": "packed_768",
+        "real_tokens": 672,
+        "physical_tokens": 768,
+        "members": 2,
+        "member_lengths": [
+          480,
+          192
+        ],
+        "request_ids": [
+          20,
+          18
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        480,
+        192,
+        96
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "unsupported_on_this_device",
+      "source_capture_sha256": "fe53eb21e6152c6c227e2a6603fb93db644b88f107406795fd5e3dcc6a810f02",
+      "reason": "innerPrecise=4 is 310P-only",
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/pfa_d128_approx_packed_768/result.json"
+    },
+    {
+      "variant": "pfa_d128",
+      "route": "bucket_5632",
+      "tags": {
+        "route": "bucket_5632",
+        "real_tokens": 5476,
+        "physical_tokens": 5632,
+        "members": 1,
+        "member_lengths": [
+          5476
+        ],
+        "request_ids": [
+          0
+        ],
+        "hidden_shape": [
+          5632,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        5476,
+        156
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "completed",
+      "source_capture_sha256": "dc774a0d09d3838c55137b10c29184ae642de282037d3d259052d4897b152b37",
+      "first_call_s": 44.72771134902723,
+      "first_layer_eager_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 112.30506140273064,
+          "p50": 112.24584199953824,
+          "p90": 112.34674900770187,
+          "p99": 112.80149118509144,
+          "min": 112.20955697353929,
+          "max": 112.85201809369028
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 112.10931625366212,
+          "p50": 112.1084098815918,
+          "p90": 112.14439163208007,
+          "p99": 112.16099678039551,
+          "min": 112.03340148925781,
+          "max": 112.162841796875
+        },
+        "wall_samples_ms": [
+          112.85201809369028,
+          112.25253704469651,
+          112.26173699833453,
+          112.22884699236602,
+          112.26409790106118,
+          112.20955697353929,
+          112.23914695437998,
+          112.22983698826283,
+          112.2906079981476,
+          112.22222808282822
+        ],
+        "device_samples_ms": [
+          112.03340148925781,
+          112.08789825439453,
+          112.14234161376953,
+          112.1060791015625,
+          112.13616180419922,
+          112.09185791015625,
+          112.1165771484375,
+          112.1107406616211,
+          112.162841796875,
+          112.10526275634766
+        ]
+      },
+      "real_tok_s": 48845.18238974741,
+      "physical_tok_s": 50236.68137674533,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/pfa_d128_bucket_5632/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 111.92567333333326,
+        "attention_types": [
+          {
+            "name": "PromptFlashAttention",
+            "calls_per_forward": 32,
+            "ms_per_forward": 56.22337333333332
+          }
+        ]
+      }
+    },
+    {
+      "variant": "pfa_d128",
+      "route": "bucket_768",
+      "tags": {
+        "route": "bucket_768",
+        "real_tokens": 640,
+        "physical_tokens": 768,
+        "members": 1,
+        "member_lengths": [
+          640
+        ],
+        "request_ids": [
+          21
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        640,
+        128
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "completed",
+      "source_capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "first_call_s": 45.45140594791155,
+      "first_layer_eager_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 0.9999999403953552,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 20.51399857737124,
+          "p50": 20.446902024559677,
+          "p90": 20.539575128350407,
+          "p99": 21.085249503375962,
+          "min": 20.40933701209724,
+          "max": 21.145879989489913
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 20.32131996154785,
+          "p50": 20.333409309387207,
+          "p90": 20.357500076293945,
+          "p99": 20.357824516296386,
+          "min": 20.223960876464844,
+          "max": 20.357860565185547
+        },
+        "wall_samples_ms": [
+          21.145879989489913,
+          20.450387033633888,
+          20.463587949052453,
+          20.437736995518208,
+          20.47220792155713,
+          20.43974702246487,
+          20.443417015485466,
+          20.414146943949163,
+          20.463537890464067,
+          20.40933701209724
+        ],
+        "device_samples_ms": [
+          20.223960876464844,
+          20.316219329833984,
+          20.357860565185547,
+          20.33639907836914,
+          20.357460021972656,
+          20.330419540405273,
+          20.336999893188477,
+          20.30620002746582,
+          20.34044075012207,
+          20.307239532470703
+        ]
+      },
+      "real_tok_s": 31494.017180528266,
+      "physical_tok_s": 37792.82061663392,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/pfa_d128_bucket_768/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 20.122839999999993,
+        "attention_types": [
+          {
+            "name": "PromptFlashAttention",
+            "calls_per_forward": 32,
+            "ms_per_forward": 2.8217199999999987
+          }
+        ]
+      }
+    },
+    {
+      "variant": "pfa_d128",
+      "route": "packed_768",
+      "tags": {
+        "route": "packed_768",
+        "real_tokens": 672,
+        "physical_tokens": 768,
+        "members": 2,
+        "member_lengths": [
+          480,
+          192
+        ],
+        "request_ids": [
+          20,
+          18
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        480,
+        192,
+        96
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "torchair_fullgraph",
+      "status": "completed",
+      "source_capture_sha256": "fe53eb21e6152c6c227e2a6603fb93db644b88f107406795fd5e3dcc6a810f02",
+      "first_call_s": 39.99872171599418,
+      "first_layer_eager_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 19.250277988612652,
+          "p50": 19.185370998457074,
+          "p90": 19.27933907136321,
+          "p99": 19.791203185450286,
+          "min": 19.1584350541234,
+          "max": 19.848076975904405
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 19.06061210632324,
+          "p50": 19.061140060424805,
+          "p90": 19.096494674682617,
+          "p99": 19.1168571472168,
+          "min": 18.994159698486328,
+          "max": 19.11911964416504
+        },
+        "wall_samples_ms": [
+          19.848076975904405,
+          19.187445985153317,
+          19.216145970858634,
+          19.168435945175588,
+          19.1837860038504,
+          19.207626930437982,
+          19.1584350541234,
+          19.18082602787763,
+          19.165044999681413,
+          19.186955993063748
+        ],
+        "device_samples_ms": [
+          18.994159698486328,
+          19.063859939575195,
+          19.11911964416504,
+          19.042579650878906,
+          19.077119827270508,
+          19.09398078918457,
+          19.050640106201172,
+          19.058420181274414,
+          19.03264045715332,
+          19.07360076904297
+        ]
+      },
+      "real_tok_s": 35255.95066157755,
+      "physical_tok_s": 40292.51504180292,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/pfa_d128_packed_768/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 18.8322,
+        "attention_types": [
+          {
+            "name": "PromptFlashAttention",
+            "calls_per_forward": 32,
+            "ms_per_forward": 2.7295466666666663
+          }
+        ]
+      }
+    },
+    {
+      "variant": "unpad_d128",
+      "route": "bucket_5632",
+      "tags": {
+        "route": "bucket_5632",
+        "real_tokens": 5476,
+        "physical_tokens": 5632,
+        "members": 1,
+        "member_lengths": [
+          5476
+        ],
+        "request_ids": [
+          0
+        ],
+        "hidden_shape": [
+          5632,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        5476,
+        156
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "raw_eager",
+      "status": "completed",
+      "source_capture_sha256": "dc774a0d09d3838c55137b10c29184ae642de282037d3d259052d4897b152b37",
+      "first_call_s": 0.13000083004590124,
+      "first_layer_eager_parity": {
+        "exact": false,
+        "max_abs": 0.015625,
+        "mean_abs": 0.00012286756827961653,
+        "relative_l2": 0.0003018265706487,
+        "cosine": 0.9999998807907104,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": false,
+        "max_abs": 264,
+        "mean_abs": 0.013496709987521172,
+        "relative_l2": 0.006710011977702379,
+        "cosine": 0.9999775290489197,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 129.709067591466,
+          "p50": 129.6295235515572,
+          "p90": 129.91410564864054,
+          "p99": 130.20520913531072,
+          "min": 129.53205208759755,
+          "max": 130.23755396716297
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 129.4963851928711,
+          "p50": 129.4647674560547,
+          "p90": 129.6037612915039,
+          "p99": 129.71636978149414,
+          "min": 129.369140625,
+          "max": 129.7288818359375
+        },
+        "wall_samples_ms": [
+          130.23755396716297,
+          129.53205208759755,
+          129.61546308360994,
+          129.6435840195045,
+          129.5891529880464,
+          129.8781669465825,
+          129.60560200735927,
+          129.7318049473688,
+          129.58872190210968,
+          129.6685739653185
+        ],
+        "device_samples_ms": [
+          129.4241180419922,
+          129.369140625,
+          129.480712890625,
+          129.50503540039062,
+          129.44882202148438,
+          129.7288818359375,
+          129.4464874267578,
+          129.58985900878906,
+          129.43765258789062,
+          129.53314208984375
+        ]
+      },
+      "real_tok_s": 42286.8946638478,
+      "physical_tok_s": 43491.561495031194,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/unpad_d128_bucket_5632/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 129.7839200000001,
+        "attention_types": [
+          {
+            "name": "UnpadFlashAttentionNdKernel",
+            "calls_per_forward": 32,
+            "ms_per_forward": 55.84490666666667
+          }
+        ]
+      }
+    },
+    {
+      "variant": "unpad_d128",
+      "route": "bucket_768",
+      "tags": {
+        "route": "bucket_768",
+        "real_tokens": 640,
+        "physical_tokens": 768,
+        "members": 1,
+        "member_lengths": [
+          640
+        ],
+        "request_ids": [
+          21
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        640,
+        128
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "raw_eager",
+      "status": "completed",
+      "source_capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "first_call_s": 0.055772857973352075,
+      "first_layer_eager_parity": {
+        "exact": false,
+        "max_abs": 0.0078125,
+        "mean_abs": 0.00009772046178113669,
+        "relative_l2": 0.0002443274133838713,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": false,
+        "max_abs": 252,
+        "mean_abs": 0.01590176671743393,
+        "relative_l2": 0.010675381869077682,
+        "cosine": 0.9999431371688843,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 0.9999999403953552,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 51.901155698578805,
+          "p50": 51.78915447322652,
+          "p90": 52.391835080925375,
+          "p99": 52.45975442812778,
+          "min": 51.49244505446404,
+          "max": 52.46730102226138
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 51.69970817565918,
+          "p50": 51.6179313659668,
+          "p90": 52.066392517089845,
+          "p99": 52.22769790649414,
+          "min": 51.36132049560547,
+          "max": 52.24562072753906
+        },
+        "wall_samples_ms": [
+          52.46730102226138,
+          51.70753796119243,
+          51.599367056041956,
+          51.59068596549332,
+          52.12571599986404,
+          51.870770985260606,
+          52.383449976332486,
+          51.608857000246644,
+          52.16542596463114,
+          51.49244505446404
+        ],
+        "device_samples_ms": [
+          51.6663818359375,
+          51.569480895996094,
+          51.467140197753906,
+          51.458221435546875,
+          51.977718353271484,
+          51.72589874267578,
+          52.24562072753906,
+          51.47882080078125,
+          52.046478271484375,
+          51.36132049560547
+        ]
+      },
+      "real_tok_s": 12379.18012661664,
+      "physical_tok_s": 14855.016151939968,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/unpad_d128_bucket_768/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 30.99528666666673,
+        "attention_types": [
+          {
+            "name": "UnpadFlashAttentionNdKernel",
+            "calls_per_forward": 32,
+            "ms_per_forward": 2.1908400000000015
+          }
+        ]
+      }
+    },
+    {
+      "variant": "unpad_d128",
+      "route": "packed_768",
+      "tags": {
+        "route": "packed_768",
+        "real_tokens": 672,
+        "physical_tokens": 768,
+        "members": 2,
+        "member_lengths": [
+          480,
+          192
+        ],
+        "request_ids": [
+          20,
+          18
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        480,
+        192,
+        96
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "raw_eager",
+      "status": "completed",
+      "source_capture_sha256": "fe53eb21e6152c6c227e2a6603fb93db644b88f107406795fd5e3dcc6a810f02",
+      "first_call_s": 0.05176648998167366,
+      "first_layer_eager_parity": {
+        "exact": false,
+        "max_abs": 0.0078125,
+        "mean_abs": 0.00007170460594352335,
+        "relative_l2": 0.00020557933021336794,
+        "cosine": 0.9999999403953552,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": false,
+        "max_abs": 72,
+        "mean_abs": 0.010402088053524494,
+        "relative_l2": 0.003684292547404766,
+        "cosine": 0.9999931454658508,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 50.33757750643417,
+          "p50": 50.284324563108385,
+          "p90": 50.52060658344999,
+          "p99": 51.275847376091406,
+          "min": 49.97948894742876,
+          "max": 51.35976301971823
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 50.136590576171876,
+          "p50": 50.14227104187012,
+          "p90": 50.31073760986328,
+          "p99": 50.554191207885744,
+          "min": 49.84872055053711,
+          "max": 50.581241607666016
+        },
+        "wall_samples_ms": [
+          51.35976301971823,
+          50.314275082200766,
+          50.32485502306372,
+          49.97948894742876,
+          50.427366979420185,
+          50.204264000058174,
+          50.254374044016004,
+          50.06107094231993,
+          50.3767360933125,
+          50.07358093280345
+        ],
+        "device_samples_ms": [
+          50.581241607666016,
+          50.17570114135742,
+          50.18962097167969,
+          49.84872055053711,
+          50.28068161010742,
+          50.05632019042969,
+          50.10884094238281,
+          49.93600082397461,
+          50.24311828613281,
+          49.94565963745117
+        ]
+      },
+      "real_tok_s": 13403.38447982495,
+      "physical_tok_s": 15318.153691228516,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/unpad_d128_packed_768/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 30.93796666666661,
+        "attention_types": [
+          {
+            "name": "UnpadFlashAttentionNdKernel",
+            "calls_per_forward": 32,
+            "ms_per_forward": 1.9669266666666656
+          }
+        ]
+      }
+    },
+    {
+      "variant": "unpad_d80",
+      "route": "bucket_5632",
+      "tags": {
+        "route": "bucket_5632",
+        "real_tokens": 5476,
+        "physical_tokens": 5632,
+        "members": 1,
+        "member_lengths": [
+          5476
+        ],
+        "request_ids": [
+          0
+        ],
+        "hidden_shape": [
+          5632,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        5476,
+        156
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "raw_eager",
+      "status": "completed",
+      "source_capture_sha256": "dc774a0d09d3838c55137b10c29184ae642de282037d3d259052d4897b152b37",
+      "first_call_s": 0.14719173090998083,
+      "first_layer_eager_parity": {
+        "exact": false,
+        "max_abs": 0.015625,
+        "mean_abs": 0.00012286756827961653,
+        "relative_l2": 0.0003018265706487,
+        "cosine": 0.9999998807907104,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": false,
+        "max_abs": 264,
+        "mean_abs": 0.013496709987521172,
+        "relative_l2": 0.006710011977702379,
+        "cosine": 0.9999775290489197,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 146.7093036044389,
+          "p50": 146.6699629672803,
+          "p90": 146.90839705290273,
+          "p99": 146.947277066065,
+          "min": 146.46424900274724,
+          "max": 146.95159706752747
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 146.50234832763672,
+          "p50": 146.51496124267578,
+          "p90": 146.70901641845703,
+          "p99": 146.75043350219727,
+          "min": 146.1472930908203,
+          "max": 146.75503540039062
+        },
+        "wall_samples_ms": [
+          146.95159706752747,
+          146.81045594625175,
+          146.66108298115432,
+          146.90359705127776,
+          146.66394295636564,
+          146.51331002824008,
+          146.6119720134884,
+          146.83684601914138,
+          146.46424900274724,
+          146.67598297819495
+        ],
+        "device_samples_ms": [
+          146.1472930908203,
+          146.64944458007812,
+          146.50636291503906,
+          146.75503540039062,
+          146.5235595703125,
+          146.37667846679688,
+          146.4813232421875,
+          146.7039031982422,
+          146.33285522460938,
+          146.54702758789062
+        ]
+      },
+      "real_tok_s": 37378.240434436695,
+      "physical_tok_s": 38443.06978209413,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/unpad_d80_bucket_5632/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 146.48826666666676,
+        "attention_types": [
+          {
+            "name": "UnpadFlashAttentionNdKernel",
+            "calls_per_forward": 32,
+            "ms_per_forward": 80.96082666666668
+          }
+        ]
+      }
+    },
+    {
+      "variant": "unpad_d80",
+      "route": "bucket_768",
+      "tags": {
+        "route": "bucket_768",
+        "real_tokens": 640,
+        "physical_tokens": 768,
+        "members": 1,
+        "member_lengths": [
+          640
+        ],
+        "request_ids": [
+          21
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        640,
+        128
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "raw_eager",
+      "status": "completed",
+      "source_capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "first_call_s": 0.050509738037362695,
+      "first_layer_eager_parity": {
+        "exact": false,
+        "max_abs": 0.0078125,
+        "mean_abs": 0.00009772046178113669,
+        "relative_l2": 0.0002443274133838713,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": false,
+        "max_abs": 252,
+        "mean_abs": 0.01590176671743393,
+        "relative_l2": 0.010675381869077682,
+        "cosine": 0.9999431371688843,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 0.9999999403953552,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 47.49673329060897,
+          "p50": 47.153661493211985,
+          "p90": 48.54128190781921,
+          "p99": 49.0484877792187,
+          "min": 46.95759899914265,
+          "max": 49.10484398715198
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 47.2858699798584,
+          "p50": 47.011831283569336,
+          "p90": 47.740940475463866,
+          "p99": 48.853896369934084,
+          "min": 46.82685852050781,
+          "max": 48.97755813598633
+        },
+        "wall_samples_ms": [
+          48.47866389900446,
+          47.23829298745841,
+          47.74021101184189,
+          46.95759899914265,
+          47.317474032752216,
+          47.01390897389501,
+          46.98217904660851,
+          47.06512996926904,
+          47.06902999896556,
+          49.10484398715198
+        ],
+        "device_samples_ms": [
+          47.58287811279297,
+          47.08430099487305,
+          47.603538513183594,
+          46.82685852050781,
+          47.18244171142578,
+          46.88951873779297,
+          46.83412170410156,
+          46.939361572265625,
+          46.9381217956543,
+          48.97755813598633
+        ]
+      },
+      "real_tok_s": 13534.698637724347,
+      "physical_tok_s": 16241.638365269215,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/unpad_d80_bucket_768/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 28.019360000000052,
+        "attention_types": [
+          {
+            "name": "UnpadFlashAttentionNdKernel",
+            "calls_per_forward": 32,
+            "ms_per_forward": 2.633946666666667
+          }
+        ]
+      }
+    },
+    {
+      "variant": "unpad_d80",
+      "route": "packed_768",
+      "tags": {
+        "route": "packed_768",
+        "real_tokens": 672,
+        "physical_tokens": 768,
+        "members": 2,
+        "member_lengths": [
+          480,
+          192
+        ],
+        "request_ids": [
+          20,
+          18
+        ],
+        "hidden_shape": [
+          768,
+          1280
+        ],
+        "graph_batch_size": 1,
+        "num_heads": 16,
+        "head_dim": 80,
+        "dtype": "torch.float16"
+      },
+      "segments": [
+        480,
+        192,
+        96
+      ],
+      "device": "Ascend910B2",
+      "soc_version": 221,
+      "commit": "6c7238d38c9d99bfff1540fbe1ab391baf554681",
+      "execution": "raw_eager",
+      "status": "completed",
+      "source_capture_sha256": "fe53eb21e6152c6c227e2a6603fb93db644b88f107406795fd5e3dcc6a810f02",
+      "first_call_s": 0.04605312296189368,
+      "first_layer_eager_parity": {
+        "exact": false,
+        "max_abs": 0.0078125,
+        "mean_abs": 0.00007170460594352335,
+        "relative_l2": 0.00020557933021336794,
+        "cosine": 0.9999999403953552,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "full_encoder_parity": {
+        "exact": false,
+        "max_abs": 72,
+        "mean_abs": 0.010402088053524494,
+        "relative_l2": 0.003684292547404766,
+        "cosine": 0.9999931454658508,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "repeat_parity": {
+        "exact": true,
+        "max_abs": 0,
+        "mean_abs": 0,
+        "relative_l2": 0,
+        "cosine": 1,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": true
+      },
+      "timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 44.915587187279016,
+          "p50": 44.79497601278126,
+          "p90": 45.59488411759958,
+          "p99": 45.65919078071602,
+          "min": 44.50614599045366,
+          "max": 45.66633596550673
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 44.69036598205567,
+          "p50": 44.629329681396484,
+          "p90": 44.906973648071286,
+          "p99": 45.475383262634274,
+          "min": 44.38125991821289,
+          "max": 45.53853988647461
+        },
+        "wall_samples_ms": [
+          45.58694502338767,
+          44.80932105798274,
+          44.54729694407433,
+          44.78063096757978,
+          44.87726290244609,
+          45.66633596550673,
+          44.65663805603981,
+          44.966044020839036,
+          44.7592509444803,
+          44.50614599045366
+        ],
+        "device_samples_ms": [
+          44.56925964355469,
+          44.644779205322266,
+          44.41714096069336,
+          44.653621673583984,
+          44.74335861206055,
+          45.53853988647461,
+          44.50502014160156,
+          44.83679962158203,
+          44.6138801574707,
+          44.38125991821289
+        ]
+      },
+      "real_tok_s": 15036.797869809912,
+      "physical_tok_s": 17184.911851211327,
+      "source_result": "tmp/11_mineru_2_5_pro_inference/attention_matrix_910b_r1/unpad_d80_packed_768/result.json",
+      "normalized_profile": {
+        "forwards": 3,
+        "kernel_ms_per_forward": 27.61496000000005,
+        "attention_types": [
+          {
+            "name": "UnpadFlashAttentionNdKernel",
+            "calls_per_forward": 32,
+            "ms_per_forward": 2.45978
+          }
+        ]
+      }
+    }
+  ]
+}
