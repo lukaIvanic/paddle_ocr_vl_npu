@@ -98,6 +98,67 @@ def profiled_worker(jobs, results, config):
         destination.mkdir(parents=True, exist_ok=False)
         arena = self.decode_arena
         original_step = arena.step
+        if os.environ.get("TABLE_SERVING_PROFILE_COMPONENT") == "cadence":
+            import csv
+            observations = []
+
+            def timed_step(decode_fn, *step_args, **step_kwargs):
+                call_times = []
+                positions = [slot.ready.prompt_length + slot.iterations_launched
+                             for slot in arena.slots if slot is not None]
+
+                def timed_call(*fn_args, **fn_kwargs):
+                    wall_start = time.perf_counter_ns()
+                    cpu_start = time.thread_time_ns()
+                    output = decode_fn(*fn_args, **fn_kwargs)
+                    cpu_end = time.thread_time_ns()
+                    wall_end = time.perf_counter_ns()
+                    call_times.extend((wall_start, wall_end, cpu_start, cpu_end))
+                    return output
+
+                step_start = time.perf_counter_ns()
+                result = original_step(timed_call, *step_args, **step_kwargs)
+                step_end = time.perf_counter_ns()
+                observations.append((step_kwargs["iteration"], len(positions),
+                                     min(positions), max(positions),
+                                     step_start, step_end, *call_times))
+                return result
+
+            arena.step = timed_step
+            try:
+                return original_serve(self, *args, **kwargs)
+            finally:
+                arena.step = original_step
+                # The normal serve shutdown has already completed device work
+                # and resolved timings. Reuse its existing event pairs; no new
+                # event, profiler collection, or per-step sync is introduced.
+                spans = arena._decode_event_spans
+                if len(spans) != len(observations):
+                    raise RuntimeError("cadence observations do not match decode events")
+                columns = ("iteration", "active_slots", "min_position", "max_position",
+                           "step_start_ns", "step_end_ns", "call_start_ns", "call_end_ns",
+                           "call_cpu_start_ns", "call_cpu_end_ns", "event_start_enqueue_ns",
+                           "device_interval_ms")
+                with (destination / "cadence.csv").open("w", newline="") as stream:
+                    writer = csv.writer(stream)
+                    writer.writerow(columns)
+                    for observation, span in zip(observations, spans):
+                        if observation[0] != span.args["iteration"]:
+                            raise RuntimeError("cadence iteration/event mismatch")
+                        interval_ms = (span.duration_s * 1000 if span.duration_s is not None
+                                       else float(span.start_event.elapsed_time(span.end_event)))
+                        writer.writerow((*observation, span.enqueued_ns, interval_ms))
+                (destination / "capture.json").write_text(json.dumps({
+                    "component": "existing real graph call cadence",
+                    "configuration": config,
+                    "calls": len(observations),
+                    "torch_num_threads": torch.get_num_threads(),
+                    "torch_num_interop_threads": torch.get_num_interop_threads(),
+                    "cpu_affinity": sorted(os.sched_getaffinity(0)),
+                    "note": "Diagnostic timings, not a goal gate. Whole-server calls include warmup. No new device sync/events or changed scheduling.",
+                }, indent=2) + "\n")
+                print(f"SERVING_CADENCE saved {len(observations)} calls", flush=True)
+
         profiler = None
         eligible = captured = 0
         observations = []
