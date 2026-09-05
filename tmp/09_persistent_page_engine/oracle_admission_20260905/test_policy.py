@@ -1,8 +1,24 @@
 import unittest
-from oracle_api import protection
+from oracle_api import DecodeCadence, protection
 
 
 class PolicyTest(unittest.TestCase):
+    def test_cadence_excludes_prefill_and_idle(self):
+        clock = DecodeCadence()
+        for i in range(33):
+            clock.step(i*.001)
+        self.assertAlmostEqual(clock.step_s, .001)
+        clock.interrupted = True
+        clock.step(1.0)
+        self.assertEqual(clock.count, 32)
+        self.assertLess(max(clock.samples), .002)
+        clock.step(1.001)
+        self.assertEqual(clock.count, 33)
+
+    def test_decision_uses_observed_cadence(self):
+        self.assertEqual(protection(100, .01, [("a", .21, 1351)], .00130), ["a"])
+        self.assertEqual(protection(100, .01, [("a", .21, 1351)], .00135), [])
+
     def test_threatened_running_request_with_short_newcomer(self):
         self.assertEqual(protection(100, .01, [("a", 1.8, 100)]), ["a"])
 

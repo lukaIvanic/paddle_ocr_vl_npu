@@ -4,8 +4,9 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 
-ROOT = Path(__file__).resolve().parent / "run_37e42bc0"
+ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent / "run_37e42bc0"
 load = lambda p: json.loads(p.read_text())
 log = (ROOT / "host_npu6_monitor.log").read_text()
 samples = [(datetime.fromisoformat(b.splitlines()[0]).timestamp(), set(map(int, re.findall(r"Process id:(\d+)", b)))) for b in re.split(r"(?=^2026-\d\d-\d\dT)", log, flags=re.M) if "Chip Count" in b]
