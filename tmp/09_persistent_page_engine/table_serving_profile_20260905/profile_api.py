@@ -24,6 +24,53 @@ def profiled_worker(jobs, results, config):
     import torch_npu.profiler as prof
     from paddleocr_vl.serving.engine import ContinuousRecognizer
 
+    if os.environ.get("TABLE_SERVING_PROFILE_COMPONENT") == "embedding":
+        from paddleocr_vl.model.vision_prefill import PaddleOCRVisionEmbeddings
+        original_forward = PaddleOCRVisionEmbeddings.forward
+        calls = 0
+        observations = []
+        destination = Path(os.environ["TABLE_SERVING_PROFILE_ROOT"]).resolve()
+        destination.mkdir(parents=True, exist_ok=False)
+
+        def forward(module, pixels, image_grid_thw):
+            nonlocal calls
+            index = calls
+            calls += 1
+            if index < 5 or index >= 8:
+                return original_forward(module, pixels, image_grid_thw)
+            # Five complete real requests precede three separately captured
+            # forwards. Stop at each forward so inter-request decoder work does
+            # not inflate the capture. Profiler stop synchronizes: diagnostic only.
+            capture_dir = destination / f"embedding_{index-5}"
+            with prof.profile(
+                activities=[prof.ProfilerActivity.CPU, prof.ProfilerActivity.NPU],
+                on_trace_ready=prof.tensorboard_trace_handler(str(capture_dir), analyse_flag=True),
+                record_shapes=True, profile_memory=False, with_stack=False,
+                experimental_config=prof._ExperimentalConfig(
+                    profiler_level=prof.ProfilerLevel.Level1,
+                    aic_metrics=prof.AiCMetrics.PipeUtilization,
+                    export_type=prof.ExportType.Text, data_simplification=False,
+                ),
+            ):
+                with torch.profiler.record_function("serving.vision_embeddings"):
+                    result = original_forward(module, pixels, image_grid_thw)
+            observations.append({"request_index": index, "pixel_shape": list(pixels.shape),
+                                 "grid": image_grid_thw.tolist(), "host_epoch_s": time.time()})
+            (destination / "capture.json").write_text(json.dumps({
+                "component": "real vision patch and position embeddings",
+                "full_request_warmups": 5, "profiled_forwards": len(observations),
+                "configuration": config, "observations": observations,
+                "profiled_latency_is_not_a_goal_result": True,
+            }, indent=2)+"\n")
+            print(f"SERVING_PROFILE embedding {index-4}/3 done", flush=True)
+            return result
+
+        PaddleOCRVisionEmbeddings.forward = forward
+        try:
+            return original_worker(jobs, results, config)
+        finally:
+            PaddleOCRVisionEmbeddings.forward = original_forward
+
     original_serve = ContinuousRecognizer.serve
 
     def serve(self, *args, **kwargs):
