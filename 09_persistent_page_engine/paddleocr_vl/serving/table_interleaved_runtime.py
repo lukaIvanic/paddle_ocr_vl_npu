@@ -105,7 +105,7 @@ class _Arena:
 
 
 class _Call:
-    def __init__(self, runtime: Any, batch: int, query: int, device: Any) -> None:
+    def __init__(self, runtime: Any, batch: int, query: int, device: Any, *, record_device_timing: bool) -> None:
         self.runtime = runtime
         self.host_ids = torch.empty((batch, query), dtype=torch.int64, pin_memory=True)
         self.ids = self.host_ids.numpy()
@@ -114,8 +114,10 @@ class _Call:
         self.device_ids = torch.empty((batch, query), dtype=torch.int64, device=device)
         self.device_pos = torch.empty(batch, dtype=torch.int64, device=device)
         self.host_result = torch.empty_like(self.host_ids)
-        self.begin = torch.npu.Event(enable_timing=True)
-        self.end = torch.npu.Event(enable_timing=True)
+        self.stream = torch.npu.current_stream(device)
+        self.begin = torch.npu.Event(enable_timing=True) if record_device_timing else None
+        self.end = torch.npu.Event(enable_timing=True) if record_device_timing else None
+        self.rope_views: dict[tuple[int, int], Any] = {}
 
     def run(self, arena: _Arena, first: int, sequences: list[_Sequence], proposals: dict[int, Any]) -> tuple[list[list[int]], float]:
         batch, query = self.ids.shape
@@ -130,18 +132,24 @@ class _Call:
                 self.ids[index, 1:1 + len(proposal.tokens)] = proposal.tokens
         self.device_ids.copy_(self.host_ids, non_blocking=True)
         self.device_pos.copy_(self.host_pos, non_blocking=True)
-        self.begin.record()
+        view_key = id(arena), first
+        if view_key not in self.rope_views:
+            self.rope_views[view_key] = arena.rope[first:first + batch]
+        if self.begin is not None:
+            self.begin.record()
         output = self.runtime.fn(
-            self.device_ids, self.device_pos, arena.rope[first:first + batch],
+            self.device_ids, self.device_pos, self.rope_views[view_key],
             *arena.tensors(first, batch),
         )
-        self.end.record()
+        if self.end is not None:
+            self.end.record()
         # These locked optimized graphs map compact argmax back to native IDs.
         if output.dtype != torch.int64 or output.numel() != batch * query:
             raise RuntimeError("expected native compact-head argmax IDs")
-        self.host_result.copy_(output.reshape(batch, query), non_blocking=True)
-        torch.npu.current_stream(arena.recognizer.device).synchronize()
-        return self.host_result.numpy().tolist(), float(self.begin.elapsed_time(self.end)) / 1000.0
+        self.host_result.copy_(output if output.shape == self.host_ids.shape else output.reshape(batch, query), non_blocking=True)
+        self.stream.synchronize()
+        device_s = float(self.begin.elapsed_time(self.end)) / 1000.0 if self.begin is not None else 0.0
+        return self.host_result.numpy().tolist(), device_s
 
 
 class InterleavedTableRuntime:
@@ -191,8 +199,11 @@ class InterleavedTableRuntime:
                 self._add_call("target", batch, k + 1, runtime, b1.device)
 
     def _add_call(self, kind: str, batch: int, query: int, runtime: Any, device: Any) -> None:
-        self.calls[kind, batch, query] = _Call(runtime, batch, query, device)
+        self.calls[kind, batch, query] = _Call(
+            runtime, batch, query, device, record_device_timing=bool(self.args.per_call_device_timing),
+        )
         self.metadata[f"{kind}_b{batch}q{query}"] = dict(runtime.metadata)
+        self.metadata[f"{kind}_b{batch}q{query}"]["per_call_device_timing"] = bool(self.args.per_call_device_timing)
 
     def add(self, request_id: str, *, route: str, payload: Any, target_prepared: Any, row_groups: Any = None) -> None:
         if request_id in self.jobs or len(self.jobs) >= self.capacity:
@@ -207,6 +218,7 @@ class InterleavedTableRuntime:
             "policy_k": int(self.args.initial_k), "proposal": None,
             "proposal_ready": False, "query": 1, "trace": [],
             "prefill_records": [],
+            "matcher_future": None, "matcher_timing": {},
         }
 
     def work(self) -> list[PhaseWork]:
@@ -250,6 +262,16 @@ class InterleavedTableRuntime:
             job["target_prepared"] = None
             job["target"] = self.target_arena.admit(prefilled, job["slot"], self.args.b1_max_new_tokens)
             job["prefill_records"].append({"kind": "target", "timing_s": dict(prefilled.timing_s), "device_stage_s": dict(prefilled.device_stage_s)})
+            if job["matcher_future"] is not None:
+                wait_started = time.perf_counter()
+                matcher, started, finished, thread_s = job["matcher_future"].result()
+                job["matcher"] = matcher
+                job["matcher_future"] = None
+                job["matcher_timing"] = {
+                    "build_wall_s": finished - started, "build_thread_s": thread_s,
+                    "consumer_wait_s": time.perf_counter() - wait_started,
+                    "contract": "background build overlaps target prefill; do not add build wall to E2E",
+                }
             if job["matcher"] is not None:
                 job["matcher"].start(job["target"].tokens[0])
             job["phase"] = "verify" if job["route"] == "spec" else "ordinary"
@@ -304,7 +326,7 @@ class InterleavedTableRuntime:
         for request_id, job in entries:
             if job["phase"] == "draft" and all(state.stop is not None for state in job["draft_states"]):
                 rows = [{"row_index": state.slot % 8, "token_ids": state.tokens} for state in job["draft_states"]]
-                job["matcher"] = make_matcher({"request_id": request_id, "rows": rows})
+                job["matcher_future"] = make_matcher({"request_id": request_id, "rows": rows})
                 for state in job["draft_states"]:
                     del self.draft_arena.states[state.slot]
                 job["phase"] = "target_prefill"

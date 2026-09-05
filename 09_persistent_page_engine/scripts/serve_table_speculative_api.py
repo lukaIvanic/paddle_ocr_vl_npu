@@ -662,13 +662,13 @@ def _interleaved_worker_loop(
     import table_spec_live_u8_adaptive_lab as live_lab
     from paddleocr_vl.serving.table_interleaved_runtime import InterleavedTableRuntime
     from paddleocr_vl.serving.table_phase_scheduler import PhaseLedger, TablePhasePolicy
-    from paddleocr_vl.serving.table_speculative import TableDraftMatcher
     from pipeline.layout_output import normalize_recognition_text
 
     capacity = int(config["interleaved_tables"])
     with torch.inference_mode():
         runtime = InterleavedTableRuntime(b1, draft, args, capacity=capacity)
         policy, ledger = TablePhasePolicy(), PhaseLedger()
+        matcher_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="table-phase-matcher")
         metadata: dict[str, Any] = {}
         draining = False
         completed = 0
@@ -725,7 +725,8 @@ def _interleaved_worker_loop(
             print(f"TABLE_PHASE admitted id={key} route={route} active={len(runtime.jobs)}", flush=True)
 
         def matcher_factory(record: dict[str, Any]) -> Any:
-            return TableDraftMatcher(
+            return matcher_executor.submit(
+                live_lab._timed_matcher,
                 record, b1.tokenizer, eos_token_id=int(b1.model.config.eos_token_id),
                 block_size=args.initial_k,
             )
@@ -755,7 +756,7 @@ def _interleaved_worker_loop(
                 for key in list(runtime.jobs):
                     state = runtime.jobs[key]
                     if state["phase"] == "draft" and all(row.stop is not None for row in state["draft_states"]):
-                        account("matcher_build", [key], lambda key=key: runtime.transitions(matcher_factory, key))
+                        account("matcher_submit", [key], lambda key=key: runtime.transitions(matcher_factory, key))
                     else:
                         runtime.transitions(matcher_factory, key)
                     if runtime.jobs[key]["phase"] != "done":
@@ -783,6 +784,7 @@ def _interleaved_worker_loop(
                             "adaptive_trace": state["trace"],
                             "draft_rows": [{"row_index": row.slot % 8, "token_ids": row.tokens, "stop_reason": row.stop} for row in state["draft_states"]],
                             "target_calls": target.calls,
+                            "matcher_timing": state["matcher_timing"],
                         },
                     }
                     runtime.retire(key)
@@ -815,6 +817,7 @@ def _interleaved_worker_loop(
                              "error": f"{type(exc).__name__}: {exc}", "traceback": traceback.format_exc()})
             raise
         finally:
+            matcher_executor.shutdown(wait=True, cancel_futures=True)
             runtime.close()
 
 
