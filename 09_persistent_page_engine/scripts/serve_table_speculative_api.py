@@ -48,6 +48,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--request-timeout-s", type=float, default=900.0)
     parser.add_argument("--max-image-bytes", type=int, default=64 * 1024 * 1024)
     parser.add_argument("--queue-capacity", type=int, default=256)
+    parser.add_argument(
+        "--interleaved-tables", type=int, choices=(1, 2), default=None,
+        help="Opt-in step-level reference with independent table slots; client controls in-flight requests.",
+    )
     parser.add_argument("--targets", type=Path, default=DEFAULT_TARGETS)
     parser.add_argument(
         "--images-dir",
@@ -409,6 +413,8 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
         torch.npu.config.allow_internal_format = True
         torch.npu.set_compile_mode(jit_compile=False)
         args = _live_args(config)
+        if config.get("interleaved_tables") is not None and not args.allow_compile:
+            raise ValueError("interleaved reference requires explicit --allow-compile for its startup graph matrix")
         targets = fixed_lab.read_jsonl(Path(config["targets"]))
         targets_by_id = {str(row["request_id"]): row for row in targets}
 
@@ -416,6 +422,12 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
         draft_recognizer = row_lab.build_recognizer(live_lab._draft_args(args))
         print("TABLE_SPEC_API setup=b1_recognizer", flush=True)
         b1_recognizer = fixed_lab.build_recognizer(live_lab._b1_args(args))
+        if config.get("interleaved_tables") is not None:
+            _interleaved_worker_loop(
+                jobs, results, config, args, targets_by_id,
+                b1_recognizer, draft_recognizer,
+            )
+            return
         k_values = adaptive_lab.parse_k_values(args.k_values)
         cache_roots = adaptive_lab.parse_k_cache_roots(
             [], k_values=k_values, default=args.decode_cache_dir
@@ -639,6 +651,173 @@ def _worker_main(jobs: Any, results: Any, config: dict[str, Any]) -> None:
         )
 
 
+def _interleaved_worker_loop(
+    jobs: Any, results: Any, config: dict[str, Any], args: Any,
+    targets_by_id: dict[str, Any], b1: Any, draft: Any,
+) -> None:
+    """Reference composition only; the established C1 worker above is unchanged."""
+    from PIL import Image
+    import torch
+    import table_spec_decode_lab as fixed_lab
+    import table_spec_live_u8_adaptive_lab as live_lab
+    from paddleocr_vl.serving.table_interleaved_runtime import InterleavedTableRuntime
+    from paddleocr_vl.serving.table_phase_scheduler import PhaseLedger, TablePhasePolicy
+    from paddleocr_vl.serving.table_speculative import TableDraftMatcher
+    from pipeline.layout_output import normalize_recognition_text
+
+    capacity = int(config["interleaved_tables"])
+    with torch.inference_mode():
+        runtime = InterleavedTableRuntime(b1, draft, args, capacity=capacity)
+        policy, ledger = TablePhasePolicy(), PhaseLedger()
+        metadata: dict[str, Any] = {}
+        draining = False
+        completed = 0
+        results.put({
+            "kind": "ready", "worker_pid": __import__("os").getpid(),
+            "configuration": {
+                "lane": "interleaved_height_routed_u8_reference",
+                "table_slots": capacity, "draft_rows": 8,
+                "height_threshold_px": config["height_threshold_px"],
+                "adaptive_k": list(runtime.k_values), "initial_k": args.initial_k,
+                "mixed_execution": "separate_fairly_alternating_calls",
+                "batching": "immediate_matching_phase_and_query_only",
+                "kv_policy": "stable_request_slots_no_k_migration",
+                "warmup": "client_must_send_complete_requests_before_measurement",
+                "graph_contracts": runtime.metadata,
+            },
+        })
+        print("TABLE_PHASE ready; perform complete client warmups outside measurement", flush=True)
+
+        def snapshot(extra: str | None = None) -> dict[str, str]:
+            phases = {key: value["phase"] for key, value in runtime.jobs.items()}
+            if extra is not None:
+                phases[extra] = "cpu_prepare"
+            return phases
+
+        def account(action: str, owners: list[str], fn: Any, *, extra: str | None = None) -> Any:
+            phases = snapshot(extra)
+            started = time.perf_counter()
+            try:
+                return fn()
+            finally:
+                ledger.record(action, owners=owners, phases=phases, wall_s=time.perf_counter() - started)
+
+        def prepare(job: dict[str, Any]) -> None:
+            key = str(job["request_id"])
+            source_id = str(job["source_request_id"])
+            if job.get("crop_type") != "table":
+                raise ValueError("speculative server accepts only table crops")
+            source = dict(targets_by_id[source_id])
+            # Identity scopes cache ownership and draft rows, not model decisions.
+            source["request_id"] = key
+            with Image.open(io.BytesIO(job["image_bytes"])) as opened:
+                raw = opened.convert("RGB")
+            crop = live_lab._exact_target_crop_from_raw(source, raw)
+            route = "b1" if crop.height < config["height_threshold_px"] else "spec"
+            row_requests = None
+            if route == "spec":
+                row_requests, _, _ = live_lab._prepare_rows(source, raw, args)
+            request = fixed_lab.request_for(source, crop, live_lab._b1_args(args))
+            prepared = b1._prepare_cpu(request, time.perf_counter())
+            groups = draft._iter_packed_prefill_groups(row_requests) if row_requests is not None else None
+            runtime.add(key, route=route, payload=source, target_prepared=prepared, row_groups=groups)
+            metadata[key] = {"job": job, "source_id": source_id}
+            print(f"TABLE_PHASE admitted id={key} route={route} active={len(runtime.jobs)}", flush=True)
+
+        def matcher_factory(record: dict[str, Any]) -> Any:
+            return TableDraftMatcher(
+                record, b1.tokenizer, eos_token_id=int(b1.model.config.eos_token_id),
+                block_size=args.initial_k,
+            )
+
+        try:
+            while not draining or runtime.jobs:
+                # Never wait for a second request while the first has work.
+                if not draining and len(runtime.jobs) < capacity:
+                    try:
+                        incoming = jobs.get() if not runtime.jobs else jobs.get_nowait()
+                    except queue.Empty:
+                        incoming = False
+                    if incoming is None:
+                        draining = True
+                    elif incoming is not False:
+                        key = str(incoming["request_id"])
+                        ledger.admit(key)
+                        try:
+                            account("cpu_prepare", [key], lambda: prepare(incoming), extra=key)
+                        except Exception as exc:
+                            ledger.retire(key)
+                            results.put({"kind": "result", "request_id": key, "ok": False,
+                                         "error": f"{type(exc).__name__}: {exc}", "traceback": traceback.format_exc()})
+                if not runtime.jobs:
+                    continue
+
+                for key in list(runtime.jobs):
+                    state = runtime.jobs[key]
+                    if state["phase"] == "draft" and all(row.stop is not None for row in state["draft_states"]):
+                        account("matcher_build", [key], lambda key=key: runtime.transitions(matcher_factory, key))
+                    else:
+                        runtime.transitions(matcher_factory, key)
+                    if runtime.jobs[key]["phase"] != "done":
+                        continue
+                    started = time.perf_counter()
+                    state = runtime.jobs[key]
+                    target = state["target"]
+                    raw_text = b1.tokenizer.decode(target.tokens, skip_special_tokens=target.prefilled.skip_special_tokens)
+                    text = normalize_recognition_text("table", raw_text)
+                    ledger.record("output_postprocess", owners=[key], phases=snapshot(), wall_s=time.perf_counter() - started)
+                    scheduling = ledger.retire(key)
+                    info = metadata.pop(key)
+                    original = targets_by_id[info["source_id"]]
+                    response = {
+                        "request_id": info["source_id"], "crop_type": "table",
+                        "route_lane": state["route"], "raw_text": raw_text, "text": text,
+                        "token_ids": list(target.tokens), "output_tokens": len(target.tokens),
+                        "stop_reason": target.stop,
+                        "exact_saved_reference": target.tokens == fixed_lab.target_tokens(original),
+                        "worker_wall_s": time.perf_counter() - float(info["job"]["submitted_monotonic_s"]),
+                        "stage_timing_s": {},
+                        "runtime_metrics": {
+                            "phase_accounting": scheduling,
+                            "prefills": state["prefill_records"],
+                            "adaptive_trace": state["trace"],
+                            "draft_rows": [{"row_index": row.slot % 8, "token_ids": row.tokens, "stop_reason": row.stop} for row in state["draft_states"]],
+                            "target_calls": target.calls,
+                        },
+                    }
+                    runtime.retire(key)
+                    policy.retire(key)
+                    results.put({"kind": "result", "request_id": key, "ok": True, "payload": response})
+                    completed += 1
+                    print(f"TABLE_PHASE complete id={key} wall_s={response['worker_wall_s']:.4f} tokens={len(target.tokens)} exact={response['exact_saved_reference']} active={len(runtime.jobs)}", flush=True)
+
+                if not runtime.jobs:
+                    continue
+                work = account("matcher_propose_control", list(runtime.jobs), runtime.work)
+                selected = policy.choose(work)
+                if not selected:
+                    continue
+                owners = [item.request_id for item in selected]
+                if selected[0].phase.endswith("prefill"):
+                    account(selected[0].phase, owners, lambda: runtime.prefill(owners[0]))
+                else:
+                    phases = snapshot()
+                    started = time.perf_counter()
+                    action, device_s = runtime.decode_step(selected)
+                    ledger.record(action, owners=owners, phases=phases,
+                                  wall_s=time.perf_counter() - started, device_s=device_s, decode=True)
+            results.put({"kind": "service_summary", "payload": {
+                "completed_requests": completed, **ledger.summary(), "graph_contracts": runtime.metadata,
+            }})
+        except BaseException as exc:
+            for key in list(runtime.jobs):
+                results.put({"kind": "result", "request_id": key, "ok": False,
+                             "error": f"{type(exc).__name__}: {exc}", "traceback": traceback.format_exc()})
+            raise
+        finally:
+            runtime.close()
+
+
 def main() -> None:
     args = parse_args()
     context = mp.get_context("spawn")
@@ -663,6 +842,7 @@ def main() -> None:
         "allow_compile": args.allow_compile,
         "min_pixels": args.min_pixels,
         "max_pixels": args.max_pixels,
+        "interleaved_tables": args.interleaved_tables,
         "decode_cache_dir": str(args.decode_cache_dir.expanduser().resolve()),
         "vision_cache_dir": str(args.vision_cache_dir.expanduser().resolve()),
         "text_cache_dir": str(args.text_cache_dir.expanduser().resolve()),
