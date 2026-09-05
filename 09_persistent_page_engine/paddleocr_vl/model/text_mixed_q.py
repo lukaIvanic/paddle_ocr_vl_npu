@@ -220,6 +220,7 @@ def _mixed_attention(
     rotary_mode: str,
     packed_write_indices: torch.Tensor | None = None,
     packed_attention_mask: torch.Tensor | None = None,
+    packed_cache_starts: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Run one M16 projection body and two cache-specific attention calls."""
     import torch_npu
@@ -269,9 +270,8 @@ def _mixed_attention(
             value_updates = value_bsnd.reshape(16, kv_heads * head_dim).index_select(
                 0, packed_write_indices
             ).reshape(16, 8, kv_heads * head_dim)
-            starts = torch.cat((verifier_positions[:, 0].expand(8), draft_cache_position.reshape(-1))).contiguous()
-            torch_npu.scatter_update_(verifier_key_cache, starts, key_updates, 1)
-            torch_npu.scatter_update_(verifier_value_cache, starts, value_updates, 1)
+            torch_npu.scatter_update_(verifier_key_cache, packed_cache_starts, key_updates, 1)
+            torch_npu.scatter_update_(verifier_value_cache, packed_cache_starts, value_updates, 1)
         elif layout == MIXED_LAYOUT_B16_INCREFA_SCATTER:
             # One uniform Q8 write block per physical row permits dedicated
             # Scatter KV writes. Draft rows have one real update and seven
@@ -652,6 +652,7 @@ def run_text_mixed_m16_transformer(
     ).view(DRAFT_BATCH_SIZE, 1, 1, 768)
     packed_write_indices = None
     packed_attention_mask = None
+    packed_cache_starts = None
     if layout in MIXED_SINGLE_ATTENTION_LAYOUTS:
         attention_batch = 2 if layout == MIXED_LAYOUT_B2_BSND_PROMPTFA else 1
         attention_kv = 6144 if attention_batch == 2 else 10240
@@ -706,6 +707,9 @@ def run_text_mixed_m16_transformer(
                 torch.arange(8, device=draft_positions.device, dtype=torch.int64).repeat(8),
                 torch.arange(8, 16, device=draft_positions.device, dtype=torch.int64).view(8, 1).expand(8, 8).reshape(-1),
             ))
+            packed_cache_starts = torch.cat((
+                verifier_cache_position.reshape(-1).expand(8), draft_positions,
+            )).contiguous()
 
     verifier_decode_positions = verifier_positions + verifier_rope_deltas.to(
         device=verifier_inputs_embeds.device,
@@ -750,6 +754,18 @@ def run_text_mixed_m16_transformer(
             dim=1,
         ),
     )
+    if layout == MIXED_LAYOUT_B16_INCREFA_BSH:
+        # Generated text has identical positions on all three MRoPE axes,
+        # including after each crop's scalar rope_delta. Use the same prepared
+        # lookup table as ordinary decode, once for all 16 positions.
+        packed_decode_positions = torch.cat((
+            verifier_decode_positions.reshape(-1), draft_decode_positions.reshape(-1),
+        ))
+        lookup_factors = _lookup_scalar_rotary_factors(text_model.rotary_emb, packed_decode_positions)
+        packed_factors = (
+            lookup_factors[0].reshape(1, 16, 1, -1),
+            lookup_factors[1].reshape(1, 16, 1, -1),
+        )
 
     hidden_states = torch.cat(
         (
@@ -805,6 +821,7 @@ def run_text_mixed_m16_transformer(
             rotary_mode,
             packed_write_indices,
             packed_attention_mask,
+            packed_cache_starts,
         )
         mlp_input, residual = _decode_add_with_optional_rms_norm(
             attention_output,
