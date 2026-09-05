@@ -45,10 +45,12 @@ MIXED_LAYOUT_PACK_ALL_THEN_SPLIT_LANES = "pack_all_then_split_lanes"
 MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV = (
     "split_lanes_then_transpose_qkv_separately"
 )
+MIXED_LAYOUT_PACKED_BSND_PROMPTFA = "packed_bsnd_promptfa"
 MIXED_M16_LAYOUTS = (
     MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER,
     MIXED_LAYOUT_PACK_ALL_THEN_SPLIT_LANES,
     MIXED_LAYOUT_SPLIT_LANES_THEN_TRANSPOSE_QKV,
+    MIXED_LAYOUT_PACKED_BSND_PROMPTFA,
 )
 DEFAULT_MIXED_M16_LAYOUT = MIXED_LAYOUT_SPLIT_LANES_THEN_PACK_VERIFIER
 MIXED_PREFETCH_FULL = "full"
@@ -198,6 +200,8 @@ def _mixed_attention(
     prefetch_mode: str,
     attention_order: str,
     rotary_mode: str,
+    packed_write_indices: torch.Tensor | None = None,
+    packed_attention_mask: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Run one M16 projection body and two cache-specific attention calls."""
     import torch_npu
@@ -229,6 +233,45 @@ def _mixed_attention(
     key_bsnd = key_flat.view(1, PACKED_TOKEN_COUNT, kv_heads, head_dim)
     value_bsnd = value_flat.view(1, PACKED_TOKEN_COUNT, kv_heads, head_dim)
     cosine, sine = packed_factors
+    if layout == MIXED_LAYOUT_PACKED_BSND_PROMPTFA:
+        # All 16 real tokens stay in projection-native BSND order. The caches
+        # are persistent BSND segment arenas; no full-cache packing is hidden
+        # outside (or repeated inside) the measured forward.
+        query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
+            query_bsnd, key_bsnd, cosine, sine,
+            layout="BSND", rotary_mode="half",
+        )
+        torch_npu.npu_scatter_nd_update_(
+            verifier_key_cache, packed_write_indices,
+            key_bsnd.reshape(PACKED_TOKEN_COUNT, kv_heads, head_dim).contiguous(),
+        )
+        torch_npu.npu_scatter_nd_update_(
+            verifier_value_cache, packed_write_indices,
+            value_bsnd.reshape(PACKED_TOKEN_COUNT, kv_heads, head_dim).contiguous(),
+        )
+        if (
+            prefetch_mode in (MIXED_PREFETCH_FULL, MIXED_PREFETCH_KV_ONLY)
+            and optimization.post_scatter_kv_prefetch
+        ):
+            torch_npu.npu_prefetch(
+                verifier_key_cache, key_bsnd,
+                verifier_key_cache.numel() * verifier_key_cache.element_size(),
+            )
+            torch_npu.npu_prefetch(
+                verifier_value_cache, value_bsnd,
+                verifier_value_cache.numel() * verifier_value_cache.element_size(),
+            )
+        packed_output = torch_npu.npu_prompt_flash_attention(
+            query_bsnd.contiguous(), verifier_key_cache, verifier_value_cache,
+            atten_mask=packed_attention_mask,
+            num_heads=query_heads, num_key_value_heads=kv_heads,
+            input_layout="BSND", scale_value=float(attention.scaling),
+            pre_tokens=2147483647, next_tokens=2147483647, sparse_mode=0,
+        )
+        return _linear_tokenwise(
+            attention.o_proj,
+            packed_output.reshape(1, PACKED_TOKEN_COUNT, query_heads * head_dim),
+        )
     lanes_are_split = rotary_mode == MIXED_ROTARY_PER_LANE
     if rotary_mode == MIXED_ROTARY_SHARED_M16:
         query_bsnd, key_bsnd = torch_npu.npu_apply_rotary_pos_emb(
@@ -523,6 +566,20 @@ def run_text_mixed_m16_transformer(
     draft_attention_mask = (
         draft_kv_positions.view(1, 768) > draft_positions.view(-1, 1)
     ).view(DRAFT_BATCH_SIZE, 1, 1, 768)
+    packed_write_indices = None
+    packed_attention_mask = None
+    if layout == MIXED_LAYOUT_PACKED_BSND_PROMPTFA:
+        draft_offsets = 4096 + torch.arange(
+            DRAFT_BATCH_SIZE, device=draft_inputs_embeds.device, dtype=torch.int64
+        ) * 768
+        limits = torch.cat((verifier_positions.reshape(-1), draft_offsets + draft_positions))
+        starts = torch.cat((torch.zeros_like(verifier_positions.reshape(-1)), draft_offsets))
+        slots = torch.arange(10240, device=draft_inputs_embeds.device, dtype=torch.int64)
+        packed_attention_mask = (
+            (slots.view(1, -1) < starts.view(-1, 1))
+            | (slots.view(1, -1) > limits.view(-1, 1))
+        ).view(1, 1, PACKED_TOKEN_COUNT, 10240).contiguous()
+        packed_write_indices = torch.stack((torch.zeros_like(limits), limits), dim=1)
 
     verifier_decode_positions = verifier_positions + verifier_rope_deltas.to(
         device=verifier_inputs_embeds.device,
@@ -620,6 +677,8 @@ def run_text_mixed_m16_transformer(
             prefetch_mode,
             attention_order,
             rotary_mode,
+            packed_write_indices,
+            packed_attention_mask,
         )
         mlp_input, residual = _decode_add_with_optional_rms_norm(
             attention_output,
@@ -687,7 +746,8 @@ class TextMixedM16Stage(nn.Module):
             raise ValueError("verifier input must have shape [1,8]")
         if tuple(draft_input_ids.shape) != (DRAFT_BATCH_SIZE, 1):
             raise ValueError("draft input must have shape [8,1]")
-        expected_cache_tensors = 4 * self.num_layers
+        packed_cache = self.layout == MIXED_LAYOUT_PACKED_BSND_PROMPTFA
+        expected_cache_tensors = (2 if packed_cache else 4) * self.num_layers
         if len(flat_cache_tensors) != expected_cache_tensors:
             raise ValueError(
                 f"expected {expected_cache_tensors} flat cache tensors, "
@@ -701,6 +761,11 @@ class TextMixedM16Stage(nn.Module):
             2 * self.num_layers : 3 * self.num_layers
         ]
         draft_value_caches = flat_cache_tensors[3 * self.num_layers :]
+        if packed_cache:
+            # The common layer body takes two cache groups. The packed branch
+            # uses only the first; these aliases do not copy or write twice.
+            draft_key_caches = verifier_key_caches
+            draft_value_caches = verifier_value_caches
         verifier_inputs_embeds = self.model.model.embed_tokens(verifier_input_ids)
         draft_inputs_embeds = self.model.model.embed_tokens(draft_input_ids)
         hidden_states = run_text_mixed_m16_transformer(
@@ -806,6 +871,11 @@ def mixed_m16_contract(
     if rotary_mode not in MIXED_M16_ROTARY_MODES:
         raise ValueError(f"unsupported mixed rotary mode {rotary_mode!r}")
     return {
+        "attention_boundary": (
+            "single_promptfa_persistent_bsnd_kv10240"
+            if layout == MIXED_LAYOUT_PACKED_BSND_PROMPTFA
+            else "manual_q8_plus_increfa_q1"
+        ),
         "packed_token_count": PACKED_TOKEN_COUNT,
         "verifier": {
             "batch_size": VERIFIER_BATCH_SIZE,

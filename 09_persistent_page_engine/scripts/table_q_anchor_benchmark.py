@@ -59,6 +59,7 @@ from paddleocr_vl.model.text_mixed_q import (  # noqa: E402
     MIXED_M16_ATTENTION_ORDERS,
     MIXED_M16_PREFETCH_MODES,
     MIXED_M16_ROTARY_MODES,
+    MIXED_LAYOUT_PACKED_BSND_PROMPTFA,
     PACKED_TOKEN_COUNT,
     TextMixedM16Stage,
     mixed_m16_contract,
@@ -698,6 +699,14 @@ def _build_mixed_m16_lane(
     draft_rope_deltas = torch.zeros(
         (8, 1), device=device, dtype=torch.int64
     )
+    packed_cache = layout == MIXED_LAYOUT_PACKED_BSND_PROMPTFA
+    if packed_cache:
+        flat_caches = tuple(
+            torch.zeros((1, 10240, 2, 128), device=device, dtype=dtype)
+            for _ in range(2 * int(model.config.text_config.num_hidden_layers))
+        )
+    else:
+        flat_caches = (*verifier_cache.flat_tensors(), *draft_cache.flat_tensors())
 
     def call() -> torch.Tensor:
         return fn(
@@ -707,9 +716,49 @@ def _build_mixed_m16_lane(
             draft_input_ids,
             draft_cache_position,
             draft_rope_deltas,
-            *verifier_cache.flat_tensors(),
-            *draft_cache.flat_tensors(),
+            *flat_caches,
         )
+
+    def validate_full_forward() -> dict[str, Any]:
+        # Outside all timing/profile windows. The reference sees the same
+        # deterministic IDs, positions and zero historical prefix as the anchors.
+        reference = TextMixedM16Stage(
+            model, optimization=optimization, prefetch_mode=prefetch_mode,
+            attention_order="draft_then_verifier", rotary_mode="per_lane",
+        ).eval()
+        reference_ids = reference(
+            verifier_input_ids, verifier_cache_position, verifier_rope_deltas,
+            draft_input_ids, draft_cache_position, draft_rope_deltas,
+            *verifier_cache.flat_tensors(), *draft_cache.flat_tensors(),
+        )
+        candidate_ids = call()
+        synchronize(device)
+        differences = []
+        layers = int(model.config.text_config.num_hidden_layers)
+        for i in range(2 * layers):
+            expected_v = verifier_cache.flat_tensors()[i]
+            expected_d = draft_cache.flat_tensors()[i]
+            actual = flat_caches[i]
+            actual_v = actual[:, :4096].transpose(1, 2)
+            actual_d = actual[:, 4096:].reshape(8, 768, 2, 128).transpose(1, 2)
+            differences.append({
+                "tensor": i,
+                "verifier_max_abs": float((actual_v - expected_v).abs().max().item()),
+                "draft_max_abs": float((actual_d - expected_d).abs().max().item()),
+                "verifier_finite": bool(torch.isfinite(actual_v).all().item()),
+                "draft_finite": bool(torch.isfinite(actual_d).all().item()),
+            })
+        return {
+            "reference": "full_model_eager_two_attention_same_inputs_zero_prefix",
+            "candidate_ids": candidate_ids.cpu().tolist(),
+            "reference_ids": reference_ids.cpu().tolist(),
+            "matching_ids": int((candidate_ids == reference_ids).sum().item()),
+            "total_ids": 16,
+            "cache_differences": differences,
+        }
+
+    if packed_cache:
+        call.validate_full_forward = validate_full_forward
 
     verifier_cache_bytes = sum(
         int(tensor.numel()) * int(tensor.element_size())
@@ -720,7 +769,11 @@ def _build_mixed_m16_lane(
         for tensor in draft_cache.flat_tensors()
     )
     return call, {
-        "boundary": "two_embeddings_one_transformer_two_attentions_one_lm_head",
+        "boundary": (
+            "two_embeddings_one_transformer_one_attention_one_lm_head"
+            if packed_cache else
+            "two_embeddings_one_transformer_two_attentions_one_lm_head"
+        ),
         "optimization": optimization.name,
         "contract": mixed_m16_contract(
             layout,
@@ -967,6 +1020,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         payload["result"]["reference_comparison"] = reference_comparison
     if profile_metadata is not None:
         payload["result"]["profile"] = profile_metadata
+    if hasattr(call, "validate_full_forward"):
+        print("TABLE_Q_ANCHOR full-forward KV/ID comparison", flush=True)
+        payload["result"]["full_forward_comparison"] = call.validate_full_forward()
     payload["warnings"] = warnings
     payload["setup"]["total_process_setup_and_benchmark_s"] = (
         time.perf_counter() - setup_started
