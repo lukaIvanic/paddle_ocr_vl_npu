@@ -704,7 +704,7 @@ def run_text_mixed_m16_transformer(
         if layout == MIXED_LAYOUT_B16_INCREFA_BSH:
             packed_write_indices = torch.cat((
                 torch.arange(8, device=draft_positions.device, dtype=torch.int64).repeat(8),
-                torch.arange(8, 16, device=draft_positions.device, dtype=torch.int64).repeat_interleave(8),
+                torch.arange(8, 16, device=draft_positions.device, dtype=torch.int64).view(8, 1).expand(8, 8).reshape(-1),
             ))
 
     verifier_decode_positions = verifier_positions + verifier_rope_deltas.to(
