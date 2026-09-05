@@ -1,0 +1,12 @@
+oracle-c4-cap-c4-warm API ready worker_pid=2448279; preloading 4 distinct crops for 4 requests
+oracle-c4-cap-c4-warm crops preloaded 4/4
+oracle-c4-cap-c4-warm payloads ready bytes=2202336
+SEND oracle-c4-cap-c4-warm 01/4 table=page_000279_table_box_id_0 active=1
+SEND oracle-c4-cap-c4-warm 02/4 table=page_000283_table_box_id_1 active=2
+SEND oracle-c4-cap-c4-warm 03/4 table=page_000278_table_box_id_1 active=3
+SEND oracle-c4-cap-c4-warm 04/4 table=page_000291_table_box_id_0 active=4
+RECV oracle-c4-cap-c4-warm 02/4 rank=03 id=page_000283_table_box_id_1 latency=3.6839s status=ok active=3
+RECV oracle-c4-cap-c4-warm 03/4 rank=05 id=page_000278_table_box_id_1 latency=4.4823s status=ok active=2
+RECV oracle-c4-cap-c4-warm 04/4 rank=07 id=page_000291_table_box_id_0 latency=4.5878s status=ok active=1
+RECV oracle-c4-cap-c4-warm 01/4 rank=01 id=page_000279_table_box_id_0 latency=6.3272s status=ok active=0
+DONE oracle-c4-cap-c4-warm requests=4 failures=0 max_in_flight=4 wall=6.3318s qps=0.6317 p50=4.5350s p95=6.0663s max=6.3272s

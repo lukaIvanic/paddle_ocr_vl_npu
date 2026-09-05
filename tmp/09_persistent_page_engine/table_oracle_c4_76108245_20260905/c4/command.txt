@@ -1,0 +1,17 @@
+Source commit: 76108245
+Host: Blue Zone liteserver-c001-4, Ascend 910B2, physical NPU 6
+Container: research_vllm_ascend_021_external_workspace
+Working directory: /workspace/repos/paddle_ocr_vl_npu
+Environment: source npu-setup; ASCEND_RT_VISIBLE_DEVICES=6; no SPEC_VERIFY_ATTENTION override.
+
+Server (one shared server for both runs):
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/serve_table_speculative_api.py --interleaved-tables 4 --allow-compile --host 127.0.0.1 --port 8765 --request-timeout-s 3600 --queue-capacity 64 --experimental-oracle-token-counts tmp/09_persistent_page_engine/table_token_oracle_screen_20260905/oracle_counts.json --oracle-min-output-tokens 1024 --service-summary-output tmp/09_persistent_page_engine/table_oracle_c4_76108245_20260905/service.json > tmp/09_persistent_page_engine/table_oracle_c4_76108245_20260905/server.log 2>&1
+
+External warmup:
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/table_closed_loop_api_client.py --api-url http://127.0.0.1:8765/v1/ocr --set a --count 4 --max-in-flight 4 --client-label oracle-c4-cap-c4-warm --output-dir tmp/09_persistent_page_engine/table_oracle_c4_76108245_20260905/c4_warm > tmp/09_persistent_page_engine/table_oracle_c4_76108245_20260905/c4_warm.log 2>&1
+
+Measured:
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/table_closed_loop_api_client.py --api-url http://127.0.0.1:8765/v1/ocr --set random --count 100 --shuffle-seed 1 --max-in-flight 4 --client-label oracle-c4-cap-c4 --output-dir tmp/09_persistent_page_engine/table_oracle_c4_76108245_20260905/c4 > tmp/09_persistent_page_engine/table_oracle_c4_76108245_20260905/c4_client.log 2>&1
+
+C2 calibration is evaluated before C4. C4 uses the same resident server after calibration plus its four complete warmup requests. All setup and warmup are outside timing. Max in flight applies to complete table requests, including CPU preparation. No new request is sent before one finishes; no cohort batching requirement.
+

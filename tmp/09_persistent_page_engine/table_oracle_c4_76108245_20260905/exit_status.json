@@ -1,0 +1,11 @@
+{
+  "source": "Status prints after executed client commands and owned-server wait in persistent SSH terminal 74470",
+  "c2_warmup": 0,
+  "c2_measured": 0,
+  "c4_warmup": 0,
+  "c4_measured": 0,
+  "server": 0,
+  "server_shutdown": "SIGINT to owned container PID 2448277; wait returned zero",
+  "npu_release_observed_utc": "2026-09-05T16:45:56Z",
+  "monitor_shutdown": "SIGTERM to owned host monitor loop PID 1728607 after NPU release"
+}
