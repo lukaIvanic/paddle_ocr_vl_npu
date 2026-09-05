@@ -41,7 +41,7 @@ def run_case(batch_size, collect, device_timing=True, compact=False):
         compact_step_control=compact,
     )
     candidates = deque([("a", 1), ("b", 4), ("c", 3)])
-    if batch_size >= 4:
+    if batch_size >= 3:
         candidates.extend((f"extra-{i}", 3) for i in range(batch_size - 2))
     submitted = time.perf_counter()
     available = deque((candidates.popleft(), submitted) for _ in range(batch_size))
@@ -87,7 +87,7 @@ def run_case(batch_size, collect, device_timing=True, compact=False):
 
 class ContinuousDecodeMetricsTest(unittest.TestCase):
     def test_compact_control_matches_full_scheduler_across_refills(self):
-        for batch in (1, 2, 4, 8):
+        for batch in (1, 2, 3, 4, 8):
             control, old, old_shapes = run_case(batch, True)
             candidate, new, new_shapes = run_case(batch, True, compact=True)
             self.assertEqual([x.token_ids for x in old], [x.token_ids for x in new])
@@ -459,7 +459,7 @@ class ContinuousDecodeMetricsTest(unittest.TestCase):
             source.close()
 
     def test_logging_preserves_tokens_and_fixed_batch(self):
-        for batch_size in (1, 2, 4, 8, 16):
+        for batch_size in (1, 2, 3, 4, 8, 16):
             with self.subTest(batch_size=batch_size):
                 before, plain, _ = run_case(batch_size, False)
                 after, measured, shapes = run_case(batch_size, True)
@@ -470,7 +470,7 @@ class ContinuousDecodeMetricsTest(unittest.TestCase):
                 expected = {
                     "a": [1, 2, 3, 4, 5, 9], "b": [4, 5, 9], "c": [3, 4, 5, 9],
                 }
-                if batch_size >= 4:
+                if batch_size >= 3:
                     expected.update({f"extra-{i}": [3, 4, 5, 9] for i in range(batch_size - 2)})
                 self.assertEqual(outputs(measured), expected)
                 for item in measured:

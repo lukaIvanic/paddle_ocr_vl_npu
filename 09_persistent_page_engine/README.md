@@ -1223,6 +1223,11 @@ still submits the static B4 decode graph, but at most three rows contain useful
 requests and one row remains idle. Label this lane **B4 decode / C3 admission**,
 not B3 decoding.
 
+The crop API also accepts an exact static B3 decoder (`--decode-batch-size 3`).
+This compiles a separate B3 graph; it does not pad to B4. Non-power-of-two
+kernel performance must be measured rather than inferred from neighboring
+batch sizes. The page-runner CLIs retain their existing power-of-two profiles.
+
 For a larger matched test, use `--set p90 --count 50` in every client run.
 This selects original B1 tail ranks 1 through 50, in that order, from the frozen
 P90 cohort. It is not a random P90 sample. Sets `a` and `b` retain their original

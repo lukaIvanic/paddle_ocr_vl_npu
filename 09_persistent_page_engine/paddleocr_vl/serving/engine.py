@@ -843,8 +843,10 @@ class ContinuousRecognizer:
                 f"decode_backend must be one of {DECODE_BACKEND_CHOICES}, "
                 f"got {self.decode_backend!r}"
             )
-        if self.batch_size <= 0 or self.batch_size & (self.batch_size - 1):
-            raise ValueError("batch_size must be a positive power of two")
+        # The static arena and compiled cache key use the exact batch size;
+        # neither slot management nor ordinary IncreFA requires a power of two.
+        if self.batch_size <= 0:
+            raise ValueError("batch_size must be positive")
         if self.max_new_tokens <= 0:
             raise ValueError("max_new_tokens must be positive")
 
