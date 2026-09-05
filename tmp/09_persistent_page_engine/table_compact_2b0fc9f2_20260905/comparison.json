@@ -1,0 +1,24 @@
+{
+  "completed_tables_per_s": 2.8746560721729524,
+  "latency_s": {
+    "count": 100,
+    "mean": 0.6830222999188118,
+    "p50": 0.41003577900119126,
+    "p90": 1.3446387428324678,
+    "p95": 1.957017857010941,
+    "p99": 4.1738442224496985,
+    "max": 4.356716675101779,
+    "sum": 68.30222999188118,
+    "median": 0.41003577900119126
+  },
+  "run_wall_s": 34.786770135047846,
+  "performance_target_pass": false,
+  "all_100_eos": true,
+  "native_token_identical": 100,
+  "inputs_and_real_token_counts_match": true,
+  "peak_client_outstanding": 2,
+  "ownership_samples_during_measurement": 6,
+  "only_own_pid_in_samples": true,
+  "decode_device_s_including_warmup": 29.178924245953745,
+  "graph_calls_including_warmup": 24170
+}
