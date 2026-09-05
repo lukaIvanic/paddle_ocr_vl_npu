@@ -65,6 +65,8 @@ def mask_segments(mask):
     lengths, begin = [], 0
     while begin < size:
         allowed = (~square[begin]).nonzero().flatten()
+        if not allowed.numel():
+            raise ValueError('fully masked query row')
         end = begin + allowed.numel()
         if not torch.equal(allowed, torch.arange(begin, end)):
             raise ValueError('mask is not contiguous full-attention components')

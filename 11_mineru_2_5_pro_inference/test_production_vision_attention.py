@@ -19,6 +19,8 @@ class AttentionContracts(unittest.TestCase):
         self.assertEqual(mask_segments(mask_for([5476, 156])), [5476, 156])
 
     def test_reject_fully_masked_row_and_cross_component_leak(self):
+        with self.assertRaises(ValueError):
+            mask_segments(torch.ones(1, 1, 5, 5, dtype=torch.bool))
         mask = mask_for([3, 2])
         mask[..., 1, :] = True
         with self.assertRaises(ValueError):
