@@ -1,0 +1,12 @@
+{
+  "scope": "same real input, original Conv2D versus linear patch projection",
+  "shape": [
+    3840,
+    1152
+  ],
+  "all_finite": true,
+  "max_abs": 0.001953125,
+  "mean_abs": 5.3718004267011565e-08,
+  "different_fraction": 0.00013879846665076911,
+  "relative_l2": 5.453072390082525e-06
+}

@@ -1,0 +1,20 @@
+client API ready worker_pid=2532111; preloading 1 distinct crops for 8 requests
+client crops preloaded 1/1
+client payloads ready bytes=207972
+SEND client 01/8 table=page_000287_table_box_id_8 active=1
+RECV client 01/8 rank=01 id=page_000287_table_box_id_8 latency=3.7164s status=ok active=0
+SEND client 02/8 table=page_000287_table_box_id_8 active=1
+RECV client 02/8 rank=01 id=page_000287_table_box_id_8 latency=2.3135s status=ok active=0
+SEND client 03/8 table=page_000287_table_box_id_8 active=1
+RECV client 03/8 rank=01 id=page_000287_table_box_id_8 latency=2.3085s status=ok active=0
+SEND client 04/8 table=page_000287_table_box_id_8 active=1
+RECV client 04/8 rank=01 id=page_000287_table_box_id_8 latency=2.3026s status=ok active=0
+SEND client 05/8 table=page_000287_table_box_id_8 active=1
+RECV client 05/8 rank=01 id=page_000287_table_box_id_8 latency=2.3067s status=ok active=0
+SEND client 06/8 table=page_000287_table_box_id_8 active=1
+RECV client 06/8 rank=01 id=page_000287_table_box_id_8 latency=9.2431s status=ok active=0
+SEND client 07/8 table=page_000287_table_box_id_8 active=1
+RECV client 07/8 rank=01 id=page_000287_table_box_id_8 latency=9.2330s status=ok active=0
+SEND client 08/8 table=page_000287_table_box_id_8 active=1
+RECV client 08/8 rank=01 id=page_000287_table_box_id_8 latency=9.1820s status=ok active=0
+DONE client requests=8 failures=0 max_in_flight=1 wall=40.6123s qps=0.1970 p50=3.0149s p95=9.2395s max=9.2431s

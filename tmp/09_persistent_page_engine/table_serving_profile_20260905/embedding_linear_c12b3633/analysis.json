@@ -1,0 +1,75 @@
+{
+  "diagnostic_only": true,
+  "profiles": [
+    {
+      "source": "profile/embedding_0/liteserver-c001-4_2532111_20260905225520528_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_sum_us": 332.58,
+      "by_type_us": {
+        "MatMulV2": 86.02,
+        "Transpose": 51.9,
+        "Cast": 1.6,
+        "TransData": 42.28,
+        "ResizeBilinearV2": 115.96,
+        "Tile": 10.5,
+        "Add": 13.58,
+        "TensorMove": 10.74
+      }
+    },
+    {
+      "source": "profile/embedding_1/liteserver-c001-4_2532111_20260905225529773_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_sum_us": 341.6600000000001,
+      "by_type_us": {
+        "MatMulV2": 85.64,
+        "Transpose": 55.74,
+        "Cast": 1.62,
+        "TransData": 42.28,
+        "ResizeBilinearV2": 115.82,
+        "Tile": 10.8,
+        "Add": 13.1,
+        "TensorMove": 16.66
+      }
+    },
+    {
+      "source": "profile/embedding_2/liteserver-c001-4_2532111_20260905225539007_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_sum_us": 331.24,
+      "by_type_us": {
+        "MatMulV2": 82.26,
+        "Transpose": 54.82,
+        "Cast": 1.6,
+        "TransData": 41.64,
+        "ResizeBilinearV2": 116.0,
+        "Tile": 10.44,
+        "Add": 13.54,
+        "TensorMove": 10.94
+      }
+    }
+  ],
+  "mean_kernel_sum_us": 335.16,
+  "mean_by_type_us": {
+    "MatMulV2": 84.64,
+    "Transpose": 54.153333333333336,
+    "Cast": 1.6066666666666667,
+    "TransData": 42.06666666666667,
+    "ResizeBilinearV2": 115.92666666666666,
+    "Tile": 10.58,
+    "Add": 13.406666666666666,
+    "TensorMove": 12.78
+  },
+  "projection_type": "MatMulV2",
+  "projection_share": 0.2525361021601623,
+  "all_eight_eos_native_identical": true,
+  "note": "Profiling synchronizes and exports during requests. These HTTP latencies are not performance results.",
+  "same_input_patch_comparison": {
+    "scope": "same real input, original Conv2D versus linear patch projection",
+    "shape": [
+      3840,
+      1152
+    ],
+    "all_finite": true,
+    "max_abs": 0.001953125,
+    "mean_abs": 5.3718004267011565e-08,
+    "different_fraction": 0.00013879846665076911,
+    "relative_l2": 5.453072390082525e-06
+  },
+  "native_streams_matching_convolution": 8
+}

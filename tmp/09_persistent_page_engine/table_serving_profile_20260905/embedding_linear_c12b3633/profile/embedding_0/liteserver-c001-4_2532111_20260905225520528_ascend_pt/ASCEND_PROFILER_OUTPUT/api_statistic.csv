@@ -1,0 +1,11 @@
+Device_id,Level,API Name,Time(us),Count,Avg(us),Min(us),Max(us),Variance
+host,model,ModelLoad,2304013.02,16,144000.814,60902.33,170845.21,642865882.188
+host,acl,aclnnAdd,12.99,1,12.99,12.99,12.99,0
+host,acl,aclnnAddmm,99.4,1,99.4,99.4,99.4,0
+host,acl,aclnnCat,14.98,1,14.98,14.98,14.98,0
+host,acl,aclnnRepeat,31.6,1,31.6,31.6,31.6,0
+host,acl,aclnnUpsampleBilinear2d,92.33,1,92.33,92.33,92.33,0
+host,acl,aclrtGetStreamAttribute,8.99,5,1.798,0.48,4.13,2.444
+host,acl,aclrtLaunchKernelWithHostArgs,150.65,11,13.695,3.67,56.55,244.513
+host,acl,aclrtSynchronizeDeviceWithTimeout,219.94,1,219.94,219.94,219.94,0
+host,node,launch,154355.69,11979,12.886,4.6,293.56,105.712

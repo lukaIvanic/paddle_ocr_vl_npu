@@ -4,9 +4,12 @@ import csv
 import json
 from pathlib import Path
 from statistics import mean
+import sys
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent
 capture = json.loads((ROOT / "profile/capture.json").read_text())
+linear = capture["configuration"].get("vision_linear_patch_projection", False)
+projection_type = "MatMulV2" if linear else "Conv2D"
 assert capture["full_request_warmups"] == 5
 assert capture["profiled_forwards"] == 3
 assert all(row["pixel_shape"] == [1, 3840, 3, 14, 14]
@@ -14,8 +17,8 @@ assert all(row["pixel_shape"] == [1, 3840, 3, 14, 14]
 profiles = []
 for path in sorted((ROOT / "profile").rglob("kernel_details.csv")):
     rows = list(csv.DictReader(path.open()))
-    assert len(rows) == 15
-    assert sum(r["Type"] == "Conv2D" for r in rows) == 1
+    assert len(rows) == (11 if linear else 15)
+    assert sum(r["Type"] == projection_type for r in rows) == 1
     assert sum(r["Type"] == "ResizeBilinearV2" for r in rows) == 1
     groups = defaultdict(float)
     for row in rows:
@@ -35,8 +38,14 @@ average = {kind: mean(p["by_type_us"][kind] for p in profiles)
 total = mean(p["kernel_sum_us"] for p in profiles)
 result = {"diagnostic_only": True, "profiles": profiles,
           "mean_kernel_sum_us": total, "mean_by_type_us": average,
-          "convolution_share": average["Conv2D"]/total,
+          "projection_type": projection_type,
+          "projection_share": average[projection_type]/total,
           "all_eight_eos_native_identical": True,
           "note": "Profiling synchronizes and exports during requests. These HTTP latencies are not performance results."}
+if linear:
+    result["same_input_patch_comparison"] = json.loads((ROOT / "profile/patch_comparison.json").read_text())
+    baseline = ROOT.parent / "embedding_bc201dda/client/results.jsonl"
+    reference = json.loads(baseline.read_text().splitlines()[0])["service_result"]["response"]
+    result["native_streams_matching_convolution"] = sum(out["token_ids"] == reference["token_ids"] for out in outputs)
 (ROOT / "analysis.json").write_text(json.dumps(result, indent=2)+"\n")
 print(json.dumps({k:v for k,v in result.items() if k != "profiles"}, indent=2))

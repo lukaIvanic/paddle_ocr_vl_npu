@@ -1,0 +1,10 @@
+Manual direct-host process and /proc namespace checks while each worker was live.
+Profile: parent1940350/container2532109, worker:
+NSpid: 1940352 2532111
+Control: parent1948260/container2536259, worker:
+NSpid: 1948264 2536261
+Candidate: parent1951639/container2536993, worker:
+NSpid: 1951641 2536995
+The common five-second host monitor was PID1939586.
+All these processes were absent at2026-09-06T07:06:01+08:00;
+NPU6 was verified free at2026-09-06T07:05:37+08:00 after server shutdown.
