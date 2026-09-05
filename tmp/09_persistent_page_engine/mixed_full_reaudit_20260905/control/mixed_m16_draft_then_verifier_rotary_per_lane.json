@@ -1,0 +1,300 @@
+{
+  "contract": {
+    "attention_boundary": "manual_q8_plus_increfa_q1",
+    "attention_order": "draft_then_verifier",
+    "compact_vocab": "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json",
+    "draft": {
+      "attention": "increfa",
+      "batch_size": 8,
+      "cache_length": 768,
+      "query_length": 1
+    },
+    "dtype": "torch.float16",
+    "kind": "mixed_m16",
+    "lane": "mixed_m16",
+    "layout": "split_lanes_then_pack_verifier",
+    "linear_weight_format": "decode_nz",
+    "optimization": "combined_apply_mixed_m16",
+    "packed_token_count": 16,
+    "physical_positions_per_call": 16,
+    "prefetch_mode": "full",
+    "repeats": 50,
+    "rotary_mode": "per_lane",
+    "verifier": {
+      "attention": "manual_grouped_legal_scaled_masked_softmax_fp16",
+      "batch_size": 1,
+      "cache_length": 4096,
+      "query_length": 8
+    },
+    "warmups": 10
+  },
+  "kind": "table_q_anchor_single_lane",
+  "provenance": {
+    "argv": [
+      "09_persistent_page_engine/scripts/table_q_anchor_benchmark.py",
+      "--lane",
+      "mixed_m16",
+      "--mixed-attention-order",
+      "draft_then_verifier",
+      "--mixed-rotary",
+      "per_lane",
+      "--warmups",
+      "10",
+      "--repeats",
+      "50",
+      "--output-dir",
+      "tmp/09_persistent_page_engine/mixed_full_reaudit_20260905/control",
+      "--profile-dir",
+      ".runtime_cache/mixed_full_reaudit_20260905/control"
+    ],
+    "ascend_rt_visible_devices": "6",
+    "git_commit": "395068b9fbd17a9fac055d8651ea43cbb9b845dd",
+    "hostname": "liteserver-c001-4",
+    "started_utc": "2026-09-05T09:03:41.932100+00:00"
+  },
+  "result": {
+    "native_output_token_ids": [
+      176,
+      50015,
+      3,
+      96748,
+      3,
+      9,
+      5,
+      8,
+      185,
+      62942,
+      93953,
+      3,
+      93976,
+      3,
+      93952,
+      7
+    ],
+    "profile": {
+      "captured_calls": 50,
+      "outside_measured_timing": true,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/mixed_full_reaudit_20260905/control",
+      "profiler_warmup_calls": 10,
+      "wall_s": 20.827996585983783
+    },
+    "reference_comparison": {
+      "anchor_dir": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_q_anchor_ab925dd5_20260904T0948Z",
+      "available": true,
+      "branches": {
+        "draft": {
+          "actual_native_ids": [
+            185,
+            62942,
+            93953,
+            3,
+            93976,
+            3,
+            93952,
+            7
+          ],
+          "exact_match": true,
+          "expected_native_ids": [
+            185,
+            62942,
+            93953,
+            3,
+            93976,
+            3,
+            93952,
+            7
+          ],
+          "mismatches": [],
+          "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_q_anchor_ab925dd5_20260904T0948Z/b8q1.json"
+        },
+        "verifier": {
+          "actual_native_ids": [
+            176,
+            50015,
+            3,
+            96748,
+            3,
+            9,
+            5,
+            8
+          ],
+          "exact_match": true,
+          "expected_native_ids": [
+            176,
+            50015,
+            3,
+            96748,
+            3,
+            9,
+            5,
+            8
+          ],
+          "mismatches": [],
+          "path": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_q_anchor_ab925dd5_20260904T0948Z/b1q8.json"
+        }
+      }
+    },
+    "timing": {
+      "device_s": 0.11883730101585388,
+      "graph_calls_per_s": 420.7433152098396,
+      "host_graph_calls_per_s": 415.0580849076458,
+      "host_physical_positions_per_s": 6640.929358522333,
+      "host_wall_s": 0.1204650669824332,
+      "latency_ms": {
+        "max": 2.626879930496216,
+        "mean": 2.3767460203170776,
+        "median": 2.3725299835205083,
+        "min": 2.3604400157928467,
+        "p95": 2.3787060260772703
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 6731.893043357433
+    },
+    "warmup_wall_s": {
+      "all": [
+        22.622052838094532,
+        0.0033180470345541835,
+        0.002807806944474578,
+        0.0027740669902414083,
+        0.002794348052702844,
+        0.0027663169894367456,
+        0.0027694469317793846,
+        0.0027778669027611613,
+        0.0027714070165529847,
+        0.002776478067971766
+      ],
+      "calls": 10,
+      "first": 22.622052838094532,
+      "remaining_mean": 0.002839531658941673
+    }
+  },
+  "schema_version": 1,
+  "setup": {
+    "cache_positions": [
+      1249,
+      128,
+      155,
+      173,
+      189,
+      205,
+      225,
+      270,
+      382
+    ],
+    "compact_vocab": {
+      "enabled": true,
+      "full_vocab_size": 103424,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json",
+      "selected_vocab_size": 16384,
+      "selection": null,
+      "source": null,
+      "token_ids_sha256": "9c48e5c3b92776ba250f75359fccb407448c4da8419fe927f5ea381d345712c3"
+    },
+    "model_dir": "/workspace/models/PaddleOCR-VL-1.6",
+    "model_load_s": 20.14992474205792,
+    "runtime": {
+      "boundary": "two_embeddings_one_transformer_two_attentions_one_lm_head",
+      "cache_allocated_bytes": 188743680,
+      "cache_was_warm_before_setup": false,
+      "compile_wrapper_s": 0.0005048079183325171,
+      "contract": {
+        "attention_boundary": "manual_q8_plus_increfa_q1",
+        "attention_order": "draft_then_verifier",
+        "draft": {
+          "attention": "increfa",
+          "batch_size": 8,
+          "cache_length": 768,
+          "query_length": 1
+        },
+        "layout": "split_lanes_then_pack_verifier",
+        "optimization": "combined_apply_mixed_m16",
+        "packed_token_count": 16,
+        "prefetch_mode": "full",
+        "rotary_mode": "per_lane",
+        "verifier": {
+          "attention": "manual_grouped_legal_scaled_masked_softmax_fp16",
+          "batch_size": 1,
+          "cache_length": 4096,
+          "query_length": 8
+        }
+      },
+      "draft_cache_allocated_bytes": 113246208,
+      "optimization": "combined_apply_mixed_m16",
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair/text_mixed_m16_key2b050c98e1323c9141c8",
+      "verifier_cache_allocated_bytes": 75497472
+    },
+    "setup_before_warmups_s": 28.022840677993372,
+    "total_process_setup_and_benchmark_s": 71.62329227803275,
+    "weight_format": {
+      "after_formats_sample": {
+        "model.layers.0.mlp.down_proj": 29,
+        "model.layers.0.mlp.gate_proj": 29,
+        "model.layers.0.mlp.up_proj": 29,
+        "model.layers.0.self_attn.decode_qkv_proj": 29,
+        "model.layers.0.self_attn.k_proj": 29,
+        "model.layers.0.self_attn.o_proj": 29,
+        "model.layers.0.self_attn.q_proj": 29,
+        "model.layers.0.self_attn.v_proj": 29,
+        "model.layers.1.mlp.down_proj": 29,
+        "model.layers.1.mlp.gate_proj": 29,
+        "model.layers.1.mlp.up_proj": 29,
+        "model.layers.1.self_attn.decode_qkv_proj": 29,
+        "model.layers.1.self_attn.k_proj": 29,
+        "model.layers.1.self_attn.o_proj": 29,
+        "model.layers.1.self_attn.q_proj": 29,
+        "model.layers.1.self_attn.v_proj": 29
+      },
+      "all_after_are_nz": true,
+      "already_nz_count": 0,
+      "before_formats_sample": {
+        "model.layers.0.mlp.down_proj": 2,
+        "model.layers.0.mlp.gate_proj": 2,
+        "model.layers.0.mlp.up_proj": 2,
+        "model.layers.0.self_attn.decode_qkv_proj": 2,
+        "model.layers.0.self_attn.k_proj": 2,
+        "model.layers.0.self_attn.o_proj": 2,
+        "model.layers.0.self_attn.q_proj": 2,
+        "model.layers.0.self_attn.v_proj": 2,
+        "model.layers.1.mlp.down_proj": 2,
+        "model.layers.1.mlp.gate_proj": 2,
+        "model.layers.1.mlp.up_proj": 2,
+        "model.layers.1.self_attn.decode_qkv_proj": 2,
+        "model.layers.1.self_attn.k_proj": 2,
+        "model.layers.1.self_attn.o_proj": 2,
+        "model.layers.1.self_attn.q_proj": 2,
+        "model.layers.1.self_attn.v_proj": 2
+      },
+      "cast_count": 146,
+      "converted_count": 146,
+      "converted_modules_sample": [
+        "model.layers.0.self_attn.q_proj",
+        "model.layers.0.self_attn.k_proj",
+        "model.layers.0.self_attn.v_proj",
+        "model.layers.0.self_attn.o_proj",
+        "model.layers.0.self_attn.decode_qkv_proj",
+        "model.layers.0.mlp.gate_proj",
+        "model.layers.0.mlp.up_proj",
+        "model.layers.0.mlp.down_proj",
+        "model.layers.1.self_attn.q_proj",
+        "model.layers.1.self_attn.k_proj",
+        "model.layers.1.self_attn.v_proj",
+        "model.layers.1.self_attn.o_proj",
+        "model.layers.1.self_attn.decode_qkv_proj",
+        "model.layers.1.mlp.gate_proj",
+        "model.layers.1.mlp.up_proj",
+        "model.layers.1.mlp.down_proj"
+      ],
+      "effective_mode": "decode_nz",
+      "failures_sample": [],
+      "fallback_reason": null,
+      "mode": "decode_nz",
+      "requested_mode": "decode_nz",
+      "target_count": 146,
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29
+    },
+    "weight_format_s": 6.272469985065982
+  },
+  "status": "complete",
+  "warnings": []
+}

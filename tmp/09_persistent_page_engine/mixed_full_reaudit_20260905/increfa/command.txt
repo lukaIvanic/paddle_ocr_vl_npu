@@ -1,0 +1,6 @@
+Git commit: 556f191cb9218e76f6aa33f6e4848c04aba76c6b
+Host: liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES: 6
+Started UTC: 2026-09-05T09:13:37.087028+00:00
+
+/usr/local/python3.12.13/bin/python3 09_persistent_page_engine/scripts/table_q_anchor_benchmark.py --lane mixed_m16 --mixed-layout b16_replicated_increfa --warmups 10 --repeats 50 --output-dir tmp/09_persistent_page_engine/mixed_full_reaudit_20260905/increfa --profile-dir .runtime_cache/mixed_full_reaudit_20260905/increfa

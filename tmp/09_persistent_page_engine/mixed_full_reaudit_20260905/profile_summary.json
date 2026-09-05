@@ -1,0 +1,813 @@
+{
+  "control": {
+    "profiled_calls": 50,
+    "kernel_groups": {
+      "Add": {
+        "us_per_call": 4.9236,
+        "count_per_call": 3
+      },
+      "ApplyRotaryPosEmb": {
+        "us_per_call": 154.9336,
+        "count_per_call": 36
+      },
+      "ArgMaxV2": {
+        "us_per_call": 9.692,
+        "count_per_call": 1
+      },
+      "AutomaticBufferFusionOp": {
+        "us_per_call": 147.9184,
+        "count_per_call": 18
+      },
+      "BatchMatMul": {
+        "us_per_call": 320.5532,
+        "count_per_call": 36
+      },
+      "BroadcastTo": {
+        "us_per_call": 10.0396,
+        "count_per_call": 3
+      },
+      "Cast": {
+        "us_per_call": 15.8204,
+        "count_per_call": 6
+      },
+      "ConcatV2D": {
+        "us_per_call": 50.124,
+        "count_per_call": 21
+      },
+      "Cos": {
+        "us_per_call": 2.5992,
+        "count_per_call": 1
+      },
+      "GatherV2": {
+        "us_per_call": 45.5236,
+        "count_per_call": 34
+      },
+      "Greater": {
+        "us_per_call": 17.7816,
+        "count_per_call": 2
+      },
+      "IncreFlashAttention": {
+        "us_per_call": 334.6928,
+        "count_per_call": 18
+      },
+      "InplaceAddRmsNorm": {
+        "us_per_call": 159.3884,
+        "count_per_call": 36
+      },
+      "MatMul": {
+        "us_per_call": 474.22,
+        "count_per_call": 91
+      },
+      "Mul": {
+        "us_per_call": 10.3656,
+        "count_per_call": 3
+      },
+      "Range": {
+        "us_per_call": 24.6772,
+        "count_per_call": 3
+      },
+      "RmsNorm": {
+        "us_per_call": 12.2152,
+        "count_per_call": 1
+      },
+      "ScaledMaskedSoftmax": {
+        "us_per_call": 164.9772,
+        "count_per_call": 18
+      },
+      "Scatter": {
+        "us_per_call": 156.5048,
+        "count_per_call": 72
+      },
+      "Sin": {
+        "us_per_call": 2.5152,
+        "count_per_call": 1
+      },
+      "SplitVD": {
+        "us_per_call": 81.258,
+        "count_per_call": 56
+      },
+      "Transpose": {
+        "us_per_call": 269.9524,
+        "count_per_call": 37
+      },
+      "Unpack": {
+        "us_per_call": 1.2016,
+        "count_per_call": 1
+      }
+    },
+    "matmul_input_formats": {
+      "ND;FRACTAL_NZ": 4550
+    },
+    "timing": {
+      "device_s": 0.118837,
+      "graph_calls_per_s": 420.743315,
+      "host_graph_calls_per_s": 415.058085,
+      "host_physical_positions_per_s": 6640.929359,
+      "host_wall_s": 0.120465,
+      "latency_ms": {
+        "max": 2.62688,
+        "mean": 2.376746,
+        "median": 2.37253,
+        "min": 2.36044,
+        "p95": 2.378706
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 6731.893043
+    },
+    "git_commit": "395068b9fbd17a9fac055d8651ea43cbb9b845dd"
+  },
+  "packed": {
+    "profiled_calls": 50,
+    "kernel_groups": {
+      "Add": {
+        "us_per_call": 1.5204,
+        "count_per_call": 1
+      },
+      "ApplyRotaryPosEmb": {
+        "us_per_call": 117.8668,
+        "count_per_call": 18
+      },
+      "ArgMaxV2": {
+        "us_per_call": 9.1372,
+        "count_per_call": 1
+      },
+      "AutomaticBufferFusionOp": {
+        "us_per_call": 173.8176,
+        "count_per_call": 20
+      },
+      "BroadcastTo": {
+        "us_per_call": 2.458,
+        "count_per_call": 2
+      },
+      "Cast": {
+        "us_per_call": 16.6124,
+        "count_per_call": 6
+      },
+      "ConcatV2D": {
+        "us_per_call": 12.9032,
+        "count_per_call": 4
+      },
+      "Cos": {
+        "us_per_call": 2.6292,
+        "count_per_call": 1
+      },
+      "GatherV2": {
+        "us_per_call": 24.9328,
+        "count_per_call": 16
+      },
+      "InplaceAddRmsNorm": {
+        "us_per_call": 143.8708,
+        "count_per_call": 36
+      },
+      "MatMul": {
+        "us_per_call": 560.926,
+        "count_per_call": 91
+      },
+      "Mul": {
+        "us_per_call": 12.5936,
+        "count_per_call": 4
+      },
+      "Pack": {
+        "us_per_call": 1.4068,
+        "count_per_call": 1
+      },
+      "PromptFlashAttention": {
+        "us_per_call": 1987.5568,
+        "count_per_call": 18
+      },
+      "Range": {
+        "us_per_call": 26.616,
+        "count_per_call": 3
+      },
+      "RmsNorm": {
+        "us_per_call": 13.2244,
+        "count_per_call": 1
+      },
+      "ScatterNdUpdate": {
+        "us_per_call": 312.1368,
+        "count_per_call": 36
+      },
+      "Sin": {
+        "us_per_call": 2.5688,
+        "count_per_call": 1
+      },
+      "SplitVD": {
+        "us_per_call": 44.4552,
+        "count_per_call": 20
+      },
+      "Transpose": {
+        "us_per_call": 7.3896,
+        "count_per_call": 1
+      },
+      "Unpack": {
+        "us_per_call": 1.178,
+        "count_per_call": 1
+      },
+      "ZerosLike": {
+        "us_per_call": 2.0504,
+        "count_per_call": 2
+      }
+    },
+    "matmul_input_formats": {
+      "ND;FRACTAL_NZ": 4550
+    },
+    "timing": {
+      "device_s": 0.17846,
+      "graph_calls_per_s": 280.174922,
+      "host_graph_calls_per_s": 277.784446,
+      "host_physical_positions_per_s": 4444.55114,
+      "host_wall_s": 0.179996,
+      "latency_ms": {
+        "max": 3.87276,
+        "mean": 3.569199,
+        "median": 3.56316,
+        "min": 3.54184,
+        "p95": 3.577511
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 4482.798756
+    },
+    "git_commit": "46f8cdbcb7f2e408a4cee748a8ab387ca41b76be"
+  },
+  "b2": {
+    "profiled_calls": 50,
+    "kernel_groups": {
+      "Add": {
+        "us_per_call": 1.502,
+        "count_per_call": 1
+      },
+      "ApplyRotaryPosEmb": {
+        "us_per_call": 128.052,
+        "count_per_call": 18
+      },
+      "ArgMaxV2": {
+        "us_per_call": 8.9416,
+        "count_per_call": 1
+      },
+      "AutomaticBufferFusionOp": {
+        "us_per_call": 162.9772,
+        "count_per_call": 20
+      },
+      "BroadcastTo": {
+        "us_per_call": 2.484,
+        "count_per_call": 2
+      },
+      "Cast": {
+        "us_per_call": 16.0652,
+        "count_per_call": 6
+      },
+      "ConcatV2D": {
+        "us_per_call": 12.7844,
+        "count_per_call": 4
+      },
+      "Cos": {
+        "us_per_call": 2.5828,
+        "count_per_call": 1
+      },
+      "GatherV2": {
+        "us_per_call": 24.9996,
+        "count_per_call": 16
+      },
+      "InplaceAddRmsNorm": {
+        "us_per_call": 172.9324,
+        "count_per_call": 36
+      },
+      "MatMul": {
+        "us_per_call": 531.4996,
+        "count_per_call": 91
+      },
+      "Mul": {
+        "us_per_call": 12.6164,
+        "count_per_call": 4
+      },
+      "Pack": {
+        "us_per_call": 1.3924,
+        "count_per_call": 1
+      },
+      "PromptFlashAttention": {
+        "us_per_call": 2159.3048,
+        "count_per_call": 18
+      },
+      "Range": {
+        "us_per_call": 23.872,
+        "count_per_call": 3
+      },
+      "RmsNorm": {
+        "us_per_call": 11.9912,
+        "count_per_call": 1
+      },
+      "ScatterNdUpdate": {
+        "us_per_call": 346.1288,
+        "count_per_call": 36
+      },
+      "Sin": {
+        "us_per_call": 2.5852,
+        "count_per_call": 1
+      },
+      "SplitVD": {
+        "us_per_call": 43.0192,
+        "count_per_call": 20
+      },
+      "Transpose": {
+        "us_per_call": 7.3348,
+        "count_per_call": 1
+      },
+      "Unpack": {
+        "us_per_call": 1.1776,
+        "count_per_call": 1
+      },
+      "ZerosLike": {
+        "us_per_call": 2.0112,
+        "count_per_call": 2
+      }
+    },
+    "matmul_input_formats": {
+      "ND;FRACTAL_NZ": 4550
+    },
+    "timing": {
+      "device_s": 0.188772,
+      "graph_calls_per_s": 264.869256,
+      "host_graph_calls_per_s": 262.756424,
+      "host_physical_positions_per_s": 4204.102777,
+      "host_wall_s": 0.19029,
+      "latency_ms": {
+        "max": 4.08128,
+        "mean": 3.775448,
+        "median": 3.76936,
+        "min": 3.74924,
+        "p95": 3.784268
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 4237.908091
+    },
+    "git_commit": "46f8cdbcb7f2e408a4cee748a8ab387ca41b76be"
+  },
+  "b9": {
+    "profiled_calls": 50,
+    "kernel_groups": {
+      "Add": {
+        "us_per_call": 1.48,
+        "count_per_call": 1
+      },
+      "ApplyRotaryPosEmb": {
+        "us_per_call": 107.4184,
+        "count_per_call": 18
+      },
+      "ArgMaxV2": {
+        "us_per_call": 10.0544,
+        "count_per_call": 1
+      },
+      "AutomaticBufferFusionOp": {
+        "us_per_call": 134.8588,
+        "count_per_call": 19
+      },
+      "BroadcastTo": {
+        "us_per_call": 4.1164,
+        "count_per_call": 3
+      },
+      "Cast": {
+        "us_per_call": 14.434,
+        "count_per_call": 5
+      },
+      "ConcatV2D": {
+        "us_per_call": 59.9044,
+        "count_per_call": 23
+      },
+      "Cos": {
+        "us_per_call": 2.5788,
+        "count_per_call": 1
+      },
+      "GatherV2": {
+        "us_per_call": 24.7112,
+        "count_per_call": 16
+      },
+      "Greater": {
+        "us_per_call": 19.5104,
+        "count_per_call": 1
+      },
+      "InplaceAddRmsNorm": {
+        "us_per_call": 151.448,
+        "count_per_call": 36
+      },
+      "MatMul": {
+        "us_per_call": 577.0856,
+        "count_per_call": 91
+      },
+      "Mul": {
+        "us_per_call": 10.4268,
+        "count_per_call": 3
+      },
+      "Pack": {
+        "us_per_call": 1.3448,
+        "count_per_call": 1
+      },
+      "PromptFlashAttention": {
+        "us_per_call": 3993.436,
+        "count_per_call": 18
+      },
+      "Range": {
+        "us_per_call": 17.2372,
+        "count_per_call": 2
+      },
+      "RmsNorm": {
+        "us_per_call": 10.6324,
+        "count_per_call": 1
+      },
+      "ScatterNdUpdate": {
+        "us_per_call": 281.6552,
+        "count_per_call": 36
+      },
+      "Sin": {
+        "us_per_call": 2.5284,
+        "count_per_call": 1
+      },
+      "SplitVD": {
+        "us_per_call": 44.7872,
+        "count_per_call": 20
+      },
+      "StridedSliceD": {
+        "us_per_call": 165.8888,
+        "count_per_call": 90
+      },
+      "Transpose": {
+        "us_per_call": 7.3704,
+        "count_per_call": 1
+      },
+      "Unpack": {
+        "us_per_call": 1.142,
+        "count_per_call": 1
+      },
+      "ZerosLike": {
+        "us_per_call": 1.038,
+        "count_per_call": 1
+      }
+    },
+    "matmul_input_formats": {
+      "ND;FRACTAL_NZ": 4550
+    },
+    "timing": {
+      "device_s": 0.284555,
+      "graph_calls_per_s": 175.713017,
+      "host_graph_calls_per_s": 174.782505,
+      "host_physical_positions_per_s": 2796.520076,
+      "host_wall_s": 0.28607,
+      "latency_ms": {
+        "max": 5.93474,
+        "mean": 5.691098,
+        "median": 5.68701,
+        "min": 5.627,
+        "p95": 5.730892
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 2811.408276
+    },
+    "git_commit": "3a3bf0f218f68de3e7983f3195a9432ccacd84e1"
+  },
+  "increfa": {
+    "profiled_calls": 50,
+    "kernel_groups": {
+      "Add": {
+        "us_per_call": 3.2216,
+        "count_per_call": 2
+      },
+      "ApplyRotaryPosEmb": {
+        "us_per_call": 108.6072,
+        "count_per_call": 18
+      },
+      "ArgMaxV2": {
+        "us_per_call": 9.69,
+        "count_per_call": 1
+      },
+      "AutomaticBufferFusionOp": {
+        "us_per_call": 152.296,
+        "count_per_call": 19
+      },
+      "BroadcastTo": {
+        "us_per_call": 201.1924,
+        "count_per_call": 44
+      },
+      "Cast": {
+        "us_per_call": 16.2396,
+        "count_per_call": 7
+      },
+      "ConcatV2D": {
+        "us_per_call": 12.7488,
+        "count_per_call": 4
+      },
+      "Cos": {
+        "us_per_call": 2.5744,
+        "count_per_call": 1
+      },
+      "GatherV2": {
+        "us_per_call": 25.4332,
+        "count_per_call": 16
+      },
+      "Greater": {
+        "us_per_call": 12.1896,
+        "count_per_call": 1
+      },
+      "IncreFlashAttention": {
+        "us_per_call": 1024.106,
+        "count_per_call": 18
+      },
+      "InplaceAddRmsNorm": {
+        "us_per_call": 166.3392,
+        "count_per_call": 36
+      },
+      "MatMul": {
+        "us_per_call": 498.786,
+        "count_per_call": 91
+      },
+      "Mul": {
+        "us_per_call": 10.404,
+        "count_per_call": 3
+      },
+      "Pack": {
+        "us_per_call": 3.3292,
+        "count_per_call": 2
+      },
+      "Range": {
+        "us_per_call": 26.88,
+        "count_per_call": 4
+      },
+      "RmsNorm": {
+        "us_per_call": 12.1908,
+        "count_per_call": 1
+      },
+      "ScatterNdUpdate": {
+        "us_per_call": 685.8452,
+        "count_per_call": 36
+      },
+      "Sin": {
+        "us_per_call": 2.5652,
+        "count_per_call": 1
+      },
+      "SplitVD": {
+        "us_per_call": 46.7444,
+        "count_per_call": 20
+      },
+      "StridedSliceD": {
+        "us_per_call": 87.924,
+        "count_per_call": 72
+      },
+      "Transpose": {
+        "us_per_call": 7.296,
+        "count_per_call": 1
+      },
+      "Unpack": {
+        "us_per_call": 1.2008,
+        "count_per_call": 1
+      }
+    },
+    "matmul_input_formats": {
+      "ND;FRACTAL_NZ": 4550
+    },
+    "timing": {
+      "device_s": 0.158986,
+      "graph_calls_per_s": 314.49322,
+      "host_graph_calls_per_s": 311.585735,
+      "host_physical_positions_per_s": 4985.371768,
+      "host_wall_s": 0.160469,
+      "latency_ms": {
+        "max": 3.47116,
+        "mean": 3.179719,
+        "median": 3.1723,
+        "min": 3.14334,
+        "p95": 3.198332
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 5031.891515
+    },
+    "git_commit": "556f191cb9218e76f6aa33f6e4848c04aba76c6b"
+  },
+  "control_repeat": {
+    "profiled_calls": 50,
+    "kernel_groups": {
+      "Add": {
+        "us_per_call": 4.9824,
+        "count_per_call": 3
+      },
+      "ApplyRotaryPosEmb": {
+        "us_per_call": 153.37,
+        "count_per_call": 36
+      },
+      "ArgMaxV2": {
+        "us_per_call": 10.0388,
+        "count_per_call": 1
+      },
+      "AutomaticBufferFusionOp": {
+        "us_per_call": 141.9216,
+        "count_per_call": 18
+      },
+      "BatchMatMul": {
+        "us_per_call": 317.3332,
+        "count_per_call": 36
+      },
+      "BroadcastTo": {
+        "us_per_call": 10.2048,
+        "count_per_call": 3
+      },
+      "Cast": {
+        "us_per_call": 15.5132,
+        "count_per_call": 6
+      },
+      "ConcatV2D": {
+        "us_per_call": 49.7764,
+        "count_per_call": 21
+      },
+      "Cos": {
+        "us_per_call": 2.6132,
+        "count_per_call": 1
+      },
+      "GatherV2": {
+        "us_per_call": 45.8916,
+        "count_per_call": 34
+      },
+      "Greater": {
+        "us_per_call": 22.5752,
+        "count_per_call": 2
+      },
+      "IncreFlashAttention": {
+        "us_per_call": 334.9496,
+        "count_per_call": 18
+      },
+      "InplaceAddRmsNorm": {
+        "us_per_call": 161.9116,
+        "count_per_call": 36
+      },
+      "MatMul": {
+        "us_per_call": 478.646,
+        "count_per_call": 91
+      },
+      "Mul": {
+        "us_per_call": 10.32,
+        "count_per_call": 3
+      },
+      "Range": {
+        "us_per_call": 25.6324,
+        "count_per_call": 3
+      },
+      "RmsNorm": {
+        "us_per_call": 11.9436,
+        "count_per_call": 1
+      },
+      "ScaledMaskedSoftmax": {
+        "us_per_call": 160.6004,
+        "count_per_call": 18
+      },
+      "Scatter": {
+        "us_per_call": 159.0588,
+        "count_per_call": 72
+      },
+      "Sin": {
+        "us_per_call": 2.5692,
+        "count_per_call": 1
+      },
+      "SplitVD": {
+        "us_per_call": 82.2636,
+        "count_per_call": 56
+      },
+      "Transpose": {
+        "us_per_call": 284.228,
+        "count_per_call": 37
+      },
+      "Unpack": {
+        "us_per_call": 1.1788,
+        "count_per_call": 1
+      }
+    },
+    "matmul_input_formats": {
+      "ND;FRACTAL_NZ": 4550
+    },
+    "timing": {
+      "device_s": 0.119362,
+      "graph_calls_per_s": 418.893363,
+      "host_graph_calls_per_s": 413.841529,
+      "host_physical_positions_per_s": 6621.464466,
+      "host_wall_s": 0.120819,
+      "latency_ms": {
+        "max": 2.73552,
+        "mean": 2.387242,
+        "median": 2.38132,
+        "min": 2.37144,
+        "p95": 2.388715
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 6702.293805
+    },
+    "git_commit": "556f191cb9218e76f6aa33f6e4848c04aba76c6b"
+  },
+  "increfa_scatter": {
+    "profiled_calls": 50,
+    "kernel_groups": {
+      "Add": {
+        "us_per_call": 4.8872,
+        "count_per_call": 3
+      },
+      "ApplyRotaryPosEmb": {
+        "us_per_call": 81.6952,
+        "count_per_call": 18
+      },
+      "ArgMaxV2": {
+        "us_per_call": 10.0512,
+        "count_per_call": 1
+      },
+      "AutomaticBufferFusionOp": {
+        "us_per_call": 132.868,
+        "count_per_call": 18
+      },
+      "BroadcastTo": {
+        "us_per_call": 176.5988,
+        "count_per_call": 56
+      },
+      "Cast": {
+        "us_per_call": 14.3848,
+        "count_per_call": 5
+      },
+      "ConcatV2D": {
+        "us_per_call": 97.112,
+        "count_per_call": 58
+      },
+      "Cos": {
+        "us_per_call": 2.6152,
+        "count_per_call": 1
+      },
+      "GatherV2": {
+        "us_per_call": 45.5976,
+        "count_per_call": 34
+      },
+      "Greater": {
+        "us_per_call": 12.1824,
+        "count_per_call": 1
+      },
+      "IncreFlashAttention": {
+        "us_per_call": 1038.9836,
+        "count_per_call": 18
+      },
+      "InplaceAddRmsNorm": {
+        "us_per_call": 156.5044,
+        "count_per_call": 36
+      },
+      "MatMul": {
+        "us_per_call": 521.1944,
+        "count_per_call": 91
+      },
+      "Mul": {
+        "us_per_call": 10.228,
+        "count_per_call": 3
+      },
+      "Range": {
+        "us_per_call": 17.4632,
+        "count_per_call": 2
+      },
+      "RmsNorm": {
+        "us_per_call": 12.1608,
+        "count_per_call": 1
+      },
+      "Scatter": {
+        "us_per_call": 155.584,
+        "count_per_call": 36
+      },
+      "Sin": {
+        "us_per_call": 2.548,
+        "count_per_call": 1
+      },
+      "SplitVD": {
+        "us_per_call": 45.86,
+        "count_per_call": 20
+      },
+      "StridedSliceD": {
+        "us_per_call": 84.1864,
+        "count_per_call": 72
+      },
+      "Transpose": {
+        "us_per_call": 165.7472,
+        "count_per_call": 37
+      },
+      "Unpack": {
+        "us_per_call": 1.1804,
+        "count_per_call": 1
+      }
+    },
+    "matmul_input_formats": {
+      "ND;FRACTAL_NZ": 4550
+    },
+    "timing": {
+      "device_s": 0.134448,
+      "graph_calls_per_s": 371.890273,
+      "host_graph_calls_per_s": 368.1214,
+      "host_physical_positions_per_s": 5889.942393,
+      "host_wall_s": 0.135825,
+      "latency_ms": {
+        "max": 3.0101,
+        "mean": 2.688965,
+        "median": 2.68155,
+        "min": 2.66548,
+        "p95": 2.694441
+      },
+      "physical_positions_per_call": 16,
+      "physical_positions_per_s": 5950.244362
+    },
+    "git_commit": "72da35139a472fa0938c1ccbe7b921332b381dbf"
+  }
+}
