@@ -1,0 +1,42 @@
+{
+  "c3": {
+    "completed_tables_per_s": 3.6711111239184526,
+    "latency_s": {
+      "count": 100,
+      "mean": 0.7850533229822758,
+      "p50": 0.5324899100232869,
+      "p90": 1.5428502660943209,
+      "p95": 2.214141868660226,
+      "p99": 4.971084423201392,
+      "max": 5.085484492010437,
+      "sum": 78.50533229822759,
+      "median": 0.5324899100232869
+    },
+    "wall_s": 27.239709348068573,
+    "all_100_eos": true,
+    "peak_outstanding": 3,
+    "ownership_samples_during_measurement": 5,
+    "only_owned_npu_pid_in_samples": true
+  },
+  "c4": {
+    "completed_tables_per_s": 4.339326623943828,
+    "latency_s": {
+      "count": 100,
+      "mean": 0.871326564514311,
+      "p50": 0.5471028130268678,
+      "p90": 1.7981259426218459,
+      "p95": 2.559495626681018,
+      "p99": 5.5192258579365445,
+      "max": 5.570783469942398,
+      "sum": 87.1326564514311,
+      "median": 0.5471028130268678
+    },
+    "wall_s": 23.04505022696685,
+    "all_100_eos": true,
+    "peak_outstanding": 4,
+    "ownership_samples_during_measurement": 4,
+    "only_owned_npu_pid_in_samples": true
+  },
+  "native_token_identical": 100,
+  "same_inputs": true
+}

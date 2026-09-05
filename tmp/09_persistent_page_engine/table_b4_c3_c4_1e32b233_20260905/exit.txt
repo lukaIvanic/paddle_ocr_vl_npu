@@ -1,0 +1,3 @@
+setup_server_exit=0
+c3_exit=0
+c4_exit=0
