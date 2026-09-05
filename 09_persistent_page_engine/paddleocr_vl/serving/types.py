@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+import io
 from typing import Any
 
 from PIL import Image
@@ -11,13 +12,21 @@ from PIL import Image
 @dataclass(frozen=True)
 class RecognitionRequest:
     request_id: str
-    crop: Image.Image
+    crop: Image.Image | bytes
     prompt: str
     skip_special_tokens: bool = True
     min_pixels: int | None = None
     max_pixels: int | None = None
     source_crop_size: tuple[int, int] | None = None
     submitted_at: float | None = None
+
+    def resolve_image(self) -> RecognitionRequest:
+        """Decode an already-cropped HTTP image on the CPU preparation worker."""
+        if not isinstance(self.crop, bytes):
+            return self
+        with Image.open(io.BytesIO(self.crop)) as opened:
+            crop = opened.convert("RGB")
+        return replace(self, crop=crop, source_crop_size=self.source_crop_size or crop.size)
 
 
 @dataclass

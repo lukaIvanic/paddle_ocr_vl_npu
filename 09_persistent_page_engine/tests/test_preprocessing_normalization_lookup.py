@@ -1,5 +1,6 @@
 """Bitwise checks: faster normalization is not a different image recipe."""
 from pathlib import Path
+import io
 import sys
 import unittest
 from unittest.mock import patch
@@ -10,6 +11,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from paddleocr_vl.model import preprocessing as p
+from paddleocr_vl.serving.types import RecognitionRequest
 
 
 def reference(array, cfg):
@@ -22,6 +24,27 @@ def reference(array, cfg):
 
 
 class NormalizationLookupTest(unittest.TestCase):
+    def test_deferred_image_decode_preserves_original_recipe_and_metadata(self):
+        for mode in ("RGB", "RGBA", "L"):
+            image = Image.new(mode, (61, 99), 80)
+            stream = io.BytesIO()
+            image.save(stream, format="PNG")
+            encoded = stream.getvalue()
+            request = RecognitionRequest("example", encoded, "Table Recognition:",
+                                         min_pixels=28224, max_pixels=802816, submitted_at=123.0)
+            resolved = request.resolve_image()
+            with Image.open(io.BytesIO(encoded)) as opened:
+                expected = opened.convert("RGB")
+            self.assertEqual(resolved.crop.tobytes(), expected.tobytes())
+            self.assertEqual(resolved.source_crop_size, expected.size)
+            self.assertEqual(resolved.submitted_at, 123.0)
+            self.assertEqual(resolved.min_pixels, 28224)
+            self.assertEqual(resolved.max_pixels, 802816)
+            self.assertEqual(request.crop, encoded)
+            self.assertIs(resolved.resolve_image(), resolved)
+        with self.assertRaises(Exception):
+            RecognitionRequest("bad", b"not an image", "Table Recognition:").resolve_image()
+
     def test_all_channel_values_and_fallbacks(self):
         cfg = p.load_preprocessor_config(Path("/does-not-exist"))
         image = np.repeat(np.arange(256, dtype=np.uint8).reshape(16, 16, 1), 3, axis=2)

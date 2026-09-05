@@ -8,7 +8,6 @@ ContinuousRecognizer and its compiled-graph caches for the server lifetime.
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import multiprocessing as mp
 import queue
@@ -137,7 +136,6 @@ def _worker_main(
 
     try:
         sys.path.insert(0, str(EXPERIMENT_ROOT))
-        from PIL import Image
         from paddleocr_vl.model.text_prefill import parse_text_buckets
         from paddleocr_vl.model.vision_prefill import parse_vision_buckets
         from paddleocr_vl.serving.engine import ContinuousRecognizer
@@ -207,29 +205,16 @@ def _worker_main(
                         self._closed = True
                         return None
                     request_id = job["request_id"]
-                    try:
-                        with Image.open(io.BytesIO(job["image_bytes"])) as opened:
-                            crop = opened.convert("RGB")
-                    except BaseException as exc:
-                        results.put(
-                            {
-                                "kind": "result",
-                                "request_id": request_id,
-                                "ok": False,
-                                "error": f"{type(exc).__name__}: {exc}",
-                                "traceback": traceback.format_exc(),
-                            }
-                        )
-                        block = False
-                        continue
                     request_jobs[request_id] = job
                     return RecognitionRequest(
                         request_id=request_id,
-                        crop=crop,
+                        # Same Image.open/convert recipe, executed later on the
+                        # preparation worker instead of pausing active decode.
+                        # Preparation failures use the existing error callback.
+                        crop=job["image_bytes"],
                         prompt=job["prompt"],
                         min_pixels=config["min_pixels"],
                         max_pixels=config["max_pixels"],
-                        source_crop_size=crop.size,
                         submitted_at=job["submitted_monotonic_s"],
                     )
                 return None

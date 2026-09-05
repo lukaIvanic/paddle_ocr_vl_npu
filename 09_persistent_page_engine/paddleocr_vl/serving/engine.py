@@ -2263,6 +2263,10 @@ class ContinuousRecognizer:
                 lane="cpu-prep",
             )
         timing: dict[str, float] = {}
+        if isinstance(request.crop, bytes):
+            image_decode_started = time.perf_counter()
+            request = request.resolve_image()
+            timing["cpu_image_decode"] = time.perf_counter() - image_decode_started
         crop_size = tuple(int(value) for value in request.crop.size)
         preprocessor_config = self.preprocessor_config
         if request.min_pixels is not None or request.max_pixels is not None:
