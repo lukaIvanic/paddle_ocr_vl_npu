@@ -166,7 +166,10 @@ class InterleavedTableRuntime:
                 print(f"TABLE_PHASE setup=decode kind={kind} B={physical_batch} KV={recognizer.cache_length}", flush=True)
                 runtime = recognizer.text_decode if physical_batch == recognizer.batch_size else TextDecodeRuntime(
                     recognizer.model, backend="torchair", device=recognizer.device,
-                    cache_root=args.decode_cache_dir, batch_size=physical_batch,
+                    cache_root=(args.decode_cache_dir / (
+                        f"selected_vocab_{recognizer.decode_vocab['selected_vocab_size']}_"
+                        f"{recognizer.decode_vocab['token_ids_sha256'][:12]}"
+                    )), batch_size=physical_batch,
                     cache_length=recognizer.cache_length, dtype=recognizer.dtype,
                     model_dir=recognizer.model_dir,
                     linear_weight_format=str(recognizer.weight_format["effective_mode"]),
