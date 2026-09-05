@@ -86,6 +86,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-pixels", type=int, default=28224)
     parser.add_argument("--max-pixels", type=int, default=802816)
     parser.add_argument("--vision-buckets", default=DEFAULT_VISION_BUCKETS)
+    parser.add_argument("--vision-attention-weight-padding", action="store_true",
+                        help="Zero-pad D72 vision projections to D80 and use joint FP32 RoPE.")
     parser.add_argument("--text-buckets", default=DEFAULT_TEXT_BUCKETS)
     parser.add_argument("--torchair-cache-dir", type=Path, default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair")
     parser.add_argument("--vision-torchair-cache-dir", type=Path, default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_vision_torchair")
@@ -159,6 +161,7 @@ def _worker_main(
             torchair_cache_dir=Path(config["torchair_cache_dir"]),
             vision_backend="torchair",
             vision_attention="prompt_flash_attention",
+            vision_attention_weight_padding=config["vision_attention_weight_padding"],
             vision_promptfa_align_128=True,
             vision_mlp_intermediate_size=4352,
             vision_linear_weight_format="fractal_nz",
@@ -472,6 +475,7 @@ def main() -> None:
         "min_pixels": args.min_pixels,
         "max_pixels": args.max_pixels,
         "vision_buckets": args.vision_buckets,
+        "vision_attention_weight_padding": args.vision_attention_weight_padding,
         "text_buckets": args.text_buckets,
         "torchair_cache_dir": str(args.torchair_cache_dir.expanduser().resolve()),
         "vision_torchair_cache_dir": str(args.vision_torchair_cache_dir.expanduser().resolve()),

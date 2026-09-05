@@ -824,6 +824,55 @@ def select_vision_bucket(real_seq_len: int, buckets: Iterable[int]) -> int | Non
     return None
 
 
+@torch.no_grad()
+def prepare_vision_attention_weight_padding(model: nn.Module) -> None:
+    """Zero-extend D72 projections to D80, preserving both RoPE halves.
+
+    Load-time only, before NZ conversion. The stage below owns execution of
+    these weights; original head_dim/scaling and rotary frequencies stay D72.
+    This is the joint-manual formulation measured in vision_matmul_lab.
+    """
+    layers = model.visual.vision_model.encoder.layers
+    for layer in layers:
+        attn = layer.self_attn
+        if attn.head_dim != 72 or hasattr(attn, "_weight_padded_head_dim"):
+            raise ValueError("vision weight padding requires unmodified D72 attention")
+    for layer in layers:
+        attn = layer.self_attn
+        heads = int(attn.num_heads)
+        indices = torch.tensor(
+            [h * 80 + i + (4 if i >= 36 else 0)
+             for h in range(heads) for i in range(72)],
+            device=attn.q_proj.weight.device, dtype=torch.long,
+        )
+        for name in ("q_proj", "k_proj", "v_proj", "out_proj"):
+            source = getattr(attn, name)
+            output_projection = name == "out_proj"
+            replacement = nn.Linear(
+                heads * 80 if output_projection else source.in_features,
+                source.out_features if output_projection else heads * 80,
+                bias=source.bias is not None,
+                device=source.weight.device, dtype=source.weight.dtype,
+            )
+            replacement.weight.zero_().index_copy_(
+                1 if output_projection else 0, indices, source.weight
+            )
+            if source.bias is not None:
+                if output_projection:
+                    replacement.bias.copy_(source.bias)
+                else:
+                    replacement.bias.zero_().index_copy_(0, indices, source.bias)
+            setattr(attn, name, replacement)
+        attn._weight_padded_head_dim = 80
+
+
+def pad_vision_rope_halves(value: torch.Tensor, fill: float) -> torch.Tensor:
+    # Neutral coordinates in each half, not a new D80 frequency table.
+    first, second = value.chunk(2, dim=-1)
+    return torch.cat((F.pad(first, (0, 4), value=fill),
+                      F.pad(second, (0, 4), value=fill)), dim=-1)
+
+
 class VisionPrefillStage(torch.nn.Module):
     """Vision encoder plus post LayerNorm for eager or compiled use."""
 
@@ -842,6 +891,33 @@ class VisionPrefillStage(torch.nn.Module):
                 f"{VISION_ATTENTION_CHOICES}, got {attention_impl!r}"
             )
         self.softmax_dtype_mode = get_vision_softmax_dtype_mode()
+        padded = {getattr(layer.self_attn, "_weight_padded_head_dim", None)
+                  for layer in self.transformer.encoder.layers}
+        if len(padded) != 1:
+            raise ValueError("vision layers must share the attention padding contract")
+        self.weight_padded_attention = padded == {80}
+        if self.weight_padded_attention and self.attention_impl != "prompt_flash_attention":
+            raise ValueError("weight-padded vision requires PromptFA")
+
+    def _weight_padded_attention(
+        self, attention, hidden_states, rope_cos, rope_sin, attention_mask,
+    ):
+        batch, seq, _ = hidden_states.shape
+        heads = int(attention.num_heads)
+        qk = torch.cat((attention.q_proj(hidden_states),
+                        attention.k_proj(hidden_states)), dim=-1).view(batch, seq, 2 * heads, 80)
+        value = attention.v_proj(hidden_states).view(batch, seq, heads, 80)
+        qk_fp32 = qk.float()
+        rotated = torch.cat((-qk_fp32[..., 40:], qk_fp32[..., :40]), dim=-1)
+        qk = (qk_fp32 * rope_cos.unsqueeze(-2).float()
+              + rotated * rope_sin.unsqueeze(-2).float()).to(qk.dtype)
+        query, key = (qk.view(batch, seq, 2, heads, 80)
+                      .permute(2, 0, 3, 1, 4).contiguous().unbind(0))
+        output = vision_prompt_flash_attention_bnsd(
+            query, key, value.transpose(1, 2).contiguous(),
+            num_heads=heads, scale=float(attention.scaling), atten_mask=attention_mask,
+        )
+        return attention.out_proj(output.transpose(1, 2).contiguous().view(batch, seq, heads * 80))
 
     def _attention(
         self,
@@ -851,6 +927,10 @@ class VisionPrefillStage(torch.nn.Module):
         rope_sin: torch.Tensor,
         attention_mask: torch.Tensor,
     ) -> torch.Tensor:
+        if self.weight_padded_attention:
+            return self._weight_padded_attention(
+                attention, hidden_states, rope_cos, rope_sin, attention_mask
+            )
         batch_size, seq_length, _hidden = hidden_states.shape
         qkv = torch.cat(
             [
@@ -942,6 +1022,10 @@ class VisionPrefillStage(torch.nn.Module):
         attention_mask: torch.Tensor,
     ) -> torch.Tensor:
         hidden_states = prefix_hidden_states
+        if self.weight_padded_attention:
+            # Once per full encoder pass, not once per layer.
+            rope_cos = pad_vision_rope_halves(rope_cos, 1.0)
+            rope_sin = pad_vision_rope_halves(rope_sin, 0.0)
         for encoder_layer in self.transformer.encoder.layers:
             attention_input = encoder_layer.layer_norm1(hidden_states)
             hidden_states = hidden_states + self._attention(
@@ -1215,6 +1299,7 @@ def vision_cache_dir_for_bucket(
     head_dim: int,
     mlp_intermediate_size: int,
     linear_weight_format: str,
+    weight_padded_attention: bool = False,
 ) -> Path:
     attention_key = (
         "manual_bmm"
@@ -1231,6 +1316,7 @@ def vision_cache_dir_for_bucket(
             f"softmax{cache_key_part(get_vision_softmax_dtype_mode())}",
             f"mlp{int(mlp_intermediate_size)}",
             f"weight{cache_key_part(linear_weight_format)}",
+            f"headpadding{'weights_joint_fp32' if weight_padded_attention else 'runtime'}",
             "bs1",
             f"seq{int(bucket)}",
             f"dtype{cache_key_part(dtype)}",
@@ -1359,6 +1445,10 @@ class VisionPrefillRuntime:
                 else None
             ),
             "vision_head_dim": head_dim,
+            "attention_weight_padding": self.eager_stage.weight_padded_attention,
+            "rotary_implementation": (
+                "joint_manual_fp32" if self.eager_stage.weight_padded_attention else "separate_manual_fp32"
+            ),
             "mlp_intermediate_size": self.mlp_intermediate_size,
             "linear_weight_format": self.linear_weight_format,
             "prompt_flash_attention_call_head_dim": (
@@ -1402,6 +1492,7 @@ class VisionPrefillRuntime:
                 head_dim=head_dim,
                 mlp_intermediate_size=self.mlp_intermediate_size,
                 linear_weight_format=self.linear_weight_format,
+                weight_padded_attention=module.weight_padded_attention,
             )
             cache_dir.mkdir(parents=True, exist_ok=True)
             config = CompilerConfig()

@@ -92,6 +92,7 @@ from ..model.vision_prefill import (
     get_vision_prompt_fa_layout,
     prepare_vision_linear_weight_format,
     prepare_vision_mlp_intermediate,
+    prepare_vision_attention_weight_padding,
 )
 from .vision_router import BatchedVisionGraphRuntime, select_profiled_vision_route
 
@@ -575,6 +576,7 @@ class ContinuousRecognizer:
         torchair_cache_dir: Path,
         vision_backend: str = DEFAULT_VISION_BACKEND,
         vision_attention: str = "manual",
+        vision_attention_weight_padding: bool = False,
         vision_buckets: str | Iterable[int] = OPTIMIZED_VISION_BUCKETS,
         vision_torchair_cache_dir: Path | None = None,
         vision_padding: str = "auto",
@@ -705,6 +707,11 @@ class ContinuousRecognizer:
             else int(vision_mlp_intermediate_size)
         )
         self.vision_attention = str(vision_attention)
+        self.vision_attention_weight_padding = bool(vision_attention_weight_padding)
+        if self.vision_attention_weight_padding and (
+            self.vision_attention != "prompt_flash_attention" or str(vision_packing) != "off"
+        ):
+            raise ValueError("weight-padded vision currently supports the unpacked PromptFA serving lane")
         if self.vision_attention not in VISION_ATTENTION_CHOICES:
             raise ValueError(
                 "vision attention must be one of "
@@ -948,6 +955,13 @@ class ContinuousRecognizer:
         synchronize(self.device)
         vision_mlp_setup_s = time.perf_counter() - started
         _emit_setup_progress("vision_mlp_padding", "done", vision_mlp_setup_s)
+
+        if self.vision_attention_weight_padding:
+            started = time.perf_counter()
+            _emit_setup_progress("vision_attention_weight_padding", "start")
+            prepare_vision_attention_weight_padding(self.model)
+            synchronize(self.device)
+            _emit_setup_progress("vision_attention_weight_padding", "done", time.perf_counter() - started)
 
         synchronize(self.device)
         started = time.perf_counter()
@@ -3718,6 +3732,7 @@ class ContinuousRecognizer:
             "vision_linear_weight_format": dict(self.vision_weight_format),
             "vision_backend": self.vision_backend,
             "vision_attention": vision_attention,
+            "vision_attention_weight_padding": self.vision_attention_weight_padding,
             "vision_promptfa_align_128": self.vision_promptfa_align_128,
             "vision_sequence_alignment": self.vision_seq_alignment,
             "vision_packing": {
