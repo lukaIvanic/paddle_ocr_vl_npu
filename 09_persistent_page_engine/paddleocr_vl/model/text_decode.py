@@ -849,6 +849,15 @@ DECODE_OPTIMIZATION_PRESETS[
     prefetch_next_iteration=True,
 )
 
+DECODE_OPTIMIZATION_PRESETS[
+    "combined_apply_complete_layer_prefetch1_rope_lut_packed_mlp"
+] = replace(
+    DECODE_OPTIMIZATION_PRESETS["combined_apply_complete_layer_prefetch1_rope_lut"],
+    name="combined_apply_complete_layer_prefetch1_rope_lut_packed_mlp",
+    packed_mlp=True,
+    npu_swiglu=True,
+)
+
 
 def resolve_decode_optimization(
     optimization: str | DecodeOptimizationConfig,
@@ -1141,21 +1150,22 @@ def prepare_decode_weight_prefetch(
         return
     layers = model.model.layers
     decode_lm_head = getattr(model, "decode_lm_head", model.lm_head)
+    def mlp_weights(mlp: nn.Module) -> tuple[torch.Tensor, ...]:
+        # Prefetch the allocation actually consumed by decode, not the original
+        # separate weights retained for prefill when gate/up are packed.
+        if config.packed_mlp:
+            return (mlp.decode_gate_up_proj.weight, mlp.down_proj.weight)
+        return (mlp.gate_proj.weight, mlp.up_proj.weight, mlp.down_proj.weight)
+
     def complete_layer_weights(layer: nn.Module) -> tuple[torch.Tensor, ...]:
         return (
             layer.self_attn.decode_qkv_proj.weight,
             layer.self_attn.o_proj.weight,
-            layer.mlp.gate_proj.weight,
-            layer.mlp.up_proj.weight,
-            layer.mlp.down_proj.weight,
+            *mlp_weights(layer.mlp),
         )
 
     for index, layer in enumerate(layers):
-        layer.self_attn._decode_prefetch_current_mlp = (
-            layer.mlp.gate_proj.weight,
-            layer.mlp.up_proj.weight,
-            layer.mlp.down_proj.weight,
-        )
+        layer.self_attn._decode_prefetch_current_mlp = mlp_weights(layer.mlp)
         layer.mlp._decode_prefetch_next_attention = (
             (
                 layers[index + 1].self_attn.decode_qkv_proj.weight,
