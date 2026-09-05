@@ -1,0 +1,65 @@
+{
+  "diagnostic_only": true,
+  "profiles": [
+    {
+      "source": "profile/embedding_0/liteserver-c001-4_2529224_20260905223754017_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_sum_us": 8555.699999999999,
+      "by_type_us": {
+        "TransData": 116.16,
+        "MemSet": 11.2,
+        "Conv2D": 8225.66,
+        "Transpose": 54.379999999999995,
+        "Cast": 1.64,
+        "ResizeBilinearV2": 114.96,
+        "Tile": 9.34,
+        "Add": 11.0,
+        "TensorMove": 11.36
+      }
+    },
+    {
+      "source": "profile/embedding_1/liteserver-c001-4_2529224_20260905223803202_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_sum_us": 8537.900000000003,
+      "by_type_us": {
+        "TransData": 114.82,
+        "MemSet": 10.12,
+        "Conv2D": 8205.4,
+        "Transpose": 58.18,
+        "Cast": 1.5,
+        "ResizeBilinearV2": 115.04,
+        "Tile": 9.62,
+        "Add": 11.18,
+        "TensorMove": 12.04
+      }
+    },
+    {
+      "source": "profile/embedding_2/liteserver-c001-4_2529224_20260905223812306_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "kernel_sum_us": 8549.18,
+      "by_type_us": {
+        "TransData": 119.0,
+        "MemSet": 10.9,
+        "Conv2D": 8214.4,
+        "Transpose": 56.12,
+        "Cast": 1.6,
+        "ResizeBilinearV2": 115.02,
+        "Tile": 9.54,
+        "Add": 11.22,
+        "TensorMove": 11.38
+      }
+    }
+  ],
+  "mean_kernel_sum_us": 8547.593333333334,
+  "mean_by_type_us": {
+    "TransData": 116.66,
+    "MemSet": 10.74,
+    "Conv2D": 8215.153333333334,
+    "Transpose": 56.22666666666667,
+    "Cast": 1.58,
+    "ResizeBilinearV2": 115.00666666666666,
+    "Tile": 9.5,
+    "Add": 11.133333333333333,
+    "TensorMove": 11.593333333333334
+  },
+  "convolution_share": 0.9611071810466727,
+  "all_eight_eos_native_identical": true,
+  "note": "Profiling synchronizes and exports during requests. These HTTP latencies are not performance results."
+}

@@ -1,0 +1,54 @@
+Waiting for NPU worker pid=2529224
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.882318}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":11.489228}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.025916}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.028437}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"done","elapsed_s":0.067662}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":5.793247}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.516602}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.016664}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":6.369347}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":3.274812}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":0.237835}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.00609}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.00362}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":29.565605}
+READY http://127.0.0.1:8767 worker_pid=2529224
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+.HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-001-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-002-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-003-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-004-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-005-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+[2026-09-05 22:37:54] [WARNING] [2529224] profiler.py: Incorrect schedule: Stop profiler while current state is RECORD which may result in incomplete parsed data.
+[2026-09-05 22:37:54] [INFO] [2529867] profiler.py: Start parsing profiling data in sync mode at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_serving_profile_20260905/embedding_bc201dda/profile/embedding_0/liteserver-c001-4_2529224_20260905223754017_ascend_pt
+|/-\|[2026-09-05 22:37:58] [INFO] [2529893] profiler.py: CANN profiling data parsed in a total time of 0:00:04.032467
+/[2026-09-05 22:38:00] [INFO] [2529867] profiler.py: All profiling data parsed in a total time of 0:00:05.793222
+SERVING_PROFILE embedding 1/3 done
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-006-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+[2026-09-05 22:38:03] [WARNING] [2529224] profiler.py: Incorrect schedule: Stop profiler while current state is RECORD which may result in incomplete parsed data.
+[2026-09-05 22:38:03] [INFO] [2530543] profiler.py: Start parsing profiling data in sync mode at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_serving_profile_20260905/embedding_bc201dda/profile/embedding_1/liteserver-c001-4_2529224_20260905223803202_ascend_pt
+|/-\|[2026-09-05 22:38:08] [INFO] [2530569] profiler.py: CANN profiling data parsed in a total time of 0:00:04.032413
+/[2026-09-05 22:38:09] [INFO] [2530543] profiler.py: All profiling data parsed in a total time of 0:00:05.791365
+SERVING_PROFILE embedding 2/3 done
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-007-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+[2026-09-05 22:38:12] [WARNING] [2529224] profiler.py: Incorrect schedule: Stop profiler while current state is RECORD which may result in incomplete parsed data.
+[2026-09-05 22:38:13] [INFO] [2531219] profiler.py: Start parsing profiling data in sync mode at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_serving_profile_20260905/embedding_bc201dda/profile/embedding_2/liteserver-c001-4_2529224_20260905223812306_ascend_pt
+|/-\|[2026-09-05 22:38:17] [INFO] [2531245] profiler.py: CANN profiling data parsed in a total time of 0:00:04.032612
+/[2026-09-05 22:38:18] [INFO] [2531219] profiler.py: All profiling data parsed in a total time of 0:00:05.834634
+SERVING_PROFILE embedding 3/3 done
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-008-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+SERVICE_SUMMARY /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_serving_profile_20260905/embedding_bc201dda/service.json

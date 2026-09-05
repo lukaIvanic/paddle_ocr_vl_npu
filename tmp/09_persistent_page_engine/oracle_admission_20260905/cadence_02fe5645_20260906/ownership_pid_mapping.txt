@@ -1,0 +1,9 @@
+Manually observed direct-host /proc status, not inferred from NPU enumeration.
+Control snapshot 2026-09-06T06:20:05+08:00:
+PPid: 1922511
+NSpid: 1922513 2527518
+Policy snapshot 2026-09-06T06:24:07+08:00:
+PPid: 1924993
+NSpid: 1924995 2528253
+Control container parent: 2527516. Policy container parent: 2528251.
+Host monitor PID: 1921777 (owned bash loop, five-second sleep).

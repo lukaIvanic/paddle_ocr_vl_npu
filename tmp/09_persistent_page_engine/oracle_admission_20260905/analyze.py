@@ -9,6 +9,8 @@ import sys
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent / "run_37e42bc0"
 load = lambda p: json.loads(p.read_text())
 log = (ROOT / "host_npu6_monitor.log").read_text()
+mapping_file = ROOT / "ownership_pid_mapping.txt"
+mapping = log + (mapping_file.read_text() if mapping_file.exists() else "")
 samples = [(datetime.fromisoformat(b.splitlines()[0]).timestamp(), set(map(int, re.findall(r"Process id:(\d+)", b)))) for b in re.split(r"(?=^2026-\d\d-\d\dT)", log, flags=re.M) if "Chip Count" in b]
 report, records, configs = {"non_qualifying_oracle": True}, {}, {}
 for mode in ("control", "policy"):
@@ -33,7 +35,7 @@ for mode in ("control", "policy"):
     assert active == 0 and peak == 3
     for r in rows:
         assert r["status"] == "ok" and r["service_result"]["response"]["stop_reason"] == "eos"
-    pid = int(re.search(r"NSpid:\s+(\d+)\s+" + str(service["worker_pid"]) + r"\b", log)[1])
+    pid = int(re.search(r"NSpid:\s+(\d+)\s+" + str(service["worker_pid"]) + r"\b", mapping)[1])
     begin = s["actual_start_epoch_s"]
     end = begin + s["run_wall_s"]
     during = [p for t, p in samples if begin <= t <= end]

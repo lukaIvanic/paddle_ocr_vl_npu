@@ -1,0 +1,85 @@
+{
+  "component": "real vision patch and position embeddings",
+  "full_request_warmups": 5,
+  "profiled_forwards": 3,
+  "configuration": {
+    "model": "/workspace/models/PaddleOCR-VL-1.6",
+    "dtype": "fp16",
+    "decode_backend": "torchair",
+    "decode_optimization": "combined_apply_complete_layer_prefetch1_rope_lut",
+    "decode_vocab_token_ids": "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json",
+    "token_selection": "greedy",
+    "decode_batch_size": 2,
+    "decode_device_timing": true,
+    "compact_decode_control": false,
+    "request_scheduling_metrics": true,
+    "max_prefill_interruptions": null,
+    "cache_length": 4096,
+    "max_new_tokens": 4096,
+    "min_pixels": 28224,
+    "max_pixels": 802816,
+    "vision_buckets": "256,384,512,640,768,1408,1920,2048,2944,4096",
+    "vision_attention_weight_padding": true,
+    "text_buckets": "128,256,512,1024,1152",
+    "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair",
+    "vision_torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_torchair",
+    "text_torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair"
+  },
+  "observations": [
+    {
+      "request_index": 5,
+      "pixel_shape": [
+        1,
+        3840,
+        3,
+        14,
+        14
+      ],
+      "grid": [
+        [
+          1,
+          48,
+          80
+        ]
+      ],
+      "host_epoch_s": 1788647880.9290037
+    },
+    {
+      "request_index": 6,
+      "pixel_shape": [
+        1,
+        3840,
+        3,
+        14,
+        14
+      ],
+      "grid": [
+        [
+          1,
+          48,
+          80
+        ]
+      ],
+      "host_epoch_s": 1788647890.0358725
+    },
+    {
+      "request_index": 7,
+      "pixel_shape": [
+        1,
+        3840,
+        3,
+        14,
+        14
+      ],
+      "grid": [
+        [
+          1,
+          48,
+          80
+        ]
+      ],
+      "host_epoch_s": 1788647899.190325
+    }
+  ],
+  "profiled_latency_is_not_a_goal_result": true
+}

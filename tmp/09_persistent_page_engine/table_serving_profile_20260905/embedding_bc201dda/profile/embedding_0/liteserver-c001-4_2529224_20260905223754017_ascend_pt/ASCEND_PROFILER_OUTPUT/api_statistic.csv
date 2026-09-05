@@ -1,0 +1,17 @@
+Device_id,Level,API Name,Time(us),Count,Avg(us),Min(us),Max(us),Variance
+host,model,ModelLoad,2272706.19,16,142044.137,60432.8,170287.98,674196042.812
+host,acl,aclCreateDataBuffer,3.24,9,0.36,0.21,0.9,0.046
+host,acl,aclCreateTensorDesc,6.16,9,0.684,0.33,2.15,0.286
+host,acl,aclDestroyTensorDesc,4.89,9,0.543,0.28,1.98,0.261
+host,acl,aclmdlRICaptureGetInfo,5.99,3,1.997,0.7,3.91,1.907
+host,acl,aclnnCat,24.8,1,24.8,24.8,24.8,0
+host,acl,aclnnRepeat,34.93,1,34.93,34.93,34.93,0
+host,acl,aclnnUpsampleBilinear2d,108.33,1,108.33,108.33,108.33,0
+host,acl,aclopCompileAndExecute,1681.1,3,560.367,237.08,862.3,65377.99
+host,acl,aclopCreateAttr,0.34,1,0.34,0.34,0.34,0
+host,acl,aclopDestroyAttr,2.54,1,2.54,2.54,2.54,0
+host,acl,aclrtGetStreamAttribute,4.93,3,1.643,0.58,3.31,1.424
+host,acl,aclrtLaunchKernelWithHostArgs,86.35,9,9.594,4.84,16.9,16.003
+host,acl,aclrtSynchronizeDeviceWithTimeout,7425.86,1,7425.86,7425.86,7425.86,0
+host,node,launch,147942.86,11983,12.346,5.73,80.79,81.587
+host,acl,opCompile,67.37,3,22.457,7.73,47.05,306.353
