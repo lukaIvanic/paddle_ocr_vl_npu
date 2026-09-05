@@ -70,6 +70,8 @@ def parse_args() -> argparse.Namespace:
         help="Direct-logit token selection policy; validated in the NPU worker.",
     )
     parser.add_argument("--decode-batch-size", type=int, default=64)
+    parser.add_argument("--no-decode-device-timing", action="store_true",
+                        help="Disable per-iteration profiling events, not request timing or copy synchronization.")
     parser.add_argument(
         "--request-scheduling-metrics", action="store_true",
         help="Include per-request prefill interruption and decode occupancy records.",
@@ -156,6 +158,7 @@ def _worker_main(
             ),
             token_selection=config["token_selection"],
             batch_size=config["decode_batch_size"],
+            decode_device_timing=config["decode_device_timing"],
             cache_length=config["cache_length"],
             max_new_tokens=config["max_new_tokens"],
             torchair_cache_dir=Path(config["torchair_cache_dir"]),
@@ -468,6 +471,7 @@ def main() -> None:
         ),
         "token_selection": args.token_selection,
         "decode_batch_size": args.decode_batch_size,
+        "decode_device_timing": not args.no_decode_device_timing,
         "request_scheduling_metrics": args.request_scheduling_metrics,
         "max_prefill_interruptions": args.max_prefill_interruptions,
         "cache_length": args.cache_length,

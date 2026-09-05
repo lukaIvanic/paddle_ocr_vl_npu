@@ -133,7 +133,7 @@ class ContinuousDecodeRun:
     kv_prefix_bytes_copied: int
     initial_kv_prefix_bytes_copied: int
     hot_swap_kv_prefix_bytes_copied: int
-    timing_s: dict[str, float]
+    timing_s: dict[str, float | None]
 
 
 class OpenReadyDecodeSource(Protocol):
@@ -199,11 +199,15 @@ class DecodeArena:
         math_close_token_id: int | None = None,
         decode_token_id_map: torch.Tensor | None = None,
         timeline: TimelineRecorder | None = None,
+        decode_device_timing: bool = True,
     ) -> None:
         self.cache = cache
         self.device = device
         self.batch_size = int(batch_size)
         self.eos_token_id = int(eos_token_id)
+        self.decode_device_timing = bool(decode_device_timing)
+        if timeline is not None and not self.decode_device_timing:
+            raise ValueError("decode timeline requires decode device timing")
         self.token_selection = str(token_selection)
         self.preferred_token_id = (
             None if preferred_token_id is None else int(preferred_token_id)
@@ -314,6 +318,10 @@ class DecodeArena:
         event_type: str = "work",
         args: dict[str, Any] | None = None,
     ) -> Any:
+        if records is self._decode_event_spans and not self.decode_device_timing:
+            # Profiling events only. Token-copy dependency/completion events
+            # remain mandatory and are owned by the scheduler, not this helper.
+            return fn()
         start_event = self._event()
         end_event = self._event()
         enqueued_ns = time.perf_counter_ns()
@@ -1573,7 +1581,7 @@ class ContinuousDecodeScheduler:
         continuous_decode_wall_s = max(
             decode_host_exclusive_wall_s,
             decode_device_s + admission_device_s,
-        )
+        ) if self.arena.decode_device_timing else None
 
         if ready_queue or not source_exhausted:
             raise AssertionError(f"continuous decode stopped with {len(ready_queue)} ready requests")
@@ -1616,14 +1624,16 @@ class ContinuousDecodeScheduler:
             initial_kv_prefix_bytes_copied=initial_kv_bytes,
             hot_swap_kv_prefix_bytes_copied=hot_swap_kv_bytes,
             timing_s={
-                "continuous_decode_wall": float(continuous_decode_wall_s),
+                "continuous_decode_wall": continuous_decode_wall_s,
                 "decode_host_exclusive_wall": float(
                     decode_host_exclusive_wall_s
                 ),
                 "run_scoped_scheduler_wall": float(scheduler_wall_s),
                 "ready_source_wall": float(ready_source_wall_s),
                 "completion_callback_wall": float(completion_callback_wall_s),
-                "decode_model_and_argmax_device": float(decode_device_s),
+                "decode_model_and_argmax_device": (
+                    float(decode_device_s) if self.arena.decode_device_timing else None
+                ),
                 "slot_admission_device": float(admission_device_s),
                 "slot_admission_enqueue_wall": float(self.arena.admission_enqueue_wall_s),
                 "d2h_wait_wall": float(d2h_wait_wall_s),

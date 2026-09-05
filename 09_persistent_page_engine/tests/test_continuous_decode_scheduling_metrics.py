@@ -31,12 +31,13 @@ def cache(batch_size, length=32):
     )
 
 
-def run_case(batch_size, collect):
+def run_case(batch_size, collect, device_timing=True):
     recorder = RequestSchedulingMetrics(batch_size) if collect else None
     arena = DecodeArena(
         cache=cache(batch_size), device=torch.device("cpu"),
         batch_size=batch_size, eos_token_id=9,
         decode_token_id_map=torch.arange(10),
+        decode_device_timing=device_timing,
     )
     candidates = deque([("a", 1), ("b", 4), ("c", 3)])
     if batch_size >= 4:
@@ -84,6 +85,19 @@ def run_case(batch_size, collect):
 
 
 class ContinuousDecodeMetricsTest(unittest.TestCase):
+    def test_disabling_profiler_events_preserves_outputs_and_reports_unavailable(self):
+        from utils.metrics import per_second
+        for batch in (1, 2, 4):
+            control, old_outputs, old_shapes = run_case(batch, True)
+            fast, outputs, shapes = run_case(batch, True, device_timing=False)
+            self.assertEqual([x.token_ids for x in old_outputs], [x.token_ids for x in outputs])
+            self.assertEqual(old_shapes, shapes)
+            self.assertEqual(control.graph_calls, fast.graph_calls)
+            self.assertIsNone(fast.timing_s["decode_model_and_argmax_device"])
+            self.assertIsNone(fast.timing_s["continuous_decode_wall"])
+            self.assertIsNone(per_second(fast.effective_decode_tokens, None))
+            self.assertGreater(fast.timing_s["run_scoped_scheduler_wall"], 0)
+
     def run_capped_case(self, limit, *, collect=True, length=32, fail=False):
         recorder = RequestSchedulingMetrics(2) if collect else None
         arena = DecodeArena(
