@@ -4,9 +4,15 @@ import tempfile
 import unittest
 
 from run_pixel_cap_ablation import select_pages
+from summarize_pixel_cap_ablation import page_average
 
 
 class PixelCapSelectionTests(unittest.TestCase):
+    def test_metric_average_weights_pages_not_samples(self):
+        self.assertEqual(page_average({'a.png_[0]': 1.0, 'a.png_[1]': 0.0,
+                                       'b.png_[0]': 1.0}), {'a.png': 0.5, 'b.png': 1.0})
+        self.assertEqual(page_average({'a.png_[0]': {'TEDS': 0.8}}, 'TEDS'), {'a.png': 0.8})
+
     def test_selection_uses_recognition_only_strict_threshold_and_dataset_order(self):
         dataset = [{'page_info': {'image_path': name}} for name in ['a.png', 'b.png', 'c.png']]
         rows = [{'request_id': name + ':layout', 'page': name, 'phase': 'layout',
