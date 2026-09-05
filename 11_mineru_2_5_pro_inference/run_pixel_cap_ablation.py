@@ -72,6 +72,8 @@ def main():
     parser.add_argument('--reference-summary', type=Path, required=True)
     parser.add_argument('--run-root', type=Path, required=True)
     parser.add_argument('--max-pixels', type=int, default=1103872)
+    parser.add_argument('--warmup-pages', type=int, default=4,
+                        help='Real subset prefix; must supply enough crops to exercise B32 packed prefill.')
     args = parser.parse_args()
     os.chdir(Path(__file__).resolve().parent.parent)
     root = args.run_root.resolve()
@@ -119,6 +121,7 @@ def main():
                 run = root / label
                 run.mkdir()
                 command = build_command(paired_reference, run / 'output', len(subset), maximum)
+                command[command.index('--warmup-pages') + 1] = str(args.warmup_pages)
                 print(f'INFERENCE_START {label} max_pixels={maximum}', flush=True)
                 execute(command, run)
                 summary = validate(run / 'output', paired_reference, len(subset))
