@@ -43,6 +43,28 @@ failed pages and 99.77% decode-slot occupancy. This keeps KV4096; 39 requests
 hit that capacity, and their unchanged predictions remain in the score.
 The result directory preserves full token traces and evaluation evidence.
 
+## Image-resolution overrides
+
+The locally owned processor accepts `--processor-min-pixels` and
+`--processor-max-pixels`. For a recognition-resolution ablation, add:
+
+```sh
+--processor-min-pixels 25088 --processor-max-pixels 1103872
+```
+
+The maximum is pixel **area**, not edge length: `1103872 / (14 * 14) = 5632`
+raw vision tokens, or at most 1408 image tokens after the 2×2 merger. Resize
+alignment can produce fewer tokens. This shared processor also handles layout,
+but the standard 1036×1036 layout image (5476 raw tokens) remains below this cap.
+The production minimum is 25088 pixels (128 raw tokens); the checkpoint minimum
+is 50176. Omitting the maximum override preserves the checkpoint's 1605632-pixel
+limit (8192 raw tokens). Effective limits are recorded in the run summary.
+
+`run_vision_timing_production.py` also accepts `--processor-max-pixels 1103872`,
+keeping the reference run's remaining settings and graph caches. The override
+changes recognition resolution and needs empirical quality evaluation; it is
+not a new default or a claim of unchanged accuracy.
+
 ## Included surfaces
 
 ```text

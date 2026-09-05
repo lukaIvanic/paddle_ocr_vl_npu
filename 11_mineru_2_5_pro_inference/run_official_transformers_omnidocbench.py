@@ -144,6 +144,16 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--processor-max-pixels",
+        type=int,
+        help=(
+            "Override the Qwen2-VL image processor maximum pixel area for layout "
+            "and recognition. Use 1103872 for at most 5632 raw 14x14 vision "
+            "tokens; the default 1036x1036 layout remains below this cap. "
+            "Omit to retain the checkpoint limit."
+        ),
+    )
+    parser.add_argument(
         "--local-dtype",
         choices=("float16",),
         default="float16",
@@ -589,9 +599,32 @@ def warm_all_static_buckets(
     return report
 
 
+def apply_processor_pixel_limits(image_processor, *, min_pixels=None, max_pixels=None):
+    """Support both current size-based and older attribute-based processors."""
+    lower = min_pixels if min_pixels is not None else image_processor.size["shortest_edge"]
+    upper = max_pixels if max_pixels is not None else image_processor.size["longest_edge"]
+    if lower <= 0 or upper <= 0:
+        raise ValueError("processor min/max pixels must be positive")
+    if lower > upper:
+        raise ValueError("processor min pixels must not exceed max pixels")
+    if upper < (image_processor.patch_size * image_processor.merge_size) ** 2:
+        raise ValueError("processor max pixels must fit at least one merged image patch")
+    if min_pixels is not None:
+        image_processor.min_pixels = int(lower)
+        image_processor.size["shortest_edge"] = int(lower)
+    if max_pixels is not None:
+        image_processor.max_pixels = int(upper)
+        image_processor.size["longest_edge"] = int(upper)
+
+
 def main() -> None:
     args = parse_args()
     vision_timing_samples: list[dict[str, Any]] = []
+    if args.processor_max_pixels is not None and args.backend not in (
+        "transformers", "local-correctness", "local-eager-client",
+        "local-compiled-client", "local-fixed-batch-client", "local-continuous-client",
+    ):
+        raise ValueError("processor-max-pixels requires a locally owned image processor")
     if args.offset < 0 or (args.limit is not None and args.limit < 0):
         raise ValueError("offset and limit must be non-negative")
     if args.warmup_pages < 0:
@@ -678,13 +711,11 @@ def main() -> None:
             use_fast=True,
             local_files_only=True,
         )
-        if args.processor_min_pixels is not None:
-            if args.processor_min_pixels <= 0:
-                raise ValueError("processor-min-pixels must be positive")
-            processor.image_processor.min_pixels = args.processor_min_pixels
-            processor.image_processor.size["shortest_edge"] = (
-                args.processor_min_pixels
-            )
+        apply_processor_pixel_limits(
+            processor.image_processor,
+            min_pixels=args.processor_min_pixels,
+            max_pixels=args.processor_max_pixels,
+        )
         if args.backend == "transformers":
             from transformers import Qwen2VLForConditionalGeneration
 
@@ -1098,6 +1129,11 @@ def main() -> None:
             if processor_fast
             else None
         ),
+        "processor_max_pixels": (
+            int(processor.image_processor.size["longest_edge"])
+            if processor_fast else None
+        ),
+        "processor_max_pixels_override": args.processor_max_pixels,
         "npu_jit_compile": False,
         "image_analysis": False,
         "batch_size": args.batch_size,

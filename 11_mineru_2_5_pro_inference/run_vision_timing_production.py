@@ -10,7 +10,7 @@ import sys
 import time
 
 
-def build_command(reference, output, limit):
+def build_command(reference, output, limit, max_pixels=None):
     required = {
         'completed': 1651, 'failed': 0, 'skipped': 0,
         'batch_size': 32, 'page_batch_size': 32, 'streaming_page_window': 32,
@@ -55,6 +55,11 @@ def build_command(reference, output, limit):
         if not path.exists():
             raise ValueError(f'missing reference path: {key}={path}')
         command.extend(['--' + key.replace('_', '-'), str(path)])
+    effective_max = max_pixels if max_pixels is not None else reference.get('processor_max_pixels')
+    if effective_max is not None:
+        if effective_max < reference['processor_min_pixels']:
+            raise ValueError('processor max pixels must be at least the reference min pixels')
+        command.extend(['--processor-max-pixels', str(effective_max)])
     return command
 
 
@@ -91,10 +96,12 @@ def main():
     parser.add_argument('--reference-summary', type=Path, required=True)
     parser.add_argument('--run-root', type=Path, required=True)
     parser.add_argument('--limit', type=int, default=384)
+    parser.add_argument('--processor-max-pixels', type=int,
+                        help='Explicit resolution ablation; 1103872 caps raw vision tokens at 5632.')
     args = parser.parse_args()
     reference = json.loads(args.reference_summary.read_text())
     root = args.run_root.resolve()
-    command = build_command(reference, root/'output', args.limit)
+    command = build_command(reference, root/'output', args.limit, args.processor_max_pixels)
     root.mkdir(parents=True, exist_ok=False)
     (root/'pid.txt').write_text(str(os.getpid())+'\n')
     (root/'reference_summary.json').write_text(json.dumps(reference, indent=2)+'\n')
