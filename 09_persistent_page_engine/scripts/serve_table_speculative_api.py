@@ -669,6 +669,8 @@ def _interleaved_worker_loop(
         runtime = InterleavedTableRuntime(b1, draft, args, capacity=capacity)
         policy, ledger = TablePhasePolicy(), PhaseLedger()
         matcher_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="table-phase-matcher")
+        preparation_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="table-phase-prepare")
+        preparing: dict[str, Any] = {}
         metadata: dict[str, Any] = {}
         draining = False
         completed = 0
@@ -682,6 +684,7 @@ def _interleaved_worker_loop(
                 "mixed_execution": "separate_fairly_alternating_calls",
                 "batching": "immediate_matching_phase_and_query_only",
                 "kv_policy": "stable_request_slots_no_k_migration",
+                "cpu_preparation": "one_background_worker_with_reserved_table_slots",
                 "warmup": "client_must_send_complete_requests_before_measurement",
                 "graph_contracts": runtime.metadata,
             },
@@ -690,6 +693,7 @@ def _interleaved_worker_loop(
 
         def snapshot(extra: str | None = None) -> dict[str, str]:
             phases = {key: value["phase"] for key, value in runtime.jobs.items()}
+            phases.update({key: "cpu_prepare" for key in preparing})
             if extra is not None:
                 phases[extra] = "cpu_prepare"
             return phases
@@ -702,7 +706,9 @@ def _interleaved_worker_loop(
             finally:
                 ledger.record(action, owners=owners, phases=phases, wall_s=time.perf_counter() - started)
 
-        def prepare(job: dict[str, Any]) -> None:
+        def prepare(job: dict[str, Any]) -> dict[str, Any]:
+            started = time.perf_counter()
+            cpu_started = time.thread_time()
             key = str(job["request_id"])
             source_id = str(job["source_request_id"])
             if job.get("crop_type") != "table":
@@ -725,9 +731,13 @@ def _interleaved_worker_loop(
             )
             prepared = b1._prepare_cpu(request, time.perf_counter())
             groups = draft._iter_packed_prefill_groups(row_requests) if row_requests is not None else None
-            runtime.add(key, route=route, payload=source, target_prepared=prepared, row_groups=groups)
-            metadata[key] = {"job": job, "source_id": source_id, "row_preparation": row_preparation}
-            print(f"TABLE_PHASE admitted id={key} route={route} active={len(runtime.jobs)}", flush=True)
+            return {
+                "route": route, "source": source, "prepared": prepared, "groups": groups,
+                "metadata": {"job": job, "source_id": source_id, "row_preparation": row_preparation},
+                "timing": {"started": started, "finished": time.perf_counter(),
+                           "thread_s": time.thread_time() - cpu_started,
+                           "contract": "background CPU span may overlap decode; not additive to E2E"},
+            }
 
         def matcher_factory(record: dict[str, Any]) -> Any:
             return matcher_executor.submit(
@@ -737,24 +747,40 @@ def _interleaved_worker_loop(
             )
 
         try:
-            while not draining or runtime.jobs:
+            while not draining or runtime.jobs or preparing:
                 # Never wait for a second request while the first has work.
-                if not draining and len(runtime.jobs) < capacity:
+                while not draining and len(runtime.jobs) + len(preparing) < capacity:
                     try:
-                        incoming = jobs.get() if not runtime.jobs else jobs.get_nowait()
+                        incoming = jobs.get() if not runtime.jobs and not preparing else jobs.get_nowait()
                     except queue.Empty:
-                        incoming = False
+                        break
                     if incoming is None:
                         draining = True
-                    elif incoming is not False:
+                    else:
                         key = str(incoming["request_id"])
                         ledger.admit(key)
-                        try:
-                            account("cpu_prepare", [key], lambda: prepare(incoming), extra=key)
-                        except Exception as exc:
-                            ledger.retire(key)
-                            results.put({"kind": "result", "request_id": key, "ok": False,
-                                         "error": f"{type(exc).__name__}: {exc}", "traceback": traceback.format_exc()})
+                        preparing[key] = preparation_executor.submit(prepare, incoming)
+                        if len(runtime.jobs) + len(preparing) > capacity:
+                            raise RuntimeError("CPU preparation exceeded table admission capacity")
+                        print(f"TABLE_PHASE preparing id={key} admitted={len(runtime.jobs) + len(preparing)}", flush=True)
+                for key, future in list(preparing.items()):
+                    # With useful model work available, never block on CPU
+                    # preparation. Otherwise wait, rather than spinning idle.
+                    if runtime.jobs and not future.done():
+                        continue
+                    try:
+                        ready = account("cpu_prepare_wait", [key], future.result)
+                        del preparing[key]
+                        runtime.add(key, route=ready["route"], payload=ready["source"],
+                                    target_prepared=ready["prepared"], row_groups=ready["groups"])
+                        metadata[key] = ready["metadata"]
+                        metadata[key]["cpu_preparation"] = ready["timing"]
+                        print(f"TABLE_PHASE admitted id={key} route={ready['route']} active={len(runtime.jobs)}", flush=True)
+                    except Exception as exc:
+                        preparing.pop(key, None)
+                        ledger.retire(key)
+                        results.put({"kind": "result", "request_id": key, "ok": False,
+                                     "error": f"{type(exc).__name__}: {exc}", "traceback": traceback.format_exc()})
                 if not runtime.jobs:
                     continue
 
@@ -791,6 +817,7 @@ def _interleaved_worker_loop(
                             "target_calls": target.calls,
                             "matcher_timing": state["matcher_timing"],
                             "row_preparation": info["row_preparation"],
+                            "cpu_preparation": info["cpu_preparation"],
                         },
                     }
                     runtime.retire(key)
@@ -819,11 +846,12 @@ def _interleaved_worker_loop(
                 "q1_pipeline": runtime.pipeline_statistics(),
             }})
         except BaseException as exc:
-            for key in list(runtime.jobs):
+            for key in list(runtime.jobs) + list(preparing):
                 results.put({"kind": "result", "request_id": key, "ok": False,
                              "error": f"{type(exc).__name__}: {exc}", "traceback": traceback.format_exc()})
             raise
         finally:
+            preparation_executor.shutdown(wait=True, cancel_futures=True)
             matcher_executor.shutdown(wait=True, cancel_futures=True)
             runtime.close()
 
