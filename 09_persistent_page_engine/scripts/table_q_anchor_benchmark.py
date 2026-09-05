@@ -60,6 +60,8 @@ from paddleocr_vl.model.text_mixed_q import (  # noqa: E402
     MIXED_M16_PREFETCH_MODES,
     MIXED_M16_ROTARY_MODES,
     MIXED_LAYOUT_PACKED_BSND_PROMPTFA,
+    MIXED_LAYOUT_B2_BSND_PROMPTFA,
+    MIXED_SINGLE_ATTENTION_LAYOUTS,
     PACKED_TOKEN_COUNT,
     TextMixedM16Stage,
     mixed_m16_contract,
@@ -699,10 +701,11 @@ def _build_mixed_m16_lane(
     draft_rope_deltas = torch.zeros(
         (8, 1), device=device, dtype=torch.int64
     )
-    packed_cache = layout == MIXED_LAYOUT_PACKED_BSND_PROMPTFA
+    packed_cache = layout in MIXED_SINGLE_ATTENTION_LAYOUTS
+    packed_b2 = layout == MIXED_LAYOUT_B2_BSND_PROMPTFA
     if packed_cache:
         flat_caches = tuple(
-            torch.zeros((1, 10240, 2, 128), device=device, dtype=dtype)
+            torch.zeros((2, 6144, 2, 128) if packed_b2 else (1, 10240, 2, 128), device=device, dtype=dtype)
             for _ in range(2 * int(model.config.text_config.num_hidden_layers))
         )
     else:
@@ -739,8 +742,9 @@ def _build_mixed_m16_lane(
             expected_v = verifier_cache.flat_tensors()[i]
             expected_d = draft_cache.flat_tensors()[i]
             actual = flat_caches[i]
-            actual_v = actual[:, :4096].transpose(1, 2)
-            actual_d = actual[:, 4096:].reshape(8, 768, 2, 128).transpose(1, 2)
+            actual_v = actual[:1, :4096].transpose(1, 2)
+            draft_segment = actual[1:] if packed_b2 else actual[:, 4096:]
+            actual_d = draft_segment.reshape(8, 768, 2, 128).transpose(1, 2)
             differences.append({
                 "tensor": i,
                 "verifier_max_abs": float((actual_v - expected_v).abs().max().item()),
@@ -786,7 +790,7 @@ def _build_mixed_m16_lane(
         "compile_wrapper_s": float(compile_wrapper_s),
         "verifier_cache_allocated_bytes": verifier_cache_bytes,
         "draft_cache_allocated_bytes": draft_cache_bytes,
-        "cache_allocated_bytes": verifier_cache_bytes + draft_cache_bytes,
+        "cache_allocated_bytes": sum(t.numel() * t.element_size() for t in flat_caches),
     }, (
         VERIFIER_POSITION,
         *tuple(int(value) for value in draft_cache_position.cpu().tolist()),
@@ -981,6 +985,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         durations,
         host_wall_s=host_wall_s,
         physical_positions_per_call=expected_count,
+    )
+    print(
+        f"TABLE_Q_ANCHOR timing_complete median_ms={timing['latency_ms']['median']:.6f} "
+        f"profile={args.profile_dir is not None}", flush=True,
     )
     profile_metadata = (
         _profile_calls(
