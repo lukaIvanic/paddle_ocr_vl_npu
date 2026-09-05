@@ -754,10 +754,23 @@ def _build_mixed_m16_lane(
             model, optimization=optimization, prefetch_mode=prefetch_mode,
             attention_order="draft_then_verifier", rotary_mode="per_lane",
         ).eval()
+        populated_history = layout == MIXED_LAYOUT_B16_INCREFA_BSH
+        if populated_history:
+            # Independent nonzero histories expose cross-row masking mistakes.
+            # Initialize identical logical histories in both physical layouts.
+            # This is outside timing, and no generated text is re-encoded.
+            torch.npu.manual_seed(74)
+            for tensor in (*verifier_cache.flat_tensors(), *draft_cache.flat_tensors()):
+                tensor.normal_(0.0, 0.02)
+            for i, actual in enumerate(flat_caches):
+                expected_v = verifier_cache.flat_tensors()[i]
+                expected_d = draft_cache.flat_tensors()[i]
+                actual[:8].copy_(expected_v.transpose(1, 2).reshape(1, 4096, 256).expand(8, -1, -1))
+                actual[8:, :768].copy_(expected_d.transpose(1, 2).reshape(8, 768, 256))
         steps = []
         for step in range(3):
             if step:
-                verifier_cache_position.add_(8)
+                verifier_cache_position.add_(1 if step == 1 else 4)
                 draft_cache_position.add_(1)
             reference_ids = reference(
                 verifier_input_ids, verifier_cache_position, verifier_rope_deltas,
@@ -771,6 +784,7 @@ def _build_mixed_m16_lane(
                 "candidate_ids": candidate_ids.cpu().tolist(),
                 "reference_ids": reference_ids.cpu().tolist(),
                 "matching_ids": int((candidate_ids == reference_ids).sum().item()),
+                "verifier_start": int(verifier_cache_position.item()),
             })
         differences = []
         layers = int(model.config.text_config.num_hidden_layers)
@@ -802,7 +816,8 @@ def _build_mixed_m16_lane(
                 "draft_finite": bool(torch.isfinite(actual_d).all().item()),
             })
         return {
-            "reference": "full_model_eager_two_attention_same_inputs_zero_prefix",
+            "reference": "full_model_eager_two_attention_same_inputs",
+            "history_fixture": "independent_normal_std0.02_seed74" if populated_history else "zero_prefix",
             "candidate_ids": candidate_ids.cpu().tolist(),
             "reference_ids": reference_ids.cpu().tolist(),
             "matching_ids": int((candidate_ids == reference_ids).sum().item()),
