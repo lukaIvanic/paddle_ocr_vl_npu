@@ -505,6 +505,11 @@ class _OpenPrefillSource:
             self._submit_available(block_for_first=block and not self.pending)
             if not self.pending:
                 return None
+            if not block and not self.pending[0][1].done():
+                # CPU preparation is background work, not a reason to stall
+                # live decoding. Keep ownership in pending until a later poll;
+                # only an idle scheduler may wait for the first ready request.
+                return None
             request_id, future = self.pending.popleft()
             for state in active:
                 state.prefill_interruptions += 1

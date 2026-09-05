@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from collections import deque
+from concurrent.futures import Future
 from pathlib import Path
 import sys
 import time
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 import torch
 
@@ -160,10 +162,28 @@ class ContinuousDecodeMetricsTest(unittest.TestCase):
             shapes.append(tuple(tokens.shape))
             return torch.where(tokens >= 14, torch.full_like(tokens, 15), tokens + 1)
 
-        source = _OpenPrefillSource(
-            Recognizer(), Requests(), on_request_error=error,
-            scheduling_metrics=recorder, max_prefill_interruptions=limit,
-        )
+        class ImmediateExecutor:
+            # These tests isolate interruption-cap policy, not OS CPU-worker
+            # scheduling. Delayed CPU preparation has its own tests below.
+            def __init__(self, **kwargs):
+                pass
+
+            def submit(self, fn, *args):
+                future = Future()
+                try:
+                    future.set_result(fn(*args))
+                except BaseException as exc:
+                    future.set_exception(exc)
+                return future
+
+            def shutdown(self, **kwargs):
+                pass
+
+        with patch("paddleocr_vl.serving.engine.ThreadPoolExecutor", ImmediateExecutor):
+            source = _OpenPrefillSource(
+                Recognizer(), Requests(), on_request_error=error,
+                scheduling_metrics=recorder, max_prefill_interruptions=limit,
+            )
         scheduler = ContinuousDecodeScheduler(arena=arena, decode_fn=decode, max_new_tokens=30)
         try:
             result = scheduler.run_stream(
@@ -251,14 +271,72 @@ class ContinuousDecodeMetricsTest(unittest.TestCase):
             scheduling_metrics=recorder,
         )
         try:
-            self.assertEqual(source.pull(block=False).request_id, "a")
-            self.assertEqual(source.pull(block=False).request_id, "b")
+            self.assertEqual(source.pull(block=True).request_id, "a")
+            self.assertEqual(source.pull(block=True).request_id, "b")
             for _ in range(5):
                 self.assertIsNone(source.pull(block=False))
             self.assertEqual(len(recorder.prefills), 2)
             recorder.step(["a", "b"], time.perf_counter())
             result = recorder.finish("b", time.perf_counter())
             self.assertEqual(result["before_first_decode_other_prefill_count"], 1)
+        finally:
+            source.close()
+
+    def test_unfinished_cpu_preparation_does_not_block_or_disappear(self):
+        prepared = SimpleNamespace(request_id="arriving")
+        future = Future()
+        prefilled = []
+        active = SimpleNamespace(first_decode_launched_at=1.0, prefill_interruptions=0)
+        recognizer = SimpleNamespace(
+            cpu_preprocess_max_pending=1,
+            decode_scheduler=SimpleNamespace(arena=SimpleNamespace(slots=[active, None])),
+            _prepared_group=lambda members: members[0][0],
+            _stage_prefill_group=lambda group: group,
+            _enqueue_staged_prefill_group=lambda group: prefilled.append(group) or group,
+            _finalize_prefill_group=lambda group: [group],
+            _ready_from_prefilled=lambda item: item,
+        )
+        requests = SimpleNamespace(closed=True, pull=lambda **kwargs: None)
+        recorder = RequestSchedulingMetrics(2)
+        recorder.register("arriving", time.perf_counter())
+        source = _OpenPrefillSource(recognizer, requests,
+                                    on_request_error=lambda *args: self.fail(str(args)),
+                                    scheduling_metrics=recorder, max_prefill_interruptions=2)
+        source.pending.append(("arriving", future))
+        try:
+            for _ in range(3):
+                self.assertIsNone(source.pull(block=False))
+                self.assertFalse(source.closed)
+                self.assertEqual(len(source.pending), 1)
+                self.assertEqual(active.prefill_interruptions, 0)
+                self.assertEqual(len(recorder.prefills), 0)
+                self.assertEqual(prefilled, [])
+            future.set_result(prepared)
+            self.assertIs(source.pull(block=False), prepared)
+            self.assertTrue(source.closed)
+            self.assertEqual(prefilled, [prepared])
+            self.assertEqual(active.prefill_interruptions, 1)
+            self.assertEqual(len(recorder.prefills), 1)
+        finally:
+            source.close()
+
+    def test_idle_pull_waits_for_cpu_future(self):
+        class FinishOnWait(Future):
+            def result(self, timeout=None):
+                self.set_exception(ValueError("prepared failure"))
+                return super().result(timeout)
+
+        errors = []
+        source = _OpenPrefillSource(
+            SimpleNamespace(cpu_preprocess_max_pending=1),
+            SimpleNamespace(closed=True, pull=lambda **kwargs: None),
+            on_request_error=lambda key, exc: errors.append((key, str(exc))),
+        )
+        source.pending.append(("arriving", FinishOnWait()))
+        try:
+            self.assertIsNone(source.pull(block=True))
+            self.assertEqual(errors, [("arriving", "prepared failure")])
+            self.assertTrue(source.closed)
         finally:
             source.close()
 
