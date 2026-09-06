@@ -66,3 +66,25 @@ read-only monitor were stopped. `final_cleanup.log` confirms NPU6 free at
 The workbook's latest block includes these eight rows plus the previously
 selected higher-P95 B5/C5 run. B2's new control is the highest-P95 of its three
 clean validations, so its complete row replaces the prior selected B2 row.
+
+## Added B16/C16 validation
+
+The user subsequently requested B16/C16 on the identical optimized contract.
+The separate server used the same inference commit `9f6e486d`. After one
+complete-request warmup, its single seed-3 1,000-request measurement took
+119.549 seconds and achieved **8.364789 tables/s** (EOS-only 8.264412/s).
+
+| Mean | P50 | P90 | P95 | P99 | Maximum |
+|---:|---:|---:|---:|---:|---:|
+| 1.840228 s | 1.053501 s | 4.320971 s | 6.105225 s | 13.219457 s | 14.079550 s |
+
+Again: 988 EOS, 12 KV4096-cap stops, no HTTP errors, same manifest and input
+shapes/token counts, maximum 16 outstanding requests. Eight native streams
+differ from the C1 reference; a new Page-TEDS evaluation was not performed.
+There were 34 ownership snapshots during measurement, all containing only
+our host worker PID 3404101, with a maximum four-second sample gap. The parent
+was PID 3404099. Both exited normally, and the read-only monitor was stopped.
+`final_cleanup_b16.log` confirms the card free at 20:41:29 CST.
+
+The combined analysis now includes all nine new runs. The workbook has the
+additional B16/C16 row; no historical values were changed.

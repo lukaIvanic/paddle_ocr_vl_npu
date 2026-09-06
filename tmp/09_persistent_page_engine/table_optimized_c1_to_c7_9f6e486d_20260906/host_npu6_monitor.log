@@ -7635,3 +7635,738 @@
 	No process in device.
 	Chip ID                        : 0
 
+2026-09-06T20:35:20+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:35:23+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:35:27+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:35:30+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:35:34+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):105
+	Chip ID                        : 0
+
+2026-09-06T20:35:37+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):105
+	Chip ID                        : 0
+
+2026-09-06T20:35:41+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):105
+	Chip ID                        : 0
+
+2026-09-06T20:35:44+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):105
+	Chip ID                        : 0
+
+2026-09-06T20:35:48+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):3853
+	Chip ID                        : 0
+
+2026-09-06T20:35:51+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):3855
+	Chip ID                        : 0
+
+2026-09-06T20:35:55+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):3855
+	Chip ID                        : 0
+
+2026-09-06T20:35:58+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):3873
+	Chip ID                        : 0
+
+2026-09-06T20:36:02+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):4171
+	Chip ID                        : 0
+
+2026-09-06T20:36:05+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):5519
+	Chip ID                        : 0
+
+2026-09-06T20:36:09+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):5519
+	Chip ID                        : 0
+
+2026-09-06T20:36:12+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):5519
+	Chip ID                        : 0
+
+2026-09-06T20:36:16+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):5519
+	Chip ID                        : 0
+
+2026-09-06T20:36:19+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):5519
+	Chip ID                        : 0
+
+2026-09-06T20:36:23+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):5519
+	Chip ID                        : 0
+
+2026-09-06T20:36:26+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):5519
+	Chip ID                        : 0
+
+2026-09-06T20:36:30+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9059
+	Chip ID                        : 0
+
+2026-09-06T20:36:34+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9059
+	Chip ID                        : 0
+
+2026-09-06T20:36:37+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9059
+	Chip ID                        : 0
+
+2026-09-06T20:36:41+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9059
+	Chip ID                        : 0
+
+2026-09-06T20:36:44+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9059
+	Chip ID                        : 0
+
+2026-09-06T20:36:48+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9059
+	Chip ID                        : 0
+
+2026-09-06T20:36:51+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9059
+	Chip ID                        : 0
+
+2026-09-06T20:36:55+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:36:58+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:02+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:05+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:09+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:12+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:16+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:19+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:23+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:26+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:30+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:33+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:37+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:40+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:44+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:47+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:51+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:55+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:37:58+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:02+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:05+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:09+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:12+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:16+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:19+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:23+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:26+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:30+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:33+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:37+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:40+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:44+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:47+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:51+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:54+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:38:58+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:01+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:05+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:09+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:12+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:16+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:19+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:23+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:26+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:30+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:33+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:37+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:40+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:44+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:47+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:51+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:54+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:39:58+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:01+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:05+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:08+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:12+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:16+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:19+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:23+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:26+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:30+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:33+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:37+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:40+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:44+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:47+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:51+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:54+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):9091
+	Chip ID                        : 0
+
+2026-09-06T20:40:58+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3404101 Process name:python            Process memory(MB):8747
+	Chip ID                        : 0
+
+2026-09-06T20:41:01+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:41:05+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:41:08+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:41:12+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:41:15+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:41:19+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:41:22+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-06T20:41:26+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+

@@ -6,6 +6,31 @@ const repo=path.resolve(here,'../../..');
 const file=path.join(repo,'outputs/01a0735d-f277-7262-b1d0-b87d6db95456/Table OCR latency comparison.xlsx');
 const wb=await SpreadsheetFile.importXlsx(await FileBlob.load(file));
 const s=wb.worksheets.getItem('Latency comparison');
+if(process.argv.includes('--append-b16')){
+ const ranges=[['Latency comparison','A1:Z39'],['Latency comparison','A41:Z45'],['vLLM data','A1:K15'],['Sources and notes','A1:B12']];
+ const snap=w=>JSON.stringify(ranges.map(([n,a])=>{const r=w.worksheets.getItem(n).getRange(a);return {values:r.values,formulas:r.formulas};}));
+ const before=snap(wb);
+ const result=JSON.parse(await fs.readFile(path.join(repo,'tmp/09_persistent_page_engine/table_optimized_c1_to_c7_9f6e486d_20260906/analysis.json'),'utf8')).b16c16;
+ if(!result.clean_timing || result.requests!==1000 || result.batch!==16 || result.concurrency!==16)throw Error('Invalid B16 validation');
+ const row=['B16 / C16',...['mean','p50','p90','p95','p99','max'].map(k=>result.latency_s[k]),result.qps];
+ if(s.getRange('C40:J40').values[0].some(x=>x!==null && x!=='') && JSON.stringify(s.getRange('C40:J40').values)!==JSON.stringify([row]))throw Error('Destination row is occupied');
+ s.getRange('C40:J40').format={font:{name:'Arial',size:11,color:'#20231F'},fill:'#E2EFDA',borders:{preset:'all',style:'thin',color:'#61615B'},rowHeightPx:33,verticalAlignment:'center'};
+ s.getRange('C40:J40').values=[row];
+ s.getRange('D40:J40').setNumberFormat('0.###');
+ s.getRange('D40:J40').format.horizontalAlignment='right';
+ s.getRange('G40').format.font.bold=true;
+ s.getRange('J40').format.font.bold=true;
+ if(snap(wb)!==before)throw Error('Unrelated content changed');
+ console.log((await wb.inspect({kind:'match',searchTerm:'#REF!|#DIV/0!|#VALUE!|#NAME\\?|#N/A|#NUM!|#SPILL!',options:{useRegex:true,maxResults:30},maxChars:1000})).ndjson);
+ const png=await wb.render({sheetName:'Latency comparison',range:'C28:J45',scale:1.2,format:'png'});
+ await fs.writeFile(path.join(here,'after-b16.png'),new Uint8Array(await png.arrayBuffer()));
+ try{await fs.access(path.join(here,'before-b16.xlsx'));}catch{await fs.copyFile(file,path.join(here,'before-b16.xlsx'));}
+ await(await SpreadsheetFile.exportXlsx(wb)).save(file);
+ const saved=await SpreadsheetFile.importXlsx(await FileBlob.load(file));
+ if(snap(saved)!==before || JSON.stringify(saved.worksheets.getItem('Latency comparison').getRange('C40:J40').values)!==JSON.stringify([row]))throw Error('Export verification failed');
+ console.log('B16 row saved and verified; prior rows, other tabs and formulas unchanged.',row);
+ process.exit(0);
+}
 const scope=[['Latency comparison','A1:Z27'],['vLLM data','A1:K15'],['Sources and notes','A1:B8'],['Sources and notes','A10:B12']];
 const snapshot=w=>scope.map(([name,range])=>{const r=w.worksheets.getItem(name).getRange(range);return JSON.stringify({values:r.values,formulas:r.formulas});});
 const original=snapshot(wb);

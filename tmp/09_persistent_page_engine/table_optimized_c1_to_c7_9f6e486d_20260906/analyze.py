@@ -1,4 +1,4 @@
-"""CPU-only audit of the requested eight-lane production validation sweep."""
+"""CPU-only audit of the requested production validation sweep, including B16."""
 from collections import Counter
 from datetime import datetime
 import hashlib
@@ -28,7 +28,7 @@ for block in re.split(r"(?=^2026-\d\d-\d\dT)", (ROOT / "host_npu6_monitor.log").
                         set(map(int, re.findall(r"Process id:(\d+)", block)))))
 report, base_outputs = {}, None
 for name, batch, concurrency in [("b1c1",1,1),("b2c2",2,2),("b3c3",3,3),
-                                 ("b4c4",4,4),("b6c6",6,6),("b7c7",7,7),("b8c7",8,7),("b8c8",8,8)]:
+                                 ("b4c4",4,4),("b6c6",6,6),("b7c7",7,7),("b8c7",8,7),("b8c8",8,8),("b16c16",16,16)]:
     lane = ROOT / name
     if not (lane / "measured/summary.json").exists():
         continue

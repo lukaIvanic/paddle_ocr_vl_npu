@@ -309,5 +309,48 @@
     "ownership_samples": 41,
     "clean_timing": true,
     "ownership_max_gap_s": 4.0
+  },
+  "b16c16": {
+    "batch": 16,
+    "concurrency": 16,
+    "requests": 1000,
+    "qps": 8.364789333155967,
+    "latency_s": {
+      "count": 1000,
+      "mean": 1.8402280153116444,
+      "p50": 1.053500725014601,
+      "p90": 4.320971092197579,
+      "p95": 6.105224792403168,
+      "p99": 13.219456814958248,
+      "max": 14.079549701069482,
+      "sum": 1840.2280153116444,
+      "median": 1.053500725014601
+    },
+    "eos_qps": 8.264411861158095,
+    "stop_reasons": {
+      "eos": 988,
+      "kv_cache_full": 12
+    },
+    "errors": 0,
+    "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+    "optimized_contract_matches": true,
+    "actual_peak_in_flight": 16,
+    "same_input_shapes_and_vision_tokens": true,
+    "native_id_differences_vs_c1": [
+      19,
+      67,
+      83,
+      275,
+      380,
+      547,
+      780,
+      836
+    ],
+    "owned_host_pids": [
+      3404101
+    ],
+    "ownership_samples": 34,
+    "clean_timing": true,
+    "ownership_max_gap_s": 4.0
   }
 }
