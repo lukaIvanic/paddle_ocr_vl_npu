@@ -1,0 +1,205 @@
+client API ready worker_pid=2548265; preloading 100 distinct crops for 100 requests
+client crops preloaded 50/100
+client crops preloaded 100/100
+client payloads ready bytes=34840674
+SEND client 01/100 table=page_000287_table_box_id_8 active=1
+SEND client 02/100 table=page_001367_table_51 active=2
+SEND client 03/100 table=page_000236_table_box_id_1 active=3
+SEND client 04/100 table=page_000634_table_11 active=4
+SEND client 05/100 table=page_000272_table_box_id_1 active=5
+RECV client 03/100 rank=324 id=page_000236_table_box_id_1 latency=0.6728s status=ok active=4
+SEND client 06/100 table=page_001172_table_16 active=5
+RECV client 04/100 rank=225 id=page_000634_table_11 latency=0.9734s status=ok active=4
+SEND client 07/100 table=page_001137_table_2 active=5
+RECV client 02/100 rank=65 id=page_001367_table_51 latency=1.1019s status=ok active=4
+SEND client 08/100 table=page_001150_table_box_id_9 active=5
+RECV client 06/100 rank=337 id=page_001172_table_16 latency=0.5749s status=ok active=4
+SEND client 09/100 table=page_000920_table_8 active=5
+RECV client 09/100 rank=368 id=page_000920_table_8 latency=0.3884s status=ok active=4
+SEND client 10/100 table=page_000524_table_0 active=5
+RECV client 08/100 rank=255 id=page_001150_table_box_id_9 latency=0.7451s status=ok active=4
+SEND client 11/100 table=page_000256_table_box_id_8 active=5
+RECV client 07/100 rank=151 id=page_001137_table_2 latency=1.2729s status=ok active=4
+SEND client 12/100 table=page_001166_table_9 active=5
+RECV client 11/100 rank=336 id=page_000256_table_box_id_8 latency=0.4856s status=ok active=4
+SEND client 13/100 table=page_000211_table_box_id_3 active=5
+RECV client 12/100 rank=436 id=page_001166_table_9 latency=0.3988s status=ok active=4
+SEND client 14/100 table=page_000933_table_10 active=5
+RECV client 14/100 rank=504 id=page_000933_table_10 latency=0.2139s status=ok active=4
+SEND client 15/100 table=page_001129_table_8 active=5
+RECV client 10/100 rank=140 id=page_000524_table_0 latency=1.2914s status=ok active=4
+SEND client 16/100 table=page_001375_table_7 active=5
+RECV client 13/100 rank=201 id=page_000211_table_box_id_3 latency=0.9096s status=ok active=4
+SEND client 17/100 table=page_000106_table_box_id_2 active=5
+RECV client 16/100 rank=458 id=page_001375_table_7 latency=0.3164s status=ok active=4
+SEND client 18/100 table=page_001134_table_10 active=5
+RECV client 01/100 rank=24 id=page_000287_table_box_id_8 latency=3.9227s status=ok active=4
+SEND client 19/100 table=page_000642_table_8 active=5
+RECV client 17/100 rank=208 id=page_000106_table_box_id_2 latency=0.8672s status=ok active=4
+SEND client 20/100 table=page_000564_table_7 active=5
+RECV client 15/100 rank=107 id=page_001129_table_8 latency=1.5880s status=ok active=4
+SEND client 21/100 table=page_001368_table_box_id_242 active=5
+RECV client 20/100 rank=334 id=page_000564_table_7 latency=0.4461s status=ok active=4
+SEND client 22/100 table=page_000263_table_box_id_7 active=5
+RECV client 18/100 rank=134 id=page_001134_table_10 latency=1.3241s status=ok active=4
+SEND client 23/100 table=page_000746_table_18 active=5
+RECV client 21/100 rank=497 id=page_001368_table_box_id_242 latency=0.4114s status=ok active=4
+SEND client 24/100 table=page_000213_table_box_id_5 active=5
+RECV client 19/100 rank=128 id=page_000642_table_8 latency=1.4846s status=ok active=4
+SEND client 25/100 table=page_000206_table_box_id_1 active=5
+RECV client 24/100 rank=215 id=page_000213_table_box_id_5 latency=0.6915s status=ok active=4
+SEND client 26/100 table=page_000209_table_box_id_1 active=5
+RECV client 23/100 rank=161 id=page_000746_table_18 latency=1.1587s status=ok active=4
+SEND client 27/100 table=page_001216_table_2 active=5
+RECV client 26/100 rank=432 id=page_000209_table_box_id_1 latency=0.3833s status=ok active=4
+SEND client 28/100 table=page_000188_table_box_id_6 active=5
+RECV client 25/100 rank=309 id=page_000206_table_box_id_1 latency=0.6280s status=ok active=4
+SEND client 29/100 table=page_000921_table_9 active=5
+RECV client 29/100 rank=460 id=page_000921_table_9 latency=0.5301s status=ok active=4
+SEND client 30/100 table=page_000533_table_8 active=5
+RECV client 28/100 rank=240 id=page_000188_table_box_id_6 latency=0.6589s status=ok active=4
+SEND client 31/100 table=page_001123_table_14 active=5
+RECV client 05/100 rank=09 id=page_000272_table_box_id_1 latency=6.7574s status=ok active=4
+SEND client 32/100 table=page_001503_table_5 active=5
+RECV client 27/100 rank=186 id=page_001216_table_2 latency=1.0841s status=ok active=4
+SEND client 33/100 table=page_001197_table_5 active=5
+RECV client 32/100 rank=526 id=page_001503_table_5 latency=0.2256s status=ok active=4
+SEND client 34/100 table=page_000542_table_0 active=5
+RECV client 30/100 rank=399 id=page_000533_table_8 latency=0.5927s status=ok active=4
+SEND client 35/100 table=page_001130_table_1 active=5
+RECV client 31/100 rank=413 id=page_001123_table_14 latency=0.5851s status=ok active=4
+SEND client 36/100 table=page_001595_table_box_id_9 active=5
+RECV client 36/100 rank=561 id=page_001595_table_box_id_9 latency=0.1545s status=ok active=4
+SEND client 37/100 table=page_001233_table_6 active=5
+RECV client 35/100 rank=572 id=page_001130_table_1 latency=0.1925s status=ok active=4
+SEND client 38/100 table=page_000585_table_1 active=5
+RECV client 34/100 rank=219 id=page_000542_table_0 latency=0.8775s status=ok active=4
+SEND client 39/100 table=page_000821_table_box_id_26 active=5
+RECV client 39/100 rank=617 id=page_000821_table_box_id_26 latency=0.1057s status=ok active=4
+SEND client 40/100 table=page_000566_table_3 active=5
+RECV client 37/100 rank=241 id=page_001233_table_6 latency=0.7232s status=ok active=4
+SEND client 41/100 table=page_000534_table_4 active=5
+RECV client 22/100 rank=31 id=page_000263_table_box_id_7 latency=3.7060s status=ok active=4
+SEND client 42/100 table=page_001141_table_13 active=5
+RECV client 38/100 rank=159 id=page_000585_table_1 latency=1.1739s status=ok active=4
+SEND client 43/100 table=page_000665_table_3 active=5
+RECV client 43/100 rank=662 id=page_000665_table_3 latency=0.0469s status=ok active=4
+SEND client 44/100 table=page_001417_table_2 active=5
+RECV client 33/100 rank=118 id=page_001197_table_5 latency=1.7628s status=ok active=4
+SEND client 45/100 table=page_001117_table_box_id_7 active=5
+RECV client 44/100 rank=587 id=page_001417_table_2 latency=0.1745s status=ok active=4
+SEND client 46/100 table=page_001270_table_box_id_1 active=5
+RECV client 45/100 rank=483 id=page_001117_table_box_id_7 latency=0.3318s status=ok active=4
+SEND client 47/100 table=page_000261_table_box_id_3 active=5
+RECV client 41/100 rank=221 id=page_000534_table_4 latency=0.8981s status=ok active=4
+SEND client 48/100 table=page_000505_table_1 active=5
+RECV client 42/100 rank=280 id=page_001141_table_13 latency=0.7026s status=ok active=4
+SEND client 49/100 table=page_000682_table_15 active=5
+RECV client 40/100 rank=167 id=page_000566_table_3 latency=1.4238s status=ok active=4
+SEND client 50/100 table=page_000275_table_box_id_1 active=5
+RECV client 49/100 rank=507 id=page_000682_table_15 latency=0.4334s status=ok active=4
+SEND client 51/100 table=page_000789_table_34 active=5
+RECV client 51/100 rank=639 id=page_000789_table_34 latency=0.2331s status=ok active=4
+SEND client 52/100 table=page_001177_table_2 active=5
+RECV client 52/100 rank=229 id=page_001177_table_2 latency=0.6317s status=ok active=4
+SEND client 53/100 table=page_001398_table_box-13qv1ztw active=5
+RECV client 48/100 rank=121 id=page_000505_table_1 latency=1.4878s status=ok active=4
+SEND client 54/100 table=page_001183_table_11 active=5
+RECV client 53/100 rank=511 id=page_001398_table_box-13qv1ztw latency=0.2159s status=ok active=4
+SEND client 55/100 table=page_000507_table_0 active=5
+RECV client 46/100 rank=95 id=page_001270_table_box_id_1 latency=1.9215s status=ok active=4
+SEND client 56/100 table=page_000710_table_9 active=5
+RECV client 56/100 rank=514 id=page_000710_table_9 latency=0.2000s status=ok active=4
+SEND client 57/100 table=page_000657_table_6 active=5
+RECV client 57/100 rank=659 id=page_000657_table_6 latency=0.0504s status=ok active=4
+SEND client 58/100 table=page_001368_table_box_id_227 active=5
+RECV client 55/100 rank=396 id=page_000507_table_0 latency=0.5126s status=ok active=4
+SEND client 59/100 table=page_001176_table_4 active=5
+RECV client 54/100 rank=395 id=page_001183_table_11 latency=0.5532s status=ok active=4
+SEND client 60/100 table=page_001181_table_6 active=5
+RECV client 47/100 rank=54 id=page_000261_table_box_id_3 latency=2.6758s status=ok active=4
+SEND client 61/100 table=page_000937_table_0 active=5
+RECV client 58/100 rank=264 id=page_001368_table_box_id_227 latency=0.7531s status=ok active=4
+SEND client 62/100 table=page_001368_table_box_id_237 active=5
+RECV client 62/100 rank=468 id=page_001368_table_box_id_237 latency=0.3299s status=ok active=4
+SEND client 63/100 table=page_000217_table_box_id_0 active=5
+RECV client 61/100 rank=350 id=page_000937_table_0 latency=0.4364s status=ok active=4
+SEND client 64/100 table=page_001159_table_5 active=5
+RECV client 63/100 rank=391 id=page_000217_table_box_id_0 latency=0.4371s status=ok active=4
+SEND client 65/100 table=page_000626_table_box_id_1 active=5
+RECV client 59/100 rank=122 id=page_001176_table_4 latency=1.5045s status=ok active=4
+SEND client 66/100 table=page_000984_table_2 active=5
+RECV client 66/100 rank=625 id=page_000984_table_2 latency=0.1550s status=ok active=4
+SEND client 67/100 table=page_001082_table_34 active=5
+RECV client 64/100 rank=224 id=page_001159_table_5 latency=0.8804s status=ok active=4
+SEND client 68/100 table=page_000467_table_17 active=5
+RECV client 60/100 rank=72 id=page_001181_table_6 latency=2.1831s status=ok active=4
+SEND client 69/100 table=page_000866_table_14 active=5
+RECV client 69/100 rank=419 id=page_000866_table_14 latency=0.3311s status=ok active=4
+SEND client 70/100 table=page_001227_table_10 active=5
+RECV client 67/100 rank=171 id=page_001082_table_34 latency=1.0526s status=ok active=4
+SEND client 71/100 table=page_000916_table_7 active=5
+RECV client 71/100 rank=265 id=page_000916_table_7 latency=0.5280s status=ok active=4
+SEND client 72/100 table=page_000251_table_box_id_7 active=5
+RECV client 68/100 rank=120 id=page_000467_table_17 latency=1.3928s status=ok active=4
+SEND client 73/100 table=page_001131_table_15 active=5
+RECV client 73/100 rank=469 id=page_001131_table_15 latency=0.3436s status=ok active=4
+SEND client 74/100 table=page_001183_table_12 active=5
+RECV client 72/100 rank=184 id=page_000251_table_box_id_7 latency=0.8748s status=ok active=4
+SEND client 75/100 table=page_000266_table_box_id_7 active=5
+RECV client 74/100 rank=285 id=page_001183_table_12 latency=0.5504s status=ok active=4
+SEND client 76/100 table=page_000447_table_12 active=5
+RECV client 65/100 rank=44 id=page_000626_table_box_id_1 latency=2.8301s status=ok active=4
+SEND client 77/100 table=page_001193_table_4 active=5
+RECV client 75/100 rank=509 id=page_000266_table_box_id_7 latency=0.3257s status=ok active=4
+SEND client 78/100 table=page_001368_table_box_id_239 active=5
+RECV client 50/100 rank=12 id=page_000275_table_box_id_1 latency=6.1059s status=ok active=4
+SEND client 79/100 table=page_000903_table_15 active=5
+RECV client 70/100 rank=75 id=page_001227_table_10 latency=1.9911s status=ok active=4
+SEND client 80/100 table=page_001167_table_2 active=5
+RECV client 79/100 rank=522 id=page_000903_table_15 latency=0.2406s status=ok active=4
+SEND client 81/100 table=page_000212_table_box_id_1 active=5
+RECV client 78/100 rank=512 id=page_001368_table_box_id_239 latency=0.3068s status=ok active=4
+SEND client 82/100 table=page_001147_table_10 active=5
+RECV client 76/100 rank=371 id=page_000447_table_12 latency=0.5966s status=ok active=4
+SEND client 83/100 table=page_000223_table_box_id_2 active=5
+RECV client 77/100 rank=342 id=page_001193_table_4 latency=0.5627s status=ok active=4
+SEND client 84/100 table=page_000716_table_0 active=5
+RECV client 80/100 rank=422 id=page_001167_table_2 latency=0.6608s status=ok active=4
+SEND client 85/100 table=page_000937_table_1 active=5
+RECV client 84/100 rank=588 id=page_000716_table_0 latency=0.3872s status=ok active=4
+SEND client 86/100 table=page_000465_table_10 active=5
+RECV client 85/100 rank=415 id=page_000937_table_1 latency=0.3797s status=ok active=4
+SEND client 87/100 table=page_000465_table_8 active=5
+RECV client 86/100 rank=339 id=page_000465_table_10 latency=0.5423s status=ok active=4
+SEND client 88/100 table=page_001179_table_6 active=5
+RECV client 87/100 rank=331 id=page_000465_table_8 latency=0.5353s status=ok active=4
+SEND client 89/100 table=page_000554_table_12 active=5
+RECV client 89/100 rank=538 id=page_000554_table_12 latency=0.1829s status=ok active=4
+SEND client 90/100 table=page_000199_table_box_id_0 active=5
+RECV client 81/100 rank=113 id=page_000212_table_box_id_1 latency=1.7585s status=ok active=4
+SEND client 91/100 table=page_000516_table_0 active=5
+RECV client 83/100 rank=114 id=page_000223_table_box_id_2 latency=1.7671s status=ok active=4
+SEND client 92/100 table=page_001214_table_8 active=5
+RECV client 82/100 rank=90 id=page_001147_table_10 latency=2.2163s status=ok active=4
+SEND client 93/100 table=page_001368_table_box_id_161 active=5
+RECV client 92/100 rank=359 id=page_001214_table_8 latency=0.5468s status=ok active=4
+SEND client 94/100 table=page_000577_table_3 active=5
+RECV client 94/100 rank=382 id=page_000577_table_3 latency=0.3687s status=ok active=4
+SEND client 95/100 table=page_000984_table_3 active=5
+RECV client 93/100 rank=332 id=page_001368_table_box_id_161 latency=0.5436s status=ok active=4
+SEND client 96/100 table=page_001187_table_0 active=5
+RECV client 91/100 rank=125 id=page_000516_table_0 latency=1.4750s status=ok active=4
+SEND client 97/100 table=page_000821_table_box_id_14 active=5
+RECV client 97/100 rank=585 id=page_000821_table_box_id_14 latency=0.1424s status=ok active=4
+SEND client 98/100 table=page_000833_table_4 active=5
+RECV client 88/100 rank=61 id=page_001179_table_6 latency=2.4428s status=ok active=4
+SEND client 99/100 table=page_001375_table_31 active=5
+RECV client 95/100 rank=238 id=page_000984_table_3 latency=0.7377s status=ok active=4
+SEND client 100/100 table=page_000645_table_7 active=5
+RECV client 90/100 rank=80 id=page_000199_table_box_id_0 latency=2.0041s status=ok active=4
+RECV client 99/100 rank=631 id=page_001375_table_31 latency=0.2663s status=ok active=3
+RECV client 100/100 rank=533 id=page_000645_table_7 latency=0.3466s status=ok active=2
+RECV client 98/100 rank=352 id=page_000833_table_4 latency=0.4676s status=ok active=1
+RECV client 96/100 rank=28 id=page_001187_table_0 latency=2.8505s status=ok active=0
+DONE client requests=100 failures=0 max_in_flight=5 wall=21.3635s qps=4.6809 p50=0.5947s p95=2.8312s max=6.7574s
