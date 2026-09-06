@@ -21,7 +21,6 @@ import table_request_load_simulator as load
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
-IN_FLIGHT_LIMITS = (1, 2, 3, 4, 8, 16)
 
 
 def parse_args() -> argparse.Namespace:
@@ -38,7 +37,7 @@ def parse_args() -> argparse.Namespace:
               "tables for --set random. Required for random sampling."),
     )
     parser.add_argument(
-        "--max-in-flight", type=int, choices=IN_FLIGHT_LIMITS, default=1,
+        "--max-in-flight", type=int, default=1,
         help="Client-side outstanding-request limit. Refill after any response.",
     )
     parser.add_argument("--client-label", default="client")
@@ -54,7 +53,10 @@ def parse_args() -> argparse.Namespace:
         type=float,
         help="Wait until this wall-clock epoch after all payloads are ready.",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.max_in_flight < 1:
+        parser.error("--max-in-flight must be positive")
+    return args
 
 
 def vllm_endpoint(api_url: str, path: str) -> str:
@@ -165,8 +167,8 @@ async def run_closed_loop(
     payloads: dict[str, bytes],
     results_path: Path,
 ) -> tuple[list[dict[str, Any]], float, float, dict[str, Any]]:
-    if args.max_in_flight not in IN_FLIGHT_LIMITS:
-        raise ValueError(f"--max-in-flight must be one of {IN_FLIGHT_LIMITS}")
+    if args.max_in_flight < 1:
+        raise ValueError("--max-in-flight must be positive")
     if args.start_at_epoch_s is not None:
         remaining = args.start_at_epoch_s - time.time()
         if remaining > 0:

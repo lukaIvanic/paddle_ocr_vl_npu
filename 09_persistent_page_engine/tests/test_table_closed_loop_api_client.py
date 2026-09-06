@@ -22,6 +22,7 @@ SPEC = importlib.util.spec_from_file_location(
 assert SPEC is not None and SPEC.loader is not None
 CLIENT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CLIENT)
+TEST_LIMITS = (1, 2, 3, 4, 5, 8, 16)
 
 
 def tables(count: int) -> list[dict]:
@@ -113,7 +114,7 @@ class ClosedLoopClientTest(unittest.TestCase):
             self.assertEqual(peak, limit)
             return result
 
-        for limit in (3, 4, 8, 16):
+        for limit in (3, 4, 5, 8, 16):
             with self.subTest(limit=limit), tempfile.TemporaryDirectory() as directory:
                 rows, _, _, stats = asyncio.run(scenario(Path(directory) / "results.jsonl", limit))
                 self.assertEqual(
@@ -204,14 +205,21 @@ class ClosedLoopClientTest(unittest.TestCase):
             self.assertEqual(CLIENT.select_tables(one), CLIENT.select_tables(four))
 
     def test_invalid_limit_rejected(self) -> None:
-        with self.assertRaises(ValueError):
-            asyncio.run(CLIENT.run_closed_loop(args(0), [], {}, Path("unused")))
+        for limit in (0, -1):
+            with self.assertRaises(ValueError):
+                asyncio.run(CLIENT.run_closed_loop(args(limit), [], {}, Path("unused")))
+
+    def test_cli_admission_limit_is_independent_of_decode_shape(self) -> None:
+        argv = ["client", "--api-url", "http://unused", "--output-dir", "unused",
+                "--set", "random", "--shuffle-seed", "1", "--max-in-flight", "5"]
+        with patch.object(sys, "argv", argv):
+            self.assertEqual(CLIENT.parse_args().max_in_flight, 5)
 
     def test_fifty_table_set_is_fixed_and_disjoint_from_warmup(self) -> None:
         records = [{"request_id": str(i), "worker_wall_s": float(i)} for i in range(666)]
         with patch.object(CLIENT.load, "read_jsonl", return_value=records):
             selections = []
-            for limit in CLIENT.IN_FLIGHT_LIMITS:
+            for limit in TEST_LIMITS:
                 selected_args = args(limit)
                 selected_args.set = "p90"
                 selected_args.source_jsonl, selected_args.count = Path("unused"), 50
@@ -228,7 +236,7 @@ class ClosedLoopClientTest(unittest.TestCase):
         records = [{"request_id": str(i), "worker_wall_s": float(i)} for i in range(666)]
         with patch.object(CLIENT.load, "read_jsonl", return_value=records):
             shuffled = []
-            for limit in CLIENT.IN_FLIGHT_LIMITS:
+            for limit in TEST_LIMITS:
                 selected_args = args(limit)
                 selected_args.set, selected_args.count = "p90", 50
                 selected_args.source_jsonl = Path("unused")
@@ -246,7 +254,7 @@ class ClosedLoopClientTest(unittest.TestCase):
         records = [{"request_id": str(i), "worker_wall_s": float(i)} for i in range(665)]
         with patch.object(CLIENT.load, "read_jsonl", return_value=records):
             selections = []
-            for limit in CLIENT.IN_FLIGHT_LIMITS:
+            for limit in TEST_LIMITS:
                 selected_args = args(limit)
                 selected_args.set, selected_args.count = "random", 100
                 selected_args.source_jsonl = Path("unused")
