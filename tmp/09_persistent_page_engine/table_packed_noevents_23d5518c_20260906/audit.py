@@ -104,6 +104,9 @@ for name, count, seed in (("client",100,1), ("seed2",100,2),
     during = [pids for stamp,pids in samples if begin <= stamp <= end]
     ownership_ok = bool(during and samples[0][0] < begin and samples[-1][0] > end
                         and all(pids == {args.worker_pid} for pids in during))
+    unexpected = [{"epoch_s":stamp,"pids":sorted(pids)} for stamp,pids in samples
+                  if begin <= stamp <= end and pids != {args.worker_pid}]
+    targets_met = stops["eos"]/summary["run_wall_s"] >= args.target_qps and p95 < args.target_p95
     # Report EOS throughput separately: capped outputs do not become hidden
     # fast successes. Their actual latency remains in the full distribution.
     report["runs"][name] = {
@@ -112,7 +115,9 @@ for name, count, seed in (("client",100,1), ("seed2",100,2),
         "request_completion_qps": qps, "eos_completion_qps": stops["eos"]/summary["run_wall_s"],
         "p95_s": p95, "stop_reasons": dict(stops), "errors": 0,
         "ownership_samples": len(during), "sampled_ownership_ok": ownership_ok,
-        "numerical_targets_met": stops["eos"]/summary["run_wall_s"] >= args.target_qps and p95 < args.target_p95,
+        "numerical_targets_met": targets_met,
+        "qualifying_timing": ownership_ok and targets_met,
+        "unexpected_ownership_snapshots": unexpected,
         "non_eos_requests": [{"sequence":r["sequence"], "request_id":r["request_id"],
                               "stop_reason":r["service_result"]["response"]["stop_reason"],
                               "latency_s":r["latency_s"]} for r in rows
@@ -154,6 +159,9 @@ comparisons = {
         ROOT.parent / "table_1000_matrix_02fe5645_20260905/b2/measured", ROOT / "validation1000_a"),
     "first_to_second_validation": compare_outputs(ROOT / "validation1000_a", ROOT / "validation1000_b"),
 }
+if ROOT != Path(__file__).resolve().parent:
+    comparisons["optimized_b2_to_first_validation"] = compare_outputs(
+        Path(__file__).resolve().parent / "validation1000_a", ROOT / "validation1000_a")
 (ROOT / "output_comparison.json").write_text(json.dumps(comparisons,ensure_ascii=False,indent=2)+"\n")
 report["output_comparison_summary"] = {name:{k:v for k,v in comparison.items() if k != "differences"}
                                        for name,comparison in comparisons.items()}

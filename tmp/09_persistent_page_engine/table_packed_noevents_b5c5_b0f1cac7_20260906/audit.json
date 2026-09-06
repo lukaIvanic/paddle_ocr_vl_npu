@@ -1,0 +1,286 @@
+{
+  "source_sha256": "9e7b342c2f71002a988a0877407b62b3134afb59e2fc50655aa2230e6b6b248a",
+  "hardware": "one 910B2, physical NPU6",
+  "runs": {
+    "client": {
+      "completed": true,
+      "count": 100,
+      "seed": 1,
+      "peak_outstanding": 5,
+      "manifest_sha256": "1f77a0233333ba8dbf01434dc7de3b6b3dee75e611e38554de47d6a29bf1ba85",
+      "request_completion_qps": 5.01253755342034,
+      "eos_completion_qps": 5.01253755342034,
+      "p95_s": 2.592431990162004,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "errors": 0,
+      "ownership_samples": 3,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": []
+    },
+    "seed2": {
+      "completed": true,
+      "count": 100,
+      "seed": 2,
+      "peak_outstanding": 5,
+      "manifest_sha256": "b6fb05f880146e500d11091ac204879a62027b574682c170fcbb7946f161b502",
+      "request_completion_qps": 5.0177570969864185,
+      "eos_completion_qps": 5.0177570969864185,
+      "p95_s": 2.993809562240494,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "errors": 0,
+      "ownership_samples": 3,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": []
+    },
+    "validation1000_a": {
+      "completed": true,
+      "count": 1000,
+      "seed": 3,
+      "peak_outstanding": 5,
+      "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+      "request_completion_qps": 5.605123315729733,
+      "eos_completion_qps": 5.537861835940976,
+      "p95_s": 2.884945039480224,
+      "stop_reasons": {
+        "eos": 988,
+        "kv_cache_full": 12
+      },
+      "errors": 0,
+      "ownership_samples": 29,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": [
+        {
+          "sequence": 76,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.291486707981676
+        },
+        {
+          "sequence": 114,
+          "request_id": "page_000291_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.094627451966517
+        },
+        {
+          "sequence": 206,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.602639641030692
+        },
+        {
+          "sequence": 310,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.450322418008
+        },
+        {
+          "sequence": 475,
+          "request_id": "page_000283_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.619867003988475
+        },
+        {
+          "sequence": 496,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.1605179120088
+        },
+        {
+          "sequence": 523,
+          "request_id": "page_000271_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.139273532084189
+        },
+        {
+          "sequence": 552,
+          "request_id": "page_000278_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.171478979056701
+        },
+        {
+          "sequence": 681,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.7386838279198855
+        },
+        {
+          "sequence": 729,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.5116988610243425
+        },
+        {
+          "sequence": 844,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.519102696096525
+        },
+        {
+          "sequence": 852,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.887077004997991
+        }
+      ]
+    },
+    "validation1000_b": {
+      "completed": true,
+      "count": 1000,
+      "seed": 3,
+      "peak_outstanding": 5,
+      "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+      "request_completion_qps": 5.415152604136896,
+      "eos_completion_qps": 5.350170772887253,
+      "p95_s": 2.9913312447781175,
+      "stop_reasons": {
+        "eos": 988,
+        "kv_cache_full": 12
+      },
+      "errors": 0,
+      "ownership_samples": 30,
+      "sampled_ownership_ok": false,
+      "numerical_targets_met": true,
+      "qualifying_timing": false,
+      "unexpected_ownership_snapshots": [
+        {
+          "epoch_s": 1788657958.0,
+          "pids": [
+            2037247,
+            2057079
+          ]
+        },
+        {
+          "epoch_s": 1788657976.0,
+          "pids": [
+            2037247,
+            2059772
+          ]
+        },
+        {
+          "epoch_s": 1788657982.0,
+          "pids": [
+            2037247,
+            2059772
+          ]
+        }
+      ],
+      "non_eos_requests": [
+        {
+          "sequence": 76,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.4385929990094155
+        },
+        {
+          "sequence": 114,
+          "request_id": "page_000291_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.071619691094384
+        },
+        {
+          "sequence": 206,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.818390507018194
+        },
+        {
+          "sequence": 310,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.751466165995225
+        },
+        {
+          "sequence": 475,
+          "request_id": "page_000283_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.624689846066758
+        },
+        {
+          "sequence": 496,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.308851624024101
+        },
+        {
+          "sequence": 523,
+          "request_id": "page_000271_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.2696379569824785
+        },
+        {
+          "sequence": 552,
+          "request_id": "page_000278_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.312917102011852
+        },
+        {
+          "sequence": 681,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.528183541027829
+        },
+        {
+          "sequence": 729,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.353943940019235
+        },
+        {
+          "sequence": 844,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 10.564777566003613
+        },
+        {
+          "sequence": 852,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 9.827371123014018
+        }
+      ]
+    }
+  },
+  "required_batch_size": 5,
+  "required_client_cap": 5,
+  "owned_host_worker_pid": 2037247,
+  "targets": {
+    "eos_completion_qps_at_least": 5.0,
+    "p95_s_below": 3.0
+  },
+  "output_comparison_summary": {
+    "historical_b2_to_first_validation": {
+      "available": true,
+      "count": 1000,
+      "native_ids_identical": 985,
+      "input_differences": [],
+      "stop_differences": []
+    },
+    "first_to_second_validation": {
+      "available": true,
+      "count": 1000,
+      "native_ids_identical": 1000,
+      "input_differences": [],
+      "stop_differences": []
+    },
+    "optimized_b2_to_first_validation": {
+      "available": true,
+      "count": 1000,
+      "native_ids_identical": 996,
+      "input_differences": [],
+      "stop_differences": []
+    }
+  }
+}
