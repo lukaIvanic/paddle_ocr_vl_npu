@@ -85,6 +85,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--request-timeout-s", type=float, default=900.0)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument(
+        "--shuffle-all",
+        action="store_true",
+        help="Shuffle the complete balanced request list, rather than one corpus cycle at a time.",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         help="Defaults to a timestamped directory under tmp/09_persistent_page_engine.",
@@ -172,6 +177,7 @@ def make_schedule(
     seed: int,
     *,
     max_requests: int | None = None,
+    shuffle_all: bool = False,
 ) -> list[ScheduledRequest]:
     if not cohort:
         raise ValueError("cohort must not be empty")
@@ -203,6 +209,15 @@ def make_schedule(
                 table=table,
             )
         )
+    if shuffle_all:
+        # Preserve complete-corpus coverage and the random remainder, but remove
+        # cycle boundaries. Arrival times use an independent RNG and stay exact.
+        tables = [item.table for item in schedule]
+        table_rng.shuffle(tables)
+        schedule = [
+            ScheduledRequest(item.sequence, item.scheduled_offset_s, table)
+            for item, table in zip(schedule, tables)
+        ]
     return schedule
 
 
@@ -881,6 +896,7 @@ def main() -> None:
         args.duration_s,
         args.seed,
         max_requests=args.max_requests,
+        shuffle_all=args.shuffle_all,
     )
 
     cohort_path = output_dir / "cohort.jsonl"
@@ -964,6 +980,9 @@ def main() -> None:
         api_configuration=api_configuration,
     )
     summary["process_wall_s"] = process_wall_s
+    summary["table_order"] = (
+        "globally_shuffled_balanced_corpus" if args.shuffle_all else "shuffled_cycles"
+    )
     summary_path.write_text(
         json.dumps(summary, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",

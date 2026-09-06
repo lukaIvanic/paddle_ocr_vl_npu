@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections import Counter
 import importlib.util
 from pathlib import Path
 import sys
@@ -69,6 +70,22 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
         offsets = [item.scheduled_offset_s for item in schedule]
         self.assertEqual(offsets, sorted(offsets))
         self.assertGreater(offsets[-1], 0.01)
+
+    def test_global_shuffle_preserves_balanced_counts_and_poisson_arrivals(self) -> None:
+        cohort = [{"request_id": f"table_{i}"} for i in range(665)]
+        kwargs = dict(qps=6.0, duration_s=0.0, seed=1, max_requests=10000)
+        control = MODULE.make_schedule(cohort, **kwargs)
+        shuffled = MODULE.make_schedule(cohort, **kwargs, shuffle_all=True)
+        repeat = MODULE.make_schedule(cohort, **kwargs, shuffle_all=True)
+        self.assertEqual(shuffled, repeat)
+        self.assertEqual([r.sequence for r in shuffled], list(range(1, 10001)))
+        self.assertEqual([r.scheduled_offset_s for r in shuffled],
+                         [r.scheduled_offset_s for r in control])
+        counts = Counter(r.table["request_id"] for r in shuffled)
+        self.assertEqual(counts, Counter(r.table["request_id"] for r in control))
+        self.assertEqual(Counter(counts.values()), {15: 640, 16: 25})
+        self.assertLess(len({r.table["request_id"] for r in shuffled[:665]}), 665)
+        self.assertNotEqual([r.table for r in shuffled], [r.table for r in control])
 
     def test_requests_overlap_and_each_result_is_written(self) -> None:
         schedule = [
