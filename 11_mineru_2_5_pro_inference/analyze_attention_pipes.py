@@ -56,6 +56,8 @@ def analyze_csv(path, forwards):
             key = (kind, shape, core)
             call = dict(name=row.get('Name') or row.get('Task Name'), duration_us=duration,
                 input_formats=row.get('Input Formats'), input_dtypes=row.get('Input Data Types'),
+                step_id=row.get('Step Id'), task_id=row.get('Task ID'),
+                block_num=row.get('Block Num'), mix_block_num=row.get('Mix Block Num'),
                 pmu={key:number(row.get(key)) for key in columns})
             groups.setdefault(key, []).append(call)
     result = []
@@ -73,6 +75,8 @@ def analyze_csv(path, forwards):
                 field['engine_time_sum_us_per_forward'] = sum(v for v,_ in valid)/forwards if valid else None
             counters[name] = field
         result.append(dict(kernel=kind, input_shapes=shape, core=core, count=len(calls),
+            block_nums=sorted({str(c['block_num']) for c in calls}),
+            mix_block_nums=sorted({str(c['mix_block_num']) for c in calls}),
             calls_per_forward=len(calls)/forwards, elapsed_us=stats([c['duration_us'] for c in calls]),
             elapsed_ms_per_forward=sum(c['duration_us'] for c in calls)/forwards/1000,
             pmu=counters, calls=calls))
@@ -91,7 +95,7 @@ def collect(root, old_forwards=3):
         if sessions_path.exists():
             sessions = json.loads(sessions_path.read_text())['profiles']
         else:
-            sessions = [dict(metric='pipe', status='completed', profile_forwards=old_forwards)]
+            sessions = [dict(metric='pipe', status=result.get('status','incomplete'), profile_forwards=old_forwards)]
         for session in sessions:
             base = lane/'metrics'/session['metric'] if sessions_path.exists() else lane
             item = dict(lane=lane.name, variant=result['variant'], route=result['route'],
