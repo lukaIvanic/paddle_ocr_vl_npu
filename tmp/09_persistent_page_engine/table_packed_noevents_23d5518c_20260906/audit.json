@@ -15,9 +15,13 @@
         "eos": 100
       },
       "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
       "ownership_samples": 5,
       "sampled_ownership_ok": true,
       "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
       "non_eos_requests": []
     },
     "seed2": {
@@ -33,9 +37,13 @@
         "eos": 100
       },
       "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
       "ownership_samples": 5,
       "sampled_ownership_ok": true,
       "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
       "non_eos_requests": []
     },
     "validation1000_a": {
@@ -52,9 +60,13 @@
         "kv_cache_full": 12
       },
       "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
       "ownership_samples": 50,
       "sampled_ownership_ok": true,
       "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
       "non_eos_requests": [
         {
           "sequence": 76,
@@ -144,9 +156,13 @@
         "kv_cache_full": 12
       },
       "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
       "ownership_samples": 50,
       "sampled_ownership_ok": true,
       "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
       "non_eos_requests": [
         {
           "sequence": 76,

@@ -153,3 +153,26 @@ The host parent and worker PIDs are gone and NPU6 no longer has our process.
 It still has the other user's test job. Only the read-only owned monitor is
 left running while awaiting a safe replacement validation; no other process
 has been signalled, stopped or modified.
+
+## Remaining validation after the other job finishes
+
+Wait for the live `runtime_test.run_b2 --device 6` suite to finish, not merely
+for an empty NPU snapshot between its child cases. Manually recheck NPU6 and
+start the identical ordinary B5 server above. Do not tune any inference option.
+Use one full warm request outside timing, then the frozen1000/seed3/C5 client.
+Save the replacement in a new artifact directory; never overwrite or conceal
+the contaminated `validation1000_b` attempt.
+
+Compare the fresh server's inference contract with the existing candidate;
+new PIDs and setup/compile timing counters are not model-setting changes.
+The final audit must retain the original valid development/seed2/validation A
+records alongside the new clean validation B and the invalid earlier attempt.
+No additional development sample, repeat-count or performance margin is added.
+Stop the owned replacement server and monitor and verify release before
+declaring the overall goal complete.
+
+The shared audit now additionally asserts frozen model/dtype, image-policy,
+vision settings and native-vocabulary-map fields against the original passing
+B2 configuration. It also asserts that the request-ID-specific decode-length
+and prefill-KV diagnostic overrides are disabled. Both B2 and B5 saved records
+pass these fidelity checks. This CPU-only audit does not alter inference.

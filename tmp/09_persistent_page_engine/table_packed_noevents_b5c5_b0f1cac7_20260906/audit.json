@@ -15,6 +15,8 @@
         "eos": 100
       },
       "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
       "ownership_samples": 3,
       "sampled_ownership_ok": true,
       "numerical_targets_met": true,
@@ -35,6 +37,8 @@
         "eos": 100
       },
       "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
       "ownership_samples": 3,
       "sampled_ownership_ok": true,
       "numerical_targets_met": true,
@@ -56,6 +60,8 @@
         "kv_cache_full": 12
       },
       "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
       "ownership_samples": 29,
       "sampled_ownership_ok": true,
       "numerical_targets_met": true,
@@ -150,6 +156,8 @@
         "kv_cache_full": 12
       },
       "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
       "ownership_samples": 30,
       "sampled_ownership_ok": false,
       "numerical_targets_met": true,

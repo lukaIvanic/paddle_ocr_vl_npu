@@ -21,6 +21,12 @@ ROOT = args.root.resolve()
 SOURCE = Path(__file__).resolve().parent.parent / "table_b1_latency_full_04fbc8e/client/tables.jsonl"
 source = list(map(json.loads, SOURCE.read_text().splitlines()))
 assert len(source) == 665 and len({r["request_id"] for r in source}) == 665
+frozen_config = json.loads((Path(__file__).resolve().parent / "client/summary.json").read_text())["api_configuration"]
+frozen_fields = (
+    "recognizer_model", "dtype", "preprocessor", "decode_vocab", "token_selection",
+    "vision_attention", "vision_attention_weight_padding", "vision_linear_patch_projection",
+    "vision_sequence_alignment", "vision_mlp", "vision_packing", "text_packing",
+)
 monitor_path = ROOT / "host_npu6_monitor.log"
 samples = []
 if monitor_path.exists():
@@ -94,6 +100,11 @@ for name, count, seed in (("client",100,1), ("seed2",100,2),
     assert config["token_selection"]["mode"] == "greedy"
     assert config["token_selection"]["rule"] == "ordinary_argmax" and config["setup_gc"]["gc_remains_enabled"]
     assert config["setup_gc"]["enabled"] and not config["decode_device_timing"]
+    assert all(config[key] == frozen_config[key] for key in frozen_fields)
+    assert config["diagnostic_decode_request_id"] is None
+    assert config["diagnostic_decode_effective_length"] is None
+    assert config["diagnostic_prefill_kv_request_ids"] == []
+    assert config["decode_backend"] == "torchair" and config["decode_attention"] == "increfa"
     responses = [r["service_result"]["response"] for r in rows]
     stops = Counter(r["stop_reason"] for r in responses)
     p95 = percentile([r["latency_s"] for r in rows], .95)
@@ -114,6 +125,8 @@ for name, count, seed in (("client",100,1), ("seed2",100,2),
         "manifest_sha256": hashlib.sha256((directory/"tables.jsonl").read_bytes()).hexdigest(),
         "request_completion_qps": qps, "eos_completion_qps": stops["eos"]/summary["run_wall_s"],
         "p95_s": p95, "stop_reasons": dict(stops), "errors": 0,
+        "frozen_model_input_and_vocab_fields_match": True,
+        "diagnostic_inference_overrides_disabled": True,
         "ownership_samples": len(during), "sampled_ownership_ok": ownership_ok,
         "numerical_targets_met": targets_met,
         "qualifying_timing": ownership_ok and targets_met,
