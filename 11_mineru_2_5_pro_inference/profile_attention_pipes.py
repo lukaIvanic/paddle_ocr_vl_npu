@@ -94,6 +94,12 @@ def lane(args):
             if not parity['exact'] or parity['nonfinite']:
                 raise RuntimeError(f'profiled replay changed output: {metric}: {parity}')
             parsed = _run_parser(root / 'profile', root, topn=100)
+            csv_files = list((root/'profile').rglob('kernel_details.csv'))
+            if len(csv_files) != 1:
+                row.update(status='missing_kernel_csv', parsed=parsed,
+                           collection_wall_s=time.monotonic()-start)
+                save(args.output_dir / 'metric_sessions.json', capabilities)
+                raise RuntimeError(f'expected one device kernel CSV for {metric}, got {len(csv_files)}; preserve capture and diagnose')
             row.update(status='completed', collection_wall_s=time.monotonic()-start,
                        repeat_parity=parity, parsed=parsed)
             save(args.output_dir / 'metric_sessions.json', capabilities)

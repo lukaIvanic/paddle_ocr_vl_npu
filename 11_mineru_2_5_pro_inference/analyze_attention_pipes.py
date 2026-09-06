@@ -104,6 +104,11 @@ def collect(root, old_forwards=3):
                 warm_timing=result.get('timing'), feature_parity=result.get('full_encoder_parity'))
             if session['status'] == 'completed':
                 paths = list((base/'profile').rglob('kernel_details.csv'))
+                if not paths:
+                    item.update(status='missing_kernel_csv', collection_status=session['status'],
+                                has_numeric_pmu=False)
+                    output.append(item)
+                    continue
                 if len(paths) != 1:
                     raise ValueError(f'expected one raw kernel CSV under {base}, got {paths}')
                 item.update(csv=str(paths[0]), attention=analyze_csv(paths[0],session['profile_forwards']))
