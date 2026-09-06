@@ -1,7 +1,9 @@
 """Diagnostic-only launcher for the unchanged crop serving API.
 
 TABLE_SERVING_PROFILE_ROOT selects an output directory. Capture starts after
-32 actual B2 steps, then uses 5 profiler warmups and 20 active iterations.
+32 actual eligible steps, then uses 5 profiler warmups and 20 active iterations.
+TABLE_SERVING_PROFILE_ACTIVE_SLOTS selects the minimum live-slot count for
+capture (default: the physical batch size); it does not change serving.
 No synthetic inputs, altered model calls, or manual per-step synchronization.
 Profiled client timing must not be used as a performance/goal result.
 """
@@ -181,11 +183,14 @@ def profiled_worker(jobs, results, config):
         profiler = None
         eligible = captured = 0
         observations = []
+        required_slots = int(os.environ.get("TABLE_SERVING_PROFILE_ACTIVE_SLOTS", arena.batch_size))
+        if not 1 <= required_slots <= arena.batch_size:
+            raise ValueError("profile active slots must fit the physical decode batch")
 
         def step(*step_args, **step_kwargs):
             nonlocal profiler, eligible, captured
             if profiler is None:
-                eligible += int(arena.num_active == 2)
+                eligible += int(arena.num_active >= required_slots)
                 if eligible <= 32:
                     return original_step(*step_args, **step_kwargs)
                 profiler = prof.profile(
@@ -200,7 +205,8 @@ def profiled_worker(jobs, results, config):
                     ),
                 )
                 profiler.start()
-                print("SERVING_PROFILE start: actual B2; warmup=5 active=20", flush=True)
+                print(f"SERVING_PROFILE start: physical B{arena.batch_size}, "
+                      f"live>={required_slots}; warmup=5 active=20", flush=True)
             observations.append({
                 "index": captured, "profiler_warmup": captured < 5,
                 "iteration": step_kwargs.get("iteration"), "host_epoch_s": time.time(),
@@ -217,7 +223,8 @@ def profiled_worker(jobs, results, config):
                 profiler.stop()
                 arena.step = original_step
                 (destination / "capture.json").write_text(json.dumps({
-                    "actual_b2_steps_before_profiler": 32, "warmups": 5, "repeats": 20,
+                    "eligible_steps_before_profiler": 32, "minimum_live_slots": required_slots,
+                    "physical_decode_batch": arena.batch_size, "warmups": 5, "repeats": 20,
                     "configuration": config, "observations": observations,
                     "profiled_latency_is_not_a_goal_result": True,
                 }, indent=2) + "\n")
