@@ -33,6 +33,16 @@ class CounterTests(unittest.TestCase):
             self.assertEqual(metric['engine_time_sum_us_per_forward'],2)
             self.assertNotIn('engine_time_sum_us_per_forward',result['pmu']['aic_mac_ratio'])
 
+    def test_negative_traffic_is_flagged_not_averaged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'kernel_details.csv'
+            path.write_text('Type,Duration(us),aic_GM_to_L1_datas(KB)\nPromptFlashAttention,10,-99\n')
+            result=analyze_csv(path,1)[0]
+            metric=result['pmu']['aic_GM_to_L1_datas(KB)']
+            self.assertEqual(metric['invalid_negative_count'],1)
+            self.assertIsNone(metric['mean'])
+            self.assertEqual(result['calls'][0]['pmu']['aic_GM_to_L1_datas(KB)'],-99)
+
 
 if __name__ == '__main__':
     unittest.main()

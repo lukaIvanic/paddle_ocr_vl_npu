@@ -62,9 +62,11 @@ def analyze_csv(path, forwards):
     for (kind,shape,core), calls in groups.items():
         counters = {}
         for name in columns:
-            valid = [(c['pmu'][name],c['duration_us']) for c in calls if c['pmu'][name] is not None]
+            valid = [(c['pmu'][name],c['duration_us']) for c in calls
+                     if c['pmu'][name] is not None and c['pmu'][name] >= 0]
             field = stats([v for v,_ in valid])
-            field['missing_count'] = len(calls)-len(valid)
+            field['missing_count'] = sum(c['pmu'][name] is None for c in calls)
+            field['invalid_negative_count'] = sum(c['pmu'][name] is not None and c['pmu'][name] < 0 for c in calls)
             denominator = sum(w for _,w in valid)
             field['duration_weighted_mean'] = sum(v*w for v,w in valid)/denominator if denominator else None
             if 'time' in name.lower() and '(us)' in name.lower():
@@ -103,6 +105,14 @@ def collect(root, old_forwards=3):
                 item.update(csv=str(paths[0]), attention=analyze_csv(paths[0],session['profile_forwards']))
                 item['has_numeric_pmu'] = any(s['count'] for k in item['attention'] for s in k['pmu'].values())
             output.append(item)
+    baselines = {r['lane']:sum(k['elapsed_ms_per_forward'] for k in r.get('attention',[]))
+                 for r in output if r['metric']=='pipe' and r.get('attention')}
+    for row in output:
+        if row.get('attention'):
+            baseline = baselines.get(row['lane'])
+            row['elapsed_ratio_to_pipe'] = sum(k['elapsed_ms_per_forward'] for k in row['attention'])/baseline if baseline else None
+            row['has_invalid_negative_pmu'] = any(s['invalid_negative_count'] for k in row['attention'] for s in k['pmu'].values())
+            row['duration_perturbation_warning'] = bool(baseline and row['elapsed_ratio_to_pipe'] > 1.25)
     return output
 
 
@@ -123,7 +133,7 @@ def main():
             if args.omit_calls:
                 del kernel['calls']
     report = dict(notes=['PMU pipe times overlap: never sum as elapsed components.',
-        'Zero is retained; missing/unsupported is null, not zero.',
+        'Zero is retained; missing/unsupported is null, not zero. Negative PMU values remain in raw calls but are excluded from statistics and flagged.',
         'Counter units and chip aggregation semantics remain those of the raw CSV headers.',
         'No bottleneck classification is made from utilization alone.'], rows=rows)
     args.out.parent.mkdir(parents=True,exist_ok=True)

@@ -42,6 +42,23 @@ def lane(args):
 
     def measure_and_profile(fn, steps):
         timing, output = original_measure(fn, steps)
+        if args.operator_window:
+            import torch_npu
+            bench.phase('operator_window_start', name='attention_hot')
+            mark = torch_npu.npu.mstx.range_start('attention_hot')
+            if not isinstance(mark, int) or mark <= 0:
+                raise RuntimeError('MSTX range creation failed; cannot select the production window')
+            try:
+                current = fn()
+                bench.synchronize()
+            finally:
+                torch_npu.npu.mstx.range_end(mark)
+            parity = bench.differences(output, current)
+            save(args.output_dir/'operator_window.json',dict(name='attention_hot',parity=parity))
+            if not parity['exact'] or parity['nonfinite']:
+                raise RuntimeError('operator-profile replay differs from warm candidate')
+            bench.phase('operator_window_finish', name='attention_hot')
+            return timing, output
         query = getattr(prof, 'supported_ai_core_metrics', None)
         available = query() if query else None
         capabilities = dict(available=sorted(map(str, available)) if available is not None else None,
@@ -149,6 +166,7 @@ def main():
     p.add_argument('--steps', type=int, default=10)
     p.add_argument('--profile-steps', type=int, default=3)
     p.add_argument('--timeout-s', type=int, default=900)
+    p.add_argument('--operator-window', action='store_true', help='Lane only: mark one warm production forward for external msopprof, no torch profiler')
     args = p.parse_args()
     variants = {'baseline','eager_pfa','unpad_d80','unpad_d128','pfa_approx','pfa_d128','pfa_d128_approx'}
     routes = {'bucket_768','packed_768','bucket_5632'}
@@ -158,6 +176,8 @@ def main():
         p.error('unknown variant/route')
     if args.mode == 'lane' and (args.variant not in variants or args.route not in routes):
         p.error('lane requires valid --variant and --route')
+    if args.operator_window and args.mode != 'lane':
+        p.error('--operator-window requires lane mode')
     (suite if args.mode == 'suite' else lane)(args)
 
 
