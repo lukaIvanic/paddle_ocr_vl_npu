@@ -430,7 +430,7 @@ class PrefilledRecognition:
 
 
 class _OpenPrefillSource:
-    """Turn an open crop source into ready decode requests on demand."""
+    """Prepare CPU inputs ahead, but prefill NPU KV only for free decode slots."""
 
     def __init__(
         self,
@@ -484,7 +484,13 @@ class _OpenPrefillSource:
                 )
             )
 
-    def pull(self, *, block: bool) -> ReadyDecodeRequest | None:
+    def pull_for_decode_slots(
+        self, *, block: bool, available_slots: int,
+    ) -> ReadyDecodeRequest | None:
+        """CPU may run ahead; NPU prefill needs an unreserved decode slot."""
+        return self.pull(block=block, allow_prefill=available_slots > 0)
+
+    def pull(self, *, block: bool, allow_prefill: bool = True) -> ReadyDecodeRequest | None:
         while True:
             active = ()
             if self.max_prefill_interruptions is not None:
@@ -503,7 +509,14 @@ class _OpenPrefillSource:
             pull_started = (
                 time.perf_counter() if self.scheduling_metrics is not None else 0.0
             )
-            self._submit_available(block_for_first=block and not self.pending)
+            self._submit_available(
+                block_for_first=allow_prefill and block and not self.pending,
+            )
+            if not allow_prefill:
+                # Do not consume/wait for a future or allocate/prefill NPU KV
+                # while every decode slot is active or already reserved by a
+                # ready request. CPU preparation above remains bounded/ahead.
+                return None
             if not self.pending:
                 return None
             if not block and not self.pending[0][1].done():

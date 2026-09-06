@@ -86,6 +86,102 @@ def run_case(batch_size, collect, device_timing=True, compact=False):
 
 
 class ContinuousDecodeMetricsTest(unittest.TestCase):
+    def test_open_prefill_reserves_only_free_slots_under_backlog(self):
+        for batch in (1, 2, 8):
+            for late_arrivals in (False, True):
+                with self.subTest(batch=batch, late_arrivals=late_arrivals):
+                    arena = DecodeArena(cache=cache(batch), device=torch.device("cpu"),
+                                        batch_size=batch, eos_token_id=9,
+                                        decode_token_id_map=torch.arange(10))
+                    names = [str(i) for i in range(batch * 3 + 1)]
+                    incoming = deque(names[:batch] if late_arrivals else names)
+                    arrived = not late_arrivals
+                    live, emitted, prepared = set(), [], []
+                    prepared_while_full = []
+                    calls = 0
+
+                    class Requests:
+                        @property
+                        def closed(self):
+                            return arrived and not incoming
+
+                        def pull(self, *, block):
+                            return (SimpleNamespace(request_id=incoming.popleft(), submitted_at=None)
+                                    if incoming else None)
+
+                    class Executor:
+                        def submit(self, fn, *args):
+                            f = Future()
+                            try:
+                                f.set_result(fn(*args))
+                            except BaseException as exc:
+                                f.set_exception(exc)
+                            return f
+
+                        def shutdown(self, **kwargs):
+                            pass
+
+                    def prepare(request, submitted):
+                        prepared.append(request.request_id)
+                        if arena.num_active == batch:
+                            prepared_while_full.append(request.request_id)
+                        return request
+
+                    def prefill(request):
+                        # Includes active AND returned-but-not-yet-admitted KV.
+                        self.assertLess(len(live), batch, "NPU prefilled ahead of free slots")
+                        live.add(request.request_id)
+                        token = 9 if request.request_id == names[-1] else 1
+                        return ReadyDecodeRequest(
+                            request_id=request.request_id, payload=None, cache=cache(1),
+                            rope_deltas=torch.zeros((1, 1), dtype=torch.int64),
+                            cache_position=torch.ones(1, dtype=torch.int64),
+                            first_token_tensor=torch.tensor([[token]]), first_token=token,
+                            prompt_length=1)
+
+                    recognizer = SimpleNamespace(
+                        cpu_preprocess_max_pending=max(2, batch), _prepare_cpu=prepare,
+                        _prepared_group=lambda members: members[0][0],
+                        _stage_prefill_group=prefill,
+                        _enqueue_staged_prefill_group=lambda x:x,
+                        _finalize_prefill_group=lambda x:[x], _ready_from_prefilled=lambda x:x,
+                    )
+                    with patch("paddleocr_vl.serving.engine.ThreadPoolExecutor", return_value=Executor()):
+                        source = _OpenPrefillSource(recognizer, Requests(),
+                                                    on_request_error=lambda *args:self.fail(str(args)))
+
+                    def decode(tokens, *args):
+                        nonlocal arrived, calls
+                        calls += 1
+                        self.assertEqual(tuple(tokens.shape), (batch, 1))
+                        if not arrived:
+                            self.assertEqual(arena.num_active, batch)
+                            incoming.extend(names[batch:])
+                            arrived = True
+                        return torch.where(tokens >= 5, torch.full_like(tokens, 9), tokens + 1)
+
+                    def complete(result):
+                        live.remove(result.ready.request_id)
+                        emitted.append(result)
+
+                    scheduler = ContinuousDecodeScheduler(arena=arena, decode_fn=decode,
+                                                          max_new_tokens=20)
+                    try:
+                        result = scheduler.run_stream(source, on_completion=complete)
+                        self.assertEqual(result.submitted_requests, len(names))
+                        self.assertEqual(len(emitted), len(names))
+                        self.assertFalse(live)
+                        self.assertTrue(source.closed)
+                        self.assertGreater(calls, 0)
+                        self.assertCountEqual(prepared, names)
+                        if late_arrivals:
+                            self.assertTrue(prepared_while_full, "CPU lookahead stopped with full decode")
+                        for item in emitted:
+                            self.assertEqual(item.token_ids, [9] if item.ready.request_id == names[-1]
+                                             else [1, 2, 3, 4, 5, 9])
+                    finally:
+                        source.close()
+
     def test_compact_control_matches_full_scheduler_across_refills(self):
         for batch in (1, 2, 3, 4, 8):
             control, old, old_shapes = run_case(batch, True)

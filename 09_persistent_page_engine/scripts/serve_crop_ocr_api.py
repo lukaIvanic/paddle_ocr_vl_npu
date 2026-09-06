@@ -255,6 +255,7 @@ def _worker_main(
         configuration["setup_gc"] = setup_gc
         configuration["request_scheduling_metrics"] = config["request_scheduling_metrics"]
         configuration["max_prefill_interruptions"] = config["max_prefill_interruptions"]
+        configuration["open_prefill_admission"] = "free_decode_slots_only_cpu_lookahead"
         results.put(
             {
                 "kind": "ready",

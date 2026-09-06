@@ -23,6 +23,15 @@ SPEC.loader.exec_module(MODULE)
 
 
 class TableRequestLoadSimulatorTest(unittest.TestCase):
+    def test_all_cohort_keeps_every_source_table_including_first(self) -> None:
+        records = [{"request_id": f"table_{i}", "worker_wall_s": float(i)}
+                   for i in range(665)]
+        cohort = MODULE.freeze_tail_cohort(records, "all")
+        self.assertEqual(len(cohort), 665)
+        self.assertEqual({r["request_id"] for r in cohort}, {r["request_id"] for r in records})
+        schedule = MODULE.make_schedule(cohort, 2.0, 0.0, 1, max_requests=50)
+        self.assertEqual(len({r.table["request_id"] for r in schedule}), 50)
+
     def test_freeze_tail_cohort_excludes_first_record(self) -> None:
         records = [
             {"request_id": f"table_{index}", "worker_wall_s": float(index)}
@@ -88,6 +97,11 @@ class TableRequestLoadSimulatorTest(unittest.TestCase):
             self.assertEqual(stats["max_active"], 3)
             self.assertEqual(len(path.read_text(encoding="utf-8").splitlines()), 3)
             self.assertTrue(all(row["latency_s"] >= 0.045 for row in results))
+            for row in results:
+                self.assertEqual(row["latency_s"], row["scheduled_latency_s"])
+                self.assertAlmostEqual(row["scheduled_latency_s"],
+                                       row["request_latency_s"] + row["dispatch_lag_s"], places=7)
+                self.assertGreaterEqual(row["request_latency_s"], 0.045)
 
     def test_async_http_client_posts_table_crop(self) -> None:
         payload = bytes(

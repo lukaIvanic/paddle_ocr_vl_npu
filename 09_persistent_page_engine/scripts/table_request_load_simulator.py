@@ -52,9 +52,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--cohort",
-        choices=("p90", "p95"),
+        choices=("all", "p90", "p95"),
         default="p90",
-        help="Use tables at or above this B1 latency percentile.",
+        help="Use all source tables, or tables at/above this B1 latency percentile.",
     )
     parser.add_argument("--qps", type=float, default=10.0)
     parser.add_argument("--duration-s", type=float, default=10.0)
@@ -128,9 +128,10 @@ def freeze_tail_cohort(
     *,
     exclude_first_record: bool = True,
 ) -> list[dict[str, Any]]:
-    if cohort not in {"p90", "p95"}:
+    if cohort not in {"all", "p90", "p95"}:
         raise ValueError(f"unsupported cohort: {cohort}")
-    candidates = records[1:] if exclude_first_record else records
+    # Historical cold timing does not invalidate an image in the full corpus.
+    candidates = records[1:] if exclude_first_record and cohort != "all" else records
     candidates = [
         row
         for row in candidates
@@ -139,7 +140,7 @@ def freeze_tail_cohort(
     if not candidates:
         raise ValueError("source has no records with request_id and worker_wall_s")
 
-    tail_fraction = 0.10 if cohort == "p90" else 0.05
+    tail_fraction = {"all": 1.0, "p90": 0.10, "p95": 0.05}[cohort]
     tail_count = math.ceil(len(candidates) * tail_fraction)
     selected = sorted(
         candidates,
@@ -724,6 +725,8 @@ async def run_schedule(
             "dispatch_lag_s": dispatch_lag_s,
             "completion_offset_s": completion_offset_s,
             "latency_s": latency_s,
+            "scheduled_latency_s": latency_s,
+            "request_latency_s": completion_time - dispatch_time,
             "active_at_dispatch": active_at_dispatch,
             "active_after_completion": active,
             "status": "ok" if error is None else "error",
@@ -749,7 +752,8 @@ async def run_schedule(
         if print_events:
             line = (
                 f"[{completion_offset_s:8.3f}s] RECV #{item.sequence:05d} "
-                f"table={request_id} latency={latency_s:6.3f}s "
+                f"table={request_id} request={result['request_latency_s']:6.3f}s "
+                f"scheduled={latency_s:6.3f}s "
                 f"status={result['status']} active={active}"
             )
             print(line, flush=True)
@@ -781,6 +785,7 @@ def make_summary(
     api_configuration: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     latencies = [float(row["latency_s"]) for row in results]
+    request_latencies = [float(row["request_latency_s"]) for row in results]
     dispatch_lags = [float(row["dispatch_lag_s"]) for row in results]
     latex_latencies = [
         float(row["latency_s"]) for row in results if row["has_latex_markup"]
@@ -823,6 +828,9 @@ def make_summary(
         "run_wall_s": run_stats["run_wall_s"],
         "max_active_requests": run_stats["max_active"],
         "latency_s": distribution(latencies),
+        "scheduled_latency_s": distribution(latencies),
+        "request_latency_s": distribution(request_latencies),
+        "latency_definition": "latency_s is scheduled-arrival-to-response; request_latency_s starts at the client request attempt, including connection establishment",
         "dispatch_lag_s": distribution(dispatch_lags),
         "latex_latency_s": distribution(latex_latencies),
         "non_latex_latency_s": distribution(non_latex_latencies),
@@ -896,7 +904,8 @@ def main() -> None:
             "preparing table crops in RAM",
             flush=True,
         )
-        payloads = prepare_http_payloads(cohort, args.images_dir)
+        selected_tables = list({item.table["request_id"]: item.table for item in schedule}.values())
+        payloads = prepare_http_payloads(selected_tables, args.images_dir)
 
         async def send_http_request(item: ScheduledRequest) -> dict[str, Any]:
             request_id = str(item.table["request_id"])

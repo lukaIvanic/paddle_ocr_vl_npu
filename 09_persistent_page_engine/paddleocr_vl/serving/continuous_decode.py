@@ -946,6 +946,9 @@ class ContinuousDecodeScheduler:
         A source with ``pull(block=...)`` and ``closed`` may stay open while it
         is temporarily empty. Decode continues while slots are active. The
         scheduler blocks for another request only when the arena is idle.
+        Open serving provides ``pull_for_decode_slots``: the slot budget
+        includes ready-but-not-admitted requests, so NPU prefill cannot run
+        ahead of decode capacity. A zero-budget poll still permits CPU prep.
         """
 
         self.arena.begin_run()
@@ -953,6 +956,9 @@ class ContinuousDecodeScheduler:
             ready_source = ready_requests
         else:
             ready_source = _IterableReadyDecodeSource(ready_requests)
+        # Open serving separates CPU lookahead from NPU prefill admission.
+        # Other sources retain the existing offline ready-reservoir policy.
+        pull_for_decode_slots = getattr(ready_source, "pull_for_decode_slots", None)
         buffer_capacity = (
             self.batch_size
             if ready_buffer_capacity is None
@@ -1098,7 +1104,17 @@ class ContinuousDecodeScheduler:
                     and self.arena.num_active == 0
                 )
                 try:
-                    ready = ready_source.pull(block=should_block)
+                    if pull_for_decode_slots is None:
+                        ready = ready_source.pull(block=should_block)
+                    else:
+                        # Include ready_queue: those requests have already
+                        # reserved otherwise free slots during this refill.
+                        ready = pull_for_decode_slots(
+                            block=should_block,
+                            available_slots=(
+                                self.batch_size - self.arena.num_active - len(ready_queue)
+                            ),
+                        )
                 except BaseException as exc:
                     progress(
                         "ready_source_next_error",
