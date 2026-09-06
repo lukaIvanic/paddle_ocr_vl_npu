@@ -3,6 +3,8 @@
 
 The HTTP process never imports Torch. One spawned NPU process owns the
 ContinuousRecognizer and its compiled-graph caches for the server lifetime.
+Defaults target the validated 910B2 table-serving path. For other recognition
+tasks, explicitly use --full-vocab; the table vocabulary is not validated there.
 """
 
 from __future__ import annotations
@@ -42,11 +44,44 @@ DEFAULT_VISION_BUCKETS = "256,384,512,640,768,1408,1920,2048,2944,4096"
 # A 4096-token vision input becomes at most about 1024 projected tokens.
 # Five existing B1 shapes cover that full table-recognition range while
 # avoiding startup work for thirteen redundant intermediate buckets.
-DEFAULT_TEXT_BUCKETS = "128,256,512,1024,1312"
+DEFAULT_TEXT_BUCKETS = "128,256,512,1024,1152"
+DEFAULT_TABLE_OPTIMIZATION = "combined_apply_complete_layer_prefetch1_rope_lut_packed_mlp"
+DEFAULT_TABLE_VOCAB = EXPERIMENT_ROOT / "presets/table_compact_vocab/b1_verifier_topfreq_16384.json"
+TABLE_VOCAB_SHA256 = "9c48e5c3b92776ba250f75359fccb407448c4da8419fe927f5ea381d345712c3"
+
+# Evidence, NOT an automatic scheduling/routing policy. B is physical decode
+# batch size; C is the client limit over the ENTIRE request lifetime. Never
+# silently equate the two, wait to fill a batch, or interpolate measured scores.
+# C1/C3/C4 anchors predate packed MLP + linear patch + GC freeze/no events;
+# keep that provenance explicit until those lanes get new 1000-request runs.
+_HISTORICAL_MATRIX = "tmp/09_persistent_page_engine/table_1000_matrix_02fe5645_20260905"
+TABLE_CONCURRENCY_ANCHORS = {
+    1: (1, "historical", f"{_HISTORICAL_MATRIX}/b1/measured/summary.json"),
+    2: (2, "current", "tmp/09_persistent_page_engine/table_packed_noevents_23d5518c_20260906/validation1000_a/summary.json"),
+    3: (4, "historical", f"{_HISTORICAL_MATRIX}/b4c3/measured/summary.json"),
+    4: (4, "historical", f"{_HISTORICAL_MATRIX}/b4c4/measured/summary.json"),
+    5: (5, "current", "tmp/09_persistent_page_engine/table_b5_clean_repeat_d958f186_20260906/validation1000_b/summary.json"),
+}
+TABLE_SERVING_GUIDANCE = """910B2 TABLE SERVING: choose B on the server and C on the client explicitly.
+  C1 -> B1: sequential reference; historical 1000: 1.745 tables/s, P95 1.811s.
+  C2 -> B2: RECOMMENDED latency default; current 2x1000: 3.311-3.312/s, P95 1.941-1.944s.
+  C3 -> B4: historical underfilled-B4 anchor: 3.797/s, P95 2.623s. NOT a B3 result.
+  C4 -> B4: historical 1000: 4.674/s, P95 2.790s.
+  C5 -> B5: RECOMMENDED throughput option; current 2x1000: 5.605-5.821/s, P95 2.813-2.885s.
+C1/C3/C4 numbers PRE-DATE the final shared optimizations; do not claim them as
+current-stack results. Exact 1000-request artifact paths: TABLE_CONCURRENCY_ANCHORS
+in serve_crop_ocr_api.py. All scores are closed-loop on one 910B2, not offered QPS.
+Each 1000 includes 12 unchanged KV4096-cap responses; EOS-only rates also pass
+the current B2/B5 targets. Keep the client cap explicit; the server does not enforce C.
+Use one complete-request warmup outside measurement. No batch-filling waits.
+The default 16384-row native-ID vocabulary is TABLE-SPECIFIC: use --full-vocab
+for other crop tasks. This does not change full-page pipeline defaults.
+"""
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, epilog=TABLE_SERVING_GUIDANCE,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--request-timeout-s", type=float, default=900.0)
@@ -55,29 +90,36 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", type=Path, default=Path("/workspace/models/PaddleOCR-VL-1.6"))
     parser.add_argument("--dtype", default="fp16")
     parser.add_argument("--decode-backend", default="torchair")
-    parser.add_argument("--decode-optimization", default="combined_apply_pse_sentinel")
-    parser.add_argument(
+    parser.add_argument("--decode-optimization", default=DEFAULT_TABLE_OPTIMIZATION)
+    vocabulary = parser.add_mutually_exclusive_group()
+    vocabulary.add_argument(
         "--decode-vocab-token-ids",
-        type=Path,
+        type=Path, default=DEFAULT_TABLE_VOCAB,
         help=(
-            "Optional JSON file of native token IDs for a decode-only compact "
-            "LM head. Prefill keeps the full checkpoint head."
+            "Native-ID compact LM head; defaults to the validated table 16384-row map. "
+            "Prefill keeps the full checkpoint head. Use --full-vocab for non-table tasks."
         ),
     )
+    vocabulary.add_argument("--full-vocab", dest="decode_vocab_token_ids", action="store_const", const=None,
+                            help="Use the full checkpoint LM head instead of the table-specific compact head.")
     parser.add_argument(
         "--token-selection",
         default="greedy",
         help="Direct-logit token selection policy; validated in the NPU worker.",
     )
-    parser.add_argument("--decode-batch-size", type=int, default=64)
+    parser.add_argument("--decode-batch-size", type=int, default=2,
+                        help="Physical static batch B, NOT client concurrency C. Default B2; see benchmark guidance below.")
     parser.add_argument("--compact-decode-control", action="store_true",
                         help="Use persistent token/position buffers with two per-step control operations.")
-    parser.add_argument("--no-decode-device-timing", action="store_true",
+    timing = parser.add_mutually_exclusive_group()
+    timing.add_argument("--no-decode-device-timing", action="store_true", default=True,
                         help="Disable per-iteration profiling events, not request timing or copy synchronization.")
-    parser.add_argument("--freeze-setup-gc", action="store_true",
+    timing.add_argument("--decode-device-timing", dest="no_decode_device_timing", action="store_false",
+                        help="Opt back into per-decode profiling events; may reduce serving throughput.")
+    parser.add_argument("--freeze-setup-gc", action=argparse.BooleanOptionalAction, default=True,
                         help="Collect and freeze long-lived worker setup objects before serving; new request objects remain GC-managed.")
     parser.add_argument(
-        "--request-scheduling-metrics", action="store_true",
+        "--request-scheduling-metrics", action=argparse.BooleanOptionalAction, default=True,
         help="Include per-request prefill interruption and decode occupancy records.",
     )
     parser.add_argument(
@@ -92,9 +134,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-pixels", type=int, default=28224)
     parser.add_argument("--max-pixels", type=int, default=802816)
     parser.add_argument("--vision-buckets", default=DEFAULT_VISION_BUCKETS)
-    parser.add_argument("--vision-attention-weight-padding", action="store_true",
+    parser.add_argument("--vision-attention-weight-padding", action=argparse.BooleanOptionalAction, default=True,
                         help="Zero-pad D72 vision projections to D80 and use joint FP32 RoPE.")
-    parser.add_argument("--vision-linear-patch-projection", action="store_true",
+    parser.add_argument("--vision-linear-patch-projection", action=argparse.BooleanOptionalAction, default=True,
                         help="Express the full-patch convolution as the equivalent linear projection.")
     parser.add_argument("--text-buckets", default=DEFAULT_TEXT_BUCKETS)
     parser.add_argument("--torchair-cache-dir", type=Path, default=REPO_ROOT / ".runtime_cache/09_persistent_page_engine_torchair")
@@ -434,6 +476,13 @@ class _Handler(BaseHTTPRequestHandler):
         crop_type = query.get("crop_type", [""])[0].strip().lower()
         if crop_type not in PROMPTS:
             self._json(HTTPStatus.BAD_REQUEST, {"error": f"crop_type must be one of {sorted(PROMPTS)}"})
+            return
+        vocabulary = (self.state.configuration or {}).get("decode_vocab") or {}
+        if crop_type != "table" and vocabulary.get("token_ids_sha256") == TABLE_VOCAB_SHA256:
+            self._json(HTTPStatus.BAD_REQUEST, {
+                "error": "This server uses the table-specific compact vocabulary. "
+                         "Start with --full-vocab for non-table recognition.",
+            })
             return
         public_request_id = query.get("request_id", [uuid.uuid4().hex])[0].strip()
         source_request_id = query.get(

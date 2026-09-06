@@ -1190,9 +1190,53 @@ type; this endpoint does not run page layout detection.
 
 ### Closed-loop table concurrency comparison
 
+The crop API now defaults to the validated **ordinary table-serving B2** stack:
+`combined_apply_complete_layer_prefetch1_rope_lut_packed_mlp`, the frozen
+16,384-row native-ID LM head, KV4096/output4096, FP16 greedy selection,
+vision attention-weight padding and linear patch projection, setup GC freeze,
+and no optional per-decode timing events. Request wall timing and dependency
+events remain enabled. Vision buckets are
+256/384/512/640/768/1408/1920/2048/2944/4096; text buckets are
+128/256/512/1024/1152. Scheduling metrics are on; interruption caps remain off.
+The B1 launcher inherits these same settings, changing only B to1.
+
+These are **table-specific defaults**. For other recognition tasks pass
+`--full-vocab`; the compact table vocabulary has not been validated for them,
+and the API rejects non-table requests while that vocabulary is active.
+Full-page pipeline defaults in `runtime_defaults.py` are unchanged. To run
+explicit diagnostic controls, use `--decode-device-timing`,
+`--no-freeze-setup-gc`, `--no-vision-attention-weight-padding`,
+`--no-vision-linear-patch-projection`, or `--no-request-scheduling-metrics`.
+The old positive flags remain accepted. Historical default-only commands are
+not frozen reproductions: use each saved run's explicit model/settings.
+
+**B and C are separate.** Choose B with server `--decode-batch-size`, and C
+with client `--max-in-flight`. The generic client keeps default C1 so existing
+speculative/vLLM tests do not silently gain concurrency. For the recommended
+ordinary lane, explicitly use C2 with the default B2 server; for higher
+throughput use B5 and C5. No server admission guard or batch-filling wait is added.
+
+| Client C | Server B | 1,000-request anchor: tables/s; P95 | Evidence status |
+|---|---:|---|---|
+| 1 | 1 | 1.745; 1.811s | Earlier stack, not final shared settings |
+| 2 | 2 | 3.311–3.312; 1.941–1.944s | **Current, two clean1,000 runs** |
+| 3 | 4 | 3.797; 2.623s | Earlier B4/C3; not an exact B3 measurement |
+| 4 | 4 | 4.674; 2.790s | Earlier stack, not final shared settings |
+| 5 | 5 | 5.605–5.821; 2.813–2.885s | **Current, two clean1,000 runs** |
+
+The server and client `--help` print this guidance. `TABLE_CONCURRENCY_ANCHORS`
+in `scripts/serve_crop_ocr_api.py` links each C to the exact saved summary; tests
+verify count, B and C against those artifacts and lock inference defaults to
+the passing B2 configuration. The final run audit is
+[`table_b5_clean_repeat_d958f186_20260906/README.md`](../tmp/09_persistent_page_engine/table_b5_clean_repeat_d958f186_20260906/README.md).
+Each1,000 includes12 unchanged KV-cap responses; they stay in latency, and
+EOS-only throughput also passes the B2/B5 targets. These are closed-loop
+one910B2 measurements, not a guarantee for offered-QPS traffic or other hardware.
+C1/C3/C4 need new1,000-request measurements before claiming final-stack scores.
+
 Keep the optimized model, vocabulary, KV capacity, and vision/text buckets
-identical between runs. Set `--decode-batch-size` to `1`, `2`, `4`, `8`, or `16` on the crop
-API command and add `--request-scheduling-metrics`. This adds logging only, not
+identical between runs. Set `--decode-batch-size` explicitly on the crop
+API command. `--request-scheduling-metrics` adds logging only, not
 an admission guard. The decode graph retains its configured batch size when a
 slot is idle. Warm the server with a complete request outside measured timing.
 

@@ -13,7 +13,8 @@ EVALUATOR_ROOT="${EVALUATOR_ROOT:-/workspace/repos/OmniDocBench_eval}"
 TEDS_WORKERS="${TEDS_WORKERS:-12}"
 TEDS_TIMEOUT_S="${TEDS_TIMEOUT_S:-120}"
 TOKEN_SELECTION="${TOKEN_SELECTION:-greedy}"
-DECODE_OPTIMIZATION="${DECODE_OPTIMIZATION:-combined_apply_pse_sentinel}"
+# Inherit the locked table API defaults unless this is an explicit control.
+DECODE_OPTIMIZATION="${DECODE_OPTIMIZATION:-}"
 DECODE_VOCAB_TOKEN_IDS="${DECODE_VOCAB_TOKEN_IDS:-}"
 OFFSET="${OFFSET:-0}"
 LIMIT_PAGES="${LIMIT_PAGES:-}"
@@ -32,11 +33,13 @@ SERVER_ARGS=(
   --cache-length 4096
   --max-new-tokens 4096
   --decode-backend torchair
-  --decode-optimization "$DECODE_OPTIMIZATION"
   --token-selection "$TOKEN_SELECTION"
   --min-pixels 28224
   --max-pixels 802816
 )
+if [[ -n "$DECODE_OPTIMIZATION" ]]; then
+  SERVER_ARGS+=(--decode-optimization "$DECODE_OPTIMIZATION")
+fi
 if [[ -n "$DECODE_VOCAB_TOKEN_IDS" ]]; then
   SERVER_ARGS+=(--decode-vocab-token-ids "$DECODE_VOCAB_TOKEN_IDS")
 fi

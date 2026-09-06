@@ -17,6 +17,7 @@ from urllib.parse import urlparse, urlunparse
 from urllib.request import Request, urlopen
 
 import table_request_load_simulator as load
+from serve_crop_ocr_api import TABLE_SERVING_GUIDANCE
 
 
 HERE = Path(__file__).resolve().parent
@@ -24,7 +25,8 @@ REPO_ROOT = HERE.parent.parent
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, epilog=TABLE_SERVING_GUIDANCE,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--api-url", required=True)
     parser.add_argument("--api-kind", choices=("crop", "vllm"), default="crop")
     parser.add_argument("--vllm-model", default="PaddleOCR-VL-1.6")
@@ -38,7 +40,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--max-in-flight", type=int, default=1,
-        help="Client-side outstanding-request limit. Refill after any response.",
+        help=("Client-side outstanding-request limit C. Refill after any response. "
+              "Kept at 1 for generic/spec/vLLM safety; explicitly use 2 with default "
+              "ordinary B2, or 5 with ordinary B5. See anchored guidance below."),
     )
     parser.add_argument("--client-label", default="client")
     parser.add_argument("--source-jsonl", type=Path, default=load.DEFAULT_SOURCE)
