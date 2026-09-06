@@ -74,6 +74,8 @@ def parse_args() -> argparse.Namespace:
                         help="Use persistent token/position buffers with two per-step control operations.")
     parser.add_argument("--no-decode-device-timing", action="store_true",
                         help="Disable per-iteration profiling events, not request timing or copy synchronization.")
+    parser.add_argument("--freeze-setup-gc", action="store_true",
+                        help="Collect and freeze long-lived worker setup objects before serving; new request objects remain GC-managed.")
     parser.add_argument(
         "--request-scheduling-metrics", action="store_true",
         help="Include per-request prefill interruption and decode occupancy records.",
@@ -135,6 +137,24 @@ def _write_service_summary(
     temporary.replace(path)
 
 
+def _freeze_setup_gc() -> dict[str, Any]:
+    """Exclude persistent setup objects from later cyclic-GC scans.
+
+    Called only in the dedicated model worker, before accepting any request.
+    This does not disable collection of newly allocated request objects.
+    Frozen setup objects intentionally share the worker's lifetime.
+    """
+    import gc
+
+    started = time.perf_counter()
+    collected = gc.collect()
+    gc.freeze()
+    return {"enabled": True, "setup_collected": collected,
+            "frozen_objects": gc.get_freeze_count(),
+            "gc_remains_enabled": gc.isenabled(),
+            "setup_wall_s": time.perf_counter()-started}
+
+
 def _worker_main(
     jobs: Any,
     results: Any,
@@ -186,7 +206,11 @@ def _worker_main(
             preprocessor_min_pixels=config["min_pixels"],
             preprocessor_max_pixels=config["max_pixels"],
         )
+        setup_gc = _freeze_setup_gc() if config.get("freeze_setup_gc", False) else {"enabled": False}
+        if setup_gc["enabled"]:
+            print("EXP09_SETUP_GC " + json.dumps(setup_gc), flush=True)
         configuration = recognizer.configuration()
+        configuration["setup_gc"] = setup_gc
         configuration["request_scheduling_metrics"] = config["request_scheduling_metrics"]
         configuration["max_prefill_interruptions"] = config["max_prefill_interruptions"]
         results.put(
@@ -478,6 +502,7 @@ def main() -> None:
         "token_selection": args.token_selection,
         "decode_batch_size": args.decode_batch_size,
         "decode_device_timing": not args.no_decode_device_timing,
+        "freeze_setup_gc": args.freeze_setup_gc,
         "compact_decode_control": args.compact_decode_control,
         "request_scheduling_metrics": args.request_scheduling_metrics,
         "max_prefill_interruptions": args.max_prefill_interruptions,

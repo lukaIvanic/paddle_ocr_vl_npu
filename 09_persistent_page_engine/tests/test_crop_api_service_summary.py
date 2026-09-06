@@ -6,6 +6,7 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -23,6 +24,34 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CropApiServiceSummaryTest(unittest.TestCase):
+    def test_setup_gc_freeze_is_opt_in(self) -> None:
+        with patch.object(sys, "argv", ["serve_crop_ocr_api.py"]):
+            self.assertFalse(MODULE.parse_args().freeze_setup_gc)
+        with patch.object(sys, "argv", ["serve_crop_ocr_api.py", "--freeze-setup-gc"]):
+            self.assertTrue(MODULE.parse_args().freeze_setup_gc)
+
+    def test_new_request_cycles_remain_collectable(self) -> None:
+        # GC freezing is interpreter-global; isolate this test from the runner.
+        code = f"""
+import gc, importlib.util, weakref
+spec = importlib.util.spec_from_file_location('crop_api_gc_test', {str(SCRIPT)!r})
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+class Request:
+    pass
+old = Request()
+state = module._freeze_setup_gc()
+assert state['gc_remains_enabled'] and state['frozen_objects'] > 0
+new = Request()
+new.cycle = new
+reference = weakref.ref(new)
+del new
+gc.collect()
+assert reference() is None
+gc.unfreeze()
+"""
+        subprocess.run([sys.executable, "-c", code], check=True, timeout=15)
+
     def test_prefill_interruption_limit_is_opt_in(self) -> None:
         with patch.object(sys, "argv", ["serve_crop_ocr_api.py"]):
             self.assertIsNone(MODULE.parse_args().max_prefill_interruptions)
