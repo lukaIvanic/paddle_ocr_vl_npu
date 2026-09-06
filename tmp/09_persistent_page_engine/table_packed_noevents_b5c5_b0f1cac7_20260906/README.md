@@ -154,6 +154,15 @@ It still has the other user's test job. Only the read-only owned monitor is
 left running while awaiting a safe replacement validation; no other process
 has been signalled, stopped or modified.
 
+Availability follow-up: the same external suite remained live through three
+goal turns. At09:48:11 CST it was still running `L127_MatMul_ReLU_MatMul`
+(child2172570, suite parent2056282). All CPU audits were complete, leaving only
+the NPU-dependent replacement run. The owned read-only monitor2028986 was
+then stopped after verifying its exact command, and its final log is retained
+as `availability_monitor_final.log`. The benchmark server and worker remain
+stopped. No external process was touched. The goal is hardware-blocked, not
+complete; resume the unchanged candidate when NPU6 becomes available.
+
 ## Remaining validation after the other job finishes
 
 Wait for the live `runtime_test.run_b2 --device 6` suite to finish, not merely
