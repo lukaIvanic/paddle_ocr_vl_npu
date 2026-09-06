@@ -178,6 +178,9 @@ def main():
         p.error('lane requires valid --variant and --route')
     if args.operator_window and args.mode != 'lane':
         p.error('--operator-window requires lane mode')
+    if args.operator_window:
+        # msopprof application replay may launch the same command repeatedly.
+        args.output_dir = args.output_dir / f'process_{os.getpid()}'
     (suite if args.mode == 'suite' else lane)(args)
 
 

@@ -1,9 +1,10 @@
 import csv
+import json
 from pathlib import Path
 import tempfile
 import unittest
 
-from analyze_attention_pipes import analyze_csv, number, stats
+from analyze_attention_pipes import analyze_csv, collect, number, stats
 
 
 class CounterTests(unittest.TestCase):
@@ -42,6 +43,16 @@ class CounterTests(unittest.TestCase):
             self.assertEqual(metric['invalid_negative_count'],1)
             self.assertIsNone(metric['mean'])
             self.assertEqual(result['calls'][0]['pmu']['aic_GM_to_L1_datas(KB)'],-99)
+
+    def test_unsupported_lane_needs_no_csv(self):
+        with tempfile.TemporaryDirectory() as directory:
+            lane=Path(directory)/'pfa_approx_bucket_768'
+            lane.mkdir()
+            (lane/'result.json').write_text(json.dumps(dict(variant='pfa_approx',route='bucket_768',
+                device='910B',commit='test',source_capture_sha256='test',status='unsupported_on_this_device')))
+            rows=collect(Path(directory))
+            self.assertEqual(rows[0]['status'],'unsupported_on_this_device')
+            self.assertNotIn('attention',rows[0])
 
 
 if __name__ == '__main__':
