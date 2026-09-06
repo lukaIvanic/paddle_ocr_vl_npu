@@ -1,0 +1,495 @@
+{
+  "milestone1": {
+    "client": {
+      "completed": true,
+      "count": 100,
+      "seed": 1,
+      "peak_outstanding": 2,
+      "manifest_sha256": "1f77a0233333ba8dbf01434dc7de3b6b3dee75e611e38554de47d6a29bf1ba85",
+      "request_completion_qps": 3.1716184673601306,
+      "eos_completion_qps": 3.1716184673601306,
+      "p95_s": 1.7593515512591686,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
+      "ownership_samples": 5,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": []
+    },
+    "seed2": {
+      "completed": true,
+      "count": 100,
+      "seed": 2,
+      "peak_outstanding": 2,
+      "manifest_sha256": "b6fb05f880146e500d11091ac204879a62027b574682c170fcbb7946f161b502",
+      "request_completion_qps": 3.0203698080505923,
+      "eos_completion_qps": 3.0203698080505923,
+      "p95_s": 1.9289231458795246,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
+      "ownership_samples": 5,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": []
+    },
+    "validation1000_a": {
+      "completed": true,
+      "count": 1000,
+      "seed": 3,
+      "peak_outstanding": 2,
+      "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+      "request_completion_qps": 3.310780705472748,
+      "eos_completion_qps": 3.271051337007075,
+      "p95_s": 1.9443893248273525,
+      "stop_reasons": {
+        "eos": 988,
+        "kv_cache_full": 12
+      },
+      "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
+      "ownership_samples": 50,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": [
+        {
+          "sequence": 76,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9871327640721574
+        },
+        {
+          "sequence": 114,
+          "request_id": "page_000291_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.764573911903426
+        },
+        {
+          "sequence": 206,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.102640398079529
+        },
+        {
+          "sequence": 310,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.8958866039756685
+        },
+        {
+          "sequence": 475,
+          "request_id": "page_000283_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9948890160303563
+        },
+        {
+          "sequence": 496,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.901403777068481
+        },
+        {
+          "sequence": 523,
+          "request_id": "page_000271_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.895301213953644
+        },
+        {
+          "sequence": 552,
+          "request_id": "page_000278_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9563281500013545
+        },
+        {
+          "sequence": 681,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.890496091917157
+        },
+        {
+          "sequence": 729,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.158515927032568
+        },
+        {
+          "sequence": 844,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.147495788987726
+        },
+        {
+          "sequence": 852,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.86909635795746
+        }
+      ]
+    },
+    "validation1000_b": {
+      "completed": true,
+      "count": 1000,
+      "seed": 3,
+      "peak_outstanding": 2,
+      "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+      "request_completion_qps": 3.3119760036561687,
+      "eos_completion_qps": 3.272232291612295,
+      "p95_s": 1.9410503454506394,
+      "stop_reasons": {
+        "eos": 988,
+        "kv_cache_full": 12
+      },
+      "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
+      "ownership_samples": 50,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": [
+        {
+          "sequence": 76,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9975970620289445
+        },
+        {
+          "sequence": 114,
+          "request_id": "page_000291_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.759121648967266
+        },
+        {
+          "sequence": 206,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.1515595589298755
+        },
+        {
+          "sequence": 310,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.8942896960070357
+        },
+        {
+          "sequence": 475,
+          "request_id": "page_000283_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.999615015927702
+        },
+        {
+          "sequence": 496,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.8807120650308207
+        },
+        {
+          "sequence": 523,
+          "request_id": "page_000271_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.8802834280068055
+        },
+        {
+          "sequence": 552,
+          "request_id": "page_000278_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9604344700928777
+        },
+        {
+          "sequence": 681,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9033312590327114
+        },
+        {
+          "sequence": 729,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.172414883039892
+        },
+        {
+          "sequence": 844,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.157237775973044
+        },
+        {
+          "sequence": 852,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.8696275169495493
+        }
+      ]
+    }
+  },
+  "milestone2": {
+    "client": {
+      "completed": true,
+      "count": 100,
+      "seed": 1,
+      "peak_outstanding": 5,
+      "manifest_sha256": "1f77a0233333ba8dbf01434dc7de3b6b3dee75e611e38554de47d6a29bf1ba85",
+      "request_completion_qps": 5.01253755342034,
+      "eos_completion_qps": 5.01253755342034,
+      "p95_s": 2.592431990162004,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
+      "ownership_samples": 3,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": []
+    },
+    "seed2": {
+      "completed": true,
+      "count": 100,
+      "seed": 2,
+      "peak_outstanding": 5,
+      "manifest_sha256": "b6fb05f880146e500d11091ac204879a62027b574682c170fcbb7946f161b502",
+      "request_completion_qps": 5.0177570969864185,
+      "eos_completion_qps": 5.0177570969864185,
+      "p95_s": 2.993809562240494,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
+      "ownership_samples": 3,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": []
+    },
+    "validation1000_a": {
+      "completed": true,
+      "count": 1000,
+      "seed": 3,
+      "peak_outstanding": 5,
+      "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+      "request_completion_qps": 5.605123315729733,
+      "eos_completion_qps": 5.537861835940976,
+      "p95_s": 2.884945039480224,
+      "stop_reasons": {
+        "eos": 988,
+        "kv_cache_full": 12
+      },
+      "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
+      "ownership_samples": 29,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": [
+        {
+          "sequence": 76,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.291486707981676
+        },
+        {
+          "sequence": 114,
+          "request_id": "page_000291_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.094627451966517
+        },
+        {
+          "sequence": 206,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.602639641030692
+        },
+        {
+          "sequence": 310,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.450322418008
+        },
+        {
+          "sequence": 475,
+          "request_id": "page_000283_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.619867003988475
+        },
+        {
+          "sequence": 496,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.1605179120088
+        },
+        {
+          "sequence": 523,
+          "request_id": "page_000271_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.139273532084189
+        },
+        {
+          "sequence": 552,
+          "request_id": "page_000278_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.171478979056701
+        },
+        {
+          "sequence": 681,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.7386838279198855
+        },
+        {
+          "sequence": 729,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.5116988610243425
+        },
+        {
+          "sequence": 844,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.519102696096525
+        },
+        {
+          "sequence": 852,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.887077004997991
+        }
+      ]
+    },
+    "validation1000_b": {
+      "completed": true,
+      "count": 1000,
+      "seed": 3,
+      "peak_outstanding": 5,
+      "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+      "request_completion_qps": 5.821290025805274,
+      "eos_completion_qps": 5.75143454549561,
+      "p95_s": 2.8129160678014133,
+      "stop_reasons": {
+        "eos": 988,
+        "kv_cache_full": 12
+      },
+      "errors": 0,
+      "frozen_model_input_and_vocab_fields_match": true,
+      "diagnostic_inference_overrides_disabled": true,
+      "ownership_samples": 69,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "qualifying_timing": true,
+      "unexpected_ownership_snapshots": [],
+      "non_eos_requests": [
+        {
+          "sequence": 76,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.952425886061974
+        },
+        {
+          "sequence": 114,
+          "request_id": "page_000291_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.74099312198814
+        },
+        {
+          "sequence": 206,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.608051331946626
+        },
+        {
+          "sequence": 310,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.3444179280195385
+        },
+        {
+          "sequence": 475,
+          "request_id": "page_000283_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.515797045081854
+        },
+        {
+          "sequence": 496,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.072376633994281
+        },
+        {
+          "sequence": 523,
+          "request_id": "page_000271_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.013719336944632
+        },
+        {
+          "sequence": 552,
+          "request_id": "page_000278_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.993897320935503
+        },
+        {
+          "sequence": 681,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.142017357982695
+        },
+        {
+          "sequence": 729,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.070927640073933
+        },
+        {
+          "sequence": 844,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 6.3147173130419105
+        },
+        {
+          "sequence": 852,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 5.648219614988193
+        }
+      ]
+    }
+  },
+  "retained_invalid_attempt": "/Users/lukaivanic/projects/work/aoe_research/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_packed_noevents_b5c5_b0f1cac7_20260906/validation1000_b",
+  "replacement_inference_contract_identical": true,
+  "replacement_service_requests_including_warmup": 1001,
+  "owned_jobs_stopped_and_npu_released": true,
+  "configuration_comparison_excludes_only": [
+    "vision/text prefill compile-wrapper and first-call timing measurements",
+    "setup GC collected/frozen object counts and collection wall time"
+  ],
+  "replacement_output_comparison": {
+    "available": true,
+    "count": 1000,
+    "native_ids_identical": 1000,
+    "input_differences": [],
+    "stop_differences": []
+  },
+  "scope": "Closed-loop ordinary serving on physical NPU6; not an offered-QPS test.",
+  "caps": "All1000 latencies retained; 988 EOS and 12 unchanged KV4096 caps. EOS-only QPS qualifies."
+}

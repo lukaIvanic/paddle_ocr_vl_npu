@@ -1,0 +1,10 @@
+test_new_request_cycles_remain_collectable (test_crop_api_service_summary.CropApiServiceSummaryTest) ... ok
+test_prefill_interruption_limit_is_opt_in (test_crop_api_service_summary.CropApiServiceSummaryTest) ... ok
+test_scheduling_metrics_are_opt_in (test_crop_api_service_summary.CropApiServiceSummaryTest) ... ok
+test_setup_gc_freeze_is_opt_in (test_crop_api_service_summary.CropApiServiceSummaryTest) ... ok
+test_writer_preserves_configuration_and_scheduler_metrics (test_crop_api_service_summary.CropApiServiceSummaryTest) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.081s
+
+OK

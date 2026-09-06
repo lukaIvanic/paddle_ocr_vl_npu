@@ -1,0 +1,2 @@
+table_closed_loop_api_client.py --api-url http://127.0.0.1:8767/v1/ocr --set warm --count 1 --max-in-flight 1 --output-dir warm
+table_closed_loop_api_client.py --api-url http://127.0.0.1:8767/v1/ocr --set random --count 1000 --shuffle-seed 3 --max-in-flight 5 --output-dir validation1000_b

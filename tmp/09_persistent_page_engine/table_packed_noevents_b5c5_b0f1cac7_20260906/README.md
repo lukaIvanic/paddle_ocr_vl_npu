@@ -1,5 +1,12 @@
 # Exact B5/C5 ordinary serving: second-milestone candidate
 
+**Later completion:** the required clean replacement1000 passed with
+5.821290025805274 response completions/s (5.75143454549561 EOS/s) and
+P95 2.8129160678014133s. It is saved separately in
+`../table_b5_clean_repeat_d958f186_20260906/`, including the cross-run final
+audit and verified cleanup. The contaminated attempt below remains invalid.
+The blocked/wait notes below describe the earlier state, not the final status.
+
 One910B2, physical NPU6. Runtime/client source `b0f1cac7` (later commits during
 the run save evidence/audits only). No speculative decoding or routing. The
 candidate differs from the passing B2 stack only in static decode batch5 and

@@ -1,0 +1,157 @@
+test_cli_admission_limit_is_independent_of_decode_shape (test_table_closed_loop_api_client.ClosedLoopClientTest) ... ok
+test_fifty_table_set_is_fixed_and_disjoint_from_warmup (test_table_closed_loop_api_client.ClosedLoopClientTest) ... ok
+test_goal_gate_manifests_are_frozen_and_reproduce_existing_selection (test_table_closed_loop_api_client.ClosedLoopClientTest) ... ok
+test_invalid_limit_rejected (test_table_closed_loop_api_client.ClosedLoopClientTest) ... ok
+test_large_limits_refill_while_other_partners_wait (test_table_closed_loop_api_client.ClosedLoopClientTest) ... SEND test 01/6 table=0 active=1
+SEND test 02/6 table=1 active=2
+SEND test 03/6 table=2 active=3
+RECV test 03/6 rank=03 id=2 latency=0.0000s status=ok active=2
+SEND test 04/6 table=3 active=3
+RECV test 04/6 rank=04 id=3 latency=0.0000s status=ok active=2
+SEND test 05/6 table=4 active=3
+RECV test 05/6 rank=05 id=4 latency=0.0000s status=ok active=2
+SEND test 06/6 table=5 active=3
+RECV test 06/6 rank=06 id=5 latency=0.0001s status=ok active=2
+RECV test 01/6 rank=01 id=0 latency=0.0003s status=ok active=1
+RECV test 02/6 rank=02 id=1 latency=0.0003s status=ok active=0
+SEND test 01/7 table=0 active=1
+SEND test 02/7 table=1 active=2
+SEND test 03/7 table=2 active=3
+SEND test 04/7 table=3 active=4
+RECV test 04/7 rank=04 id=3 latency=0.0000s status=ok active=3
+SEND test 05/7 table=4 active=4
+RECV test 05/7 rank=05 id=4 latency=0.0000s status=ok active=3
+SEND test 06/7 table=5 active=4
+RECV test 06/7 rank=06 id=5 latency=0.0000s status=ok active=3
+SEND test 07/7 table=6 active=4
+RECV test 07/7 rank=07 id=6 latency=0.0001s status=ok active=3
+RECV test 01/7 rank=01 id=0 latency=0.0003s status=ok active=2
+RECV test 02/7 rank=02 id=1 latency=0.0003s status=ok active=1
+RECV test 03/7 rank=03 id=2 latency=0.0003s status=ok active=0
+SEND test 01/8 table=0 active=1
+SEND test 02/8 table=1 active=2
+SEND test 03/8 table=2 active=3
+SEND test 04/8 table=3 active=4
+SEND test 05/8 table=4 active=5
+RECV test 05/8 rank=05 id=4 latency=0.0000s status=ok active=4
+SEND test 06/8 table=5 active=5
+RECV test 06/8 rank=06 id=5 latency=0.0000s status=ok active=4
+SEND test 07/8 table=6 active=5
+RECV test 07/8 rank=07 id=6 latency=0.0000s status=ok active=4
+SEND test 08/8 table=7 active=5
+RECV test 08/8 rank=08 id=7 latency=0.0001s status=ok active=4
+RECV test 01/8 rank=01 id=0 latency=0.0003s status=ok active=3
+RECV test 02/8 rank=02 id=1 latency=0.0003s status=ok active=2
+RECV test 03/8 rank=03 id=2 latency=0.0003s status=ok active=1
+RECV test 04/8 rank=04 id=3 latency=0.0003s status=ok active=0
+SEND test 01/11 table=0 active=1
+SEND test 02/11 table=1 active=2
+SEND test 03/11 table=2 active=3
+SEND test 04/11 table=3 active=4
+SEND test 05/11 table=4 active=5
+SEND test 06/11 table=5 active=6
+SEND test 07/11 table=6 active=7
+SEND test 08/11 table=7 active=8
+RECV test 08/11 rank=08 id=7 latency=0.0000s status=ok active=7
+SEND test 09/11 table=8 active=8
+RECV test 09/11 rank=09 id=8 latency=0.0000s status=ok active=7
+SEND test 10/11 table=9 active=8
+RECV test 10/11 rank=10 id=9 latency=0.0000s status=ok active=7
+SEND test 11/11 table=10 active=8
+RECV test 11/11 rank=11 id=10 latency=0.0001s status=ok active=7
+RECV test 01/11 rank=01 id=0 latency=0.0003s status=ok active=6
+RECV test 02/11 rank=02 id=1 latency=0.0003s status=ok active=5
+RECV test 03/11 rank=03 id=2 latency=0.0003s status=ok active=4
+RECV test 04/11 rank=04 id=3 latency=0.0003s status=ok active=3
+RECV test 05/11 rank=05 id=4 latency=0.0003s status=ok active=2
+RECV test 06/11 rank=06 id=5 latency=0.0003s status=ok active=1
+RECV test 07/11 rank=07 id=6 latency=0.0004s status=ok active=0
+SEND test 01/19 table=0 active=1
+SEND test 02/19 table=1 active=2
+SEND test 03/19 table=2 active=3
+SEND test 04/19 table=3 active=4
+SEND test 05/19 table=4 active=5
+SEND test 06/19 table=5 active=6
+SEND test 07/19 table=6 active=7
+SEND test 08/19 table=7 active=8
+SEND test 09/19 table=8 active=9
+SEND test 10/19 table=9 active=10
+SEND test 11/19 table=10 active=11
+SEND test 12/19 table=11 active=12
+SEND test 13/19 table=12 active=13
+SEND test 14/19 table=13 active=14
+SEND test 15/19 table=14 active=15
+SEND test 16/19 table=15 active=16
+RECV test 16/19 rank=16 id=15 latency=0.0000s status=ok active=15
+SEND test 17/19 table=16 active=16
+RECV test 17/19 rank=17 id=16 latency=0.0000s status=ok active=15
+SEND test 18/19 table=17 active=16
+RECV test 18/19 rank=18 id=17 latency=0.0000s status=ok active=15
+SEND test 19/19 table=18 active=16
+RECV test 19/19 rank=19 id=18 latency=0.0001s status=ok active=15
+RECV test 01/19 rank=01 id=0 latency=0.0006s status=ok active=14
+RECV test 02/19 rank=02 id=1 latency=0.0006s status=ok active=13
+RECV test 03/19 rank=03 id=2 latency=0.0006s status=ok active=12
+RECV test 04/19 rank=04 id=3 latency=0.0006s status=ok active=11
+RECV test 05/19 rank=05 id=4 latency=0.0006s status=ok active=10
+RECV test 06/19 rank=06 id=5 latency=0.0006s status=ok active=9
+RECV test 07/19 rank=07 id=6 latency=0.0006s status=ok active=8
+RECV test 08/19 rank=08 id=7 latency=0.0006s status=ok active=7
+RECV test 09/19 rank=09 id=8 latency=0.0007s status=ok active=6
+RECV test 10/19 rank=10 id=9 latency=0.0007s status=ok active=5
+RECV test 11/19 rank=11 id=10 latency=0.0006s status=ok active=4
+RECV test 12/19 rank=12 id=11 latency=0.0006s status=ok active=3
+RECV test 13/19 rank=13 id=12 latency=0.0006s status=ok active=2
+RECV test 14/19 rank=14 id=13 latency=0.0006s status=ok active=1
+RECV test 15/19 rank=15 id=14 latency=0.0006s status=ok active=0
+ok
+test_limit_does_not_change_fixed_selection (test_table_closed_loop_api_client.ClosedLoopClientTest) ... ok
+test_one_request_is_strictly_sequential (test_table_closed_loop_api_client.ClosedLoopClientTest) ... SEND test 01/4 table=0 active=1
+RECV test 01/4 rank=01 id=0 latency=0.0000s status=ok active=0
+SEND test 02/4 table=1 active=1
+RECV test 02/4 rank=02 id=1 latency=0.0000s status=ok active=0
+SEND test 03/4 table=2 active=1
+RECV test 03/4 rank=03 id=2 latency=0.0000s status=ok active=0
+SEND test 04/4 table=3 active=1
+RECV test 04/4 rank=04 id=3 latency=0.0000s status=ok active=0
+ok
+test_random_sample_rejects_duplicate_source_ids (test_table_closed_loop_api_client.ClosedLoopClientTest) ... ok
+test_random_sample_uses_all_tables_and_is_identical_across_limits (test_table_closed_loop_api_client.ClosedLoopClientTest) ... ok
+test_repeated_table_requests_have_unique_api_ids (test_table_closed_loop_api_client.ClosedLoopClientTest) ... SEND test 01/3 table=0 active=1
+SEND test 02/3 table=0 active=2
+RECV test 01/3 rank=01 id=0 latency=0.0000s status=ok active=1
+SEND test 03/3 table=0 active=2
+RECV test 02/3 rank=01 id=0 latency=0.0001s status=ok active=1
+RECV test 03/3 rank=01 id=0 latency=0.0000s status=ok active=0
+ok
+test_shuffle_preserves_top_fifty_and_is_identical_across_limits (test_table_closed_loop_api_client.ClosedLoopClientTest) ... ok
+test_thousand_requests_cover_full_pool_before_repeating (test_table_closed_loop_api_client.ClosedLoopClientTest) ... ok
+test_timeout_stops_new_submissions_and_drains_partner (test_table_closed_loop_api_client.ClosedLoopClientTest) ... SEND test 01/5 table=0 active=1
+SEND test 02/5 table=1 active=2
+RECV test 01/5 rank=01 id=0 latency=0.0000s status=error active=1
+RECV test 02/5 rank=02 id=1 latency=0.0001s status=ok active=0
+ok
+test_two_requests_refill_without_waiting_for_slow_partner (test_table_closed_loop_api_client.ClosedLoopClientTest) ... SEND test 01/4 table=0 active=1
+SEND test 02/4 table=1 active=2
+RECV test 02/4 rank=02 id=1 latency=0.0000s status=ok active=1
+SEND test 03/4 table=2 active=2
+RECV test 03/4 rank=03 id=2 latency=0.0000s status=ok active=1
+SEND test 04/4 table=3 active=2
+RECV test 04/4 rank=04 id=3 latency=0.0001s status=ok active=1
+RECV test 01/4 rank=01 id=0 latency=0.0002s status=ok active=0
+ok
+test_vllm_body_requests_native_ids_and_remaining_context (test_table_closed_loop_api_client.ClosedLoopClientTest) ... ok
+test_vllm_uses_same_closed_loop_limit_and_saves_native_ids (test_table_closed_loop_api_client.ClosedLoopClientTest) ... SEND test 01/4 table=0 active=1
+SEND test 02/4 table=1 active=2
+RECV test 01/4 rank=01 id=0 latency=0.0000s status=ok active=1
+SEND test 03/4 table=2 active=2
+RECV test 02/4 rank=02 id=1 latency=0.0001s status=ok active=1
+SEND test 04/4 table=3 active=2
+RECV test 03/4 rank=03 id=2 latency=0.0001s status=ok active=1
+RECV test 04/4 rank=04 id=3 latency=0.0000s status=ok active=0
+ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.139s
+
+OK

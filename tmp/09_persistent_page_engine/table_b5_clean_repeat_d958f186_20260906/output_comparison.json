@@ -1,0 +1,11 @@
+{
+  "historical_b2_to_first_validation": {
+    "available": false
+  },
+  "first_to_second_validation": {
+    "available": false
+  },
+  "optimized_b2_to_first_validation": {
+    "available": false
+  }
+}

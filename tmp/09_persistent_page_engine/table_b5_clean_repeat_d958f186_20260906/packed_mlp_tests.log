@@ -1,0 +1,7 @@
+test_equivalent_packing (test_packed_mlp_prefetch.PackedPrefetchTest) ... ok
+test_prefetch_uses_executed_weights (test_packed_mlp_prefetch.PackedPrefetchTest) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.008s
+
+OK
