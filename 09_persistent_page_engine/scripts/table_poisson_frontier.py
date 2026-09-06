@@ -101,8 +101,21 @@ class Sweep:
             return set(), None
         lines = output(["docker", "top", CONTAINER, "-eo", "pid,ppid,args"]).splitlines()[1:]
         entries = [line.split(None, 2) for line in lines if line.strip()]
-        parents = [int(pid) for pid, ppid, cmd in entries
-                   if "serve_crop_ocr_api.py" in cmd and self.marker in cmd]
+        candidates = {int(pid) for pid, ppid, cmd in entries
+                      if "serve_crop_ocr_api.py" in cmd and self.marker in cmd}
+        parent_of = {int(pid): int(ppid) for pid, ppid, _ in entries}
+        def has_candidate_ancestor(pid):
+            seen = set()
+            pid = parent_of.get(pid)
+            while pid is not None and pid not in seen:
+                if pid in candidates:
+                    return True
+                seen.add(pid)
+                pid = parent_of.get(pid)
+            return False
+        # bash setup subshells inherit the command line before exec. They are
+        # descendants of ONE launch, not independent owners of the device.
+        parents = [pid for pid in candidates if not has_candidate_ancestor(pid)]
         if len(parents) > 1:
             raise RuntimeError("Ambiguous owned server PID")
         if not parents:

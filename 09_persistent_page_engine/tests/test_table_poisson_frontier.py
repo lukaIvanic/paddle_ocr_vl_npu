@@ -50,6 +50,22 @@ class FrontierTest(unittest.TestCase):
             with patch.object(MODULE, "output", return_value="Process id:101"):
                 sweep.check_device()
 
+    def test_setup_subshells_are_one_owned_process_tree(self):
+        sweep = MODULE.Sweep.__new__(MODULE.Sweep)
+        sweep.marker = "tmp/my-run/b1/service.json"
+        processes = """PID PPID COMMAND
+100 1 bash -c source npu-setup; exec python serve_crop_ocr_api.py tmp/my-run/b1/service.json
+101 100 bash -c source npu-setup; exec python serve_crop_ocr_api.py tmp/my-run/b1/service.json
+102 101 npu-status
+200 1 unrelated-job
+"""
+        with patch.object(MODULE, "output", return_value=processes):
+            self.assertEqual(sweep.owned(), ({100,101,102},100))
+        with patch.object(MODULE, "output", return_value=processes +
+                          "300 1 python serve_crop_ocr_api.py tmp/my-run/b1/service.json\n"):
+            with self.assertRaisesRegex(RuntimeError, "Ambiguous"):
+                sweep.owned()
+
     def test_stop_refuses_recycled_pid(self):
         sweep = MODULE.Sweep.__new__(MODULE.Sweep)
         sweep.server = object()
