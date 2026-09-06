@@ -1,0 +1,239 @@
+Waiting for NPU worker pid=2547253
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":7.34009}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":11.35771}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"start"}
+EXP09_SETUP {"stage":"decode_compact_vocab","status":"done","elapsed_s":0.026836}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.027492}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"done","elapsed_s":0.067319}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":6.097487}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.532193}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.018321}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":6.375946}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":3.28084}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+.EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":15.701091}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.006259}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.003431}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":51.708579}
+EXP09_SETUP_GC {"enabled": true, "setup_collected": 31453, "frozen_objects": 694446, "gc_remains_enabled": true, "setup_wall_s": 0.5158701479667798}
+READY http://127.0.0.1:8767 worker_pid=2547253
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-001-page_001272_table_1&source_request_id=page_001272_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-003-page_000236_table_box_id_1&source_request_id=page_000236_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-004-page_000634_table_11&source_request_id=page_000634_table_11 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-002-page_001367_table_51&source_request_id=page_001367_table_51 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-006-page_001172_table_16&source_request_id=page_001172_table_16 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-008-page_001150_table_box_id_9&source_request_id=page_001150_table_box_id_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-007-page_001137_table_2&source_request_id=page_001137_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-009-page_000920_table_8&source_request_id=page_000920_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-011-page_000256_table_box_id_8&source_request_id=page_000256_table_box_id_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-012-page_001166_table_9&source_request_id=page_001166_table_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-010-page_000524_table_0&source_request_id=page_000524_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-014-page_000933_table_10&source_request_id=page_000933_table_10 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-001-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-016-page_001375_table_7&source_request_id=page_001375_table_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-013-page_000211_table_box_id_3&source_request_id=page_000211_table_box_id_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-017-page_000106_table_box_id_2&source_request_id=page_000106_table_box_id_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-015-page_001129_table_8&source_request_id=page_001129_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-018-page_001134_table_10&source_request_id=page_001134_table_10 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-020-page_000564_table_7&source_request_id=page_000564_table_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-021-page_001368_table_box_id_242&source_request_id=page_001368_table_box_id_242 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-019-page_000642_table_8&source_request_id=page_000642_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-005-page_000272_table_box_id_1&source_request_id=page_000272_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-023-page_000746_table_18&source_request_id=page_000746_table_18 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-024-page_000213_table_box_id_5&source_request_id=page_000213_table_box_id_5 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-026-page_000209_table_box_id_1&source_request_id=page_000209_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-025-page_000206_table_box_id_1&source_request_id=page_000206_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-029-page_000921_table_9&source_request_id=page_000921_table_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-028-page_000188_table_box_id_6&source_request_id=page_000188_table_box_id_6 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-027-page_001216_table_2&source_request_id=page_001216_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-032-page_001503_table_5&source_request_id=page_001503_table_5 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-030-page_000533_table_8&source_request_id=page_000533_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-031-page_001123_table_14&source_request_id=page_001123_table_14 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-035-page_001130_table_1&source_request_id=page_001130_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-036-page_001595_table_box_id_9&source_request_id=page_001595_table_box_id_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-022-page_000263_table_box_id_7&source_request_id=page_000263_table_box_id_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-034-page_000542_table_0&source_request_id=page_000542_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-039-page_000821_table_box_id_26&source_request_id=page_000821_table_box_id_26 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-037-page_001233_table_6&source_request_id=page_001233_table_6 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-033-page_001197_table_5&source_request_id=page_001197_table_5 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-038-page_000585_table_1&source_request_id=page_000585_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-043-page_000665_table_3&source_request_id=page_000665_table_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-044-page_001417_table_2&source_request_id=page_001417_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-041-page_000534_table_4&source_request_id=page_000534_table_4 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-040-page_000566_table_3&source_request_id=page_000566_table_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-042-page_001141_table_13&source_request_id=page_001141_table_13 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-045-page_001117_table_box_id_7&source_request_id=page_001117_table_box_id_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-049-page_000682_table_15&source_request_id=page_000682_table_15 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-048-page_000505_table_1&source_request_id=page_000505_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-046-page_001270_table_box_id_1&source_request_id=page_001270_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-051-page_000789_table_34&source_request_id=page_000789_table_34 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-053-page_001398_table_box-13qv1ztw&source_request_id=page_001398_table_box-13qv1ztw HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-054-page_001183_table_11&source_request_id=page_001183_table_11 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-052-page_001177_table_2&source_request_id=page_001177_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-047-page_000261_table_box_id_3&source_request_id=page_000261_table_box_id_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-057-page_000657_table_6&source_request_id=page_000657_table_6 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-056-page_000710_table_9&source_request_id=page_000710_table_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-055-page_000507_table_0&source_request_id=page_000507_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-058-page_001368_table_box_id_227&source_request_id=page_001368_table_box_id_227 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-061-page_000937_table_0&source_request_id=page_000937_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-059-page_001176_table_4&source_request_id=page_001176_table_4 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-062-page_001368_table_box_id_237&source_request_id=page_001368_table_box_id_237 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-063-page_000217_table_box_id_0&source_request_id=page_000217_table_box_id_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-060-page_001181_table_6&source_request_id=page_001181_table_6 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-064-page_001159_table_5&source_request_id=page_001159_table_5 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-066-page_000984_table_2&source_request_id=page_000984_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-067-page_001082_table_34&source_request_id=page_001082_table_34 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-069-page_000866_table_14&source_request_id=page_000866_table_14 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-050-page_000275_table_box_id_1&source_request_id=page_000275_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-068-page_000467_table_17&source_request_id=page_000467_table_17 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-071-page_000916_table_7&source_request_id=page_000916_table_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-073-page_001131_table_15&source_request_id=page_001131_table_15 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-065-page_000626_table_box_id_1&source_request_id=page_000626_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-072-page_000251_table_box_id_7&source_request_id=page_000251_table_box_id_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-075-page_000266_table_box_id_7&source_request_id=page_000266_table_box_id_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-076-page_000447_table_12&source_request_id=page_000447_table_12 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-074-page_001183_table_12&source_request_id=page_001183_table_12 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-077-page_001193_table_4&source_request_id=page_001193_table_4 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-078-page_001368_table_box_id_239&source_request_id=page_001368_table_box_id_239 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-079-page_000903_table_15&source_request_id=page_000903_table_15 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-070-page_001227_table_10&source_request_id=page_001227_table_10 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-080-page_001167_table_2&source_request_id=page_001167_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-084-page_000716_table_0&source_request_id=page_000716_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-085-page_000937_table_1&source_request_id=page_000937_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-086-page_000465_table_10&source_request_id=page_000465_table_10 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-081-page_000212_table_box_id_1&source_request_id=page_000212_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-083-page_000223_table_box_id_2&source_request_id=page_000223_table_box_id_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-082-page_001147_table_10&source_request_id=page_001147_table_10 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-087-page_000465_table_8&source_request_id=page_000465_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-089-page_000554_table_12&source_request_id=page_000554_table_12 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-092-page_001214_table_8&source_request_id=page_001214_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-093-page_001368_table_box_id_161&source_request_id=page_001368_table_box_id_161 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-091-page_000516_table_0&source_request_id=page_000516_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-094-page_000577_table_3&source_request_id=page_000577_table_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-090-page_000199_table_box_id_0&source_request_id=page_000199_table_box_id_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-088-page_001179_table_6&source_request_id=page_001179_table_6 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-097-page_000821_table_box_id_14&source_request_id=page_000821_table_box_id_14 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-095-page_000984_table_3&source_request_id=page_000984_table_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-099-page_001375_table_31&source_request_id=page_001375_table_31 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-098-page_000833_table_4&source_request_id=page_000833_table_4 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-100-page_000645_table_7&source_request_id=page_000645_table_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-096-page_001187_table_0&source_request_id=page_001187_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-001-page_001272_table_1&source_request_id=page_001272_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-001-page_001272_table_1&source_request_id=page_001272_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-003-page_000236_table_box_id_1&source_request_id=page_000236_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-004-page_000634_table_11&source_request_id=page_000634_table_11 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-002-page_001367_table_51&source_request_id=page_001367_table_51 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-006-page_001172_table_16&source_request_id=page_001172_table_16 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-008-page_001150_table_box_id_9&source_request_id=page_001150_table_box_id_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-007-page_001137_table_2&source_request_id=page_001137_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-009-page_000920_table_8&source_request_id=page_000920_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-011-page_000256_table_box_id_8&source_request_id=page_000256_table_box_id_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-012-page_001166_table_9&source_request_id=page_001166_table_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-010-page_000524_table_0&source_request_id=page_000524_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-014-page_000933_table_10&source_request_id=page_000933_table_10 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-013-page_000211_table_box_id_3&source_request_id=page_000211_table_box_id_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-001-page_000287_table_box_id_8&source_request_id=page_000287_table_box_id_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-016-page_001375_table_7&source_request_id=page_001375_table_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-017-page_000106_table_box_id_2&source_request_id=page_000106_table_box_id_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-015-page_001129_table_8&source_request_id=page_001129_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-018-page_001134_table_10&source_request_id=page_001134_table_10 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-020-page_000564_table_7&source_request_id=page_000564_table_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-021-page_001368_table_box_id_242&source_request_id=page_001368_table_box_id_242 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-019-page_000642_table_8&source_request_id=page_000642_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-023-page_000746_table_18&source_request_id=page_000746_table_18 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-024-page_000213_table_box_id_5&source_request_id=page_000213_table_box_id_5 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-005-page_000272_table_box_id_1&source_request_id=page_000272_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-026-page_000209_table_box_id_1&source_request_id=page_000209_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-025-page_000206_table_box_id_1&source_request_id=page_000206_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-029-page_000921_table_9&source_request_id=page_000921_table_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-028-page_000188_table_box_id_6&source_request_id=page_000188_table_box_id_6 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-027-page_001216_table_2&source_request_id=page_001216_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-032-page_001503_table_5&source_request_id=page_001503_table_5 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-030-page_000533_table_8&source_request_id=page_000533_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-031-page_001123_table_14&source_request_id=page_001123_table_14 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-035-page_001130_table_1&source_request_id=page_001130_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-036-page_001595_table_box_id_9&source_request_id=page_001595_table_box_id_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-022-page_000263_table_box_id_7&source_request_id=page_000263_table_box_id_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-034-page_000542_table_0&source_request_id=page_000542_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-039-page_000821_table_box_id_26&source_request_id=page_000821_table_box_id_26 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-037-page_001233_table_6&source_request_id=page_001233_table_6 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-033-page_001197_table_5&source_request_id=page_001197_table_5 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-041-page_000534_table_4&source_request_id=page_000534_table_4 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-038-page_000585_table_1&source_request_id=page_000585_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-043-page_000665_table_3&source_request_id=page_000665_table_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-044-page_001417_table_2&source_request_id=page_001417_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-040-page_000566_table_3&source_request_id=page_000566_table_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-045-page_001117_table_box_id_7&source_request_id=page_001117_table_box_id_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-042-page_001141_table_13&source_request_id=page_001141_table_13 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-049-page_000682_table_15&source_request_id=page_000682_table_15 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-048-page_000505_table_1&source_request_id=page_000505_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-051-page_000789_table_34&source_request_id=page_000789_table_34 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-046-page_001270_table_box_id_1&source_request_id=page_001270_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-053-page_001398_table_box-13qv1ztw&source_request_id=page_001398_table_box-13qv1ztw HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-054-page_001183_table_11&source_request_id=page_001183_table_11 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-052-page_001177_table_2&source_request_id=page_001177_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-056-page_000710_table_9&source_request_id=page_000710_table_9 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-057-page_000657_table_6&source_request_id=page_000657_table_6 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-047-page_000261_table_box_id_3&source_request_id=page_000261_table_box_id_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-055-page_000507_table_0&source_request_id=page_000507_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-058-page_001368_table_box_id_227&source_request_id=page_001368_table_box_id_227 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-061-page_000937_table_0&source_request_id=page_000937_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-062-page_001368_table_box_id_237&source_request_id=page_001368_table_box_id_237 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-059-page_001176_table_4&source_request_id=page_001176_table_4 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-063-page_000217_table_box_id_0&source_request_id=page_000217_table_box_id_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-060-page_001181_table_6&source_request_id=page_001181_table_6 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-066-page_000984_table_2&source_request_id=page_000984_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-064-page_001159_table_5&source_request_id=page_001159_table_5 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-067-page_001082_table_34&source_request_id=page_001082_table_34 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-069-page_000866_table_14&source_request_id=page_000866_table_14 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-068-page_000467_table_17&source_request_id=page_000467_table_17 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-050-page_000275_table_box_id_1&source_request_id=page_000275_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-071-page_000916_table_7&source_request_id=page_000916_table_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-073-page_001131_table_15&source_request_id=page_001131_table_15 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-065-page_000626_table_box_id_1&source_request_id=page_000626_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-075-page_000266_table_box_id_7&source_request_id=page_000266_table_box_id_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-072-page_000251_table_box_id_7&source_request_id=page_000251_table_box_id_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-074-page_001183_table_12&source_request_id=page_001183_table_12 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-076-page_000447_table_12&source_request_id=page_000447_table_12 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-077-page_001193_table_4&source_request_id=page_001193_table_4 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-078-page_001368_table_box_id_239&source_request_id=page_001368_table_box_id_239 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-079-page_000903_table_15&source_request_id=page_000903_table_15 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-070-page_001227_table_10&source_request_id=page_001227_table_10 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-080-page_001167_table_2&source_request_id=page_001167_table_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-084-page_000716_table_0&source_request_id=page_000716_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-085-page_000937_table_1&source_request_id=page_000937_table_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-086-page_000465_table_10&source_request_id=page_000465_table_10 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-081-page_000212_table_box_id_1&source_request_id=page_000212_table_box_id_1 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-083-page_000223_table_box_id_2&source_request_id=page_000223_table_box_id_2 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-087-page_000465_table_8&source_request_id=page_000465_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-089-page_000554_table_12&source_request_id=page_000554_table_12 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-082-page_001147_table_10&source_request_id=page_001147_table_10 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-092-page_001214_table_8&source_request_id=page_001214_table_8 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-093-page_001368_table_box_id_161&source_request_id=page_001368_table_box_id_161 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-091-page_000516_table_0&source_request_id=page_000516_table_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-094-page_000577_table_3&source_request_id=page_000577_table_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-090-page_000199_table_box_id_0&source_request_id=page_000199_table_box_id_0 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-097-page_000821_table_box_id_14&source_request_id=page_000821_table_box_id_14 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-095-page_000984_table_3&source_request_id=page_000984_table_3 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-088-page_001179_table_6&source_request_id=page_001179_table_6 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-099-page_001375_table_31&source_request_id=page_001375_table_31 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-100-page_000645_table_7&source_request_id=page_000645_table_7 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-098-page_000833_table_4&source_request_id=page_000833_table_4 HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-096-page_001187_table_0&source_request_id=page_001187_table_0 HTTP/1.1" 200 -
+SERVICE_SUMMARY /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_packed_noevents_b4_23d5518c_20260906/service.json

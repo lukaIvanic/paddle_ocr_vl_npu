@@ -1,0 +1,92 @@
+{
+  "client": {
+    "client_cap": 4,
+    "physical_decode_batch": 4,
+    "request_completion_qps": 4.454861004573734,
+    "p95_s": 2.3847790930594783,
+    "run_wall_s": 22.447389469016343,
+    "stop_reasons": {
+      "eos": 100
+    },
+    "native_ids_identical_to_c4": 100,
+    "launched_request_iteration_histogram": {
+      "4": 29988,
+      "3": 8661,
+      "2": 1130,
+      "1": 1341
+    },
+    "estimated_launched_slot_utilization": 0.8364524003254679,
+    "timing_sums_not_additive": {
+      "cpu_image_decode": 1.7526943682460114,
+      "cpu_image_and_prompt_preprocess": 3.6656917355721816,
+      "cpu_mrope_index": 0.24407866434194148,
+      "cpu_pin_memory": 0.2582389268791303,
+      "cpu_preprocess_background_queue_wait": 1.671775681199506,
+      "cpu_preprocess_background_service": 5.938795161666349,
+      "cpu_preprocess_background_consumer_wait": 0.08363555278629065,
+      "cpu_preprocess_background_ready_wait": 0.8869907648768276,
+      "prefill_h2d_submit_host": 0.35978802165482193,
+      "prefill_enqueue_host": 5.143499337369576,
+      "recognizer_h2d": 0.3422404785156248,
+      "first_token_d2h": 0.01843975915107876,
+      "prefill_resolve_wait": 0.03380741865839809,
+      "vision_and_text_prefill_wall": 5.17941788258031,
+      "time_to_first_token": 14.038124488084577,
+      "prefill_request_total": 9.70810744704027,
+      "decode_ready_queue_wait": 1.2390505366493016,
+      "decode_slot_residency": 68.71224415069446,
+      "detokenize": 0.024220592342317104,
+      "request_total": 84.01363976777066
+    },
+    "errors": 0,
+    "unsent": 0,
+    "sampled_ownership_ok": true,
+    "ownership_samples": 3,
+    "second_milestone_development_pass": false
+  },
+  "c5": {
+    "client_cap": 5,
+    "physical_decode_batch": 4,
+    "request_completion_qps": 4.742527029517923,
+    "p95_s": 2.3707526877638876,
+    "run_wall_s": 21.085804968024604,
+    "stop_reasons": {
+      "eos": 100
+    },
+    "native_ids_identical_to_c4": 100,
+    "launched_request_iteration_histogram": {
+      "4": 37952,
+      "1": 1224,
+      "3": 1350,
+      "2": 594
+    },
+    "estimated_launched_slot_utilization": 0.8971114407888996,
+    "timing_sums_not_additive": {
+      "cpu_image_decode": 1.7523344084620476,
+      "cpu_image_and_prompt_preprocess": 3.640153833781369,
+      "cpu_mrope_index": 0.2411808556644246,
+      "cpu_pin_memory": 0.2509892520029098,
+      "cpu_preprocess_background_queue_wait": 2.19278096628841,
+      "cpu_preprocess_background_service": 5.902827478363179,
+      "cpu_preprocess_background_consumer_wait": 0.042707415763288736,
+      "cpu_preprocess_background_ready_wait": 0.776849826099351,
+      "prefill_h2d_submit_host": 0.405633999267593,
+      "prefill_enqueue_host": 5.04537005815655,
+      "recognizer_h2d": 0.38778870171308527,
+      "first_token_d2h": 0.018918686313554645,
+      "prefill_resolve_wait": 0.034124612458981574,
+      "vision_and_text_prefill_wall": 5.080784952035174,
+      "time_to_first_token": 14.361295519862324,
+      "prefill_request_total": 9.619816281510518,
+      "decode_ready_queue_wait": 10.13373517722357,
+      "decode_slot_residency": 73.7585638014134,
+      "detokenize": 0.028389149927534163,
+      "request_total": 98.28198364842683
+    },
+    "errors": 0,
+    "unsent": 0,
+    "sampled_ownership_ok": true,
+    "ownership_samples": 4,
+    "second_milestone_development_pass": false
+  }
+}

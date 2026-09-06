@@ -1,0 +1,13 @@
+usage: table_closed_loop_api_client.py [-h] --api-url API_URL
+                                       [--api-kind {crop,vllm}]
+                                       [--vllm-model VLLM_MODEL] --output-dir
+                                       OUTPUT_DIR --set {a,b,p90,warm,random}
+                                       [--count COUNT]
+                                       [--shuffle-seed SHUFFLE_SEED]
+                                       [--max-in-flight {1,2,3,4,8,16}]
+                                       [--client-label CLIENT_LABEL]
+                                       [--source-jsonl SOURCE_JSONL]
+                                       [--images-dir IMAGES_DIR]
+                                       [--request-timeout-s REQUEST_TIMEOUT_S]
+                                       [--start-at-epoch-s START_AT_EPOCH_S]
+table_closed_loop_api_client.py: error: argument --max-in-flight: invalid choice: '5' (choose from 1, 2, 3, 4, 8, 16)
