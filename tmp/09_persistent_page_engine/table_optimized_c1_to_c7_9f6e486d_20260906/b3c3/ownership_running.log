@@ -1,0 +1,10 @@
+2026-09-06T19:48:07+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:3352688 Process name:python            Process memory(MB):6967
+	Chip ID                        : 0
+
+    PID    PPID     ELAPSED COMMAND
+3352686 3327863       01:17 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 09_persistent_page_engine/scripts/serve_crop_ocr_api.py --host 127.0.0.1 --port 8767 --request-timeout-s 3600 --queue-capacity 64 --model /workspace/models/PaddleOCR-VL-1.6 --decode-backend torchair --decode-optimization combined_apply_complete_layer_prefetch1_rope_lut_packed_mlp --decode-vocab-token-ids 09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json --token-selection greedy --cache-length 4096 --max-new-tokens 4096 --min-pixels 28224 --max-pixels 802816 --request-scheduling-metrics --decode-batch-size 3 --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096 --text-buckets 128,256,512,1024,1152 --vision-attention-weight-padding --vision-linear-patch-projection --freeze-setup-gc --no-decode-device-timing --service-summary-output tmp/09_persistent_page_engine/table_optimized_c1_to_c7_9f6e486d_20260906/b3c3/service.json
+3352688 3352686       01:17 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=10) --multiprocessing-fork

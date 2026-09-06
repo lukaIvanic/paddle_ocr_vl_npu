@@ -1,0 +1,313 @@
+{
+  "b1c1": {
+    "batch": 1,
+    "concurrency": 1,
+    "requests": 1000,
+    "qps": 1.916940128951687,
+    "latency_s": {
+      "count": 1000,
+      "mean": 0.5213162477005971,
+      "p50": 0.33059578901156783,
+      "p90": 1.1335126296267846,
+      "p95": 1.6565518201270606,
+      "p99": 3.3628204637719317,
+      "max": 3.429513827082701,
+      "sum": 521.3162477005972,
+      "median": 0.33059578901156783
+    },
+    "eos_qps": 1.8939368474042666,
+    "stop_reasons": {
+      "eos": 988,
+      "kv_cache_full": 12
+    },
+    "errors": 0,
+    "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+    "optimized_contract_matches": true,
+    "actual_peak_in_flight": 1,
+    "same_input_shapes_and_vision_tokens": true,
+    "native_id_differences_vs_c1": [],
+    "owned_host_pids": [
+      3331125
+    ],
+    "ownership_samples": 148,
+    "clean_timing": true,
+    "ownership_max_gap_s": 4.0
+  },
+  "b2c2": {
+    "batch": 2,
+    "concurrency": 2,
+    "requests": 1000,
+    "qps": 3.3022555894193437,
+    "latency_s": {
+      "count": 1000,
+      "mean": 0.6041275005427887,
+      "p50": 0.3743322269874625,
+      "p90": 1.336234595521819,
+      "p95": 1.9527289563324304,
+      "p99": 3.896921452964889,
+      "max": 4.195354482973926,
+      "sum": 604.1275005427888,
+      "median": 0.3743322269874625
+    },
+    "eos_qps": 3.2626285223463114,
+    "stop_reasons": {
+      "eos": 988,
+      "kv_cache_full": 12
+    },
+    "errors": 0,
+    "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+    "optimized_contract_matches": true,
+    "actual_peak_in_flight": 2,
+    "same_input_shapes_and_vision_tokens": true,
+    "native_id_differences_vs_c1": [],
+    "owned_host_pids": [
+      3343538
+    ],
+    "ownership_samples": 86,
+    "clean_timing": true,
+    "ownership_max_gap_s": 4.0
+  },
+  "b3c3": {
+    "batch": 3,
+    "concurrency": 3,
+    "requests": 1000,
+    "qps": 3.930970276679353,
+    "latency_s": {
+      "count": 1000,
+      "mean": 0.7598435960153583,
+      "p50": 0.4687598364544101,
+      "p90": 1.713730762887281,
+      "p95": 2.4720755729300423,
+      "p99": 5.063775968842673,
+      "max": 5.5475653250468895,
+      "sum": 759.8435960153583,
+      "median": 0.4687598364544101
+    },
+    "eos_qps": 3.8837986333592007,
+    "stop_reasons": {
+      "eos": 988,
+      "kv_cache_full": 12
+    },
+    "errors": 0,
+    "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+    "optimized_contract_matches": true,
+    "actual_peak_in_flight": 3,
+    "same_input_shapes_and_vision_tokens": true,
+    "native_id_differences_vs_c1": [],
+    "owned_host_pids": [
+      3352688
+    ],
+    "ownership_samples": 73,
+    "clean_timing": true,
+    "ownership_max_gap_s": 4.0
+  },
+  "b4c4": {
+    "batch": 4,
+    "concurrency": 4,
+    "requests": 1000,
+    "qps": 5.128103389079862,
+    "latency_s": {
+      "count": 1000,
+      "mean": 0.7755472345288145,
+      "p50": 0.4701226999750361,
+      "p90": 1.7669590109726416,
+      "p95": 2.540035831264684,
+      "p99": 5.108939005434513,
+      "max": 5.611563332029618,
+      "sum": 775.5472345288144,
+      "median": 0.4701226999750361
+    },
+    "eos_qps": 5.066566148410903,
+    "stop_reasons": {
+      "eos": 988,
+      "kv_cache_full": 12
+    },
+    "errors": 0,
+    "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+    "optimized_contract_matches": true,
+    "actual_peak_in_flight": 4,
+    "same_input_shapes_and_vision_tokens": true,
+    "native_id_differences_vs_c1": [
+      19,
+      275,
+      380,
+      547,
+      566,
+      644,
+      780,
+      836,
+      894
+    ],
+    "owned_host_pids": [
+      3362981
+    ],
+    "ownership_samples": 55,
+    "clean_timing": true,
+    "ownership_max_gap_s": 4.0
+  },
+  "b6c6": {
+    "batch": 6,
+    "concurrency": 6,
+    "requests": 1000,
+    "qps": 5.942513646912682,
+    "latency_s": {
+      "count": 1000,
+      "mean": 0.9974676761954324,
+      "p50": 0.5958280664635822,
+      "p90": 2.2713731546071365,
+      "p95": 3.2565520662174055,
+      "p99": 6.556477977633474,
+      "max": 7.884030124987476,
+      "sum": 997.4676761954324,
+      "median": 0.5958280664635822
+    },
+    "eos_qps": 5.8712034831497295,
+    "stop_reasons": {
+      "eos": 988,
+      "kv_cache_full": 12
+    },
+    "errors": 0,
+    "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+    "optimized_contract_matches": true,
+    "actual_peak_in_flight": 6,
+    "same_input_shapes_and_vision_tokens": true,
+    "native_id_differences_vs_c1": [
+      19,
+      67,
+      83,
+      547
+    ],
+    "owned_host_pids": [
+      3370023
+    ],
+    "ownership_samples": 48,
+    "clean_timing": true,
+    "ownership_max_gap_s": 4.0
+  },
+  "b7c7": {
+    "batch": 7,
+    "concurrency": 7,
+    "requests": 1000,
+    "qps": 6.508119820258158,
+    "latency_s": {
+      "count": 1000,
+      "mean": 1.0593258181991987,
+      "p50": 0.617943222518079,
+      "p90": 2.407472352520563,
+      "p95": 3.471485421829855,
+      "p99": 7.015740477233191,
+      "max": 8.021164715057239,
+      "sum": 1059.3258181991987,
+      "median": 0.617943222518079
+    },
+    "eos_qps": 6.43002238241506,
+    "stop_reasons": {
+      "eos": 988,
+      "kv_cache_full": 12
+    },
+    "errors": 0,
+    "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+    "optimized_contract_matches": true,
+    "actual_peak_in_flight": 7,
+    "same_input_shapes_and_vision_tokens": true,
+    "native_id_differences_vs_c1": [
+      19,
+      83,
+      275,
+      380,
+      547,
+      780,
+      836
+    ],
+    "owned_host_pids": [
+      3382439
+    ],
+    "ownership_samples": 44,
+    "clean_timing": true,
+    "ownership_max_gap_s": 4.0
+  },
+  "b8c7": {
+    "batch": 8,
+    "concurrency": 7,
+    "requests": 1000,
+    "qps": 6.468149539254828,
+    "latency_s": {
+      "count": 1000,
+      "mean": 1.0653884073762456,
+      "p50": 0.6112742489785887,
+      "p90": 2.393488236877602,
+      "p95": 3.582552019687135,
+      "p99": 7.117921280496519,
+      "max": 7.991954467957839,
+      "sum": 1065.3884073762456,
+      "median": 0.6112742489785887
+    },
+    "eos_qps": 6.39053174478377,
+    "stop_reasons": {
+      "eos": 988,
+      "kv_cache_full": 12
+    },
+    "errors": 0,
+    "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+    "optimized_contract_matches": true,
+    "actual_peak_in_flight": 7,
+    "same_input_shapes_and_vision_tokens": true,
+    "native_id_differences_vs_c1": [
+      19,
+      83,
+      275,
+      380,
+      547,
+      780,
+      836
+    ],
+    "owned_host_pids": [
+      3390098
+    ],
+    "ownership_samples": 44,
+    "clean_timing": true,
+    "ownership_max_gap_s": 4.0
+  },
+  "b8c8": {
+    "batch": 8,
+    "concurrency": 8,
+    "requests": 1000,
+    "qps": 6.985774628299913,
+    "latency_s": {
+      "count": 1000,
+      "mean": 1.1240035916685593,
+      "p50": 0.6648684749961831,
+      "p90": 2.5825716336607005,
+      "p95": 3.7681284833292006,
+      "p99": 7.67259384816396,
+      "max": 8.543899290030822,
+      "sum": 1124.0035916685592,
+      "median": 0.6648684749961831
+    },
+    "eos_qps": 6.901945332760314,
+    "stop_reasons": {
+      "eos": 988,
+      "kv_cache_full": 12
+    },
+    "errors": 0,
+    "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+    "optimized_contract_matches": true,
+    "actual_peak_in_flight": 8,
+    "same_input_shapes_and_vision_tokens": true,
+    "native_id_differences_vs_c1": [
+      19,
+      83,
+      275,
+      380,
+      547,
+      780,
+      836
+    ],
+    "owned_host_pids": [
+      3390098
+    ],
+    "ownership_samples": 41,
+    "clean_timing": true,
+    "ownership_max_gap_s": 4.0
+  }
+}

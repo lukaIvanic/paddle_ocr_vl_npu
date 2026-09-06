@@ -1,0 +1,30 @@
+table_launch () 
+{ 
+    table_b=$1;
+    table_c=$2;
+    table_lane="$table_root/b${table_b}c${table_c}";
+    mkdir -p "$table_lane";
+    table_cmd=("$table_py" -u 09_persistent_page_engine/scripts/serve_crop_ocr_api.py --host 127.0.0.1 --port 8767 --request-timeout-s 3600 --queue-capacity 64 --model /workspace/models/PaddleOCR-VL-1.6 --decode-backend torchair --decode-optimization combined_apply_complete_layer_prefetch1_rope_lut_packed_mlp --decode-vocab-token-ids 09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json --token-selection greedy --cache-length 4096 --max-new-tokens 4096 --min-pixels 28224 --max-pixels 802816 --request-scheduling-metrics --decode-batch-size "$table_b" --vision-buckets 256,384,512,640,768,1408,1920,2048,2944,4096 --text-buckets 128,256,512,1024,1152 --vision-attention-weight-padding --vision-linear-patch-projection --freeze-setup-gc --no-decode-device-timing --service-summary-output "$table_lane/service.json");
+    { 
+        date -Is;
+        git rev-parse HEAD;
+        echo ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES;
+        printf '%q ' "${table_cmd[@]}";
+        printf '\n'
+    } > "$table_lane/command.txt";
+    "${table_cmd[@]}" > "$table_lane/server.log" 2>&1 & table_server=$!;
+    echo SERVER_PID=$table_server LANE=$table_lane
+}
+table_clients () 
+{ 
+    local run_dir="$table_lane" cap="$table_c";
+    ( "$table_py" -u 09_persistent_page_engine/scripts/table_closed_loop_api_client.py --api-url http://127.0.0.1:8767/v1/ocr --set warm --count 1 --max-in-flight 1 --output-dir "$run_dir/warm" > "$run_dir/warm.log" 2>&1;
+    table_ec=$?;
+    echo "$table_ec" > "$run_dir/warm_exit_code.txt";
+    if [ "$table_ec" != 0 ]; then
+        exit "$table_ec";
+    fi;
+    "$table_py" -u 09_persistent_page_engine/scripts/table_closed_loop_api_client.py --api-url http://127.0.0.1:8767/v1/ocr --set random --count 1000 --shuffle-seed 3 --max-in-flight "$cap" --client-label "b${table_b}c${cap}" --output-dir "$run_dir/measured" > "$run_dir/measured.log" 2>&1;
+    echo "$?" > "$run_dir/client_exit_code.txt" ) & table_client=$!;
+    echo CLIENT_CONTROLLER_PID=$table_client
+}
