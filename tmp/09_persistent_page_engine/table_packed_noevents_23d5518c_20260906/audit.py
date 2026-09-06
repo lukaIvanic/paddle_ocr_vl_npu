@@ -1,5 +1,6 @@
 """Read-only serving evidence audit; generated report, never a routing input."""
 from collections import Counter
+import argparse
 from datetime import datetime
 from difflib import SequenceMatcher
 import hashlib
@@ -8,8 +9,16 @@ from pathlib import Path
 import random
 import re
 
-ROOT = Path(__file__).resolve().parent
-SOURCE = ROOT.parent / "table_b1_latency_full_04fbc8e/client/tables.jsonl"
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent)
+parser.add_argument("--batch-size", type=int, default=2)
+parser.add_argument("--max-in-flight", type=int, default=2)
+parser.add_argument("--worker-pid", type=int, default=1994482)
+parser.add_argument("--target-qps", type=float, default=3.0)
+parser.add_argument("--target-p95", type=float, default=2.0)
+args = parser.parse_args()
+ROOT = args.root.resolve()
+SOURCE = Path(__file__).resolve().parent.parent / "table_b1_latency_full_04fbc8e/client/tables.jsonl"
 source = list(map(json.loads, SOURCE.read_text().splitlines()))
 assert len(source) == 665 and len({r["request_id"] for r in source}) == 665
 monitor_path = ROOT / "host_npu6_monitor.log"
@@ -29,7 +38,10 @@ def percentile(values, q):
 
 
 report = {"source_sha256": hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
-          "hardware": "one 910B2, physical NPU6", "runs": {}}
+          "hardware": "one 910B2, physical NPU6", "runs": {},
+          "required_batch_size":args.batch_size, "required_client_cap":args.max_in_flight,
+          "owned_host_worker_pid":args.worker_pid,
+          "targets":{"eos_completion_qps_at_least":args.target_qps,"p95_s_below":args.target_p95}}
 development_config = None
 for name, count, seed in (("client",100,1), ("seed2",100,2),
                           ("validation1000_a",1000,3), ("validation1000_b",1000,3)):
@@ -51,6 +63,19 @@ for name, count, seed in (("client",100,1), ("seed2",100,2),
         assert len({r["request_id"] for r in manifest[665:]}) == 335
     assert len(rows) == count and len({r["sequence"] for r in rows}) == count
     assert summary["failed_request_count"] == summary["unsent_request_count"] == 0
+    for row in rows:
+        assert row["status"] == "ok" and row["error"] is None
+        assert row["service_result"]["http_status"] == 200
+        assert row["latency_s"] > 0
+        assert abs(row["latency_s"] - (row["completion_offset_s"]-row["dispatch_offset_s"])) < 1e-9
+        response = row["service_result"]["response"]
+        ids = response["token_ids"]
+        assert len(ids) == response["generated_tokens_including_eos"]
+        assert response["stop_reason"] in ("eos", "kv_cache_full")
+        if response["stop_reason"] == "eos":
+            assert ids[-1] == 2
+        else:
+            assert ids[-1] != 2 and response["input_tokens"] + len(ids) - 1 == 4096
     ordered = sorted(rows, key=lambda r:r["sequence"])
     assert [r["request_id"] for r in ordered] == [r["request_id"] for r in manifest]
     active = peak = 0
@@ -58,13 +83,13 @@ for name, count, seed in (("client",100,1), ("seed2",100,2),
                             + [(r["completion_offset_s"],-1) for r in rows]):
         active += change
         peak = max(peak, active)
-        assert 0 <= active <= 2
-    assert active == 0 and peak == 2
+        assert 0 <= active <= args.max_in_flight
+    assert active == 0 and peak == args.max_in_flight
     config = summary["api_configuration"]
     if development_config is None:
         development_config = config
     assert config == development_config
-    assert config["batch_size"] == 2 and config["cache_length"] == config["max_new_tokens"] == 4096
+    assert config["batch_size"] == args.batch_size and config["cache_length"] == config["max_new_tokens"] == 4096
     assert config["decode_optimization"] == "combined_apply_complete_layer_prefetch1_rope_lut_packed_mlp"
     assert config["token_selection"]["mode"] == "greedy"
     assert config["token_selection"]["rule"] == "ordinary_argmax" and config["setup_gc"]["gc_remains_enabled"]
@@ -78,7 +103,7 @@ for name, count, seed in (("client",100,1), ("seed2",100,2),
     begin, end = summary["actual_start_epoch_s"], summary["actual_start_epoch_s"]+summary["run_wall_s"]
     during = [pids for stamp,pids in samples if begin <= stamp <= end]
     ownership_ok = bool(during and samples[0][0] < begin and samples[-1][0] > end
-                        and all(pids == {1994482} for pids in during))
+                        and all(pids == {args.worker_pid} for pids in during))
     # Report EOS throughput separately: capped outputs do not become hidden
     # fast successes. Their actual latency remains in the full distribution.
     report["runs"][name] = {
@@ -87,7 +112,7 @@ for name, count, seed in (("client",100,1), ("seed2",100,2),
         "request_completion_qps": qps, "eos_completion_qps": stops["eos"]/summary["run_wall_s"],
         "p95_s": p95, "stop_reasons": dict(stops), "errors": 0,
         "ownership_samples": len(during), "sampled_ownership_ok": ownership_ok,
-        "numerical_targets_met": qps >= 3.0 and p95 < 2.0,
+        "numerical_targets_met": stops["eos"]/summary["run_wall_s"] >= args.target_qps and p95 < args.target_p95,
         "non_eos_requests": [{"sequence":r["sequence"], "request_id":r["request_id"],
                               "stop_reason":r["service_result"]["response"]["stop_reason"],
                               "latency_s":r["latency_s"]} for r in rows
