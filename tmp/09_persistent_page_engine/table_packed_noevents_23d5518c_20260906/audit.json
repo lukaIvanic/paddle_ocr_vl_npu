@@ -1,0 +1,242 @@
+{
+  "source_sha256": "9e7b342c2f71002a988a0877407b62b3134afb59e2fc50655aa2230e6b6b248a",
+  "hardware": "one 910B2, physical NPU6",
+  "runs": {
+    "client": {
+      "completed": true,
+      "count": 100,
+      "seed": 1,
+      "peak_outstanding": 2,
+      "manifest_sha256": "1f77a0233333ba8dbf01434dc7de3b6b3dee75e611e38554de47d6a29bf1ba85",
+      "request_completion_qps": 3.1716184673601306,
+      "eos_completion_qps": 3.1716184673601306,
+      "p95_s": 1.7593515512591686,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "errors": 0,
+      "ownership_samples": 5,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "non_eos_requests": []
+    },
+    "seed2": {
+      "completed": true,
+      "count": 100,
+      "seed": 2,
+      "peak_outstanding": 2,
+      "manifest_sha256": "b6fb05f880146e500d11091ac204879a62027b574682c170fcbb7946f161b502",
+      "request_completion_qps": 3.0203698080505923,
+      "eos_completion_qps": 3.0203698080505923,
+      "p95_s": 1.9289231458795246,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "errors": 0,
+      "ownership_samples": 5,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "non_eos_requests": []
+    },
+    "validation1000_a": {
+      "completed": true,
+      "count": 1000,
+      "seed": 3,
+      "peak_outstanding": 2,
+      "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+      "request_completion_qps": 3.310780705472748,
+      "eos_completion_qps": 3.271051337007075,
+      "p95_s": 1.9443893248273525,
+      "stop_reasons": {
+        "eos": 988,
+        "kv_cache_full": 12
+      },
+      "errors": 0,
+      "ownership_samples": 50,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "non_eos_requests": [
+        {
+          "sequence": 76,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9871327640721574
+        },
+        {
+          "sequence": 114,
+          "request_id": "page_000291_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.764573911903426
+        },
+        {
+          "sequence": 206,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.102640398079529
+        },
+        {
+          "sequence": 310,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.8958866039756685
+        },
+        {
+          "sequence": 475,
+          "request_id": "page_000283_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9948890160303563
+        },
+        {
+          "sequence": 496,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.901403777068481
+        },
+        {
+          "sequence": 523,
+          "request_id": "page_000271_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.895301213953644
+        },
+        {
+          "sequence": 552,
+          "request_id": "page_000278_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9563281500013545
+        },
+        {
+          "sequence": 681,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.890496091917157
+        },
+        {
+          "sequence": 729,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.158515927032568
+        },
+        {
+          "sequence": 844,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.147495788987726
+        },
+        {
+          "sequence": 852,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.86909635795746
+        }
+      ]
+    },
+    "validation1000_b": {
+      "completed": true,
+      "count": 1000,
+      "seed": 3,
+      "peak_outstanding": 2,
+      "manifest_sha256": "fcf572b443303fb449913a12d58989eaf59b5e563e45fa6dac6629e194b7fa62",
+      "request_completion_qps": 3.3119760036561687,
+      "eos_completion_qps": 3.272232291612295,
+      "p95_s": 1.9410503454506394,
+      "stop_reasons": {
+        "eos": 988,
+        "kv_cache_full": 12
+      },
+      "errors": 0,
+      "ownership_samples": 50,
+      "sampled_ownership_ok": true,
+      "numerical_targets_met": true,
+      "non_eos_requests": [
+        {
+          "sequence": 76,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9975970620289445
+        },
+        {
+          "sequence": 114,
+          "request_id": "page_000291_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.759121648967266
+        },
+        {
+          "sequence": 206,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.1515595589298755
+        },
+        {
+          "sequence": 310,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.8942896960070357
+        },
+        {
+          "sequence": 475,
+          "request_id": "page_000283_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.999615015927702
+        },
+        {
+          "sequence": 496,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.8807120650308207
+        },
+        {
+          "sequence": 523,
+          "request_id": "page_000271_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.8802834280068055
+        },
+        {
+          "sequence": 552,
+          "request_id": "page_000278_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9604344700928777
+        },
+        {
+          "sequence": 681,
+          "request_id": "page_000282_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.9033312590327114
+        },
+        {
+          "sequence": 729,
+          "request_id": "page_000288_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.172414883039892
+        },
+        {
+          "sequence": 844,
+          "request_id": "page_000290_table_box_id_1",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 4.157237775973044
+        },
+        {
+          "sequence": 852,
+          "request_id": "page_000279_table_box_id_0",
+          "stop_reason": "kv_cache_full",
+          "latency_s": 3.8696275169495493
+        }
+      ]
+    }
+  },
+  "output_comparison_summary": {
+    "historical_b2_to_first_validation": {
+      "available": true,
+      "count": 1000,
+      "native_ids_identical": 985,
+      "input_differences": [],
+      "stop_differences": []
+    },
+    "first_to_second_validation": {
+      "available": true,
+      "count": 1000,
+      "native_ids_identical": 1000,
+      "input_differences": [],
+      "stop_differences": []
+    }
+  }
+}

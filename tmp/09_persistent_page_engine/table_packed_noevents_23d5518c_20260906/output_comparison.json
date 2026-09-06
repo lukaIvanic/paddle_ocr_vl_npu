@@ -1,0 +1,520 @@
+{
+  "historical_b2_to_first_validation": {
+    "available": true,
+    "count": 1000,
+    "native_ids_identical": 985,
+    "input_differences": [],
+    "stop_differences": [],
+    "differences": [
+      {
+        "sequence": 8,
+        "request_id": "page_001417_table_2",
+        "old_tokens": 68,
+        "new_tokens": 69,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": " s<nl><ucel><fcel>60%<fcel>0.5 s<nl><fcel>电压初转<fcel>100%<fcel>电源波形一个周期<nl><ucel><ecel><fcel",
+            "after": " s<nl><ucel><fcel>60%<fcel>0.5 s<nl><fcel>电压初赛<fcel>100%<fcel>电票波形一个周期<nl><ucel><ecel><fcel",
+            "removed": "转",
+            "added": "赛"
+          },
+          {
+            "before": "60%<fcel>0.5 s<nl><fcel>电压初转<fcel>100%<fcel>电源波形一个周期<nl><ucel><ecel><fcel>0.5 s<nl><ucel><e",
+            "after": "60%<fcel>0.5 s<nl><fcel>电压初赛<fcel>100%<fcel>电票波形一个周期<nl><ucel><ecel><fcel>0.5 s<nl><ucel><e",
+            "removed": "源",
+            "added": "票"
+          }
+        ]
+      },
+      {
+        "sequence": 67,
+        "request_id": "page_000766_table_2",
+        "old_tokens": 680,
+        "new_tokens": 680,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": "\\times\\) 宽 \\(\\times\\) 高; 圆柱体体积=\\(\\pi r^{2}h\\)(其中 h 为高, r 为底面半径)<fcel>变形前后体积相等<nl><ucel><fc",
+            "after": "\\times\\) 宽 \\(\\times\\) 高; 圆柱体体积=\\(\\pi r^{2}h\\) (其中 h 为高, r 为底面半径)<fcel>变形前后体积相等<nl><ucel><fc",
+            "removed": "",
+            "added": " "
+          }
+        ]
+      },
+      {
+        "sequence": 114,
+        "request_id": "page_000291_table_box_id_0",
+        "old_tokens": 3070,
+        "new_tokens": 3070,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": "98 (82%)<fcel>61594<fcel>13744 (22%)<fcel>15349 (35%)<fcel>3016<fcel>22%<fcel>69.8<nl><ucel",
+            "after": "98 (82%)<fcel>61594<fcel>13744 (22%)<fcel>1539 (35%)<fcel>3016<fcel>22%<fcel>69.8<nl><ucel",
+            "removed": "4",
+            "added": ""
+          },
+          {
+            "before": "fcel>replace-Reaction<fcel>1661 (33%)<fcel>32",
+            "after": "fcel>replace-Reaction<fcel>1661 (33%)<fcel>321",
+            "removed": "",
+            "added": "1"
+          }
+        ]
+      },
+      {
+        "sequence": 121,
+        "request_id": "page_001368_table_box_id_263",
+        "old_tokens": 476,
+        "new_tokens": 476,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": " Carolina<nl><fcel>At Belmont<fcel>10<fcel>So, Illinois<nl><fcel>Illinois St.<fcel>5<fcel>a",
+            "after": " Carolina<nl><fcel>At Belmont<fcel>10<fcel>So. Illinois<nl><fcel>Illinois St.<fcel>5<fcel>a",
+            "removed": ",",
+            "added": "."
+          }
+        ]
+      },
+      {
+        "sequence": 380,
+        "request_id": "page_001375_table_4",
+        "old_tokens": 1185,
+        "new_tokens": 1183,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": "fcel>CHURCHILL<fcel>-15/-15<fcel>SN<fcel>-13/-24<fcel>SN<fcel>-24/-26<fcel>PC<nl><fcel>CORN",
+            "after": "fcel>CHURCHILL<fcel>-15/-15<fcel>SN<fcel>-13/24<fcel>SN<fcel>-24/-26<fcel>PC<nl><fcel>CORN",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "cel>HUNTSVILLE<fcel>-14/-18<fcel>PC<fcel>-10/-16<fcel>S<fcel>-6/8<fcel>PC<nl><fcel>IQALUIT<",
+            "after": "cel>HUNTSVILLE<fcel>-14/-18<fcel>PC<fcel>-10/16<fcel>S<fcel>-6/8<fcel>PC<nl><fcel>IQALUIT<",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "<nl><fcel>LONDON<fcel>-7/-12<fcel>SN<fcel>-5/-11<fcel>PC<fcel>-4/7<fcel>PC<nl><fcel>MONTRÉA",
+            "after": "<nl><fcel>LONDON<fcel>-7/-12<fcel>SN<fcel>-5/11<fcel>PC<fcel>4/7<fcel>PC<nl><fcel>MONTRÉAL",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "fcel>-7/-12<fcel>SN<fcel>-5/-11<fcel>PC<fcel>-4/7<fcel>PC<nl><fcel>MONTRÉAL<fcel>-10/-11<fc",
+            "after": "<fcel>-7/-12<fcel>SN<fcel>-5/11<fcel>PC<fcel>4/7<fcel>PC<nl><fcel>MONTRÉAL<fcel>-10/-11<fc",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "<nl><fcel>OTTAWA<fcel>-12/-13<fcel>C<fcel>-6/-13<fcel>PC<fcel>-7/-11<fcel>S<nl><fcel>PRINCE",
+            "after": "<nl><fcel>OTTAWA<fcel>-12/-13<fcel>C<fcel>-6/13<fcel>PC<fcel>-7/-11<fcel>S<nl><fcel>PRINCE",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": ">S<nl><fcel>REGINA<fcel>-1/6<fcel>SN<fcel>-6/-13<fcel>PC<fcel>-5/-6<fcel>C<nl><fcel>SASKATO",
+            "after": ">S<nl><fcel>REGINA<fcel>-1/6<fcel>SN<fcel>-6/13<fcel>PC<fcel>-5/-6<fcel>C<nl><fcel>SASKATO",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "<nl><fcel>SASKATOON<fcel>1/8<fcel>PC<fcel>-6/-13<fcel>S<fcel>-5/-5<fcel>C<nl><fcel>SAULT ST",
+            "after": "<nl><fcel>SASKATOON<fcel>1/8<fcel>PC<fcel>-6/13<fcel>S<fcel>-5/-5<fcel>C<nl><fcel>SAULT ST",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "fcel>THUNDER BAY<fcel>-12/-16<fcel>S<fcel>-5/-8<fcel>SN<fcel>-4/10<fcel>PC<nl><fcel>THOMPSO",
+            "after": "fcel>THUNDER BAY<fcel>-12/-16<fcel>S<fcel>-5/8<fcel>SN<fcel>4/10<fcel>PC<nl><fcel>THOMPSON",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "<fcel>-12/-16<fcel>S<fcel>-5/-8<fcel>SN<fcel>-4/10<fcel>PC<nl><fcel>THOMPSON<fcel>-12/-12<f",
+            "after": "Y<fcel>-12/-16<fcel>S<fcel>-5/8<fcel>SN<fcel>4/10<fcel>PC<nl><fcel>THOMPSON<fcel>-12/-12<f",
+            "removed": "-",
+            "added": ""
+          }
+        ]
+      },
+      {
+        "sequence": 430,
+        "request_id": "page_000281_table_box_id_1",
+        "old_tokens": 1111,
+        "new_tokens": 1111,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": "ls, methods, model systems and so on)\\(^{13}\\)<nl><fcel>2. Lack of rich metadata limits di",
+            "after": "ls, methods, model systems and so on)\\(^{13}\\))<nl><fcel>2. Lack of rich metadata limits di",
+            "removed": "",
+            "added": ")"
+          }
+        ]
+      },
+      {
+        "sequence": 458,
+        "request_id": "page_001138_table_1",
+        "old_tokens": 1093,
+        "new_tokens": 1092,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": "理<fcel>18810922935<fcel>18810922935<fcel>dxsyf@swsc.com.cn<nl><ucel><fcel>杨薇<fcel>高级销售经理<fc",
+            "after": "理<fcel>18810922935<fcel>18810922935<fcel>dxsy@swsc.com.cn<nl><ucel><fcel>杨薇<fcel>高级销售经理<fc",
+            "removed": "f",
+            "added": ""
+          }
+        ]
+      },
+      {
+        "sequence": 547,
+        "request_id": "page_001227_table_10",
+        "old_tokens": 910,
+        "new_tokens": 910,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": "l>S750A_rp<fcel>5'-AACAGCCGTGCTGTGCACCCGGGGCGCGGACGATACTGCGGGACAG-3'<nl><fcel>754<fcel>S754",
+            "after": "l>S750A_rp<fcel>5'-AACAGCCGTGCTGTGCACCCGGGGCGGGACGATACTGCGGGACAG-3'<nl><fcel>754<fcel>S754",
+            "removed": "C",
+            "added": ""
+          }
+        ]
+      },
+      {
+        "sequence": 566,
+        "request_id": "page_000918_table_0",
+        "old_tokens": 96,
+        "new_tokens": 97,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": "来群岛大部分、马来半岛南部<fcel>粮食作物：稻米（泰国）四种产量世界第一的热带经济作物产地：<nl><fcel>热带季风气候<fcel>全年高温，一年分旱雨两季<fcel>中南",
+            "after": "来群岛大部分、马来半岛南部<fcel>粮食作物：稻米（泰国）四种产量世界第一的热带经济作物及产地：<nl><fcel>热带季风气候<fcel>全年高温，一年分旱雨两季<fcel>中南",
+            "removed": "",
+            "added": "及"
+          }
+        ]
+      },
+      {
+        "sequence": 648,
+        "request_id": "page_001398_table_box-7mwax454",
+        "old_tokens": 226,
+        "new_tokens": 224,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": ".............................................<fcel>A3<nl><fcel>G<nl><fcel>Getty Images..........",
+            "after": "................................................A3<nl><fcel>G<nl><fcel>Getty Images..........",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B3<nl><fcel>GFL Environmental................",
+            "after": "................................................B3<nl><fcel>GFL Environmental................",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B2<nl><fcel>Greystar Real Estate<ecel><nl><fc",
+            "after": "................................................B2<nl><fcel>Greystar Real Estate<ecel><nl><fc",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B1<nl><fcel>H<nl><fcel>Home Depot............",
+            "after": "................................................B1<nl><fcel>H<nl><fcel>Home Depot............",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B3<nl><fcel>I<nl><fcel>ING Groep.............",
+            "after": "................................................B3<nl><fcel>I<nl><fcel>ING Groep.............",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B3<nl><fcel>J<nl><fcel>Jonathan Adler........",
+            "after": "................................................B3<nl><fcel>J<nl><fcel>Jonathan Adler........",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B6<nl><fcel>JPMorgan Chase...................",
+            "after": "................................................B6<nl><fcel>JPMorgan Chase...................",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": "..................................................<fcel>B3<nl><fcel>JPMorgan Equity Premium<ecel><nl>",
+            "after": ".............................................B3<nl><fcel>JPMorgan Equity Premium<ecel><nl>",
+            "removed": ".....<fcel>",
+            "added": ""
+          },
+          {
+            "before": ".............................................<fcel>B12<nl><fcel>M<nl><fcel>Merck................",
+            "after": "................................................B12<nl><fcel>M<nl><fcel>Merck................",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B3<nl><fcel>Meta Platforms...................",
+            "after": "................................................B3<nl><fcel>Meta Platforms...................",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".................................................<fcel>A1,B1<nl><fcel>Microsoft.....................",
+            "after": ".............................................A1,B1<nl><fcel>Microsoft.....................",
+            "removed": "....<fcel>",
+            "added": ""
+          },
+          {
+            "before": ".............................................<fcel>B4<nl><fcel>MicroStrategy....................",
+            "after": "................................................B4<nl><fcel>MicroStrategy....................",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B12<nl><fcel>N<nl><fcel>NEOS Enhanced Income<",
+            "after": "................................................B12<nl><fcel>N<nl><fcel>NEOS Enhanced Income<",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B12<nl><fcel>O<nl><fcel>OpenAI...............",
+            "after": "................................................B12<nl><fcel>O<nl><fcel>OpenAI...............",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B1<nl><fcel>P<nl>",
+            "after": "................................................B1<nl><fcel>P<nl>",
+            "removed": "<fcel>",
+            "added": "..."
+          }
+        ]
+      },
+      {
+        "sequence": 756,
+        "request_id": "page_001398_table_box-7mwax454",
+        "old_tokens": 226,
+        "new_tokens": 224,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": ".............................................<fcel>A3<nl><fcel>G<nl><fcel>Getty Images..........",
+            "after": "................................................A3<nl><fcel>G<nl><fcel>Getty Images..........",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B3<nl><fcel>GFL Environmental................",
+            "after": "................................................B3<nl><fcel>GFL Environmental................",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B2<nl><fcel>Greystar Real Estate<ecel><nl><fc",
+            "after": "................................................B2<nl><fcel>Greystar Real Estate<ecel><nl><fc",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B1<nl><fcel>H<nl><fcel>Home Depot............",
+            "after": "................................................B1<nl><fcel>H<nl><fcel>Home Depot............",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B3<nl><fcel>I<nl><fcel>ING Groep.............",
+            "after": "................................................B3<nl><fcel>I<nl><fcel>ING Groep.............",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B3<nl><fcel>J<nl><fcel>Jonathan Adler........",
+            "after": "................................................B3<nl><fcel>J<nl><fcel>Jonathan Adler........",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B6<nl><fcel>JPMorgan Chase...................",
+            "after": "................................................B6<nl><fcel>JPMorgan Chase...................",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": "..................................................<fcel>B3<nl><fcel>JPMorgan Equity Premium<ecel><nl>",
+            "after": ".............................................B3<nl><fcel>JPMorgan Equity Premium<ecel><nl>",
+            "removed": ".....<fcel>",
+            "added": ""
+          },
+          {
+            "before": ".............................................<fcel>B12<nl><fcel>M<nl><fcel>Merck................",
+            "after": "................................................B12<nl><fcel>M<nl><fcel>Merck................",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B3<nl><fcel>Meta Platforms...................",
+            "after": "................................................B3<nl><fcel>Meta Platforms...................",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".................................................<fcel>A1,B1<nl><fcel>Microsoft.....................",
+            "after": ".............................................A1,B1<nl><fcel>Microsoft.....................",
+            "removed": "....<fcel>",
+            "added": ""
+          },
+          {
+            "before": ".............................................<fcel>B4<nl><fcel>MicroStrategy....................",
+            "after": "................................................B4<nl><fcel>MicroStrategy....................",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B12<nl><fcel>N<nl><fcel>NEOS Enhanced Income<",
+            "after": "................................................B12<nl><fcel>N<nl><fcel>NEOS Enhanced Income<",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B12<nl><fcel>O<nl><fcel>OpenAI...............",
+            "after": "................................................B12<nl><fcel>O<nl><fcel>OpenAI...............",
+            "removed": "<fcel>",
+            "added": "..."
+          },
+          {
+            "before": ".............................................<fcel>B1<nl><fcel>P<nl>",
+            "after": "................................................B1<nl><fcel>P<nl>",
+            "removed": "<fcel>",
+            "added": "..."
+          }
+        ]
+      },
+      {
+        "sequence": 823,
+        "request_id": "page_001138_table_1",
+        "old_tokens": 1093,
+        "new_tokens": 1092,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": "理<fcel>18810922935<fcel>18810922935<fcel>dxsyf@swsc.com.cn<nl><ucel><fcel>杨薇<fcel>高级销售经理<fc",
+            "after": "理<fcel>18810922935<fcel>18810922935<fcel>dxsy@swsc.com.cn<nl><ucel><fcel>杨薇<fcel>高级销售经理<fc",
+            "removed": "f",
+            "added": ""
+          }
+        ]
+      },
+      {
+        "sequence": 836,
+        "request_id": "page_001375_table_4",
+        "old_tokens": 1185,
+        "new_tokens": 1183,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": "fcel>CHURCHILL<fcel>-15/-15<fcel>SN<fcel>-13/-24<fcel>SN<fcel>-24/-26<fcel>PC<nl><fcel>CORN",
+            "after": "fcel>CHURCHILL<fcel>-15/-15<fcel>SN<fcel>-13/24<fcel>SN<fcel>-24/-26<fcel>PC<nl><fcel>CORN",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "cel>HUNTSVILLE<fcel>-14/-18<fcel>PC<fcel>-10/-16<fcel>S<fcel>-6/8<fcel>PC<nl><fcel>IQALUIT<",
+            "after": "cel>HUNTSVILLE<fcel>-14/-18<fcel>PC<fcel>-10/16<fcel>S<fcel>-6/8<fcel>PC<nl><fcel>IQALUIT<",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "<nl><fcel>LONDON<fcel>-7/-12<fcel>SN<fcel>-5/-11<fcel>PC<fcel>-4/7<fcel>PC<nl><fcel>MONTRÉA",
+            "after": "<nl><fcel>LONDON<fcel>-7/-12<fcel>SN<fcel>-5/11<fcel>PC<fcel>4/7<fcel>PC<nl><fcel>MONTRÉAL",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "fcel>-7/-12<fcel>SN<fcel>-5/-11<fcel>PC<fcel>-4/7<fcel>PC<nl><fcel>MONTRÉAL<fcel>-10/-11<fc",
+            "after": "<fcel>-7/-12<fcel>SN<fcel>-5/11<fcel>PC<fcel>4/7<fcel>PC<nl><fcel>MONTRÉAL<fcel>-10/-11<fc",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "<nl><fcel>OTTAWA<fcel>-12/-13<fcel>C<fcel>-6/-13<fcel>PC<fcel>-7/-11<fcel>S<nl><fcel>PRINCE",
+            "after": "<nl><fcel>OTTAWA<fcel>-12/-13<fcel>C<fcel>-6/13<fcel>PC<fcel>-7/-11<fcel>S<nl><fcel>PRINCE",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": ">S<nl><fcel>REGINA<fcel>-1/6<fcel>SN<fcel>-6/-13<fcel>PC<fcel>-5/-6<fcel>C<nl><fcel>SASKATO",
+            "after": ">S<nl><fcel>REGINA<fcel>-1/6<fcel>SN<fcel>-6/13<fcel>PC<fcel>-5/-6<fcel>C<nl><fcel>SASKATO",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "<nl><fcel>SASKATOON<fcel>1/8<fcel>PC<fcel>-6/-13<fcel>S<fcel>-5/-5<fcel>C<nl><fcel>SAULT ST",
+            "after": "<nl><fcel>SASKATOON<fcel>1/8<fcel>PC<fcel>-6/13<fcel>S<fcel>-5/-5<fcel>C<nl><fcel>SAULT ST",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "fcel>THUNDER BAY<fcel>-12/-16<fcel>S<fcel>-5/-8<fcel>SN<fcel>-4/10<fcel>PC<nl><fcel>THOMPSO",
+            "after": "fcel>THUNDER BAY<fcel>-12/-16<fcel>S<fcel>-5/8<fcel>SN<fcel>4/10<fcel>PC<nl><fcel>THOMPSON",
+            "removed": "-",
+            "added": ""
+          },
+          {
+            "before": "<fcel>-12/-16<fcel>S<fcel>-5/-8<fcel>SN<fcel>-4/10<fcel>PC<nl><fcel>THOMPSON<fcel>-12/-12<f",
+            "after": "Y<fcel>-12/-16<fcel>S<fcel>-5/8<fcel>SN<fcel>4/10<fcel>PC<nl><fcel>THOMPSON<fcel>-12/-12<f",
+            "removed": "-",
+            "added": ""
+          }
+        ]
+      },
+      {
+        "sequence": 894,
+        "request_id": "page_000918_table_0",
+        "old_tokens": 96,
+        "new_tokens": 97,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": "来群岛大部分、马来半岛南部<fcel>粮食作物：稻米（泰国）四种产量世界第一的热带经济作物产地：<nl><fcel>热带季风气候<fcel>全年高温，一年分旱雨两季<fcel>中南",
+            "after": "来群岛大部分、马来半岛南部<fcel>粮食作物：稻米（泰国）四种产量世界第一的热带经济作物及产地：<nl><fcel>热带季风气候<fcel>全年高温，一年分旱雨两季<fcel>中南",
+            "removed": "",
+            "added": "及"
+          }
+        ]
+      },
+      {
+        "sequence": 936,
+        "request_id": "page_001368_table_box_id_263",
+        "old_tokens": 476,
+        "new_tokens": 476,
+        "rendered_html_equal": false,
+        "edits": [
+          {
+            "before": " Carolina<nl><fcel>At Belmont<fcel>10<fcel>So, Illinois<nl><fcel>Illinois St.<fcel>5<fcel>a",
+            "after": " Carolina<nl><fcel>At Belmont<fcel>10<fcel>So. Illinois<nl><fcel>Illinois St.<fcel>5<fcel>a",
+            "removed": ",",
+            "added": "."
+          }
+        ]
+      }
+    ]
+  },
+  "first_to_second_validation": {
+    "available": true,
+    "count": 1000,
+    "native_ids_identical": 1000,
+    "input_differences": [],
+    "stop_differences": [],
+    "differences": []
+  }
+}

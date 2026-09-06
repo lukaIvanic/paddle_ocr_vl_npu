@@ -9,6 +9,62 @@ import statistics
 import sys
 
 ROOT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent / "capture_1e32b233"
+if (ROOT / "cadence.csv").exists():
+    capture = json.loads((ROOT / "capture.json").read_text())
+    samples = list(csv.DictReader((ROOT / "cadence.csv").open()))
+    assert len(samples) == capture["calls"]
+
+    def describe(values):
+        values = sorted(values)
+        def quantile(q):
+            pos = (len(values) - 1) * q
+            lo = int(pos)
+            return values[lo] + (values[min(lo+1, len(values)-1)] - values[lo]) * (pos-lo)
+        return {"count": len(values), "mean": statistics.mean(values),
+                "p50": quantile(.5), "p95": quantile(.95), "max": values[-1]}
+
+    groups = {}
+    for active in (None, 1, 2):
+        chosen = [r for r in samples if active is None or int(r["active_slots"]) == active]
+        if not chosen:
+            continue
+        values = {}
+        for name, start, end in (
+            ("host_call_wall_us", "call_start_ns", "call_end_ns"),
+            ("host_call_thread_cpu_us", "call_cpu_start_ns", "call_cpu_end_ns"),
+            ("host_step_wall_us", "step_start_ns", "step_end_ns"),
+            ("event_enqueue_to_host_call_start_us", "event_start_enqueue_ns", "call_start_ns"),
+        ):
+            values[name] = [(int(r[end]) - int(r[start])) / 1000 for r in chosen]
+        values["host_call_wall_minus_thread_cpu_us"] = [
+            wall-cpu for wall, cpu in zip(values["host_call_wall_us"], values["host_call_thread_cpu_us"])]
+        values["device_event_interval_us"] = [float(r["device_interval_ms"]) * 1000 for r in chosen]
+        groups["all" if active is None else str(active)] = {k: describe(v) for k, v in values.items()}
+    report = {"diagnostic_only": True, "configuration": capture["configuration"],
+              "by_active_slots": groups, "cpu_affinity": capture["cpu_affinity"],
+              "torch_num_threads": capture["torch_num_threads"],
+              "torch_num_interop_threads": capture["torch_num_interop_threads"],
+              "note": "Host scopes overlap device execution; never add or subtract these from request latency. All includes warmup. Two-active-slot rows exclude the C1 warmup, but are still diagnostic."}
+    if (ROOT / "gc_events.json").exists():
+        gc_events = json.loads((ROOT / "gc_events.json").read_text())
+        report["gc_by_generation"] = {
+            str(g): describe([(e["end_ns"]-e["start_ns"])/1e6 for e in gc_events if e["generation"] == g])
+            for g in sorted({e["generation"] for e in gc_events})}
+        longest = sorted(samples, key=lambda r: int(r["call_end_ns"])-int(r["call_start_ns"]), reverse=True)[:10]
+        report["longest_calls_and_gc_overlap"] = []
+        for row in longest:
+            start, end = int(row["call_start_ns"]), int(row["call_end_ns"])
+            overlap = [e for e in gc_events if e["start_ns"] < end and e["end_ns"] > start]
+            report["longest_calls_and_gc_overlap"].append({
+                "iteration": int(row["iteration"]), "host_call_ms": (end-start)/1e6,
+                "thread_cpu_ms": (int(row["call_cpu_end_ns"])-int(row["call_cpu_start_ns"]))/1e6,
+                "device_interval_ms": float(row["device_interval_ms"]),
+                "gc_overlap_ms": sum(max(0,min(end,e["end_ns"])-max(start,e["start_ns"])) for e in overlap)/1e6,
+                "gc_generations": [e["generation"] for e in overlap],
+            })
+    (ROOT / "cadence_analysis.json").write_text(json.dumps(report, indent=2)+"\n")
+    print(json.dumps({k:v for k,v in report.items() if k not in ("configuration", "cpu_affinity")}, indent=2))
+    raise SystemExit(0)
 inputs = ROOT / "analysis_input"
 capture = json.loads((ROOT / "capture.json").read_text())
 packed_mlp = capture["configuration"]["decode_optimization"].endswith("_packed_mlp")
