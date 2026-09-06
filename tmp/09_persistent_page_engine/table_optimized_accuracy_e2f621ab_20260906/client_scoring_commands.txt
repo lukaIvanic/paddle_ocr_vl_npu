@@ -1,0 +1,5 @@
+C1: table_closed_loop_api_client.py --set random --count 665 --shuffle-seed 3 --max-in-flight 1
+C1 warmup: --set warm --count 1 --max-in-flight 1
+C2 scoring: score_saved.py --results table_packed_noevents_23d5518c_20260906/validation1000_a/results.jsonl --teds-workers 12 --teds-timeout-s 120
+Reference scoring: score_saved.py --results table_1000_matrix_02fe5645_20260905/b1/measured/results.jsonl --teds-workers 12 --teds-timeout-s 300
+C1 scoring: score_saved.py --results c1/results.jsonl --output-dir c1_scores --teds-workers 12 --teds-timeout-s 300
