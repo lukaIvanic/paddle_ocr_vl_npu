@@ -66,18 +66,26 @@ if (ROOT / "cadence.csv").exists():
     print(json.dumps({k:v for k,v in report.items() if k not in ("configuration", "cpu_affinity")}, indent=2))
     raise SystemExit(0)
 inputs = ROOT / "analysis_input"
+if not inputs.exists():
+    candidates = list(ROOT.glob("*/ASCEND_PROFILER_OUTPUT"))
+    assert len(candidates) == 1, "expected exactly one real profiler export"
+    inputs = candidates[0]
 capture = json.loads((ROOT / "capture.json").read_text())
 packed_mlp = capture["configuration"]["decode_optimization"].endswith("_packed_mlp")
 assert capture["warmups"] == 5 and capture["repeats"] == 20
 assert len(capture["observations"]) == 25
-assert all(x["active_slots"] == 2 for x in capture["observations"])
+physical_batch = capture.get("physical_decode_batch", 2)
+assert all(0 < x["active_slots"] <= physical_batch for x in capture["observations"])
 rows = sorted(csv.DictReader((inputs / "kernel_details.csv").open()),
               key=lambda row: float(row["Start Time(us)"]))
 # Profiling starts while a preceding asynchronously submitted graph is still
 # finishing. Counting every row / 20 would overstate cost (375 vs 360 IncreFA).
-# UpdateModelParam_static_bin starts each of the 20 COMPLETE graph executions.
+# UpdateModelParam_static_bin marks COMPLETE graph executions. Queue-depth-one
+# asynchronous capture can also retain one complete warmup graph; count it
+# explicitly instead of dividing all observed device work by 20 host calls.
 starts = [i for i, row in enumerate(rows) if row["Name"] == "UpdateModelParam_static_bin"]
-assert len(starts) == 20
+assert capture["repeats"] <= len(starts) <= capture["repeats"] + 1
+graph_count = len(starts)
 blocks = [rows[a:b] for a, b in zip(starts, starts[1:] + [len(rows)])]
 types, counts = Counter(), Counter()
 model_spans, model_sums, controls = [], [], []
@@ -106,7 +114,10 @@ for event in trace:
 assert host_count["serving.decode_step"] == 20
 report = {
     "packed_mlp": packed_mlp,
-    "warmups": 5, "captured_real_b2_iterations": 20,
+    "warmups": 5, "captured_real_host_iterations": 20,
+    "complete_device_graphs": graph_count,
+    "physical_decode_batch": physical_batch,
+    "observed_active_slot_counts": dict(Counter(x["active_slots"] for x in capture["observations"][5:])),
     "discarded_prior_partial_graph_rows": starts[0],
     "actual_positions_start": capture["observations"][5]["positions"],
     "actual_positions_end": capture["observations"][-1]["positions"],
@@ -116,7 +127,7 @@ report = {
     "mean_profiled_device_start_cadence_us": statistics.mean(
         float(rows[b]["Start Time(us)"]) - float(rows[a]["Start Time(us)"])
         for a, b in zip(starts, starts[1:])),
-    "model_kernel_types": {k: {"count": counts[k], "mean_us_per_iteration": v / 20}
+    "model_kernel_types": {k: {"count": counts[k], "mean_us_per_iteration": v / graph_count}
                            for k, v in types.most_common()},
     "host_nested_scopes_not_additive": {k: {"count": host_count[k], "mean_us_per_iteration": host[k] / 20}
                                        for k in ("serving.decode_step", "cache_compiler inference", "TorchNpuGraphBase::Run", "Event::record")},

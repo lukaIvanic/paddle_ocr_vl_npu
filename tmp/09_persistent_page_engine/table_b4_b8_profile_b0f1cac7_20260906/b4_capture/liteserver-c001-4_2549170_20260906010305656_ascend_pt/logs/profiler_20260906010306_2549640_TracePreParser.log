@@ -1,0 +1,3 @@
+[2026-09-06-01:03:06.775] [INFO] [AscendProfiler_TracePreParser:97] Profiler logger initialized at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_b4_b8_profile_b0f1cac7_20260906/b4_capture/liteserver-c001-4_2549170_20260906010305656_ascend_pt/logs/profiler_20260906010306_2549640_TracePreParser.log
+[2026-09-06-01:03:06.776] [INFO] [AscendProfiler_TracePreParser:36] TracePreParser start.
+[2026-09-06-01:03:06.803] [INFO] [AscendProfiler_TracePreParser:50] TracePreParser finish.

@@ -1,0 +1,510 @@
+{
+  "eligible_steps_before_profiler": 32,
+  "minimum_live_slots": 4,
+  "physical_decode_batch": 4,
+  "warmups": 5,
+  "repeats": 20,
+  "configuration": {
+    "model": "/workspace/models/PaddleOCR-VL-1.6",
+    "dtype": "fp16",
+    "decode_backend": "torchair",
+    "decode_optimization": "combined_apply_complete_layer_prefetch1_rope_lut_packed_mlp",
+    "decode_vocab_token_ids": "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json",
+    "token_selection": "greedy",
+    "decode_batch_size": 4,
+    "decode_device_timing": false,
+    "freeze_setup_gc": true,
+    "compact_decode_control": false,
+    "request_scheduling_metrics": true,
+    "max_prefill_interruptions": null,
+    "cache_length": 4096,
+    "max_new_tokens": 4096,
+    "min_pixels": 28224,
+    "max_pixels": 802816,
+    "vision_buckets": "256,384,512,640,768,1408,1920,2048,2944,4096",
+    "vision_attention_weight_padding": true,
+    "vision_linear_patch_projection": true,
+    "text_buckets": "128,256,512,1024,1152",
+    "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_torchair",
+    "vision_torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_vision_torchair",
+    "text_torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/09_persistent_page_engine_text_torchair"
+  },
+  "observations": [
+    {
+      "index": 0,
+      "profiler_warmup": true,
+      "iteration": 1025,
+      "host_epoch_s": 1788656585.8101058,
+      "active_slots": 4,
+      "positions": [
+        266,
+        1005,
+        824,
+        621
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 1,
+      "profiler_warmup": true,
+      "iteration": 1026,
+      "host_epoch_s": 1788656585.8121314,
+      "active_slots": 4,
+      "positions": [
+        267,
+        1006,
+        825,
+        622
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 2,
+      "profiler_warmup": true,
+      "iteration": 1027,
+      "host_epoch_s": 1788656585.8132687,
+      "active_slots": 4,
+      "positions": [
+        268,
+        1007,
+        826,
+        623
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 3,
+      "profiler_warmup": true,
+      "iteration": 1028,
+      "host_epoch_s": 1788656585.8143625,
+      "active_slots": 4,
+      "positions": [
+        269,
+        1008,
+        827,
+        624
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 4,
+      "profiler_warmup": true,
+      "iteration": 1029,
+      "host_epoch_s": 1788656585.8154678,
+      "active_slots": 4,
+      "positions": [
+        270,
+        1009,
+        828,
+        625
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 5,
+      "profiler_warmup": false,
+      "iteration": 1030,
+      "host_epoch_s": 1788656585.817355,
+      "active_slots": 4,
+      "positions": [
+        271,
+        1010,
+        829,
+        626
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 6,
+      "profiler_warmup": false,
+      "iteration": 1031,
+      "host_epoch_s": 1788656585.8188415,
+      "active_slots": 4,
+      "positions": [
+        272,
+        1011,
+        830,
+        627
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 7,
+      "profiler_warmup": false,
+      "iteration": 1032,
+      "host_epoch_s": 1788656585.8203137,
+      "active_slots": 4,
+      "positions": [
+        273,
+        1012,
+        831,
+        628
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 8,
+      "profiler_warmup": false,
+      "iteration": 1033,
+      "host_epoch_s": 1788656585.821762,
+      "active_slots": 4,
+      "positions": [
+        274,
+        1013,
+        832,
+        629
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 9,
+      "profiler_warmup": false,
+      "iteration": 1034,
+      "host_epoch_s": 1788656585.8232062,
+      "active_slots": 4,
+      "positions": [
+        275,
+        1014,
+        833,
+        630
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 10,
+      "profiler_warmup": false,
+      "iteration": 1035,
+      "host_epoch_s": 1788656585.8246677,
+      "active_slots": 4,
+      "positions": [
+        276,
+        1015,
+        834,
+        631
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 11,
+      "profiler_warmup": false,
+      "iteration": 1036,
+      "host_epoch_s": 1788656585.8261018,
+      "active_slots": 4,
+      "positions": [
+        277,
+        1016,
+        835,
+        632
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 12,
+      "profiler_warmup": false,
+      "iteration": 1037,
+      "host_epoch_s": 1788656585.8275385,
+      "active_slots": 4,
+      "positions": [
+        278,
+        1017,
+        836,
+        633
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 13,
+      "profiler_warmup": false,
+      "iteration": 1038,
+      "host_epoch_s": 1788656585.8290024,
+      "active_slots": 4,
+      "positions": [
+        279,
+        1018,
+        837,
+        634
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 14,
+      "profiler_warmup": false,
+      "iteration": 1039,
+      "host_epoch_s": 1788656585.8304288,
+      "active_slots": 4,
+      "positions": [
+        280,
+        1019,
+        838,
+        635
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 15,
+      "profiler_warmup": false,
+      "iteration": 1040,
+      "host_epoch_s": 1788656585.8318675,
+      "active_slots": 4,
+      "positions": [
+        281,
+        1020,
+        839,
+        636
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 16,
+      "profiler_warmup": false,
+      "iteration": 1041,
+      "host_epoch_s": 1788656585.8333304,
+      "active_slots": 4,
+      "positions": [
+        282,
+        1021,
+        840,
+        637
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 17,
+      "profiler_warmup": false,
+      "iteration": 1042,
+      "host_epoch_s": 1788656585.8347714,
+      "active_slots": 4,
+      "positions": [
+        283,
+        1022,
+        841,
+        638
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 18,
+      "profiler_warmup": false,
+      "iteration": 1043,
+      "host_epoch_s": 1788656585.8362362,
+      "active_slots": 4,
+      "positions": [
+        284,
+        1023,
+        842,
+        639
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 19,
+      "profiler_warmup": false,
+      "iteration": 1044,
+      "host_epoch_s": 1788656585.837688,
+      "active_slots": 4,
+      "positions": [
+        285,
+        1024,
+        843,
+        640
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 20,
+      "profiler_warmup": false,
+      "iteration": 1045,
+      "host_epoch_s": 1788656585.8391232,
+      "active_slots": 4,
+      "positions": [
+        286,
+        1025,
+        844,
+        641
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 21,
+      "profiler_warmup": false,
+      "iteration": 1046,
+      "host_epoch_s": 1788656585.8405812,
+      "active_slots": 4,
+      "positions": [
+        287,
+        1026,
+        845,
+        642
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 22,
+      "profiler_warmup": false,
+      "iteration": 1047,
+      "host_epoch_s": 1788656585.8420398,
+      "active_slots": 4,
+      "positions": [
+        288,
+        1027,
+        846,
+        643
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 23,
+      "profiler_warmup": false,
+      "iteration": 1048,
+      "host_epoch_s": 1788656585.8434987,
+      "active_slots": 4,
+      "positions": [
+        289,
+        1028,
+        847,
+        644
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    },
+    {
+      "index": 24,
+      "profiler_warmup": false,
+      "iteration": 1049,
+      "host_epoch_s": 1788656585.844975,
+      "active_slots": 4,
+      "positions": [
+        290,
+        1029,
+        848,
+        645
+      ],
+      "request_ids": [
+        "client-002-page_001367_table_51:793599b2f7ec444289181debdb7a6722",
+        "client-001-page_000287_table_box_id_8:549bb6d55855424b81dd7826c1629d8b",
+        "client-003-page_000236_table_box_id_1:1f6f48b039684cc2996c15c827024a79",
+        "client-004-page_000634_table_11:2a6d9483902e462eb6f78fb214cf1772"
+      ]
+    }
+  ],
+  "profiled_latency_is_not_a_goal_result": true
+}

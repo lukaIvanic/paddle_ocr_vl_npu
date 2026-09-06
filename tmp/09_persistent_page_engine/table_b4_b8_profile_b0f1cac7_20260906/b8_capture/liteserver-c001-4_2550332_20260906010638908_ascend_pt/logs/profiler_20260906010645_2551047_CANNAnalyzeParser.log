@@ -1,0 +1,3 @@
+[2026-09-06-01:06:45.194] [INFO] [AscendProfiler_CANNAnalyzeParser:97] Profiler logger initialized at: /workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_b4_b8_profile_b0f1cac7_20260906/b8_capture/liteserver-c001-4_2550332_20260906010638908_ascend_pt/logs/profiler_20260906010645_2551047_CANNAnalyzeParser.log
+[2026-09-06-01:06:45.194] [INFO] [AscendProfiler_CANNAnalyzeParser:41] CANNAnalyzeParser start.
+[2026-09-06-01:06:46.238] [INFO] [AscendProfiler_CANNAnalyzeParser:67] CANNAnalyzeParser finish.
