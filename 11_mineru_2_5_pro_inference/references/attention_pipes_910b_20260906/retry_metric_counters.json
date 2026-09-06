@@ -1,0 +1,2071 @@
+{
+  "notes": [
+    "PMU pipe times overlap: never sum as elapsed components.",
+    "Zero is retained; missing/unsupported is null, not zero. Negative PMU values remain in raw calls but are excluded from statistics and flagged.",
+    "Counter units and chip aggregation semantics remain those of the raw CSV headers.",
+    "No bottleneck classification is made from utilization alone."
+  ],
+  "rows": [
+    {
+      "lane": "unpad_d80_bucket_768",
+      "variant": "unpad_d80",
+      "route": "bucket_768",
+      "device": "Ascend910B2",
+      "commit": "5925954828e248d2d854f006b5a0f2cdf9684cfd",
+      "capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "metric": "pipe",
+      "status": "completed",
+      "profile_forwards": 3,
+      "warm_timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 51.76074969349429,
+          "p50": 51.84887652285397,
+          "p90": 52.060720103327185,
+          "p99": 52.08401650306769,
+          "min": 51.357103046029806,
+          "max": 52.08660499192774
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 51.55661735534668,
+          "p50": 51.54869842529297,
+          "p90": 51.87204780578613,
+          "p99": 51.92216915130615,
+          "min": 51.23265838623047,
+          "max": 51.927738189697266
+        },
+        "wall_samples_ms": [
+          52.08660499192774,
+          51.457354915328324,
+          51.55705602373928,
+          51.357103046029806,
+          51.885531982406974,
+          52.002152893692255,
+          51.81222106330097,
+          51.95930297486484,
+          51.432325039058924,
+          52.05784400459379
+        ],
+        "device_samples_ms": [
+          51.29072189331055,
+          51.29570007324219,
+          51.42237854003906,
+          51.23265838623047,
+          51.734458923339844,
+          51.86585998535156,
+          51.675018310546875,
+          51.83407974243164,
+          51.287559509277344,
+          51.927738189697266
+        ]
+      },
+      "feature_parity": {
+        "exact": false,
+        "max_abs": 252.0,
+        "mean_abs": 0.01590176671743393,
+        "relative_l2": 0.010675381869077682,
+        "cosine": 0.9999431371688843,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "csv": "tmp/11_mineru_2_5_pro_inference/attention_pipes_910b_retry_59259548/unpad_d80_bucket_768/metrics/pipe/profile/liteserver-c001-4_2612564_20260906135400179_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "attention": [
+        {
+          "kernel": "UnpadFlashAttentionNdKernel",
+          "input_shapes": "\"768,16,80;768,16,80;768,16,80;;;;;;;;;\"",
+          "core": "MIX_AIC",
+          "count": 96,
+          "block_nums": [
+            "24"
+          ],
+          "mix_block_nums": [
+            "48"
+          ],
+          "calls_per_forward": 32.0,
+          "elapsed_us": {
+            "count": 96,
+            "mean": 79.74833333333333,
+            "min": 77.78,
+            "p50": 79.57,
+            "p99": 82.46199999999999,
+            "max": 82.5
+          },
+          "elapsed_ms_per_forward": 2.551946666666667,
+          "pmu": {
+            "aicore_time(us)": {
+              "count": 96,
+              "mean": 71.57814583333334,
+              "min": 68.965,
+              "p50": 71.3665,
+              "p99": 74.61775,
+              "max": 74.803,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 71.59018087107358,
+              "engine_time_sum_us_per_forward": 2290.500666666667
+            },
+            "aic_total_cycles": {
+              "count": 96,
+              "mean": 3092175.0416666665,
+              "min": 2979279.0,
+              "p50": 3083020.5,
+              "p99": 3223476.5,
+              "max": 3231504.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 3092694.9738134546
+            },
+            "aic_mac_time(us)": {
+              "count": 96,
+              "mean": 6.9854375,
+              "min": 6.945,
+              "p50": 6.983,
+              "p99": 7.00395,
+              "max": 7.022,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6.985444863006541,
+              "engine_time_sum_us_per_forward": 223.534
+            },
+            "aic_mac_ratio": {
+              "count": 96,
+              "mean": 0.09758333333333334,
+              "min": 0.093,
+              "p50": 0.098,
+              "p99": 0.10005,
+              "max": 0.101,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.09756763986708186
+            },
+            "aic_scalar_time(us)": {
+              "count": 96,
+              "mean": 66.05636458333333,
+              "min": 63.383,
+              "p50": 65.8765,
+              "p99": 69.6001,
+              "max": 70.115,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 66.06794085822065,
+              "engine_time_sum_us_per_forward": 2113.8036666666667
+            },
+            "aic_scalar_ratio": {
+              "count": 96,
+              "mean": 0.9228333333333334,
+              "min": 0.882,
+              "p50": 0.924,
+              "p99": 0.9351,
+              "max": 0.937,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.92283996530753
+            },
+            "aic_mte1_time(us)": {
+              "count": 96,
+              "mean": 6.0333854166666665,
+              "min": 5.943,
+              "p50": 6.036,
+              "p99": 6.064,
+              "max": 6.064,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6.033367311751552,
+              "engine_time_sum_us_per_forward": 193.06833333333336
+            },
+            "aic_mte1_ratio": {
+              "count": 96,
+              "mean": 0.08428125,
+              "min": 0.081,
+              "p50": 0.085,
+              "p99": 0.08604999999999999,
+              "max": 0.087,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.08426773286798053
+            },
+            "aic_mte2_time(us)": {
+              "count": 96,
+              "mean": 45.6075,
+              "min": 43.072,
+              "p50": 45.629999999999995,
+              "p99": 48.1483,
+              "max": 48.572,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 45.60943325356851,
+              "engine_time_sum_us_per_forward": 1459.4399999999998
+            },
+            "aic_mte2_ratio": {
+              "count": 96,
+              "mean": 0.6372291666666666,
+              "min": 0.6,
+              "p50": 0.64,
+              "p99": 0.6632,
+              "max": 0.667,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.6371523647307153
+            },
+            "aic_fixpipe_time(us)": {
+              "count": 96,
+              "mean": 31.500885416666666,
+              "min": 30.526,
+              "p50": 31.436,
+              "p99": 32.816449999999996,
+              "max": 33.357,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 31.503446487909883,
+              "engine_time_sum_us_per_forward": 1008.0283333333333
+            },
+            "aic_fixpipe_ratio": {
+              "count": 96,
+              "mean": 0.440125,
+              "min": 0.421,
+              "p50": 0.441,
+              "p99": 0.45225,
+              "max": 0.457,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.4400875984869067
+            },
+            "aic_icache_miss_rate": {
+              "count": 96,
+              "mean": 0.004,
+              "min": 0.004,
+              "p50": 0.004,
+              "p99": 0.004,
+              "max": 0.004,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.004
+            },
+            "aiv_time(us)": {
+              "count": 96,
+              "mean": 73.15307291666667,
+              "min": 70.348,
+              "p50": 72.8655,
+              "p99": 76.3781,
+              "max": 76.475,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 73.16554553125458,
+              "engine_time_sum_us_per_forward": 2340.898333333333
+            },
+            "aiv_total_cycles": {
+              "count": 96,
+              "mean": 6320426.510416667,
+              "min": 6078055.0,
+              "p50": 6295561.0,
+              "p99": 6599062.1,
+              "max": 6607405.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6321504.130728959
+            },
+            "aiv_vec_time(us)": {
+              "count": 96,
+              "mean": 21.364093750000002,
+              "min": 21.364,
+              "p50": 21.364,
+              "p99": 21.365,
+              "max": 21.365,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 21.364093946581953,
+              "engine_time_sum_us_per_forward": 683.651
+            },
+            "aiv_vec_ratio": {
+              "count": 96,
+              "mean": 0.29210416666666666,
+              "min": 0.279,
+              "p50": 0.293,
+              "p99": 0.29829999999999995,
+              "max": 0.304,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.2920554086814771
+            },
+            "aiv_scalar_time(us)": {
+              "count": 96,
+              "mean": 43.06729166666667,
+              "min": 40.774,
+              "p50": 42.809,
+              "p99": 47.1271,
+              "max": 47.471,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 43.07940613440197,
+              "engine_time_sum_us_per_forward": 1378.1533333333334
+            },
+            "aiv_scalar_ratio": {
+              "count": 96,
+              "mean": 0.5885937499999999,
+              "min": 0.563,
+              "p50": 0.5885,
+              "p99": 0.6172,
+              "max": 0.621,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.5886571401701184
+            },
+            "aiv_mte2_time(us)": {
+              "count": 96,
+              "mean": 11.54265625,
+              "min": 10.066,
+              "p50": 11.49,
+              "p99": 12.90465,
+              "max": 13.183,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 11.545018874480135,
+              "engine_time_sum_us_per_forward": 369.365
+            },
+            "aiv_mte2_ratio": {
+              "count": 96,
+              "mean": 0.15777083333333333,
+              "min": 0.139,
+              "p50": 0.157,
+              "p99": 0.17414999999999997,
+              "max": 0.177,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.15777683180421742
+            },
+            "aiv_mte3_time(us)": {
+              "count": 96,
+              "mean": 11.745614583333333,
+              "min": 10.919,
+              "p50": 11.7615,
+              "p99": 12.62235,
+              "max": 12.705,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 11.746489331020502,
+              "engine_time_sum_us_per_forward": 375.85966666666667
+            },
+            "aiv_mte3_ratio": {
+              "count": 96,
+              "mean": 0.16055208333333335,
+              "min": 0.148,
+              "p50": 0.16,
+              "p99": 0.17304999999999998,
+              "max": 0.174,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.16053777769650357
+            },
+            "aiv_icache_miss_rate": {
+              "count": 96,
+              "mean": 0.032,
+              "min": 0.032,
+              "p50": 0.032,
+              "p99": 0.032,
+              "max": 0.032,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.032
+            },
+            "cube_utilization(%)": {
+              "count": 96,
+              "mean": 89.75585416666667,
+              "min": 87.493,
+              "p50": 89.715,
+              "p99": 90.85725000000001,
+              "max": 91.185,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 89.75508055810988
+            }
+          }
+        }
+      ],
+      "has_numeric_pmu": true,
+      "elapsed_ratio_to_pipe": 1.0,
+      "has_invalid_negative_pmu": false,
+      "duration_perturbation_warning": false
+    },
+    {
+      "lane": "unpad_d80_bucket_768",
+      "variant": "unpad_d80",
+      "route": "bucket_768",
+      "device": "Ascend910B2",
+      "commit": "5925954828e248d2d854f006b5a0f2cdf9684cfd",
+      "capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "metric": "arithmetic",
+      "status": "completed",
+      "profile_forwards": 3,
+      "warm_timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 51.76074969349429,
+          "p50": 51.84887652285397,
+          "p90": 52.060720103327185,
+          "p99": 52.08401650306769,
+          "min": 51.357103046029806,
+          "max": 52.08660499192774
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 51.55661735534668,
+          "p50": 51.54869842529297,
+          "p90": 51.87204780578613,
+          "p99": 51.92216915130615,
+          "min": 51.23265838623047,
+          "max": 51.927738189697266
+        },
+        "wall_samples_ms": [
+          52.08660499192774,
+          51.457354915328324,
+          51.55705602373928,
+          51.357103046029806,
+          51.885531982406974,
+          52.002152893692255,
+          51.81222106330097,
+          51.95930297486484,
+          51.432325039058924,
+          52.05784400459379
+        ],
+        "device_samples_ms": [
+          51.29072189331055,
+          51.29570007324219,
+          51.42237854003906,
+          51.23265838623047,
+          51.734458923339844,
+          51.86585998535156,
+          51.675018310546875,
+          51.83407974243164,
+          51.287559509277344,
+          51.927738189697266
+        ]
+      },
+      "feature_parity": {
+        "exact": false,
+        "max_abs": 252.0,
+        "mean_abs": 0.01590176671743393,
+        "relative_l2": 0.010675381869077682,
+        "cosine": 0.9999431371688843,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "csv": "tmp/11_mineru_2_5_pro_inference/attention_pipes_910b_retry_59259548/unpad_d80_bucket_768/metrics/arithmetic/profile/liteserver-c001-4_2612564_20260906135410169_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "attention": [
+        {
+          "kernel": "UnpadFlashAttentionNdKernel",
+          "input_shapes": "\"768,16,80;768,16,80;768,16,80;;;;;;;;;\"",
+          "core": "MIX_AIC",
+          "count": 96,
+          "block_nums": [
+            "24"
+          ],
+          "mix_block_nums": [
+            "48"
+          ],
+          "calls_per_forward": 32.0,
+          "elapsed_us": {
+            "count": 96,
+            "mean": 78.86875,
+            "min": 77.16,
+            "p50": 78.72,
+            "p99": 82.229,
+            "max": 82.4
+          },
+          "elapsed_ms_per_forward": 2.5237999999999996,
+          "pmu": {
+            "aicore_time(us)": {
+              "count": 96,
+              "mean": 71.20376041666667,
+              "min": 69.645,
+              "p50": 71.00550000000001,
+              "p99": 75.057,
+              "max": 75.114,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 71.21736436326175,
+              "engine_time_sum_us_per_forward": 2278.5203333333334
+            },
+            "aic_total_cycles": {
+              "count": 96,
+              "mean": 3076001.2395833335,
+              "min": 3008680.0,
+              "p50": 3067457.0,
+              "p99": 3242447.55,
+              "max": 3244909.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 3076588.910109095
+            },
+            "aic_mac_fp16_ratio": {
+              "count": 96,
+              "mean": 0.1041875,
+              "min": 0.099,
+              "p50": 0.104,
+              "p99": 0.106,
+              "max": 0.106,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.10416884592017328
+            },
+            "aic_mac_int8_ratio": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aic_cube_fops": {
+              "count": 96,
+              "mean": 2624963754.6666665,
+              "min": 2619269120.0,
+              "p50": 2623234048.0,
+              "p99": 2636516556.8,
+              "max": 2644049920.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 2624983858.89705
+            },
+            "aiv_time(us)": {
+              "count": 96,
+              "mean": 72.47936458333334,
+              "min": 70.695,
+              "p50": 72.3005,
+              "p99": 76.43164999999999,
+              "max": 76.558,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 72.49332119555169,
+              "engine_time_sum_us_per_forward": 2319.3396666666667
+            },
+            "aiv_total_cycles": {
+              "count": 96,
+              "mean": 6262218.614583333,
+              "min": 6108051.0,
+              "p50": 6246784.5,
+              "p99": 6603690.6,
+              "max": 6614608.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6263424.46933196
+            },
+            "aiv_vec_fp32_ratio": {
+              "count": 96,
+              "mean": 0.11110416666666667,
+              "min": 0.105,
+              "p50": 0.111,
+              "p99": 0.114,
+              "max": 0.114,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.11108340069207809
+            },
+            "aiv_vec_fp16_ratio": {
+              "count": 96,
+              "mean": 0.026229166666666665,
+              "min": 0.025,
+              "p50": 0.026,
+              "p99": 0.027,
+              "max": 0.027,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.026223755183981824
+            },
+            "aiv_vec_int32_ratio": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_vec_misc_ratio": {
+              "count": 96,
+              "mean": 0.002,
+              "min": 0.002,
+              "p50": 0.002,
+              "p99": 0.002,
+              "max": 0.002,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.002
+            },
+            "aiv_vector_fops": {
+              "count": 96,
+              "mean": 66036736.0,
+              "min": 66036736.0,
+              "p50": 66036736.0,
+              "p99": 66036736.0,
+              "max": 66036736.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 66036736.00000001
+            }
+          }
+        }
+      ],
+      "has_numeric_pmu": true,
+      "elapsed_ratio_to_pipe": 0.988970511400447,
+      "has_invalid_negative_pmu": false,
+      "duration_perturbation_warning": false
+    },
+    {
+      "lane": "unpad_d80_bucket_768",
+      "variant": "unpad_d80",
+      "route": "bucket_768",
+      "device": "Ascend910B2",
+      "commit": "5925954828e248d2d854f006b5a0f2cdf9684cfd",
+      "capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "metric": "memory",
+      "status": "completed",
+      "profile_forwards": 3,
+      "warm_timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 51.76074969349429,
+          "p50": 51.84887652285397,
+          "p90": 52.060720103327185,
+          "p99": 52.08401650306769,
+          "min": 51.357103046029806,
+          "max": 52.08660499192774
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 51.55661735534668,
+          "p50": 51.54869842529297,
+          "p90": 51.87204780578613,
+          "p99": 51.92216915130615,
+          "min": 51.23265838623047,
+          "max": 51.927738189697266
+        },
+        "wall_samples_ms": [
+          52.08660499192774,
+          51.457354915328324,
+          51.55705602373928,
+          51.357103046029806,
+          51.885531982406974,
+          52.002152893692255,
+          51.81222106330097,
+          51.95930297486484,
+          51.432325039058924,
+          52.05784400459379
+        ],
+        "device_samples_ms": [
+          51.29072189331055,
+          51.29570007324219,
+          51.42237854003906,
+          51.23265838623047,
+          51.734458923339844,
+          51.86585998535156,
+          51.675018310546875,
+          51.83407974243164,
+          51.287559509277344,
+          51.927738189697266
+        ]
+      },
+      "feature_parity": {
+        "exact": false,
+        "max_abs": 252.0,
+        "mean_abs": 0.01590176671743393,
+        "relative_l2": 0.010675381869077682,
+        "cosine": 0.9999431371688843,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "csv": "tmp/11_mineru_2_5_pro_inference/attention_pipes_910b_retry_59259548/unpad_d80_bucket_768/metrics/memory/profile/liteserver-c001-4_2612564_20260906135419085_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "attention": [
+        {
+          "kernel": "UnpadFlashAttentionNdKernel",
+          "input_shapes": "\"768,16,80;768,16,80;768,16,80;;;;;;;;;\"",
+          "core": "MIX_AIC",
+          "count": 96,
+          "block_nums": [
+            "24"
+          ],
+          "mix_block_nums": [
+            "48"
+          ],
+          "calls_per_forward": 32.0,
+          "elapsed_us": {
+            "count": 96,
+            "mean": 79.84479166666667,
+            "min": 77.68,
+            "p50": 79.69,
+            "p99": 83.392,
+            "max": 83.62
+          },
+          "elapsed_ms_per_forward": 2.5550333333333333,
+          "pmu": {
+            "aicore_time(us)": {
+              "count": 96,
+              "mean": 71.65027083333334,
+              "min": 70.116,
+              "p50": 71.4485,
+              "p99": 75.3894,
+              "max": 75.967,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 71.66178378103352,
+              "engine_time_sum_us_per_forward": 2292.808666666667
+            },
+            "aic_total_cycles": {
+              "count": 96,
+              "mean": 3095291.0208333335,
+              "min": 3029025.0,
+              "p50": 3086580.5,
+              "p99": 3256816.6999999997,
+              "max": 3281777.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 3095788.3961539967
+            },
+            "aic_l1_read_bw(GB/s)": {
+              "count": 96,
+              "mean": 42.45885416666667,
+              "min": 40.038,
+              "p50": 42.57,
+              "p99": 43.3714,
+              "max": 43.379,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 42.452206228229244
+            },
+            "aic_l1_write_bw(GB/s)": {
+              "count": 96,
+              "mean": 8.8396875,
+              "min": 8.336,
+              "p50": 8.8625,
+              "p99": 9.03005,
+              "max": 9.031,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 8.8383035916035
+            },
+            "aic_main_mem_read_bw(GB/s)": {
+              "count": 96,
+              "mean": 1.1467291666666666,
+              "min": 1.081,
+              "p50": 1.15,
+              "p99": 1.17105,
+              "max": 1.172,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 1.1465493861789147
+            },
+            "aic_main_mem_write_bw(GB/s)": {
+              "count": 96,
+              "mean": 0.5791979166666666,
+              "min": 0.546,
+              "p50": 0.581,
+              "p99": 0.592,
+              "max": 0.592,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.5791070070840563
+            },
+            "aic_l2_read_bw(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aic_l2_write_bw(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_time(us)": {
+              "count": 96,
+              "mean": 73.26008333333333,
+              "min": 71.593,
+              "p50": 73.0505,
+              "p99": 77.0616,
+              "max": 77.719,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 73.27191114271177,
+              "engine_time_sum_us_per_forward": 2344.3226666666665
+            },
+            "aiv_total_cycles": {
+              "count": 96,
+              "mean": 6329669.083333333,
+              "min": 6185642.0,
+              "p50": 6311537.0,
+              "p99": 6658096.5,
+              "max": 6714954.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6330690.970677486
+            },
+            "aiv_ub_read_bw(GB/s)": {
+              "count": 96,
+              "mean": 38.314739583333335,
+              "min": 36.107,
+              "p50": 38.4035,
+              "p99": 39.1966,
+              "max": 39.208,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 38.30869393745679
+            },
+            "aiv_ub_write_bw(GB/s)": {
+              "count": 96,
+              "mean": 31.502447916666668,
+              "min": 29.683,
+              "p50": 31.588,
+              "p99": 32.18535,
+              "max": 32.192,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 31.497442997482093
+            },
+            "aiv_main_mem_read_bw(GB/s)": {
+              "count": 96,
+              "mean": 0.10798958333333333,
+              "min": 0.102,
+              "p50": 0.108,
+              "p99": 0.11005,
+              "max": 0.111,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.10797214909133604
+            },
+            "aiv_main_mem_write_bw(GB/s)": {
+              "count": 96,
+              "mean": 0.10966666666666666,
+              "min": 0.103,
+              "p50": 0.11,
+              "p99": 0.112,
+              "max": 0.112,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.10964945010502146
+            },
+            "aiv_l2_read_bw(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_l2_write_bw(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            }
+          }
+        }
+      ],
+      "has_numeric_pmu": true,
+      "elapsed_ratio_to_pipe": 1.0012095341595435,
+      "has_invalid_negative_pmu": false,
+      "duration_perturbation_warning": false
+    },
+    {
+      "lane": "unpad_d80_bucket_768",
+      "variant": "unpad_d80",
+      "route": "bucket_768",
+      "device": "Ascend910B2",
+      "commit": "5925954828e248d2d854f006b5a0f2cdf9684cfd",
+      "capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "metric": "memory_l0",
+      "status": "completed",
+      "profile_forwards": 3,
+      "warm_timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 51.76074969349429,
+          "p50": 51.84887652285397,
+          "p90": 52.060720103327185,
+          "p99": 52.08401650306769,
+          "min": 51.357103046029806,
+          "max": 52.08660499192774
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 51.55661735534668,
+          "p50": 51.54869842529297,
+          "p90": 51.87204780578613,
+          "p99": 51.92216915130615,
+          "min": 51.23265838623047,
+          "max": 51.927738189697266
+        },
+        "wall_samples_ms": [
+          52.08660499192774,
+          51.457354915328324,
+          51.55705602373928,
+          51.357103046029806,
+          51.885531982406974,
+          52.002152893692255,
+          51.81222106330097,
+          51.95930297486484,
+          51.432325039058924,
+          52.05784400459379
+        ],
+        "device_samples_ms": [
+          51.29072189331055,
+          51.29570007324219,
+          51.42237854003906,
+          51.23265838623047,
+          51.734458923339844,
+          51.86585998535156,
+          51.675018310546875,
+          51.83407974243164,
+          51.287559509277344,
+          51.927738189697266
+        ]
+      },
+      "feature_parity": {
+        "exact": false,
+        "max_abs": 252.0,
+        "mean_abs": 0.01590176671743393,
+        "relative_l2": 0.010675381869077682,
+        "cosine": 0.9999431371688843,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "csv": "tmp/11_mineru_2_5_pro_inference/attention_pipes_910b_retry_59259548/unpad_d80_bucket_768/metrics/memory_l0/profile/liteserver-c001-4_2612564_20260906135428330_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "attention": [
+        {
+          "kernel": "UnpadFlashAttentionNdKernel",
+          "input_shapes": "\"768,16,80;768,16,80;768,16,80;;;;;;;;;\"",
+          "core": "MIX_AIC",
+          "count": 96,
+          "block_nums": [
+            "24"
+          ],
+          "mix_block_nums": [
+            "48"
+          ],
+          "calls_per_forward": 32.0,
+          "elapsed_us": {
+            "count": 96,
+            "mean": 78.835625,
+            "min": 76.9,
+            "p50": 78.66,
+            "p99": 82.744,
+            "max": 83.2
+          },
+          "elapsed_ms_per_forward": 2.52274,
+          "pmu": {
+            "aicore_time(us)": {
+              "count": 96,
+              "mean": 71.23922916666666,
+              "min": 69.445,
+              "p50": 71.00649999999999,
+              "p99": 75.262,
+              "max": 75.376,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 71.25262085668756,
+              "engine_time_sum_us_per_forward": 2279.6553333333336
+            },
+            "aic_total_cycles": {
+              "count": 96,
+              "mean": 3077533.1458333335,
+              "min": 3000007.0,
+              "p50": 3067478.0,
+              "p99": 3251310.55,
+              "max": 3256223.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 3078111.661759304
+            },
+            "aic_l0a_read_bw(GB/s)": {
+              "count": 96,
+              "mean": 24.137333333333334,
+              "min": 22.808,
+              "p50": 24.2115,
+              "p99": 24.622999999999998,
+              "max": 24.756,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 24.132912396838357
+            },
+            "aic_l0a_write_bw(GB/s)": {
+              "count": 96,
+              "mean": 24.137333333333334,
+              "min": 22.808,
+              "p50": 24.2115,
+              "p99": 24.622999999999998,
+              "max": 24.756,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 24.132912396838357
+            },
+            "aic_l0b_read_bw(GB/s)": {
+              "count": 96,
+              "mean": 74.26867708333333,
+              "min": 70.178,
+              "p50": 74.4965,
+              "p99": 75.76350000000001,
+              "max": 76.172,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 74.2550744270119
+            },
+            "aic_l0b_write_bw(GB/s)": {
+              "count": 96,
+              "mean": 18.56709375,
+              "min": 17.545,
+              "p50": 18.624000000000002,
+              "p99": 18.94135,
+              "max": 19.043,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 18.56369347085576
+            },
+            "aic_l0c_read_bw_cube(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aic_l0c_write_bw_cube(GB/s)": {
+              "count": 96,
+              "mean": 20.566791666666667,
+              "min": 19.434,
+              "p50": 20.63,
+              "p99": 20.98095,
+              "max": 21.094,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 20.56302452888526
+            },
+            "aiv_time(us)": {
+              "count": 96,
+              "mean": 72.51814583333334,
+              "min": 70.632,
+              "p50": 72.27600000000001,
+              "p99": 76.75495,
+              "max": 76.963,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 72.53243390916225,
+              "engine_time_sum_us_per_forward": 2320.5806666666667
+            },
+            "aiv_total_cycles": {
+              "count": 96,
+              "mean": 6265571.46875,
+              "min": 6102625.0,
+              "p50": 6244633.5,
+              "p99": 6631651.15,
+              "max": 6649609.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6266806.0263126595
+            },
+            "aiv_l0c_read_bw(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_l0c_write_bw(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            }
+          }
+        }
+      ],
+      "has_numeric_pmu": true,
+      "elapsed_ratio_to_pipe": 0.9885551422182282,
+      "has_invalid_negative_pmu": false,
+      "duration_perturbation_warning": false
+    },
+    {
+      "lane": "unpad_d80_bucket_768",
+      "variant": "unpad_d80",
+      "route": "bucket_768",
+      "device": "Ascend910B2",
+      "commit": "5925954828e248d2d854f006b5a0f2cdf9684cfd",
+      "capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "metric": "memory_ub",
+      "status": "completed",
+      "profile_forwards": 3,
+      "warm_timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 51.76074969349429,
+          "p50": 51.84887652285397,
+          "p90": 52.060720103327185,
+          "p99": 52.08401650306769,
+          "min": 51.357103046029806,
+          "max": 52.08660499192774
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 51.55661735534668,
+          "p50": 51.54869842529297,
+          "p90": 51.87204780578613,
+          "p99": 51.92216915130615,
+          "min": 51.23265838623047,
+          "max": 51.927738189697266
+        },
+        "wall_samples_ms": [
+          52.08660499192774,
+          51.457354915328324,
+          51.55705602373928,
+          51.357103046029806,
+          51.885531982406974,
+          52.002152893692255,
+          51.81222106330097,
+          51.95930297486484,
+          51.432325039058924,
+          52.05784400459379
+        ],
+        "device_samples_ms": [
+          51.29072189331055,
+          51.29570007324219,
+          51.42237854003906,
+          51.23265838623047,
+          51.734458923339844,
+          51.86585998535156,
+          51.675018310546875,
+          51.83407974243164,
+          51.287559509277344,
+          51.927738189697266
+        ]
+      },
+      "feature_parity": {
+        "exact": false,
+        "max_abs": 252.0,
+        "mean_abs": 0.01590176671743393,
+        "relative_l2": 0.010675381869077682,
+        "cosine": 0.9999431371688843,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "csv": "tmp/11_mineru_2_5_pro_inference/attention_pipes_910b_retry_59259548/unpad_d80_bucket_768/metrics/memory_ub/profile/liteserver-c001-4_2612564_20260906135437293_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "attention": [
+        {
+          "kernel": "UnpadFlashAttentionNdKernel",
+          "input_shapes": "\"768,16,80;768,16,80;768,16,80;;;;;;;;;\"",
+          "core": "MIX_AIC",
+          "count": 96,
+          "block_nums": [
+            "24"
+          ],
+          "mix_block_nums": [
+            "48"
+          ],
+          "calls_per_forward": 32.0,
+          "elapsed_us": {
+            "count": 96,
+            "mean": 79.69333333333333,
+            "min": 77.68,
+            "p50": 79.50999999999999,
+            "p99": 82.868,
+            "max": 83.78
+          },
+          "elapsed_ms_per_forward": 2.550186666666667,
+          "pmu": {
+            "aicore_time(us)": {
+              "count": 96,
+              "mean": 71.59163541666666,
+              "min": 70.041,
+              "p50": 71.422,
+              "p99": 74.94969999999999,
+              "max": 75.476,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 71.60335174680024,
+              "engine_time_sum_us_per_forward": 2290.932333333333
+            },
+            "aic_total_cycles": {
+              "count": 96,
+              "mean": 3092758.53125,
+              "min": 3025773.0,
+              "p50": 3085445.0,
+              "p99": 3237808.5,
+              "max": 3260580.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 3093264.67914767
+            },
+            "aic_ub_read_bw_scalar(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aic_ub_write_bw_scalar(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_time(us)": {
+              "count": 96,
+              "mean": 73.17836458333333,
+              "min": 71.381,
+              "p50": 72.94,
+              "p99": 76.6032,
+              "max": 77.272,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 73.19039760226701,
+              "engine_time_sum_us_per_forward": 2341.7076666666667
+            },
+            "aiv_total_cycles": {
+              "count": 96,
+              "mean": 6322613.385416667,
+              "min": 6167360.0,
+              "p50": 6302020.5,
+              "p99": 6618543.75,
+              "max": 6676337.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6323653.016006671
+            },
+            "aiv_ub_read_bw_vector(GB/s)": {
+              "count": 96,
+              "mean": 8.629072916666667,
+              "min": 8.17,
+              "p50": 8.6555,
+              "p99": 8.83355,
+              "max": 8.844,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 8.627690579513132
+            },
+            "aiv_ub_write_bw_vector(GB/s)": {
+              "count": 96,
+              "mean": 6.496541666666666,
+              "min": 6.151,
+              "p50": 6.516500000000001,
+              "p99": 6.65045,
+              "max": 6.659,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6.495500873138698
+            },
+            "aiv_ub_read_bw_scalar(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_ub_write_bw_scalar(GB/s)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            }
+          }
+        }
+      ],
+      "has_numeric_pmu": true,
+      "elapsed_ratio_to_pipe": 0.9993103304144287,
+      "has_invalid_negative_pmu": false,
+      "duration_perturbation_warning": false
+    },
+    {
+      "lane": "unpad_d80_bucket_768",
+      "variant": "unpad_d80",
+      "route": "bucket_768",
+      "device": "Ascend910B2",
+      "commit": "5925954828e248d2d854f006b5a0f2cdf9684cfd",
+      "capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "metric": "resource_conflict",
+      "status": "completed",
+      "profile_forwards": 3,
+      "warm_timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 51.76074969349429,
+          "p50": 51.84887652285397,
+          "p90": 52.060720103327185,
+          "p99": 52.08401650306769,
+          "min": 51.357103046029806,
+          "max": 52.08660499192774
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 51.55661735534668,
+          "p50": 51.54869842529297,
+          "p90": 51.87204780578613,
+          "p99": 51.92216915130615,
+          "min": 51.23265838623047,
+          "max": 51.927738189697266
+        },
+        "wall_samples_ms": [
+          52.08660499192774,
+          51.457354915328324,
+          51.55705602373928,
+          51.357103046029806,
+          51.885531982406974,
+          52.002152893692255,
+          51.81222106330097,
+          51.95930297486484,
+          51.432325039058924,
+          52.05784400459379
+        ],
+        "device_samples_ms": [
+          51.29072189331055,
+          51.29570007324219,
+          51.42237854003906,
+          51.23265838623047,
+          51.734458923339844,
+          51.86585998535156,
+          51.675018310546875,
+          51.83407974243164,
+          51.287559509277344,
+          51.927738189697266
+        ]
+      },
+      "feature_parity": {
+        "exact": false,
+        "max_abs": 252.0,
+        "mean_abs": 0.01590176671743393,
+        "relative_l2": 0.010675381869077682,
+        "cosine": 0.9999431371688843,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "csv": "tmp/11_mineru_2_5_pro_inference/attention_pipes_910b_retry_59259548/unpad_d80_bucket_768/metrics/resource_conflict/profile/liteserver-c001-4_2612564_20260906135445147_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "attention": [
+        {
+          "kernel": "UnpadFlashAttentionNdKernel",
+          "input_shapes": "\"768,16,80;768,16,80;768,16,80;;;;;;;;;\"",
+          "core": "MIX_AIC",
+          "count": 96,
+          "block_nums": [
+            "24"
+          ],
+          "mix_block_nums": [
+            "48"
+          ],
+          "calls_per_forward": 32.0,
+          "elapsed_us": {
+            "count": 96,
+            "mean": 78.92,
+            "min": 76.0,
+            "p50": 78.77000000000001,
+            "p99": 82.586,
+            "max": 83.08
+          },
+          "elapsed_ms_per_forward": 2.52544,
+          "pmu": {
+            "aicore_time(us)": {
+              "count": 96,
+              "mean": 71.20934375,
+              "min": 68.88,
+              "p50": 71.005,
+              "p99": 75.0685,
+              "max": 75.401,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 71.2260661746072,
+              "engine_time_sum_us_per_forward": 2278.699
+            },
+            "aic_total_cycles": {
+              "count": 96,
+              "mean": 3076243.6354166665,
+              "min": 2975611.0,
+              "p50": 3067408.0,
+              "p99": 3242957.9,
+              "max": 3257339.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 3076966.056597398
+            },
+            "aiv_time(us)": {
+              "count": 96,
+              "mean": 72.47958333333334,
+              "min": 70.083,
+              "p50": 72.2795,
+              "p99": 76.59815,
+              "max": 76.601,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 72.49675162347948,
+              "engine_time_sum_us_per_forward": 2319.346666666667
+            },
+            "aiv_total_cycles": {
+              "count": 96,
+              "mean": 6262229.916666667,
+              "min": 6055199.0,
+              "p50": 6244936.0,
+              "p99": 6618103.8,
+              "max": 6618347.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6263713.258318023
+            },
+            "aiv_vec_bankgroup_cflt_ratio": {
+              "count": 96,
+              "mean": 0.0206875,
+              "min": 0.019,
+              "p50": 0.021,
+              "p99": 0.021,
+              "max": 0.021,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.020681916814495695
+            },
+            "aiv_vec_bank_cflt_ratio": {
+              "count": 96,
+              "mean": 0.047343750000000004,
+              "min": 0.045,
+              "p50": 0.047,
+              "p99": 0.048049999999999995,
+              "max": 0.049,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.047333040315087005
+            },
+            "aiv_vec_resc_cflt_ratio": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            }
+          }
+        }
+      ],
+      "has_numeric_pmu": true,
+      "elapsed_ratio_to_pipe": 0.9896131580597296,
+      "has_invalid_negative_pmu": false,
+      "duration_perturbation_warning": false
+    },
+    {
+      "lane": "unpad_d80_bucket_768",
+      "variant": "unpad_d80",
+      "route": "bucket_768",
+      "device": "Ascend910B2",
+      "commit": "5925954828e248d2d854f006b5a0f2cdf9684cfd",
+      "capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "metric": "l2",
+      "status": "completed",
+      "profile_forwards": 3,
+      "warm_timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 51.76074969349429,
+          "p50": 51.84887652285397,
+          "p90": 52.060720103327185,
+          "p99": 52.08401650306769,
+          "min": 51.357103046029806,
+          "max": 52.08660499192774
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 51.55661735534668,
+          "p50": 51.54869842529297,
+          "p90": 51.87204780578613,
+          "p99": 51.92216915130615,
+          "min": 51.23265838623047,
+          "max": 51.927738189697266
+        },
+        "wall_samples_ms": [
+          52.08660499192774,
+          51.457354915328324,
+          51.55705602373928,
+          51.357103046029806,
+          51.885531982406974,
+          52.002152893692255,
+          51.81222106330097,
+          51.95930297486484,
+          51.432325039058924,
+          52.05784400459379
+        ],
+        "device_samples_ms": [
+          51.29072189331055,
+          51.29570007324219,
+          51.42237854003906,
+          51.23265838623047,
+          51.734458923339844,
+          51.86585998535156,
+          51.675018310546875,
+          51.83407974243164,
+          51.287559509277344,
+          51.927738189697266
+        ]
+      },
+      "feature_parity": {
+        "exact": false,
+        "max_abs": 252.0,
+        "mean_abs": 0.01590176671743393,
+        "relative_l2": 0.010675381869077682,
+        "cosine": 0.9999431371688843,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "csv": "tmp/11_mineru_2_5_pro_inference/attention_pipes_910b_retry_59259548/unpad_d80_bucket_768/metrics/l2/profile/liteserver-c001-4_2612564_20260906135453032_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "attention": [
+        {
+          "kernel": "UnpadFlashAttentionNdKernel",
+          "input_shapes": "\"768,16,80;768,16,80;768,16,80;;;;;;;;;\"",
+          "core": "MIX_AIC",
+          "count": 96,
+          "block_nums": [
+            "24"
+          ],
+          "mix_block_nums": [
+            "48"
+          ],
+          "calls_per_forward": 32.0,
+          "elapsed_us": {
+            "count": 96,
+            "mean": 80.549375,
+            "min": 77.36,
+            "p50": 80.31,
+            "p99": 84.42599999999999,
+            "max": 85.3
+          },
+          "elapsed_ms_per_forward": 2.5775799999999998,
+          "pmu": {
+            "aicore_time(us)": {
+              "count": 96,
+              "mean": 72.45952083333333,
+              "min": 69.585,
+              "p50": 72.234,
+              "p99": 76.71195,
+              "max": 77.129,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 72.4905505060302,
+              "engine_time_sum_us_per_forward": 2318.7046666666665
+            },
+            "aic_total_cycles": {
+              "count": 96,
+              "mean": 3130250.9583333335,
+              "min": 3006078.0,
+              "p50": 3120519.0,
+              "p99": 3313947.55,
+              "max": 3331970.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 3131591.403585275
+            },
+            "aic_write_cache_hit": {
+              "count": 96,
+              "mean": 133143.0,
+              "min": 133143.0,
+              "p50": 133143.0,
+              "p99": 133143.0,
+              "max": 133143.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 133143.0
+            },
+            "aic_write_cache_miss_allocate": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aic_r0_read_cache_hit": {
+              "count": 96,
+              "mean": 172249.16666666666,
+              "min": 172092.0,
+              "p50": 172259.5,
+              "p99": 172413.65,
+              "max": 172445.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 172249.06434459196
+            },
+            "aic_r0_read_cache_miss_allocate": {
+              "count": 96,
+              "mean": 1.40625,
+              "min": 0.0,
+              "p50": 1.0,
+              "p99": 4.0,
+              "max": 4.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 1.4043198141926407
+            },
+            "aic_r1_read_cache_hit": {
+              "count": 96,
+              "mean": 172238.875,
+              "min": 172042.0,
+              "p50": 172228.0,
+              "p99": 172394.15,
+              "max": 172397.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 172238.98089163736
+            },
+            "aic_r1_read_cache_miss_allocate": {
+              "count": 96,
+              "mean": 1.5520833333333333,
+              "min": 0.0,
+              "p50": 2.0,
+              "p99": 4.0,
+              "max": 4.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 1.550443956475971
+            },
+            "aiv_time(us)": {
+              "count": 96,
+              "mean": 74.06730208333333,
+              "min": 71.15,
+              "p50": 73.981,
+              "p99": 78.2933,
+              "max": 78.717,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 74.09862009326578,
+              "engine_time_sum_us_per_forward": 2370.1536666666666
+            },
+            "aiv_total_cycles": {
+              "count": 96,
+              "mean": 6399412.104166667,
+              "min": 6147381.0,
+              "p50": 6391945.0,
+              "p99": 6764507.399999999,
+              "max": 6801147.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6402117.983591845
+            },
+            "aiv_write_cache_hit": {
+              "count": 96,
+              "mean": 51248.0,
+              "min": 51248.0,
+              "p50": 51248.0,
+              "p99": 51248.0,
+              "max": 51248.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 51248.0
+            },
+            "aiv_write_cache_miss_allocate": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_r0_read_cache_hit": {
+              "count": 96,
+              "mean": 96131.375,
+              "min": 95936.0,
+              "p50": 96121.0,
+              "p99": 96280.7,
+              "max": 96294.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 96131.46953085194
+            },
+            "aiv_r0_read_cache_miss_allocate": {
+              "count": 96,
+              "mean": 2.3854166666666665,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 9.149999999999991,
+              "max": 12.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 2.3778789924399373
+            },
+            "aiv_r1_read_cache_hit": {
+              "count": 96,
+              "mean": 96142.44791666667,
+              "min": 95976.0,
+              "p50": 96155.0,
+              "p99": 96310.75,
+              "max": 96344.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 96142.32806999848
+            },
+            "aiv_r1_read_cache_miss_allocate": {
+              "count": 96,
+              "mean": 2.34375,
+              "min": 0.0,
+              "p50": 0.5,
+              "p99": 11.0,
+              "max": 11.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 2.337161213231015
+            }
+          }
+        }
+      ],
+      "has_numeric_pmu": true,
+      "elapsed_ratio_to_pipe": 1.0100446195322785,
+      "has_invalid_negative_pmu": false,
+      "duration_perturbation_warning": false
+    },
+    {
+      "lane": "unpad_d80_bucket_768",
+      "variant": "unpad_d80",
+      "route": "bucket_768",
+      "device": "Ascend910B2",
+      "commit": "5925954828e248d2d854f006b5a0f2cdf9684cfd",
+      "capture_sha256": "a109db15b02d143874f7c7703a2df1fe0140bd83aefbd298eb3d36695d084907",
+      "metric": "memory_access",
+      "status": "completed",
+      "profile_forwards": 3,
+      "warm_timing": {
+        "wall_ms": {
+          "count": 10,
+          "mean": 51.76074969349429,
+          "p50": 51.84887652285397,
+          "p90": 52.060720103327185,
+          "p99": 52.08401650306769,
+          "min": 51.357103046029806,
+          "max": 52.08660499192774
+        },
+        "device_ms": {
+          "count": 10,
+          "mean": 51.55661735534668,
+          "p50": 51.54869842529297,
+          "p90": 51.87204780578613,
+          "p99": 51.92216915130615,
+          "min": 51.23265838623047,
+          "max": 51.927738189697266
+        },
+        "wall_samples_ms": [
+          52.08660499192774,
+          51.457354915328324,
+          51.55705602373928,
+          51.357103046029806,
+          51.885531982406974,
+          52.002152893692255,
+          51.81222106330097,
+          51.95930297486484,
+          51.432325039058924,
+          52.05784400459379
+        ],
+        "device_samples_ms": [
+          51.29072189331055,
+          51.29570007324219,
+          51.42237854003906,
+          51.23265838623047,
+          51.734458923339844,
+          51.86585998535156,
+          51.675018310546875,
+          51.83407974243164,
+          51.287559509277344,
+          51.927738189697266
+        ]
+      },
+      "feature_parity": {
+        "exact": false,
+        "max_abs": 252.0,
+        "mean_abs": 0.01590176671743393,
+        "relative_l2": 0.010675381869077682,
+        "cosine": 0.9999431371688843,
+        "nonfinite": 0,
+        "allclose_atol_005_rtol_005": false
+      },
+      "csv": "tmp/11_mineru_2_5_pro_inference/attention_pipes_910b_retry_59259548/unpad_d80_bucket_768/metrics/memory_access/profile/liteserver-c001-4_2612564_20260906135502576_ascend_pt/ASCEND_PROFILER_OUTPUT/kernel_details.csv",
+      "attention": [
+        {
+          "kernel": "UnpadFlashAttentionNdKernel",
+          "input_shapes": "\"768,16,80;768,16,80;768,16,80;;;;;;;;;\"",
+          "core": "MIX_AIC",
+          "count": 96,
+          "block_nums": [
+            "24"
+          ],
+          "mix_block_nums": [
+            "48"
+          ],
+          "calls_per_forward": 32.0,
+          "elapsed_us": {
+            "count": 96,
+            "mean": 79.42104166666667,
+            "min": 76.22,
+            "p50": 79.25,
+            "p99": 83.67099999999999,
+            "max": 83.88
+          },
+          "elapsed_ms_per_forward": 2.5414733333333333,
+          "pmu": {
+            "aicore_time(us)": {
+              "count": 96,
+              "mean": 71.75891666666666,
+              "min": 68.504,
+              "p50": 71.51249999999999,
+              "p99": 75.47775,
+              "max": 76.081,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 71.78511143929636,
+              "engine_time_sum_us_per_forward": 2296.2853333333333
+            },
+            "aic_total_cycles": {
+              "count": 96,
+              "mean": 3099986.8854166665,
+              "min": 2959357.0,
+              "p50": 3089341.5,
+              "p99": 3260638.9,
+              "max": 3286705.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 3101118.5125688245
+            },
+            "aic_read_main_memory_datas(KB)": {
+              "count": 96,
+              "mean": 43061.375,
+              "min": 43061.375,
+              "p50": 43061.375,
+              "p99": 43061.375,
+              "max": 43061.375,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 43061.37499999999
+            },
+            "aic_write_main_memory_datas(KB)": {
+              "count": 96,
+              "mean": 27714.875,
+              "min": 27714.875,
+              "p50": 27714.875,
+              "p99": 27714.875,
+              "max": 27714.875,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 27714.875
+            },
+            "aic_GM_to_L1_datas(KB)": {
+              "count": 96,
+              "mean": 31872.0,
+              "min": 31872.0,
+              "p50": 31872.0,
+              "p99": 31872.0,
+              "max": 31872.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 31872.0
+            },
+            "aic_L0C_to_L1_datas(KB)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aic_L0C_to_GM_datas(KB)": {
+              "count": 96,
+              "mean": 23552.0,
+              "min": 23552.0,
+              "p50": 23552.0,
+              "p99": 23552.0,
+              "max": 23552.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 23552.0
+            },
+            "aic_GM_to_UB_datas(KB)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aic_UB_to_GM_datas(KB)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_time(us)": {
+              "count": 96,
+              "mean": 73.0263125,
+              "min": 69.812,
+              "p50": 72.799,
+              "p99": 76.92125,
+              "max": 77.553,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 73.0533529422566,
+              "engine_time_sum_us_per_forward": 2336.842
+            },
+            "aiv_total_cycles": {
+              "count": 96,
+              "mean": 6309474.40625,
+              "min": 6031772.0,
+              "p50": 6289826.0,
+              "p99": 6645999.25,
+              "max": 6700553.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 6311810.6718412675
+            },
+            "aiv_read_main_memory_datas(KB)": {
+              "count": 96,
+              "mean": 24034.829427083332,
+              "min": 24034.0,
+              "p50": 24035.125,
+              "p99": 24035.75,
+              "max": 24035.75,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 24034.825660837152
+            },
+            "aiv_write_main_memory_datas(KB)": {
+              "count": 96,
+              "mean": 16454.0,
+              "min": 16454.0,
+              "p50": 16454.0,
+              "p99": 16454.0,
+              "max": 16454.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 16454.0
+            },
+            "aiv_GM_to_L1_datas(KB)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_L0C_to_L1_datas(KB)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_L0C_to_GM_datas(KB)": {
+              "count": 96,
+              "mean": 0.0,
+              "min": 0.0,
+              "p50": 0.0,
+              "p99": 0.0,
+              "max": 0.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 0.0
+            },
+            "aiv_GM_to_UB_datas(KB)": {
+              "count": 96,
+              "mean": 23552.0,
+              "min": 23552.0,
+              "p50": 23552.0,
+              "p99": 23552.0,
+              "max": 23552.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 23552.0
+            },
+            "aiv_UB_to_GM_datas(KB)": {
+              "count": 96,
+              "mean": 16384.0,
+              "min": 16384.0,
+              "p50": 16384.0,
+              "p99": 16384.0,
+              "max": 16384.0,
+              "missing_count": 0,
+              "invalid_negative_count": 0,
+              "duration_weighted_mean": 16384.0
+            }
+          }
+        }
+      ],
+      "has_numeric_pmu": true,
+      "elapsed_ratio_to_pipe": 0.9958959434888921,
+      "has_invalid_negative_pmu": false,
+      "duration_perturbation_warning": false
+    }
+  ]
+}
