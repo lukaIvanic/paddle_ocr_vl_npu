@@ -13,11 +13,15 @@ mkdir -p "$mineru_root"
 exec 9>.runtime_cache/11_mineru_2_5_pro_inference/serving_validation.lock
 flock -n 9 || { echo 'MinerU cache owner is busy.' >&2; exit 2; }
 mineru_args=(11_mineru_2_5_pro_inference/run_page_pipeline.py
-  --dataset-json "${DATASET_JSON:-/workspace/datasets/OmniDocBench/OmniDocBench.json}"
   --images-dir /workspace/datasets/OmniDocBench/images
   --model /workspace/models/MinerU2.5-Pro-2605-1.2B
   --layout-model /workspace/models/PP-DocLayoutV3_safetensors
   --limit "${LIMIT:-7}" --output-dir "$mineru_root/output")
+if (( $# )); then
+  mineru_args+=("$@")
+else
+  mineru_args+=(--dataset-json "${DATASET_JSON:-/workspace/datasets/OmniDocBench/OmniDocBench.json}")
+fi
 printf '%q ' "$mineru_python" "${mineru_args[@]}" > "$mineru_root/command.txt"
 printf '\n' >> "$mineru_root/command.txt"
 git rev-parse HEAD > "$mineru_root/commit.txt"
