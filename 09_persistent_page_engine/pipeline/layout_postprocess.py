@@ -812,6 +812,8 @@ def _merge_images(
 def merge_blocks(
     blocks: list[dict[str, Any]],
     non_merge_labels: list[str],
+    *,
+    merge_images: bool = True,
 ) -> list[dict[str, Any]]:
     mergeable = [
         (index, block)
@@ -930,10 +932,10 @@ def merge_blocks(
                     outputs.append(block)
                     used.add(item)
             else:
-                merged = _merge_images(images, aligns)
+                merged = _merge_images(images, aligns) if merge_images else None
                 for position, item in enumerate(indices):
                     block = blocks[item].copy()
-                    block["img"] = merged if position == 0 else None
+                    block["img"] = (merged if position == 0 else None) if merge_images else blocks[item]["img"]
                     block["merge_aligns"] = aligns if position == 0 else None
                     block["group_id"] = indices[0]
                     outputs.append(block)

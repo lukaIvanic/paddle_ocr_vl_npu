@@ -26,6 +26,7 @@ from typing import Any
 from PIL import Image
 
 from run_transformers_recognition_smoke import configure_npu, synchronize
+from phase_logging import log_phase
 
 
 DEFAULT_MODEL = Path("/workspace/models/MinerU2.5-Pro-2605-1.2B")
@@ -50,14 +51,19 @@ DEFAULT_LOCAL_TEXT_TORCHAIR_CACHE_DIR = (
 DEFAULT_LOCAL_TEXT_BUCKETS = "128,256,512,1024"
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
-    parser.add_argument("--dataset-json", type=Path, default=DEFAULT_DATASET_JSON)
+    inputs = parser.add_mutually_exclusive_group()
+    inputs.add_argument("--dataset-json", type=Path)
+    inputs.add_argument("--input-images", type=Path, nargs="+", help="Ordinary page images; no benchmark annotations required.")
     parser.add_argument("--images-dir", type=Path, default=DEFAULT_IMAGES_DIR)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--saved-layout-manifest", type=Path,
                         help="Use frozen Paddle crops instead of MinerU layout; streaming only, warmup-pages=0.")
+    parser.add_argument("--layout-backend", choices=("mineru", "pp-doclayout-v3"), default="mineru")
+    parser.add_argument("--layout-model", type=Path, default=Path("/workspace/models/PP-DocLayoutV3_safetensors"))
+    parser.add_argument("--layout-graph-capture", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument(
         "--backend",
         choices=(
@@ -77,7 +83,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--warmup-pages",
         type=int,
-        default=2,
+        default=None,
         help=(
             "Run this many pages from the start of the selected shard before "
             "measurement, discard their outputs, and reset runtime counters. "
@@ -322,7 +328,9 @@ def parse_args() -> argparse.Namespace:
         default="1,2,4,8,16,32,64,128",
         help="Comma-separated batch sizes captured by FULL_DECODE_ONLY.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if args.warmup_pages is None:
+        args.warmup_pages = 0 if args.layout_backend == "pp-doclayout-v3" else 2
     if args.streaming_pages is None:
         args.streaming_pages = args.backend == "local-continuous-client"
     return args
@@ -619,8 +627,11 @@ def apply_processor_pixel_limits(image_processor, *, min_pixels=None, max_pixels
         image_processor.size["longest_edge"] = int(upper)
 
 
-def main() -> None:
-    args = parse_args()
+def main(args=None) -> None:
+    args = parse_args() if args is None else args
+    if args.layout_backend == "pp-doclayout-v3":
+        if args.saved_layout_manifest is not None or not args.streaming_pages or args.warmup_pages:
+            raise ValueError("live Paddle layout requires streaming, warmup-pages=0 and no saved layout manifest")
     if args.saved_layout_manifest is not None and (not args.streaming_pages or args.warmup_pages != 0):
         raise ValueError("saved-layout-manifest requires streaming-pages and warmup-pages=0")
     vision_timing_samples: list[dict[str, Any]] = []
@@ -664,7 +675,7 @@ def main() -> None:
         raise ValueError("FULL_DECODE_ONLY requires --no-vllm-enforce-eager")
 
     model_dir = args.model.expanduser().resolve()
-    dataset_json = args.dataset_json.expanduser().resolve()
+    dataset_json = (args.dataset_json or DEFAULT_DATASET_JSON).expanduser().resolve()
     images_dir = args.images_dir.expanduser().resolve()
     output_dir = args.output_dir.expanduser().resolve()
     predictions_dir = output_dir / "predictions"
@@ -674,7 +685,20 @@ def main() -> None:
     for directory in (predictions_dir, content_dir, progress_dir, failures_dir):
         directory.mkdir(parents=True, exist_ok=True)
 
-    dataset = json.loads(dataset_json.read_text(encoding="utf-8"))
+    input_paths = {}
+    if args.input_images:
+        for source in args.input_images:
+            path = source.expanduser().resolve(strict=True)
+            if path.name in input_paths or any(Path(name).stem == path.stem for name in input_paths):
+                raise ValueError(f"duplicate page name/output stem: {path.name}")
+            input_paths[path.name] = path
+        dataset = [{"page_info": {"image_path": name}} for name in input_paths]
+        dataset_json = output_dir / "input_pages.json"
+        atomic_write_text(dataset_json, json.dumps(dataset, ensure_ascii=False) + "\n")
+    else:
+        dataset = json.loads(dataset_json.read_text(encoding="utf-8"))
+    def page_path(name):
+        return input_paths.get(name, images_dir / name)
     if not isinstance(dataset, list):
         raise TypeError("OmniDocBench dataset must be a JSON list")
     stop = None if args.limit is None else args.offset + args.limit
@@ -1019,6 +1043,19 @@ def main() -> None:
         attention = "vllm-selected"
         processor_fast = None
     synchronize()
+    paddle_frontend = None
+    layout_model_hashes = None
+    if args.layout_backend == "pp-doclayout-v3":
+        from paddle_layout_source import load_paddle_frontend
+        log_phase("paddle_layout_setup", "start", model=str(args.layout_model))
+        threads = torch.get_num_threads()
+        try:
+            paddle_frontend = load_paddle_frontend(args.layout_model, graph_capture=args.layout_graph_capture)
+        finally:
+            torch.set_num_threads(threads)
+        layout_model_hashes = {p.name: sha256(p) for p in args.layout_model.iterdir()
+                              if p.is_file() and (p.suffix in (".json", ".yml", ".safetensors"))}
+        log_phase("paddle_layout_setup", "finish", elapsed_s=paddle_frontend.setup_s)
     setup_s = time.perf_counter() - setup_started
 
     warmup_count = min(args.warmup_pages, len(shard))
@@ -1053,7 +1090,7 @@ def main() -> None:
                 warmup_group = warmup_items[start : start + args.page_batch_size]
                 warmup_images: list[Image.Image] = []
                 for _, sample in warmup_group:
-                    with Image.open(images_dir / image_name(sample)) as source:
+                    with Image.open(page_path(image_name(sample))) as source:
                         warmup_images.append(source.convert("RGB"))
                 with torch.inference_mode():
                     if args.layout_only:
@@ -1120,6 +1157,7 @@ def main() -> None:
         "model": str(model_dir),
         "dataset_json": str(dataset_json),
         "images_dir": str(images_dir),
+        "input_images": {name: str(path) for name, path in input_paths.items()} if input_paths else None,
         "model_hashes": model_hashes,
         "torch": torch.__version__,
         "torch_npu": torch_npu.__version__,
@@ -1140,6 +1178,10 @@ def main() -> None:
         "processor_max_pixels_override": args.processor_max_pixels,
         "npu_jit_compile": False,
         "image_analysis": False,
+        "layout_backend": args.layout_backend,
+        "layout_model": str(args.layout_model) if args.layout_backend == "pp-doclayout-v3" else None,
+        "layout_model_hashes": layout_model_hashes,
+        "layout_graph_capture": args.layout_graph_capture if args.layout_backend == "pp-doclayout-v3" else None,
         "saved_layout_manifest": str(args.saved_layout_manifest) if args.saved_layout_manifest else None,
         "saved_layout_manifest_sha256": sha256(args.saved_layout_manifest) if args.saved_layout_manifest else None,
         "batch_size": args.batch_size,
@@ -1347,6 +1389,8 @@ def main() -> None:
             raise ValueError("duplicate page image names")
 
         def load_page(path):
+            if args.layout_backend == "pp-doclayout-v3":
+                return path
             with Image.open(path) as source_image:
                 return source_image.convert("RGB")
 
@@ -1370,6 +1414,7 @@ def main() -> None:
 
         writer = BoundedWriter(write_page)
         page_source = None
+        layout_writer = None
         try:
             source_class = MinerUPageSource
             source_kwargs = {}
@@ -1377,21 +1422,44 @@ def main() -> None:
                 from saved_layout_source import SavedLayoutPageSource
                 source_class = SavedLayoutPageSource
                 source_kwargs["manifest_path"] = args.saved_layout_manifest
+            elif args.layout_backend == "pp-doclayout-v3":
+                from paddle_layout_source import PaddleRegionFrontend, PaddleLayoutPageSource
+                layout_dir = output_dir / "layout_regions"
+                layout_dir.mkdir(exist_ok=True)
+                def write_layout(name, metadata):
+                    atomic_write_text(layout_dir / f"{Path(name).stem}.json",
+                                      json.dumps(dict(image_name=name, **metadata), ensure_ascii=False) + "\n")
+                layout_writer = BoundedWriter(write_layout)
+                source_class = PaddleLayoutPageSource
+                source_kwargs.update(layout_frontend=PaddleRegionFrontend(paddle_frontend), on_layout=layout_writer.submit)
             page_source = source_class(
-                client, ((name, lambda path=images_dir / name: load_page(path)) for name in page_lookup),
+                client, ((name, lambda path=page_path(name): load_page(path)) for name in page_lookup),
                 on_page=writer.submit, page_window=args.streaming_page_window,
                 prepare_depth=max(1, args.local_prepare_prefetch_depth), trace=generation_trace, **source_kwargs)
             streaming_metrics = run_decode_stream(engine, page_source)
             streaming_report = {**page_source.metadata(), "decode": streaming_metrics}
+            if paddle_frontend is not None:
+                streaming_report["layout_setup_s"] = paddle_frontend.setup_s
+                streaming_report["layout_model_dtype"] = str(paddle_frontend.model_dtype)
             client.client.generation_metrics.append(streaming_metrics)
         finally:
             try:
                 if page_source is not None:
                     page_source.close()
             finally:
-                writer.close()
-                if generation_trace is not None:
-                    generation_trace.close()
+                try:
+                    writer.close()
+                finally:
+                    try:
+                        if layout_writer is not None:
+                            layout_writer.close()
+                    finally:
+                        try:
+                            if paddle_frontend is not None:
+                                paddle_frontend.close()
+                        finally:
+                            if generation_trace is not None:
+                                generation_trace.close()
         streaming_report["writer_max_pending_pages"] = writer.max_pending
         if completed != len(pending):
             raise RuntimeError("streaming runner did not persist every input page")
@@ -1421,7 +1489,7 @@ def main() -> None:
         try:
             images = []
             for name in names:
-                with Image.open(images_dir / name) as source:
+                with Image.open(page_path(name)) as source:
                     images.append(source.convert("RGB"))
             with torch.inference_mode():
                 results = (

@@ -343,6 +343,10 @@ class OwnedLayoutFrontend:
             torch.npu.synchronize()
         self.setup_s = time.perf_counter() - setup_started
 
+    def close(self) -> None:
+        """Drain owned CPU workers; model lifetime belongs to the caller."""
+        self._crop_executor.shutdown(wait=True, cancel_futures=True)
+
     def _span(
         self,
         row: str,
@@ -665,6 +669,37 @@ class OwnedLayoutFrontend:
             detect_timing=detect_timing,
         )
 
+    def postprocess_detected_regions(
+        self,
+        detected: DetectedLayoutPage,
+    ) -> list[dict[str, Any]]:
+        """Resolve detector geometry/order without recognizer-specific cropping.
+
+        This CPU stage is shared with non-Paddle recognizers. It consumes the
+        deferred polygon payload once; callers must not reuse the same result.
+        """
+        decoded = detected.decoded
+        image = decoded.image
+        detect_timing = detected.detect_timing
+        started = time.perf_counter()
+        started_ns = time.perf_counter_ns()
+        prediction = detected.prediction
+        polygon_inputs = prediction.pop("_deferred_polygon_inputs", None)
+        if polygon_inputs is not None:
+            polygon_started = time.perf_counter()
+            prediction["polygon_points"] = self.processor._extract_polygon_points_by_masks(*polygon_inputs)
+            detect_timing["layout_mask_polygon_cpu_s"] = time.perf_counter() - polygon_started
+        boxes = self.postprocessor(
+            prediction, (image.shape[1], image.shape[0]),
+            timing=detect_timing if self.device_stage_timing else None,
+        )
+        structural_s = time.perf_counter() - started
+        detect_timing["layout_structural_postprocess_cpu_s"] = structural_s
+        detect_timing["layout_postprocess_s"] = detect_timing.pop("layout_selected_mask_postprocess_s") + structural_s
+        self._span("Layout postprocess", "Normalize and order layout boxes", started_ns,
+                   flow_id=f"page:{decoded.ordinal}", args={"boxes": len(boxes)})
+        return boxes
+
     def prepare_detected_page(
         self,
         detected: DetectedLayoutPage,
@@ -683,36 +718,7 @@ class OwnedLayoutFrontend:
         flow_id = f"page:{ordinal}"
 
         detect_timing = detected.detect_timing
-        postprocessor_started = time.perf_counter()
-        postprocessor_started_ns = time.perf_counter_ns()
-        prediction = detected.prediction
-        polygon_inputs = prediction.pop("_deferred_polygon_inputs", None)
-        if polygon_inputs is not None:
-            polygon_started = time.perf_counter()
-            prediction["polygon_points"] = (
-                self.processor._extract_polygon_points_by_masks(*polygon_inputs)
-            )
-            detect_timing["layout_mask_polygon_cpu_s"] = (
-                time.perf_counter() - polygon_started
-            )
-        boxes = self.postprocessor(
-            prediction,
-            (image.shape[1], image.shape[0]),
-            timing=detect_timing if self.device_stage_timing else None,
-        )
-        structural_s = time.perf_counter() - postprocessor_started
-        detect_timing["layout_structural_postprocess_cpu_s"] = structural_s
-        detect_timing["layout_postprocess_s"] = (
-            detect_timing.pop("layout_selected_mask_postprocess_s")
-            + structural_s
-        )
-        self._span(
-            "Layout postprocess",
-            "Normalize and order layout boxes",
-            postprocessor_started_ns,
-            flow_id=flow_id,
-            args={"boxes": len(boxes)},
-        )
+        boxes = self.postprocess_detected_regions(detected)
         preparation_started = time.perf_counter()
         preparation_started_ns = time.perf_counter_ns()
         document_images = gather_document_images(image, boxes)
