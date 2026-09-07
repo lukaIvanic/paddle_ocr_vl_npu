@@ -49,6 +49,8 @@ def report(root, reference_run):
             "vision_transformer_device_s": p["vision_transformer_blocks"],
             "text_prefill_device_s": p["text_transformer_prefill"], "decode_device_s": d["decode_s"],
             "vision_tokens": p["raw_vision_tokens"], "text_prefill_tokens": p["text_prefill_tokens"],
+            "text_prefill_pack_count": p["text_prefill_pack_count"],
+            "text_prefill_overflow_count": p["text_prefill_overflow_count"],
             "effective_decode_tokens": d["decode_calls"], "active_decode_slot_fraction": d["active_slot_fraction"],
             "decode_first_call_s": d["compiled_first_call_s"],
         }
