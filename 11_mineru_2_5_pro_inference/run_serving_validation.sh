@@ -6,9 +6,11 @@ source npu-setup
 set -u
 mineru_status="$(npu-status)"
 printf '%s\n' "$mineru_status"
+mineru_device="${PHYSICAL_NPU:-4}"
+[[ "$mineru_device" =~ ^[0-7]$ ]] || { echo 'PHYSICAL_NPU must be 0..7' >&2; exit 2; }
 case "$mineru_status" in
-  *"NPU 4: free "*) export ASCEND_RT_VISIBLE_DEVICES=4 ;;
-  *) echo 'NPU4 is not free; refusing to change the comparison device.' >&2; exit 2 ;;
+  *"NPU $mineru_device: free "*) export ASCEND_RT_VISIBLE_DEVICES="$mineru_device" ;;
+  *) echo "NPU$mineru_device is not free; refusing to claim an occupied device." >&2; exit 2 ;;
 esac
 export PYTHONUNBUFFERED=1
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
@@ -62,6 +64,7 @@ esac
 printf '%q ' "$mineru_python" "${mineru_args[@]}" > "$mineru_root/command.txt"
 printf '\n' >> "$mineru_root/command.txt"
 git rev-parse HEAD > "$mineru_root/commit.txt"
+printf 'hostname=%s\nASCEND_RT_VISIBLE_DEVICES=%s\n' "$(hostname)" "$ASCEND_RT_VISIBLE_DEVICES" > "$mineru_root/environment.txt"
 printf 'RUN_ROOT=%s\n' "$mineru_root"
 set +e
 "$mineru_python" "${mineru_args[@]}" 2>&1 | tee "$mineru_root/run.log"
