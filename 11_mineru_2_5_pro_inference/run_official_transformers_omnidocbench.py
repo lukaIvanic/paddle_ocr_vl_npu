@@ -56,6 +56,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dataset-json", type=Path, default=DEFAULT_DATASET_JSON)
     parser.add_argument("--images-dir", type=Path, default=DEFAULT_IMAGES_DIR)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--saved-layout-manifest", type=Path,
+                        help="Use frozen Paddle crops instead of MinerU layout; streaming only, warmup-pages=0.")
     parser.add_argument(
         "--backend",
         choices=(
@@ -619,6 +621,8 @@ def apply_processor_pixel_limits(image_processor, *, min_pixels=None, max_pixels
 
 def main() -> None:
     args = parse_args()
+    if args.saved_layout_manifest is not None and (not args.streaming_pages or args.warmup_pages != 0):
+        raise ValueError("saved-layout-manifest requires streaming-pages and warmup-pages=0")
     vision_timing_samples: list[dict[str, Any]] = []
     if args.processor_max_pixels is not None and args.backend not in (
         "transformers", "local-correctness", "local-eager-client",
@@ -1136,6 +1140,8 @@ def main() -> None:
         "processor_max_pixels_override": args.processor_max_pixels,
         "npu_jit_compile": False,
         "image_analysis": False,
+        "saved_layout_manifest": str(args.saved_layout_manifest) if args.saved_layout_manifest else None,
+        "saved_layout_manifest_sha256": sha256(args.saved_layout_manifest) if args.saved_layout_manifest else None,
         "batch_size": args.batch_size,
         "page_batch_size": args.page_batch_size,
         "global_request_stream": bool(args.global_request_stream),
@@ -1365,10 +1371,16 @@ def main() -> None:
         writer = BoundedWriter(write_page)
         page_source = None
         try:
-            page_source = MinerUPageSource(
+            source_class = MinerUPageSource
+            source_kwargs = {}
+            if args.saved_layout_manifest is not None:
+                from saved_layout_source import SavedLayoutPageSource
+                source_class = SavedLayoutPageSource
+                source_kwargs["manifest_path"] = args.saved_layout_manifest
+            page_source = source_class(
                 client, ((name, lambda path=images_dir / name: load_page(path)) for name in page_lookup),
                 on_page=writer.submit, page_window=args.streaming_page_window,
-                prepare_depth=max(1, args.local_prepare_prefetch_depth), trace=generation_trace)
+                prepare_depth=max(1, args.local_prepare_prefetch_depth), trace=generation_trace, **source_kwargs)
             streaming_metrics = run_decode_stream(engine, page_source)
             streaming_report = {**page_source.metadata(), "decode": streaming_metrics}
             client.client.generation_metrics.append(streaming_metrics)

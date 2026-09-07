@@ -24,10 +24,10 @@ mineru_args=(
   11_mineru_2_5_pro_inference/run_official_transformers_omnidocbench.py
   --backend local-continuous-client
   --model /workspace/models/MinerU2.5-Pro-2605-1.2B
-  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json
+  --dataset-json "${DATASET_JSON:-/workspace/datasets/OmniDocBench/OmniDocBench.json}"
   --images-dir /workspace/datasets/OmniDocBench/images
   --output-dir "$mineru_root/output"
-  --offset 0 --limit "$mineru_limit" --warmup-pages 2 --no-resume --fail-fast
+  --offset 0 --limit "$mineru_limit" --warmup-pages "${WARMUP_PAGES:-2}" --no-resume --fail-fast
   --batch-size 32 --page-batch-size 32 --global-request-stream
   --layout-image-size 1036 1036 --processor-min-pixels 25088
   --local-dtype float16 --local-compiled-cache-length 4096
@@ -43,6 +43,16 @@ mineru_args=(
   --local-torchair-cache-dir .runtime_cache/11_mineru_2_5_pro_inference/production_increfa_real_nz_compile
   --token-trace --hash-model-files
 )
+if [[ -n "${SAVED_LAYOUT_MANIFEST:-}" ]]; then
+  mineru_args+=(--saved-layout-manifest "$SAVED_LAYOUT_MANIFEST")
+fi
+# Explicit matching overrides for current cross-chip accuracy experiments.
+if [[ -n "${PROCESSOR_MAX_PIXELS:-}" ]]; then
+  mineru_args+=(--processor-max-pixels "$PROCESSOR_MAX_PIXELS")
+fi
+if [[ -n "${INCREFA_LENGTH_MODE:-}" ]]; then
+  mineru_args+=(--local-decode-increfa-length-mode "$INCREFA_LENGTH_MODE")
+fi
 case "$mineru_mode" in
   anchor) echo 'The unchanged anchor must run at trace-only commit 13061fc4.' >&2; exit 2 ;;
   stepping) mineru_args+=(--no-streaming-pages) ;;
