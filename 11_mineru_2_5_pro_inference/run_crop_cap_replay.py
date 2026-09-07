@@ -5,9 +5,30 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 from run_pixel_cap_ablation import execute, dump
-from run_vision_timing_production import build_command, validate
+from run_vision_timing_production import validate
+
+
+def replay_command(reference, output, manifest, dataset, count, max_pixels):
+    from run_page_pipeline import pipeline_args
+    options = ["--layout-backend", "mineru", "--model", reference["model"],
+               "--dataset-json", str(dataset), "--images-dir", reference["images_dir"],
+               "--output-dir", str(output), "--limit", str(count),
+               "--crop-replay-manifest", str(manifest), "--processor-max-pixels", str(max_pixels)]
+    for key in ("local_torchair_cache_dir", "local_vision_torchair_cache_dir", "local_text_torchair_cache_dir"):
+        options += ["--" + key.replace("_", "-"), str(reference[key])]
+    args = pipeline_args(options)
+    for key in ("batch_size", "page_batch_size", "streaming_page_window", "streaming_pages",
+                "global_request_stream", "local_compiled_cache_length", "local_decode_attention",
+                "local_decode_increfa_length_mode", "local_decode_weight_format", "local_decode_rotary_impl",
+                "local_text_backend", "local_vision_backend", "local_vision_attention", "local_vision_pack_target",
+                "local_vision_lookahead", "local_prepare_prefetch_depth", "processor_min_pixels",
+                "local_text_max_members", "local_vision_buckets", "local_text_buckets"):
+        if getattr(args, key) != reference[key]:
+            raise ValueError(f"production setting changed: {key}")
+    return [sys.executable, str(Path(__file__).with_name("run_page_pipeline.py"))] + options
 
 
 def traces(output):
@@ -81,11 +102,8 @@ def main():
                 run.mkdir(exist_ok=False)
                 is_smoke = label == "smoke"
                 count = len(json.loads((root / "frozen/smoke_dataset.json").read_text())) if is_smoke else 1651
-                command = build_command(reference, run / "output", count, maximum)
-                command[command.index("--warmup-pages") + 1] = "0"
-                command += ["--crop-replay-manifest", str(manifest)]
-                if is_smoke:
-                    command[command.index("--dataset-json") + 1] = str(root / "frozen/smoke_dataset.json")
+                dataset = root / "frozen/smoke_dataset.json" if is_smoke else reference["dataset_json"]
+                command = replay_command(reference, run / "output", manifest, dataset, count, maximum)
                 print(f"INFERENCE_START {label} max_pixels={maximum}", flush=True)
                 execute(command, run)
                 check(run, reference_run, reference, selection, maximum, count, smoke=is_smoke)

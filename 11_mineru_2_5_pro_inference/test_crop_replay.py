@@ -14,6 +14,13 @@ from test_streaming_pipeline import client, Block
 
 
 class ReplayTests(unittest.TestCase):
+    def test_current_live_preset_replay_command(self):
+        from run_crop_cap_replay import replay_command
+        reference = json.loads((Path(__file__).parent / "references/live_paddle_full1651_910b/run_summary_shard_00.json").read_text())
+        command = replay_command(reference, Path("/tmp/out"), Path("/tmp/replay.json"), "/tmp/dataset.json", 2, 602112)
+        self.assertIn("--crop-replay-manifest", command)
+        self.assertNotIn("--global-request-stream", command)
+
     def test_cap_boundary(self):
         row = dict(phase="recognition", prompt_token_ids=[99]*768)
         self.assertFalse(selected(row, 99, 602112))
