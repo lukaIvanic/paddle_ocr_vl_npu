@@ -17,12 +17,20 @@ from streaming_pipeline import MinerUPageSource, PageState
 
 
 def load_paddle_frontend(model, *, graph_capture=False):
+    # Fail during setup, before loading either layout tensors or submitting pages.
+    import kornia_rs
+    import shapely.geometry
     import torch
     root = Path(__file__).resolve().parents[1] / "09_persistent_page_engine"
     if str(root) not in sys.path:
         sys.path.append(str(root))
     from pipeline.layout_frontend import OwnedLayoutFrontend
-    return OwnedLayoutFrontend(Path(model), torch.device("npu:0"), graph_capture=graph_capture)
+    frontend = OwnedLayoutFrontend(Path(model), torch.device("npu:0"), graph_capture=graph_capture)
+    unknown = set(frontend.labels) - set(LABEL_MAP) - {"reference"}
+    if unknown:
+        frontend.close()
+        raise ValueError(f"layout checkpoint has unmapped labels: {sorted(unknown)}")
+    return frontend
 
 
 class PaddleRegionFrontend:
