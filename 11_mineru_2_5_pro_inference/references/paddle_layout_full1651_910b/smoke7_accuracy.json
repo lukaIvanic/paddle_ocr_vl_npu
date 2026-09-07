@@ -1,0 +1,95 @@
+{
+  "hybrid": {
+    "run": "tmp/11_mineru_2_5_pro_inference/paddle_layout_smoke7_f1bbec69",
+    "scores": {
+      "text_accuracy": 89.74625139900729,
+      "table_teds": 95.3968253968254,
+      "formula_cdm": 98.81666666666668,
+      "overall": 94.65324782083313,
+      "table_structure_teds": 100.0,
+      "reading_order_edit_distance": 0.07983193277310925
+    },
+    "completed": 7,
+    "failed": 0,
+    "settings": {
+      "git_commit": "f1bbec69c43e6ec902956cf83a6d6cc66996894e",
+      "model_hashes": {
+        "config.json": "22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28",
+        "model.safetensors": "abf8681ca63b8dec7b67de257af47b821f179442f72998d0696ae2ed9232a5f0",
+        "added_tokens.json": "14155f41a9e51bee8ee7e5ff1b458418928d9ea86822ea5e98ae7bbdf1912ec8",
+        "configuration.json": "26726b583ef39126b03b84fffd5011c2544c50d236a16472f6575373b17f3986",
+        "generation_config.json": "405a603af8aed51b82ef71a5e16e7c053d11576fdc2db3c168d32bac2fd75f0d",
+        "preprocessor_config.json": "7070ae84a684ce2eb8d239c2cb38ff848085075784b213ea28a5ef5b3cdb445f",
+        "special_tokens_map.json": "badbadb9452d98337219d280879a65eafe224d661a0216114c7cbd3e40ff4984",
+        "tokenizer.json": "dceac5fc54a795ee7570d17902b47bd05412dc2afa62bdf325c3f97fcb5b87fe",
+        "tokenizer_config.json": "d762430b9c668b5c3ad95e26626e3982d5b2a59c18ff214d621d1de4318ff376",
+        "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+        "dataset_json": "97b6be539411250b860ff7b38f2aed8535dc3e1bdeb719460cd8e63d230da382"
+      },
+      "processor_max_pixels": 1103872,
+      "processor_min_pixels": 25088,
+      "local_decode_increfa_length_mode": "pse_sentinel_310p",
+      "local_compiled_cache_length": 4096,
+      "image_analysis": false,
+      "saved_layout_manifest_sha256": "fad1db4db11a6d90781966d9c1f36c5b54551dd1e0dfc2c3bf9f0e62fc5c2761",
+      "warmup": {
+        "requested_pages": 0,
+        "executed_pages": 0,
+        "dataset_indices": [],
+        "wall_s": 0.0,
+        "measurement_counters_reset": false
+      }
+    },
+    "request_phases": {
+      "recognition": 151
+    },
+    "stop_reasons": {
+      "eos": 150,
+      "length": 1
+    },
+    "length_limited_requests": [
+      {
+        "request_id": "jiaocaineedrop_jiaocai_needrop_en_349.jpg:recognition:5",
+        "page": "jiaocaineedrop_jiaocai_needrop_en_349.jpg",
+        "block_type": "text"
+      }
+    ],
+    "pipeline_wall_s": 32.02300811302848,
+    "evaluation_wall_s": 13.15,
+    "evaluation_diagnostics": {
+      "match_debug": {
+        "workers": 24,
+        "page_count": 7,
+        "quick_match_truncated_timeout_sec": 300,
+        "match_timeout_sec": 420,
+        "text_match_fallback_pages": {
+          "quick_match_timeout": [],
+          "page_timeout": []
+        },
+        "text_match_fallback_counts": {
+          "quick_match_timeout": 0,
+          "page_timeout": 0
+        }
+      }
+    },
+    "per_page": {
+      "text_accuracy": {
+        "book_en_[搬书匠#893][Pyomo—Optimization Modeling in Python].2012.英文版_page_016.png": 100.0,
+        "jiaocaineedrop_jiaocai_needrop_en_349.jpg": 50.17806935332709,
+        "notes_f7f010b78016aeebd76e56d9283eb67f_72.jpg": 96.91833590138675,
+        "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png": 90.25110782865583,
+        "page-d1561665-5359-42fe-920c-d6e3bff81953.png": 91.3290113452188,
+        "page-f9583127-1277-4424-be9d-35430e0aedd6.png": 99.74059662775616,
+        "scihub_fmicb.2019.01892.pdf_2.jpg": 99.8066387367064
+      },
+      "table_teds": {
+        "page-f9583127-1277-4424-be9d-35430e0aedd6.png": 95.3968253968254
+      },
+      "formula_cdm": {
+        "page-d1561665-5359-42fe-920c-d6e3bff81953.png": 99.7,
+        "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png": 98.44999999999999,
+        "page-f9583127-1277-4424-be9d-35430e0aedd6.png": 98.3
+      }
+    }
+  }
+}

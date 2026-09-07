@@ -1,0 +1,2 @@
+hostname=liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=3

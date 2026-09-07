@@ -68,6 +68,10 @@ def main():
     if args.baseline:
         report["baseline"] = score(args.baseline)
         a, b = report["baseline"], report["hybrid"]
+        if (a["completed"] != b["completed"] or
+                a["settings"]["model_hashes"].get("dataset_json") !=
+                b["settings"]["model_hashes"].get("dataset_json")):
+            raise ValueError("headline comparisons require the same dataset and page count")
         report["score_delta_hybrid_minus_baseline"] = {k: b["scores"][k] - v for k, v in a["scores"].items()}
         report["setting_differences"] = {k: {"baseline": a["settings"].get(k), "hybrid": v}
                                           for k, v in b["settings"].items() if a["settings"].get(k) != v}
