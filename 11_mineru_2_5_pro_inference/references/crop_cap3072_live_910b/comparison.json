@@ -1,0 +1,731 @@
+{
+  "selection": {
+    "selected_crops": 1227,
+    "selected_pages": 469,
+    "by_type": {
+      "table": 256,
+      "text": 896,
+      "equation": 34,
+      "title": 33,
+      "algorithm": 6,
+      "header": 1,
+      "footer": 1
+    }
+  },
+  "accuracy": {
+    "reference": {
+      "text_accuracy": 96.30327283502432,
+      "table_teds": 93.10191730060761,
+      "formula_cdm": 96.99331993011732,
+      "overall": 95.46617002191641,
+      "table_structure_teds": 95.78719200246326,
+      "reading_order_edit_distance": 0.13887116307912775
+    },
+    "control": {
+      "text_accuracy": 96.30327283502432,
+      "table_teds": 93.10191730060761,
+      "formula_cdm": 96.99331993011732,
+      "overall": 95.46617002191641,
+      "table_structure_teds": 95.78719200246326,
+      "reading_order_edit_distance": 0.13887116307912775
+    },
+    "capped": {
+      "text_accuracy": 96.23462448196373,
+      "table_teds": 93.52070548430889,
+      "formula_cdm": 97.05371806233654,
+      "overall": 95.60301600953639,
+      "table_structure_teds": 96.15260506185102,
+      "reading_order_edit_distance": 0.13899162406585014
+    }
+  },
+  "accuracy_delta_capped_minus_control": {
+    "text_accuracy": -0.06864835306058126,
+    "table_teds": 0.418788183701281,
+    "formula_cdm": 0.06039813221921975,
+    "overall": 0.1368459876199779,
+    "table_structure_teds": 0.3654130593877625,
+    "reading_order_edit_distance": 0.00012046098672238714
+  },
+  "accuracy_delta_control_minus_reference": {
+    "text_accuracy": 0.0,
+    "table_teds": 0.0,
+    "formula_cdm": 0.0,
+    "overall": 0.0,
+    "table_structure_teds": 0.0,
+    "reading_order_edit_distance": 0.0
+  },
+  "performance": {
+    "control": {
+      "timing_scope": "selected crop recognition plus full-page reconstruction, no layout inference",
+      "selected_crops": 1227,
+      "wall_s": 313.071442137938,
+      "selected_crops_per_s": 3.919233231945151,
+      "setup_s": 23.52220284601208,
+      "physical_npu": "6",
+      "processor_max_pixels": 1103872,
+      "vision_transformer_device_s": 122.30300216674809,
+      "text_prefill_device_s": 70.52406997489933,
+      "decode_device_s": 48.616650694847124,
+      "vision_tokens": 5915168,
+      "text_prefill_tokens": 1509467,
+      "text_prefill_pack_count": 278,
+      "text_prefill_overflow_count": 949,
+      "effective_decode_tokens": 321491,
+      "active_decode_slot_fraction": 0.8632886064030132,
+      "decode_first_call_s": 0.303721962030977
+    },
+    "capped": {
+      "timing_scope": "selected crop recognition plus full-page reconstruction, no layout inference",
+      "selected_crops": 1227,
+      "wall_s": 204.84735272300895,
+      "selected_crops_per_s": 5.989826003068383,
+      "setup_s": 22.78002975299023,
+      "physical_npu": "6",
+      "processor_max_pixels": 602112,
+      "vision_transformer_device_s": 61.05039842224121,
+      "text_prefill_device_s": 20.711339147567788,
+      "decode_device_s": 50.02813409805297,
+      "vision_tokens": 3609956,
+      "text_prefill_tokens": 933164,
+      "text_prefill_pack_count": 1227,
+      "text_prefill_overflow_count": 0,
+      "effective_decode_tokens": 329370,
+      "active_decode_slot_fraction": 0.8621510681799216,
+      "decode_first_call_s": 0.3698948670644313
+    }
+  },
+  "measured_selected_replay_speedup": 1.528315782343879,
+  "measured_selected_replay_saved_s": 108.22408941492904,
+  "whole_pipeline_estimate_NOT_MEASURED": {
+    "reference_wall_s": 1769.7285797620425,
+    "estimated_wall_s": 1661.5044903471135,
+    "estimated_pg_s": 0.9936777237689446,
+    "method": "reference full live wall minus paired selected-replay wall savings",
+    "limitations": "Different batching, overlap and device/run variability; full E2E rerun needed to validate."
+  },
+  "by_crop_type": {
+    "table": {
+      "crops": 256,
+      "changed_generated_ids": 123,
+      "control_vision_tokens": 1236212,
+      "control_generated_tokens_including_eos": 187009,
+      "control_length_capped_crops": 12,
+      "capped_vision_tokens": 756452,
+      "capped_generated_tokens_including_eos": 194964,
+      "capped_length_capped_crops": 3
+    },
+    "text": {
+      "crops": 896,
+      "changed_generated_ids": 182,
+      "control_vision_tokens": 4345412,
+      "control_generated_tokens_including_eos": 101795,
+      "control_length_capped_crops": 1,
+      "capped_vision_tokens": 2633428,
+      "capped_generated_tokens_including_eos": 101789,
+      "capped_length_capped_crops": 1
+    },
+    "equation": {
+      "crops": 34,
+      "changed_generated_ids": 22,
+      "control_vision_tokens": 139472,
+      "control_generated_tokens_including_eos": 31779,
+      "control_length_capped_crops": 2,
+      "capped_vision_tokens": 100032,
+      "capped_generated_tokens_including_eos": 31733,
+      "capped_length_capped_crops": 2
+    },
+    "title": {
+      "crops": 33,
+      "changed_generated_ids": 5,
+      "control_vision_tokens": 157356,
+      "control_generated_tokens_including_eos": 627,
+      "control_length_capped_crops": 0,
+      "capped_vision_tokens": 96740,
+      "capped_generated_tokens_including_eos": 607,
+      "capped_length_capped_crops": 0
+    },
+    "header": {
+      "crops": 1,
+      "changed_generated_ids": 0,
+      "control_vision_tokens": 4464,
+      "control_generated_tokens_including_eos": 20,
+      "control_length_capped_crops": 0,
+      "capped_vision_tokens": 2772,
+      "capped_generated_tokens_including_eos": 20,
+      "capped_length_capped_crops": 0
+    },
+    "algorithm": {
+      "crops": 6,
+      "changed_generated_ids": 5,
+      "control_vision_tokens": 28948,
+      "control_generated_tokens_including_eos": 1475,
+      "control_length_capped_crops": 0,
+      "capped_vision_tokens": 17820,
+      "capped_generated_tokens_including_eos": 1471,
+      "capped_length_capped_crops": 0
+    },
+    "footer": {
+      "crops": 1,
+      "changed_generated_ids": 0,
+      "control_vision_tokens": 3304,
+      "control_generated_tokens_including_eos": 13,
+      "control_length_capped_crops": 0,
+      "capped_vision_tokens": 2712,
+      "capped_generated_tokens_including_eos": 13,
+      "capped_length_capped_crops": 0
+    }
+  },
+  "page_changes": {
+    "text_accuracy": {
+      "common_scored_pages": 1557,
+      "control_only_pages": [],
+      "capped_only_pages": [],
+      "improved": 22,
+      "regressed": 22,
+      "unchanged": 1513,
+      "worst": [
+        {
+          "page": "book_en_[搬书匠#893][Pyomo—Optimization Modeling in Python].2012.英文版_page_016.png",
+          "delta": -98.48866498740554,
+          "control": 100.0,
+          "capped": 1.5113350125944613
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_12.jpg",
+          "delta": -22.41270345480234,
+          "control": 56.74300254452926,
+          "capped": 34.33029908972692
+        },
+        {
+          "page": "yanbaopptmerge_yanbaoPPT_4125.jpg",
+          "delta": -12.887159533073927,
+          "control": 96.88715953307393,
+          "capped": 84.0
+        },
+        {
+          "page": "PPT_lecture1_page_005.png",
+          "delta": -12.666666666666671,
+          "control": 100.0,
+          "capped": 87.33333333333333
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_11.jpg",
+          "delta": -7.63358778625954,
+          "control": 99.23664122137404,
+          "capped": 91.6030534351145
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2263.jpg",
+          "delta": -4.468361843119126,
+          "control": 79.65714285714286,
+          "capped": 75.18878101402373
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1363.jpg",
+          "delta": -3.975967324313501,
+          "control": 73.09361438313702,
+          "capped": 69.11764705882352
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_9.jpg",
+          "delta": -1.6949152542372872,
+          "control": 76.27118644067797,
+          "capped": 74.57627118644068
+        },
+        {
+          "page": "page-c7a51204-5142-4c7a-bc9d-1faf1fe1be02.png",
+          "delta": -1.0810810810810807,
+          "control": 82.16216216216216,
+          "capped": 81.08108108108108
+        },
+        {
+          "page": "page-4540d82a-19d8-44ef-8f18-6d42fdb2a2de.png",
+          "delta": -1.0610079575596814,
+          "control": 96.81697612732096,
+          "capped": 95.75596816976127
+        }
+      ],
+      "best": [
+        {
+          "page": "yanbaopptmerge_yanbaoPPT_4330.jpg",
+          "delta": 25.0,
+          "control": 75.0,
+          "capped": 100.0
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_13.jpg",
+          "delta": 11.690261690261693,
+          "control": 86.5079365079365,
+          "capped": 98.1981981981982
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_16.jpg",
+          "delta": 6.448208002862415,
+          "control": 37.31707317073171,
+          "capped": 43.765281173594126
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_2444.jpg",
+          "delta": 5.844980940279541,
+          "control": 91.4866581956798,
+          "capped": 97.33163913595934
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_3063.jpg",
+          "delta": 4.065928874295778,
+          "control": 71.35306553911205,
+          "capped": 75.41899441340783
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_4.jpg",
+          "delta": 3.745318352059911,
+          "control": 95.88014981273409,
+          "capped": 99.625468164794
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_15.jpg",
+          "delta": 2.0640445527323266,
+          "control": 48.82352941176471,
+          "capped": 50.88757396449704
+        },
+        {
+          "page": "exam_paper_2004-2019上海高考英语听力原文和答案_page_010.png",
+          "delta": 0.58541918508881,
+          "control": 94.19394688079062,
+          "capped": 94.77936606587943
+        },
+        {
+          "page": "PPT_8076_MEYER_Chapter_2_-_Language_Change_page_017.png",
+          "delta": 0.5405405405405332,
+          "control": 99.45945945945947,
+          "capped": 100.0
+        },
+        {
+          "page": "notes_f7f010b78016aeebd76e56d9283eb67f_2.jpg",
+          "delta": 0.37453183520598543,
+          "control": 82.39700374531836,
+          "capped": 82.77153558052434
+        }
+      ]
+    },
+    "table_teds": {
+      "common_scored_pages": 458,
+      "control_only_pages": [],
+      "capped_only_pages": [],
+      "improved": 44,
+      "regressed": 47,
+      "unchanged": 367,
+      "worst": [
+        {
+          "page": "page-dca64e05-1ce6-49ee-857a-9b5d05a87357.png",
+          "delta": -85.08790091169955,
+          "control": 85.31673386364463,
+          "capped": 0.22883295194507935
+        },
+        {
+          "page": "yanbaor2_yanbaoPPT_5877.jpg",
+          "delta": -45.812757201646086,
+          "control": 99.95884773662551,
+          "capped": 54.14609053497943
+        },
+        {
+          "page": "page-d29fe4d2-832a-4ad6-ac80-dc01cf8b0e16.png",
+          "delta": -20.0,
+          "control": 97.41604244694132,
+          "capped": 77.41604244694132
+        },
+        {
+          "page": "yanbaor2_0aa9545ccbc482a37e3b55c96897f0f24cee08bb80c7addfb0c219814af44a3b.pdf_27.jpg",
+          "delta": -14.21812868504044,
+          "control": 98.70335236102281,
+          "capped": 84.48522367598237
+        },
+        {
+          "page": "scihub_s12237-014-9873-7.pdf_4.jpg",
+          "delta": -12.10297454388698,
+          "control": 63.66897186936416,
+          "capped": 51.56599732547718
+        },
+        {
+          "page": "page-e7681b54-2c4a-40a2-9abe-caebba01cefb.png",
+          "delta": -8.860323886639677,
+          "control": 94.31981431981433,
+          "capped": 85.45949043317465
+        },
+        {
+          "page": "page-472c26e2-6bc2-4c05-9889-05132c87a8a9.png",
+          "delta": -8.588498879761019,
+          "control": 94.69684427386161,
+          "capped": 86.1083453941006
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_81.jpg",
+          "delta": -8.585858585858588,
+          "control": 99.6875,
+          "capped": 91.10164141414141
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_952.jpg",
+          "delta": -4.722417449683007,
+          "control": 94.31749796364417,
+          "capped": 89.59508051396116
+        },
+        {
+          "page": "scihub_AEM.01420-09.pdf_3.jpg",
+          "delta": -2.8494890476936234,
+          "control": 87.08118192229325,
+          "capped": 84.23169287459963
+        }
+      ],
+      "best": [
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_96.jpg",
+          "delta": 87.07891641366145,
+          "control": 10.307017543859642,
+          "capped": 97.38593395752109
+        },
+        {
+          "page": "page-f6b6cfb8-3bb5-4393-b3fb-70efef72aca5.png",
+          "delta": 69.32239810146785,
+          "control": 30.677601898532146,
+          "capped": 100.0
+        },
+        {
+          "page": "scihub_jneurosci.16-15-04625.1996.pdf_2.jpg",
+          "delta": 44.66206349206348,
+          "control": 44.38893647262391,
+          "capped": 89.05099996468739
+        },
+        {
+          "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_13.jpg",
+          "delta": 41.9274483166772,
+          "control": 55.55150174183221,
+          "capped": 97.47895005850941
+        },
+        {
+          "page": "page-1955f827-fb35-4806-b3a4-463d9e0d6cc8.png",
+          "delta": 31.66912238974166,
+          "control": 20.889229803127073,
+          "capped": 52.55835219286873
+        },
+        {
+          "page": "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png",
+          "delta": 19.899734793953186,
+          "control": 72.36748463249205,
+          "capped": 92.26721942644524
+        },
+        {
+          "page": "page-f5b824d0-be81-48a9-aae6-3060d11a6503.png",
+          "delta": 14.775725593667545,
+          "control": 85.10793955384985,
+          "capped": 99.88366514751739
+        },
+        {
+          "page": "page-dbed9c07-e155-4ba1-92f9-a2962dc9a8f9.png",
+          "delta": 14.759386610189175,
+          "control": 38.33839293069665,
+          "capped": 53.097779540885824
+        },
+        {
+          "page": "page-f3e750d8-8201-4a22-9419-9776798b7a32.png",
+          "delta": 13.190397411436031,
+          "control": 63.880670687734955,
+          "capped": 77.07106809917099
+        },
+        {
+          "page": "page-8d707810-de48-43ba-81a7-b976918e7be2.png",
+          "delta": 10.549985202984772,
+          "control": 63.81825223254965,
+          "capped": 74.36823743553443
+        }
+      ]
+    },
+    "formula_cdm": {
+      "common_scored_pages": 313,
+      "control_only_pages": [],
+      "capped_only_pages": [],
+      "improved": 4,
+      "regressed": 4,
+      "unchanged": 305,
+      "worst": [
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_15.jpg",
+          "delta": -1.8999999999999915,
+          "control": 92.94285714285714,
+          "capped": 91.04285714285714
+        },
+        {
+          "page": "page-d2816bbe-3c28-4905-ad6d-5f873b525de3.png",
+          "delta": -0.9153846153846246,
+          "control": 99.34615384615385,
+          "capped": 98.43076923076923
+        },
+        {
+          "page": "page-e13fef95-c179-4a0f-94f9-1cc970aab788.png",
+          "delta": -0.09999999999999432,
+          "control": 100.0,
+          "capped": 99.9
+        },
+        {
+          "page": "page-b2cc5729-a6b2-49ba-af62-788bf069b617.png",
+          "delta": -0.07500000000000284,
+          "control": 100.0,
+          "capped": 99.925
+        },
+        {
+          "page": "PPT_fundamental_theorem_of_calculus___page_006.png",
+          "delta": 0.0,
+          "control": 100.0,
+          "capped": 100.0
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_2009_Solutions_2009s_page_001.png",
+          "delta": 0.0,
+          "control": 100.0,
+          "capped": 100.0
+        },
+        {
+          "page": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+          "delta": 0.0,
+          "control": 100.0,
+          "capped": 100.0
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_2015_Solutions_2015s_page_005.png",
+          "delta": 0.0,
+          "control": 100.0,
+          "capped": 100.0
+        },
+        {
+          "page": "exam_paper_en-file-putnam-archive_1996_Solutions_1996s_page_003.png",
+          "delta": 0.0,
+          "control": 100.0,
+          "capped": 100.0
+        },
+        {
+          "page": "page-05746fc5-2045-4dea-94e7-4bbab648d702.png",
+          "delta": 0.0,
+          "control": 99.73333333333333,
+          "capped": 99.73333333333333
+        }
+      ],
+      "best": [
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_16.jpg",
+          "delta": 19.72,
+          "control": 80.28,
+          "capped": 100.0
+        },
+        {
+          "page": "notes_9e951846094758afac08c620144e3a76_14.jpg",
+          "delta": 1.3749999999999858,
+          "control": 70.15,
+          "capped": 71.52499999999999
+        },
+        {
+          "page": "page-ccd77e4e-4f94-45df-8e3d-e054a951f65f.png",
+          "delta": 0.5909090909090793,
+          "control": 99.26363636363637,
+          "capped": 99.85454545454544
+        },
+        {
+          "page": "page-80a540c8-88d4-4643-b40e-282489353fb8.png",
+          "delta": 0.20909090909090366,
+          "control": 99.58181818181818,
+          "capped": 99.79090909090908
+        },
+        {
+          "page": "page-47977c29-59ca-4534-9a00-becad3bfdaa4.png",
+          "delta": 0.0,
+          "control": 88.35,
+          "capped": 88.35
+        },
+        {
+          "page": "page-dad0f4e5-290f-496f-bbdd-099ad75c6ff0.png",
+          "delta": 0.0,
+          "control": 94.69999999999999,
+          "capped": 94.69999999999999
+        },
+        {
+          "page": "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+          "delta": 0.0,
+          "control": 99.2,
+          "capped": 99.2
+        },
+        {
+          "page": "page-1853e666-6f83-432c-afc8-923ce8cf0fea.png",
+          "delta": 0.0,
+          "control": 98.5125,
+          "capped": 98.5125
+        },
+        {
+          "page": "book_zh_GB149361994_extracted_page_7.png",
+          "delta": 0.0,
+          "control": 46.9,
+          "capped": 46.9
+        },
+        {
+          "page": "jiaocaineedrop_jiaocai_needrop_en_1496.jpg",
+          "delta": 0.0,
+          "control": 100.0,
+          "capped": 100.0
+        }
+      ]
+    }
+  },
+  "parity": {
+    "control": {
+      "markdown_exact_vs_reference": 1651,
+      "selected_generated_ids_exact_vs_reference": 1227
+    },
+    "capped": {
+      "markdown_exact_vs_reference": 1431,
+      "selected_generated_ids_exact_vs_reference": 890
+    }
+  },
+  "stage_execution": {
+    "reference": {
+      "page_match": {
+        "workers": 24,
+        "page_count": 1651,
+        "quick_match_truncated_timeout_sec": 300,
+        "match_timeout_sec": 420,
+        "fallbacks": {
+          "quick_match_timeout": {
+            "count": 0,
+            "cases": []
+          },
+          "page_timeout": {
+            "count": 0,
+            "cases": []
+          }
+        }
+      },
+      "metrics": {
+        "display_formula": {
+          "CDM": {
+            "workers": 12,
+            "timeout_sec": null,
+            "sample_count": 2352,
+            "timeout_case_count": 0,
+            "timeout_cases": [],
+            "error_case_count": 0,
+            "error_cases": [],
+            "exception_case_count": 0,
+            "exception_cases": []
+          }
+        },
+        "table": {
+          "TEDS": {
+            "workers": 12,
+            "timeout_sec": 120.0,
+            "sample_count": 665,
+            "timeout_case_count": 0,
+            "timeout_cases": [],
+            "error_case_count": 0,
+            "error_cases": [],
+            "exception_case_count": 0,
+            "exception_cases": []
+          }
+        }
+      }
+    },
+    "control": {
+      "page_match": {
+        "workers": 24,
+        "page_count": 1651,
+        "quick_match_truncated_timeout_sec": 300,
+        "match_timeout_sec": 420,
+        "fallbacks": {
+          "quick_match_timeout": {
+            "count": 0,
+            "cases": []
+          },
+          "page_timeout": {
+            "count": 0,
+            "cases": []
+          }
+        }
+      },
+      "metrics": {
+        "display_formula": {
+          "CDM": {
+            "workers": 12,
+            "timeout_sec": null,
+            "sample_count": 2352,
+            "timeout_case_count": 0,
+            "timeout_cases": [],
+            "error_case_count": 0,
+            "error_cases": [],
+            "exception_case_count": 0,
+            "exception_cases": []
+          }
+        },
+        "table": {
+          "TEDS": {
+            "workers": 12,
+            "timeout_sec": 120.0,
+            "sample_count": 665,
+            "timeout_case_count": 0,
+            "timeout_cases": [],
+            "error_case_count": 0,
+            "error_cases": [],
+            "exception_case_count": 0,
+            "exception_cases": []
+          }
+        }
+      }
+    },
+    "capped": {
+      "page_match": {
+        "workers": 24,
+        "page_count": 1651,
+        "quick_match_truncated_timeout_sec": 300,
+        "match_timeout_sec": 420,
+        "fallbacks": {
+          "quick_match_timeout": {
+            "count": 0,
+            "cases": []
+          },
+          "page_timeout": {
+            "count": 0,
+            "cases": []
+          }
+        }
+      },
+      "metrics": {
+        "display_formula": {
+          "CDM": {
+            "workers": 12,
+            "timeout_sec": null,
+            "sample_count": 2352,
+            "timeout_case_count": 0,
+            "timeout_cases": [],
+            "error_case_count": 0,
+            "error_cases": [],
+            "exception_case_count": 0,
+            "exception_cases": []
+          }
+        },
+        "table": {
+          "TEDS": {
+            "workers": 12,
+            "timeout_sec": 120.0,
+            "sample_count": 665,
+            "timeout_case_count": 0,
+            "timeout_cases": [],
+            "error_case_count": 0,
+            "error_cases": [],
+            "exception_case_count": 0,
+            "exception_cases": []
+          }
+        }
+      }
+    }
+  },
+  "evaluation_wall_s": {
+    "reference": 865.83,
+    "control": 875.19,
+    "capped": 865.35
+  }
+}
