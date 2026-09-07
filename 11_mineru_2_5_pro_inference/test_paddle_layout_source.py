@@ -30,6 +30,25 @@ class FakeLayout:
 
 
 class LivePaddleTests(unittest.TestCase):
+    def test_order_only_merging_preserves_paddle_geometry_without_joining_pixels(self):
+        import importlib.util
+        import numpy as np
+        from pathlib import Path
+        path = Path(__file__).resolve().parents[1] / "09_persistent_page_engine/pipeline/layout_postprocess.py"
+        spec = importlib.util.spec_from_file_location("layout_geometry_test", path)
+        geometry = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(geometry)
+        blocks = [{"label": "text", "box": [offset, 0, offset + 10, 5],
+                   "img": np.full((5, 10, 3), offset, dtype=np.uint8)} for offset in [0, 11]]
+        ordinary = geometry.merge_blocks(blocks, [])
+        separate = geometry.merge_blocks(blocks, [], merge_images=False)
+        self.assertEqual([r["box"] for r in ordinary], [r["box"] for r in separate])
+        self.assertEqual([r["group_id"] for r in ordinary], [r["group_id"] for r in separate])
+        self.assertIsNone(ordinary[1]["img"])
+        self.assertEqual(ordinary[0]["img"].shape, (10, 10, 3))
+        for old, new in zip(blocks, separate):
+            self.assertTrue(np.array_equal(old["img"], new["img"]))
+
     def test_cli_defaults_and_explicit_native_option(self):
         from run_page_pipeline import pipeline_args
         args = pipeline_args(["--input-images", "/tmp/page.png", "--output-dir", "/tmp/out"])

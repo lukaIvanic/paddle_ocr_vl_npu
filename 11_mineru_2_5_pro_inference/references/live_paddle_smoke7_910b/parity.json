@@ -1,0 +1,69 @@
+{
+  "pages": [
+    {
+      "image": "book_en_[搬书匠#893][Pyomo—Optimization Modeling in Python].2012.英文版_page_016.png",
+      "live_crops": 3,
+      "saved_crops": 3,
+      "ordered_geometry_exact": true,
+      "crop_pixels_exact": true,
+      "markdown_exact": true
+    },
+    {
+      "image": "jiaocaineedrop_jiaocai_needrop_en_349.jpg",
+      "live_crops": 37,
+      "saved_crops": 37,
+      "ordered_geometry_exact": true,
+      "crop_pixels_exact": true,
+      "markdown_exact": true
+    },
+    {
+      "image": "notes_f7f010b78016aeebd76e56d9283eb67f_72.jpg",
+      "live_crops": 54,
+      "saved_crops": 54,
+      "ordered_geometry_exact": true,
+      "crop_pixels_exact": true,
+      "markdown_exact": true
+    },
+    {
+      "image": "page-bd6eb36e-0856-4d9d-b587-21b4a0209c8b.png",
+      "live_crops": 10,
+      "saved_crops": 10,
+      "ordered_geometry_exact": true,
+      "crop_pixels_exact": true,
+      "markdown_exact": true
+    },
+    {
+      "image": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+      "live_crops": 15,
+      "saved_crops": 15,
+      "ordered_geometry_exact": true,
+      "crop_pixels_exact": true,
+      "markdown_exact": true
+    },
+    {
+      "image": "page-f9583127-1277-4424-be9d-35430e0aedd6.png",
+      "live_crops": 18,
+      "saved_crops": 18,
+      "ordered_geometry_exact": true,
+      "crop_pixels_exact": true,
+      "markdown_exact": true
+    },
+    {
+      "image": "scihub_fmicb.2019.01892.pdf_2.jpg",
+      "live_crops": 14,
+      "saved_crops": 14,
+      "ordered_geometry_exact": true,
+      "crop_pixels_exact": true,
+      "markdown_exact": true
+    }
+  ],
+  "page_count": 7,
+  "ordered_geometry_exact_pages": 7,
+  "crop_pixels_exact_pages": 7,
+  "markdown_exact_pages": 7,
+  "layout_calls": 7,
+  "recognition_requests": {
+    "recognition": 151
+  },
+  "pipeline_wall_s": 36.101927876938134
+}
