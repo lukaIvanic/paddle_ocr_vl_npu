@@ -1,0 +1,444 @@
+{
+  "accuracy": {
+    "live": {
+      "text_accuracy": 96.30327283502432,
+      "table_teds": 93.10191730060761,
+      "formula_cdm": 96.99331993011732,
+      "overall": 95.46617002191641,
+      "table_structure_teds": 95.78719200246326,
+      "reading_order_edit_distance": 0.13887116307912775
+    },
+    "saved_layout": {
+      "text_accuracy": 96.30341683967855,
+      "table_teds": 93.0990457907492,
+      "formula_cdm": 96.99365273096929,
+      "overall": 95.46537178713234,
+      "table_structure_teds": 95.78719200246326,
+      "reading_order_edit_distance": 0.13887116307912775
+    },
+    "native_historical": {
+      "text_accuracy": 96.30632169786224,
+      "table_teds": 92.30337630807993,
+      "formula_cdm": 96.72968076226105,
+      "overall": 95.11312625606774,
+      "table_structure_teds": 95.10332546866125,
+      "reading_order_edit_distance": 0.12525933217652402
+    }
+  },
+  "performance": {
+    "live": {
+      "pipeline_wall_s": 1769.7285797620425,
+      "pages_per_second": 0.9329114186662416,
+      "setup_s": 24.221632853965275,
+      "physical_npu": "4",
+      "warmup_pages": 0
+    },
+    "saved_layout": {
+      "pipeline_wall_s": 1568.131269674981,
+      "pages_per_second": 1.052845531447246,
+      "setup_s": 28.365104053984396,
+      "physical_npu": "3",
+      "warmup_pages": 0
+    },
+    "native_historical": {
+      "pipeline_wall_s": 2029.965940847993,
+      "pages_per_second": 0.8133141383201313,
+      "setup_s": 22.88045277900528,
+      "physical_npu": "4",
+      "warmup_pages": 2
+    }
+  },
+  "live_vs_historical_throughput_ratio": 1.1470493069174155,
+  "live_vs_historical_throughput_gain_percent": 14.704930691741547,
+  "live_completion_10_to_last_pg_s": 0.9442543112691029,
+  "parity_with_saved_layout": {
+    "prediction_pages": 1651,
+    "markdown_exact_pages": 1639,
+    "recognition_pages": 1649,
+    "input_exact_recognition_pages": 1596,
+    "input_mismatch_pages": [
+      {
+        "page": "PPT_13 fallacies LALT2012_page_010.png",
+        "saved_crops": 10,
+        "live_crops": 10
+      },
+      {
+        "page": "PPT_B14_Claeys_Consistent Presentation of Images_v2_page_024.png",
+        "saved_crops": 7,
+        "live_crops": 7
+      },
+      {
+        "page": "PPT_Keuk Chan Narith_page_009.png",
+        "saved_crops": 2,
+        "live_crops": 2
+      },
+      {
+        "page": "PPT_LEP power point presentation-English-FINAL-10-31-07_page_008.png",
+        "saved_crops": 8,
+        "live_crops": 8
+      },
+      {
+        "page": "book_zh_GB12082006_extracted_page_8.png",
+        "saved_crops": 40,
+        "live_crops": 40
+      },
+      {
+        "page": "book_zh_JGJ1022003_extracted_page_27.png",
+        "saved_crops": 36,
+        "live_crops": 36
+      },
+      {
+        "page": "book_zh_SYT57941993_extracted_page_3.png",
+        "saved_crops": 36,
+        "live_crops": 36
+      },
+      {
+        "page": "color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第08讲第八课写作Part8训练_第八课写作Part8训练_page_003.png",
+        "saved_crops": 49,
+        "live_crops": 49
+      },
+      {
+        "page": "docstructbench_llm-raw-the-eye-o.O-ST-169-R1-072694.pdf_76.jpg",
+        "saved_crops": 5,
+        "live_crops": 5
+      },
+      {
+        "page": "jiaocaineedrop_2005_QP.pdf_5.jpg",
+        "saved_crops": 9,
+        "live_crops": 9
+      },
+      {
+        "page": "jiaocaineedrop_AMC8_V5.pdf_64.jpg",
+        "saved_crops": 15,
+        "live_crops": 15
+      },
+      {
+        "page": "jiaocaineedrop_jiaocai_needrop_en_1303.jpg",
+        "saved_crops": 12,
+        "live_crops": 12
+      },
+      {
+        "page": "jiaocaineedrop_jiaocai_needrop_en_1898.jpg",
+        "saved_crops": 14,
+        "live_crops": 14
+      },
+      {
+        "page": "jiaocaineedrop_jiaocai_needrop_en_3303.jpg",
+        "saved_crops": 33,
+        "live_crops": 33
+      },
+      {
+        "page": "jiaocaineedrop_jiaocai_needrop_en_546.jpg",
+        "saved_crops": 38,
+        "live_crops": 38
+      },
+      {
+        "page": "jiaocaineedrop_jiaocai_needrop_en_922.jpg",
+        "saved_crops": 30,
+        "live_crops": 30
+      },
+      {
+        "page": "newspaper_019d4d5296ba8f1c21277d72fb0cf0db_1.jpg",
+        "saved_crops": 92,
+        "live_crops": 92
+      },
+      {
+        "page": "newspaper_0ce88e1e131aef7a59d0533be36870de_1.jpg",
+        "saved_crops": 65,
+        "live_crops": 65
+      },
+      {
+        "page": "newspaper_14b9d21f7fed39fb42849e9cde233930_1.jpg",
+        "saved_crops": 86,
+        "live_crops": 86
+      },
+      {
+        "page": "newspaper_1cddf9d22ca549f3a86cf1512a3110cc_1.jpg",
+        "saved_crops": 85,
+        "live_crops": 85
+      },
+      {
+        "page": "newspaper_41a09cb64841567c220d8cac3c1cc193_1.jpg",
+        "saved_crops": 90,
+        "live_crops": 90
+      },
+      {
+        "page": "newspaper_4790b51e8fa793743699647c09a93ccb_1.jpg",
+        "saved_crops": 81,
+        "live_crops": 81
+      },
+      {
+        "page": "newspaper_5d4b8e73eacbc6ecac0d7b1396fd01d7_1.jpg",
+        "saved_crops": 51,
+        "live_crops": 51
+      },
+      {
+        "page": "newspaper_7746db2ad2ea24c827eac60244375bbf_1.jpg",
+        "saved_crops": 83,
+        "live_crops": 83
+      },
+      {
+        "page": "newspaper_e6083de4647ef28434cb6a598b073ae4_1.jpg",
+        "saved_crops": 57,
+        "live_crops": 57
+      },
+      {
+        "page": "newspaper_ef5c785d9cc21ccf6b73d143f231b5c5_1.jpg",
+        "saved_crops": 223,
+        "live_crops": 223
+      },
+      {
+        "page": "newspaper_f1de032fb6a25cf85c85c15cb2d2a63a_1.jpg",
+        "saved_crops": 102,
+        "live_crops": 102
+      },
+      {
+        "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_12.jpg",
+        "saved_crops": 18,
+        "live_crops": 18
+      },
+      {
+        "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_14.jpg",
+        "saved_crops": 3,
+        "live_crops": 3
+      },
+      {
+        "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_16.jpg",
+        "saved_crops": 23,
+        "live_crops": 23
+      },
+      {
+        "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_55.jpg",
+        "saved_crops": 16,
+        "live_crops": 16
+      },
+      {
+        "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_56.jpg",
+        "saved_crops": 17,
+        "live_crops": 17
+      },
+      {
+        "page": "notes_1ba14cb325bc448f7201b20502ecf2b5_96.jpg",
+        "saved_crops": 4,
+        "live_crops": 4
+      },
+      {
+        "page": "notes_f7f010b78016aeebd76e56d9283eb67f_113.jpg",
+        "saved_crops": 21,
+        "live_crops": 21
+      },
+      {
+        "page": "notes_f7f010b78016aeebd76e56d9283eb67f_48.jpg",
+        "saved_crops": 17,
+        "live_crops": 17
+      },
+      {
+        "page": "notes_f7f010b78016aeebd76e56d9283eb67f_51.jpg",
+        "saved_crops": 18,
+        "live_crops": 18
+      },
+      {
+        "page": "notes_f7f010b78016aeebd76e56d9283eb67f_53.jpg",
+        "saved_crops": 10,
+        "live_crops": 10
+      },
+      {
+        "page": "notes_f7f010b78016aeebd76e56d9283eb67f_94.jpg",
+        "saved_crops": 13,
+        "live_crops": 13
+      },
+      {
+        "page": "notes_f7f010b78016aeebd76e56d9283eb67f_97.jpg",
+        "saved_crops": 14,
+        "live_crops": 14
+      },
+      {
+        "page": "page-07088b2f-f9d6-4c38-9c97-d7f98bc3d556.png",
+        "saved_crops": 26,
+        "live_crops": 26
+      },
+      {
+        "page": "page-50209df6-f404-4e67-a646-bc9697f2e214.png",
+        "saved_crops": 23,
+        "live_crops": 23
+      },
+      {
+        "page": "page-6788acda-bfb0-479c-bc2a-9b471ec2cc33.png",
+        "saved_crops": 21,
+        "live_crops": 21
+      },
+      {
+        "page": "page-9551c5d5-0786-4bf6-9a87-86b4f6c4111f.png",
+        "saved_crops": 28,
+        "live_crops": 28
+      },
+      {
+        "page": "page-af9aded3-1faf-4d12-ad5f-28a66d0a9114.png",
+        "saved_crops": 24,
+        "live_crops": 24
+      },
+      {
+        "page": "page-c018d221-68b3-4a14-84cd-c9abde2db3a4.png",
+        "saved_crops": 18,
+        "live_crops": 18
+      },
+      {
+        "page": "page-d209d5c0-fe1e-4cf0-90d8-6d610948b235.png",
+        "saved_crops": 16,
+        "live_crops": 16
+      },
+      {
+        "page": "yanbaopptmerge_4304d65458262c3161cf5d0440c6a56851222ce1da3d7886cdd2320ce2222c4a.pdf_7.jpg",
+        "saved_crops": 16,
+        "live_crops": 16
+      },
+      {
+        "page": "yanbaopptmerge_yanbaoPPT_1360.jpg",
+        "saved_crops": 4,
+        "live_crops": 4
+      },
+      {
+        "page": "yanbaopptmerge_yanbaoPPT_3150.jpg",
+        "saved_crops": 9,
+        "live_crops": 9
+      },
+      {
+        "page": "yanbaopptmerge_yanbaoPPT_4050.jpg",
+        "saved_crops": 6,
+        "live_crops": 6
+      },
+      {
+        "page": "yanbaopptmerge_yanbaoPPT_840.jpg",
+        "saved_crops": 3,
+        "live_crops": 3
+      },
+      {
+        "page": "yanbaor2_4862cd850679e945a98c54c8d4c37be0154b5790d2c32da35d0f5ca0be413693.pdf_9.jpg",
+        "saved_crops": 5,
+        "live_crops": 5
+      },
+      {
+        "page": "yanbaor2_75f9d788216f5e26469269defcd466aa8d250542b2142c72782103913bc6e61b.pdf_6.jpg",
+        "saved_crops": 6,
+        "live_crops": 6
+      }
+    ],
+    "requests_on_input_exact_pages": 30313,
+    "generated_ids_exact_requests_on_input_exact_pages": 30306,
+    "ordered_comparable_requests": 32051,
+    "changed_input_fields_by_request": {
+      "image_sha256": 61
+    },
+    "changed_generation_requests": {
+      "different_inputs": 5,
+      "same_inputs": 7
+    }
+  },
+  "layout": {
+    "layout_source": "PP-DocLayoutV3_live",
+    "layout_calls": 1651,
+    "layout_host_wall_s": 177.82558639487252,
+    "layout_timing_s": {
+      "layout_preprocess_cpu_s": 20.55666414287407,
+      "layout_input_h2d_s": 8.66818068549037,
+      "layout_preprocess_h2d_s": 29.22484482836444,
+      "layout_model_submit_s": 160.0267152369488,
+      "layout_metadata_wait_and_d2h_s": 0.6251653119688854,
+      "layout_mask_wait_and_d2h_s": 0.8745843997457996,
+      "layout_mask_polygon_cpu_s": 13.896788612939417,
+      "layout_structural_postprocess_cpu_s": 27.755190631491132,
+      "layout_postprocess_s": 36.26413463812787
+    },
+    "layout_region_counts": {
+      "header": 1395,
+      "number": 1248,
+      "text": 19673,
+      "display_formula": 1666,
+      "formula_number": 300,
+      "paragraph_title": 3172,
+      "header_image": 273,
+      "image": 1604,
+      "figure_title": 770,
+      "table": 751,
+      "chart": 218,
+      "footnote": 90,
+      "vertical_text": 105,
+      "content": 16,
+      "footer_image": 38,
+      "vision_footnote": 693,
+      "doc_title": 1040,
+      "footer": 651,
+      "aside_text": 156,
+      "algorithm": 24,
+      "reference_content": 265,
+      "seal": 2,
+      "abstract": 21,
+      "inline_formula": 15
+    },
+    "layout_setup_s": 0.9158060839399695,
+    "layout_model_dtype": "torch.float32"
+  },
+  "request_phases": {
+    "recognition": 32051
+  },
+  "stop_reasons": {
+    "eos": 32016,
+    "length": 35
+  },
+  "evaluation_wall_s": 865.83,
+  "stage_execution": {
+    "page_match": {
+      "workers": 24,
+      "page_count": 1651,
+      "quick_match_truncated_timeout_sec": 300,
+      "match_timeout_sec": 420,
+      "fallbacks": {
+        "quick_match_timeout": {
+          "count": 0,
+          "cases": []
+        },
+        "page_timeout": {
+          "count": 0,
+          "cases": []
+        }
+      }
+    },
+    "metrics": {
+      "display_formula": {
+        "CDM": {
+          "workers": 12,
+          "timeout_sec": null,
+          "sample_count": 2352,
+          "timeout_case_count": 0,
+          "timeout_cases": [],
+          "error_case_count": 0,
+          "error_cases": [],
+          "exception_case_count": 0,
+          "exception_cases": []
+        }
+      },
+      "table": {
+        "TEDS": {
+          "workers": 12,
+          "timeout_sec": 120.0,
+          "sample_count": 665,
+          "timeout_case_count": 0,
+          "timeout_cases": [],
+          "error_case_count": 0,
+          "error_cases": [],
+          "exception_case_count": 0,
+          "exception_cases": []
+        }
+      }
+    }
+  },
+  "caveat": "Native historical run predates the pixel cap and runtime changes; not a layout-only ablation. Saved-layout timing excludes detection/crop export.",
+  "accuracy_delta_live_minus_saved": {
+    "text_accuracy": -0.00014400465423136666,
+    "table_teds": 0.002871509858408672,
+    "formula_cdm": -0.0003328008519645209,
+    "overall": 0.0007982347840709281,
+    "table_structure_teds": 0.0,
+    "reading_order_edit_distance": 0.0
+  }
+}
