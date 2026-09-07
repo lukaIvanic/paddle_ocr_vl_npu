@@ -61,6 +61,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--saved-layout-manifest", type=Path,
                         help="Use frozen Paddle crops instead of MinerU layout; streaming only, warmup-pages=0.")
+    parser.add_argument("--crop-replay-manifest", type=Path,
+                        help="Experimental selective recognition replay with frozen baseline outputs; not full E2E timing.")
     parser.add_argument("--layout-backend", choices=("mineru", "pp-doclayout-v3"), default="mineru")
     parser.add_argument("--layout-model", type=Path, default=Path("/workspace/models/PP-DocLayoutV3_safetensors"))
     parser.add_argument("--layout-graph-capture", action=argparse.BooleanOptionalAction, default=False)
@@ -629,6 +631,11 @@ def apply_processor_pixel_limits(image_processor, *, min_pixels=None, max_pixels
 
 def main(args=None) -> None:
     args = parse_args() if args is None else args
+    if args.crop_replay_manifest is not None and (
+        args.layout_backend != "mineru" or args.saved_layout_manifest is not None
+        or not args.streaming_pages or args.warmup_pages or args.resume
+    ):
+        raise ValueError("crop replay requires streaming, zero warmup, no resume, no live/saved layout backend")
     if args.layout_backend == "pp-doclayout-v3":
         if args.saved_layout_manifest is not None or not args.streaming_pages or args.warmup_pages:
             raise ValueError("live Paddle layout requires streaming, warmup-pages=0 and no saved layout manifest")
@@ -1184,6 +1191,8 @@ def main(args=None) -> None:
         "layout_graph_capture": args.layout_graph_capture if args.layout_backend == "pp-doclayout-v3" else None,
         "saved_layout_manifest": str(args.saved_layout_manifest) if args.saved_layout_manifest else None,
         "saved_layout_manifest_sha256": sha256(args.saved_layout_manifest) if args.saved_layout_manifest else None,
+        "crop_replay_manifest": str(args.crop_replay_manifest) if args.crop_replay_manifest else None,
+        "crop_replay_manifest_sha256": sha256(args.crop_replay_manifest) if args.crop_replay_manifest else None,
         "batch_size": args.batch_size,
         "page_batch_size": args.page_batch_size,
         "global_request_stream": bool(args.global_request_stream),
@@ -1418,7 +1427,11 @@ def main(args=None) -> None:
         try:
             source_class = MinerUPageSource
             source_kwargs = {}
-            if args.saved_layout_manifest is not None:
+            if args.crop_replay_manifest is not None:
+                from crop_replay_source import CropReplayPageSource
+                source_class = CropReplayPageSource
+                source_kwargs["manifest_path"] = args.crop_replay_manifest
+            elif args.saved_layout_manifest is not None:
                 from saved_layout_source import SavedLayoutPageSource
                 source_class = SavedLayoutPageSource
                 source_kwargs["manifest_path"] = args.saved_layout_manifest
