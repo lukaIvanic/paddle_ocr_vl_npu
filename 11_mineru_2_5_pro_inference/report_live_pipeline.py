@@ -1,6 +1,6 @@
 """Report full live-layout accuracy, E2E speed, and saved-input/output parity."""
 import argparse
-from collections import defaultdict
+from collections import Counter, defaultdict
 import json
 from pathlib import Path
 
@@ -30,6 +30,10 @@ def compare_saved(live, saved):
     signature = lambda row: [row.get(k) for k in (
         "block_type", "bbox", "image_sha256", "chat_prompt", "prompt_token_ids")]
     mismatches = []
+    fields = ("block_type", "bbox", "image_sha256", "chat_prompt", "prompt_token_ids")
+    changed_fields = Counter()
+    changed_generation = Counter()
+    comparable_requests = 0
     input_exact = generated_exact = shared_requests = 0
     names = sorted(p.stem for p in (live / "output/predictions").glob("*.md"))
     saved_names = sorted(p.stem for p in (saved / "output/predictions").glob("*.md"))
@@ -39,6 +43,12 @@ def compare_saved(live, saved):
                          (saved / "output/predictions" / f"{name}.md").read_bytes() for name in names)
     for name in sorted(a.keys() | b.keys()):
         old, new = a.get(name, []), b.get(name, [])
+        if len(old) == len(new):
+            comparable_requests += len(old)
+            for x, y in zip(old, new):
+                changed_fields.update(k for k in fields if x.get(k) != y.get(k))
+                if x["generated_token_ids"] != y["generated_token_ids"]:
+                    changed_generation["same_inputs" if signature(x) == signature(y) else "different_inputs"] += 1
         same_inputs = [signature(r) for r in old] == [signature(r) for r in new]
         if not same_inputs:
             mismatches.append({"page": name, "saved_crops": len(old), "live_crops": len(new)})
@@ -49,7 +59,10 @@ def compare_saved(live, saved):
     return {"prediction_pages": len(names), "markdown_exact_pages": markdown_exact,
             "recognition_pages": len(a.keys() | b.keys()), "input_exact_recognition_pages": input_exact,
             "input_mismatch_pages": mismatches, "requests_on_input_exact_pages": shared_requests,
-            "generated_ids_exact_requests_on_input_exact_pages": generated_exact}
+            "generated_ids_exact_requests_on_input_exact_pages": generated_exact,
+            "ordered_comparable_requests": comparable_requests,
+            "changed_input_fields_by_request": dict(changed_fields),
+            "changed_generation_requests": dict(changed_generation)}
 
 
 def report(live, saved, native):
@@ -71,6 +84,7 @@ def report(live, saved, native):
     for name, row in summaries.items():
         performance[name] = {"pipeline_wall_s": row["pipeline_wall_s"],
                              "pages_per_second": n / row["pipeline_wall_s"],
+                             "setup_s": row.get("setup_s"),
                              "physical_npu": row.get("ascend_rt_visible_devices"),
                              "warmup_pages": row["warmup"]["executed_pages"]}
     ratio = performance["live"]["pages_per_second"] / performance["native_historical"]["pages_per_second"]

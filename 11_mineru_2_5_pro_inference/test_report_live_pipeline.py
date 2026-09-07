@@ -23,6 +23,7 @@ class ReportParityTests(unittest.TestCase):
             self.assertEqual(result["markdown_exact_pages"], 1)
             self.assertEqual(result["input_exact_recognition_pages"], 1)
             self.assertEqual(result["generated_ids_exact_requests_on_input_exact_pages"], 1)
+            self.assertEqual(result["changed_input_fields_by_request"], {})
             # A different crop must not be counted as a numerical generation difference.
             (live / "output/generation_trace.jsonl").write_text(
                 json.dumps({**base, "image_sha256": "different"}) + "\n")
@@ -30,6 +31,7 @@ class ReportParityTests(unittest.TestCase):
             self.assertEqual(result["input_exact_recognition_pages"], 0)
             self.assertEqual(len(result["input_mismatch_pages"]), 1)
             self.assertEqual(result["requests_on_input_exact_pages"], 0)
+            self.assertEqual(result["changed_input_fields_by_request"], {"image_sha256": 1})
 
     def test_duplicate_trace_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
