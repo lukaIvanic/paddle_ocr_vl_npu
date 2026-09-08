@@ -1,0 +1,31 @@
+Source: e4b4a49e, main. Single Ascend 910B2, physical NPU6.
+Server: research_vllm_ascend_023_paddleocr, vLLM 0.23.0+empty / vLLM-Ascend 0.23.0rc1.
+ASCEND_RT_VISIBLE_DEVICES=6 TABLE_VLLM_MAX_SEQS=16 bash /workspace/serve_vllm_table_reference.sh
+Explicit async scheduling and chunked prefill; FULL_AND_PIECEWISE, capture sizes 1..16.
+Per-request max_model_len=4096, shared max_num_batched_tokens=4096.
+Unchanged default GPU memory utilization 0.92; stock global KV pool.
+FP16, greedy full-vocabulary PaddleOCR-VL-1.6, no max_tokens override.
+Prefix cache disabled; multimodal processor cache 0. Installed renderer creates
+per-request image UUIDs under this combination and does not reuse embeddings.
+Effective image processor minimum/maximum pixels verified as 28224 / 802816.
+
+Client in research_vllm_ascend_021_external_workspace:
+cd /workspace/repos/paddle_ocr_vl_npu
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u \
+  09_persistent_page_engine/scripts/table_request_load_simulator.py \
+  --api-kind vllm --api-url http://127.0.0.1:18081/v1/chat/completions \
+  --cohort all --qps 1 --max-requests 100 --seed 1 --shuffle-all \
+  --schedule-jsonl tmp/09_persistent_page_engine/table_poisson_frontier_screen1000_be691de1_20260907/b2/qps1/measured/schedule.jsonl \
+  --output-dir tmp/09_persistent_page_engine/table_vllm_poisson100_qps1_e4b4a49e_20260908/measured
+
+Exact first 100 records/timestamps of the existing 1000-request frontier sequence.
+Open-loop Poisson replay; no client concurrency gate. Save every result immediately.
+PNG crop preparation and base64/JSON construction outside measured arrival window,
+matching the previous HTTP benchmarking contract. Latency includes connection,
+HTTP transfer, server processing/queueing/inference and the complete response.
+Actual-send latency and scheduled-arrival latency are recorded separately.
+
+Two separate complete warm requests using table_closed_loop_api_client.py:
+--api-kind vllm --set warm --count 1 --max-in-flight 1, page_001272_table_1.
+Both completed before measurement. Compilation and warmup are outside measured time.
+Direct-host read-only NPU6 monitoring every 10 seconds, plus manual PID checks.

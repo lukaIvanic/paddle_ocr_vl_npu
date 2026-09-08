@@ -1,0 +1,6 @@
+client API ready worker_pid=None; preloading 1 distinct crops for 1 requests
+client crops preloaded 1/1
+client payloads ready bytes=792999
+SEND client 01/1 table=page_001272_table_1 active=1
+RECV client 01/1 rank=65 id=page_001272_table_1 latency=8.8059s status=ok active=0
+DONE client requests=1 failures=0 max_in_flight=1 wall=8.8072s qps=0.1135 p50=8.8059s p95=8.8059s max=8.8059s
