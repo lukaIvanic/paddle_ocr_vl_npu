@@ -1,4 +1,5 @@
 from collections import Counter, deque
+from hybrid_timing import NO_TIMING
 
 
 class Adapter:
@@ -15,6 +16,8 @@ class Adapter:
         self.prefill_device_s = Counter()
         self.prefill_request_counts = Counter()
         self.cpu = None
+        self.timing = NO_TIMING
+        self.timing_model = "engine"
 
     def start_cpu_preparation(self, prepare, capacity, name):
         from cpu_preparation import CpuPreparation
@@ -77,7 +80,8 @@ class Adapter:
         with torch.inference_mode():
             while not self.done:
                 try:
-                    state = next(self.steps)
+                    with self.timing.scope(f"{self.timing_model}.decode_engine_advance"):
+                        state = next(self.steps)
                 except StopIteration as finished:
                     self.done = True
                     self.summary = finished.value
@@ -89,4 +93,5 @@ class Adapter:
         # Cross-model compute is deliberately serialized. This also completes
         # token transfers; generator-local pending-copy/slot epoch ownership
         # remains entirely in the original engine.
-        torch.npu.synchronize()
+        with self.timing.scope(f"{self.timing_model}.decode_yield_fence"):
+            torch.npu.synchronize()

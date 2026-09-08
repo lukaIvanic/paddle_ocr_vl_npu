@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from threading import get_ident
 import time
+from hybrid_timing import NO_TIMING
 
 
 class CpuPreparation:
@@ -16,6 +17,8 @@ class CpuPreparation:
         self.service_s = 0.0
         self.worker_thread_ids = set()
         self.notify = lambda: None
+        self.timing = NO_TIMING
+        self.name = name
 
     def _run(self, request):
         started = time.perf_counter()
@@ -35,7 +38,8 @@ class CpuPreparation:
                     continue
                 if len(self.futures) >= self.capacity:
                     return
-                future = self.executor.submit(self._run, request)
+                future = self.timing.submit(self.executor, self._run, request,
+                                            stage=self.name, flow_id=key)
                 self.futures[key] = future
                 self.submitted += 1
                 self.high_water = max(self.high_water, len(self.futures))
@@ -50,7 +54,9 @@ class CpuPreparation:
             raise RuntimeError("CPU preparation consumed before completion")
         values = []
         for request in requests:
-            value, seconds, thread_id = self.futures.pop(request.request_id).result()
+            future = self.futures.pop(request.request_id)
+            value, seconds, thread_id = future.result()
+            self.timing.consume(future)
             values.append(value)
             self.service_s += seconds
             self.worker_thread_ids.add(thread_id)

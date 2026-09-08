@@ -121,6 +121,40 @@ python3.12 -m unittest discover -s 18_unirec_paddle_hybrid_pipeline/tests -v
 ```
 ## Timing interpretation
 
+Detailed timing defaults on; `--no-detailed-timing` is the instrumentation-cost
+control, not a scheduling preset. `detailed_timing.owner_exclusive` is a checked
+non-overlapping partition of the owner `pipeline` scope. Each label reports
+count, total, mean, p50, p99 and max seconds. `owner_inclusive` contains nested
+durations and must not be summed. Remaining scope time is retained explicitly,
+not inferred to be idle CPU or accelerator work. The original `wall_s` boundary
+remains unchanged; the encompassing timing scope differs by a small call-boundary
+overhead. Detailed trace export occurs after processing and is timed separately.
+
+`wait_blocker_sets` counts each observed wait once, including joint prerequisites.
+It snapshots missing CPU crop requests and page input/post-layout futures at wait
+entry. A ready-before-wait race is labelled separately. This is exposed waiting
+under the current policy, including wake/scheduling latency, **not** proof that
+speeding up one named worker would save the entire joint wait. `cpu_service`,
+`cpu_queue_residence` and `cpu_ready_residence` are overlapping per-job elapsed
+distributions. They are not additive to owner time. Raw job intervals and page/
+crop identifiers are saved in `timing_trace.json` using Paddle's existing shared
+host-clock recorder; its viewer can open that JSON. Existing Paddle frontend/
+prefill/decode trace spans are included, but device envelopes are not exact
+kernel occupancy or a globally synchronized device critical-path proof.
+
+Output scopes separate completion conversion, page assembly/emission, Markdown
+and image building/writing, JSON encoding/writing and crop tracing. Decoder
+advancement and yield fences are measured separately. UniRec's existing step
+callback supplies input-build, submission, token-read/wait and scheduler
+distributions; those are nested host intervals, not extra exclusive costs.
+No new NPU synchronization is added. Vision/text/decode models and cache keys
+are not changed by instrumentation.
+
+Legacy engine timers that span generator suspension are moved out of their
+normal timing dictionaries into `cooperative_pause_inclusive_legacy_timing`.
+Do not interpret those numbers as exclusive decode or scheduler overhead.
+The original engine objects and standalone reporting behavior are unchanged.
+
 `action_wall_s` measures serialized coordinator service time by model/phase.
 Engine-wide elapsed timers span cooperative pauses and must not be interpreted
 as exclusive decode time. Slot utilization uses each engine's active/effective

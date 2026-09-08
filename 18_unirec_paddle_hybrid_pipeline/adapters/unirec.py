@@ -1,17 +1,19 @@
 """UniRec's production vision, packed prefill, fixed-arena decode and converter."""
 from types import SimpleNamespace
 from .base import Adapter
+from hybrid_timing import timed_method
 
 
 class UniRecAdapter(Adapter):
-    def __init__(self, runner, vision, decoder, emit, converter):
+    def __init__(self, runner, vision, decoder, emit, converter, *, collect_step_timing=False):
         from persistent_ready_queue import PersistentReadyQueue
         super().__init__(decoder.batch_size, emit)
         self.runner, self.vision, self.decoder = runner, vision, decoder
         self.converter = converter
         self.source = PersistentReadyQueue(maxsize=self.ready_capacity)
         self.source.register_upstream()
-        self.steps = decoder.iter_run(self.source, on_complete=self.complete)
+        self.steps = decoder.iter_run(self.source, on_complete=self.complete,
+                                     on_step=(lambda record: self.timing.unirec_step(record)) if collect_step_timing else None)
         next(self.steps)
         self.start_cpu_preparation(self.prepare_cpu, self.capacity, "hybrid-unirec-cpu")
 
@@ -84,10 +86,12 @@ class UniRecAdapter(Adapter):
                     def release(value=prefilled):
                         value.packed_cross_kv = None
                     self.source.put(ContinuousReadyItem(crop.request.request_id, crop.request, prefilled, release))
-        torch.npu.synchronize()
+        with self.timing.scope("unirec.prefill_yield_fence"):
+            torch.npu.synchronize()
         for stage, (start, end) in spans:
             self.prefill_device_s[stage] += start.elapsed_time(end) / 1000
 
+    @timed_method("unirec.completion_conversion")
     def complete(self, completed):
         from run_opendoc_batched_unirec import _postprocess_recognizer_text
         from routing import TASKS

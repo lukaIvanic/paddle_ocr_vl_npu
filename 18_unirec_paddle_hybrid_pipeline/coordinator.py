@@ -2,10 +2,11 @@
 from collections import Counter
 import time
 from threading import Event
+from hybrid_timing import NO_TIMING
 
 
 class Coordinator:
-    def __init__(self, adapters, pages, *, decode_steps=32):
+    def __init__(self, adapters, pages, *, decode_steps=32, timing=NO_TIMING):
         if decode_steps < 1:
             raise ValueError("decode_steps must be positive")
         self.adapters = adapters
@@ -16,6 +17,32 @@ class Coordinator:
         self.wall_s = Counter()
         self.wakeup = Event()
         self.pages.set_wakeup(self.wakeup.set)
+        self.timing = timing
+
+    def wait_snapshot(self):
+        blockers, state = [], {}
+        for name, adapter in self.adapters.items():
+            if adapter.done:
+                continue
+            requests = adapter.planned_prefill_requests() if adapter.free > 0 else []
+            missing = [r.request_id for r in requests
+                       if r.request_id not in adapter.cpu.futures or not adapter.cpu.futures[r.request_id].done()]
+            state[name] = dict(active=adapter.active, ready=adapter.ready_count,
+                               pending_pages=len(adapter.pending), missing_cpu_requests=missing)
+            if missing:
+                blockers.append(name + ".cpu_preparation")
+            elif requests or adapter.occupied >= adapter.capacity:
+                blockers.append("ready_before_wait")
+        prep = self.pages.preparation
+        future = prep.crop_future if prep.crop_future is not None else prep.input_future
+        if future is not None:
+            blockers.append("ready_before_wait" if future.done() else
+                            "page.crops" if prep.crop_future is not None else "page.input")
+        if not blockers:
+            blockers.append("awaiting_input" if not self.pages.exhausted else "unclassified")
+        if "ready_before_wait" in blockers:
+            blockers = ["ready_before_wait"]
+        return dict(blockers=sorted(set(blockers)), state=state)
 
     def choose(self, names):
         return next((name for name in names if name != self.last_model), names[0])
@@ -40,30 +67,37 @@ class Coordinator:
         return (self.choose(draining), "decode") if draining else (None, "wait")
 
     def run(self):
+        with self.timing.scope("pipeline"):
+            return self._run()
+
+    def _run(self):
         started = time.perf_counter()
         while True:
-            self.wakeup.clear()
-            self.pages.pump()
-            for adapter in self.adapters.values():
-                adapter.pump_preparation(self.wakeup.set)
-            action = self.action()
+            with self.timing.scope("control.pump_and_choose"):
+                self.wakeup.clear()
+                self.pages.pump()
+                for adapter in self.adapters.values():
+                    adapter.pump_preparation(self.wakeup.set)
+                action = self.action()
             if action is None:
                 break
             name, phase = action
             before = time.perf_counter()
-            if phase == "layout":
-                self.pages.advance(self.adapters)
-            elif phase == "wait":
-                self.wakeup.wait()
-            else:
-                adapter = self.adapters[name]
-                adapter.set_upstream(self.pages.has_pending or bool(adapter.pending), closed=self.pages.exhausted)
-                if phase == "prefill":
-                    adapter.prefill()
-                else:
-                    adapter.advance(self.decode_steps)
-                self.last_model = name
             key = f"{name or 'shared'}.{phase}"
+            snapshot = self.wait_snapshot() if phase == "wait" and self.timing.enabled else None
+            with self.timing.scope(key, args=snapshot):
+                if phase == "layout":
+                    self.pages.advance(self.adapters)
+                elif phase == "wait":
+                    self.wakeup.wait()
+                else:
+                    adapter = self.adapters[name]
+                    adapter.set_upstream(self.pages.has_pending or bool(adapter.pending), closed=self.pages.exhausted)
+                    if phase == "prefill":
+                        adapter.prefill()
+                    else:
+                        adapter.advance(self.decode_steps)
+                    self.last_model = name
             self.calls[key] += 1
             self.wall_s[key] += time.perf_counter() - before
         return {"wall_s": time.perf_counter() - started, "calls": dict(self.calls), "action_wall_s": dict(self.wall_s)}

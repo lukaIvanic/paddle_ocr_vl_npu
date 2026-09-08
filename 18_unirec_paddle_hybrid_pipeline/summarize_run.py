@@ -79,6 +79,7 @@ def summarize(run):
         "including_setup_pages_s": run["pages"] / (run["wall_s"] + run["setup_s"]),
         "action_wall_s": run["action_wall_s"], "engines": engines,
         "page_preparation": run.get("page_preparation"),
+        "detailed_timing": run.get("detailed_timing"),
         "peak_torch_allocated_GiB": run["peak_torch_allocated_bytes"] / 2**30,
         "peak_torch_reserved_GiB": run["peak_torch_reserved_bytes"] / 2**30,
     }

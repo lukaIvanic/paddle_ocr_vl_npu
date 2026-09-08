@@ -1,6 +1,7 @@
 """Paddle execution delegates to experiment 09's existing model and arena."""
 from collections import deque
 from .base import Adapter
+from hybrid_timing import timed_method
 
 
 class ReadySource:
@@ -72,8 +73,10 @@ class PaddleAdapter(Adapter):
                         "text_input": item.input_tokens,
                     })
                     self.source.items.append(self.recognizer._ready_from_prefilled(item))
-        torch.npu.synchronize()
+        with self.timing.scope("paddle.prefill_yield_fence"):
+            torch.npu.synchronize()
 
+    @timed_method("paddle.completion_conversion")
     def complete(self, completion):
         result = self.recognizer._result_from_completion(completion, schedule_id="hybrid:paddle")
         self.emit(result.request_id, result.text, result.token_ids, result.stop_reason, "paddle")

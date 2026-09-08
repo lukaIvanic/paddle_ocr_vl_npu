@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from collections import Counter
 from threading import get_ident
 import time
+from hybrid_timing import NO_TIMING
 
 
 class LayoutPreparation:
@@ -16,6 +17,7 @@ class LayoutPreparation:
         self.service_s = Counter()
         self.threads = {"input": set(), "crops": set()}
         self.high_water = 0
+        self.timing = NO_TIMING
 
     @staticmethod
     def timed(function, *args):
@@ -40,13 +42,16 @@ class LayoutPreparation:
     def submit(self, path, ordinal):
         if self.input_future is not None:
             raise RuntimeError("layout input slot is occupied")
-        self.input_future = self.input_worker.submit(self.timed, self.prepare_input, path, ordinal)
+        self.input_flow = f"page:{ordinal}"
+        self.input_future = self.timing.submit(self.input_worker, self.timed, self.prepare_input, path, ordinal,
+                                               stage="page.input", flow_id=self.input_flow)
         self.input_future.add_done_callback(lambda _: self.notify())
         self.counts["submitted"] += 1
         self.high_water = max(self.high_water, 1 + (self.crop_future is not None))
 
     def consume(self, future, stage):
         value, seconds, thread = future.result()
+        self.timing.consume(future)
         self.counts[stage] += 1
         self.service_s[stage] += seconds
         self.threads[stage].add(thread)
@@ -65,7 +70,8 @@ class LayoutPreparation:
         detected = self.detect(inputs)  # Only called on the coordinator.
         self.service_s["detect_owner"] += time.perf_counter() - started
         self.counts["detected"] += 1
-        self.crop_future = self.crop_worker.submit(self.timed, self.prepare_crops, detected)
+        self.crop_future = self.timing.submit(self.crop_worker, self.timed, self.prepare_crops, detected,
+                                              stage="page.crops", flow_id=self.input_flow)
         self.crop_future.add_done_callback(lambda _: self.notify())
         return None
 

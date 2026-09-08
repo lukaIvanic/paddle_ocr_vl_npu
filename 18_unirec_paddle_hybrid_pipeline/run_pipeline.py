@@ -22,6 +22,7 @@ def parse_args():
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--decode-steps", type=int, default=32)
+    parser.add_argument("--detailed-timing", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--layout-model", type=Path, default=Path("/workspace/models/PP-DocLayoutV3_safetensors"))
     parser.add_argument("--paddle-model-path", type=Path, default=Path("/workspace/models/PaddleOCR-VL-1.6"))
     parser.add_argument("--paddle-batch-size", type=int, default=64)
@@ -44,12 +45,31 @@ def engine_report(adapter):
             for field in fields(summary)
             if field.name != "completions"
         }
+    # These legacy timers span generator suspension, including other engines
+    # and sometimes setup after iterator priming. Do not expose misleading
+    # "exclusive"/"bookkeeping" names as normal stage measurements.
+    summary = dict(summary)
+    lifetime = {}
+    for group, keys in {
+        "timing_detail": ("run_wall_s", "scheduler_bookkeeping_residual_s"),
+        "timing_s": ("continuous_decode_wall", "decode_host_exclusive_wall", "run_scoped_scheduler_wall"),
+    }.items():
+        if group in summary:
+            summary[group] = dict(summary[group])
+            for key in keys:
+                if key in summary[group]:
+                    lifetime[f"legacy_{key}"] = summary[group].pop(key)
     return {
         "graph_calls": adapter.graph_calls,
         "capacity": adapter.capacity,
         "ready_capacity": getattr(adapter, "ready_capacity", None),
         "prefill_request_counts": dict(getattr(adapter, "prefill_request_counts", {})),
         "summary": summary,
+        "cooperative_pause_inclusive_legacy_timing": {
+            "note": "Includes iterator suspension and possibly setup after priming. NOT exclusive work or scheduler overhead; do not use for throughput.",
+            "values": lifetime,
+        },
+        "prefill_timing_basis": "Device-event elapsed envelopes; can include transfers and host submission gaps. NOT kernel-active time.",
         "cpu_preparation": adapter.cpu.summary() if getattr(adapter, "cpu", None) is not None else None,
         "prefill_tokens": dict(getattr(adapter, "prefill_tokens", {})),
         "prefill_device_s": dict(getattr(adapter, "prefill_device_s", {})),
@@ -101,7 +121,7 @@ def make_unirec(args, emit):
     r._get_compiled_packed_text_prefill_runtime()
     r.compile_cache_dir = decode_cache_variant_root(production_decode_cache_parent(args.unirec_decode_cache), weight_format="nz", lm_head_rows=57344)
     decoder = ContinuousUniRecDecoder(runner=r, batch_size=args.unirec_batch_size, max_length=2048, decode_mode="compiled_ifa", compile_backend="torchair", admission_prefetch_depth=0, self_cache_length=2048, cross_cache_length=1320)
-    return UniRecAdapter(r, vision, decoder, emit, infer_doc_onnx)
+    return UniRecAdapter(r, vision, decoder, emit, infer_doc_onnx, collect_step_timing=args.detailed_timing)
 
 
 def main():
@@ -135,10 +155,15 @@ def main():
     install_layout_mask_guard()
     with (args.output_dir / "recognition_trace.jsonl").open("w") as trace:
         def emit_page(result):
-            result.save_to_markdown(str(predictions))
-            (predictions / (Path(result.data["input_path"]).stem + ".json")).write_text(json.dumps(result.json, ensure_ascii=False, indent=2) + "\n")
+            with timing.scope("output.markdown_and_images_build_write"):
+                result.save_to_markdown(str(predictions))
+            with timing.scope("output.json_encode"):
+                content = json.dumps(result.json, ensure_ascii=False, indent=2) + "\n"
+            with timing.scope("output.json_write"):
+                (predictions / (Path(result.data["input_path"]).stem + ".json")).write_text(content)
         def emit_trace(record):
-            trace.write(json.dumps(record, ensure_ascii=False) + "\n")
+            with timing.scope("output.crop_trace_encode_write"):
+                trace.write(json.dumps(record, ensure_ascii=False) + "\n")
         # UniRec's loader changes the process-global format flag. Finish its
         # initialization first, then establish the shared production setting.
         holder = {}
@@ -154,9 +179,12 @@ def main():
         holder["source"] = source
         setup_s = time.perf_counter() - started
         print(f"HYBRID setup_finish setup_s={setup_s:.3f} routes={asdict(routing)}", flush=True)
+        from hybrid_timing import PipelineTiming, install
+        timing = PipelineTiming(enabled=args.detailed_timing)
+        install(timing, adapters, source)
         try:
             with torch.inference_mode():
-                result = Coordinator(adapters, source, decode_steps=args.decode_steps).run()
+                result = Coordinator(adapters, source, decode_steps=args.decode_steps, timing=timing).run()
             if source.completed != len(paths) or source.pages or source.owners:
                 raise RuntimeError(
                     f"Incomplete pipeline drain: completed={source.completed}/{len(paths)} "
@@ -169,6 +197,7 @@ def main():
                 routing=asdict(routing),
                 engines={name: engine_report(a) for name, a in adapters.items()},
                 page_preparation=source.summary(),
+                detailed_timing=timing.summary(),
                 peak_torch_allocated_bytes=torch.npu.max_memory_allocated(),
                 peak_torch_reserved_bytes=torch.npu.max_memory_reserved(),
                 arguments={
@@ -176,6 +205,10 @@ def main():
                     for key, value in vars(args).items()
                 },
             )
+            diagnostics_started = time.perf_counter()
+            if timing.enabled:
+                timing.trace.write_json(args.output_dir / "timing_trace.json")
+            result["diagnostic_trace_write_s_excluded_from_pipeline"] = time.perf_counter() - diagnostics_started
             (args.output_dir / "run_summary.json").write_text(json.dumps(result, indent=2) + "\n")
             print(json.dumps(result, indent=2), flush=True)
         finally:
