@@ -1,0 +1,73 @@
+{
+  "format": "table_closed_loop_api_client_v2",
+  "created_at": "2026-09-08T10:30:17.087850+00:00",
+  "api_url": "http://127.0.0.1:18081/v1/chat/completions",
+  "api_kind": "vllm",
+  "client_label": "client",
+  "set": "warm",
+  "shuffle_seed": null,
+  "source_record_count": 665,
+  "unique_table_count": 1,
+  "selection_method": "fixed_ranked_subset",
+  "dispatch_request_ids": [
+    "page_001272_table_1"
+  ],
+  "requested_request_count": 1,
+  "request_count": 1,
+  "failed_request_count": 0,
+  "max_in_flight": 1,
+  "observed_max_in_flight": 1,
+  "stopped_sending_after_error": false,
+  "unsent_request_count": 0,
+  "run_wall_s": 8.098457028972916,
+  "completion_qps": 0.12348031191897609,
+  "successful_completion_qps": 0.12348031191897609,
+  "requested_start_epoch_s": null,
+  "actual_start_epoch_s": 1788863408.9764469,
+  "start_lag_s": null,
+  "latency_s": {
+    "count": 1,
+    "mean": 8.097264359006658,
+    "p50": 8.097264359006658,
+    "p90": 8.097264359006658,
+    "p95": 8.097264359006658,
+    "p99": 8.097264359006658,
+    "max": 8.097264359006658,
+    "sum": 8.097264359006658,
+    "median": 8.097264359006658
+  },
+  "api_configuration": {
+    "object": "list",
+    "data": [
+      {
+        "id": "PaddleOCR-VL-1.6",
+        "object": "model",
+        "created": 1788863408,
+        "owned_by": "vllm",
+        "root": "/workspace/models/PaddleOCR-VL-1.6",
+        "parent": null,
+        "max_model_len": 4096,
+        "permission": [
+          {
+            "id": "modelperm-86de363fb68a4ec9",
+            "object": "model_permission",
+            "created": 1788863408,
+            "allow_create_engine": false,
+            "allow_sampling": true,
+            "allow_logprobs": true,
+            "allow_search_indices": false,
+            "allow_view": true,
+            "allow_fine_tuning": false,
+            "organization": "*",
+            "group": null,
+            "is_blocking": false
+          }
+        ]
+      }
+    ]
+  },
+  "scheduling_metrics_request_count": 0,
+  "request_ids": [
+    "page_001272_table_1"
+  ]
+}

@@ -1,0 +1,777 @@
+{
+  "table_count": 97,
+  "table_page_count": 83,
+  "sample_TEDS": 0.9543563401614189,
+  "sample_TEDS_structure_only": 0.9827395499304948,
+  "page_TEDS": 0.9570138838805222,
+  "page_TEDS_structure_only": 0.9805232367584374,
+  "teds_timeout_s": 120,
+  "teds_timeout_count": 0,
+  "teds_error_count": 0,
+  "per_page_TEDS": {
+    "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png": 0.9715648353393351,
+    "page-bf2cd266-22b7-41d7-a244-28595d23974f.png": 1.0,
+    "notes_1ba14cb325bc448f7201b20502ecf2b5_33.jpg": 1.0,
+    "eastmoney_5f75d8df19ab34c706ae823d8ed54f845b6a693e31c0fae19b16cdd94c32a636.pdf_3.jpg": 1.0,
+    "jiaocaineedrop_jiaocai_needrop_en_2211.jpg": 1.0,
+    "scihub_bloodadvances.2019030924.pdf_3.jpg": 0.8210952380952381,
+    "docstructbench_llm-raw-scihub-o.O-s00348-003-0689-7.pdf_3.jpg": 0.9967741935483871,
+    "page-1f03d0f2-1166-4b9b-9609-94bf8bfd29b2.png": 0.9674408377310897,
+    "page-d0b2bb59-ce8e-4a1c-9ba1-a805606a477f.png": 0.9284899749373434,
+    "page-e6c5454d-90ad-495c-85db-a416b7cd6452.png": 0.9734848484848485,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-61510621.pdf_161.jpg": 0.9886097170625301,
+    "yanbaor2_5e0df1ef7b30d8982c5cd3665f60d5b7a92d3ba7bb1b76c61b8a01777cebc7a6.pdf_19.jpg": 0.9792113374430448,
+    "page-632fad6b-6da9-4567-bd2d-a4763a03a314.png": 0.9885361552028219,
+    "eastmoney_dcf347592d4160dffacffdf00a9c39aa75cf9859205a7543c283d1df8bb14f90.pdf_1.jpg": 0.9636729691876751,
+    "notes_1ba14cb325bc448f7201b20502ecf2b5_58.jpg": 1.0,
+    "yanbaopptmerge_ee19df4a08e3d07ac1190446f5b3dd3f25438c661b87cf4fbb9040ac5fac443b.pdf_1.jpg": 0.9978354978354979,
+    "docstructbench_llm-raw-scihub-o.O-ceat.200600410.pdf_5.jpg": 0.9955198777323319,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-63711094.pdf_34.jpg": 1.0,
+    "eastmoney_e42b6e1cd2d48113ff4db8854e539d828d632bf9b1757e10cb8ddb2cfc7b1393.pdf_12.jpg": 0.9793320105820106,
+    "yanbaor2_5e780ffd1efcf79950df199abb69a114dd782d5b549ecd025b640f29a4feabef.pdf_2.jpg": 0.9968720165854871,
+    "scihub_AEM.01420-09.pdf_3.jpg": 0.8817918267398327,
+    "page-d8376ede-3935-4a80-8acb-525b14796774.png": 1.0,
+    "yanbaopptmerge_bde265c4886a63cc9a96575991522f2abfce961325fcd4884fabd9a79c423ffa.pdf_2.jpg": 1.0,
+    "docstructbench_llm-raw-scihub-o.O-s001280000131.pdf_5.jpg": 0.8517598378382693,
+    "yanbaor2_yanbaoPPT_569.jpg": 1.0,
+    "docstructbench_llm-raw-scihub-o.O-s00374-003-0589-2.pdf_6.jpg": 0.971201588877855,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-63711094.pdf_56.jpg": 0.9703703703703703,
+    "yanbaopptmerge_70a45bf10fb90ae0c91d44a11e0a97a8f9515d85626b54eb50a80b6146e5c2bf.pdf_10.jpg": 0.9190283400809717,
+    "page-572316a1-cdf8-4c50-81d4-2e6dc13dcdce.png": 0.9969230769230769,
+    "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_025.png": 0.8451664096626306,
+    "yanbaopptmerge_4304d65458262c3161cf5d0440c6a56851222ce1da3d7886cdd2320ce2222c4a.pdf_7.jpg": 0.9949494949494949,
+    "jiaocaineedrop_jiaocai_needrop_en_2272.jpg": 0.8522222222222222,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-60368448.pdf_343.jpg": 0.998792270531401,
+    "docstructbench_llm-raw-scihub-o.O-s10555-005-1578-8.pdf_5.jpg": 0.9699341955979124,
+    "jiaocaineedrop_42351289.pdf_1.jpg": 1.0,
+    "eastmoney_5c22c7d248262382ae63af18e9ef65bd26ffdf78c2f3af32137e0b4f92a0ba92.pdf_4.jpg": 0.9985964912280701,
+    "yanbaopptmerge_2b8553b00244437fa3e502aa2d3d319ed74459a1e264a4fdd9ecc14ce46609d5.pdf_2.jpg": 0.9422557862527536,
+    "eastmoney_d2bb183f5254ede5760932ac3118524aa7eddad551935713b435541f1525c1ee.pdf_3.jpg": 0.9961013645224172,
+    "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.05.085.pdf_4.jpg": 0.7426136363636364,
+    "docstructbench_llm-raw-the-eye-o.O-Character%20Sheet%20-%20Form%20Fillable.pdf_2.jpg": 0.9303076923076923,
+    "color_textbook_教材全解1+1二年级上册英语上海牛津版_page_058.png": 0.7692307692307692,
+    "jiaocai_jiaocai_en_91.jpg": 1.0,
+    "newspaper_fe5ed29024932fad071afc53807b16ba_2.jpg": 0.9428150465150641,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-61520779.pdf_76.jpg": 0.9991365746958825,
+    "yanbaor2_4f58b4bb233e5ccdf512d286d177cb94e6f6ae91d5b089ac841727067a20a510.pdf_3.jpg": 0.9944170771756978,
+    "jiaocaineedrop_jiaocai_needrop_en_625.jpg": 1.0,
+    "notes_1ba14cb325bc448f7201b20502ecf2b5_37.jpg": 0.9964260756713587,
+    "eastmoney_fcc1c7940f94c7f36157a4aa9c1c804fe16e6b681ca1cef589af39c6d3e0cb90.pdf_0.jpg": 0.9689353856020523,
+    "page-b23ec9d4-e4aa-458f-8e65-c2c7f8e9dd46.png": 0.9972979648290852,
+    "jiaocaineedrop_jiaocai_needrop_en_1826.jpg": 0.9994388327721662,
+    "page-2abc2a95-d39a-48db-9b6d-f40410412694.png": 0.8532148407148408,
+    "docstructbench_llm-raw-the-eye-o.O-TFT-Traveller.pdf_6.jpg": 0.9759872985223516,
+    "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png": 0.9583333333333334,
+    "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.08.021.pdf_7.jpg": 0.9427137756879136,
+    "jiaocaineedrop_jiaocai_needrop_en_574.jpg": 1.0,
+    "jiaocaineedrop_96657786.pdf_0.jpg": 1.0,
+    "magazine_TheEconomist.2024.02.24_page_076.png": 0.6782577614379085,
+    "jiaocaineedrop_jiaocai_needrop_en_3751.jpg": 0.9904761904761905,
+    "notes_1ba14cb325bc448f7201b20502ecf2b5_78.jpg": 1.0,
+    "page-3bed7e71-905d-4f69-aabe-dbff56d7ac4c.png": 0.8432147562582345,
+    "jiaocaineedrop_jiaocai_needrop_en_1920.jpg": 1.0,
+    "page-14a6b411-9097-4eec-86da-92075868d243.png": 0.9596832727021406,
+    "docstructbench_dianzishu_zhongwenzaixian-o.O-63684502.pdf_263.jpg": 0.9945454545454545,
+    "newspaper_01f020903d7bc4b3fc69f500f41eb77e_1.jpg": 1.0,
+    "jiaocaineedrop_ced6f3c05e1dfefa8455fa60aacdd2d76ffd79489b631c2dbde22a74e927544b.pdf_84.jpg": 0.9746032278895825,
+    "page-d5f79be0-5d57-4849-9897-6106dd32117a.png": 0.8095238095238095,
+    "eastmoney_6e1cdb75430fe7d7a7757754d163d1a4a8a1c2a3fca38b74a8a2e8df009f2ce0.pdf_2.jpg": 0.9978354978354979,
+    "yanbaor2_yanbaoPPT_5544.jpg": 1.0,
+    "page-f245e436-c16e-4d7c-8797-c473bf25880a.png": 0.996,
+    "docstructbench_llm-raw-the-eye-o.O-Player%27s%20Options%20-%20Halflings.pdf_11.jpg": 0.8256802721088435,
+    "page-f8c08102-a96d-4533-b3a1-dac6020513b5.png": 0.9699347671639863,
+    "yanbaopptmerge_aec1bf4ddb8fb4996b0512e90b3bfb31c9b151919f5d7b4a4f658f4b1f762b9e.pdf_2.jpg": 0.9754901960784313,
+    "page-0c1be55c-0b1b-4d62-b17d-ed752f9af9f2.png": 1.0,
+    "yanbaopptmerge_51e549c0d1a2669ac976409fcf99ce91908b1e0a07f0fc70d92263abf6d07f18.pdf_1.jpg": 1.0,
+    "page-bf3685a0-f0ea-46a7-bb99-1526da8f8077.png": 0.9198564593301435,
+    "scihub_journal.pone.0166577.pdf_5.jpg": 0.9813602321930353,
+    "yanbaopptmerge_2d0d871a074b4818b16b4425cafac8dd221d91fbde8deae28efba2af50359c50.pdf_1.jpg": 1.0,
+    "docstructbench_llm-raw-scihub-o.O-s0362-546x%2897%2900070-9.pdf_7.jpg": 0.9865384615384616,
+    "jiaocaineedrop_33137159.pdf_3.jpg": 1.0,
+    "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg": 0.8613636363636363,
+    "jiaocaineedrop_jiaocai_needrop_en_439.jpg": 0.9461659663865546,
+    "yanbaopptmerge_2325ef43385f09f3c8539d0f817edf9b39a086325d416958e4b481904f9867db.pdf_12.jpg": 0.9947597728031314,
+    "scihub_s00586-010-1656-7.pdf_3.jpg": 0.9184615384615384
+  },
+  "per_table": [
+    {
+      "request_id": "variant_0",
+      "page_name": "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+      "TEDS": 0.9898282097649186,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_1",
+      "page_name": "page-bf2cd266-22b7-41d7-a244-28595d23974f.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_2",
+      "page_name": "notes_1ba14cb325bc448f7201b20502ecf2b5_33.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_3",
+      "page_name": "eastmoney_5f75d8df19ab34c706ae823d8ed54f845b6a693e31c0fae19b16cdd94c32a636.pdf_3.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_4",
+      "page_name": "jiaocaineedrop_jiaocai_needrop_en_2211.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_5",
+      "page_name": "scihub_bloodadvances.2019030924.pdf_3.jpg",
+      "TEDS": 0.8210952380952381,
+      "TEDS_structure_only": 0.95,
+      "error": null
+    },
+    {
+      "request_id": "variant_6",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s00348-003-0689-7.pdf_3.jpg",
+      "TEDS": 0.9967741935483871,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_7",
+      "page_name": "page-1f03d0f2-1166-4b9b-9609-94bf8bfd29b2.png",
+      "TEDS": 0.9674408377310897,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_8",
+      "page_name": "page-d0b2bb59-ce8e-4a1c-9ba1-a805606a477f.png",
+      "TEDS": 0.9284899749373434,
+      "TEDS_structure_only": 0.9583333333333334,
+      "error": null
+    },
+    {
+      "request_id": "variant_9",
+      "page_name": "page-e6c5454d-90ad-495c-85db-a416b7cd6452.png",
+      "TEDS": 0.9734848484848485,
+      "TEDS_structure_only": 0.9772727272727273,
+      "error": null
+    },
+    {
+      "request_id": "variant_10",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61510621.pdf_161.jpg",
+      "TEDS": 0.9886097170625301,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_11",
+      "page_name": "yanbaor2_5e0df1ef7b30d8982c5cd3665f60d5b7a92d3ba7bb1b76c61b8a01777cebc7a6.pdf_19.jpg",
+      "TEDS": 0.9792113374430448,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_12",
+      "page_name": "page-632fad6b-6da9-4567-bd2d-a4763a03a314.png",
+      "TEDS": 0.9814814814814815,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_13",
+      "page_name": "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+      "TEDS": 0.9704429083461341,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_14",
+      "page_name": "eastmoney_dcf347592d4160dffacffdf00a9c39aa75cf9859205a7543c283d1df8bb14f90.pdf_1.jpg",
+      "TEDS": 0.9636729691876751,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_15",
+      "page_name": "notes_1ba14cb325bc448f7201b20502ecf2b5_58.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_16",
+      "page_name": "yanbaopptmerge_ee19df4a08e3d07ac1190446f5b3dd3f25438c661b87cf4fbb9040ac5fac443b.pdf_1.jpg",
+      "TEDS": 0.9978354978354979,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_17",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-ceat.200600410.pdf_5.jpg",
+      "TEDS": 0.9970760233918129,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_18",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-63711094.pdf_34.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_19",
+      "page_name": "eastmoney_e42b6e1cd2d48113ff4db8854e539d828d632bf9b1757e10cb8ddb2cfc7b1393.pdf_12.jpg",
+      "TEDS": 0.9793320105820106,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_20",
+      "page_name": "yanbaor2_5e780ffd1efcf79950df199abb69a114dd782d5b549ecd025b640f29a4feabef.pdf_2.jpg",
+      "TEDS": 0.9968720165854871,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_21",
+      "page_name": "scihub_AEM.01420-09.pdf_3.jpg",
+      "TEDS": 0.8817918267398327,
+      "TEDS_structure_only": 0.92,
+      "error": null
+    },
+    {
+      "request_id": "variant_22",
+      "page_name": "page-d8376ede-3935-4a80-8acb-525b14796774.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_23",
+      "page_name": "yanbaopptmerge_bde265c4886a63cc9a96575991522f2abfce961325fcd4884fabd9a79c423ffa.pdf_2.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_24",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s001280000131.pdf_5.jpg",
+      "TEDS": 0.8517598378382693,
+      "TEDS_structure_only": 0.9333333333333333,
+      "error": null
+    },
+    {
+      "request_id": "variant_25",
+      "page_name": "yanbaor2_yanbaoPPT_569.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_26",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-003-0589-2.pdf_6.jpg",
+      "TEDS": 0.971201588877855,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_27",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-63711094.pdf_56.jpg",
+      "TEDS": 0.9703703703703703,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_28",
+      "page_name": "yanbaopptmerge_70a45bf10fb90ae0c91d44a11e0a97a8f9515d85626b54eb50a80b6146e5c2bf.pdf_10.jpg",
+      "TEDS": 0.9190283400809717,
+      "TEDS_structure_only": 0.9230769230769231,
+      "error": null
+    },
+    {
+      "request_id": "variant_29",
+      "page_name": "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+      "TEDS": 0.96,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_30",
+      "page_name": "page-572316a1-cdf8-4c50-81d4-2e6dc13dcdce.png",
+      "TEDS": 0.9969230769230769,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_31",
+      "page_name": "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_025.png",
+      "TEDS": 0.6999183006535947,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_32",
+      "page_name": "yanbaopptmerge_4304d65458262c3161cf5d0440c6a56851222ce1da3d7886cdd2320ce2222c4a.pdf_7.jpg",
+      "TEDS": 0.9949494949494949,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_33",
+      "page_name": "page-632fad6b-6da9-4567-bd2d-a4763a03a314.png",
+      "TEDS": 0.9841269841269842,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_34",
+      "page_name": "jiaocaineedrop_jiaocai_needrop_en_2272.jpg",
+      "TEDS": 0.8522222222222222,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_35",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-60368448.pdf_343.jpg",
+      "TEDS": 0.998792270531401,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_36",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s10555-005-1578-8.pdf_5.jpg",
+      "TEDS": 0.9699341955979124,
+      "TEDS_structure_only": 0.9734513274336283,
+      "error": null
+    },
+    {
+      "request_id": "variant_37",
+      "page_name": "jiaocaineedrop_42351289.pdf_1.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_38",
+      "page_name": "eastmoney_5c22c7d248262382ae63af18e9ef65bd26ffdf78c2f3af32137e0b4f92a0ba92.pdf_4.jpg",
+      "TEDS": 0.9985964912280701,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_39",
+      "page_name": "yanbaopptmerge_2b8553b00244437fa3e502aa2d3d319ed74459a1e264a4fdd9ecc14ce46609d5.pdf_2.jpg",
+      "TEDS": 0.9422557862527536,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_40",
+      "page_name": "eastmoney_d2bb183f5254ede5760932ac3118524aa7eddad551935713b435541f1525c1ee.pdf_3.jpg",
+      "TEDS": 0.9961013645224172,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_41",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.05.085.pdf_4.jpg",
+      "TEDS": 0.7426136363636364,
+      "TEDS_structure_only": 0.9772727272727273,
+      "error": null
+    },
+    {
+      "request_id": "variant_42",
+      "page_name": "docstructbench_llm-raw-the-eye-o.O-Character%20Sheet%20-%20Form%20Fillable.pdf_2.jpg",
+      "TEDS": 0.976,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_43",
+      "page_name": "color_textbook_教材全解1+1二年级上册英语上海牛津版_page_058.png",
+      "TEDS": 0.7692307692307692,
+      "TEDS_structure_only": 0.7692307692307692,
+      "error": null
+    },
+    {
+      "request_id": "variant_44",
+      "page_name": "jiaocai_jiaocai_en_91.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_45",
+      "page_name": "newspaper_fe5ed29024932fad071afc53807b16ba_2.jpg",
+      "TEDS": 0.9428150465150641,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_46",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61520779.pdf_76.jpg",
+      "TEDS": 0.9991365746958825,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_47",
+      "page_name": "yanbaor2_4f58b4bb233e5ccdf512d286d177cb94e6f6ae91d5b089ac841727067a20a510.pdf_3.jpg",
+      "TEDS": 0.9944170771756978,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_48",
+      "page_name": "jiaocaineedrop_jiaocai_needrop_en_625.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_49",
+      "page_name": "notes_1ba14cb325bc448f7201b20502ecf2b5_37.jpg",
+      "TEDS": 0.9964260756713587,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_50",
+      "page_name": "eastmoney_fcc1c7940f94c7f36157a4aa9c1c804fe16e6b681ca1cef589af39c6d3e0cb90.pdf_0.jpg",
+      "TEDS": 0.9689353856020523,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_51",
+      "page_name": "page-b23ec9d4-e4aa-458f-8e65-c2c7f8e9dd46.png",
+      "TEDS": 0.9972979648290852,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_52",
+      "page_name": "jiaocaineedrop_jiaocai_needrop_en_1826.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_53",
+      "page_name": "page-2abc2a95-d39a-48db-9b6d-f40410412694.png",
+      "TEDS": 0.8532148407148408,
+      "TEDS_structure_only": 0.8601398601398601,
+      "error": null
+    },
+    {
+      "request_id": "variant_54",
+      "page_name": "docstructbench_llm-raw-the-eye-o.O-Character%20Sheet%20-%20Form%20Fillable.pdf_2.jpg",
+      "TEDS": 0.8846153846153846,
+      "TEDS_structure_only": 0.8846153846153846,
+      "error": null
+    },
+    {
+      "request_id": "variant_55",
+      "page_name": "docstructbench_llm-raw-the-eye-o.O-TFT-Traveller.pdf_6.jpg",
+      "TEDS": 0.9759872985223516,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_56",
+      "page_name": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+      "TEDS": 0.9583333333333334,
+      "TEDS_structure_only": 0.9583333333333334,
+      "error": null
+    },
+    {
+      "request_id": "variant_57",
+      "page_name": "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_025.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_58",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.08.021.pdf_7.jpg",
+      "TEDS": 0.9731800766283525,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_59",
+      "page_name": "jiaocaineedrop_jiaocai_needrop_en_574.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_60",
+      "page_name": "jiaocaineedrop_96657786.pdf_0.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_61",
+      "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+      "TEDS": 0.6782577614379085,
+      "TEDS_structure_only": 0.6875,
+      "error": null
+    },
+    {
+      "request_id": "variant_62",
+      "page_name": "jiaocaineedrop_jiaocai_needrop_en_3751.jpg",
+      "TEDS": 0.9904761904761905,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_63",
+      "page_name": "notes_1ba14cb325bc448f7201b20502ecf2b5_78.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_64",
+      "page_name": "page-3bed7e71-905d-4f69-aabe-dbff56d7ac4c.png",
+      "TEDS": 0.8432147562582345,
+      "TEDS_structure_only": 0.8541666666666666,
+      "error": null
+    },
+    {
+      "request_id": "variant_65",
+      "page_name": "jiaocaineedrop_jiaocai_needrop_en_1920.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_66",
+      "page_name": "page-14a6b411-9097-4eec-86da-92075868d243.png",
+      "TEDS": 0.9596832727021406,
+      "TEDS_structure_only": 0.969811320754717,
+      "error": null
+    },
+    {
+      "request_id": "variant_67",
+      "page_name": "page-632fad6b-6da9-4567-bd2d-a4763a03a314.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_68",
+      "page_name": "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_025.png",
+      "TEDS": 0.7962558718944168,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_69",
+      "page_name": "jiaocaineedrop_jiaocai_needrop_en_1826.jpg",
+      "TEDS": 0.9988776655443322,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_70",
+      "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-63684502.pdf_263.jpg",
+      "TEDS": 0.9945454545454545,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_71",
+      "page_name": "newspaper_01f020903d7bc4b3fc69f500f41eb77e_1.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_72",
+      "page_name": "page-d8376ede-3935-4a80-8acb-525b14796774.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_73",
+      "page_name": "jiaocaineedrop_ced6f3c05e1dfefa8455fa60aacdd2d76ffd79489b631c2dbde22a74e927544b.pdf_84.jpg",
+      "TEDS": 0.9746032278895825,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_74",
+      "page_name": "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_025.png",
+      "TEDS": 0.8741258741258742,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_75",
+      "page_name": "page-d5f79be0-5d57-4849-9897-6106dd32117a.png",
+      "TEDS": 0.8095238095238095,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_76",
+      "page_name": "newspaper_TheBostonGlobe-2025-1-8@magazinesclubnew_page_025.png",
+      "TEDS": 0.855532001639268,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_77",
+      "page_name": "eastmoney_6e1cdb75430fe7d7a7757754d163d1a4a8a1c2a3fca38b74a8a2e8df009f2ce0.pdf_2.jpg",
+      "TEDS": 0.9978354978354979,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_78",
+      "page_name": "yanbaor2_yanbaoPPT_5544.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_79",
+      "page_name": "page-f245e436-c16e-4d7c-8797-c473bf25880a.png",
+      "TEDS": 0.996,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_80",
+      "page_name": "docstructbench_llm-raw-the-eye-o.O-Player%27s%20Options%20-%20Halflings.pdf_11.jpg",
+      "TEDS": 0.8256802721088435,
+      "TEDS_structure_only": 0.8571428571428572,
+      "error": null
+    },
+    {
+      "request_id": "variant_81",
+      "page_name": "page-f8c08102-a96d-4533-b3a1-dac6020513b5.png",
+      "TEDS": 0.9699347671639863,
+      "TEDS_structure_only": 0.9798488664987406,
+      "error": null
+    },
+    {
+      "request_id": "variant_82",
+      "page_name": "yanbaopptmerge_aec1bf4ddb8fb4996b0512e90b3bfb31c9b151919f5d7b4a4f658f4b1f762b9e.pdf_2.jpg",
+      "TEDS": 0.9754901960784313,
+      "TEDS_structure_only": 0.9803921568627451,
+      "error": null
+    },
+    {
+      "request_id": "variant_83",
+      "page_name": "page-0c1be55c-0b1b-4d62-b17d-ed752f9af9f2.png",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_84",
+      "page_name": "yanbaopptmerge_51e549c0d1a2669ac976409fcf99ce91908b1e0a07f0fc70d92263abf6d07f18.pdf_1.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_85",
+      "page_name": "page-bf3685a0-f0ea-46a7-bb99-1526da8f8077.png",
+      "TEDS": 0.9198564593301435,
+      "TEDS_structure_only": 0.9210526315789473,
+      "error": null
+    },
+    {
+      "request_id": "variant_86",
+      "page_name": "scihub_journal.pone.0166577.pdf_5.jpg",
+      "TEDS": 0.9813602321930353,
+      "TEDS_structure_only": 0.9907621247113164,
+      "error": null
+    },
+    {
+      "request_id": "variant_87",
+      "page_name": "yanbaopptmerge_2d0d871a074b4818b16b4425cafac8dd221d91fbde8deae28efba2af50359c50.pdf_1.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_88",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-s0362-546x%2897%2900070-9.pdf_7.jpg",
+      "TEDS": 0.9865384615384616,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_89",
+      "page_name": "jiaocaineedrop_33137159.pdf_3.jpg",
+      "TEDS": 1.0,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_90",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-bf03175144.pdf_4.jpg",
+      "TEDS": 0.8613636363636363,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_91",
+      "page_name": "jiaocaineedrop_jiaocai_needrop_en_439.jpg",
+      "TEDS": 0.9461659663865546,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_92",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.08.021.pdf_7.jpg",
+      "TEDS": 0.9122474747474747,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_93",
+      "page_name": "docstructbench_llm-raw-scihub-o.O-ceat.200600410.pdf_5.jpg",
+      "TEDS": 0.9939637320728508,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_94",
+      "page_name": "yanbaopptmerge_2325ef43385f09f3c8539d0f817edf9b39a086325d416958e4b481904f9867db.pdf_12.jpg",
+      "TEDS": 0.9947597728031314,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_95",
+      "page_name": "scihub_s00586-010-1656-7.pdf_3.jpg",
+      "TEDS": 0.9184615384615384,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    },
+    {
+      "request_id": "variant_96",
+      "page_name": "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+      "TEDS": 0.9659882232462877,
+      "TEDS_structure_only": 1.0,
+      "error": null
+    }
+  ]
+}

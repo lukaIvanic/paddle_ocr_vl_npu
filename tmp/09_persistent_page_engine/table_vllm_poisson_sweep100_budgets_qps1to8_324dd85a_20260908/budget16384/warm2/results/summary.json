@@ -1,0 +1,73 @@
+{
+  "format": "table_closed_loop_api_client_v2",
+  "created_at": "2026-09-08T10:55:12.930290+00:00",
+  "api_url": "http://127.0.0.1:18081/v1/chat/completions",
+  "api_kind": "vllm",
+  "client_label": "client",
+  "set": "warm",
+  "shuffle_seed": null,
+  "source_record_count": 665,
+  "unique_table_count": 1,
+  "selection_method": "fixed_ranked_subset",
+  "dispatch_request_ids": [
+    "page_001272_table_1"
+  ],
+  "requested_request_count": 1,
+  "request_count": 1,
+  "failed_request_count": 0,
+  "max_in_flight": 1,
+  "observed_max_in_flight": 1,
+  "stopped_sending_after_error": false,
+  "unsent_request_count": 0,
+  "run_wall_s": 7.95414183603134,
+  "completion_qps": 0.1257206648579129,
+  "successful_completion_qps": 0.1257206648579129,
+  "requested_start_epoch_s": null,
+  "actual_start_epoch_s": 1788864904.9633794,
+  "start_lag_s": null,
+  "latency_s": {
+    "count": 1,
+    "mean": 7.952956025954336,
+    "p50": 7.952956025954336,
+    "p90": 7.952956025954336,
+    "p95": 7.952956025954336,
+    "p99": 7.952956025954336,
+    "max": 7.952956025954336,
+    "sum": 7.952956025954336,
+    "median": 7.952956025954336
+  },
+  "api_configuration": {
+    "object": "list",
+    "data": [
+      {
+        "id": "PaddleOCR-VL-1.6",
+        "object": "model",
+        "created": 1788864904,
+        "owned_by": "vllm",
+        "root": "/workspace/models/PaddleOCR-VL-1.6",
+        "parent": null,
+        "max_model_len": 4096,
+        "permission": [
+          {
+            "id": "modelperm-a08e74e9237bd00b",
+            "object": "model_permission",
+            "created": 1788864904,
+            "allow_create_engine": false,
+            "allow_sampling": true,
+            "allow_logprobs": true,
+            "allow_search_indices": false,
+            "allow_view": true,
+            "allow_fine_tuning": false,
+            "organization": "*",
+            "group": null,
+            "is_blocking": false
+          }
+        ]
+      }
+    ]
+  },
+  "scheduling_metrics_request_count": 0,
+  "request_ids": [
+    "page_001272_table_1"
+  ]
+}

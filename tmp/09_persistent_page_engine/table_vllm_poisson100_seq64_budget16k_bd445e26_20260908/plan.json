@@ -1,0 +1,22 @@
+{
+  "matrix": {
+    "16384": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ]
+  },
+  "api_kind": "vllm",
+  "count": 100,
+  "seed": 1,
+  "npu": 4,
+  "max_sequences": 64,
+  "source_fingerprint": "337c1ae4c960332342fc5c9beb4d2ec9c87fab0fc9843c02a297b8eb9ec8e6f0",
+  "git_commit": "bd445e2635a8f8d9c57070f4a28fe11171c2824f",
+  "note": "Open loop, no client concurrency cap. All work and queueing count in latency."
+}

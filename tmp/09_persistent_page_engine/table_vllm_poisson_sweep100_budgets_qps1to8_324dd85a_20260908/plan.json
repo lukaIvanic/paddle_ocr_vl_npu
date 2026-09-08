@@ -1,0 +1,41 @@
+{
+  "matrix": {
+    "4096": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "8192": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "16384": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ]
+  },
+  "api_kind": "vllm",
+  "count": 100,
+  "seed": 1,
+  "npu": 4,
+  "source_fingerprint": "edc442f6778d04ad9606f4d6815e9b82c3b6844774f9bb1d6e40e9c3b96160ee",
+  "git_commit": "324dd85a5f253c59027857d99af8172c6e7d1e82",
+  "note": "Open loop, no client concurrency cap. All work and queueing count in latency."
+}

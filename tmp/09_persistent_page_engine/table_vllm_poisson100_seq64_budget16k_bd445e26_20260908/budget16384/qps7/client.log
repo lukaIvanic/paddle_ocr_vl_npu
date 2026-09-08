@@ -1,0 +1,206 @@
+OCR API ready worker_pid=None; preparing table crops in RAM
+Frozen ALL cohort: 665 tables (121 LaTeX, 544 non-LaTeX)
+Scheduled 100 Poisson arrivals at 7 QPS; request limit=100; last scheduled arrival at 14.445s; HTTP endpoint=http://127.0.0.1:18081/v1/chat/completions
+Writing each completion to tmp/09_persistent_page_engine/table_vllm_poisson100_seq64_budget16k_bd445e26_20260908/budget16384/qps7/measured/results.jsonl
+[   0.022s] SEND #00001 table=page_001375_table_1 lag=   1.0ms active=1
+[   0.290s] SEND #00002 table=page_000256_table_box_id_1 lag=   0.6ms active=2
+[   0.497s] SEND #00003 table=page_000918_table_6 lag=   1.8ms active=3
+[   0.538s] SEND #00004 table=page_001130_table_1 lag=   1.0ms active=4
+[   0.635s] SEND #00005 table=page_000758_table_21 lag=   0.3ms active=5
+[   0.721s] SEND #00006 table=page_001202_table_3 lag=   1.1ms active=6
+[   0.872s] SEND #00007 table=page_000636_table_5 lag=   0.6ms active=7
+[   1.094s] SEND #00008 table=page_000254_table_box_id_4 lag=   0.8ms active=8
+[   1.109s] SEND #00009 table=page_000178_table_box_id_1 lag=   2.0ms active=9
+[   1.112s] SEND #00010 table=page_000220_table_box_id_7 lag=   1.0ms active=10
+[   1.370s] SEND #00011 table=page_000505_table_1 lag=   1.1ms active=11
+[   1.451s] SEND #00012 table=page_000418_table_3 lag=   0.7ms active=12
+[   1.533s] RECV #00005 table=page_000758_table_21 request= 0.898s scheduled= 0.898s status=ok active=11
+[   1.657s] SEND #00013 table=page_000266_table_box_id_7 lag=   1.2ms active=12
+[   1.658s] SEND #00014 table=page_001375_table_4 lag=   1.6ms active=13
+[   1.741s] SEND #00015 table=page_001158_table_3 lag=   0.8ms active=14
+[   1.923s] SEND #00016 table=page_000930_table_7 lag=   0.6ms active=15
+[   1.962s] SEND #00017 table=page_001198_table_8 lag=   1.8ms active=16
+[   2.377s] SEND #00018 table=page_000434_table_15 lag=   2.3ms active=17
+[   2.409s] RECV #00004 table=page_001130_table_1 request= 1.871s scheduled= 1.872s status=ok active=16
+[   2.440s] RECV #00003 table=page_000918_table_6 request= 1.943s scheduled= 1.944s status=ok active=15
+[   2.479s] RECV #00002 table=page_000256_table_box_id_1 request= 2.189s scheduled= 2.190s status=ok active=14
+[   2.658s] RECV #00007 table=page_000636_table_5 request= 1.787s scheduled= 1.787s status=ok active=13
+[   2.707s] SEND #00019 table=page_000534_table_4 lag=   0.7ms active=14
+[   2.711s] SEND #00020 table=page_001161_table_3 lag=   0.3ms active=15
+[   2.715s] SEND #00021 table=page_000566_table_3 lag=   0.6ms active=16
+[   2.826s] SEND #00022 table=page_001200_table_2 lag=   0.5ms active=17
+[   3.226s] SEND #00023 table=page_000246_table_box_id_6 lag=   0.4ms active=18
+[   3.295s] SEND #00024 table=page_001193_table_4 lag=   0.9ms active=19
+[   3.330s] SEND #00025 table=page_001270_table_box_id_1 lag=   1.1ms active=20
+[   3.408s] SEND #00026 table=page_000592_table_3 lag=   0.9ms active=21
+[   3.412s] SEND #00027 table=page_000494_table_7 lag=   0.4ms active=22
+[   3.448s] SEND #00028 table=page_000535_table_1 lag=   0.7ms active=23
+[   3.530s] SEND #00029 table=page_001186_table_5 lag=   0.9ms active=24
+[   3.628s] SEND #00030 table=page_001375_table_31 lag=   0.4ms active=25
+[   3.666s] SEND #00031 table=page_000218_table_box_id_4 lag=   0.6ms active=26
+[   3.704s] SEND #00032 table=page_001368_table_box_id_278 lag=   1.5ms active=27
+[   3.739s] SEND #00033 table=page_001180_table_15 lag=   0.7ms active=28
+[   3.828s] SEND #00034 table=page_000266_table_box_id_9 lag=   1.9ms active=29
+[   3.875s] SEND #00035 table=page_000762_table_5 lag=   0.3ms active=30
+[   3.878s] SEND #00036 table=page_000499_table_0 lag=   0.2ms active=31
+[   4.138s] SEND #00037 table=page_000642_table_8 lag=   0.8ms active=32
+[   4.255s] SEND #00038 table=page_000659_table_5 lag=   1.0ms active=33
+[   4.401s] SEND #00039 table=page_001128_table_2 lag=   0.4ms active=34
+[   4.431s] SEND #00040 table=page_001176_table_4 lag=   1.2ms active=35
+[   5.026s] RECV #00016 table=page_000930_table_7 request= 3.103s scheduled= 3.103s status=ok active=34
+[   5.082s] RECV #00038 table=page_000659_table_5 request= 0.828s scheduled= 0.829s status=ok active=33
+[   5.131s] SEND #00041 table=page_001154_table_10 lag=   1.0ms active=34
+[   5.411s] SEND #00042 table=page_000467_table_17 lag=   0.6ms active=35
+[   5.429s] SEND #00043 table=page_000647_table_3 lag=   0.2ms active=36
+[   5.433s] RECV #00030 table=page_001375_table_31 request= 1.805s scheduled= 1.806s status=ok active=35
+[   5.488s] SEND #00044 table=page_001493_table_box_id_13 lag=   0.8ms active=36
+[   5.670s] SEND #00045 table=page_000605_table_3 lag=   0.5ms active=37
+[   5.834s] RECV #00013 table=page_000266_table_box_id_7 request= 4.177s scheduled= 4.178s status=ok active=36
+[   5.849s] SEND #00046 table=page_001117_table_box_id_17 lag=   1.9ms active=37
+[   5.990s] RECV #00032 table=page_001368_table_box_id_278 request= 2.286s scheduled= 2.288s status=ok active=36
+[   6.038s] RECV #00035 table=page_000762_table_5 request= 2.163s scheduled= 2.164s status=ok active=35
+[   6.083s] RECV #00043 table=page_000647_table_3 request= 0.654s scheduled= 0.654s status=ok active=34
+[   6.094s] RECV #00045 table=page_000605_table_3 request= 0.424s scheduled= 0.425s status=ok active=33
+[   6.105s] RECV #00029 table=page_001186_table_5 request= 2.575s scheduled= 2.576s status=ok active=32
+[   6.128s] RECV #00023 table=page_000246_table_box_id_6 request= 2.902s scheduled= 2.902s status=ok active=31
+[   6.241s] SEND #00047 table=page_000509_table_0 lag=   0.7ms active=32
+[   6.319s] SEND #00048 table=page_000565_table_1 lag=   0.7ms active=33
+[   6.573s] SEND #00049 table=page_000841_table_22 lag=   1.0ms active=34
+[   6.731s] SEND #00050 table=page_000922_table_12 lag=   0.8ms active=35
+[   6.783s] SEND #00051 table=page_001169_table_11 lag=   0.6ms active=36
+[   6.910s] SEND #00052 table=page_000287_table_box_id_8 lag=   1.3ms active=37
+[   7.215s] SEND #00053 table=page_000246_table_box_id_6 lag=   0.9ms active=38
+[   7.243s] RECV #00046 table=page_001117_table_box_id_17 request= 1.395s scheduled= 1.397s status=ok active=37
+[   7.484s] SEND #00054 table=page_000737_table_6 lag=   2.2ms active=38
+[   7.583s] SEND #00055 table=page_000250_table_box-stnne6dt lag=   1.0ms active=39
+[   7.700s] RECV #00034 table=page_000266_table_box_id_9 request= 3.873s scheduled= 3.875s status=ok active=38
+[   7.711s] SEND #00056 table=page_000647_table_6 lag=   1.6ms active=39
+[   7.715s] SEND #00057 table=page_000652_table_2 lag=   0.6ms active=40
+[   7.741s] RECV #00049 table=page_000841_table_22 request= 1.168s scheduled= 1.169s status=ok active=39
+[   7.756s] SEND #00058 table=page_001367_table_70 lag=   1.6ms active=40
+[   7.983s] SEND #00059 table=page_001368_table_box_id_163 lag=   0.9ms active=41
+[   8.059s] SEND #00060 table=page_000468_table_1 lag=   0.7ms active=42
+[   8.088s] SEND #00061 table=page_000838_table_4 lag=   1.7ms active=43
+[   8.201s] SEND #00062 table=page_000665_table_3 lag=   1.2ms active=44
+[   8.374s] SEND #00063 table=page_001595_table_box_id_14 lag=   1.0ms active=45
+[   8.534s] SEND #00064 table=page_000818_table_1 lag=   0.9ms active=46
+[   8.602s] SEND #00065 table=page_000937_table_0 lag=   1.2ms active=47
+[   8.684s] SEND #00066 table=page_000222_table_box_id_1 lag=   1.2ms active=48
+[   8.786s] SEND #00067 table=page_000744_table_11 lag=   1.1ms active=49
+[   9.001s] SEND #00068 table=page_000284_table_box_id_0 lag=   1.2ms active=50
+[   9.106s] SEND #00069 table=page_000266_table_box_id_1 lag=   1.4ms active=51
+[   9.177s] SEND #00070 table=page_001368_table_box_id_271 lag=   0.4ms active=52
+[   9.273s] SEND #00071 table=page_000467_table_17 lag=   0.5ms active=53
+[   9.277s] SEND #00072 table=page_000737_table_0 lag=   0.2ms active=54
+[   9.284s] SEND #00073 table=page_000526_table_7 lag=   0.9ms active=55
+[   9.458s] SEND #00074 table=page_001011_table_30 lag=   1.3ms active=56
+[   9.758s] RECV #00062 table=page_000665_table_3 request= 1.558s scheduled= 1.559s status=ok active=55
+[   9.982s] RECV #00059 table=page_001368_table_box_id_163 request= 1.998s scheduled= 1.999s status=ok active=54
+[  10.042s] SEND #00075 table=page_000246_table_box_id_11 lag=   1.8ms active=55
+[  10.076s] RECV #00033 table=page_001180_table_15 request= 6.337s scheduled= 6.338s status=ok active=54
+[  10.170s] SEND #00076 table=page_000676_table_2 lag=   0.9ms active=55
+[  10.240s] SEND #00077 table=page_001368_table_box_id_268 lag=   0.3ms active=56
+[  10.256s] RECV #00056 table=page_000647_table_6 request= 2.545s scheduled= 2.547s status=ok active=55
+[  10.268s] SEND #00078 table=page_000190_table_box_id_0 lag=   0.9ms active=56
+[  10.336s] RECV #00061 table=page_000838_table_4 request= 2.249s scheduled= 2.250s status=ok active=55
+[  10.366s] RECV #00015 table=page_001158_table_3 request= 8.625s scheduled= 8.626s status=ok active=54
+[  10.367s] SEND #00079 table=page_001368_table_box_id_227 lag=   0.8ms active=55
+[  10.381s] RECV #00053 table=page_000246_table_box_id_6 request= 3.165s scheduled= 3.166s status=ok active=54
+[  10.942s] SEND #00080 table=page_001134_table_9 lag=   0.9ms active=55
+[  10.951s] RECV #00077 table=page_001368_table_box_id_268 request= 0.711s scheduled= 0.711s status=ok active=54
+[  11.153s] SEND #00081 table=page_000591_table_3 lag=   1.3ms active=55
+[  11.258s] RECV #00064 table=page_000818_table_1 request= 2.723s scheduled= 2.724s status=ok active=54
+[  11.263s] SEND #00082 table=page_000210_table_box_id_4 lag=   1.1ms active=55
+[  11.273s] RECV #00067 table=page_000744_table_11 request= 2.487s scheduled= 2.488s status=ok active=54
+[  11.521s] RECV #00051 table=page_001169_table_11 request= 4.739s scheduled= 4.739s status=ok active=53
+[  11.544s] SEND #00083 table=page_000649_table_8 lag=   0.5ms active=54
+[  11.582s] SEND #00084 table=page_000289_table_box_id_4 lag=   0.7ms active=55
+[  11.593s] RECV #00024 table=page_001193_table_4 request= 8.298s scheduled= 8.299s status=ok active=54
+[  11.685s] SEND #00085 table=page_001190_table_8 lag=   0.8ms active=55
+[  11.734s] RECV #00060 table=page_000468_table_1 request= 3.674s scheduled= 3.675s status=ok active=54
+[  12.121s] SEND #00086 table=page_000211_table_box_id_3 lag=   1.4ms active=55
+[  12.134s] RECV #00027 table=page_000494_table_7 request= 8.723s scheduled= 8.723s status=ok active=54
+[  12.159s] RECV #00018 table=page_000434_table_15 request= 9.782s scheduled= 9.784s status=ok active=53
+[  12.226s] RECV #00054 table=page_000737_table_6 request= 4.742s scheduled= 4.744s status=ok active=52
+[  12.243s] SEND #00087 table=page_001182_table_3 lag=   0.6ms active=53
+[  12.332s] SEND #00088 table=page_000242_table_box-mhg591pb lag=   2.1ms active=54
+[  12.376s] SEND #00089 table=page_001274_table_4 lag=   0.5ms active=55
+[  12.489s] SEND #00090 table=page_001177_table_2 lag=   0.9ms active=56
+[  12.885s] RECV #00070 table=page_001368_table_box_id_271 request= 3.708s scheduled= 3.708s status=ok active=55
+[  12.939s] SEND #00091 table=page_001202_table_3 lag=   0.7ms active=56
+[  12.940s] SEND #00092 table=page_001158_table_3 lag=   0.5ms active=57
+[  13.159s] SEND #00093 table=page_000641_table_8 lag=   1.2ms active=58
+[  13.404s] RECV #00017 table=page_001198_table_8 request=11.442s scheduled=11.444s status=ok active=57
+[  13.404s] SEND #00094 table=page_000657_table_6 lag=   1.1ms active=58
+[  13.432s] RECV #00044 table=page_001493_table_box_id_13 request= 7.945s scheduled= 7.946s status=ok active=57
+[  13.576s] RECV #00078 table=page_000190_table_box_id_0 request= 3.309s scheduled= 3.310s status=ok active=56
+[  13.604s] RECV #00073 table=page_000526_table_7 request= 4.320s scheduled= 4.321s status=ok active=55
+[  13.700s] RECV #00094 table=page_000657_table_6 request= 0.295s scheduled= 0.296s status=ok active=54
+[  13.714s] RECV #00036 table=page_000499_table_0 request= 9.836s scheduled= 9.836s status=ok active=53
+[  13.715s] SEND #00095 table=page_000626_table_box_id_4 lag=   1.0ms active=54
+[  13.907s] SEND #00096 table=page_000829_table_4 lag=   0.6ms active=55
+[  14.044s] RECV #00028 table=page_000535_table_1 request=10.597s scheduled=10.597s status=ok active=54
+[  14.045s] RECV #00075 table=page_000246_table_box_id_11 request= 4.003s scheduled= 4.005s status=ok active=53
+[  14.045s] RECV #00069 table=page_000266_table_box_id_1 request= 4.939s scheduled= 4.941s status=ok active=52
+[  14.144s] SEND #00097 table=page_000468_table_11 lag=   1.1ms active=53
+[  14.249s] SEND #00098 table=page_000434_table_16 lag=   1.7ms active=54
+[  14.366s] SEND #00099 table=page_001175_table_2 lag=   1.0ms active=55
+[  14.447s] SEND #00100 table=page_001230_table_box_id_1 lag=   2.1ms active=56
+[  14.829s] RECV #00065 table=page_000937_table_0 request= 6.228s scheduled= 6.229s status=ok active=55
+[  14.938s] RECV #00019 table=page_000534_table_4 request=12.232s scheduled=12.232s status=ok active=54
+[  15.031s] RECV #00050 table=page_000922_table_12 request= 8.300s scheduled= 8.301s status=ok active=53
+[  15.046s] RECV #00082 table=page_000210_table_box_id_4 request= 3.782s scheduled= 3.784s status=ok active=52
+[  15.086s] RECV #00041 table=page_001154_table_10 request= 9.955s scheduled= 9.956s status=ok active=51
+[  15.113s] RECV #00012 table=page_000418_table_3 request=13.662s scheduled=13.662s status=ok active=50
+[  15.363s] RECV #00048 table=page_000565_table_1 request= 9.043s scheduled= 9.044s status=ok active=49
+[  15.390s] RECV #00066 table=page_000222_table_box_id_1 request= 6.706s scheduled= 6.707s status=ok active=48
+[  15.416s] RECV #00083 table=page_000649_table_8 request= 3.873s scheduled= 3.873s status=ok active=47
+[  15.508s] RECV #00093 table=page_000641_table_8 request= 2.349s scheduled= 2.351s status=ok active=46
+[  15.509s] RECV #00010 table=page_000220_table_box_id_7 request=14.396s scheduled=14.397s status=ok active=45
+[  15.558s] RECV #00058 table=page_001367_table_70 request= 7.802s scheduled= 7.804s status=ok active=44
+[  15.672s] RECV #00057 table=page_000652_table_2 request= 7.957s scheduled= 7.958s status=ok active=43
+[  15.748s] RECV #00008 table=page_000254_table_box_id_4 request=14.654s scheduled=14.655s status=ok active=42
+[  15.872s] RECV #00097 table=page_000468_table_11 request= 1.728s scheduled= 1.729s status=ok active=41
+[  15.909s] RECV #00096 table=page_000829_table_4 request= 2.002s scheduled= 2.003s status=ok active=40
+[  16.071s] RECV #00081 table=page_000591_table_3 request= 4.918s scheduled= 4.919s status=ok active=39
+[  16.084s] RECV #00072 table=page_000737_table_0 request= 6.807s scheduled= 6.807s status=ok active=38
+[  16.206s] RECV #00098 table=page_000434_table_16 request= 1.956s scheduled= 1.958s status=ok active=37
+[  16.231s] RECV #00031 table=page_000218_table_box_id_4 request=12.565s scheduled=12.566s status=ok active=36
+[  16.594s] RECV #00021 table=page_000566_table_3 request=13.879s scheduled=13.880s status=ok active=35
+[  16.695s] RECV #00063 table=page_001595_table_box_id_14 request= 8.321s scheduled= 8.322s status=ok active=34
+[  17.004s] RECV #00092 table=page_001158_table_3 request= 4.065s scheduled= 4.065s status=ok active=33
+[  17.295s] RECV #00020 table=page_001161_table_3 request=14.584s scheduled=14.584s status=ok active=32
+[  17.306s] RECV #00006 table=page_001202_table_3 request=16.585s scheduled=16.586s status=ok active=31
+[  17.426s] RECV #00088 table=page_000242_table_box-mhg591pb request= 5.093s scheduled= 5.095s status=ok active=30
+[  17.469s] RECV #00079 table=page_001368_table_box_id_227 request= 7.101s scheduled= 7.102s status=ok active=29
+[  17.513s] RECV #00100 table=page_001230_table_box_id_1 request= 3.066s scheduled= 3.068s status=ok active=28
+[  17.780s] RECV #00039 table=page_001128_table_2 request=13.379s scheduled=13.379s status=ok active=27
+[  17.961s] RECV #00087 table=page_001182_table_3 request= 5.718s scheduled= 5.719s status=ok active=26
+[  18.056s] RECV #00011 table=page_000505_table_1 request=16.685s scheduled=16.687s status=ok active=25
+[  18.190s] RECV #00086 table=page_000211_table_box_id_3 request= 6.070s scheduled= 6.071s status=ok active=24
+[  18.293s] RECV #00090 table=page_001177_table_2 request= 5.803s scheduled= 5.804s status=ok active=23
+[  18.664s] RECV #00040 table=page_001176_table_4 request=14.233s scheduled=14.235s status=ok active=22
+[  18.665s] RECV #00009 table=page_000178_table_box_id_1 request=17.556s scheduled=17.558s status=ok active=21
+[  18.751s] RECV #00037 table=page_000642_table_8 request=14.613s scheduled=14.614s status=ok active=20
+[  18.762s] RECV #00001 table=page_001375_table_1 request=18.740s scheduled=18.741s status=ok active=19
+[  19.099s] RECV #00085 table=page_001190_table_8 request= 7.414s scheduled= 7.415s status=ok active=18
+[  19.386s] RECV #00074 table=page_001011_table_30 request= 9.929s scheduled= 9.930s status=ok active=17
+[  19.462s] RECV #00099 table=page_001175_table_2 request= 5.096s scheduled= 5.097s status=ok active=16
+[  19.585s] RECV #00047 table=page_000509_table_0 request=13.344s scheduled=13.345s status=ok active=15
+[  19.890s] RECV #00042 table=page_000467_table_17 request=14.479s scheduled=14.480s status=ok active=14
+[  19.929s] RECV #00026 table=page_000592_table_3 request=16.521s scheduled=16.522s status=ok active=13
+[  20.111s] RECV #00025 table=page_001270_table_box_id_1 request=16.782s scheduled=16.783s status=ok active=12
+[  20.334s] RECV #00076 table=page_000676_table_2 request=10.164s scheduled=10.165s status=ok active=11
+[  20.362s] RECV #00080 table=page_001134_table_9 request= 9.420s scheduled= 9.421s status=ok active=10
+[  20.709s] RECV #00091 table=page_001202_table_3 request= 7.770s scheduled= 7.770s status=ok active=9
+[  20.816s] RECV #00071 table=page_000467_table_17 request=11.543s scheduled=11.543s status=ok active=8
+[  21.124s] RECV #00022 table=page_001200_table_2 request=18.298s scheduled=18.299s status=ok active=7
+[  21.375s] RECV #00055 table=page_000250_table_box-stnne6dt request=13.791s scheduled=13.792s status=ok active=6
+[  23.161s] RECV #00014 table=page_001375_table_4 request=21.503s scheduled=21.505s status=ok active=5
+[  28.127s] RECV #00068 table=page_000284_table_box_id_0 request=19.127s scheduled=19.128s status=ok active=4
+[  28.550s] RECV #00095 table=page_000626_table_box_id_4 request=14.835s scheduled=14.836s status=ok active=3
+[  29.545s] RECV #00052 table=page_000287_table_box_id_8 request=22.635s scheduled=22.636s status=ok active=2
+[  35.577s] RECV #00089 table=page_001274_table_4 request=23.201s scheduled=23.202s status=ok active=1
+[  38.044s] RECV #00084 table=page_000289_table_box_id_4 request=26.462s scheduled=26.463s status=ok active=0
+DONE completed=100 failed=0 max_active=58 p50=6.284s p95=18.761s max=26.463s
+Summary: tmp/09_persistent_page_engine/table_vllm_poisson100_seq64_budget16k_bd445e26_20260908/budget16384/qps7/measured/summary.json
