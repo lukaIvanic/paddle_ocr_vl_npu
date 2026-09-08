@@ -13,6 +13,7 @@ rows = json.loads((root / 'results.json').read_text())
 assert len(rows) == 30 and all(r['valid'] for r in rows)
 parser = argparse.ArgumentParser()
 parser.add_argument('--comparison', action='store_true')
+parser.add_argument('--bars', action='store_true')
 parser.add_argument('--vllm-results', type=Path)
 parser.add_argument('--output-dir', type=Path, default=root)
 args = parser.parse_args()
@@ -37,6 +38,9 @@ def comparison_charts():
     args.output_dir.mkdir(parents=True, exist_ok=True)
     plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 12,
                          'axes.spines.top': False, 'axes.spines.right': False})
+    if args.bars:
+        grouped_bar_charts(vllm)
+        return
     manifest = dict(custom_source=str(root/'results.json'),
                     vllm_source=str(args.vllm_results) if args.vllm_results else None,
                     status='complete' if complete else 'draft',
@@ -107,6 +111,66 @@ def comparison_charts():
         print(args.output_dir/f'{name}.png')
     (args.output_dir/'pareto-comparison-data.json').write_text(json.dumps(manifest,indent=2)+'\n')
     combined_chart(manifest)
+
+
+def grouped_bar_charts(vllm):
+    # Match the paired views on their common integer range. Custom P95 at
+    # QPS7/8 was explicitly excluded from the comparison by the user.
+    rates = sorted({r['target_qps'] for r in rows
+                    if float(r['target_qps']).is_integer() and r['target_qps'] not in (7,8)})
+    custom = [min((r for r in rows if r['target_qps'] == q),
+                  key=lambda r: (r['p95_s'], r['batch'])) for q in rates]
+    measured = [next(r for r in vllm if r['target_qps'] == q) for q in rates]
+    data = dict(selection='Lowest measured custom P95 per offered QPS; both metrics from that exact run',
+                rates=rates, omitted_qps=[7,8], custom=custom, vllm=measured,
+                y_scale='linear', bar_baseline_s=0)
+    (args.output_dir/'latency-bars-data.json').write_text(json.dumps(data,indent=2)+'\n')
+    fig, axes = plt.subplots(2,1,figsize=(11.2,11.6),dpi=180)
+    fig.subplots_adjust(left=.105,right=.965,bottom=.07,top=.865,hspace=.38)
+    fig.text(.105,.955,'Table OCR latency',fontsize=25,weight='bold',color='#172D3A')
+    fig.text(.105,.918,'PaddleOCR-VL-1.6 · OmniDocBench v1.6 tables · One 910B2 · 1,000 requests per column',
+             fontsize=11.5,color='#546878')
+    for ax, (metric, title) in zip(axes,[('mean_s','Mean latency'),('p95_s','P95 latency')]):
+        ax.set_title(title,loc='left',fontsize=17,weight='bold',color='#172D3A',pad=14)
+        baseline = 0
+        for points, label, color, shift in [(measured,'vLLM-Ascend','#DB7837',-.19),
+                                            (custom,'Optimized Ascend pipeline','#087F8C',.19)]:
+            xs = [i+shift for i in range(len(rates))]
+            values = [r[metric] for r in points]
+            assert all(v > baseline for v in values)
+            ax.bar(xs,[v-baseline for v in values],bottom=baseline,width=.34,
+                   color=color,label=label,zorder=3)
+            for x,v in zip(xs,values):
+                ax.annotate(f'{v:.2f} s',(x,v),xytext=(0,7),textcoords='offset points',
+                            ha='center',va='bottom',fontsize=11,color='#172D3A')
+        ax.set_ylim(0,max(r[metric] for r in custom+measured)*1.2)
+        # One measured comparison at the rightmost pair, not a global claim.
+        pair_index = rates.index(6)
+        low = custom[pair_index][metric]
+        high = measured[pair_index][metric]
+        bracket_x = pair_index + .53
+        ax.plot([bracket_x-.09,bracket_x,bracket_x,bracket_x-.09],
+                [low,low,high,high],color='#546878',linewidth=1.2,zorder=4)
+        ax.text(bracket_x+.12,(low+high)/2,
+                f"{high/low:.1f}× lower\n{'mean' if metric == 'mean_s' else 'P95'} latency\nat 6 QPS",
+                va='center',ha='left',fontsize=12,weight='bold',color='#087F8C')
+        ax.set_xlim(-.65,len(rates)+.55)
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=7, min_n_ticks=4))
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v,_:f'{v:g}'))
+        ax.yaxis.set_minor_formatter(NullFormatter())
+        ax.tick_params(axis='y',which='minor',length=0)
+        ax.set_xticks(range(len(rates)),[f'{q:g}' for q in rates])
+        ax.set_xlabel('Incoming requests per second (QPS)',labelpad=13)
+        ax.set_ylabel('Latency (seconds)',labelpad=12)
+        ax.set_axisbelow(True)
+        ax.grid(axis='y',which='major',color='#E4E9ED',linewidth=.7)
+        ax.legend(loc='upper left',frameon=False,ncol=2,fontsize=11)
+        for spine in ax.spines.values():
+            spine.set_color('#B6C1C8')
+    for ext in ('png','svg'):
+        fig.savefig(args.output_dir/f'latency-bars-comparison.{ext}',facecolor='white')
+    plt.close(fig)
+    print(args.output_dir/'latency-bars-comparison.png')
 
 
 def combined_chart(manifest):
