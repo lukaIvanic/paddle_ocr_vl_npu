@@ -88,6 +88,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--vllm-model", default="PaddleOCR-VL-1.6")
     parser.add_argument("--schedule-jsonl", type=Path,
                         help="Replay saved arrival offsets and table order; --max-requests selects a prefix.")
+    parser.add_argument("--schedule-source-qps", type=float,
+                        help="Original schedule rate; rescale its offsets to --qps without changing order.")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument(
         "--shuffle-all",
@@ -955,6 +957,12 @@ def main() -> None:
     )
     if args.schedule_jsonl:
         schedule = replay_schedule(args.schedule_jsonl, args.max_requests)
+        if args.schedule_source_qps is not None:
+            if not math.isfinite(args.schedule_source_qps) or args.schedule_source_qps <= 0:
+                raise ValueError("--schedule-source-qps must be positive and finite")
+            scale = args.schedule_source_qps / args.qps
+            schedule = [ScheduledRequest(x.sequence, x.scheduled_offset_s * scale, x.table)
+                        for x in schedule]
 
     cohort_path = output_dir / "cohort.jsonl"
     schedule_path = output_dir / "schedule.jsonl"
@@ -1042,6 +1050,7 @@ def main() -> None:
     summary["process_wall_s"] = process_wall_s
     summary["api_kind"] = args.api_kind
     summary["replayed_schedule"] = str(args.schedule_jsonl) if args.schedule_jsonl else None
+    summary["schedule_source_qps"] = args.schedule_source_qps
     summary["table_order"] = (
         "globally_shuffled_balanced_corpus" if args.shuffle_all else "shuffled_cycles"
     )
