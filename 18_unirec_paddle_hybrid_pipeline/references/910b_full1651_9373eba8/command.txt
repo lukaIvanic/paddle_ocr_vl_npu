@@ -1,0 +1,25 @@
+Inference commit: 9373eba8 (remote pull immediately before launch)
+Host: liteserver-c001-4
+Chip: Ascend 910B2
+ASCEND_RT_VISIBLE_DEVICES=6 (verified from /proc/2949641/environ)
+PID: 2949641
+Working directory: /workspace/repos/paddle_ocr_vl_npu
+Environment: source npu-setup
+Source changes: only experiment18 metrics; existing model/cache identities retained.
+Output parent: tmp/18_unirec_paddle_hybrid_pipeline/full1651_9373eba8
+Run launched under nohup, stdout/stderr in run.log, exit code in exit_code.txt.
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u \
+  18_unirec_paddle_hybrid_pipeline/run_pipeline.py \
+  --input /workspace/datasets/OmniDocBench/images \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --limit 1651 \
+  --unirec-model-path /workspace/models/unirec-0.1b \
+  --openocr-root /workspace/repos/OpenOCR \
+  --unirec-vision-cache .runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e \
+  --unirec-decode-cache .runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf \
+  --output-dir tmp/18_unirec_paddle_hybrid_pipeline/full1651_9373eba8/hybrid
+
+Defaults: text=unirec, table=paddle, formula=paddle, U B128 / P B64,
+decode turn <=32 steps, PP-DocLayoutV3 frontend, no new cache roots.
+See run_summary.json arguments and source commit for all resolved defaults.

@@ -1,0 +1,130 @@
+{
+  "pages": 1651,
+  "processing_wall_s": 928.0634399459232,
+  "processing_pages_s": 1.7789732134003697,
+  "setup_s": 42.38329047290608,
+  "including_setup_pages_s": 1.7012783373358935,
+  "action_wall_s": {
+    "shared.layout": 238.10191517113708,
+    "unirec.prefill": 357.5299911382608,
+    "paddle.prefill": 141.94323186343536,
+    "unirec.decode": 127.06153715099208,
+    "paddle.decode": 62.7376866992563
+  },
+  "engines": {
+    "unirec": {
+      "capacity": 128,
+      "graph_calls": 14933,
+      "raw_token_slots": 1911424,
+      "active_token_slots": 1698670,
+      "useful_decode_tokens": 1698670,
+      "active_slot_utilization": 0.888693455769102,
+      "useful_slot_utilization": 0.888693455769102,
+      "mean_active_slots": 113.75276233844505,
+      "scheduled_decode_wall_s": 127.06153715099208,
+      "scheduled_raw_tok_s": 15043.293532082662,
+      "scheduled_useful_tok_s": 13368.876515175521,
+      "execution_timing_basis": "host elapsed: graph, token selection and blocking CPU token read",
+      "execution_s": 92.33635255601257,
+      "execution_raw_tok_s": 20700.66606584338,
+      "execution_useful_tok_s": 18396.546462776532,
+      "prefill_tokens": {
+        "text_real_source": 1952568,
+        "text_physical_source": 15867720
+      },
+      "prefill_device_s": {
+        "vision_encode_envelope": 213.13834794950432,
+        "text_prefill_envelope": 44.4770312258006
+      },
+      "vision_bucket_row_utilization": 0.4131116179824884,
+      "prefill_rates": {
+        "vision_real_output_tokens_per_envelope_s": 9161.035631479102,
+        "text_real_source_tokens_per_envelope_s": 43900.59197267956,
+        "text_physical_source_tokens_per_envelope_s": 356762.1210921857
+      }
+    },
+    "paddle": {
+      "capacity": 64,
+      "graph_calls": 9240,
+      "raw_token_slots": 591360,
+      "active_token_slots": 410867,
+      "useful_decode_tokens": 408192,
+      "active_slot_utilization": 0.6947832115800866,
+      "useful_slot_utilization": 0.6902597402597402,
+      "mean_active_slots": 44.46612554112554,
+      "scheduled_decode_wall_s": 62.7376866992563,
+      "scheduled_raw_tok_s": 9425.91337220934,
+      "scheduled_useful_tok_s": 6506.328516012031,
+      "execution_timing_basis": "device events: decode model and argmax",
+      "execution_s": 56.00502545261396,
+      "execution_raw_tok_s": 10559.05242825667,
+      "execution_useful_tok_s": 7288.488786517429,
+      "prefill_tokens": {
+        "vision_real": 2301560,
+        "vision_physical": 2653568,
+        "text_input": 607006
+      },
+      "prefill_device_s": {
+        "recognition_inputs_h2d": 4.5280254411697305,
+        "vision_embeddings": 8.258825297325853,
+        "adaptive_mlp_projector": 0.3768390199095017,
+        "text_token_embedding": 0.03874062004080031,
+        "image_embed_scatter": 0.5413133600689468,
+        "static_cache_alloc": 0.0003904599933012059,
+        "text_prefill_input_prep": 1.191363760501147,
+        "text_prefill": 17.686958613395685,
+        "text_kv_redistribute": 1.1449917001426215,
+        "prefill_lm_head": 0.4590609198510649,
+        "prefill_argmax": 0.3944544005375359,
+        "vision_prefill_input_prep": 1.8972505383640494,
+        "vision_prefill": 52.371458656311056
+      },
+      "prefill_rates": {
+        "vision_real_patches_s": 43946.837820654226,
+        "vision_physical_patches_s": 50668.20875496524,
+        "text_input_tokens_s": 34319.41088731151
+      }
+    }
+  },
+  "peak_torch_allocated_GiB": 22.2002010345459,
+  "peak_torch_reserved_GiB": 23.568359375,
+  "crops": 30557,
+  "stops": {
+    "unirec.eos": 28060,
+    "paddle.eos": 2421,
+    "paddle.repetition": 2,
+    "unirec.length": 65,
+    "paddle.kv_cache_full": 9
+  },
+  "routes": {
+    "unirec.OCR:": 28125,
+    "paddle.Formula Recognition:": 1681,
+    "paddle.Table Recognition:": 751
+  },
+  "generated_token_lengths": {
+    "unirec.OCR:": {
+      "count": 28125,
+      "sum": 1698670,
+      "mean": 60.39715555555556,
+      "p50": 23.0,
+      "p99": 403.7599999999984,
+      "max": 2047
+    },
+    "paddle.Formula Recognition:": {
+      "count": 1681,
+      "sum": 136784,
+      "mean": 81.37061273051755,
+      "p50": 42.0,
+      "p99": 661.0,
+      "max": 1027
+    },
+    "paddle.Table Recognition:": {
+      "count": 751,
+      "sum": 273840,
+      "mean": 364.63382157123834,
+      "p50": 176.0,
+      "p99": 3069.5,
+      "max": 3112
+    }
+  }
+}

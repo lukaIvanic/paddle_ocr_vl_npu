@@ -66,7 +66,7 @@ throughput are not yet established. The first-64 set is formula-heavy.
 ```sh
 python -m unittest discover -s 18_unirec_paddle_hybrid_pipeline/tests -v
 ```
-# Timing interpretation
+## Timing interpretation
 
 `action_wall_s` measures serialized coordinator service time by model/phase.
 Engine-wide elapsed timers span cooperative pauses and must not be interpreted
@@ -84,3 +84,8 @@ no additional synchronization or model/compile-cache change is introduced.
 UniRec source tokens and Paddle vision patches have different definitions and
 must not be compared as identical units. First-use cache/compile costs inside
 the processing window remain included in E2E time.
+
+The [full 1,651-page 910B run](references/910b_full1651_9373eba8/README.md)
+completed at 1.779 pages/s (1.701 including measured setup). It records
+per-engine slot utilization, token rates, prefill density and device timing.
+Accuracy evaluation is still separate and has not been run for this hybrid.

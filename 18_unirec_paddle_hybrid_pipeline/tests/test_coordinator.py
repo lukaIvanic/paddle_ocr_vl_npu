@@ -54,6 +54,27 @@ class Pages:
 
 
 class Tests(unittest.TestCase):
+    def test_report_uses_exclusive_scheduled_time(self):
+        from summarize_run import summarize
+        run = {
+            "pages": 2, "wall_s": 20, "pages_per_s": .1, "setup_s": 5,
+            "action_wall_s": {"unirec.decode": 4},
+            "peak_torch_allocated_bytes": 2**30,
+            "peak_torch_reserved_bytes": 2**31,
+            "engines": {"unirec": {
+                "capacity": 128, "prefill_tokens": {}, "prefill_device_s": {},
+                "summary": {"raw_decode_token_slots": 1280,
+                            "effective_decode_tokens": 640,
+                            "decode_iterations": 10, "decode_s": 2,
+                            "timing_detail": {"run_wall_s": 100}},
+            }},
+        }
+        report = summarize(run)["engines"]["unirec"]
+        self.assertEqual(report["active_slot_utilization"], .5)
+        self.assertEqual(report["mean_active_slots"], 64)
+        self.assertEqual(report["scheduled_useful_tok_s"], 160)
+        self.assertEqual(report["execution_useful_tok_s"], 320)
+
     def test_routing(self):
         p = argparse.ArgumentParser()
         add_arguments(p)
