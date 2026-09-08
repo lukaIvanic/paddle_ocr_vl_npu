@@ -1,0 +1,77 @@
+{
+  "observed_after_benchmark": "2026-09-08 UTC (host 2026-09-09 CST)",
+  "note": "Read-only inventory of the existing containers after the runs; not a claim that a base Docker image alone captures the mutable venv/toolchain. No packages installed and no model loaded.",
+  "hardware": "Ascend 910B2, one 64-GB card per run",
+  "container_contract": {
+    "network_mode": "host",
+    "privileged": true,
+    "shm_size_bytes": 137438953472,
+    "repo_inside": "/workspace/repos/paddle_ocr_vl_npu",
+    "repo_on_host": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu"
+  },
+  "optimized": {
+    "container": "research_vllm_ascend_021_external_workspace",
+    "image_id": "sha256:3d4c0c31228e04c62ccd7d9a9a0d9db98a6a3baf48edaf984b2644d9df938063",
+    "image_tag": "local/research-vllm-ascend-021-slim:20260722-182611",
+    "python": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python",
+    "cann_setup": "/usr/local/Ascend/cann-9.0.0/set_env.sh",
+    "atb_setup": "/usr/local/Ascend/nnal/atb/set_env.sh",
+    "setup_script": "/usr/local/bin/npu-setup",
+    "setup_exports": {
+      "TORCH_DEVICE_BACKEND_AUTOLOAD": "0",
+      "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
+      "LD_PRELOAD_prepend": "/usr/lib/aarch64-linux-gnu/libjemalloc.so.2",
+      "LD_LIBRARY_PATH_prepend": "/usr/local/Ascend/nnal/atb/9.0.0/atb/cxx_abi_1/lib",
+      "ASCEND_RT_VISIBLE_DEVICES": "Explicit selected physical card after setup; historical 6"
+    },
+    "packages": {
+      "torch": "2.10.0+cpu",
+      "torch-npu": "2.10.0",
+      "transformers": "5.5.4",
+      "numpy": "1.26.4",
+      "Pillow": "12.2.0",
+      "kornia-rs": "0.1.14",
+      "torchair": "No installed distribution metadata; historical ready.json cache key reports unknown. Preserve installed toolchain."
+    }
+  },
+  "vllm": {
+    "container": "research_vllm_ascend_023_paddleocr",
+    "image_id": "sha256:13315b656180f24489bb0076ff449fd5dcc15f84f447872ce38bf7e43606489a",
+    "image_digest": "quay.io/ascend/vllm-ascend@sha256:9fd154211d2faee7735cfe40785f863603e42ccd53bfb4bca82dc98c9446ea0a",
+    "cann_symlink_resolves_to": "/usr/local/Ascend/cann-9.0.1",
+    "packages": {
+      "vllm": "0.23.0+empty",
+      "vllm-ascend": "0.23.0rc1",
+      "torch": "2.10.0+cpu",
+      "torch-npu": "2.10.0.post2",
+      "transformers": "5.5.4",
+      "numpy": "1.26.4",
+      "Pillow": "12.3.0"
+    },
+    "launcher_exports": {
+      "TASK_QUEUE_ENABLE": "1",
+      "PYTORCH_NPU_ALLOC_CONF": "expandable_segments:True",
+      "HF_HUB_OFFLINE": "1",
+      "TRANSFORMERS_OFFLINE": "1",
+      "PYTHONUNBUFFERED": "1",
+      "ASCEND_RT_VISIBLE_DEVICES": "Historical 4; explicitly choose one free card"
+    },
+    "resolved_memory": {
+      "gpu_memory_utilization": 0.92,
+      "kv_cache_gib": 53.68,
+      "kv_cache_token_slots": 3127296
+    }
+  },
+  "model_files_note": "The following hashes matched in BOTH containers when checked after the benchmark. Shared model path /workspace/models/PaddleOCR-VL-1.6. Re-download is not identity proof; compare these files.",
+  "model_sha256": {
+    "model.safetensors": "85a479d506a11e724e7285d395c551be69f41dbc16b6342d3cacfb189aed71db",
+    "config.json": "ce7f4565f8b1db78532ad5d1b9ebe55c2139d49bd4cb04778b580a08a598f171",
+    "generation_config.json": "a6701d78ab3b4d972307cdec3b69d4c13f46e0d5140514f50ab7d84259324b94",
+    "tokenizer.json": "c8a215a59183d0d0781adc33bacd3ce6162716f7fd568fb30234a74d69803a7d",
+    "tokenizer.model": "34ef7db83df785924fb83d7b887b6e822a031c56e15cff40aaf9b982988180df",
+    "tokenizer_config.json": "1f979337347cc0cb72a6282d8a23ed183539aa81a87a906f022aee2bab83c7c5",
+    "preprocessor_config.json": "111872ab1e8bb7fd040ac5087bfced7ab8f011f02139b088cba294964c3b1d0e",
+    "processor_config.json": "1568858960a9760c54431dae693a6152e601ff55cdf6d2eab97a4a99958faea0",
+    "chat_template.jinja": "2f27812dab7f333e471884e0c803d807f11953d5453140dfb1aaba234f872bc8"
+  }
+}

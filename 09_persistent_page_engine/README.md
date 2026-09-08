@@ -1190,6 +1190,13 @@ type; this endpoint does not run page layout detection.
 
 ### Closed-loop table concurrency comparison
 
+For the product-facing **open-loop Poisson** comparison against vLLM-Ascend,
+use the [2026-09-08 reproduction lock](repro/table_latency_20260908/README.md).
+It pins original source revisions, full CLI/environment settings, the exact
+1,000-request sequence, per-QPS batch choices, resolved configurations and
+CPU-only validation/command-printing tools. Those figures are not the
+closed-loop numbers below; do not reconstruct them from current defaults.
+
 The crop API now defaults to the validated **ordinary table-serving B2** stack:
 `combined_apply_complete_layer_prefetch1_rope_lut_packed_mlp`, the frozen
 16,384-row native-ID LM head, KV4096/output4096, FP16 greedy selection,
