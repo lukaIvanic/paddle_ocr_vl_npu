@@ -26,7 +26,9 @@ class PaddleAdapter(Adapter):
             ready_buffer_capacity=recognizer.ready_buffer_capacity,
             ready_buffer_low_watermark=recognizer.ready_buffer_low_watermark,
         )
-        next(self.steps)
+        import torch
+        with torch.inference_mode():
+            next(self.steps)
 
     @property
     def ready_count(self):
