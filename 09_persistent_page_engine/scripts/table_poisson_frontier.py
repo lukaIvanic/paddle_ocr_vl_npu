@@ -11,6 +11,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -73,7 +74,7 @@ class Sweep:
     def __init__(self, args):
         self.args = args
         self.vllm = args.api_kind == "vllm"
-        self.matrix = {n: list(range(1, 9)) for n in args.vllm_token_budgets} if self.vllm else MATRIX
+        self.matrix = {n: args.vllm_qps for n in args.vllm_token_budgets} if self.vllm else MATRIX
         self.api = "http://127.0.0.1:18081" if self.vllm else API
         self.repo = Path(__file__).resolve().parents[2]
         self.root = self.repo / args.output_dir
@@ -383,6 +384,7 @@ def main():
     parser.add_argument("--vllm-max-seqs", type=int, choices=(4, 8, 16, 32, 64), default=16)
     parser.add_argument("--vllm-token-budgets", type=int, nargs="+", choices=(4096, 8192, 16384),
                         default=[4096, 8192, 16384])
+    parser.add_argument("--vllm-qps", type=float, nargs="+", default=list(range(1, 9)))
     parser.add_argument("--schedule-jsonl", type=Path,
         default=Path("tmp/09_persistent_page_engine/table_vllm_poisson100_qps1_e4b4a49e_20260908/measured/schedule.jsonl"))
     parser.add_argument("--plan-only", action="store_true")
@@ -391,8 +393,10 @@ def main():
         parser.error("Use a new relative artifact directory and a valid positive request count")
     if args.api_kind == "vllm" and (args.schedule_jsonl.is_absolute() or ".." in args.schedule_jsonl.parts):
         parser.error("Saved schedule must be repository relative")
+    if any(not math.isfinite(q) or q <= 0 for q in args.vllm_qps) or len(set(args.vllm_qps)) != len(args.vllm_qps):
+        parser.error("Use unique, finite, positive vLLM QPS values")
     if args.plan_only:
-        matrix = {n: list(range(1, 9)) for n in args.vllm_token_budgets} if args.api_kind == "vllm" else MATRIX
+        matrix = {n: args.vllm_qps for n in args.vllm_token_budgets} if args.api_kind == "vllm" else MATRIX
         print(json.dumps(dict(matrix=matrix, points=sum(map(len, matrix.values())),
             expected_arrival_hours=sum(args.count/q for qs in matrix.values() for q in qs)/3600), indent=2))
         return
