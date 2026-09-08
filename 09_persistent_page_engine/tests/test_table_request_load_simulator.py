@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from collections import Counter
 import importlib.util
 from pathlib import Path
@@ -24,6 +25,23 @@ SPEC.loader.exec_module(MODULE)
 
 
 class TableRequestLoadSimulatorTest(unittest.TestCase):
+    def test_saved_schedule_prefix_is_exact(self) -> None:
+        schedule = MODULE.make_schedule([{"request_id": str(i)} for i in range(665)],
+            1.0, 0.0, 1, max_requests=1000, shuffle_all=True)
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "schedule.jsonl"
+            MODULE.write_jsonl(p, MODULE.schedule_rows(schedule))
+            self.assertEqual(MODULE.replay_schedule(p, 100), schedule[:100])
+            with self.assertRaises(ValueError):
+                MODULE.replay_schedule(p, 1001)
+
+    def test_vllm_payload_keeps_full_context_greedy_native_ids(self) -> None:
+        p = json.loads(MODULE.vllm_payload(b"image", "PaddleOCR-VL-1.6"))
+        self.assertEqual(p["temperature"], 0)
+        self.assertTrue(p["return_token_ids"])
+        self.assertNotIn("max_tokens", p)
+        self.assertEqual(p["messages"][0]["content"][1]["text"], "Table Recognition:")
+
     def test_all_cohort_keeps_every_source_table_including_first(self) -> None:
         records = [{"request_id": f"table_{i}", "worker_wall_s": float(i)}
                    for i in range(665)]

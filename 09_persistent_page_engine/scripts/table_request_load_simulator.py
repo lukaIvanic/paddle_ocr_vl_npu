@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import io
@@ -83,6 +84,10 @@ def parse_args() -> argparse.Namespace:
         help="OmniDocBench images used to prepare HTTP request bodies.",
     )
     parser.add_argument("--request-timeout-s", type=float, default=900.0)
+    parser.add_argument("--api-kind", choices=("crop", "vllm"), default="crop")
+    parser.add_argument("--vllm-model", default="PaddleOCR-VL-1.6")
+    parser.add_argument("--schedule-jsonl", type=Path,
+                        help="Replay saved arrival offsets and table order; --max-requests selects a prefix.")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument(
         "--shuffle-all",
@@ -598,14 +603,50 @@ def prepare_http_payloads(
     return payloads
 
 
-def check_api_ready(api_url: str, timeout_s: float) -> dict[str, Any]:
+def check_api_ready(api_url: str, timeout_s: float, api_kind: str = "crop") -> dict[str, Any]:
     parsed = urlparse(api_url)
+    if api_kind == "vllm":
+        with urlopen(urlunparse(parsed._replace(path="/health", query="")), timeout=timeout_s) as response:
+            if response.status != 200:
+                raise RuntimeError("vLLM is not healthy")
+        return {"ready": True, "configuration": {"api_kind": "vllm"}}
     ready_url = urlunparse(parsed._replace(path="/ready", query=""))
     with urlopen(ready_url, timeout=timeout_s) as response:
         payload = json.load(response)
     if not isinstance(payload, dict) or not payload.get("ready"):
         raise RuntimeError(f"OCR API is not ready: {payload}")
     return payload
+
+
+def vllm_payload(image_bytes: bytes, model: str) -> bytes:
+    # Same greedy/full-context contract as the existing closed-loop vLLM client.
+    return json.dumps({"model": model, "temperature": 0.0, "return_token_ids": True,
+        "messages": [{"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64," +
+             base64.b64encode(image_bytes).decode("ascii")}},
+            {"type": "text", "text": "Table Recognition:"}]}]},
+        separators=(",", ":")).encode("utf-8")
+
+
+def replay_schedule(path: Path, count: int | None) -> list[ScheduledRequest]:
+    rows = read_jsonl(path)
+    if count is not None:
+        if count > len(rows):
+            raise ValueError("Requested prefix exceeds saved schedule")
+        rows = rows[:count]
+    result = []
+    previous = -1.0
+    for index, row in enumerate(rows, 1):
+        row = dict(row)
+        sequence = int(row.pop("sequence"))
+        offset = float(row.pop("scheduled_offset_s"))
+        if sequence != index or not math.isfinite(offset) or offset < 0 or offset < previous:
+            raise ValueError("Invalid saved schedule order/timestamp")
+        result.append(ScheduledRequest(sequence, offset, row))
+        previous = offset
+    if not result:
+        raise ValueError("Empty saved schedule")
+    return result
 
 
 async def post_table_ocr(
@@ -615,6 +656,7 @@ async def post_table_ocr(
     timeout_s: float,
     *,
     source_request_id: str | None = None,
+    api_kind: str = "crop",
 ) -> dict[str, Any]:
     parsed = urlparse(api_url)
     if parsed.scheme != "http" or not parsed.hostname:
@@ -625,11 +667,14 @@ async def post_table_ocr(
     if source_request_id is not None:
         query["source_request_id"] = source_request_id
     target = urlunparse(("", "", parsed.path or "/v1/ocr", "", urlencode(query), ""))
+    if api_kind == "vllm":
+        target = "/v1/chat/completions"
     host_header = parsed.hostname if port == 80 else f"{parsed.hostname}:{port}"
     header = (
         f"POST {target} HTTP/1.1\r\n"
         f"Host: {host_header}\r\n"
-        "Content-Type: image/png\r\n"
+        f"Content-Type: {'application/json' if api_kind == 'vllm' else 'image/png'}\r\n"
+        f"X-Request-Id: {request_id}\r\n"
         f"Content-Length: {len(image_bytes)}\r\n"
         "Connection: close\r\n\r\n"
     )
@@ -664,6 +709,16 @@ async def post_table_ocr(
                 raise RuntimeError(f"HTTP {status}: {payload}")
             if not isinstance(payload, dict):
                 raise RuntimeError("OCR response must be a JSON object")
+            if api_kind == "vllm":
+                choice = payload["choices"][0]
+                return {"http_status": status,
+                        "output_tokens": payload["usage"]["completion_tokens"],
+                        "stop_reason": choice["finish_reason"],
+                        "response": {"text": choice["message"]["content"],
+                                     "token_ids": choice.get("token_ids"),
+                                     "input_tokens": payload["usage"]["prompt_tokens"],
+                                     "stop_reason": choice["finish_reason"]},
+                        "vllm_response": payload}
             return {
                 "http_status": status,
                 "worker_wall_s": payload.get("worker_wall_s"),
@@ -898,6 +953,8 @@ def main() -> None:
         max_requests=args.max_requests,
         shuffle_all=args.shuffle_all,
     )
+    if args.schedule_jsonl:
+        schedule = replay_schedule(args.schedule_jsonl, args.max_requests)
 
     cohort_path = output_dir / "cohort.jsonl"
     schedule_path = output_dir / "schedule.jsonl"
@@ -909,7 +966,7 @@ def main() -> None:
     request_function: RequestFunction | None = None
     api_configuration: dict[str, Any] | None = None
     if args.api_url:
-        ready = check_api_ready(args.api_url, min(args.request_timeout_s, 10.0))
+        ready = check_api_ready(args.api_url, min(args.request_timeout_s, 10.0), args.api_kind)
         api_configuration = (
             dict(ready["configuration"])
             if isinstance(ready.get("configuration"), dict)
@@ -922,6 +979,8 @@ def main() -> None:
         )
         selected_tables = list({item.table["request_id"]: item.table for item in schedule}.values())
         payloads = prepare_http_payloads(selected_tables, args.images_dir)
+        if args.api_kind == "vllm":
+            payloads = {key: vllm_payload(value, args.vllm_model) for key, value in payloads.items()}
 
         async def send_http_request(item: ScheduledRequest) -> dict[str, Any]:
             request_id = str(item.table["request_id"])
@@ -931,6 +990,7 @@ def main() -> None:
                 payloads[request_id],
                 args.request_timeout_s,
                 source_request_id=request_id,
+                api_kind=args.api_kind,
             )
 
         request_function = send_http_request
@@ -980,6 +1040,8 @@ def main() -> None:
         api_configuration=api_configuration,
     )
     summary["process_wall_s"] = process_wall_s
+    summary["api_kind"] = args.api_kind
+    summary["replayed_schedule"] = str(args.schedule_jsonl) if args.schedule_jsonl else None
     summary["table_order"] = (
         "globally_shuffled_balanced_corpus" if args.shuffle_all else "shuffled_cycles"
     )

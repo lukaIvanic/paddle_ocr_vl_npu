@@ -28,6 +28,7 @@ exec vllm serve /workspace/models/PaddleOCR-VL-1.6 \
   --trust-remote-code --dtype float16 \
   --max-model-len 4096 --max-num-batched-tokens 4096 --max-num-seqs "$table_vllm_max_seqs" \
   --no-enable-prefix-caching --mm-processor-cache-gb 0 \
+  --async-scheduling --enable-chunked-prefill \
   --mm-processor-kwargs '{"min_pixels":28224,"max_pixels":802816}' \
   --compilation-config "$table_vllm_compilation_config" \
   --host 127.0.0.1 --port 18081
