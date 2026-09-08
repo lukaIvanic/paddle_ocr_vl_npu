@@ -73,7 +73,7 @@ class Sweep:
     def __init__(self, args):
         self.args = args
         self.vllm = args.api_kind == "vllm"
-        self.matrix = {n: list(range(1, 9)) for n in (4096, 8192, 16384)} if self.vllm else MATRIX
+        self.matrix = {n: list(range(1, 9)) for n in args.vllm_token_budgets} if self.vllm else MATRIX
         self.api = "http://127.0.0.1:18081" if self.vllm else API
         self.repo = Path(__file__).resolve().parents[2]
         self.root = self.repo / args.output_dir
@@ -86,7 +86,8 @@ class Sweep:
         self.rows = []
         self.ownership = (self.root / "ownership.jsonl").open("w")
         self.write("plan.json", dict(matrix=self.matrix, api_kind=args.api_kind, count=args.count, seed=1,
-            npu=args.npu, source_fingerprint=self.initial_fingerprint,
+            npu=args.npu, max_sequences=args.vllm_max_seqs if self.vllm else None,
+            source_fingerprint=self.initial_fingerprint,
             git_commit=output(["git", "-C", str(self.repo), "rev-parse", "HEAD"]).strip(),
             note="Open loop, no client concurrency cap. All work and queueing count in latency."))
 
@@ -262,10 +263,10 @@ class Sweep:
         relative = folder.relative_to(self.repo)
         self.marker = "--port 18081"
         cmd = ["docker", "exec", "-e", f"ASCEND_RT_VISIBLE_DEVICES={self.args.npu}",
-               "-e", "TABLE_VLLM_MAX_SEQS=16", "-e", f"TABLE_VLLM_TOKEN_BUDGET={budget}",
+               "-e", f"TABLE_VLLM_MAX_SEQS={self.args.vllm_max_seqs}", "-e", f"TABLE_VLLM_TOKEN_BUDGET={budget}",
                VLLM_CONTAINER, "bash", "/workspace/serve_vllm_table_reference.sh"]
         (folder / "server_command.txt").write_text(shlex.join(cmd) + "\n")
-        self.log(f"START vLLM budget={budget}, max_seqs=16, per-request context=4096")
+        self.log(f"START vLLM budget={budget}, max_seqs={self.args.vllm_max_seqs}, per-request context=4096")
         with (folder / "server.log").open("w") as log:
             self.server = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT)
         deadline = time.monotonic() + 1200
@@ -345,7 +346,7 @@ class Sweep:
                         while timestamp - dispatches[left] >= 1:
                             left += 1
                         peak = max(peak, right - left + 1)
-                    row = dict(batch=16 if self.vllm else batch, token_budget=batch if self.vllm else None, target_qps=qps,
+                    row = dict(batch=self.args.vllm_max_seqs if self.vllm else batch, token_budget=batch if self.vllm else None, target_qps=qps,
                         actual_arrival_qps=len(sequence)/dispatches[-1], peak_1s_arrivals=peak,
                         completed_qps=s["completed_request_count"]/s["run_wall_s"],
                         count=s["completed_request_count"], errors=s["failed_request_count"],
@@ -379,6 +380,9 @@ def main():
     parser.add_argument("--npu", type=int, choices=range(8), required=True)
     parser.add_argument("--count", type=int, default=1000)
     parser.add_argument("--api-kind", choices=("crop", "vllm"), default="crop")
+    parser.add_argument("--vllm-max-seqs", type=int, choices=(4, 8, 16, 32, 64), default=16)
+    parser.add_argument("--vllm-token-budgets", type=int, nargs="+", choices=(4096, 8192, 16384),
+                        default=[4096, 8192, 16384])
     parser.add_argument("--schedule-jsonl", type=Path,
         default=Path("tmp/09_persistent_page_engine/table_vllm_poisson100_qps1_e4b4a49e_20260908/measured/schedule.jsonl"))
     parser.add_argument("--plan-only", action="store_true")
@@ -388,7 +392,7 @@ def main():
     if args.api_kind == "vllm" and (args.schedule_jsonl.is_absolute() or ".." in args.schedule_jsonl.parts):
         parser.error("Saved schedule must be repository relative")
     if args.plan_only:
-        matrix = {n: list(range(1, 9)) for n in (4096, 8192, 16384)} if args.api_kind == "vllm" else MATRIX
+        matrix = {n: list(range(1, 9)) for n in args.vllm_token_budgets} if args.api_kind == "vllm" else MATRIX
         print(json.dumps(dict(matrix=matrix, points=sum(map(len, matrix.values())),
             expected_arrival_hours=sum(args.count/q for qs in matrix.values() for q in qs)/3600), indent=2))
         return

@@ -15,7 +15,13 @@ case "$table_vllm_max_seqs" in
   4) table_vllm_capture_sizes='[1,2,3,4]' ;;
   8) table_vllm_capture_sizes='[1,2,3,4,5,6,7,8]' ;;
   16) table_vllm_capture_sizes='[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]' ;;
-  *) echo 'TABLE_VLLM_MAX_SEQS must be 4, 8, or 16.' >&2; exit 1 ;;
+  32|64)
+    table_vllm_capture_sizes='[1'
+    for ((table_vllm_shape=2; table_vllm_shape<=table_vllm_max_seqs; table_vllm_shape++)); do
+      table_vllm_capture_sizes+=",$table_vllm_shape"
+    done
+    table_vllm_capture_sizes+=']' ;;
+  *) echo 'TABLE_VLLM_MAX_SEQS must be 4, 8, 16, 32, or 64.' >&2; exit 1 ;;
 esac
 printf -v table_vllm_compilation_config \
   '{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":%s}' \
