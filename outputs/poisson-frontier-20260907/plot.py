@@ -130,6 +130,8 @@ def combined_chart(manifest):
                     markersize=5.5, markeredgecolor='white', markeredgewidth=.8,
                     label=label)
             for r in points:
+                if not float(r['target_qps']).is_integer():
+                    continue
                 right_label = system == 'vllm' and metric == 'p95_s'
                 ax.annotate(f"{r['target_qps']:g} QPS · {r[metric]:.2f} s",
                             (r[metric], r['target_qps']),
