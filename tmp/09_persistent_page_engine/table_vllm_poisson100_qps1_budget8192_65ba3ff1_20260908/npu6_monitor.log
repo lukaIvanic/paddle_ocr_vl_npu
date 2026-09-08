@@ -1,0 +1,236 @@
+2026-09-08T18:16:29+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-08T18:16:40+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-08T18:16:50+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-08T18:17:01+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-08T18:17:11+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-08T18:17:22+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	No process in device.
+	Chip ID                        : 0
+
+2026-09-08T18:17:32+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):109
+	Chip ID                        : 0
+
+2026-09-08T18:17:43+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):141
+	Chip ID                        : 0
+
+2026-09-08T18:17:53+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):2003
+	Chip ID                        : 0
+
+2026-09-08T18:18:04+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):2405
+	Chip ID                        : 0
+
+2026-09-08T18:18:14+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):2413
+	Chip ID                        : 0
+
+2026-09-08T18:18:25+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57669
+	Chip ID                        : 0
+
+2026-09-08T18:18:36+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57669
+	Chip ID                        : 0
+
+2026-09-08T18:18:46+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57669
+	Chip ID                        : 0
+
+2026-09-08T18:18:57+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57931
+	Chip ID                        : 0
+
+2026-09-08T18:19:07+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57951
+	Chip ID                        : 0
+
+2026-09-08T18:19:18+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57951
+	Chip ID                        : 0
+
+2026-09-08T18:19:28+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57951
+	Chip ID                        : 0
+
+2026-09-08T18:19:39+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57955
+	Chip ID                        : 0
+
+2026-09-08T18:19:49+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57959
+	Chip ID                        : 0
+
+2026-09-08T18:20:00+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57959
+	Chip ID                        : 0
+
+2026-09-08T18:20:10+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57963
+	Chip ID                        : 0
+
+2026-09-08T18:20:21+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57963
+	Chip ID                        : 0
+
+2026-09-08T18:20:31+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57959
+	Process id:1696007 Process name:python3           Process memory(MB):111
+	Chip ID                        : 0
+
+2026-09-08T18:20:42+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57959
+	Process id:1696007 Process name:python3           Process memory(MB):111
+	Chip ID                        : 0
+
+2026-09-08T18:20:53+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57959
+	Process id:1696007 Process name:python3           Process memory(MB):111
+	Process id:1702267 Process name:python3           Process memory(MB):147
+	Chip ID                        : 0
+
+2026-09-08T18:21:03+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57959
+	Process id:1696007 Process name:python3           Process memory(MB):111
+	Chip ID                        : 0
+
+2026-09-08T18:21:14+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1706744 Process name:python3           Process memory(MB):109
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57959
+	Process id:1696007 Process name:python3           Process memory(MB):111
+	Chip ID                        : 0
+
+2026-09-08T18:21:24+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57959
+	Process id:1696007 Process name:python3           Process memory(MB):111
+	Chip ID                        : 0
+
+2026-09-08T18:21:35+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57959
+	Process id:1696007 Process name:python3           Process memory(MB):111
+	Process id:1711854 Process name:python3           Process memory(MB):637
+	Chip ID                        : 0
+
+2026-09-08T18:21:45+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1666113 Process name:VLLMEngineCor     Process memory(MB):57959
+	Process id:1696007 Process name:python3           Process memory(MB):111
+	Chip ID                        : 0
+
+2026-09-08T18:21:56+08:00
+	NPU ID                         : 6
+	Chip Count                     : 1
+
+	Process id:1719528 Process name:python3           Process memory(MB):104
+	Process id:1696007 Process name:python3           Process memory(MB):111
+	Chip ID                        : 0
+

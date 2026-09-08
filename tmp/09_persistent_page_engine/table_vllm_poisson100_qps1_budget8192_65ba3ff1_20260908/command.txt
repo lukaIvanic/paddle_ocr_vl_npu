@@ -1,0 +1,33 @@
+Source: 65ba3ff1, main. One Ascend 910B2, physical NPU6.
+Control: ../table_vllm_poisson100_qps1_e4b4a49e_20260908
+Only requested inference-setting change: max_num_batched_tokens 4096 -> 8192.
+
+Server in research_vllm_ascend_023_paddleocr:
+ASCEND_RT_VISIBLE_DEVICES=6 TABLE_VLLM_MAX_SEQS=16 TABLE_VLLM_TOKEN_BUDGET=8192 \
+  bash /workspace/serve_vllm_table_reference.sh
+
+Per-request max_model_len remains 4096. FULL_AND_PIECEWISE, capture sizes
+1..16, async and chunked prefill on, prefix and multimodal processor caching
+off, FP16, greedy full vocabulary, unchanged PaddleOCR-VL-1.6 checkpoint.
+Same min/max image pixels 28224/802816. Same default memory utilization 0.92;
+derived workspace/global KV sizes may differ because scheduling budget changed.
+
+Two sequential real-request warmups outside measurement, as for control:
+table_closed_loop_api_client.py --api-kind vllm --set warm --count 1
+--max-in-flight 1; table page_001272_table_1.
+
+Measured client in research_vllm_ascend_021_external_workspace:
+cd /workspace/repos/paddle_ocr_vl_npu
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u \
+  09_persistent_page_engine/scripts/table_request_load_simulator.py \
+  --api-kind vllm --api-url http://127.0.0.1:18081/v1/chat/completions \
+  --cohort all --qps 1 --max-requests 100 --seed 1 --shuffle-all \
+  --schedule-jsonl tmp/09_persistent_page_engine/table_poisson_frontier_screen1000_be691de1_20260907/b2/qps1/measured/schedule.jsonl \
+  --output-dir tmp/09_persistent_page_engine/table_vllm_poisson100_qps1_budget8192_65ba3ff1_20260908/measured
+
+Identical saved 100-table prefix and arrival times; open loop, no client cap.
+All preprocessing/payload preparation and model warmup outside the measured
+arrival window, unchanged from control. Full request-response latency includes
+network transfer, server input processing, queueing, inference, and response.
+Results persist immediately. Native counters taken before and after measurement.
+Manual NPU ownership checks plus direct-host read-only monitor every 10 seconds.
