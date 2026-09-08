@@ -1,0 +1,101 @@
+{
+  "format": "table_request_load_simulator_v1",
+  "mode": "http",
+  "api_url": "http://127.0.0.1:18081/v1/chat/completions",
+  "source_jsonl": "/workspace/repos/paddle_ocr_vl_npu/tmp/09_persistent_page_engine/table_b1_latency_full_04fbc8e/client/tables.jsonl",
+  "cohort": "all",
+  "cohort_table_count": 665,
+  "cohort_latex_table_count": 121,
+  "target_qps": 3.5,
+  "arrival_process": "poisson",
+  "duration_s": null,
+  "max_requests": 1000,
+  "scheduled_arrival_span_s": 297.44895332124753,
+  "drain_after_last_arrival_s": 15.307322469728831,
+  "ocr_time_s": null,
+  "seed": 1,
+  "scheduled_request_count": 1000,
+  "completed_request_count": 1000,
+  "failed_request_count": 0,
+  "run_wall_s": 312.75627579097636,
+  "max_active_requests": 51,
+  "latency_s": {
+    "count": 1000,
+    "mean": 8.244078433189891,
+    "p50": 4.597357960010413,
+    "p90": 19.452319210534917,
+    "p95": 28.625094836280898,
+    "p99": 62.46033852534134,
+    "max": 69.68703270575497
+  },
+  "scheduled_latency_s": {
+    "count": 1000,
+    "mean": 8.244078433189891,
+    "p50": 4.597357960010413,
+    "p90": 19.452319210534917,
+    "p95": 28.625094836280898,
+    "p99": 62.46033852534134,
+    "max": 69.68703270575497
+  },
+  "request_latency_s": {
+    "count": 1000,
+    "mean": 8.243146243689232,
+    "p50": 4.5970106745371595,
+    "p90": 19.451031524944117,
+    "p95": 28.624255342123778,
+    "p99": 62.45935219287638,
+    "max": 69.68560991494451
+  },
+  "latency_definition": "latency_s is scheduled-arrival-to-response; request_latency_s starts at the client request attempt, including connection establishment",
+  "dispatch_lag_s": {
+    "count": 1000,
+    "mean": 0.0009321895038223755,
+    "p50": 0.0008730098764573313,
+    "p90": 0.0015121403749304818,
+    "p95": 0.0018829471474191436,
+    "p99": 0.002283197179346672,
+    "max": 0.0028915457933402777
+  },
+  "latex_latency_s": {
+    "count": 179,
+    "mean": 13.42042214653127,
+    "p50": 7.150312398909591,
+    "p90": 31.726145798130926,
+    "p95": 50.13617465160787,
+    "p99": 63.64095240461174,
+    "max": 69.12712435424328
+  },
+  "non_latex_latency_s": {
+    "count": 821,
+    "mean": 7.115496795323743,
+    "p50": 4.2515152405248955,
+    "p90": 15.419944990659133,
+    "p95": 23.584134301287122,
+    "p99": 58.76247473247349,
+    "max": 69.68703270575497
+  },
+  "server_worker_latency_s": {
+    "count": 0,
+    "mean": null,
+    "p50": null,
+    "p90": null,
+    "p95": null,
+    "p99": null,
+    "max": null
+  },
+  "runtime_metrics": {
+    "api_configuration": {
+      "api_kind": "vllm"
+    },
+    "route_counts": {
+      "ordinary": 1000
+    },
+    "ordinary": null,
+    "speculative": null
+  },
+  "process_wall_s": 312.75937911402434,
+  "api_kind": "vllm",
+  "replayed_schedule": "tmp/09_persistent_page_engine/table_poisson_frontier_screen1000_be691de1_20260907/b2/qps1/measured/schedule.jsonl",
+  "schedule_source_qps": 1.0,
+  "table_order": "globally_shuffled_balanced_corpus"
+}
