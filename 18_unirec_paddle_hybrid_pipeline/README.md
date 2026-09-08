@@ -1,5 +1,9 @@
 # Experiment 18: continuous UniRec + Paddle page pipeline
 
+310P execution brief: [smoke64 then full1651](WORK_SERVER_310P_HYBRID_E2E.md).
+It verifies local assets/caches and explicitly gates memory fit; no 310P
+validation is claimed until the work agent reports its run.
+
 One PP-DocLayoutV3 frontend feeds two resident recognizers on one NPU.
 Experiment 09 owns Paddle layout/cropping/assembly and inference; experiment
 12 owns UniRec inference. This experiment owns routing and cross-model turns.
