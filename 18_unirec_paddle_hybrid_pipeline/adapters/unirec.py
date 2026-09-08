@@ -75,7 +75,9 @@ class UniRecAdapter(Adapter):
             content = content.replace("$", "").replace("\\(", " $ ").replace("\\)", " $ ").replace("\\[", " $$ ").replace("\\]", " $$ ")
         if task == "table":
             content = self.converter.convert_otsl_to_html(content)
-        self.emit(completed.request_id, content, value["generated_ids"], value.get("stop_reason", "unknown"), "unirec")
+        ids = value["generated_ids"]
+        stop = "eos" if ids[-1] == self.runner.config.eos_token_id else "length"
+        self.emit(completed.request_id, content, ids, stop, "unirec")
 
     def close(self):
         self.steps.close()

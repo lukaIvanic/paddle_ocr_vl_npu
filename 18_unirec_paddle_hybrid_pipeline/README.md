@@ -44,7 +44,7 @@ Model definitions and their compiled cache keys are unchanged by those seams.
 
 Paddle keeps its production greedy vision / packed text prefill, B64/KV4096,
 PSE-sentinel decode, and 0.5 text-crop scaling. UniRec uses the K20 production
-vision kernels, packed S1024 text prefill, NZ decode and B128/C1320/S2048.
+vision kernels, its existing packed text prefill, NZ decode and B128/C1320/S2048.
 UniRec vision runs on the shared owner, not four concurrent vision lanes.
 Both consume Paddle's region geometry/merge policy. UniRec receives unscaled
 crop pixels and uses its own resize/normalization and output conversion.

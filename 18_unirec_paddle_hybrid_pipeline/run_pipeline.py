@@ -113,6 +113,7 @@ def main():
     with (args.output_dir / "recognition_trace.jsonl").open("w") as trace:
         def emit_page(result):
             result.save_to_markdown(str(predictions))
+            (predictions / (Path(result.data["input_path"]).stem + ".json")).write_text(json.dumps(result.json, ensure_ascii=False, indent=2) + "\n")
         def emit_trace(record):
             trace.write(json.dumps(record, ensure_ascii=False) + "\n")
         # UniRec's loader changes the process-global format flag. Finish its
@@ -133,7 +134,7 @@ def main():
         try:
             with torch.inference_mode():
                 result = Coordinator(adapters, source, decode_steps=args.decode_steps).run()
-            result.update(pages=source.completed, pages_per_s=source.completed/result["wall_s"], setup_s=setup_s, routing=asdict(routing), arguments={k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()})
+            result.update(pages=source.completed, pages_per_s=source.completed/result["wall_s"], setup_s=setup_s, routing=asdict(routing), engines={name:{"graph_calls":a.graph_calls,"capacity":a.capacity,"summary":asdict(a.summary) if hasattr(a.summary,"__dataclass_fields__") else a.summary} for name,a in adapters.items()}, peak_torch_allocated_bytes=torch.npu.max_memory_allocated(), peak_torch_reserved_bytes=torch.npu.max_memory_reserved(), arguments={k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()})
             (args.output_dir / "run_summary.json").write_text(json.dumps(result, indent=2) + "\n")
             print(json.dumps(result, indent=2), flush=True)
         finally:
