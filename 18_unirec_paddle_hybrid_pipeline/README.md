@@ -150,3 +150,11 @@ completed all 1,651 pages at 2.344 pages/s (+15.2% versus page-prefill), with
 serialized NPU execution. Both workers stayed within their existing capacities;
 all UniRec predictions matched, while seven Paddle formulas and one table
 differed. Layout/crop preparation and output writing remain synchronous.
+
+The next [staged frontend run](references/910b_layout_cpu_de71a457/README.md)
+completed all 1,651 pages at 2.597 pages/s (+10.75%), with exact token parity
+for every crop and identical saved layout geometry. CPU input and crop work now
+run on the persistent stages described above; NPU work remains serialized and
+output writing remains synchronous. Shared waits and increased recognition
+prefill wall offset part of the owner-side layout reduction; the report records
+both rather than treating all background CPU service time as saved E2E time.

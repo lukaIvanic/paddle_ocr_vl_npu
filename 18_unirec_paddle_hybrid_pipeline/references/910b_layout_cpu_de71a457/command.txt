@@ -1,0 +1,32 @@
+Inference commit: de71a457
+Date: 2026-09-08
+Host: liteserver-c001-4
+Chip: one Ascend 910B2, physical NPU 6 (both npu-setup launches)
+Working directory: /workspace/repos/paddle_ocr_vl_npu
+Environment: source npu-setup
+Output root: tmp/18_unirec_paddle_hybrid_pipeline/layoutcpu_de71a457
+Hybrid64 smoke first, then a serial nohup driver for unirec64, paddle64,
+hybrid1651. The driver stops on any nonzero exit. Existing caches reused.
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u \
+  18_unirec_paddle_hybrid_pipeline/run_pipeline.py \
+  --input /workspace/datasets/OmniDocBench/images \
+  --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json \
+  --limit <LIMIT> <ROUTES> \
+  --unirec-model-path /workspace/models/unirec-0.1b \
+  --openocr-root /workspace/repos/OpenOCR \
+  --unirec-vision-cache .runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e \
+  --unirec-decode-cache .runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf \
+  --output-dir tmp/18_unirec_paddle_hybrid_pipeline/layoutcpu_de71a457/<LANE>
+
+LANE=hybrid64, LIMIT=64, ROUTES omitted (text=unirec, tables/formulas=paddle)
+LANE=unirec64, LIMIT=64, ROUTES=--text-model unirec --table-model unirec --formula-model unirec
+LANE=paddle64, LIMIT=64, ROUTES=--text-model paddle --table-model paddle --formula-model paddle
+LANE=hybrid1651, LIMIT=1651, ROUTES omitted (text=unirec, tables/formulas=paddle)
+
+Model defaults: UniRec B128, Paddle B64, <=32 decode steps per turn.
+Layout graph capture remains OFF. Recognition settings unchanged from b511f81b.
+Only the coordinator performs NPU work and transfers. One persistent CPU worker
+per frontend stage, one input slot + one crop/post-layout slot; existing
+recognition-preparation workers and frontend crop/mask workers remain enabled.
+Page output writing remains synchronous.

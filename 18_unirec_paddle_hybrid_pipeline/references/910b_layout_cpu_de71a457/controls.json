@@ -1,0 +1,478 @@
+{
+  "hybrid64": {
+    "baseline_processing_s": 54.478168135043234,
+    "candidate": {
+      "pages": 64,
+      "processing_wall_s": 51.831818277947605,
+      "processing_pages_s": 1.2347627794340659,
+      "setup_s": 42.27833021013066,
+      "including_setup_pages_s": 0.6800541814903992,
+      "action_wall_s": {
+        "shared.wait": 0.2690597106702626,
+        "shared.layout": 9.278056018287316,
+        "unirec.prefill": 9.970986986998469,
+        "paddle.prefill": 9.202835991978645,
+        "unirec.decode": 13.748481346992776,
+        "paddle.decode": 9.205730302492157
+      },
+      "engines": {
+        "unirec": {
+          "capacity": 128,
+          "ready_capacity": 128,
+          "prefill_request_counts": {
+            "11": 7,
+            "6": 5,
+            "9": 3,
+            "8": 4,
+            "21": 3,
+            "16": 4,
+            "7": 5,
+            "2": 1,
+            "13": 4,
+            "10": 6,
+            "12": 6,
+            "15": 6,
+            "33": 1,
+            "14": 5,
+            "4": 3,
+            "5": 1,
+            "17": 1
+          },
+          "cpu_preparation": {
+            "capacity": 128,
+            "submitted": 741,
+            "consumed": 741,
+            "high_water_requests": 33,
+            "service_wall_s": 1.5529655278660357,
+            "worker_threads_observed": 1
+          },
+          "graph_calls": 2052,
+          "raw_token_slots": 262656,
+          "active_token_slots": 41193,
+          "useful_decode_tokens": 41193,
+          "active_slot_utilization": 0.15683251096491227,
+          "useful_slot_utilization": 0.15683251096491227,
+          "mean_active_slots": 20.07456140350877,
+          "scheduled_decode_wall_s": 13.748481346992776,
+          "scheduled_raw_tok_s": 19104.36457459726,
+          "scheduled_useful_tok_s": 2996.1854666232066,
+          "execution_timing_basis": "host elapsed: graph, token selection and blocking CPU token read",
+          "execution_s": 12.700263963779435,
+          "execution_raw_tok_s": 20681.144954867297,
+          "execution_useful_tok_s": 3243.475892901166,
+          "prefill_tokens": {
+            "text_real_source": 33160,
+            "text_physical_source": 85800
+          },
+          "prefill_device_s": {
+            "vision_encode_envelope": 8.801625007152554,
+            "text_prefill_envelope": 0.9642983357906343
+          },
+          "text_prefill_useful_token_fraction": 0.3864801864801865,
+          "vision_bucket_row_utilization": 0.7145612343297975,
+          "prefill_rates": {
+            "vision_real_output_tokens_per_envelope_s": 3767.4861145587156,
+            "text_real_source_tokens_per_envelope_s": 34387.698048666556,
+            "text_physical_source_tokens_per_envelope_s": 88976.6131657295
+          }
+        },
+        "paddle": {
+          "capacity": 64,
+          "ready_capacity": 64,
+          "prefill_request_counts": {
+            "4": 8,
+            "1": 9,
+            "3": 9,
+            "2": 6,
+            "11": 3,
+            "8": 2,
+            "6": 10,
+            "5": 8,
+            "10": 1,
+            "7": 5
+          },
+          "cpu_preparation": {
+            "capacity": 64,
+            "submitted": 274,
+            "consumed": 274,
+            "high_water_requests": 11,
+            "service_wall_s": 4.888561617350206,
+            "worker_threads_observed": 1
+          },
+          "graph_calls": 1347,
+          "raw_token_slots": 86208,
+          "active_token_slots": 46653,
+          "useful_decode_tokens": 46253,
+          "active_slot_utilization": 0.5411678730512249,
+          "useful_slot_utilization": 0.5365279324424648,
+          "mean_active_slots": 34.634743875278396,
+          "scheduled_decode_wall_s": 9.205730302492157,
+          "scheduled_raw_tok_s": 9364.60195631214,
+          "scheduled_useful_tok_s": 5024.370525766813,
+          "execution_timing_basis": "device events: decode model and argmax",
+          "execution_s": 8.385618624687192,
+          "execution_raw_tok_s": 10280.457991042469,
+          "execution_useful_tok_s": 5515.75287049563,
+          "prefill_tokens": {
+            "vision_real": 210976,
+            "vision_physical": 248832,
+            "text_input": 56306
+          },
+          "prefill_device_s": {
+            "recognition_inputs_h2d": 0.33946870100498167,
+            "vision_embeddings": 1.8000061949193478,
+            "adaptive_mlp_projector": 0.044289559938013555,
+            "text_token_embedding": 0.006550099888350807,
+            "image_embed_scatter": 0.05726956030353903,
+            "static_cache_alloc": 4.4119999292888504e-05,
+            "text_prefill_input_prep": 0.09071338015794755,
+            "text_prefill": 1.5210566573143018,
+            "text_kv_redistribute": 0.099053780078888,
+            "prefill_lm_head": 0.040394259989261626,
+            "prefill_argmax": 0.03440666005015374,
+            "vision_prefill_input_prep": 0.22365061832964406,
+            "vision_prefill": 4.606984027862551
+          },
+          "vision_useful_token_fraction": 0.8478652263374485,
+          "prefill_rates": {
+            "vision_real_patches_s": 45794.81906688617,
+            "vision_physical_patches_s": 54011.9085490834,
+            "text_input_tokens_s": 37017.687493257705
+          }
+        }
+      },
+      "page_preparation": {
+        "input_capacity": 1,
+        "crop_capacity": 1,
+        "high_water_pages": 2,
+        "counts": {
+          "submitted": 64,
+          "input": 64,
+          "detected": 64,
+          "crops": 64
+        },
+        "service_wall_s": {
+          "input": 4.182656872319058,
+          "detect_owner": 9.198438902851194,
+          "crops": 2.383861375041306
+        },
+        "worker_threads_observed": {
+          "input": 1,
+          "crops": 1
+        },
+        "frontend_stage_s": {
+          "file_read_s": 0.09993099397979677,
+          "image_decode_s": 3.431914289481938,
+          "layout_preprocess_cpu_s": 0.5793103566393256,
+          "layout_input_h2d_s": 0.2300488632172346,
+          "layout_preprocess_h2d_s": 0.8093592198565602,
+          "layout_model_submit_s": 8.718417083378881,
+          "layout_metadata_wait_and_d2h_s": 0.01734380517154932,
+          "layout_mask_wait_and_d2h_s": 0.05659857112914324,
+          "layout_mask_polygon_cpu_s": 0.8653333189431578,
+          "layout_structural_postprocess_cpu_s": 1.7637136883568019,
+          "layout_postprocess_s": 2.0012847760226578,
+          "page_preparation_s": 0.6103357125539333,
+          "page_total_s": 35.74380388692953
+        }
+      },
+      "peak_torch_allocated_GiB": 22.167831897735596,
+      "peak_torch_reserved_GiB": 23.5078125
+    },
+    "comparison": {
+      "reference_requests": 1015,
+      "candidate_requests": 1015,
+      "by_model": {
+        "unirec": {
+          "compared": 741,
+          "token_ids_equal": 741,
+          "text_equal": 741,
+          "stop_reason_equal": 741
+        },
+        "paddle": {
+          "compared": 274,
+          "token_ids_equal": 274,
+          "text_equal": 274,
+          "stop_reason_equal": 274
+        }
+      },
+      "first_token_mismatches": []
+    }
+  },
+  "unirec64": {
+    "baseline_processing_s": 41.348990275058895,
+    "candidate": {
+      "pages": 64,
+      "processing_wall_s": 38.824272596044466,
+      "processing_pages_s": 1.6484532927609958,
+      "setup_s": 18.45984948799014,
+      "including_setup_pages_s": 1.117238035107064,
+      "action_wall_s": {
+        "shared.wait": 1.439162775175646,
+        "shared.layout": 8.747812488581985,
+        "unirec.prefill": 12.154658795334399,
+        "unirec.decode": 16.36688245786354
+      },
+      "engines": {
+        "unirec": {
+          "capacity": 128,
+          "ready_capacity": 128,
+          "prefill_request_counts": {
+            "15": 4,
+            "10": 5,
+            "14": 2,
+            "21": 2,
+            "27": 2,
+            "6": 2,
+            "16": 7,
+            "24": 2,
+            "18": 4,
+            "9": 2,
+            "11": 4,
+            "12": 4,
+            "44": 1,
+            "17": 6,
+            "22": 2,
+            "23": 1,
+            "8": 3,
+            "7": 1,
+            "13": 5,
+            "20": 4,
+            "19": 2
+          },
+          "cpu_preparation": {
+            "capacity": 128,
+            "submitted": 1015,
+            "consumed": 1015,
+            "high_water_requests": 44,
+            "service_wall_s": 2.563379363156855,
+            "worker_threads_observed": 1
+          },
+          "graph_calls": 2421,
+          "raw_token_slots": 309888,
+          "active_token_slots": 102771,
+          "useful_decode_tokens": 102771,
+          "active_slot_utilization": 0.33163917286245354,
+          "useful_slot_utilization": 0.33163917286245354,
+          "mean_active_slots": 42.44981412639405,
+          "scheduled_decode_wall_s": 16.36688245786354,
+          "scheduled_raw_tok_s": 18933.84404744185,
+          "scheduled_useful_tok_s": 6279.2043790003045,
+          "execution_timing_basis": "host elapsed: graph, token selection and blocking CPU token read",
+          "execution_s": 14.893121648347005,
+          "execution_raw_tok_s": 20807.457786017254,
+          "execution_useful_tok_s": 6900.568089525181,
+          "prefill_tokens": {
+            "text_real_source": 62612,
+            "text_physical_source": 89760
+          },
+          "prefill_device_s": {
+            "vision_encode_envelope": 10.678493207931517,
+            "text_prefill_envelope": 1.2242321734428412
+          },
+          "text_prefill_useful_token_fraction": 0.6975490196078431,
+          "vision_bucket_row_utilization": 0.7496307237813885,
+          "prefill_rates": {
+            "vision_real_output_tokens_per_envelope_s": 5863.374052951081,
+            "text_real_source_tokens_per_envelope_s": 51143.89358345296,
+            "text_physical_source_tokens_per_envelope_s": 73319.42579778218
+          }
+        }
+      },
+      "page_preparation": {
+        "input_capacity": 1,
+        "crop_capacity": 1,
+        "high_water_pages": 2,
+        "counts": {
+          "submitted": 64,
+          "input": 64,
+          "detected": 64,
+          "crops": 64
+        },
+        "service_wall_s": {
+          "input": 4.19227217300795,
+          "detect_owner": 8.689193221274763,
+          "crops": 1.9363864003680646
+        },
+        "worker_threads_observed": {
+          "input": 1,
+          "crops": 1
+        },
+        "frontend_stage_s": {
+          "file_read_s": 0.07741768495179713,
+          "image_decode_s": 3.6187300228048116,
+          "layout_preprocess_cpu_s": 0.4470545973163098,
+          "layout_input_h2d_s": 0.235569549491629,
+          "layout_preprocess_h2d_s": 0.6826241468079388,
+          "layout_model_submit_s": 8.194383627735078,
+          "layout_metadata_wait_and_d2h_s": 0.01945439795963466,
+          "layout_mask_wait_and_d2h_s": 0.07445141510106623,
+          "layout_mask_polygon_cpu_s": 0.7776668460574001,
+          "layout_structural_postprocess_cpu_s": 1.399601409677416,
+          "layout_postprocess_s": 1.6469550153706223,
+          "page_preparation_s": 0.5267251683399081,
+          "page_total_s": 27.899087404366583
+        }
+      },
+      "peak_torch_allocated_GiB": 8.461555480957031,
+      "peak_torch_reserved_GiB": 8.638671875
+    },
+    "comparison": {
+      "reference_requests": 1015,
+      "candidate_requests": 1015,
+      "by_model": {
+        "unirec": {
+          "compared": 1015,
+          "token_ids_equal": 1015,
+          "text_equal": 1015,
+          "stop_reason_equal": 1015
+        }
+      },
+      "first_token_mismatches": []
+    }
+  },
+  "paddle64": {
+    "baseline_processing_s": 45.955424204003066,
+    "candidate": {
+      "pages": 64,
+      "processing_wall_s": 45.918761871987954,
+      "processing_pages_s": 1.3937658027108573,
+      "setup_s": 37.36640482908115,
+      "including_setup_pages_s": 0.7684441604074793,
+      "action_wall_s": {
+        "shared.wait": 2.3736912761814892,
+        "shared.layout": 9.759110256796703,
+        "paddle.prefill": 20.47193461866118,
+        "paddle.decode": 13.221060472074896
+      },
+      "engines": {
+        "paddle": {
+          "capacity": 64,
+          "ready_capacity": 64,
+          "prefill_request_counts": {
+            "15": 4,
+            "10": 5,
+            "14": 2,
+            "5": 1,
+            "16": 7,
+            "27": 2,
+            "22": 3,
+            "24": 2,
+            "18": 4,
+            "9": 2,
+            "11": 4,
+            "12": 4,
+            "44": 1,
+            "17": 6,
+            "23": 1,
+            "8": 3,
+            "7": 1,
+            "13": 5,
+            "20": 4,
+            "19": 2,
+            "21": 1,
+            "6": 1
+          },
+          "cpu_preparation": {
+            "capacity": 64,
+            "submitted": 1015,
+            "consumed": 1015,
+            "high_water_requests": 61,
+            "service_wall_s": 9.20631835819222,
+            "worker_threads_observed": 1
+          },
+          "graph_calls": 1790,
+          "raw_token_slots": 114560,
+          "active_token_slots": 76455,
+          "useful_decode_tokens": 75202,
+          "active_slot_utilization": 0.6673795391061452,
+          "useful_slot_utilization": 0.6564420391061453,
+          "mean_active_slots": 42.712290502793294,
+          "scheduled_decode_wall_s": 13.221060472074896,
+          "scheduled_raw_tok_s": 8664.963014273326,
+          "scheduled_useful_tok_s": 5688.045989868912,
+          "execution_timing_basis": "device events: decode model and argmax",
+          "execution_s": 10.914323655128477,
+          "execution_raw_tok_s": 10496.298590721191,
+          "execution_useful_tok_s": 6890.211649959978,
+          "prefill_tokens": {
+            "vision_real": 360860,
+            "vision_physical": 415872,
+            "text_input": 103410
+          },
+          "prefill_device_s": {
+            "recognition_inputs_h2d": 2.208545239508153,
+            "vision_embeddings": 2.718477213025092,
+            "adaptive_mlp_projector": 0.11667545994371174,
+            "text_token_embedding": 0.013248820023145522,
+            "image_embed_scatter": 0.11527151974663141,
+            "static_cache_alloc": 0.00042598000056750997,
+            "text_prefill_input_prep": 0.40491803982853886,
+            "text_prefill": 3.231245556831361,
+            "text_kv_redistribute": 0.4515788393914698,
+            "prefill_lm_head": 0.09583351996541031,
+            "prefill_argmax": 0.0802075399365277,
+            "vision_prefill_input_prep": 0.8100474618524314,
+            "vision_prefill": 9.093663987159731
+          },
+          "vision_useful_token_fraction": 0.8677189135118498,
+          "prefill_rates": {
+            "vision_real_patches_s": 39682.57464862732,
+            "vision_physical_patches_s": 45732.06142070039,
+            "text_input_tokens_s": 32003.138783858445
+          }
+        }
+      },
+      "page_preparation": {
+        "input_capacity": 1,
+        "crop_capacity": 1,
+        "high_water_pages": 2,
+        "counts": {
+          "submitted": 64,
+          "input": 64,
+          "detected": 64,
+          "crops": 64
+        },
+        "service_wall_s": {
+          "input": 4.501809863373637,
+          "detect_owner": 9.703201102791354,
+          "crops": 3.463368951343
+        },
+        "worker_threads_observed": {
+          "input": 1,
+          "crops": 1
+        },
+        "frontend_stage_s": {
+          "file_read_s": 0.11522532044909894,
+          "image_decode_s": 3.4863374445121735,
+          "layout_preprocess_cpu_s": 0.8324605557136238,
+          "layout_input_h2d_s": 0.27650356851518154,
+          "layout_preprocess_h2d_s": 1.1089641242288053,
+          "layout_model_submit_s": 9.110270319972187,
+          "layout_metadata_wait_and_d2h_s": 0.026881325524300337,
+          "layout_mask_wait_and_d2h_s": 0.06052482617087662,
+          "layout_mask_polygon_cpu_s": 0.9595036164391786,
+          "layout_structural_postprocess_cpu_s": 1.733600205508992,
+          "layout_postprocess_s": 2.033394055906683,
+          "page_preparation_s": 0.7508437493816018,
+          "page_total_s": 42.01410074066371
+        }
+      },
+      "peak_torch_allocated_GiB": 14.37205457687378,
+      "peak_torch_reserved_GiB": 15.689453125
+    },
+    "comparison": {
+      "reference_requests": 1015,
+      "candidate_requests": 1015,
+      "by_model": {
+        "paddle": {
+          "compared": 1015,
+          "token_ids_equal": 1015,
+          "text_equal": 1015,
+          "stop_reason_equal": 1015
+        }
+      },
+      "first_token_mismatches": []
+    }
+  }
+}

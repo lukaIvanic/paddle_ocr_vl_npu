@@ -1,0 +1,29 @@
+{
+  "hybrid64": {
+    "pages": 64,
+    "json_and_markdown_stems_match_baseline": true,
+    "all_non_content_page_fields_equal": true,
+    "mismatches": []
+  },
+  "unirec64": {
+    "pages": 64,
+    "json_and_markdown_stems_match_baseline": true,
+    "all_non_content_page_fields_equal": true,
+    "mismatches": [],
+    "exit_code": 0
+  },
+  "paddle64": {
+    "pages": 64,
+    "json_and_markdown_stems_match_baseline": true,
+    "all_non_content_page_fields_equal": true,
+    "mismatches": [],
+    "exit_code": 0
+  },
+  "hybrid1651": {
+    "pages": 1651,
+    "json_and_markdown_stems_match_baseline": true,
+    "all_non_content_page_fields_equal": true,
+    "mismatches": [],
+    "exit_code": 0
+  }
+}
