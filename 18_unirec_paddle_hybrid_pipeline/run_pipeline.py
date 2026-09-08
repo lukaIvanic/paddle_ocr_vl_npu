@@ -156,6 +156,11 @@ def main():
         try:
             with torch.inference_mode():
                 result = Coordinator(adapters, source, decode_steps=args.decode_steps).run()
+            if source.completed != len(paths) or source.pages or source.owners:
+                raise RuntimeError(
+                    f"Incomplete pipeline drain: completed={source.completed}/{len(paths)} "
+                    f"pending_pages={len(source.pages)} pending_crops={len(source.owners)}"
+                )
             result.update(
                 pages=source.completed,
                 pages_per_s=source.completed / result["wall_s"],

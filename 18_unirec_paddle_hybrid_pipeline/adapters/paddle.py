@@ -6,7 +6,17 @@ from .base import Adapter
 class ReadySource:
     def __init__(self):
         self.items = deque()
-        self.closed = False
+        self._closed = False
+
+    @property
+    def closed(self):
+        # A slot-limited pull may temporarily return None while prefetched
+        # requests remain. It must not signal EOF until those are consumed.
+        return self._closed and not self.items
+
+    @closed.setter
+    def closed(self, value):
+        self._closed = value
 
     def pull(self, *, block=False):
         return self.items.popleft() if self.items else None

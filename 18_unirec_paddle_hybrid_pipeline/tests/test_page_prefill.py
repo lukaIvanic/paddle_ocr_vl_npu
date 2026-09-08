@@ -60,6 +60,18 @@ class Pages:
 
 
 class PagePrefillTests(unittest.TestCase):
+    def test_paddle_closed_input_is_not_eof_with_ready_surplus(self):
+        from adapters.paddle import ReadySource
+        source = ReadySource()
+        source.items.extend(["first", "last"])
+        source.closed = True
+        self.assertIsNone(source.pull_for_decode_slots(block=False, available_slots=0))
+        self.assertFalse(source.closed)
+        self.assertEqual(source.pull_for_decode_slots(block=False, available_slots=1), "first")
+        self.assertFalse(source.closed)
+        self.assertEqual(source.pull_for_decode_slots(block=False, available_slots=1), "last")
+        self.assertTrue(source.closed)
+
     def test_prefill_is_not_limited_by_two_decode_vacancies(self):
         for capacity in (64, 128):
             adapter = SimulatedAdapter(capacity)
