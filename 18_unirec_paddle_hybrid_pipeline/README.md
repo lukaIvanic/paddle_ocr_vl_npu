@@ -38,7 +38,8 @@ this shared rule, then apply their existing vision/text grouping. Ready capacity
 is UniRec B128 / Paddle B64 at the default batches; Paddle retains its existing
 additional 32 private-KV staging slots. Active decode slots are separate from
 ready storage. Full decode remains eligible when active + ready >= batch size.
-Pending crop work is consumed before more pages are examined. There is one compute owner; NPU work
+CPU-ready pending crops are prefilled before more pages are examined; while
+preparation is outstanding, layout may advance instead. There is one compute owner; NPU work
 is synchronized at cross-model yield boundaries. The engines retain pending
 token-copy objects, slot epochs, EOS handling and KV update ordering.
 
@@ -122,3 +123,9 @@ completed all 1,651 pages at 2.035 pages/s, improving UniRec text-prefill densit
 to 58.2% and vision row utilization to 75.7%. Full token comparison preserved
 all UniRec text and Paddle tables; three Paddle formulas differed. Both model
 adapters use the page-prefill rule above with their existing ready capacities.
+
+The [persistent CPU-preparation run](references/910b_cpu_preparation_b511f81b/README.md)
+completed all 1,651 pages at 2.344 pages/s (+15.2% versus page-prefill), with
+serialized NPU execution. Both workers stayed within their existing capacities;
+all UniRec predictions matched, while seven Paddle formulas and one table
+differed. Layout/crop preparation and output writing remain synchronous.

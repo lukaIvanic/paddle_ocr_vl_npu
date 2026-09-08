@@ -1,0 +1,76 @@
+{
+  "reference_requests": 30557,
+  "candidate_requests": 30557,
+  "by_model": {
+    "unirec": {
+      "compared": 28125,
+      "token_ids_equal": 28125,
+      "text_equal": 28125,
+      "stop_reason_equal": 28125
+    },
+    "paddle": {
+      "compared": 2432,
+      "token_ids_equal": 2424,
+      "text_equal": 2424,
+      "stop_reason_equal": 2432
+    }
+  },
+  "first_token_mismatches": [
+    {
+      "request_id": "page_000006_block_000016",
+      "model": "paddle",
+      "reference_tokens": 44,
+      "candidate_tokens": 48,
+      "text_equal": false
+    },
+    {
+      "request_id": "page_000056_block_000004",
+      "model": "paddle",
+      "reference_tokens": 50,
+      "candidate_tokens": 49,
+      "text_equal": false
+    },
+    {
+      "request_id": "page_000092_block_000007",
+      "model": "paddle",
+      "reference_tokens": 63,
+      "candidate_tokens": 63,
+      "text_equal": false
+    },
+    {
+      "request_id": "page_000681_block_000004",
+      "model": "paddle",
+      "reference_tokens": 27,
+      "candidate_tokens": 27,
+      "text_equal": false
+    },
+    {
+      "request_id": "page_001427_block_000011",
+      "model": "paddle",
+      "reference_tokens": 9,
+      "candidate_tokens": 8,
+      "text_equal": false
+    },
+    {
+      "request_id": "page_001413_block_000018",
+      "model": "paddle",
+      "reference_tokens": 171,
+      "candidate_tokens": 172,
+      "text_equal": false
+    },
+    {
+      "request_id": "page_001535_block_000013",
+      "model": "paddle",
+      "reference_tokens": 55,
+      "candidate_tokens": 56,
+      "text_equal": false
+    },
+    {
+      "request_id": "page_001536_block_000005",
+      "model": "paddle",
+      "reference_tokens": 81,
+      "candidate_tokens": 57,
+      "text_equal": false
+    }
+  ]
+}

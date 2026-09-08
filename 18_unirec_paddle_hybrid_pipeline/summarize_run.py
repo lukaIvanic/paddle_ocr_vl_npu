@@ -35,6 +35,7 @@ def summarize(run):
             "capacity": engine["capacity"],
             "ready_capacity": engine.get("ready_capacity"),
             "prefill_request_counts": engine.get("prefill_request_counts"),
+            "cpu_preparation": engine.get("cpu_preparation"),
             "graph_calls": s.get("decode_iterations", s.get("graph_calls")),
             "raw_token_slots": raw,
             "active_token_slots": active,
