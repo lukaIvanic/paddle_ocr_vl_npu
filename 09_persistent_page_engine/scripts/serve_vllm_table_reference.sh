@@ -7,6 +7,10 @@ if [[ ! "$ASCEND_RT_VISIBLE_DEVICES" =~ ^[0-7]$ ]]; then
   exit 1
 fi
 table_vllm_max_seqs="${TABLE_VLLM_MAX_SEQS:-4}"
+table_vllm_token_budget="${TABLE_VLLM_TOKEN_BUDGET:-4096}"
+if [[ ! "$table_vllm_token_budget" =~ ^[1-9][0-9]*$ ]]; then
+  echo 'TABLE_VLLM_TOKEN_BUDGET must be a positive integer.' >&2; exit 1
+fi
 case "$table_vllm_max_seqs" in
   4) table_vllm_capture_sizes='[1,2,3,4]' ;;
   8) table_vllm_capture_sizes='[1,2,3,4,5,6,7,8]' ;;
@@ -21,12 +25,12 @@ export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export PYTHONUNBUFFERED=1
-printf 'TABLE_VLLM_CONFIG max_seqs=%s compilation=%s\n' \
-  "$table_vllm_max_seqs" "$table_vllm_compilation_config"
+printf 'TABLE_VLLM_CONFIG max_seqs=%s token_budget=%s max_model_len=4096 compilation=%s\n' \
+  "$table_vllm_max_seqs" "$table_vllm_token_budget" "$table_vllm_compilation_config"
 exec vllm serve /workspace/models/PaddleOCR-VL-1.6 \
   --served-model-name PaddleOCR-VL-1.6 \
   --trust-remote-code --dtype float16 \
-  --max-model-len 4096 --max-num-batched-tokens 4096 --max-num-seqs "$table_vllm_max_seqs" \
+  --max-model-len 4096 --max-num-batched-tokens "$table_vllm_token_budget" --max-num-seqs "$table_vllm_max_seqs" \
   --no-enable-prefix-caching --mm-processor-cache-gb 0 \
   --async-scheduling --enable-chunked-prefill \
   --mm-processor-kwargs '{"min_pixels":28224,"max_pixels":802816}' \
