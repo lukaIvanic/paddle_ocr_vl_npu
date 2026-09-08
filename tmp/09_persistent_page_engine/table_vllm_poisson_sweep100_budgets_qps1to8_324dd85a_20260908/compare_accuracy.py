@@ -16,13 +16,13 @@ def load(path):
     return [json.loads(line) for line in path.open() if line.strip()]
 
 
-def prepare(run, base_dir, gt, extra_runs):
+def prepare(run, base_dir, gt, extra_runs, count):
     from pipeline.layout_output import normalize_recognition_text
 
     paths = sorted(run.glob("budget*/qps*/measured/results.jsonl"))
-    reference = load(run / "budget4096/qps1/measured/results.jsonl")
+    reference = load(paths[0])
     reference.sort(key=lambda x: x["sequence"])
-    assert len(reference) == 100
+    assert len(reference) == count
     expected = [(x["sequence"], x["request_id"]) for x in reference]
     groups = {str(p.relative_to(run).parent.parent): load(p) for p in paths}
     for extra in extra_runs:
@@ -30,7 +30,7 @@ def prepare(run, base_dir, gt, extra_runs):
         groups.update({extra.name + "/" + str(p.relative_to(extra).parent.parent): load(p)
                        for p in sorted(extra.glob("budget*/qps*/measured/results.jsonl"))})
     custom = load(base_dir / "table_poisson_frontier_screen1000_be691de1_20260907/b2/qps1/measured/results.jsonl")
-    groups["custom_b2_qps1_first100"] = [x for x in custom if x["sequence"] <= 100]
+    groups[f"custom_b2_qps1_first{count}"] = [x for x in custom if x["sequence"] <= count]
     unique, records, views = {}, [], {}
     for name, rows in groups.items():
         rows.sort(key=lambda x: x["sequence"])
@@ -59,12 +59,14 @@ def main():
     parser.add_argument("--evaluator-root", type=Path, default=Path("/workspace/repos/OmniDocBench_eval"))
     parser.add_argument("--teds-workers", type=int, default=4)
     parser.add_argument("--teds-timeout-s", type=float, default=120)
+    parser.add_argument("--run-dir", type=Path, default=Path(__file__).resolve().parent)
+    parser.add_argument("--count", type=int, choices=(100, 1000), default=100)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--prepare-only", action="store_true")
     mode.add_argument("--score-prepared", action="store_true")
     parser.add_argument("--extra-run", type=Path, action="append", default=[])
     args = parser.parse_args()
-    run = Path(__file__).resolve().parent
+    run = args.run_dir.resolve()
     args.output_dir = run / "accuracy"
     args.output_dir.mkdir(exist_ok=True)
     base_dir = ROOT / "tmp/09_persistent_page_engine"
@@ -74,14 +76,15 @@ def main():
         payload = json.loads(prepared.read_text())
         records, views = payload["records"], payload["views"]
     else:
-        records, views = prepare(run, base_dir, gt, args.extra_run)
+        records, views = prepare(run, base_dir, gt, args.extra_run, args.count)
         prepared.write_text(json.dumps(dict(records=records, views=views), ensure_ascii=False)+"\n")
         if args.prepare_only:
             print(f"Prepared {len(records)} unique scoring pairs across {len(views)} runs")
             return
+    assert all(len(items) == args.count for items in views.values())
     scores = _score(records, args)
     per_variant = scores["per_table"]
-    controls = views["custom_b2_qps1_first100"]
+    controls = views[f"custom_b2_qps1_first{args.count}"]
     summaries, differences = {}, []
     for name, items in views.items():
         pages, structures = defaultdict(list), defaultdict(list)
@@ -107,7 +110,7 @@ def main():
         summaries[name] = dict(count=len(items), matches_custom=matches, sample_TEDS=mean(values),
             page_TEDS=mean([mean(v) for v in pages.values()]),
             sample_structure_TEDS=mean(shape_values), page_structure_TEDS=mean([mean(v) for v in structures.values()]))
-    report = dict(note="Matched first100 subset, not corpus-wide. Identical GT/prediction pairs scored once; native IDs untouched.",
+    report = dict(note=f"Matched first{args.count} requests, retaining repeated occurrences. Identical GT/prediction pairs scored once; native IDs untouched.",
         unique_scored_pairs=len(records), teds_errors=scores["teds_error_count"], teds_timeouts=scores["teds_timeout_count"],
         custom_source="table_poisson_frontier_screen1000_be691de1_20260907/b2/qps1/measured/results.jsonl", runs=summaries, differences=differences)
     (args.output_dir / "comparison.json").write_text(json.dumps(report, ensure_ascii=False, indent=2)+"\n")
