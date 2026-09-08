@@ -1,0 +1,86 @@
+{
+  "owner_exclusive_groups_s": {
+    "control_and_residual": 4.651247797,
+    "shared_wait": 20.294264792,
+    "layout": 126.02735527799999,
+    "unirec_prefill": 206.60754996799997,
+    "paddle_prefill": 85.90748190600002,
+    "unirec_decode": 111.726316021,
+    "output": 20.391911562,
+    "paddle_decode": 62.115924007000004
+  },
+  "group_members": {
+    "control_and_residual": [
+      "control.pump_and_choose",
+      "pipeline"
+    ],
+    "shared_wait": [
+      "shared.wait"
+    ],
+    "layout": [
+      "layout.detect_transfer_and_fence",
+      "layout.advance_or_publish",
+      "shared.layout"
+    ],
+    "unirec_prefill": [
+      "unirec.vision_prefill_envelope",
+      "unirec.text_prefill_envelope",
+      "unirec.prefill_yield_fence",
+      "unirec.prefill"
+    ],
+    "paddle_prefill": [
+      "paddle.prefill_stage_inputs",
+      "paddle.prefill_enqueue",
+      "paddle.prefill_finalize",
+      "paddle.prefill_yield_fence",
+      "paddle.prefill"
+    ],
+    "unirec_decode": [
+      "unirec.decode_engine_advance",
+      "unirec.decode_yield_fence",
+      "unirec.decode"
+    ],
+    "output": [
+      "output.crop_trace_encode_write",
+      "output.crop_trace",
+      "unirec.publish_completion",
+      "unirec.completion_conversion",
+      "paddle.result_conversion",
+      "paddle.publish_completion",
+      "paddle.completion_conversion",
+      "output.markdown_and_images_build_write",
+      "output.json_encode",
+      "output.json_write",
+      "output.page_files",
+      "output.page_assembly_and_emit"
+    ],
+    "paddle_decode": [
+      "paddle.decode_engine_advance",
+      "paddle.decode_yield_fence",
+      "paddle.decode"
+    ]
+  },
+  "partition_total_s": 637.722051331,
+  "trace_bytes": 138210584,
+  "trace_events": 413914,
+  "events_by_track": {
+    "host": 306488,
+    "queue": 77446,
+    "device": 25116,
+    "slot": 4864
+  },
+  "cpu_services_with_ids": 33859,
+  "cpu_stage_counts": {
+    "page.input": 1651,
+    "page.crops": 1651,
+    "hybrid-unirec-cpu": 28125,
+    "hybrid-paddle-cpu": 2432
+  },
+  "cpu_worker_threads": {
+    "hybrid-page-input_0": 1651,
+    "hybrid-page-crops_0": 1651,
+    "hybrid-unirec-cpu_0": 28125,
+    "hybrid-paddle-cpu_0": 2432
+  },
+  "negative_durations": 0
+}

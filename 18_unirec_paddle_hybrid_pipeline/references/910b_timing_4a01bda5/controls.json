@@ -1,0 +1,61 @@
+{
+  "chip": "910B2",
+  "inference_commit": "4a01bda5",
+  "single_pair_only": true,
+  "runs": {
+    "on64": {
+      "pages": 64,
+      "wall_s": 52.23700694413856,
+      "pages_per_s": 1.2251850506756754,
+      "setup_s": 41.78239959082566,
+      "diagnostic_trace_write_s_excluded_from_pipeline": 1.0858255240600556
+    },
+    "off64": {
+      "pages": 64,
+      "wall_s": 51.78241888782941,
+      "pages_per_s": 1.2359407183862192,
+      "setup_s": 42.2805515169166,
+      "diagnostic_trace_write_s_excluded_from_pipeline": 1.1799857020378113e-06
+    }
+  },
+  "observed_on_wall_change_percent": 0.8778810763820699,
+  "on_vs_off_predictions": {
+    "reference_requests": 1015,
+    "candidate_requests": 1015,
+    "by_model": {
+      "unirec": {
+        "compared": 741,
+        "token_ids_equal": 741,
+        "text_equal": 741,
+        "stop_reason_equal": 741
+      },
+      "paddle": {
+        "compared": 274,
+        "token_ids_equal": 274,
+        "text_equal": 274,
+        "stop_reason_equal": 274
+      }
+    },
+    "first_token_mismatches": []
+  },
+  "on_vs_previous_predictions": {
+    "reference_requests": 1015,
+    "candidate_requests": 1015,
+    "by_model": {
+      "unirec": {
+        "compared": 741,
+        "token_ids_equal": 741,
+        "text_equal": 741,
+        "stop_reason_equal": 741
+      },
+      "paddle": {
+        "compared": 274,
+        "token_ids_equal": 274,
+        "text_equal": 274,
+        "stop_reason_equal": 274
+      }
+    },
+    "first_token_mismatches": []
+  },
+  "owner_partition_error_s": 0.0
+}

@@ -1,0 +1,30 @@
+{
+  "on64": {
+    "json": {
+      "reference": 64,
+      "candidate": 64,
+      "same_names": true,
+      "different_files": []
+    },
+    "md": {
+      "reference": 64,
+      "candidate": 64,
+      "same_names": true,
+      "different_files": []
+    }
+  },
+  "hybrid1651": {
+    "json": {
+      "reference": 1651,
+      "candidate": 1651,
+      "same_names": true,
+      "different_files": []
+    },
+    "md": {
+      "reference": 1651,
+      "candidate": 1651,
+      "same_names": true,
+      "different_files": []
+    }
+  }
+}

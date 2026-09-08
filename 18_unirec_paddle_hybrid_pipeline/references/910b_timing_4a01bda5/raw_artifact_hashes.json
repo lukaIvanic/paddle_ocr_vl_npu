@@ -1,0 +1,18 @@
+{
+  "hybrid1651.log": {
+    "bytes": 349926,
+    "sha256": "0f1f0f314186a8dbe0f775c107ef73e5e173f6be742bbde90667c2b2ef6338c1"
+  },
+  "hybrid1651/run_summary.json": {
+    "bytes": 46371,
+    "sha256": "96cb16b3e654cf5b889258cf7733a2e111b2bc42c6b727eecc0d0ec63d548a4b"
+  },
+  "hybrid1651/recognition_trace.jsonl": {
+    "bytes": 24667267,
+    "sha256": "b9ba22009f9e1e1cf44900f5aef915665d4da2f8a36cdef01064fece1420b0ab"
+  },
+  "hybrid1651/timing_trace.json": {
+    "bytes": 138210584,
+    "sha256": "2b8d5f4b36331db9628307659eec3b07a84f09bcc7f3a721b2447d3fddf6e8bd"
+  }
+}

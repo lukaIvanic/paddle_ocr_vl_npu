@@ -1,0 +1,22 @@
+Inference commit: 4a01bda5
+Date: 2026-09-09
+Host: liteserver-c001-4
+Chip: one Ascend 910B2, physical NPU 6 (both npu-setup launches)
+Working directory: /workspace/repos/paddle_ocr_vl_npu
+Environment: source npu-setup
+Persistent SSH master reused.
+Output root: tmp/18_unirec_paddle_hybrid_pipeline/timing_4a01bda5
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 18_unirec_paddle_hybrid_pipeline/run_pipeline.py --input /workspace/datasets/OmniDocBench/images --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json --unirec-model-path /workspace/models/unirec-0.1b --openocr-root /workspace/repos/OpenOCR --unirec-vision-cache .runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e --unirec-decode-cache .runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf --limit <LIMIT> <TIMING> --output-dir tmp/18_unirec_paddle_hybrid_pipeline/timing_4a01bda5/<LANE>
+
+LANE=on64, LIMIT=64, TIMING omitted (detailed timing defaults on).
+LANE=off64, LIMIT=64, TIMING=--no-detailed-timing.
+LANE=hybrid1651, LIMIT=1651, TIMING omitted.
+
+on64 ran first, exit 0 printed by the SSH wrapper (no exit-code file).
+off64 then hybrid1651 run serially in a nohup shell, stopping on nonzero exit;
+each exit is stored as <LANE>.exit_code.txt. Stdout/stderr: <LANE>.log.
+Run directories are newly created; compile/cache roots are unchanged.
+Routing: UniRec text, Paddle tables/formulas. B128/B64; up to32 decode steps.
+No model, resolution, scheduler, worker-count, or NPU-concurrency changes.
+Local policy/timing tests: Python3.13, 29 passed.

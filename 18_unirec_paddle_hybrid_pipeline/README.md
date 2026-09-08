@@ -121,6 +121,10 @@ python3.12 -m unittest discover -s 18_unirec_paddle_hybrid_pipeline/tests -v
 ```
 ## Timing interpretation
 
+Validated on all 1,651 pages on 910B2: see the
+[timing validation and accounting report](references/910b_timing_4a01bda5/README.md).
+All 30,557 crop predictions and all page JSON/Markdown files remained identical.
+
 Detailed timing defaults on; `--no-detailed-timing` is the instrumentation-cost
 control, not a scheduling preset. `detailed_timing.owner_exclusive` is a checked
 non-overlapping partition of the owner `pipeline` scope. Each label reports
@@ -141,6 +145,10 @@ crop identifiers are saved in `timing_trace.json` using Paddle's existing shared
 host-clock recorder; its viewer can open that JSON. Existing Paddle frontend/
 prefill/decode trace spans are included, but device envelopes are not exact
 kernel occupancy or a globally synchronized device critical-path proof.
+In particular, the inherited `Pipeline / Continuous decode scheduler` span
+is Paddle's iterator lifetime, including cooperative pauses for other stages.
+It is context, not exclusive Paddle execution; use the `Hybrid owner` scopes
+and their checked exclusive totals for coordinator accounting.
 
 Output scopes separate completion conversion, page assembly/emission, Markdown
 and image building/writing, JSON encoding/writing and crop tracing. Decoder
