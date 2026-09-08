@@ -62,6 +62,7 @@ class PageSource:
         self.ordinal += 1
         state = {"prepared": prepared, "recognition": {}, "remaining": len(prepared.requests), "started": started}
         self.pages[prepared.ordinal] = state
+        routed = {name: [] for name in adapters}
         for request, index in zip(prepared.requests, prepared.request_block_indices, strict=True):
             model = self.routing.model_for(request.prompt)
             if model == "paddle" and request.prompt == "OCR:":
@@ -69,7 +70,9 @@ class PageSource:
                 size = tuple(max(1, round(v * 0.5)) for v in request.crop.size)
                 request = replace(request, crop=request.crop.resize(size, Image.Resampling.BICUBIC))
             self.owners[request.request_id] = (prepared.ordinal, index, request.prompt)
-            adapters[model].pending.append(request)
+            routed[model].append(request)
+        for model, requests in routed.items():
+            adapters[model].enqueue_page(requests)
         prepared.requests.clear()
         prepared.request_block_indices.clear()
         if not state["remaining"]:

@@ -9,7 +9,7 @@ class UniRecAdapter(Adapter):
         super().__init__(decoder.batch_size, emit)
         self.runner, self.vision, self.decoder = runner, vision, decoder
         self.converter = converter
-        self.source = PersistentReadyQueue(maxsize=self.capacity)
+        self.source = PersistentReadyQueue(maxsize=self.ready_capacity)
         self.source.register_upstream()
         self.steps = decoder.iter_run(self.source, on_complete=self.complete)
         next(self.steps)
@@ -33,7 +33,7 @@ class UniRecAdapter(Adapter):
         from continuous_unirec import ContinuousReadyItem, ContinuousWorkerPrefilledItem
         from run_opendoc_batched_unirec import iter_greedy_text_packs
         from vision_full_batch import PreprocessedVisionInput
-        requests = [self.pending.popleft() for _ in range(min(self.free, len(self.pending)))]
+        requests = self.take_prefill_requests()
         inputs = []
         crops = []
         for i, request in enumerate(requests):
@@ -65,7 +65,11 @@ class UniRecAdapter(Adapter):
                         "text_physical_source": item.text_prefill_physical_source_tokens,
                     })
                     cache = item.kv_cache
-                    kv = torch.stack((*cache.cross_key_cache, *cache.cross_value_cache), dim=0).contiguous()
+                    actual_length = cache.actual_cross_attention_length
+                    kv = torch.stack(tuple(
+                        tensor[:, :, :actual_length, :]
+                        for tensor in (*cache.cross_key_cache, *cache.cross_value_cache)
+                    ), dim=0).contiguous()
                     prefilled = ContinuousWorkerPrefilledItem(
                         packed_cross_kv=kv, prep=item.prep, prefill_s=item.prefill_s,
                         actual_cross_attention_length=cache.actual_cross_attention_length,

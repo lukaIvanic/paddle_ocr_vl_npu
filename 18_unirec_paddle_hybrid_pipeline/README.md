@@ -31,8 +31,14 @@ layout. Partial arenas drain only when submitted upstream work for that model
 has exhausted. `PageInbox` supports independent arrivals and explicit close;
 the benchmark submits filenames then closes input, not the recognition arenas.
 
-No page cohorts and no corpus-wide text/table phases. Pending crop work is
-consumed before more pages are examined. There is one compute owner; NPU work
+No page decode cohorts and no corpus-wide text/table phases. Prefill takes a
+page's assigned crops up to the available ready-storage capacity, independent
+of decode vacancies. Larger pages resume on a later refill. Both adapters use
+this shared rule, then apply their existing vision/text grouping. Ready capacity
+is UniRec B128 / Paddle B64 at the default batches; Paddle retains its existing
+additional 32 private-KV staging slots. Active decode slots are separate from
+ready storage. Full decode remains eligible when active + ready >= batch size.
+Pending crop work is consumed before more pages are examined. There is one compute owner; NPU work
 is synchronized at cross-model yield boundaries. The engines retain pending
 token-copy objects, slot epochs, EOS handling and KV update ordering.
 

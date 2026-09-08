@@ -17,7 +17,7 @@ class ReadySource:
 
 class PaddleAdapter(Adapter):
     def __init__(self, recognizer, emit):
-        super().__init__(recognizer.batch_size, emit)
+        super().__init__(recognizer.batch_size, emit, ready_capacity=recognizer.ready_buffer_capacity)
         self.recognizer = recognizer
         self.source = ReadySource()
         recognizer._begin_decode_schedule()
@@ -39,8 +39,7 @@ class PaddleAdapter(Adapter):
 
     def prefill(self):
         import torch
-        count = min(self.free, len(self.pending), self.recognizer.text_pack_max_members)
-        requests = [self.pending.popleft() for _ in range(count)]
+        requests = self.take_prefill_requests()
         with torch.inference_mode():
             # Reuse the production grouping implementation, including its
             # vision pack target and text-pack membership limits.

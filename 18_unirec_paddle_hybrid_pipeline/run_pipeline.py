@@ -47,6 +47,8 @@ def engine_report(adapter):
     return {
         "graph_calls": adapter.graph_calls,
         "capacity": adapter.capacity,
+        "ready_capacity": getattr(adapter, "ready_capacity", None),
+        "prefill_request_counts": dict(getattr(adapter, "prefill_request_counts", {})),
         "summary": summary,
         "prefill_tokens": dict(getattr(adapter, "prefill_tokens", {})),
         "prefill_device_s": dict(getattr(adapter, "prefill_device_s", {})),

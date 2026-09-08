@@ -21,7 +21,7 @@ class Coordinator:
         live = [name for name, adapter in self.adapters.items() if not adapter.done]
         if not live:
             return None
-        full = [name for name in live if self.adapters[name].occupied == self.adapters[name].capacity]
+        full = [name for name in live if self.adapters[name].occupied >= self.adapters[name].capacity]
         if full:
             return self.choose(full), "decode"
         prefills = [name for name in live if self.adapters[name].pending and self.adapters[name].free > 0]
