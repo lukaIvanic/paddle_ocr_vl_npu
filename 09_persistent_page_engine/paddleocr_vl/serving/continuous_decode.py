@@ -927,7 +927,16 @@ class ContinuousDecodeScheduler:
     def run(self, ready_requests: list[ReadyDecodeRequest]) -> ContinuousDecodeRun:
         return self.run_stream(ready_requests)
 
-    def run_stream(
+    def run_stream(self, ready_requests, **kwargs):
+        """Historical blocking entrypoint; consume cooperative boundaries."""
+        steps = self.iter_run_stream(ready_requests, **kwargs)
+        while True:
+            try:
+                next(steps)
+            except StopIteration as finished:
+                return finished.value
+
+    def iter_run_stream(
         self,
         ready_requests: Iterable[ReadyDecodeRequest] | OpenReadyDecodeSource,
         *,
@@ -1467,6 +1476,7 @@ class ContinuousDecodeScheduler:
                     },
                 )
 
+        yield {"active": 0, "graph_calls": 0}
         progress("scheduler_device_sync_begin", phase="before_initial_fill")
         synchronize(self.device)
         progress("scheduler_device_sync_end", phase="before_initial_fill")
@@ -1489,6 +1499,9 @@ class ContinuousDecodeScheduler:
         iteration = 0
 
         while True:
+            # A cooperative caller must finish device work before switching
+            # models. Pending token-copy ownership stays inside this generator.
+            yield {"active": self.arena.num_active, "graph_calls": graph_calls}
             if self.arena.num_active == 0:
                 if not ready_queue and not source_exhausted:
                     refill_ready_queue(

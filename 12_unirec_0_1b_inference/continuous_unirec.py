@@ -691,7 +691,16 @@ class ContinuousUniRecDecoder:
             "prep": prep,
         }
 
-    def run(
+    def run(self, source, **kwargs):
+        """Historical blocking entrypoint; consume the cooperative boundaries."""
+        steps = self.iter_run(source, **kwargs)
+        while True:
+            try:
+                next(steps)
+            except StopIteration as finished:
+                return finished.value
+
+    def iter_run(
         self,
         source: Iterable[ContinuousReadyItem]
         | PersistentReadyQueue[ContinuousReadyItem],
@@ -793,6 +802,7 @@ class ContinuousUniRecDecoder:
             submitted += 1
             return ready, "item"
 
+        yield {"active": 0, "graph_calls": 0}
         if persistent_source:
             dispatchable = source.wait_until_dispatchable(self.batch_size)
             first_ready, first_state = (
@@ -1272,6 +1282,10 @@ class ContinuousUniRecDecoder:
         try:
             with torch.inference_mode():
                 while True:
+                    yield {
+                        "active": sum(slot is not None for slot in slots),
+                        "graph_calls": decode_iterations,
+                    }
                     if not any(slot is not None for slot in slots):
                         if on_idle is not None:
                             on_idle()

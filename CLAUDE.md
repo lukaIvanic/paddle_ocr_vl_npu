@@ -12,11 +12,15 @@ plus adaptive MLP projector plus an ERNIE-4.5-0.3B decoder-only multimodal LM.
 Visual embeddings replace `<image>` token embeddings before decoder inference;
 there is no encoder-decoder cross-attention.
 
-Work is organized as a ladder of numbered experiments, `01_` through `17_`.
+Work is organized as a ladder of numbered experiments, `01_` through `18_`.
 **`09_persistent_page_engine/` is the active PaddleOCR-VL engine**; experiments
 10–17 are self-contained sibling model/runtime investigations. Read
 [09_persistent_page_engine/README.md](09_persistent_page_engine/README.md) before
 interpreting any 09 throughput or parity claim.
+
+`18_unirec_paddle_hybrid_pipeline/` owns the continuous hybrid coordinator,
+with configurable text/table/formula routing to the existing 09 and 12 engines.
+Its README records implementation scope and validation status.
 
 09 owns the full PaddleOCR-VL 1.6 page contract directly — PP-DocLayoutV3
 loading and inference, crop/merge policy, prompt routing, page assembly, JSON and
