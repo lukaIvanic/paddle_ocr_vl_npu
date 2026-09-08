@@ -46,6 +46,11 @@ class Engine:
 
 
 class Pages:
+    can_advance = True
+
+    def pump(self):
+        pass
+
     def set_wakeup(self, notify):
         pass
 
@@ -160,6 +165,11 @@ class Tests(unittest.TestCase):
                 if self.completed:
                     completed.set()
         class LivePages:
+            can_advance = True
+
+            def pump(self):
+                pass
+
             def set_wakeup(self, notify):
                 inbox.wakeup = notify
 

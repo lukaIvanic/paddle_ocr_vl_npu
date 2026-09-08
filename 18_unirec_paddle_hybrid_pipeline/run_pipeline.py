@@ -168,6 +168,7 @@ def main():
                 setup_s=setup_s,
                 routing=asdict(routing),
                 engines={name: engine_report(a) for name, a in adapters.items()},
+                page_preparation=source.summary(),
                 peak_torch_allocated_bytes=torch.npu.max_memory_allocated(),
                 peak_torch_reserved_bytes=torch.npu.max_memory_reserved(),
                 arguments={
@@ -178,6 +179,7 @@ def main():
             (args.output_dir / "run_summary.json").write_text(json.dumps(result, indent=2) + "\n")
             print(json.dumps(result, indent=2), flush=True)
         finally:
+            source.close()
             for adapter in reversed(tuple(adapters.values())):
                 adapter.close()
             frontend.close()

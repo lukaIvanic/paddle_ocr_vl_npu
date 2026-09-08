@@ -65,8 +65,29 @@ in-flight CPU requests continue to count as upstream work, including after input
 closure. Worker errors propagate, and workers are joined during shutdown.
 `cpu_preparation` summaries record consumed requests, high-water storage and
 worker service wall time (overlapping work, not additive to E2E). Coordinator
-`shared.wait` measures exposed waiting. Page preparation and output writing
-remain unchanged and synchronous in this first step.
+`shared.wait` measures exposed waiting.
+
+## Staged page preparation
+
+One persistent input worker reads/decodes the next page and builds Paddle's
+unchanged CPU detector input. Detection, H2D, selected-mask processing and D2H
+remain on the coordinator, with an NPU fence before yielding. One persistent
+post-layout worker consumes CPU-owned results using Paddle's existing polygon,
+crop/merge and request-building methods, including routing-specific text resize.
+The frontend retains its existing internal CPU crop/mask workers.
+
+There is one slot for each CPU stage (at most two frontend pages in flight,
+including finished-but-unconsumed futures). Publication remains FIFO; raw page
+input and recognition-ready storage retain their existing behavior. Pending
+frontend futures count as upstream work until the page is published, so neither
+temporary CPU gaps nor a closed input can cause premature partial drain. The
+coordinator waits only when no eligible NPU/frontend action exists. Full decode
+and ready recognition prefill keep priority over layout. No separate NPU layout
+stream, transfer worker, new capture mode or page decode cohort is introduced.
+
+`page_preparation` records stage counts, worker service wall, detector owner
+wall and the existing frontend timing fields. CPU spans and page totals overlap;
+they are not additive to coordinator wall. Page output writing remains synchronous.
 
 ## First implementation scope
 
@@ -92,7 +113,7 @@ specialist sequences matched all-Paddle. Full-corpus accuracy and optimized
 throughput are not yet established. The first-64 set is formula-heavy.
 
 ```sh
-python -m unittest discover -s 18_unirec_paddle_hybrid_pipeline/tests -v
+python3.12 -m unittest discover -s 18_unirec_paddle_hybrid_pipeline/tests -v
 ```
 ## Timing interpretation
 

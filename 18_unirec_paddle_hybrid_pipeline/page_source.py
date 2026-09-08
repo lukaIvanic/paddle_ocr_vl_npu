@@ -1,5 +1,5 @@
 """Paddle-owned layout/crop/assembly contract; recognition routing only is new."""
-from collections import deque
+from collections import Counter, deque
 from dataclasses import replace
 from pathlib import Path
 from threading import Condition
@@ -37,6 +37,7 @@ class PageInbox:
 class PageSource:
     def set_wakeup(self, notify):
         self.inbox.wakeup = notify
+        self.preparation.notify = notify
 
     def __init__(self, inbox, frontend, routing, emit_page, emit_trace):
         self.inbox, self.frontend, self.routing = inbox, frontend, routing
@@ -45,10 +46,51 @@ class PageSource:
         self.owners = {}
         self.ordinal = 0
         self.completed = 0
+        from layout_preparation import LayoutPreparation
+        self.preparation = LayoutPreparation(self.prepare_input, self.detect, self.prepare_crops)
+        self.frontend_stage_s = Counter()
+
+    def prepare_input(self, path, ordinal):
+        import torch
+        with torch.inference_mode():
+            return self.frontend.preprocess_decoded_page(self.frontend.decode_page(path, ordinal))
+
+    def detect(self, inputs):
+        import torch
+        detected = self.frontend.detect_preprocessed_page(inputs)
+        # All selected metadata/masks are already CPU-owned. Fence any remaining
+        # layout work before another model gets the shared compute owner.
+        torch.npu.synchronize()
+        return detected
+
+    def prepare_crops(self, detected):
+        import torch
+        with torch.inference_mode():
+            prepared = self.frontend.prepare_detected_page(
+                detected, min_pixels=28224, max_pixels=802816, text_crop_scale=1.0,
+            )
+            # Preserve the previous routing-specific resize, now on CPU worker.
+            for i, request in enumerate(prepared.requests):
+                if self.routing.model_for(request.prompt) == "paddle" and request.prompt == "OCR:":
+                    from PIL import Image
+                    size = tuple(max(1, round(v * 0.5)) for v in request.crop.size)
+                    prepared.requests[i] = replace(request, crop=request.crop.resize(size, Image.Resampling.BICUBIC))
+        return prepared, detected.decoded.page_started_s
+
+    def pump(self):
+        self.preparation.check_errors()
+        with self.inbox.condition:
+            if self.preparation.input_future is None and self.inbox.items:
+                self.preparation.submit(self.inbox.items.popleft(), self.ordinal)
+                self.ordinal += 1
+
+    @property
+    def can_advance(self):
+        return self.preparation.available
 
     @property
     def has_pending(self):
-        return bool(self.inbox.items)
+        return bool(self.inbox.items) or self.preparation.pending
 
     @property
     def exhausted(self):
@@ -58,23 +100,16 @@ class PageSource:
         self.inbox.wait()
 
     def advance(self, adapters):
-        with self.inbox.condition:
-            path = self.inbox.items.popleft()
-        started = time.perf_counter()
-        prepared = self.frontend.prepare_page(
-            path, self.ordinal, min_pixels=28224, max_pixels=802816,
-            text_crop_scale=1.0,
-        )
-        self.ordinal += 1
+        result = self.preparation.advance()
+        if result is None:
+            return
+        prepared, started = result
+        self.frontend_stage_s.update(prepared.timing_s)
         state = {"prepared": prepared, "recognition": {}, "remaining": len(prepared.requests), "started": started}
         self.pages[prepared.ordinal] = state
         routed = {name: [] for name in adapters}
         for request, index in zip(prepared.requests, prepared.request_block_indices, strict=True):
             model = self.routing.model_for(request.prompt)
-            if model == "paddle" and request.prompt == "OCR:":
-                from PIL import Image
-                size = tuple(max(1, round(v * 0.5)) for v in request.crop.size)
-                request = replace(request, crop=request.crop.resize(size, Image.Resampling.BICUBIC))
             self.owners[request.request_id] = (prepared.ordinal, index, request.prompt)
             routed[model].append(request)
         for model, requests in routed.items():
@@ -83,6 +118,12 @@ class PageSource:
         prepared.request_block_indices.clear()
         if not state["remaining"]:
             self.finish(prepared.ordinal)
+
+    def summary(self):
+        return {**self.preparation.summary(), "frontend_stage_s": dict(self.frontend_stage_s)}
+
+    def close(self):
+        self.preparation.close()
 
     def complete(self, request_id, text, token_ids, stop_reason, model):
         ordinal, index, prompt = self.owners.pop(request_id)

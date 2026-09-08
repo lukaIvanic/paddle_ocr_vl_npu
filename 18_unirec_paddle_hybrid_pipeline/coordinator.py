@@ -31,7 +31,7 @@ class Coordinator:
         if prefills:
             return self.choose(prefills), "prefill"
         if self.pages.has_pending:
-            return None, "layout"
+            return None, "layout" if self.pages.can_advance else "wait"
         # No future pages: partial decode is eligible only after that model's
         # pending crops have entered its ready queue. A finished source can
         # still own active decode slots.
@@ -43,6 +43,7 @@ class Coordinator:
         started = time.perf_counter()
         while True:
             self.wakeup.clear()
+            self.pages.pump()
             for adapter in self.adapters.values():
                 adapter.pump_preparation(self.wakeup.set)
             action = self.action()

@@ -43,6 +43,11 @@ class SimulatedAdapter(Adapter):
 
 
 class Pages:
+    can_advance = True
+
+    def pump(self):
+        pass
+
     def set_wakeup(self, notify):
         pass
 
