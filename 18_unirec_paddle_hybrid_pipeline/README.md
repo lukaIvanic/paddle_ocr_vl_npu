@@ -95,3 +95,9 @@ The [full 1,651-page 910B run](references/910b_full1651_9373eba8/README.md)
 completed at 1.779 pages/s (1.701 including measured setup). It records
 per-engine slot utilization, token rates, prefill density and device timing.
 Accuracy evaluation is still separate and has not been run for this hybrid.
+
+The subsequent [shared page-prefill run](references/910b_page_prefill_d7de347f/README.md)
+completed all 1,651 pages at 2.035 pages/s, improving UniRec text-prefill density
+to 58.2% and vision row utilization to 75.7%. Full token comparison preserved
+all UniRec text and Paddle tables; three Paddle formulas differed. Both model
+adapters use the page-prefill rule above with their existing ready capacities.

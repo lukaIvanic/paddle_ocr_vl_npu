@@ -118,6 +118,15 @@ class PagePrefillTests(unittest.TestCase):
                 self.assertTrue(adapter.done)
                 self.assertLessEqual(adapter.high_water_ready, adapter.ready_capacity)
 
+    def test_trace_comparison_rejects_metadata_change(self):
+        from compare_traces import compare
+        row = {"page": "p.png", "block_index": 1, "prompt": "OCR:",
+               "model": "unirec", "token_ids": [0, 1], "text": "x", "stop_reason": "eos"}
+        reference = {"r": row}
+        self.assertEqual(compare(reference, reference)["by_model"]["unirec"]["token_ids_equal"], 1)
+        with self.assertRaisesRegex(ValueError, "metadata changed"):
+            compare(reference, {"r": {**row, "block_index": 2}})
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -33,6 +33,8 @@ def summarize(run):
             basis = "host elapsed: graph, token selection and blocking CPU token read"
         engines[name] = {
             "capacity": engine["capacity"],
+            "ready_capacity": engine.get("ready_capacity"),
+            "prefill_request_counts": engine.get("prefill_request_counts"),
             "graph_calls": s.get("decode_iterations", s.get("graph_calls")),
             "raw_token_slots": raw,
             "active_token_slots": active,
@@ -52,12 +54,14 @@ def summarize(run):
         }
         tokens, spans = engine["prefill_tokens"], engine["prefill_device_s"]
         if name == "paddle":
+            engines[name]["vision_useful_token_fraction"] = tokens["vision_real"] / tokens["vision_physical"]
             engines[name]["prefill_rates"] = {
                 "vision_real_patches_s": tokens["vision_real"] / spans["vision_prefill"],
                 "vision_physical_patches_s": tokens["vision_physical"] / spans["vision_prefill"],
                 "text_input_tokens_s": tokens["text_input"] / spans["text_prefill"],
             }
         elif engine.get("vision_runtime"):
+            engines[name]["text_prefill_useful_token_fraction"] = tokens["text_real_source"] / tokens["text_physical_source"]
             vision = engine["vision_runtime"]
             physical_rows = sum(b["batch_size"] * vision["bucket_calls"][b["key"]]
                                 for b in vision["buckets"])

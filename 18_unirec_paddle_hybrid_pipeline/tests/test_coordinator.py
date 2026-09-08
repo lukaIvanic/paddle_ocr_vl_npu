@@ -74,6 +74,19 @@ class Tests(unittest.TestCase):
         self.assertEqual(report["mean_active_slots"], 64)
         self.assertEqual(report["scheduled_useful_tok_s"], 160)
         self.assertEqual(report["execution_useful_tok_s"], 320)
+        run["action_wall_s"]["paddle.decode"] = 4
+        run["engines"]["paddle"] = {
+            "capacity": 64,
+            "prefill_tokens": {"vision_real": 80, "vision_physical": 100, "text_input": 40},
+            "prefill_device_s": {"vision_prefill": 2, "text_prefill": 2},
+            "summary": {"raw_decode_token_slots": 640, "effective_decode_tokens": 320,
+                        "active_decode_token_slots": 352, "graph_calls": 10,
+                        "timing_s": {"decode_model_and_argmax_device": 2}},
+        }
+        report = summarize(run)["engines"]["paddle"]
+        self.assertEqual(report["vision_useful_token_fraction"], .8)
+        self.assertEqual(report["active_slot_utilization"], .55)
+        self.assertEqual(report["useful_slot_utilization"], .5)
 
     def test_routing(self):
         p = argparse.ArgumentParser()
