@@ -43,13 +43,27 @@ class UniRecAdapter(Adapter):
             inputs.append(PreprocessedVisionInput(i, pixels, image.size, request.request_id))
             crops.append(SimpleNamespace(image_size=image.size, source_index=i, request=request))
         with torch.inference_mode():
+            spans = []
+            def begin(stage):
+                pair = (torch.npu.Event(enable_timing=True), torch.npu.Event(enable_timing=True))
+                spans.append((stage, pair))
+                pair[0].record()
+                return pair[1]
+            end = begin("vision_encode_envelope")
             encoded = self.vision.encode(inputs)
+            end.record()
             for packed, group in iter_greedy_text_packs(crops, runner=self.runner):
                 if not packed:
                     raise RuntimeError("UniRec crop exceeds the production packed text-prefill contract")
                 values = [(encoded[c.source_index].hidden_states, encoded[c.source_index].prep) for c in group]
+                end = begin("text_prefill_envelope")
                 items = self.runner.prefill_encoder_hidden_states_packed_for_cohort(values, decode_ready=False)
+                end.record()
                 for crop, item in zip(group, items, strict=True):
+                    self.prefill_tokens.update({
+                        "text_real_source": item.text_prefill_real_source_tokens,
+                        "text_physical_source": item.text_prefill_physical_source_tokens,
+                    })
                     cache = item.kv_cache
                     kv = torch.stack((*cache.cross_key_cache, *cache.cross_value_cache), dim=0).contiguous()
                     prefilled = ContinuousWorkerPrefilledItem(
@@ -63,6 +77,8 @@ class UniRecAdapter(Adapter):
                         value.packed_cross_kv = None
                     self.source.put(ContinuousReadyItem(crop.request.request_id, crop.request, prefilled, release))
         torch.npu.synchronize()
+        for stage, (start, end) in spans:
+            self.prefill_device_s[stage] += start.elapsed_time(end) / 1000
 
     def complete(self, completed):
         from run_opendoc_batched_unirec import _postprocess_recognizer_text

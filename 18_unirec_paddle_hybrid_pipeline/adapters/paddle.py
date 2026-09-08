@@ -48,6 +48,12 @@ class PaddleAdapter(Adapter):
                 staged = self.recognizer._stage_prefill_group(group)
                 inflight = self.recognizer._enqueue_staged_prefill_group(staged)
                 for item in self.recognizer._finalize_prefill_group(inflight):
+                    self.prefill_device_s.update(item.device_stage_s)
+                    self.prefill_tokens.update({
+                        "vision_real": item.vision["real_vision_tokens"],
+                        "vision_physical": item.vision["physical_vision_tokens"],
+                        "text_input": item.input_tokens,
+                    })
                     self.source.items.append(self.recognizer._ready_from_prefilled(item))
         torch.npu.synchronize()
 

@@ -66,3 +66,21 @@ throughput are not yet established. The first-64 set is formula-heavy.
 ```sh
 python -m unittest discover -s 18_unirec_paddle_hybrid_pipeline/tests -v
 ```
+# Timing interpretation
+
+`action_wall_s` measures serialized coordinator service time by model/phase.
+Engine-wide elapsed timers span cooperative pauses and must not be interpreted
+as exclusive decode time. Slot utilization uses each engine's active/effective
+token slots divided by its physical token slots. Paddle's
+`decode_model_and_argmax_device` is a device-event measurement; UniRec's
+`decode_s` includes graph execution, token selection and the blocking CPU read.
+
+`prefill_tokens` retains real and padded token counts. Paddle's
+`prefill_device_s` sums existing stage events (shared packs counted once).
+UniRec's new `*_envelope` event intervals surround the production vision and
+text-prefill calls: they include transfers and host-submission gaps, **not just
+kernel-active time**. They resolve at the existing prefill synchronization;
+no additional synchronization or model/compile-cache change is introduced.
+UniRec source tokens and Paddle vision patches have different definitions and
+must not be compared as identical units. First-use cache/compile costs inside
+the processing window remain included in E2E time.

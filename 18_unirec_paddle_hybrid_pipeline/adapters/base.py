@@ -1,4 +1,4 @@
-from collections import deque
+from collections import Counter, deque
 
 
 class Adapter:
@@ -10,6 +10,8 @@ class Adapter:
         self.graph_calls = 0
         self.done = False
         self.summary = None
+        self.prefill_tokens = Counter()
+        self.prefill_device_s = Counter()
 
     @property
     def occupied(self):
@@ -38,4 +40,3 @@ class Adapter:
         # token transfers; generator-local pending-copy/slot epoch ownership
         # remains entirely in the original engine.
         torch.npu.synchronize()
-

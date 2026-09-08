@@ -48,6 +48,9 @@ def engine_report(adapter):
         "graph_calls": adapter.graph_calls,
         "capacity": adapter.capacity,
         "summary": summary,
+        "prefill_tokens": dict(getattr(adapter, "prefill_tokens", {})),
+        "prefill_device_s": dict(getattr(adapter, "prefill_device_s", {})),
+        "vision_runtime": adapter.vision.summary() if hasattr(adapter, "vision") else None,
     }
 
 
