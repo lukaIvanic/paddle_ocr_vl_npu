@@ -106,6 +106,62 @@ def comparison_charts():
             omitted_custom_qps=[7,8] if metric == 'p95_s' else [])
         print(args.output_dir/f'{name}.png')
     (args.output_dir/'pareto-comparison-data.json').write_text(json.dumps(manifest,indent=2)+'\n')
+    combined_chart(manifest)
+
+
+def combined_chart(manifest):
+    """Overlay the two already-selected metric frontiers without changing data."""
+    fig, ax = plt.subplots(figsize=(13.6, 8.2), dpi=180)
+    fig.subplots_adjust(left=.085, right=.965, bottom=.12, top=.83)
+    fig.text(.085, .95, 'Table OCR: Mean & P95 latency', fontsize=24,
+             weight='bold', color='#172D3A')
+    fig.text(.085, .905,
+             'PaddleOCR-VL-1.6 · OmniDocBench v1.6 · One 910B2 · 1,000 requests per point',
+             fontsize=11.5, color='#546878')
+    all_x = []
+    for system, color in [('custom', '#087F8C'), ('vllm', '#DB7837')]:
+        for metric, metric_label, style, marker in [
+                ('mean_s', 'Mean', '-', 'o'), ('p95_s', 'P95', '--', 's')]:
+            points = manifest['curves'][metric][system]
+            all_x.extend(r[metric] for r in points)
+            label = f"{'Custom' if system == 'custom' else 'vLLM-Ascend'} · {metric_label}"
+            ax.plot([r[metric] for r in points], [r['target_qps'] for r in points],
+                    color=color, linestyle=style, marker=marker, linewidth=2.3,
+                    markersize=5.5, markeredgecolor='white', markeredgewidth=.8,
+                    label=label)
+            for r in points:
+                right_label = system == 'vllm' and metric == 'p95_s'
+                ax.annotate(f"{r['target_qps']:g} QPS · {r[metric]:.2f} s",
+                            (r[metric], r['target_qps']),
+                            xytext=(8 if right_label else -8, -9 if metric == 'mean_s' else 9),
+                            textcoords='offset points', ha='left' if right_label else 'right',
+                            va='top' if metric == 'mean_s' else 'bottom',
+                            fontsize=9.5, color='#172D3A',
+                            bbox=dict(facecolor='white', edgecolor='none', alpha=.9, pad=1))
+    ax.set_xscale('log')
+    # Leave room for the left-facing point labels inside the plotting area.
+    ax.set_xlim(min(all_x)/2.25, max(all_x)*2.25)
+    xmin, xmax = ax.get_xlim()
+    ticks = [1.5**p for p in range(math.ceil(math.log(xmin,1.5)),
+                                  math.floor(math.log(xmax,1.5))+1)]
+    ax.xaxis.set_major_locator(FixedLocator(ticks))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f'{v:.2f}'.rstrip('0').rstrip('.')))
+    ax.xaxis.set_minor_formatter(NullFormatter())
+    ax.tick_params(axis='x', which='minor', length=0)
+    ax.set_ylim(.4, 9.25)
+    ax.set_yticks(range(1,9))
+    ax.set_axisbelow(True)
+    ax.grid(which='major', color='#E4E9ED', linewidth=.7)
+    ax.set_xlabel('Request latency (seconds, log scale)', labelpad=12)
+    ax.set_ylabel('Offered Poisson QPS', labelpad=12)
+    ax.legend(loc='upper left', ncol=2, frameon=False,
+              borderaxespad=1, fontsize=11, columnspacing=2.5, handlelength=3)
+    for spine in ax.spines.values():
+        spine.set_color('#B6C1C8')
+    for extension in ('png', 'svg'):
+        fig.savefig(args.output_dir/f'pareto-mean-p95.{extension}', facecolor='white')
+    plt.close(fig)
+    print(args.output_dir/'pareto-mean-p95.png')
 
 
 if args.comparison:
