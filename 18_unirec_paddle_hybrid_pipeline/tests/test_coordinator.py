@@ -10,6 +10,13 @@ from routing import Routing, add_arguments
 
 
 class Engine:
+    def pump_preparation(self, notify):
+        pass
+
+    @property
+    def prefill_available(self):
+        return bool(self.pending)
+
     def __init__(self, capacity=2):
         self.capacity = capacity
         self.occupied = 0
@@ -39,6 +46,9 @@ class Engine:
 
 
 class Pages:
+    def set_wakeup(self, notify):
+        pass
+
     def __init__(self, routes):
         self.routes = deque(routes)
         self.exhausted = not self.routes
@@ -150,6 +160,9 @@ class Tests(unittest.TestCase):
                 if self.completed:
                     completed.set()
         class LivePages:
+            def set_wakeup(self, notify):
+                inbox.wakeup = notify
+
             @property
             def has_pending(self):
                 return bool(inbox.items)

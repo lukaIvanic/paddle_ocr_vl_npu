@@ -14,6 +14,33 @@ class Adapter:
         self.prefill_tokens = Counter()
         self.prefill_device_s = Counter()
         self.prefill_request_counts = Counter()
+        self.cpu = None
+
+    def start_cpu_preparation(self, prepare, capacity, name):
+        from cpu_preparation import CpuPreparation
+        self.cpu = CpuPreparation(prepare, capacity, name)
+
+    def pump_preparation(self, notify):
+        if self.cpu is not None:
+            self.cpu.pump(self.pending, notify)
+
+    def planned_prefill_requests(self):
+        if not self.pending:
+            return []
+        from itertools import islice
+        count = min(len(self.pending[0]), self.ready_capacity - self.ready_count)
+        return list(islice(self.pending[0], max(0, count)))
+
+    @property
+    def prefill_available(self):
+        requests = self.planned_prefill_requests()
+        return bool(requests) and (self.cpu is None or self.cpu.ready(requests))
+
+    def take_prepared_requests(self):
+        if not self.prefill_available:
+            raise RuntimeError("prefill selected before CPU inputs are ready")
+        requests = self.take_prefill_requests()
+        return requests, self.cpu.take(requests)
 
     @property
     def occupied(self):

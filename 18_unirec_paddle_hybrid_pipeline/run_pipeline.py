@@ -50,6 +50,7 @@ def engine_report(adapter):
         "ready_capacity": getattr(adapter, "ready_capacity", None),
         "prefill_request_counts": dict(getattr(adapter, "prefill_request_counts", {})),
         "summary": summary,
+        "cpu_preparation": adapter.cpu.summary() if getattr(adapter, "cpu", None) is not None else None,
         "prefill_tokens": dict(getattr(adapter, "prefill_tokens", {})),
         "prefill_device_s": dict(getattr(adapter, "prefill_device_s", {})),
         "vision_runtime": adapter.vision.summary() if hasattr(adapter, "vision") else None,

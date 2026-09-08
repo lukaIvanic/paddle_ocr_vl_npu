@@ -39,6 +39,12 @@ class PaddleAdapter(Adapter):
         import torch
         with torch.inference_mode():
             next(self.steps)
+        self.start_cpu_preparation(self.prepare_cpu, recognizer.cpu_preprocess_max_pending,
+                                   "hybrid-paddle-cpu")
+
+    def prepare_cpu(self, request):
+        import time
+        return self.recognizer._prepare_cpu(request, time.perf_counter())
 
     @property
     def ready_count(self):
@@ -49,11 +55,13 @@ class PaddleAdapter(Adapter):
 
     def prefill(self):
         import torch
-        requests = self.take_prefill_requests()
+        _requests, prepared = self.take_prepared_requests()
         with torch.inference_mode():
             # Reuse the production grouping implementation, including its
             # vision pack target and text-pack membership limits.
-            for group in self.recognizer._iter_packed_prefill_groups(requests):
+            for group in self.recognizer._iter_cohort_prefill_groups(
+                (), prepared_items=[(item, 0.0) for item in prepared]
+            ):
                 staged = self.recognizer._stage_prefill_group(group)
                 inflight = self.recognizer._enqueue_staged_prefill_group(staged)
                 for item in self.recognizer._finalize_prefill_group(inflight):
@@ -71,4 +79,5 @@ class PaddleAdapter(Adapter):
         self.emit(result.request_id, result.text, result.token_ids, result.stop_reason, "paddle")
 
     def close(self):
+        self.cpu.close()
         self.steps.close()

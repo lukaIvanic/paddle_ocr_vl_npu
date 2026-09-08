@@ -12,6 +12,7 @@ class PageInbox:
         self.items = deque()
         self.closed = False
         self.condition = Condition()
+        self.wakeup = lambda: None
 
     def submit(self, path):
         with self.condition:
@@ -19,11 +20,13 @@ class PageInbox:
                 raise RuntimeError("page input is closed")
             self.items.append(Path(path))
             self.condition.notify_all()
+            self.wakeup()
 
     def close(self):
         with self.condition:
             self.closed = True
             self.condition.notify_all()
+            self.wakeup()
 
     def wait(self):
         with self.condition:
@@ -32,6 +35,9 @@ class PageInbox:
 
 
 class PageSource:
+    def set_wakeup(self, notify):
+        self.inbox.wakeup = notify
+
     def __init__(self, inbox, frontend, routing, emit_page, emit_trace):
         self.inbox, self.frontend, self.routing = inbox, frontend, routing
         self.emit_page, self.emit_trace = emit_page, emit_trace

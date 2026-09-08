@@ -1894,12 +1894,15 @@ class ContinuousRecognizer:
     def _iter_cohort_prefill_groups(
         self,
         requests: Iterable[RecognitionRequest],
+        *,
+        prepared_items: Iterable[tuple[CpuPreparedRecognition, float]] | None = None,
     ) -> Iterable[_PreparedPrefillGroup]:
         """Pack each bounded request cohort before launching vision prefill."""
 
         members: list[tuple[CpuPreparedRecognition, float]] = []
         total = 0
-        for item in self._iter_cpu_prepared(requests):
+        source = self._iter_cpu_prepared(requests) if prepared_items is None else prepared_items
+        for item in source:
             tokens = int(item[0].pixel_values.shape[0])
             if members and total + tokens > self.vision_pack_target:
                 yield self._prepared_group(members)

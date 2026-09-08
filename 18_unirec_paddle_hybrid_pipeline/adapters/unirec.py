@@ -13,6 +13,15 @@ class UniRecAdapter(Adapter):
         self.source.register_upstream()
         self.steps = decoder.iter_run(self.source, on_complete=self.complete)
         next(self.steps)
+        self.start_cpu_preparation(self.prepare_cpu, self.capacity, "hybrid-unirec-cpu")
+
+    def prepare_cpu(self, request):
+        import numpy as np
+        from PIL import Image
+        image = request.crop.convert("RGB")
+        size = self.runner.processor.get_processed_size(*image.size)
+        pixels = np.ascontiguousarray(np.asarray(image.resize(size, Image.Resampling.BICUBIC)))
+        return pixels, image.size
 
     @property
     def ready_count(self):
@@ -27,21 +36,16 @@ class UniRecAdapter(Adapter):
             self.source.close()
 
     def prefill(self):
-        import numpy as np
         import torch
-        from PIL import Image
         from continuous_unirec import ContinuousReadyItem, ContinuousWorkerPrefilledItem
         from run_opendoc_batched_unirec import iter_greedy_text_packs
         from vision_full_batch import PreprocessedVisionInput
-        requests = self.take_prefill_requests()
+        requests, prepared = self.take_prepared_requests()
         inputs = []
         crops = []
-        for i, request in enumerate(requests):
-            image = request.crop.convert("RGB")
-            size = self.runner.processor.get_processed_size(*image.size)
-            pixels = np.ascontiguousarray(np.asarray(image.resize(size, Image.Resampling.BICUBIC)))
-            inputs.append(PreprocessedVisionInput(i, pixels, image.size, request.request_id))
-            crops.append(SimpleNamespace(image_size=image.size, source_index=i, request=request))
+        for i, (request, (pixels, image_size)) in enumerate(zip(requests, prepared, strict=True)):
+            inputs.append(PreprocessedVisionInput(i, pixels, image_size, request.request_id))
+            crops.append(SimpleNamespace(image_size=image_size, source_index=i, request=request))
         with torch.inference_mode():
             spans = []
             def begin(stage):
@@ -100,4 +104,5 @@ class UniRecAdapter(Adapter):
         self.emit(completed.request_id, content, ids, stop, "unirec")
 
     def close(self):
+        self.cpu.close()
         self.steps.close()

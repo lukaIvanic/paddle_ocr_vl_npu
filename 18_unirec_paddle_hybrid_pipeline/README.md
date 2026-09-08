@@ -46,6 +46,27 @@ The existing blocking decode entrypoints consume the new iterator boundaries
 internally. Standalone callers do not opt into cross-model synchronization.
 Model definitions and their compiled cache keys are unchanged by those seams.
 
+## Persistent CPU preparation
+
+Each selected recognizer owns one run-lifetime CPU worker. Submitted and finished
+CPU requests share a bounded capacity (UniRec 128 / Paddle's existing CPU-prep
+capacity, 64 at B64). The coordinator pumps these queues independently of NPU
+ready-KV capacity. UniRec reuses its resize/RGB path; Paddle reuses `_prepare_cpu`
+and its FIFO ready-input grouping, without spawning per-chunk producers.
+FIFO/page boundaries remain intact. Since Paddle now groups fully CPU-ready
+inputs, pack membership is no longer affected by its old impatient producer's
+instantaneous availability; numerical comparisons are required.
+
+Only the coordinator stages transfers and submits layout, prefill and decode.
+If one model's CPU inputs are pending it can run other eligible work. When no
+work is eligible it waits on an event signalled by CPU completion or page input;
+in-flight CPU requests continue to count as upstream work, including after input
+closure. Worker errors propagate, and workers are joined during shutdown.
+`cpu_preparation` summaries record consumed requests, high-water storage and
+worker service wall time (overlapping work, not additive to E2E). Coordinator
+`shared.wait` measures exposed waiting. Page preparation and output writing
+remain unchanged and synchronous in this first step.
+
 ## First implementation scope
 
 Paddle keeps its production greedy vision / packed text prefill, B64/KV4096,

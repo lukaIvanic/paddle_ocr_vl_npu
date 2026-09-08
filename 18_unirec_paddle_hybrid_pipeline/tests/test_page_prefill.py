@@ -43,6 +43,9 @@ class SimulatedAdapter(Adapter):
 
 
 class Pages:
+    def set_wakeup(self, notify):
+        pass
+
     def __init__(self, pages):
         self.pages = deque(pages)
 
