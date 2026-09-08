@@ -17,6 +17,7 @@ class Engine:
         self.done = False
         self.upstream = True
         self.completed = 0
+        self.closed = False
 
     @property
     def free(self):
@@ -24,6 +25,7 @@ class Engine:
 
     def set_upstream(self, pending, *, closed=False):
         self.upstream = pending
+        self.closed = closed
 
     def prefill(self):
         while self.free and self.pending:
@@ -33,7 +35,7 @@ class Engine:
     def advance(self, count):
         self.completed += self.occupied
         self.occupied = 0
-        self.done = not self.upstream
+        self.done = self.closed and not self.upstream
 
 
 class Pages:
@@ -85,6 +87,61 @@ class Tests(unittest.TestCase):
         e = Engine()
         Coordinator({"unirec": e}, Pages([])).run()
         self.assertTrue(e.done)
+
+    def test_summary_does_not_copy_completion_history(self):
+        from dataclasses import dataclass
+        from types import SimpleNamespace
+        from run_pipeline import engine_report
+        @dataclass
+        class Summary:
+            graph_calls: int
+            completions: object
+        adapter = SimpleNamespace(summary=Summary(12, object()), graph_calls=12, capacity=64)
+        self.assertEqual(engine_report(adapter)["summary"], {"graph_calls": 12})
+
+    def test_underfilled_requests_more_layout_before_decode(self):
+        e = Engine(capacity=64)
+        e.occupied = 1
+        c = Coordinator({"paddle": e}, Pages([["paddle"]]))
+        self.assertEqual(c.action(), (None, "layout"))
+
+    def test_open_service_drains_then_accepts_later_input(self):
+        import threading
+        from page_source import PageInbox
+        inbox = PageInbox()
+        completed = threading.Event()
+        class LiveEngine(Engine):
+            def advance(self, count):
+                super().advance(count)
+                if self.completed:
+                    completed.set()
+        class LivePages:
+            @property
+            def has_pending(self):
+                return bool(inbox.items)
+            @property
+            def exhausted(self):
+                return inbox.closed and not inbox.items
+            def advance(self, engines):
+                with inbox.condition:
+                    inbox.items.popleft()
+                engines["paddle"].pending.append(1)
+            def wait(self):
+                inbox.wait()
+        e = LiveEngine(capacity=64)
+        c = Coordinator({"paddle": e}, LivePages())
+        worker = threading.Thread(target=c.run, daemon=True)
+        worker.start()
+        inbox.submit("first.png")
+        self.assertTrue(completed.wait(2))
+        self.assertFalse(e.done)
+        completed.clear()
+        inbox.submit("second.png")
+        self.assertTrue(completed.wait(2))
+        inbox.close()
+        worker.join(2)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(e.completed, 2)
 
 
 if __name__ == "__main__":

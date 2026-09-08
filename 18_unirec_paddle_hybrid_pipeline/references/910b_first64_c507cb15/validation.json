@@ -1,0 +1,418 @@
+{
+  "source_commit": "c507cb15",
+  "chip": "910B2",
+  "physical_device": 4,
+  "remote_root": "/workspace/repos/paddle_ocr_vl_npu/tmp/18_unirec_paddle_hybrid_pipeline/smoke_c507cb15",
+  "runs": {
+    "unirec64_serial": {
+      "wall_s": 46.41255617397837,
+      "calls": {
+        "shared.layout": 64,
+        "unirec.prefill": 452,
+        "unirec.decode": 2302
+      },
+      "action_wall_s": {
+        "shared.layout": 13.551948685431853,
+        "unirec.prefill": 16.450589950894937,
+        "unirec.decode": 16.364922922337428
+      },
+      "pages": 64,
+      "pages_per_s": 1.3789371944974276,
+      "setup_s": 17.792020017979667,
+      "routing": {
+        "text": "unirec",
+        "table": "unirec",
+        "formula": "unirec"
+      },
+      "engines": {
+        "unirec": {
+          "graph_calls": 2421,
+          "capacity": 128,
+          "summary": {
+            "batch_size": 128,
+            "submitted": 1015,
+            "completed": 1015,
+            "decode_iterations": 2421,
+            "raw_decode_token_slots": 309888,
+            "effective_decode_tokens": 102771,
+            "idle_decode_token_slots": 207117,
+            "decode_s": 14.837687672348693,
+            "first_decode_step_s": 0.12946563004516065,
+            "steady_decode_s": 14.708222042303532,
+            "raw_decode_tokens_per_s": 20885.194973978523,
+            "effective_decode_tokens_per_s": 6926.3487862413085,
+            "steady_raw_decode_tokens_per_s": 21060.32932526268,
+            "steady_effective_decode_tokens_per_s": 6978.61371039817,
+            "slot_refills": 887,
+            "opportunistic_slot_refills": 887,
+            "compile_wrap_s": 0.0007591629400849342,
+            "compile": {
+              "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+              "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+              "backend": "torchair",
+              "fullgraph": true,
+              "dynamic": false,
+              "torchair_ge_cache": true,
+              "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/production_decode_graph_235f9ba98956362a/decode_weight_nz_lmhead57344_semantic56371/decode_selfkv2048_cross1320_increfa_all_b128_wnz",
+              "mask_mode": "per_step",
+              "qkv_fused": false,
+              "weights_nz": true,
+              "ge_tuning": [],
+              "prefetch_mode": "none",
+              "static_self_kv_len": 2048,
+              "static_cross_kv_len": 1320,
+              "self_attention_backend": "increfa_all",
+              "batch_size": 128
+            },
+            "source_mode": "persistent_queue",
+            "batch_fill_policy": "full_while_upstream_pending_else_partial",
+            "partial_batch_wait_s": 0,
+            "production_graph_warmup": {
+              "passes": 0,
+              "wall_s": 0,
+              "pass_wall_s": [],
+              "warnings": [],
+              "arena": "actual_admitted_decode_arena",
+              "included_in_decode_s": false,
+              "cache_dir": null
+            },
+            "timing_detail": {
+              "run_wall_s": 47.914427399169654,
+              "source_pull_s": 0.017613790230825543,
+              "source_wait_s": 0,
+              "source_waits": 0,
+              "source_idle_polls": 887,
+              "initial_cache_stack_s": 0,
+              "initial_arena_allocate_s": 0.011249392060562968,
+              "initial_arena_admission_enqueue_s": 0.02621607482433319,
+              "initial_state_build_s": 0.00020616408437490463,
+              "cache_refill_copy_enqueue_s": 0,
+              "cache_refill_direct_admission_enqueue_s": 0.19845426990650594,
+              "cache_refill_row_bytes": 0,
+              "cache_refill_total_bytes": 0,
+              "direct_admission_count": 1015,
+              "direct_cross_kv_bytes": 1154064384,
+              "direct_reset_bytes": 4683360,
+              "admission_prefetch": null,
+              "result_build_s": 0.15544440154917538,
+              "completion_callback_s": 0.29047879949212074,
+              "decode_input_buffer_setup_s": 0.00035214610397815704,
+              "decode_input_host_pinned": true,
+              "decode_input_device_tensors_inference": true,
+              "decode_input_build_s": 0.16793296299874783,
+              "explicit_pre_decode_sync": false,
+              "pre_decode_sync_s": 0,
+              "production_graph_warmup_s": 0,
+              "diagnostic_step_callback_s": 0,
+              "decode_s": 14.837687672348693,
+              "scheduler_bookkeeping_residual_s": 32.20803256263025
+            }
+          }
+        }
+      },
+      "peak_torch_allocated_bytes": 9093483008,
+      "peak_torch_reserved_bytes": 9275703296,
+      "arguments": {
+        "text_model": "unirec",
+        "table_model": "unirec",
+        "formula_model": "unirec",
+        "input": "/workspace/datasets/OmniDocBench/images",
+        "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+        "output_dir": "tmp/18_unirec_paddle_hybrid_pipeline/smoke_c507cb15/unirec64_serial",
+        "offset": 0,
+        "limit": 64,
+        "decode_steps": 32,
+        "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+        "paddle_model_path": "/workspace/models/PaddleOCR-VL-1.6",
+        "paddle_batch_size": 64,
+        "vision_promptfa_align_128": false,
+        "unirec_model_path": "/workspace/models/unirec-0.1b",
+        "openocr_root": "/workspace/repos/OpenOCR",
+        "unirec_vision_cache": ".runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e",
+        "unirec_decode_cache": ".runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf",
+        "unirec_batch_size": 128
+      },
+      "crop_count": 1015
+    },
+    "paddle64_serial": {
+      "wall_s": 63.69542764802463,
+      "calls": {
+        "shared.layout": 64,
+        "paddle.prefill": 622,
+        "paddle.decode": 1355
+      },
+      "action_wall_s": {
+        "shared.layout": 15.348386157304049,
+        "paddle.prefill": 35.30295817600563,
+        "paddle.decode": 13.019771473482251
+      },
+      "pages": 64,
+      "pages_per_s": 1.004781698831797,
+      "setup_s": 38.35027415002696,
+      "routing": {
+        "text": "paddle",
+        "table": "paddle",
+        "formula": "paddle"
+      },
+      "engines": {
+        "paddle": {
+          "graph_calls": 1800,
+          "capacity": 64,
+          "summary": {
+            "submitted_requests": 1015,
+            "ready_buffer_capacity": 64,
+            "ready_buffer_low_watermark": 32,
+            "max_ready_queue_depth": 64,
+            "ready_source_refill_count": 600,
+            "graph_calls": 1800,
+            "initial_admissions": 64,
+            "hot_swap_admissions": 951,
+            "prefill_only_completions": 0,
+            "raw_decode_token_slots": 115200,
+            "active_decode_token_slots": 76464,
+            "effective_decode_tokens": 75211,
+            "idle_decode_token_slots": 38736,
+            "lookahead_decode_token_slots": 1253,
+            "kv_prefix_bytes_copied": 1906053120,
+            "initial_kv_prefix_bytes_copied": 104914944,
+            "hot_swap_kv_prefix_bytes_copied": 1801138176,
+            "timing_s": {
+              "continuous_decode_wall": 53.928510597674176,
+              "decode_host_exclusive_wall": 53.928510597674176,
+              "run_scoped_scheduler_wall": 54.45009840792045,
+              "ready_source_wall": 0.14275272493250668,
+              "completion_callback_wall": 0.3788350853137672,
+              "decode_model_and_argmax_device": 10.952152865886662,
+              "slot_admission_device": 0.379163679867983,
+              "slot_admission_enqueue_wall": 0.6263439999893308,
+              "d2h_wait_wall": 0.6853270910214633,
+              "retire_and_refill_host_wall": 5.179348224308342,
+              "hot_swap_safety_sync_wall": 2.246060543693602
+            }
+          }
+        }
+      },
+      "peak_torch_allocated_bytes": 15431878144,
+      "peak_torch_reserved_bytes": 16848519168,
+      "arguments": {
+        "text_model": "paddle",
+        "table_model": "paddle",
+        "formula_model": "paddle",
+        "input": "/workspace/datasets/OmniDocBench/images",
+        "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+        "output_dir": "tmp/18_unirec_paddle_hybrid_pipeline/smoke_c507cb15/paddle64_serial",
+        "offset": 0,
+        "limit": 64,
+        "decode_steps": 32,
+        "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+        "paddle_model_path": "/workspace/models/PaddleOCR-VL-1.6",
+        "paddle_batch_size": 64,
+        "vision_promptfa_align_128": false,
+        "unirec_model_path": "/workspace/models/unirec-0.1b",
+        "openocr_root": "/workspace/repos/OpenOCR",
+        "unirec_vision_cache": ".runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e",
+        "unirec_decode_cache": ".runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf",
+        "unirec_batch_size": 128
+      },
+      "crop_count": 1015
+    },
+    "hybrid64": {
+      "wall_s": 62.18708221288398,
+      "calls": {
+        "shared.layout": 64,
+        "unirec.prefill": 257,
+        "paddle.prefill": 198,
+        "unirec.decode": 2038,
+        "paddle.decode": 1003
+      },
+      "action_wall_s": {
+        "shared.layout": 13.453546840464696,
+        "unirec.prefill": 11.937037598108873,
+        "paddle.prefill": 13.870476101059467,
+        "unirec.decode": 13.736779446247965,
+        "paddle.decode": 9.107030690182
+      },
+      "pages": 64,
+      "pages_per_s": 1.0291526426808366,
+      "setup_s": 48.115470046177506,
+      "routing": {
+        "text": "unirec",
+        "table": "paddle",
+        "formula": "paddle"
+      },
+      "engines": {
+        "unirec": {
+          "graph_calls": 2052,
+          "capacity": 128,
+          "summary": {
+            "batch_size": 128,
+            "submitted": 741,
+            "completed": 741,
+            "decode_iterations": 2052,
+            "raw_decode_token_slots": 262656,
+            "effective_decode_tokens": 41193,
+            "idle_decode_token_slots": 221463,
+            "decode_s": 12.666173616191372,
+            "first_decode_step_s": 0.13367757201194763,
+            "steady_decode_s": 12.532496044179425,
+            "raw_decode_tokens_per_s": 20736.80718099763,
+            "effective_decode_tokens_per_s": 3252.205539591083,
+            "steady_raw_decode_tokens_per_s": 20947.78239502642,
+            "steady_effective_decode_tokens_per_s": 3276.681664629144,
+            "slot_refills": 613,
+            "opportunistic_slot_refills": 613,
+            "compile_wrap_s": 0.0008158439304679632,
+            "compile": {
+              "compile_api": "torch_npu.dynamo.torchair.inference.cache_compile",
+              "compile_api_import_path": "torch_npu.dynamo.torchair.inference.cache_compile",
+              "backend": "torchair",
+              "fullgraph": true,
+              "dynamic": false,
+              "torchair_ge_cache": true,
+              "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf/production_decode_graph_235f9ba98956362a/decode_weight_nz_lmhead57344_semantic56371/decode_selfkv2048_cross1320_increfa_all_b128_wnz",
+              "mask_mode": "per_step",
+              "qkv_fused": false,
+              "weights_nz": true,
+              "ge_tuning": [],
+              "prefetch_mode": "none",
+              "static_self_kv_len": 2048,
+              "static_cross_kv_len": 1320,
+              "self_attention_backend": "increfa_all",
+              "batch_size": 128
+            },
+            "source_mode": "persistent_queue",
+            "batch_fill_policy": "full_while_upstream_pending_else_partial",
+            "partial_batch_wait_s": 0,
+            "production_graph_warmup": {
+              "passes": 0,
+              "wall_s": 0,
+              "pass_wall_s": [],
+              "warnings": [],
+              "arena": "actual_admitted_decode_arena",
+              "included_in_decode_s": false,
+              "cache_dir": null
+            },
+            "timing_detail": {
+              "run_wall_s": 92.93663935293444,
+              "source_pull_s": 0.013240823522210121,
+              "source_wait_s": 0,
+              "source_waits": 0,
+              "source_idle_polls": 613,
+              "initial_cache_stack_s": 0,
+              "initial_arena_allocate_s": 0.01004541083239019,
+              "initial_arena_admission_enqueue_s": 0.026057305512949824,
+              "initial_state_build_s": 0.00021546403877437115,
+              "cache_refill_copy_enqueue_s": 0,
+              "cache_refill_direct_admission_enqueue_s": 0.13508162437938154,
+              "cache_refill_row_bytes": 0,
+              "cache_refill_total_bytes": 0,
+              "direct_admission_count": 741,
+              "direct_cross_kv_bytes": 611205120,
+              "direct_reset_bytes": 3236640,
+              "admission_prefetch": null,
+              "result_build_s": 0.09377689915709198,
+              "completion_callback_s": 0.15600691130384803,
+              "decode_input_buffer_setup_s": 0.0003706368152052164,
+              "decode_input_host_pinned": true,
+              "decode_input_device_tensors_inference": true,
+              "decode_input_build_s": 0.1418126195203513,
+              "explicit_pre_decode_sync": false,
+              "pre_decode_sync_s": 0,
+              "production_graph_warmup_s": 0,
+              "diagnostic_step_callback_s": 0,
+              "decode_s": 12.666173616191372,
+              "scheduler_bookkeeping_residual_s": 79.69304219773039
+            }
+          }
+        },
+        "paddle": {
+          "graph_calls": 1351,
+          "capacity": 64,
+          "summary": {
+            "submitted_requests": 274,
+            "ready_buffer_capacity": 64,
+            "ready_buffer_low_watermark": 32,
+            "max_ready_queue_depth": 64,
+            "ready_source_refill_count": 168,
+            "graph_calls": 1351,
+            "initial_admissions": 64,
+            "hot_swap_admissions": 210,
+            "prefill_only_completions": 0,
+            "raw_decode_token_slots": 86464,
+            "active_decode_token_slots": 46650,
+            "effective_decode_tokens": 46250,
+            "idle_decode_token_slots": 39814,
+            "lookahead_decode_token_slots": 400,
+            "kv_prefix_bytes_copied": 1037832192,
+            "initial_kv_prefix_bytes_copied": 181592064,
+            "hot_swap_kv_prefix_bytes_copied": 856240128,
+            "timing_s": {
+              "continuous_decode_wall": 38.21862516528927,
+              "decode_host_exclusive_wall": 38.21862516528927,
+              "run_scoped_scheduler_wall": 38.43374893791042,
+              "ready_source_wall": 0.04656519670970738,
+              "completion_callback_wall": 0.1685585759114474,
+              "decode_model_and_argmax_device": 8.372168145656568,
+              "slot_admission_device": 0.09276622014492747,
+              "slot_admission_enqueue_wall": 0.1701849834062159,
+              "d2h_wait_wall": 0.8122468125075102,
+              "retire_and_refill_host_wall": 1.8153468696400523,
+              "hot_swap_safety_sync_wall": 0.7238925797864795
+            }
+          }
+        }
+      },
+      "peak_torch_allocated_bytes": 23802528256,
+      "peak_torch_reserved_bytes": 25243418624,
+      "arguments": {
+        "text_model": "unirec",
+        "table_model": "paddle",
+        "formula_model": "paddle",
+        "input": "/workspace/datasets/OmniDocBench/images",
+        "dataset_json": "/workspace/datasets/OmniDocBench/OmniDocBench.json",
+        "output_dir": "tmp/18_unirec_paddle_hybrid_pipeline/smoke_c507cb15/hybrid64",
+        "offset": 0,
+        "limit": 64,
+        "decode_steps": 32,
+        "layout_model": "/workspace/models/PP-DocLayoutV3_safetensors",
+        "paddle_model_path": "/workspace/models/PaddleOCR-VL-1.6",
+        "paddle_batch_size": 64,
+        "vision_promptfa_align_128": false,
+        "unirec_model_path": "/workspace/models/unirec-0.1b",
+        "openocr_root": "/workspace/repos/OpenOCR",
+        "unirec_vision_cache": ".runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e",
+        "unirec_decode_cache": ".runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf",
+        "unirec_batch_size": 128
+      },
+      "crop_count": 1015
+    }
+  },
+  "comparison": {
+    "unirec": {
+      "compared": 741,
+      "token_exact": 741,
+      "different_request_ids": [],
+      "length_cases": [
+        {
+          "request_id": "page_000003_block_000009",
+          "control_stop": "length",
+          "token_exact": true
+        },
+        {
+          "request_id": "page_000012_block_000005",
+          "control_stop": "length",
+          "token_exact": true
+        }
+      ]
+    },
+    "paddle": {
+      "compared": 274,
+      "token_exact": 272,
+      "different_request_ids": [
+        "page_000006_block_000016",
+        "page_000006_block_000009"
+      ],
+      "length_cases": []
+    }
+  }
+}

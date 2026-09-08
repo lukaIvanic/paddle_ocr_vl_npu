@@ -57,6 +57,12 @@ compare token IDs across tokenizers. The initial writer is synchronous.
 CPU policy tests are not inference validation. 910B and 310P validation must
 be recorded separately; no 310P result is claimed by this implementation.
 
+The [initial 910B validation](references/910b_first64_c507cb15/README.md)
+completed 64 pages in all-UniRec, all-Paddle and hybrid configurations. All
+741 hybrid text token sequences matched the all-UniRec control; 272/274
+specialist sequences matched all-Paddle. Full-corpus accuracy and optimized
+throughput are not yet established. The first-64 set is formula-heavy.
+
 ```sh
 python -m unittest discover -s 18_unirec_paddle_hybrid_pipeline/tests -v
 ```

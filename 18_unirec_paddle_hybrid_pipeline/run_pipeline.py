@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PP-DocLayoutV3 with continuously scheduled UniRec/Paddle crop recognition."""
 import argparse
-from dataclasses import asdict
+from dataclasses import asdict, fields
 import json
 import os
 from pathlib import Path
@@ -32,6 +32,23 @@ def parse_args():
     parser.add_argument("--unirec-decode-cache", type=Path)
     parser.add_argument("--unirec-batch-size", type=int, default=128)
     return parser.parse_args()
+
+
+def engine_report(adapter):
+    summary = adapter.summary
+    if hasattr(summary, "__dataclass_fields__"):
+        # Crop outputs already have their own trace; do not recursively copy
+        # the scheduler's complete request history into the run summary.
+        summary = {
+            field.name: getattr(summary, field.name)
+            for field in fields(summary)
+            if field.name != "completions"
+        }
+    return {
+        "graph_calls": adapter.graph_calls,
+        "capacity": adapter.capacity,
+        "summary": summary,
+    }
 
 
 def make_paddle(args, emit):
@@ -134,7 +151,19 @@ def main():
         try:
             with torch.inference_mode():
                 result = Coordinator(adapters, source, decode_steps=args.decode_steps).run()
-            result.update(pages=source.completed, pages_per_s=source.completed/result["wall_s"], setup_s=setup_s, routing=asdict(routing), engines={name:{"graph_calls":a.graph_calls,"capacity":a.capacity,"summary":asdict(a.summary) if hasattr(a.summary,"__dataclass_fields__") else a.summary} for name,a in adapters.items()}, peak_torch_allocated_bytes=torch.npu.max_memory_allocated(), peak_torch_reserved_bytes=torch.npu.max_memory_reserved(), arguments={k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()})
+            result.update(
+                pages=source.completed,
+                pages_per_s=source.completed / result["wall_s"],
+                setup_s=setup_s,
+                routing=asdict(routing),
+                engines={name: engine_report(a) for name, a in adapters.items()},
+                peak_torch_allocated_bytes=torch.npu.max_memory_allocated(),
+                peak_torch_reserved_bytes=torch.npu.max_memory_reserved(),
+                arguments={
+                    key: str(value) if isinstance(value, Path) else value
+                    for key, value in vars(args).items()
+                },
+            )
             (args.output_dir / "run_summary.json").write_text(json.dumps(result, indent=2) + "\n")
             print(json.dumps(result, indent=2), flush=True)
         finally:

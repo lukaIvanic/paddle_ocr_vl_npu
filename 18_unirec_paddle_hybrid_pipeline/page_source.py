@@ -55,7 +55,10 @@ class PageSource:
         with self.inbox.condition:
             path = self.inbox.items.popleft()
         started = time.perf_counter()
-        prepared = self.frontend.prepare_page(path, self.ordinal, min_pixels=28224, max_pixels=802816, text_crop_scale=1.0)
+        prepared = self.frontend.prepare_page(
+            path, self.ordinal, min_pixels=28224, max_pixels=802816,
+            text_crop_scale=1.0,
+        )
         self.ordinal += 1
         state = {"prepared": prepared, "recognition": {}, "remaining": len(prepared.requests), "started": started}
         self.pages[prepared.ordinal] = state
@@ -77,7 +80,16 @@ class PageSource:
         state = self.pages[ordinal]
         state["recognition"][index] = text
         state["remaining"] -= 1
-        self.emit_trace({"request_id": request_id, "page": state["prepared"].image_path.name, "block_index": index, "prompt": prompt, "model": model, "text": text, "token_ids": token_ids, "stop_reason": stop_reason})
+        self.emit_trace({
+            "request_id": request_id,
+            "page": state["prepared"].image_path.name,
+            "block_index": index,
+            "prompt": prompt,
+            "model": model,
+            "text": text,
+            "token_ids": token_ids,
+            "stop_reason": stop_reason,
+        })
         if not state["remaining"]:
             self.finish(ordinal)
 
@@ -85,7 +97,17 @@ class PageSource:
         from pipeline.layout_output import OwnedPageResult, assemble_page_blocks
         state = self.pages.pop(ordinal)
         p = state["prepared"]
-        result = OwnedPageResult(input_path=p.image_path, width=p.image_size[0], height=p.image_size[1], blocks=assemble_page_blocks(p.blocks, state["recognition"], figure_token_maps=p.figure_token_maps, dropped_figure_paths=p.dropped_figure_paths), document_images=p.document_images)
+        result = OwnedPageResult(
+            input_path=p.image_path,
+            width=p.image_size[0],
+            height=p.image_size[1],
+            blocks=assemble_page_blocks(
+                p.blocks, state["recognition"],
+                figure_token_maps=p.figure_token_maps,
+                dropped_figure_paths=p.dropped_figure_paths,
+            ),
+            document_images=p.document_images,
+        )
         self.emit_page(result)
         self.completed += 1
         print(f"HYBRID page_finish ordinal={ordinal} completed={self.completed} page_wall_s={time.perf_counter()-state['started']:.3f}", flush=True)
