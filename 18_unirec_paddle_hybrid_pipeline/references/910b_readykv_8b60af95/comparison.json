@@ -1,0 +1,35 @@
+{
+  "baseline": {
+    "wall_s": 637.7220378411002,
+    "pages_per_s": 2.5889022207687544,
+    "peak_allocated_GiB": 22.28911018371582,
+    "peak_reserved_GiB": 23.619140625,
+    "slot_admission_device_s": 0.9718780797347427,
+    "slot_admission_enqueue_wall_s": 1.452823514584452,
+    "decode_graphs": 9217
+  },
+  "candidate": {
+    "wall_s": 632.0050208070315,
+    "pages_per_s": 2.6123210190510426,
+    "peak_allocated_GiB": 17.297380447387695,
+    "peak_reserved_GiB": 18.556640625,
+    "slot_admission_device_s": 2.3812533584237148,
+    "slot_admission_enqueue_wall_s": 2.9236874610651284,
+    "decode_graphs": 9217
+  },
+  "same_prefill_tokens_and_group_counts": true,
+  "same_graph_calls": true,
+  "pool": {
+    "storage": "zero_once_fixed_arena",
+    "capacity": 64,
+    "allocated_bytes": 1811939328,
+    "acquisitions": 2432,
+    "reuses": 2368,
+    "releases": 2432,
+    "active_slots": 0,
+    "free_slots": 64,
+    "high_water_active_slots": 64,
+    "cache_length": 1536,
+    "max_prompt_length": 1036
+  }
+}

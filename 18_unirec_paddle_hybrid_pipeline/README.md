@@ -51,6 +51,33 @@ The existing blocking decode entrypoints consume the new iterator boundaries
 internally. Standalone callers do not opt into cross-model synchronization.
 Model definitions and their compiled cache keys are unchanged by those seams.
 
+## Paddle ready-KV storage
+
+[Full 910B validation](references/910b_readykv_8b60af95/README.md): all 30,557
+crop outputs and all 1,651 page JSON/Markdown files matched exactly. Peak
+allocation fell 22.29 -> 17.30 GiB, at 2.61 pg/s versus 2.59 pg/s previously.
+
+The hybrid requests one ready row per Paddle decode slot (64 by default), with
+1,536 positions per ready row. The active decode arena remains B64 x 4,096;
+generation limits, preprocessing and grouping are unchanged. Override only for
+an explicit comparison with `--paddle-ready-cache-rows 96
+--paddle-ready-cache-length 4096`. The pool now reports allocation, live/high-water
+leases, releases, row length and maximum observed prompt length in `ready_kv_pool`.
+
+Admission still runs through experiment 09's `DecodeArena.admit`, using its
+existing `torch._foreach_copy_`, controls, and release-event protocol. A compact
+source row is copied into the corresponding destination prefix; the remaining
+finite suffix stays masked by the real cache position and is overwritten as
+decode progresses. The active arena is zero-initialized as before. Source rows
+are reusable only after the existing release-event dependency.
+
+Packed prefill keeps its existing scratch graphs and prefix redistribution.
+Individual prefill uses one reusable B1 x 4,096 scratch cache to retain the
+compiled call shape, then copies the valid prefix to the leased ready row.
+Prompts exceeding the ready-row length raise explicitly; they are never truncated
+or silently rerouted. The previous run's largest Paddle prompt was 1,036 tokens.
+Experiment 09 standalone constructor defaults retain their original pool sizes.
+
 ## Persistent CPU preparation
 
 Each selected recognizer owns one run-lifetime CPU worker. Submitted and finished

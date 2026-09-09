@@ -1,0 +1,62 @@
+{
+  "baseline": {
+    "wall_s": 52.23700694413856,
+    "peak_allocated_GiB": 22.167831897735596,
+    "paddle_timing_s": {
+      "ready_source_wall": 0.04021780611947179,
+      "completion_callback_wall": 0.21260578115470707,
+      "decode_model_and_argmax_device": 8.07693214607239,
+      "slot_admission_device": 0.12758126025646926,
+      "slot_admission_enqueue_wall": 0.16775331855751574,
+      "d2h_wait_wall": 0.9146217021625489,
+      "retire_and_refill_host_wall": 1.7724999338388443,
+      "hot_swap_safety_sync_wall": 0.6453695092350245
+    }
+  },
+  "candidate": {
+    "wall_s": 54.022464520065114,
+    "peak_allocated_GiB": 17.105331897735596,
+    "pool": {
+      "storage": "zero_once_fixed_arena",
+      "capacity": 64,
+      "allocated_bytes": 1811939328,
+      "acquisitions": 274,
+      "reuses": 210,
+      "releases": 274,
+      "active_slots": 0,
+      "free_slots": 64,
+      "high_water_active_slots": 64,
+      "cache_length": 1536,
+      "max_prompt_length": 1021
+    },
+    "paddle_timing_s": {
+      "ready_source_wall": 0.04037395166233182,
+      "completion_callback_wall": 0.2234127800911665,
+      "decode_model_and_argmax_device": 8.17140338659286,
+      "slot_admission_device": 0.352961480498314,
+      "slot_admission_enqueue_wall": 0.4005209053866565,
+      "d2h_wait_wall": 0.8613311392255127,
+      "retire_and_refill_host_wall": 2.007437009131536,
+      "hot_swap_safety_sync_wall": 0.6227930204477161
+    }
+  },
+  "prediction_comparison": {
+    "reference_requests": 1015,
+    "candidate_requests": 1015,
+    "by_model": {
+      "unirec": {
+        "compared": 741,
+        "token_ids_equal": 741,
+        "text_equal": 741,
+        "stop_reason_equal": 741
+      },
+      "paddle": {
+        "compared": 274,
+        "token_ids_equal": 274,
+        "text_equal": 274,
+        "stop_reason_equal": 274
+      }
+    },
+    "first_token_mismatches": []
+  }
+}

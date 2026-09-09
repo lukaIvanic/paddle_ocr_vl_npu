@@ -1,0 +1,27 @@
+Inference commit: 8b60af95 (production change eb3264e1; test initialization correction 8b60af95)
+Date: 2026-09-09
+Host: liteserver-c001-4
+Chip: one Ascend 910B2, physical NPU 6, logical npu:0
+Working directory: /workspace/repos/paddle_ocr_vl_npu
+Environment: source npu-setup
+Persistent SSH master reused; model graph caches unchanged.
+
+NPU copy tests:
+READY_CACHE_TEST_DEVICE=npu:0 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -m unittest discover -s 18_unirec_paddle_hybrid_pipeline/tests -p test_ready_cache.py -v
+4 passed in 7.843s. Initial eb3264e1 test invocation failed before allocation
+because torch_npu was imported after torch.device('npu:0'); corrected in 8b60af95.
+
+Existing Paddle scheduler CPU tests:
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -m unittest discover -s 09_persistent_page_engine/tests -p test_continuous_decode_scheduling_metrics.py -q
+13 passed. These are regression tests, not NPU inference validation.
+
+Production command:
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 18_unirec_paddle_hybrid_pipeline/run_pipeline.py --input /workspace/datasets/OmniDocBench/images --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json --unirec-model-path /workspace/models/unirec-0.1b --openocr-root /workspace/repos/OpenOCR --unirec-vision-cache .runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e --unirec-decode-cache .runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf --limit <LIMIT> --output-dir tmp/18_unirec_paddle_hybrid_pipeline/readykv_eb3264e1/<LANE>
+
+LANE=hybrid64 LIMIT=64, then LANE=hybrid1651 LIMIT=1651.
+Both run under nohup with stdout/stderr redirected to <LANE>.log.
+Smoke exit 0 printed by SSH wrapper; full exit persisted to hybrid1651.exit_code.txt.
+Full run launched only after all 1,015 smoke crop predictions matched.
+Default hybrid ready cache: rows=Paddle B64, length1536.
+Active decode: Paddle B64 S4096 and UniRec B128, unchanged.
+Existing reference: timing_4a01bda5/on64 and timing_4a01bda5/hybrid1651.

@@ -34,6 +34,7 @@ def summarize(run):
         engines[name] = {
             "capacity": engine["capacity"],
             "ready_capacity": engine.get("ready_capacity"),
+            "ready_kv_pool": engine.get("ready_kv_pool"),
             "prefill_request_counts": engine.get("prefill_request_counts"),
             "cpu_preparation": engine.get("cpu_preparation"),
             "graph_calls": s.get("decode_iterations", s.get("graph_calls")),
