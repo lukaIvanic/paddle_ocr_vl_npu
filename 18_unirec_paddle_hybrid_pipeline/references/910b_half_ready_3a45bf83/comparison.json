@@ -1,0 +1,306 @@
+{
+  "chip": "Ascend 910B2",
+  "physical_npu": 6,
+  "source_commit": "3a45bf83",
+  "pages": 384,
+  "runs": {
+    "original": {
+      "remote_root": "/workspace/repos/paddle_ocr_vl_npu/tmp/18_unirec_paddle_hybrid_pipeline/ready_control_3a45bf83_384",
+      "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 12_unirec_0_1b_inference/run_with_process_tree_memory.py --output /workspace/repos/paddle_ocr_vl_npu/tmp/18_unirec_paddle_hybrid_pipeline/ready_control_3a45bf83_384/memory.json --interval-ms 1000 --npu-id 6 --npu-interval-ms 1000 -- /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 18_unirec_paddle_hybrid_pipeline/run_pipeline.py --input /workspace/datasets/OmniDocBench/images --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json --unirec-model-path /workspace/models/unirec-0.1b --openocr-root /workspace/repos/OpenOCR --unirec-vision-cache .runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e --unirec-decode-cache .runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf --unirec-vision-lanes 0 --unirec-ready-capacity 128 --paddle-ready-capacity 64 --limit 384 --output-dir /workspace/repos/paddle_ocr_vl_npu/tmp/18_unirec_paddle_hybrid_pipeline/ready_control_3a45bf83_384/output \n",
+      "exit_code": 0,
+      "pages": 384,
+      "wall_s": 185.4981280299835,
+      "pages_per_s": 2.070101752929448,
+      "setup_s": 43.81406992999837,
+      "torch_peak_allocated_bytes": 18443806208,
+      "torch_peak_reserved_bytes": 19878903808,
+      "npu_smi": {
+        "baseline_mb": 3425,
+        "peak_mb": 22859,
+        "peak_increase_mb": 19434,
+        "interval_ms": 1000.0,
+        "sample_count": 261,
+        "errors": []
+      },
+      "engines": {
+        "unirec": {
+          "capacity": 128,
+          "ready_capacity": 128,
+          "cpu_preparation": {
+            "capacity": 128,
+            "submitted": 3657,
+            "consumed": 3657,
+            "high_water_requests": 65,
+            "service_wall_s": 9.390295323682949,
+            "worker_threads_observed": 1
+          },
+          "compact_ready_kv": {
+            "rows": 0,
+            "bytes": 0,
+            "high_water_rows": 128,
+            "high_water_bytes": 118996992,
+            "scope": "Logical owned compact cross-KV, excluding prefill intermediates and allocator retention"
+          },
+          "ready_kv_pool": null,
+          "graph_calls": 3099,
+          "prefill_tokens": {
+            "text_real_source": 184188,
+            "text_physical_source": 534600
+          },
+          "prefill_device_s": {
+            "vision_encode_envelope": 53.70145376300815,
+            "text_prefill_envelope": 5.694660921216017
+          },
+          "decode_counters": {
+            "effective_decode_tokens": 166917,
+            "raw_decode_token_slots": 396672,
+            "idle_decode_token_slots": 229755
+          }
+        },
+        "paddle": {
+          "capacity": 64,
+          "ready_capacity": 64,
+          "cpu_preparation": {
+            "capacity": 64,
+            "submitted": 689,
+            "consumed": 689,
+            "high_water_requests": 14,
+            "service_wall_s": 17.884974097833037,
+            "worker_threads_observed": 1
+          },
+          "compact_ready_kv": null,
+          "ready_kv_pool": {
+            "storage": "zero_once_fixed_arena",
+            "capacity": 64,
+            "allocated_bytes": 1811939328,
+            "acquisitions": 689,
+            "reuses": 625,
+            "releases": 689,
+            "active_slots": 0,
+            "free_slots": 64,
+            "high_water_active_slots": 64,
+            "cache_length": 1536,
+            "max_prompt_length": 1033
+          },
+          "graph_calls": 4958,
+          "prefill_tokens": {
+            "vision_real": 861804,
+            "vision_physical": 970880,
+            "text_input": 224408
+          },
+          "prefill_device_s": {
+            "recognition_inputs_h2d": 1.5392365196943276,
+            "vision_embeddings": 3.6337194870710343,
+            "adaptive_mlp_projector": 0.1148267596885562,
+            "text_token_embedding": 0.015453439961187518,
+            "image_embed_scatter": 0.19736302016302967,
+            "static_cache_alloc": 0.0006680799973837483,
+            "text_prefill_input_prep": 0.2503440201878546,
+            "text_prefill": 4.566903923511512,
+            "text_kv_redistribute": 0.3326471801102163,
+            "prefill_lm_head": 0.12035715982317925,
+            "prefill_argmax": 0.08553464012593032,
+            "vision_prefill_input_prep": 0.5191744004040957,
+            "vision_prefill": 16.610335573196423
+          },
+          "decode_counters": {
+            "effective_decode_tokens": 192399,
+            "raw_decode_token_slots": 317312,
+            "active_decode_token_slots": 193205,
+            "idle_decode_token_slots": 124107
+          }
+        }
+      },
+      "owner_exclusive_s": {
+        "control.pump_and_choose": 0.455641934,
+        "shared.wait": 0.777086806,
+        "layout.detect_transfer_and_fence": 34.049603146,
+        "layout.advance_or_publish": 0.21910878,
+        "shared.layout": 0.018428772,
+        "unirec.vision_prefill_envelope": 51.521820104,
+        "unirec.text_prefill_envelope": 7.701152978,
+        "unirec.prefill_yield_fence": 0.048192103,
+        "unirec.prefill": 2.613685733,
+        "paddle.prefill_stage_inputs": 1.720258469,
+        "paddle.prefill_enqueue": 26.921597208,
+        "paddle.prefill_finalize": 0.439982567,
+        "paddle.prefill_yield_fence": 0.015151474,
+        "paddle.prefill": 0.217387088,
+        "unirec.decode_engine_advance": 21.874176053,
+        "output.crop_trace_encode_write": 0.230784362,
+        "output.crop_trace": 0.106407101,
+        "unirec.publish_completion": 0.124549729,
+        "unirec.completion_conversion": 0.253742671,
+        "unirec.decode_yield_fence": 0.150898456,
+        "unirec.decode": 0.282943877,
+        "paddle.decode_engine_advance": 20.390039738,
+        "paddle.result_conversion": 0.208326957,
+        "paddle.publish_completion": 0.039783462,
+        "paddle.completion_conversion": 0.034729122,
+        "paddle.decode_yield_fence": 12.516300432,
+        "paddle.decode": 0.357682036,
+        "output.markdown_and_images_build_write": 0.725308326,
+        "output.json_encode": 0.280410689,
+        "output.json_write": 0.091729121,
+        "output.page_files": 0.036582135,
+        "output.page_assembly_and_emit": 0.71368721,
+        "pipeline": 0.360984372
+      },
+      "owner_partition_error_s": 0.0
+    },
+    "half_ready": {
+      "remote_root": "/workspace/repos/paddle_ocr_vl_npu/tmp/18_unirec_paddle_hybrid_pipeline/half_ready_3a45bf83_384",
+      "command": "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 12_unirec_0_1b_inference/run_with_process_tree_memory.py --output /workspace/repos/paddle_ocr_vl_npu/tmp/18_unirec_paddle_hybrid_pipeline/half_ready_3a45bf83_384/memory.json --interval-ms 1000 --npu-id 6 --npu-interval-ms 1000 -- /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u 18_unirec_paddle_hybrid_pipeline/run_pipeline.py --input /workspace/datasets/OmniDocBench/images --dataset-json /workspace/datasets/OmniDocBench/OmniDocBench.json --unirec-model-path /workspace/models/unirec-0.1b --openocr-root /workspace/repos/OpenOCR --unirec-vision-cache .runtime_cache/12_unirec_0_1b_inference/vision_opt_allfocal_internal_b0c5c6e --unirec-decode-cache .runtime_cache/12_unirec_0_1b_inference/opendoc_batched_decode_a372dbf --unirec-vision-lanes 0 --unirec-ready-capacity 64 --paddle-ready-capacity 32 --limit 384 --output-dir /workspace/repos/paddle_ocr_vl_npu/tmp/18_unirec_paddle_hybrid_pipeline/half_ready_3a45bf83_384/output \n",
+      "exit_code": 0,
+      "pages": 384,
+      "wall_s": 184.08471448812634,
+      "pages_per_s": 2.0859961190572855,
+      "setup_s": 48.18779303482734,
+      "torch_peak_allocated_bytes": 17538341376,
+      "torch_peak_reserved_bytes": 18945671168,
+      "npu_smi": {
+        "baseline_mb": 3419,
+        "peak_mb": 21969,
+        "peak_increase_mb": 18550,
+        "interval_ms": 1000.0,
+        "sample_count": 272,
+        "errors": []
+      },
+      "engines": {
+        "unirec": {
+          "capacity": 128,
+          "ready_capacity": 64,
+          "cpu_preparation": {
+            "capacity": 128,
+            "submitted": 3657,
+            "consumed": 3657,
+            "high_water_requests": 65,
+            "service_wall_s": 9.642456511268392,
+            "worker_threads_observed": 1
+          },
+          "compact_ready_kv": {
+            "rows": 0,
+            "bytes": 0,
+            "high_water_rows": 64,
+            "high_water_bytes": 118996992,
+            "scope": "Logical owned compact cross-KV, excluding prefill intermediates and allocator retention"
+          },
+          "ready_kv_pool": null,
+          "graph_calls": 3099,
+          "prefill_tokens": {
+            "text_real_source": 184188,
+            "text_physical_source": 535920
+          },
+          "prefill_device_s": {
+            "vision_encode_envelope": 53.07233129024509,
+            "text_prefill_envelope": 6.539809196352957
+          },
+          "decode_counters": {
+            "effective_decode_tokens": 166917,
+            "raw_decode_token_slots": 396672,
+            "idle_decode_token_slots": 229755
+          }
+        },
+        "paddle": {
+          "capacity": 64,
+          "ready_capacity": 32,
+          "cpu_preparation": {
+            "capacity": 64,
+            "submitted": 689,
+            "consumed": 689,
+            "high_water_requests": 14,
+            "service_wall_s": 18.46349610039033,
+            "worker_threads_observed": 1
+          },
+          "compact_ready_kv": null,
+          "ready_kv_pool": {
+            "storage": "zero_once_fixed_arena",
+            "capacity": 32,
+            "allocated_bytes": 905969664,
+            "acquisitions": 689,
+            "reuses": 657,
+            "releases": 689,
+            "active_slots": 0,
+            "free_slots": 32,
+            "high_water_active_slots": 32,
+            "cache_length": 1536,
+            "max_prompt_length": 1033
+          },
+          "graph_calls": 4953,
+          "prefill_tokens": {
+            "vision_real": 861804,
+            "vision_physical": 970880,
+            "text_input": 224408
+          },
+          "prefill_device_s": {
+            "recognition_inputs_h2d": 1.403886281818149,
+            "vision_embeddings": 3.8698964048028004,
+            "adaptive_mlp_projector": 0.11189451999962316,
+            "text_token_embedding": 0.01566365998098627,
+            "image_embed_scatter": 0.19706251979619277,
+            "static_cache_alloc": 0.0001084599980968062,
+            "text_prefill_input_prep": 0.5777304351329802,
+            "text_prefill": 4.552602087974549,
+            "text_kv_redistribute": 0.34596324107050863,
+            "prefill_lm_head": 0.12023438024520872,
+            "prefill_argmax": 0.08234270007163287,
+            "vision_prefill_input_prep": 0.5882086574435235,
+            "vision_prefill": 16.67514411544801
+          },
+          "decode_counters": {
+            "effective_decode_tokens": 192399,
+            "raw_decode_token_slots": 316992,
+            "active_decode_token_slots": 193205,
+            "idle_decode_token_slots": 123787
+          }
+        }
+      },
+      "owner_exclusive_s": {
+        "control.pump_and_choose": 0.46600658,
+        "shared.wait": 0.949254775,
+        "layout.detect_transfer_and_fence": 33.344371142,
+        "layout.advance_or_publish": 0.201350105,
+        "shared.layout": 0.018254933,
+        "unirec.vision_prefill_envelope": 50.842942877,
+        "unirec.text_prefill_envelope": 8.602441064,
+        "unirec.prefill_yield_fence": 0.045331389,
+        "unirec.prefill": 1.096079577,
+        "paddle.prefill_stage_inputs": 1.572929412,
+        "paddle.prefill_enqueue": 27.599962345,
+        "paddle.prefill_finalize": 0.447088191,
+        "paddle.prefill_yield_fence": 0.015404464999999999,
+        "paddle.prefill": 0.223519417,
+        "unirec.decode_engine_advance": 21.667678128,
+        "unirec.decode_yield_fence": 0.154846594,
+        "unirec.decode": 0.275436607,
+        "paddle.decode_engine_advance": 20.512905563,
+        "paddle.decode_yield_fence": 12.480890322,
+        "paddle.decode": 0.361292661,
+        "output.crop_trace_encode_write": 0.233420692,
+        "output.crop_trace": 0.10097068,
+        "unirec.publish_completion": 0.123768276,
+        "unirec.completion_conversion": 0.245552739,
+        "paddle.result_conversion": 0.2044046,
+        "paddle.publish_completion": 0.04139466,
+        "paddle.completion_conversion": 0.037443923,
+        "output.markdown_and_images_build_write": 0.71561526,
+        "output.json_encode": 0.285754678,
+        "output.json_write": 0.090412435,
+        "output.page_files": 0.036167787,
+        "output.page_assembly_and_emit": 0.735931969,
+        "pipeline": 0.355940503
+      },
+      "owner_partition_error_s": 0.0
+    }
+  },
+  "parity": {
+    "key_sets_equal": true,
+    "all_crop_records_equal": true,
+    "crop_count": 4346,
+    "by_model": {
+      "unirec": 3657,
+      "paddle": 689
+    },
+    "mismatched_ids": []
+  }
+}

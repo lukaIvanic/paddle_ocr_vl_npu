@@ -88,8 +88,12 @@ gets an admission turn through the existing engine copy path, yielding before
 decode so more prefill can fill the remaining active slots. Standalone engine
 behavior stays unchanged unless cooperative refill is explicitly selected.
 UniRec `compact_ready_kv` reports logical live/high-water cross-KV rows/bytes,
-excluding temporary prefill tensors and allocator retention. NPU validation
-of the half-capacity settings is pending.
+excluding temporary prefill tensors and allocator retention.
+[First-384 910B validation](references/910b_half_ready_3a45bf83/README.md)
+passed: all 4,346 crop records matched the fresh original-capacity control;
+sampled whole-device peak fell 22.323 -> 21.454 GiB, with 185.50 -> 184.08 s
+pipeline wall time. CPU capacities and active decode arenas were unchanged.
+Defaults remain unchanged; this is not yet a 310P memory-fit validation.
 
 [Full 910B validation](references/910b_readykv_8b60af95/README.md): all 30,557
 crop outputs and all 1,651 page JSON/Markdown files matched exactly. Peak
