@@ -19,9 +19,11 @@ class ReadyCacheTests(unittest.TestCase):
         from paddleocr_vl.serving.continuous_decode import DecodeArena, ReadyDecodeRequest
         self.Ready = ReadyDecodeRequest
         self.Cache = LocalPaddleOCRVLStaticCache
-        self.device = torch.device(os.environ.get('READY_CACHE_TEST_DEVICE', 'cpu'))
-        if self.device.type == 'npu':
+        device_name = os.environ.get('READY_CACHE_TEST_DEVICE', 'cpu')
+        if device_name.startswith('npu'):
             import torch_npu
+        self.device = torch.device(device_name)
+        if self.device.type == 'npu':
             torch.npu.set_device(self.device)
         self.config = SimpleNamespace(num_hidden_layers=2, num_key_value_heads=2, head_dim=128)
         self.arena = DecodeArena(cache=self.cache(4096, 2), device=self.device,
