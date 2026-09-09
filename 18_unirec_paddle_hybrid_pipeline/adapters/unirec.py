@@ -40,6 +40,46 @@ class UniRecAdapter(Adapter):
         if closed and not pending:
             self.source.close()
 
+    def export_prefill_group(self, values, *, record_ready_event=False):
+        """Existing compact cross-KV export, shared by serial/streamed owners."""
+        import torch
+        from continuous_unirec import ContinuousWorkerPrefilledItem
+        items = self.runner.prefill_encoder_hidden_states_packed_for_cohort(values, decode_ready=False)
+        exports = []
+        for item in items:
+            cache = item.kv_cache
+            actual_length = cache.actual_cross_attention_length
+            kv = torch.stack(tuple(tensor[:, :, :actual_length, :]
+                                  for tensor in (*cache.cross_key_cache, *cache.cross_value_cache)), dim=0).contiguous()
+            exports.append(ContinuousWorkerPrefilledItem(
+                packed_cross_kv=kv, prep=item.prep, prefill_s=item.prefill_s,
+                actual_cross_attention_length=actual_length,
+                text_prefill_execution=item.text_prefill_execution,
+                text_prefill_real_source_tokens=item.text_prefill_real_source_tokens,
+                text_prefill_physical_source_tokens=item.text_prefill_physical_source_tokens))
+        if record_ready_event:
+            event = torch.npu.Event()
+            event.record()
+            for item in exports:
+                item.ready_event = event
+        return exports
+
+    def publish_prefill(self, request, prefilled):
+        from continuous_unirec import ContinuousReadyItem
+        self.prefill_tokens.update({"text_real_source": prefilled.text_prefill_real_source_tokens,
+                                   "text_physical_source": prefilled.text_prefill_physical_source_tokens})
+        kv = prefilled.packed_cross_kv
+        size = kv.numel() * kv.element_size()
+        self.ready_kv_rows += 1
+        self.ready_kv_bytes += size
+        self.ready_kv_high_water_rows = max(self.ready_kv_high_water_rows, self.ready_kv_rows)
+        self.ready_kv_high_water_bytes = max(self.ready_kv_high_water_bytes, self.ready_kv_bytes)
+        def release(value=prefilled, size=size):
+            self.ready_kv_rows -= 1
+            self.ready_kv_bytes -= size
+            value.packed_cross_kv = None
+        self.source.put(ContinuousReadyItem(request.request_id, request, prefilled, release), timeout=0)
+
     def prefill(self):
         import torch
         from continuous_unirec import ContinuousReadyItem, ContinuousWorkerPrefilledItem

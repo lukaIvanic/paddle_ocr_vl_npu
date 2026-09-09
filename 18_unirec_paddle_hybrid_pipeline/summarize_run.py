@@ -24,7 +24,8 @@ def summarize(run):
         raw = s["raw_decode_token_slots"]
         useful = s["effective_decode_tokens"]
         active = s.get("active_decode_token_slots", useful)
-        scheduled = run["action_wall_s"][f"{name}.decode"]
+        streamed = engine.get("streamed_execution")
+        scheduled = run["action_wall_s"].get(f"{name}.decode")
         if name == "paddle":
             seconds = s["timing_s"]["decode_model_and_argmax_device"]
             basis = "device events: decode model and argmax"
@@ -45,6 +46,8 @@ def summarize(run):
             "useful_slot_utilization": useful / raw if raw else None,
             "mean_active_slots": engine["capacity"] * active / raw if raw else None,
             "scheduled_decode_wall_s": scheduled,
+            "streamed_owner_wall_s": run["action_wall_s"].get(f"{name}.stream"),
+            "streamed_execution": streamed,
             "scheduled_raw_tok_s": raw / scheduled if scheduled else None,
             "scheduled_useful_tok_s": useful / scheduled if scheduled else None,
             "execution_timing_basis": basis,
@@ -70,10 +73,14 @@ def summarize(run):
             real_rows = sum(vision["bucket_real_rows"].values())
             engines[name]["vision_bucket_row_utilization"] = real_rows / physical_rows if physical_rows else None
             engines[name]["prefill_rates"] = {
-                "vision_real_output_tokens_per_envelope_s": tokens["text_real_source"] / spans["vision_encode_envelope"],
+                "vision_real_output_tokens_per_envelope_s": (tokens["text_real_source"] / spans["vision_encode_envelope"]
+                                                              if spans.get("vision_encode_envelope") else None),
                 "text_real_source_tokens_per_envelope_s": tokens["text_real_source"] / spans["text_prefill_envelope"],
                 "text_physical_source_tokens_per_envelope_s": tokens["text_physical_source"] / spans["text_prefill_envelope"],
             }
+            if streamed:
+                vision_s = streamed["stage_host_envelopes"]["vision"]["total_s"]
+                engines[name]["prefill_rates"]["vision_real_output_tokens_per_worker_host_envelope_s"] = tokens["text_real_source"] / vision_s
     return {
         "pages": run["pages"], "processing_wall_s": run["wall_s"],
         "processing_pages_s": run["pages_per_s"], "setup_s": run["setup_s"],

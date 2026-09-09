@@ -38,6 +38,9 @@ def parse_args():
     parser.add_argument("--unirec-ready-capacity", type=int, help="NPU ready-request capacity; defaults to UniRec batch size; CPU capacity unchanged")
     parser.add_argument("--unirec-vision-lanes", type=int, choices=(0, 1, 2, 4), default=0,
                         help="0: existing sequential path; 1/2/4: persistent UniRec vision executor lanes within each prefill turn")
+    parser.add_argument("--unirec-streamed", action="store_true", help="Cross-page vision and overlapping UniRec vision/text/decode; Paddle/layout remain exclusive")
+    parser.add_argument("--unirec-cpu-workers", type=int, default=4, help="Streamed mode only: persistent CPU processes")
+    parser.add_argument("--unirec-cpu-threads", type=int, default=8, help="Streamed mode only: resize threads per CPU process")
     return parser.parse_args()
 
 
@@ -90,6 +93,7 @@ def engine_report(adapter):
         "prefill_tokens": dict(getattr(adapter, "prefill_tokens", {})),
         "prefill_device_s": dict(getattr(adapter, "prefill_device_s", {})),
         "vision_runtime": adapter.vision.summary() if hasattr(adapter, "vision") else None,
+        "streamed_execution": adapter.stream_summary() if hasattr(adapter, "stream_summary") else None,
     }
 
 
@@ -138,14 +142,20 @@ def make_unirec(args, emit):
     apply_decode_model_optimizations(r, weight_format="nz", lm_head_rows=57344)
     r._static_cross_cache_len_by_processor_max_side[tuple(r.processor.max_side)] = 1320
     vision = BucketedFullVisionRuntime(r, specs=resolve_vision_bucket_specs("310p_k20_l4"), focal_depthwise_rewrite="constant_grouped_all", weight_format="torchair_internal", preset_name="310p_k20_l4", synchronize_first_call=False)
-    if args.unirec_vision_lanes:
+    if args.unirec_vision_lanes or args.unirec_streamed:
         from vision_lanes import UniRecVisionLanes
-        vision = UniRecVisionLanes(vision, args.unirec_vision_lanes)
+        vision = UniRecVisionLanes(vision, args.unirec_vision_lanes or 4)
     r._get_compiled_packed_text_prefill_runtime()
     r.compile_cache_dir = decode_cache_variant_root(production_decode_cache_parent(args.unirec_decode_cache), weight_format="nz", lm_head_rows=57344)
     decoder = ContinuousUniRecDecoder(runner=r, batch_size=args.unirec_batch_size, max_length=2048, decode_mode="compiled_ifa", compile_backend="torchair", admission_prefetch_depth=0, self_cache_length=2048, cross_cache_length=1320)
-    return UniRecAdapter(r, vision, decoder, emit, infer_doc_onnx, collect_step_timing=args.detailed_timing,
-                         ready_capacity=args.unirec_ready_capacity)
+    adapter_class = UniRecAdapter
+    options = {}
+    if args.unirec_streamed:
+        from adapters.unirec_streamed import StreamedUniRecAdapter
+        adapter_class = StreamedUniRecAdapter
+        options = dict(cpu_workers=args.unirec_cpu_workers, cpu_threads=args.unirec_cpu_threads)
+    return adapter_class(r, vision, decoder, emit, infer_doc_onnx, collect_step_timing=args.detailed_timing,
+                         ready_capacity=args.unirec_ready_capacity, **options)
 
 
 def main():

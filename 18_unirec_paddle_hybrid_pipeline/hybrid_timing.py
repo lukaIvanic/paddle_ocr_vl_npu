@@ -46,7 +46,7 @@ class PipelineTiming:
             if stack:
                 stack[-1][1] += duration
             self.trace.record_span(
-                "Hybrid owner" if threading.get_ident() == self.owner else "Hybrid CPU",
+                "Hybrid owner" if threading.get_ident() == self.owner else "Hybrid worker",
                 label, frame[0], end, flow_id=flow_id, event_type="scope",
                 args={**(args or {}), "exclusive_ns": duration - frame[1]},
             )
@@ -88,7 +88,7 @@ class PipelineTiming:
     def summary(self):
         if not self.enabled:
             return {"enabled": False}
-        inclusive, exclusive, workers, queues, ready, waits = (defaultdict(list) for _ in range(6))
+        inclusive, exclusive, workers, queues, ready, waits, stages = (defaultdict(list) for _ in range(7))
         for event in self.trace.events():
             name, row = event["name"], event["row"]
             seconds = event["duration_ns"] / 1e9
@@ -101,6 +101,7 @@ class PipelineTiming:
             elif row == "CPU service": workers[name].append(seconds)
             elif row == "CPU queue": queues[name].append(seconds)
             elif row == "CPU ready residence": ready[name].append(seconds)
+            elif row == "Hybrid worker": stages[name].append(seconds)
         measured = sum(inclusive.get("pipeline", []))
         partition = sum(sum(values) for values in exclusive.values())
         if abs(partition - measured) > 1e-6 or any(value < 0 for values in exclusive.values() for value in values):
@@ -125,6 +126,7 @@ class PipelineTiming:
             "cpu_service": {k: distribution(v) for k,v in workers.items()},
             "cpu_queue_residence": {k: distribution(v) for k,v in queues.items()},
             "cpu_ready_residence": {k: distribution(v) for k,v in ready.items()},
+            "overlapping_worker_scopes": {k: distribution(v) for k,v in stages.items()},
             "unirec_step_diagnostics": {k: distribution(v) for k,v in self.step_samples.items()},
             "unirec_step_diagnostics_note": "Existing host timers, nested/non-additive: decode_step contains submission/token wait; scheduler contains retirement/admission/completion callbacks. These are not device-only or exclusive CPU work.",
         }
@@ -167,6 +169,10 @@ def install(timing, adapters, source):
         timing.instrument(adapter, "emit", f"{name}.publish_completion")
         if name == "unirec":
             timing.instrument(adapter.vision, "encode", "unirec.vision_prefill_envelope")
+            if getattr(adapter, "streamed", False):
+                timing.instrument(adapter, "_vision_job", "unirec.streamed_vision_worker")
+                timing.instrument(adapter, "_text_job", "unirec.streamed_text_worker")
+                timing.instrument(adapter, "_decode_job", "unirec.streamed_decode_worker")
             timing.instrument(adapter.runner, "prefill_encoder_hidden_states_packed_for_cohort",
                               "unirec.text_prefill_envelope")
         else:

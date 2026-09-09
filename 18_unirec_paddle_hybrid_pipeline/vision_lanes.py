@@ -24,7 +24,11 @@ class UniRecVisionLanes:
     def encode(self, inputs):
         start = time.perf_counter()
         outputs, report = self.owner.encode_inputs(inputs)
-        self.turns.append(time.perf_counter() - start)
+        self.record_report(report, wall_s=time.perf_counter() - start)
+        return outputs
+
+    def record_report(self, report, *, wall_s=None):
+        self.turns.append(report["wall_s"] if wall_s is None else wall_s)
         # These are overlapping host submit-through-stream-sync intervals,
         # not additive critical-path time or kernel-active time.
         for group in report["pairs"]:
@@ -35,7 +39,6 @@ class UniRecVisionLanes:
                 stats["calls"] += lane["calls"]
                 stats["real_rows"] += lane["real_rows"]
                 stats["spans"].append(lane["wall_s"])
-        return outputs
 
     def summary(self):
         def dist(values):

@@ -48,6 +48,12 @@ class Coordinator:
         return next((name for name in names if name != self.last_model), names[0])
 
     def action(self):
+        name, phase = self._action() or (None, None)
+        if name is not None and getattr(self.adapters[name], "streamed", False):
+            phase = "stream"
+        return (name, phase) if phase is not None else None
+
+    def _action(self):
         live = [name for name, adapter in self.adapters.items() if not adapter.done]
         if not live:
             return None
@@ -85,6 +91,8 @@ class Coordinator:
                 self.wakeup.clear()
                 self.pages.pump()
                 for adapter in self.adapters.values():
+                    if hasattr(adapter, "set_supply"):
+                        adapter.set_supply(self.pages.has_pending, self.pages.exhausted)
                     adapter.pump_preparation(self.wakeup.set)
                 action = self.action()
             if action is None:
@@ -101,7 +109,9 @@ class Coordinator:
                 else:
                     adapter = self.adapters[name]
                     adapter.set_upstream(self.pages.has_pending or bool(adapter.pending), closed=self.pages.exhausted)
-                    if phase == "prefill":
+                    if phase == "stream":
+                        adapter.serve(self.decode_steps)
+                    elif phase == "prefill":
                         adapter.prefill()
                     else:
                         adapter.advance(self.decode_steps)
