@@ -42,24 +42,32 @@ class UniRecAdapter(Adapter):
         if closed and not pending:
             self.source.close()
 
-    def export_prefill_group(self, values, *, record_ready_event=False, stream_local_sync=False):
-        """Existing compact cross-KV export, shared by serial/streamed owners."""
+    def export_prefill_group(self, values, *, record_ready_event=False):
+        """Use the existing packed graph/redistribution without decode scaffolding.
+
+        The cohort convenience wrapper globally synchronizes and creates
+        decode-only masks/start tokens. Streamed producers need only compact
+        cross-KV and a ready event, consumed by existing direct admission.
+        """
         import torch
+        import time
         from continuous_unirec import ContinuousWorkerPrefilledItem
-        items = self.runner.prefill_encoder_hidden_states_packed_for_cohort(
-            values, decode_ready=False, stream_local_sync=stream_local_sync)
+        runtime = self.runner._get_compiled_packed_text_prefill_runtime()
+        started = time.perf_counter()
+        packed = runtime.run(encoder_hidden_states=[hidden for hidden, _ in values])
         exports = []
-        for item in items:
-            cache = item.kv_cache
-            actual_length = cache.actual_cross_attention_length
-            kv = torch.stack(tuple(tensor[:, :, :actual_length, :]
-                                  for tensor in (*cache.cross_key_cache, *cache.cross_value_cache)), dim=0).contiguous()
+        for member, ((_, prep), length) in enumerate(zip(values, packed.segment_lengths, strict=True)):
+            kv = torch.stack((*packed.cross_key_cache[member], *packed.cross_value_cache[member]), dim=0).contiguous()
+            physical = length + (packed.physical_source_tokens-packed.real_source_tokens if member == len(values)-1 else 0)
             exports.append(ContinuousWorkerPrefilledItem(
-                packed_cross_kv=kv, prep=item.prep, prefill_s=item.prefill_s,
-                actual_cross_attention_length=actual_length,
-                text_prefill_execution=item.text_prefill_execution,
-                text_prefill_real_source_tokens=item.text_prefill_real_source_tokens,
-                text_prefill_physical_source_tokens=item.text_prefill_physical_source_tokens))
+                packed_cross_kv=kv, prep=prep, prefill_s=0.0,
+                actual_cross_attention_length=length,
+                text_prefill_execution=runtime.metadata['execution'],
+                text_prefill_real_source_tokens=length,
+                text_prefill_physical_source_tokens=physical))
+        enqueue_s = time.perf_counter() - started
+        for item in exports:
+            item.prefill_s = enqueue_s / len(exports)
         if record_ready_event:
             event = torch.npu.Event()
             event.record()

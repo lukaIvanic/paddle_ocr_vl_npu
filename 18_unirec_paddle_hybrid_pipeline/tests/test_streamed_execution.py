@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 from threading import Event
 import unittest
+import importlib.util
 from collections import deque
 from types import SimpleNamespace
 
@@ -10,6 +11,26 @@ from streamed_execution import StreamedExecution
 
 
 class StreamTests(unittest.TestCase):
+    @unittest.skipUnless(importlib.util.find_spec('torch'), 'requires torch')
+    def test_direct_packed_export_preserves_kv_segments_and_token_accounting(self):
+        import torch
+        from adapters.unirec import UniRecAdapter
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'12_unirec_0_1b_inference'))
+        keys = tuple((torch.full((1, 2, n, 3), float(n)),) for n in (2, 4))
+        vals = tuple((torch.full((1, 2, n, 3), float(n+1)),) for n in (2, 4))
+        packed = SimpleNamespace(segment_lengths=(2,4), cross_key_cache=keys, cross_value_cache=vals,
+                                 real_source_tokens=6, physical_source_tokens=8)
+        runtime = SimpleNamespace(run=lambda **kwargs: packed, metadata={'execution':'compiled_packed_s8'})
+        adapter = UniRecAdapter.__new__(UniRecAdapter)
+        adapter.runner = SimpleNamespace(_get_compiled_packed_text_prefill_runtime=lambda:runtime)
+        out = adapter.export_prefill_group([(None,{'id':0}),(None,{'id':1})])
+        self.assertTrue(torch.equal(out[0].packed_cross_kv, torch.stack((*keys[0], *vals[0]))))
+        self.assertTrue(torch.equal(out[1].packed_cross_kv, torch.stack((*keys[1], *vals[1]))))
+        self.assertEqual([x.actual_cross_attention_length for x in out],[2,4])
+        self.assertEqual([x.text_prefill_real_source_tokens for x in out],[2,4])
+        self.assertEqual([x.text_prefill_physical_source_tokens for x in out],[2,6])
+        self.assertEqual([x.prep for x in out],[{'id':0},{'id':1}])
+
     def test_early_publication_allows_stage_overlap(self):
         executor = StreamedExecution()
         text_started = Event()

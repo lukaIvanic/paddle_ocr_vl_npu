@@ -124,7 +124,7 @@ class StreamedUniRecAdapter(UniRecAdapter):
                 hidden.record_stream(self.text_stream)
             start, end = torch.npu.Event(enable_timing=True), torch.npu.Event(enable_timing=True)
             start.record()
-            exports = self.export_prefill_group(values, record_ready_event=True, stream_local_sync=True)
+            exports = self.export_prefill_group(values, record_ready_event=True)
             end.record()
         # Do not synchronize globally: decode consumes each export's ready_event.
         return group, exports, start, end
