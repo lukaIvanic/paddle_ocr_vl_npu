@@ -2,6 +2,8 @@ from pathlib import Path
 import sys
 from threading import Event
 import unittest
+from collections import deque
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from streamed_execution import StreamedExecution
@@ -60,6 +62,41 @@ class StreamTests(unittest.TestCase):
         self.assertEqual(owner.action(), ('unirec', 'stream'))
         owner.last_model = 'unirec'
         self.assertEqual(owner.action(), ('paddle', 'decode'))
+
+    def test_cross_page_supply_and_tail_use_existing_capacity(self):
+        from adapters.unirec_streamed import StreamedUniRecAdapter
+        adapter = StreamedUniRecAdapter.__new__(StreamedUniRecAdapter)
+        adapter.chunks, adapter.text_groups = deque(), deque()
+        adapter.buffer_capacity = 8
+        adapter.external_pending = True
+        adapter.pending = deque([deque(range(3)), deque(range(3,7))])
+        adapter.cpu = SimpleNamespace(ready=lambda rows: True)
+        self.assertFalse(adapter.prefill_available)  # Request another page.
+        adapter.pending.append(deque([7]))
+        self.assertTrue(adapter.prefill_available)
+        adapter.cpu.ready = lambda rows: False
+        self.assertFalse(adapter.prefill_available)  # Do not consume CPU-in-flight.
+        adapter.cpu.ready = lambda rows: True
+        adapter.pending.pop()
+        adapter.set_supply(False, True)
+        self.assertTrue(adapter.prefill_available)  # No hypothetical future input.
+
+    def test_staged_work_prevents_premature_source_close(self):
+        from adapters.unirec_streamed import StreamedUniRecAdapter
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'12_unirec_0_1b_inference'))
+        from persistent_ready_queue import PersistentReadyQueue
+        adapter = StreamedUniRecAdapter.__new__(StreamedUniRecAdapter)
+        adapter.source = PersistentReadyQueue(maxsize=4)
+        adapter.source.register_upstream()
+        adapter.pending = deque()
+        adapter.buffer_rows = 1
+        adapter.set_supply(False, True)
+        adapter.set_upstream(False, closed=True)
+        self.assertEqual(adapter.source.upstream_pending, 1)
+        self.assertFalse(adapter.source.close_requested)
+        adapter.buffer_rows = 0
+        adapter.set_upstream(False, closed=True)
+        self.assertTrue(adapter.source.close_requested)
 
 
 if __name__ == '__main__':

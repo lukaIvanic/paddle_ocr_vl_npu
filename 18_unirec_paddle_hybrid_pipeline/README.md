@@ -9,6 +9,54 @@ One PP-DocLayoutV3 frontend feeds two resident recognizers on one NPU.
 Experiment 09 owns Paddle layout/cropping/assembly and inference; experiment
 12 owns UniRec inference. This experiment owns routing and cross-model turns.
 
+## Opt-in streamed UniRec integration
+
+`--unirec-streamed --unirec-vision-lanes 4` enables cross-page vision supply
+and overlapping UniRec vision/text-prefill/decode inside an exclusive UniRec
+turn. This is experimental; it does not change the default or the 310P brief.
+Use `run_910b_streamed_unirec_matrix.sh` for matched serial/streamed trials,
+starting with first64 then first384, existing caches and half-ready capacities.
+
+The CPU preparation pool follows standalone UniRec's process/thread structure:
+four persistent spawn processes, eight persistent resize threads each. The
+existing crop/RGB/resize contract is retained; PPv3/Paddle still own geometry,
+so importing standalone's entire OpenDoc crop builder would be incorrect.
+`--unirec-cpu-workers` and `--unirec-cpu-threads` adjust this opt-in pool only.
+CPU queued/running/finished crops remain bounded at the active batch capacity
+(128 by default). Process startup belongs to setup, not the first timed page.
+
+Vision accumulates CPU-ready crops across pages up to that same 128-record
+budget, flushing the available tail when no submitted upstream pages remain.
+Experiment12's `BoundedVisionOwner` performs the unchanged shape planning and
+multi-key stream dispatch. Completed key groups publish early through its
+existing callback; text prefill can begin for complete page fragments before
+the whole vision window finishes. Each fragment is at most the selected ready
+capacity; the existing page-local greedy text packs and compact cross-KV export
+are used. Ready-KV credits include in-flight text exports. Decoding consumes
+the existing ready-event dependency and cooperative continuous iterator, not
+a new model-forward or cache-copy implementation.
+
+Three persistent stage threads overlap vision, text and decode. Only the owner
+mutates page assembly and stage scheduling; workers never block on downstream
+queue capacity. At the decode-step budget, stop NEW submissions, join in-flight
+operations, then fence the device before Paddle/layout can run. Decode arenas
+survive turns. A turn can also return when it needs more upstream layout/CPU
+work; no batching timer or corpus-wide recognizer phase is added.
+
+This is a bounded shared-owner adaptation, not the standalone service verbatim:
+standalone can run its stages indefinitely, whereas the hybrid must hand the
+NPU back to Paddle/layout. Model kernels, shape presets, generation limits and
+existing cache roots remain unchanged. Standalone 09/12 entrypoints are unchanged.
+
+`unirec.stream` is the non-overlapping owner interval. Worker stage envelopes
+overlap and are reported in `streamed_execution` and `overlapping_worker_scopes`;
+never add them to owner wall or call them kernel occupancy. Streamed vision's
+host-envelope token rate is labelled separately from device-event rates.
+Window sizes, page-fragment counts, buffer high-water, CPU process/thread
+counts, ready-KV peaks, external memory and crop parity must accompany timing.
+The two-page 910B smoke at `26c922c3` passed all 25 crop records against the
+existing control; larger-workload throughput validation is pending.
+
 Experimental `--unirec-vision-lanes 1|2|4` reuses experiment 12's persistent
 `BoundedVisionOwner` with in-memory prepared inputs, all graphs retained and
 no same-key graph cloning. Default `0` retains the validated sequential path.

@@ -12,9 +12,16 @@ import time
 from cpu_preparation import CpuPreparation
 
 
-def _initialize(threads):
+def _initialize(threads, ready):
     global _resize_threads
+    import numpy
+    from PIL import Image
     _resize_threads = ThreadPoolExecutor(max_workers=threads, thread_name_prefix="unirec-resize")
+    ready.wait(timeout=120)
+
+
+def _ready():
+    return os.getpid()
 
 
 def _resize(job):
@@ -36,8 +43,15 @@ class UniRecCpuPool(CpuPreparation):
         from hybrid_timing import NO_TIMING
         self.processor, self.capacity = processor, capacity
         self.workers, self.threads = workers, threads
-        self.executor = ProcessPoolExecutor(max_workers=workers, mp_context=mp.get_context("spawn"),
-                                            initializer=_initialize, initargs=(threads,))
+        context = mp.get_context("spawn")
+        self.executor = ProcessPoolExecutor(max_workers=workers, mp_context=context,
+                                            initializer=_initialize, initargs=(threads, context.Barrier(workers)))
+        # Like the standalone pool: start all CPU processes in setup, not on
+        # the first timed page. The barrier prevents one process doing all
+        # warmup tickets while others have not initialized yet.
+        tickets = [self.executor.submit(_ready) for _ in range(workers)]
+        for ticket in tickets:
+            ticket.result(timeout=120)
         self.futures = {}
         self.submitted = self.consumed = self.high_water = 0
         self.service_s = 0.0

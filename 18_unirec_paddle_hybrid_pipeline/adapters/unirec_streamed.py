@@ -127,15 +127,21 @@ class StreamedUniRecAdapter(UniRecAdapter):
         # Do not synchronize globally: decode consumes each export's ready_event.
         return group, exports, start, end
 
-    def _decode_job(self):
+    def _decode_job(self, max_steps):
         import torch
         import torch_npu
         torch_npu.npu.set_device(self.runner.device)
         with torch.inference_mode(), torch.npu.stream(self.decode_stream):
-            try:
-                return False, next(self.steps)
-            except StopIteration as result:
-                return True, result.value
+            start = self.graph_calls
+            while True:
+                try:
+                    state = next(self.steps)
+                except StopIteration as result:
+                    return True, result.value
+                if state['graph_calls'] - start >= max_steps:
+                    return False, state
+                if state['active'] < self.capacity and not self.ready_count and self.source.upstream_pending:
+                    return False, state
 
     def complete(self, result):
         # Decoder thread owns token history; only owner thread publishes pages.
@@ -213,7 +219,8 @@ class StreamedUniRecAdapter(UniRecAdapter):
                         can_decode = (self.ready_count > 0 or self.active >= self.capacity or
                                       (not self.source.upstream_pending and (self.active or self.source.close_requested)))
                         if can_decode:
-                            self.execution.submit("decode", self._decode_job)
+                            self.execution.submit("decode", self._decode_job,
+                                                  decode_steps - (self.graph_calls - start_steps))
                 if not self.execution.running:
                     break
                 self._accept_event(*self.execution.receive(), text_events)

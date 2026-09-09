@@ -7,7 +7,9 @@ from hybrid_timing import timed_method
 class UniRecAdapter(Adapter):
     def __init__(self, runner, vision, decoder, emit, converter, *, collect_step_timing=False, ready_capacity=None):
         from persistent_ready_queue import PersistentReadyQueue
+        from threading import Lock
         super().__init__(decoder.batch_size, emit, ready_capacity=ready_capacity)
+        self.ready_stats_lock = Lock()
         self.ready_kv_rows = self.ready_kv_bytes = 0
         self.ready_kv_high_water_rows = self.ready_kv_high_water_bytes = 0
         self.runner, self.vision, self.decoder = runner, vision, decoder
@@ -70,13 +72,15 @@ class UniRecAdapter(Adapter):
                                    "text_physical_source": prefilled.text_prefill_physical_source_tokens})
         kv = prefilled.packed_cross_kv
         size = kv.numel() * kv.element_size()
-        self.ready_kv_rows += 1
-        self.ready_kv_bytes += size
-        self.ready_kv_high_water_rows = max(self.ready_kv_high_water_rows, self.ready_kv_rows)
-        self.ready_kv_high_water_bytes = max(self.ready_kv_high_water_bytes, self.ready_kv_bytes)
+        with self.ready_stats_lock:
+            self.ready_kv_rows += 1
+            self.ready_kv_bytes += size
+            self.ready_kv_high_water_rows = max(self.ready_kv_high_water_rows, self.ready_kv_rows)
+            self.ready_kv_high_water_bytes = max(self.ready_kv_high_water_bytes, self.ready_kv_bytes)
         def release(value=prefilled, size=size):
-            self.ready_kv_rows -= 1
-            self.ready_kv_bytes -= size
+            with self.ready_stats_lock:
+                self.ready_kv_rows -= 1
+                self.ready_kv_bytes -= size
             value.packed_cross_kv = None
         self.source.put(ContinuousReadyItem(request.request_id, request, prefilled, release), timeout=0)
 
