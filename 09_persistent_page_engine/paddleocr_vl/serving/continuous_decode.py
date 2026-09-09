@@ -444,12 +444,17 @@ class DecodeArena:
             )
         if len(source_cache.key_caches) != len(self.cache.key_caches):
             raise ValueError("ready cache and decode arena have different layer counts")
-        if int(source_cache.cache_length) != int(self.cache.cache_length):
-            raise ValueError("ready cache and decode arena have different cache lengths")
+        copy_length = int(source_cache.cache_length)
+        if not prompt_length <= copy_length <= int(self.cache.cache_length):
+            raise ValueError("ready cache must hold the prompt and fit the decode arena")
 
         source_tensors = source_cache.logical_tensors()
+        # A compact prefill row initializes only the destination prefix. The
+        # active arena starts zeroed; a reused row's finite suffix stays masked
+        # by the unchanged real cache position and is overwritten by decode.
+        # Keep the existing grouped copy and release-event protocol below.
         destination_tensors = tuple(
-            destination[slot_index : slot_index + 1]
+            destination[slot_index : slot_index + 1, :, :copy_length, :]
             for destination in self.cache.logical_tensors()
         )
         source_heads = int(source_tensors[0].shape[1])
@@ -506,7 +511,7 @@ class DecodeArena:
             self._admission_event_spans,
             copy_state,
             row="Decode admission",
-            name="Copy full prefetched KV cache into decode slot",
+            name="Copy prefetched KV storage into decode slot",
             flow_id=ready.request_id,
             event_type="io",
             args={
@@ -514,6 +519,8 @@ class DecodeArena:
                 "prompt_tokens": prompt_length,
                 "useful_prefix_bytes": useful_prefix_bytes,
                 "physical_copied_bytes": physical_copied_bytes,
+                "source_cache_length": copy_length,
+                "destination_cache_length": int(self.cache.cache_length),
                 "source_kv_heads": source_heads,
                 "destination_kv_heads": destination_heads,
                 "cache_head_expansion": cache_head_expansion,

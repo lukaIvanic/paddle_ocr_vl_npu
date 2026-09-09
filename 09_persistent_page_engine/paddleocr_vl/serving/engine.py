@@ -587,6 +587,8 @@ class ContinuousRecognizer:
         cache_length: int,
         max_new_tokens: int,
         torchair_cache_dir: Path,
+        prefill_cache_capacity: int | None = None,
+        prefill_cache_length: int | None = None,
         decode_device_timing: bool = True,
         compact_decode_control: bool = False,
         vision_backend: str = DEFAULT_VISION_BACKEND,
@@ -705,6 +707,11 @@ class ContinuousRecognizer:
         )
         self.batch_size = int(batch_size)
         self.cache_length = int(cache_length)
+        self.prefill_cache_length = self.cache_length if prefill_cache_length is None else int(prefill_cache_length)
+        if not 0 < self.prefill_cache_length <= self.cache_length:
+            raise ValueError("prefill_cache_length must be in [1, cache_length]")
+        self._single_prefill_scratch_cache = None
+        self.max_prefill_prompt_length = 0
         self.max_new_tokens = int(max_new_tokens)
         self.recognition_input_fingerprints = bool(
             recognition_input_fingerprints
@@ -1185,10 +1192,14 @@ class ContinuousRecognizer:
         _emit_setup_progress("private_cache_pool", "start")
         private_cache_capacity = (
             self.ready_buffer_capacity + self.private_cache_staging_headroom
+            if prefill_cache_capacity is None else int(prefill_cache_capacity)
         )
+        if private_cache_capacity < self.ready_buffer_capacity:
+            raise ValueError("prefill_cache_capacity must cover the ready reservoir")
+        self.private_cache_staging_headroom = private_cache_capacity - self.ready_buffer_capacity
         private_cache_storage = self.model.allocate_static_cache(
             batch_size=private_cache_capacity,
-            cache_length=self.cache_length,
+            cache_length=self.prefill_cache_length,
             device=self.device,
             dtype=self.dtype,
             init_mode="zeros",
@@ -2354,6 +2365,11 @@ class ContinuousRecognizer:
                 f"request {request.request_id} has prompt_length={prompt_length}, "
                 f"configured cache_length={self.cache_length}"
             )
+        if prompt_length > self.prefill_cache_length:
+            raise ValueError(
+                f"request {request.request_id} has prompt_length={prompt_length}, "
+                f"prefill_cache_length={self.prefill_cache_length}; no truncation"
+            )
         image_token_count = int(
             (input_ids == self.model.config.image_token_id).sum().item()
         )
@@ -2896,6 +2912,7 @@ class ContinuousRecognizer:
         self._text_packing_stats.groups += 1
         self._text_packing_stats.crops += len(text_inputs)
         lengths = [int(item.inputs_embeds.shape[1]) for item in text_inputs]
+        self.max_prefill_prompt_length = max(self.max_prefill_prompt_length, *lengths)
         pack_indices: list[tuple[int, ...]] = []
         fallback_indices: tuple[int, ...] = ()
         next_tokens: list[torch.Tensor | None] = [None] * len(text_inputs)
@@ -3163,9 +3180,14 @@ class ContinuousRecognizer:
             last_hidden_state = device_timeline.measure(
                 self._group_stage_key(member_index, "text_prefill"),
                 lambda prepared_text=prepared_text, cache=item.cache: (
-                    self.text_prefill.run_prepared(prepared_text, cache)
+                    self._run_single_prefill(prepared_text, cache)
                 ),
             )
+            if self.prefill_cache_length < self.cache_length:
+                device_timeline.measure(
+                    self._group_stage_key(member_index, "text_kv_redistribute"),
+                    lambda item=item: self._copy_single_prefill_prefix(item),
+                )
             logits = device_timeline.measure(
                 self._group_stage_key(member_index, "prefill_lm_head"),
                 lambda last_hidden_state=last_hidden_state: self.model.lm_head(
@@ -3235,6 +3257,7 @@ class ContinuousRecognizer:
                             "text_prefill",
                             "prefill_lm_head",
                             "prefill_argmax",
+                            *(("text_kv_redistribute",) if self.prefill_cache_length < self.cache_length else ()),
                         )
                     },
                 )
@@ -3684,6 +3707,25 @@ class ContinuousRecognizer:
             )
         return results
 
+    def _run_single_prefill(self, prepared_text, cache):
+        # Keep the existing compiled cache shape. One shared scratch is safe:
+        # this engine serializes prefill groups and prefix copies on its stream.
+        if self.prefill_cache_length < self.cache_length:
+            if self._single_prefill_scratch_cache is None:
+                self._single_prefill_scratch_cache = self.model.allocate_static_cache(
+                    batch_size=1, cache_length=self.cache_length,
+                    device=self.device, dtype=self.dtype, init_mode="zeros",
+                )
+            cache = self._single_prefill_scratch_cache
+        return self.text_prefill.run_prepared(prepared_text, cache)
+
+    def _copy_single_prefill_prefix(self, item):
+        length = int(item.prepared.input_ids.shape[1])
+        torch._foreach_copy_(
+            tuple(t[:, :, :length, :] for t in item.cache.logical_tensors()),
+            tuple(t[:, :, :length, :] for t in self._single_prefill_scratch_cache.logical_tensors()),
+        )
+
     def configuration(self) -> dict[str, Any]:
         decode_label = (
             f"compiled_static_b{self.batch_size}"
@@ -3835,6 +3877,8 @@ class ContinuousRecognizer:
             ),
             "decode_completion_detection": "queue_depth_one_async_token_copy",
             "private_prefill_cache": self.prefill_cache_pool.stats(),
+            "prefill_cache_length": self.prefill_cache_length,
+            "max_prefill_prompt_length": self.max_prefill_prompt_length,
             "kv_admission": "full_prefill_cache_foreach_copy_into_fixed_slot",
             "text_decode": self.text_decode.metadata,
             "linear_weight_format": self.weight_format,

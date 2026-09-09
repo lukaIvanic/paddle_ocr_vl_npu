@@ -26,6 +26,8 @@ def parse_args():
     parser.add_argument("--layout-model", type=Path, default=Path("/workspace/models/PP-DocLayoutV3_safetensors"))
     parser.add_argument("--paddle-model-path", type=Path, default=Path("/workspace/models/PaddleOCR-VL-1.6"))
     parser.add_argument("--paddle-batch-size", type=int, default=64)
+    parser.add_argument("--paddle-ready-cache-length", type=int, default=1536)
+    parser.add_argument("--paddle-ready-cache-rows", type=int, help="Defaults to Paddle batch size")
     parser.add_argument("--vision-promptfa-align-128", action="store_true")
     parser.add_argument("--unirec-model-path", type=Path)
     parser.add_argument("--openocr-root", type=Path)
@@ -71,6 +73,11 @@ def engine_report(adapter):
         },
         "prefill_timing_basis": "Device-event elapsed envelopes; can include transfers and host submission gaps. NOT kernel-active time.",
         "cpu_preparation": adapter.cpu.summary() if getattr(adapter, "cpu", None) is not None else None,
+        "ready_kv_pool": ({
+            **adapter.recognizer.prefill_cache_pool.stats(),
+            "cache_length": adapter.recognizer.prefill_cache_length,
+            "max_prompt_length": adapter.recognizer.max_prefill_prompt_length,
+        } if hasattr(adapter, "recognizer") else None),
         "prefill_tokens": dict(getattr(adapter, "prefill_tokens", {})),
         "prefill_device_s": dict(getattr(adapter, "prefill_device_s", {})),
         "vision_runtime": adapter.vision.summary() if hasattr(adapter, "vision") else None,
@@ -84,6 +91,8 @@ def make_paddle(args, emit):
         model=str(args.paddle_model_path), dtype="fp16", decode_backend="torchair",
         decode_optimization="combined_apply_pse_sentinel", batch_size=args.paddle_batch_size,
         cache_length=4096, max_new_tokens=4096,
+        prefill_cache_capacity=(args.paddle_batch_size if args.paddle_ready_cache_rows is None else args.paddle_ready_cache_rows),
+        prefill_cache_length=args.paddle_ready_cache_length,
         torchair_cache_dir=ROOT / ".runtime_cache/09_persistent_page_engine_torchair",
         vision_backend="torchair", vision_attention="prompt_flash_attention",
         vision_promptfa_align_128=args.vision_promptfa_align_128,
