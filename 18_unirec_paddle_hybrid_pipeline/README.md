@@ -1,5 +1,9 @@
 # Experiment 18: continuous UniRec + Paddle page pipeline
 
+Evaluation-only follow-up: [score the completed 310P full1651 run](WORK_SERVER_310P_COMPLETED_FULL1651_ACCURACY.md).
+This uses the saved predictions and frozen TeX-2025/ImageMagick evaluator,
+without another inference run.
+
 310P execution brief: [half-ready full1651 retry](WORK_SERVER_310P_HALF_READY_FULL1651.md).
 It reuses the previous attempt's caches, verifies local assets and independently
 monitors device memory with the smaller 32-row/S1536 ready pool; no 310P
