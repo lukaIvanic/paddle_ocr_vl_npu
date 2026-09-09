@@ -116,4 +116,4 @@ class PaddleAdmissionTests(unittest.TestCase):
         else:
             self.fail('scheduler did not drain')
         self.assertEqual(active_counts[0],4)
-        self.assertEqual({c.request_id for c in completed},{'0','1','2','3'})
+        self.assertEqual({c.ready.request_id for c in completed},{'0','1','2','3'})
