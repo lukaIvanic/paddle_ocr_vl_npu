@@ -25,8 +25,19 @@ export OMNIDOCBENCH_EVAL_PYTHON="$EVAL_PYTHON"
 export OMNIDOCBENCH_EVALUATOR_ROOT="$EVALUATOR_ROOT"
 source "$REPO/09_persistent_page_engine/scripts/omnidocbench_eval_env.sh"
 export PYTHONUNBUFFERED=1
+# Scale process parallelism without multiplying BLAS/ImageMagick threads inside
+# each worker. Defaults preserve the 310P handoff; larger hosts can override.
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1 MAGICK_THREAD_LIMIT=1
+MATCH_WORKERS="${MATCH_WORKERS:-12}"
+TEDS_WORKERS="${TEDS_WORKERS:-12}"
+CDM_WORKERS="${CDM_WORKERS:-12}"
+EVAL_LANE="${EVAL_LANE:-hybrid_310p_half_ready_full1651_dd172553a4ef}"
+echo "EVAL_WORKERS match=$MATCH_WORKERS teds=$TEDS_WORKERS cdm=$CDM_WORKERS lane=$EVAL_LANE"
 test "$(git -C "$EVALUATOR_ROOT" rev-parse HEAD)" = 2b161d010d2e3aff77a0edef359ea3a6411d23cd
-test -z "$(git -C "$EVALUATOR_ROOT" status --porcelain)"
+# The pinned evaluator contains historical tracked result files. They are not
+# executable inputs, and this run writes results in its own fresh work directory.
+test -z "$(git -C "$EVALUATOR_ROOT" status --porcelain -- . ':!result')"
 [[ "$("$CDM_PDFLATEX" --version | head -n 1)" == *"1.40.28 (TeX Live 2025)"* ]]
 [[ "$("$OMNIDOCBENCH_IMAGEMAGICK_ROOT/bin/magick" --version | head -n 1)" == *"ImageMagick 7.1.1-47"* ]]
 echo 'EVAL_PHASE runtime_verify start'
@@ -40,16 +51,16 @@ cd "$EVAL_ROOT/work"
 echo 'EVAL_PHASE matching_teds start'
 "$EVAL_PYTHON" "$REPO/09_persistent_page_engine/scripts/run_omnidocbench_eval.py" \
   --config config.yaml --evaluator-root "$EVALUATOR_ROOT" \
-  --match-workers 12 --teds-workers 12 --page-timeout-sec 120 \
+  --match-workers "$MATCH_WORKERS" --teds-workers "$TEDS_WORKERS" --page-timeout-sec 120 \
   --fallback-timeout-sec 180 --fallback-latex-timeout-sec 30
 echo 'EVAL_PHASE matching_teds finish'
 echo 'EVAL_PHASE cdm start'
 "$EVAL_PYTHON" "$REPO/09_persistent_page_engine/scripts/run_cdm_from_matched_formulas.py" \
   --input "$EVAL_ROOT/work/result/predictions_quick_match_display_formula_result.json" \
-  --output-dir "$EVAL_ROOT/cdm" --evaluator-root "$EVALUATOR_ROOT" --workers 12
+  --output-dir "$EVAL_ROOT/cdm" --evaluator-root "$EVALUATOR_ROOT" --workers "$CDM_WORKERS"
 echo 'EVAL_PHASE cdm finish'
 "$EVAL_PYTHON" "$REPO/12_unirec_0_1b_inference/summarize_completed_unirec_eval.py" \
-  --lane hybrid_310p_half_ready_full1651_dd172553a4ef \
+  --lane "$EVAL_LANE" \
   --metric-result "$EVAL_ROOT/work/result/predictions_quick_match_metric_result.json" \
   --stage-execution "$EVAL_ROOT/work/result/predictions_quick_match_stage_execution.json" \
   --cdm-summary "$EVAL_ROOT/cdm/cdm_run_summary.json" \
