@@ -28,7 +28,10 @@ more activation/workspace memory; 310P fit is not inferred from 910B.
 on identical first-N pages (`PAGE_LIMIT=64` initially), with independent device
 memory sampling and exact per-crop token/text/stop parity gates. Run only after
 `source npu-setup`, with `RUN_ROOT` naming a new output directory. It never
-clears or changes the graph cache roots. NPU validation pending.
+clears or changes the graph cache roots. All 64/384-page cases passed on 910B;
+four lanes improved the 384-page rate by only 1.9% while increasing sampled
+whole-device peak memory by 1.71 GiB. Default remains `0`; this is not a 310P
+recommendation. See [measured comparison](references/910b_vision_lanes_abe23c9b/README.md).
 
 ```sh
 python 18_unirec_paddle_hybrid_pipeline/run_pipeline.py \
