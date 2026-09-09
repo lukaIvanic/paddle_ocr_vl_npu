@@ -1,8 +1,8 @@
 # Experiment 18: continuous UniRec + Paddle page pipeline
 
-310P execution brief: [compact ready-KV retry, smoke64 then full1651](WORK_SERVER_310P_COMPACT_READY_KV_E2E.md).
+310P execution brief: [half-ready full1651 retry](WORK_SERVER_310P_HALF_READY_FULL1651.md).
 It reuses the previous attempt's caches, verifies local assets and independently
-monitors device memory with the smaller B64/S1536 ready pool; no 310P
+monitors device memory with the smaller 32-row/S1536 ready pool; no 310P
 validation is claimed until the work agent reports its run.
 
 One PP-DocLayoutV3 frontend feeds two resident recognizers on one NPU.
@@ -54,8 +54,13 @@ never add them to owner wall or call them kernel occupancy. Streamed vision's
 host-envelope token rate is labelled separately from device-event rates.
 Window sizes, page-fragment counts, buffer high-water, CPU process/thread
 counts, ready-KV peaks, external memory and crop parity must accompany timing.
-The two-page 910B smoke at `26c922c3` passed all 25 crop records against the
-existing control; larger-workload throughput validation is pending.
+The [910B validation](references/910b_streamed_aa1d1181/README.md) passed all
+4,346 first384 crop records exactly. Processing improved 180.17 -> 162.93 s
+(2.13 -> 2.36 pg/s), with whole-device peak 21.45 -> 23.46 GiB. The extra memory
+is why the mode remains opt-in, especially for 310P. Streamed text export calls
+the existing packed graph/redistribution directly, bypassing the convenience
+wrapper's whole-device fences and unused decode scaffolding. Model source and
+graph-cache keys are unchanged. The report documents remaining timing caveats.
 
 Experimental `--unirec-vision-lanes 1|2|4` reuses experiment 12's persistent
 `BoundedVisionOwner` with in-memory prepared inputs, all graphs retained and
@@ -112,8 +117,8 @@ No page decode cohorts and no corpus-wide text/table phases. Prefill takes a
 page's assigned crops up to the available ready-storage capacity, independent
 of decode vacancies. Larger pages resume on a later refill. Both adapters use
 this shared rule, then apply their existing vision/text grouping. Ready capacity
-is UniRec B128 / Paddle B64 at the default batches; Paddle retains its existing
-additional 32 private-KV staging slots. Active decode slots are separate from
+is UniRec B128 / Paddle B64 at the default batches; Paddle private-KV rows default
+to its selected ready capacity. Active decode slots are separate from
 ready storage. Full decode remains eligible when active + ready >= batch size.
 CPU-ready pending crops are prefilled before more pages are examined; while
 preparation is outstanding, layout may advance instead. There is one compute owner; NPU work

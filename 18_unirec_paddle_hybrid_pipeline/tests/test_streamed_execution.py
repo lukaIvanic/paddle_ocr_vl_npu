@@ -95,6 +95,7 @@ class StreamTests(unittest.TestCase):
         self.assertFalse(adapter.prefill_available)  # Request another page.
         adapter.pending.append(deque([7]))
         self.assertTrue(adapter.prefill_available)
+        self.assertEqual(adapter.planned_prefill_requests(), list(range(8)))
         adapter.cpu.ready = lambda rows: False
         self.assertFalse(adapter.prefill_available)  # Do not consume CPU-in-flight.
         adapter.cpu.ready = lambda rows: True

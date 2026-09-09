@@ -62,13 +62,18 @@ class StreamedUniRecAdapter(UniRecAdapter):
         # Accumulate across pages while upstream can replenish this window.
         if self.external_pending and count < self.buffer_capacity:
             return False
-        target = min(count, self.buffer_capacity)
+        return self.cpu.ready(self.planned_prefill_requests())
+
+    def planned_prefill_requests(self):
+        # Timing snapshots must describe the actual cross-page prerequisite,
+        # not only the first page inherited from the serial adapter.
+        target = min(sum(len(page) for page in self.pending), self.buffer_capacity)
         ready = []
         for page in self.pending:
             ready.extend(list(page)[:target-len(ready)])
             if len(ready) == target:
                 break
-        return self.cpu.ready(ready)
+        return ready
 
     def _ingest(self):
         from run_opendoc_batched_unirec import iter_greedy_text_packs
