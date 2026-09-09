@@ -1,7 +1,8 @@
 # Experiment 18: continuous UniRec + Paddle page pipeline
 
-310P execution brief: [smoke64 then full1651](WORK_SERVER_310P_HYBRID_E2E.md).
-It verifies local assets/caches and explicitly gates memory fit; no 310P
+310P execution brief: [compact ready-KV retry, smoke64 then full1651](WORK_SERVER_310P_COMPACT_READY_KV_E2E.md).
+It reuses the previous attempt's caches, verifies local assets and independently
+monitors device memory with the smaller B64/S1536 ready pool; no 310P
 validation is claimed until the work agent reports its run.
 
 One PP-DocLayoutV3 frontend feeds two resident recognizers on one NPU.
