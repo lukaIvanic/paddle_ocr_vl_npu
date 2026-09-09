@@ -78,6 +78,19 @@ Model definitions and their compiled cache keys are unchanged by those seams.
 
 ## Paddle ready-KV storage
 
+Ready request counts can be varied independently of active decode and CPU
+preparation using `--unirec-ready-capacity` and `--paddle-ready-capacity`.
+Defaults remain 128/64 at the usual batch sizes. A half-ready experiment uses
+`--unirec-ready-capacity 64 --paddle-ready-capacity 32`; Paddle private rows
+default to its selected ready capacity, retaining length1536. CPU preparation
+remains 128/64 and active decode remains B128/B64. A full smaller reservoir
+gets an admission turn through the existing engine copy path, yielding before
+decode so more prefill can fill the remaining active slots. Standalone engine
+behavior stays unchanged unless cooperative refill is explicitly selected.
+UniRec `compact_ready_kv` reports logical live/high-water cross-KV rows/bytes,
+excluding temporary prefill tensors and allocator retention. NPU validation
+of the half-capacity settings is pending.
+
 [Full 910B validation](references/910b_readykv_8b60af95/README.md): all 30,557
 crop outputs and all 1,651 page JSON/Markdown files matched exactly. Peak
 allocation fell 22.29 -> 17.30 GiB, at 2.61 pg/s versus 2.59 pg/s previously.

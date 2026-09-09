@@ -5,14 +5,17 @@ from hybrid_timing import timed_method
 
 
 class UniRecAdapter(Adapter):
-    def __init__(self, runner, vision, decoder, emit, converter, *, collect_step_timing=False):
+    def __init__(self, runner, vision, decoder, emit, converter, *, collect_step_timing=False, ready_capacity=None):
         from persistent_ready_queue import PersistentReadyQueue
-        super().__init__(decoder.batch_size, emit)
+        super().__init__(decoder.batch_size, emit, ready_capacity=ready_capacity)
+        self.ready_kv_rows = self.ready_kv_bytes = 0
+        self.ready_kv_high_water_rows = self.ready_kv_high_water_bytes = 0
         self.runner, self.vision, self.decoder = runner, vision, decoder
         self.converter = converter
         self.source = PersistentReadyQueue(maxsize=self.ready_capacity)
         self.source.register_upstream()
         self.steps = decoder.iter_run(self.source, on_complete=self.complete,
+                                     cooperative_refill=self.ready_capacity < self.capacity,
                                      on_step=(lambda record: self.timing.unirec_step(record)) if collect_step_timing else None)
         next(self.steps)
         self.start_cpu_preparation(self.prepare_cpu, self.capacity, "hybrid-unirec-cpu")
@@ -83,7 +86,14 @@ class UniRecAdapter(Adapter):
                         text_prefill_real_source_tokens=item.text_prefill_real_source_tokens,
                         text_prefill_physical_source_tokens=item.text_prefill_physical_source_tokens,
                     )
-                    def release(value=prefilled):
+                    size = kv.numel() * kv.element_size()
+                    self.ready_kv_rows += 1
+                    self.ready_kv_bytes += size
+                    self.ready_kv_high_water_rows = max(self.ready_kv_high_water_rows, self.ready_kv_rows)
+                    self.ready_kv_high_water_bytes = max(self.ready_kv_high_water_bytes, self.ready_kv_bytes)
+                    def release(value=prefilled, size=size):
+                        self.ready_kv_rows -= 1
+                        self.ready_kv_bytes -= size
                         value.packed_cross_kv = None
                     self.source.put(ContinuousReadyItem(crop.request.request_id, crop.request, prefilled, release))
         with self.timing.scope("unirec.prefill_yield_fence"):

@@ -6,6 +6,8 @@ class Adapter:
     def __init__(self, capacity, emit, *, ready_capacity=None):
         self.capacity = capacity
         self.ready_capacity = capacity if ready_capacity is None else ready_capacity
+        if self.ready_capacity < 1:
+            raise ValueError("ready_capacity must be positive")
         self.emit = emit
         self.pending = deque()
         self.active = 0

@@ -589,6 +589,7 @@ class ContinuousRecognizer:
         torchair_cache_dir: Path,
         prefill_cache_capacity: int | None = None,
         prefill_cache_length: int | None = None,
+        ready_buffer_capacity: int | None = None,
         decode_device_timing: bool = True,
         compact_decode_control: bool = False,
         vision_backend: str = DEFAULT_VISION_BACKEND,
@@ -1156,7 +1157,10 @@ class ContinuousRecognizer:
         )
         self.ready_buffer_capacity = (
             READY_BUFFER_BATCH_MULTIPLIER * self.batch_size
+            if ready_buffer_capacity is None else int(ready_buffer_capacity)
         )
+        if self.ready_buffer_capacity < 1:
+            raise ValueError("ready_buffer_capacity must be positive")
         self.ready_buffer_low_watermark = max(
             1,
             self.ready_buffer_capacity // READY_BUFFER_LOW_WATERMARK_DIVISOR,

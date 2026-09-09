@@ -711,6 +711,7 @@ class ContinuousUniRecDecoder:
         on_graph_warmup_complete: Callable[[dict[str, Any]], None] | None = None,
         on_step: Callable[[dict[str, Any]], None] | None = None,
         on_idle: Callable[[], None] | None = None,
+        cooperative_refill: bool = False,
     ) -> dict[str, Any]:
         if graph_warmup_passes < 0:
             raise ValueError("graph_warmup_passes must be non-negative")
@@ -804,7 +805,8 @@ class ContinuousUniRecDecoder:
 
         yield {"active": 0, "graph_calls": 0}
         if persistent_source:
-            dispatchable = source.wait_until_dispatchable(self.batch_size)
+            dispatchable = (source.qsize() > 0 if cooperative_refill
+                            else source.wait_until_dispatchable(self.batch_size))
             first_ready, first_state = (
                 pull_ready(wait=False)
                 if dispatchable
@@ -1261,6 +1263,14 @@ class ContinuousUniRecDecoder:
                 ]
                 if not empty_slots or not persistent_source:
                     return True
+                if cooperative_refill:
+                    for slot in empty_slots:
+                        refills_before = slot_refills
+                        state = refill_slot(slot)
+                        opportunistic_slot_refills += slot_refills - refills_before
+                        if state != "item":
+                            break
+                    return any(slot is not None for slot in slots)
                 active_count = self.batch_size - len(empty_slots)
                 if not source.wait_until_dispatchable(
                     len(empty_slots),
@@ -1286,6 +1296,13 @@ class ContinuousUniRecDecoder:
                         "active": sum(slot is not None for slot in slots),
                         "graph_calls": decode_iterations,
                     }
+                    if cooperative_refill and persistent_source:
+                        fill_service_rows()
+                        # Do not block the thread that must execute the next
+                        # prefill, or decode a partial arena while more input
+                        # is pending. Publish admissions through the next yield.
+                        if source.upstream_pending and any(slot is None for slot in slots):
+                            continue
                     if not any(slot is not None for slot in slots):
                         if on_idle is not None:
                             on_idle()

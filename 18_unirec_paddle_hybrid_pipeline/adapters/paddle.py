@@ -36,6 +36,7 @@ class PaddleAdapter(Adapter):
             self.source, on_completion=self.complete,
             ready_buffer_capacity=recognizer.ready_buffer_capacity,
             ready_buffer_low_watermark=recognizer.ready_buffer_low_watermark,
+            cooperative_refill=self.ready_capacity < self.capacity,
         )
         import torch
         with torch.inference_mode():

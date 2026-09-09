@@ -951,6 +951,7 @@ class ContinuousDecodeScheduler:
         ready_buffer_capacity: int | None = None,
         ready_buffer_low_watermark: int | None = None,
         scheduling_metrics: RequestSchedulingMetrics | None = None,
+        cooperative_refill: bool = False,
     ) -> ContinuousDecodeRun:
         """Decode a bounded, lazily produced request stream.
 
@@ -1509,6 +1510,14 @@ class ContinuousDecodeScheduler:
             # A cooperative caller must finish device work before switching
             # models. Pending token-copy ownership stays inside this generator.
             yield {"active": self.arena.num_active, "graph_calls": graph_calls}
+            if cooperative_refill and self.arena.num_active < self.batch_size:
+                # Reuse normal slot admission, then yield before any decode.
+                # A smaller ready reservoir can refill the same active arena
+                # in several turns. Pending token-copy ownership stays here.
+                before_admission = self.arena.num_active
+                fill_free_slots(hot_swap=graph_calls > 0)
+                if self.arena.num_active != before_admission:
+                    yield {"active": self.arena.num_active, "graph_calls": graph_calls}
             if self.arena.num_active == 0:
                 if not ready_queue and not source_exhausted:
                     refill_ready_queue(

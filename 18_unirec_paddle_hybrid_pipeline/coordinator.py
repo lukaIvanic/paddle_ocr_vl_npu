@@ -54,6 +54,14 @@ class Coordinator:
         full = [name for name in live if self.adapters[name].occupied >= self.adapters[name].capacity]
         if full:
             return self.choose(full), "decode"
+        # A ready reservoir smaller than the active batch must be admitted
+        # before another prefill can run. Engine iterator boundaries return
+        # control after that admission without requiring a full ready cohort.
+        admit = [name for name in live
+                 if getattr(self.adapters[name], "ready_capacity", self.adapters[name].capacity) < self.adapters[name].capacity
+                 and self.adapters[name].ready_count >= self.adapters[name].ready_capacity]
+        if admit:
+            return self.choose(admit), "decode"
         prefills = [name for name in live if self.adapters[name].prefill_available and self.adapters[name].free > 0]
         if prefills:
             return self.choose(prefills), "prefill"

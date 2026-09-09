@@ -27,13 +27,15 @@ def parse_args():
     parser.add_argument("--paddle-model-path", type=Path, default=Path("/workspace/models/PaddleOCR-VL-1.6"))
     parser.add_argument("--paddle-batch-size", type=int, default=64)
     parser.add_argument("--paddle-ready-cache-length", type=int, default=1536)
-    parser.add_argument("--paddle-ready-cache-rows", type=int, help="Defaults to Paddle batch size")
+    parser.add_argument("--paddle-ready-cache-rows", type=int, help="Defaults to Paddle ready capacity")
+    parser.add_argument("--paddle-ready-capacity", type=int, help="NPU ready-request capacity; defaults to Paddle batch size; CPU capacity unchanged")
     parser.add_argument("--vision-promptfa-align-128", action="store_true")
     parser.add_argument("--unirec-model-path", type=Path)
     parser.add_argument("--openocr-root", type=Path)
     parser.add_argument("--unirec-vision-cache", type=Path)
     parser.add_argument("--unirec-decode-cache", type=Path)
     parser.add_argument("--unirec-batch-size", type=int, default=128)
+    parser.add_argument("--unirec-ready-capacity", type=int, help="NPU ready-request capacity; defaults to UniRec batch size; CPU capacity unchanged")
     parser.add_argument("--unirec-vision-lanes", type=int, choices=(0, 1, 2, 4), default=0,
                         help="0: existing sequential path; 1/2/4: persistent UniRec vision executor lanes within each prefill turn")
     return parser.parse_args()
@@ -80,6 +82,11 @@ def engine_report(adapter):
             "cache_length": adapter.recognizer.prefill_cache_length,
             "max_prompt_length": adapter.recognizer.max_prefill_prompt_length,
         } if hasattr(adapter, "recognizer") else None),
+        "compact_ready_kv": (dict(rows=adapter.ready_kv_rows, bytes=adapter.ready_kv_bytes,
+                                   high_water_rows=adapter.ready_kv_high_water_rows,
+                                   high_water_bytes=adapter.ready_kv_high_water_bytes,
+                                   scope="Logical owned compact cross-KV, excluding prefill intermediates and allocator retention")
+                             if hasattr(adapter, "ready_kv_rows") else None),
         "prefill_tokens": dict(getattr(adapter, "prefill_tokens", {})),
         "prefill_device_s": dict(getattr(adapter, "prefill_device_s", {})),
         "vision_runtime": adapter.vision.summary() if hasattr(adapter, "vision") else None,
@@ -89,11 +96,13 @@ def engine_report(adapter):
 def make_paddle(args, emit):
     from paddleocr_vl.serving.engine import ContinuousRecognizer
     from adapters.paddle import PaddleAdapter
+    ready_capacity = args.paddle_batch_size if args.paddle_ready_capacity is None else args.paddle_ready_capacity
     r = ContinuousRecognizer(
         model=str(args.paddle_model_path), dtype="fp16", decode_backend="torchair",
         decode_optimization="combined_apply_pse_sentinel", batch_size=args.paddle_batch_size,
         cache_length=4096, max_new_tokens=4096,
-        prefill_cache_capacity=(args.paddle_batch_size if args.paddle_ready_cache_rows is None else args.paddle_ready_cache_rows),
+        prefill_cache_capacity=(ready_capacity if args.paddle_ready_cache_rows is None else args.paddle_ready_cache_rows),
+        ready_buffer_capacity=ready_capacity,
         prefill_cache_length=args.paddle_ready_cache_length,
         torchair_cache_dir=ROOT / ".runtime_cache/09_persistent_page_engine_torchair",
         vision_backend="torchair", vision_attention="prompt_flash_attention",
@@ -135,7 +144,8 @@ def make_unirec(args, emit):
     r._get_compiled_packed_text_prefill_runtime()
     r.compile_cache_dir = decode_cache_variant_root(production_decode_cache_parent(args.unirec_decode_cache), weight_format="nz", lm_head_rows=57344)
     decoder = ContinuousUniRecDecoder(runner=r, batch_size=args.unirec_batch_size, max_length=2048, decode_mode="compiled_ifa", compile_backend="torchair", admission_prefetch_depth=0, self_cache_length=2048, cross_cache_length=1320)
-    return UniRecAdapter(r, vision, decoder, emit, infer_doc_onnx, collect_step_timing=args.detailed_timing)
+    return UniRecAdapter(r, vision, decoder, emit, infer_doc_onnx, collect_step_timing=args.detailed_timing,
+                         ready_capacity=args.unirec_ready_capacity)
 
 
 def main():
