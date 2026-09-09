@@ -9,6 +9,27 @@ One PP-DocLayoutV3 frontend feeds two resident recognizers on one NPU.
 Experiment 09 owns Paddle layout/cropping/assembly and inference; experiment
 12 owns UniRec inference. This experiment owns routing and cross-model turns.
 
+Experimental `--unirec-vision-lanes 1|2|4` reuses experiment 12's persistent
+`BoundedVisionOwner` with in-memory prepared inputs, all graphs retained and
+no same-key graph cloning. Default `0` retains the validated sequential path.
+Only vision calls within a UniRec prefill turn can overlap; all lanes finish
+before text prefill or any layout/Paddle/decode turn. CPU worker counts, crop
+grouping, routing and ready-KV capacities are unchanged. The lane executor and
+streams persist until shutdown; no extra model-weight copies or spool writes
+are introduced. Existing cache roots and compiled model code are unchanged.
+
+`vision_runtime.hybrid_lanes` records joined turn wall time, concurrent group
+widths and per-key lane host spans. Lane spans overlap and are not additive to
+the critical path, nor are they pure device-kernel timings. The existing owner
+scope around `vision.encode` measures the joined interval. More lanes can need
+more activation/workspace memory; 310P fit is not inferred from 910B.
+
+`run_910b_vision_lanes_matrix.sh` runs sequential control/1/2/4-lane comparisons
+on identical first-N pages (`PAGE_LIMIT=64` initially), with independent device
+memory sampling and exact per-crop token/text/stop parity gates. Run only after
+`source npu-setup`, with `RUN_ROOT` naming a new output directory. It never
+clears or changes the graph cache roots. NPU validation pending.
+
 ```sh
 python 18_unirec_paddle_hybrid_pipeline/run_pipeline.py \
   --input /workspace/datasets/OmniDocBench/images \

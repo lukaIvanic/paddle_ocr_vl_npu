@@ -110,3 +110,5 @@ class UniRecAdapter(Adapter):
     def close(self):
         self.cpu.close()
         self.steps.close()
+        if hasattr(self.vision, "close"):
+            self.vision.close()

@@ -34,6 +34,8 @@ def parse_args():
     parser.add_argument("--unirec-vision-cache", type=Path)
     parser.add_argument("--unirec-decode-cache", type=Path)
     parser.add_argument("--unirec-batch-size", type=int, default=128)
+    parser.add_argument("--unirec-vision-lanes", type=int, choices=(0, 1, 2, 4), default=0,
+                        help="0: existing sequential path; 1/2/4: persistent UniRec vision executor lanes within each prefill turn")
     return parser.parse_args()
 
 
@@ -127,6 +129,9 @@ def make_unirec(args, emit):
     apply_decode_model_optimizations(r, weight_format="nz", lm_head_rows=57344)
     r._static_cross_cache_len_by_processor_max_side[tuple(r.processor.max_side)] = 1320
     vision = BucketedFullVisionRuntime(r, specs=resolve_vision_bucket_specs("310p_k20_l4"), focal_depthwise_rewrite="constant_grouped_all", weight_format="torchair_internal", preset_name="310p_k20_l4", synchronize_first_call=False)
+    if args.unirec_vision_lanes:
+        from vision_lanes import UniRecVisionLanes
+        vision = UniRecVisionLanes(vision, args.unirec_vision_lanes)
     r._get_compiled_packed_text_prefill_runtime()
     r.compile_cache_dir = decode_cache_variant_root(production_decode_cache_parent(args.unirec_decode_cache), weight_format="nz", lm_head_rows=57344)
     decoder = ContinuousUniRecDecoder(runner=r, batch_size=args.unirec_batch_size, max_length=2048, decode_mode="compiled_ifa", compile_backend="torchair", admission_prefetch_depth=0, self_cache_length=2048, cross_cache_length=1320)

@@ -129,6 +129,34 @@ class BoundedVisionOwner:
             shape=tuple(int(value) for value in descriptor["shape"]),
         )
 
+    def _input(self, record: dict[str, Any]) -> PreprocessedVisionInput:
+        """Use an owned CPU array or the standalone service's spool descriptor."""
+        if "preprocessed_input" in record:
+            return record["preprocessed_input"]
+        return PreprocessedVisionInput(
+            source_index=int(record["source_index"]),
+            pixel_values=self._mapping(record["processed_pixel_values_descriptor"]),
+            original_image_size=tuple(int(v) for v in record["source_image_size"]),
+            image_source=str(record["request_id"]),
+        )
+
+    def encode_inputs(
+        self, items: Sequence[PreprocessedVisionInput],
+    ) -> tuple[list[EncodedVisionItem], dict[str, Any]]:
+        """Same production planner/executors, without a disk-spool round trip.
+
+        The caller retains the CPU arrays until all lane futures have completed.
+        Outputs are synchronized before returning to a shared NPU coordinator.
+        """
+        if [item.source_index for item in items] != list(range(len(items))):
+            raise ValueError("encode_inputs requires contiguous source indices from zero")
+        records = [dict(
+            source_index=item.source_index,
+            processed_image_size=(item.processed_width, item.processed_height),
+            preprocessed_input=item,
+        ) for item in items]
+        return self.encode(records, retain_loaded_graphs=True)
+
     def _plan(
         self,
         records: Sequence[dict[str, Any]],
@@ -184,21 +212,7 @@ class BoundedVisionOwner:
         started = time.perf_counter()
         with torch.npu.stream(self.streams[lane]):
             for call in calls:
-                mappings = [
-                    self._mapping(record["processed_pixel_values_descriptor"])
-                    for record in call
-                ]
-                inputs = [
-                    PreprocessedVisionInput(
-                        source_index=int(record["source_index"]),
-                        pixel_values=mapping,
-                        original_image_size=tuple(
-                            int(value) for value in record["source_image_size"]
-                        ),
-                        image_source=str(record["request_id"]),
-                    )
-                    for record, mapping in zip(call, mappings)
-                ]
+                inputs = [self._input(record) for record in call]
                 outputs.extend(
                     self.runtime._run_bucket(
                         spec,
@@ -207,8 +221,6 @@ class BoundedVisionOwner:
                     )
                 )
                 del inputs
-                for mapping in mappings:
-                    del mapping
         self.streams[lane].synchronize()
         return outputs, time.perf_counter() - started
 
@@ -500,15 +512,7 @@ class BoundedVisionOwner:
         ):
             self._release_loaded()
         for record in fallbacks:
-            mapping = self._mapping(record["processed_pixel_values_descriptor"])
-            item = PreprocessedVisionInput(
-                source_index=int(record["source_index"]),
-                pixel_values=mapping,
-                original_image_size=tuple(
-                    int(value) for value in record["source_image_size"]
-                ),
-                image_source=str(record["request_id"]),
-            )
+            item = self._input(record)
             with torch.npu.stream(self.streams[0]):
                 use_compiled_fallback = (
                     self.fallback_runtime is not None
@@ -538,7 +542,7 @@ class BoundedVisionOwner:
                 outputs[output.source_index] = output
             if on_encoded_batch is not None:
                 on_encoded_batch([output])
-            del item, mapping
+            del item
         fallback_s = time.perf_counter() - fallback_started
         if self.fallback_runtime is not None:
             loaded_fallbacks = [
