@@ -625,6 +625,9 @@ class BoundedVisionOwner:
         return ordered, report
 
     def close(self) -> None:
+        # A lane error can leave another submitted future running. Join the
+        # workers before unloading any executor they may still be using.
+        self.pool.shutdown(wait=True)
         self._release_loaded()
         if self.fallback_runtime is not None:
             loaded_fallbacks = [
@@ -635,4 +638,3 @@ class BoundedVisionOwner:
             if loaded_fallbacks:
                 torch.npu.synchronize()
                 release_loaded_ge_executors(loaded_fallbacks)
-        self.pool.shutdown(wait=True)
