@@ -42,11 +42,12 @@ class UniRecAdapter(Adapter):
         if closed and not pending:
             self.source.close()
 
-    def export_prefill_group(self, values, *, record_ready_event=False):
+    def export_prefill_group(self, values, *, record_ready_event=False, stream_local_sync=False):
         """Existing compact cross-KV export, shared by serial/streamed owners."""
         import torch
         from continuous_unirec import ContinuousWorkerPrefilledItem
-        items = self.runner.prefill_encoder_hidden_states_packed_for_cohort(values, decode_ready=False)
+        items = self.runner.prefill_encoder_hidden_states_packed_for_cohort(
+            values, decode_ready=False, stream_local_sync=stream_local_sync)
         exports = []
         for item in items:
             cache = item.kv_cache

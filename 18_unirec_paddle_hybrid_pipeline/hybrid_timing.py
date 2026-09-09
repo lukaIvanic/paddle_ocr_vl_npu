@@ -88,7 +88,7 @@ class PipelineTiming:
     def summary(self):
         if not self.enabled:
             return {"enabled": False}
-        inclusive, exclusive, workers, queues, ready, waits, stages = (defaultdict(list) for _ in range(7))
+        inclusive, exclusive, workers, queues, ready, waits, stages, delivery = (defaultdict(list) for _ in range(8))
         for event in self.trace.events():
             name, row = event["name"], event["row"]
             seconds = event["duration_ns"] / 1e9
@@ -102,6 +102,7 @@ class PipelineTiming:
             elif row == "CPU queue": queues[name].append(seconds)
             elif row == "CPU ready residence": ready[name].append(seconds)
             elif row == "Hybrid worker": stages[name].append(seconds)
+            elif row == "CPU result delivery": delivery[name].append(seconds)
         measured = sum(inclusive.get("pipeline", []))
         partition = sum(sum(values) for values in exclusive.values())
         if abs(partition - measured) > 1e-6 or any(value < 0 for values in exclusive.values() for value in values):
@@ -127,6 +128,7 @@ class PipelineTiming:
             "cpu_queue_residence": {k: distribution(v) for k,v in queues.items()},
             "cpu_ready_residence": {k: distribution(v) for k,v in ready.items()},
             "overlapping_worker_scopes": {k: distribution(v) for k,v in stages.items()},
+            "cpu_result_delivery": {k: distribution(v) for k,v in delivery.items()},
             "unirec_step_diagnostics": {k: distribution(v) for k,v in self.step_samples.items()},
             "unirec_step_diagnostics_note": "Existing host timers, nested/non-additive: decode_step contains submission/token wait; scheduler contains retirement/admission/completion callbacks. These are not device-only or exclusive CPU work.",
         }

@@ -84,12 +84,17 @@ class UniRecCpuPool(CpuPreparation):
                 self.batches.append(batch)
                 def finished(future, proxies=proxies, queued=queued):
                     try:
-                        for key, value, start, end, identity in future.result():
+                        results = future.result()
+                        received = time.perf_counter_ns()
+                        for key, value, start, end, identity in results:
                             if self.timing.enabled:
                                 self.timing.trace.record_span("CPU queue", self.name, queued, start,
                                                               flow_id=key, track="queue", lane=self.name)
-                                self.timing.trace.record_span("CPU service", self.name, start, end, flow_id=key)
-                            proxies[key].set_result((value, (end-start)/1e9, identity, end))
+                                self.timing.trace.record_span("CPU service", self.name, start, end, flow_id=key,
+                                                              track="worker", lane=f"{identity[0]}:{identity[1]}")
+                                self.timing.trace.record_span("CPU result delivery", self.name, end, received,
+                                                              flow_id=key, track="queue", lane=self.name)
+                            proxies[key].set_result((value, (end-start)/1e9, identity, received))
                     except BaseException as exc:
                         for proxy in proxies.values():
                             if not proxy.done():

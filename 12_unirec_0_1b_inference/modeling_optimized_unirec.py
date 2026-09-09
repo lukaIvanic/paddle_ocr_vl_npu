@@ -2619,6 +2619,7 @@ class OptimizedUniRecRunner:
         *,
         profile_device_stages: bool = False,
         decode_ready: bool = True,
+        stream_local_sync: bool = False,
     ) -> list[UniRecPrefilledItem]:
         """Run packed cross-KV prefill from already-computed vision outputs.
 
@@ -2637,8 +2638,14 @@ class OptimizedUniRecRunner:
             for hidden in encoder_hidden_states
         ]
 
+        def synchronize_prefill():
+            if stream_local_sync:
+                torch.npu.current_stream(torch.device(self.device)).synchronize()
+            else:
+                synchronize_device(self.device)
+
         with torch.inference_mode():
-            synchronize_device(self.device)
+            synchronize_prefill()
             packed_started = time.perf_counter()
             packed_timeline = (
                 PrefillDeviceTimeline(torch.device(self.device))
@@ -2679,7 +2686,7 @@ class OptimizedUniRecRunner:
                 )
                 caches.append(cache)
             if packed_timeline is None:
-                synchronize_device(self.device)
+                synchronize_prefill()
                 packed_stage_s = None
             else:
                 packed_stage_s = packed_timeline.resolve()
