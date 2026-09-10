@@ -10,7 +10,6 @@ from typing import Any, Callable, Iterable, Protocol
 import torch
 
 from text_prefill_and_decode import LocalPaddleOCRVLStaticCache
-from _support.model.token_selection import TOKEN_SELECTION_GREEDY, TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY, TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY, TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP, TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE, TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED, TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10, TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED, select_token_ids
 from _support.serving.repetition import ExactCycleTracker, RepetitionEvidence
 from _support.serving.scheduling_metrics import RequestSchedulingMetrics
 from _support.utils.timing import stream_synchronize, synchronize
@@ -27,7 +26,6 @@ class ReadyDecodeRequest:
     first_token_tensor: torch.Tensor | None
     first_token: int
     prompt_length: int
-    token_selection_policy_active: bool = False
     cache_release: Callable[[], None] | None = None
 
     def release_device_state(self) -> None:
@@ -52,8 +50,6 @@ class DecodeSlotState:
     admitted_at: float
     first_decode_launched_at: float | None = None
     iterations_launched: int = 0
-    # Host-only, request-local count for the optional open-serving prefill cap.
-    prefill_interruptions: int = 0
     repetition_tracker: ExactCycleTracker = field(
         default_factory=ExactCycleTracker,
     )
@@ -182,48 +178,16 @@ class DecodeArena:
         device: torch.device,
         batch_size: int,
         eos_token_id: int,
-        token_selection: str = TOKEN_SELECTION_GREEDY,
-        preferred_token_id: int | None = None,
-        alternate_preferred_token_id: int | None = None,
-        cell_start_token_ids: Iterable[int] = (),
-        math_close_token_id: int | None = None,
-        decode_token_id_map: torch.Tensor | None = None,
         timeline: TimelineRecorder | None = None,
         decode_device_timing: bool = True,
-        compact_step_control: bool = False,
     ) -> None:
         self.cache = cache
         self.device = device
         self.batch_size = int(batch_size)
         self.eos_token_id = int(eos_token_id)
         self.decode_device_timing = bool(decode_device_timing)
-        self.compact_step_control = bool(compact_step_control)
-        if self.compact_step_control and token_selection != TOKEN_SELECTION_GREEDY:
-            raise ValueError("compact step control is validated for greedy serving only")
         if timeline is not None and not self.decode_device_timing:
             raise ValueError("decode timeline requires decode device timing")
-        self.token_selection = str(token_selection)
-        self.preferred_token_id = (
-            None if preferred_token_id is None else int(preferred_token_id)
-        )
-        self.alternate_preferred_token_id = (
-            None
-            if alternate_preferred_token_id is None
-            else int(alternate_preferred_token_id)
-        )
-        self.cell_start_token_ids = tuple(int(value) for value in cell_start_token_ids)
-        self.math_close_token_id = (
-            None if math_close_token_id is None else int(math_close_token_id)
-        )
-        if (
-            decode_token_id_map is not None
-            and self.token_selection != TOKEN_SELECTION_GREEDY
-        ):
-            raise ValueError(
-                "a compact decode vocabulary currently supports ordinary greedy "
-                "token selection only"
-            )
-        self.decode_token_id_map = decode_token_id_map
         self.timeline = timeline
         self.next_token = torch.full(
             (self.batch_size, 1),
@@ -247,21 +211,6 @@ class DecodeArena:
             dtype=torch.bool,
         )
         self.active_increment = torch.zeros_like(self.cache_position)
-        self.token_selection_policy_mask = torch.zeros(
-            (self.batch_size,),
-            device=self.device,
-            dtype=torch.bool,
-        )
-        self.token_selection_override_used = torch.zeros(
-            (self.batch_size,),
-            device=self.device,
-            dtype=torch.bool,
-        )
-        self.token_selection_math_open = torch.zeros(
-            (self.batch_size,),
-            device=self.device,
-            dtype=torch.bool,
-        )
         self.slots: list[DecodeSlotState | None] = [None] * self.batch_size
         self._epochs = [0] * self.batch_size
         self._decode_event_spans: list[_DeviceSpanRecord] = []
@@ -281,9 +230,6 @@ class DecodeArena:
         self.rope_deltas.zero_()
         self.active_mask.zero_()
         self.active_increment.zero_()
-        self.token_selection_policy_mask.zero_()
-        self.token_selection_override_used.zero_()
-        self.token_selection_math_open.zero_()
 
     @property
     def num_active(self) -> int:
@@ -355,7 +301,9 @@ class DecodeArena:
             else:
                 assert record.start_event is not None
                 assert record.end_event is not None
-                total += float(record.start_event.elapsed_time(record.end_event)) / 1000.0
+                total += (
+                    float(record.start_event.elapsed_time(record.end_event)) / 1000.0
+                )
         return total
 
     def resolve_device_timing(self) -> tuple[float, float]:
@@ -379,12 +327,14 @@ class DecodeArena:
                         raise RuntimeError("decode device timing lost its anchor event")
                     assert record.start_event is not None
                     assert record.end_event is not None
-                    offset_s = float(
-                        anchor.start_event.elapsed_time(record.start_event)
-                    ) / 1000.0
-                    duration_s = float(
-                        record.start_event.elapsed_time(record.end_event)
-                    ) / 1000.0
+                    offset_s = (
+                        float(anchor.start_event.elapsed_time(record.start_event))
+                        / 1000.0
+                    )
+                    duration_s = (
+                        float(record.start_event.elapsed_time(record.end_event))
+                        / 1000.0
+                    )
                     start_ns = anchor.enqueued_ns + int(offset_s * 1_000_000_000)
                     clock = "device_event_reconstructed"
                 self.timeline.record_span(
@@ -435,12 +385,14 @@ class DecodeArena:
         if len(source_cache.key_caches) != len(self.cache.key_caches):
             raise ValueError("ready cache and decode arena have different layer counts")
         if int(source_cache.cache_length) != int(self.cache.cache_length):
-            raise ValueError("ready cache and decode arena have different cache lengths")
+            raise ValueError(
+                "ready cache and decode arena have different cache lengths"
+            )
 
-        source_tensors = source_cache.logical_tensors()
+        source_tensors = source_cache.flat_tensors()
         destination_tensors = tuple(
             destination[slot_index : slot_index + 1]
-            for destination in self.cache.logical_tensors()
+            for destination in self.cache.flat_tensors()
         )
         source_heads = int(source_tensors[0].shape[1])
         destination_heads = int(destination_tensors[0].shape[1])
@@ -485,11 +437,6 @@ class DecodeArena:
             self.next_token[slot_index : slot_index + 1].copy_(source_first_token)
             self.active_mask[slot_index].fill_(True)
             self.active_increment[slot_index].fill_(1)
-            self.token_selection_policy_mask[slot_index].fill_(
-                bool(ready.token_selection_policy_active)
-            )
-            self.token_selection_override_used[slot_index].fill_(False)
-            self.token_selection_math_open[slot_index].fill_(False)
 
         started = time.perf_counter()
         self._measure_enqueue(
@@ -535,9 +482,6 @@ class DecodeArena:
         self.slots[slot_index] = None
         self.active_mask[slot_index].fill_(False)
         self.active_increment[slot_index].zero_()
-        self.token_selection_policy_mask[slot_index].fill_(False)
-        self.token_selection_override_used[slot_index].fill_(False)
-        self.token_selection_math_open[slot_index].fill_(False)
         self.next_token[slot_index].fill_(self.eos_token_id)
         self.cache_position[slot_index].zero_()
         self.rope_deltas[slot_index].zero_()
@@ -550,10 +494,11 @@ class DecodeArena:
         iteration: int,
     ) -> DecodeStep:
         active_slots = tuple(slot is not None for slot in self.slots)
-        slot_epochs = tuple(slot.epoch if slot is not None else None for slot in self.slots)
+        slot_epochs = tuple(
+            slot.epoch if slot is not None else None for slot in self.slots
+        )
         slot_request_ids = tuple(
-            slot.ready.request_id if slot is not None else None
-            for slot in self.slots
+            slot.ready.request_id if slot is not None else None for slot in self.slots
         )
         cache_positions = tuple(
             (
@@ -564,8 +509,7 @@ class DecodeArena:
             for slot in self.slots
         )
         generated_token_counts = tuple(
-            len(slot.token_ids) if slot is not None else None
-            for slot in self.slots
+            len(slot.token_ids) if slot is not None else None for slot in self.slots
         )
         launched_at = time.perf_counter()
         for slot in self.slots:
@@ -581,92 +525,7 @@ class DecodeArena:
                 self.rope_deltas,
                 *self.cache.flat_tensors(),
             )
-            if self.decode_token_id_map is not None:
-                return decode_output.reshape(-1, 1)
-            logits = decode_output
-            if self.preferred_token_id is not None:
-                self.token_selection_math_open.copy_(
-                    torch.where(
-                        self.next_token[:, 0] == int(self.preferred_token_id),
-                        torch.ones_like(self.token_selection_math_open),
-                        self.token_selection_math_open,
-                    )
-                )
-            if self.math_close_token_id is not None:
-                self.token_selection_math_open.copy_(
-                    torch.where(
-                        self.next_token[:, 0] == int(self.math_close_token_id),
-                        torch.zeros_like(self.token_selection_math_open),
-                        self.token_selection_math_open,
-                    )
-                )
-            if (
-                self.token_selection
-                == TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_NON_NESTED
-            ):
-                policy_mask = (
-                    self.token_selection_policy_mask
-                    & ~self.token_selection_math_open
-                )
-            elif (
-                self.token_selection
-                == TOKEN_SELECTION_PREFER_MATH_OPEN_TOP2_FIRST_OVERRIDE
-            ):
-                policy_mask = (
-                    self.token_selection_policy_mask
-                    & ~self.token_selection_override_used
-                )
-            elif (
-                self.token_selection
-                == TOKEN_SELECTION_PREFER_MATH_OPEN_PROBABILITY_NEAR_TOP
-            ):
-                policy_mask = self.token_selection_policy_mask
-            elif (
-                self.token_selection in (
-                    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_GREEDY,
-                    TOKEN_SELECTION_SUPPRESS_MATH_OPEN_AND_SLASH_GREEDY,
-                )
-            ):
-                policy_mask = self.token_selection_policy_mask
-            elif (
-                self.token_selection in (
-                    TOKEN_SELECTION_PREFER_MATH_OPEN_VARIANTS_TOP2_P10,
-                    TOKEN_SELECTION_PREFER_MATH_OPEN_ADJUSTERS_COMBINED,
-                )
-            ):
-                cell_start_mask = torch.zeros_like(
-                    self.token_selection_policy_mask,
-                    dtype=torch.bool,
-                )
-                for token_id in self.cell_start_token_ids:
-                    cell_start_mask |= self.next_token[:, 0] == int(token_id)
-                policy_mask = self.token_selection_policy_mask & cell_start_mask
-            else:
-                policy_mask = torch.zeros_like(
-                    self.token_selection_policy_mask,
-                    dtype=torch.bool,
-                )
-            selected = select_token_ids(
-                logits[:, -1, :].float(),
-                mode=self.token_selection,
-                preferred_token_id=self.preferred_token_id,
-                alternate_preferred_token_id=self.alternate_preferred_token_id,
-                policy_mask=policy_mask,
-                legacy_policy_mask=self.token_selection_policy_mask,
-            )
-            greedy = torch.argmax(logits[:, -1, :].float(), dim=-1)
-            if self.preferred_token_id is None:
-                override = torch.zeros_like(policy_mask)
-            else:
-                override = (
-                    policy_mask
-                    & (selected == int(self.preferred_token_id))
-                    & (greedy != int(self.preferred_token_id))
-                )
-            self.token_selection_override_used.copy_(
-                self.token_selection_override_used | override
-            )
-            return selected.view(-1, 1)
+            return decode_output.reshape(-1, 1)
 
         request_ids = tuple(
             slot.ready.request_id for slot in self.slots if slot is not None
@@ -685,26 +544,16 @@ class DecodeArena:
                 "request_ids": list(request_ids),
             },
         )
-        if self.compact_step_control:
-            # Do NOT alias sampled: the copy stream may still be reading it
-            # when retirement overwrites a slot in next_token. These buffers
-            # retain their identities; all writes run after decode on its stream.
-            self.next_token.copy_(sampled)
-            # Inactive positions start at zero and retirement resets them.
-            # Their dummy token/KV-at-zero is unobservable and overwritten on
-            # admission. No per-iteration EOS/zero filling is necessary.
-            self.cache_position.add_(self.active_increment)
-        else:
-            self.next_token = torch.where(
-                self.active_mask.view(-1, 1),
-                sampled,
-                torch.full_like(sampled, self.eos_token_id),
-            )
-            self.cache_position = torch.where(
-                self.active_mask,
-                self.cache_position + 1,
-                torch.zeros_like(self.cache_position),
-            )
+        self.next_token = torch.where(
+            self.active_mask.view(-1, 1),
+            sampled,
+            torch.full_like(sampled, self.eos_token_id),
+        )
+        self.cache_position = torch.where(
+            self.active_mask,
+            self.cache_position + 1,
+            torch.zeros_like(self.cache_position),
+        )
         return DecodeStep(
             sampled=sampled,
             active_slots=active_slots,
@@ -730,9 +579,7 @@ class ContinuousDecodeScheduler:
         decode_fn: Callable[..., torch.Tensor],
         max_new_tokens: int,
         timeline: TimelineRecorder | None = None,
-        completion_policy: (
-            Callable[[DecodeSlotState, int], str | None] | None
-        ) = None,
+        completion_policy: (Callable[[DecodeSlotState, int], str | None] | None) = None,
         stop_repetitions: bool = False,
         progress: Callable[..., None] | None = None,
         diagnostic_effective_length: int | None = None,
@@ -759,9 +606,7 @@ class ContinuousDecodeScheduler:
             else int(diagnostic_effective_length)
         )
         self.diagnostic_request_id = (
-            None
-            if diagnostic_request_id is None
-            else str(diagnostic_request_id)
+            None if diagnostic_request_id is None else str(diagnostic_request_id)
         )
         self.copy_stream = None
         self.host_token_ring = None
@@ -785,9 +630,8 @@ class ContinuousDecodeScheduler:
         token_id: int,
     ) -> str | None:
         generated_tokens = len(state.token_ids)
-        cache_is_full = (
-            int(state.ready.prompt_length) + generated_tokens - 1
-            >= int(self.arena.cache.cache_length)
+        cache_is_full = int(state.ready.prompt_length) + generated_tokens - 1 >= int(
+            self.arena.cache.cache_length
         )
         if self.completion_policy is not None:
             if cache_is_full:
@@ -826,9 +670,7 @@ class ContinuousDecodeScheduler:
                 # Retaining it does not change the lifetime of the production
                 # ready_event; it gives the diagnostic path a precise compute
                 # completion boundary to synchronize.
-                diagnostic_compute_event = (
-                    torch_npu.npu.current_stream().record_event()
-                )
+                diagnostic_compute_event = torch_npu.npu.current_stream().record_event()
             ready_event = torch_npu.npu.current_stream().record_event()
             done_event = torch_npu.npu.Event()
             with torch_npu.npu.stream(self.copy_stream):
@@ -860,7 +702,9 @@ class ContinuousDecodeScheduler:
             ring_index=None,
             done_event=None,
             diagnostic_compute_event=None,
-            host_tokens=[int(value) for value in step.sampled.detach().cpu().reshape(-1).tolist()],
+            host_tokens=[
+                int(value) for value in step.sampled.detach().cpu().reshape(-1).tolist()
+            ],
         )
 
     def _diagnostic_slots(
@@ -1015,7 +859,8 @@ class ContinuousDecodeScheduler:
             nonlocal completion_callback_wall_s
             if scheduling_metrics is not None:
                 completion.scheduling_metrics = scheduling_metrics.finish(
-                    completion.ready.request_id, completion.completed_at,
+                    completion.ready.request_id,
+                    completion.completed_at,
                 )
             completions.append(completion)
             if self.timeline is not None:
@@ -1102,7 +947,9 @@ class ContinuousDecodeScheduler:
                         ready = pull_for_decode_slots(
                             block=should_block,
                             available_slots=(
-                                self.batch_size - self.arena.num_active - len(ready_queue)
+                                self.batch_size
+                                - self.arena.num_active
+                                - len(ready_queue)
                             ),
                         )
                 except BaseException as exc:
@@ -1497,9 +1344,7 @@ class ContinuousDecodeScheduler:
             progress(
                 "iteration_begin",
                 iteration=iteration,
-                pending_iteration=(
-                    None if pending is None else pending.iteration
-                ),
+                pending_iteration=(None if pending is None else pending.iteration),
             )
             boundary_slots = [
                 index
@@ -1530,7 +1375,11 @@ class ContinuousDecodeScheduler:
             progress("decode_step_begin", iteration=iteration)
             if scheduling_metrics is not None:
                 scheduling_metrics.step(
-                    (state.ready.request_id for state in self.arena.slots if state is not None),
+                    (
+                        state.ready.request_id
+                        for state in self.arena.slots
+                        if state is not None
+                    ),
                     time.perf_counter(),
                 )
             step = self.arena.step(self.decode_fn, iteration=iteration)
@@ -1597,18 +1446,22 @@ class ContinuousDecodeScheduler:
             )
         decode_host_exclusive_wall_s = max(
             0.0,
-            scheduler_wall_s
-            - ready_source_wall_s
-            - completion_callback_wall_s,
+            scheduler_wall_s - ready_source_wall_s - completion_callback_wall_s,
         )
         decode_device_s, admission_device_s = self.arena.resolve_device_timing()
-        continuous_decode_wall_s = max(
-            decode_host_exclusive_wall_s,
-            decode_device_s + admission_device_s,
-        ) if self.arena.decode_device_timing else None
+        continuous_decode_wall_s = (
+            max(
+                decode_host_exclusive_wall_s,
+                decode_device_s + admission_device_s,
+            )
+            if self.arena.decode_device_timing
+            else None
+        )
 
         if ready_queue or not source_exhausted:
-            raise AssertionError(f"continuous decode stopped with {len(ready_queue)} ready requests")
+            raise AssertionError(
+                f"continuous decode stopped with {len(ready_queue)} ready requests"
+            )
         if len(completions) != len(submitted_order):
             raise AssertionError(
                 f"continuous decode completed {len(completions)} of {len(submitted_order)} requests"
@@ -1627,7 +1480,9 @@ class ContinuousDecodeScheduler:
             raise AssertionError("continuous decode slot accounting does not balance")
 
         completion_by_id = {item.ready.request_id: item for item in completions}
-        ordered_completions = [completion_by_id[request_id] for request_id in submitted_order]
+        ordered_completions = [
+            completion_by_id[request_id] for request_id in submitted_order
+        ]
         return ContinuousDecodeRun(
             completions=ordered_completions,
             submitted_requests=len(submitted_order),
@@ -1649,9 +1504,7 @@ class ContinuousDecodeScheduler:
             hot_swap_kv_prefix_bytes_copied=hot_swap_kv_bytes,
             timing_s={
                 "continuous_decode_wall": continuous_decode_wall_s,
-                "decode_host_exclusive_wall": float(
-                    decode_host_exclusive_wall_s
-                ),
+                "decode_host_exclusive_wall": float(decode_host_exclusive_wall_s),
                 "run_scoped_scheduler_wall": float(scheduler_wall_s),
                 "ready_source_wall": float(ready_source_wall_s),
                 "completion_callback_wall": float(completion_callback_wall_s),
@@ -1659,11 +1512,11 @@ class ContinuousDecodeScheduler:
                     float(decode_device_s) if self.arena.decode_device_timing else None
                 ),
                 "slot_admission_device": float(admission_device_s),
-                "slot_admission_enqueue_wall": float(self.arena.admission_enqueue_wall_s),
+                "slot_admission_enqueue_wall": float(
+                    self.arena.admission_enqueue_wall_s
+                ),
                 "d2h_wait_wall": float(d2h_wait_wall_s),
                 "retire_and_refill_host_wall": float(retire_and_refill_wall_s),
-                "hot_swap_safety_sync_wall": float(
-                    hot_swap_safety_sync_wall_s
-                ),
+                "hot_swap_safety_sync_wall": float(hot_swap_safety_sync_wall_s),
             },
         )
