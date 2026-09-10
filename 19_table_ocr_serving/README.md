@@ -1,11 +1,11 @@
 # Experiment 19: table OCR serving
 
-**Step 2: mechanical relocation, not yet simplified or NPU-validated.**
+**Step 2 complete: mechanical relocation validated on one 910B2. Not yet simplified.**
 
 This self-contained runtime is copied from experiment 09 at
 `be691de190ae099d1a9b0ba80865006b122ecc00`. It does not import experiment 09.
-The original is preserved unchanged. The next action is the same B8 / 6 QPS
-1,000-request benchmark as the verified step-1 anchor, before any cleanup.
+The original is preserved unchanged. The same B8 / 6 QPS 1,000-request benchmark
+has now been repeated before any cleanup.
 
 ## Structure
 
@@ -63,4 +63,35 @@ Step-1 anchor: `tmp/09_persistent_page_engine/step1_b8qps6_20260910/README.md`.
 It recorded 1.282711 s mean, 3.781594 s P95, 5.734013 completed requests/s,
 zero errors and 1,000/1,000 native outputs identical to the original chart run.
 
-Step-2 NPU results: pending.
+## Step-2 validation
+
+Runtime source commit: `dc755584`. Physical NPU6, same environment, historical
+clients, 1,000-request sequence, Poisson schedule, warmup and B8 settings.
+
+| Run | Mean (s) | P95 (s) | Completed requests/s |
+|---|---:|---:|---:|
+| Step 1, historical cached runtime | 1.282711 | 3.781594 | 5.734013 |
+| Experiment 19, process that compiled fresh graphs | 1.360155 | 3.917355 | 5.730880 |
+| Experiment 19, restarted with cached graphs | 1.283549 | 3.779594 | 5.733948 |
+
+Both experiment-19 runs retained all 1,000 responses, zero errors, the same ten
+KV-limit stops and **1,000/1,000 identical native token streams, raw text and
+formatted outputs** compared with step 1. Schedules are byte-identical. Input
+token counts, projected-image-token counts, crop dimensions and completion
+reasons match for every occurrence. No new TEDS evaluation was run: complete
+output equality establishes parity with the control.
+
+The cached run differs from step 1 by +0.065% mean and -0.053% P95. Ownership
+monitoring and direct-host checks confirmed no competing NPU6 process; our
+server was stopped and NPU6 released after each completed benchmark.
+
+**Startup qualification:** both runs used the same synthetic-constructor setup
+and complete real-request warmup. The first process compiled new graphs; the
+repeat loaded them from cache. The performance gap disappeared after restart
+without code/settings changes. Setup froze 1,346,978 objects in the first
+process versus 636,274 in the cached process (step 1: 636,312). This establishes
+a startup-state difference, not proof that the object count itself caused the
+gap. Keep the fresh-compile result; discuss startup behavior during step 3.
+
+Evidence: `tmp/19_table_ocr_serving/STEP2_VALIDATION.md`, with all response,
+configuration, command and ownership records in the adjacent run directories.

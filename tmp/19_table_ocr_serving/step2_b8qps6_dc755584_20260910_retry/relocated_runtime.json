@@ -1,0 +1,7 @@
+{
+  "runtime_git_commit": "dc7555849ad4e087dde457b0f40a67c0242d8b9f",
+  "historical_client_and_harness_commit": "be691de190ae099d1a9b0ba80865006b122ecc00",
+  "runtime_source": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/19_table_ocr_serving",
+  "server_entrypoint": "/workspace/repos/paddle_ocr_vl_npu/19_table_ocr_serving/serve.py",
+  "changes": "Orchestration only: entrypoint/ownership name, working directory, selected point and source fingerprint. Historical clients and schedule generation unchanged."
+}

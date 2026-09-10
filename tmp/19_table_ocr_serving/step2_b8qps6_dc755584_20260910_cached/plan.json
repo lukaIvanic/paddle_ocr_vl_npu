@@ -1,0 +1,13 @@
+{
+  "matrix": {
+    "8": [
+      6
+    ]
+  },
+  "count": 1000,
+  "seed": 1,
+  "npu": 6,
+  "source_fingerprint": "3313c86064d1597c3c3a7935b69873ebfe5bbdb0ee34213a43ec05d28ece8a0a",
+  "git_commit": "be691de190ae099d1a9b0ba80865006b122ecc00",
+  "note": "Open loop, no client concurrency cap. All work and queueing count in latency."
+}

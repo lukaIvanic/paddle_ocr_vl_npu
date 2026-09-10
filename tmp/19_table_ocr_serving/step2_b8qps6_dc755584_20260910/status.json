@@ -1,0 +1,5 @@
+{
+  "status": "stopped",
+  "error": "RuntimeError('NPU contamination or occupied device: [2410041]')",
+  "completed_points": 0
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "batch": 8,
+    "target_qps": 6,
+    "actual_arrival_qps": 5.763293819475205,
+    "completed_qps": 5.7339482466112885,
+    "count": 1000,
+    "errors": 0,
+    "kv_caps": 10,
+    "mean_s": 1.2835490869782225,
+    "p50_s": 0.8628325140016386,
+    "p90_s": 2.713301178204711,
+    "p95_s": 3.779593972347356,
+    "p99_s": 7.259671545497839,
+    "max_s": 8.5457061999914,
+    "scheduled_p95_s": 3.780324927257606,
+    "drain_s": 0.8880104206120336,
+    "max_outstanding": 19,
+    "valid": true,
+    "sequence_sha256": "97a1f87dd18ace0833f6d66796ce6868845b04880292d0f632f3575c3693caa9",
+    "artifact": "tmp/19_table_ocr_serving/step2_b8qps6_dc755584_20260910_cached/b8/qps6/measured"
+  }
+]
