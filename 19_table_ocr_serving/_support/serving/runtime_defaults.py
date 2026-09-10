@@ -1,0 +1,78 @@
+"""Validated default profile for the Experiment 09 serving runtime."""
+
+from __future__ import annotations
+
+
+DECODE_BACKEND_CHOICES = ("raw_eager", "torchair")
+DEFAULT_DECODE_BACKEND = "torchair"
+DEFAULT_DECODE_OPTIMIZATION = "combined_apply"
+DEFAULT_DECODE_BATCH_SIZE = 4
+DEFAULT_CACHE_LENGTH = 2048
+DEFAULT_MAX_NEW_TOKENS = 768
+DEFAULT_VISION_BACKEND = "torchair"
+VISION_PACKING_CHOICES = (
+    "off",
+    "greedy",
+    "cohort",
+    "fixed_batch",
+    "profile_guided",
+)
+DEFAULT_VISION_PACKING = "off"
+DEFAULT_VISION_PACK_TARGET = 1920
+DEFAULT_VISION_ROUTER_LOOKAHEAD = 32
+DEFAULT_TEXT_BACKEND = "torchair"
+TEXT_PACKING_CHOICES = ("off", "production_group", "fixed_batch")
+DEFAULT_TEXT_PACKING = "off"
+DEFAULT_TEXT_PACK_BUCKETS = (128, 256, 512, 1024)
+DEFAULT_TEXT_PACK_MAX_MEMBERS = 32
+READY_BUFFER_BATCH_MULTIPLIER = 1
+READY_BUFFER_LOW_WATERMARK_DIVISOR = 2
+
+PADDLEOCR_DEFAULT_MIN_PIXELS = 112896
+
+# Measured dense policy: <=512 by 32, <=1024 by 64, <=2048 by 128.
+# Large B1 graphs cover the remaining faithful resize domain through 5120;
+# the profile-guided router still prefers faster B2/B4 graphs when their
+# padding-aware effective throughput is higher.
+OPTIMIZED_VISION_BUCKETS = (
+    *range(32, 512 + 1, 32),
+    *range(512 + 64, 1024 + 1, 64),
+    *range(1024 + 128, 2048 + 1, 128),
+    2304,
+    2560,
+    2816,
+    3072,
+    3584,
+    4096,
+    4608,
+    5120,
+)
+
+# Text prompts are projected-image tokens plus a short task prompt.  The
+# measured five-page distributions cluster tightly at 32-224 tokens, while a
+# small table tail reaches 1,273 tokens.  These buckets retain 95.2% useful
+# tokens at default min_pixels and 83.8% at min_pixels/8 on that corpus while
+# avoiding the setup cost of compiling every dense vision bucket.
+OPTIMIZED_TEXT_BUCKETS = (
+    32,
+    64,
+    96,
+    128,
+    160,
+    176,
+    192,
+    208,
+    224,
+    256,
+    320,
+    384,
+    448,
+    576,
+    640,
+    768,
+    896,
+    1024,
+    1152,
+    1280,
+    1312,
+)

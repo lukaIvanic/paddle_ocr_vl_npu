@@ -1,0 +1,49 @@
+{
+  "note": "Screening only. Queue growth is recorded, not inferred away; 10k confirmation required.",
+  "completed_throughput_p95": [
+    {
+      "batch": 8,
+      "target_qps": 6,
+      "actual_arrival_qps": 5.763293819475205,
+      "completed_qps": 5.734012961232235,
+      "count": 1000,
+      "errors": 0,
+      "kv_caps": 10,
+      "mean_s": 1.282710744213924,
+      "p50_s": 0.8634178489955957,
+      "p90_s": 2.7151545482993242,
+      "p95_s": 3.7815938075989832,
+      "p99_s": 7.249392699853631,
+      "max_s": 8.539985053008422,
+      "scheduled_p95_s": 3.7818374731250515,
+      "drain_s": 0.8860421265937362,
+      "max_outstanding": 19,
+      "valid": true,
+      "sequence_sha256": "97a1f87dd18ace0833f6d66796ce6868845b04880292d0f632f3575c3693caa9",
+      "artifact": "tmp/09_persistent_page_engine/step1_b8qps6_20260910/b8/qps6/measured"
+    }
+  ],
+  "offered_qps_p95": [
+    {
+      "batch": 8,
+      "target_qps": 6,
+      "actual_arrival_qps": 5.763293819475205,
+      "completed_qps": 5.734012961232235,
+      "count": 1000,
+      "errors": 0,
+      "kv_caps": 10,
+      "mean_s": 1.282710744213924,
+      "p50_s": 0.8634178489955957,
+      "p90_s": 2.7151545482993242,
+      "p95_s": 3.7815938075989832,
+      "p99_s": 7.249392699853631,
+      "max_s": 8.539985053008422,
+      "scheduled_p95_s": 3.7818374731250515,
+      "drain_s": 0.8860421265937362,
+      "max_outstanding": 19,
+      "valid": true,
+      "sequence_sha256": "97a1f87dd18ace0833f6d66796ce6868845b04880292d0f632f3575c3693caa9",
+      "artifact": "tmp/09_persistent_page_engine/step1_b8qps6_20260910/b8/qps6/measured"
+    }
+  ]
+}
