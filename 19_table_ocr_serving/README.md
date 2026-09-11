@@ -133,7 +133,7 @@ This self-contained runtime is copied from experiment 09 at
 The original is preserved unchanged. The same B8 / 6 QPS 1,000-request benchmark
 has now been repeated before any cleanup.
 
-### Full versus trimmed decode-head comparison (CPU-tested only)
+### Full versus trimmed decode-head comparison (910B-tested)
 
 `serve.py --full-decode-lm-head` skips construction of the selected-row head
 and its native-ID map. Omitting the flag preserves the 16,384-row trimmed
@@ -149,8 +149,12 @@ metadata. This is a comparison switch, not a decision to retain trimming.
 
 All 25 CPU tests pass, including full-head greedy IDs against the old logits,
 unchanged transformer operation traces/KV writes, head setup/cache separation,
-and CLI-to-worker selection. NPU compilation and throughput/latency measurements
-for this comparison have not run yet.
+and CLI-to-worker selection. The four real-NPU random-100 runs completed at
+`2c04ecc7`: full-head throughput was 4.2% lower at B2/C2 and 7.3% lower at B8/C8.
+All 400 requests succeeded; two tables differ between heads at both batch sizes.
+See [the report and complete evidence](../tmp/19_table_ocr_serving/lm_head_ab_20260911/README.md).
+This is a head comparison, not a repeat of the original 1,000-request flagship
+or a new ground-truth quality evaluation.
 
 ## Structure
 

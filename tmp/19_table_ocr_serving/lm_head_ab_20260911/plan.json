@@ -1,0 +1,29 @@
+{
+  "runtime_commit": "2c04ecc7c343153403356638c9d1474e6ebad447",
+  "historical_commit": "be691de1",
+  "npu": 6,
+  "matrix": [
+    [
+      2,
+      "trimmed"
+    ],
+    [
+      2,
+      "full"
+    ],
+    [
+      8,
+      "trimmed"
+    ],
+    [
+      8,
+      "full"
+    ]
+  ],
+  "count": 100,
+  "seed": 1,
+  "ordered_ids_sha256": "944d66f46da6db1aa55d59fe31f82d2e57f3f414911bdb2a7e7926f3f64efd0b",
+  "expected_distinct_graphs": 19,
+  "decode_device_timing": true,
+  "note": "Actual closed-loop submission-to-response latency; warmup outside measured client. Device timing enabled equally in every variant. First-token head remains full."
+}

@@ -1,0 +1,31 @@
+2026-09-11T19:47:06+0800 HEAD_AB trimmed B2/C2 compile_warm
+2026-09-11T19:47:07+0800 START B2; cached production setup, then one full request warmup
+2026-09-11T19:53:50+0800 STOP owned server pid=618517
+2026-09-11T19:54:01+0800 HEAD_AB trimmed B2/C2 measured
+2026-09-11T19:54:01+0800 START B2; cached production setup, then one full request warmup
+2026-09-11T19:55:57+0800 PROGRESS measured: SEND b2-trimmed 95/100 table=page_000984_table_3 active=2
+2026-09-11T19:56:01+0800 HEAD_AB RESULT {"batch": 2, "head": "trimmed", "qps": 2.9577060317849893, "latency_s": {"count": 100, "mean": 0.6637685446999604, "p50": 0.39439109500017366, "p90": 1.30936279399939, "p95": 1.8892101435005306, "p99": 4.027871839400142, "max": 4.2772042699998565, "sum": 66.37685446999603, "median": 0.39439109500017366}, "artifact": "tmp/19_table_ocr_serving/lm_head_ab_20260911/b2_trimmed_measured/b2/measured/results"}
+2026-09-11T19:56:01+0800 STOP owned server pid=676559
+2026-09-11T19:56:14+0800 HEAD_AB full B2/C2 compile_warm
+2026-09-11T19:56:14+0800 START B2; cached production setup, then one full request warmup
+2026-09-11T19:57:42+0800 STOP owned server pid=684499
+2026-09-11T19:57:51+0800 HEAD_AB full B2/C2 measured
+2026-09-11T19:57:52+0800 START B2; cached production setup, then one full request warmup
+2026-09-11T19:59:44+0800 PROGRESS measured: SEND b2-full 90/100 table=page_000199_table_box_id_0 active=2
+2026-09-11T19:59:51+0800 HEAD_AB RESULT {"batch": 2, "head": "full", "qps": 2.833003489239473, "latency_s": {"count": 100, "mean": 0.692523407699955, "p50": 0.4178002449989435, "p90": 1.3644965019999298, "p95": 1.9937570054996274, "p99": 4.2576848292998335, "max": 4.4463767799989, "sum": 69.2523407699955, "median": 0.4178002449989435}, "artifact": "tmp/19_table_ocr_serving/lm_head_ab_20260911/b2_full_measured/b2/measured/results"}
+2026-09-11T19:59:52+0800 STOP owned server pid=696149
+2026-09-11T20:00:04+0800 HEAD_AB trimmed B8/C8 compile_warm
+2026-09-11T20:00:05+0800 START B8; cached production setup, then one full request warmup
+2026-09-11T20:01:25+0800 STOP owned server pid=733244
+2026-09-11T20:01:34+0800 HEAD_AB trimmed B8/C8 measured
+2026-09-11T20:01:35+0800 START B8; cached production setup, then one full request warmup
+2026-09-11T20:03:24+0800 HEAD_AB RESULT {"batch": 8, "head": "trimmed", "qps": 6.090250064894127, "latency_s": {"count": 100, "mean": 1.1742739136001183, "p50": 0.6943630600007964, "p90": 2.3848242580006636, "p95": 3.2379473819985822, "p99": 7.461281199199497, "max": 8.374919449999652, "sum": 117.42739136001182, "median": 0.6943630600007964}, "artifact": "tmp/19_table_ocr_serving/lm_head_ab_20260911/b8_trimmed_measured/b8/measured/results"}
+2026-09-11T20:03:24+0800 STOP owned server pid=751017
+2026-09-11T20:03:36+0800 HEAD_AB full B8/C8 compile_warm
+2026-09-11T20:03:37+0800 START B8; cached production setup, then one full request warmup
+2026-09-11T20:05:05+0800 STOP owned server pid=774172
+2026-09-11T20:05:14+0800 HEAD_AB full B8/C8 measured
+2026-09-11T20:05:15+0800 START B8; cached production setup, then one full request warmup
+2026-09-11T20:07:00+0800 HEAD_AB RESULT {"batch": 8, "head": "full", "qps": 5.645765583476044, "latency_s": {"count": 100, "mean": 1.256542824199987, "p50": 0.7448771699991994, "p90": 2.6066248450002614, "p95": 3.527710252500673, "p99": 8.195074031699118, "max": 8.948973059999844, "sum": 125.65428241999871, "median": 0.7448771699991994}, "artifact": "tmp/19_table_ocr_serving/lm_head_ab_20260911/b8_full_measured/b8/measured/results"}
+2026-09-11T20:07:00+0800 STOP owned server pid=787521
+HEAD_AB COMPLETE; owned servers stopped and NPU released

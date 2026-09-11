@@ -1,0 +1,34 @@
+Waiting for NPU worker pid=75427
+EXP09_SETUP {"stage":"frontend","status":"start"}
+EXP09_SETUP {"stage":"frontend","status":"done","elapsed_s":0.891159}
+EXP09_SETUP {"stage":"model_load","status":"start"}
+EXP09_SETUP {"stage":"model_load","status":"done","elapsed_s":11.244465}
+EXP09_SETUP {"stage":"decode_lm_head","status":"start"}
+EXP09_SETUP {"stage":"decode_lm_head","status":"done","elapsed_s":0.027649}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_mlp_padding","status":"done","elapsed_s":0.02642}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"start"}
+EXP09_SETUP {"stage":"vision_attention_weight_padding","status":"done","elapsed_s":0.06478}
+EXP09_SETUP {"stage":"vision_weight_format","status":"start"}
+EXP09_SETUP {"stage":"vision_weight_format","status":"done","elapsed_s":6.087257}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"start"}
+EXP09_SETUP {"stage":"decode_optimization_setup","status":"done","elapsed_s":0.535437}
+EXP09_SETUP {"stage":"decode_weight_format","status":"start"}
+EXP09_SETUP {"stage":"decode_weight_format","status":"done","elapsed_s":0.017652}
+EXP09_SETUP {"stage":"vision_runtime","status":"start"}
+..........EXP09_SETUP {"stage":"vision_runtime","status":"done","elapsed_s":191.282945}
+EXP09_SETUP {"stage":"text_prefill_runtime","status":"start"}
+.....EXP09_SETUP {"stage":"text_prefill_runtime","status":"done","elapsed_s":143.349203}
+EXP09_SETUP {"stage":"text_decode_runtime","status":"start"}
+.EXP09_SETUP {"stage":"text_decode_runtime","status":"done","elapsed_s":10.658156}
+EXP09_SETUP {"stage":"private_cache_pool","status":"start"}
+EXP09_SETUP {"stage":"private_cache_pool","status":"done","elapsed_s":0.005815}
+EXP09_SETUP {"stage":"decode_control","status":"start"}
+EXP09_SETUP {"stage":"decode_control","status":"done","elapsed_s":0.003359}
+EXP09_SETUP {"stage":"recognizer_runtime","status":"done","elapsed_s":365.053684}
+EXP09_SETUP_GC {"enabled": true, "setup_collected": 100168, "frozen_objects": 1327346, "gc_remains_enabled": true, "setup_wall_s": 1.1224496499999077}
+READY http://127.0.0.1:8767 worker_pid=75427
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "GET /ready HTTP/1.1" 200 -
+HTTP 127.0.0.1 "POST /v1/ocr?crop_type=table&request_id=client-001-page_001272_table_1&source_request_id=page_001272_table_1 HTTP/1.1" 200 -
+SERVICE_SUMMARY /workspace/repos/table_step1_be691de1_20260910/tmp/19_table_ocr_serving/lm_head_ab_20260911/b2_trimmed_compile_warm/b2/service.json

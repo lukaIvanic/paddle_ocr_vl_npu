@@ -1,0 +1,457 @@
+{
+  "format": "paddleocr_crop_service_summary_v1",
+  "worker_pid": 75427,
+  "configuration": {
+    "recognizer_model": "/workspace/models/PaddleOCR-VL-1.6",
+    "device": "npu:0",
+    "dtype": "torch.float16",
+    "decode_backend": "torchair",
+    "decode_vocab": {
+      "enabled": true,
+      "path": "/workspace/repos/paddle_ocr_vl_npu/19_table_ocr_serving/presets/table_compact_vocab/b1_verifier_topfreq_16384.json",
+      "full_vocab_size": 103424,
+      "selected_vocab_size": 16384,
+      "token_ids_sha256": "9c48e5c3b92776ba250f75359fccb407448c4da8419fe927f5ea381d345712c3",
+      "source": null,
+      "selection": null
+    },
+    "full_decode_lm_head": false,
+    "token_selection": "greedy",
+    "cache_length": 4096,
+    "max_new_tokens": 4096,
+    "recognition_input_fingerprints": false,
+    "batch_size": 2,
+    "diagnostic_decode_effective_length": null,
+    "scheduler_progress_events": null,
+    "diagnostic_decode_request_id": null,
+    "diagnostic_prefill_kv_request_ids": [],
+    "vision_prefill": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "vision_encoder_layers_plus_post_layernorm",
+      "buckets": [
+        256,
+        384,
+        512,
+        640,
+        768,
+        1408,
+        1920,
+        2048,
+        2944,
+        4096
+      ],
+      "sequence_alignment": 128,
+      "padding": "bucket",
+      "overflow": "eager_same_stage_unpadded",
+      "compile_api": "torchair.inference.cache_compile",
+      "dynamic": false,
+      "fullgraph": true,
+      "torchair_ge_cache": true,
+      "compile_wrapper_total_s": 0.0008315800023410702,
+      "compile_first_call_total_s": 190.25684195000213,
+      "per_bucket": {
+        "256": {
+          "compile_wrapper_s": 8.363000051758718e-05,
+          "compile_first_call_s": 19.1623315300003,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_vision_torchair/vision_seq256_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src79eb50e4955d"
+        },
+        "384": {
+          "compile_wrapper_s": 9.519000013824552e-05,
+          "compile_first_call_s": 18.837625840000328,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_vision_torchair/vision_seq384_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src79eb50e4955d"
+        },
+        "512": {
+          "compile_wrapper_s": 8.536000132153276e-05,
+          "compile_first_call_s": 19.074306530001195,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_vision_torchair/vision_seq512_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src79eb50e4955d"
+        },
+        "640": {
+          "compile_wrapper_s": 8.223999975598417e-05,
+          "compile_first_call_s": 19.146506529999897,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_vision_torchair/vision_seq640_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src79eb50e4955d"
+        },
+        "768": {
+          "compile_wrapper_s": 9.206000140693504e-05,
+          "compile_first_call_s": 18.53641588999926,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_vision_torchair/vision_seq768_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src79eb50e4955d"
+        },
+        "1408": {
+          "compile_wrapper_s": 7.469999945897143e-05,
+          "compile_first_call_s": 19.234269620001214,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_vision_torchair/vision_seq1408_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src79eb50e4955d"
+        },
+        "1920": {
+          "compile_wrapper_s": 8.727999920665752e-05,
+          "compile_first_call_s": 19.145956899999874,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_vision_torchair/vision_seq1920_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src79eb50e4955d"
+        },
+        "2048": {
+          "compile_wrapper_s": 7.442000060109422e-05,
+          "compile_first_call_s": 18.43849880000016,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_vision_torchair/vision_seq2048_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src79eb50e4955d"
+        },
+        "2944": {
+          "compile_wrapper_s": 7.967000055941753e-05,
+          "compile_first_call_s": 19.359817739999926,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_vision_torchair/vision_seq2944_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src79eb50e4955d"
+        },
+        "4096": {
+          "compile_wrapper_s": 7.702999937464483e-05,
+          "compile_first_call_s": 19.32111256999997,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_vision_torchair/vision_seq4096_modeinference_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src79eb50e4955d"
+        }
+      },
+      "cache_key_fields": {
+        "dtype": "torch.float16",
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "vision_source_hash": "79eb50e4955d",
+        "attention": "prompt_flash_attention",
+        "prompt_flash_attention_layout": "bnsd",
+        "prompt_flash_attention_mask_sparse_mode": 1,
+        "softmax_dtype": "fp32",
+        "execution_mode": "inference"
+      }
+    },
+    "vision_mlp": {
+      "source_intermediate_size": 4304,
+      "target_intermediate_size": 4352,
+      "layer_count": 27,
+      "zero_extended": true
+    },
+    "vision_linear_weight_format": {
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "linear_weight_count": 162,
+      "before_format_histogram": {
+        "2": 162
+      },
+      "after_format_histogram": {
+        "29": 162
+      },
+      "converted_count": 162,
+      "all_after_are_nz": true
+    },
+    "vision_backend": "torchair",
+    "vision_attention": "prompt_flash_attention",
+    "decode_device_timing": true,
+    "compact_decode_control": false,
+    "vision_sequence_alignment": 128,
+    "vision_packing": {
+      "mode": "off",
+      "target": 1920,
+      "lookahead": 32,
+      "grouping": "independent_crops",
+      "oversized": "faithful_eager_single_crop_route",
+      "batched_runtime": null
+    },
+    "vision_prompt_fa_layout": "bnsd",
+    "text_prefill": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "text_transformer_plus_in_place_prefill_kv_writes",
+      "buckets": [
+        128,
+        256,
+        512,
+        1024,
+        1152
+      ],
+      "padding": "bucket",
+      "overflow": "eager_same_stage_unpadded",
+      "compile_api": "torchair.inference.cache_compile",
+      "dynamic": false,
+      "fullgraph": true,
+      "torchair_ge_cache": true,
+      "compile_wrapper_total_s": 0.00038951000169618055,
+      "compile_first_call_total_s": 143.31012353000187,
+      "per_bucket": {
+        "128": {
+          "compile_wrapper_s": 7.714000093983486e-05,
+          "compile_first_call_s": 28.36053203999836,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq128_cache4096_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src9cdfcf3c6dd9"
+        },
+        "256": {
+          "compile_wrapper_s": 8.429000081378035e-05,
+          "compile_first_call_s": 28.732590139999957,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq256_cache4096_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src9cdfcf3c6dd9"
+        },
+        "512": {
+          "compile_wrapper_s": 7.521000043198e-05,
+          "compile_first_call_s": 28.20084283000142,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq512_cache4096_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src9cdfcf3c6dd9"
+        },
+        "1024": {
+          "compile_wrapper_s": 8.046000039030332e-05,
+          "compile_first_call_s": 28.8934058800005,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq1024_cache4096_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src9cdfcf3c6dd9"
+        },
+        "1152": {
+          "compile_wrapper_s": 7.240999912028201e-05,
+          "compile_first_call_s": 29.122752640001636,
+          "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_text_torchair/text_transformer_prefill_modeinference_softmaxfp32_bs1_seq1152_cache4096_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src9cdfcf3c6dd9"
+        }
+      },
+      "cache_key_fields": {
+        "cache_length": 4096,
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "text_source_hash": "9cdfcf3c6dd9",
+        "attention": "manual_causal",
+        "softmax_dtype": "fp32",
+        "execution_mode": "inference"
+      }
+    },
+    "text_backend": "torchair",
+    "text_packing": {
+      "mode": "off",
+      "buckets": [
+        128,
+        256,
+        512,
+        1024
+      ],
+      "max_members": 32,
+      "grouping": "independent_crops",
+      "runtime": null
+    },
+    "preprocessor": {
+      "model_default_min_pixels": 112896,
+      "model_default_max_pixels": 1003520,
+      "min_pixels_override": 28224,
+      "max_pixels_override": 802816,
+      "effective_min_pixels": 28224,
+      "effective_max_pixels": 802816,
+      "patch_size": 14,
+      "merge_size": 2,
+      "resize_factor": 28,
+      "nominal_minimum_projected_image_tokens": 36
+    },
+    "cpu_preprocessing": {
+      "execution": "background_thread",
+      "workers": 1,
+      "max_pending": 2,
+      "ordering": "fifo",
+      "pin_recognition_inputs": "best_effort"
+    },
+    "prefill_production": "next_crop_h2d_staged_before_ready_yield",
+    "prefill_transfer": "dedicated_stream_event_dependencies",
+    "decode": "compiled_static_b2",
+    "decode_schedule": "run_scoped_persistent_slots_iteration_hot_swap",
+    "ready_buffer_capacity": 2,
+    "ready_buffer_low_watermark": 1,
+    "private_cache_staging_headroom": 32,
+    "decode_completion_detection": "queue_depth_one_async_token_copy",
+    "private_prefill_cache": {
+      "storage": "zero_once_fixed_arena",
+      "capacity": 34,
+      "allocated_bytes": 2566914048,
+      "acquisitions": 0,
+      "reuses": 0,
+      "releases": 0,
+      "active_slots": 0,
+      "free_slots": 34,
+      "high_water_active_slots": 0
+    },
+    "kv_admission": "full_prefill_cache_foreach_copy_into_fixed_slot",
+    "text_decode": {
+      "backend": "torchair",
+      "enabled": true,
+      "boundary": "token_embedding_text_transformer_lm_head_static_step",
+      "linear_weight_format": "decode_nz",
+      "torchair_cache_dir": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_table_ocr_serving_torchair/selected_vocab_16384_9c48e5c3b927/modeinference_bs2_cache4096_model6d2211febbe9_torch2.10.0_cpu_torchnpu2.10.0_torchairunknown_src9cdfcf3c6dd9",
+      "torchair_ge_cache": true,
+      "compile_api": "torchair.inference.cache_compile",
+      "cache_key_fields": {
+        "batch_size": 2,
+        "cache_length": 4096,
+        "model_config_hash": "6d2211febbe9",
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "decode_source_hash": "9cdfcf3c6dd9",
+        "execution_mode": "inference"
+      },
+      "cache_num_key_value_heads": 2,
+      "cache_allocated_bytes": 150994944
+    },
+    "linear_weight_format": {
+      "requested_mode": "decode_nz",
+      "mode": "decode_nz",
+      "effective_mode": "decode_nz",
+      "target_format": "FRACTAL_NZ",
+      "target_format_code": 29,
+      "target_count": 164,
+      "cast_count": 164,
+      "converted_count": 164,
+      "already_nz_count": 0,
+      "converted_modules_sample": [
+        "model.layers.0.self_attn.q_proj",
+        "model.layers.0.self_attn.k_proj",
+        "model.layers.0.self_attn.v_proj",
+        "model.layers.0.self_attn.o_proj",
+        "model.layers.0.self_attn.decode_qkv_proj",
+        "model.layers.0.mlp.gate_proj",
+        "model.layers.0.mlp.up_proj",
+        "model.layers.0.mlp.down_proj",
+        "model.layers.0.mlp.decode_gate_up_proj",
+        "model.layers.1.self_attn.q_proj",
+        "model.layers.1.self_attn.k_proj",
+        "model.layers.1.self_attn.v_proj",
+        "model.layers.1.self_attn.o_proj",
+        "model.layers.1.self_attn.decode_qkv_proj",
+        "model.layers.1.mlp.gate_proj",
+        "model.layers.1.mlp.up_proj"
+      ],
+      "before_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 2,
+        "model.layers.0.self_attn.k_proj": 2,
+        "model.layers.0.self_attn.v_proj": 2,
+        "model.layers.0.self_attn.o_proj": 2,
+        "model.layers.0.self_attn.decode_qkv_proj": 2,
+        "model.layers.0.mlp.gate_proj": 2,
+        "model.layers.0.mlp.up_proj": 2,
+        "model.layers.0.mlp.down_proj": 2,
+        "model.layers.0.mlp.decode_gate_up_proj": 2,
+        "model.layers.1.self_attn.q_proj": 2,
+        "model.layers.1.self_attn.k_proj": 2,
+        "model.layers.1.self_attn.v_proj": 2,
+        "model.layers.1.self_attn.o_proj": 2,
+        "model.layers.1.self_attn.decode_qkv_proj": 2,
+        "model.layers.1.mlp.gate_proj": 2,
+        "model.layers.1.mlp.up_proj": 2
+      },
+      "after_formats_sample": {
+        "model.layers.0.self_attn.q_proj": 29,
+        "model.layers.0.self_attn.k_proj": 29,
+        "model.layers.0.self_attn.v_proj": 29,
+        "model.layers.0.self_attn.o_proj": 29,
+        "model.layers.0.self_attn.decode_qkv_proj": 29,
+        "model.layers.0.mlp.gate_proj": 29,
+        "model.layers.0.mlp.up_proj": 29,
+        "model.layers.0.mlp.down_proj": 29,
+        "model.layers.0.mlp.decode_gate_up_proj": 29,
+        "model.layers.1.self_attn.q_proj": 29,
+        "model.layers.1.self_attn.k_proj": 29,
+        "model.layers.1.self_attn.v_proj": 29,
+        "model.layers.1.self_attn.o_proj": 29,
+        "model.layers.1.self_attn.decode_qkv_proj": 29,
+        "model.layers.1.mlp.gate_proj": 29,
+        "model.layers.1.mlp.up_proj": 29
+      },
+      "all_after_are_nz": true
+    },
+    "setup_gc": {
+      "enabled": true,
+      "setup_collected": 100168,
+      "frozen_objects": 1327346,
+      "gc_remains_enabled": true,
+      "setup_wall_s": 1.1224496499999077
+    },
+    "request_scheduling_metrics": true,
+    "max_prefill_interruptions": null,
+    "open_prefill_admission": "free_decode_slots_only_cpu_lookahead"
+  },
+  "summary": {
+    "schedule_id": "http:open",
+    "batch_size": 2,
+    "requests": 1,
+    "ready_buffer_capacity": 2,
+    "ready_buffer_low_watermark": 1,
+    "max_ready_queue_depth": 1,
+    "ready_source_refill_count": 1,
+    "graph_calls": 952,
+    "initial_admissions": 1,
+    "hot_swap_admissions": 0,
+    "prefill_only_completions": 0,
+    "raw_decode_token_slots": 1904,
+    "active_decode_token_slots": 952,
+    "effective_decode_tokens": 951,
+    "idle_decode_token_slots": 952,
+    "lookahead_decode_token_slots": 1,
+    "kv_prefix_bytes_copied": 18671616,
+    "initial_kv_prefix_bytes_copied": 18671616,
+    "hot_swap_kv_prefix_bytes_copied": 0,
+    "timing_s": {
+      "continuous_decode_wall": 1.2901929608583456,
+      "decode_host_exclusive_wall": 1.2419598999858863,
+      "run_scoped_scheduler_wall": 6.402105950000987,
+      "ready_source_wall": 5.15795883001374,
+      "completion_callback_wall": 0.0021872200013604015,
+      "decode_model_and_argmax_device": 1.2855525008440023,
+      "slot_admission_device": 0.004640460014343262,
+      "slot_admission_enqueue_wall": 0.002833910000845208,
+      "d2h_wait_wall": 0.026917329989373684,
+      "retire_and_refill_host_wall": 0.16042908997042105,
+      "hot_swap_safety_sync_wall": 0.00034563000008347444
+    },
+    "vision_packing": {
+      "mode": "off",
+      "target": 1920,
+      "lookahead": 32,
+      "groups": 1,
+      "crops": 1,
+      "packed_groups": 0,
+      "singleton_groups": 1,
+      "eager_overflow_groups": 0,
+      "crops_per_group": 1.0,
+      "group_size_histogram": {
+        "1": 1
+      },
+      "graph_shape_histogram": {
+        "b1_s4096": 1
+      },
+      "ready_window_histogram": {},
+      "router_cpu_s": 0.0,
+      "packed_real_vision_tokens": 0,
+      "packed_physical_vision_tokens": 0,
+      "packed_fill_fraction": null
+    },
+    "text_packing": {
+      "mode": "off",
+      "buckets": [
+        128,
+        256,
+        512,
+        1024
+      ],
+      "groups": 1,
+      "crops": 1,
+      "packs": 0,
+      "packed_crops": 0,
+      "fallback_crops": 1,
+      "calls": 1,
+      "call_reduction_fraction": 0.0,
+      "pack_size_histogram": {},
+      "bucket_histogram": {},
+      "packed_real_text_tokens": 0,
+      "packed_physical_text_tokens": 0,
+      "packed_fill_fraction": null,
+      "redistributed_kv_bytes": 0,
+      "private_cache_pool": {
+        "storage": "zero_once_fixed_arena",
+        "capacity": 34,
+        "allocated_bytes": 2566914048,
+        "acquisitions": 1,
+        "reuses": 0,
+        "releases": 1,
+        "active_slots": 0,
+        "free_slots": 34,
+        "high_water_active_slots": 1
+      }
+    },
+    "rates": {
+      "raw_decode_tok_per_s": 1475.7482467841849,
+      "effective_decode_tok_per_s": 737.0990455313865,
+      "effective_fraction": 0.4994747899159664,
+      "active_slot_fraction": 0.5,
+      "effective_device_tok_per_s": 739.7597526165918,
+      "scheduler_effective_tok_per_s": 148.5448706139975
+    }
+  }
+}
