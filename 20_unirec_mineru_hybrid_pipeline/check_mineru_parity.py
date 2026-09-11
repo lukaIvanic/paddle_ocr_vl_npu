@@ -11,6 +11,7 @@ from threading import Event
 from types import SimpleNamespace
 
 from run_pipeline import ROOT, build_parser, make_mineru
+from hybrid_routing import MINERU_TASKS
 
 
 def main():
@@ -26,14 +27,14 @@ def main():
     manifest = json.loads((ROOT / 'crops/manifest.json').read_text())
     requests = [SimpleNamespace(request_id=str(i), prompt=r['suggested_prompt'],
                                crop=Image.open(ROOT / 'crops' / r['file']).convert('RGB'))
-                for i, r in enumerate(manifest)]
+                for i, r in enumerate(manifest) if r['suggested_prompt'] in MINERU_TASKS]
     reference = {}
     waiting = deque()
     with torch.inference_mode():
         for i, request in enumerate(requests):
             _, params, cpu = adapter.prepare_cpu(request)
             inputs, position, rope, _, _ = cpu
-            waiting.append((i, adapter.client._finish_generation(inputs, params, position, rope)))
+            waiting.append((int(request.request_id), adapter.client._finish_generation(inputs, params, position, rope)))
 
         class Source:
             @property
