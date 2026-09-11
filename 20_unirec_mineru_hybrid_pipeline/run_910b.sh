@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 : "${ASCEND_RT_VISIBLE_DEVICES:?source npu-setup first}"
 : "${RUN_ROOT:?new output root required}"
-PYTHON_BIN=${PYTHON_BIN:-/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python}
+PYTHON_BIN=${PYTHON_BIN:-/workspace/venvs/mineru_pro_vllm_py312/bin/python}
 PAGE_LIMIT=${PAGE_LIMIT:-64}
 test ! -e "$RUN_ROOT"
 mkdir -p "$RUN_ROOT"
