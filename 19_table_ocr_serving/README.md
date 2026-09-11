@@ -142,6 +142,16 @@ stage; the full branch no longer returns a logits tensor to the scheduler.
 The checkpoint full head remains used for first-token selection after text
 prefill in both variants. No first-token handling or scheduler change is included.
 
+The frozen expanded-head comparison uses `--expanded-decode-lm-head` and
+`presets/table_compact_vocab/native_han_core_60416.json`: 60,352 reviewed protected
+IDs plus 64 deterministic fillers, SHA256
+`c730b5388f9871ead92e2cb484f8df81ba69518f1e8baeccc5a37f44c1514637`.
+It preserves the original 16k row order, all inspected raw generation IDs, all
+Han tokens, and the reviewed Unicode protections. It is mutually exclusive with
+`--full-decode-lm-head`; the default remains the original 16k mapping pending the
+comparison. See `tmp/19_table_ocr_serving/vocab_review_51200_20260911/CORE_REVIEW.md`
+and `NATIVE_RESULTS.md` for scope and limitations. First-token selection is unchanged.
+
 Serving uses separate decode cache roots: `full_vocab_<size>` versus
 `selected_vocab_<size>_<mapping-hash>`. Vision and text-prefill roots are unchanged
 between variants. Readiness records `full_decode_lm_head` and the vocabulary

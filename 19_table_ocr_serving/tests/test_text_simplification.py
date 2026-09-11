@@ -415,7 +415,7 @@ class TextSimplificationTests(unittest.TestCase):
         with patch.object(sys, 'argv', ['serve.py']):
             args = serve.parse_args()
         expected_args = {'host', 'port', 'request_timeout_s', 'max_image_bytes', 'queue_capacity', 'eager',
-            'full_decode_lm_head',
+            'full_decode_lm_head', 'expanded_decode_lm_head',
             'model', 'device', 'decode_batch_size', 'no_decode_device_timing', 'request_scheduling_metrics',
             'torchair_cache_dir', 'vision_torchair_cache_dir', 'text_torchair_cache_dir', 'service_summary_output'}
         self.assertEqual(set(vars(args)), expected_args)
@@ -423,6 +423,12 @@ class TextSimplificationTests(unittest.TestCase):
         self.assertTrue(args.no_decode_device_timing)
         self.assertTrue(args.request_scheduling_metrics)
         self.assertFalse(args.full_decode_lm_head)
+        self.assertFalse(args.expanded_decode_lm_head)
+        with patch.object(sys, 'argv', ['serve.py', '--expanded-decode-lm-head']):
+            self.assertTrue(serve.parse_args().expanded_decode_lm_head)
+        with patch.object(sys, 'argv', ['serve.py', '--full-decode-lm-head', '--expanded-decode-lm-head']), \
+             patch('sys.stderr',new=io.StringIO()), self.assertRaises(SystemExit):
+            serve.parse_args()
         with patch.object(sys, 'argv', ['serve.py', '--full-decode-lm-head']):
             self.assertTrue(serve.parse_args().full_decode_lm_head)
         seen = []
@@ -458,7 +464,7 @@ class TextSimplificationTests(unittest.TestCase):
                       crop_type='table', submitted_monotonic_s=0.0))
         jobs.put(None)
         cfg = dict(model='/unused', device='npu:0', decode_batch_size=8, decode_device_timing=False, eager=False,
-                   full_decode_lm_head=True,
+                   full_decode_lm_head=True, expanded_decode_lm_head=False,
                    request_scheduling_metrics=True, torchair_cache_dir='/unused/decode',
                    vision_torchair_cache_dir='/unused/vision', text_torchair_cache_dir='/unused/text')
         with patch.object(runtime, 'ContinuousRecognizer', FakeRecognizer), \

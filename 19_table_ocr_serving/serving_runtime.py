@@ -975,6 +975,7 @@ class ContinuousRecognizer:
         batch_size: int,
         torchair_cache_dir: Path,
         full_decode_lm_head: bool = False,
+        expanded_decode_lm_head: bool = False,
         decode_device_timing: bool = True,
         vision_torchair_cache_dir: Path | None = None,
         eager: bool = False,
@@ -1007,7 +1008,9 @@ class ContinuousRecognizer:
         self.decode_backend = "raw_eager" if eager else "torchair"
         self.decode_vocab_token_ids_path = (
             Path(__file__).resolve().parent
-            / "presets/table_compact_vocab/b1_verifier_topfreq_16384.json"
+            / "presets/table_compact_vocab"
+            / ("native_han_core_60416.json" if expanded_decode_lm_head
+               else "b1_verifier_topfreq_16384.json")
         )
         self.timeline = timeline
         self.scheduler_progress = bool(scheduler_progress)

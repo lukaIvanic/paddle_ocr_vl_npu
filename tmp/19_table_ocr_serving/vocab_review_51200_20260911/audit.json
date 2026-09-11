@@ -1,0 +1,5184 @@
+{
+  "tokenizer_sha256": "c8a215a59183d0d0781adc33bacd3ce6162716f7fd568fb30234a74d69803a7d",
+  "annotations_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "selection_token_ids_sha256": "9c48e5c3b92776ba250f75359fccb407448c4da8419fe927f5ea381d345712c3",
+  "active_preset_changed": false,
+  "counts": {
+    "existing": 16384,
+    "all_han_union": 35995,
+    "protected": 39556,
+    "fill": 11644,
+    "candidate": 51200,
+    "highest_fill_id": 23338
+  },
+  "native_outputs": {
+    "tmp/09_persistent_page_engine/table_vllm_poisson1000_seq64_14qps_npu4_retry_85a90862_20260908/budget16384/qps3/measured/results.jsonl": {
+      "records": 665,
+      "affected_records": 6,
+      "missing_unique": 9,
+      "missing_occurrences": 12,
+      "missing": [
+        {
+          "id": 29785,
+          "token": "TEMP",
+          "count": 2
+        },
+        {
+          "id": 67113,
+          "token": "ISM",
+          "count": 2
+        },
+        {
+          "id": 33914,
+          "token": "▁(+",
+          "count": 2
+        },
+        {
+          "id": 23464,
+          "token": "▁MIN",
+          "count": 1
+        },
+        {
+          "id": 84170,
+          "token": "▁Tac",
+          "count": 1
+        },
+        {
+          "id": 49098,
+          "token": "ldr",
+          "count": 1
+        },
+        {
+          "id": 50413,
+          "token": "Convention",
+          "count": 1
+        },
+        {
+          "id": 63572,
+          "token": "▁SHOW",
+          "count": 1
+        },
+        {
+          "id": 37946,
+          "token": "STOR",
+          "count": 1
+        }
+      ],
+      "unique_tables": 665,
+      "source_sha256": "cb71174e2c7366513b76f00b438673966d47fd7c1849c15629a751daf8627637",
+      "contexts": [
+        {
+          "request_id": "page_000542_table_0",
+          "snippets": [
+            {
+              "id": 29785,
+              "token": "TEMP",
+              "text": "<fcel>ROW<fcel>MINUS<fcel>FACTOR<fcel>TEMP MINUS<fcel>MINUS<fcel>ORBIT"
+            },
+            {
+              "id": 23464,
+              "token": "▁MIN",
+              "text": "ROW<fcel>MINUS<fcel>FACTOR<fcel>TEMP MINUS<fcel>MINUS<fcel>ORBIT<fcel>"
+            },
+            {
+              "id": 29785,
+              "token": "TEMP",
+              "text": "MINUS<fcel>ORBIT<fcel>EC<fcel>TEMP FOR<nl><fcel>1<fcel>-45"
+            }
+          ]
+        },
+        {
+          "request_id": "page_000276_table_box_id_5",
+          "snippets": [
+            {
+              "id": 84170,
+              "token": "▁Tac",
+              "text": "<fcel>Learning by doing<fcel>14. Tacit knowledge transfer<fcel>The process of replic"
+            }
+          ]
+        },
+        {
+          "request_id": "page_001367_table_60",
+          "snippets": [
+            {
+              "id": 49098,
+              "token": "ldr",
+              "text": "American Funds CptIncBldrA m<fcel>69.15"
+            },
+            {
+              "id": 67113,
+              "token": "ISM",
+              "text": "5<nl><fcel>Vanguard TtISMIdxAmdrI<fcel>14"
+            },
+            {
+              "id": 67113,
+              "token": "ISM",
+              "text": "7<nl><fcel>Vanguard TtISMIdxAms<fcel>141."
+            }
+          ]
+        },
+        {
+          "request_id": "page_000290_table_box_id_1",
+          "snippets": [
+            {
+              "id": 50413,
+              "token": "Convention",
+              "text": ", 7q36<nl><fcel>Conventionally treated high-grade gliomas<lcel>"
+            }
+          ]
+        },
+        {
+          "request_id": "page_001375_table_3",
+          "snippets": [
+            {
+              "id": 63572,
+              "token": "▁SHOW",
+              "text": "<fcel>NA NOT AVAILABLE<fcel>SH SHOWERS<nl><fcel>PC PARTLY CLOUD"
+            },
+            {
+              "id": 37946,
+              "token": "STOR",
+              "text": "LY CLOUDY<fcel>T THUNDERSTORMS<nl><fcel>R RAIN<fcel>W"
+            }
+          ]
+        },
+        {
+          "request_id": "page_000245_table_box_id_0",
+          "snippets": [
+            {
+              "id": 33914,
+              "token": "▁(+",
+              "text": " 亿元~13.30 亿元 (+128.96%~+"
+            },
+            {
+              "id": 33914,
+              "token": "▁(+",
+              "text": "0~13.00 亿元 (+133.25%~+"
+            }
+          ]
+        }
+      ]
+    },
+    "tmp/19_table_ocr_serving/lm_head_ab_20260911/b2_full_measured/b2/measured/results/results.jsonl": {
+      "records": 100,
+      "affected_records": 1,
+      "missing_unique": 2,
+      "missing_occurrences": 3,
+      "missing": [
+        {
+          "id": 29785,
+          "token": "TEMP",
+          "count": 2
+        },
+        {
+          "id": 23464,
+          "token": "▁MIN",
+          "count": 1
+        }
+      ],
+      "unique_tables": 100,
+      "source_sha256": "2320904e9df1c5011004127edb1783272c5e0e3fa00cf05f75445456e70e05c7",
+      "contexts": [
+        {
+          "request_id": "page_000542_table_0",
+          "snippets": [
+            {
+              "id": 29785,
+              "token": "TEMP",
+              "text": "<fcel>ROW<fcel>MINUS<fcel>FACTOR<fcel>TEMP MINUS<fcel>MINUS<fcel>ORBIT"
+            },
+            {
+              "id": 23464,
+              "token": "▁MIN",
+              "text": "ROW<fcel>MINUS<fcel>FACTOR<fcel>TEMP MINUS<fcel>MINUS<fcel>ORBIT<fcel>"
+            },
+            {
+              "id": 29785,
+              "token": "TEMP",
+              "text": "MINUS<fcel>ORBIT<fcel>EC<fcel>TEMP FOR<nl><fcel>1<fcel>-45"
+            }
+          ]
+        }
+      ]
+    },
+    "tmp/19_table_ocr_serving/lm_head_ab_20260911/b8_full_measured/b8/measured/results/results.jsonl": {
+      "records": 100,
+      "affected_records": 1,
+      "missing_unique": 2,
+      "missing_occurrences": 3,
+      "missing": [
+        {
+          "id": 29785,
+          "token": "TEMP",
+          "count": 2
+        },
+        {
+          "id": 23464,
+          "token": "▁MIN",
+          "count": 1
+        }
+      ],
+      "unique_tables": 100,
+      "source_sha256": "48b4b8c9aa667acaaedf79ae87e764d66fe8f0f89538c26212fe55e582f33d29",
+      "contexts": [
+        {
+          "request_id": "page_000542_table_0",
+          "snippets": [
+            {
+              "id": 29785,
+              "token": "TEMP",
+              "text": "<fcel>ROW<fcel>MINUS<fcel>FACTOR<fcel>TEMP MINUS<fcel>MINUS<fcel>ORBIT"
+            },
+            {
+              "id": 23464,
+              "token": "▁MIN",
+              "text": "ROW<fcel>MINUS<fcel>FACTOR<fcel>TEMP MINUS<fcel>MINUS<fcel>ORBIT<fcel>"
+            },
+            {
+              "id": 29785,
+              "token": "TEMP",
+              "text": "MINUS<fcel>ORBIT<fcel>EC<fcel>TEMP FOR<nl><fcel>1<fcel>-45"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "reference_strings": {
+    "algorithm_mask:text": {
+      "strings": 1,
+      "affected_strings": 1,
+      "total_tokens": 184,
+      "missing_occurrences": 20,
+      "missing_unique": 18,
+      "missing": [
+        {
+          "id": 48955,
+          "token": "DRAW",
+          "count": 2
+        },
+        {
+          "id": 46108,
+          "token": "▁TITLE",
+          "count": 2
+        },
+        {
+          "id": 54771,
+          "token": "REASON",
+          "count": 1
+        },
+        {
+          "id": 77000,
+          "token": "▁Cable",
+          "count": 1
+        },
+        {
+          "id": 64647,
+          "token": "▁DATE",
+          "count": 1
+        },
+        {
+          "id": 46587,
+          "token": "VOLUME",
+          "count": 1
+        },
+        {
+          "id": 41213,
+          "token": "LECTION",
+          "count": 1
+        },
+        {
+          "id": 60011,
+          "token": "ATIONAL",
+          "count": 1
+        },
+        {
+          "id": 25147,
+          "token": "▁SEC",
+          "count": 1
+        },
+        {
+          "id": 61192,
+          "token": "▁PRES",
+          "count": 1
+        },
+        {
+          "id": 51835,
+          "token": "▁COUN",
+          "count": 1
+        },
+        {
+          "id": 74723,
+          "token": "▁PAC",
+          "count": 1
+        },
+        {
+          "id": 41256,
+          "token": "IFIC",
+          "count": 1
+        },
+        {
+          "id": 59728,
+          "token": "▁NUMBER",
+          "count": 1
+        },
+        {
+          "id": 72472,
+          "token": "FOLDER",
+          "count": 1
+        },
+        {
+          "id": 86404,
+          "token": "DRA",
+          "count": 1
+        },
+        {
+          "id": 76691,
+          "token": "▁ARCH",
+          "count": 1
+        },
+        {
+          "id": 54935,
+          "token": "JR",
+          "count": 1
+        }
+      ]
+    },
+    "code_txt:text": {
+      "strings": 40,
+      "affected_strings": 30,
+      "total_tokens": 3974,
+      "missing_occurrences": 187,
+      "missing_unique": 107,
+      "missing": [
+        {
+          "id": 42771,
+          "token": ");\\",
+          "count": 8
+        },
+        {
+          "id": 48360,
+          "token": "fft",
+          "count": 7
+        },
+        {
+          "id": 71004,
+          "token": ")');",
+          "count": 5
+        },
+        {
+          "id": 34428,
+          "token": "▁Dialog",
+          "count": 5
+        },
+        {
+          "id": 33682,
+          "token": "▁|\\",
+          "count": 5
+        },
+        {
+          "id": 45186,
+          "token": "▁Priority",
+          "count": 5
+        },
+        {
+          "id": 87483,
+          "token": "')\\",
+          "count": 4
+        },
+        {
+          "id": 76013,
+          "token": "()\\",
+          "count": 4
+        },
+        {
+          "id": 70083,
+          "token": "affe",
+          "count": 4
+        },
+        {
+          "id": 38417,
+          "token": "▁Rx",
+          "count": 4
+        },
+        {
+          "id": 42359,
+          "token": "('%",
+          "count": 3
+        },
+        {
+          "id": 77400,
+          "token": "]#",
+          "count": 3
+        },
+        {
+          "id": 46136,
+          "token": ";%",
+          "count": 3
+        },
+        {
+          "id": 45251,
+          "token": "▁DECL",
+          "count": 3
+        },
+        {
+          "id": 79550,
+          "token": "__;",
+          "count": 3
+        },
+        {
+          "id": 42083,
+          "token": "▁Iterator",
+          "count": 3
+        },
+        {
+          "id": 26922,
+          "token": "▁}\\",
+          "count": 3
+        },
+        {
+          "id": 85153,
+          "token": "skipped",
+          "count": 2
+        },
+        {
+          "id": 75368,
+          "token": "▁Else",
+          "count": 2
+        },
+        {
+          "id": 49626,
+          "token": "▁Exit",
+          "count": 2
+        },
+        {
+          "id": 25548,
+          "token": "Theta",
+          "count": 2
+        },
+        {
+          "id": 90134,
+          "token": "FFT",
+          "count": 2
+        },
+        {
+          "id": 62104,
+          "token": "▁nx",
+          "count": 2
+        },
+        {
+          "id": 26543,
+          "token": "TASK",
+          "count": 2
+        },
+        {
+          "id": 43380,
+          "token": "reachable",
+          "count": 2
+        },
+        {
+          "id": 45693,
+          "token": "▁skipped",
+          "count": 2
+        },
+        {
+          "id": 86438,
+          "token": "▁rescued",
+          "count": 2
+        },
+        {
+          "id": 31175,
+          "token": "]/",
+          "count": 2
+        },
+        {
+          "id": 43702,
+          "token": ";//",
+          "count": 2
+        },
+        {
+          "id": 80246,
+          "token": "▁SECTION",
+          "count": 2
+        },
+        {
+          "id": 33085,
+          "token": "▁printf",
+          "count": 2
+        },
+        {
+          "id": 40840,
+          "token": "▁Movie",
+          "count": 2
+        },
+        {
+          "id": 29046,
+          "token": "father",
+          "count": 2
+        },
+        {
+          "id": 48436,
+          "token": "tracks",
+          "count": 2
+        },
+        {
+          "id": 37077,
+          "token": "▁SELECT",
+          "count": 2
+        }
+      ]
+    },
+    "code_txt_caption:text": {
+      "strings": 3,
+      "affected_strings": 2,
+      "total_tokens": 38,
+      "missing_occurrences": 5,
+      "missing_unique": 3,
+      "missing": [
+        {
+          "id": 72216,
+          "token": "▁Assignment",
+          "count": 2
+        },
+        {
+          "id": 30737,
+          "token": "▁conditional",
+          "count": 2
+        },
+        {
+          "id": 72994,
+          "token": "▁evaluates",
+          "count": 1
+        }
+      ]
+    },
+    "equation_caption:text": {
+      "strings": 281,
+      "affected_strings": 0,
+      "total_tokens": 1219,
+      "missing_occurrences": 0,
+      "missing_unique": 0,
+      "missing": []
+    },
+    "equation_explanation:text": {
+      "strings": 16,
+      "affected_strings": 6,
+      "total_tokens": 108,
+      "missing_occurrences": 9,
+      "missing_unique": 8,
+      "missing": [
+        {
+          "id": 28535,
+          "token": "▁inequality",
+          "count": 2
+        },
+        {
+          "id": 27724,
+          "token": "consistent",
+          "count": 1
+        },
+        {
+          "id": 36435,
+          "token": "chy",
+          "count": 1
+        },
+        {
+          "id": 46221,
+          "token": "warz",
+          "count": 1
+        },
+        {
+          "id": 48176,
+          "token": "Triangle",
+          "count": 1
+        },
+        {
+          "id": 28824,
+          "token": "▁equality",
+          "count": 1
+        },
+        {
+          "id": 61679,
+          "token": "Determin",
+          "count": 1
+        },
+        {
+          "id": 33087,
+          "token": "isible",
+          "count": 1
+        }
+      ]
+    },
+    "equation_isolated:latex": {
+      "strings": 2066,
+      "affected_strings": 1265,
+      "total_tokens": 158532,
+      "missing_occurrences": 5274,
+      "missing_unique": 332,
+      "missing": [
+        {
+          "id": 26922,
+          "token": "▁}\\",
+          "count": 479
+        },
+        {
+          "id": 23965,
+          "token": "▁\\|",
+          "count": 210
+        },
+        {
+          "id": 43482,
+          "token": "mathop",
+          "count": 167
+        },
+        {
+          "id": 69214,
+          "token": "vdots",
+          "count": 138
+        },
+        {
+          "id": 57297,
+          "token": "binom",
+          "count": 117
+        },
+        {
+          "id": 44847,
+          "token": "}}^{\\",
+          "count": 117
+        },
+        {
+          "id": 75287,
+          "token": "▁}{\\",
+          "count": 112
+        },
+        {
+          "id": 29652,
+          "token": "}}}\\",
+          "count": 101
+        },
+        {
+          "id": 29780,
+          "token": ")$$",
+          "count": 94
+        },
+        {
+          "id": 45897,
+          "token": "\\|_{",
+          "count": 81
+        },
+        {
+          "id": 57963,
+          "token": "bmatrix",
+          "count": 80
+        },
+        {
+          "id": 55523,
+          "token": "lesssim",
+          "count": 76
+        },
+        {
+          "id": 53135,
+          "token": "}^*",
+          "count": 75
+        },
+        {
+          "id": 29761,
+          "token": "}_\\",
+          "count": 74
+        },
+        {
+          "id": 32446,
+          "token": "},{",
+          "count": 68
+        },
+        {
+          "id": 25088,
+          "token": "}-\\",
+          "count": 65
+        },
+        {
+          "id": 58876,
+          "token": "|^{",
+          "count": 64
+        },
+        {
+          "id": 69523,
+          "token": "▁}{",
+          "count": 63
+        },
+        {
+          "id": 87859,
+          "token": ")_{\\",
+          "count": 62
+        },
+        {
+          "id": 87876,
+          "token": "▁{{{",
+          "count": 61
+        },
+        {
+          "id": 36758,
+          "token": ")^{\\",
+          "count": 59
+        },
+        {
+          "id": 28606,
+          "token": "\\}",
+          "count": 56
+        },
+        {
+          "id": 31480,
+          "token": "}}_{\\",
+          "count": 55
+        },
+        {
+          "id": 88171,
+          "token": "}^{*",
+          "count": 51
+        },
+        {
+          "id": 66405,
+          "token": "}},\\",
+          "count": 50
+        },
+        {
+          "id": 24085,
+          "token": "parallel",
+          "count": 48
+        },
+        {
+          "id": 60689,
+          "token": "|{\\",
+          "count": 45
+        },
+        {
+          "id": 70758,
+          "token": "})^{",
+          "count": 45
+        },
+        {
+          "id": 92696,
+          "token": "substack",
+          "count": 44
+        },
+        {
+          "id": 23744,
+          "token": "▁dx",
+          "count": 42
+        },
+        {
+          "id": 68029,
+          "token": "\\|\\",
+          "count": 42
+        },
+        {
+          "id": 29459,
+          "token": "}}(\\",
+          "count": 40
+        },
+        {
+          "id": 48250,
+          "token": "leqslant",
+          "count": 39
+        },
+        {
+          "id": 32020,
+          "token": "&=",
+          "count": 39
+        },
+        {
+          "id": 76429,
+          "token": "▁\\!",
+          "count": 36
+        }
+      ]
+    },
+    "figure_caption:text": {
+      "strings": 722,
+      "affected_strings": 247,
+      "total_tokens": 23781,
+      "missing_occurrences": 1053,
+      "missing_unique": 780,
+      "missing": [
+        {
+          "id": 26050,
+          "token": "PDF",
+          "count": 10
+        },
+        {
+          "id": 81743,
+          "token": "GFR",
+          "count": 9
+        },
+        {
+          "id": 45328,
+          "token": "▁Tir",
+          "count": 9
+        },
+        {
+          "id": 46010,
+          "token": "▁ure",
+          "count": 7
+        },
+        {
+          "id": 42546,
+          "token": "▁^{",
+          "count": 7
+        },
+        {
+          "id": 33348,
+          "token": "▁phosphorylation",
+          "count": 7
+        },
+        {
+          "id": 82454,
+          "token": "▁caspase",
+          "count": 6
+        },
+        {
+          "id": 47877,
+          "token": "idol",
+          "count": 6
+        },
+        {
+          "id": 33202,
+          "token": "▁fluorescence",
+          "count": 6
+        },
+        {
+          "id": 31524,
+          "token": "▁Gy",
+          "count": 6
+        },
+        {
+          "id": 26130,
+          "token": "psy",
+          "count": 6
+        },
+        {
+          "id": 25703,
+          "token": "▁females",
+          "count": 5
+        },
+        {
+          "id": 33316,
+          "token": "▁lys",
+          "count": 5
+        },
+        {
+          "id": 46997,
+          "token": "▁blot",
+          "count": 5
+        },
+        {
+          "id": 37743,
+          "token": "}}=",
+          "count": 5
+        },
+        {
+          "id": 70925,
+          "token": "▁adsorption",
+          "count": 5
+        },
+        {
+          "id": 36160,
+          "token": "orption",
+          "count": 5
+        },
+        {
+          "id": 36139,
+          "token": "▁=\\",
+          "count": 5
+        },
+        {
+          "id": 37738,
+          "token": "▁chron",
+          "count": 4
+        },
+        {
+          "id": 66059,
+          "token": "▁Cd",
+          "count": 4
+        },
+        {
+          "id": 32499,
+          "token": "▁deviation",
+          "count": 4
+        },
+        {
+          "id": 57698,
+          "token": "▁MN",
+          "count": 4
+        },
+        {
+          "id": 37312,
+          "token": "▁cultured",
+          "count": 4
+        },
+        {
+          "id": 27954,
+          "token": "bullet",
+          "count": 4
+        },
+        {
+          "id": 66983,
+          "token": "▁lanes",
+          "count": 4
+        },
+        {
+          "id": 92839,
+          "token": "ismic",
+          "count": 4
+        },
+        {
+          "id": 52635,
+          "token": "printed",
+          "count": 4
+        },
+        {
+          "id": 35184,
+          "token": "▁].",
+          "count": 4
+        },
+        {
+          "id": 47753,
+          "token": "▁skeletal",
+          "count": 4
+        },
+        {
+          "id": 36524,
+          "token": "▁muscles",
+          "count": 4
+        },
+        {
+          "id": 67708,
+          "token": "▁Ctrl",
+          "count": 4
+        },
+        {
+          "id": 26371,
+          "token": "▁consumers",
+          "count": 4
+        },
+        {
+          "id": 23663,
+          "token": "▁southern",
+          "count": 4
+        },
+        {
+          "id": 71712,
+          "token": "▁TODAY",
+          "count": 4
+        },
+        {
+          "id": 24277,
+          "token": "▁Hist",
+          "count": 3
+        }
+      ]
+    },
+    "figure_footnote:text": {
+      "strings": 175,
+      "affected_strings": 73,
+      "total_tokens": 3322,
+      "missing_occurrences": 189,
+      "missing_unique": 138,
+      "missing": [
+        {
+          "id": 42546,
+          "token": "▁^{",
+          "count": 9
+        },
+        {
+          "id": 61596,
+          "token": "Wind",
+          "count": 8
+        },
+        {
+          "id": 26826,
+          "token": "Sources",
+          "count": 5
+        },
+        {
+          "id": 25852,
+          "token": "market",
+          "count": 4
+        },
+        {
+          "id": 47298,
+          "token": "letters",
+          "count": 4
+        },
+        {
+          "id": 35407,
+          "token": "▁McK",
+          "count": 3
+        },
+        {
+          "id": 47977,
+          "token": "AFF",
+          "count": 3
+        },
+        {
+          "id": 44152,
+          "token": "▁WT",
+          "count": 2
+        },
+        {
+          "id": 26585,
+          "token": "itte",
+          "count": 2
+        },
+        {
+          "id": 53550,
+          "token": "）=",
+          "count": 2
+        },
+        {
+          "id": 75789,
+          "token": "▁holog",
+          "count": 2
+        },
+        {
+          "id": 58179,
+          "token": "▁rounding",
+          "count": 2
+        },
+        {
+          "id": 25008,
+          "token": "▁Sent",
+          "count": 2
+        },
+        {
+          "id": 53214,
+          "token": "OCI",
+          "count": 2
+        },
+        {
+          "id": 54361,
+          "token": "▁NEWS",
+          "count": 2
+        },
+        {
+          "id": 30065,
+          "token": "HU",
+          "count": 2
+        },
+        {
+          "id": 24204,
+          "token": "▁LLC",
+          "count": 2
+        },
+        {
+          "id": 44104,
+          "token": "▁Lic",
+          "count": 2
+        },
+        {
+          "id": 23388,
+          "token": "ensing",
+          "count": 2
+        },
+        {
+          "id": 24592,
+          "token": "Times",
+          "count": 2
+        },
+        {
+          "id": 39038,
+          "token": "▁subscribe",
+          "count": 2
+        },
+        {
+          "id": 49495,
+          "token": "▁washing",
+          "count": 2
+        },
+        {
+          "id": 86967,
+          "token": "ZU",
+          "count": 2
+        },
+        {
+          "id": 29426,
+          "token": "BRE",
+          "count": 2
+        },
+        {
+          "id": 39704,
+          "token": "▁Reserve",
+          "count": 2
+        },
+        {
+          "id": 24040,
+          "token": "▁ending",
+          "count": 2
+        },
+        {
+          "id": 51623,
+          "token": "▁Pradesh",
+          "count": 2
+        },
+        {
+          "id": 40435,
+          "token": "▁Delhi",
+          "count": 2
+        },
+        {
+          "id": 48586,
+          "token": "▁Analytics",
+          "count": 2
+        },
+        {
+          "id": 75205,
+          "token": "Insets",
+          "count": 1
+        },
+        {
+          "id": 69479,
+          "token": "▁depict",
+          "count": 1
+        },
+        {
+          "id": 33348,
+          "token": "▁phosphorylation",
+          "count": 1
+        },
+        {
+          "id": 25699,
+          "token": "▁Mean",
+          "count": 1
+        },
+        {
+          "id": 51975,
+          "token": "▁SEM",
+          "count": 1
+        },
+        {
+          "id": 52362,
+          "token": "young",
+          "count": 1
+        }
+      ]
+    },
+    "footer:text": {
+      "strings": 736,
+      "affected_strings": 236,
+      "total_tokens": 12256,
+      "missing_occurrences": 510,
+      "missing_unique": 254,
+      "missing": [
+        {
+          "id": 73616,
+          "token": "▁Sons",
+          "count": 17
+        },
+        {
+          "id": 46184,
+          "token": "▁GmbH",
+          "count": 13
+        },
+        {
+          "id": 50971,
+          "token": "hua",
+          "count": 13
+        },
+        {
+          "id": 46599,
+          "token": "PPT",
+          "count": 12
+        },
+        {
+          "id": 76458,
+          "token": "▁Wein",
+          "count": 12
+        },
+        {
+          "id": 31814,
+          "token": "/@",
+          "count": 12
+        },
+        {
+          "id": 85682,
+          "token": "▁Edwin",
+          "count": 12
+        },
+        {
+          "id": 35719,
+          "token": "▁Kre",
+          "count": 12
+        },
+        {
+          "id": 30657,
+          "token": "zig",
+          "count": 12
+        },
+        {
+          "id": 48038,
+          "token": "▁Mathematics",
+          "count": 11
+        },
+        {
+          "id": 40808,
+          "token": "▁everyday",
+          "count": 8
+        },
+        {
+          "id": 27495,
+          "token": "ENTS",
+          "count": 7
+        },
+        {
+          "id": 39479,
+          "token": "WW",
+          "count": 6
+        },
+        {
+          "id": 25678,
+          "token": "Chapter",
+          "count": 6
+        },
+        {
+          "id": 43523,
+          "token": "▁Psych",
+          "count": 5
+        },
+        {
+          "id": 59664,
+          "token": "▁WI",
+          "count": 5
+        },
+        {
+          "id": 47329,
+          "token": "LEY",
+          "count": 5
+        },
+        {
+          "id": 55638,
+          "token": "Chem",
+          "count": 5
+        },
+        {
+          "id": 57267,
+          "token": "▁doi",
+          "count": 5
+        },
+        {
+          "id": 74484,
+          "token": "Edward",
+          "count": 4
+        },
+        {
+          "id": 26050,
+          "token": "PDF",
+          "count": 4
+        },
+        {
+          "id": 56308,
+          "token": "▁Publishing",
+          "count": 4
+        },
+        {
+          "id": 58853,
+          "token": "nature",
+          "count": 4
+        },
+        {
+          "id": 25714,
+          "token": "▁IEEE",
+          "count": 4
+        },
+        {
+          "id": 25550,
+          "token": "▁Eur",
+          "count": 4
+        },
+        {
+          "id": 63836,
+          "token": "BRIDGE",
+          "count": 4
+        },
+        {
+          "id": 24526,
+          "token": "IVER",
+          "count": 4
+        },
+        {
+          "id": 61933,
+          "token": "▁Riv",
+          "count": 4
+        },
+        {
+          "id": 33568,
+          "token": "▁Travel",
+          "count": 4
+        },
+        {
+          "id": 80630,
+          "token": "OPC",
+          "count": 3
+        },
+        {
+          "id": 48682,
+          "token": "MATH",
+          "count": 3
+        },
+        {
+          "id": 24214,
+          "token": "▁Magn",
+          "count": 3
+        },
+        {
+          "id": 28717,
+          "token": "National",
+          "count": 3
+        },
+        {
+          "id": 28453,
+          "token": "▁Sciences",
+          "count": 3
+        },
+        {
+          "id": 43028,
+          "token": "▁Neuro",
+          "count": 3
+        }
+      ]
+    },
+    "header:text": {
+      "strings": 1916,
+      "affected_strings": 666,
+      "total_tokens": 20233,
+      "missing_occurrences": 1156,
+      "missing_unique": 588,
+      "missing": [
+        {
+          "id": 55731,
+          "token": "ITIES",
+          "count": 70
+        },
+        {
+          "id": 25147,
+          "token": "▁SEC",
+          "count": 64
+        },
+        {
+          "id": 37561,
+          "token": "▁Econom",
+          "count": 39
+        },
+        {
+          "id": 25678,
+          "token": "Chapter",
+          "count": 25
+        },
+        {
+          "id": 50971,
+          "token": "hua",
+          "count": 21
+        },
+        {
+          "id": 34475,
+          "token": "Thursday",
+          "count": 17
+        },
+        {
+          "id": 34489,
+          "token": "Wednesday",
+          "count": 15
+        },
+        {
+          "id": 92414,
+          "token": "ersi",
+          "count": 12
+        },
+        {
+          "id": 29644,
+          "token": "▁Email",
+          "count": 12
+        },
+        {
+          "id": 37687,
+          "token": "ILY",
+          "count": 12
+        },
+        {
+          "id": 43257,
+          "token": "▁Linear",
+          "count": 10
+        },
+        {
+          "id": 55051,
+          "token": "UTH",
+          "count": 8
+        },
+        {
+          "id": 57035,
+          "token": "▁Guardian",
+          "count": 8
+        },
+        {
+          "id": 32891,
+          "token": "Journal",
+          "count": 7
+        },
+        {
+          "id": 92504,
+          "token": "▁Environ",
+          "count": 7
+        },
+        {
+          "id": 43554,
+          "token": "▁GU",
+          "count": 7
+        },
+        {
+          "id": 38389,
+          "token": "STE",
+          "count": 6
+        },
+        {
+          "id": 31468,
+          "token": "sci",
+          "count": 6
+        },
+        {
+          "id": 55638,
+          "token": "Chem",
+          "count": 6
+        },
+        {
+          "id": 32732,
+          "token": "▁ET",
+          "count": 6
+        },
+        {
+          "id": 34962,
+          "token": "▁Physics",
+          "count": 6
+        },
+        {
+          "id": 36987,
+          "token": "▁Rules",
+          "count": 6
+        },
+        {
+          "id": 73100,
+          "token": "UNE",
+          "count": 6
+        },
+        {
+          "id": 34330,
+          "token": "ATIONS",
+          "count": 5
+        },
+        {
+          "id": 66308,
+          "token": "▁Securities",
+          "count": 5
+        },
+        {
+          "id": 69962,
+          "token": "▁Letters",
+          "count": 5
+        },
+        {
+          "id": 54576,
+          "token": "OUS",
+          "count": 5
+        },
+        {
+          "id": 49740,
+          "token": "▁SOL",
+          "count": 4
+        },
+        {
+          "id": 69775,
+          "token": "▁LINEAR",
+          "count": 4
+        },
+        {
+          "id": 76095,
+          "token": "▁Wheel",
+          "count": 4
+        },
+        {
+          "id": 33572,
+          "token": "▁Chrom",
+          "count": 4
+        },
+        {
+          "id": 72812,
+          "token": "ELSE",
+          "count": 4
+        },
+        {
+          "id": 28153,
+          "token": "SEARCH",
+          "count": 4
+        },
+        {
+          "id": 43304,
+          "token": "nals",
+          "count": 4
+        },
+        {
+          "id": 25486,
+          "token": "▁Matrix",
+          "count": 4
+        }
+      ]
+    },
+    "organic_chemical_formula_mask:text": {
+      "strings": 1,
+      "affected_strings": 0,
+      "total_tokens": 156,
+      "missing_occurrences": 0,
+      "missing_unique": 0,
+      "missing": []
+    },
+    "page_footnote:text": {
+      "strings": 126,
+      "affected_strings": 82,
+      "total_tokens": 6410,
+      "missing_occurrences": 519,
+      "missing_unique": 380,
+      "missing": [
+        {
+          "id": 42546,
+          "token": "▁^{",
+          "count": 30
+        },
+        {
+          "id": 29486,
+          "token": "▁Medicine",
+          "count": 7
+        },
+        {
+          "id": 37884,
+          "token": "cology",
+          "count": 6
+        },
+        {
+          "id": 82771,
+          "token": "JT",
+          "count": 6
+        },
+        {
+          "id": 50591,
+          "token": "▁Correspond",
+          "count": 5
+        },
+        {
+          "id": 67899,
+          "token": "▁Ottawa",
+          "count": 5
+        },
+        {
+          "id": 43271,
+          "token": "$^",
+          "count": 4
+        },
+        {
+          "id": 75226,
+          "token": "；(",
+          "count": 4
+        },
+        {
+          "id": 35268,
+          "token": "▁Poly",
+          "count": 4
+        },
+        {
+          "id": 86292,
+          "token": "▁^{\\",
+          "count": 4
+        },
+        {
+          "id": 34537,
+          "token": "▁Contract",
+          "count": 4
+        },
+        {
+          "id": 36834,
+          "token": "▁Notice",
+          "count": 4
+        },
+        {
+          "id": 35722,
+          "token": "orea",
+          "count": 4
+        },
+        {
+          "id": 52823,
+          "token": "JC",
+          "count": 4
+        },
+        {
+          "id": 64540,
+          "token": "▁Understanding",
+          "count": 3
+        },
+        {
+          "id": 29683,
+          "token": "training",
+          "count": 3
+        },
+        {
+          "id": 26168,
+          "token": "▁Yang",
+          "count": 3
+        },
+        {
+          "id": 44114,
+          "token": "▁Agricult",
+          "count": 3
+        },
+        {
+          "id": 93096,
+          "token": ":+",
+          "count": 3
+        },
+        {
+          "id": 24132,
+          "token": "▁Eastern",
+          "count": 3
+        },
+        {
+          "id": 39936,
+          "token": "▁Memorial",
+          "count": 3
+        },
+        {
+          "id": 75684,
+          "token": "▁Veterans",
+          "count": 3
+        },
+        {
+          "id": 41415,
+          "token": "▁Insurance",
+          "count": 3
+        },
+        {
+          "id": 35407,
+          "token": "▁McK",
+          "count": 3
+        },
+        {
+          "id": 37539,
+          "token": "▁Problem",
+          "count": 3
+        },
+        {
+          "id": 40186,
+          "token": "▁Learning",
+          "count": 2
+        },
+        {
+          "id": 44982,
+          "token": "▁Transform",
+          "count": 2
+        },
+        {
+          "id": 38993,
+          "token": "▁Liu",
+          "count": 2
+        },
+        {
+          "id": 44710,
+          "token": "▁completing",
+          "count": 2
+        },
+        {
+          "id": 32766,
+          "token": "due",
+          "count": 2
+        },
+        {
+          "id": 55135,
+          "token": "▁Consumer",
+          "count": 2
+        },
+        {
+          "id": 43192,
+          "token": "▁Mort",
+          "count": 2
+        },
+        {
+          "id": 43879,
+          "token": "heet",
+          "count": 2
+        },
+        {
+          "id": 45186,
+          "token": "▁Priority",
+          "count": 2
+        },
+        {
+          "id": 29726,
+          "token": "▁Mail",
+          "count": 2
+        }
+      ]
+    },
+    "page_number:text": {
+      "strings": 1188,
+      "affected_strings": 10,
+      "total_tokens": 3162,
+      "missing_occurrences": 11,
+      "missing_unique": 7,
+      "missing": [
+        {
+          "id": 34876,
+          "token": "Slide",
+          "count": 5
+        },
+        {
+          "id": 27954,
+          "token": "bullet",
+          "count": 1
+        },
+        {
+          "id": 42250,
+          "token": "ISS",
+          "count": 1
+        },
+        {
+          "id": 37687,
+          "token": "ILY",
+          "count": 1
+        },
+        {
+          "id": 62289,
+          "token": "IRR",
+          "count": 1
+        },
+        {
+          "id": 35156,
+          "token": "▁Types",
+          "count": 1
+        },
+        {
+          "id": 51465,
+          "token": "XV",
+          "count": 1
+        }
+      ]
+    },
+    "reference:text": {
+      "strings": 275,
+      "affected_strings": 271,
+      "total_tokens": 15710,
+      "missing_occurrences": 1441,
+      "missing_unique": 902,
+      "missing": [
+        {
+          "id": 92504,
+          "token": "▁Environ",
+          "count": 23
+        },
+        {
+          "id": 80710,
+          "token": "▁sclerosis",
+          "count": 18
+        },
+        {
+          "id": 43523,
+          "token": "▁Psych",
+          "count": 13
+        },
+        {
+          "id": 43028,
+          "token": "▁Neuro",
+          "count": 10
+        },
+        {
+          "id": 28376,
+          "token": "▁moon",
+          "count": 8
+        },
+        {
+          "id": 55037,
+          "token": "▁Reports",
+          "count": 8
+        },
+        {
+          "id": 57267,
+          "token": "▁doi",
+          "count": 8
+        },
+        {
+          "id": 68304,
+          "token": "▁Neu",
+          "count": 7
+        },
+        {
+          "id": 33925,
+          "token": "▁MRI",
+          "count": 7
+        },
+        {
+          "id": 29331,
+          "token": "▁Cancer",
+          "count": 7
+        },
+        {
+          "id": 23389,
+          "token": "▁Environment",
+          "count": 7
+        },
+        {
+          "id": 29749,
+          "token": "▁Kelly",
+          "count": 7
+        },
+        {
+          "id": 92927,
+          "token": "▁zir",
+          "count": 7
+        },
+        {
+          "id": 56125,
+          "token": "▁Brain",
+          "count": 6
+        },
+        {
+          "id": 62831,
+          "token": "▁Psy",
+          "count": 6
+        },
+        {
+          "id": 75500,
+          "token": "▁photore",
+          "count": 6
+        },
+        {
+          "id": 36267,
+          "token": "▁hed",
+          "count": 6
+        },
+        {
+          "id": 66945,
+          "token": "geh",
+          "count": 6
+        },
+        {
+          "id": 33202,
+          "token": "▁fluorescence",
+          "count": 6
+        },
+        {
+          "id": 33668,
+          "token": "▁microscopy",
+          "count": 6
+        },
+        {
+          "id": 64339,
+          "token": "culos",
+          "count": 6
+        },
+        {
+          "id": 69773,
+          "token": "keletal",
+          "count": 6
+        },
+        {
+          "id": 32138,
+          "token": "▁Occ",
+          "count": 6
+        },
+        {
+          "id": 60380,
+          "token": "▁Behavior",
+          "count": 6
+        },
+        {
+          "id": 26910,
+          "token": "▁Cambridge",
+          "count": 6
+        },
+        {
+          "id": 49032,
+          "token": "logy",
+          "count": 5
+        },
+        {
+          "id": 64884,
+          "token": "▁optic",
+          "count": 5
+        },
+        {
+          "id": 65597,
+          "token": "▁Torres",
+          "count": 5
+        },
+        {
+          "id": 89005,
+          "token": "▁mutagenesis",
+          "count": 5
+        },
+        {
+          "id": 26830,
+          "token": "▁Rot",
+          "count": 5
+        },
+        {
+          "id": 70250,
+          "token": "▁hydroxy",
+          "count": 5
+        },
+        {
+          "id": 38609,
+          "token": "▁marine",
+          "count": 5
+        },
+        {
+          "id": 23487,
+          "token": "lut",
+          "count": 5
+        },
+        {
+          "id": 35062,
+          "token": "▁Bull",
+          "count": 5
+        },
+        {
+          "id": 62743,
+          "token": "▁MG",
+          "count": 5
+        }
+      ]
+    },
+    "table:html": {
+      "strings": 665,
+      "affected_strings": 396,
+      "total_tokens": 462003,
+      "missing_occurrences": 6941,
+      "missing_unique": 262,
+      "missing": [
+        {
+          "id": 27472,
+          "token": ">-",
+          "count": 2133
+        },
+        {
+          "id": 41387,
+          "token": "%</",
+          "count": 1841
+        },
+        {
+          "id": 23714,
+          "token": ">$",
+          "count": 886
+        },
+        {
+          "id": 70270,
+          "token": "▁rowspan",
+          "count": 764
+        },
+        {
+          "id": 33503,
+          "token": "$</",
+          "count": 321
+        },
+        {
+          "id": 44922,
+          "token": "。</",
+          "count": 170
+        },
+        {
+          "id": 78873,
+          "token": "+</",
+          "count": 158
+        },
+        {
+          "id": 48339,
+          "token": "%(",
+          "count": 52
+        },
+        {
+          "id": 28108,
+          "token": ">/",
+          "count": 38
+        },
+        {
+          "id": 34885,
+          "token": ")<",
+          "count": 24
+        },
+        {
+          "id": 26656,
+          "token": "?</",
+          "count": 22
+        },
+        {
+          "id": 44836,
+          "token": "\">$",
+          "count": 20
+        },
+        {
+          "id": 35734,
+          "token": ").</",
+          "count": 20
+        },
+        {
+          "id": 23907,
+          "token": ">%",
+          "count": 18
+        },
+        {
+          "id": 35533,
+          "token": "/</",
+          "count": 14
+        },
+        {
+          "id": 62097,
+          "token": "*</",
+          "count": 13
+        },
+        {
+          "id": 39779,
+          "token": "/></",
+          "count": 12
+        },
+        {
+          "id": 30647,
+          "token": "$^{",
+          "count": 10
+        },
+        {
+          "id": 73012,
+          "token": "geqslant",
+          "count": 9
+        },
+        {
+          "id": 49461,
+          "token": "。<",
+          "count": 8
+        },
+        {
+          "id": 29943,
+          "token": "\">-",
+          "count": 7
+        },
+        {
+          "id": 48250,
+          "token": "leqslant",
+          "count": 6
+        },
+        {
+          "id": 60709,
+          "token": ",<",
+          "count": 6
+        },
+        {
+          "id": 57786,
+          "token": "▁$<",
+          "count": 6
+        },
+        {
+          "id": 46786,
+          "token": "=}",
+          "count": 6
+        },
+        {
+          "id": 26146,
+          "token": "!</",
+          "count": 6
+        },
+        {
+          "id": 31551,
+          "token": "$^{-",
+          "count": 6
+        },
+        {
+          "id": 66728,
+          "token": "ETF",
+          "count": 6
+        },
+        {
+          "id": 32337,
+          "token": "pul",
+          "count": 5
+        },
+        {
+          "id": 69338,
+          "token": "\\%$",
+          "count": 5
+        },
+        {
+          "id": 28205,
+          "token": ">#",
+          "count": 5
+        },
+        {
+          "id": 27012,
+          "token": "▁($\\",
+          "count": 5
+        },
+        {
+          "id": 35963,
+          "token": "}$-",
+          "count": 5
+        },
+        {
+          "id": 38917,
+          "token": "implementation",
+          "count": 5
+        },
+        {
+          "id": 47957,
+          "token": "▁Curt",
+          "count": 4
+        }
+      ]
+    },
+    "table_caption:text": {
+      "strings": 485,
+      "affected_strings": 156,
+      "total_tokens": 6833,
+      "missing_occurrences": 405,
+      "missing_unique": 313,
+      "missing": [
+        {
+          "id": 61826,
+          "token": "▁CONF",
+          "count": 7
+        },
+        {
+          "id": 24365,
+          "token": "▁optimization",
+          "count": 5
+        },
+        {
+          "id": 39041,
+          "token": "▁retention",
+          "count": 5
+        },
+        {
+          "id": 72265,
+          "token": "▁modelling",
+          "count": 5
+        },
+        {
+          "id": 61234,
+          "token": "▁Comparison",
+          "count": 5
+        },
+        {
+          "id": 92821,
+          "token": "▁PCA",
+          "count": 4
+        },
+        {
+          "id": 32121,
+          "token": "▁Character",
+          "count": 3
+        },
+        {
+          "id": 70866,
+          "token": "arh",
+          "count": 3
+        },
+        {
+          "id": 42688,
+          "token": "▁anis",
+          "count": 3
+        },
+        {
+          "id": 42909,
+          "token": "▁isolates",
+          "count": 3
+        },
+        {
+          "id": 80971,
+          "token": "ONS",
+          "count": 3
+        },
+        {
+          "id": 76980,
+          "token": "FINAL",
+          "count": 3
+        },
+        {
+          "id": 47180,
+          "token": "▁metastasis",
+          "count": 3
+        },
+        {
+          "id": 85630,
+          "token": "▁}$",
+          "count": 2
+        },
+        {
+          "id": 67767,
+          "token": "variants",
+          "count": 2
+        },
+        {
+          "id": 67260,
+          "token": "▁deviations",
+          "count": 2
+        },
+        {
+          "id": 87178,
+          "token": "▁parentheses",
+          "count": 2
+        },
+        {
+          "id": 55479,
+          "token": "▁vaccination",
+          "count": 2
+        },
+        {
+          "id": 52636,
+          "token": "inations",
+          "count": 2
+        },
+        {
+          "id": 85417,
+          "token": "corrected",
+          "count": 2
+        },
+        {
+          "id": 78586,
+          "token": "pecific",
+          "count": 2
+        },
+        {
+          "id": 34279,
+          "token": "▁distances",
+          "count": 2
+        },
+        {
+          "id": 40919,
+          "token": "▁highlighted",
+          "count": 2
+        },
+        {
+          "id": 34405,
+          "token": "▁diagonal",
+          "count": 2
+        },
+        {
+          "id": 64317,
+          "token": "▁LR",
+          "count": 2
+        },
+        {
+          "id": 23709,
+          "token": "▁strains",
+          "count": 2
+        },
+        {
+          "id": 58817,
+          "token": "▁incubation",
+          "count": 2
+        },
+        {
+          "id": 28948,
+          "token": "}}$,",
+          "count": 2
+        },
+        {
+          "id": 28081,
+          "token": "▁toxic",
+          "count": 2
+        },
+        {
+          "id": 33238,
+          "token": "▁Clinical",
+          "count": 2
+        },
+        {
+          "id": 62617,
+          "token": "▁FCC",
+          "count": 2
+        },
+        {
+          "id": 80219,
+          "token": "DDS",
+          "count": 2
+        },
+        {
+          "id": 28497,
+          "token": "▁NON",
+          "count": 2
+        },
+        {
+          "id": 39422,
+          "token": "DG",
+          "count": 2
+        },
+        {
+          "id": 41256,
+          "token": "IFIC",
+          "count": 2
+        }
+      ]
+    },
+    "table_cell_text:derived": {
+      "strings": 40010,
+      "affected_strings": 367,
+      "total_tokens": 211896,
+      "missing_occurrences": 447,
+      "missing_unique": 226,
+      "missing": [
+        {
+          "id": 48339,
+          "token": "%(",
+          "count": 52
+        },
+        {
+          "id": 46913,
+          "token": "^*$",
+          "count": 23
+        },
+        {
+          "id": 30647,
+          "token": "$^{",
+          "count": 12
+        },
+        {
+          "id": 42701,
+          "token": "}$)",
+          "count": 10
+        },
+        {
+          "id": 73012,
+          "token": "geqslant",
+          "count": 9
+        },
+        {
+          "id": 46786,
+          "token": "=}",
+          "count": 6
+        },
+        {
+          "id": 31551,
+          "token": "$^{-",
+          "count": 6
+        },
+        {
+          "id": 66728,
+          "token": "ETF",
+          "count": 6
+        },
+        {
+          "id": 32337,
+          "token": "pul",
+          "count": 5
+        },
+        {
+          "id": 69338,
+          "token": "\\%$",
+          "count": 5
+        },
+        {
+          "id": 27012,
+          "token": "▁($\\",
+          "count": 5
+        },
+        {
+          "id": 35963,
+          "token": "}$-",
+          "count": 5
+        },
+        {
+          "id": 48250,
+          "token": "leqslant",
+          "count": 4
+        },
+        {
+          "id": 47957,
+          "token": "▁Curt",
+          "count": 4
+        },
+        {
+          "id": 26922,
+          "token": "▁}\\",
+          "count": 4
+        },
+        {
+          "id": 65125,
+          "token": "knowledge",
+          "count": 4
+        },
+        {
+          "id": 25972,
+          "token": "macro",
+          "count": 4
+        },
+        {
+          "id": 81703,
+          "token": "reaction",
+          "count": 4
+        },
+        {
+          "id": 50784,
+          "token": "Compression",
+          "count": 4
+        },
+        {
+          "id": 75226,
+          "token": "；(",
+          "count": 4
+        },
+        {
+          "id": 83438,
+          "token": "°,",
+          "count": 4
+        },
+        {
+          "id": 31643,
+          "token": "gj",
+          "count": 4
+        },
+        {
+          "id": 81451,
+          "token": "▁Alo",
+          "count": 4
+        },
+        {
+          "id": 26736,
+          "token": "/'",
+          "count": 4
+        },
+        {
+          "id": 37743,
+          "token": "}}=",
+          "count": 3
+        },
+        {
+          "id": 38176,
+          "token": "amel",
+          "count": 3
+        },
+        {
+          "id": 25088,
+          "token": "}-\\",
+          "count": 3
+        },
+        {
+          "id": 39746,
+          "token": "~\\",
+          "count": 3
+        },
+        {
+          "id": 63567,
+          "token": "”(",
+          "count": 3
+        },
+        {
+          "id": 27584,
+          "token": "AO",
+          "count": 3
+        },
+        {
+          "id": 88965,
+          "token": "}$$\\",
+          "count": 3
+        },
+        {
+          "id": 48378,
+          "token": "})$,",
+          "count": 2
+        },
+        {
+          "id": 78922,
+          "token": "}}=\\",
+          "count": 2
+        },
+        {
+          "id": 28319,
+          "token": "}>",
+          "count": 2
+        },
+        {
+          "id": 77045,
+          "token": "credits",
+          "count": 2
+        }
+      ]
+    },
+    "table_footnote:text": {
+      "strings": 194,
+      "affected_strings": 86,
+      "total_tokens": 5386,
+      "missing_occurrences": 235,
+      "missing_unique": 148,
+      "missing": [
+        {
+          "id": 61596,
+          "token": "Wind",
+          "count": 24
+        },
+        {
+          "id": 42546,
+          "token": "▁^{",
+          "count": 19
+        },
+        {
+          "id": 86292,
+          "token": "▁^{\\",
+          "count": 10
+        },
+        {
+          "id": 90872,
+          "token": "▁alph",
+          "count": 6
+        },
+        {
+          "id": 85630,
+          "token": "▁}$",
+          "count": 5
+        },
+        {
+          "id": 29717,
+          "token": "______",
+          "count": 4
+        },
+        {
+          "id": 52176,
+          "token": "▁$^{",
+          "count": 3
+        },
+        {
+          "id": 46997,
+          "token": "▁blot",
+          "count": 3
+        },
+        {
+          "id": 42176,
+          "token": "Bs",
+          "count": 3
+        },
+        {
+          "id": 32499,
+          "token": "▁deviation",
+          "count": 2
+        },
+        {
+          "id": 38893,
+          "token": "▁drift",
+          "count": 2
+        },
+        {
+          "id": 24040,
+          "token": "▁ending",
+          "count": 2
+        },
+        {
+          "id": 51986,
+          "token": "otides",
+          "count": 2
+        },
+        {
+          "id": 39428,
+          "token": "▁odds",
+          "count": 2
+        },
+        {
+          "id": 48070,
+          "token": "▁cumulative",
+          "count": 2
+        },
+        {
+          "id": 65658,
+          "token": "▁pestic",
+          "count": 2
+        },
+        {
+          "id": 39499,
+          "token": "▁calibration",
+          "count": 2
+        },
+        {
+          "id": 27210,
+          "token": "ocard",
+          "count": 2
+        },
+        {
+          "id": 65853,
+          "token": "epic",
+          "count": 2
+        },
+        {
+          "id": 39697,
+          "token": "▁myocardial",
+          "count": 2
+        },
+        {
+          "id": 61461,
+          "token": "▁Minimum",
+          "count": 2
+        },
+        {
+          "id": 34279,
+          "token": "▁distances",
+          "count": 2
+        },
+        {
+          "id": 56522,
+          "token": "▁melanoma",
+          "count": 2
+        },
+        {
+          "id": 66109,
+          "token": "▁SIR",
+          "count": 2
+        },
+        {
+          "id": 61155,
+          "token": "▁Poisson",
+          "count": 2
+        },
+        {
+          "id": 72223,
+          "token": "▁alde",
+          "count": 2
+        },
+        {
+          "id": 25013,
+          "token": "▁GC",
+          "count": 2
+        },
+        {
+          "id": 26826,
+          "token": "Sources",
+          "count": 2
+        },
+        {
+          "id": 48339,
+          "token": "%(",
+          "count": 1
+        },
+        {
+          "id": 81703,
+          "token": "reaction",
+          "count": 1
+        },
+        {
+          "id": 57072,
+          "token": "decision",
+          "count": 1
+        },
+        {
+          "id": 39932,
+          "token": "boundary",
+          "count": 1
+        },
+        {
+          "id": 32403,
+          "token": "▁conservative",
+          "count": 1
+        },
+        {
+          "id": 43030,
+          "token": "▁responding",
+          "count": 1
+        },
+        {
+          "id": 62339,
+          "token": "arger",
+          "count": 1
+        }
+      ]
+    },
+    "text_block:text": {
+      "strings": 16520,
+      "affected_strings": 7640,
+      "total_tokens": 1109602,
+      "missing_occurrences": 44152,
+      "missing_unique": 12572,
+      "missing": [
+        {
+          "id": 42546,
+          "token": "▁^{",
+          "count": 239
+        },
+        {
+          "id": 85630,
+          "token": "▁}$",
+          "count": 237
+        },
+        {
+          "id": 26922,
+          "token": "▁}\\",
+          "count": 221
+        },
+        {
+          "id": 76429,
+          "token": "▁\\!",
+          "count": 185
+        },
+        {
+          "id": 88784,
+          "token": "therefore",
+          "count": 182
+        },
+        {
+          "id": 53215,
+          "token": "▁\\$",
+          "count": 117
+        },
+        {
+          "id": 69338,
+          "token": "\\%$",
+          "count": 116
+        },
+        {
+          "id": 45332,
+          "token": "\\!",
+          "count": 114
+        },
+        {
+          "id": 30347,
+          "token": "▁integers",
+          "count": 97
+        },
+        {
+          "id": 37186,
+          "token": "▁habitat",
+          "count": 91
+        },
+        {
+          "id": 53326,
+          "token": "▁$,",
+          "count": 88
+        },
+        {
+          "id": 74946,
+          "token": "angered",
+          "count": 88
+        },
+        {
+          "id": 36393,
+          "token": "$;",
+          "count": 79
+        },
+        {
+          "id": 32446,
+          "token": "},{",
+          "count": 77
+        },
+        {
+          "id": 27230,
+          "token": "lict",
+          "count": 75
+        },
+        {
+          "id": 26388,
+          "token": "▁taxes",
+          "count": 74
+        },
+        {
+          "id": 33280,
+          "token": "···",
+          "count": 72
+        },
+        {
+          "id": 44210,
+          "token": "▁mL",
+          "count": 64
+        },
+        {
+          "id": 37743,
+          "token": "}}=",
+          "count": 63
+        },
+        {
+          "id": 25005,
+          "token": "▁$\\{",
+          "count": 62
+        },
+        {
+          "id": 24916,
+          "token": "\\}$",
+          "count": 60
+        },
+        {
+          "id": 28606,
+          "token": "\\}",
+          "count": 58
+        },
+        {
+          "id": 57297,
+          "token": "binom",
+          "count": 57
+        },
+        {
+          "id": 23535,
+          "token": "▁rational",
+          "count": 55
+        },
+        {
+          "id": 86053,
+          "token": "]：",
+          "count": 55
+        },
+        {
+          "id": 28535,
+          "token": "▁inequality",
+          "count": 54
+        },
+        {
+          "id": 36953,
+          "token": "▁threatened",
+          "count": 53
+        },
+        {
+          "id": 87876,
+          "token": "▁{{{",
+          "count": 52
+        },
+        {
+          "id": 48250,
+          "token": "leqslant",
+          "count": 51
+        },
+        {
+          "id": 82916,
+          "token": "Rightarrow",
+          "count": 50
+        },
+        {
+          "id": 31466,
+          "token": "▁$-",
+          "count": 50
+        },
+        {
+          "id": 35347,
+          "token": "▁conservation",
+          "count": 50
+        },
+        {
+          "id": 89074,
+          "token": ".（",
+          "count": 48
+        },
+        {
+          "id": 25088,
+          "token": "}-\\",
+          "count": 47
+        },
+        {
+          "id": 39811,
+          "token": "Proof",
+          "count": 46
+        }
+      ]
+    },
+    "title:text": {
+      "strings": 4441,
+      "affected_strings": 1094,
+      "total_tokens": 37460,
+      "missing_occurrences": 1914,
+      "missing_unique": 1334,
+      "missing": [
+        {
+          "id": 78366,
+          "token": "▁Mathematical",
+          "count": 28
+        },
+        {
+          "id": 87012,
+          "token": "▁Competition",
+          "count": 27
+        },
+        {
+          "id": 57599,
+          "token": "Saturday",
+          "count": 23
+        },
+        {
+          "id": 46856,
+          "token": "Listen",
+          "count": 13
+        },
+        {
+          "id": 32821,
+          "token": "STITUTE",
+          "count": 9
+        },
+        {
+          "id": 50317,
+          "token": "▁REAL",
+          "count": 9
+        },
+        {
+          "id": 87418,
+          "token": "▁PROPER",
+          "count": 9
+        },
+        {
+          "id": 55164,
+          "token": "▁Introduction",
+          "count": 8
+        },
+        {
+          "id": 24455,
+          "token": "PART",
+          "count": 7
+        },
+        {
+          "id": 65542,
+          "token": "▁Experimental",
+          "count": 7
+        },
+        {
+          "id": 72088,
+          "token": "Questions",
+          "count": 7
+        },
+        {
+          "id": 53389,
+          "token": "MISSION",
+          "count": 7
+        },
+        {
+          "id": 36834,
+          "token": "▁Notice",
+          "count": 7
+        },
+        {
+          "id": 47329,
+          "token": "LEY",
+          "count": 7
+        },
+        {
+          "id": 31799,
+          "token": "MID",
+          "count": 7
+        },
+        {
+          "id": 55051,
+          "token": "UTH",
+          "count": 7
+        },
+        {
+          "id": 33280,
+          "token": "···",
+          "count": 7
+        },
+        {
+          "id": 55731,
+          "token": "ITIES",
+          "count": 6
+        },
+        {
+          "id": 26901,
+          "token": "▁Comment",
+          "count": 6
+        },
+        {
+          "id": 41298,
+          "token": "▁COMM",
+          "count": 6
+        },
+        {
+          "id": 28717,
+          "token": "National",
+          "count": 6
+        },
+        {
+          "id": 42207,
+          "token": "FORMATION",
+          "count": 6
+        },
+        {
+          "id": 37130,
+          "token": "▁Meeting",
+          "count": 6
+        },
+        {
+          "id": 45850,
+          "token": "▁THERE",
+          "count": 6
+        },
+        {
+          "id": 37299,
+          "token": "▁Ward",
+          "count": 6
+        },
+        {
+          "id": 42629,
+          "token": "stitute",
+          "count": 6
+        },
+        {
+          "id": 55566,
+          "token": "▁Solution",
+          "count": 5
+        },
+        {
+          "id": 79630,
+          "token": "DUCTION",
+          "count": 5
+        },
+        {
+          "id": 28278,
+          "token": "▁Anne",
+          "count": 5
+        },
+        {
+          "id": 25114,
+          "token": "CHANGE",
+          "count": 5
+        },
+        {
+          "id": 47286,
+          "token": "SUPP",
+          "count": 5
+        },
+        {
+          "id": 42743,
+          "token": "▁HEALTH",
+          "count": 5
+        },
+        {
+          "id": 71712,
+          "token": "▁TODAY",
+          "count": 5
+        },
+        {
+          "id": 55926,
+          "token": "ROSS",
+          "count": 5
+        },
+        {
+          "id": 85630,
+          "token": "▁}$",
+          "count": 4
+        }
+      ]
+    }
+  },
+  "reference_missing_overall": [
+    {
+      "id": 27472,
+      "token": ">-",
+      "count": 2133
+    },
+    {
+      "id": 41387,
+      "token": "%</",
+      "count": 1841
+    },
+    {
+      "id": 23714,
+      "token": ">$",
+      "count": 886
+    },
+    {
+      "id": 70270,
+      "token": "▁rowspan",
+      "count": 764
+    },
+    {
+      "id": 26922,
+      "token": "▁}\\",
+      "count": 711
+    },
+    {
+      "id": 33503,
+      "token": "$</",
+      "count": 321
+    },
+    {
+      "id": 42546,
+      "token": "▁^{",
+      "count": 313
+    },
+    {
+      "id": 85630,
+      "token": "▁}$",
+      "count": 251
+    },
+    {
+      "id": 76429,
+      "token": "▁\\!",
+      "count": 221
+    },
+    {
+      "id": 23965,
+      "token": "▁\\|",
+      "count": 211
+    },
+    {
+      "id": 88784,
+      "token": "therefore",
+      "count": 210
+    },
+    {
+      "id": 43482,
+      "token": "mathop",
+      "count": 180
+    },
+    {
+      "id": 57297,
+      "token": "binom",
+      "count": 174
+    },
+    {
+      "id": 44922,
+      "token": "。</",
+      "count": 170
+    },
+    {
+      "id": 69214,
+      "token": "vdots",
+      "count": 160
+    },
+    {
+      "id": 78873,
+      "token": "+</",
+      "count": 158
+    },
+    {
+      "id": 44847,
+      "token": "}}^{\\",
+      "count": 146
+    },
+    {
+      "id": 32446,
+      "token": "},{",
+      "count": 145
+    },
+    {
+      "id": 75287,
+      "token": "▁}{\\",
+      "count": 131
+    },
+    {
+      "id": 69338,
+      "token": "\\%$",
+      "count": 127
+    },
+    {
+      "id": 29652,
+      "token": "}}}\\",
+      "count": 123
+    },
+    {
+      "id": 25088,
+      "token": "}-\\",
+      "count": 120
+    },
+    {
+      "id": 45332,
+      "token": "\\!",
+      "count": 120
+    },
+    {
+      "id": 53215,
+      "token": "▁\\$",
+      "count": 120
+    },
+    {
+      "id": 28606,
+      "token": "\\}",
+      "count": 114
+    },
+    {
+      "id": 87876,
+      "token": "▁{{{",
+      "count": 113
+    },
+    {
+      "id": 48339,
+      "token": "%(",
+      "count": 107
+    },
+    {
+      "id": 69523,
+      "token": "▁}{",
+      "count": 101
+    },
+    {
+      "id": 48250,
+      "token": "leqslant",
+      "count": 100
+    },
+    {
+      "id": 30347,
+      "token": "▁integers",
+      "count": 97
+    },
+    {
+      "id": 29780,
+      "token": ")$$",
+      "count": 95
+    },
+    {
+      "id": 37743,
+      "token": "}}=",
+      "count": 92
+    },
+    {
+      "id": 37186,
+      "token": "▁habitat",
+      "count": 92
+    },
+    {
+      "id": 74946,
+      "token": "angered",
+      "count": 91
+    },
+    {
+      "id": 53326,
+      "token": "▁$,",
+      "count": 88
+    },
+    {
+      "id": 57963,
+      "token": "bmatrix",
+      "count": 86
+    },
+    {
+      "id": 31480,
+      "token": "}}_{\\",
+      "count": 83
+    },
+    {
+      "id": 45897,
+      "token": "\\|_{",
+      "count": 81
+    },
+    {
+      "id": 36393,
+      "token": "$;",
+      "count": 81
+    },
+    {
+      "id": 82916,
+      "token": "Rightarrow",
+      "count": 80
+    },
+    {
+      "id": 55523,
+      "token": "lesssim",
+      "count": 80
+    },
+    {
+      "id": 33280,
+      "token": "···",
+      "count": 79
+    },
+    {
+      "id": 53135,
+      "token": "}^*",
+      "count": 77
+    },
+    {
+      "id": 55731,
+      "token": "ITIES",
+      "count": 77
+    },
+    {
+      "id": 27230,
+      "token": "lict",
+      "count": 76
+    },
+    {
+      "id": 29761,
+      "token": "}_\\",
+      "count": 74
+    },
+    {
+      "id": 26388,
+      "token": "▁taxes",
+      "count": 74
+    },
+    {
+      "id": 25147,
+      "token": "▁SEC",
+      "count": 70
+    },
+    {
+      "id": 36139,
+      "token": "▁=\\",
+      "count": 68
+    },
+    {
+      "id": 47550,
+      "token": "▁,\\",
+      "count": 68
+    },
+    {
+      "id": 87859,
+      "token": ")_{\\",
+      "count": 66
+    },
+    {
+      "id": 58876,
+      "token": "|^{",
+      "count": 66
+    },
+    {
+      "id": 25668,
+      "token": "mathscr",
+      "count": 65
+    },
+    {
+      "id": 44210,
+      "token": "▁mL",
+      "count": 65
+    },
+    {
+      "id": 29487,
+      "token": "'(",
+      "count": 64
+    },
+    {
+      "id": 25005,
+      "token": "▁$\\{",
+      "count": 62
+    },
+    {
+      "id": 36758,
+      "token": ")^{\\",
+      "count": 61
+    },
+    {
+      "id": 24916,
+      "token": "\\}$",
+      "count": 60
+    },
+    {
+      "id": 23744,
+      "token": "▁dx",
+      "count": 59
+    },
+    {
+      "id": 66405,
+      "token": "}},\\",
+      "count": 58
+    },
+    {
+      "id": 43720,
+      "token": "\\{\\",
+      "count": 58
+    },
+    {
+      "id": 88171,
+      "token": "}^{*",
+      "count": 58
+    },
+    {
+      "id": 89091,
+      "token": "lfloor",
+      "count": 58
+    },
+    {
+      "id": 88176,
+      "token": "rfloor",
+      "count": 57
+    },
+    {
+      "id": 28535,
+      "token": "▁inequality",
+      "count": 56
+    },
+    {
+      "id": 46786,
+      "token": "=}",
+      "count": 56
+    },
+    {
+      "id": 23535,
+      "token": "▁rational",
+      "count": 56
+    },
+    {
+      "id": 86053,
+      "token": "]：",
+      "count": 55
+    },
+    {
+      "id": 24085,
+      "token": "parallel",
+      "count": 54
+    },
+    {
+      "id": 36953,
+      "token": "▁threatened",
+      "count": 53
+    },
+    {
+      "id": 56390,
+      "token": "={\\",
+      "count": 52
+    },
+    {
+      "id": 70758,
+      "token": "})^{",
+      "count": 51
+    },
+    {
+      "id": 26203,
+      "token": "]}",
+      "count": 51
+    },
+    {
+      "id": 89074,
+      "token": ".（",
+      "count": 51
+    },
+    {
+      "id": 35347,
+      "token": "▁conservation",
+      "count": 51
+    },
+    {
+      "id": 31466,
+      "token": "▁$-",
+      "count": 50
+    },
+    {
+      "id": 66237,
+      "token": "},{\\",
+      "count": 49
+    },
+    {
+      "id": 92374,
+      "token": "leftarrow",
+      "count": 49
+    },
+    {
+      "id": 86292,
+      "token": "▁^{\\",
+      "count": 49
+    },
+    {
+      "id": 37561,
+      "token": "▁Econom",
+      "count": 48
+    },
+    {
+      "id": 39811,
+      "token": "Proof",
+      "count": 47
+    },
+    {
+      "id": 48794,
+      "token": ",{",
+      "count": 46
+    },
+    {
+      "id": 84635,
+      "token": "▁\\}",
+      "count": 46
+    },
+    {
+      "id": 60689,
+      "token": "|{\\",
+      "count": 46
+    },
+    {
+      "id": 24952,
+      "token": "▁Cook",
+      "count": 46
+    },
+    {
+      "id": 44627,
+      "token": "······",
+      "count": 46
+    },
+    {
+      "id": 28161,
+      "token": "subseteq",
+      "count": 45
+    },
+    {
+      "id": 29630,
+      "token": "▁\\;",
+      "count": 45
+    },
+    {
+      "id": 24345,
+      "token": "▁$|",
+      "count": 45
+    },
+    {
+      "id": 26371,
+      "token": "▁consumers",
+      "count": 45
+    },
+    {
+      "id": 28520,
+      "token": "▁$[",
+      "count": 45
+    },
+    {
+      "id": 43153,
+      "token": "▁rede",
+      "count": 45
+    },
+    {
+      "id": 68029,
+      "token": "\\|\\",
+      "count": 44
+    },
+    {
+      "id": 92696,
+      "token": "substack",
+      "count": 44
+    },
+    {
+      "id": 32154,
+      "token": "”、",
+      "count": 44
+    },
+    {
+      "id": 38875,
+      "token": "▁deposit",
+      "count": 44
+    },
+    {
+      "id": 25609,
+      "token": "oplus",
+      "count": 43
+    },
+    {
+      "id": 48911,
+      "token": "▁squares",
+      "count": 43
+    },
+    {
+      "id": 24567,
+      "token": "▁-\\",
+      "count": 42
+    },
+    {
+      "id": 78922,
+      "token": "}}=\\",
+      "count": 42
+    }
+  ],
+  "formula_commands": {
+    "unique": 370,
+    "missing_commands": [
+      {
+        "command": "\\therefore",
+        "occurrences": 209,
+        "tokens": [
+          "\\",
+          "therefore"
+        ],
+        "missing": [
+          "therefore"
+        ]
+      },
+      {
+        "command": "\\mathop",
+        "occurrences": 180,
+        "tokens": [
+          "\\",
+          "mathop"
+        ],
+        "missing": [
+          "mathop"
+        ]
+      },
+      {
+        "command": "\\binom",
+        "occurrences": 173,
+        "tokens": [
+          "\\",
+          "binom"
+        ],
+        "missing": [
+          "binom"
+        ]
+      },
+      {
+        "command": "\\vdots",
+        "occurrences": 160,
+        "tokens": [
+          "\\",
+          "vdots"
+        ],
+        "missing": [
+          "vdots"
+        ]
+      },
+      {
+        "command": "\\leqslant",
+        "occurrences": 96,
+        "tokens": [
+          "\\",
+          "leqslant"
+        ],
+        "missing": [
+          "leqslant"
+        ]
+      },
+      {
+        "command": "\\Rightarrow",
+        "occurrences": 80,
+        "tokens": [
+          "\\",
+          "Rightarrow"
+        ],
+        "missing": [
+          "Rightarrow"
+        ]
+      },
+      {
+        "command": "\\lesssim",
+        "occurrences": 80,
+        "tokens": [
+          "\\",
+          "lesssim"
+        ],
+        "missing": [
+          "lesssim"
+        ]
+      },
+      {
+        "command": "\\mathscr",
+        "occurrences": 65,
+        "tokens": [
+          "\\",
+          "mathscr"
+        ],
+        "missing": [
+          "mathscr"
+        ]
+      },
+      {
+        "command": "\\lfloor",
+        "occurrences": 58,
+        "tokens": [
+          "\\",
+          "lfloor"
+        ],
+        "missing": [
+          "lfloor"
+        ]
+      },
+      {
+        "command": "\\rfloor",
+        "occurrences": 57,
+        "tokens": [
+          "\\",
+          "rfloor"
+        ],
+        "missing": [
+          "rfloor"
+        ]
+      },
+      {
+        "command": "\\parallel",
+        "occurrences": 52,
+        "tokens": [
+          "\\",
+          "parallel"
+        ],
+        "missing": [
+          "parallel"
+        ]
+      },
+      {
+        "command": "\\subseteq",
+        "occurrences": 45,
+        "tokens": [
+          "\\",
+          "subseteq"
+        ],
+        "missing": [
+          "subseteq"
+        ]
+      },
+      {
+        "command": "\\substack",
+        "occurrences": 44,
+        "tokens": [
+          "\\",
+          "substack"
+        ],
+        "missing": [
+          "substack"
+        ]
+      },
+      {
+        "command": "\\oplus",
+        "occurrences": 42,
+        "tokens": [
+          "\\",
+          "oplus"
+        ],
+        "missing": [
+          "oplus"
+        ]
+      },
+      {
+        "command": "\\leftarrow",
+        "occurrences": 34,
+        "tokens": [
+          "\\",
+          "leftarrow"
+        ],
+        "missing": [
+          "leftarrow"
+        ]
+      },
+      {
+        "command": "\\Bigg",
+        "occurrences": 33,
+        "tokens": [
+          "\\",
+          "Bigg"
+        ],
+        "missing": [
+          "Bigg"
+        ]
+      },
+      {
+        "command": "\\stackrel",
+        "occurrences": 32,
+        "tokens": [
+          "\\",
+          "stackrel"
+        ],
+        "missing": [
+          "stackrel"
+        ]
+      },
+      {
+        "command": "\\perp",
+        "occurrences": 30,
+        "tokens": [
+          "\\",
+          "perp"
+        ],
+        "missing": [
+          "perp"
+        ]
+      },
+      {
+        "command": "\\geqslant",
+        "occurrences": 28,
+        "tokens": [
+          "\\",
+          "geqslant"
+        ],
+        "missing": [
+          "geqslant"
+        ]
+      },
+      {
+        "command": "\\sharp",
+        "occurrences": 28,
+        "tokens": [
+          "\\",
+          "sharp"
+        ],
+        "missing": [
+          "sharp"
+        ]
+      },
+      {
+        "command": "\\underset",
+        "occurrences": 24,
+        "tokens": [
+          "\\",
+          "underset"
+        ],
+        "missing": [
+          "underset"
+        ]
+      },
+      {
+        "command": "\\setminus",
+        "occurrences": 23,
+        "tokens": [
+          "\\",
+          "setminus"
+        ],
+        "missing": [
+          "setminus"
+        ]
+      },
+      {
+        "command": "\\degree",
+        "occurrences": 20,
+        "tokens": [
+          "\\",
+          "degree"
+        ],
+        "missing": [
+          "degree"
+        ]
+      },
+      {
+        "command": "\\bigl",
+        "occurrences": 20,
+        "tokens": [
+          "\\",
+          "bigl"
+        ],
+        "missing": [
+          "bigl"
+        ]
+      },
+      {
+        "command": "\\bigr",
+        "occurrences": 19,
+        "tokens": [
+          "\\",
+          "bigr"
+        ],
+        "missing": [
+          "bigr"
+        ]
+      },
+      {
+        "command": "\\bigg",
+        "occurrences": 18,
+        "tokens": [
+          "\\",
+          "bigg"
+        ],
+        "missing": [
+          "bigg"
+        ]
+      },
+      {
+        "command": "\\underbrace",
+        "occurrences": 17,
+        "tokens": [
+          "\\",
+          "under",
+          "brace"
+        ],
+        "missing": [
+          "brace"
+        ]
+      },
+      {
+        "command": "\\longrightarrow",
+        "occurrences": 15,
+        "tokens": [
+          "\\",
+          "longrightarrow"
+        ],
+        "missing": [
+          "longrightarrow"
+        ]
+      },
+      {
+        "command": "\\twoheadleftarrow",
+        "occurrences": 15,
+        "tokens": [
+          "\\",
+          "two",
+          "head",
+          "leftarrow"
+        ],
+        "missing": [
+          "leftarrow"
+        ]
+      },
+      {
+        "command": "\\mapsto",
+        "occurrences": 11,
+        "tokens": [
+          "\\",
+          "mapsto"
+        ],
+        "missing": [
+          "mapsto"
+        ]
+      },
+      {
+        "command": "\\notin",
+        "occurrences": 11,
+        "tokens": [
+          "\\",
+          "notin"
+        ],
+        "missing": [
+          "notin"
+        ]
+      },
+      {
+        "command": "\\bullet",
+        "occurrences": 11,
+        "tokens": [
+          "\\",
+          "bullet"
+        ],
+        "missing": [
+          "bullet"
+        ]
+      },
+      {
+        "command": "\\hline",
+        "occurrences": 10,
+        "tokens": [
+          "\\",
+          "hline"
+        ],
+        "missing": [
+          "hline"
+        ]
+      },
+      {
+        "command": "\\forall",
+        "occurrences": 9,
+        "tokens": [
+          "\\",
+          "forall"
+        ],
+        "missing": [
+          "forall"
+        ]
+      },
+      {
+        "command": "\\simeq",
+        "occurrences": 9,
+        "tokens": [
+          "\\",
+          "simeq"
+        ],
+        "missing": [
+          "simeq"
+        ]
+      },
+      {
+        "command": "\\Theta",
+        "occurrences": 8,
+        "tokens": [
+          "\\",
+          "Theta"
+        ],
+        "missing": [
+          "Theta"
+        ]
+      },
+      {
+        "command": "\\varnothing",
+        "occurrences": 8,
+        "tokens": [
+          "\\",
+          "var",
+          "nothing"
+        ],
+        "missing": [
+          "nothing"
+        ]
+      },
+      {
+        "command": "\\lceil",
+        "occurrences": 8,
+        "tokens": [
+          "\\",
+          "l",
+          "ceil"
+        ],
+        "missing": [
+          "ceil"
+        ]
+      },
+      {
+        "command": "\\rceil",
+        "occurrences": 8,
+        "tokens": [
+          "\\",
+          "r",
+          "ceil"
+        ],
+        "missing": [
+          "ceil"
+        ]
+      },
+      {
+        "command": "\\emptyset",
+        "occurrences": 8,
+        "tokens": [
+          "\\",
+          "emptyset"
+        ],
+        "missing": [
+          "emptyset"
+        ]
+      },
+      {
+        "command": "\\biggl",
+        "occurrences": 7,
+        "tokens": [
+          "\\",
+          "biggl"
+        ],
+        "missing": [
+          "biggl"
+        ]
+      },
+      {
+        "command": "\\displaystyle",
+        "occurrences": 7,
+        "tokens": [
+          "\\",
+          "displaystyle"
+        ],
+        "missing": [
+          "displaystyle"
+        ]
+      },
+      {
+        "command": "\\atop",
+        "occurrences": 6,
+        "tokens": [
+          "\\",
+          "atop"
+        ],
+        "missing": [
+          "atop"
+        ]
+      },
+      {
+        "command": "\\bigcup",
+        "occurrences": 6,
+        "tokens": [
+          "\\",
+          "bigcup"
+        ],
+        "missing": [
+          "bigcup"
+        ]
+      },
+      {
+        "command": "\\upharpoonright",
+        "occurrences": 6,
+        "tokens": [
+          "\\",
+          "up",
+          "har",
+          "poon",
+          "right"
+        ],
+        "missing": [
+          "poon"
+        ]
+      },
+      {
+        "command": "\\vee",
+        "occurrences": 6,
+        "tokens": [
+          "\\",
+          "vee"
+        ],
+        "missing": [
+          "vee"
+        ]
+      },
+      {
+        "command": "\\llbracket",
+        "occurrences": 5,
+        "tokens": [
+          "\\",
+          "ll",
+          "bracket"
+        ],
+        "missing": [
+          "bracket"
+        ]
+      },
+      {
+        "command": "\\rrbracket",
+        "occurrences": 5,
+        "tokens": [
+          "\\",
+          "rr",
+          "bracket"
+        ],
+        "missing": [
+          "bracket"
+        ]
+      },
+      {
+        "command": "\\gtrdot",
+        "occurrences": 5,
+        "tokens": [
+          "\\",
+          "gtr",
+          "dot"
+        ],
+        "missing": [
+          "gtr"
+        ]
+      },
+      {
+        "command": "\\phantom",
+        "occurrences": 5,
+        "tokens": [
+          "\\",
+          "phantom"
+        ],
+        "missing": [
+          "phantom"
+        ]
+      },
+      {
+        "command": "\\scriptstyle",
+        "occurrences": 5,
+        "tokens": [
+          "\\",
+          "scriptstyle"
+        ],
+        "missing": [
+          "scriptstyle"
+        ]
+      },
+      {
+        "command": "\\sinh",
+        "occurrences": 5,
+        "tokens": [
+          "\\",
+          "sinh"
+        ],
+        "missing": [
+          "sinh"
+        ]
+      },
+      {
+        "command": "\\varrho",
+        "occurrences": 4,
+        "tokens": [
+          "\\",
+          "varrho"
+        ],
+        "missing": [
+          "varrho"
+        ]
+      },
+      {
+        "command": "\\vartriangleleft",
+        "occurrences": 3,
+        "tokens": [
+          "\\",
+          "vart",
+          "ri",
+          "angle",
+          "left"
+        ],
+        "missing": [
+          "vart"
+        ]
+      },
+      {
+        "command": "\\textstyle",
+        "occurrences": 3,
+        "tokens": [
+          "\\",
+          "textstyle"
+        ],
+        "missing": [
+          "textstyle"
+        ]
+      },
+      {
+        "command": "\\cot",
+        "occurrences": 3,
+        "tokens": [
+          "\\",
+          "cot"
+        ],
+        "missing": [
+          "cot"
+        ]
+      },
+      {
+        "command": "\\mathtt",
+        "occurrences": 3,
+        "tokens": [
+          "\\",
+          "mat",
+          "htt"
+        ],
+        "missing": [
+          "htt"
+        ]
+      },
+      {
+        "command": "\\scriptscriptstyle",
+        "occurrences": 3,
+        "tokens": [
+          "\\",
+          "script",
+          "scriptstyle"
+        ],
+        "missing": [
+          "scriptstyle"
+        ]
+      },
+      {
+        "command": "\\backslash",
+        "occurrences": 2,
+        "tokens": [
+          "\\",
+          "backslash"
+        ],
+        "missing": [
+          "backslash"
+        ]
+      },
+      {
+        "command": "\\mathit",
+        "occurrences": 2,
+        "tokens": [
+          "\\",
+          "mathit"
+        ],
+        "missing": [
+          "mathit"
+        ]
+      },
+      {
+        "command": "\\textnormal",
+        "occurrences": 2,
+        "tokens": [
+          "\\",
+          "textnormal"
+        ],
+        "missing": [
+          "textnormal"
+        ]
+      },
+      {
+        "command": "\\hbar",
+        "occurrences": 2,
+        "tokens": [
+          "\\",
+          "hbar"
+        ],
+        "missing": [
+          "hbar"
+        ]
+      },
+      {
+        "command": "\\tfrac",
+        "occurrences": 2,
+        "tokens": [
+          "\\",
+          "tfrac"
+        ],
+        "missing": [
+          "tfrac"
+        ]
+      },
+      {
+        "command": "\\textit",
+        "occurrences": 2,
+        "tokens": [
+          "\\",
+          "textit"
+        ],
+        "missing": [
+          "textit"
+        ]
+      },
+      {
+        "command": "\\tif",
+        "occurrences": 2,
+        "tokens": [
+          "\\",
+          "tif"
+        ],
+        "missing": [
+          "tif"
+        ]
+      },
+      {
+        "command": "\\overbrace",
+        "occurrences": 2,
+        "tokens": [
+          "\\",
+          "over",
+          "brace"
+        ],
+        "missing": [
+          "brace"
+        ]
+      },
+      {
+        "command": "\\dfrac",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "dfrac"
+        ],
+        "missing": [
+          "dfrac"
+        ]
+      },
+      {
+        "command": "\\Leftrightarrow",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "L",
+          "ef",
+          "trightarrow"
+        ],
+        "missing": [
+          "trightarrow"
+        ]
+      },
+      {
+        "command": "\\boxed",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "boxed"
+        ],
+        "missing": [
+          "boxed"
+        ]
+      },
+      {
+        "command": "\\Longleftrightarrow",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "Long",
+          "lef",
+          "trightarrow"
+        ],
+        "missing": [
+          "lef",
+          "trightarrow"
+        ]
+      },
+      {
+        "command": "\\nolimits",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "nolimits"
+        ],
+        "missing": [
+          "nolimits"
+        ]
+      },
+      {
+        "command": "\\asymp",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "as",
+          "ymp"
+        ],
+        "missing": [
+          "ymp"
+        ]
+      },
+      {
+        "command": "\\odot",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "odot"
+        ],
+        "missing": [
+          "odot"
+        ]
+      },
+      {
+        "command": "\\gtrsim",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "gtr",
+          "sim"
+        ],
+        "missing": [
+          "gtr"
+        ]
+      },
+      {
+        "command": "\\leadsto",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "lead",
+          "sto"
+        ],
+        "missing": [
+          "lead"
+        ]
+      },
+      {
+        "command": "\\bigoplus",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "big",
+          "oplus"
+        ],
+        "missing": [
+          "oplus"
+        ]
+      },
+      {
+        "command": "\\nlegend",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "n",
+          "legend"
+        ],
+        "missing": [
+          "legend"
+        ]
+      },
+      {
+        "command": "\\ncolormap",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "n",
+          "col",
+          "ormap"
+        ],
+        "missing": [
+          "ormap"
+        ]
+      },
+      {
+        "command": "\\nsurf",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "ns",
+          "urf"
+        ],
+        "missing": [
+          "urf"
+        ]
+      },
+      {
+        "command": "\\nzlabel",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "nz",
+          "label"
+        ],
+        "missing": [
+          "nz"
+        ]
+      },
+      {
+        "command": "\\textbf",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "textbf"
+        ],
+        "missing": [
+          "textbf"
+        ]
+      },
+      {
+        "command": "\\Bigl",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "Bigl"
+        ],
+        "missing": [
+          "Bigl"
+        ]
+      },
+      {
+        "command": "\\Bigr",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "Bigr"
+        ],
+        "missing": [
+          "Bigr"
+        ]
+      },
+      {
+        "command": "\\bigodot",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "big",
+          "odot"
+        ],
+        "missing": [
+          "odot"
+        ]
+      },
+      {
+        "command": "\\propto",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "propto"
+        ],
+        "missing": [
+          "propto"
+        ]
+      },
+      {
+        "command": "\\QC",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "QC"
+        ],
+        "missing": [
+          "QC"
+        ]
+      },
+      {
+        "command": "\\nmovieList",
+        "occurrences": 1,
+        "tokens": [
+          "\\",
+          "n",
+          "movie",
+          "List"
+        ],
+        "missing": [
+          "movie"
+        ]
+      }
+    ]
+  },
+  "probes": [
+    {
+      "text": "MIN TEMP MAX AVG STD MEAN SD SE CI P95 P99",
+      "missing": [
+        {
+          "id": 68069,
+          "token": "▁TEMP"
+        }
+      ]
+    },
+    {
+      "text": "Publisher Douglas brain temperature concentration coefficient uncertainty",
+      "missing": [
+        {
+          "id": 39938,
+          "token": "Publisher"
+        },
+        {
+          "id": 35576,
+          "token": "▁Douglas"
+        }
+      ]
+    },
+    {
+      "text": "µg/mL μmol/L mmol/L mg/kg kg·m⁻³ m² s⁻¹ °C °F ± ≤ ≥ ≠ ≈ × ÷ ¾ ½ ‰",
+      "missing": []
+    },
+    {
+      "text": "\\frac{a}{b} \\sqrt{x} \\alpha \\beta \\gamma \\Delta \\sigma \\epsilon \\varepsilon",
+      "missing": []
+    },
+    {
+      "text": "\\sum_{i=1}^{n} \\prod \\int \\infty \\partial \\nabla \\forall \\exists \\notin",
+      "missing": [
+        {
+          "id": 32411,
+          "token": "forall"
+        },
+        {
+          "id": 77099,
+          "token": "notin"
+        }
+      ]
+    },
+    {
+      "text": "\\operatorname{diag} \\mathbf{x} \\boldsymbol{\\theta} \\mathbb{R} \\mathcal{L}",
+      "missing": [
+        {
+          "id": 31291,
+          "token": "diag"
+        }
+      ]
+    },
+    {
+      "text": "\\begin{aligned} x &= y \\\\ z &= 1 \\end{aligned}",
+      "missing": []
+    },
+    {
+      "text": "H₂O CO₂ Na⁺ Ca²⁺ Fe³⁺ SO₄²⁻ 10⁻⁶ 10⁹",
+      "missing": []
+    },
+    {
+      "text": "p<0.05 p≤0.01 95% CI 1.2e−3 1.2E-3 $ € £ ¥ ₹ ₽ ₩",
+      "missing": []
+    },
+    {
+      "text": "Ångström Müller François İstanbul Straße naïve café résumé",
+      "missing": [
+        {
+          "id": 55336,
+          "token": "ström"
+        },
+        {
+          "id": 78676,
+          "token": "▁Müller"
+        },
+        {
+          "id": 59564,
+          "token": "▁François"
+        },
+        {
+          "id": 65847,
+          "token": "▁İstanbul"
+        },
+        {
+          "id": 37217,
+          "token": "▁Stra"
+        },
+        {
+          "id": 27233,
+          "token": "ße"
+        },
+        {
+          "id": 89043,
+          "token": "▁café"
+        }
+      ]
+    },
+    {
+      "text": "Температура среднее стандартное отклонение",
+      "missing": [
+        {
+          "id": 29030,
+          "token": "тура"
+        },
+        {
+          "id": 63678,
+          "token": "▁сред"
+        },
+        {
+          "id": 32837,
+          "token": "ное"
+        },
+        {
+          "id": 47912,
+          "token": "лон"
+        }
+      ]
+    },
+    {
+      "text": "درجة الحرارة متوسط القيمة",
+      "missing": [
+        {
+          "id": 83531,
+          "token": "جة"
+        },
+        {
+          "id": 59050,
+          "token": "ارة"
+        },
+        {
+          "id": 32557,
+          "token": "▁مت"
+        },
+        {
+          "id": 63757,
+          "token": "وسط"
+        }
+      ]
+    },
+    {
+      "text": "平均 温度 標準偏差 カタカナ ひらがな",
+      "missing": []
+    },
+    {
+      "text": "평균 온도 표준편차",
+      "missing": []
+    },
+    {
+      "text": "तापमान औसत मान ค่าเฉลี่ย อุณหภูมิ",
+      "missing": [
+        {
+          "id": 28729,
+          "token": "मान"
+        },
+        {
+          "id": 81804,
+          "token": "▁मान"
+        },
+        {
+          "id": 81252,
+          "token": "ี่ย"
+        }
+      ]
+    },
+    {
+      "text": "<fcel>A<ecel><lcel><ucel><xcel><nl>",
+      "missing": []
+    }
+  ],
+  "omitted_early_examples": [
+    [
+      23339,
+      "imus"
+    ],
+    [
+      23340,
+      "▁antigen"
+    ],
+    [
+      23343,
+      "▁HOLD"
+    ],
+    [
+      23345,
+      "ње"
+    ],
+    [
+      23346,
+      "▁Naj"
+    ],
+    [
+      23348,
+      "▁transplant"
+    ],
+    [
+      23349,
+      "jp"
+    ],
+    [
+      23351,
+      "iox"
+    ],
+    [
+      23352,
+      "zek"
+    ],
+    [
+      23353,
+      "шт"
+    ],
+    [
+      23354,
+      "▁AF"
+    ],
+    [
+      23356,
+      "▁ticket"
+    ],
+    [
+      23357,
+      "▁Republican"
+    ],
+    [
+      23358,
+      "▁thu"
+    ],
+    [
+      23359,
+      "osten"
+    ],
+    [
+      23360,
+      "▁Despite"
+    ],
+    [
+      23361,
+      "šč"
+    ],
+    [
+      23362,
+      "▁consequence"
+    ],
+    [
+      23364,
+      "▁reven"
+    ],
+    [
+      23365,
+      "▁Fab"
+    ],
+    [
+      23368,
+      "WINDO"
+    ],
+    [
+      23369,
+      "▁aged"
+    ],
+    [
+      23370,
+      "▁δεν"
+    ],
+    [
+      23371,
+      "▁males"
+    ],
+    [
+      23372,
+      "▁fuck"
+    ],
+    [
+      23373,
+      "▁clot"
+    ],
+    [
+      23374,
+      "{'"
+    ],
+    [
+      23375,
+      "unicode"
+    ],
+    [
+      23377,
+      "Missing"
+    ],
+    [
+      23378,
+      "apor"
+    ],
+    [
+      23379,
+      "▁кра"
+    ],
+    [
+      23380,
+      "▁sitt"
+    ],
+    [
+      23381,
+      "Sen"
+    ],
+    [
+      23383,
+      "▁accesskey"
+    ],
+    [
+      23384,
+      "ErrorCode"
+    ],
+    [
+      23385,
+      "iks"
+    ],
+    [
+      23386,
+      "Fire"
+    ],
+    [
+      23387,
+      "▁DES"
+    ],
+    [
+      23388,
+      "ensing"
+    ],
+    [
+      23389,
+      "▁Environment"
+    ],
+    [
+      23391,
+      "▁Ге"
+    ],
+    [
+      23393,
+      "ICODE"
+    ],
+    [
+      23394,
+      "▁/**<"
+    ],
+    [
+      23395,
+      "▁جم"
+    ],
+    [
+      23396,
+      "etary"
+    ],
+    [
+      23397,
+      "▁Cred"
+    ],
+    [
+      23400,
+      "usen"
+    ],
+    [
+      23401,
+      "ovascular"
+    ],
+    [
+      23402,
+      "ând"
+    ],
+    [
+      23404,
+      "▁guitar"
+    ],
+    [
+      23405,
+      "▁fare"
+    ],
+    [
+      23407,
+      "▁Vin"
+    ],
+    [
+      23409,
+      "pires"
+    ],
+    [
+      23410,
+      "▁consisting"
+    ],
+    [
+      23417,
+      "Hook"
+    ],
+    [
+      23418,
+      "▁bik"
+    ],
+    [
+      23419,
+      "▁suffered"
+    ],
+    [
+      23420,
+      "Live"
+    ],
+    [
+      23422,
+      "!)"
+    ],
+    [
+      23423,
+      "anca"
+    ],
+    [
+      23425,
+      "bugzilla"
+    ],
+    [
+      23427,
+      "Mount"
+    ],
+    [
+      23428,
+      "▁symmetry"
+    ],
+    [
+      23430,
+      "▁magazine"
+    ],
+    [
+      23431,
+      "▁Vo"
+    ],
+    [
+      23432,
+      "▁trained"
+    ],
+    [
+      23433,
+      "ussen"
+    ],
+    [
+      23434,
+      "▁jou"
+    ],
+    [
+      23436,
+      "dere"
+    ],
+    [
+      23437,
+      "ividual"
+    ],
+    [
+      23438,
+      "▁dealing"
+    ],
+    [
+      23439,
+      "scheduler"
+    ],
+    [
+      23440,
+      "▁qualified"
+    ],
+    [
+      23441,
+      "future"
+    ],
+    [
+      23442,
+      "held"
+    ],
+    [
+      23444,
+      "▁recruit"
+    ],
+    [
+      23447,
+      "▁torn"
+    ],
+    [
+      23448,
+      "Overlay"
+    ],
+    [
+      23450,
+      "▁Release"
+    ],
+    [
+      23454,
+      "یں"
+    ],
+    [
+      23455,
+      "▁klub"
+    ],
+    [
+      23457,
+      ">\";"
+    ],
+    [
+      23458,
+      "OVER"
+    ],
+    [
+      23459,
+      "▁Fox"
+    ],
+    [
+      23460,
+      "▁mos"
+    ],
+    [
+      23461,
+      "ceptions"
+    ],
+    [
+      23462,
+      "▁rural"
+    ],
+    [
+      23463,
+      "Cc"
+    ],
+    [
+      23464,
+      "▁MIN"
+    ],
+    [
+      23465,
+      "ranslate"
+    ],
+    [
+      23466,
+      "Ber"
+    ],
+    [
+      23467,
+      "Signal"
+    ],
+    [
+      23468,
+      "ुर"
+    ],
+    [
+      23471,
+      "▁Clark"
+    ],
+    [
+      23472,
+      "ρχ"
+    ],
+    [
+      23473,
+      "▁Iz"
+    ],
+    [
+      23475,
+      "Cos"
+    ],
+    [
+      23476,
+      "olesc"
+    ],
+    [
+      23477,
+      "▁rear"
+    ],
+    [
+      23478,
+      ",("
+    ]
+  ],
+  "observed_native_missing": [
+    {
+      "id": 29785,
+      "token": "TEMP",
+      "count": 6
+    },
+    {
+      "id": 23464,
+      "token": "▁MIN",
+      "count": 3
+    },
+    {
+      "id": 67113,
+      "token": "ISM",
+      "count": 2
+    },
+    {
+      "id": 33914,
+      "token": "▁(+",
+      "count": 2
+    },
+    {
+      "id": 84170,
+      "token": "▁Tac",
+      "count": 1
+    },
+    {
+      "id": 49098,
+      "token": "ldr",
+      "count": 1
+    },
+    {
+      "id": 50413,
+      "token": "Convention",
+      "count": 1
+    },
+    {
+      "id": 63572,
+      "token": "▁SHOW",
+      "count": 1
+    },
+    {
+      "id": 37946,
+      "token": "STOR",
+      "count": 1
+    }
+  ],
+  "repair_counts": {
+    "add_all_observed_native": 9,
+    "protected_plus_all_reference_ids": 60153,
+    "protected_plus_table_cell_formula_native": 40399,
+    "missing_table_cell_formula_native": 541,
+    "protect_reference_tokenizations_total": 53881,
+    "protect_reference_and_native_total": 53881,
+    "extra_missing_latex_command_pieces": 79
+  }
+}
