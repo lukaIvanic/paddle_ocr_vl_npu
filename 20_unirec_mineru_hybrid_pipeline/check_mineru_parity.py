@@ -16,10 +16,14 @@ from hybrid_routing import MINERU_TASKS
 
 def main():
     import torch
+    import torch_npu
     from PIL import Image
     from streaming_decode import run_decode_stream
 
     args = build_parser().parse_args()
+    torch.npu.set_device('npu:0')
+    torch.npu.set_compile_mode(jit_compile=False)
+    torch.npu.config.allow_internal_format = True
     output = args.output_dir
     output.mkdir(parents=True, exist_ok=False)
     actual = {}
