@@ -1521,6 +1521,8 @@ class _OpenPrefillSource:
                 return None
             if not self.pending:
                 return None
+            if self.scheduling_metrics is not None:
+                self.scheduling_metrics.cpu_prefill_eligible(self.pending[0][0], block=block)
             if not block and not self.pending[0][1].done():
                 # CPU preparation is background work, not a reason to stall
                 # live decoding. Keep ownership in pending until a later poll;
@@ -1542,6 +1544,12 @@ class _OpenPrefillSource:
                 block = False
                 continue
             consumer_wait_s = time.perf_counter() - wait_started
+            if self.scheduling_metrics is not None:
+                self.scheduling_metrics.cpu_prepared(
+                    request_id, submitted_at=prepared.request_started,
+                    queue_wait_s=prepared.timing_s["cpu_preprocess_background_queue_wait"],
+                    finished_at=prepared.preparation_finished, consumed_at=wait_started,
+                )
             # Refill the CPU lane before NPU prefill so host preparation for
             # later HTTP requests overlaps the current crop's device work.
             self._submit_available(block_for_first=False)

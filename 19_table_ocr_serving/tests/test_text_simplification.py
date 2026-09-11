@@ -759,6 +759,18 @@ class TextSimplificationTests(unittest.TestCase):
         old_classes,new_classes=classes(old_source),classes(new_source)
         # Arrival/admission/CPU lookahead behavior is not rewritten by this cleanup.
         class CropHandoff(ast.NodeTransformer):
+            def visit_If(self, n):
+                # Additive CPU-readiness observations are independently tested.
+                # Remove ONLY the two new metric calls for this scheduling AST
+                # comparison; future polling, waiting and prefill stay checked.
+                if (ast.unparse(n.test) == 'self.scheduling_metrics is not None'
+                    and len(n.body)==1 and isinstance(n.body[0],ast.Expr)
+                    and isinstance(n.body[0].value,ast.Call)
+                    and ast.unparse(n.body[0].value.func) in
+                        {'self.scheduling_metrics.cpu_prefill_eligible',
+                         'self.scheduling_metrics.cpu_prepared'}):
+                    return None
+                return self.generic_visit(n)
             def visit_FunctionDef(self, n):
                 n = self.generic_visit(n)
                 if n.name == 'pull':

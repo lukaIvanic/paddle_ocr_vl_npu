@@ -10,6 +10,7 @@ from __future__ import annotations
 from bisect import bisect_right
 from collections import Counter
 from dataclasses import dataclass, field
+import time
 from typing import Any, Iterable
 
 
@@ -20,6 +21,9 @@ class _Request:
     first_decode_at: float | None = None
     launched: Counter[int] = field(default_factory=Counter)
     consumed: Counter[int] = field(default_factory=Counter)
+    cpu_eligible_at: float | None = None
+    cpu_idle_eligible_at: float | None = None
+    cpu_readiness: dict[str, Any] = field(default_factory=dict)
 
 
 class RequestSchedulingMetrics:
@@ -54,6 +58,50 @@ class RequestSchedulingMetrics:
             self.requests[request_id].ready_at = finished_at
         else:
             self.requests.pop(request_id)
+
+    def cpu_prefill_eligible(self, request_id: str, *, block: bool) -> None:
+        """FIFO head has an unreserved slot; CPU may still be unfinished.
+
+        Once eligible, this head cannot lose its slot to a later request:
+        prefill is FIFO on the scheduler thread. Read the clock only at the
+        first eligibility observation or transition into an idle blocking pull.
+        """
+        request = self.requests[request_id]
+        if request.cpu_eligible_at is None:
+            request.cpu_eligible_at = time.perf_counter()
+        if block and request.cpu_idle_eligible_at is None:
+            request.cpu_idle_eligible_at = time.perf_counter()
+
+    def cpu_prepared(
+        self, request_id: str, *, submitted_at: float, queue_wait_s: float,
+        finished_at: float, consumed_at: float,
+    ) -> None:
+        request = self.requests[request_id]
+        eligible = request.cpu_eligible_at
+        assert eligible is not None
+        started = submitted_at + queue_wait_s
+        blocked = max(0.0, finished_at - eligible)
+        queue = max(0.0, min(started, finished_at) - eligible)
+        service = max(0.0, finished_at - max(started, eligible))
+        idle = (0.0 if request.cpu_idle_eligible_at is None else
+                max(0.0, finished_at - request.cpu_idle_eligible_at))
+        request.cpu_readiness = {
+            "prefill_blocked_s": blocked,
+            "blocked_cpu_queue_s": queue,
+            "blocked_cpu_service_s": service,
+            "scheduler_idle_blocked_s": idle,
+            "ready_to_consumer_poll_s": max(0.0, consumed_at - max(eligible, finished_at)),
+            "eligible_offset_s": eligible - request.started_at,
+            "cpu_finished_offset_s": finished_at - request.started_at,
+            "semantics": (
+                "Observed FIFO-head/free-slot eligibility until CPU preparation "
+                "finishes; zero if already ready. Includes CPU queue and service, "
+                "excludes full-slot and earlier-request prefill waits. Idle subset "
+                "means no active/ready decode request at a blocking pull, not "
+                "device-traced NPU idle. Poll-boundary measurement, not a "
+                "counterfactual E2E saving; do not subtract from latency."
+            ),
+        }
 
     def step(self, request_ids: Iterable[str], started_at: float) -> None:
         ids = tuple(request_ids)
@@ -111,6 +159,7 @@ class RequestSchedulingMetrics:
                 "stall time; do not add to device-stage or residency timings."
             ),
             "batch_size": self.batch_size,
+            "cpu_readiness": dict(request.cpu_readiness),
             "first_decode_offset_s": (
                 None if request.first_decode_at is None
                 else request.first_decode_at - request.started_at
