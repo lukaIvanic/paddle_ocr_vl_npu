@@ -4,7 +4,8 @@
 The HTTP process never imports Torch. One spawned NPU process owns the
 ContinuousRecognizer and its compiled-graph caches for the server lifetime.
 The implementation is the validated 910B2 table-serving path. This endpoint
-accepts table crops only; it uses the frozen table vocabulary.
+accepts table crops only, with the bundled 60,416-row decode vocabulary by
+default or the full checkpoint vocabulary with --full-decode-lm-head.
 """
 
 from __future__ import annotations
@@ -46,7 +47,6 @@ def main() -> None:
         "model": str(args.model.expanduser().resolve()),
         "decode_batch_size": args.decode_batch_size,
         "full_decode_lm_head": args.full_decode_lm_head,
-        "expanded_decode_lm_head": args.expanded_decode_lm_head,
         "eager": args.eager,
         "decode_device_timing": not args.no_decode_device_timing,
         "request_scheduling_metrics": args.request_scheduling_metrics,
@@ -143,14 +143,9 @@ def parse_args() -> argparse.Namespace:
         "--decode-batch-size", type=int, default=2,
         help="Physical decode batch B, not a client concurrency limit; no batch-filling wait.",
     )
-    head = parser.add_mutually_exclusive_group()
-    head.add_argument(
+    parser.add_argument(
         "--full-decode-lm-head", action="store_true",
-        help="Compare against the full checkpoint vocabulary; default uses the fixed trimmed decode head.",
-    )
-    head.add_argument(
-        "--expanded-decode-lm-head", action="store_true",
-        help="Use the frozen 60,416-row native-ID/Han/character vocabulary for head comparison.",
+        help="Use all 103,424 checkpoint vocabulary rows instead of the bundled 60,416-row decode head.",
     )
     timing = parser.add_mutually_exclusive_group()
     timing.add_argument("--no-decode-device-timing", action="store_true", default=True)
@@ -401,7 +396,6 @@ def _worker_main(
             model=config["model"],
             batch_size=config["decode_batch_size"],
             full_decode_lm_head=config["full_decode_lm_head"],
-            expanded_decode_lm_head=config["expanded_decode_lm_head"],
             decode_device_timing=config["decode_device_timing"],
             torchair_cache_dir=Path(config["torchair_cache_dir"]),
             eager=config["eager"],

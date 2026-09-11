@@ -9,7 +9,9 @@ ROOT=HERE.parents[2]
 scope=runpy.run_path(str(HERE/'review_native_core.py'))
 vocab=scope['vocab']
 protected=scope['extended']
-old=json.loads((ROOT/'19_table_ocr_serving/presets/table_compact_vocab/b1_verifier_topfreq_16384.json').read_text())
+# Historical audit input, not a product-runtime dependency. Experiment 19 no
+# longer ships the 16k head; its byte-identical research copy remains in 09.
+old=json.loads((ROOT/'09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json').read_text())
 assert len(protected)==60352
 tokenizer_sha=hashlib.sha256(Path('/tmp/paddle_tokenizer_vocab_audit.json').read_bytes()).hexdigest()
 assert tokenizer_sha=='c8a215a59183d0d0781adc33bacd3ce6162716f7fd568fb30234a74d69803a7d'

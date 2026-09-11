@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args()
     raw = json.loads(args.tokenizer.read_text())
     tokenizer = Tokenizer.from_file(str(args.tokenizer))
-    selection = json.loads((ROOT/'19_table_ocr_serving/presets/table_compact_vocab/b1_verifier_topfreq_16384.json').read_text())
+    selection = json.loads((ROOT/'09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json').read_text())
     kept = set(selection['token_ids'])
     vocab = {i:t for t,i in raw['model']['vocab'].items()}
     special = set()

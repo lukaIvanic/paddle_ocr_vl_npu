@@ -48,7 +48,7 @@ cmd=['ssh','-S','/tmp/paddle-blue-zone-master.sock','-o','IdentitiesOnly=yes',
      'root@116.204.40.238','python3 -']
 result=subprocess.run(cmd,input=REMOTE,text=True,capture_output=True,timeout=180,check=True)
 raw=json.loads(result.stdout)
-selection=json.loads((ROOT/'19_table_ocr_serving/presets/table_compact_vocab/b1_verifier_topfreq_16384.json').read_text())
+selection=json.loads((ROOT/'09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json').read_text())
 kept=set(selection['token_ids'])
 for source in raw:
  total=collections.Counter()

@@ -406,8 +406,12 @@ class TextSimplificationTests(unittest.TestCase):
         for kind in ('min', 'max'):
             self.assertEqual(instance.preprocessor_config[kind + '_pixels'], recorded['preprocessor']['effective_' + kind + '_pixels'])
         _, vocab = current.load_decode_vocab_token_ids(instance.decode_vocab_token_ids_path, full_vocab_size=103424)
-        self.assertEqual(vocab['token_ids_sha256'], recorded['decode_vocab']['token_ids_sha256'])
-        self.assertEqual(vocab['selected_vocab_size'], recorded['decode_vocab']['selected_vocab_size'])
+        # Vocabulary intentionally changed after the mechanical-copy anchor.
+        # Keep all the original runtime checks above, but anchor this decision
+        # to the completed 60k NPU run, not the old 16k readiness record.
+        head_record = json.loads((ROOT / 'tmp/19_table_ocr_serving/lm_head_60416_20260911/b8_expanded_measured/b8/ready.json').read_text())['configuration']['decode_vocab']
+        self.assertEqual(vocab['token_ids_sha256'], head_record['token_ids_sha256'])
+        self.assertEqual(vocab['selected_vocab_size'], head_record['selected_vocab_size'])
 
     def test_http_worker_cli_and_request_wiring(self):
         import serve
@@ -415,7 +419,7 @@ class TextSimplificationTests(unittest.TestCase):
         with patch.object(sys, 'argv', ['serve.py']):
             args = serve.parse_args()
         expected_args = {'host', 'port', 'request_timeout_s', 'max_image_bytes', 'queue_capacity', 'eager',
-            'full_decode_lm_head', 'expanded_decode_lm_head',
+            'full_decode_lm_head',
             'model', 'device', 'decode_batch_size', 'no_decode_device_timing', 'request_scheduling_metrics',
             'torchair_cache_dir', 'vision_torchair_cache_dir', 'text_torchair_cache_dir', 'service_summary_output'}
         self.assertEqual(set(vars(args)), expected_args)
@@ -423,10 +427,7 @@ class TextSimplificationTests(unittest.TestCase):
         self.assertTrue(args.no_decode_device_timing)
         self.assertTrue(args.request_scheduling_metrics)
         self.assertFalse(args.full_decode_lm_head)
-        self.assertFalse(args.expanded_decode_lm_head)
-        with patch.object(sys, 'argv', ['serve.py', '--expanded-decode-lm-head']):
-            self.assertTrue(serve.parse_args().expanded_decode_lm_head)
-        with patch.object(sys, 'argv', ['serve.py', '--full-decode-lm-head', '--expanded-decode-lm-head']), \
+        with patch.object(sys, 'argv', ['serve.py', '--expanded-decode-lm-head']), \
              patch('sys.stderr',new=io.StringIO()), self.assertRaises(SystemExit):
             serve.parse_args()
         with patch.object(sys, 'argv', ['serve.py', '--full-decode-lm-head']):
@@ -464,7 +465,7 @@ class TextSimplificationTests(unittest.TestCase):
                       crop_type='table', submitted_monotonic_s=0.0))
         jobs.put(None)
         cfg = dict(model='/unused', device='npu:0', decode_batch_size=8, decode_device_timing=False, eager=False,
-                   full_decode_lm_head=True, expanded_decode_lm_head=False,
+                   full_decode_lm_head=True,
                    request_scheduling_metrics=True, torchair_cache_dir='/unused/decode',
                    vision_torchair_cache_dir='/unused/vision', text_torchair_cache_dir='/unused/text')
         with patch.object(runtime, 'ContinuousRecognizer', FakeRecognizer), \

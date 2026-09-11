@@ -133,38 +133,36 @@ This self-contained runtime is copied from experiment 09 at
 The original is preserved unchanged. The same B8 / 6 QPS 1,000-request benchmark
 has now been repeated before any cleanup.
 
-### Full versus trimmed decode-head comparison (910B-tested)
+### Two supported decode vocabularies
 
-`serve.py --full-decode-lm-head` skips construction of the selected-row head
-and its native-ID map. Omitting the flag preserves the 16,384-row trimmed
-default. Both decode branches return greedy native token IDs from inside the
-stage; the full branch no longer returns a logits tensor to the scheduler.
-The checkpoint full head remains used for first-token selection after text
-prefill in both variants. No first-token handling or scheduler change is included.
+- Default: the bundled **60,416-row** selected head.
+- `--full-decode-lm-head`: the complete **103,424-row** checkpoint head.
 
-The frozen expanded-head comparison uses `--expanded-decode-lm-head` and
+There is no 16k mode, arbitrary vocabulary-path option, or expanded-head flag.
+Both choices use the same decoder and scheduler and return greedy native IDs.
+First-token selection after text prefill uses the full head in both modes.
+
+All selected IDs, row ordering and checksum are self-contained in
 `presets/table_compact_vocab/native_han_core_60416.json`: 60,352 reviewed protected
 IDs plus 64 deterministic fillers, SHA256
 `c730b5388f9871ead92e2cb484f8df81ba69518f1e8baeccc5a37f44c1514637`.
-It preserves the original 16k row order, all inspected raw generation IDs, all
-Han tokens, and the reviewed Unicode protections. It is mutually exclusive with
-`--full-decode-lm-head`; the default remains the original 16k mapping pending the
-comparison. See `tmp/19_table_ocr_serving/vocab_review_51200_20260911/CORE_REVIEW.md`
-and `NATIVE_RESULTS.md` for scope and limitations. First-token selection is unchanged.
+Loading does not tokenize text, read benchmark artifacts, import experiment 09,
+or download anything. Full mode needs no separate ID list: its rows already use
+the checkpoint's native vocabulary IDs. See the [vocabulary contract](presets/table_compact_vocab/README.md).
 
-Serving uses separate decode cache roots: `full_vocab_<size>` versus
-`selected_vocab_<size>_<mapping-hash>`. Vision and text-prefill roots are unchanged
-between variants. Readiness records `full_decode_lm_head` and the vocabulary
-metadata. This is a comparison switch, not a decision to retain trimming.
+Decode cache identities remain `selected_vocab_<size>_<mapping-hash>` and
+`full_vocab_<size>`. Defaulting to the already-tested 60k mapping does not change
+its ID order, model operations or cache identity. The model source files and
+vision/text-prefill cache identities are unchanged by this selection cleanup.
+Readiness reports the actual head size and hash.
 
-All 25 CPU tests pass, including full-head greedy IDs against the old logits,
-unchanged transformer operation traces/KV writes, head setup/cache separation,
-and CLI-to-worker selection. The four real-NPU random-100 runs completed at
-`2c04ecc7`: full-head throughput was 4.2% lower at B2/C2 and 7.3% lower at B8/C8.
-All 400 requests succeeded; two tables differ between heads at both batch sizes.
-See [the report and complete evidence](../tmp/19_table_ocr_serving/lm_head_ab_20260911/README.md).
-This is a head comparison, not a repeat of the original 1,000-request flagship
-or a new ground-truth quality evaluation.
+The 60k path was tested at `fb6532c1` on the same random-100 tables as the saved
+16k/full controls: B2/C2 **2.927 tables/s, P95 1.928 s**; B8/C8 **5.788 tables/s,
+P95 3.334 s**. Raw token streams matched the corresponding full-head control
+100/100 at each B. This is not a general accuracy guarantee or a new 1,000-request
+flagship validation. See [the results and raw evidence](../tmp/19_table_ocr_serving/lm_head_60416_20260911/README.md).
+Historical 16k reports and reproduction scripts remain tied to their recorded
+commits; they are not supported modes of the current product runtime.
 
 ## Structure
 
@@ -179,7 +177,7 @@ or a new ground-truth quality evaluation.
 - `_support/`: temporary original dependencies, including the decode scheduler,
   checkpoint configuration and timing. Further
   consolidation is deferred until the simplified model passes NPU validation.
-- `presets/`: unchanged 16,384-row native-token vocabulary mapping.
+- `presets/`: the single frozen 60,416-row native-token vocabulary mapping.
 
 No new scheduling, warmup or metrics design is introduced here. Synthetic constructor compilation, real
 request warmup, asynchronous token transfer, KV4096 stopping behavior, CPU
@@ -237,8 +235,8 @@ switches and cache-directory consolidation are deliberately deferred.
 Internal values come directly from the validated serving contract, not a preset:
 
 - FP16, TorchAir, KV4096 and the existing 4096 output-token ceiling/stopping rules.
-- Frozen 16,384-row decode vocabulary mapped to native IDs; full checkpoint head
-  for the first token after text prefill.
+- Frozen 60,416-row decode vocabulary mapped to native IDs, or the full head
+  with `--full-decode-lm-head`; full checkpoint head for the first prefill token.
 - Greedy argmax only; LaTeX preference/suppression policies and their unused
   scheduler buffers are removed.
 - Input pixel bounds 28,224–802,816; vision buckets
@@ -247,8 +245,9 @@ Internal values come directly from the validated serving contract, not a preset:
 - Weight-padded vision attention, linear patch projection, setup GC freeze and
   the anchor's noncompact decode-control updates. No interruption-cap policy.
 
-The endpoint accepts table crops only. Operational controls do not change
-resolution, vocabulary, token limits or model math. Text weights now require NZ;
+The endpoint accepts table crops only. The explicit full-head switch changes
+the decode vocabulary; other operational controls do not change resolution,
+token limits or model math. Text weights now require NZ;
 vision-format choices and compiler machinery remain deferred. Readiness still
 describes actual weight formats.
 

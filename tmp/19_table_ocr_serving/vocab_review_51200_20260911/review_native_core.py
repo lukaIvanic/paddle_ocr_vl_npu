@@ -15,7 +15,7 @@ special=set()
 for t in raw['added_tokens']:
     vocab[t['id']]=t['content']
     if t['special']: special.add(t['id'])
-kept=set(json.loads((ROOT/'19_table_ocr_serving/presets/table_compact_vocab/b1_verifier_topfreq_16384.json').read_text())['token_ids'])
+kept=set(json.loads((ROOT/'09_persistent_page_engine/presets/table_compact_vocab/b1_verifier_topfreq_16384.json').read_text())['token_ids'])
 native=set().union(*(set(s['all_token_ids']) for s in json.loads((HERE/'native_generation_counts.json').read_text())))
 han={i for i,t in vocab.items() if i not in special and regex.search(r'\p{Script=Han}',t)}
 core={i for i,t in vocab.items() if i not in special and
