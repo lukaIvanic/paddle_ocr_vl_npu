@@ -509,8 +509,6 @@ class ContinuousRecognizer:
         pixel_values, image_grid_thw = preprocess_pil_image(
             request.crop,
             preprocessor_config,
-            defer_normalization=self.compact_uint8_preprocess,
-            resize_backend=self.image_resize_backend,
         )
         input_ids, attention_mask = build_inputs(
             self.preprocessing_tokenizer,
@@ -699,11 +697,7 @@ class ContinuousRecognizer:
                 )
 
             def move_inputs() -> tuple[torch.Tensor, ...]:
-                pixels = (
-                    prepared.pixel_values.to(device=self.device, non_blocking=True)
-                    if prepared.pixel_values.dtype == torch.uint8 else
-                    prepared.pixel_values.to(device=self.device, dtype=self.model.visual.dtype, non_blocking=True)
-                )
+                pixels = prepared.pixel_values.to(device=self.device, non_blocking=True)
                 return (
                     prepared.input_ids.to(self.device, non_blocking=True),
                     prepared.attention_mask.to(self.device, non_blocking=True),
@@ -739,14 +733,13 @@ class ContinuousRecognizer:
         prefill_started = time.perf_counter()
         vision_model = self.model.visual.vision_model
         pixels = moved[2]
-        if pixels.dtype == torch.uint8:
-            def normalize_uint8():
-                output = pixels.to(torch.float32)
-                output.mul_(self.compact_rescale_factor)
-                output.sub_(self.compact_image_mean)
-                output.div_(self.compact_image_std)
-                return output.to(self.model.visual.dtype).contiguous()
-            pixels = device_timeline.measure("vision_input_normalize", normalize_uint8)
+        def normalize_uint8():
+            output = pixels.to(torch.float32)
+            output.mul_(self.compact_rescale_factor)
+            output.sub_(self.compact_image_mean)
+            output.div_(self.compact_image_std)
+            return output.to(self.model.visual.dtype).contiguous()
+        pixels = device_timeline.measure("vision_input_normalize", normalize_uint8)
         hidden = device_timeline.measure("vision_embeddings", lambda: vision_model.embeddings(
             pixels.unsqueeze(0), image_grid_thw=prepared.image_grid_thw,
         ))
@@ -986,8 +979,6 @@ class ContinuousRecognizer:
         diagnostic_decode_request_id: str | None = None,
         diagnostic_prefill_kv_request_ids: Iterable[str] | None = None,
         recognition_input_fingerprints: bool = False,
-        compact_uint8_preprocess: bool = True,
-        image_resize_backend: str = "kornia_rs",
     ):
         runtime_started = time.perf_counter()
         _emit_setup_progress("frontend", "start")
@@ -1034,12 +1025,6 @@ class ContinuousRecognizer:
         self.cache_length = 4096
         self.max_new_tokens = 4096
         self.recognition_input_fingerprints = bool(recognition_input_fingerprints)
-        self.compact_uint8_preprocess = bool(compact_uint8_preprocess)
-        self.image_resize_backend = str(image_resize_backend)
-        if self.image_resize_backend not in {"pillow", "kornia_rs"}:
-            raise ValueError(
-                f"image_resize_backend must be 'pillow' or 'kornia_rs', got {self.image_resize_backend!r}"
-            )
         self.vision_backend = self.decode_backend
         self.vision_attention = "prompt_flash_attention"
         self.decode_device_timing = bool(decode_device_timing)
@@ -1067,27 +1052,26 @@ class ContinuousRecognizer:
             min_pixels=self.preprocessor_min_pixels_override,
             max_pixels=self.preprocessor_max_pixels_override,
         )
-        if self.compact_uint8_preprocess:
-            mean = tuple(
-                (float(value) for value in self.preprocessor_config["image_mean"])
+        mean = tuple(
+            (float(value) for value in self.preprocessor_config["image_mean"])
+        )
+        std = tuple(
+            (float(value) for value in self.preprocessor_config["image_std"])
+        )
+        if (
+            not self.preprocessor_config["do_rescale"]
+            or not self.preprocessor_config["do_normalize"]
+            or len(set(mean)) != 1
+            or (len(set(std)) != 1)
+        ):
+            raise ValueError(
+                "Vision input normalization requires scalar RGB rescale and normalization parameters"
             )
-            std = tuple(
-                (float(value) for value in self.preprocessor_config["image_std"])
-            )
-            if (
-                not self.preprocessor_config["do_rescale"]
-                or not self.preprocessor_config["do_normalize"]
-                or len(set(mean)) != 1
-                or (len(set(std)) != 1)
-            ):
-                raise ValueError(
-                    "compact_uint8_preprocess currently requires scalar RGB rescale and normalization parameters"
-                )
-            self.compact_rescale_factor = float(
-                self.preprocessor_config["rescale_factor"]
-            )
-            self.compact_image_mean = mean[0]
-            self.compact_image_std = std[0]
+        self.compact_rescale_factor = float(
+            self.preprocessor_config["rescale_factor"]
+        )
+        self.compact_image_mean = mean[0]
+        self.compact_image_std = std[0]
         self.preprocessing_tokenizer = Tokenizer.from_file(
             str(self.model_dir / "tokenizer.json")
         )
@@ -1323,8 +1307,6 @@ class ContinuousRecognizer:
                 "runtime": (None),
             },
             "preprocessor": {
-                "image_resize_backend": self.image_resize_backend,
-                "compact_uint8_preprocess": self.compact_uint8_preprocess,
                 "model_default_min_pixels": self.model_preprocessor_min_pixels,
                 "model_default_max_pixels": self.model_preprocessor_max_pixels,
                 "min_pixels_override": self.preprocessor_min_pixels_override,

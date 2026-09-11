@@ -416,14 +416,14 @@ class TextSimplificationTests(unittest.TestCase):
         head_record = json.loads((ROOT / 'tmp/19_table_ocr_serving/lm_head_60416_20260911/b8_expanded_measured/b8/ready.json').read_text())['configuration']['decode_vocab']
         self.assertEqual(vocab['token_ids_sha256'], head_record['token_ids_sha256'])
         self.assertEqual(vocab['selected_vocab_size'], head_record['selected_vocab_size'])
-        # Defaults now select the completed combined-preprocessing NPU runs.
+        # This is now the sole implementation, anchored by the combined run.
         preprocessing_record = json.loads((ROOT / 'tmp/19_table_ocr_serving/preprocess_options_20260911/b8_both_measured/b8/ready.json').read_text())['configuration']['preprocessing_benchmark']
-        self.assertEqual(instance.image_resize_backend, preprocessing_record['resize_backend'])
-        self.assertEqual(instance.compact_uint8_preprocess, preprocessing_record['compact_uint8'])
+        self.assertEqual(preprocessing_record, {'resize_backend': 'kornia_rs', 'compact_uint8': True})
         from crop_processing import preprocess_pil_image
         parameters = inspect.signature(preprocess_pil_image).parameters
-        self.assertEqual(parameters['resize_backend'].default, instance.image_resize_backend)
-        self.assertEqual(parameters['defer_normalization'].default, instance.compact_uint8_preprocess)
+        self.assertEqual(set(parameters), {'image', 'cfg'})
+        for name in ('compact_uint8_preprocess', 'image_resize_backend'):
+            self.assertNotIn(name, inspect.signature(runtime.ContinuousRecognizer).parameters)
 
     def test_http_worker_cli_and_request_wiring(self):
         import serve
@@ -626,24 +626,36 @@ class TextSimplificationTests(unittest.TestCase):
                 continue
             actual = (EXPERIMENT / relative).read_bytes()
             if relative == 'crop_processing.py':
-                # Preserve the full algorithm. Only the two benchmarked defaults
-                # and their explanatory docstring intentionally changed here.
-                def defs(src, *, update_defaults=False):
+                # Specialize only the removed options to their measured values;
+                # compare every retained operation, including dynamic image paths.
+                class SelectedPreprocessing(ast.NodeTransformer):
+                    def visit_If(self, n):
+                        selected = {"resize_backend == 'pillow'": False,
+                                    "resize_backend == 'kornia_rs'": True,
+                                    'not defer_normalization': False}
+                        condition = ast.unparse(n.test)
+                        n = self.generic_visit(n)
+                        if condition in selected:
+                            return n.body if selected[condition] else n.orelse
+                        return n
+
+                def defs(src, *, specialize=False):
                     nodes = [n for n in ast.parse(src).body if isinstance(n, (ast.FunctionDef, ast.ClassDef))]
+                    if specialize:
+                        nodes = [n for n in nodes if n.name not in {'_normalize_image_array', '_uint8_normalization_table'}]
                     for n in nodes:
                         if n.name != 'preprocess_pil_image':
                             continue
                         self.assertIsInstance(n.body[0], ast.Expr)
                         self.assertIsInstance(n.body[0].value.value, str)
                         n.body = n.body[1:]
-                        if update_defaults:
-                            for i, arg in enumerate(n.args.kwonlyargs):
-                                old, new = {'defer_normalization': (False, True),
-                                            'resize_backend': ('pillow', 'kornia_rs')}[arg.arg]
-                                self.assertEqual(ast.literal_eval(n.args.kw_defaults[i]), old)
-                                n.args.kw_defaults[i] = ast.Constant(value=new)
+                        if specialize:
+                            self.assertEqual([a.arg for a in n.args.kwonlyargs], ['defer_normalization', 'resize_backend'])
+                            n.args.kwonlyargs = []
+                            n.args.kw_defaults = []
+                            SelectedPreprocessing().visit(n)
                     return {n.name: ast.dump(n) for n in nodes}
-                expected_defs, actual_defs = defs(previous, update_defaults=True), defs(actual)
+                expected_defs, actual_defs = defs(previous, specialize=True), defs(actual)
                 self.assertEqual(expected_defs, {k:actual_defs[k] for k in expected_defs})
             else:
                 self.assertEqual(previous, actual, relative)

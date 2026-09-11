@@ -1,8 +1,8 @@
 # Experiment 19: table OCR serving
 
-## Current preprocessing defaults
+## Current preprocessing implementation
 
-Kornia-RS bicubic resizing and uint8 CPU patch preparation are now the defaults.
+Kornia-RS bicubic resizing and uint8 CPU patch preparation are the sole path.
 The NPU normalizes the transferred uint8 patches immediately before vision.
 This selects the existing combined path tested in eight 100-table comparisons:
 [preprocessing comparison](../tmp/19_table_ocr_serving/preprocess_options_20260911/README.md).
@@ -10,11 +10,20 @@ Those are closed-loop HTTP results, not a new Poisson-load validation. The same
 endpoint and preprocessing run under either arrival schedule. No scheduler,
 pixel limits, vision-token budget or model graph is changed by this default edit.
 
-Pillow resizing and CPU float32 normalization remain explicit internal controls;
-the product CLI needs no new arguments. Readiness reports the resolved settings
-under `preprocessor`. Standalone `preprocess_pil_image` / `preprocess_image`
-now return uint8 patches by default; callers needing already-normalized float32
-must explicitly use `preprocess_pil_image(..., defer_normalization=False)`.
+The resize/normalization selectors, Pillow-resize branch, CPU normalization/LUT
+helpers and their runtime forwarding/state have been removed. Transfers always
+carry uint8 patches; the existing FP32 rescale/subtract/divide followed by FP16
+conversion runs unconditionally before vision. Operator order is unchanged.
+Standalone `preprocess_pil_image` / `preprocess_image` also return uint8 patches.
+Historical A/B launchers require their recorded source revision; their removed
+constructor arguments are no longer accepted by the product implementation.
+
+This cleanup is CPU-tested against the selected historical source and prefill
+call trace; it is not another NPU benchmark. The RGB, resize-policy and temporal
+configuration branches remain pending discussion. The deployed checkpoint was
+read directly and specifies `do_convert_rgb=true`, `do_resize=true`, and
+`temporal_patch_size=1`. Target resize dimensions and actual image modes are
+separate, input-dependent concerns.
 
 **Simplified source `0976fa33` compiled and tested on one 910B2 on 2026-09-11.**
 The cached-process B8 / 6-QPS / 1,000-request replay has exact output and workload
