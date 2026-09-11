@@ -1,0 +1,29 @@
+{
+  "status": "measured_complete",
+  "row": {
+    "batch": 8,
+    "head": "pillow",
+    "qps": 5.2139205651806035,
+    "latency_s": {
+      "count": 100,
+      "mean": 1.3349518444998467,
+      "p50": 0.9703378950016486,
+      "p90": 2.438667890998479,
+      "p95": 3.465478109999458,
+      "p99": 7.670305289001775,
+      "max": 8.40734237000288
+    },
+    "scheduled_latency_s": {
+      "count": 100,
+      "mean": 1.335816551673306,
+      "p50": 0.9709761408394115,
+      "p90": 2.4396337692673136,
+      "p95": 3.4675418014670867,
+      "p99": 7.671413716525097,
+      "max": 8.408335088093736
+    },
+    "max_outstanding": 18,
+    "drain_s": 2.32746300249293,
+    "artifact": "tmp/19_table_ocr_serving/preprocess_poisson100_20260911/b8_pillow_measured/b8/measured/results"
+  }
+}
