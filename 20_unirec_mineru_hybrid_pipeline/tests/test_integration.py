@@ -43,9 +43,13 @@ class RoutingTests(unittest.TestCase):
         args = module.build_parser().parse_args(['--input', 'images', '--output-dir', 'new'])
         self.assertEqual(args.table_model, 'mineru')
         self.assertEqual(args.mineru_max_pixels, 602112)
+        self.assertTrue(args.unirec_streamed)
+        self.assertEqual(args.unirec_vision_lanes, 4)
+        self.assertEqual(args.unirec_ready_capacity, 64)
         self.assertFalse(hasattr(args, 'paddle_model_path'))
         old = module.shared.build_parser().parse_args(['--input', 'images', '--output-dir', 'old'])
         self.assertEqual(old.table_model, 'paddle')
+        self.assertFalse(old.unirec_streamed)
 
     def test_ready_source_idle_is_not_closed(self):
         source = ReadySource(lambda *_: None)

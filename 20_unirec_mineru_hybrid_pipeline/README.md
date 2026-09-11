@@ -1,7 +1,10 @@
 # Experiment 20: continuous PPv3 + UniRec/MinerU
 
-First implementation; accelerator validation is pending. This is not yet a
-measured throughput or accuracy result, and no 310P fit is claimed.
+Continuous integration implemented and validated on 910B through a 384-page
+streamed run: 192.495s processing, 1.995 pages/s, 4,346 crops fully drained.
+Seven real crops match the standalone MinerU stream token-for-token through
+the new ready-KV path. No full-corpus accuracy result or 310P fit is claimed.
+See [910B evidence](references/910b_first384_67cd100b/README.md).
 
 Experiment 18 remains the execution owner: its coordinator, PageInbox,
 PageSource, persistent CPU workers, staged PPv3 layout/cropping, page assembly,
@@ -39,9 +42,10 @@ MinerU outputs go through its existing single-block postprocessor before the
 owned PPv3 page assembler. This boundary needs real table/formula validation,
 especially for embedded table-image placeholders. Raw token IDs are retained.
 
-UniRec's existing `--unirec-streamed` mode remains opt-in. In that mode its
-internal stages can overlap; the inherited owner joins/fences before MinerU
-or layout. Models are never repeatedly unloaded/reloaded.
+UniRec's existing streamed mode is the experiment-20 default, with four vision
+lanes and ready capacity64. Its internal stages can overlap; the inherited
+owner joins/fences before MinerU or layout. Experiment18 defaults are unchanged.
+Models are never repeatedly unloaded/reloaded.
 
 ## Reproduction
 
@@ -71,6 +75,19 @@ CPU tests check routing/default isolation, pause/resume token parity,
 upstream-aware saturation/drain and prefix-copy isolation. They do not prove
 TorchAir correctness. With the actual NPU environment, set
 `READY_CACHE_TEST_DEVICE=npu:0` for the admission-copy test.
+
+Real NPU crop-token control (uses the seven text/table/formula entries in
+`crops/manifest.json`; the chart entry is outside this experiment's routes):
+
+```bash
+/workspace/venvs/mineru_pro_vllm_py312/bin/python \
+  20_unirec_mineru_hybrid_pipeline/check_mineru_parity.py \
+  --input crops --output-dir tmp/20_unirec_mineru_hybrid_pipeline/parity_new
+```
+
+The control executes the ordinary experiment11 stream first, then the hybrid
+ready-prefill/yield path on the same B32 graph and crop group. It requires exact
+raw token agreement, including EOS. It is not a quality score or speed test.
 
 Timing uses experiment18's checked exclusive owner partition. MinerU's
 generation/drain lifetime spans cooperative pauses and is labelled legacy,

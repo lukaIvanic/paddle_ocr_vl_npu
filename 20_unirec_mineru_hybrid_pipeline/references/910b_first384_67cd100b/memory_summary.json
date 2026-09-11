@@ -1,0 +1,1247 @@
+{
+  "schema": "linux_process_tree_and_npu_memory_v2",
+  "exit_code": 0,
+  "wall_s": 260.5643734931946,
+  "interval_ms": 1000.0,
+  "sample_count": 232,
+  "note": "Whole-device NPU-SMI HBM, not process-only allocation. Raw source remains in remote run directory; unrelated process lists omitted here.",
+  "host_process_tree_peak": {
+    "process_count": 8,
+    "total_pss_bytes": 13551586304,
+    "total_rss_bytes": 13791858688,
+    "elapsed_s": 207.42884349822998
+  },
+  "npu_hbm": {
+    "physical_npu": 7,
+    "query_command": [
+      "npu-smi",
+      "info"
+    ],
+    "interval_ms": 1000.0,
+    "query_timeout_s": 10.0,
+    "sample_count": 242,
+    "samples": [
+      {
+        "elapsed_s": 1.0640788078308105,
+        "used_mb": 3398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 2.1090667247772217,
+        "used_mb": 3397,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 3.160127639770508,
+        "used_mb": 3397,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 4.219285011291504,
+        "used_mb": 3397,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 5.271345376968384,
+        "used_mb": 3397,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 6.3248610496521,
+        "used_mb": 3397,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 7.3729963302612305,
+        "used_mb": 3396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 8.43221402168274,
+        "used_mb": 3396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 9.522984981536865,
+        "used_mb": 3414,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 10.580293893814087,
+        "used_mb": 3449,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 11.631387948989868,
+        "used_mb": 3449,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 12.670750856399536,
+        "used_mb": 3449,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 13.766608715057373,
+        "used_mb": 3449,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 14.810524940490723,
+        "used_mb": 3449,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 15.880226373672485,
+        "used_mb": 3449,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 16.947118282318115,
+        "used_mb": 3449,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 17.99587392807007,
+        "used_mb": 3449,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 19.120909452438354,
+        "used_mb": 3903,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 20.181347846984863,
+        "used_mb": 3903,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 21.227317094802856,
+        "used_mb": 3903,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 22.291918754577637,
+        "used_mb": 3989,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 23.360429048538208,
+        "used_mb": 3988,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 24.448341608047485,
+        "used_mb": 3993,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 25.542677402496338,
+        "used_mb": 4003,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 26.599632501602173,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 27.69003176689148,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 28.75976014137268,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 29.819099187850952,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 30.88810157775879,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 31.983916521072388,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 33.039310693740845,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 34.13464045524597,
+        "used_mb": 4012,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 35.2212393283844,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 36.26325249671936,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 37.341954708099365,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 38.428102254867554,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 39.55782222747803,
+        "used_mb": 4013,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 40.60386037826538,
+        "used_mb": 8497,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 41.65953063964844,
+        "used_mb": 11727,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 42.744646072387695,
+        "used_mb": 11973,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 43.79186701774597,
+        "used_mb": 12085,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 44.84381294250488,
+        "used_mb": 12085,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 45.9446439743042,
+        "used_mb": 12125,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 47.005595207214355,
+        "used_mb": 12255,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 48.07551383972168,
+        "used_mb": 12263,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 49.134750843048096,
+        "used_mb": 12275,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 50.2075982093811,
+        "used_mb": 12485,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 51.28168702125549,
+        "used_mb": 12487,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 52.360604763031006,
+        "used_mb": 12495,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 53.432613134384155,
+        "used_mb": 12509,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 54.50499439239502,
+        "used_mb": 12512,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 55.571380615234375,
+        "used_mb": 12516,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 56.63614845275879,
+        "used_mb": 12520,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 57.68418002128601,
+        "used_mb": 12523,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 58.80985379219055,
+        "used_mb": 12833,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 59.86049842834473,
+        "used_mb": 20783,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 60.90650200843811,
+        "used_mb": 20784,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 61.996182680130005,
+        "used_mb": 20787,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 63.04516243934631,
+        "used_mb": 20791,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 64.1000988483429,
+        "used_mb": 20807,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 65.21144032478333,
+        "used_mb": 20808,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 66.25261497497559,
+        "used_mb": 20808,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 67.33623361587524,
+        "used_mb": 20830,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 68.39466166496277,
+        "used_mb": 20932,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 69.45735430717468,
+        "used_mb": 20932,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 70.53446054458618,
+        "used_mb": 20933,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 71.58966708183289,
+        "used_mb": 20933,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 72.64483284950256,
+        "used_mb": 20933,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 73.69116616249084,
+        "used_mb": 21043,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 74.76227569580078,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 75.83940482139587,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 76.89874601364136,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 77.9485993385315,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 79.04029059410095,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 80.09529948234558,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 81.16564106941223,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 82.25499606132507,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 83.32050466537476,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 84.38757824897766,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 85.45497298240662,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 86.51569151878357,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 87.5937888622284,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 88.64804601669312,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 89.71341228485107,
+        "used_mb": 21074,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 90.8042905330658,
+        "used_mb": 21076,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 91.95655131340027,
+        "used_mb": 21076,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 93.09281611442566,
+        "used_mb": 21075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 94.17250180244446,
+        "used_mb": 21075,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 95.23684191703796,
+        "used_mb": 21076,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 96.31352066993713,
+        "used_mb": 21076,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 97.41461181640625,
+        "used_mb": 21076,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 98.47927808761597,
+        "used_mb": 21076,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 99.55090427398682,
+        "used_mb": 21076,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 100.6253433227539,
+        "used_mb": 21076,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 101.6911313533783,
+        "used_mb": 21076,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 102.74875330924988,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 103.82198905944824,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 104.88497686386108,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 105.945552110672,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 107.05442595481873,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 108.1257312297821,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 109.17576837539673,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 110.31412744522095,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 111.42651057243347,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 112.54736256599426,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 113.69543385505676,
+        "used_mb": 21079,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 114.79393577575684,
+        "used_mb": 21080,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 115.9203896522522,
+        "used_mb": 21142,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 117.01971387863159,
+        "used_mb": 21198,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 118.15431499481201,
+        "used_mb": 21198,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 119.32507300376892,
+        "used_mb": 21200,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 120.37504267692566,
+        "used_mb": 21204,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 121.45156812667847,
+        "used_mb": 21206,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 122.51581645011902,
+        "used_mb": 21206,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 123.63383769989014,
+        "used_mb": 21205,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 124.73267388343811,
+        "used_mb": 21206,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 125.87079310417175,
+        "used_mb": 21206,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 127.04007768630981,
+        "used_mb": 21206,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 128.09989953041077,
+        "used_mb": 21206,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 129.19833111763,
+        "used_mb": 21206,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 130.28811860084534,
+        "used_mb": 21206,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 131.43888902664185,
+        "used_mb": 21206,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 132.5231237411499,
+        "used_mb": 21210,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 133.59636688232422,
+        "used_mb": 21270,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 134.6675968170166,
+        "used_mb": 21462,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 135.73538041114807,
+        "used_mb": 21644,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 136.93153595924377,
+        "used_mb": 21644,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 138.06296610832214,
+        "used_mb": 21644,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 139.21502709388733,
+        "used_mb": 21844,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 140.37840628623962,
+        "used_mb": 21894,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 141.50853443145752,
+        "used_mb": 21896,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 142.6017026901245,
+        "used_mb": 21904,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 143.77566576004028,
+        "used_mb": 21907,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 144.90158677101135,
+        "used_mb": 21908,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 145.95311570167542,
+        "used_mb": 21908,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 147.03218579292297,
+        "used_mb": 21908,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 148.10741114616394,
+        "used_mb": 22032,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 149.24785375595093,
+        "used_mb": 22036,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 150.30035996437073,
+        "used_mb": 22036,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 151.38749718666077,
+        "used_mb": 22036,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 152.48722052574158,
+        "used_mb": 22036,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 153.56989097595215,
+        "used_mb": 22036,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 154.62729048728943,
+        "used_mb": 22036,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 155.68469309806824,
+        "used_mb": 22334,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 156.78335905075073,
+        "used_mb": 22334,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 157.91315722465515,
+        "used_mb": 22334,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 158.97196531295776,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 160.12123942375183,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 161.1829764842987,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 162.23001194000244,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 163.29276990890503,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 164.3602294921875,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 165.411217212677,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 166.47073411941528,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 167.560444355011,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 168.63521218299866,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 169.71005582809448,
+        "used_mb": 22396,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 170.78563618659973,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 171.83231163024902,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 172.91767263412476,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 174.00844717025757,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 175.11673069000244,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 176.21200847625732,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 177.2720980644226,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 178.33781552314758,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 179.43163299560547,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 180.5241436958313,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 181.59673500061035,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 182.65130305290222,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 183.785297870636,
+        "used_mb": 22397,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 184.84918189048767,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 185.8938398361206,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 186.94411444664001,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 188.0086727142334,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 189.0680115222931,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 190.1200556755066,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 191.1794946193695,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 192.31793332099915,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 193.37621593475342,
+        "used_mb": 22397,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 194.43515348434448,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 195.5356216430664,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 196.59177160263062,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 197.65328860282898,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 198.71771430969238,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 199.79614210128784,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 200.90399765968323,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 201.96678948402405,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 203.03050112724304,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 204.09366083145142,
+        "used_mb": 22397,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 205.16574692726135,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 206.22790241241455,
+        "used_mb": 22398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 207.31426668167114,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 208.3919792175293,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 209.44082975387573,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 210.49694180488586,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 211.6006371974945,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 212.68137192726135,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 213.72886204719543,
+        "used_mb": 22399,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 214.79550671577454,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 215.89694094657898,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 216.9731090068817,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 218.04677438735962,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 219.11272597312927,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 220.1670482158661,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 221.22376203536987,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 222.26733326911926,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 223.33279943466187,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 224.38020300865173,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 225.43246603012085,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 226.4842562675476,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 227.5448203086853,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 228.60329127311707,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 229.65206480026245,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 230.6924409866333,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 231.75001168251038,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 232.7972331047058,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 233.8438584804535,
+        "used_mb": 22399,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 234.89205861091614,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 235.95626640319824,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 237.00838232040405,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 238.0662384033203,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 239.16044425964355,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 240.20727014541626,
+        "used_mb": 22400,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 241.27435755729675,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 242.34573078155518,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 243.42740440368652,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 244.48000526428223,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 245.5238037109375,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 246.56755471229553,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 247.61160254478455,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 248.6773030757904,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 249.728289604187,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 250.78467082977295,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 251.85983443260193,
+        "used_mb": 12010,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 252.96856307983398,
+        "used_mb": 5638,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 254.03818368911743,
+        "used_mb": 5637,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 255.18357682228088,
+        "used_mb": 5638,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 256.24518394470215,
+        "used_mb": 5638,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 257.314612865448,
+        "used_mb": 3419,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 258.3878219127655,
+        "used_mb": 3398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 259.49636793136597,
+        "used_mb": 3398,
+        "total_mb": 65536
+      },
+      {
+        "elapsed_s": 260.5640621185303,
+        "used_mb": 3398,
+        "total_mb": 65536
+      }
+    ],
+    "peak_increase_from_baseline_mb": 19002,
+    "errors": [],
+    "baseline": {
+      "used_mb": 3398,
+      "total_mb": 65536
+    },
+    "peak": {
+      "elapsed_s": 207.31426668167114,
+      "used_mb": 22400,
+      "total_mb": 65536
+    }
+  }
+}

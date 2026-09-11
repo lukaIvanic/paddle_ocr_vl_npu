@@ -18,6 +18,9 @@ from hybrid_routing import Routing, add_arguments
 def build_parser():
     parser = shared.build_parser(add_routes=add_arguments, include_paddle=False)
     parser.description = __doc__
+    # Reuse experiment 18's validated throughput-oriented UniRec mode. The
+    # shared runner still fences this work before MinerU or layout executes.
+    parser.set_defaults(unirec_streamed=True, unirec_vision_lanes=4, unirec_ready_capacity=64)
     parser.add_argument("--mineru-model-path", type=Path, default=Path("/workspace/models/MinerU2.5-Pro-2605-1.2B"))
     parser.add_argument("--mineru-batch-size", type=int, default=32)
     parser.add_argument("--mineru-ready-capacity", type=int, default=32)
