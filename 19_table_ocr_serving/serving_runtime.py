@@ -986,8 +986,8 @@ class ContinuousRecognizer:
         diagnostic_decode_request_id: str | None = None,
         diagnostic_prefill_kv_request_ids: Iterable[str] | None = None,
         recognition_input_fingerprints: bool = False,
-        compact_uint8_preprocess: bool = False,
-        image_resize_backend: str = "pillow",
+        compact_uint8_preprocess: bool = True,
+        image_resize_backend: str = "kornia_rs",
     ):
         runtime_started = time.perf_counter()
         _emit_setup_progress("frontend", "start")
@@ -1323,6 +1323,8 @@ class ContinuousRecognizer:
                 "runtime": (None),
             },
             "preprocessor": {
+                "image_resize_backend": self.image_resize_backend,
+                "compact_uint8_preprocess": self.compact_uint8_preprocess,
                 "model_default_min_pixels": self.model_preprocessor_min_pixels,
                 "model_default_max_pixels": self.model_preprocessor_max_pixels,
                 "min_pixels_override": self.preprocessor_min_pixels_override,

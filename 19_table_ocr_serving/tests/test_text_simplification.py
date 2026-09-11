@@ -385,7 +385,11 @@ class TextSimplificationTests(unittest.TestCase):
             npu=types.SimpleNamespace(config=types.SimpleNamespace(), is_available=lambda: True,
                                       set_compile_mode=lambda **kwargs: None)),
             _resolve_model_dir=lambda model: Path(model), _emit_setup_progress=lambda *args: None,
-            load_preprocessor_config=lambda _: {'min_pixels': 112896, 'max_pixels': 1003520})
+            load_preprocessor_config=lambda _: {
+                'min_pixels': 112896, 'max_pixels': 1003520,
+                'do_rescale': True, 'do_normalize': True, 'rescale_factor': 1/255,
+                'image_mean': [0.5]*3, 'image_std': [0.5]*3,
+            })
         exec(compile(ast.fix_missing_locations(ast.Module(body=[init], type_ignores=[])), '<setup-contract>', 'exec'), scope)
         instance = types.SimpleNamespace()
         with patch.dict(sys.modules, {'torch_npu': types.ModuleType('torch_npu')}):
@@ -412,6 +416,14 @@ class TextSimplificationTests(unittest.TestCase):
         head_record = json.loads((ROOT / 'tmp/19_table_ocr_serving/lm_head_60416_20260911/b8_expanded_measured/b8/ready.json').read_text())['configuration']['decode_vocab']
         self.assertEqual(vocab['token_ids_sha256'], head_record['token_ids_sha256'])
         self.assertEqual(vocab['selected_vocab_size'], head_record['selected_vocab_size'])
+        # Defaults now select the completed combined-preprocessing NPU runs.
+        preprocessing_record = json.loads((ROOT / 'tmp/19_table_ocr_serving/preprocess_options_20260911/b8_both_measured/b8/ready.json').read_text())['configuration']['preprocessing_benchmark']
+        self.assertEqual(instance.image_resize_backend, preprocessing_record['resize_backend'])
+        self.assertEqual(instance.compact_uint8_preprocess, preprocessing_record['compact_uint8'])
+        from crop_processing import preprocess_pil_image
+        parameters = inspect.signature(preprocess_pil_image).parameters
+        self.assertEqual(parameters['resize_backend'].default, instance.image_resize_backend)
+        self.assertEqual(parameters['defer_normalization'].default, instance.compact_uint8_preprocess)
 
     def test_http_worker_cli_and_request_wiring(self):
         import serve
@@ -614,11 +626,24 @@ class TextSimplificationTests(unittest.TestCase):
                 continue
             actual = (EXPERIMENT / relative).read_bytes()
             if relative == 'crop_processing.py':
-                # Preprocessing is unchanged; only formatting functions/imports
-                # were moved here, with exact-source tests in the crop suite.
-                def defs(src):
-                    return {n.name: ast.dump(n) for n in ast.parse(src).body if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
-                expected_defs, actual_defs = defs(previous), defs(actual)
+                # Preserve the full algorithm. Only the two benchmarked defaults
+                # and their explanatory docstring intentionally changed here.
+                def defs(src, *, update_defaults=False):
+                    nodes = [n for n in ast.parse(src).body if isinstance(n, (ast.FunctionDef, ast.ClassDef))]
+                    for n in nodes:
+                        if n.name != 'preprocess_pil_image':
+                            continue
+                        self.assertIsInstance(n.body[0], ast.Expr)
+                        self.assertIsInstance(n.body[0].value.value, str)
+                        n.body = n.body[1:]
+                        if update_defaults:
+                            for i, arg in enumerate(n.args.kwonlyargs):
+                                old, new = {'defer_normalization': (False, True),
+                                            'resize_backend': ('pillow', 'kornia_rs')}[arg.arg]
+                                self.assertEqual(ast.literal_eval(n.args.kw_defaults[i]), old)
+                                n.args.kw_defaults[i] = ast.Constant(value=new)
+                    return {n.name: ast.dump(n) for n in nodes}
+                expected_defs, actual_defs = defs(previous, update_defaults=True), defs(actual)
                 self.assertEqual(expected_defs, {k:actual_defs[k] for k in expected_defs})
             else:
                 self.assertEqual(previous, actual, relative)

@@ -30,10 +30,14 @@ def preprocess_pil_image(
     image: Image.Image,
     cfg: dict,
     *,
-    defer_normalization: bool = False,
-    resize_backend: str = "pillow",
+    defer_normalization: bool = True,
+    resize_backend: str = "kornia_rs",
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Preprocess one in-memory crop with the local PaddleOCR-VL recipe."""
+    """Prepare crop patches; default uint8 output is normalized by the NPU stage.
+
+    Kornia + uint8 is anchored by preprocess_options_20260911's B2/B8 runs.
+    Explicit defer_normalization=False retains normalized CPU float32 output.
+    """
     if cfg["do_convert_rgb"] and image.mode != "RGB":
         image = image.convert("RGB")
     width, height = image.size

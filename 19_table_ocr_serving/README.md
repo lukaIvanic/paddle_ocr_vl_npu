@@ -1,5 +1,21 @@
 # Experiment 19: table OCR serving
 
+## Current preprocessing defaults
+
+Kornia-RS bicubic resizing and uint8 CPU patch preparation are now the defaults.
+The NPU normalizes the transferred uint8 patches immediately before vision.
+This selects the existing combined path tested in eight 100-table comparisons:
+[preprocessing comparison](../tmp/19_table_ocr_serving/preprocess_options_20260911/README.md).
+Those are closed-loop HTTP results, not a new Poisson-load validation. The same
+endpoint and preprocessing run under either arrival schedule. No scheduler,
+pixel limits, vision-token budget or model graph is changed by this default edit.
+
+Pillow resizing and CPU float32 normalization remain explicit internal controls;
+the product CLI needs no new arguments. Readiness reports the resolved settings
+under `preprocessor`. Standalone `preprocess_pil_image` / `preprocess_image`
+now return uint8 patches by default; callers needing already-normalized float32
+must explicitly use `preprocess_pil_image(..., defer_normalization=False)`.
+
 **Simplified source `0976fa33` compiled and tested on one 910B2 on 2026-09-11.**
 The cached-process B8 / 6-QPS / 1,000-request replay has exact output and workload
 parity with step 2. P95 is 3.790 s versus 3.780 s; mean is 1.318 s versus
