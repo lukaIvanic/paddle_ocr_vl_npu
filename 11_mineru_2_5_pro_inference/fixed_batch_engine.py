@@ -21,7 +21,7 @@ import torch.nn.functional as F
 
 from local_modeling_mineru import LocalMinerUStaticCache
 from phase_logging import log_phase
-from prefill_timing import PrefillDeviceTimeline
+from mineru_prefill_timing import PrefillDeviceTimeline
 from run_local_model_two_step_extract import maybe_sync_device
 
 

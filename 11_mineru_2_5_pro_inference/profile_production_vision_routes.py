@@ -19,7 +19,7 @@ import time
 
 import torch
 
-from prefill_timing import PrefillDeviceTimeline
+from mineru_prefill_timing import PrefillDeviceTimeline
 from profile_vision_prefill_lab import npu_profiler_config, _run_parser
 from run_transformers_recognition_smoke import synchronize
 from vision_prefill_compile import select_vision_bucket

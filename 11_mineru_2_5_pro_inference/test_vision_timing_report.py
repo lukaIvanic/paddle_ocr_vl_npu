@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
 from types import SimpleNamespace
-from prefill_timing import PrefillDeviceTimeline
+from mineru_prefill_timing import PrefillDeviceTimeline
 from vision_timing_report import summarize_vision_samples
 
 

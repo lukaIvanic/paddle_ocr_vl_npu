@@ -24,7 +24,7 @@ import torch.nn.functional as F
 from PIL import Image
 
 from local_modeling_mineru import LocalMinerU2_5ForConditionalGeneration
-from prefill_timing import PrefillDeviceTimeline
+from mineru_prefill_timing import PrefillDeviceTimeline
 from run_transformers_recognition_smoke import configure_npu, synchronize
 from vision_prefill_compile import (
     DEFAULT_VISION_BUCKETS,

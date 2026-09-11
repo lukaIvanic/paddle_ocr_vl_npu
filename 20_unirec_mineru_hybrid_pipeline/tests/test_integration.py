@@ -66,6 +66,19 @@ class RoutingTests(unittest.TestCase):
 
 @unittest.skipIf(torch is None, 'CPU torch required')
 class CooperativeTests(unittest.TestCase):
+    def test_timing_modules_coexist(self):
+        import subprocess
+        subprocess.run([sys.executable, '-c', '''
+import sys, torch
+sys.path[:0] = ['12_unirec_0_1b_inference', '11_mineru_2_5_pro_inference']
+import prefill_timing
+from mineru_prefill_timing import PrefillDeviceTimeline
+from local_modeling_mineru import PrefillDeviceTimeline as model_timeline
+assert PrefillDeviceTimeline is model_timeline
+assert PrefillDeviceTimeline is not prefill_timing.PrefillDeviceTimeline
+assert PrefillDeviceTimeline(torch.device('cpu'), []).resolve() == {}
+'''], cwd=ROOT, check=True)
+
     def fixture(self):
         from test_streaming_decode import FakeEngine, FakeSource
         from streaming_decode import iter_decode_stream

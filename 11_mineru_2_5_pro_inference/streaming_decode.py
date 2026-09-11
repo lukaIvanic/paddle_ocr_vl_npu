@@ -80,7 +80,7 @@ def iter_decode_stream(engine, source, *, cooperative=False):
     uses the device, and resume on the same owning thread.
     """
     import torch
-    from prefill_timing import PrefillDeviceTimeline
+    from mineru_prefill_timing import PrefillDeviceTimeline
     from run_local_model_two_step_extract import maybe_sync_device
 
     started = time.perf_counter()

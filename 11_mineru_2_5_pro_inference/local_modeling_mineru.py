@@ -18,7 +18,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from config import MinerUConfig, MinerUTextConfig, MinerUVisionConfig
-from prefill_timing import PrefillDeviceTimeline
+from mineru_prefill_timing import PrefillDeviceTimeline
 
 
 FRACTAL_NZ = 29
