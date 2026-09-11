@@ -1,5 +1,37 @@
 # Experiment 19: table OCR serving
 
+## Fixed checkpoint implementation
+
+The product no longer reads model or preprocessor configuration files, constructs
+model-config objects, or forwards architecture settings through constructors.
+The verified PaddleOCR-VL-1.6 dimensions, RoPE values and token IDs are explicit
+constants in the modeling files. Crop processing fixes 14x14 patches, 2x2 merging,
+one temporal frame, and the effective serving limits of 28,224–802,816 pixels.
+RGB conversion remains conditional on the actual image mode; resize dimensions
+remain input-dependent. Kornia resizing and FP32 normalization before FP16 vision
+retain their existing operation order.
+
+Model input files are data only: the local `model.safetensors`, `tokenizer.json`
+(including vocabulary/merges), and the bundled native-token mapping for the
+60,416-row head. Full 103,424-row decoding remains supported. No `config.json`,
+`preprocessor_config.json`, tokenizer-config or generation-config file is needed.
+Operational arguments such as device, model directory, batch size and endpoint
+remain configurable. TorchAir's compiler API configuration is unchanged.
+
+At the user's request, checkpoint-config hashes were removed from all three
+stage cache keys and metadata, without a replacement model fingerprint. The
+now-unused model-directory forwarding was removed too. Existing source/version
+hashes and head-specific cache separation remain. No caches were renamed,
+deleted or bypassed; broader cache policy is deferred.
+
+This change passes 33 local CPU tests: full-size model parameter-shape parity on
+the meta device (no weight allocation), rotary-buffer parity, a mocked weight
+loader with no config files, image-grid checks across 70 size pairs, RGB/RGBA/L
+patch-layout checks with an identical resize test double, and the existing
+arithmetic, call-order and scheduler controls. Historical config classes are
+loaded from Git only by reference tests, never by the product. This revision has
+**not** been compiled or benchmarked on an NPU.
+
 ## Current preprocessing implementation
 
 Kornia-RS bicubic resizing and uint8 CPU patch preparation are the sole path.
@@ -19,11 +51,11 @@ Historical A/B launchers require their recorded source revision; their removed
 constructor arguments are no longer accepted by the product implementation.
 
 This cleanup is CPU-tested against the selected historical source and prefill
-call trace; it is not another NPU benchmark. The RGB, resize-policy and temporal
-configuration branches remain pending discussion. The deployed checkpoint was
-read directly and specifies `do_convert_rgb=true`, `do_resize=true`, and
-`temporal_patch_size=1`. Target resize dimensions and actual image modes are
-separate, input-dependent concerns.
+call trace; it is not another NPU benchmark. The subsequent fixed-checkpoint
+cleanup above removes the RGB/resize/temporal configuration switches. The
+deployed preprocessor was read directly and specifies `do_convert_rgb=true`,
+`do_resize=true`, and `temporal_patch_size=1`. Target resize dimensions and actual
+image modes remain input-dependent.
 
 **Simplified source `0976fa33` compiled and tested on one 910B2 on 2026-09-11.**
 The cached-process B8 / 6-QPS / 1,000-request replay has exact output and workload

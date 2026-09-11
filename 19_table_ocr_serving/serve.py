@@ -449,8 +449,6 @@ def _worker_main(
                         # Preparation failures use the existing error callback.
                         crop=job["image_bytes"],
                         prompt=job["prompt"],
-                        min_pixels=recognizer.preprocessor_min_pixels_override,
-                        max_pixels=recognizer.preprocessor_max_pixels_override,
                         submitted_at=job["submitted_monotonic_s"],
                     )
                 return None

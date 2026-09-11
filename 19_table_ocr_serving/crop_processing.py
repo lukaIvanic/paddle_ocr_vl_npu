@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import html
 import re
 from collections import Counter
@@ -22,67 +21,37 @@ IMAGE_END = "<|IMAGE_END|>"
 BOS = "<|begin_of_sentence|>"
 
 
+# Fixed crop input contract; one image, 14x14 patches, 2x2 spatial merging.
+PATCH_SIZE = 14
+MERGE_SIZE = 2
+MIN_PIXELS = 28224
+MAX_PIXELS = 802816
+
+
 # Crop preprocessing
 
 
-def preprocess_pil_image(
-    image: Image.Image,
-    cfg: dict,
-) -> tuple[torch.Tensor, torch.Tensor]:
+def preprocess_pil_image(image: Image.Image) -> tuple[torch.Tensor, torch.Tensor]:
     """Resize with Kornia-RS and produce uint8 patches for NPU normalization."""
-    if cfg["do_convert_rgb"] and image.mode != "RGB":
+    if image.mode != "RGB":
         image = image.convert("RGB")
     width, height = image.size
-    patch_size = int(cfg["patch_size"])
-    merge_size = int(cfg["merge_size"])
-    temporal_patch_size = int(cfg["temporal_patch_size"])
-    if temporal_patch_size != 1:
-        raise ValueError(
-            "temporal_patch_size must be 1 for this recognizer path, "
-            f"got {temporal_patch_size}"
-        )
+    grid_t, grid_h, grid_w = image_grid_thw_from_size(width, height)
+    from kornia_rs.image import Image as KorniaImage
 
-    grid_t, grid_h, grid_w = image_grid_thw_from_size(
-        width,
-        height,
-        patch_size=patch_size,
-        merge_size=merge_size,
-        temporal_patch_size=temporal_patch_size,
-        min_pixels=int(cfg["min_pixels"]),
-        max_pixels=int(cfg["max_pixels"]),
-        do_resize=bool(cfg["do_resize"]),
-    )
-    resized_height = grid_h * patch_size
-    resized_width = grid_w * patch_size
-    resized_array: np.ndarray | None = None
-    if cfg["do_resize"]:
-        from kornia_rs.image import Image as KorniaImage
-
-        resized_array = KorniaImage.fromarray(np.asarray(image)).resize(
-            resized_width,
-            resized_height,
-            "bicubic",
-        ).data
-
-    array = resized_array if resized_array is not None else np.asarray(image)
-
+    array = KorniaImage.fromarray(np.asarray(image)).resize(
+        grid_w * PATCH_SIZE,
+        grid_h * PATCH_SIZE,
+        "bicubic",
+    ).data
     patches = array.transpose(2, 0, 1)[None, ...]
     channel = patches.shape[1]
     patches = patches.reshape(
-        grid_t,
-        temporal_patch_size,
-        channel,
-        grid_h,
-        patch_size,
-        grid_w,
-        patch_size,
+        grid_t, 1, channel, grid_h, PATCH_SIZE, grid_w, PATCH_SIZE,
     )
     patches = patches.transpose(0, 3, 5, 2, 1, 4, 6)
     flatten_patches = patches.reshape(
-        grid_t * grid_h * grid_w,
-        channel,
-        patch_size,
-        patch_size,
+        grid_t * grid_h * grid_w, channel, PATCH_SIZE, PATCH_SIZE,
     )
     return (
         torch.from_numpy(flatten_patches),
@@ -90,73 +59,26 @@ def preprocess_pil_image(
     )
 
 
-def preprocess_image(
-    image_path: Path,
-    cfg: dict,
-) -> tuple[torch.Tensor, torch.Tensor]:
+def preprocess_image(image_path: Path) -> tuple[torch.Tensor, torch.Tensor]:
     with Image.open(image_path) as image:
-        return preprocess_pil_image(image, cfg)
+        return preprocess_pil_image(image)
 
 
-def image_grid_thw_from_size(
-    width: int,
-    height: int,
-    *,
-    patch_size: int,
-    merge_size: int,
-    temporal_patch_size: int,
-    min_pixels: int,
-    max_pixels: int,
-    do_resize: bool = True,
-) -> tuple[int, int, int]:
-    """Return the shape-only image grid used by ``preprocess_pil_image``.
-
-    This deliberately mirrors only the resize and patch-grid math. It does not
-    allocate an image or perform resampling, normalization, or patchification.
-    """
-    width = int(width)
-    height = int(height)
-    patch_size = int(patch_size)
-    merge_size = int(merge_size)
-    temporal_patch_size = int(temporal_patch_size)
+def image_grid_thw_from_size(width: int, height: int) -> tuple[int, int, int]:
+    """Compute the single-image patch grid without allocating pixel tensors."""
+    width, height = int(width), int(height)
     if width <= 0 or height <= 0:
         raise ValueError(f"image dimensions must be positive, got {(width, height)}")
-    if patch_size <= 0 or merge_size <= 0:
-        raise ValueError("patch_size and merge_size must be positive")
-    if temporal_patch_size != 1:
-        raise ValueError(
-            "temporal_patch_size must be 1 for this recognizer path, "
-            f"got {temporal_patch_size}"
-        )
-
-    resized_height, resized_width = height, width
-    if do_resize:
-        resized_height, resized_width = smart_resize(
-            height,
-            width,
-            factor=patch_size * merge_size,
-            min_pixels=int(min_pixels),
-            max_pixels=int(max_pixels),
-        )
-    if resized_height % patch_size or resized_width % patch_size:
-        raise ValueError(
-            "resized image dimensions must be divisible by patch_size: "
-            f"size={(resized_width, resized_height)} patch_size={patch_size}"
-        )
-    return (
-        1,
-        resized_height // patch_size,
-        resized_width // patch_size,
-    )
+    resized_height, resized_width = smart_resize(height, width)
+    return 1, resized_height // PATCH_SIZE, resized_width // PATCH_SIZE
 
 
 def smart_resize(
     height: int,
     width: int,
-    factor: int,
-    min_pixels: int,
-    max_pixels: int,
 ) -> tuple[int, int]:
+    factor = PATCH_SIZE * MERGE_SIZE
+    min_pixels, max_pixels = MIN_PIXELS, MAX_PIXELS
     if height < factor:
         width = round((width * factor) / height)
         height = factor
@@ -398,61 +320,3 @@ def _parse_otsl_rows(content: str) -> list[list[tuple[str, str]]]:
             continue
         rows[-1].append((token, text))
     return [row for row in rows if row]
-
-
-# Preprocessor configuration
-
-
-def load_preprocessor_config(model_dir: Path) -> dict:
-    defaults = {
-        "do_convert_rgb": True,
-        "do_normalize": True,
-        "do_rescale": True,
-        "do_resize": True,
-        "image_mean": [0.5, 0.5, 0.5],
-        "image_std": [0.5, 0.5, 0.5],
-        "max_pixels": 1003520,
-        "merge_size": 2,
-        "min_pixels": 112896,
-        "patch_size": 14,
-        "resample": 3,
-        "rescale_factor": 1.0 / 255.0,
-        "temporal_patch_size": 1,
-    }
-    path = model_dir / "preprocessor_config.json"
-    if path.exists():
-        defaults.update(json.loads(path.read_text(encoding="utf-8")))
-    return defaults
-
-
-def apply_pixel_overrides(
-    cfg: dict,
-    *,
-    min_pixels: int | None = None,
-    max_pixels: int | None = None,
-) -> dict:
-    """Return a copied preprocessor config with validated pixel overrides."""
-    effective = dict(cfg)
-    effective_min_pixels = (
-        int(effective["min_pixels"])
-        if min_pixels is None
-        else int(min_pixels)
-    )
-    effective_max_pixels = (
-        int(effective["max_pixels"])
-        if max_pixels is None
-        else int(max_pixels)
-    )
-    if effective_min_pixels <= 0:
-        raise ValueError("preprocessor min_pixels override must be positive")
-    if effective_max_pixels <= 0:
-        raise ValueError("preprocessor max_pixels override must be positive")
-    if effective_min_pixels > effective_max_pixels:
-        raise ValueError(
-            "preprocessor min_pixels must not exceed max_pixels: "
-            f"min_pixels={effective_min_pixels}, "
-            f"max_pixels={effective_max_pixels}"
-        )
-    effective["min_pixels"] = effective_min_pixels
-    effective["max_pixels"] = effective_max_pixels
-    return effective

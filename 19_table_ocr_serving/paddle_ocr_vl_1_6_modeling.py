@@ -16,10 +16,16 @@ from typing import Callable
 import torch
 from torch import nn
 
-from _support.model.config import PaddleOCRVLConfig
+from text_prefill_and_decode import TEXT_HIDDEN_SIZE, TEXT_VOCAB_SIZE
+from vision_prefill import VISION_MERGE_SIZE
 from text_prefill_and_decode import LocalPaddleOCRVLStaticCache, TextDecodeRuntime
 from text_prefill_and_decode import PaddleOCRRotaryEmbedding, PaddleOCRTextModel, TextPrefillRuntime
 from vision_prefill import PaddleOCRProjector, PaddleOCRVisionModel, PaddleOCRVisionRotaryEmbedding, VisionPrefillRuntime
+
+
+# Fixed recognition token IDs.
+IMAGE_TOKEN_ID = 100295
+VISION_START_TOKEN_ID = 101305
 
 
 # Model composition, loading, and stage assembly
@@ -27,13 +33,12 @@ from vision_prefill import PaddleOCRProjector, PaddleOCRVisionModel, PaddleOCRVi
 
 class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
 
-    def __init__(self, config: PaddleOCRVLConfig):
+    def __init__(self):
         super().__init__()
-        self.config = config
-        self.visual = PaddleOCRVisionModel(config.vision_config)
-        self.mlp_AR = PaddleOCRProjector(config)
-        self.model = PaddleOCRTextModel(config.text_config)
-        self.lm_head = nn.Linear(config.text_config.hidden_size, config.text_config.vocab_size, bias=False)
+        self.visual = PaddleOCRVisionModel()
+        self.mlp_AR = PaddleOCRProjector()
+        self.model = PaddleOCRTextModel()
+        self.lm_head = nn.Linear(TEXT_HIDDEN_SIZE, TEXT_VOCAB_SIZE, bias=False)
         self.rope_deltas: torch.Tensor | None = None
 
     @classmethod
@@ -45,8 +50,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         device: str | torch.device | None = None,
     ) -> "LocalPaddleOCRVLForConditionalGeneration":
         model_dir = Path(model_dir).expanduser()
-        config = PaddleOCRVLConfig.from_model_dir(model_dir)
-        model = cls(config)
+        model = cls()
         if dtype is not None:
             model = model.to(dtype=dtype)
         if device is not None:
@@ -77,7 +81,6 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         batch_size: int,
         cache_length: int,
         device: torch.device,
-        model_dir: Path,
         eager: bool = False,
         setup_progress: Callable[[str, str, float | None], None] | None = None,
     ) -> PaddleOCRVLInferenceStages:
@@ -103,7 +106,6 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             self,
             cache_root=vision_cache_root,
             device=device,
-            model_dir=model_dir,
             eager=eager,
         )
         synchronize(device)
@@ -122,7 +124,6 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             cache_root=text_cache_root,
             cache_length=cache_length,
             device=device,
-            model_dir=model_dir,
             eager=eager,
         )
         synchronize(device)
@@ -141,7 +142,6 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             cache_root=decode_cache_root,
             batch_size=batch_size,
             cache_length=cache_length,
-            model_dir=model_dir,
             eager=eager,
         )
         setup_timing_s.update(text_decode.setup_timing_s)
@@ -167,7 +167,6 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         dtype: torch.dtype,
     ) -> LocalPaddleOCRVLStaticCache:
         return LocalPaddleOCRVLStaticCache.allocate(
-            self.config.text_config,
             batch_size=batch_size,
             cache_length=cache_length,
             device=device,
@@ -180,9 +179,9 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         image_grid_thw: torch.Tensor | None = None,
         attention_mask: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        spatial_merge_size = self.config.vision_config.spatial_merge_size
-        image_token_id = self.config.image_token_id
-        vision_start_token_id = self.config.vision_start_token_id
+        spatial_merge_size = VISION_MERGE_SIZE
+        image_token_id = IMAGE_TOKEN_ID
+        vision_start_token_id = VISION_START_TOKEN_ID
         if image_grid_thw is not None:
             if attention_mask is None:
                 attention_mask = torch.ones_like(input_ids)

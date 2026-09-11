@@ -26,6 +26,7 @@ from _support.serving.prefill_cache_pool import PrefillKVCacheLease, PrefillKVCa
 from _support.serving.scheduling_metrics import RequestSchedulingMetrics
 from paddle_ocr_vl_1_6_modeling import (
     LocalPaddleOCRVLForConditionalGeneration,
+    IMAGE_TOKEN_ID,
 )
 from text_prefill_and_decode import (
     LocalPaddleOCRVLStaticCache,
@@ -35,12 +36,11 @@ from text_prefill_and_decode import (
     prepare_decode_projections,
 )
 from crop_processing import (
-    apply_pixel_overrides,
     build_inputs,
-    load_preprocessor_config,
     preprocess_pil_image,
+    PATCH_SIZE, MERGE_SIZE, MIN_PIXELS, MAX_PIXELS,
 )
-from text_prefill_and_decode import TEXT_PREFILL_BUCKETS
+from text_prefill_and_decode import TEXT_PREFILL_BUCKETS, TEXT_EOS_TOKEN_ID
 from _support.serving.types import (
     ContinuousDecodeResult,
     RecognitionRequest,
@@ -490,31 +490,15 @@ class ContinuousRecognizer:
             request = request.resolve_image()
             timing["cpu_image_decode"] = time.perf_counter() - image_decode_started
         crop_size = tuple(int(value) for value in request.crop.size)
-        preprocessor_config = self.preprocessor_config
-        if request.min_pixels is not None or request.max_pixels is not None:
-            if request.min_pixels is None or request.max_pixels is None:
-                raise ValueError(
-                    "request-specific min_pixels and max_pixels must be provided together"
-                )
-            if request.min_pixels <= 0 or request.max_pixels < request.min_pixels:
-                raise ValueError(
-                    "invalid request-specific pixel profile: "
-                    f"min={request.min_pixels} max={request.max_pixels}"
-                )
-            preprocessor_config = dict(preprocessor_config)
-            preprocessor_config["min_pixels"] = int(request.min_pixels)
-            preprocessor_config["max_pixels"] = int(request.max_pixels)
-
         started = time.perf_counter()
         pixel_values, image_grid_thw = preprocess_pil_image(
             request.crop,
-            preprocessor_config,
         )
         input_ids, attention_mask = build_inputs(
             self.preprocessing_tokenizer,
             image_grid_thw,
             request.prompt,
-            merge_size=int(preprocessor_config["merge_size"]),
+            merge_size=MERGE_SIZE,
         )
         timing["cpu_image_and_prompt_preprocess"] = time.perf_counter() - started
         if self.timeline is not None:
@@ -534,7 +518,7 @@ class ContinuousRecognizer:
                 f"configured cache_length={self.cache_length}"
             )
         image_token_count = int(
-            (input_ids == self.model.config.image_token_id).sum().item()
+            (input_ids == IMAGE_TOKEN_ID).sum().item()
         )
 
         started = time.perf_counter()
@@ -735,9 +719,9 @@ class ContinuousRecognizer:
         pixels = moved[2]
         def normalize_uint8():
             output = pixels.to(torch.float32)
-            output.mul_(self.compact_rescale_factor)
-            output.sub_(self.compact_image_mean)
-            output.div_(self.compact_image_std)
+            output.mul_(1.0 / 255.0)
+            output.sub_(0.5)
+            output.div_(0.5)
             return output.to(self.model.visual.dtype).contiguous()
         pixels = device_timeline.measure("vision_input_normalize", normalize_uint8)
         hidden = device_timeline.measure("vision_embeddings", lambda: vision_model.embeddings(
@@ -757,7 +741,7 @@ class ContinuousRecognizer:
 
         def scatter_image_embeds():
             projected = image_embeds.to(device=inputs_embeds.device, dtype=inputs_embeds.dtype)
-            image_mask = (input_ids == self.model.config.image_token_id).unsqueeze(-1).expand_as(inputs_embeds)
+            image_mask = (input_ids == IMAGE_TOKEN_ID).unsqueeze(-1).expand_as(inputs_embeds)
             return inputs_embeds.masked_scatter(image_mask, projected)
 
         inputs_embeds = device_timeline.measure("image_embed_scatter", scatter_image_embeds)
@@ -1038,40 +1022,6 @@ class ContinuousRecognizer:
             raise ValueError("batch_size must be positive")
         if self.max_new_tokens <= 0:
             raise ValueError("max_new_tokens must be positive")
-        model_preprocessor_config = load_preprocessor_config(self.model_dir)
-        self.model_preprocessor_min_pixels = int(
-            model_preprocessor_config["min_pixels"]
-        )
-        self.model_preprocessor_max_pixels = int(
-            model_preprocessor_config["max_pixels"]
-        )
-        self.preprocessor_min_pixels_override = 28224
-        self.preprocessor_max_pixels_override = 802816
-        self.preprocessor_config = apply_pixel_overrides(
-            model_preprocessor_config,
-            min_pixels=self.preprocessor_min_pixels_override,
-            max_pixels=self.preprocessor_max_pixels_override,
-        )
-        mean = tuple(
-            (float(value) for value in self.preprocessor_config["image_mean"])
-        )
-        std = tuple(
-            (float(value) for value in self.preprocessor_config["image_std"])
-        )
-        if (
-            not self.preprocessor_config["do_rescale"]
-            or not self.preprocessor_config["do_normalize"]
-            or len(set(mean)) != 1
-            or (len(set(std)) != 1)
-        ):
-            raise ValueError(
-                "Vision input normalization requires scalar RGB rescale and normalization parameters"
-            )
-        self.compact_rescale_factor = float(
-            self.preprocessor_config["rescale_factor"]
-        )
-        self.compact_image_mean = mean[0]
-        self.compact_image_std = std[0]
         self.preprocessing_tokenizer = Tokenizer.from_file(
             str(self.model_dir / "tokenizer.json")
         )
@@ -1166,7 +1116,6 @@ class ContinuousRecognizer:
             batch_size=self.batch_size,
             cache_length=self.cache_length,
             device=self.device,
-            model_dir=self.model_dir,
             eager=self.eager,
             setup_progress=_emit_setup_progress,
         )
@@ -1214,7 +1163,7 @@ class ContinuousRecognizer:
             cache=self.text_decode.warm_cache,
             device=self.device,
             batch_size=self.batch_size,
-            eos_token_id=int(self.model.config.eos_token_id),
+            eos_token_id=int(TEXT_EOS_TOKEN_ID),
             timeline=self.timeline,
             decode_device_timing=self.decode_device_timing,
         )
@@ -1252,9 +1201,9 @@ class ContinuousRecognizer:
 
     def configuration(self) -> dict[str, Any]:
         decode_label = f"{'eager' if self.eager else 'compiled'}_static_b{self.batch_size}"
-        patch_size = int(self.preprocessor_config["patch_size"])
-        merge_size = int(self.preprocessor_config["merge_size"])
-        min_pixels = int(self.preprocessor_config["min_pixels"])
+        patch_size = PATCH_SIZE
+        merge_size = MERGE_SIZE
+        min_pixels = MIN_PIXELS
         vision_attention = self.vision_attention
         return {
             "recognizer_model": str(self.model_dir),
@@ -1307,12 +1256,8 @@ class ContinuousRecognizer:
                 "runtime": (None),
             },
             "preprocessor": {
-                "model_default_min_pixels": self.model_preprocessor_min_pixels,
-                "model_default_max_pixels": self.model_preprocessor_max_pixels,
-                "min_pixels_override": self.preprocessor_min_pixels_override,
-                "max_pixels_override": self.preprocessor_max_pixels_override,
                 "effective_min_pixels": min_pixels,
-                "effective_max_pixels": int(self.preprocessor_config["max_pixels"]),
+                "effective_max_pixels": MAX_PIXELS,
                 "patch_size": patch_size,
                 "merge_size": merge_size,
                 "resize_factor": patch_size * merge_size,

@@ -62,7 +62,7 @@ class CropPipelineTests(unittest.TestCase):
         model.config=cfg
         model.model=torch.nn.Module()
         model.visual=types.SimpleNamespace(vision_model=torch.nn.Module())
-        kwargs=dict(cache_root=Path('/unused'),device=torch.device('cpu'),model_dir=Path('/unused'),eager=True)
+        kwargs=dict(cache_root=Path('/unused'),device=torch.device('cpu'),eager=True)
         with patch.object(text,'import_torchair',side_effect=AssertionError('compiler called')), \
              patch.object(vision,'import_torchair',side_effect=AssertionError('compiler called')):
             t=text.TextPrefillRuntime(model,cache_length=4096,**kwargs)
@@ -181,7 +181,7 @@ class CropPipelineTests(unittest.TestCase):
                     rope_deltas=torch.zeros(1,1,dtype=torch.int64),image_token_count=2,
                     timing_s=dict(cpu_image_and_prompt_preprocess=.01,cpu_mrope_index=.01,cpu_pin_memory=.01),
                     request_started=0,preparation_finished=0)
-                with patch.dict(sys.modules,{'torch_npu':fake}),patch.object(module,'DeviceTimeline',DeviceTimeline):
+                with patch.dict(sys.modules,{'torch_npu':fake}), patch.dict(module.__dict__, {'IMAGE_TOKEN_ID': 5}), patch.object(module,'DeviceTimeline',DeviceTimeline):
                     if module is old:
                         crop=engine._prepared_group([(prepared,0.0)])
                         staged=engine._stage_prefill_group(crop)

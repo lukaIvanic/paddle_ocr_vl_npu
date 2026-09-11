@@ -23,11 +23,25 @@ from _support.model.compile_utils import (
     torch_npu_version_label,
     torchair_version_label,
 )
-from _support.model.config import PaddleOCRTextConfig
 from _support.utils.timing import synchronize
 
 if TYPE_CHECKING:
     from paddle_ocr_vl_1_6_modeling import LocalPaddleOCRVLForConditionalGeneration
+
+
+# Fixed PaddleOCR-VL-1.6 text architecture.
+TEXT_VOCAB_SIZE = 103424
+TEXT_HIDDEN_SIZE = 1024
+TEXT_INTERMEDIATE_SIZE = 3072
+TEXT_LAYERS = 18
+TEXT_HEADS = 16
+TEXT_KV_HEADS = 2
+TEXT_HEAD_DIM = 128
+TEXT_RMS_EPS = 1e-5
+TEXT_ROPE_THETA = 500000.0
+TEXT_MROPE_SECTION = (16, 24, 24)
+TEXT_PAD_TOKEN_ID = 0
+TEXT_EOS_TOKEN_ID = 2
 
 
 FRACTAL_NZ = 29
@@ -39,37 +53,36 @@ TEXT_PREFILL_BUCKETS = (128, 256, 512, 1024, 1152)
 
 
 class PaddleOCRTextModel(nn.Module):
-    def __init__(self, config: PaddleOCRTextConfig):
+    def __init__(self):
         super().__init__()
-        self.config = config
         self.embed_tokens = nn.Embedding(
-            config.vocab_size,
-            config.hidden_size,
-            config.pad_token_id,
+            TEXT_VOCAB_SIZE,
+            TEXT_HIDDEN_SIZE,
+            TEXT_PAD_TOKEN_ID,
         )
         self.layers = nn.ModuleList(
             [
-                PaddleOCRDecoderLayer(config, layer_idx)
-                for layer_idx in range(config.num_hidden_layers)
+                PaddleOCRDecoderLayer(layer_idx)
+                for layer_idx in range(TEXT_LAYERS)
             ]
         )
         self.norm = PaddleOCRRMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
+            TEXT_HIDDEN_SIZE, eps=TEXT_RMS_EPS
         )
-        self.rotary_emb = PaddleOCRRotaryEmbedding(config)
+        self.rotary_emb = PaddleOCRRotaryEmbedding()
 
 
 class PaddleOCRDecoderLayer(nn.Module):
-    def __init__(self, config: PaddleOCRTextConfig, layer_idx: int):
+    def __init__(self, layer_idx: int):
         super().__init__()
         self.layer_idx = int(layer_idx)
-        self.self_attn = PaddleOCRAttention(config, layer_idx)
-        self.mlp = PaddleOCRMLP(config)
+        self.self_attn = PaddleOCRAttention(layer_idx)
+        self.mlp = PaddleOCRMLP()
         self.input_layernorm = PaddleOCRRMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
+            TEXT_HIDDEN_SIZE, eps=TEXT_RMS_EPS
         )
         self.post_attention_layernorm = PaddleOCRRMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
+            TEXT_HIDDEN_SIZE, eps=TEXT_RMS_EPS
         )
 
     def apply_blocks(
@@ -85,38 +98,38 @@ class PaddleOCRDecoderLayer(nn.Module):
 
 
 class PaddleOCRAttention(nn.Module):
-    def __init__(self, config: PaddleOCRTextConfig, layer_idx: int):
+    def __init__(self, layer_idx: int):
         super().__init__()
         self.layer_idx = int(layer_idx)
-        self.num_heads = config.num_attention_heads
-        self.head_dim = config.head_dim
-        self.num_key_value_heads = config.num_key_value_heads
+        self.num_heads = TEXT_HEADS
+        self.head_dim = TEXT_HEAD_DIM
+        self.num_key_value_heads = TEXT_KV_HEADS
         self.num_key_value_groups = (
-            config.num_attention_heads // config.num_key_value_heads
+            TEXT_HEADS // TEXT_KV_HEADS
         )
-        self.scaling = config.head_dim**-0.5
+        self.scaling = TEXT_HEAD_DIM**-0.5
         self.mrope_section = list(
-            (config.rope_parameters or {})["mrope_section"]
+            TEXT_MROPE_SECTION
         )
         self.q_proj = nn.Linear(
-            config.hidden_size,
-            config.num_attention_heads * config.head_dim,
-            bias=config.use_bias,
+            TEXT_HIDDEN_SIZE,
+            TEXT_HEADS * TEXT_HEAD_DIM,
+            bias=False,
         )
         self.k_proj = nn.Linear(
-            config.hidden_size,
-            config.num_key_value_heads * config.head_dim,
-            bias=config.use_bias,
+            TEXT_HIDDEN_SIZE,
+            TEXT_KV_HEADS * TEXT_HEAD_DIM,
+            bias=False,
         )
         self.v_proj = nn.Linear(
-            config.hidden_size,
-            config.num_key_value_heads * config.head_dim,
-            bias=config.use_bias,
+            TEXT_HIDDEN_SIZE,
+            TEXT_KV_HEADS * TEXT_HEAD_DIM,
+            bias=False,
         )
         self.o_proj = nn.Linear(
-            config.num_attention_heads * config.head_dim,
-            config.hidden_size,
-            bias=config.use_bias,
+            TEXT_HEADS * TEXT_HEAD_DIM,
+            TEXT_HIDDEN_SIZE,
+            bias=False,
         )
 
     def project_qkv(
@@ -162,22 +175,22 @@ class PaddleOCRAttention(nn.Module):
 
 
 class PaddleOCRMLP(nn.Module):
-    def __init__(self, config: PaddleOCRTextConfig):
+    def __init__(self):
         super().__init__()
         self.gate_proj = nn.Linear(
-            config.hidden_size,
-            config.intermediate_size,
-            bias=config.use_bias,
+            TEXT_HIDDEN_SIZE,
+            TEXT_INTERMEDIATE_SIZE,
+            bias=False,
         )
         self.up_proj = nn.Linear(
-            config.hidden_size,
-            config.intermediate_size,
-            bias=config.use_bias,
+            TEXT_HIDDEN_SIZE,
+            TEXT_INTERMEDIATE_SIZE,
+            bias=False,
         )
         self.down_proj = nn.Linear(
-            config.intermediate_size,
-            config.hidden_size,
-            bias=config.use_bias,
+            TEXT_INTERMEDIATE_SIZE,
+            TEXT_HIDDEN_SIZE,
+            bias=False,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -205,11 +218,10 @@ class PaddleOCRRMSNorm(nn.Module):
 
 
 class PaddleOCRRotaryEmbedding(nn.Module):
-    def __init__(self, config: PaddleOCRTextConfig):
+    def __init__(self):
         super().__init__()
-        rope = config.rope_parameters or {}
-        self.base = float(rope.get("rope_theta", 500000.0))
-        self.dim = int(config.head_dim)
+        self.base = TEXT_ROPE_THETA
+        self.dim = int(TEXT_HEAD_DIM)
         self.register_buffer("inv_freq", self._compute_inv_freq(), persistent=False)
         self.attention_scaling = 1.0
 
@@ -253,7 +265,6 @@ class LocalPaddleOCRVLStaticCache:
     @classmethod
     def allocate(
         cls,
-        config: PaddleOCRTextConfig,
         *,
         batch_size: int,
         cache_length: int,
@@ -262,13 +273,13 @@ class LocalPaddleOCRVLStaticCache:
     ):
         cache_shape = (
             int(batch_size),
-            int(config.num_key_value_heads),
+            int(TEXT_KV_HEADS),
             int(cache_length),
-            int(config.head_dim),
+            int(TEXT_HEAD_DIM),
         )
         key_caches = []
         value_caches = []
-        for _ in range(config.num_hidden_layers):
+        for _ in range(TEXT_LAYERS):
             key_cache = torch.zeros(cache_shape, device=device, dtype=dtype)
             value_cache = torch.zeros_like(key_cache)
             key_caches.append(key_cache)
@@ -379,7 +390,7 @@ class TextPrefillStage(torch.nn.Module):
     def __init__(self, model: LocalPaddleOCRVLForConditionalGeneration):
         super().__init__()
         self.text_model = model.model
-        self.num_layers = int(model.config.text_config.num_hidden_layers)
+        self.num_layers = int(TEXT_LAYERS)
 
 
 def build_causal_mask(
@@ -541,7 +552,7 @@ class TextDecodeStage(torch.nn.Module):
     ):
         super().__init__()
         self.model = model
-        self.num_layers = int(model.config.text_config.num_hidden_layers)
+        self.num_layers = int(TEXT_LAYERS)
 
 
 def run_text_decode_transformer(
@@ -1079,7 +1090,6 @@ class TextPrefillRuntime:
         cache_root: Path,
         cache_length: int,
         device: torch.device,
-        model_dir: Path,
         eager: bool = False,
     ):
         self.model = model
@@ -1105,7 +1115,7 @@ class TextPrefillRuntime:
             return
 
         torchair, CompilerConfig = import_torchair()
-        hidden_size = int(model.config.text_config.hidden_size)
+        hidden_size = int(TEXT_HIDDEN_SIZE)
         per_bucket: dict[str, Any] = {}
         wrapper_total_s = 0.0
         first_call_total_s = 0.0
@@ -1116,7 +1126,6 @@ class TextPrefillRuntime:
                 bucket=bucket,
                 cache_length=self.cache_length,
                 device=self.device,
-                model_dir=model_dir,
             )
             cache_dir.mkdir(parents=True, exist_ok=True)
             config = CompilerConfig()
@@ -1193,7 +1202,6 @@ class TextPrefillRuntime:
                 "per_bucket": per_bucket,
                 "cache_key_fields": {
                     "cache_length": self.cache_length,
-                    "model_config_hash": short_file_hash(model_dir / "config.json"),
                     "torch": str(torch.__version__),
                     "torch_npu": torch_npu_version_label(device),
                     "torchair": torchair_version_label(device),
@@ -1290,7 +1298,6 @@ def text_cache_dir_for_bucket(
     bucket: int,
     cache_length: int,
     device: torch.device,
-    model_dir: Path,
 ) -> Path:
     key = "_".join(
         [
@@ -1300,7 +1307,6 @@ def text_cache_dir_for_bucket(
             "bs1",
             f"seq{int(bucket)}",
             f"cache{int(cache_length)}",
-            f"model{short_file_hash(model_dir / 'config.json')}",
             f"torch{cache_key_part(torch.__version__)}",
             f"torchnpu{torch_npu_version_label(device)}",
             f"torchair{torchair_version_label(device)}",
@@ -1329,7 +1335,6 @@ class TextDecodeRuntime:
         cache_root: Path,
         batch_size: int,
         cache_length: int,
-        model_dir: Path,
         eager: bool = False,
     ):
         dtype = torch.float16
@@ -1337,7 +1342,7 @@ class TextDecodeRuntime:
         prepare_decode_weight_prefetch(model)
         self.stage = TextDecodeStage(model).eval()
         self.cache_num_key_value_heads = int(
-            model.config.text_config.num_key_value_heads
+            TEXT_KV_HEADS
         )
         synchronize(device)
         started = time.perf_counter()
@@ -1347,7 +1352,6 @@ class TextDecodeRuntime:
             cache_root=cache_root,
             batch_size=batch_size,
             cache_length=cache_length,
-            model_dir=model_dir,
             eager=eager,
         )
         synchronize(device)
@@ -1387,7 +1391,6 @@ def compile_text_decode_stage(
     cache_root: Path,
     batch_size: int,
     cache_length: int,
-    model_dir: Path,
     eager: bool = False,
 ) -> tuple[Any, dict[str, Any]]:
     common_metadata = {
@@ -1401,7 +1404,7 @@ def compile_text_decode_stage(
     (torchair, CompilerConfig) = import_torchair()
     shape_cache_dir = torchair_cache_dir_for_shape(
         cache_root, batch_size=batch_size, cache_length=cache_length,
-        device=device, model_dir=model_dir,
+        device=device,
     )
     shape_cache_dir.mkdir(parents=True, exist_ok=True)
     original = stage.forward.__func__
@@ -1427,7 +1430,6 @@ def compile_text_decode_stage(
             "cache_key_fields": {
                 "batch_size": int(batch_size),
                 "cache_length": int(cache_length),
-                "model_config_hash": short_file_hash(model_dir / "config.json"),
                 "torch": str(torch.__version__),
                 "torch_npu": torch_npu_version_label(device),
                 "torchair": torchair_version_label(device),
@@ -1444,15 +1446,12 @@ def torchair_cache_dir_for_shape(
     batch_size: int,
     cache_length: int,
     device: torch.device,
-    model_dir: Path,
 ) -> Path:
-    model_hash = short_file_hash(model_dir / "config.json")
     shape_key = "_".join(
         [
             f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
             f"bs{int(batch_size)}",
             f"cache{int(cache_length)}",
-            f"model{model_hash}",
             f"torch{cache_key_part(torch.__version__)}",
             f"torchnpu{torch_npu_version_label(device)}",
             f"torchair{torchair_version_label(device)}",

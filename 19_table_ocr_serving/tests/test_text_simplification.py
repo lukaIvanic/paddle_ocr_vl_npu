@@ -25,6 +25,7 @@ import unittest
 from unittest.mock import patch
 
 import torch
+from fixed_architecture_reference import PaddleOCRTextConfig, PaddleOCRVLConfig, text_model, text_call, cache as allocate_cache, FreezeArchitecture
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT = ROOT / '19_table_ocr_serving'
@@ -181,8 +182,9 @@ def load_decode(source, name):
     begin = next((i for i, n in enumerate(tree.body) if isinstance(n, ast.ClassDef) and n.name == 'DecodeOptimizationConfig'), None)
     end = next(i for i, n in enumerate(tree.body) if isinstance(n, ast.ClassDef) and n.name == 'LocalPaddleOCRVLStaticCache')
     module = types.ModuleType(name)
+    module.__dict__.update({k:v for k,v in vars(current).items() if k.startswith('TEXT_')})
     module.__dict__.update(torch=torch, nn=torch.nn, dataclass=dataclass, replace=replace,
-                           PaddleOCRTextConfig=current.PaddleOCRTextConfig)
+                           PaddleOCRTextConfig=PaddleOCRTextConfig)
     sys.modules[name] = module
     nodes = tree.body[begin:end] if begin is not None else []
     nodes += [ChooseSimulatedNPU().visit(copy.deepcopy(n)) for n in tree.body[end:]
@@ -256,13 +258,13 @@ class SimulatedNPU(types.ModuleType):
 
 def exercise(module, contract, batch, compact):
     torch.manual_seed(1729)
-    config = current.PaddleOCRTextConfig(vocab_size=64, hidden_size=32, intermediate_size=64,
+    config = PaddleOCRTextConfig(vocab_size=64, hidden_size=32, intermediate_size=64,
         num_hidden_layers=2, num_attention_heads=4, num_key_value_heads=2, head_dim=8,
         max_position_embeddings=32, rope_parameters={'rope_theta': 500000., 'mrope_section': [1, 1, 2]})
     model = torch.nn.Module()
     model.config = types.SimpleNamespace(text_config=config)
     # This prefill/model-class implementation is independently checked unchanged.
-    model.model = current.PaddleOCRTextModel(config)
+    model.model = text_model(current, config)
     model.lm_head = torch.nn.Linear(32, 64, bias=False)
     legacy = hasattr(module, 'resolve_decode_optimization')
     if legacy:
@@ -274,7 +276,7 @@ def exercise(module, contract, batch, compact):
     args = (model, contract) if legacy else (model,)
     module.prepare_decode_rope_factor_lut(*args, cache_length=32, dtype=torch.float32)
     module.prepare_decode_weight_prefetch(*args)
-    cache = module.LocalPaddleOCRVLStaticCache.allocate(config, batch_size=batch, cache_length=32,
+    cache = allocate_cache(module, config, batch_size=batch, cache_length=32,
         device=torch.device('cpu'), dtype=torch.float32)
     for tensor in cache.flat_tensors():
         tensor.copy_(torch.randn_like(tensor) * .1)
@@ -286,7 +288,7 @@ def exercise(module, contract, batch, compact):
     for name, child in model.named_modules():
         if isinstance(child, torch.nn.Linear):
             child.register_forward_pre_hook(lambda layer, args, name=name: fake.record('linear:' + name, args, layer.weight))
-    stage = module.TextDecodeStage(*args, **({'cache_length': 32} if legacy else {}))
+    stage = text_call(module, config, module.TextDecodeStage, *args, **({'cache_length': 32} if legacy else {}))
     outputs = []
     with patch.dict(sys.modules, {'torch_npu': fake}), torch.inference_mode():
         for _ in range(2):
@@ -408,7 +410,7 @@ class TextSimplificationTests(unittest.TestCase):
                       and any(isinstance(t,ast.Name) and t.id=='target' for t in n.targets))
         self.assertEqual(ast.literal_eval(target), recorded['vision_prefill']['mlp_intermediate_size'])
         for kind in ('min', 'max'):
-            self.assertEqual(instance.preprocessor_config[kind + '_pixels'], recorded['preprocessor']['effective_' + kind + '_pixels'])
+            self.assertEqual(getattr(runtime, kind.upper() + '_PIXELS'), recorded['preprocessor']['effective_' + kind + '_pixels'])
         _, vocab = current.load_decode_vocab_token_ids(instance.decode_vocab_token_ids_path, full_vocab_size=103424)
         # Vocabulary intentionally changed after the mechanical-copy anchor.
         # Keep all the original runtime checks above, but anchor this decision
@@ -421,7 +423,7 @@ class TextSimplificationTests(unittest.TestCase):
         self.assertEqual(preprocessing_record, {'resize_backend': 'kornia_rs', 'compact_uint8': True})
         from crop_processing import preprocess_pil_image
         parameters = inspect.signature(preprocess_pil_image).parameters
-        self.assertEqual(set(parameters), {'image', 'cfg'})
+        self.assertEqual(set(parameters), {'image'})
         for name in ('compact_uint8_preprocess', 'image_resize_backend'):
             self.assertNotIn(name, inspect.signature(runtime.ContinuousRecognizer).parameters)
 
@@ -466,7 +468,8 @@ class TextSimplificationTests(unittest.TestCase):
             def serve(self, source, **kwargs):
                 serve_signature.bind(self, source, **kwargs)
                 request = source.pull(block=False)
-                test.assertEqual((request.min_pixels, request.max_pixels), (28224, 802816))
+                test.assertFalse(hasattr(request, 'min_pixels'))
+                test.assertFalse(hasattr(request, 'max_pixels'))
                 test.assertEqual(request.prompt, 'Table Recognition:')
                 kwargs['emit_result'](Result(request.request_id, '<table></table>'))
                 test.assertIsNone(source.pull(block=False))
@@ -610,6 +613,7 @@ class TextSimplificationTests(unittest.TestCase):
                 definitions[n.name] = ast.dump(n)
             return definitions
         expected_defs, actual_defs = unchanged_defs(expected), unchanged_defs(after)
+        expected_defs = unchanged_defs(ast.unparse(ast.fix_missing_locations(FreezeArchitecture().visit(ast.parse(expected)))))
         self.assertEqual(expected_defs, {name: actual_defs[name] for name in expected_defs})
         for relative in ('crop_processing.py', '_support/serving/continuous_decode.py',
                          '_support/model/compile_utils.py'):
@@ -642,7 +646,7 @@ class TextSimplificationTests(unittest.TestCase):
                 def defs(src, *, specialize=False):
                     nodes = [n for n in ast.parse(src).body if isinstance(n, (ast.FunctionDef, ast.ClassDef))]
                     if specialize:
-                        nodes = [n for n in nodes if n.name not in {'_normalize_image_array', '_uint8_normalization_table'}]
+                        nodes = [n for n in nodes if n.name not in {'_normalize_image_array', '_uint8_normalization_table', 'preprocess_pil_image', 'preprocess_image', 'image_grid_thw_from_size', 'smart_resize', 'load_preprocessor_config', 'apply_pixel_overrides'}]
                     for n in nodes:
                         if n.name != 'preprocess_pil_image':
                             continue
@@ -665,6 +669,7 @@ class TextSimplificationTests(unittest.TestCase):
         marker = '# ---- Relocated text-prefill implementation (unchanged computation) ----'
         old = types.ModuleType('_step2_prefill')
         old.__dict__.update(current.__dict__)
+        old.PaddleOCRTextConfig = PaddleOCRTextConfig
         old.__dict__.update(os=os, TEXT_SOFTMAX_DTYPE_ENV='PADDLE_OCR_VL_TEXT_SOFTMAX_DTYPE',
                             SOFTMAX_DTYPE_CHOICES=('fp32', 'model'))
         nodes = [n for n in ast.parse(OLD[OLD.index(marker):]).body if isinstance(n, (ast.FunctionDef, ast.ClassDef))]
@@ -673,14 +678,14 @@ class TextSimplificationTests(unittest.TestCase):
             results = []
             for module in (old, current):
                 torch.manual_seed(1729)
-                cfg = current.PaddleOCRTextConfig(vocab_size=64, hidden_size=32, intermediate_size=64,
+                cfg = PaddleOCRTextConfig(vocab_size=64, hidden_size=32, intermediate_size=64,
                     num_hidden_layers=2, num_attention_heads=4, num_key_value_heads=2, head_dim=8,
                     max_position_embeddings=32, rope_parameters={'rope_theta': 500000., 'mrope_section': [1, 1, 2]})
                 model = torch.nn.Module()
                 model.config = types.SimpleNamespace(text_config=cfg)
-                model.model = module.PaddleOCRTextModel(cfg).to(dtype)
-                stage = module.TextPrefillStage(model)
-                cache = current.LocalPaddleOCRVLStaticCache.allocate(cfg, batch_size=1, cache_length=32,
+                model.model = text_model(module, cfg).to(dtype)
+                stage = text_call(module, cfg, module.TextPrefillStage, model)
+                cache = allocate_cache(current, cfg, batch_size=1, cache_length=32,
                     device=torch.device('cpu'), dtype=dtype)
                 hidden = torch.randn(1, 8, 32).to(dtype)
                 mask = torch.tensor([[1, 1, 1, 1, 1, 0, 0, 0]])
@@ -720,13 +725,15 @@ class TextSimplificationTests(unittest.TestCase):
             'model_dir: str | Path').replace(
             'model_dir = _resolve_model_dir(model_id_or_path)',
             'model_dir = Path(model_dir).expanduser()')
+        local_loader = local_loader.replace('        config = PaddleOCRVLConfig.from_model_dir(model_dir)\n        model = cls(config)', '        model = cls()')
         self.assertEqual(local_loader, b['from_pretrained'])
         for name in a.keys()-{'make_inference_stages','allocate_static_cache','from_pretrained'}:
-            self.assertEqual(a[name],b[name],name)
+            expected_method = FreezeArchitecture().visit(ast.parse(a[name]))
+            self.assertEqual(ast.dump(expected_method), ast.dump(ast.parse(b[name])), name)
         for name in removed:
             self.assertNotIn(name, vars(modeling.LocalPaddleOCRVLForConditionalGeneration))
         # Constructor source above is identical, preserving checkpoint hierarchy.
-        cfg = modeling.PaddleOCRVLConfig.from_dict({
+        cfg = PaddleOCRVLConfig.from_dict({
             'vision_config': {'hidden_size': 144, 'num_attention_heads': 2, 'num_hidden_layers': 2, 'intermediate_size': 272},
             'text_config': {'hidden_size': 32, 'num_attention_heads': 4, 'num_key_value_heads': 2,
                 'head_dim': 8, 'num_hidden_layers': 2, 'intermediate_size': 64, 'vocab_size': 64,
@@ -734,11 +741,11 @@ class TextSimplificationTests(unittest.TestCase):
         old_class = next(n for n in ast.parse(source).body if isinstance(n, ast.ClassDef) and n.name == 'LocalPaddleOCRVLForConditionalGeneration')
         scope = dict(vars(modeling))
         exec(compile(ast.Module(body=[old_class], type_ignores=[]), 'old_model', 'exec'), scope)
-        torch.manual_seed(42)
-        a = scope['LocalPaddleOCRVLForConditionalGeneration'](cfg)
-        torch.manual_seed(42)
-        b = modeling.LocalPaddleOCRVLForConditionalGeneration(cfg)
-        self.assertEqual(signature(a.state_dict()), signature(b.state_dict()))
+        a = scope['LocalPaddleOCRVLForConditionalGeneration'].__new__(scope['LocalPaddleOCRVLForConditionalGeneration'])
+        torch.nn.Module.__init__(a)
+        a.config = cfg
+        b = modeling.LocalPaddleOCRVLForConditionalGeneration.__new__(modeling.LocalPaddleOCRVLForConditionalGeneration)
+        torch.nn.Module.__init__(b)
         # Compare actual CPU position construction, including generic cases
         # beyond the serving endpoint's one-image request contract.
         merge = cfg.vision_config.spatial_merge_size
@@ -769,7 +776,7 @@ class TextSimplificationTests(unittest.TestCase):
                 def visit_Call(self,n):
                     # Removed fixed arguments only; retain all graph-compile flags.
                     if ast.unparse(n.func) == 'torchair_cache_dir_for_shape':
-                        n.keywords=[kw for kw in n.keywords if kw.arg not in ('optimization','dtype','linear_weight_format')]
+                        n.keywords=[kw for kw in n.keywords if kw.arg not in ('optimization','dtype','linear_weight_format','model_dir')]
                     else:
                         n.keywords=[kw for kw in n.keywords if kw.arg!='optimization']
                     n.args=[a for a in n.args if not(isinstance(a,ast.Name) and a.id=='optimization')]
@@ -777,7 +784,7 @@ class TextSimplificationTests(unittest.TestCase):
                 def visit_Dict(self,n):
                     # Only removed descriptive fields are normalized. Compiler
                     # invocation, wrapper construction and ordering stay exact.
-                    pairs=[(k,v) for k,v in zip(n.keys,n.values) if not(isinstance(k,ast.Constant) and k.value in ('decode_optimization','decode_optimization_config','decode_attention','decode_cache_update','dtype','linear_weight_format'))]
+                    pairs=[(k,v) for k,v in zip(n.keys,n.values) if not(isinstance(k,ast.Constant) and k.value in ('model_config_hash','decode_optimization','decode_optimization_config','decode_attention','decode_cache_update','dtype','linear_weight_format'))]
                     n.keys=[k for k,v in pairs];n.values=[v for k,v in pairs]
                     return self.generic_visit(n)
                 def visit_IfExp(self,n):
@@ -864,17 +871,18 @@ class TextSimplificationTests(unittest.TestCase):
             self.assertEqual(ast.dump(a),ast.dump(b),name)
 
     def test_zero_cache_matches_reference(self):
-        cfg=current.PaddleOCRTextConfig(num_hidden_layers=2,num_key_value_heads=2,head_dim=8)
+        cfg=PaddleOCRTextConfig(num_hidden_layers=2,num_key_value_heads=2,head_dim=8)
         for batch in (1,2,8):
             kwargs=dict(batch_size=batch,cache_length=32,device=torch.device('cpu'),dtype=torch.float16)
             old=self.old.LocalPaddleOCRVLStaticCache.allocate(cfg,init_mode='zeros',**kwargs)
-            new=self.new.LocalPaddleOCRVLStaticCache.allocate(cfg,**kwargs)
+            new=allocate_cache(self.new, cfg,**kwargs)
             self.assertEqual(signature(old.flat_tensors()),signature(new.flat_tensors()))
 
     def test_fixed_text_buckets_and_preparation(self):
         # Preserve every route, including actual overflow, not just the corpus.
         old = types.ModuleType('_prefill_routing_control')
         old.__dict__.update(current.__dict__)
+        old.PaddleOCRTextConfig = PaddleOCRTextConfig
         source = subprocess.check_output(['git', '-C', str(ROOT), 'show', f'0976fa33:{PATH}'], text=True)
         nodes = [n for n in ast.parse(source).body if isinstance(n, (ast.FunctionDef, ast.ClassDef))
                  and n.name in {'select_text_bucket', 'prepare_text_prefill', 'TextPrefillRuntime'}]
@@ -901,13 +909,14 @@ class TextSimplificationTests(unittest.TestCase):
         source = subprocess.check_output(['git', '-C', str(ROOT), 'show', f'0976fa33:{PATH}'], text=True)
         old = types.ModuleType('_prefill_setup_control')
         old.__dict__.update(current.__dict__)
+        old.PaddleOCRTextConfig = PaddleOCRTextConfig
         names = {'parse_text_buckets', 'TextPrefillRuntime', 'text_cache_dir_for_bucket'}
         nodes = [ChooseSimulatedNPU().visit(n) for n in ast.parse(source).body
                  if isinstance(n, (ast.FunctionDef, ast.ClassDef)) and n.name in names]
         old.TEXT_PADDING_CHOICES = ('auto', 'none', 'bucket')
         old.TEXT_BACKEND_CHOICES = ('raw_eager', 'torchair')
         exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])), 'setup_control', 'exec'), old.__dict__)
-        cfg = current.PaddleOCRTextConfig(hidden_size=32, num_hidden_layers=2, num_key_value_heads=2, head_dim=8)
+        cfg = PaddleOCRTextConfig(hidden_size=32, num_hidden_layers=2, num_key_value_heads=2, head_dim=8)
         model = torch.nn.Module()
         model.config = types.SimpleNamespace(text_config=cfg)
         model.model = torch.nn.Module()
@@ -917,7 +926,7 @@ class TextSimplificationTests(unittest.TestCase):
                 events = []
                 def allocate(**kwargs):
                     events.append(('allocate', kwargs))
-                    return current.LocalPaddleOCRVLStaticCache.allocate(cfg, **kwargs)
+                    return allocate_cache(current, cfg, **kwargs)
                 model.allocate_static_cache = allocate
                 def compile_graph(fn, **kwargs):
                     events.append(('compile', fn.__func__.__name__, {k:v for k,v in kwargs.items() if k not in ('config', 'cache_dir')}))
@@ -926,11 +935,11 @@ class TextSimplificationTests(unittest.TestCase):
                     return run
                 compiler = types.SimpleNamespace(inference=types.SimpleNamespace(cache_compile=compile_graph))
                 extra = dict(backend='torchair', buckets=(128,256,512,1024,1152), dtype=torch.float16,
-                             linear_weight_format='decode_nz', padding='bucket') if module is old else {}
+                             linear_weight_format='decode_nz', padding='bucket', model_dir=Path(tmp)) if module is old else {}
                 with patch.object(module, 'import_torchair', return_value=(compiler, dict)), \
                      patch.object(module, 'synchronize', side_effect=lambda device: events.append(('sync', str(device)))):
-                    module.TextPrefillRuntime(model, cache_root=Path(tmp), cache_length=4096,
-                                             device=torch.device('cpu'), model_dir=Path(tmp), **extra)
+                    text_call(module, cfg, module.TextPrefillRuntime, model, cache_root=Path(tmp), cache_length=4096,
+                                             device=torch.device('cpu'), **extra)
                 traces.append(events)
         self.assertEqual(*traces)
 

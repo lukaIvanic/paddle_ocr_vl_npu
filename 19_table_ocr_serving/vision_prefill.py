@@ -21,11 +21,23 @@ import torch.nn.functional as F
 from torch import nn
 
 from _support.model.compile_utils import TORCHAIR_EXECUTION_MODE, cache_key_part, import_torchair, short_file_hash, torch_npu_version_label, torchair_version_label
-from _support.model.config import PaddleOCRVLConfig, PaddleOCRVisionConfig
+from text_prefill_and_decode import TEXT_HIDDEN_SIZE
 from _support.utils.timing import synchronize
 
 if TYPE_CHECKING:
     from paddle_ocr_vl_1_6_modeling import LocalPaddleOCRVLForConditionalGeneration
+
+
+# Fixed PaddleOCR-VL-1.6 vision architecture.
+VISION_HIDDEN_SIZE = 1152
+VISION_INTERMEDIATE_SIZE = 4304
+VISION_LAYERS = 27
+VISION_HEADS = 16
+VISION_CHANNELS = 3
+VISION_IMAGE_SIZE = 384
+VISION_PATCH_SIZE = 14
+VISION_MERGE_SIZE = 2
+VISION_NORM_EPS = 1e-6
 
 
 VISION_BUCKETS = (256, 384, 512, 640, 768, 1408, 1920, 2048, 2944, 4096)
@@ -38,9 +50,9 @@ VISION_FRACTAL_NZ_FORMAT = 29
 
 
 class PaddleOCRVisionModel(nn.Module):
-    def __init__(self, config: PaddleOCRVisionConfig):
+    def __init__(self):
         super().__init__()
-        self.vision_model = PaddleOCRVisionTransformer(config)
+        self.vision_model = PaddleOCRVisionTransformer()
 
     @property
     def dtype(self) -> torch.dtype:
@@ -48,47 +60,46 @@ class PaddleOCRVisionModel(nn.Module):
 
 
 class PaddleOCRVisionTransformer(nn.Module):
-    def __init__(self, config: PaddleOCRVisionConfig):
+    def __init__(self):
         super().__init__()
-        self.embeddings = PaddleOCRVisionEmbeddings(config)
-        self.encoder = PaddleOCRVisionEncoder(config)
+        self.embeddings = PaddleOCRVisionEmbeddings()
+        self.encoder = PaddleOCRVisionEncoder()
         self.post_layernorm = nn.LayerNorm(
-            config.hidden_size, eps=config.layer_norm_eps
+            VISION_HIDDEN_SIZE, eps=VISION_NORM_EPS
         )
 
 
 class PaddleOCRVisionEncoder(nn.Module):
-    def __init__(self, config: PaddleOCRVisionConfig):
+    def __init__(self):
         super().__init__()
-        self.config = config
         self.layers = nn.ModuleList(
             [
-                PaddleOCRVisionEncoderLayer(config)
-                for _ in range(config.num_hidden_layers)
+                PaddleOCRVisionEncoderLayer()
+                for _ in range(VISION_LAYERS)
             ]
         )
-        head_dim = config.hidden_size // config.num_attention_heads
+        head_dim = VISION_HIDDEN_SIZE // VISION_HEADS
         self.rotary_pos_emb = PaddleOCRVisionRotaryEmbedding(head_dim // 2)
 
 
 class PaddleOCRVisionEncoderLayer(nn.Module):
-    def __init__(self, config: PaddleOCRVisionConfig):
+    def __init__(self):
         super().__init__()
         self.layer_norm1 = nn.LayerNorm(
-            config.hidden_size, eps=config.layer_norm_eps
+            VISION_HIDDEN_SIZE, eps=VISION_NORM_EPS
         )
-        self.self_attn = PaddleOCRVisionAttention(config)
+        self.self_attn = PaddleOCRVisionAttention()
         self.layer_norm2 = nn.LayerNorm(
-            config.hidden_size, eps=config.layer_norm_eps
+            VISION_HIDDEN_SIZE, eps=VISION_NORM_EPS
         )
-        self.mlp = PaddleOCRVisionMLP(config)
+        self.mlp = PaddleOCRVisionMLP()
 
 
 class PaddleOCRVisionAttention(nn.Module):
-    def __init__(self, config: PaddleOCRVisionConfig):
+    def __init__(self):
         super().__init__()
-        self.embed_dim = config.hidden_size
-        self.num_heads = config.num_attention_heads
+        self.embed_dim = VISION_HIDDEN_SIZE
+        self.num_heads = VISION_HEADS
         self.head_dim = self.embed_dim // self.num_heads
         self.scaling = self.head_dim**-0.5
         self.k_proj = nn.Linear(self.embed_dim, self.embed_dim)
@@ -98,10 +109,10 @@ class PaddleOCRVisionAttention(nn.Module):
 
 
 class PaddleOCRVisionMLP(nn.Module):
-    def __init__(self, config: PaddleOCRVisionConfig):
+    def __init__(self):
         super().__init__()
-        self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
-        self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
+        self.fc1 = nn.Linear(VISION_HIDDEN_SIZE, VISION_INTERMEDIATE_SIZE)
+        self.fc2 = nn.Linear(VISION_INTERMEDIATE_SIZE, VISION_HIDDEN_SIZE)
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         return self.fc2(F.gelu(self.fc1(hidden_states), approximate="tanh"))
@@ -167,14 +178,13 @@ class PaddleOCRVisionEmbeddings(nn.Module):
         )
         return patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
 
-    def __init__(self, config: PaddleOCRVisionConfig):
+    def __init__(self):
         super().__init__()
-        self.config = config
-        self.embed_dim = config.hidden_size
-        self.image_size = config.image_size
-        self.patch_size = config.patch_size
+        self.embed_dim = VISION_HIDDEN_SIZE
+        self.image_size = VISION_IMAGE_SIZE
+        self.patch_size = VISION_PATCH_SIZE
         self.patch_embedding = nn.Conv2d(
-            in_channels=config.num_channels,
+            in_channels=VISION_CHANNELS,
             out_channels=self.embed_dim,
             kernel_size=self.patch_size,
             stride=self.patch_size,
@@ -341,15 +351,15 @@ class PaddleOCRProjector(nn.Module):
             processed.append(hidden_states)
         return torch.cat(processed, dim=0)
 
-    def __init__(self, config: PaddleOCRVLConfig):
+    def __init__(self):
         super().__init__()
-        merge = config.vision_config.spatial_merge_size
-        hidden_size = config.vision_config.hidden_size * merge * merge
+        merge = VISION_MERGE_SIZE
+        hidden_size = VISION_HIDDEN_SIZE * merge * merge
         self.merge_kernel_size = (merge, merge)
-        self.pre_norm = nn.LayerNorm(config.vision_config.hidden_size, eps=1e-5)
+        self.pre_norm = nn.LayerNorm(VISION_HIDDEN_SIZE, eps=1e-5)
         self.linear_1 = nn.Linear(hidden_size, hidden_size, bias=True)
         self.linear_2 = nn.Linear(
-            hidden_size, config.text_config.hidden_size, bias=True
+            hidden_size, TEXT_HIDDEN_SIZE, bias=True
         )
 
 
@@ -573,7 +583,6 @@ class VisionPrefillRuntime:
         *,
         cache_root: Path,
         device: torch.device,
-        model_dir: Path,
         eager: bool = False,
     ):
         self.model = model
@@ -582,8 +591,8 @@ class VisionPrefillRuntime:
         self.device = device
         self.dtype = torch.float16
         self.cache_root = cache_root.expanduser().resolve()
-        hidden_size = int(model.config.vision_config.hidden_size)
-        head_dim = hidden_size // int(model.config.vision_config.num_attention_heads)
+        hidden_size = int(VISION_HIDDEN_SIZE)
+        head_dim = hidden_size // int(VISION_HEADS)
         self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
         self.entrypoints: dict[int, Callable[..., torch.Tensor]] = {}
         self.eager_stage = VisionPrefillStage(model).eval()
@@ -607,7 +616,7 @@ class VisionPrefillRuntime:
         for bucket in self.buckets:
             module = VisionPrefillStage(model).eval()
             cache_dir = vision_cache_dir_for_bucket(
-                self.cache_root, bucket=bucket, device=self.device, model_dir=model_dir,
+                self.cache_root, bucket=bucket, device=self.device,
             )
             cache_dir.mkdir(parents=True, exist_ok=True)
             config = CompilerConfig()
@@ -670,7 +679,6 @@ class VisionPrefillRuntime:
                 "per_bucket": per_bucket,
                 "cache_key_fields": {
                     "dtype": str(self.dtype),
-                    "model_config_hash": short_file_hash(model_dir / "config.json"),
                     "torch": str(torch.__version__),
                     "torch_npu": torch_npu_version_label(device),
                     "torchair": torchair_version_label(device),
@@ -828,12 +836,11 @@ def unique_bucket_forward(
 
 
 def vision_cache_dir_for_bucket(
-    cache_root: Path, *, bucket: int, device: torch.device, model_dir: Path,
+    cache_root: Path, *, bucket: int, device: torch.device,
 ) -> Path:
     key = "_".join([
         "vision", f"seq{bucket}",
         f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
-        f"model{short_file_hash(model_dir / 'config.json')}",
         f"torch{cache_key_part(torch.__version__)}",
         f"torchnpu{torch_npu_version_label(device)}",
         f"torchair{torchair_version_label(device)}",

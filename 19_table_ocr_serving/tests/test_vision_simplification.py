@@ -18,6 +18,7 @@ import unittest
 from unittest.mock import patch
 
 import torch
+from fixed_architecture_reference import PaddleOCRVisionConfig, vision_model, FreezeArchitecture
 
 from test_text_simplification import ChooseSimulatedNPU, signature, without_methods
 
@@ -132,10 +133,10 @@ class SimulatedPromptFA(types.ModuleType):
 
 def exercise(module, mode, batch, seq, real, dtype):
     torch.manual_seed(1729)
-    cfg = module.PaddleOCRVisionConfig(hidden_size=144, num_attention_heads=2,
+    cfg = PaddleOCRVisionConfig(hidden_size=144, num_attention_heads=2,
         intermediate_size=272, num_hidden_layers=2, image_size=28)
     model = torch.nn.Module()
-    model.visual = module.PaddleOCRVisionModel(cfg).to(dtype=dtype)
+    model.visual = vision_model(module, cfg).to(dtype=dtype)
     if mode == 'weight_padded':
         module.prepare_vision_attention_weight_padding(model)
         kwargs = {'target_intermediate_size':4352} if 'target_intermediate_size' in inspect.signature(module.prepare_vision_mlp_intermediate).parameters else {}
@@ -194,9 +195,9 @@ class VisionSimplificationTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.new.vision_prompt_flash_attention_bnsd(q, q, q, num_heads=2, scale=72**-.5)
         for real, physical in ((8, 8), (8, 16)):
-            cfg = self.new.PaddleOCRVisionConfig(hidden_size=144, num_attention_heads=2,
+            cfg = PaddleOCRVisionConfig(hidden_size=144, num_attention_heads=2,
                 intermediate_size=272, num_hidden_layers=2, image_size=28)
-            model = types.SimpleNamespace(visual=self.new.PaddleOCRVisionModel(cfg))
+            model = types.SimpleNamespace(visual=vision_model(self.new, cfg))
             hidden = torch.randn(real, 144)
             grid = torch.tensor([[1, 2, real // 2]])
             a = self.old.prepare_vision_prefill(model, hidden, grid, physical_seq_len=physical, execution='test')
@@ -221,9 +222,11 @@ class VisionSimplificationTests(unittest.TestCase):
                     return {m.name: ast.get_source_segment(src,m)
                             for m in ast.parse(src).body[0].body
                             if isinstance(m,ast.FunctionDef)}
-                self.assertEqual(method_sources(old[name]),method_sources(new[name]))
+                a = ast.unparse(ast.fix_missing_locations(FreezeArchitecture('vision').visit(ast.parse(old[name]))))
+                b = ast.unparse(ast.parse(new[name]))
+                self.assertEqual(method_sources(a),method_sources(b))
                 continue
-            self.assertEqual(old[name], new[name], name)
+            self.assertEqual(ast.dump(FreezeArchitecture('vision').visit(ast.parse(old[name]))), ast.dump(ast.parse(new[name])), name)
         # The selected padded-head computation and full layer loop stay literal.
         def methods(source):
             return {n.name: ast.get_source_segment(source, n) for n in ast.parse(source).body[0].body
@@ -270,7 +273,7 @@ class VisionSimplificationTests(unittest.TestCase):
             cls.body = [m for m in cls.body if not isinstance(m,ast.FunctionDef)]
             cls.body += sorted(methods,key=lambda m:m.name)
             return ast.dump(tree)
-        self.assertEqual(method_order_independent(LinearPatch().visit(ast.parse(old['PaddleOCRVisionEmbeddings']))),
+        self.assertEqual(method_order_independent(FreezeArchitecture('vision').visit(LinearPatch().visit(ast.parse(old['PaddleOCRVisionEmbeddings'])))),
                          method_order_independent(ast.parse(new['PaddleOCRVisionEmbeddings'])))
         # Same graph compiler call; only fixed constructor/cache selectors were
         # removed. Constructor behavior is also exercised with a fake compiler.
