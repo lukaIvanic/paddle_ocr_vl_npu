@@ -63,6 +63,11 @@ def engine_report(adapter):
     # and sometimes setup after iterator priming. Do not expose misleading
     # "exclusive"/"bookkeeping" names as normal stage measurements.
     summary = dict(summary)
+    if getattr(getattr(adapter, "source", None), "prefilled", False):
+        # The prefilled source performs admission only inside the decode loop.
+        # Actual model prefill has separate adapter event/owner measurements.
+        summary["ready_kv_admission_s"] = summary.pop("prefill_s", 0.0)
+        summary["ready_kv_admission_metrics"] = summary.pop("prefill_metrics", {})
     lifetime = {}
     for key in ("generation_wall_s", "final_drain_wall_s"):
         if key in summary:
@@ -100,6 +105,7 @@ def engine_report(adapter):
                              if hasattr(adapter, "ready_kv_rows") else None),
         "prefill_tokens": dict(getattr(adapter, "prefill_tokens", {})),
         "prefill_device_s": dict(getattr(adapter, "prefill_device_s", {})),
+        "prefill_counters": dict(getattr(adapter, "prefill_counters", {})),
         "vision_runtime": adapter.vision.summary() if hasattr(adapter, "vision") else None,
         "streamed_execution": adapter.stream_summary() if hasattr(adapter, "stream_summary") else None,
         "ready_storage": adapter.ready_storage_summary() if hasattr(adapter, "ready_storage_summary") else None,

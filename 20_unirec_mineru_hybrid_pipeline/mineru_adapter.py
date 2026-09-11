@@ -1,5 +1,5 @@
 """MinerU preparation and ready leases behind experiment 18's adapter contract."""
-from collections import deque
+from collections import Counter, deque
 from adapters.base import Adapter
 from hybrid_timing import timed_method
 from hybrid_routing import MINERU_TASKS
@@ -42,6 +42,7 @@ class MinerUAdapter(Adapter):
         self.records = {}
         self.next_index = 0
         self.ready_high_water = 0
+        self.prefill_counters = Counter()
         self.steps = iter_decode_stream(engine, self.source, cooperative=True)
         with torch.inference_mode():
             next(self.steps)
@@ -74,6 +75,11 @@ class MinerUAdapter(Adapter):
             cpu = self.client._prepare_cpu_inputs(image, chat)
         return kind, params, cpu
 
+    def record_prefill_metrics(self, metrics):
+        for name, value in metrics.items():
+            target = self.prefill_counters if name.endswith(('_count', '_tokens', '_bytes')) else self.prefill_device_s
+            target[name] += value
+
     def prefill(self):
         import torch
         from fixed_batch_engine import PrefilledGeneration
@@ -91,10 +97,10 @@ class MinerUAdapter(Adapter):
         with torch.inference_mode():
             with self.timing.scope("mineru.vision_prefill"):
                 _, metrics = self.engine._prepare_vision_window([(i, r) for _, i, r in entries])
-                self.prefill_device_s.update(metrics)
+                self.record_prefill_metrics(metrics)
             with self.timing.scope("mineru.text_prefill"):
                 states, _, metrics = self.engine._prefill_slots(self.ready_arena, entries)
-                self.prefill_device_s.update(metrics)
+                self.record_prefill_metrics(metrics)
                 self.prefill_tokens.update(vision_real=metrics["raw_vision_tokens"],
                                            text_input=metrics["text_prefill_tokens"],
                                            text_physical=metrics["physical_text_prefill_tokens"])

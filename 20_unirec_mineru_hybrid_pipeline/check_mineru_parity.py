@@ -42,6 +42,10 @@ def main():
 
         class Source:
             @property
+            def upstream_exhausted(self):
+                return not waiting
+
+            @property
             def closed(self):
                 return not waiting
 

@@ -12,7 +12,7 @@ ROOT = EXP.parent
 sys.path[:0] = [str(EXP), str(ROOT / '18_unirec_paddle_hybrid_pipeline'),
                str(ROOT / '11_mineru_2_5_pro_inference')]
 from hybrid_routing import Routing
-from mineru_adapter import ReadySource
+from mineru_adapter import MinerUAdapter, ReadySource
 from coordinator import Coordinator
 try:
     import torch
@@ -21,6 +21,14 @@ except ImportError:
 
 
 class RoutingTests(unittest.TestCase):
+    def test_prefill_counts_are_not_seconds(self):
+        from collections import Counter
+        target = SimpleNamespace(prefill_counters=Counter(), prefill_device_s=Counter())
+        MinerUAdapter.record_prefill_metrics(target, {'vision_prepare_request_count': 3,
+            'raw_vision_tokens': 100, 'text_kv_redistribute_bytes': 256, 'vision_transformer_blocks': .2})
+        self.assertEqual(target.prefill_device_s, {'vision_transformer_blocks': .2})
+        self.assertEqual(target.prefill_counters['raw_vision_tokens'], 100)
+
     def test_defaults_and_single_engine(self):
         self.assertEqual(Routing().models, ('unirec', 'mineru'))
         self.assertEqual(Routing().model_for('Table Recognition:'), 'mineru')
