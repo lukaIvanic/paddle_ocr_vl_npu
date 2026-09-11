@@ -13,9 +13,9 @@ sys.path[:0] = [str(ROOT / "09_persistent_page_engine"), str(ROOT / "12_unirec_0
 from routing import Routing, add_arguments
 
 
-def parse_args():
+def build_parser(*, add_routes=add_arguments, include_paddle=True):
     parser = argparse.ArgumentParser(description=__doc__)
-    add_arguments(parser)
+    add_routes(parser)
     parser.add_argument("--input", type=Path, required=True, help="Directory of page images")
     parser.add_argument("--dataset-json", type=Path, help="Use annotation order instead of filename order")
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -24,12 +24,13 @@ def parse_args():
     parser.add_argument("--decode-steps", type=int, default=32)
     parser.add_argument("--detailed-timing", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--layout-model", type=Path, default=Path("/workspace/models/PP-DocLayoutV3_safetensors"))
-    parser.add_argument("--paddle-model-path", type=Path, default=Path("/workspace/models/PaddleOCR-VL-1.6"))
-    parser.add_argument("--paddle-batch-size", type=int, default=64)
-    parser.add_argument("--paddle-ready-cache-length", type=int, default=1536)
-    parser.add_argument("--paddle-ready-cache-rows", type=int, help="Defaults to Paddle ready capacity")
-    parser.add_argument("--paddle-ready-capacity", type=int, help="NPU ready-request capacity; defaults to Paddle batch size; CPU capacity unchanged")
-    parser.add_argument("--vision-promptfa-align-128", action="store_true")
+    if include_paddle:
+        parser.add_argument("--paddle-model-path", type=Path, default=Path("/workspace/models/PaddleOCR-VL-1.6"))
+        parser.add_argument("--paddle-batch-size", type=int, default=64)
+        parser.add_argument("--paddle-ready-cache-length", type=int, default=1536)
+        parser.add_argument("--paddle-ready-cache-rows", type=int, help="Defaults to Paddle ready capacity")
+        parser.add_argument("--paddle-ready-capacity", type=int, help="NPU ready-request capacity; defaults to Paddle batch size; CPU capacity unchanged")
+        parser.add_argument("--vision-promptfa-align-128", action="store_true")
     parser.add_argument("--unirec-model-path", type=Path)
     parser.add_argument("--openocr-root", type=Path)
     parser.add_argument("--unirec-vision-cache", type=Path)
@@ -41,7 +42,11 @@ def parse_args():
     parser.add_argument("--unirec-streamed", action="store_true", help="Cross-page vision and overlapping UniRec vision/text/decode; Paddle/layout remain exclusive")
     parser.add_argument("--unirec-cpu-workers", type=int, default=4, help="Streamed mode only: persistent CPU processes")
     parser.add_argument("--unirec-cpu-threads", type=int, default=8, help="Streamed mode only: resize threads per CPU process")
-    return parser.parse_args()
+    return parser
+
+
+def parse_args():
+    return build_parser().parse_args()
 
 
 def engine_report(adapter):
@@ -59,6 +64,9 @@ def engine_report(adapter):
     # "exclusive"/"bookkeeping" names as normal stage measurements.
     summary = dict(summary)
     lifetime = {}
+    for key in ("generation_wall_s", "final_drain_wall_s"):
+        if key in summary:
+            lifetime[f"legacy_{key}"] = summary.pop(key)
     for group, keys in {
         "timing_detail": ("run_wall_s", "scheduler_bookkeeping_residual_s"),
         "timing_s": ("continuous_decode_wall", "decode_host_exclusive_wall", "run_scoped_scheduler_wall"),
@@ -94,6 +102,7 @@ def engine_report(adapter):
         "prefill_device_s": dict(getattr(adapter, "prefill_device_s", {})),
         "vision_runtime": adapter.vision.summary() if hasattr(adapter, "vision") else None,
         "streamed_execution": adapter.stream_summary() if hasattr(adapter, "stream_summary") else None,
+        "ready_storage": adapter.ready_storage_summary() if hasattr(adapter, "ready_storage_summary") else None,
     }
 
 
@@ -158,9 +167,10 @@ def make_unirec(args, emit):
                          ready_capacity=args.unirec_ready_capacity, **options)
 
 
-def main():
-    args = parse_args()
-    routing = Routing(args.text_model, args.table_model, args.formula_model)
+def main(args=None, *, routing=None, factories=None):
+    args = parse_args() if args is None else args
+    routing = Routing(args.text_model, args.table_model, args.formula_model) if routing is None else routing
+    factories = {"paddle": make_paddle} if factories is None else factories
     os.environ.setdefault("CANN_KNOWLEDGE_BANK_PROCESS_NUM", "0")
     os.environ.setdefault("TE_PARALLEL_COMPILER", "1")
     import torch
@@ -206,8 +216,9 @@ def main():
         if "unirec" in routing.models:
             adapters["unirec"] = make_unirec(args, emit)
         torch.npu.config.allow_internal_format = True
-        if "paddle" in routing.models:
-            adapters["paddle"] = make_paddle(args, emit)
+        for name in routing.models:
+            if name != "unirec":
+                adapters[name] = factories[name](args, emit)
         frontend = OwnedLayoutFrontend(args.layout_model, torch.device("npu:0"), graph_capture=False)
         source = PageSource(inbox, frontend, routing, emit_page, emit_trace)
         holder["source"] = source

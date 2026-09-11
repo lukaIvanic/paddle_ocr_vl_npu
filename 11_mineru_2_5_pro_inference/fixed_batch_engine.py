@@ -48,6 +48,16 @@ class PendingTokenCopy:
     host_tokens: list[int] | None
 
 
+@dataclass
+class PrefilledGeneration:
+    """Ready KV lease produced by the existing prefill kernels."""
+    cache: LocalMinerUStaticCache
+    state: dict[str, Any]
+    prompt_length: int
+    max_new_tokens: int
+    release: Callable[[], None]
+
+
 class FixedBatchDecodeEngine:
     """B1 prefill into request slots followed by lockstep compiled decode."""
 
@@ -758,6 +768,34 @@ class ContinuousBatchDecodeEngine(FixedBatchDecodeEngine):
             request_count=request_count,
             prepare_request=prepare_request,
         )
+
+    @torch.inference_mode()
+    def admit_prefilled_slots(self, arena, entries):
+        """Copy ready prefixes into active rows, then release source leases.
+
+        This is outside compiled graphs. The existing stream loop supplies the
+        swap safety fence and owns all controls/epochs/token-copy state.
+        """
+        started = time.perf_counter()
+        destinations, sources, states = [], [], {}
+        copied_bytes = 0
+        for slot, index, request in entries:
+            length = request.prompt_length
+            if not 0 < length < arena.cache_length or length + request.max_new_tokens > arena.cache_length:
+                raise ValueError("prefilled request exceeds active cache capacity")
+            for dst, src in zip(arena.flat_tensors(), request.cache.flat_tensors(), strict=True):
+                target, value = dst[slot:slot + 1, :, :length, :], src[:, :, :length, :]
+                if target.shape != value.shape:
+                    raise ValueError("ready/active KV shape mismatch")
+                destinations.append(target)
+                sources.append(value)
+                copied_bytes += value.numel() * value.element_size()
+            states[slot] = dict(request.state, request_index=index)
+        torch._foreach_copy_(destinations, sources)
+        maybe_sync_device(self.model.device)
+        for _slot, _index, request in entries:
+            request.release()
+        return states, time.perf_counter() - started, {"ready_kv_admission_bytes": copied_bytes}
 
     def _validate_request(self, request: PreparedGeneration) -> None:
         if request.input_ids.shape[0] != 1:

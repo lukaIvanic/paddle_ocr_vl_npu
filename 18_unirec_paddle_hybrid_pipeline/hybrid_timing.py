@@ -177,7 +177,7 @@ def install(timing, adapters, source):
                 timing.instrument(adapter, "_decode_job", "unirec.streamed_decode_worker")
             timing.instrument(adapter.runner, "prefill_encoder_hidden_states_packed_for_cohort",
                               "unirec.text_prefill_envelope")
-        else:
+        elif name == "paddle":
             r = adapter.recognizer
             r.timeline = timing.trace
             r.decode_scheduler.timeline = timing.trace

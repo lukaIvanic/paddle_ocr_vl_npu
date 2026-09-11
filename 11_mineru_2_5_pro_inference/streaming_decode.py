@@ -63,6 +63,22 @@ def decode_step_state(cache_position, *, cache_length, boundary_period):
 
 
 def run_decode_stream(engine, source):
+    """Blocking standalone entrypoint; retains the original source behavior."""
+    steps = iter_decode_stream(engine, source)
+    while True:
+        try:
+            next(steps)
+        except StopIteration as finished:
+            return finished.value
+
+
+def iter_decode_stream(engine, source, *, cooperative=False):
+    """Opt-in shared-owner yields; token-copy and KV state remain engine-owned.
+
+    Cooperative sources never block in pull. An underfilled arena yields while
+    submitted upstream work remains. Callers must fence before another engine
+    uses the device, and resume on the same owning thread.
+    """
     import torch
     from prefill_timing import PrefillDeviceTimeline
     from run_local_model_two_step_extract import maybe_sync_device
@@ -123,7 +139,7 @@ def run_decode_stream(engine, source):
         while len(window) < engine.vision_lookahead:
             # The page source blocks only on known CPU work. If only its own
             # layouts are in flight it returns None immediately, not false EOF.
-            item = source.pull(block=True)
+            item = source.pull(block=not cooperative)
             if item is None:
                 break
             index, request = item
@@ -133,7 +149,7 @@ def run_decode_stream(engine, source):
             limits[index] = request.max_new_tokens
             window.append((index, request))
             request_count += 1
-        if window and engine.packed_text_prefill_runtime is not None:
+        if window and engine.packed_text_prefill_runtime is not None and not getattr(source, "prefilled", False):
             elapsed, metrics = engine._prepare_vision_window(window)
             prefill_s += elapsed
             prefill_metrics.update(metrics)
@@ -161,7 +177,10 @@ def run_decode_stream(engine, source):
                 slot = available.pop(0)
                 index, request = vision_ready.popleft()
                 entries.append((slot, index, request))
-            states, elapsed, metrics = engine._prefill_slots(arena, entries)
+            if getattr(source, "prefilled", False):
+                states, elapsed, metrics = engine.admit_prefilled_slots(arena, entries)
+            else:
+                states, elapsed, metrics = engine._prefill_slots(arena, entries)
             prefill_s += elapsed
             prefill_metrics.update(metrics)
             for slot, index, request in entries:
@@ -210,6 +229,8 @@ def run_decode_stream(engine, source):
             decode_by_occupancy[int(key)] += value
         decode_timeline._events.clear()
 
+    if cooperative:
+        yield {"active": 0, "graph_calls": 0}
     with torch.inference_mode():
         while True:
             admit_free()
@@ -217,12 +238,19 @@ def run_decode_stream(engine, source):
             if not active:
                 if source.closed and not vision_ready:
                     break
+                if cooperative:
+                    yield {"active": 0, "graph_calls": graph_calls}
+                    continue
                 # A synchronous finite page source must either produce CPU
                 # work or close here. An external source can wait for arrivals.
                 if hasattr(source, "wait_for_work"):
                     source.wait_for_work()
                     continue
                 raise RuntimeError("source stalled with no active decode and no ready requests")
+            if cooperative and active < batch and not source.upstream_exhausted:
+                resolve_timing()
+                yield {"active": active, "graph_calls": graph_calls}
+                continue
             if vision_ready:
                 idle_rows_with_ready_work += batch - active
                 if active != batch:
@@ -381,6 +409,8 @@ def run_decode_stream(engine, source):
             pending = current
             if graph_calls % 1024 == 0:
                 resolve_timing()
+            if cooperative:
+                yield {"active": sum(index is not None for index in slots), "graph_calls": graph_calls}
         if pending is not None:
             _, elapsed = engine._wait_token_copy(pending)
             copy_wait_s += elapsed
