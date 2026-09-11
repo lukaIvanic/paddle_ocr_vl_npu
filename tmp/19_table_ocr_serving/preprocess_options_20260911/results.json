@@ -1,0 +1,138 @@
+[
+  {
+    "batch": 2,
+    "head": "pillow",
+    "qps": 2.8676185964228287,
+    "latency_s": {
+      "count": 100,
+      "mean": 0.6846083317999728,
+      "p50": 0.42859818499891844,
+      "p90": 1.3238015359991562,
+      "p95": 1.9287957790020291,
+      "p99": 4.185886864198948,
+      "max": 4.370435160002671,
+      "sum": 68.46083317999728,
+      "median": 0.42859818499891844
+    },
+    "artifact": "tmp/19_table_ocr_serving/preprocess_options_20260911/b2_pillow_measured/b2/measured/results"
+  },
+  {
+    "batch": 2,
+    "head": "kornia",
+    "qps": 2.940666974952806,
+    "latency_s": {
+      "count": 100,
+      "mean": 0.6677677928000049,
+      "p50": 0.4201670499987813,
+      "p90": 1.2971487010006986,
+      "p95": 1.9172449190013132,
+      "p99": 4.0741269654011205,
+      "max": 4.272735359998478,
+      "sum": 66.77677928000048,
+      "median": 0.4201670499987813
+    },
+    "artifact": "tmp/19_table_ocr_serving/preprocess_options_20260911/b2_kornia_measured/b2/measured/results"
+  },
+  {
+    "batch": 2,
+    "head": "uint8",
+    "qps": 2.9986094970980717,
+    "latency_s": {
+      "count": 100,
+      "mean": 0.654354156400077,
+      "p50": 0.39534573500168335,
+      "p90": 1.3487272279973699,
+      "p95": 1.8814075404985477,
+      "p99": 4.128318603302615,
+      "max": 4.219818689998647,
+      "sum": 65.4354156400077,
+      "median": 0.39534573500168335
+    },
+    "artifact": "tmp/19_table_ocr_serving/preprocess_options_20260911/b2_uint8_measured/b2/measured/results"
+  },
+  {
+    "batch": 2,
+    "head": "both",
+    "qps": 3.061966656772877,
+    "latency_s": {
+      "count": 100,
+      "mean": 0.6415293515001395,
+      "p50": 0.38810190500043973,
+      "p90": 1.2678377530017322,
+      "p95": 1.8708312114989887,
+      "p99": 4.015309580797913,
+      "max": 4.216387569998915,
+      "sum": 64.15293515001395,
+      "median": 0.38810190500043973
+    },
+    "artifact": "tmp/19_table_ocr_serving/preprocess_options_20260911/b2_both_measured/b2/measured/results"
+  },
+  {
+    "batch": 8,
+    "head": "pillow",
+    "qps": 5.882611187807675,
+    "latency_s": {
+      "count": 100,
+      "mean": 1.207451427399901,
+      "p50": 0.7191965700003493,
+      "p90": 2.4657204280003504,
+      "p95": 3.3204758134996144,
+      "p99": 7.698133785198448,
+      "max": 8.643330859998969,
+      "sum": 120.74514273999011,
+      "median": 0.7191965700003493
+    },
+    "artifact": "tmp/19_table_ocr_serving/preprocess_options_20260911/b8_pillow_measured/b8/measured/results"
+  },
+  {
+    "batch": 8,
+    "head": "kornia",
+    "qps": 5.864473252331499,
+    "latency_s": {
+      "count": 100,
+      "mean": 1.2173714184003621,
+      "p50": 0.7531464449984924,
+      "p90": 2.481501398000547,
+      "p95": 3.3656728740001185,
+      "p99": 7.794564826298598,
+      "max": 8.798012620001828,
+      "sum": 121.7371418400362,
+      "median": 0.7531464449984924
+    },
+    "artifact": "tmp/19_table_ocr_serving/preprocess_options_20260911/b8_kornia_measured/b8/measured/results"
+  },
+  {
+    "batch": 8,
+    "head": "uint8",
+    "qps": 6.077528264003317,
+    "latency_s": {
+      "count": 100,
+      "mean": 1.1701467485000832,
+      "p50": 0.7184377149987995,
+      "p90": 2.434089602998211,
+      "p95": 3.2607910275029997,
+      "p99": 7.7074411148978506,
+      "max": 8.397852750000311,
+      "sum": 117.0146748500083,
+      "median": 0.7184377149987995
+    },
+    "artifact": "tmp/19_table_ocr_serving/preprocess_options_20260911/b8_uint8_measured/b8/measured/results"
+  },
+  {
+    "batch": 8,
+    "head": "both",
+    "qps": 6.150542544154722,
+    "latency_s": {
+      "count": 100,
+      "mean": 1.1544833370001653,
+      "p50": 0.6871564399989438,
+      "p90": 2.3746104060010116,
+      "p95": 3.2091863590008862,
+      "p99": 7.661498698198379,
+      "max": 8.476288319998275,
+      "sum": 115.44833370001652,
+      "median": 0.6871564399989438
+    },
+    "artifact": "tmp/19_table_ocr_serving/preprocess_options_20260911/b8_both_measured/b8/measured/results"
+  }
+]

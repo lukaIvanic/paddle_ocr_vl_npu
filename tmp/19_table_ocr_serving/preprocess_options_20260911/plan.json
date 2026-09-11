@@ -1,0 +1,45 @@
+{
+  "runtime_commit": "875863c09ae43492c5c633ab5ad5a02bc60fd723",
+  "historical_commit": "be691de1",
+  "npu": 6,
+  "matrix": [
+    [
+      2,
+      "pillow"
+    ],
+    [
+      2,
+      "kornia"
+    ],
+    [
+      2,
+      "uint8"
+    ],
+    [
+      2,
+      "both"
+    ],
+    [
+      8,
+      "pillow"
+    ],
+    [
+      8,
+      "kornia"
+    ],
+    [
+      8,
+      "uint8"
+    ],
+    [
+      8,
+      "both"
+    ]
+  ],
+  "count": 100,
+  "seed": 1,
+  "ordered_ids_sha256": "944d66f46da6db1aa55d59fe31f82d2e57f3f414911bdb2a7e7926f3f64efd0b",
+  "expected_new_decode_graphs": 0,
+  "decode_device_timing": true,
+  "note": "Actual closed-loop submission-to-response latency; warmup outside measured client. Device timing enabled equally in every variant. First-token head remains full."
+}

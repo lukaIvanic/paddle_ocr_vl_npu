@@ -1,0 +1,20 @@
+{
+  "status": "measured_complete",
+  "row": {
+    "batch": 8,
+    "head": "kornia",
+    "qps": 5.864473252331499,
+    "latency_s": {
+      "count": 100,
+      "mean": 1.2173714184003621,
+      "p50": 0.7531464449984924,
+      "p90": 2.481501398000547,
+      "p95": 3.3656728740001185,
+      "p99": 7.794564826298598,
+      "max": 8.798012620001828,
+      "sum": 121.7371418400362,
+      "median": 0.7531464449984924
+    },
+    "artifact": "tmp/19_table_ocr_serving/preprocess_options_20260911/b8_kornia_measured/b8/measured/results"
+  }
+}

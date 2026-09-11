@@ -1,0 +1,20 @@
+{
+  "status": "measured_complete",
+  "row": {
+    "batch": 8,
+    "head": "both",
+    "qps": 6.150542544154722,
+    "latency_s": {
+      "count": 100,
+      "mean": 1.1544833370001653,
+      "p50": 0.6871564399989438,
+      "p90": 2.3746104060010116,
+      "p95": 3.2091863590008862,
+      "p99": 7.661498698198379,
+      "max": 8.476288319998275,
+      "sum": 115.44833370001652,
+      "median": 0.6871564399989438
+    },
+    "artifact": "tmp/19_table_ocr_serving/preprocess_options_20260911/b8_both_measured/b8/measured/results"
+  }
+}
