@@ -47,6 +47,15 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(args.unirec_vision_lanes, 4)
         self.assertEqual(args.unirec_ready_capacity, 64)
         self.assertFalse(hasattr(args, 'paddle_model_path'))
+        # 310P handoff halves decode only: ready/prefill capacities stay intact.
+        b16 = module.build_parser().parse_args([
+            '--input', 'images', '--output-dir', 'b16', '--mineru-batch-size', '16'])
+        self.assertEqual(args.mineru_batch_size, 32)
+        self.assertEqual(b16.mineru_batch_size, 16)
+        self.assertEqual(b16.mineru_ready_capacity, 32)
+        self.assertEqual(b16.mineru_cpu_capacity, 64)
+        self.assertEqual(b16.unirec_batch_size, 128)
+        self.assertTrue(b16.unirec_streamed)
         old = module.shared.build_parser().parse_args(['--input', 'images', '--output-dir', 'old'])
         self.assertEqual(old.table_model, 'paddle')
         self.assertFalse(old.unirec_streamed)

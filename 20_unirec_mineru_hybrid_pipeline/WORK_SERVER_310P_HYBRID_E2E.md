@@ -1,4 +1,4 @@
-# 310P: continuous PPv3 + UniRec/MinerU validation
+# 310P: continuous PPv3 + UniRec/MinerU, halved MinerU decode B16
 
 ## Task, sequence and authority
 
@@ -7,18 +7,18 @@ live PP-DocLayoutV3 -> UniRec text / MinerU tables and formulas -> page
 Markdown and JSON. No MinerU layout or image/chart recognition. Preserve
 experiment 18's continuous service, not page cohorts or all-text-first phases.
 
-First run a two-page smoke, then the first 384 pages, each from offset zero
-in a fresh output root. Validate and explain the results directly to Luka.
-**Ask Luka before proceeding to the full 1,651-page run and its evaluation.**
-If he explicitly authorizes automatic continuation, that replaces this gate.
-After approval, use the same settings from offset zero for all 1,651 pages,
-monitor until actual exit, then evaluate every prediction with the frozen
-evaluator. Do not substitute a 165-page run or resume a suffix.
+Luka has approved the full **1,651-page B16 reference run**. First run a
+two-page smoke in a fresh root. If all checks pass, automatically continue
+from offset zero through all1,651 pages in another fresh root, monitor until
+actual exit, then evaluate every prediction with the frozen evaluator. No
+additional384-page run or approval gate is required. Do not substitute a
+165-page run or resume a suffix. A smoke pass is not a memory-fit guarantee.
 
 Read CLAUDE.md, this experiment's README and this brief. The recent historical
 references are experiment 18's `WORK_SERVER_310P_HALF_READY_FULL1651.md` and
 `WORK_SERVER_310P_COMPLETED_FULL1651_ACCURACY.md`. This brief supersedes their
 inference settings for this experiment, including their sequential UniRec mode.
+It also supersedes this brief's original B32/384-page approval-gated version.
 
 Inspect git status, preserve modifications, and `git pull --ff-only origin main`.
 Require `git merge-base --is-ancestor 8a412cb1 HEAD` and this brief present.
@@ -29,7 +29,7 @@ launch scripts, logs, metrics and predictions in a new run directory are allowed
 Do not access Luka's Mac or the 910B server. If GitHub access fails, ask Luka;
 do not change repository visibility.
 
-## Settings: match the validated 910B pipeline
+## Settings: 910B reference with ONLY MinerU decode batch halved
 
 - UniRec B128, self-KV2048/cross-KV1320, K20 `310p_k20_l4`, NZ decode,
   LM-head57344, compact NPU ready capacity64.
@@ -37,8 +37,8 @@ do not change repository visibility.
   processes and eight resize threads per process. Its stages may overlap;
   the owner fences them before MinerU/layout. Do not silently substitute
   sequential vision from the older successful experiment-18 310P run.
-- MinerU FP16, B32/KV4096, NPU ready capacity32/S4096, CPU capacity64.
-  Active and ready KV are **each 1.5 GiB** at this configuration. This is NOT
+- MinerU FP16, **B16/KV4096**, NPU ready capacity32/S4096, CPU capacity64.
+  Active KV is **0.75 GiB**; ready KV remains **1.5 GiB**. This is NOT
   Paddle's 32/S1536 ready pool; do not copy Paddle ready-cache flags here.
 - MinerU min/max pixels25088/602112 (3072 raw vision tokens), manual FP32
   vision LayerNorm + nn.Linear, compiled PromptFA vision, packed text prefill,
@@ -49,7 +49,33 @@ do not change repository visibility.
   the older standalone experiment11 handoff's different crop policy.
 - Routes text=unirec, table=mineru, formula=mineru; decode turns32; detailed
   timing enabled. No output-length reduction, smaller active batch, resolution
-  change, model unloading or fallback. CPU queues are not HBM ready pools.
+  change, model unloading or fallback. The approved B32 -> B16 change is the
+  only active-batch reduction; UniRec stays B128. CPU queues are not HBM ready pools.
+
+### Code audit and expected memory effect (not NPU validation)
+
+The existing `--mineru-batch-size 16` is sufficient; no model/scheduler edits
+or global default changes are required. `streaming_decode.iter_decode_stream`
+derives slot arrays, admission and compiled decode from `engine.batch_size`.
+`ContinuousBatchDecodeEngine._arena_for_batch` allocates that many rows and
+accepts batch sizes greater than1. The ready arena independently uses
+`ready_capacity`; its32 prepared rows may feed the16 active slots across
+multiple admissions. Remaining leases stay alive until copied/released.
+Prefill packing stays at max32 members, vision lookahead32, and ready32.
+These are not requirements for decode B32.
+
+`torchair_cache_dir_for_shape` includes `_bs16_cache4096` in the decode cache
+key. Reuse the existing parent root; allow this genuinely new graph to compile
+without deleting B32 graphs. Vision/text prefill shapes are not changed by
+this flag. Keep knowledge-bank processes1 during both compilation and replay.
+
+Expected fixed active-KV saving is **805,306,368 bytes = 0.75 GiB**, from
+1,610,612,736 to805,306,368 bytes. The ready allocation stays1,610,612,736 bytes.
+Other batch-dependent buffers may shrink, but allocator/workspace behavior
+means the external peak need not fall by exactly0.75 GiB. B16 throughput,
+NPU lowering, accuracy and310P fit are UNVALIDATED until this run. Fewer
+simultaneous decode rows may reduce raw tok/s; measure rather than assume
+unchanged throughput. Keep all generation/context/pixel limits unchanged.
 
 Export `CANN_KNOWLEDGE_BANK_PROCESS_NUM=1` for preflight AND every run,
 including warm-cache replay. Never switch back to zero after compile. Reuse
@@ -129,8 +155,8 @@ The launcher must write the child's exit status even on failure. Do not use
 `set -e` in a way that skips that status write.
 
 ```bash
-# First PAGE_LIMIT=2; after passing, PAGE_LIMIT=384 and a DIFFERENT RUN_ROOT.
-# After Luka's approval: PAGE_LIMIT=1651 and another fresh RUN_ROOT.
+# First PAGE_LIMIT=2; after passing, PAGE_LIMIT=1651 and a DIFFERENT RUN_ROOT.
+# Name both roots explicitly with mineru_b16 so they cannot be confused with B32.
 test ! -e "$RUN_ROOT"
 mkdir -p "$RUN_ROOT"
 git rev-parse HEAD > "$RUN_ROOT/commit.txt"
@@ -146,7 +172,7 @@ command=("$PYTHON_BIN" -u 12_unirec_0_1b_inference/run_with_process_tree_memory.
   --unirec-batch-size 128 --unirec-ready-capacity 64
   --unirec-streamed --unirec-vision-lanes 4
   --unirec-cpu-workers 4 --unirec-cpu-threads 8
-  --mineru-model-path "$MINERU_MODEL" --mineru-batch-size 32
+  --mineru-model-path "$MINERU_MODEL" --mineru-batch-size 16
   --mineru-ready-capacity 32 --mineru-cpu-capacity 64 --mineru-max-pixels 602112
   --mineru-vision-cache "$M_VISION_CACHE" --mineru-text-cache "$M_TEXT_CACHE"
   --mineru-decode-cache "$M_DECODE_CACHE"
@@ -171,7 +197,7 @@ graphs separately. A two-page pass alone does not prove table coverage or fit.
 On OOM, compile failure, corruption or a failed check, STOP the sequence.
 Preserve artifacts and report the first causal error, last page/operation,
 device memory, active/ready allocations and command. Do not automatically
-shrink batches/pools, disable overlap, change kernels or rebuild caches.
+further shrink batches/pools, disable overlap, change kernels or rebuild caches.
 
 ## Completion checks and report
 
@@ -194,6 +220,10 @@ r = json.loads(Path(sys.argv[1]).read_text())
 assert r['pages'] == int(sys.argv[2])
 assert abs(r['detailed_timing']['owner_partition_error_s']) < 1e-6
 assert r['engines']['mineru']['ready_storage']['live'] == 0
+assert r['engines']['mineru']['capacity'] == 16
+assert r['engines']['mineru']['ready_storage']['capacity'] == 32
+assert r['engines']['mineru']['ready_storage']['active_cache_bytes'] == 805306368
+assert r['engines']['mineru']['ready_storage']['allocated_bytes'] == 1610612736
 assert r['engines']['unirec']['compact_ready_kv']['rows'] == 0
 print('COMPLETION_PASS', r['pages'], r['wall_s'], r['pages_per_s'])
 PY
@@ -214,7 +244,7 @@ Explain results DIRECTLY TO LUKA in chat, not in a new Markdown report:
 - Interesting differences versus the matched 910B references below. Label
   unavailable metrics unavailable; do not infer chip memory from torch alone.
 
-## Full-run evaluation, ONLY after full-run approval and successful inference
+## Full-run evaluation, after successful inference
 
 Reuse the already successful 310P frozen evaluation environment/tools, not
 the inference Python. Recover EVAL_PYTHON, EVALUATOR_ROOT and
@@ -230,7 +260,7 @@ export HYBRID_OUTPUT="$RUN_ROOT/output" DATASET_JSON
 # Set EVAL_JOB to a new absolute directory and create it before this call.
 # Set/export EVAL_PYTHON, EVALUATOR_ROOT, OMNIDOCBENCH_EVAL_TOOLS_ROOT.
 # Set/export the previously validated MATCH_WORKERS, TEDS_WORKERS, CDM_WORKERS.
-export EVAL_LANE=hybrid_unirec_mineru_310p_full1651
+export EVAL_LANE=hybrid_unirec_mineru_b16_310p_full1651
 bash 18_unirec_paddle_hybrid_pipeline/run_completed_accuracy_eval.sh \
   > "$EVAL_JOB/run.log" 2>&1
 ```
@@ -251,7 +281,9 @@ sample/page coverage, evaluator fingerprint and elapsed time. The legacy
 
 ## Comparison anchors — measured on 910B, not promises for 310P
 
-Use this experiment's committed references, not standalone MinerU scores:
+Use this experiment's committed **B32 910B** references, not standalone MinerU
+scores. The new run changes both chip and decode batch; it is not a controlled
+same-chip B32/B16 throughput comparison:
 
 - `references/910b_full1651_5c3450b8/`: 1651 pages, 30557 crops; pipeline
   641.591s / **2.573290pg/s**; process721.992s / **2.286730pg/s**.
@@ -265,6 +297,7 @@ Use this experiment's committed references, not standalone MinerU scores:
 - `references/910b_first384_67cd100b/`: first384 pages192.495s,1.99485pg/s.
   Compare equal subsets; don't treat that subset as full-corpus throughput.
 
-After384, give the memory/throughput findings and request Luka's full-run
-approval unless he already granted it explicitly. After approved full+eval,
-give one self-contained final result and artifact locations directly to Luka.
+After the smoke, continue to the approved full run. After full+eval, give one
+self-contained final result and artifact locations directly to Luka, clearly
+labelled 310P / MinerU B16 / ready32 / UniRec B128 streamed4. If anything fails,
+report it and stop; do not claim the intended memory saving as a measured peak.
