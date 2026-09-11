@@ -1,8 +1,10 @@
 # Experiment 19: table OCR serving
 
-**First model simplification applied; CPU checks pass. This edit has not been
-run or compiled on an NPU.** The step-2 results below describe the earlier
-validated source commit, not a new measurement of the simplified code.
+**Simplified source `0976fa33` compiled and tested on one 910B2 on 2026-09-11.**
+The cached-process B8 / 6-QPS / 1,000-request replay has exact output and workload
+parity with step 2. P95 is 3.790 s versus 3.780 s; mean is 1.318 s versus
+1.284 s (+2.7%). The mean increase is retained, not declared measurement noise.
+See the step-3 validation section below.
 
 This self-contained runtime is copied from experiment 09 at
 `be691de190ae099d1a9b0ba80865006b122ecc00`. It does not import experiment 09.
@@ -103,10 +105,11 @@ is removed, and prefill grouping metadata now describes independent crops.
 Compiler source hashing and the active graph-wrapper/cache-compile block are
 unchanged. Cache-name metadata uses the same resolved literals as before;
 tests check the vision key with a fixed source hash. Deleted inactive files use the hasher's existing `nohash`
-handling. No cache identity is spoofed and no compilation has been run.
-Source changes may cause a later NPU launch to compile: discuss that explicitly
-before performing any such run. Text and vision cleanup are grouped before that
-validation, avoiding a separate compile cycle for each edit. This does not
+handling. No cache identity is spoofed. The grouped text/vision cleanup was
+compiled once in the step-3 validation, followed by a cached-process restart.
+Future source changes may require compilation: discuss that explicitly before
+performing further runs. Grouping the cleanup avoided a separate compile cycle
+for each edit. This does not
 guarantee that a discovered NPU failure could never require a further change.
 
 CPU-only checks:
@@ -234,3 +237,33 @@ gap. Keep the fresh-compile result; discuss startup behavior during step 3.
 
 Evidence: `tmp/19_table_ocr_serving/STEP2_VALIDATION.md`, with all response,
 configuration, command and ownership records in the adjacent run directories.
+
+## Step-3 validation: simplified implementation
+
+Runtime source `0976fa33`, physical NPU6 (Ascend 910B2), unchanged historical
+clients, sequence, Poisson schedule and warmup. All 1,000 native token streams,
+raw/formatted outputs, completion reasons, input-token counts, projected-image
+counts and crop dimensions match the cached step-2 control. Zero errors; the
+same ten KV4096-limit stops are retained. No new ground-truth score was computed.
+
+| Metric | Cached step 2 | Cached step 3 |
+|---|---:|---:|
+| Mean (s) | 1.283549 | 1.317758 |
+| P50 (s) | 0.862833 | 0.919765 |
+| P95 (s) | 3.779594 | 3.790191 |
+| P99 (s) | 7.259672 | 7.264818 |
+| Completed requests/s | 5.733948 | 5.733937 |
+
+P95/throughput closely reproduce the control; mean rose 2.7% and P50 rose 6.6%.
+This single comparison does not establish whether those shifts are cleanup
+effects or runtime variation. No additional tuning or repeat was performed.
+
+The first process compiled and completed one real warmup, with zero measured
+requests; setup took 397.929 s. It stopped before a second process loaded caches
+(35.888 s setup), warmed identically and ran the measured replay. All 96 measured
+phase ownership checks were clean; the final check confirms NPU6 released.
+
+Full evidence and reproduction instructions:
+`tmp/19_table_ocr_serving/STEP3_VALIDATION.md` and adjacent
+`step3_b8qps6_0976fa33_20260911_*` directories. The original relocation receipt
+remains unchanged. Deferred cleanup/performance discussions remain deferred.

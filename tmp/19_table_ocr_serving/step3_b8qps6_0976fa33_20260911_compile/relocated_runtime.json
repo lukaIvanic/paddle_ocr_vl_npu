@@ -1,0 +1,9 @@
+{
+  "runtime_git_commit": "0976fa33367f33ba9051d47bcb1e9a2a2b20ffaa",
+  "historical_client_and_harness_commit": "be691de190ae099d1a9b0ba80865006b122ecc00",
+  "phase": "compile-warm",
+  "runtime_source": "/data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/19_table_ocr_serving",
+  "server_entrypoint": "/workspace/repos/paddle_ocr_vl_npu/19_table_ocr_serving/serve.py",
+  "expected_ordered_request_id_sha256": "97a1f87dd18ace0833f6d66796ce6868845b04880292d0f632f3575c3693caa9",
+  "changes": "Entrypoint/ownership names and fingerprint adapted; removed min/max CLI flags now hardcoded to the same pixel bounds. Frozen clients and warmup unchanged."
+}
