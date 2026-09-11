@@ -1,0 +1,8 @@
+{
+  "pages": 1651,
+  "source_output": "/workspace/repos/paddle_ocr_vl_npu/tmp/20_unirec_mineru_hybrid_pipeline/full1651_5c3450b8/output",
+  "source_summary_sha256": "627f4af4d9d5e0fb9d04580d23f7e36b7164195f22c8c8169b49c874c35701ad",
+  "dataset_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "removed_image_tags": 1824,
+  "config": "/workspace/repos/paddle_ocr_vl_npu/tmp/20_unirec_mineru_hybrid_pipeline/full1651_accuracy_5c3450b8/evaluation/work/config.yaml"
+}

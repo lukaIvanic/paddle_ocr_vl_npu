@@ -1,10 +1,12 @@
 # Experiment 20: continuous PPv3 + UniRec/MinerU
 
-Continuous integration implemented and validated on 910B through a 384-page
-streamed run: 192.495s processing, 1.995 pages/s, 4,346 crops fully drained.
-Seven real crops match the standalone MinerU stream token-for-token through
-the new ready-KV path. No full-corpus accuracy result or 310P fit is claimed.
-See [910B evidence](references/910b_first384_67cd100b/README.md).
+Continuous integration validated on all 1,651 OmniDocBench images on one
+910B2: **2.573 pages/s pipeline processing, 95.095 overall accuracy**.
+Whole-process throughput including startup/setup/shutdown is 2.287 pages/s.
+See [full-run evidence](references/910b_full1651_5c3450b8/README.md) and
+[accuracy evaluation](references/910b_accuracy_5c3450b8/README.md).
+Seven real crops also match the standalone MinerU stream token-for-token
+through the new ready-KV path. No 310P validation or memory fit is claimed.
 
 Experiment 18 remains the execution owner: its coordinator, PageInbox,
 PageSource, persistent CPU workers, staged PPv3 layout/cropping, page assembly,

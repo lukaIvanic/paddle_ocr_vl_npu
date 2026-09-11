@@ -1,0 +1,54 @@
+{
+  "cdm_debug": {
+    "exception_case_count": 0,
+    "exception_cases": [],
+    "sample_count": 2352,
+    "stage": "CDM",
+    "timeout_case_count": 0,
+    "timeout_cases": [],
+    "workers": 64
+  },
+  "display_formula_page_cdm": 0.9666279478877208,
+  "display_formula_page_edit": 0.09162709864675023,
+  "display_formula_sample_cdm": 0.9644162414965991,
+  "formula_pages": 313,
+  "formula_samples": 2352,
+  "lane": "unirec_mineru_910b_full1651_5c3450b8",
+  "official_overall": 0.9509487478185257,
+  "page_match": {
+    "fallbacks": {
+      "page_timeout": {
+        "cases": [
+          "docstructbench_enbook-zlib-o.O-17208435.pdf_57.jpg",
+          "newspaper_0b1bb8d03b4287eb95f67b68c2cf9f92_1.jpg",
+          "yanbaopptmerge_593a9a157e4d56a5a57eb14f1d1beec5.pdf_944.jpg"
+        ],
+        "count": 3
+      },
+      "quick_match_timeout": {
+        "cases": [],
+        "count": 0
+      }
+    },
+    "match_timeout_sec": 420,
+    "page_count": 1651,
+    "quick_match_truncated_timeout_sec": 300,
+    "workers": 48
+  },
+  "reading_order_page_edit": 0.1411848908522474,
+  "table_page_teds": 0.9359323936233493,
+  "table_page_teds_structure_only": 0.962061687381451,
+  "table_sample_teds": 0.9229898675440014,
+  "table_teds_execution": {
+    "error_case_count": 0,
+    "error_cases": [],
+    "exception_case_count": 0,
+    "exception_cases": [],
+    "sample_count": 665,
+    "timeout_case_count": 0,
+    "timeout_cases": [],
+    "timeout_sec": 120.0,
+    "workers": 32
+  },
+  "text_block_page_edit": 0.04971409805549312
+}

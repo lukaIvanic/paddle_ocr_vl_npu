@@ -1,0 +1,30 @@
+{
+  "schema": "linux_process_tree_and_npu_memory_v2",
+  "exit_code": 0,
+  "wall_s": 721.9916994571686,
+  "interval_ms": 1000.0,
+  "sample_count": 585,
+  "source_run": "tmp/20_unirec_mineru_hybrid_pipeline/full1651_5c3450b8",
+  "note": "Whole-device NPU-SMI; raw memory samples and process lists retained at source. Not process-only HBM.",
+  "npu_hbm": {
+    "physical_npu": 7,
+    "interval_ms": 1000.0,
+    "peak_increase_from_baseline_mb": 19556,
+    "errors": [],
+    "baseline": {
+      "used_mb": 3396,
+      "total_mb": 65536
+    },
+    "peak": {
+      "elapsed_s": 657.997528553009,
+      "used_mb": 22952,
+      "total_mb": 65536
+    }
+  },
+  "host_process_tree_peak": {
+    "process_count": 8,
+    "total_pss_bytes": 18128395264,
+    "total_rss_bytes": 18369761280,
+    "elapsed_s": 657.1395838260651
+  }
+}

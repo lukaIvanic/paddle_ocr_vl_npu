@@ -1,0 +1,14 @@
+5c3450b8376caa5119d3b97673e25fe0b01cadf9
+liteserver-c001-4
+Fri Sep 11 11:12:18 UTC 2026
+declare -x HYBRID_OUTPUT="/workspace/repos/paddle_ocr_vl_npu/tmp/20_unirec_mineru_hybrid_pipeline/full1651_5c3450b8/output"
+declare -x DATASET_JSON="/workspace/datasets/OmniDocBench/OmniDocBench.json"
+declare -x EVAL_PYTHON="/workspace/venvs/omnidocbench_py310/bin/python"
+declare -x EVALUATOR_ROOT="/workspace/repos/OmniDocBench_eval"
+declare -x OMNIDOCBENCH_EVAL_TOOLS_ROOT="/workspace/.tools/omnidocbench_eval"
+declare -x MATCH_WORKERS="48"
+declare -x TEDS_WORKERS="32"
+declare -x CDM_WORKERS="64"
+declare -x EVAL_LANE="unirec_mineru_910b_full1651_5c3450b8"
+declare -x EVAL_JOB="/workspace/repos/paddle_ocr_vl_npu/tmp/20_unirec_mineru_hybrid_pipeline/full1651_accuracy_5c3450b8"
+bash 18_unirec_paddle_hybrid_pipeline/run_completed_accuracy_eval.sh
