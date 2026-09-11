@@ -105,11 +105,6 @@ def apply_pixel_overrides(
     return effective
 
 
-def apply_min_pixels_override(cfg: dict, min_pixels: int | None) -> dict:
-    """Backward-compatible wrapper for callers overriding only ``min_pixels``."""
-    return apply_pixel_overrides(cfg, min_pixels=min_pixels)
-
-
 def image_grid_thw_from_size(
     width: int,
     height: int,

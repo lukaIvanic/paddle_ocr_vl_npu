@@ -467,6 +467,11 @@ class TextSimplificationTests(unittest.TestCase):
         for relative in ('crop_processing.py', '_support/serving/continuous_decode.py',
                          '_support/model/compile_utils.py'):
             previous = subprocess.check_output(['git', '-C', str(ROOT), 'show', f'{PIN}:19_table_ocr_serving/{relative}'])
+            if relative == 'crop_processing.py':
+                # Only the unused minimum-only compatibility wrapper is removed.
+                removed = b'def apply_min_pixels_override(cfg: dict, min_pixels: int | None) -> dict:\n    """Backward-compatible wrapper for callers overriding only ``min_pixels``."""\n    return apply_pixel_overrides(cfg, min_pixels=min_pixels)\n\n\n'
+                self.assertEqual(previous.count(removed), 1)
+                previous = previous.replace(removed, b'')
             if relative == '_support/serving/continuous_decode.py':
                 expected = LockedServingContract().visit(ast.parse(previous))
                 actual = ast.parse((EXPERIMENT / relative).read_text())
@@ -512,6 +517,11 @@ class TextSimplificationTests(unittest.TestCase):
             'forward_static_decode', 'forward', 'generate_ids', 'generate_ids_static'}
         expected = without_methods(source, {'LocalPaddleOCRVLForConditionalGeneration': removed})
         expected = expected.replace('        vision_attention: str,\n', '').replace('            attention_impl=vision_attention,\n', '')
+        # The image-loop counter is positive at every check; only its dead
+        # fallback and redundant bookkeeping are removed.
+        expected = expected.replace('                remain_images = image_nums\n', '')
+        expected = expected.replace(' if remain_images > 0 else len(input_tokens) + 1', '')
+        expected = expected.replace('                    remain_images -= 1\n', '')
         def defs(src):
             return {n.name: ast.get_source_segment(src, n) for n in ast.parse(src).body
                     if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
@@ -541,6 +551,24 @@ class TextSimplificationTests(unittest.TestCase):
         torch.manual_seed(42)
         b = modeling.LocalPaddleOCRVLForConditionalGeneration(cfg)
         self.assertEqual(signature(a.state_dict()), signature(b.state_dict()))
+        # Compare actual CPU position construction, including generic cases
+        # beyond the serving endpoint's one-image request contract.
+        merge = cfg.vision_config.spatial_merge_size
+        for image_count in (0, 1, 2):
+            tokens = [7]
+            for _ in range(image_count):
+                tokens += [cfg.vision_start_token_id] + [cfg.image_token_id] * 4 + [8]
+            ids = torch.tensor([tokens])
+            grid = torch.tensor([[1, 2 * merge, 2 * merge]] * image_count).reshape(-1, 3)
+            for masked in (False, True):
+                inputs = torch.cat((torch.zeros((1, 2), dtype=ids.dtype), ids), dim=1) if masked else ids
+                mask = torch.cat((torch.zeros((1, 2), dtype=ids.dtype), torch.ones_like(ids)), dim=1) if masked else None
+                for images in (grid, None) if image_count == 0 else (grid,):
+                    with self.subTest(image_count=image_count, masked=masked, grid_present=images is not None):
+                        before = a.get_rope_index(inputs, images, mask)
+                        after = b.get_rope_index(inputs, images, mask)
+                        for x, y in zip(before, after):
+                            self.assertTrue(torch.equal(x, y))
 
 
     def test_compiler_wrapper_unchanged(self):

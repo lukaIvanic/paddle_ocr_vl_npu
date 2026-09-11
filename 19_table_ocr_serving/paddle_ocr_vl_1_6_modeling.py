@@ -130,12 +130,10 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
                 input_tokens = visible_input_ids.tolist()
                 llm_pos_ids_list = []
                 st = 0
-                remain_images = image_nums
                 for _ in range(image_nums):
-                    ed = input_tokens.index(image_token_id, st) if remain_images > 0 else len(input_tokens) + 1
+                    ed = input_tokens.index(image_token_id, st)
                     t, h, w = image_grid_thw[image_index]
                     image_index += 1
-                    remain_images -= 1
                     llm_grid_t = int(t.item())
                     llm_grid_h = int(h.item()) // spatial_merge_size
                     llm_grid_w = int(w.item()) // spatial_merge_size
