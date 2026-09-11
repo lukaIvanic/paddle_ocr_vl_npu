@@ -51,6 +51,12 @@ Models are never repeatedly unloaded/reloaded.
 
 ## Reproduction
 
+For the pull-only 310P agent, use the
+[310P validation handoff](WORK_SERVER_310P_HYBRID_E2E.md): two-page smoke,
+384-page memory/throughput validation, then Luka's approval for full1,651
+and frozen accuracy evaluation. It preserves knowledge-bank processes=1,
+explicit 310P cache paths and external device-memory sampling.
+
 On the 910B container, pull committed source, then `source npu-setup`:
 
 ```bash
