@@ -6,10 +6,151 @@ parity with step 2. P95 is 3.790 s versus 3.780 s; mean is 1.318 s versus
 1.284 s (+2.7%). The mean increase is retained, not declared measurement noise.
 See the step-3 validation section below.
 
+**New cleanup after that validation (not yet NPU-tested):** text-weight NZ
+conversion now fails setup on non-NPU weights, cast exceptions, or a returned
+non-NZ format. Native/mixed-format continuation is removed. Decode KV writes
+use only the direct `scatter_update_` calls; the unused CPU-indexing branch is
+removed. IncreFA/scatter label constants, label helpers, readiness fields and
+cache-name tags are removed, not replaced with other selectors. `FRACTAL_NZ = 29`
+remains the named storage-format code. Physical weight-format statistics remain.
+Source/cache-name changes may require compilation on a future NPU run; no cache
+is renamed or bypassed, and no NPU execution is part of this edit.
+
+The subsequent checkpoint-specific text sweep is also CPU-tested only:
+
+- The deployed checkpoint's `config.json` was read directly: text `use_bias=false`,
+  `hidden_act=silu`, hidden size 1024. Q/K/V and gate/up inputs share that width.
+  Packed projection construction no longer validates arbitrary mixed widths or
+  supports optional biases; text MLP calls SiLU directly. Vision GELU is unchanged.
+- `torch_npu` is imported once at module scope. CPU tests supply their own fake
+  module explicitly; production has no CPU fallback. Redundant internal NPU and
+  tensor-shape guards are removed from the text computation/preparation path.
+- Decode always constructs its future-slot mask. There are no optional supplied
+  masks/KV positions or scalar-position broadcast inputs; the scheduler supplies
+  one position per slot. Prefill always receives its padding mask.
+- Layer 0 explicitly uses RMSNorm, later layers AddRMSNorm. Prefetch remains
+  before normalization and all retained operator calls keep their order.
+- Text prefill has one fixed bucket tuple `(128, 256, 512, 1024, 1152)` and one
+  padding policy. Bucket parsing, `auto`/`none` options and selectable text/decode
+  backends are removed. Smallest-fitting-bucket selection remains request-dependent;
+  overflow still uses the same unpadded prefill stage, not a new implementation.
+- Decode source hashing now hashes this actual text file, not deleted experimental
+  modules. Fixed dtype/weight-format forwarding and old preset cache-name tags
+  are removed. Source hashes still change naturally; cache reuse is not forced.
+- Model loading requires a local path. Hugging Face download resolution and the
+  default hub ID are removed; checkpoint loading/filtering itself is unchanged.
+
+There are 24 passing CPU tests. In addition to arithmetic and call-trace parity,
+they compare every prefill route from 1 through 4096 tokens, padded tensors at
+bucket boundaries and overflow, and constructor compilation/warmup call order
+using a fake compiler. These changes are not covered by the historical NPU
+result below and will need a later agreed compilation/validation pass.
+
+### Latest vision and single-crop cleanup (CPU-tested only)
+
+Vision directly uses the checkpoint's GELU/tanh, MLP zero-extension to 4352,
+joint D72-to-D80 attention weights, linear patch projection and mandatory NZ
+conversion. Backend/padding/format selectors and hypothetical checkpoint guards
+are removed. Dynamic request lengths still select buckets or the existing
+aligned overflow path. The projector's own GELU is unchanged.
+
+`--eager` is the one compilation opt-out: it executes the same NPU stages,
+weights, padding and scheduler without TorchAir wrapping. It applies to vision,
+text prefill and decode; default execution is compiled. The test suite checks
+that eager constructors do not invoke the compiler. No NPU eager run is claimed.
+
+Prefill now carries `_PreparedCrop`, `_StagedCrop` and `_InFlightCrop`. Singleton
+member lists, row layouts, profiled group routes, intermediate text-pack objects
+and result lists are gone. CPU lookahead, free-slot admission, H2D stream events,
+compute dependencies, first-token D2H synchronization and cache-lease ownership
+are preserved. The legacy single-token concat is deliberately retained as an
+operation, not optimized away during this structural pass.
+
+The duplicate packed-projection setup call and its `hasattr` guards are removed:
+projections are built once before NZ conversion. The 32-slot staging reserve
+keeps its allocation behavior under the name `private_cache_staging_headroom`.
+Unused `runtime_defaults.py` is deleted. Per-crop counters replace packing
+statistics machinery, preserving the existing external summary schema with
+constant compatibility fields until the separate metrics discussion. Internal
+timeline stage keys and grouping labels now describe a crop, not a pack.
+
+Output normalization, repetition handling and OTSL conversion were moved
+verbatim into `crop_processing.py`; unused page-output/postprocess modules were
+deleted. They remain recoverable from Git history. The formatting algorithm
+and its text/formula label handling are unchanged.
+
+New tests compare the original singleton prefill chain with the crop chain:
+stage outputs, KV contents, first tokens, event/copy ordering and device-stage
+accounting, for regular/uint8 preprocessing and timeline on/off. Formatting is
+checked for exact source equality and output equality. Vision arithmetic and
+weight preparation still match the reference on CPU; request routing is checked
+through length 8192. These tests do not substitute for the deferred NPU run.
+
+### Text-module reading order (CPU-tested only)
+
+`text_prefill_and_decode.py` now introduces the shared model and KV storage,
+then prefill computation, one-token decode computation, one-time decode
+preparation, and finally runtime/bucket/compilation details. Stage `forward`
+methods precede their implementation details; the prefill runtime's request
+methods precede its long setup constructor. No new execution abstraction was
+introduced.
+
+Against the local pre-reordering snapshot, all 60 function/method definitions
+retain byte-identical source, and the complete module AST matches after
+normalizing declaration order. All 24 CPU tests pass. The historical prefill
+source check now locates definitions by name rather than their position in a
+file suffix; it permits only the stage method-order change, not body changes.
+This source relocation changes the source hash and is not NPU validation or a
+reason to bypass the compilation-cache identity checks.
+
+### Reading order across the remaining main modules (CPU-tested only)
+
+The same declaration-only pass now covers all five other main scripts:
+
+- `vision_prefill.py`: shared model, embeddings, encoder computation, projector,
+  weight preparation, and execution/bucket setup.
+- `crop_processing.py`: crop preprocessing, prompt construction, output
+  normalization and its helpers, then preprocessor configuration.
+- `paddle_ocr_vl_1_6_modeling.py`: model composition, checkpoint loading, stage
+  assembly, then cache and position-construction details.
+- `serving_runtime.py`: request entrypoints, decode coordination, CPU preparation
+  and prefill, completion, then persistent setup and diagnostics. The open-request
+  admission helper and crop-state records follow the main recognizer.
+- `serve.py`: startup and CLI, HTTP handling, request/result coordination,
+  the NPU worker, then setup-GC and summary helpers. The `__main__` invocation
+  remains after every definition.
+
+All 105 function/method definitions across these files retain byte-identical
+source against the local pre-reordering snapshots, including decorators and
+signatures. The complete module ASTs match after declaration-order normalization.
+The 24 CPU tests and HTTP CLI smoke pass. Physical-layout-dependent tests now
+compare named definitions/methods; computation and behavior checks remain.
+No new files or abstractions were added to the product, and no NPU run or
+compilation was performed for this pass.
+
 This self-contained runtime is copied from experiment 09 at
 `be691de190ae099d1a9b0ba80865006b122ecc00`. It does not import experiment 09.
 The original is preserved unchanged. The same B8 / 6 QPS 1,000-request benchmark
 has now been repeated before any cleanup.
+
+### Full versus trimmed decode-head comparison (CPU-tested only)
+
+`serve.py --full-decode-lm-head` skips construction of the selected-row head
+and its native-ID map. Omitting the flag preserves the 16,384-row trimmed
+default. Both decode branches return greedy native token IDs from inside the
+stage; the full branch no longer returns a logits tensor to the scheduler.
+The checkpoint full head remains used for first-token selection after text
+prefill in both variants. No first-token handling or scheduler change is included.
+
+Serving uses separate decode cache roots: `full_vocab_<size>` versus
+`selected_vocab_<size>_<mapping-hash>`. Vision and text-prefill roots are unchanged
+between variants. Readiness records `full_decode_lm_head` and the vocabulary
+metadata. This is a comparison switch, not a decision to retain trimming.
+
+All 25 CPU tests pass, including full-head greedy IDs against the old logits,
+unchanged transformer operation traces/KV writes, head setup/cache separation,
+and CLI-to-worker selection. NPU compilation and throughput/latency measurements
+for this comparison have not run yet.
 
 ## Structure
 
@@ -20,9 +161,9 @@ has now been repeated before any cleanup.
 - `text_prefill_and_decode.py`: both original text implementations, joined without
   changing computation; the prefill-only `_linear_tokenwise` helper is renamed
   `_prefill_linear_tokenwise` to avoid changing either implementation.
-- `crop_processing.py`: original image/prompt preprocessing.
+- `crop_processing.py`: image/prompt preprocessing and unchanged output formatting.
 - `_support/`: temporary original dependencies, including the decode scheduler,
-  configuration compatibility, timing and table-output formatting. Further
+  checkpoint configuration and timing. Further
   consolidation is deferred until the simplified model passes NPU validation.
 - `presets/`: unchanged 16,384-row native-token vocabulary mapping.
 
@@ -72,12 +213,9 @@ the zero-initialized separate K/V tensors used by this path: no `init_mode`,
 packed storage or MHA-head override. The existing extra reserve of 32 private
 cache slots/host token entries is deliberately retained, not retuned.
 
-**Follow-up after cleanup and validation:** revisit cross-crop vision/text
-prefill packing as a performance experiment. `be691de1` explicitly served with
-`vision_packing="off"` and `text_packing="off"`; removing those unused alternatives
-does not remove an optimization behind the chart. Packing could improve prefill
-efficiency, but its end-to-end benefit and decode-interruption cost still need
-measurement. Do not reintroduce or benchmark it during this cleanup.
+Cross-crop prefill packing is not part of this serving design. `be691de1`
+explicitly served with `vision_packing="off"` and `text_packing="off"`; removing
+unused packing machinery does not remove an optimization behind the chart.
 
 The HTTP CLI now exposes model/device/batch size, host/port, queue/timeout/upload
 limits, summary output and the existing three cache directories. The metrics
@@ -96,16 +234,18 @@ Internal values come directly from the validated serving contract, not a preset:
   the anchor's noncompact decode-control updates. No interruption-cap policy.
 
 The endpoint accepts table crops only. Operational controls do not change
-resolution, vocabulary, token limits or model math. Native/NZ compatibility and
-compiler machinery remain deferred; readiness still describes actual formats.
+resolution, vocabulary, token limits or model math. Text weights now require NZ;
+vision-format choices and compiler machinery remain deferred. Readiness still
+describes actual weight formats.
 
 Image processing, vocabulary mapping, scheduling, startup warmup and GC remain
 unchanged. Stage timings and queue/slot metrics remain; obsolete preset metadata
 is removed, and prefill grouping metadata now describes independent crops.
-Compiler source hashing and the active graph-wrapper/cache-compile block are
-unchanged. Cache-name metadata uses the same resolved literals as before;
-tests check the vision key with a fixed source hash. Deleted inactive files use the hasher's existing `nohash`
-handling. No cache identity is spoofed. The grouped text/vision cleanup was
+The validated step-3 version preserved compiler source hashing and the active
+graph-wrapper/cache-compile block. The later text sweep documented above removes
+obsolete hash inputs and fixed cache tags, while retaining the graph-wrapper
+construction and compile flags. Tests also check the unchanged vision key with
+a fixed source hash. No cache identity is spoofed. The grouped text/vision cleanup was
 compiled once in the step-3 validation, followed by a cached-process restart.
 Future source changes may require compilation: discuss that explicitly before
 performing further runs. Grouping the cleanup avoided a separate compile cycle
@@ -119,7 +259,7 @@ python3 -m unittest discover -s 19_table_ocr_serving/tests -p 'test_*simplificat
 python3 19_table_ocr_serving/serve.py --help
 ```
 
-The sixteen tests use small CPU tensors and simulated NPU operations. For the
+The twenty-four tests use small CPU tensors and simulated NPU operations. For the
 retained serving contract, B1/B2/B8, full/compact heads and two successive decode steps,
 it checks exact operation traces/arguments, outputs and KV writes against
 `dc755584`. Vision checks cover two D72 layers using the retained weight-padded
@@ -134,6 +274,8 @@ and compare zero-initialized KV storage. Checks also compare fixed setup values
 and the vocabulary hash with the saved B8 readiness record, and exercise HTTP
 worker request/result wiring with a fake engine (no NPU or real OCR).
 This is not real Ascend correctness, compilation or performance validation.
+NZ setup tests cover conversion success, already-NZ weights, non-NPU weights,
+cast exceptions, wrong returned formats and failures after a partial conversion.
 
 The latest dead-plumbing pass removes two unread arguments, the rejected
 `use_scatter_pa` selector, two write-only prefetch attributes and the single-step
@@ -154,8 +296,8 @@ unreachable. No analysis tooling is added to serving dependencies.
 
 - Define the Python interface over the same persistent engine later: blocking
   one-crop convenience, asynchronous submission and bulk-result iteration.
-- Native versus NZ weight handling and exact versus bucket padding remain for
-  separate review. Do not remove
+- NZ conversion and bucket padding are fixed for the supported checkpoint.
+  Do not remove
   compatibility behavior based only on the flagship run exercising one case.
 - Ascend operator behavior changes require review of the exact stack's supplied
   documentation. A 1,000-request regression run is not exhaustive edge coverage.

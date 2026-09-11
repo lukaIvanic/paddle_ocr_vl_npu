@@ -26,11 +26,8 @@ from _support.serving.prefill_cache_pool import PrefillKVCacheLease, PrefillKVCa
 from _support.serving.scheduling_metrics import RequestSchedulingMetrics
 from paddle_ocr_vl_1_6_modeling import (
     LocalPaddleOCRVLForConditionalGeneration,
-    _resolve_model_dir,
 )
 from text_prefill_and_decode import (
-    DECODE_ATTENTION,
-    DECODE_CACHE_UPDATE,
     LocalPaddleOCRVLStaticCache,
     cast_decode_linear_weights_to_nz,
     load_decode_vocab_token_ids,
@@ -43,11 +40,7 @@ from crop_processing import (
     load_preprocessor_config,
     preprocess_pil_image,
 )
-from _support.serving.runtime_defaults import (
-    READY_BUFFER_BATCH_MULTIPLIER,
-    READY_BUFFER_LOW_WATERMARK_DIVISOR,
-)
-from text_prefill_and_decode import parse_text_buckets
+from text_prefill_and_decode import TEXT_PREFILL_BUCKETS
 from _support.serving.types import (
     ContinuousDecodeResult,
     RecognitionRequest,
@@ -58,472 +51,15 @@ from _support.utils.timeline import TimelineRecorder
 from _support.utils.metrics import per_second
 from _support.utils.input_fingerprints import fingerprint_recognition_inputs
 from vision_prefill import (
-    VISION_LINEAR_WEIGHT_FORMAT_CHOICES,
-    VISION_PROMPT_FA_310P_SEQ_ALIGNMENT,
-    align_vision_buckets,
-    align_vision_seq_len,
+    VISION_BUCKETS,
+    VISION_SEQUENCE_ALIGNMENT,
     prepare_vision_linear_weight_format,
     prepare_vision_mlp_intermediate,
     prepare_vision_attention_weight_padding,
 )
 
 
-def _emit_setup_progress(
-    stage: str,
-    status: str,
-    elapsed_s: float | None = None,
-) -> None:
-    record: dict[str, Any] = {
-        "stage": str(stage),
-        "status": str(status),
-    }
-    if elapsed_s is not None:
-        record["elapsed_s"] = round(float(elapsed_s), 6)
-    print(
-        "EXP09_SETUP " + json.dumps(record, ensure_ascii=False, separators=(",", ":")),
-        file=sys.stderr,
-        flush=True,
-    )
-
-
-@dataclass
-class CpuPreparedRecognition:
-    request_id: str
-    prompt: str
-    crop_size: tuple[int, int]
-    skip_special_tokens: bool
-    pixel_values: torch.Tensor
-    image_grid_thw: torch.Tensor
-    input_ids: torch.Tensor
-    attention_mask: torch.Tensor
-    position_ids: torch.Tensor
-    rope_deltas: torch.Tensor
-    image_token_count: int
-    timing_s: dict[str, float]
-    request_started: float
-    preparation_finished: float
-    input_fingerprints: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class _InFlightPrefillMember:
-    prepared: CpuPreparedRecognition
-    cache: LocalPaddleOCRVLStaticCache
-    cache_lease: PrefillKVCacheLease
-    rope_deltas: torch.Tensor
-    next_cache_position: torch.Tensor
-    next_token: torch.Tensor
-    device_inputs: tuple[torch.Tensor, ...]
-    vision: dict[str, Any]
-    text_prefill: dict[str, Any]
-    timing_s: dict[str, float]
-    input_tokens: int
-    projected_image_tokens: int
-
-
-@dataclass
-class _TextPrefillInputMember:
-    prepared: CpuPreparedRecognition
-    moved: tuple[torch.Tensor, ...]
-    cache: LocalPaddleOCRVLStaticCache
-    cache_lease: PrefillKVCacheLease
-    rope_deltas: torch.Tensor
-    next_cache_position: torch.Tensor
-    inputs_embeds: torch.Tensor
-    vision: dict[str, Any]
-    timing_s: dict[str, float]
-    projected_image_tokens: int
-
-
-@dataclass(frozen=True)
-class _TextPackTrace:
-    member_indices: tuple[int, ...]
-    route: dict[str, Any]
-    stage_keys: dict[str, str]
-
-
-@dataclass
-class _InFlightPrefillGroup:
-    group_id: int
-    members: list[_InFlightPrefillMember]
-    device_timeline: DeviceTimeline
-    h2d_ready_event: Any
-    prefill_ready_event: Any
-    packed_next_tokens: torch.Tensor
-    prefill_started: float
-    pack_route: dict[str, Any]
-    text_packs: list[_TextPackTrace]
-
-
-@dataclass
-class _PreparedPrefillGroup:
-    group_id: int
-    members: list[tuple[CpuPreparedRecognition, float]]
-    real_vision_tokens: int
-    row_sizes: tuple[int, ...]
-    profiled_route: dict[str, Any] | None = None
-
-
-@dataclass
-class _StagedPrefillGroup:
-    group: _PreparedPrefillGroup
-    device_timeline: DeviceTimeline
-    h2d_ready_event: Any
-    moved_members: list[tuple[torch.Tensor, ...]]
-    timings: list[dict[str, float]]
-
-
-@dataclass
-class _VisionPackingRunStats:
-    mode: str
-    target: int
-    lookahead: int
-    groups: int = 0
-    crops: int = 0
-    packed_groups: int = 0
-    singleton_groups: int = 0
-    packed_real_tokens: int = 0
-    packed_physical_tokens: int = 0
-    eager_overflow_groups: int = 0
-    group_size_histogram: Counter[int] | None = None
-    graph_shape_histogram: Counter[str] | None = None
-    ready_window_histogram: Counter[int] | None = None
-    router_cpu_s: float = 0.0
-
-    def __post_init__(self) -> None:
-        if self.group_size_histogram is None:
-            self.group_size_histogram = Counter()
-        if self.graph_shape_histogram is None:
-            self.graph_shape_histogram = Counter()
-        if self.ready_window_histogram is None:
-            self.ready_window_histogram = Counter()
-
-    def record(self, *, crops: int, route: dict[str, Any]) -> None:
-        self.groups += 1
-        self.crops += int(crops)
-        self.group_size_histogram[int(crops)] += 1
-        sequence_length = int(
-            route.get("sequence_length")
-            or route.get("bucket")
-            or route["physical_vision_tokens"]
-        )
-        shape = (
-            f"b{int(route.get('batch_size', 1))}_s{sequence_length}"
-            if route.get("execution") == "compiled"
-            else str(route.get("execution", "unknown"))
-        )
-        self.graph_shape_histogram[shape] += 1
-        if route.get("visible_window_size") is not None:
-            self.ready_window_histogram[int(route["visible_window_size"])] += 1
-        self.router_cpu_s += float(route.get("router_cpu_s", 0.0))
-        if crops > 1:
-            self.packed_groups += 1
-            self.packed_real_tokens += int(route["real_vision_tokens"])
-            self.packed_physical_tokens += int(route["physical_vision_tokens"])
-        else:
-            self.singleton_groups += 1
-        if route.get("execution") == "eager_overflow":
-            self.eager_overflow_groups += 1
-
-    def summary(self) -> dict[str, Any]:
-        return {
-            "mode": self.mode,
-            "target": self.target,
-            "lookahead": self.lookahead,
-            "groups": self.groups,
-            "crops": self.crops,
-            "packed_groups": self.packed_groups,
-            "singleton_groups": self.singleton_groups,
-            "eager_overflow_groups": self.eager_overflow_groups,
-            "crops_per_group": (
-                float(self.crops) / float(self.groups) if self.groups else None
-            ),
-            "group_size_histogram": {
-                str(size): count
-                for size, count in sorted(self.group_size_histogram.items())
-            },
-            "graph_shape_histogram": dict(sorted(self.graph_shape_histogram.items())),
-            "ready_window_histogram": {
-                str(size): count
-                for size, count in sorted(self.ready_window_histogram.items())
-            },
-            "router_cpu_s": self.router_cpu_s,
-            "packed_real_vision_tokens": self.packed_real_tokens,
-            "packed_physical_vision_tokens": self.packed_physical_tokens,
-            "packed_fill_fraction": (
-                float(self.packed_real_tokens) / float(self.packed_physical_tokens)
-                if self.packed_physical_tokens
-                else None
-            ),
-        }
-
-
-@dataclass
-class _TextPackingRunStats:
-    mode: str
-    buckets: tuple[int, ...]
-    groups: int = 0
-    crops: int = 0
-    packs: int = 0
-    packed_crops: int = 0
-    fallback_crops: int = 0
-    packed_real_tokens: int = 0
-    packed_physical_tokens: int = 0
-    redistributed_kv_bytes: int = 0
-    pack_size_histogram: Counter[int] | None = None
-    bucket_histogram: Counter[int] | None = None
-
-    def __post_init__(self) -> None:
-        if self.pack_size_histogram is None:
-            self.pack_size_histogram = Counter()
-        if self.bucket_histogram is None:
-            self.bucket_histogram = Counter()
-
-    def record_pack(
-        self,
-        *,
-        members: int,
-        real_tokens: int,
-        physical_tokens: int,
-        redistributed_kv_bytes: int,
-    ) -> None:
-        self.packs += 1
-        self.packed_crops += int(members)
-        self.packed_real_tokens += int(real_tokens)
-        self.packed_physical_tokens += int(physical_tokens)
-        self.redistributed_kv_bytes += int(redistributed_kv_bytes)
-        self.pack_size_histogram[int(members)] += 1
-        self.bucket_histogram[int(physical_tokens)] += 1
-
-    def summary(self) -> dict[str, Any]:
-        return {
-            "mode": self.mode,
-            "buckets": list(self.buckets),
-            "groups": self.groups,
-            "crops": self.crops,
-            "packs": self.packs,
-            "packed_crops": self.packed_crops,
-            "fallback_crops": self.fallback_crops,
-            "calls": self.packs + self.fallback_crops,
-            "call_reduction_fraction": (
-                1.0 - (self.packs + self.fallback_crops) / self.crops
-                if self.crops
-                else None
-            ),
-            "pack_size_histogram": {
-                str(size): count
-                for size, count in sorted(self.pack_size_histogram.items())
-            },
-            "bucket_histogram": {
-                str(bucket): count
-                for bucket, count in sorted(self.bucket_histogram.items())
-            },
-            "packed_real_text_tokens": self.packed_real_tokens,
-            "packed_physical_text_tokens": self.packed_physical_tokens,
-            "packed_fill_fraction": (
-                self.packed_real_tokens / self.packed_physical_tokens
-                if self.packed_physical_tokens
-                else None
-            ),
-            "redistributed_kv_bytes": self.redistributed_kv_bytes,
-        }
-
-
-def _pin_memory_or_keep(tensor: torch.Tensor) -> torch.Tensor:
-    if tensor.device.type != "cpu" or tensor.is_pinned():
-        return tensor
-    try:
-        return tensor.pin_memory()
-    except RuntimeError:
-        # Pageable staging is slower to submit but has identical semantics.
-        return tensor
-
-
-@dataclass
-class PrefilledRecognition:
-    request_id: str
-    prompt: str
-    crop_size: tuple[int, int]
-    skip_special_tokens: bool
-    cache: LocalPaddleOCRVLStaticCache | None
-    cache_release: Callable[[], None] | None
-    rope_deltas: torch.Tensor | None
-    next_cache_position: torch.Tensor | None
-    next_token: torch.Tensor | None
-    first_token: int
-    input_tokens: int
-    projected_image_tokens: int
-    vision: dict[str, Any]
-    text_prefill: dict[str, Any]
-    timing_s: dict[str, float]
-    device_stage_s: dict[str, float]
-    request_started: float
-    prefill_finished: float
-    input_fingerprints: dict[str, Any] = field(default_factory=dict)
-
-    def take_device_state(
-        self,
-    ) -> tuple[
-        LocalPaddleOCRVLStaticCache,
-        torch.Tensor,
-        torch.Tensor,
-        torch.Tensor,
-        Callable[[], None] | None,
-    ]:
-        """Move the pending NPU prefix out of the long-lived result payload."""
-
-        cache = self.cache
-        rope_deltas = self.rope_deltas
-        next_cache_position = self.next_cache_position
-        next_token = self.next_token
-        cache_release = self.cache_release
-        if (
-            cache is None
-            or rope_deltas is None
-            or next_cache_position is None
-            or next_token is None
-        ):
-            raise RuntimeError(
-                f"prefill device state already taken for {self.request_id}"
-            )
-        self.cache = None
-        self.cache_release = None
-        self.rope_deltas = None
-        self.next_cache_position = None
-        self.next_token = None
-        return (
-            cache,
-            rope_deltas,
-            next_cache_position,
-            next_token,
-            cache_release,
-        )
-
-
-class _OpenPrefillSource:
-    """Prepare CPU inputs ahead, but prefill NPU KV only for free decode slots."""
-
-    def __init__(
-        self,
-        recognizer: Any,
-        requests: Any,
-        *,
-        on_request_error: Callable[[str, BaseException], None],
-        scheduling_metrics: RequestSchedulingMetrics | None = None,
-    ):
-        self.recognizer = recognizer
-        self.requests = requests
-        self.on_request_error = on_request_error
-        self.scheduling_metrics = scheduling_metrics
-        self.pending: deque[tuple[str, Future[CpuPreparedRecognition]]] = deque()
-        self.executor = ThreadPoolExecutor(
-            max_workers=1,
-            thread_name_prefix="paddleocr-vl-open-cpu-prepare",
-        )
-        self._executor_closed = False
-
-    @property
-    def closed(self) -> bool:
-        return bool(self.requests.closed) and not self.pending
-
-    def _submit_available(self, *, block_for_first: bool) -> None:
-        while len(self.pending) < self.recognizer.cpu_preprocess_max_pending:
-            request = self.requests.pull(
-                block=block_for_first and not self.pending,
-            )
-            block_for_first = False
-            if request is None:
-                break
-            submitted_at = time.perf_counter()
-            if self.scheduling_metrics is not None:
-                self.scheduling_metrics.register(
-                    request.request_id,
-                    submitted_at
-                    if request.submitted_at is None
-                    else request.submitted_at,
-                )
-            self.pending.append(
-                (
-                    request.request_id,
-                    self.executor.submit(
-                        self.recognizer._prepare_cpu,
-                        request,
-                        submitted_at,
-                    ),
-                )
-            )
-
-    def pull_for_decode_slots(
-        self,
-        *,
-        block: bool,
-        available_slots: int,
-    ) -> ReadyDecodeRequest | None:
-        """CPU may run ahead; NPU prefill needs an unreserved decode slot."""
-        return self.pull(block=block, allow_prefill=available_slots > 0)
-
-    def pull(
-        self, *, block: bool, allow_prefill: bool = True
-    ) -> ReadyDecodeRequest | None:
-        while True:
-            pull_started = (
-                time.perf_counter() if self.scheduling_metrics is not None else 0.0
-            )
-            self._submit_available(
-                block_for_first=allow_prefill and block and not self.pending,
-            )
-            if not allow_prefill:
-                # Do not consume/wait for a future or allocate/prefill NPU KV
-                # while every decode slot is active or already reserved by a
-                # ready request. CPU preparation above remains bounded/ahead.
-                return None
-            if not self.pending:
-                return None
-            if not block and not self.pending[0][1].done():
-                # CPU preparation is background work, not a reason to stall
-                # live decoding. Keep ownership in pending until a later poll;
-                # only an idle scheduler may wait for the first ready request.
-                return None
-            request_id, future = self.pending.popleft()
-            wait_started = time.perf_counter()
-            try:
-                prepared = future.result()
-            except BaseException as exc:
-                if self.scheduling_metrics is not None:
-                    self.scheduling_metrics.record_prefill(
-                        request_id,
-                        pull_started,
-                        time.perf_counter(),
-                        status="error",
-                    )
-                self.on_request_error(request_id, exc)
-                block = False
-                continue
-            consumer_wait_s = time.perf_counter() - wait_started
-            # Refill the CPU lane before NPU prefill so host preparation for
-            # later HTTP requests overlaps the current crop's device work.
-            self._submit_available(block_for_first=False)
-            group = self.recognizer._prepared_group([(prepared, consumer_wait_s)])
-            staged = self.recognizer._stage_prefill_group(group)
-            inflight = self.recognizer._enqueue_staged_prefill_group(staged)
-            finalized = self.recognizer._finalize_prefill_group(inflight)
-            if len(finalized) != 1:
-                raise RuntimeError(
-                    f"open single-crop prefill produced {len(finalized)} ready states"
-                )
-            if self.scheduling_metrics is not None:
-                self.scheduling_metrics.record_prefill(
-                    request_id,
-                    pull_started,
-                    time.perf_counter(),
-                )
-            return self.recognizer._ready_from_prefilled(finalized[0])
-
-    def close(self) -> None:
-        if self._executor_closed:
-            return
-        self._executor_closed = True
-        self.executor.shutdown(wait=True, cancel_futures=True)
+# Persistent recognizer: request flow before setup details
 
 
 class ContinuousRecognizer:
@@ -536,421 +72,224 @@ class ContinuousRecognizer:
     stable while ready KV prefixes replace finished requests between steps.
     """
 
+    # Request entrypoints: open serving stream and finite request iterable.
     @torch.inference_mode()
-    def __init__(
+    def serve(
         self,
+        requests: Any,
         *,
-        model: str,
-        device: str = "npu:0",
-        batch_size: int,
-        torchair_cache_dir: Path,
-        decode_device_timing: bool = True,
-        vision_torchair_cache_dir: Path | None = None,
-        vision_linear_weight_format: str = "native",
-        text_torchair_cache_dir: Path | None = None,
-        timeline: TimelineRecorder | None = None,
-        scheduler_progress: bool = False,
-        scheduler_progress_events: Iterable[str] | None = None,
-        diagnostic_decode_effective_length: int | None = None,
-        diagnostic_decode_request_id: str | None = None,
-        diagnostic_prefill_kv_request_ids: Iterable[str] | None = None,
-        recognition_input_fingerprints: bool = False,
-        compact_uint8_preprocess: bool = False,
-        image_resize_backend: str = "pillow",
-    ):
-        runtime_started = time.perf_counter()
-        _emit_setup_progress("frontend", "start")
-        import torch_npu
+        schedule_id: str,
+        emit_result: Callable[[RecognitionResult], None],
+        on_request_error: Callable[[str, BaseException], None],
+        collect_scheduling_metrics: bool = False,
+    ) -> ContinuousDecodeResult:
+        """Serve an open stream whose input can be temporarily empty.
 
-        self.vision_linear_weight_format_requested = str(vision_linear_weight_format)
-        if (
-            self.vision_linear_weight_format_requested
-            not in VISION_LINEAR_WEIGHT_FORMAT_CHOICES
-        ):
-            raise ValueError(
-                f"vision_linear_weight_format must be one of {VISION_LINEAR_WEIGHT_FORMAT_CHOICES}, got {self.vision_linear_weight_format_requested!r}"
+        Each arrival remains one independent crop request. The model stages
+        stay unchanged, while ready crops enter the same fixed decode arena
+        and can hot-swap into free slots until the caller closes the source.
+        """
+
+        self._begin_decode_schedule()
+        scheduling_metrics = (
+            RequestSchedulingMetrics(self.batch_size)
+            if collect_scheduling_metrics
+            else None
+        )
+        ready_source = _OpenPrefillSource(
+            self,
+            requests,
+            on_request_error=on_request_error,
+            scheduling_metrics=scheduling_metrics,
+        )
+        try:
+            return self._decode_ready_source(
+                ready_source,
+                schedule_id=schedule_id,
+                emit_result=emit_result,
+                scheduling_metrics=scheduling_metrics,
             )
-        if self.vision_linear_weight_format_requested == "fractal_nz":
-            torch.npu.config.allow_internal_format = True
-        self.model_dir = _resolve_model_dir(model)
-        self.device = torch.device(device)
-        if self.device.type != "npu":
-            raise ValueError("table serving requires an NPU device")
-        if not torch.npu.is_available():
-            raise RuntimeError("Table serving requires an available NPU")
-        self.dtype = torch.float16
-        torch.npu.set_compile_mode(jit_compile=False)
-        self.decode_backend = "torchair"
-        self.decode_vocab_token_ids_path = (
-            Path(__file__).resolve().parent
-            / "presets/table_compact_vocab/b1_verifier_topfreq_16384.json"
-        )
-        self.timeline = timeline
-        self.scheduler_progress = bool(scheduler_progress)
-        self.scheduler_progress_events = (
-            None
-            if scheduler_progress_events is None
-            else frozenset((str(event) for event in scheduler_progress_events))
-        )
-        self.diagnostic_decode_effective_length = (
-            None
-            if diagnostic_decode_effective_length is None
-            else int(diagnostic_decode_effective_length)
-        )
-        self.diagnostic_decode_request_id = (
-            None
-            if diagnostic_decode_request_id is None
-            else str(diagnostic_decode_request_id)
-        )
-        self.diagnostic_prefill_kv_request_ids = frozenset(
-            (str(request_id) for request_id in diagnostic_prefill_kv_request_ids or ())
-        )
-        self.batch_size = int(batch_size)
-        self.cache_length = 4096
-        self.max_new_tokens = 4096
-        self.recognition_input_fingerprints = bool(recognition_input_fingerprints)
-        self.compact_uint8_preprocess = bool(compact_uint8_preprocess)
-        self.image_resize_backend = str(image_resize_backend)
-        if self.image_resize_backend not in {"pillow", "kornia_rs"}:
-            raise ValueError(
-                f"image_resize_backend must be 'pillow' or 'kornia_rs', got {self.image_resize_backend!r}"
+        finally:
+            ready_source.close()
+
+    @torch.inference_mode()
+    def run(
+        self,
+        requests: Iterable[RecognitionRequest],
+        *,
+        schedule_id: str,
+        emit_result: Callable[[RecognitionResult], None],
+    ) -> ContinuousDecodeResult:
+        """Emit independent crop results as they complete.
+
+        Request ordering and higher-level grouping belong to the caller. The
+        return value contains only run-scoped scheduler metrics, which become
+        final after the input stream is drained.
+        """
+
+        self._begin_decode_schedule()
+
+        def ready_stream() -> Iterable[ReadyDecodeRequest]:
+            current_staged: _StagedCrop | None = None
+            drained_normally = False
+            h2d_executor = ThreadPoolExecutor(
+                max_workers=1,
+                thread_name_prefix="prefill-h2d",
             )
-        self.vision_backend = "torchair"
-        self.vision_mlp_intermediate_size_requested = 4352
-        self.vision_attention = "prompt_flash_attention"
-        self.decode_device_timing = bool(decode_device_timing)
-        self.compact_decode_control = False
-        self.vision_attention_weight_padding = True
-        self.vision_linear_patch_projection = True
-        self.vision_promptfa_align_128 = True
-        self.vision_seq_alignment = VISION_PROMPT_FA_310P_SEQ_ALIGNMENT
-        self.vision_buckets = align_vision_buckets(
-            (256, 384, 512, 640, 768, 1408, 1920, 2048, 2944, 4096),
-            self.vision_seq_alignment,
-        )
-        self.vision_padding = "bucket"
-        self.vision_packing = "off"
-        self.vision_pack_target = align_vision_seq_len(
-            int(1920), self.vision_seq_alignment
-        )
-        self.vision_router_lookahead = 32
-        self.text_backend = "torchair"
-        self.text_buckets = parse_text_buckets((128, 256, 512, 1024, 1152))
-        self.text_padding = "bucket"
-        self.text_packing = "off"
-        self.text_pack_buckets = parse_text_buckets((128, 256, 512, 1024))
-        self.text_pack_max_members = 32
-        if self.batch_size <= 0:
-            raise ValueError("batch_size must be positive")
-        if self.max_new_tokens <= 0:
-            raise ValueError("max_new_tokens must be positive")
-        model_preprocessor_config = load_preprocessor_config(self.model_dir)
-        self.model_preprocessor_min_pixels = int(
-            model_preprocessor_config["min_pixels"]
-        )
-        self.model_preprocessor_max_pixels = int(
-            model_preprocessor_config["max_pixels"]
-        )
-        self.preprocessor_min_pixels_override = 28224
-        self.preprocessor_max_pixels_override = 802816
-        self.preprocessor_config = apply_pixel_overrides(
-            model_preprocessor_config,
-            min_pixels=self.preprocessor_min_pixels_override,
-            max_pixels=self.preprocessor_max_pixels_override,
-        )
-        if self.compact_uint8_preprocess:
-            mean = tuple(
-                (float(value) for value in self.preprocessor_config["image_mean"])
-            )
-            std = tuple(
-                (float(value) for value in self.preprocessor_config["image_std"])
-            )
-            if (
-                not self.preprocessor_config["do_rescale"]
-                or not self.preprocessor_config["do_normalize"]
-                or len(set(mean)) != 1
-                or (len(set(std)) != 1)
-            ):
-                raise ValueError(
-                    "compact_uint8_preprocess currently requires scalar RGB rescale and normalization parameters"
+            self._emit_scheduler_progress("ready_stream_begin")
+            try:
+                crops = self._iter_prepared_crops(requests)
+                crop_source = iter(crops)
+                try:
+                    self._emit_scheduler_progress(
+                        "prefill_crop_source_next_begin",
+                        phase="first",
+                    )
+                    first_crop = next(crop_source)
+                except StopIteration:
+                    self._emit_scheduler_progress(
+                        "prefill_crop_source_exhausted",
+                        phase="first",
+                    )
+                    drained_normally = True
+                    return
+                self._emit_scheduler_progress(
+                    "prefill_crop_source_next_end",
+                    phase="first",
+                    crop_id=first_crop.crop_id,
+                    crops=1,
+                    real_vision_tokens=first_crop.real_vision_tokens,
                 )
-            self.compact_rescale_factor = float(
-                self.preprocessor_config["rescale_factor"]
-            )
-            self.compact_image_mean = mean[0]
-            self.compact_image_std = std[0]
-        self.preprocessing_tokenizer = Tokenizer.from_file(
-            str(self.model_dir / "tokenizer.json")
-        )
-        self.tokenizer = Tokenizer.from_file(str(self.model_dir / "tokenizer.json"))
-        frontend_setup_s = time.perf_counter() - runtime_started
-        _emit_setup_progress("frontend", "done", frontend_setup_s)
-        synchronize(self.device)
-        started = time.perf_counter()
-        _emit_setup_progress("model_load", "start")
-        self.model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(
-            self.model_dir, dtype=self.dtype, device=self.device
-        )
-        synchronize(self.device)
-        model_load_s = time.perf_counter() - started
-        _emit_setup_progress("model_load", "done", model_load_s)
-        started = time.perf_counter()
-        _emit_setup_progress("decode_compact_vocab", "start")
-        (token_ids, self.decode_vocab) = load_decode_vocab_token_ids(
-            self.decode_vocab_token_ids_path,
-            full_vocab_size=int(self.model.lm_head.weight.shape[0]),
-        )
-        prepare_decode_compact_lm_head(self.model, token_ids)
-        synchronize(self.device)
-        _emit_setup_progress(
-            "decode_compact_vocab", "done", time.perf_counter() - started
-        )
-        synchronize(self.device)
-        started = time.perf_counter()
-        _emit_setup_progress("vision_mlp_padding", "start")
-        self.vision_mlp = prepare_vision_mlp_intermediate(
-            self.model,
-            target_intermediate_size=self.vision_mlp_intermediate_size_requested,
-        )
-        synchronize(self.device)
-        vision_mlp_setup_s = time.perf_counter() - started
-        _emit_setup_progress("vision_mlp_padding", "done", vision_mlp_setup_s)
-        started = time.perf_counter()
-        _emit_setup_progress("vision_attention_weight_padding", "start")
-        prepare_vision_attention_weight_padding(self.model)
-        synchronize(self.device)
-        _emit_setup_progress(
-            "vision_attention_weight_padding", "done", time.perf_counter() - started
-        )
-        synchronize(self.device)
-        started = time.perf_counter()
-        _emit_setup_progress("vision_weight_format", "start")
-        self.vision_weight_format = prepare_vision_linear_weight_format(
-            self.model, requested=self.vision_linear_weight_format_requested
-        )
-        synchronize(self.device)
-        vision_weight_format_s = time.perf_counter() - started
-        _emit_setup_progress("vision_weight_format", "done", vision_weight_format_s)
-        synchronize(self.device)
-        started = time.perf_counter()
-        _emit_setup_progress("decode_optimization_setup", "start")
-        prepare_decode_projections(self.model)
-        synchronize(self.device)
-        decode_optimization_setup_s = time.perf_counter() - started
-        _emit_setup_progress(
-            "decode_optimization_setup", "done", decode_optimization_setup_s
-        )
-        synchronize(self.device)
-        started = time.perf_counter()
-        _emit_setup_progress("decode_weight_format", "start")
-        self.weight_format = cast_decode_linear_weights_to_nz(self.model)
-        synchronize(self.device)
-        weight_format_s = time.perf_counter() - started
-        _emit_setup_progress("decode_weight_format", "done", weight_format_s)
-        self.stages = self.model.make_inference_stages(
-            vision_backend=self.vision_backend,
-            vision_buckets=self.vision_buckets,
-            vision_cache_root=vision_torchair_cache_dir
-            if vision_torchair_cache_dir is not None
-            else torchair_cache_dir.parent / f"{torchair_cache_dir.name}_vision",
-            vision_padding=self.vision_padding,
-            vision_seq_alignment=self.vision_seq_alignment,
-            vision_mlp_intermediate_size=int(
-                self.vision_mlp["target_intermediate_size"]
-            ),
-            vision_linear_weight_format=str(
-                self.vision_weight_format["effective_mode"]
-            ),
-            text_backend=self.text_backend,
-            text_buckets=self.text_buckets,
-            text_cache_root=text_torchair_cache_dir
-            if text_torchair_cache_dir is not None
-            else torchair_cache_dir.parent / f"{torchair_cache_dir.name}_text",
-            text_padding=self.text_padding,
-            decode_backend=self.decode_backend,
-            decode_cache_root=torchair_cache_dir
-            / f"selected_vocab_{self.decode_vocab['selected_vocab_size']}_{self.decode_vocab['token_ids_sha256'][:12]}",
-            batch_size=self.batch_size,
-            cache_length=self.cache_length,
-            device=self.device,
-            dtype=self.dtype,
-            model_dir=self.model_dir,
-            linear_weight_format=str(self.weight_format["effective_mode"]),
-            setup_progress=_emit_setup_progress,
-        )
-        self.vision_prefill = self.stages.vision_prefill
-        self.text_prefill = self.stages.text_prefill
-        self.text_decode = self.stages.text_decode
-        self.decode_fn = self.text_decode.fn
-        packed_text_started = time.perf_counter()
-        synchronize(self.device)
-        packed_text_setup_s = time.perf_counter() - packed_text_started
-        self.prefill_transfer_stream = torch_npu.npu.Stream(device=self.device)
-        self.cpu_preprocess_max_pending = max(2, self.batch_size)
-        self.ready_buffer_capacity = READY_BUFFER_BATCH_MULTIPLIER * self.batch_size
-        self.ready_buffer_low_watermark = max(
-            1, self.ready_buffer_capacity // READY_BUFFER_LOW_WATERMARK_DIVISOR
-        )
-        self.private_cache_staging_headroom = self.text_pack_max_members
-        self.prefill_host_tokens = torch.empty(
-            (max(self.cpu_preprocess_max_pending + 1, self.text_pack_max_members),),
-            dtype=torch.int64,
-            pin_memory=True,
-        )
-        self._vision_pack_sequence = 0
-        self._captured_vision_route_groups: list[dict[str, Any]] = []
-        self._vision_packing_stats = _VisionPackingRunStats(
-            self.vision_packing, self.vision_pack_target, self.vision_router_lookahead
-        )
-        self._text_packing_stats = _TextPackingRunStats(
-            self.text_packing, self.text_pack_buckets
-        )
-        private_cache_pool_started = time.perf_counter()
-        _emit_setup_progress("private_cache_pool", "start")
-        private_cache_capacity = (
-            self.ready_buffer_capacity + self.private_cache_staging_headroom
-        )
-        private_cache_storage = self.model.allocate_static_cache(
-            batch_size=private_cache_capacity,
-            cache_length=self.cache_length,
-            device=self.device,
-            dtype=self.dtype,
-        )
-        synchronize(self.device)
-        self.prefill_cache_pool = PrefillKVCachePool(
-            private_cache_storage, device=self.device
-        )
-        private_cache_pool_setup_s = time.perf_counter() - private_cache_pool_started
-        _emit_setup_progress("private_cache_pool", "done", private_cache_pool_setup_s)
-        started = time.perf_counter()
-        _emit_setup_progress("decode_control", "start")
-        self.decode_arena = DecodeArena(
-            cache=self.text_decode.warm_cache,
-            device=self.device,
-            batch_size=self.batch_size,
-            eos_token_id=int(self.model.config.eos_token_id),
-            timeline=self.timeline,
-            decode_device_timing=self.decode_device_timing,
-        )
-        self.decode_scheduler = ContinuousDecodeScheduler(
-            arena=self.decode_arena,
-            decode_fn=self.decode_fn,
-            max_new_tokens=self.max_new_tokens,
-            timeline=self.timeline,
-            stop_repetitions=True,
-            progress=self._emit_scheduler_progress,
-            diagnostic_effective_length=self.diagnostic_decode_effective_length,
-            diagnostic_request_id=self.diagnostic_decode_request_id,
-        )
-        decode_control_setup_s = time.perf_counter() - started
-        _emit_setup_progress("decode_control", "done", decode_control_setup_s)
-        self.setup_timing_s = {
-            "recognizer_frontend_setup": float(frontend_setup_s),
-            "recognizer_model_load": float(model_load_s),
-            "vision_mlp_padding": float(vision_mlp_setup_s),
-            "vision_weight_format": float(vision_weight_format_s),
-            "decode_optimization_setup": float(decode_optimization_setup_s),
-            "decode_weight_format": float(weight_format_s),
-            **self.stages.setup_timing_s,
-            "vision_router_setup": 0.0,
-            "packed_text_runtime_setup": float(packed_text_setup_s),
-            "private_cache_pool_setup": float(private_cache_pool_setup_s),
-            "decode_control_setup": float(decode_control_setup_s),
-            "recognizer_runtime_total": float(time.perf_counter() - runtime_started),
-        }
-        _emit_setup_progress(
-            "recognizer_runtime",
-            "done",
-            self.setup_timing_s["recognizer_runtime_total"],
+                self._emit_scheduler_progress(
+                    "prefill_h2d_stage_begin",
+                    crop_id=first_crop.crop_id,
+                    crops=1,
+                )
+                current_staged = self._stage_crop(first_crop)
+                self._emit_scheduler_progress(
+                    "prefill_h2d_stage_end",
+                    crop_id=first_crop.crop_id,
+                    crops=1,
+                )
+                while current_staged is not None:
+                    try:
+                        self._emit_scheduler_progress(
+                            "prefill_crop_source_next_begin",
+                            phase="lookahead",
+                            current_crop_id=current_staged.crop.crop_id,
+                        )
+                        next_crop = next(crop_source)
+                    except StopIteration:
+                        self._emit_scheduler_progress(
+                            "prefill_crop_source_exhausted",
+                            phase="lookahead",
+                            current_crop_id=current_staged.crop.crop_id,
+                        )
+                        next_stage_future = None
+                    else:
+                        self._emit_scheduler_progress(
+                            "prefill_crop_source_next_end",
+                            phase="lookahead",
+                            current_crop_id=current_staged.crop.crop_id,
+                            crop_id=next_crop.crop_id,
+                            crops=1,
+                            real_vision_tokens=next_crop.real_vision_tokens,
+                        )
+                        # TorchAir occupies this thread for much of G's device
+                        # work. Submit only G+1's H2D on a dedicated host
+                        # worker while this thread invokes G's compute chain.
+                        next_stage_future = h2d_executor.submit(
+                            self._stage_crop,
+                            next_crop,
+                        )
+
+                    self._emit_scheduler_progress(
+                        "prefill_enqueue_begin",
+                        crop_id=current_staged.crop.crop_id,
+                        crops=1,
+                        real_vision_tokens=current_staged.crop.real_vision_tokens,
+                    )
+                    final = self._enqueue_crop(current_staged)
+                    self._emit_scheduler_progress(
+                        "prefill_enqueue_end",
+                        crop_id=final.crop_id,
+                        crops=1,
+                    )
+                    current_staged = None
+                    if next_stage_future is not None:
+                        self._emit_scheduler_progress(
+                            "prefill_lookahead_h2d_wait_begin",
+                            current_crop_id=final.crop_id,
+                        )
+                    next_staged = (
+                        None
+                        if next_stage_future is None
+                        else next_stage_future.result()
+                    )
+                    if next_stage_future is not None:
+                        assert next_staged is not None
+                        self._emit_scheduler_progress(
+                            "prefill_lookahead_h2d_wait_end",
+                            current_crop_id=final.crop_id,
+                            next_crop_id=next_staged.crop.crop_id,
+                        )
+                    self._emit_scheduler_progress(
+                        "prefill_finalize_begin",
+                        crop_id=final.crop_id,
+                        crops=1,
+                    )
+                    finalized = self._finalize_crop(final)
+                    self._emit_scheduler_progress(
+                        "prefill_finalize_end",
+                        crop_id=final.crop_id,
+                        crops=1,
+                    )
+                    self._emit_scheduler_progress(
+                        "ready_state_yield", crop_id=final.crop_id,
+                        request_id=finalized.request_id,
+                    )
+                    yield self._ready_from_prefilled(finalized)
+                    self._emit_scheduler_progress(
+                        "prefill_crop_yield_complete",
+                        crop_id=final.crop_id,
+                        crops=1,
+                    )
+                    if next_staged is None:
+                        break
+                    current_staged = next_staged
+                drained_normally = True
+            finally:
+                self._emit_scheduler_progress(
+                    "prefill_h2d_executor_shutdown_begin",
+                    drained_normally=drained_normally,
+                    has_current_staged=current_staged is not None,
+                )
+                h2d_executor.shutdown(wait=True, cancel_futures=True)
+                self._emit_scheduler_progress(
+                    "prefill_h2d_executor_shutdown_end",
+                    drained_normally=drained_normally,
+                    has_current_staged=current_staged is not None,
+                )
+                if drained_normally and current_staged is not None:
+                    raise RuntimeError(
+                        "ready stream drained with an unused staged prefill"
+                    )
+                self._emit_scheduler_progress(
+                    "ready_stream_end",
+                    drained_normally=drained_normally,
+                )
+
+        return self._decode_ready_source(
+            ready_stream(),
+            schedule_id=schedule_id,
+            emit_result=emit_result,
         )
 
-    def _emit_scheduler_progress(self, event: str, **fields: Any) -> None:
-        if not self.scheduler_progress:
-            return
-        if (
-            self.scheduler_progress_events is not None
-            and event not in self.scheduler_progress_events
-        ):
-            return
-        record = {
-            "event": str(event),
-            "monotonic_s": round(time.perf_counter(), 6),
-            "thread": threading.current_thread().name,
-            **fields,
-        }
-        print(
-            "EXP09_SCHEDULER "
-            + json.dumps(record, ensure_ascii=False, separators=(",", ":")),
-            file=sys.stderr,
-            flush=True,
-        )
-
+    # Decode coordination and ready-state handoff.
     def _begin_decode_schedule(self) -> None:
-        self._vision_pack_sequence = 0
-        self._captured_vision_route_groups = []
-        self._vision_packing_stats = _VisionPackingRunStats(
-            self.vision_packing,
-            self.vision_pack_target,
-            self.vision_router_lookahead,
-        )
-        self._text_packing_stats = _TextPackingRunStats(
-            self.text_packing,
-            self.text_pack_buckets,
-        )
-
-    @torch.inference_mode()
-    def prefill_prepared_one(
-        self,
-        prepared: CpuPreparedRecognition,
-    ) -> PrefilledRecognition:
-        """Run one already-prepared crop through the normal NPU prefill path.
-
-        This is the ownership-safe handoff for callers that prepare a request
-        on a CPU worker while unrelated NPU work is running. The returned state
-        owns one cache lease; its consumer must eventually call
-        ``take_device_state`` and release it.
-        """
-
-        group = self._prepared_group([(prepared, 0.0)])
-        staged = self._stage_prefill_group(group)
-        inflight = self._enqueue_staged_prefill_group(staged)
-        finalized = self._finalize_prefill_group(inflight)
-        if len(finalized) != 1:
-            raise RuntimeError(f"single-crop prefill produced {len(finalized)} states")
-        return finalized[0]
-
-    @torch.inference_mode()
-    def prefill_one(self, request: RecognitionRequest) -> PrefilledRecognition:
-        """Run the faithful crop frontend and prefill without entering decode.
-
-        Specialized B1 target runtimes use this seam to consume the same
-        prepared image, prompt, vision, projector, text-prefill, and private-KV
-        result as the normal scheduler. The returned state owns one cache lease;
-        its consumer must eventually call ``take_device_state`` and release it.
-        """
-
-        submitted_at = time.perf_counter()
-        prepared = self._prepare_cpu(request, submitted_at)
-        return self.prefill_prepared_one(prepared)
-
-    def _ready_from_prefilled(
-        self,
-        state: PrefilledRecognition,
-    ) -> ReadyDecodeRequest:
-        cache, rope_deltas, cache_position, first_token_tensor, cache_release = (
-            state.take_device_state()
-        )
-        return ReadyDecodeRequest(
-            request_id=state.request_id,
-            payload=state,
-            cache=cache,
-            rope_deltas=rope_deltas,
-            cache_position=cache_position,
-            first_token_tensor=first_token_tensor,
-            first_token=state.first_token,
-            prompt_length=state.input_tokens,
-            cache_release=cache_release,
-        )
+        self._prefill_sequence = 0
+        self._vision_prefill_stats = _VisionPrefillStats()
+        self._text_prefill_stats = _TextPrefillStats()
 
     def _decode_ready_source(
         self,
@@ -1003,9 +342,9 @@ class ContinuousRecognizer:
             initial_kv_prefix_bytes_copied=decoded.initial_kv_prefix_bytes_copied,
             hot_swap_kv_prefix_bytes_copied=decoded.hot_swap_kv_prefix_bytes_copied,
             timing_s=dict(decoded.timing_s),
-            vision_packing=self._vision_packing_stats.summary(),
+            vision_packing=self._vision_prefill_stats.summary(),
             text_packing={
-                **self._text_packing_stats.summary(),
+                **self._text_prefill_stats.summary(),
                 "private_cache_pool": private_cache_pool_stats,
             },
             rates={
@@ -1040,220 +379,26 @@ class ContinuousRecognizer:
             },
         )
 
-    @torch.inference_mode()
-    def run(
+    def _ready_from_prefilled(
         self,
-        requests: Iterable[RecognitionRequest],
-        *,
-        schedule_id: str,
-        emit_result: Callable[[RecognitionResult], None],
-    ) -> ContinuousDecodeResult:
-        """Emit independent crop results as they complete.
-
-        Request ordering and higher-level grouping belong to the caller. The
-        return value contains only run-scoped scheduler metrics, which become
-        final after the input stream is drained.
-        """
-
-        self._begin_decode_schedule()
-
-        def ready_stream() -> Iterable[ReadyDecodeRequest]:
-            current_staged: _StagedPrefillGroup | None = None
-            drained_normally = False
-            h2d_executor = ThreadPoolExecutor(
-                max_workers=1,
-                thread_name_prefix="prefill-h2d",
-            )
-            self._emit_scheduler_progress("ready_stream_begin")
-            try:
-                groups = self._iter_single_prefill_groups(requests)
-                group_source = iter(groups)
-                try:
-                    self._emit_scheduler_progress(
-                        "prefill_group_source_next_begin",
-                        phase="first",
-                    )
-                    first_group = next(group_source)
-                except StopIteration:
-                    self._emit_scheduler_progress(
-                        "prefill_group_source_exhausted",
-                        phase="first",
-                    )
-                    drained_normally = True
-                    return
-                self._emit_scheduler_progress(
-                    "prefill_group_source_next_end",
-                    phase="first",
-                    group_id=first_group.group_id,
-                    crops=len(first_group.members),
-                    real_vision_tokens=first_group.real_vision_tokens,
-                )
-                self._emit_scheduler_progress(
-                    "prefill_h2d_stage_begin",
-                    group_id=first_group.group_id,
-                    crops=len(first_group.members),
-                )
-                current_staged = self._stage_prefill_group(first_group)
-                self._emit_scheduler_progress(
-                    "prefill_h2d_stage_end",
-                    group_id=first_group.group_id,
-                    crops=len(first_group.members),
-                )
-                while current_staged is not None:
-                    try:
-                        self._emit_scheduler_progress(
-                            "prefill_group_source_next_begin",
-                            phase="lookahead",
-                            current_group_id=current_staged.group.group_id,
-                        )
-                        next_group = next(group_source)
-                    except StopIteration:
-                        self._emit_scheduler_progress(
-                            "prefill_group_source_exhausted",
-                            phase="lookahead",
-                            current_group_id=current_staged.group.group_id,
-                        )
-                        next_stage_future = None
-                    else:
-                        self._emit_scheduler_progress(
-                            "prefill_group_source_next_end",
-                            phase="lookahead",
-                            current_group_id=current_staged.group.group_id,
-                            group_id=next_group.group_id,
-                            crops=len(next_group.members),
-                            real_vision_tokens=next_group.real_vision_tokens,
-                        )
-                        # TorchAir occupies this thread for much of G's device
-                        # work. Submit only G+1's H2D on a dedicated host
-                        # worker while this thread invokes G's compute chain.
-                        next_stage_future = h2d_executor.submit(
-                            self._stage_prefill_group,
-                            next_group,
-                        )
-
-                    self._emit_scheduler_progress(
-                        "prefill_enqueue_begin",
-                        group_id=current_staged.group.group_id,
-                        crops=len(current_staged.group.members),
-                        real_vision_tokens=current_staged.group.real_vision_tokens,
-                    )
-                    final = self._enqueue_staged_prefill_group(current_staged)
-                    self._emit_scheduler_progress(
-                        "prefill_enqueue_end",
-                        group_id=final.group_id,
-                        crops=len(final.members),
-                    )
-                    current_staged = None
-                    if next_stage_future is not None:
-                        self._emit_scheduler_progress(
-                            "prefill_lookahead_h2d_wait_begin",
-                            current_group_id=final.group_id,
-                        )
-                    next_staged = (
-                        None
-                        if next_stage_future is None
-                        else next_stage_future.result()
-                    )
-                    if next_stage_future is not None:
-                        assert next_staged is not None
-                        self._emit_scheduler_progress(
-                            "prefill_lookahead_h2d_wait_end",
-                            current_group_id=final.group_id,
-                            next_group_id=next_staged.group.group_id,
-                        )
-                    self._emit_scheduler_progress(
-                        "prefill_finalize_begin",
-                        group_id=final.group_id,
-                        crops=len(final.members),
-                    )
-                    finalized = self._finalize_prefill_group(final)
-                    self._emit_scheduler_progress(
-                        "prefill_finalize_end",
-                        group_id=final.group_id,
-                        crops=len(finalized),
-                    )
-                    for state in finalized:
-                        self._emit_scheduler_progress(
-                            "ready_state_yield",
-                            group_id=final.group_id,
-                            request_id=state.request_id,
-                        )
-                        yield self._ready_from_prefilled(state)
-                    self._emit_scheduler_progress(
-                        "prefill_group_yield_complete",
-                        group_id=final.group_id,
-                        crops=len(finalized),
-                    )
-                    if next_staged is None:
-                        break
-                    current_staged = next_staged
-                drained_normally = True
-            finally:
-                self._emit_scheduler_progress(
-                    "prefill_h2d_executor_shutdown_begin",
-                    drained_normally=drained_normally,
-                    has_current_staged=current_staged is not None,
-                )
-                h2d_executor.shutdown(wait=True, cancel_futures=True)
-                self._emit_scheduler_progress(
-                    "prefill_h2d_executor_shutdown_end",
-                    drained_normally=drained_normally,
-                    has_current_staged=current_staged is not None,
-                )
-                if drained_normally and current_staged is not None:
-                    raise RuntimeError(
-                        "ready stream drained with an unused staged prefill"
-                    )
-                self._emit_scheduler_progress(
-                    "ready_stream_end",
-                    drained_normally=drained_normally,
-                )
-
-        return self._decode_ready_source(
-            ready_stream(),
-            schedule_id=schedule_id,
-            emit_result=emit_result,
+        state: PrefilledRecognition,
+    ) -> ReadyDecodeRequest:
+        cache, rope_deltas, cache_position, first_token_tensor, cache_release = (
+            state.take_device_state()
+        )
+        return ReadyDecodeRequest(
+            request_id=state.request_id,
+            payload=state,
+            cache=cache,
+            rope_deltas=rope_deltas,
+            cache_position=cache_position,
+            first_token_tensor=first_token_tensor,
+            first_token=state.first_token,
+            prompt_length=state.input_tokens,
+            cache_release=cache_release,
         )
 
-    @torch.inference_mode()
-    def serve(
-        self,
-        requests: Any,
-        *,
-        schedule_id: str,
-        emit_result: Callable[[RecognitionResult], None],
-        on_request_error: Callable[[str, BaseException], None],
-        collect_scheduling_metrics: bool = False,
-    ) -> ContinuousDecodeResult:
-        """Serve an open stream whose input can be temporarily empty.
-
-        Each arrival remains one independent crop request. The model stages
-        stay unchanged, while ready crops enter the same fixed decode arena
-        and can hot-swap into free slots until the caller closes the source.
-        """
-
-        self._begin_decode_schedule()
-        scheduling_metrics = (
-            RequestSchedulingMetrics(self.batch_size)
-            if collect_scheduling_metrics
-            else None
-        )
-        ready_source = _OpenPrefillSource(
-            self,
-            requests,
-            on_request_error=on_request_error,
-            scheduling_metrics=scheduling_metrics,
-        )
-        try:
-            return self._decode_ready_source(
-                ready_source,
-                schedule_id=schedule_id,
-                emit_result=emit_result,
-                scheduling_metrics=scheduling_metrics,
-            )
-        finally:
-            ready_source.close()
-
+    # CPU lookahead and preparation; this remains asynchronous with NPU work.
     def _iter_cpu_prepared(
         self,
         requests: Iterable[RecognitionRequest],
@@ -1320,127 +465,6 @@ class ContinuousRecognizer:
                 yield prepared, consumer_wait_s
         finally:
             executor.shutdown(wait=True, cancel_futures=True)
-
-    def _prepared_group(
-        self,
-        members: list[tuple[CpuPreparedRecognition, float]],
-        *,
-        row_sizes: tuple[int, ...] | None = None,
-        profiled_route: dict[str, Any] | None = None,
-    ) -> _PreparedPrefillGroup:
-        if not members:
-            raise ValueError("prefill group must contain at least one crop")
-        if row_sizes is None:
-            row_sizes = (len(members),)
-        if sum(row_sizes) != len(members) or any(size < 0 for size in row_sizes):
-            raise ValueError(
-                f"invalid vision row sizes {row_sizes} for {len(members)} crops"
-            )
-        self._vision_pack_sequence += 1
-        return _PreparedPrefillGroup(
-            group_id=self._vision_pack_sequence,
-            members=members,
-            real_vision_tokens=sum(
-                int(prepared.pixel_values.shape[0]) for prepared, _wait_s in members
-            ),
-            row_sizes=tuple(int(size) for size in row_sizes),
-            profiled_route=profiled_route,
-        )
-
-    def _iter_single_prefill_groups(
-        self,
-        requests: Iterable[RecognitionRequest],
-    ) -> Iterable[_PreparedPrefillGroup]:
-        for item in self._iter_cpu_prepared(requests):
-            yield self._prepared_group([item])
-
-    def _result_from_completion(
-        self,
-        completion: DecodeCompletion,
-        *,
-        schedule_id: str,
-    ) -> RecognitionResult:
-        state: PrefilledRecognition = completion.ready.payload
-        token_ids = completion.token_ids
-        started = time.perf_counter()
-        text = self.tokenizer.decode(
-            token_ids,
-            skip_special_tokens=state.skip_special_tokens,
-        )
-        detokenize_s = time.perf_counter() - started
-        if self.timeline is not None:
-            self.timeline.record_span_seconds(
-                "Result assembly",
-                "Detokenize crop result",
-                started,
-                started + detokenize_s,
-                flow_id=state.request_id,
-                args={"generated_tokens": len(token_ids)},
-            )
-            self.timeline.instant(
-                "Result assembly",
-                "Crop recognition completed",
-                flow_id=state.request_id,
-                args={
-                    "stop_reason": completion.stop_reason,
-                    "decode_slot": completion.slot_index,
-                    "generated_tokens": len(token_ids),
-                },
-            )
-        generated_tokens = len(token_ids)
-        effective_decode_tokens = max(0, generated_tokens - 1)
-        timing = dict(state.timing_s)
-        timing.update(
-            {
-                "decode_ready_queue_wait": (
-                    max(0.0, completion.admitted_at - state.prefill_finished)
-                    if completion.admitted_at is not None
-                    else 0.0
-                ),
-                "decode_slot_residency": (
-                    max(0.0, completion.completed_at - completion.admitted_at)
-                    if completion.admitted_at is not None
-                    else 0.0
-                ),
-                "detokenize": float(detokenize_s),
-                "request_total": float(
-                    completion.completed_at - state.request_started + detokenize_s
-                ),
-            }
-        )
-        return RecognitionResult(
-            request_id=state.request_id,
-            decode_schedule_id=schedule_id,
-            decode_slot_index=completion.slot_index,
-            decode_slot_epoch=completion.slot_epoch,
-            prompt=state.prompt,
-            crop_size=state.crop_size,
-            text=text,
-            token_ids=token_ids,
-            stop_reason=completion.stop_reason,
-            input_tokens=state.input_tokens,
-            projected_image_tokens=state.projected_image_tokens,
-            generated_tokens_including_eos=generated_tokens,
-            decode_tokens_after_prefill_including_eos=effective_decode_tokens,
-            decode_calls_executed=completion.iterations_launched,
-            timing_s=timing,
-            device_stage_s=dict(state.device_stage_s),
-            rates={
-                "request_output_tok_per_s": per_second(
-                    generated_tokens,
-                    timing["request_total"],
-                ),
-            },
-            vision=dict(state.vision),
-            text_prefill=dict(state.text_prefill),
-            input_fingerprints=dict(state.input_fingerprints),
-            scheduling_metrics=dict(completion.scheduling_metrics),
-            repetition=(
-                dict(completion.repetition_evidence)
-                if completion.repetition_evidence is not None
-                else {}
-            ),
-        )
 
     @torch.inference_mode()
     def _prepare_cpu(
@@ -1603,434 +627,761 @@ class ContinuousRecognizer:
             input_fingerprints=input_fingerprints,
         )
 
-    @staticmethod
-    def _group_stage_key(member_index: int, stage: str) -> str:
-        return f"member:{int(member_index)}:{stage}"
+    def _prepared_crop(
+        self, prepared: CpuPreparedRecognition, consumer_wait_s: float,
+    ) -> _PreparedCrop:
+        self._prefill_sequence += 1
+        return _PreparedCrop(
+            self._prefill_sequence, prepared, consumer_wait_s,
+            int(prepared.pixel_values.shape[0]),
+        )
+
+    def _iter_prepared_crops(
+        self, requests: Iterable[RecognitionRequest],
+    ) -> Iterable[_PreparedCrop]:
+        for prepared, wait_s in self._iter_cpu_prepared(requests):
+            yield self._prepared_crop(prepared, wait_s)
+
+    # Single-crop prefill: stage inputs, enqueue device work, then finalize.
+    @torch.inference_mode()
+    def prefill_one(self, request: RecognitionRequest) -> PrefilledRecognition:
+        """Run the faithful crop frontend and prefill without entering decode.
+
+        Specialized B1 target runtimes use this seam to consume the same
+        prepared image, prompt, vision, projector, text-prefill, and private-KV
+        result as the normal scheduler. The returned state owns one cache lease;
+        its consumer must eventually call ``take_device_state`` and release it.
+        """
+
+        submitted_at = time.perf_counter()
+        prepared = self._prepare_cpu(request, submitted_at)
+        return self.prefill_prepared_one(prepared)
 
     @torch.inference_mode()
-    def _stage_prefill_group(
+    def prefill_prepared_one(
         self,
-        group: _PreparedPrefillGroup,
-    ) -> _StagedPrefillGroup:
+        prepared: CpuPreparedRecognition,
+    ) -> PrefilledRecognition:
+        """Run one already-prepared crop through the normal NPU prefill path.
+
+        This is the ownership-safe handoff for callers that prepare a request
+        on a CPU worker while unrelated NPU work is running. The returned state
+        owns one cache lease; its consumer must eventually call
+        ``take_device_state`` and release it.
+        """
+
+        crop = self._prepared_crop(prepared, 0.0)
+        staged = self._stage_crop(crop)
+        inflight = self._enqueue_crop(staged)
+        finalized = self._finalize_crop(inflight)
+        return finalized
+
+    @torch.inference_mode()
+    def _stage_crop(self, crop: _PreparedCrop) -> _StagedCrop:
         import torch_npu
 
-        if not group.members:
-            raise ValueError("cannot stage an empty prefill group")
+        prepared = crop.prepared
         device_timeline = DeviceTimeline(self.device)
         submit_started = time.perf_counter()
-        moved_members: list[tuple[torch.Tensor, ...]] = []
-        timings: list[dict[str, float]] = []
-
         with torch_npu.npu.stream(self.prefill_transfer_stream):
-            for index, (prepared, consumer_wait_s) in enumerate(group.members):
-                timing = dict(prepared.timing_s)
-                timing["cpu_preprocess_background_consumer_wait"] = float(
-                    consumer_wait_s
+            timing = dict(prepared.timing_s)
+            timing["cpu_preprocess_background_consumer_wait"] = float(crop.consumer_wait_s)
+            ready_consumed_at = time.perf_counter()
+            timing["cpu_preprocess_background_ready_wait"] = max(
+                0.0, ready_consumed_at - prepared.preparation_finished,
+            )
+            if self.timeline is not None:
+                self.timeline.record_span_seconds(
+                    "CPU / queue wait", "Prepared crop waiting for NPU prefill",
+                    prepared.preparation_finished, ready_consumed_at,
+                    flow_id=prepared.request_id, event_type="wait", track="queue",
+                    lane="prefill-ready",
                 )
-                ready_consumed_at = time.perf_counter()
-                timing["cpu_preprocess_background_ready_wait"] = max(
-                    0.0,
-                    ready_consumed_at - prepared.preparation_finished,
-                )
-                timings.append(timing)
-                if self.timeline is not None:
-                    self.timeline.record_span_seconds(
-                        "CPU / queue wait",
-                        "Prepared crop waiting for NPU prefill",
-                        prepared.preparation_finished,
-                        ready_consumed_at,
-                        flow_id=prepared.request_id,
-                        event_type="wait",
-                        track="queue",
-                        lane="prefill-ready",
-                    )
 
-                def move_inputs(
-                    prepared: CpuPreparedRecognition = prepared,
-                ) -> tuple[torch.Tensor, ...]:
-                    pixel_values = (
-                        prepared.pixel_values.to(
-                            device=self.device,
-                            non_blocking=True,
-                        )
-                        if prepared.pixel_values.dtype == torch.uint8
-                        else prepared.pixel_values.to(
-                            device=self.device,
-                            dtype=self.model.visual.dtype,
-                            non_blocking=True,
-                        )
-                    )
-                    return (
-                        prepared.input_ids.to(self.device, non_blocking=True),
-                        prepared.attention_mask.to(self.device, non_blocking=True),
-                        pixel_values,
-                        prepared.position_ids.to(self.device, non_blocking=True),
-                        prepared.rope_deltas.to(self.device, non_blocking=True),
-                    )
-
-                moved_members.append(
-                    device_timeline.measure(
-                        self._group_stage_key(index, "recognition_inputs_h2d"),
-                        move_inputs,
-                    )
+            def move_inputs() -> tuple[torch.Tensor, ...]:
+                pixels = (
+                    prepared.pixel_values.to(device=self.device, non_blocking=True)
+                    if prepared.pixel_values.dtype == torch.uint8 else
+                    prepared.pixel_values.to(device=self.device, dtype=self.model.visual.dtype, non_blocking=True)
                 )
+                return (
+                    prepared.input_ids.to(self.device, non_blocking=True),
+                    prepared.attention_mask.to(self.device, non_blocking=True),
+                    pixels,
+                    prepared.position_ids.to(self.device, non_blocking=True),
+                    prepared.rope_deltas.to(self.device, non_blocking=True),
+                )
+
+            moved = device_timeline.measure("recognition_inputs_h2d", move_inputs)
             h2d_ready_event = self.prefill_transfer_stream.record_event()
         submit_finished = time.perf_counter()
-        for timing in timings:
-            timing["prefill_h2d_submit_host"] = submit_finished - submit_started
+        timing["prefill_h2d_submit_host"] = submit_finished - submit_started
         if self.timeline is not None:
             self.timeline.record_span_seconds(
-                "H2D / D2H transfer",
-                "Submit next prefill group H2D",
-                submit_started,
-                submit_finished,
-                flow_id=group.members[0][0].request_id,
-                flow_ids=[prepared.request_id for prepared, _wait_s in group.members],
-                event_type="io",
-                track="host",
-                lane="prefill-submit",
-                args={"group_id": group.group_id, "crops": len(group.members)},
+                "H2D / D2H transfer", "Submit crop H2D", submit_started, submit_finished,
+                flow_id=prepared.request_id, event_type="io", track="host",
+                lane="prefill-submit", args={"crop_id": crop.crop_id},
             )
-        return _StagedPrefillGroup(
-            group=group,
-            device_timeline=device_timeline,
-            h2d_ready_event=h2d_ready_event,
-            moved_members=moved_members,
-            timings=timings,
+        return _StagedCrop(crop, device_timeline, h2d_ready_event, moved, timing)
+
+    @torch.inference_mode()
+    def _enqueue_crop(self, staged: _StagedCrop) -> _InFlightCrop:
+        import torch_npu
+
+        crop = staged.crop
+        prepared = crop.prepared
+        device_timeline = staged.device_timeline
+        moved = staged.moved
+        timing = staged.timing_s
+        enqueue_started = time.perf_counter()
+        compute_stream = torch_npu.npu.current_stream()
+        compute_stream.wait_event(staged.h2d_ready_event)
+        prefill_started = time.perf_counter()
+        vision_model = self.model.visual.vision_model
+        pixels = moved[2]
+        if pixels.dtype == torch.uint8:
+            def normalize_uint8():
+                output = pixels.to(torch.float32)
+                output.mul_(self.compact_rescale_factor)
+                output.sub_(self.compact_image_mean)
+                output.div_(self.compact_image_std)
+                return output.to(self.model.visual.dtype).contiguous()
+            pixels = device_timeline.measure("vision_input_normalize", normalize_uint8)
+        hidden = device_timeline.measure("vision_embeddings", lambda: vision_model.embeddings(
+            pixels.unsqueeze(0), image_grid_thw=prepared.image_grid_thw,
+        ))
+        real_length = int(hidden.shape[0])
+        vision_route = self.vision_prefill.route(real_length)
+        prepared_vision = device_timeline.measure("vision_prefill_input_prep", lambda: self.vision_prefill.prepare(
+            hidden, prepared.image_grid_thw, route=vision_route,
+        ))
+        features = device_timeline.measure("vision_prefill", lambda: self.vision_prefill.run_prepared(prepared_vision))
+        self._vision_prefill_stats.record(vision_route)
+        input_ids, attention_mask, _pixels, position_ids, rope_deltas = moved
+        next_position = torch.full((1,), int(input_ids.shape[1]), device=self.device, dtype=torch.int64)
+        image_embeds = device_timeline.measure("adaptive_mlp_projector", lambda: self.model.mlp_AR(features, prepared.image_grid_thw))
+        inputs_embeds = device_timeline.measure("text_token_embedding", lambda: self.model.model.embed_tokens(input_ids))
+
+        def scatter_image_embeds():
+            projected = image_embeds.to(device=inputs_embeds.device, dtype=inputs_embeds.dtype)
+            image_mask = (input_ids == self.model.config.image_token_id).unsqueeze(-1).expand_as(inputs_embeds)
+            return inputs_embeds.masked_scatter(image_mask, projected)
+
+        inputs_embeds = device_timeline.measure("image_embed_scatter", scatter_image_embeds)
+        lease = device_timeline.measure("static_cache_alloc", self.prefill_cache_pool.acquire)
+        self._text_prefill_stats.record()
+        text_route = self.text_prefill.route(int(inputs_embeds.shape[1]))
+        prepared_text = device_timeline.measure("text_prefill_input_prep", lambda: self.text_prefill.prepare(
+            inputs_embeds, attention_mask, position_ids, route=text_route,
+        ))
+        last_hidden = device_timeline.measure("text_prefill", lambda: self.text_prefill.run_prepared(prepared_text, lease.cache))
+        logits = device_timeline.measure("prefill_lm_head", lambda: self.model.lm_head(last_hidden))
+        next_token = device_timeline.measure("prefill_argmax", lambda: torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True))
+        text_route = {
+            **text_route,
+            "private_cache_slot_index": int(lease.slot_index),
+            "private_cache_generation": int(lease.generation),
+        }
+        # Retain the original one-element concat/copy operation in this structural
+        # pass; eliminating it is a separate execution change.
+        first_token_device = torch.cat([next_token.detach().reshape(-1)], dim=0).contiguous()
+        prefill_ready_event = torch_npu.npu.current_stream().record_event()
+        enqueue_finished = time.perf_counter()
+        timing["prefill_enqueue_host"] = enqueue_finished - enqueue_started
+        if self.timeline is not None:
+            self.timeline.record_span_seconds(
+                "Vision prefill", "Enqueue prefill chain", enqueue_started, enqueue_finished,
+                flow_id=prepared.request_id, args={"crop_id": crop.crop_id,
+                    "real_tokens": real_length, "physical_tokens": vision_route["physical_vision_tokens"]},
+            )
+        return _InFlightCrop(
+            crop_id=crop.crop_id, prepared=prepared, cache=lease.cache, cache_lease=lease,
+            rope_deltas=rope_deltas, next_cache_position=next_position, next_token=next_token,
+            device_inputs=moved, vision=vision_route, text_prefill=text_route, timing_s=timing,
+            input_tokens=int(prepared.input_ids.shape[1]), projected_image_tokens=int(image_embeds.shape[0]),
+            device_timeline=device_timeline, h2d_ready_event=staged.h2d_ready_event,
+            prefill_ready_event=prefill_ready_event, first_token_device=first_token_device,
+            prefill_started=prefill_started,
         )
 
     @torch.inference_mode()
-    def _enqueue_staged_prefill_group(
-        self,
-        staged: _StagedPrefillGroup,
-    ) -> _InFlightPrefillGroup:
+    def _finalize_crop(self, inflight: _InFlightCrop) -> PrefilledRecognition:
         import torch_npu
 
-        group = staged.group
-        device_timeline = staged.device_timeline
-        h2d_ready_event = staged.h2d_ready_event
-        moved_members = staged.moved_members
-        timings = staged.timings
-        enqueue_started = time.perf_counter()
-
-        compute_stream = torch_npu.npu.current_stream()
-        compute_stream.wait_event(h2d_ready_event)
-        prefill_started = time.perf_counter()
-        vision_model = self.model.visual.vision_model
-        hidden_states: list[torch.Tensor] = []
-        for index, ((prepared, _consumer_wait_s), moved) in enumerate(
-            zip(group.members, moved_members)
-        ):
-            pixel_values_device = moved[2]
-            if pixel_values_device.dtype == torch.uint8:
-
-                def normalize_uint8(
-                    pixels: torch.Tensor = pixel_values_device,
-                ) -> torch.Tensor:
-                    output = pixels.to(torch.float32)
-                    output.mul_(self.compact_rescale_factor)
-                    output.sub_(self.compact_image_mean)
-                    output.div_(self.compact_image_std)
-                    return output.to(self.model.visual.dtype).contiguous()
-
-                pixel_values_device = device_timeline.measure(
-                    self._group_stage_key(index, "vision_input_normalize"),
-                    normalize_uint8,
+        resolve_started = time.perf_counter()
+        spans = inflight.device_timeline.resolve_spans()
+        started = time.perf_counter()
+        with torch_npu.npu.stream(self.prefill_transfer_stream):
+            self.prefill_transfer_stream.wait_event(inflight.prefill_ready_event)
+            self.prefill_host_tokens[:1].copy_(inflight.first_token_device, non_blocking=True)
+            first_token_ready = self.prefill_transfer_stream.record_event()
+        first_token_ready.synchronize()
+        first_token = int(self.prefill_host_tokens[:1].tolist()[0])
+        self._diagnose_prefill_kv_finiteness(inflight)
+        first_token_d2h_s = time.perf_counter() - started
+        resolve_finished = time.perf_counter()
+        prepared = inflight.prepared
+        stages = {
+            "recognition_inputs_h2d": ("H2D / D2H transfer", "Recognition inputs H2D"),
+            "vision_embeddings": ("Vision prefill", "Patch and position embeddings"),
+            "vision_prefill_input_prep": ("Vision prefill", "Vision bucket preparation"),
+            "vision_prefill": ("Vision prefill", "Vision transformer"),
+            "adaptive_mlp_projector": ("Vision prefill", "Adaptive MLP projector"),
+            "text_token_embedding": ("Text prefill", "Text token embeddings"),
+            "image_embed_scatter": ("Text prefill", "Scatter projected image embeddings"),
+            "static_cache_alloc": ("Text prefill", "Acquire private KV cache slot"),
+            "text_prefill_input_prep": ("Text prefill", "Text bucket preparation"),
+            "text_prefill": ("Text prefill", "Text transformer prefill"),
+            "prefill_lm_head": ("Text prefill", "Prefill LM head"),
+            "prefill_argmax": ("Text prefill", "First-token argmax"),
+        }
+        device_stage_s = {stage: float(spans[stage]["seconds"]) for stage in stages}
+        # Existing summary schema; no redistribution happens in this pipeline.
+        device_stage_s["text_kv_redistribute"] = 0.0
+        timing = inflight.timing_s
+        timing["recognizer_h2d"] = device_stage_s["recognition_inputs_h2d"]
+        timing["first_token_d2h"] = first_token_d2h_s
+        timing["prefill_resolve_wait"] = resolve_finished - resolve_started
+        timing["vision_and_text_prefill_wall"] = resolve_finished - inflight.prefill_started
+        timing["time_to_first_token"] = resolve_finished - prepared.request_started
+        timing["prefill_request_total"] = sum(timing[name] for name in (
+            "cpu_image_and_prompt_preprocess", "cpu_mrope_index", "cpu_pin_memory",
+            "recognizer_h2d", "vision_and_text_prefill_wall", "first_token_d2h",
+        ))
+        if self.timeline is not None:
+            for stage, (category, label) in stages.items():
+                span = spans[stage]
+                self.timeline.record_span(
+                    category, label, int(span["start_ns"]), int(span["end_ns"]),
+                    flow_id=prepared.request_id, clock=str(span["clock"]), track="device",
+                    lane="prefill", args={"crop_id": inflight.crop_id, "stage": stage},
                 )
-            hidden_states.append(
-                device_timeline.measure(
-                    self._group_stage_key(index, "vision_embeddings"),
-                    lambda prepared=prepared, pixels=pixel_values_device: (
-                        vision_model.embeddings(
-                            pixels.unsqueeze(0),
-                            image_grid_thw=prepared.image_grid_thw,
-                        )
-                    ),
-                )
+            self.timeline.record_span_seconds(
+                "H2D / D2H transfer", "First token D2H", started, started + first_token_d2h_s,
+                flow_id=prepared.request_id, event_type="io",
             )
-
-        real_lengths = [int(hidden.shape[0]) for hidden in hidden_states]
-        real_vision_tokens = sum(real_lengths)
-        pack_route = self.vision_prefill.route(real_vision_tokens)
-        batch_size = int(pack_route.get("batch_size", 1))
-        sequence_length = int(
-            pack_route.get("sequence_length", pack_route["physical_vision_tokens"])
+            self.timeline.record_span_seconds(
+                "Vision prefill", "Resolve prefill completion", resolve_started, resolve_finished,
+                flow_id=prepared.request_id, event_type="wait",
+            )
+        return PrefilledRecognition(
+            request_id=prepared.request_id, prompt=prepared.prompt, crop_size=prepared.crop_size,
+            skip_special_tokens=prepared.skip_special_tokens, cache=inflight.cache,
+            cache_release=inflight.cache_lease.release, rope_deltas=inflight.rope_deltas,
+            next_cache_position=inflight.next_cache_position, next_token=inflight.next_token,
+            first_token=first_token, input_tokens=inflight.input_tokens,
+            projected_image_tokens=inflight.projected_image_tokens, vision=inflight.vision,
+            text_prefill=inflight.text_prefill, timing_s=timing, device_stage_s=device_stage_s,
+            request_started=prepared.request_started, prefill_finished=resolve_finished,
+            input_fingerprints=dict(prepared.input_fingerprints),
         )
-        if int(pack_route["real_vision_tokens"]) != real_vision_tokens:
-            raise RuntimeError(
-                "vision route real-token mismatch: "
-                f"route={pack_route['real_vision_tokens']} actual={real_vision_tokens}"
-            )
-        prepared_vision = device_timeline.measure(
-            "group:vision_prefill_input_prep",
-            lambda: self.vision_prefill.prepare(
-                hidden_states[0],
-                group.members[0][0].image_grid_thw,
-                route=pack_route,
-            ),
+
+    # Materialize each completed request.
+    def _result_from_completion(
+        self,
+        completion: DecodeCompletion,
+        *,
+        schedule_id: str,
+    ) -> RecognitionResult:
+        state: PrefilledRecognition = completion.ready.payload
+        token_ids = completion.token_ids
+        started = time.perf_counter()
+        text = self.tokenizer.decode(
+            token_ids,
+            skip_special_tokens=state.skip_special_tokens,
         )
-        image_features = [
-            device_timeline.measure(
-                "group:vision_prefill",
-                lambda: self.vision_prefill.run_prepared(prepared_vision),
-            )
-        ]
-
-        self._vision_packing_stats.record(
-            crops=len(group.members),
-            route=pack_route,
-        )
-        group_padding = int(pack_route["physical_vision_tokens"]) - real_vision_tokens
-        text_inputs: list[_TextPrefillInputMember] = []
-        for index, (
-            ((prepared, _consumer_wait_s), moved, image_feature, real_length, timing)
-        ) in enumerate(
-            zip(
-                group.members,
-                moved_members,
-                image_features,
-                real_lengths,
-                timings,
-            )
-        ):
-            (
-                input_ids_device,
-                attention_mask_device,
-                _pixel_values_device,
-                position_ids,
-                rope_deltas,
-            ) = moved
-            next_cache_position = torch.full(
-                (1,),
-                int(input_ids_device.shape[1]),
-                device=self.device,
-                dtype=torch.int64,
-            )
-            image_embeds = device_timeline.measure(
-                self._group_stage_key(index, "adaptive_mlp_projector"),
-                lambda feature=image_feature, prepared=prepared: self.model.mlp_AR(
-                    feature,
-                    prepared.image_grid_thw,
-                ),
-            )
-            inputs_embeds = device_timeline.measure(
-                self._group_stage_key(index, "text_token_embedding"),
-                lambda input_ids_device=input_ids_device: self.model.model.embed_tokens(
-                    input_ids_device
-                ),
-            )
-
-            def scatter_image_embeds(
-                image_embeds: torch.Tensor = image_embeds,
-                inputs_embeds: torch.Tensor = inputs_embeds,
-                input_ids_device: torch.Tensor = input_ids_device,
-                prepared: CpuPreparedRecognition = prepared,
-            ) -> torch.Tensor:
-                projected = image_embeds.to(
-                    device=inputs_embeds.device,
-                    dtype=inputs_embeds.dtype,
-                )
-                image_mask = (
-                    (input_ids_device == self.model.config.image_token_id)
-                    .unsqueeze(-1)
-                    .expand_as(inputs_embeds)
-                )
-                expected_values = prepared.image_token_count * int(
-                    inputs_embeds.shape[-1]
-                )
-                if expected_values != projected.numel():
-                    raise ValueError(
-                        "image features and image tokens do not match: "
-                        f"tokens={prepared.image_token_count} "
-                        f"features={int(projected.shape[0])}"
-                    )
-                return inputs_embeds.masked_scatter(image_mask, projected)
-
-            inputs_embeds = device_timeline.measure(
-                self._group_stage_key(index, "image_embed_scatter"),
-                scatter_image_embeds,
-            )
-            cache_lease = device_timeline.measure(
-                self._group_stage_key(index, "static_cache_alloc"),
-                self.prefill_cache_pool.acquire,
-            )
-            cache = cache_lease.cache
-            member_padding = group_padding if index == len(group.members) - 1 else 0
-            vision_route = {
-                **pack_route,
-                "real_vision_tokens": real_length,
-                "physical_vision_tokens": real_length + member_padding,
-                "padding_vision_tokens": member_padding,
-                "useful_token_fraction": (
-                    float(real_length) / float(real_length + member_padding)
-                ),
-                "packing": "single",
-                "pack_group_id": group.group_id,
-                "pack_crops": len(group.members),
-                "pack_real_vision_tokens": real_vision_tokens,
-                "pack_physical_vision_tokens": int(
-                    pack_route["physical_vision_tokens"]
-                ),
-                "pack_batch_size": batch_size,
-                "pack_sequence_length": sequence_length,
-                "pack_row_sizes": list(group.row_sizes),
-                "router_visible_crops": pack_route.get("visible_window_size"),
-            }
-            text_inputs.append(
-                _TextPrefillInputMember(
-                    prepared=prepared,
-                    moved=moved,
-                    cache=cache,
-                    cache_lease=cache_lease,
-                    rope_deltas=rope_deltas,
-                    next_cache_position=next_cache_position,
-                    inputs_embeds=inputs_embeds,
-                    vision=vision_route,
-                    timing_s=timing,
-                    projected_image_tokens=int(image_embeds.shape[0]),
-                )
-            )
-
-        self._text_packing_stats.groups += 1
-        self._text_packing_stats.crops += len(text_inputs)
-        lengths = [int(item.inputs_embeds.shape[1]) for item in text_inputs]
-        pack_indices: list[tuple[int, ...]] = []
-        fallback_indices: tuple[int, ...] = ()
-        next_tokens: list[torch.Tensor | None] = [None] * len(text_inputs)
-        text_routes: list[dict[str, Any] | None] = [None] * len(text_inputs)
-        text_packs: list[_TextPackTrace] = []
-
-        fallback_indices = tuple(range(len(text_inputs)))
-
-        self._text_packing_stats.fallback_crops += len(fallback_indices)
-        for member_index in fallback_indices:
-            item = text_inputs[member_index]
-            attention_mask_device = item.moved[1]
-            position_ids = item.moved[3]
-            text_route = self.text_prefill.route(lengths[member_index])
-            prepared_text = device_timeline.measure(
-                self._group_stage_key(
-                    member_index,
-                    "text_prefill_input_prep",
-                ),
-                lambda item=item, attention_mask_device=attention_mask_device, position_ids=position_ids, text_route=text_route: (
-                    self.text_prefill.prepare(
-                        item.inputs_embeds,
-                        attention_mask_device,
-                        position_ids,
-                        route=text_route,
-                    )
-                ),
-            )
-            last_hidden_state = device_timeline.measure(
-                self._group_stage_key(member_index, "text_prefill"),
-                lambda prepared_text=prepared_text, cache=item.cache: (
-                    self.text_prefill.run_prepared(prepared_text, cache)
-                ),
-            )
-            logits = device_timeline.measure(
-                self._group_stage_key(member_index, "prefill_lm_head"),
-                lambda last_hidden_state=last_hidden_state: self.model.lm_head(
-                    last_hidden_state
-                ),
-            )
-            next_token = device_timeline.measure(
-                self._group_stage_key(member_index, "prefill_argmax"),
-                lambda logits=logits: torch.argmax(
-                    logits[:, -1, :].float(),
-                    dim=-1,
-                    keepdim=True,
-                ),
-            )
-            text_route = {
-                **text_route,
-                "packing": "fallback_single" if pack_indices else "off",
-                "pack_group_id": group.group_id,
-                "text_pack_index": None,
-                "pack_real_text_tokens": int(text_route["real_text_tokens"]),
-                "pack_physical_text_tokens": int(text_route["physical_text_tokens"]),
-                "private_cache_slot_index": int(item.cache_lease.slot_index),
-                "private_cache_generation": int(item.cache_lease.generation),
-            }
-            next_tokens[member_index] = next_token
-            text_routes[member_index] = text_route
-            text_packs.append(
-                _TextPackTrace(
-                    member_indices=(member_index,),
-                    route=dict(text_route),
-                    stage_keys={
-                        stage: self._group_stage_key(member_index, stage)
-                        for stage in (
-                            "text_prefill_input_prep",
-                            "text_prefill",
-                            "prefill_lm_head",
-                            "prefill_argmax",
-                        )
-                    },
-                )
-            )
-
-        if any(token is None for token in next_tokens) or any(
-            route is None for route in text_routes
-        ):
-            raise AssertionError("text prefill did not produce every group member")
-        members = [
-            _InFlightPrefillMember(
-                prepared=item.prepared,
-                cache=item.cache,
-                cache_lease=item.cache_lease,
-                rope_deltas=item.rope_deltas,
-                next_cache_position=item.next_cache_position,
-                next_token=next_tokens[index],
-                device_inputs=item.moved,
-                vision=item.vision,
-                text_prefill=text_routes[index],
-                timing_s=item.timing_s,
-                input_tokens=int(item.prepared.input_ids.shape[1]),
-                projected_image_tokens=item.projected_image_tokens,
-            )
-            for index, item in enumerate(text_inputs)
-        ]
-
-        packed_next_tokens = torch.cat(
-            [token.detach().reshape(-1) for token in next_tokens if token is not None],
-            dim=0,
-        ).contiguous()
-        prefill_ready_event = torch_npu.npu.current_stream().record_event()
-        enqueue_finished = time.perf_counter()
-        for member in members:
-            member.timing_s["prefill_enqueue_host"] = enqueue_finished - enqueue_started
+        detokenize_s = time.perf_counter() - started
         if self.timeline is not None:
             self.timeline.record_span_seconds(
-                "Vision prefill",
-                "Enqueue prefill chain",
-                enqueue_started,
-                enqueue_finished,
-                flow_id=members[0].prepared.request_id,
-                flow_ids=[member.prepared.request_id for member in members],
+                "Result assembly",
+                "Detokenize crop result",
+                started,
+                started + detokenize_s,
+                flow_id=state.request_id,
+                args={"generated_tokens": len(token_ids)},
+            )
+            self.timeline.instant(
+                "Result assembly",
+                "Crop recognition completed",
+                flow_id=state.request_id,
                 args={
-                    "group_id": group.group_id,
-                    "crops": len(members),
-                    "real_tokens": real_vision_tokens,
-                    "physical_tokens": int(pack_route["physical_vision_tokens"]),
+                    "stop_reason": completion.stop_reason,
+                    "decode_slot": completion.slot_index,
+                    "generated_tokens": len(token_ids),
                 },
             )
-        return _InFlightPrefillGroup(
-            group_id=group.group_id,
-            members=members,
-            device_timeline=device_timeline,
-            h2d_ready_event=h2d_ready_event,
-            prefill_ready_event=prefill_ready_event,
-            packed_next_tokens=packed_next_tokens,
-            prefill_started=prefill_started,
-            pack_route=pack_route,
-            text_packs=text_packs,
+        generated_tokens = len(token_ids)
+        effective_decode_tokens = max(0, generated_tokens - 1)
+        timing = dict(state.timing_s)
+        timing.update(
+            {
+                "decode_ready_queue_wait": (
+                    max(0.0, completion.admitted_at - state.prefill_finished)
+                    if completion.admitted_at is not None
+                    else 0.0
+                ),
+                "decode_slot_residency": (
+                    max(0.0, completion.completed_at - completion.admitted_at)
+                    if completion.admitted_at is not None
+                    else 0.0
+                ),
+                "detokenize": float(detokenize_s),
+                "request_total": float(
+                    completion.completed_at - state.request_started + detokenize_s
+                ),
+            }
+        )
+        return RecognitionResult(
+            request_id=state.request_id,
+            decode_schedule_id=schedule_id,
+            decode_slot_index=completion.slot_index,
+            decode_slot_epoch=completion.slot_epoch,
+            prompt=state.prompt,
+            crop_size=state.crop_size,
+            text=text,
+            token_ids=token_ids,
+            stop_reason=completion.stop_reason,
+            input_tokens=state.input_tokens,
+            projected_image_tokens=state.projected_image_tokens,
+            generated_tokens_including_eos=generated_tokens,
+            decode_tokens_after_prefill_including_eos=effective_decode_tokens,
+            decode_calls_executed=completion.iterations_launched,
+            timing_s=timing,
+            device_stage_s=dict(state.device_stage_s),
+            rates={
+                "request_output_tok_per_s": per_second(
+                    generated_tokens,
+                    timing["request_total"],
+                ),
+            },
+            vision=dict(state.vision),
+            text_prefill=dict(state.text_prefill),
+            input_fingerprints=dict(state.input_fingerprints),
+            scheduling_metrics=dict(completion.scheduling_metrics),
+            repetition=(
+                dict(completion.repetition_evidence)
+                if completion.repetition_evidence is not None
+                else {}
+            ),
+        )
+
+    # Persistent setup and configuration.
+    @torch.inference_mode()
+    def __init__(
+        self,
+        *,
+        model: str,
+        device: str = "npu:0",
+        batch_size: int,
+        torchair_cache_dir: Path,
+        full_decode_lm_head: bool = False,
+        decode_device_timing: bool = True,
+        vision_torchair_cache_dir: Path | None = None,
+        eager: bool = False,
+        text_torchair_cache_dir: Path | None = None,
+        timeline: TimelineRecorder | None = None,
+        scheduler_progress: bool = False,
+        scheduler_progress_events: Iterable[str] | None = None,
+        diagnostic_decode_effective_length: int | None = None,
+        diagnostic_decode_request_id: str | None = None,
+        diagnostic_prefill_kv_request_ids: Iterable[str] | None = None,
+        recognition_input_fingerprints: bool = False,
+        compact_uint8_preprocess: bool = False,
+        image_resize_backend: str = "pillow",
+    ):
+        runtime_started = time.perf_counter()
+        _emit_setup_progress("frontend", "start")
+        import torch_npu
+
+        self.eager = eager
+        self.full_decode_lm_head = bool(full_decode_lm_head)
+        torch.npu.config.allow_internal_format = True
+        self.model_dir = Path(model).expanduser()
+        self.device = torch.device(device)
+        if self.device.type != "npu":
+            raise ValueError("table serving requires an NPU device")
+        if not torch.npu.is_available():
+            raise RuntimeError("Table serving requires an available NPU")
+        self.dtype = torch.float16
+        torch.npu.set_compile_mode(jit_compile=False)
+        self.decode_backend = "raw_eager" if eager else "torchair"
+        self.decode_vocab_token_ids_path = (
+            Path(__file__).resolve().parent
+            / "presets/table_compact_vocab/b1_verifier_topfreq_16384.json"
+        )
+        self.timeline = timeline
+        self.scheduler_progress = bool(scheduler_progress)
+        self.scheduler_progress_events = (
+            None
+            if scheduler_progress_events is None
+            else frozenset((str(event) for event in scheduler_progress_events))
+        )
+        self.diagnostic_decode_effective_length = (
+            None
+            if diagnostic_decode_effective_length is None
+            else int(diagnostic_decode_effective_length)
+        )
+        self.diagnostic_decode_request_id = (
+            None
+            if diagnostic_decode_request_id is None
+            else str(diagnostic_decode_request_id)
+        )
+        self.diagnostic_prefill_kv_request_ids = frozenset(
+            (str(request_id) for request_id in diagnostic_prefill_kv_request_ids or ())
+        )
+        self.batch_size = int(batch_size)
+        self.cache_length = 4096
+        self.max_new_tokens = 4096
+        self.recognition_input_fingerprints = bool(recognition_input_fingerprints)
+        self.compact_uint8_preprocess = bool(compact_uint8_preprocess)
+        self.image_resize_backend = str(image_resize_backend)
+        if self.image_resize_backend not in {"pillow", "kornia_rs"}:
+            raise ValueError(
+                f"image_resize_backend must be 'pillow' or 'kornia_rs', got {self.image_resize_backend!r}"
+            )
+        self.vision_backend = self.decode_backend
+        self.vision_attention = "prompt_flash_attention"
+        self.decode_device_timing = bool(decode_device_timing)
+        self.compact_decode_control = False
+        self.vision_seq_alignment = VISION_SEQUENCE_ALIGNMENT
+        self.vision_buckets = VISION_BUCKETS
+        self.text_backend = self.decode_backend
+        self.text_buckets = TEXT_PREFILL_BUCKETS
+        self.private_cache_staging_headroom = 32
+        if self.batch_size <= 0:
+            raise ValueError("batch_size must be positive")
+        if self.max_new_tokens <= 0:
+            raise ValueError("max_new_tokens must be positive")
+        model_preprocessor_config = load_preprocessor_config(self.model_dir)
+        self.model_preprocessor_min_pixels = int(
+            model_preprocessor_config["min_pixels"]
+        )
+        self.model_preprocessor_max_pixels = int(
+            model_preprocessor_config["max_pixels"]
+        )
+        self.preprocessor_min_pixels_override = 28224
+        self.preprocessor_max_pixels_override = 802816
+        self.preprocessor_config = apply_pixel_overrides(
+            model_preprocessor_config,
+            min_pixels=self.preprocessor_min_pixels_override,
+            max_pixels=self.preprocessor_max_pixels_override,
+        )
+        if self.compact_uint8_preprocess:
+            mean = tuple(
+                (float(value) for value in self.preprocessor_config["image_mean"])
+            )
+            std = tuple(
+                (float(value) for value in self.preprocessor_config["image_std"])
+            )
+            if (
+                not self.preprocessor_config["do_rescale"]
+                or not self.preprocessor_config["do_normalize"]
+                or len(set(mean)) != 1
+                or (len(set(std)) != 1)
+            ):
+                raise ValueError(
+                    "compact_uint8_preprocess currently requires scalar RGB rescale and normalization parameters"
+                )
+            self.compact_rescale_factor = float(
+                self.preprocessor_config["rescale_factor"]
+            )
+            self.compact_image_mean = mean[0]
+            self.compact_image_std = std[0]
+        self.preprocessing_tokenizer = Tokenizer.from_file(
+            str(self.model_dir / "tokenizer.json")
+        )
+        self.tokenizer = Tokenizer.from_file(str(self.model_dir / "tokenizer.json"))
+        frontend_setup_s = time.perf_counter() - runtime_started
+        _emit_setup_progress("frontend", "done", frontend_setup_s)
+        synchronize(self.device)
+        started = time.perf_counter()
+        _emit_setup_progress("model_load", "start")
+        self.model = LocalPaddleOCRVLForConditionalGeneration.from_pretrained(
+            self.model_dir, dtype=self.dtype, device=self.device
+        )
+        synchronize(self.device)
+        model_load_s = time.perf_counter() - started
+        _emit_setup_progress("model_load", "done", model_load_s)
+        started = time.perf_counter()
+        _emit_setup_progress("decode_lm_head", "start")
+        full_vocab_size = int(self.model.lm_head.weight.shape[0])
+        if self.full_decode_lm_head:
+            # No selected-row head or ID map: the checkpoint head emits native IDs.
+            self.decode_vocab = {
+                "enabled": False,
+                "path": None,
+                "full_vocab_size": full_vocab_size,
+                "selected_vocab_size": full_vocab_size,
+                "token_ids_sha256": None,
+            }
+            decode_head_cache_key = f"full_vocab_{full_vocab_size}"
+        else:
+            (token_ids, self.decode_vocab) = load_decode_vocab_token_ids(
+                self.decode_vocab_token_ids_path,
+                full_vocab_size=full_vocab_size,
+            )
+            prepare_decode_compact_lm_head(self.model, token_ids)
+            decode_head_cache_key = (
+                f"selected_vocab_{self.decode_vocab['selected_vocab_size']}_"
+                f"{self.decode_vocab['token_ids_sha256'][:12]}"
+            )
+        synchronize(self.device)
+        _emit_setup_progress(
+            "decode_lm_head", "done", time.perf_counter() - started
+        )
+        synchronize(self.device)
+        started = time.perf_counter()
+        _emit_setup_progress("vision_mlp_padding", "start")
+        self.vision_mlp = prepare_vision_mlp_intermediate(
+            self.model,
+        )
+        synchronize(self.device)
+        vision_mlp_setup_s = time.perf_counter() - started
+        _emit_setup_progress("vision_mlp_padding", "done", vision_mlp_setup_s)
+        started = time.perf_counter()
+        _emit_setup_progress("vision_attention_weight_padding", "start")
+        prepare_vision_attention_weight_padding(self.model)
+        synchronize(self.device)
+        _emit_setup_progress(
+            "vision_attention_weight_padding", "done", time.perf_counter() - started
+        )
+        synchronize(self.device)
+        started = time.perf_counter()
+        _emit_setup_progress("vision_weight_format", "start")
+        self.vision_weight_format = prepare_vision_linear_weight_format(
+            self.model
+        )
+        synchronize(self.device)
+        vision_weight_format_s = time.perf_counter() - started
+        _emit_setup_progress("vision_weight_format", "done", vision_weight_format_s)
+        synchronize(self.device)
+        started = time.perf_counter()
+        _emit_setup_progress("decode_optimization_setup", "start")
+        prepare_decode_projections(self.model)
+        synchronize(self.device)
+        decode_optimization_setup_s = time.perf_counter() - started
+        _emit_setup_progress(
+            "decode_optimization_setup", "done", decode_optimization_setup_s
+        )
+        synchronize(self.device)
+        started = time.perf_counter()
+        _emit_setup_progress("decode_weight_format", "start")
+        self.weight_format = cast_decode_linear_weights_to_nz(self.model)
+        synchronize(self.device)
+        weight_format_s = time.perf_counter() - started
+        _emit_setup_progress("decode_weight_format", "done", weight_format_s)
+        self.stages = self.model.make_inference_stages(
+            vision_cache_root=vision_torchair_cache_dir
+            if vision_torchair_cache_dir is not None
+            else torchair_cache_dir.parent / f"{torchair_cache_dir.name}_vision",
+            text_cache_root=text_torchair_cache_dir
+            if text_torchair_cache_dir is not None
+            else torchair_cache_dir.parent / f"{torchair_cache_dir.name}_text",
+            decode_cache_root=torchair_cache_dir / decode_head_cache_key,
+            batch_size=self.batch_size,
+            cache_length=self.cache_length,
+            device=self.device,
+            model_dir=self.model_dir,
+            eager=self.eager,
+            setup_progress=_emit_setup_progress,
+        )
+        self.vision_prefill = self.stages.vision_prefill
+        self.text_prefill = self.stages.text_prefill
+        self.text_decode = self.stages.text_decode
+        self.decode_fn = self.text_decode.fn
+        stage_setup_sync_started = time.perf_counter()
+        synchronize(self.device)
+        stage_setup_sync_s = time.perf_counter() - stage_setup_sync_started
+        self.prefill_transfer_stream = torch_npu.npu.Stream(device=self.device)
+        self.cpu_preprocess_max_pending = max(2, self.batch_size)
+        self.ready_buffer_capacity = self.batch_size
+        self.ready_buffer_low_watermark = max(
+            1, self.ready_buffer_capacity // 2
+        )
+        self.prefill_host_tokens = torch.empty(
+            (max(self.cpu_preprocess_max_pending + 1, self.private_cache_staging_headroom),),
+            dtype=torch.int64,
+            pin_memory=True,
+        )
+        self._prefill_sequence = 0
+        self._vision_prefill_stats = _VisionPrefillStats()
+        self._text_prefill_stats = _TextPrefillStats()
+        private_cache_pool_started = time.perf_counter()
+        _emit_setup_progress("private_cache_pool", "start")
+        private_cache_capacity = (
+            self.ready_buffer_capacity + self.private_cache_staging_headroom
+        )
+        private_cache_storage = self.model.allocate_static_cache(
+            batch_size=private_cache_capacity,
+            cache_length=self.cache_length,
+            device=self.device,
+            dtype=self.dtype,
+        )
+        synchronize(self.device)
+        self.prefill_cache_pool = PrefillKVCachePool(
+            private_cache_storage, device=self.device
+        )
+        private_cache_pool_setup_s = time.perf_counter() - private_cache_pool_started
+        _emit_setup_progress("private_cache_pool", "done", private_cache_pool_setup_s)
+        started = time.perf_counter()
+        _emit_setup_progress("decode_control", "start")
+        self.decode_arena = DecodeArena(
+            cache=self.text_decode.warm_cache,
+            device=self.device,
+            batch_size=self.batch_size,
+            eos_token_id=int(self.model.config.eos_token_id),
+            timeline=self.timeline,
+            decode_device_timing=self.decode_device_timing,
+        )
+        self.decode_scheduler = ContinuousDecodeScheduler(
+            arena=self.decode_arena,
+            decode_fn=self.decode_fn,
+            max_new_tokens=self.max_new_tokens,
+            timeline=self.timeline,
+            stop_repetitions=True,
+            progress=self._emit_scheduler_progress,
+            diagnostic_effective_length=self.diagnostic_decode_effective_length,
+            diagnostic_request_id=self.diagnostic_decode_request_id,
+        )
+        decode_control_setup_s = time.perf_counter() - started
+        _emit_setup_progress("decode_control", "done", decode_control_setup_s)
+        self.setup_timing_s = {
+            "recognizer_frontend_setup": float(frontend_setup_s),
+            "recognizer_model_load": float(model_load_s),
+            "vision_mlp_padding": float(vision_mlp_setup_s),
+            "vision_weight_format": float(vision_weight_format_s),
+            "decode_optimization_setup": float(decode_optimization_setup_s),
+            "decode_weight_format": float(weight_format_s),
+            **self.stages.setup_timing_s,
+            "vision_router_setup": 0.0,
+            "packed_text_runtime_setup": float(stage_setup_sync_s),
+            "private_cache_pool_setup": float(private_cache_pool_setup_s),
+            "decode_control_setup": float(decode_control_setup_s),
+            "recognizer_runtime_total": float(time.perf_counter() - runtime_started),
+        }
+        _emit_setup_progress(
+            "recognizer_runtime",
+            "done",
+            self.setup_timing_s["recognizer_runtime_total"],
+        )
+
+    def configuration(self) -> dict[str, Any]:
+        decode_label = f"{'eager' if self.eager else 'compiled'}_static_b{self.batch_size}"
+        patch_size = int(self.preprocessor_config["patch_size"])
+        merge_size = int(self.preprocessor_config["merge_size"])
+        min_pixels = int(self.preprocessor_config["min_pixels"])
+        vision_attention = self.vision_attention
+        return {
+            "recognizer_model": str(self.model_dir),
+            "device": str(self.device),
+            "dtype": str(self.dtype),
+            "decode_backend": self.decode_backend,
+            "decode_vocab": dict(self.decode_vocab),
+            "full_decode_lm_head": self.full_decode_lm_head,
+            "token_selection": "greedy",
+            "cache_length": self.cache_length,
+            "max_new_tokens": self.max_new_tokens,
+            "recognition_input_fingerprints": (self.recognition_input_fingerprints),
+            "batch_size": self.batch_size,
+            "diagnostic_decode_effective_length": (
+                self.diagnostic_decode_effective_length
+            ),
+            "scheduler_progress_events": (
+                None
+                if self.scheduler_progress_events is None
+                else sorted(self.scheduler_progress_events)
+            ),
+            "diagnostic_decode_request_id": self.diagnostic_decode_request_id,
+            "diagnostic_prefill_kv_request_ids": sorted(
+                self.diagnostic_prefill_kv_request_ids
+            ),
+            "vision_prefill": self.vision_prefill.metadata,
+            "vision_mlp": dict(self.vision_mlp),
+            "vision_linear_weight_format": dict(self.vision_weight_format),
+            "vision_backend": self.vision_backend,
+            "vision_attention": vision_attention,
+            "decode_device_timing": self.decode_device_timing,
+            "compact_decode_control": self.compact_decode_control,
+            "vision_sequence_alignment": self.vision_seq_alignment,
+            "vision_packing": {
+                "mode": "off",
+                "target": 1920,
+                "lookahead": 32,
+                "grouping": "independent_crops",
+                "oversized": "faithful_eager_single_crop_route",
+                "batched_runtime": (None),
+            },
+            "vision_prompt_fa_layout": "bnsd",
+            "text_prefill": self.text_prefill.metadata,
+            "text_backend": self.text_backend,
+            "text_packing": {
+                "mode": "off",
+                "buckets": [128, 256, 512, 1024],
+                "max_members": self.private_cache_staging_headroom,
+                "grouping": "independent_crops",
+                "runtime": (None),
+            },
+            "preprocessor": {
+                "model_default_min_pixels": self.model_preprocessor_min_pixels,
+                "model_default_max_pixels": self.model_preprocessor_max_pixels,
+                "min_pixels_override": self.preprocessor_min_pixels_override,
+                "max_pixels_override": self.preprocessor_max_pixels_override,
+                "effective_min_pixels": min_pixels,
+                "effective_max_pixels": int(self.preprocessor_config["max_pixels"]),
+                "patch_size": patch_size,
+                "merge_size": merge_size,
+                "resize_factor": patch_size * merge_size,
+                "nominal_minimum_projected_image_tokens": (
+                    min_pixels // ((patch_size * merge_size) ** 2)
+                ),
+            },
+            "cpu_preprocessing": {
+                "execution": "background_thread",
+                "workers": 1,
+                "max_pending": self.cpu_preprocess_max_pending,
+                "ordering": "fifo",
+                "pin_recognition_inputs": "best_effort",
+            },
+            "prefill_production": ("next_crop_h2d_staged_before_ready_yield"),
+            "prefill_transfer": "dedicated_stream_event_dependencies",
+            "decode": decode_label,
+            "decode_schedule": "run_scoped_persistent_slots_iteration_hot_swap",
+            "ready_buffer_capacity": self.ready_buffer_capacity,
+            "ready_buffer_low_watermark": self.ready_buffer_low_watermark,
+            "private_cache_staging_headroom": (self.private_cache_staging_headroom),
+            "decode_completion_detection": "queue_depth_one_async_token_copy",
+            "private_prefill_cache": self.prefill_cache_pool.stats(),
+            "kv_admission": "full_prefill_cache_foreach_copy_into_fixed_slot",
+            "text_decode": self.text_decode.metadata,
+            "linear_weight_format": self.weight_format,
+        }
+
+    # Progress reporting and retained diagnostics.
+    def _emit_scheduler_progress(self, event: str, **fields: Any) -> None:
+        if not self.scheduler_progress:
+            return
+        if (
+            self.scheduler_progress_events is not None
+            and event not in self.scheduler_progress_events
+        ):
+            return
+        record = {
+            "event": str(event),
+            "monotonic_s": round(time.perf_counter(), 6),
+            "thread": threading.current_thread().name,
+            **fields,
+        }
+        print(
+            "EXP09_SCHEDULER "
+            + json.dumps(record, ensure_ascii=False, separators=(",", ":")),
+            file=sys.stderr,
+            flush=True,
         )
 
     @torch.inference_mode()
     def _diagnose_prefill_kv_finiteness(
         self,
-        member: _InFlightPrefillMember,
+        member: _InFlightCrop,
     ) -> None:
         """Synchronously inspect one explicitly targeted private KV row."""
 
@@ -2136,357 +1487,325 @@ class ContinuousRecognizer:
             flush=True,
         )
 
-    @torch.inference_mode()
-    def _finalize_prefill_group(
+
+# Open request stream and free-slot prefill admission
+
+
+class _OpenPrefillSource:
+    """Prepare CPU inputs ahead, but prefill NPU KV only for free decode slots."""
+
+    def pull_for_decode_slots(
         self,
-        inflight: _InFlightPrefillGroup,
-    ) -> list[PrefilledRecognition]:
-        import torch_npu
+        *,
+        block: bool,
+        available_slots: int,
+    ) -> ReadyDecodeRequest | None:
+        """CPU may run ahead; NPU prefill needs an unreserved decode slot."""
+        return self.pull(block=block, allow_prefill=available_slots > 0)
 
-        resolve_started = time.perf_counter()
-        device_spans = inflight.device_timeline.resolve_spans()
-        started = time.perf_counter()
-        count = len(inflight.members)
-        with torch_npu.npu.stream(self.prefill_transfer_stream):
-            self.prefill_transfer_stream.wait_event(inflight.prefill_ready_event)
-            self.prefill_host_tokens[:count].copy_(
-                inflight.packed_next_tokens,
-                non_blocking=True,
+    def pull(
+        self, *, block: bool, allow_prefill: bool = True
+    ) -> ReadyDecodeRequest | None:
+        while True:
+            pull_started = (
+                time.perf_counter() if self.scheduling_metrics is not None else 0.0
             )
-            first_tokens_ready = self.prefill_transfer_stream.record_event()
-        first_tokens_ready.synchronize()
-        first_tokens = [
-            int(value) for value in self.prefill_host_tokens[:count].tolist()
-        ]
-        for member in inflight.members:
-            self._diagnose_prefill_kv_finiteness(member)
-        first_token_d2h_s = time.perf_counter() - started
-        resolve_finished = time.perf_counter()
-        request_ids = [member.prepared.request_id for member in inflight.members]
-
-        if self.timeline is not None:
-            shared_prep = device_spans["group:vision_prefill_input_prep"]
-            shared_tower = device_spans["group:vision_prefill"]
-            shared_args = {
-                "group_id": inflight.group_id,
-                "crops": count,
-                "execution": inflight.pack_route.get("execution"),
-                "bucket": inflight.pack_route.get("bucket"),
-                "real_tokens": inflight.pack_route.get("real_vision_tokens"),
-                "physical_tokens": inflight.pack_route.get("physical_vision_tokens"),
-            }
-            self.timeline.record_span(
-                "Vision prefill",
-                "Vision bucket preparation",
-                int(shared_prep["start_ns"]),
-                int(shared_prep["end_ns"]),
-                flow_id=request_ids[0],
-                flow_ids=request_ids,
-                clock=str(shared_prep["clock"]),
-                track="device",
-                lane="prefill",
-                args=shared_args,
+            self._submit_available(
+                block_for_first=allow_prefill and block and not self.pending,
             )
-            self.timeline.record_span(
-                "Vision prefill",
-                ("Packed vision transformer" if count > 1 else "Vision transformer"),
-                int(shared_tower["start_ns"]),
-                int(shared_tower["end_ns"]),
-                flow_id=request_ids[0],
-                flow_ids=request_ids,
-                clock=str(shared_tower["clock"]),
-                track="device",
-                lane="prefill",
-                args=shared_args,
-            )
-            self.timeline.record_span_seconds(
-                "H2D / D2H transfer",
-                "First tokens D2H",
-                started,
-                started + first_token_d2h_s,
-                flow_id=request_ids[0],
-                flow_ids=request_ids,
-                event_type="io",
-                args={"group_id": inflight.group_id, "crops": count},
-            )
-            self.timeline.record_span_seconds(
-                "Vision prefill",
-                "Resolve prefill completion",
-                resolve_started,
-                resolve_finished,
-                flow_id=request_ids[0],
-                flow_ids=request_ids,
-                event_type="wait",
-                args={"group_id": inflight.group_id, "crops": count},
-            )
-
-        shared_device_stage_s = {
-            "vision_prefill_input_prep": float(
-                device_spans["group:vision_prefill_input_prep"]["seconds"]
-            ),
-            "vision_prefill": float(device_spans["group:vision_prefill"]["seconds"]),
-        }
-        vision_stages = {
-            "vision_embeddings": "Patch and position embeddings",
-            "adaptive_mlp_projector": "Adaptive MLP projector",
-        }
-        member_text_stages = {
-            "text_token_embedding": "Text token embeddings",
-            "image_embed_scatter": "Scatter projected image embeddings",
-            "static_cache_alloc": "Acquire private KV cache slot",
-        }
-        shared_text_stages = {
-            "text_prefill_input_prep": "Text bucket preparation",
-            "text_prefill": "Text transformer prefill",
-            "text_kv_redistribute": "Redistribute packed text KV prefixes",
-            "prefill_lm_head": "Prefill LM head",
-            "prefill_argmax": "First-token argmax",
-        }
-        text_device_by_member = [
-            {stage: 0.0 for stage in shared_text_stages} for _member in inflight.members
-        ]
-        for pack_index, text_pack in enumerate(inflight.text_packs):
-            owner_index = text_pack.member_indices[0]
-            pack_request_ids = [
-                request_ids[index] for index in text_pack.member_indices
-            ]
-            for stage, key in text_pack.stage_keys.items():
-                span = device_spans[key]
-                text_device_by_member[owner_index][stage] += float(span["seconds"])
-                if self.timeline is not None:
-                    self.timeline.record_span(
-                        "Text prefill",
-                        shared_text_stages[stage],
-                        int(span["start_ns"]),
-                        int(span["end_ns"]),
-                        flow_id=pack_request_ids[0],
-                        flow_ids=pack_request_ids,
-                        clock=str(span["clock"]),
-                        track="device",
-                        lane="prefill",
-                        args={
-                            "stage": stage,
-                            "vision_group_id": inflight.group_id,
-                            "text_pack_index": pack_index,
-                            "members": len(text_pack.member_indices),
-                            "execution": text_pack.route.get("execution"),
-                            "bucket": text_pack.route.get("bucket"),
-                            "real_tokens": text_pack.route.get("real_text_tokens"),
-                            "physical_tokens": text_pack.route.get(
-                                "physical_text_tokens"
-                            ),
-                        },
+            if not allow_prefill:
+                # Do not consume/wait for a future or allocate/prefill NPU KV
+                # while every decode slot is active or already reserved by a
+                # ready request. CPU preparation above remains bounded/ahead.
+                return None
+            if not self.pending:
+                return None
+            if not block and not self.pending[0][1].done():
+                # CPU preparation is background work, not a reason to stall
+                # live decoding. Keep ownership in pending until a later poll;
+                # only an idle scheduler may wait for the first ready request.
+                return None
+            request_id, future = self.pending.popleft()
+            wait_started = time.perf_counter()
+            try:
+                prepared = future.result()
+            except BaseException as exc:
+                if self.scheduling_metrics is not None:
+                    self.scheduling_metrics.record_prefill(
+                        request_id,
+                        pull_started,
+                        time.perf_counter(),
+                        status="error",
                     )
-        results: list[PrefilledRecognition] = []
-        for index, (member, first_token) in enumerate(
-            zip(inflight.members, first_tokens)
+                self.on_request_error(request_id, exc)
+                block = False
+                continue
+            consumer_wait_s = time.perf_counter() - wait_started
+            # Refill the CPU lane before NPU prefill so host preparation for
+            # later HTTP requests overlaps the current crop's device work.
+            self._submit_available(block_for_first=False)
+            crop = self.recognizer._prepared_crop(prepared, consumer_wait_s)
+            staged = self.recognizer._stage_crop(crop)
+            inflight = self.recognizer._enqueue_crop(staged)
+            finalized = self.recognizer._finalize_crop(inflight)
+            if self.scheduling_metrics is not None:
+                self.scheduling_metrics.record_prefill(
+                    request_id,
+                    pull_started,
+                    time.perf_counter(),
+                )
+            return self.recognizer._ready_from_prefilled(finalized)
+
+    def _submit_available(self, *, block_for_first: bool) -> None:
+        while len(self.pending) < self.recognizer.cpu_preprocess_max_pending:
+            request = self.requests.pull(
+                block=block_for_first and not self.pending,
+            )
+            block_for_first = False
+            if request is None:
+                break
+            submitted_at = time.perf_counter()
+            if self.scheduling_metrics is not None:
+                self.scheduling_metrics.register(
+                    request.request_id,
+                    submitted_at
+                    if request.submitted_at is None
+                    else request.submitted_at,
+                )
+            self.pending.append(
+                (
+                    request.request_id,
+                    self.executor.submit(
+                        self.recognizer._prepare_cpu,
+                        request,
+                        submitted_at,
+                    ),
+                )
+            )
+
+    @property
+    def closed(self) -> bool:
+        return bool(self.requests.closed) and not self.pending
+
+    def close(self) -> None:
+        if self._executor_closed:
+            return
+        self._executor_closed = True
+        self.executor.shutdown(wait=True, cancel_futures=True)
+
+    def __init__(
+        self,
+        recognizer: Any,
+        requests: Any,
+        *,
+        on_request_error: Callable[[str, BaseException], None],
+        scheduling_metrics: RequestSchedulingMetrics | None = None,
+    ):
+        self.recognizer = recognizer
+        self.requests = requests
+        self.on_request_error = on_request_error
+        self.scheduling_metrics = scheduling_metrics
+        self.pending: deque[tuple[str, Future[CpuPreparedRecognition]]] = deque()
+        self.executor = ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="paddleocr-vl-open-cpu-prepare",
+        )
+        self._executor_closed = False
+
+
+# Crop state through CPU preparation, transfer, and prefill
+
+
+@dataclass
+class CpuPreparedRecognition:
+    request_id: str
+    prompt: str
+    crop_size: tuple[int, int]
+    skip_special_tokens: bool
+    pixel_values: torch.Tensor
+    image_grid_thw: torch.Tensor
+    input_ids: torch.Tensor
+    attention_mask: torch.Tensor
+    position_ids: torch.Tensor
+    rope_deltas: torch.Tensor
+    image_token_count: int
+    timing_s: dict[str, float]
+    request_started: float
+    preparation_finished: float
+    input_fingerprints: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class _PreparedCrop:
+    crop_id: int
+    prepared: CpuPreparedRecognition
+    consumer_wait_s: float
+    real_vision_tokens: int
+
+
+@dataclass
+class _StagedCrop:
+    crop: _PreparedCrop
+    device_timeline: DeviceTimeline
+    h2d_ready_event: Any
+    moved: tuple[torch.Tensor, ...]
+    timing_s: dict[str, float]
+
+
+@dataclass
+class _InFlightCrop:
+    crop_id: int
+    prepared: CpuPreparedRecognition
+    cache: LocalPaddleOCRVLStaticCache
+    cache_lease: PrefillKVCacheLease
+    rope_deltas: torch.Tensor
+    next_cache_position: torch.Tensor
+    next_token: torch.Tensor
+    device_inputs: tuple[torch.Tensor, ...]
+    vision: dict[str, Any]
+    text_prefill: dict[str, Any]
+    timing_s: dict[str, float]
+    input_tokens: int
+    projected_image_tokens: int
+    device_timeline: DeviceTimeline
+    h2d_ready_event: Any
+    prefill_ready_event: Any
+    first_token_device: torch.Tensor
+    prefill_started: float
+
+
+@dataclass
+class PrefilledRecognition:
+    request_id: str
+    prompt: str
+    crop_size: tuple[int, int]
+    skip_special_tokens: bool
+    cache: LocalPaddleOCRVLStaticCache | None
+    cache_release: Callable[[], None] | None
+    rope_deltas: torch.Tensor | None
+    next_cache_position: torch.Tensor | None
+    next_token: torch.Tensor | None
+    first_token: int
+    input_tokens: int
+    projected_image_tokens: int
+    vision: dict[str, Any]
+    text_prefill: dict[str, Any]
+    timing_s: dict[str, float]
+    device_stage_s: dict[str, float]
+    request_started: float
+    prefill_finished: float
+    input_fingerprints: dict[str, Any] = field(default_factory=dict)
+
+    def take_device_state(
+        self,
+    ) -> tuple[
+        LocalPaddleOCRVLStaticCache,
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor,
+        Callable[[], None] | None,
+    ]:
+        """Move the pending NPU prefix out of the long-lived result payload."""
+
+        cache = self.cache
+        rope_deltas = self.rope_deltas
+        next_cache_position = self.next_cache_position
+        next_token = self.next_token
+        cache_release = self.cache_release
+        if (
+            cache is None
+            or rope_deltas is None
+            or next_cache_position is None
+            or next_token is None
         ):
-            prepared = member.prepared
-            device_stage_s: dict[str, float] = {}
-            for stage in (
-                "recognition_inputs_h2d",
-                *vision_stages,
-                *member_text_stages,
-            ):
-                key = self._group_stage_key(index, stage)
-                device_stage_s[stage] = float(device_spans[key]["seconds"])
-            device_stage_s.update(text_device_by_member[index])
-            device_stage_s.update(
-                shared_device_stage_s
-                if index == 0
-                else {name: 0.0 for name in shared_device_stage_s}
+            raise RuntimeError(
+                f"prefill device state already taken for {self.request_id}"
             )
-            timing = member.timing_s
-            timing["recognizer_h2d"] = device_stage_s["recognition_inputs_h2d"]
-            timing["first_token_d2h"] = first_token_d2h_s
-            timing["prefill_resolve_wait"] = resolve_finished - resolve_started
-            timing["vision_and_text_prefill_wall"] = (
-                resolve_finished - inflight.prefill_started
-            )
-            timing["time_to_first_token"] = resolve_finished - prepared.request_started
-            timing["prefill_request_total"] = sum(
-                timing[name]
-                for name in (
-                    "cpu_image_and_prompt_preprocess",
-                    "cpu_mrope_index",
-                    "cpu_pin_memory",
-                    "recognizer_h2d",
-                    "vision_and_text_prefill_wall",
-                    "first_token_d2h",
-                )
-            )
+        self.cache = None
+        self.cache_release = None
+        self.rope_deltas = None
+        self.next_cache_position = None
+        self.next_token = None
+        return (
+            cache,
+            rope_deltas,
+            next_cache_position,
+            next_token,
+            cache_release,
+        )
 
-            if self.timeline is not None:
-                h2d_span = device_spans[
-                    self._group_stage_key(index, "recognition_inputs_h2d")
-                ]
-                self.timeline.record_span(
-                    "H2D / D2H transfer",
-                    "Recognition inputs H2D",
-                    int(h2d_span["start_ns"]),
-                    int(h2d_span["end_ns"]),
-                    flow_id=prepared.request_id,
-                    event_type="io",
-                    clock=str(h2d_span["clock"]),
-                    track="device",
-                    lane="prefill",
-                    args={"input_tokens": member.input_tokens},
-                )
-                for stage, label in (
-                    *vision_stages.items(),
-                    *member_text_stages.items(),
-                ):
-                    span = device_spans[self._group_stage_key(index, stage)]
-                    route = (
-                        member.vision if stage in vision_stages else member.text_prefill
-                    )
-                    self.timeline.record_span(
-                        (
-                            "Vision prefill"
-                            if stage in vision_stages
-                            else "Text prefill"
-                        ),
-                        label,
-                        int(span["start_ns"]),
-                        int(span["end_ns"]),
-                        flow_id=prepared.request_id,
-                        clock=str(span["clock"]),
-                        track="device",
-                        lane="prefill",
-                        args={
-                            "stage": stage,
-                            "input_tokens": member.input_tokens,
-                            "projected_image_tokens": member.projected_image_tokens,
-                            "execution": route.get("execution"),
-                            "bucket": route.get("bucket"),
-                            "real_tokens": route.get(
-                                "real_vision_tokens",
-                                route.get("real_text_tokens"),
-                            ),
-                            "physical_tokens": route.get(
-                                "physical_vision_tokens",
-                                route.get("physical_text_tokens"),
-                            ),
-                            "pack_group_id": inflight.group_id,
-                        },
-                    )
 
-            results.append(
-                PrefilledRecognition(
-                    request_id=prepared.request_id,
-                    prompt=prepared.prompt,
-                    crop_size=prepared.crop_size,
-                    skip_special_tokens=prepared.skip_special_tokens,
-                    cache=member.cache,
-                    cache_release=member.cache_lease.release,
-                    rope_deltas=member.rope_deltas,
-                    next_cache_position=member.next_cache_position,
-                    next_token=member.next_token,
-                    first_token=first_token,
-                    input_tokens=member.input_tokens,
-                    projected_image_tokens=member.projected_image_tokens,
-                    vision=member.vision,
-                    text_prefill=member.text_prefill,
-                    timing_s=timing,
-                    device_stage_s=device_stage_s,
-                    request_started=prepared.request_started,
-                    prefill_finished=resolve_finished,
-                    input_fingerprints=dict(prepared.input_fingerprints),
-                )
-            )
-        return results
+# Memory staging and setup reporting
 
-    def configuration(self) -> dict[str, Any]:
-        decode_label = f"compiled_static_b{self.batch_size}"
-        patch_size = int(self.preprocessor_config["patch_size"])
-        merge_size = int(self.preprocessor_config["merge_size"])
-        min_pixels = int(self.preprocessor_config["min_pixels"])
-        vision_attention = self.vision_attention
-        return {
-            "recognizer_model": str(self.model_dir),
-            "device": str(self.device),
-            "dtype": str(self.dtype),
-            "decode_backend": self.decode_backend,
-            "decode_vocab": dict(self.decode_vocab),
-            "token_selection": "greedy",
-            "decode_attention": DECODE_ATTENTION,
-            "decode_cache_update": DECODE_CACHE_UPDATE,
-            "cache_length": self.cache_length,
-            "max_new_tokens": self.max_new_tokens,
-            "recognition_input_fingerprints": (self.recognition_input_fingerprints),
-            "batch_size": self.batch_size,
-            "diagnostic_decode_effective_length": (
-                self.diagnostic_decode_effective_length
-            ),
-            "scheduler_progress_events": (
-                None
-                if self.scheduler_progress_events is None
-                else sorted(self.scheduler_progress_events)
-            ),
-            "diagnostic_decode_request_id": self.diagnostic_decode_request_id,
-            "diagnostic_prefill_kv_request_ids": sorted(
-                self.diagnostic_prefill_kv_request_ids
-            ),
-            "vision_prefill": self.vision_prefill.metadata,
-            "vision_mlp": dict(self.vision_mlp),
-            "vision_linear_weight_format": dict(self.vision_weight_format),
-            "vision_backend": self.vision_backend,
-            "vision_attention": vision_attention,
-            "decode_device_timing": self.decode_device_timing,
-            "compact_decode_control": self.compact_decode_control,
-            "vision_attention_weight_padding": self.vision_attention_weight_padding,
-            "vision_linear_patch_projection": self.vision_linear_patch_projection,
-            "vision_promptfa_align_128": self.vision_promptfa_align_128,
-            "vision_sequence_alignment": self.vision_seq_alignment,
-            "vision_packing": {
-                "mode": self.vision_packing,
-                "target": self.vision_pack_target,
-                "lookahead": self.vision_router_lookahead,
-                "grouping": "independent_crops",
-                "oversized": "faithful_eager_single_crop_route",
-                "batched_runtime": (None),
-            },
-            "vision_prompt_fa_layout": "bnsd",
-            "text_prefill": self.text_prefill.metadata,
-            "text_backend": self.text_backend,
-            "text_packing": {
-                "mode": self.text_packing,
-                "buckets": list(self.text_pack_buckets),
-                "max_members": self.text_pack_max_members,
-                "grouping": "independent_crops",
-                "runtime": (None),
-            },
-            "preprocessor": {
-                "model_default_min_pixels": self.model_preprocessor_min_pixels,
-                "model_default_max_pixels": self.model_preprocessor_max_pixels,
-                "min_pixels_override": self.preprocessor_min_pixels_override,
-                "max_pixels_override": self.preprocessor_max_pixels_override,
-                "effective_min_pixels": min_pixels,
-                "effective_max_pixels": int(self.preprocessor_config["max_pixels"]),
-                "patch_size": patch_size,
-                "merge_size": merge_size,
-                "resize_factor": patch_size * merge_size,
-                "nominal_minimum_projected_image_tokens": (
-                    min_pixels // ((patch_size * merge_size) ** 2)
-                ),
-            },
-            "cpu_preprocessing": {
-                "execution": "background_thread",
-                "workers": 1,
-                "max_pending": self.cpu_preprocess_max_pending,
-                "ordering": "fifo",
-                "pin_recognition_inputs": "best_effort",
-            },
-            "prefill_production": ("next_crop_h2d_staged_before_ready_yield"),
-            "prefill_transfer": "dedicated_stream_event_dependencies",
-            "decode": decode_label,
-            "decode_schedule": "run_scoped_persistent_slots_iteration_hot_swap",
-            "ready_buffer_capacity": self.ready_buffer_capacity,
-            "ready_buffer_low_watermark": self.ready_buffer_low_watermark,
-            "private_cache_staging_headroom": (self.private_cache_staging_headroom),
-            "decode_completion_detection": "queue_depth_one_async_token_copy",
-            "private_prefill_cache": self.prefill_cache_pool.stats(),
-            "kv_admission": "full_prefill_cache_foreach_copy_into_fixed_slot",
-            "text_decode": self.text_decode.metadata,
-            "linear_weight_format": self.weight_format,
-        }
+
+def _pin_memory_or_keep(tensor: torch.Tensor) -> torch.Tensor:
+    if tensor.device.type != "cpu" or tensor.is_pinned():
+        return tensor
+    try:
+        return tensor.pin_memory()
+    except RuntimeError:
+        # Pageable staging is slower to submit but has identical semantics.
+        return tensor
+
+
+def _emit_setup_progress(
+    stage: str,
+    status: str,
+    elapsed_s: float | None = None,
+) -> None:
+    record: dict[str, Any] = {
+        "stage": str(stage),
+        "status": str(status),
+    }
+    if elapsed_s is not None:
+        record["elapsed_s"] = round(float(elapsed_s), 6)
+    print(
+        "EXP09_SETUP " + json.dumps(record, ensure_ascii=False, separators=(",", ":")),
+        file=sys.stderr,
+        flush=True,
+    )
+
+
+# Prefill statistics
+
+
+@dataclass
+class _VisionPrefillStats:
+    calls: int = 0
+    overflows: int = 0
+    shapes: Counter = field(default_factory=Counter)
+
+    def record(self, route: dict[str, Any]) -> None:
+        self.calls += 1
+        shape = (f"b1_s{route['physical_vision_tokens']}"
+                 if route["execution"] == "compiled" else route["execution"])
+        self.shapes[shape] += 1
+        self.overflows += int(route["execution"] == "eager_overflow")
+
+    def summary(self) -> dict[str, Any]:
+        # Preserve the existing external metrics schema until its separate review.
+        return dict(mode="off", target=1920, lookahead=32, groups=self.calls,
+            crops=self.calls, packed_groups=0, singleton_groups=self.calls,
+            eager_overflow_groups=self.overflows,
+            crops_per_group=1.0 if self.calls else None,
+            group_size_histogram={"1": self.calls} if self.calls else {},
+            graph_shape_histogram=dict(sorted(self.shapes.items())),
+            ready_window_histogram={}, router_cpu_s=0.0, packed_real_vision_tokens=0,
+            packed_physical_vision_tokens=0, packed_fill_fraction=None)
+
+
+@dataclass
+class _TextPrefillStats:
+    calls: int = 0
+
+    def record(self) -> None:
+        self.calls += 1
+
+    def summary(self) -> dict[str, Any]:
+        # Compatibility fields are constants, not implemented packing alternatives.
+        return dict(mode="off", buckets=[128, 256, 512, 1024], groups=self.calls,
+            crops=self.calls, packs=0, packed_crops=0, fallback_crops=self.calls,
+            calls=self.calls, call_reduction_fraction=0.0 if self.calls else None,
+            pack_size_histogram={}, bucket_histogram={}, packed_real_text_tokens=0,
+            packed_physical_text_tokens=0, packed_fill_fraction=None,
+            redistributed_kv_bytes=0)

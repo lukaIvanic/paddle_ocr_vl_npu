@@ -11,7 +11,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable
 
 import torch
 from torch import nn
@@ -22,45 +22,11 @@ from text_prefill_and_decode import PaddleOCRRotaryEmbedding, PaddleOCRTextModel
 from vision_prefill import PaddleOCRProjector, PaddleOCRVisionModel, PaddleOCRVisionRotaryEmbedding, VisionPrefillRuntime
 
 
-def _resolve_model_dir(model_id_or_path: str | Path) -> Path:
-    path = Path(model_id_or_path).expanduser()
-    if path.exists():
-        return path
-    try:
-        from huggingface_hub import snapshot_download
-    except Exception as exc:  # pragma: no cover - dependency/environment guard
-        raise RuntimeError("Pass a local model directory or install huggingface_hub.") from exc
-    return Path(
-        snapshot_download(
-            str(model_id_or_path),
-            allow_patterns=[
-                "config.json",
-                "model.safetensors",
-                "tokenizer.json",
-                "tokenizer.model",
-                "tokenizer_config.json",
-                "special_tokens_map.json",
-                "added_tokens.json",
-                "preprocessor_config.json",
-                "processor_config.json",
-                "chat_template.jinja",
-                "generation_config.json",
-            ],
-        )
-    )
-
-
-@dataclass(frozen=True)
-class PaddleOCRVLInferenceStages:
-    """The three persistent model-stage runtimes used by the page engine."""
-
-    vision_prefill: VisionPrefillRuntime
-    text_prefill: TextPrefillRuntime
-    text_decode: TextDecodeRuntime
-    setup_timing_s: dict[str, float]
+# Model composition, loading, and stage assembly
 
 
 class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
+
     def __init__(self, config: PaddleOCRVLConfig):
         super().__init__()
         self.config = config
@@ -73,12 +39,12 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
     @classmethod
     def from_pretrained(
         cls,
-        model_id_or_path: str | Path = "PaddlePaddle/PaddleOCR-VL-1.6",
+        model_dir: str | Path,
         *,
         dtype: torch.dtype | None = torch.float16,
         device: str | torch.device | None = None,
     ) -> "LocalPaddleOCRVLForConditionalGeneration":
-        model_dir = _resolve_model_dir(model_id_or_path)
+        model_dir = Path(model_dir).expanduser()
         config = PaddleOCRVLConfig.from_model_dir(model_dir)
         model = cls(config)
         if dtype is not None:
@@ -102,10 +68,111 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         model._reset_rope_buffers()
         return model.eval()
 
-    def _reset_rope_buffers(self) -> None:
-        for module in self.modules():
-            if isinstance(module, (PaddleOCRRotaryEmbedding, PaddleOCRVisionRotaryEmbedding)):
-                module.reset_inv_freq(device=module.inv_freq.device)
+    def make_inference_stages(
+        self,
+        *,
+        vision_cache_root: Path,
+        text_cache_root: Path,
+        decode_cache_root: Path,
+        batch_size: int,
+        cache_length: int,
+        device: torch.device,
+        model_dir: Path,
+        eager: bool = False,
+        setup_progress: Callable[[str, str, float | None], None] | None = None,
+    ) -> PaddleOCRVLInferenceStages:
+        """Assemble vision prefill, text prefill, and text decode runtimes.
+
+        Stage modules own the model math and their eager/compiled execution
+        policy. This connector only establishes the model-level ordering and
+        shared runtime configuration.
+        """
+
+        from _support.utils.timing import synchronize
+
+        setup_timing_s: dict[str, float] = {}
+
+        def progress(stage: str, status: str, elapsed_s: float | None = None) -> None:
+            if setup_progress is not None:
+                setup_progress(stage, status, elapsed_s)
+
+        synchronize(device)
+        started = time.perf_counter()
+        progress("vision_runtime", "start")
+        vision_prefill = VisionPrefillRuntime(
+            self,
+            cache_root=vision_cache_root,
+            device=device,
+            model_dir=model_dir,
+            eager=eager,
+        )
+        synchronize(device)
+        setup_timing_s["vision_runtime_setup"] = time.perf_counter() - started
+        progress(
+            "vision_runtime",
+            "done",
+            setup_timing_s["vision_runtime_setup"],
+        )
+
+        synchronize(device)
+        started = time.perf_counter()
+        progress("text_prefill_runtime", "start")
+        text_prefill = TextPrefillRuntime(
+            self,
+            cache_root=text_cache_root,
+            cache_length=cache_length,
+            device=device,
+            model_dir=model_dir,
+            eager=eager,
+        )
+        synchronize(device)
+        setup_timing_s["text_runtime_setup"] = time.perf_counter() - started
+        progress(
+            "text_prefill_runtime",
+            "done",
+            setup_timing_s["text_runtime_setup"],
+        )
+
+        started = time.perf_counter()
+        progress("text_decode_runtime", "start")
+        text_decode = TextDecodeRuntime(
+            self,
+            device=device,
+            cache_root=decode_cache_root,
+            batch_size=batch_size,
+            cache_length=cache_length,
+            model_dir=model_dir,
+            eager=eager,
+        )
+        setup_timing_s.update(text_decode.setup_timing_s)
+        progress(
+            "text_decode_runtime",
+            "done",
+            setup_timing_s["compile_wrapper"]
+            + setup_timing_s["compile_first_call"],
+        )
+        return PaddleOCRVLInferenceStages(
+            vision_prefill=vision_prefill,
+            text_prefill=text_prefill,
+            text_decode=text_decode,
+            setup_timing_s=setup_timing_s,
+        )
+
+    def allocate_static_cache(
+        self,
+        *,
+        batch_size: int,
+        cache_length: int,
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> LocalPaddleOCRVLStaticCache:
+        return LocalPaddleOCRVLStaticCache.allocate(
+            self.config.text_config,
+            batch_size=batch_size,
+            cache_length=cache_length,
+            device=device,
+            dtype=dtype,
+        )
 
     def get_rope_index(
         self,
@@ -162,132 +229,17 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         position_ids = torch.arange(input_ids.shape[1], device=input_ids.device).view(1, 1, -1).expand(3, input_ids.shape[0], -1)
         return position_ids, torch.zeros([input_ids.shape[0], 1], device=input_ids.device, dtype=input_ids.dtype)
 
-    def allocate_static_cache(
-        self,
-        *,
-        batch_size: int,
-        cache_length: int,
-        device: torch.device,
-        dtype: torch.dtype,
-    ) -> LocalPaddleOCRVLStaticCache:
-        return LocalPaddleOCRVLStaticCache.allocate(
-            self.config.text_config,
-            batch_size=batch_size,
-            cache_length=cache_length,
-            device=device,
-            dtype=dtype,
-        )
+    def _reset_rope_buffers(self) -> None:
+        for module in self.modules():
+            if isinstance(module, (PaddleOCRRotaryEmbedding, PaddleOCRVisionRotaryEmbedding)):
+                module.reset_inv_freq(device=module.inv_freq.device)
 
-    def make_inference_stages(
-        self,
-        *,
-        vision_backend: str,
-        vision_buckets: str | Iterable[int],
-        vision_cache_root: Path,
-        vision_padding: str,
-        vision_seq_alignment: int,
-        vision_mlp_intermediate_size: int,
-        vision_linear_weight_format: str,
-        text_backend: str,
-        text_buckets: str | Iterable[int],
-        text_cache_root: Path,
-        text_padding: str,
-        decode_backend: str,
-        decode_cache_root: Path,
-        batch_size: int,
-        cache_length: int,
-        device: torch.device,
-        dtype: torch.dtype,
-        model_dir: Path,
-        linear_weight_format: str,
-        setup_progress: Callable[[str, str, float | None], None] | None = None,
-    ) -> PaddleOCRVLInferenceStages:
-        """Assemble vision prefill, text prefill, and text decode runtimes.
 
-        Stage modules own the model math and their eager/compiled execution
-        policy. This connector only establishes the model-level ordering and
-        shared runtime configuration.
-        """
+@dataclass(frozen=True)
+class PaddleOCRVLInferenceStages:
+    """The three persistent model-stage runtimes used by the page engine."""
 
-        from _support.utils.timing import synchronize
-
-        setup_timing_s: dict[str, float] = {}
-
-        def progress(stage: str, status: str, elapsed_s: float | None = None) -> None:
-            if setup_progress is not None:
-                setup_progress(stage, status, elapsed_s)
-
-        synchronize(device)
-        started = time.perf_counter()
-        progress("vision_runtime", "start")
-        vision_prefill = VisionPrefillRuntime(
-            self,
-            backend=vision_backend,
-            buckets=vision_buckets,
-            cache_root=vision_cache_root,
-            device=device,
-            dtype=dtype,
-            model_dir=model_dir,
-            padding=vision_padding,
-            seq_alignment=vision_seq_alignment,
-            mlp_intermediate_size=vision_mlp_intermediate_size,
-            linear_weight_format=vision_linear_weight_format,
-        )
-        synchronize(device)
-        setup_timing_s["vision_runtime_setup"] = time.perf_counter() - started
-        progress(
-            "vision_runtime",
-            "done",
-            setup_timing_s["vision_runtime_setup"],
-        )
-
-        synchronize(device)
-        started = time.perf_counter()
-        progress("text_prefill_runtime", "start")
-        text_prefill = TextPrefillRuntime(
-            self,
-            backend=text_backend,
-            buckets=text_buckets,
-            cache_root=text_cache_root,
-            cache_length=cache_length,
-            device=device,
-            dtype=dtype,
-            model_dir=model_dir,
-            linear_weight_format=linear_weight_format,
-            padding=text_padding,
-        )
-        synchronize(device)
-        setup_timing_s["text_runtime_setup"] = time.perf_counter() - started
-        progress(
-            "text_prefill_runtime",
-            "done",
-            setup_timing_s["text_runtime_setup"],
-        )
-
-        started = time.perf_counter()
-        progress("text_decode_runtime", "start")
-        text_decode = TextDecodeRuntime(
-            self,
-            backend=decode_backend,
-
-            device=device,
-            cache_root=decode_cache_root,
-            batch_size=batch_size,
-            cache_length=cache_length,
-            dtype=dtype,
-            model_dir=model_dir,
-            linear_weight_format=linear_weight_format,
-        )
-        setup_timing_s.update(text_decode.setup_timing_s)
-        progress(
-            "text_decode_runtime",
-            "done",
-            setup_timing_s["compile_wrapper"]
-            + setup_timing_s["compile_first_call"],
-        )
-        return PaddleOCRVLInferenceStages(
-            vision_prefill=vision_prefill,
-            text_prefill=text_prefill,
-            text_decode=text_decode,
-            setup_timing_s=setup_timing_s,
-        )
+    vision_prefill: VisionPrefillRuntime
+    text_prefill: TextPrefillRuntime
+    text_decode: TextDecodeRuntime
+    setup_timing_s: dict[str, float]

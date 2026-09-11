@@ -19,6 +19,7 @@ import re
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import types
 import unittest
 from unittest.mock import patch
@@ -28,6 +29,9 @@ import torch
 ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT = ROOT / '19_table_ocr_serving'
 sys.path.insert(0, str(EXPERIMENT))
+# Production imports torch_npu once. CPU tests explicitly provide a test double;
+# this is not a CPU fallback in the runtime.
+sys.modules.setdefault('torch_npu', types.ModuleType('torch_npu'))
 import text_prefill_and_decode as current
 
 PIN = 'dc755584'
@@ -155,6 +159,8 @@ class LockedServingContract(ast.NodeTransformer):
         return self.generic_visit(n)
 
     def visit_Attribute(self, n):
+        n.attr = {'_vision_packing_stats':'_vision_prefill_stats',
+                  '_text_packing_stats':'_text_prefill_stats'}.get(n.attr,n.attr)
         if n.attr == 'logical_tensors':
             n.attr = 'flat_tensors'
         return self.generic_visit(n)
@@ -276,6 +282,7 @@ def exercise(module, contract, batch, compact):
     positions = torch.arange(batch) + 3
     deltas = torch.ones(batch, 1, dtype=torch.int64)
     fake = SimulatedNPU()
+    module.torch_npu = fake
     for name, child in model.named_modules():
         if isinstance(child, torch.nn.Linear):
             child.register_forward_pre_hook(lambda layer, args, name=name: fake.record('linear:' + name, args, layer.weight))
@@ -285,12 +292,53 @@ def exercise(module, contract, batch, compact):
         for _ in range(2):
             out = stage(inputs, positions, deltas, *cache.flat_tensors())
             outputs.append(out.clone())
-            inputs = out if compact else out[:, -1].argmax(-1).view(-1, 1)
+            inputs = out if compact or not legacy else out[:, -1].argmax(-1).view(-1, 1)
             positions = positions + 1
     return outputs, tuple(x.clone() for x in cache.flat_tensors()), fake.events
 
 
 class TextSimplificationTests(unittest.TestCase):
+    def test_nz_conversion_aborts_instead_of_falling_back(self):
+        class Linear:
+            def __init__(self, fmt=2, device='npu'):
+                self.weight = types.SimpleNamespace(
+                    device=types.SimpleNamespace(type=device),
+                    data=types.SimpleNamespace(format=fmt))
+
+        for mode in ('success', 'already_nz', 'wrong_format', 'cast_error',
+                     'partial_failure', 'non_npu'):
+            with self.subTest(mode=mode):
+                first = Linear(29 if mode == 'already_nz' else 2,
+                               'cpu' if mode == 'non_npu' else 'npu')
+                head = Linear()
+                model = types.SimpleNamespace(
+                    model=types.SimpleNamespace(named_modules=lambda: [('projection', first)]),
+                    lm_head=head)
+                calls = []
+
+                def cast(data, fmt):
+                    calls.append(fmt)
+                    if mode == 'cast_error' or (mode == 'partial_failure' and len(calls) == 2):
+                        raise ValueError('simulated cast failure')
+                    return types.SimpleNamespace(format=2 if mode == 'wrong_format' else fmt)
+
+                fake = types.SimpleNamespace(
+                    get_npu_format=lambda w: w.data.format, npu_format_cast=cast)
+                with patch.object(current.nn, 'Linear', Linear), patch.object(current, 'torch_npu', fake):
+                    if mode in ('success', 'already_nz'):
+                        report = current.cast_decode_linear_weights_to_nz(model)
+                        self.assertTrue(report['all_after_are_nz'])
+                        self.assertEqual(first.weight.data.format, 29)
+                        self.assertEqual(head.weight.data.format, 29)
+                        self.assertEqual(len(calls), 1 if mode == 'already_nz' else 2)
+                    else:
+                        name = 'lm_head' if mode == 'partial_failure' else 'projection'
+                        with self.assertRaisesRegex(RuntimeError, name) as raised:
+                            current.cast_decode_linear_weights_to_nz(model)
+                        if mode in ('cast_error', 'partial_failure'):
+                            self.assertIsInstance(raised.exception.__cause__, ValueError)
+                        self.assertEqual(len(calls), 0 if mode == 'non_npu' else 2 if mode == 'partial_failure' else 1)
+
     def test_dead_decode_plumbing_removed(self):
         self.assertNotIn('cache_length', inspect.signature(current.TextDecodeStage).parameters)
         self.assertNotIn('use_scatter_pa', inspect.signature(current.update_decode_kv_cache_).parameters)
@@ -309,8 +357,14 @@ class TextSimplificationTests(unittest.TestCase):
         configuration = next(n for n in ast.walk(runtime) if isinstance(n, ast.FunctionDef) and n.name == 'configuration')
         result = next(n.value for n in configuration.body if isinstance(n, ast.Return))
         metadata = {ast.literal_eval(k): v for k, v in zip(result.keys, result.values)}
-        self.assertEqual(ast.unparse(metadata['decode_attention']), 'DECODE_ATTENTION')
-        self.assertEqual(ast.unparse(metadata['decode_cache_update']), 'DECODE_CACHE_UPDATE')
+        self.assertNotIn('decode_attention', metadata)
+        self.assertNotIn('decode_cache_update', metadata)
+        for name in ('DECODE_ATTENTION', 'DECODE_CACHE_UPDATE',
+                     'decode_attention_label', 'decode_cache_update_label',
+                     'decode_native_fallback', 'decode_mixed_format'):
+            self.assertNotIn(name, NEW)
+        update = ast.parse(inspect.getsource(current.update_decode_kv_cache_))
+        self.assertFalse(any(isinstance(n, ast.If) for n in ast.walk(update)))
         self.assertEqual(ast.literal_eval(metadata['vision_prompt_fa_layout']), 'bnsd')
 
     def test_fixed_settings_against_saved_readiness(self):
@@ -336,15 +390,19 @@ class TextSimplificationTests(unittest.TestCase):
         instance = types.SimpleNamespace()
         with patch.dict(sys.modules, {'torch_npu': types.ModuleType('torch_npu')}):
             scope['__init__'](instance, model='/unused', batch_size=8, torchair_cache_dir=Path('/unused'),
-                              vision_linear_weight_format='fractal_nz', decode_device_timing=False)
+                              decode_device_timing=False)
         for name in ('decode_backend', 'cache_length', 'max_new_tokens', 'batch_size',
-                     'compact_decode_control', 'vision_linear_patch_projection', 'vision_attention_weight_padding'):
+                     'compact_decode_control'):
             self.assertEqual(getattr(instance, name), recorded[name], name)
         self.assertEqual(str(instance.dtype), recorded['dtype'])
         self.assertEqual(list(instance.vision_buckets), recorded['vision_prefill']['buckets'])
         self.assertEqual(list(instance.text_buckets), recorded['text_prefill']['buckets'])
         self.assertEqual(instance.vision_seq_alignment, recorded['vision_prefill']['sequence_alignment'])
-        self.assertEqual(instance.vision_mlp_intermediate_size_requested, recorded['vision_prefill']['mlp_intermediate_size'])
+        import vision_prefill
+        padding_source = ast.parse(inspect.getsource(vision_prefill.prepare_vision_mlp_intermediate))
+        target = next(n.value for n in ast.walk(padding_source) if isinstance(n,ast.Assign)
+                      and any(isinstance(t,ast.Name) and t.id=='target' for t in n.targets))
+        self.assertEqual(ast.literal_eval(target), recorded['vision_prefill']['mlp_intermediate_size'])
         for kind in ('min', 'max'):
             self.assertEqual(instance.preprocessor_config[kind + '_pixels'], recorded['preprocessor']['effective_' + kind + '_pixels'])
         _, vocab = current.load_decode_vocab_token_ids(instance.decode_vocab_token_ids_path, full_vocab_size=103424)
@@ -356,13 +414,17 @@ class TextSimplificationTests(unittest.TestCase):
         import serving_runtime as runtime
         with patch.object(sys, 'argv', ['serve.py']):
             args = serve.parse_args()
-        expected_args = {'host', 'port', 'request_timeout_s', 'max_image_bytes', 'queue_capacity',
+        expected_args = {'host', 'port', 'request_timeout_s', 'max_image_bytes', 'queue_capacity', 'eager',
+            'full_decode_lm_head',
             'model', 'device', 'decode_batch_size', 'no_decode_device_timing', 'request_scheduling_metrics',
             'torchair_cache_dir', 'vision_torchair_cache_dir', 'text_torchair_cache_dir', 'service_summary_output'}
         self.assertEqual(set(vars(args)), expected_args)
         self.assertEqual(serve.PROMPTS, {'table': 'Table Recognition:'})
         self.assertTrue(args.no_decode_device_timing)
         self.assertTrue(args.request_scheduling_metrics)
+        self.assertFalse(args.full_decode_lm_head)
+        with patch.object(sys, 'argv', ['serve.py', '--full-decode-lm-head']):
+            self.assertTrue(serve.parse_args().full_decode_lm_head)
         seen = []
         test = self
         constructor_signature = inspect.signature(runtime.ContinuousRecognizer)
@@ -395,7 +457,8 @@ class TextSimplificationTests(unittest.TestCase):
         jobs.put(dict(request_id='test', image_bytes=b'not-decoded-in-this-test', prompt='Table Recognition:',
                       crop_type='table', submitted_monotonic_s=0.0))
         jobs.put(None)
-        cfg = dict(model='/unused', device='npu:0', decode_batch_size=8, decode_device_timing=False,
+        cfg = dict(model='/unused', device='npu:0', decode_batch_size=8, decode_device_timing=False, eager=False,
+                   full_decode_lm_head=True,
                    request_scheduling_metrics=True, torchair_cache_dir='/unused/decode',
                    vision_torchair_cache_dir='/unused/vision', text_torchair_cache_dir='/unused/text')
         with patch.object(runtime, 'ContinuousRecognizer', FakeRecognizer), \
@@ -406,8 +469,47 @@ class TextSimplificationTests(unittest.TestCase):
         while not results.empty(): messages.append(results.get())
         self.assertEqual([m['kind'] for m in messages], ['ready', 'result', 'service_summary'], messages)
         self.assertTrue(messages[1]['ok'])
-        self.assertEqual(seen[0]['vision_linear_weight_format'], 'fractal_nz')
+        self.assertFalse(seen[0]['eager'])
+        self.assertTrue(seen[0]['full_decode_lm_head'])
         freeze.assert_called_once()
+
+    def test_full_head_setup_and_cache_separation(self):
+        import serving_runtime as runtime
+        tree = ast.parse((EXPERIMENT / 'serving_runtime.py').read_text())
+        cls = next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name == 'ContinuousRecognizer')
+        init = next(n for n in cls.body if isinstance(n,ast.FunctionDef) and n.name == '__init__')
+        start = next(i for i,n in enumerate(init.body) if isinstance(n,ast.Assign)
+                     and ast.unparse(n.targets[0]) == 'full_vocab_size')
+        # Execute the actual head-selection setup, not a duplicated policy.
+        selection = ast.Module(body=init.body[start:start+2],type_ignores=[])
+        cache_keys = []
+        for full in (False,True):
+            model = torch.nn.Module()
+            model.lm_head = torch.nn.Linear(4,64,bias=False)
+            owner = types.SimpleNamespace(model=model,full_decode_lm_head=full,
+                decode_vocab_token_ids_path=Path('/unused/vocab.json'))
+            metadata = dict(enabled=True,selected_vocab_size=3,token_ids_sha256='abc123456789ffff')
+            scope = dict(vars(runtime),self=owner)
+            load = unittest.mock.Mock(return_value=((3,11,63),metadata))
+            scope['load_decode_vocab_token_ids'] = load
+            with torch.inference_mode():
+                exec(compile(selection,'head_selection','exec'),scope)
+            cache_keys.append(scope['decode_head_cache_key'])
+            self.assertEqual(owner.decode_vocab['enabled'],not full)
+            if full:
+                load.assert_not_called()
+                self.assertFalse(hasattr(model,'decode_lm_head'))
+                self.assertFalse(hasattr(model,'decode_token_id_map'))
+                self.assertEqual(owner.decode_vocab['selected_vocab_size'],64)
+            else:
+                load.assert_called_once()
+                self.assertTrue(torch.equal(model.decode_lm_head.weight,model.lm_head.weight[[3,11,63]]))
+                self.assertEqual(model.decode_token_id_map.tolist(),[3,11,63])
+        self.assertEqual(cache_keys,['selected_vocab_3_abc123456789','full_vocab_64'])
+        stages = next(n for n in ast.walk(init) if isinstance(n,ast.Call)
+                      and ast.unparse(n.func) == 'self.model.make_inference_stages')
+        cache_root = next(k.value for k in stages.keywords if k.arg == 'decode_cache_root')
+        self.assertEqual(ast.unparse(cache_root),'torchair_cache_dir / decode_head_cache_key')
 
     @classmethod
     def setUpClass(cls):
@@ -430,6 +532,11 @@ class TextSimplificationTests(unittest.TestCase):
                         a, ka, events_a = exercise(self.old, contract, batch, compact)
                         b, kb, events_b = exercise(self.new, contract, batch, compact)
                         self.assertEqual(events_a, events_b)
+                        if not compact:
+                            # The legacy full head returned logits. The new
+                            # serving boundary returns their greedy native IDs.
+                            a = [torch.argmax(x[:, -1, :].float(), dim=-1, keepdim=True) for x in a]
+                        self.assertTrue(all(x.shape == (batch, 1) and x.dtype == torch.int64 for x in b))
                         self.assertTrue(all(torch.equal(x, y) for x, y in zip(a, b)))
                         self.assertTrue(all(torch.equal(x, y) for x, y in zip(ka, kb)))
 
@@ -438,14 +545,17 @@ class TextSimplificationTests(unittest.TestCase):
             return {n.name: ast.get_source_segment(source, n) for n in ast.parse(source).body
                     if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
         old, new = definitions(OLD), definitions(NEW)
-        for name in ('decode_source_hash', 'load_decode_vocab_token_ids', 'prepare_decode_compact_lm_head', 'cast_decode_linear_weights_to_nz'):
+        # NZ setup now intentionally rejects failed conversions; its success and
+        # failure contracts are tested separately instead of source equality.
+        for name in ('load_decode_vocab_token_ids', 'prepare_decode_compact_lm_head'):
             expected = old[name].replace('optimization: str | DecodeOptimizationConfig = "baseline"',
                 'optimization: str | DecodeOptimizationConfig = "' + NAMES[0] + '"')
             self.assertEqual(expected, new[name], name)
         marker = '# ---- Relocated text-prefill implementation (unchanged computation) ----'
         # Explicit mechanical inlining whitelist; no other prefill changes.
         before = OLD[OLD.index(marker):]
-        after = NEW[NEW.index('DEFAULT_TEXT_BUCKETS'):]
+        # Prefill definitions now live in purpose-led sections, not one suffix.
+        after = NEW
         expected = without_methods(before, {
             'PaddleOCRAttention': {'attend', 'forward', 'forward_prefill_static'},
             'PaddleOCRDecoderLayer': {'forward', 'forward_prefill_static'},
@@ -463,7 +573,25 @@ class TextSimplificationTests(unittest.TestCase):
         expected = expected.replace('f"softmax{cache_key_part(\'fp32\')}"', '"softmaxfp32"')
         expected = expected[expected.index('DEFAULT_TEXT_BUCKETS'):]
         expected = expected.replace('                init_mode="zeros",\n', '')
-        self.assertEqual(ast.dump(ast.parse(expected)), ast.dump(ast.parse(after)))
+        # These explicitly changed definitions have focused behavior tests below.
+        changed = {'_activation', 'build_causal_mask', 'PaddleOCRMLP',
+                   'parse_text_buckets', 'select_text_bucket', 'prepare_text_prefill',
+                   'text_cache_dir_for_bucket', 'TextPrefillRuntime'}
+        def unchanged_defs(source):
+            definitions = {}
+            for n in ast.parse(source).body:
+                if not isinstance(n, (ast.FunctionDef, ast.ClassDef)) or n.name in changed:
+                    continue
+                if isinstance(n, ast.ClassDef) and n.name == 'TextPrefillStage':
+                    # Only declaration order changed: forward now introduces
+                    # the computation before _attention and __init__.
+                    methods = [m for m in n.body if isinstance(m, ast.FunctionDef)]
+                    n.body = [m for m in n.body if not isinstance(m, ast.FunctionDef)]
+                    n.body += sorted(methods, key=lambda m: m.name)
+                definitions[n.name] = ast.dump(n)
+            return definitions
+        expected_defs, actual_defs = unchanged_defs(expected), unchanged_defs(after)
+        self.assertEqual(expected_defs, {name: actual_defs[name] for name in expected_defs})
         for relative in ('crop_processing.py', '_support/serving/continuous_decode.py',
                          '_support/model/compile_utils.py'):
             previous = subprocess.check_output(['git', '-C', str(ROOT), 'show', f'{PIN}:19_table_ocr_serving/{relative}'])
@@ -477,7 +605,16 @@ class TextSimplificationTests(unittest.TestCase):
                 actual = ast.parse((EXPERIMENT / relative).read_text())
                 self.assertEqual(ast.dump(expected), ast.dump(actual), relative)
                 continue
-            self.assertEqual(previous, (EXPERIMENT / relative).read_bytes(), relative)
+            actual = (EXPERIMENT / relative).read_bytes()
+            if relative == 'crop_processing.py':
+                # Preprocessing is unchanged; only formatting functions/imports
+                # were moved here, with exact-source tests in the crop suite.
+                def defs(src):
+                    return {n.name: ast.dump(n) for n in ast.parse(src).body if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
+                expected_defs, actual_defs = defs(previous), defs(actual)
+                self.assertEqual(expected_defs, {k:actual_defs[k] for k in expected_defs})
+            else:
+                self.assertEqual(previous, actual, relative)
 
     def test_prefill_softmax_contract(self):
         self.assertFalse(hasattr(current, 'get_text_softmax_dtype_mode'))
@@ -526,14 +663,21 @@ class TextSimplificationTests(unittest.TestCase):
             return {n.name: ast.get_source_segment(src, n) for n in ast.parse(src).body
                     if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
         old, new = defs(expected), defs((ROOT / path).read_text())
-        self.assertEqual(old.keys() - {'LocalModelOutput', 'LocalStaticModelOutput'}, new.keys())
+        self.assertEqual(old.keys() - {'LocalModelOutput', 'LocalStaticModelOutput', '_resolve_model_dir'}, new.keys())
+        self.assertNotIn('_resolve_model_dir', new)
         for name in new.keys() - {'LocalPaddleOCRVLForConditionalGeneration'}:
             self.assertEqual(old[name], new[name], name)
         def methods(src):
             cls = next(n for n in ast.parse(src).body if isinstance(n, ast.ClassDef) and n.name == 'LocalPaddleOCRVLForConditionalGeneration')
             return {n.name: ast.get_source_segment(src,n) for n in cls.body if isinstance(n,ast.FunctionDef)}
         a,b = methods(expected),methods((ROOT/path).read_text())
-        for name in a.keys()-{'make_inference_stages','allocate_static_cache'}:
+        local_loader = a['from_pretrained'].replace(
+            'model_id_or_path: str | Path = "PaddlePaddle/PaddleOCR-VL-1.6"',
+            'model_dir: str | Path').replace(
+            'model_dir = _resolve_model_dir(model_id_or_path)',
+            'model_dir = Path(model_dir).expanduser()')
+        self.assertEqual(local_loader, b['from_pretrained'])
+        for name in a.keys()-{'make_inference_stages','allocate_static_cache','from_pretrained'}:
             self.assertEqual(a[name],b[name],name)
         for name in removed:
             self.assertNotIn(name, vars(modeling.LocalPaddleOCRVLForConditionalGeneration))
@@ -574,16 +718,27 @@ class TextSimplificationTests(unittest.TestCase):
     def test_compiler_wrapper_unchanged(self):
         def active_cache_block(source):
             fn = next(n for n in ast.parse(source).body if isinstance(n, ast.FunctionDef) and n.name == 'compile_text_decode_stage')
-            body = next(n for n in fn.body if isinstance(n, ast.If) and ast.unparse(n.test) == "backend_name == 'torchair'").body
+            branches = [n for n in fn.body if isinstance(n, ast.If) and ast.unparse(n.test) == "backend_name == 'torchair'"]
+            body = branches[0].body if branches else fn.body
             index = next(i for i, n in enumerate(body) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'shape_cache_dir')
             class WithoutSelection(ast.NodeTransformer):
                 def visit_Call(self,n):
-                    n.keywords=[kw for kw in n.keywords if kw.arg!='optimization']
+                    # Removed fixed arguments only; retain all graph-compile flags.
+                    if ast.unparse(n.func) == 'torchair_cache_dir_for_shape':
+                        n.keywords=[kw for kw in n.keywords if kw.arg not in ('optimization','dtype','linear_weight_format')]
+                    else:
+                        n.keywords=[kw for kw in n.keywords if kw.arg!='optimization']
                     n.args=[a for a in n.args if not(isinstance(a,ast.Name) and a.id=='optimization')]
                     return self.generic_visit(n)
                 def visit_Dict(self,n):
-                    pairs=[(k,v) for k,v in zip(n.keys,n.values) if not(isinstance(k,ast.Constant) and k.value in ('decode_optimization','decode_optimization_config'))]
+                    # Only removed descriptive fields are normalized. Compiler
+                    # invocation, wrapper construction and ordering stay exact.
+                    pairs=[(k,v) for k,v in zip(n.keys,n.values) if not(isinstance(k,ast.Constant) and k.value in ('decode_optimization','decode_optimization_config','decode_attention','decode_cache_update','dtype','linear_weight_format'))]
                     n.keys=[k for k,v in pairs];n.values=[v for k,v in pairs]
+                    return self.generic_visit(n)
+                def visit_IfExp(self,n):
+                    if ast.unparse(n.test) == 'model_dir is not None':
+                        return self.visit(n.body)
                     return self.generic_visit(n)
             return ast.dump(WithoutSelection().visit(ast.Module(body=body[index:], type_ignores=[])))
         self.assertEqual(active_cache_block(OLD), active_cache_block(NEW))
@@ -596,7 +751,33 @@ class TextSimplificationTests(unittest.TestCase):
             return {n.name:n for n in ast.parse(src).body if isinstance(n,ast.ClassDef)}
         old_classes,new_classes=classes(old_source),classes(new_source)
         # Arrival/admission/CPU lookahead behavior is not rewritten by this cleanup.
-        self.assertEqual(ast.dump(LockedServingContract().visit(old_classes['_OpenPrefillSource'])),ast.dump(new_classes['_OpenPrefillSource']))
+        class CropHandoff(ast.NodeTransformer):
+            def visit_FunctionDef(self, n):
+                n = self.generic_visit(n)
+                if n.name == 'pull':
+                    # The prefill handoff itself is tested end-to-end in the
+                    # singleton parity test. Check the admission loop around it.
+                    for loop in ast.walk(n):
+                        if not isinstance(loop, ast.While): continue
+                        start = next((i for i,x in enumerate(loop.body) if isinstance(x, ast.Assign)
+                            and isinstance(x.targets[0], ast.Name) and x.targets[0].id in ('group','crop')), None)
+                        if start is not None:
+                            end = next(i for i in range(start,len(loop.body)) if isinstance(loop.body[i],ast.If)
+                                and ast.unparse(loop.body[i].test)=='self.scheduling_metrics is not None')
+                            loop.body[start:end] = ast.parse('finalized = crop_handoff(prepared, consumer_wait_s)').body
+                return n
+            def visit_Subscript(self,n):
+                if ast.unparse(n)=='finalized[0]': return ast.Name(id='finalized',ctx=ast.Load())
+                return self.generic_visit(n)
+        def method_order_independent(cls):
+            # The request-facing methods moved ahead of setup; retain all
+            # class fields, decorators, signatures, and complete method bodies.
+            methods = [m for m in cls.body if isinstance(m,ast.FunctionDef)]
+            cls.body = [m for m in cls.body if not isinstance(m,ast.FunctionDef)]
+            cls.body += sorted(methods,key=lambda m:m.name)
+            return ast.dump(cls)
+        self.assertEqual(method_order_independent(CropHandoff().visit(LockedServingContract().visit(old_classes['_OpenPrefillSource']))),
+                         method_order_independent(CropHandoff().visit(new_classes['_OpenPrefillSource'])))
         def methods(cls):
             return {n.name:n for n in cls.body if isinstance(n,ast.FunctionDef)}
         old,new=methods(old_classes['ContinuousRecognizer']),methods(new_classes['ContinuousRecognizer'])
@@ -621,9 +802,7 @@ class TextSimplificationTests(unittest.TestCase):
                 n=super().visit_IfExp(n)
                 return (n.body if choice else n.orelse) if choice is not None else n
             def visit_Pass(self,n):return None
-        for name in ('serve','_enqueue_staged_prefill_group','_stage_prefill_group',
-                     '_finalize_prefill_group','_iter_cpu_prepared','_iter_single_prefill_groups',
-                     '_prepared_group','_decode_ready_source','prefill_prepared_one','_result_from_completion'):
+        for name in ('serve','_iter_cpu_prepared','_decode_ready_source','_result_from_completion'):
             a=SelectedBranch().visit(copy.deepcopy(old[name]))
             b=SelectedBranch().visit(copy.deepcopy(new[name]))
             self.assertEqual(ast.dump(a),ast.dump(b),name)
@@ -635,6 +814,81 @@ class TextSimplificationTests(unittest.TestCase):
             old=self.old.LocalPaddleOCRVLStaticCache.allocate(cfg,init_mode='zeros',**kwargs)
             new=self.new.LocalPaddleOCRVLStaticCache.allocate(cfg,**kwargs)
             self.assertEqual(signature(old.flat_tensors()),signature(new.flat_tensors()))
+
+    def test_fixed_text_buckets_and_preparation(self):
+        # Preserve every route, including actual overflow, not just the corpus.
+        old = types.ModuleType('_prefill_routing_control')
+        old.__dict__.update(current.__dict__)
+        source = subprocess.check_output(['git', '-C', str(ROOT), 'show', f'0976fa33:{PATH}'], text=True)
+        nodes = [n for n in ast.parse(source).body if isinstance(n, (ast.FunctionDef, ast.ClassDef))
+                 and n.name in {'select_text_bucket', 'prepare_text_prefill', 'TextPrefillRuntime'}]
+        exec(compile(ast.Module(body=nodes, type_ignores=[]), 'routing_control', 'exec'), old.__dict__)
+        a = old.TextPrefillRuntime.__new__(old.TextPrefillRuntime)
+        a.buckets = (128, 256, 512, 1024, 1152)
+        a.padding, a.backend = 'bucket', 'torchair'
+        b = current.TextPrefillRuntime.__new__(current.TextPrefillRuntime)
+        b.eager = False
+        for length in range(1, 4097):
+            self.assertEqual(a.route(length), b.route(length))
+        for length in (1, 128, 129, 300, 700, 1152, 1153):
+            route = b.route(length)
+            torch.manual_seed(1)
+            inputs = (torch.randn(1, length, 4), torch.ones(1, length, dtype=torch.int64),
+                      torch.arange(length).view(1, 1, length).expand(3, 1, length))
+            before = old.prepare_text_prefill(*inputs, physical_seq_len=route['physical_text_tokens'], execution=route['execution'])
+            after = current.prepare_text_prefill(*inputs, physical_seq_len=route['physical_text_tokens'], execution=route['execution'])
+            self.assertEqual(signature(vars(before)), signature(vars(after)))
+
+    def test_text_prefill_constructor_call_order(self):
+        # Exercise setup using CPU allocations and a fake compiler, without
+        # altering the production imports or rebuilding any graph.
+        source = subprocess.check_output(['git', '-C', str(ROOT), 'show', f'0976fa33:{PATH}'], text=True)
+        old = types.ModuleType('_prefill_setup_control')
+        old.__dict__.update(current.__dict__)
+        names = {'parse_text_buckets', 'TextPrefillRuntime', 'text_cache_dir_for_bucket'}
+        nodes = [ChooseSimulatedNPU().visit(n) for n in ast.parse(source).body
+                 if isinstance(n, (ast.FunctionDef, ast.ClassDef)) and n.name in names]
+        old.TEXT_PADDING_CHOICES = ('auto', 'none', 'bucket')
+        old.TEXT_BACKEND_CHOICES = ('raw_eager', 'torchair')
+        exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])), 'setup_control', 'exec'), old.__dict__)
+        cfg = current.PaddleOCRTextConfig(hidden_size=32, num_hidden_layers=2, num_key_value_heads=2, head_dim=8)
+        model = torch.nn.Module()
+        model.config = types.SimpleNamespace(text_config=cfg)
+        model.model = torch.nn.Module()
+        traces = []
+        with tempfile.TemporaryDirectory() as tmp:
+            for module in (old, current):
+                events = []
+                def allocate(**kwargs):
+                    events.append(('allocate', kwargs))
+                    return current.LocalPaddleOCRVLStaticCache.allocate(cfg, **kwargs)
+                model.allocate_static_cache = allocate
+                def compile_graph(fn, **kwargs):
+                    events.append(('compile', fn.__func__.__name__, {k:v for k,v in kwargs.items() if k not in ('config', 'cache_dir')}))
+                    def run(*inputs):
+                        events.append(('warm', signature(inputs)))
+                    return run
+                compiler = types.SimpleNamespace(inference=types.SimpleNamespace(cache_compile=compile_graph))
+                extra = dict(backend='torchair', buckets=(128,256,512,1024,1152), dtype=torch.float16,
+                             linear_weight_format='decode_nz', padding='bucket') if module is old else {}
+                with patch.object(module, 'import_torchair', return_value=(compiler, dict)), \
+                     patch.object(module, 'synchronize', side_effect=lambda device: events.append(('sync', str(device)))):
+                    module.TextPrefillRuntime(model, cache_root=Path(tmp), cache_length=4096,
+                                             device=torch.device('cpu'), model_dir=Path(tmp), **extra)
+                traces.append(events)
+        self.assertEqual(*traces)
+
+    def test_single_import_and_cache_identity(self):
+        tree = ast.parse(NEW)
+        imports = [n for n in ast.walk(tree) if isinstance(n, ast.Import)
+                   and any(a.name == 'torch_npu' for a in n.names)]
+        self.assertEqual(len(imports), 1)
+        self.assertIn(imports[0], tree.body)
+        self.assertEqual(current.decode_source_hash(), current.short_file_hash(EXPERIMENT / 'text_prefill_and_decode.py'))
+        for function in (current.torchair_cache_dir_for_shape, current.text_cache_dir_for_bucket):
+            self.assertNotIn('dtype', inspect.signature(function).parameters)
+            self.assertNotIn('linear_weight_format', inspect.signature(function).parameters)
+        self.assertNotIn('huggingface_hub', (EXPERIMENT / 'paddle_ocr_vl_1_6_modeling.py').read_text())
 
 
 if __name__ == '__main__':
