@@ -1,0 +1,20 @@
+{
+  "status": "measured_complete",
+  "row": {
+    "batch": 2,
+    "head": "expanded",
+    "qps": 2.925456763565894,
+    "latency_s": {
+      "count": 100,
+      "mean": 0.6707903077998708,
+      "p50": 0.40038453500164906,
+      "p90": 1.3202796010027678,
+      "p95": 1.934260241998526,
+      "p99": 4.1033298517999,
+      "max": 4.288241239999479,
+      "sum": 67.07903077998708,
+      "median": 0.40038453500164906
+    },
+    "artifact": "tmp/19_table_ocr_serving/cpu_readiness_20260911/b2_expanded_measured/b2/measured/results"
+  }
+}

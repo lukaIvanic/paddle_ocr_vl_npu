@@ -1,0 +1,36 @@
+[
+  {
+    "batch": 2,
+    "head": "expanded",
+    "qps": 2.925456763565894,
+    "latency_s": {
+      "count": 100,
+      "mean": 0.6707903077998708,
+      "p50": 0.40038453500164906,
+      "p90": 1.3202796010027678,
+      "p95": 1.934260241998526,
+      "p99": 4.1033298517999,
+      "max": 4.288241239999479,
+      "sum": 67.07903077998708,
+      "median": 0.40038453500164906
+    },
+    "artifact": "tmp/19_table_ocr_serving/cpu_readiness_20260911/b2_expanded_measured/b2/measured/results"
+  },
+  {
+    "batch": 8,
+    "head": "expanded",
+    "qps": 5.939070188080485,
+    "latency_s": {
+      "count": 100,
+      "mean": 1.1979741943000772,
+      "p50": 0.7465580900006898,
+      "p90": 2.4441270799987262,
+      "p95": 3.2905542855009107,
+      "p99": 7.676636633499297,
+      "max": 8.569607080000424,
+      "sum": 119.79741943000772,
+      "median": 0.7465580900006898
+    },
+    "artifact": "tmp/19_table_ocr_serving/cpu_readiness_20260911/b8_expanded_measured/b8/measured/results"
+  }
+]
