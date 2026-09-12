@@ -71,11 +71,16 @@ class FakeProcess:
 
 
 class ServeLifecycleTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.log_folder = Path(directory.name) / 'logs'
+
     def test_real_spawned_process_communication(self):
         import os
 
         with patch.object(serve, 'run_inference_process', fake_inference_process):
-            connection = serve.InferenceConnection(make_config(request_timeout_s=5))
+            connection = serve.InferenceConnection(make_config(request_timeout_s=5, log_folder=self.log_folder))
         try:
             self.start(connection)
             self.assertNotEqual(connection.worker_pid, os.getpid())
@@ -96,6 +101,7 @@ class ServeLifecycleTests(unittest.TestCase):
             connection.results.join_thread()
 
     def make_connection(self, **config_overrides):
+        config_overrides.setdefault('log_folder', self.log_folder)
         context = SimpleNamespace(Queue=queue.Queue, Process=FakeProcess)
         with patch.object(serve.mp, 'get_context', return_value=context) as get_context:
             connection = serve.InferenceConnection(make_config(**config_overrides))
@@ -184,6 +190,9 @@ class ServeLifecycleTests(unittest.TestCase):
         self.assertFalse(connection.inference_process.terminated)
         self.assertEqual(connection.inference_process.join_timeouts, [10.0])
         self.assertTrue(connection.stop_reading_results.is_set())
+        summary_path = connection.serve_config.log_folder / 'service_summary.json'
+        self.assertEqual(json.loads(summary_path.read_text())['summary'], {'requests': 1})
+        self.assertFalse(summary_path.with_name('.service_summary.json.tmp').exists())
 
     def test_shutdown_timeout_terminates_worker(self):
         connection = self.make_connection(request_timeout_s=0.02)
@@ -241,7 +250,7 @@ class ServeLifecycleTests(unittest.TestCase):
         self.assertEqual(handler._json.call_args.args[0], 200)
         self.assertEqual(handler._json.call_args.args[1]['configuration'], {'loaded': True})
 
-    def test_main_lifecycle_and_log_folder(self):
+    def test_main_lifecycle(self):
         for http_error in (None, RuntimeError('http failure')):
             with self.subTest(http_error=http_error), tempfile.TemporaryDirectory() as directory:
                 config = make_config(log_folder=Path(directory) / 'logs')
@@ -253,17 +262,17 @@ class ServeLifecycleTests(unittest.TestCase):
                     order.append('stop B')
                     return {'requests': 4}
                 connection.stop_inference_process.side_effect = stop
-                server = Mock()
-                server.server_close.side_effect = lambda: order.append('close HTTP')
-                def run_http(server_arg):
-                    self.assertIs(server_arg, server)
+                server = serve.HttpServer.__new__(serve.HttpServer)
+                server.inference_connection = connection
+                server.server_close = Mock(side_effect=lambda: order.append('close HTTP'))
+                def run_http():
                     order.append('serve HTTP')
                     if http_error is not None:
                         raise http_error
+                server.run = Mock(side_effect=run_http)
                 with patch.object(serve, 'parse_args', return_value=config), \
                      patch.object(serve, 'InferenceConnection', return_value=connection), \
                      patch.object(serve, 'HttpServer', return_value=server) as constructor, \
-                     patch.object(serve, 'run_http_process', side_effect=run_http), \
                      patch('sys.stdout', new=io.StringIO()):
                     if http_error is None:
                         serve.main()
@@ -272,9 +281,65 @@ class ServeLifecycleTests(unittest.TestCase):
                             serve.main()
                 constructor.assert_called_once_with(config, connection)
                 self.assertEqual(order, ['start B', 'serve HTTP', 'stop B', 'close HTTP'])
-                summary_path = config.log_folder / 'service_summary.json'
-                self.assertEqual(json.loads(summary_path.read_text())['summary'], {'requests': 4})
-                self.assertFalse(summary_path.with_name('.service_summary.json.tmp').exists())
+
+    def test_http_close_even_if_stopping_inference_raises(self):
+        server = serve.HttpServer.__new__(serve.HttpServer)
+        server.inference_connection = Mock()
+        server.inference_connection.stop_inference_process.side_effect = OSError('summary write failed')
+        server.server_close = Mock()
+        with self.assertRaisesRegex(OSError, 'summary write failed'):
+            server.close()
+        server.server_close.assert_called_once_with()
+
+    def test_http_run_and_signal_handler(self):
+        server = serve.HttpServer.__new__(serve.HttpServer)
+        server.serve_config = make_config()
+        server.inference_connection = SimpleNamespace(worker_pid=123)
+        server.stop_requested = threading.Event()
+        server.serve_forever = Mock()
+        shutdown_called = threading.Event()
+        server.shutdown = Mock(side_effect=shutdown_called.set)
+        with patch.object(serve.signal, 'signal') as register, patch('sys.stdout', new=io.StringIO()):
+            server.run()
+        self.assertEqual([call.args[0] for call in register.call_args_list],
+                         [serve.signal.SIGTERM, serve.signal.SIGINT])
+        server.serve_forever.assert_called_once_with(poll_interval=0.25)
+        for call in register.call_args_list:
+            call.args[1](call.args[0], None)
+        self.assertTrue(shutdown_called.wait(timeout=1))
+        server.shutdown.assert_called_once_with()
+
+    def test_worker_empty_queue_completion_and_request_error(self):
+        jobs, results = queue.Queue(), queue.Queue()
+        worker = serve.InferenceWorker(jobs, results, make_config())
+        worker.recognition_request_type = SimpleNamespace
+        self.assertIsNone(worker.pull(block=False))
+        self.assertFalse(worker.closed)
+        jobs.put(dict(request_id='one', image_bytes=b'image', prompt='Table Recognition:',
+                      submitted_monotonic_s=12.0))
+        request = worker.pull(block=False)
+        self.assertEqual(request.crop, b'image')
+        self.assertEqual(request.submitted_at, 12.0)
+        worker.emit_error('one', ValueError('bad image'))
+        message = results.get_nowait()
+        self.assertEqual((message['kind'], message['request_id'], message['ok']), ('result', 'one', False))
+        self.assertEqual(message['error'], 'ValueError: bad image')
+        self.assertEqual(worker.request_jobs, {})
+        jobs.put(None)
+        self.assertIsNone(worker.pull(block=True))
+        self.assertTrue(worker.closed)
+        self.assertIsNone(worker.pull(block=False))
+
+    def test_inference_entrypoint_reports_worker_failure(self):
+        jobs, results = queue.Queue(), queue.Queue()
+        config = make_config()
+        with patch.object(serve, 'InferenceWorker') as worker_class:
+            worker_class.return_value.run.side_effect = RuntimeError('load failed')
+            serve.run_inference_process(jobs, results, config)
+        worker_class.assert_called_once_with(jobs, results, config)
+        message = results.get_nowait()
+        self.assertEqual(message['kind'], 'startup_error')
+        self.assertEqual(message['error'], 'RuntimeError: load failed')
 
 
 if __name__ == '__main__':

@@ -114,10 +114,11 @@ class CropPipelineTests(unittest.TestCase):
                     if isinstance(n,ast.FunctionDef) and n.name == 'emit_result')
         emitted = []
         jobs = {}
-        scope = dict(Any=object, asdict=dict, request_jobs=jobs,
+        worker = types.SimpleNamespace(request_jobs=jobs,
             convert_otsl_to_html=crop_processing.convert_otsl_to_html,
-            time=types.SimpleNamespace(perf_counter=lambda: 1.),
             results=types.SimpleNamespace(put=emitted.append))
+        scope = dict(Any=object, asdict=dict,
+            time=types.SimpleNamespace(perf_counter=lambda: 1.))
         exec(compile(ast.Module(body=[emit],type_ignores=[]), '<http-result>', 'exec'), scope)
         for text in ('','<fcel>A & B<lcel><nl><ucel><xcel><nl>',
                      '<ucel>orphan<nl><fcel>row<ecel>',r'\(x$y\)',
@@ -127,7 +128,7 @@ class CropPipelineTests(unittest.TestCase):
             jobs['test'] = dict(crop_type='table', submitted_monotonic_s=0.)
             class Result(dict):
                 request_id = 'test'
-            scope['emit_result'](Result(request_id='test', text=text, token_ids=[10,2]))
+            scope['emit_result'](worker, Result(request_id='test', text=text, token_ids=[10,2]))
             payload = emitted[-1]['payload']
             self.assertEqual(payload['text'], ns['convert_otsl_to_html'](text) or text)
             self.assertEqual(payload['raw_text'], text)

@@ -2,21 +2,28 @@
 
 ## Reading the HTTP service
 
-`serve.py` starts with the manually reviewed `ServeConfig`, followed by `main()`
-and argument parsing. The configuration declaration and its comments are unchanged
-by the A/B structural pass.
+`serve.py` starts with the manually reviewed `ServeConfig`, followed by `main()`.
+Argument parsing is at the bottom, immediately before the script entrypoint.
+The configuration declaration and its comments are unchanged by the structural passes.
 
 - `main()` starts inference, runs HTTP serving, and coordinates shutdown.
-- Process A: `run_http_process`, `HttpServer` and `HttpRequestHandler` receive
+- Process A: `HttpServer` and `HttpRequestHandler` receive
   images and send responses. `InferenceConnection` also lives in A: it owns the
   queues and process handle for B, matches results to waiting requests, and
   handles worker startup/shutdown messages. It is not another process.
-- Process B: `run_inference_process` owns the existing recognizer. Model setup,
-  CPU preparation, NPU execution, output conversion and inference callbacks
-  retain their implementation.
+- Process B: the small `run_inference_process` entrypoint constructs an
+  `InferenceWorker` inside B. Its `run`, `pull`, `closed`, `emit_result` and
+  `emit_error` methods replace the nested request-source class and callbacks.
+  The existing recognizer still owns model execution and OCR scheduling.
+
+`HttpServer.run()` owns signal registration and the serving loop; its named
+shutdown callback replaces the nested function. `HttpServer.close()` stops
+inference before closing the HTTP server, including when saving the summary
+raises. `InferenceConnection.stop_inference_process()` now also writes the
+shutdown summary, keeping file serialization out of `main()`.
 
 The old `_State`/`submit`/`_dispatch` names are replaced with
-`InferenceConnection`/`recognize`/`_receive_worker_messages`. Each waiting HTTP
+`InferenceConnection`/`recognize`/`_receive_results_and_status`. Each waiting HTTP
 request still has its own one-result queue; the shared dictionary lock is not
 held during inference waits. An HTTP timeout still does not cancel work in B.
 The nonfunctional HTTP `/v1/drain` endpoint is removed (now 404). Graceful

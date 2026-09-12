@@ -86,107 +86,17 @@ def main() -> None:
     # Model setup has finished. Process A can now accept HTTP connections.
     http_server = HttpServer(serve_config, inference_connection)
     try:
-        run_http_process(http_server)
+        http_server.run()
     finally:
-        try:
-            # Let B finish queued OCR work before it exits.
-            summary = inference_connection.stop_inference_process()
-            if summary is not None:
-                summary_path = serve_config.log_folder / "service_summary.json"
-                _write_service_summary(
-                    summary_path,
-                    configuration=inference_connection.worker_runtime_info,
-                    worker_pid=inference_connection.worker_pid,
-                    summary=summary,
-                )
-                print(f"SERVICE_SUMMARY {summary_path}", flush=True)
-        finally:
-            http_server.server_close()
-
-
-def parse_args() -> ServeConfig:
-    parser = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    parser.add_argument("--host", default=ServeConfig.host)
-    parser.add_argument("--port", type=int, default=ServeConfig.port)
-    parser.add_argument("--request-timeout-s", type=float, default=ServeConfig.request_timeout_s)
-    parser.add_argument("--max-image-bytes", type=int, default=ServeConfig.max_image_bytes)
-    parser.add_argument("--queue-capacity", type=int, default=ServeConfig.queue_capacity)
-    parser.add_argument(
-        "--run-eagerly", action="store_true", default=ServeConfig.run_eagerly,
-        help="Run the same NPU stages without TorchAir compilation.",
-    )
-    parser.add_argument(
-        "--model-path", type=Path, required=True,
-        help="Local directory containing the model weights and tokenizer.",
-    )
-    parser.add_argument(
-        "--device",
-        default=ServeConfig.device,
-        help="Logical NPU within the process's visible-device set.",
-    )
-    parser.add_argument(
-        "--decode-batch-size", type=int, default=ServeConfig.decode_batch_size,
-        help="Physical decode batch B, not a client concurrency limit; no batch-filling wait.",
-    )
-    parser.add_argument(
-        "--full-decode-lm-head", action="store_true", default=ServeConfig.full_decode_lm_head,
-        help="Use all 103,424 checkpoint vocabulary rows instead of the bundled 60,416-row decode head.",
-    )
-    parser.add_argument(
-        "--metrics-level", choices=("basic", "scheduling", "detailed"),
-        default=ServeConfig.metrics_level,
-        help="Basic request metrics, additional scheduling details, or both plus NPU decode timings.",
-    )
-    parser.add_argument(
-        "--graph-cache-directory",
-        type=Path,
-        required=True,
-        help="Root directory for all compiled graphs, separated into stage subdirectories.",
-    )
-    parser.add_argument(
-        "--log-folder",
-        type=Path,
-        required=True,
-        help="Directory for service_summary.json at shutdown; continuous logging is not implemented yet.",
-    )
-    args = parser.parse_args()
-    # Resolve caller-supplied paths once, relative to the launch working directory.
-    args.model_path = args.model_path.expanduser().resolve()
-    args.graph_cache_directory = args.graph_cache_directory.expanduser().resolve()
-    args.log_folder = args.log_folder.expanduser().resolve()
-    return ServeConfig(**vars(args))
+        # Finish pending inference, save its summary, and close the HTTP server.
+        http_server.close()
 
 
 # Process A: receive HTTP requests and return OCR results.
 
 
-def run_http_process(http_server: HttpServer) -> None:
-    """Keep accepting client connections in process A until shutdown is requested."""
-    stop_requested = threading.Event()
-
-    def stop_accepting_connections(signum: int, frame: Any) -> None:
-        del signum, frame
-        if not stop_requested.is_set():
-            stop_requested.set()
-            # Python's HTTP server requires shutdown() to be called from another
-            # thread; calling it from serve_forever()'s thread would deadlock.
-            threading.Thread(target=http_server.shutdown, daemon=True).start()
-
-    signal.signal(signal.SIGTERM, stop_accepting_connections)
-    signal.signal(signal.SIGINT, stop_accepting_connections)
-    serve_config = http_server.serve_config
-    print(
-        f"READY http://{serve_config.host}:{serve_config.port} "
-        f"worker_pid={http_server.inference_connection.worker_pid}",
-        flush=True,
-    )
-    http_server.serve_forever(poll_interval=0.25)
-
-
 class HttpServer(ThreadingHTTPServer):
-    """Python's HTTP server, with the settings and inference connection used by A."""
+    """Process A: accept client connections and run the HTTP service."""
 
     # Each connection gets its own thread, so waiting for one OCR result does
     # not prevent other clients from submitting images.
@@ -199,7 +109,34 @@ class HttpServer(ThreadingHTTPServer):
     ) -> None:
         self.serve_config = serve_config
         self.inference_connection = inference_connection
+        self.stop_requested = threading.Event()
         super().__init__((serve_config.host, serve_config.port), HttpRequestHandler)
+
+    def run(self) -> None:
+        """Accept HTTP requests until Ctrl+C or a termination signal requests shutdown."""
+        signal.signal(signal.SIGTERM, self._stop_accepting_connections)
+        signal.signal(signal.SIGINT, self._stop_accepting_connections)
+        print(
+            f"READY http://{self.serve_config.host}:{self.serve_config.port} "
+            f"worker_pid={self.inference_connection.worker_pid}",
+            flush=True,
+        )
+        self.serve_forever(poll_interval=0.25)
+
+    def _stop_accepting_connections(self, signum: int, frame: Any) -> None:
+        del signum, frame
+        if not self.stop_requested.is_set():
+            self.stop_requested.set()
+            # Python requires shutdown() to run outside serve_forever()'s thread,
+            # otherwise that thread would wait for itself and deadlock.
+            threading.Thread(target=self.shutdown, daemon=True).start()
+
+    def close(self) -> None:
+        """Finish pending OCR work and close the server, even if saving the summary fails."""
+        try:
+            self.inference_connection.stop_inference_process()
+        finally:
+            self.server_close()
 
 
 class HttpRequestHandler(BaseHTTPRequestHandler):
@@ -318,7 +255,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
 
 class InferenceConnection:
-    """A's connection to process B, not another process or another inference engine."""
+    """Used by HTTP requests in A to send images to B and receive OCR results."""
 
     def __init__(self, serve_config: ServeConfig) -> None:
         self.serve_config = serve_config
@@ -351,7 +288,7 @@ class InferenceConnection:
         self.service_summary_ready = threading.Event()
         self.stop_reading_results = threading.Event()
         self.result_reader = threading.Thread(
-            target=self._receive_worker_messages, name="ocr-result-dispatch", daemon=True
+            target=self._receive_results_and_status, name="ocr-result-dispatch", daemon=True
         )
 
     def start_inference_process(self) -> None:
@@ -382,7 +319,7 @@ class InferenceConnection:
             with self.result_queues_lock:
                 self.result_queues_by_request_id.pop(job["request_id"], None)
 
-    def _receive_worker_messages(self) -> None:
+    def _receive_results_and_status(self) -> None:
         """Read messages from B; deliver each OCR result to the request waiting for it."""
         while not self.stop_reading_results.is_set():
             try:
@@ -424,24 +361,55 @@ class InferenceConnection:
             self.inference_process.terminate()
             self.inference_process.join(timeout=5.0)
         self.stop_reading_results.set()
+        if summary is not None:
+            summary_path = self.serve_config.log_folder / "service_summary.json"
+            _write_service_summary(
+                summary_path,
+                configuration=self.worker_runtime_info,
+                worker_pid=self.worker_pid,
+                summary=summary,
+            )
+            print(f"SERVICE_SUMMARY {summary_path}", flush=True)
         return summary
 
 
 # Process B: own the model and execute OCR. No HTTP connections live here.
 
 
-def run_inference_process(
-    jobs: Any,
-    results: Any,
-    config: ServeConfig,
-) -> None:
-    """Run inside B: receive images from A, perform OCR, and send results back."""
-
+def run_inference_process(jobs: Any, results: Any, serve_config: ServeConfig) -> None:
+    """Process B's entrypoint: construct the worker here, never in the HTTP process."""
     try:
+        InferenceWorker(jobs, results, serve_config).run()
+    except BaseException as exc:
+        results.put(
+            {
+                "kind": "startup_error",
+                "error": f"{type(exc).__name__}: {exc}",
+                "traceback": traceback.format_exc(),
+            }
+        )
+
+
+class InferenceWorker:
+    """Lives in B: load the model, receive images, perform OCR and return results to A."""
+
+    def __init__(self, jobs: Any, results: Any, serve_config: ServeConfig) -> None:
+        self.jobs = jobs
+        self.results = results
+        self.serve_config = serve_config
+        self.request_jobs: dict[str, dict[str, Any]] = {}
+        self._closed = False
+
+    def run(self) -> None:
+        # These imports stay in B; the HTTP process does not load Torch or the model.
         from serving_runtime import ContinuousRecognizer
         from _support.serving.types import RecognitionRequest
         from crop_processing import convert_otsl_to_html
 
+        # Used by the request/result methods below, without importing model code in A.
+        self.recognition_request_type = RecognitionRequest
+        self.convert_otsl_to_html = convert_otsl_to_html
+        config = self.serve_config
         recognizer = ContinuousRecognizer(
             model=str(config.model_path),
             batch_size=config.decode_batch_size,
@@ -462,7 +430,7 @@ def run_inference_process(
         configuration["metrics_level"] = config.metrics_level
         configuration["max_prefill_interruptions"] = None
         configuration["open_prefill_admission"] = "free_decode_slots_only_cpu_lookahead"
-        results.put(
+        self.results.put(
             {
                 "kind": "ready",
                 "configuration": configuration,
@@ -470,92 +438,25 @@ def run_inference_process(
             }
         )
 
-        request_jobs: dict[str, dict[str, Any]] = {}
-
-        class QueueRecognitionSource:
-            def __init__(self) -> None:
-                self._closed = False
-
-            @property
-            def closed(self) -> bool:
-                return self._closed
-
-            def pull(self, *, block: bool) -> Any | None:
-                while not self._closed:
-                    try:
-                        job = jobs.get() if block else jobs.get_nowait()
-                    except queue.Empty:
-                        return None
-                    if job is None:
-                        self._closed = True
-                        return None
-                    request_id = job["request_id"]
-                    request_jobs[request_id] = job
-                    return RecognitionRequest(
-                        request_id=request_id,
-                        # Same Image.open/convert recipe, executed later on the
-                        # preparation worker instead of pausing active decode.
-                        # Preparation failures use the existing error callback.
-                        crop=job["image_bytes"],
-                        prompt=job["prompt"],
-                        submitted_at=job["submitted_monotonic_s"],
-                    )
-                return None
-
-        def emit_result(recognition: Any) -> None:
-            request_id = recognition.request_id
-            job = request_jobs.pop(request_id)
-            payload = asdict(recognition)
-            payload["raw_text"] = payload["text"]
-            payload["text"] = convert_otsl_to_html(payload["raw_text"]) or payload["raw_text"]
-            payload.update(
-                {
-                    "crop_type": job["crop_type"],
-                    "worker_wall_s": (
-                        time.perf_counter() - job["submitted_monotonic_s"]
-                    ),
-                }
-            )
-            results.put(
-                {
-                    "kind": "result",
-                    "request_id": request_id,
-                    "ok": True,
-                    "payload": payload,
-                }
-            )
-
-        def emit_error(request_id: str, exc: BaseException) -> None:
-            request_jobs.pop(request_id, None)
-            results.put(
-                {
-                    "kind": "result",
-                    "request_id": request_id,
-                    "ok": False,
-                    "error": f"{type(exc).__name__}: {exc}",
-                    "traceback": "".join(
-                        traceback.format_exception(type(exc), exc, exc.__traceback__)
-                    ),
-                }
-            )
-
         try:
+            # The recognizer calls pull()/closed for inputs and emit_result() or
+            # emit_error() for completed requests. It still owns all OCR scheduling.
             run_summary = recognizer.serve(
-                QueueRecognitionSource(),
+                self,
                 schedule_id="http:open",
-                emit_result=emit_result,
-                on_request_error=emit_error,
+                emit_result=self.emit_result,
+                on_request_error=self.emit_error,
                 collect_scheduling_metrics=config.metrics_level != "basic",
             )
-            results.put(
+            self.results.put(
                 {
                     "kind": "service_summary",
                     "payload": asdict(run_summary),
                 }
             )
         except BaseException as exc:
-            for request_id in list(request_jobs):
-                results.put(
+            for request_id in list(self.request_jobs):
+                self.results.put(
                     {
                         "kind": "result",
                         "request_id": request_id,
@@ -565,12 +466,69 @@ def run_inference_process(
                     }
                 )
             raise
-    except BaseException as exc:
-        results.put(
+
+    def pull(self, *, block: bool) -> Any | None:
+        """Give the recognizer the next image from A; an empty queue need not mean shutdown."""
+        while not self._closed:
+            try:
+                job = self.jobs.get() if block else self.jobs.get_nowait()
+            except queue.Empty:
+                return None
+            if job is None:
+                self._closed = True
+                return None
+            request_id = job["request_id"]
+            self.request_jobs[request_id] = job
+            return self.recognition_request_type(
+                request_id=request_id,
+                # Image decoding and preparation still run later on the CPU thread.
+                crop=job["image_bytes"],
+                prompt=job["prompt"],
+                submitted_at=job["submitted_monotonic_s"],
+            )
+        return None
+
+    @property
+    def closed(self) -> bool:
+        """True only after A explicitly signals that no more images will arrive."""
+        return self._closed
+
+    def emit_result(self, recognition: Any) -> None:
+        """Send a completed OCR result to A, retaining both raw text and formatted HTML."""
+        request_id = recognition.request_id
+        job = self.request_jobs.pop(request_id)
+        payload = asdict(recognition)
+        payload["raw_text"] = payload["text"]
+        payload["text"] = self.convert_otsl_to_html(payload["raw_text"]) or payload["raw_text"]
+        payload.update(
             {
-                "kind": "startup_error",
+                "crop_type": job["crop_type"],
+                "worker_wall_s": (
+                    time.perf_counter() - job["submitted_monotonic_s"]
+                ),
+            }
+        )
+        self.results.put(
+            {
+                "kind": "result",
+                "request_id": request_id,
+                "ok": True,
+                "payload": payload,
+            }
+        )
+
+    def emit_error(self, request_id: str, exc: BaseException) -> None:
+        """Tell A that this request failed, so its HTTP caller receives an error."""
+        self.request_jobs.pop(request_id, None)
+        self.results.put(
+            {
+                "kind": "result",
+                "request_id": request_id,
+                "ok": False,
                 "error": f"{type(exc).__name__}: {exc}",
-                "traceback": traceback.format_exc(),
+                "traceback": "".join(
+                    traceback.format_exception(type(exc), exc, exc.__traceback__)
+                ),
             }
         )
 
@@ -620,6 +578,64 @@ def _write_service_summary(
         encoding="utf-8",
     )
     temporary.replace(path)
+
+
+# CLI parsing: ServeConfig above is the readable list of options.
+
+
+def parse_args() -> ServeConfig:
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("--host", default=ServeConfig.host)
+    parser.add_argument("--port", type=int, default=ServeConfig.port)
+    parser.add_argument("--request-timeout-s", type=float, default=ServeConfig.request_timeout_s)
+    parser.add_argument("--max-image-bytes", type=int, default=ServeConfig.max_image_bytes)
+    parser.add_argument("--queue-capacity", type=int, default=ServeConfig.queue_capacity)
+    parser.add_argument(
+        "--run-eagerly", action="store_true", default=ServeConfig.run_eagerly,
+        help="Run the same NPU stages without TorchAir compilation.",
+    )
+    parser.add_argument(
+        "--model-path", type=Path, required=True,
+        help="Local directory containing the model weights and tokenizer.",
+    )
+    parser.add_argument(
+        "--device",
+        default=ServeConfig.device,
+        help="Logical NPU within the process's visible-device set.",
+    )
+    parser.add_argument(
+        "--decode-batch-size", type=int, default=ServeConfig.decode_batch_size,
+        help="Physical decode batch B, not a client concurrency limit; no batch-filling wait.",
+    )
+    parser.add_argument(
+        "--full-decode-lm-head", action="store_true", default=ServeConfig.full_decode_lm_head,
+        help="Use all 103,424 checkpoint vocabulary rows instead of the bundled 60,416-row decode head.",
+    )
+    parser.add_argument(
+        "--metrics-level", choices=("basic", "scheduling", "detailed"),
+        default=ServeConfig.metrics_level,
+        help="Basic request metrics, additional scheduling details, or both plus NPU decode timings.",
+    )
+    parser.add_argument(
+        "--graph-cache-directory",
+        type=Path,
+        required=True,
+        help="Root directory for all compiled graphs, separated into stage subdirectories.",
+    )
+    parser.add_argument(
+        "--log-folder",
+        type=Path,
+        required=True,
+        help="Directory for service_summary.json at shutdown; continuous logging is not implemented yet.",
+    )
+    args = parser.parse_args()
+    # Resolve caller-supplied paths once, relative to the launch working directory.
+    args.model_path = args.model_path.expanduser().resolve()
+    args.graph_cache_directory = args.graph_cache_directory.expanduser().resolve()
+    args.log_folder = args.log_folder.expanduser().resolve()
+    return ServeConfig(**vars(args))
 
 
 if __name__ == "__main__":
