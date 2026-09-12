@@ -1,5 +1,82 @@
 # Experiment 19: table OCR serving
 
+## Reading the HTTP service
+
+`serve.py` starts with the manually reviewed `ServeConfig`, followed by `main()`
+and argument parsing. The configuration declaration and its comments are unchanged
+by the A/B structural pass.
+
+- `main()` starts inference, runs HTTP serving, and coordinates shutdown.
+- Process A: `run_http_process`, `HttpServer` and `HttpRequestHandler` receive
+  images and send responses. `InferenceConnection` also lives in A: it owns the
+  queues and process handle for B, matches results to waiting requests, and
+  handles worker startup/shutdown messages. It is not another process.
+- Process B: `run_inference_process` owns the existing recognizer. Model setup,
+  CPU preparation, NPU execution, output conversion and inference callbacks
+  retain their implementation.
+
+The old `_State`/`submit`/`_dispatch` names are replaced with
+`InferenceConnection`/`recognize`/`_receive_worker_messages`. Each waiting HTTP
+request still has its own one-result queue; the shared dictionary lock is not
+held during inference waits. An HTTP timeout still does not cancel work in B.
+The nonfunctional HTTP `/v1/drain` endpoint is removed (now 404). Graceful
+shutdown is retained as `stop_inference_process()`: send the end-of-input marker,
+wait for the final summary, and join or terminate the worker using the existing
+timeouts. The summary is written after the worker has stopped.
+
+Validation includes CPU tests for out-of-order replies, startup failure, request
+timeouts, queue rejection, graceful/forced shutdown, HTTP responses and summary
+output. A fake OCR worker also exercises actual spawned-process communication.
+These are service-plumbing checks, not NPU inference or performance validation.
+
+## Explicit server paths
+
+`ServeConfig`, above `main()` in `serve.py`, lists the public options and their
+defaults. The CLI requires `--model-path`, `--graph-cache-directory` and
+`--log-folder`. Paths are resolved from the launch working directory; none
+are derived from the repository or given machine-specific defaults.
+
+All compiled graphs live under the single supplied cache directory, in
+`decode/`, `vision_prefill/` and `text_prefill/`. Stage-specific cache keys and
+head separation are unchanged. Existing caches are not moved automatically:
+an empty new location will require compilation when the server next runs.
+
+`--run-eagerly` runs the same NPU stages without TorchAir compilation.
+`--metrics-level` is `basic`, `scheduling` (default), or `detailed`: ordinary
+request metrics, additional scheduling instrumentation, or both plus NPU decode
+event timings. The old independent timing flags and three cache-directory flags
+are replaced, not retained as aliases. Historical launch commands require their
+recorded source revision.
+
+The required `--log-folder` receives `service_summary.json` on shutdown, when
+the worker returns a summary. It is not a live log or a
+crash-safe record; continuous logging remains a separate planned discussion.
+
+The server no longer calculates `HERE`/`EXPERIMENT_ROOT`/`REPO_ROOT` or inserts a
+directory into `sys.path`. Launch it normally with Python: Python makes the
+script directory importable, and the spawned worker inherits that import path.
+
+## Output formatting
+
+Post-generation repetition truncation and math-delimiter rewriting are removed.
+The table-only HTTP endpoint calls `convert_otsl_to_html` directly, keeping the
+original text if conversion returns nothing. The obsolete normalization wrapper
+and label branch are removed. HTTP responses still retain `raw_text` and native
+token IDs. No decoder stopping rule changed.
+
+The HTML conversion behavior is unchanged: it resolves merged cells, pads
+short rows, escapes HTML-sensitive cell text, and trims cell-edge whitespace.
+There is no general whitespace/newline collapse. Cell-edge trimming changed no
+outputs in the saved 665-table check. Removing math rewriting changes 132 of
+those formatted outputs; repetition removal had affected none. This is an
+intentional output-formatting change, not a new inference or quality benchmark.
+The converter now reads as three steps: parse/pad rows, resolve cell origins and
+spans, then emit HTML. Descriptive names replace `anchors`/`owner`/`info`, and
+cell creation is consolidated. The parser remains source-identical. All 1,000
+saved conversions (665 unique tables) match the previous converter exactly.
+All 33 CPU tests pass, including 1,000 deterministic mixed/malformed OTSL cases and exact
+preservation of non-table whitespace, math, currency and repetitive content.
+
 ## Fixed checkpoint implementation
 
 The product no longer reads model or preprocessor configuration files, constructs
@@ -46,7 +123,8 @@ The resize/normalization selectors, Pillow-resize branch, CPU normalization/LUT
 helpers and their runtime forwarding/state have been removed. Transfers always
 carry uint8 patches; the existing FP32 rescale/subtract/divide followed by FP16
 conversion runs unconditionally before vision. Operator order is unchanged.
-Standalone `preprocess_pil_image` / `preprocess_image` also return uint8 patches.
+`preprocess_pil_image` returns uint8 patches. The unused file-path wrapper
+`preprocess_image` has been removed; serving decodes uploaded bytes on its CPU worker.
 Historical A/B launchers require their recorded source revision; their removed
 constructor arguments are no longer accepted by the product implementation.
 

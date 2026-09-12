@@ -36,7 +36,7 @@ from text_prefill_and_decode import (
     prepare_decode_projections,
 )
 from crop_processing import (
-    build_inputs,
+    prepare_prompt_tokens,
     preprocess_pil_image,
     PATCH_SIZE, MERGE_SIZE, MIN_PIXELS, MAX_PIXELS,
 )
@@ -494,11 +494,10 @@ class ContinuousRecognizer:
         pixel_values, image_grid_thw = preprocess_pil_image(
             request.crop,
         )
-        input_ids, attention_mask = build_inputs(
+        input_ids, attention_mask = prepare_prompt_tokens(
             self.preprocessing_tokenizer,
             image_grid_thw,
             request.prompt,
-            merge_size=MERGE_SIZE,
         )
         timing["cpu_image_and_prompt_preprocess"] = time.perf_counter() - started
         if self.timeline is not None:

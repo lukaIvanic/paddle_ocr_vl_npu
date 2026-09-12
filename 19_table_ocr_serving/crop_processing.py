@@ -1,16 +1,22 @@
-"""PaddleOCR-VL model input preprocessing and prompt construction."""
+"""Crop inputs before inference, and recognition text after inference.
+
+Serving first calls preprocess_pil_image for uint8 patches and an image grid,
+then prepare_prompt_tokens for the prompt tokens. Their implementation details follow.
+NPU normalization and model execution live in the runtime, not this module.
+After inference, the table endpoint calls convert_otsl_to_html to render the
+decoded table structure; its parser follows.
+"""
 
 from __future__ import annotations
 
 import html
 import re
-from collections import Counter
 from typing import Any
 import math
-from pathlib import Path
 
 import numpy as np
 import torch
+from kornia_rs.image import Image as KorniaImage
 from PIL import Image
 from tokenizers import Tokenizer
 
@@ -21,100 +27,52 @@ IMAGE_END = "<|IMAGE_END|>"
 BOS = "<|begin_of_sentence|>"
 
 
-# Fixed crop input contract; one image, 14x14 patches, 2x2 spatial merging.
+
 PATCH_SIZE = 14
-MERGE_SIZE = 2
+MERGE_SIZE = 2 # Vision tokens from encoder are 2x2 pooled for decoder. E.g. 4096 tokens -> 1024 tokens.
 MIN_PIXELS = 28224
 MAX_PIXELS = 802816
 
 
-# Crop preprocessing
+# Input preparation
 
 
 def preprocess_pil_image(image: Image.Image) -> tuple[torch.Tensor, torch.Tensor]:
-    """Resize with Kornia-RS and produce uint8 patches for NPU normalization."""
+    """Resize with Kornia-RS and produce uint8 patches for "normalization" on NPU."""
     if image.mode != "RGB":
         image = image.convert("RGB")
     width, height = image.size
-    grid_t, grid_h, grid_w = image_grid_thw_from_size(width, height)
-    from kornia_rs.image import Image as KorniaImage
+    grid_h, grid_w = image_grid_hw_from_size(width, height)
 
     array = KorniaImage.fromarray(np.asarray(image)).resize(
         grid_w * PATCH_SIZE,
         grid_h * PATCH_SIZE,
         "bicubic",
     ).data
-    patches = array.transpose(2, 0, 1)[None, ...]
-    channel = patches.shape[1]
-    patches = patches.reshape(
-        grid_t, 1, channel, grid_h, PATCH_SIZE, grid_w, PATCH_SIZE,
-    )
-    patches = patches.transpose(0, 3, 5, 2, 1, 4, 6)
-    flatten_patches = patches.reshape(
-        grid_t * grid_h * grid_w, channel, PATCH_SIZE, PATCH_SIZE,
-    )
+    # Split the RGB image into a grid of 14x14 patches.
+    patches = array.reshape(grid_h, PATCH_SIZE, grid_w, PATCH_SIZE, 3)
+    # Order patches by row, then column, with channels first.
+    patches = patches.transpose(0, 2, 4, 1, 3)
+    # Flatten the grid into the vision encoder's patch sequence.
+    patches = patches.reshape(grid_h * grid_w, 3, PATCH_SIZE, PATCH_SIZE)
     return (
-        torch.from_numpy(flatten_patches),
-        torch.tensor([[grid_t, grid_h, grid_w]], dtype=torch.long),
+        torch.from_numpy(patches),
+        torch.tensor([[1, grid_h, grid_w]], dtype=torch.long),
     )
 
 
-def preprocess_image(image_path: Path) -> tuple[torch.Tensor, torch.Tensor]:
-    with Image.open(image_path) as image:
-        return preprocess_pil_image(image)
-
-
-def image_grid_thw_from_size(width: int, height: int) -> tuple[int, int, int]:
-    """Compute the single-image patch grid without allocating pixel tensors."""
-    width, height = int(width), int(height)
-    if width <= 0 or height <= 0:
-        raise ValueError(f"image dimensions must be positive, got {(width, height)}")
-    resized_height, resized_width = smart_resize(height, width)
-    return 1, resized_height // PATCH_SIZE, resized_width // PATCH_SIZE
-
-
-def smart_resize(
-    height: int,
-    width: int,
-) -> tuple[int, int]:
-    factor = PATCH_SIZE * MERGE_SIZE
-    min_pixels, max_pixels = MIN_PIXELS, MAX_PIXELS
-    if height < factor:
-        width = round((width * factor) / height)
-        height = factor
-    if width < factor:
-        height = round((height * factor) / width)
-        width = factor
-    aspect_ratio = max(height, width) / min(height, width)
-    if aspect_ratio > 200:
-        raise ValueError(
-            f"absolute aspect ratio must be smaller than 200, got {aspect_ratio}"
-        )
-    h_bar = round(height / factor) * factor
-    w_bar = round(width / factor) * factor
-    if h_bar * w_bar > max_pixels:
-        beta = math.sqrt((height * width) / max_pixels)
-        h_bar = math.floor(height / beta / factor) * factor
-        w_bar = math.floor(width / beta / factor) * factor
-    elif h_bar * w_bar < min_pixels:
-        beta = math.sqrt(min_pixels / (height * width))
-        h_bar = math.ceil(height * beta / factor) * factor
-        w_bar = math.ceil(width * beta / factor) * factor
-    return h_bar, w_bar
-
-
-# Prompt and token input construction
-
-
-def build_inputs(
+def prepare_prompt_tokens(
     tokenizer: Tokenizer,
     image_grid_thw: torch.Tensor,
     prompt: str,
-    merge_size: int,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    image_token_count = (
-        int(image_grid_thw[0].prod().item()) // merge_size // merge_size
-    )
+    # Each 14x14 image patch is one input token for the vision encoder.
+    vision_input_token_count = int(image_grid_thw[0].prod().item())
+    # After vision encoding, the projector merges each 2x2 token group into
+    # one image token for the language model: e.g. 4096 / (2 * 2) = 1024.
+    # We only calculate that count here; no visual features are processed.
+    image_token_count = vision_input_token_count // (MERGE_SIZE * MERGE_SIZE)
+    # Reserve one prompt placeholder for each projected image token.
     text = build_paddleocr_vl_prompt(
         prompt,
         image_token_count=image_token_count,
@@ -125,115 +83,121 @@ def build_inputs(
     return input_ids, attention_mask
 
 
-def build_paddleocr_vl_prompt(prompt: str, *, image_token_count: int) -> str:
-    """Mirror the chat template and processor image-token expansion."""
-    template = (
-        f"{BOS}User: {IMAGE_START}{IMAGE_TOKEN}{IMAGE_END}{prompt}\nAssistant:\n"
-    )
-    placeholder = "<|placeholder|>"
-    return template.replace(
-        IMAGE_TOKEN,
-        placeholder * int(image_token_count),
-        1,
-    ).replace(placeholder, IMAGE_TOKEN)
+# Input implementation details: image geometry, resizing, then prompt text.
 
 
-# Output normalization and table formatting
+def image_grid_hw_from_size(width: int, height: int) -> tuple[int, int]:
+    """Compute the single-image patch grid without allocating pixel tensors."""
+    width, height = int(width), int(height)
+    if width <= 0 or height <= 0:
+        raise ValueError(f"image dimensions must be positive, got {(width, height)}")
+    resized_height, resized_width = calculate_resized_image_shape(height, width)
+    return resized_height // PATCH_SIZE, resized_width // PATCH_SIZE
 
 
-def normalize_recognition_text(label: str, text: str | None) -> str:
-    result = truncate_repetitive_content(
-        text or "",
-        min_count=5000 if label == "table" else 50,
-    )
-    if (
-        ("\\(" in result and "\\)" in result)
-        or ("\\[" in result and "\\]" in result)
-    ):
-        result = result.replace("$", "")
-        result = (
-            result.replace("\\(", " $ ")
-            .replace("\\)", " $")
-            .replace("\\[\\[", "\\[")
-            .replace("\\]\\]", "\\]")
-            .replace("\\[", " $$ ")
-            .replace("\\]", " $$ ")
+def calculate_resized_image_shape(
+    height: int,
+    width: int,
+) -> tuple[int, int]:
+    """Choose the target image size (height, width)
+
+    One 14x14 image patch becomes one encoder input token. The projector
+    later merges tokens in 2x2 groups, so the resized image needs both sides
+    to be multiples of 28 pixels. The area must also fit our pixel budget.
+
+    Follow Paddle's resize policy in five steps:
+    1. Enlarge sides shorter than 28, scaling the other side proportionally.
+    2. Reject aspect ratios above 200:1.
+    3. Try rounding both sides to the nearest multiple of 28.
+    4. Check that rounded shape against the 28,224 to 802,816 pixel budget.
+    5. If outside the budget, scale the PRE-ROUNDING dimensions to the limit,
+       then round down when shrinking or up when enlarging. (this follows original PaddleX behavior)
+
+    Step 3 only proposes a shape. Step 5 starts from the dimensions after step 1,
+    not that rounded proposal.
+    """
+    pooled_patch_size = PATCH_SIZE * MERGE_SIZE  # 14 * 2 = 28 pixels
+
+    # 1. Make each side at least 28 pixels, keeping the proportions approximately.
+    # Multiply before dividing to preserve Paddle's half-pixel rounding behavior.
+    if height < pooled_patch_size:
+        width = round((width * pooled_patch_size) / height)
+        height = pooled_patch_size
+
+    if width < pooled_patch_size:
+        height = round((height * pooled_patch_size) / width)
+        width = pooled_patch_size
+
+    # 2. Check the proportions before patch-grid rounding changes them.
+    aspect_ratio = max(height, width) / min(height, width)
+    if aspect_ratio > 200:
+        raise ValueError(
+            f"absolute aspect ratio must be smaller than 200, got {aspect_ratio}"
         )
-        if label == "formula_number":
-            result = result.replace("$", "")
-    if label == "table":
-        converted = convert_otsl_to_html(result)
-        if converted:
-            result = converted
-    return result
+
+    # 3. Propose a patch-aligned shape; keep height/width unchanged for scaling.
+    resized_height = round(height / pooled_patch_size) * pooled_patch_size
+    resized_width = round(width / pooled_patch_size) * pooled_patch_size
+    # 4. The budget check uses the proposed shape's area, not height * width.
+    rounded_pixel_count = resized_height * resized_width
+
+    # 5. Only replace that proposal if it is outside the budget.
+    # Scale the pre-rounding height/width together. Scaling both sides changes
+    # area by the square of the scale, hence the square root.
+    if rounded_pixel_count > MAX_PIXELS:
+        scale_divisor = math.sqrt((height * width) / MAX_PIXELS)
+        scaled_height = height / scale_divisor
+        scaled_width = width / scale_divisor
+        # Round DOWN to whole groups so the result does not exceed the maximum.
+        resized_height = math.floor(scaled_height / pooled_patch_size) * pooled_patch_size
+        resized_width = math.floor(scaled_width / pooled_patch_size) * pooled_patch_size
+    elif rounded_pixel_count < MIN_PIXELS:
+        scale_multiplier = math.sqrt(MIN_PIXELS / (height * width))
+        scaled_height = height * scale_multiplier
+        scaled_width = width * scale_multiplier
+        # Round UP to whole groups so the result reaches at least the minimum.
+        resized_height = math.ceil(scaled_height / pooled_patch_size) * pooled_patch_size
+        resized_width = math.ceil(scaled_width / pooled_patch_size) * pooled_patch_size
+    return resized_height, resized_width
 
 
-def truncate_repetitive_content(
-    content: str,
-    *,
-    min_count: int,
-) -> str:
-    if len(content) < min_count:
-        return content
-    stripped = content.strip()
-    if not stripped:
-        return content
-    if "\n" not in stripped and len(stripped) > 100:
-        suffix = _repeating_suffix(stripped)
-        if suffix is not None:
-            prefix, unit, count = suffix
-            if len(unit) * count > len(stripped) * 0.5:
-                return prefix
-    if "\n" not in stripped and len(stripped) > 10:
-        unit = _shortest_repeating_substring(stripped)
-        if unit is not None and len(stripped) // len(unit) >= 10:
-            return unit
-    lines = [line.strip() for line in content.split("\n") if line.strip()]
-    if len(lines) < 10:
-        return content
-    common, count = Counter(lines).most_common(1)[0]
-    return common if count >= 10 and count / len(lines) >= 0.8 else content
+def build_paddleocr_vl_prompt(prompt: str, *, image_token_count: int) -> str:
+    """Build the user message with image placeholders and the recognition (table/formula/text) task."""
+    # IMAGE_TOKEN is the literal string "<|IMAGE_PLACEHOLDER|>", not a token ID.
+    image_placeholder_text = ""
+    for _ in range(image_token_count):
+        image_placeholder_text += IMAGE_TOKEN
+
+    return (
+        f"{BOS}User: "
+        f"{IMAGE_START}{image_placeholder_text}{IMAGE_END}"
+        f"{prompt}\n"
+        "Assistant:\n"
+    )
 
 
-def _repeating_suffix(
-    value: str,
-    min_length: int = 8,
-    min_repeats: int = 5,
-) -> tuple[str, str, int] | None:
-    for length in range(
-        len(value) // min_repeats,
-        min_length - 1,
-        -1,
-    ):
-        unit = value[-length:]
-        if not value.endswith(unit * min_repeats):
-            continue
-        count = 0
-        prefix = value
-        while prefix.endswith(unit):
-            prefix = prefix[:-length]
-            count += 1
-        return prefix, unit, count
-    return None
-
-
-def _shortest_repeating_substring(value: str) -> str | None:
-    for length in range(1, len(value) // 2 + 1):
-        if len(value) % length == 0:
-            candidate = value[:length]
-            if candidate * (len(value) // length) == value:
-                return candidate
-    return None
+# Output processing: render table structure as HTML.
 
 
 def convert_otsl_to_html(content: str) -> str:
-    """Convert the OTSL cell grammar emitted by PaddleOCR-VL into HTML.
+    """Turn the model's table notation (OTSL) into an HTML table.
 
-    The implementation covers all six OTSL tags.  For ordinary ``fcel`` and
-    ``ecel`` tables it is byte-identical to PaddleX.  Span tags are resolved
-    into rowspan/colspan attributes without importing PaddleX's Pydantic table
-    model.
+    The model writes table-cell text, mixed with "markers" for table layout:
+    <fcel> starts a non-empty cell, <ecel> an empty cell, and <nl> ends a row.
+
+    For example, "<fcel>Apple<fcel>2<nl>" describes one row with two cells
+    which becomes "<table><tr><td>Apple</td><td>2</td></tr></table>".
+
+    A merged table-cell occupies several positions in the table grid. (so not only 1 column
+     and 1 row, but can be: 2 columns 1 row, or 1 column 8 rows) <lcel> continues
+    the cell to the left, <ucel> the cell above, and <xcel> continues a cell
+    spanning both rows and columns. We emit that cell only once, with HTML
+    rowspan/colspan attributes telling the browser how many positions it covers.
+
+    Cell text is escaped so characters such as "&" and "<" display as text,
+    rather than being interpreted as HTML markup.
     """
+    # 1. Parse rows and pad missing positions with empty cells.
     rows = _parse_otsl_rows(content)
     if not rows:
         return ""
@@ -242,62 +206,55 @@ def convert_otsl_to_html(content: str) -> str:
         row + [("ecel", "")] * (width - len(row))
         for row in rows
     ]
-    anchors: dict[tuple[int, int], dict[str, Any]] = {}
-    owner: dict[tuple[int, int], tuple[int, int]] = {}
+    # 2. Each position belongs to a cell's origin (its top-left position).
+    # Continuation markers extend that cell instead of creating another one.
+    cells_by_origin: dict[tuple[int, int], dict[str, Any]] = {}
+    origin_by_position: dict[tuple[int, int], tuple[int, int]] = {}
     for row_index, row in enumerate(grid):
         for column_index, (token, text) in enumerate(row):
-            if token in {"fcel", "ecel"}:
-                anchor = (row_index, column_index)
-                anchors[anchor] = {
-                    "text": text,
-                    "rowspan": 1,
-                    "colspan": 1,
-                }
-                owner[anchor] = anchor
-                continue
+            origin = None
             if token == "lcel":
-                anchor = owner.get((row_index, column_index - 1))
+                origin = origin_by_position.get((row_index, column_index - 1))
             elif token == "ucel":
-                anchor = owner.get((row_index - 1, column_index))
-            else:
-                anchor = owner.get(
+                origin = origin_by_position.get((row_index - 1, column_index))
+            elif token == "xcel":
+                # Preserve the existing left-first, then above fallback.
+                origin = origin_by_position.get(
                     (row_index, column_index - 1),
-                    owner.get((row_index - 1, column_index)),
+                    origin_by_position.get((row_index - 1, column_index)),
                 )
-            if anchor is None:
-                anchor = (row_index, column_index)
-                anchors[anchor] = {
+            if origin is None:
+                # Filled/empty cells start here. Orphan continuation markers
+                # also become standalone cells, as in the existing converter.
+                origin = (row_index, column_index)
+                cells_by_origin[origin] = {
                     "text": text,
                     "rowspan": 1,
                     "colspan": 1,
                 }
-            owner[(row_index, column_index)] = anchor
-            info = anchors[anchor]
-            info["rowspan"] = max(
-                info["rowspan"],
-                row_index - anchor[0] + 1,
-            )
-            info["colspan"] = max(
-                info["colspan"],
-                column_index - anchor[1] + 1,
-            )
+            else:
+                cell = cells_by_origin[origin]
+                cell["rowspan"] = max(cell["rowspan"], row_index - origin[0] + 1)
+                cell["colspan"] = max(cell["colspan"], column_index - origin[1] + 1)
+            origin_by_position[(row_index, column_index)] = origin
 
+    # 3. Emit each cell once, at its origin; continuation positions emit nothing.
     pieces = ["<table>"]
     for row_index in range(len(grid)):
         pieces.append("<tr>")
         for column_index in range(width):
-            anchor = owner[(row_index, column_index)]
-            if anchor != (row_index, column_index):
+            origin = origin_by_position[(row_index, column_index)]
+            if origin != (row_index, column_index):
                 continue
-            info = anchors[anchor]
+            cell = cells_by_origin[origin]
             attributes = ""
-            if info["rowspan"] > 1:
-                attributes += f' rowspan="{info["rowspan"]}"'
-            if info["colspan"] > 1:
-                attributes += f' colspan="{info["colspan"]}"'
+            if cell["rowspan"] > 1:
+                attributes += f' rowspan="{cell["rowspan"]}"'
+            if cell["colspan"] > 1:
+                attributes += f' colspan="{cell["colspan"]}"'
             pieces.append(
                 f"<td{attributes}>"
-                f"{html.escape(info['text'].strip(), quote=True)}</td>"
+                f"{html.escape(cell['text'].strip(), quote=True)}</td>"
             )
         pieces.append("</tr>")
     pieces.append("</table>")

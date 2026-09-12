@@ -1,0 +1,281 @@
+"""CPU-only checks of HTTP routing and A/B communication; no model is loaded."""
+
+import io
+import json
+import queue
+import sys
+import tempfile
+import threading
+import unittest
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import serve
+
+
+def make_config(**overrides):
+    values = dict(model_path=Path('/unused/model'),
+                  graph_cache_directory=Path('/unused/graphs'),
+                  log_folder=Path('/unused/logs'), request_timeout_s=2.0)
+    values.update(overrides)
+    return serve.ServeConfig(**values)
+
+
+def fake_inference_process(jobs, results, config):
+    """Spawnable test worker: exercise real IPC without importing inference code."""
+    import os
+
+    results.put(dict(kind='ready', worker_pid=os.getpid(),
+                     configuration={'model_path': str(config.model_path),
+                                    'torch_imported': 'torch' in sys.modules}))
+    completed = 0
+    while True:
+        job = jobs.get()
+        if job is None:
+            break
+        results.put(dict(kind='result', request_id=job['request_id'], ok=True,
+                         payload={'text': job['image_bytes'].decode('utf-8')}))
+        completed += 1
+    results.put(dict(kind='service_summary', payload={'requests': completed}))
+
+
+class FakeProcess:
+    """Only process lifecycle is mocked; result delivery uses real Python threads."""
+
+    def __init__(self, *, target, args, name):
+        self.target, self.args, self.name = target, args, name
+        self.pid = 123
+        self.alive = False
+        self.terminated = False
+        self.startup_message = dict(kind='ready', configuration={'loaded': True}, worker_pid=self.pid)
+        self.join_timeouts = []
+
+    def start(self):
+        self.alive = True
+        if self.startup_message is not None:
+            self.args[1].put(self.startup_message)
+
+    def is_alive(self):
+        return self.alive
+
+    def join(self, timeout):
+        self.join_timeouts.append(timeout)
+        self.alive = False
+
+    def terminate(self):
+        self.terminated = True
+        self.alive = False
+
+
+class ServeLifecycleTests(unittest.TestCase):
+    def test_real_spawned_process_communication(self):
+        import os
+
+        with patch.object(serve, 'run_inference_process', fake_inference_process):
+            connection = serve.InferenceConnection(make_config(request_timeout_s=5))
+        try:
+            self.start(connection)
+            self.assertNotEqual(connection.worker_pid, os.getpid())
+            self.assertFalse(connection.worker_runtime_info['torch_imported'])
+            self.assertEqual(connection.worker_runtime_info['model_path'], '/unused/model')
+            result = connection.recognize({'request_id': 'real-ipc', 'image_bytes': b'test OCR'})
+            self.assertEqual(result['payload']['text'], 'test OCR')
+            self.assertEqual(connection.stop_inference_process(), {'requests': 1})
+            self.assertEqual(connection.inference_process.exitcode, 0)
+        finally:
+            if connection.inference_process.is_alive():
+                connection.inference_process.terminate()
+                connection.inference_process.join(timeout=2)
+            self.stop_reader(connection)
+            connection.jobs.close()
+            connection.results.close()
+            connection.jobs.join_thread()
+            connection.results.join_thread()
+
+    def make_connection(self, **config_overrides):
+        context = SimpleNamespace(Queue=queue.Queue, Process=FakeProcess)
+        with patch.object(serve.mp, 'get_context', return_value=context) as get_context:
+            connection = serve.InferenceConnection(make_config(**config_overrides))
+        get_context.assert_called_once_with('spawn')
+        self.assertIs(connection.inference_process.target, serve.run_inference_process)
+        self.assertIs(connection.inference_process.args[0], connection.jobs)
+        self.assertIs(connection.inference_process.args[1], connection.results)
+        self.assertFalse(connection.result_reader.is_alive())
+        self.addCleanup(self.stop_reader, connection)
+        return connection
+
+    @staticmethod
+    def stop_reader(connection):
+        connection.stop_reading_results.set()
+        if connection.result_reader.ident is not None:
+            connection.result_reader.join(timeout=1)
+
+    def start(self, connection):
+        with patch('sys.stdout', new=io.StringIO()):
+            connection.start_inference_process()
+
+    def test_startup_success_and_out_of_order_request_results(self):
+        connection = self.make_connection()
+        self.start(connection)
+        self.assertEqual(connection.worker_runtime_info, {'loaded': True})
+        self.assertEqual(connection.worker_pid, 123)
+        with ThreadPoolExecutor(max_workers=4) as callers:
+            futures = {
+                str(i): callers.submit(connection.recognize, {'request_id': str(i), 'image_bytes': b'image'})
+                for i in range(4)
+            }
+            jobs = [connection.jobs.get(timeout=1) for _ in range(4)]
+            self.assertEqual(len(connection.result_queues_by_request_id), 4)
+            for job in reversed(jobs):
+                self.assertIn('submitted_monotonic_s', job)
+                connection.results.put(dict(kind='result', request_id=job['request_id'],
+                                            ok=True, payload={'text': job['request_id']}))
+            for request_id, future in futures.items():
+                self.assertEqual(future.result(timeout=1)['payload']['text'], request_id)
+        self.assertEqual(connection.result_queues_by_request_id, {})
+
+    def test_startup_error_and_timeout(self):
+        for message in (dict(kind='startup_error', error='model failed', traceback='failure details'), None):
+            with self.subTest(message=message):
+                connection = self.make_connection(request_timeout_s=0.02)
+                connection.inference_process.startup_message = message
+                with patch('sys.stderr', new=io.StringIO()), self.assertRaises(RuntimeError):
+                    self.start(connection)
+                if message is not None:
+                    self.assertEqual(connection.startup_error, message)
+
+    def test_request_timeout_does_not_cancel_job_and_late_result_is_ignored(self):
+        connection = self.make_connection(request_timeout_s=0.05)
+        self.start(connection)
+        with self.assertRaises(queue.Empty):
+            connection.recognize({'request_id': 'expired'})
+        self.assertEqual(connection.jobs.get_nowait()['request_id'], 'expired')
+        self.assertEqual(connection.result_queues_by_request_id, {})
+        connection.results.put(dict(kind='result', request_id='expired', ok=True, payload={}))
+        # A later valid request still receives its own result, not the expired one.
+        with ThreadPoolExecutor(max_workers=1) as caller:
+            future = caller.submit(connection.recognize, {'request_id': 'next'})
+            self.assertEqual(connection.jobs.get(timeout=1)['request_id'], 'next')
+            connection.results.put(dict(kind='result', request_id='next', ok=True, payload={'text': 'next'}))
+            self.assertEqual(future.result(timeout=1)['payload']['text'], 'next')
+
+    def test_full_queue_removes_request_registration(self):
+        connection = self.make_connection()
+        with patch.object(connection.jobs, 'put', side_effect=queue.Full), self.assertRaises(queue.Full):
+            connection.recognize({'request_id': 'full'})
+        self.assertEqual(connection.result_queues_by_request_id, {})
+
+    def test_shutdown_finishes_pending_request_and_receives_summary(self):
+        connection = self.make_connection()
+        self.start(connection)
+        with ThreadPoolExecutor(max_workers=2) as callers:
+            request = callers.submit(connection.recognize, {'request_id': 'last'})
+            self.assertEqual(connection.jobs.get(timeout=1)['request_id'], 'last')
+            shutdown = callers.submit(connection.stop_inference_process)
+            self.assertIsNone(connection.jobs.get(timeout=1))
+            self.assertFalse(shutdown.done())
+            connection.results.put(dict(kind='result', request_id='last', ok=True, payload={'text': 'done'}))
+            connection.results.put(dict(kind='service_summary', payload={'requests': 1}))
+            self.assertEqual(request.result(timeout=1)['payload']['text'], 'done')
+            self.assertEqual(shutdown.result(timeout=1), {'requests': 1})
+        self.assertFalse(connection.inference_process.terminated)
+        self.assertEqual(connection.inference_process.join_timeouts, [10.0])
+        self.assertTrue(connection.stop_reading_results.is_set())
+
+    def test_shutdown_timeout_terminates_worker(self):
+        connection = self.make_connection(request_timeout_s=0.02)
+        self.start(connection)
+        self.assertIsNone(connection.stop_inference_process())
+        self.assertTrue(connection.inference_process.terminated)
+
+    def make_handler(self, path, body=b'image'):
+        handler = serve.HttpRequestHandler.__new__(serve.HttpRequestHandler)
+        handler.path = path
+        handler.headers = {'Content-Length': str(len(body))}
+        handler.rfile = io.BytesIO(body)
+        handler.server = SimpleNamespace(serve_config=make_config(), inference_connection=Mock())
+        handler._json = Mock()
+        return handler
+
+    def test_http_result_errors_and_removed_drain_endpoint(self):
+        handler = self.make_handler('/v1/ocr?crop_type=table&request_id=public')
+        handler.inference_connection.recognize.return_value = dict(ok=True, payload={'text': 'table'})
+        handler.do_POST()
+        status, payload = handler._json.call_args.args
+        self.assertEqual(status, 200)
+        self.assertEqual(payload['request_id'], 'public')
+        self.assertIn('http_wall_s', payload)
+        job = handler.inference_connection.recognize.call_args.args[0]
+        self.assertEqual(job['image_bytes'], b'image')
+        self.assertEqual(job['prompt'], 'Table Recognition:')
+        self.assertNotEqual(job['request_id'], 'public')
+        for error, expected in ((queue.Full(), 503), (queue.Empty(), 504), (ValueError('bad'), 500)):
+            handler = self.make_handler('/v1/ocr?crop_type=table')
+            handler.inference_connection.recognize.side_effect = error
+            handler.do_POST()
+            self.assertEqual(handler._json.call_args.args[0], expected)
+        for path, body, expected in (('/v1/drain', b'', 404),
+                                     ('/v1/ocr?crop_type=text', b'image', 400),
+                                     ('/v1/ocr?crop_type=table', b'', 413)):
+            handler = self.make_handler(path, body)
+            handler.do_POST()
+            self.assertEqual(handler._json.call_args.args[0], expected)
+            handler.inference_connection.recognize.assert_not_called()
+
+    def test_health_and_ready_responses(self):
+        connection = self.make_connection()
+        for path in ('/health', '/ready'):
+            handler = self.make_handler(path)
+            handler.server.inference_connection = connection
+            handler.do_GET()
+            status, payload = handler._json.call_args.args
+            self.assertFalse(payload['ok' if path == '/health' else 'ready'])
+            self.assertEqual(status, 200 if path == '/health' else 503)
+        self.start(connection)
+        handler = self.make_handler('/ready')
+        handler.server.inference_connection = connection
+        handler.do_GET()
+        self.assertEqual(handler._json.call_args.args[0], 200)
+        self.assertEqual(handler._json.call_args.args[1]['configuration'], {'loaded': True})
+
+    def test_main_lifecycle_and_log_folder(self):
+        for http_error in (None, RuntimeError('http failure')):
+            with self.subTest(http_error=http_error), tempfile.TemporaryDirectory() as directory:
+                config = make_config(log_folder=Path(directory) / 'logs')
+                connection = Mock(worker_runtime_info={'loaded': True}, worker_pid=123)
+                connection.stop_inference_process.return_value = {'requests': 4}
+                order = []
+                connection.start_inference_process.side_effect = lambda: order.append('start B')
+                def stop():
+                    order.append('stop B')
+                    return {'requests': 4}
+                connection.stop_inference_process.side_effect = stop
+                server = Mock()
+                server.server_close.side_effect = lambda: order.append('close HTTP')
+                def run_http(server_arg):
+                    self.assertIs(server_arg, server)
+                    order.append('serve HTTP')
+                    if http_error is not None:
+                        raise http_error
+                with patch.object(serve, 'parse_args', return_value=config), \
+                     patch.object(serve, 'InferenceConnection', return_value=connection), \
+                     patch.object(serve, 'HttpServer', return_value=server) as constructor, \
+                     patch.object(serve, 'run_http_process', side_effect=run_http), \
+                     patch('sys.stdout', new=io.StringIO()):
+                    if http_error is None:
+                        serve.main()
+                    else:
+                        with self.assertRaisesRegex(RuntimeError, 'http failure'):
+                            serve.main()
+                constructor.assert_called_once_with(config, connection)
+                self.assertEqual(order, ['start B', 'serve HTTP', 'stop B', 'close HTTP'])
+                summary_path = config.log_folder / 'service_summary.json'
+                self.assertEqual(json.loads(summary_path.read_text())['summary'], {'requests': 4})
+                self.assertFalse(summary_path.with_name('.service_summary.json.tmp').exists())
+
+
+if __name__ == '__main__':
+    unittest.main()

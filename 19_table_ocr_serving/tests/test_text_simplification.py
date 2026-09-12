@@ -428,24 +428,65 @@ class TextSimplificationTests(unittest.TestCase):
             self.assertNotIn(name, inspect.signature(runtime.ContinuousRecognizer).parameters)
 
     def test_http_worker_cli_and_request_wiring(self):
+        import pickle
         import serve
         import serving_runtime as runtime
-        with patch.object(sys, 'argv', ['serve.py']):
+        explicit_paths = {
+            '--model-path': '/chosen/model',
+            '--graph-cache-directory': '/chosen/graphs',
+            '--log-folder': '/chosen/logs',
+        }
+        path_args = [value for pair in explicit_paths.items() for value in pair]
+        with patch.object(sys, 'argv', ['serve.py', *path_args]):
             args = serve.parse_args()
-        expected_args = {'host', 'port', 'request_timeout_s', 'max_image_bytes', 'queue_capacity', 'eager',
+        self.assertIsInstance(args, serve.ServeConfig)
+        self.assertEqual(pickle.loads(pickle.dumps(args)), args)
+        self.assertEqual(args, serve.ServeConfig(
+            model_path=Path('/chosen/model'), graph_cache_directory=Path('/chosen/graphs'),
+            log_folder=Path('/chosen/logs')))
+        for flag, value in explicit_paths.items():
+            self.assertEqual(getattr(args, flag[2:].replace('-', '_')), Path(value))
+            remaining = [item for pair in explicit_paths.items() if pair[0] != flag for item in pair]
+            with patch.object(sys, 'argv', ['serve.py', *remaining]), \
+                 patch('sys.stderr', new=io.StringIO()) as error, self.assertRaises(SystemExit) as exit:
+                serve.parse_args()
+            self.assertEqual(exit.exception.code, 2)
+            self.assertIn(flag, error.getvalue())
+        for name in ('HERE', 'EXPERIMENT_ROOT', 'REPO_ROOT'):
+            self.assertFalse(hasattr(serve, name))
+        expected_args = {'host', 'port', 'request_timeout_s', 'max_image_bytes', 'queue_capacity', 'run_eagerly',
             'full_decode_lm_head',
-            'model', 'device', 'decode_batch_size', 'no_decode_device_timing', 'request_scheduling_metrics',
-            'torchair_cache_dir', 'vision_torchair_cache_dir', 'text_torchair_cache_dir', 'service_summary_output'}
+            'model_path', 'device', 'decode_batch_size', 'metrics_level',
+            'graph_cache_directory', 'log_folder'}
         self.assertEqual(set(vars(args)), expected_args)
         self.assertEqual(serve.PROMPTS, {'table': 'Table Recognition:'})
-        self.assertTrue(args.no_decode_device_timing)
-        self.assertTrue(args.request_scheduling_metrics)
+        self.assertEqual(args.metrics_level, 'scheduling')
         self.assertFalse(args.full_decode_lm_head)
-        with patch.object(sys, 'argv', ['serve.py', '--expanded-decode-lm-head']), \
+        with patch.object(sys, 'argv', ['serve.py', *path_args, '--expanded-decode-lm-head']), \
              patch('sys.stderr',new=io.StringIO()), self.assertRaises(SystemExit):
             serve.parse_args()
-        with patch.object(sys, 'argv', ['serve.py', '--full-decode-lm-head']):
+        with patch.object(sys, 'argv', ['serve.py', *path_args, '--full-decode-lm-head']):
             self.assertTrue(serve.parse_args().full_decode_lm_head)
+        for level in ('basic', 'scheduling', 'detailed'):
+            with patch.object(sys, 'argv', ['serve.py', *path_args, '--metrics-level', level]):
+                self.assertEqual(serve.parse_args().metrics_level, level)
+        for flags in (['--metrics-level', 'unknown'], ['--decode-device-timing'],
+                      ['--request-scheduling-metrics'], ['--torchair-cache-dir', '/old/cache']):
+            with patch.object(sys, 'argv', ['serve.py', *path_args, *flags]), \
+                 patch('sys.stderr', new=io.StringIO()), self.assertRaises(SystemExit):
+                serve.parse_args()
+        with patch.object(sys, 'argv', ['serve.py', *path_args,
+                '--host', '0.0.0.0', '--port', '9001', '--queue-capacity', '10',
+                '--request-timeout-s', '30', '--max-image-bytes', '1234',
+                '--device', 'npu:1', '--decode-batch-size', '8', '--run-eagerly',
+                '--metrics-level', 'basic']):
+            overridden = serve.parse_args()
+        self.assertEqual(overridden, serve.ServeConfig(
+            model_path=args.model_path, graph_cache_directory=args.graph_cache_directory,
+            log_folder=args.log_folder,
+            host='0.0.0.0', port=9001, queue_capacity=10, request_timeout_s=30,
+            max_image_bytes=1234, device='npu:1', decode_batch_size=8, run_eagerly=True,
+            metrics_level='basic'))
         seen = []
         test = self
         constructor_signature = inspect.signature(runtime.ContinuousRecognizer)
@@ -467,6 +508,7 @@ class TextSimplificationTests(unittest.TestCase):
                 return {}
             def serve(self, source, **kwargs):
                 serve_signature.bind(self, source, **kwargs)
+                test.assertEqual(kwargs['collect_scheduling_metrics'], level != 'basic')
                 request = source.pull(block=False)
                 test.assertFalse(hasattr(request, 'min_pixels'))
                 test.assertFalse(hasattr(request, 'max_pixels'))
@@ -475,25 +517,31 @@ class TextSimplificationTests(unittest.TestCase):
                 test.assertIsNone(source.pull(block=False))
                 test.assertTrue(source.closed)
                 return Summary(1)
-        jobs, results = queue.Queue(), queue.Queue()
-        jobs.put(dict(request_id='test', image_bytes=b'not-decoded-in-this-test', prompt='Table Recognition:',
-                      crop_type='table', submitted_monotonic_s=0.0))
-        jobs.put(None)
-        cfg = dict(model='/unused', device='npu:0', decode_batch_size=8, decode_device_timing=False, eager=False,
-                   full_decode_lm_head=True,
-                   request_scheduling_metrics=True, torchair_cache_dir='/unused/decode',
-                   vision_torchair_cache_dir='/unused/vision', text_torchair_cache_dir='/unused/text')
-        with patch.object(runtime, 'ContinuousRecognizer', FakeRecognizer), \
-             patch.object(serve, '_freeze_setup_gc', return_value={'enabled': True}) as freeze, \
-             patch('sys.stdout', new=io.StringIO()):
-            serve._worker_main(jobs, results, cfg)
-        messages = []
-        while not results.empty(): messages.append(results.get())
-        self.assertEqual([m['kind'] for m in messages], ['ready', 'result', 'service_summary'], messages)
-        self.assertTrue(messages[1]['ok'])
-        self.assertFalse(seen[0]['eager'])
-        self.assertTrue(seen[0]['full_decode_lm_head'])
-        freeze.assert_called_once()
+        for level in ('basic', 'scheduling', 'detailed'):
+            jobs, results = queue.Queue(), queue.Queue()
+            jobs.put(dict(request_id='test', image_bytes=b'not-decoded-in-this-test', prompt='Table Recognition:',
+                          crop_type='table', submitted_monotonic_s=0.0))
+            jobs.put(None)
+            cfg = serve.ServeConfig(model_path=Path('/unused'), decode_batch_size=8,
+                       full_decode_lm_head=True, metrics_level=level,
+                       graph_cache_directory=Path('/unused/graphs'), log_folder=Path('/unused/logs'))
+            with patch.object(runtime, 'ContinuousRecognizer', FakeRecognizer), \
+                 patch.object(serve, '_freeze_setup_gc', return_value={'enabled': True}) as freeze, \
+                 patch('sys.stdout', new=io.StringIO()):
+                serve.run_inference_process(jobs, results, cfg)
+            messages = []
+            while not results.empty(): messages.append(results.get())
+            self.assertEqual([m['kind'] for m in messages], ['ready', 'result', 'service_summary'], messages)
+            self.assertTrue(messages[1]['ok'])
+            self.assertEqual(messages[0]['configuration']['metrics_level'], level)
+            self.assertFalse(seen[-1]['eager'])
+            self.assertTrue(seen[-1]['full_decode_lm_head'])
+            self.assertEqual(seen[-1]['decode_device_timing'], level == 'detailed')
+            self.assertEqual(seen[-1]['model'], '/unused')
+            self.assertEqual(seen[-1]['torchair_cache_dir'], Path('/unused/graphs/decode'))
+            self.assertEqual(seen[-1]['vision_torchair_cache_dir'], Path('/unused/graphs/vision_prefill'))
+            self.assertEqual(seen[-1]['text_torchair_cache_dir'], Path('/unused/graphs/text_prefill'))
+            freeze.assert_called_once()
 
     def test_full_head_setup_and_cache_separation(self):
         import serving_runtime as runtime
@@ -646,8 +694,24 @@ class TextSimplificationTests(unittest.TestCase):
                 def defs(src, *, specialize=False):
                     nodes = [n for n in ast.parse(src).body if isinstance(n, (ast.FunctionDef, ast.ClassDef))]
                     if specialize:
-                        nodes = [n for n in nodes if n.name not in {'_normalize_image_array', '_uint8_normalization_table', 'preprocess_pil_image', 'preprocess_image', 'image_grid_thw_from_size', 'smart_resize', 'load_preprocessor_config', 'apply_pixel_overrides'}]
+                        # Prompt construction now uses direct concatenation;
+                        # exact strings/tensors are checked in test_fixed_checkpoint.
+                        nodes = [n for n in nodes if n.name not in {'build_paddleocr_vl_prompt', '_normalize_image_array', '_uint8_normalization_table', 'preprocess_pil_image', 'preprocess_image', 'image_grid_thw_from_size', 'smart_resize', 'load_preprocessor_config', 'apply_pixel_overrides'}]
                     for n in nodes:
+                        if specialize and n.name == 'build_inputs':
+                            n.name = 'prepare_prompt_tokens'
+                            n.args.args = [a for a in n.args.args if a.arg != 'merge_size']
+                            for child in ast.walk(n):
+                                if isinstance(child, ast.Name) and child.id == 'merge_size':
+                                    child.id = 'MERGE_SIZE'
+                            # Same positive-integer calculation, with named
+                            # intermediate values; runtime parity is tested too.
+                            self.assertEqual(ast.unparse(n.body[0]),
+                                'image_token_count = int(image_grid_thw[0].prod().item()) // MERGE_SIZE // MERGE_SIZE')
+                            n.body[:1] = ast.parse(
+                                'vision_input_token_count = int(image_grid_thw[0].prod().item())\n'
+                                'image_token_count = vision_input_token_count // (MERGE_SIZE * MERGE_SIZE)'
+                            ).body
                         if n.name != 'preprocess_pil_image':
                             continue
                         self.assertIsInstance(n.body[0], ast.Expr)

@@ -11,6 +11,12 @@ import sys
 import types
 from unittest.mock import patch
 
+# CPU tests do not execute the Kornia kernel. The patch-layout test supplies
+# its deterministic resize double explicitly; other tests only import the module.
+kornia_image = types.ModuleType('kornia_rs.image')
+kornia_image.Image = object
+sys.modules.setdefault('kornia_rs.image', kornia_image)
+
 ROOT = Path(__file__).resolve().parents[2]
 source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
     '1c2b891d:19_table_ocr_serving/_support/model/config.py'], text=True)

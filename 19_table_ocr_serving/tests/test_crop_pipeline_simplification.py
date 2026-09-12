@@ -78,29 +78,60 @@ class CropPipelineTests(unittest.TestCase):
         self.assertEqual(t.compiled,{})
         self.assertEqual(v.compiled,{})
 
-    def test_formatting_moved_verbatim(self):
+    def test_html_conversion_unchanged_and_cleanup_removed(self):
         source = subprocess.check_output(['git','-C',str(ROOT),'show',
             '0976fa33:19_table_ocr_serving/_support/pipeline/layout_output.py'],text=True)
         section = source[source.index('def _shortest_repeating_substring('):source.index('def untokenize_table_figures(')]
         now = (EXPERIMENT/'crop_processing.py').read_text()
-        # Formatting is still verbatim, but the public normalizer now precedes
-        # its helpers. Compare every definition and the regex independently.
+        # Parser stays verbatim; the renamed/consolidated converter is checked
+        # against historical execution, including malformed marker sequences.
         def definitions(src):
             return {n.name: ast.get_source_segment(src,n) for n in ast.parse(src).body
                     if isinstance(n,ast.FunctionDef)}
         expected, actual = definitions(section), definitions(now)
-        self.assertEqual(expected, {name:actual[name] for name in expected})
+        retained = {'_parse_otsl_rows'}
+        self.assertEqual({name:expected[name] for name in retained},
+                         {name:actual[name] for name in retained})
+        for name in ('truncate_repetitive_content', '_repeating_suffix', '_shortest_repeating_substring'):
+            self.assertNotIn(name, actual)
         regex = next(n for n in ast.parse(section).body if isinstance(n,ast.Assign))
         self.assertIn(ast.get_source_segment(section,regex),now)
         self.assertFalse((EXPERIMENT/'_support/pipeline/layout_output.py').exists())
         ns = dict(html=html,re=re,Counter=Counter,Any=object)
         exec(section,ns)
-        for label in ('table','text','formula_number'):
-            for text in ('','<fcel>A & B<lcel><nl><ucel><xcel><nl>',
-                         '<ucel>orphan<nl><fcel>row<ecel>',r'\(x$y\)',
-                         ('repeat me\n'*600), 'abc12345'*1000):
-                self.assertEqual(ns['normalize_recognition_text'](label,text),
-                                 crop_processing.normalize_recognition_text(label,text))
+        import random
+        rng = random.Random(19)
+        fragments = ('<fcel>', '<ecel>', '<lcel>', '<ucel>', '<xcel>', '<nl>',
+                     '汉字', r'\(x\)', ' $2 & <tag> "quoted" ', '\n\t', "'", '&amp;')
+        for _ in range(1000):
+            content = ''.join(rng.choices(fragments, k=rng.randrange(0,100)))
+            self.assertEqual(ns['convert_otsl_to_html'](content),
+                             crop_processing.convert_otsl_to_html(content), content)
+        self.assertNotIn('normalize_recognition_text', actual)
+        # Exercise the actual HTTP result callback, without starting a server.
+        serve_source = (EXPERIMENT/'serve.py').read_text()
+        emit = next(n for n in ast.walk(ast.parse(serve_source))
+                    if isinstance(n,ast.FunctionDef) and n.name == 'emit_result')
+        emitted = []
+        jobs = {}
+        scope = dict(Any=object, asdict=dict, request_jobs=jobs,
+            convert_otsl_to_html=crop_processing.convert_otsl_to_html,
+            time=types.SimpleNamespace(perf_counter=lambda: 1.),
+            results=types.SimpleNamespace(put=emitted.append))
+        exec(compile(ast.Module(body=[emit],type_ignores=[]), '<http-result>', 'exec'), scope)
+        for text in ('','<fcel>A & B<lcel><nl><ucel><xcel><nl>',
+                     '<ucel>orphan<nl><fcel>row<ecel>',r'\(x$y\)',
+                     ('repeat me\n'*600), 'abc12345'*1000,
+                     '  text  with\tspaces\n\n\n next line \n',
+                     r'<fcel>$ per oz<fcel>\(x\)<nl>'):
+            jobs['test'] = dict(crop_type='table', submitted_monotonic_s=0.)
+            class Result(dict):
+                request_id = 'test'
+            scope['emit_result'](Result(request_id='test', text=text, token_ids=[10,2]))
+            payload = emitted[-1]['payload']
+            self.assertEqual(payload['text'], ns['convert_otsl_to_html'](text) or text)
+            self.assertEqual(payload['raw_text'], text)
+            self.assertEqual(payload['token_ids'], [10,2])
 
     def test_prefill_transfer_compute_and_result_parity(self):
         old = reference_runtime()

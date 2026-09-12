@@ -33,6 +33,75 @@ def historical(name):
 
 
 class FixedCheckpointTests(unittest.TestCase):
+    def test_resize_dimensions_preserve_rounding_and_rejections(self):
+        old = historical('crop_processing')
+        import random
+        rng = random.Random(19)
+        boundaries = (1, 13, 14, 27, 28, 29, 41, 42, 43, 167, 168, 169,
+                      383, 384, 385, 895, 896, 897, 5600, 5601)
+        sizes = [(h, w) for h in boundaries for w in boundaries]
+        sizes += [(rng.randint(1,10000),rng.randint(1,10000)) for _ in range(10000)]
+        for height, width in sizes:
+            try:
+                expected = old.smart_resize(height, width, factor=28,
+                                            min_pixels=28224, max_pixels=802816)
+            except ValueError as error:
+                with self.assertRaises(ValueError) as actual:
+                    crops.calculate_resized_image_shape(height, width)
+                self.assertEqual(str(error), str(actual.exception))
+            else:
+                self.assertEqual(expected, crops.calculate_resized_image_shape(height, width),
+                                 (height, width))
+        for original, resized in [((500,800),(504,812)),
+                                  ((100,100),(168,168)),
+                                  ((24,417),(56,700)),
+                                  ((417,24),(700,56)),
+                                  ((1000,1000),(896,896))]:
+            self.assertEqual(crops.calculate_resized_image_shape(*original), resized)
+
+    def test_narrow_image_rounding_matches_reference(self):
+        old = historical('crop_processing')
+        # All short-side sizes and both orientations. This catches half-pixel
+        # ties missed by the broader random sweep (notably 24 x 417).
+        for short_side in range(1,28):
+            for other_side in range(1,5601):
+                for height, width in ((short_side,other_side),(other_side,short_side)):
+                    try:
+                        expected = old.smart_resize(height,width,factor=28,
+                                                    min_pixels=28224,max_pixels=802816)
+                    except ValueError as error:
+                        with self.assertRaises(ValueError) as actual:
+                            crops.calculate_resized_image_shape(height,width)
+                        self.assertEqual(str(error),str(actual.exception))
+                    else:
+                        self.assertEqual(crops.calculate_resized_image_shape(height,width),
+                                         expected,(height,width))
+
+    def test_prompt_tokens_use_fixed_merge_size(self):
+        old = historical('crop_processing')
+        for count in (0, 1, 4, 1024):
+            prompt = 'Table Recognition:'
+            expected = (crops.BOS + 'User: ' + crops.IMAGE_START
+                        + crops.IMAGE_TOKEN * count + crops.IMAGE_END
+                        + prompt + '\nAssistant:\n')
+            self.assertEqual(crops.build_paddleocr_vl_prompt(prompt, image_token_count=count), expected)
+            self.assertEqual(old.build_paddleocr_vl_prompt(prompt, image_token_count=count), expected)
+        encoded = []
+        def encode(text):
+            encoded.append(text)
+            return types.SimpleNamespace(ids=list(text.encode('utf-8')))
+        tokenizer = types.SimpleNamespace(encode=encode)
+        for height, width in ((2, 2), (12, 12), (22, 36), (64, 64)):
+            grid = torch.tensor([[1, height, width]])
+            for prompt in ('Table Recognition:', 'OCR:', 'Formula Recognition:'):
+                before = old.build_inputs(tokenizer, grid, prompt, merge_size=2)
+                after = crops.prepare_prompt_tokens(tokenizer, grid, prompt)
+                self.assertEqual(encoded[-2], encoded[-1])
+                self.assertEqual(encoded[-1].count(crops.IMAGE_TOKEN), height * width // 4)
+                for x, y in zip(before, after):
+                    self.assertEqual(x.dtype, y.dtype)
+                    self.assertTrue(torch.equal(x, y))
+
     def test_full_architecture_shapes_and_buffers(self):
         # These are the verified checkpoint values, not dimensions inferred
         # from the benchmark. In particular head_dim is 128, NOT 1024 / 16.
@@ -100,9 +169,10 @@ class FixedCheckpointTests(unittest.TestCase):
                             min_pixels=28224, max_pixels=802816, do_resize=True)
                     except ValueError:
                         with self.assertRaises(ValueError):
-                            crops.image_grid_thw_from_size(width, height)
+                            crops.image_grid_hw_from_size(width, height)
                     else:
-                        self.assertEqual(expected, crops.image_grid_thw_from_size(width, height))
+                        self.assertEqual(expected[0], 1)
+                        self.assertEqual(expected[1:], crops.image_grid_hw_from_size(width, height))
         calls = []
         class FakeKorniaImage:
             @classmethod
@@ -117,7 +187,8 @@ class FixedCheckpointTests(unittest.TestCase):
                 return types.SimpleNamespace(data=np.asarray(Image.fromarray(self.array).resize((width, height))))
         fake = types.ModuleType('kornia_rs.image')
         fake.Image = FakeKorniaImage
-        with patch.dict(sys.modules, {'kornia_rs.image': fake}):
+        with patch.dict(sys.modules, {'kornia_rs.image': fake}), \
+             patch.object(crops, 'KorniaImage', FakeKorniaImage):
             for mode in ('RGB', 'RGBA', 'L'):
                 for size in ((168,168), (503,301), (1300,900)):
                     image = Image.fromarray(np.random.default_rng(4).integers(
@@ -127,6 +198,7 @@ class FixedCheckpointTests(unittest.TestCase):
                     self.assertEqual(calls[-2], calls[-1])
                     for x, y in zip(before, after):
                         self.assertEqual(x.dtype, y.dtype)
+                        self.assertEqual(x.stride(), y.stride())
                         self.assertTrue(torch.equal(x, y))
 
 
