@@ -43,8 +43,8 @@ class CPUReadinessTests(unittest.TestCase):
         import p02_serving_runtime as runtime
         now=[10.0]
         m=RequestSchedulingMetrics(2); m.register('r',0)
-        source=runtime._OpenPrefillSource.__new__(runtime._OpenPrefillSource)
-        future=Future(); source.pending=deque([('r',future)])
+        source=runtime._IncomingCropPreparation.__new__(runtime._IncomingCropPreparation)
+        future=Future(); source.crops_awaiting_prefill=deque([('r',future)])
         source.scheduling_metrics=m
         source._submit_available=lambda **kwargs:None
         source.on_request_error=lambda *args:self.fail(str(args))
@@ -54,13 +54,13 @@ class CPUReadinessTests(unittest.TestCase):
             self.assertIsNone(m.requests['r'].cpu_eligible_at)
             self.assertIsNone(source.pull_for_decode_slots(block=False,available_slots=1))
             self.assertEqual(m.requests['r'].cpu_eligible_at,10)
-            self.assertEqual(len(source.pending),1)
+            self.assertEqual(len(source.crops_awaiting_prefill),1)
             prepared=types.SimpleNamespace(request_started=1.0,preparation_finished=18.0,
                 cpu_timing=types.SimpleNamespace(cpu_preprocess_background_queue_wait=2.0))
             future.set_result(prepared); now[0]=20
             self.assertIs(source.pull_for_decode_slots(block=False,available_slots=1),prepared)
         self.assertEqual(m.requests['r'].cpu_readiness['prefill_blocked_s'],8)
         self.assertEqual(m.requests['r'].cpu_readiness['ready_to_consumer_poll_s'],2)
-        self.assertEqual(len(source.pending),0)
+        self.assertEqual(len(source.crops_awaiting_prefill),0)
 
 if __name__=='__main__': unittest.main()

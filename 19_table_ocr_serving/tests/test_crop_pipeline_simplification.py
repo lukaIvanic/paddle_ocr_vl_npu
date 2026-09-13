@@ -186,9 +186,9 @@ class CropPipelineTests(unittest.TestCase):
         with patch.dict(sys.modules,{'torch_npu':fake}), patch.dict(current.__dict__,{'IMAGE_TOKEN_ID':5}), \
              patch.object(current,'torch_npu',fake), \
              patch.object(current,'DeviceTimeline',DeviceTimeline):
-            staged=engine._stage_crop(prepared,0.25)
-            inflight=engine._enqueue_crop(staged)
-            result=engine._finalize_crop(inflight)
+            staged=engine._copy_inputs_to_npu(prepared,0.25)
+            inflight=engine._submit_vision_and_text_prefill(staged)
+            result=engine._wait_for_prefill_result(inflight)
         # Every device stage runs once, in the order the device-timing record lists.
         device_stages=[f.name for f in fields(current.PrefillDeviceTiming)]
         self.assertEqual(device_stages[-1],'text_kv_redistribute')
