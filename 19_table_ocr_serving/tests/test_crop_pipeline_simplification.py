@@ -10,28 +10,13 @@ import subprocess
 import sys
 import types
 import unittest
+from dataclasses import fields
 from unittest.mock import patch
 
 import torch
 from test_text_simplification import ROOT, EXPERIMENT, signature
 import serving_runtime as current
 import crop_processing
-
-
-def reference_runtime():
-    source = subprocess.check_output(['git','-C',str(ROOT),'show',
-        '0976fa33:19_table_ocr_serving/serving_runtime.py'],text=True)
-    ns = dict(vars(current))
-    names = {'_InFlightPrefillMember','_TextPrefillInputMember','_TextPackTrace',
-             '_InFlightPrefillGroup','_PreparedPrefillGroup','_StagedPrefillGroup',
-             'ContinuousRecognizer'}
-    nodes = [n for n in ast.parse(source).body if isinstance(n,ast.ClassDef) and n.name in names]
-    module = types.ModuleType('_old_crop_contract')
-    module.__dict__.update(ns)
-    # Annotations resolve lazily, as in the original module.
-    nodes.insert(0,ast.ImportFrom(module='__future__',names=[ast.alias(name='annotations')],level=0))
-    exec(compile(ast.fix_missing_locations(ast.Module(body=nodes,type_ignores=[])), 'old_crop', 'exec'),module.__dict__)
-    return module
 
 
 class CropPipelineTests(unittest.TestCase):
@@ -114,8 +99,7 @@ class CropPipelineTests(unittest.TestCase):
                     if isinstance(n,ast.FunctionDef) and n.name == 'emit_result')
         emitted = []
         jobs = {}
-        worker = types.SimpleNamespace(request_jobs=jobs,
-            convert_otsl_to_html=crop_processing.convert_otsl_to_html,
+        worker = types.SimpleNamespace(jobs_in_progress=jobs,
             results=types.SimpleNamespace(put=emitted.append))
         scope = dict(Any=object, asdict=dict,
             time=types.SimpleNamespace(perf_counter=lambda: 1.))
@@ -134,101 +118,105 @@ class CropPipelineTests(unittest.TestCase):
             self.assertEqual(payload['raw_text'], text)
             self.assertEqual(payload['token_ids'], [10,2])
 
-    def test_prefill_transfer_compute_and_result_parity(self):
-        old = reference_runtime()
-        for timeline_enabled in (False,True):
-            reports=[]
-            for module in (old,current):
-                trace=[]
-                class Event:
-                    def __init__(self,name): self.name=name
-                    def synchronize(self): trace.append(('sync',self.name))
-                class Stream:
-                    def __init__(self,name): self.name=name; self.serial=0
-                    def wait_event(self,e): trace.append(('wait',self.name,e.name))
-                    def record_event(self):
-                        self.serial+=1
-                        name=f'{self.name}:{self.serial}'
-                        trace.append(('event',name))
-                        return Event(name)
-                transfer,compute=Stream('transfer'),Stream('compute')
-                @contextmanager
-                def stream(s):
-                    trace.append(('enter',s.name)); yield
-                    trace.append(('exit',s.name))
-                fake=types.SimpleNamespace(npu=types.SimpleNamespace(stream=stream,current_stream=lambda:compute))
-                class DeviceTimeline:
-                    def __init__(self,device): self.spans={}
-                    def measure(self,key,fn):
-                        stage=key.removeprefix('member:0:').removeprefix('group:')
-                        trace.append(('stage',stage))
-                        out=fn()
-                        if isinstance(out,torch.Tensor): trace.append(('tensor',stage,signature(out)))
-                        self.spans[key]=dict(seconds=.001,start_ns=0,end_ns=1000000,clock='fake')
-                        return out
-                    def resolve_spans(self): trace.append(('resolve',)); return self.spans
-                engine=module.ContinuousRecognizer.__new__(module.ContinuousRecognizer)
-                engine.device=torch.device('cpu')
-                engine.prefill_transfer_stream=transfer
-                engine.prefill_host_tokens=torch.zeros(32,dtype=torch.int64)
-                engine._vision_pack_sequence=engine._prefill_sequence=0
-                engine._vision_packing_stats=types.SimpleNamespace(record=lambda **kw:None)
-                engine._text_packing_stats=types.SimpleNamespace(groups=0,crops=0,fallback_crops=0)
-                engine._vision_prefill_stats=current._VisionPrefillStats()
-                engine._text_prefill_stats=current._TextPrefillStats()
-                engine.diagnostic_prefill_kv_request_ids=set()
-                engine.compact_rescale_factor=1/255
-                engine.compact_image_mean=0.5
-                engine.compact_image_std=0.5
-                engine.timeline=types.SimpleNamespace(record_span=lambda *a,**k:None,
-                    record_span_seconds=lambda *a,**k:None) if timeline_enabled else None
-                torch.manual_seed(7)
-                embedding=torch.nn.Embedding(16,4)
-                head=torch.nn.Linear(4,16)
-                cache=types.SimpleNamespace(key=torch.zeros(4,4))
-                lease=types.SimpleNamespace(cache=cache,slot_index=2,generation=3,release=lambda:None)
-                engine.prefill_cache_pool=types.SimpleNamespace(acquire=lambda:lease)
-                engine.model=types.SimpleNamespace(
-                    config=types.SimpleNamespace(image_token_id=5),
-                    model=types.SimpleNamespace(embed_tokens=embedding),lm_head=head,
-                    visual=types.SimpleNamespace(dtype=torch.float32,vision_model=types.SimpleNamespace(
-                        embeddings=lambda pixels,image_grid_thw:pixels.squeeze(0))),
-                    mlp_AR=lambda features,grid:features[:2])
-                engine.vision_prefill=types.SimpleNamespace(
-                    route=lambda n:dict(execution='compiled',real_vision_tokens=n,physical_vision_tokens=8,
-                        padding_vision_tokens=8-n,useful_token_fraction=n/8,bucket=8),
-                    prepare=lambda hidden,grid,route:hidden,run_prepared=lambda hidden:hidden)
-                def text_run(prepared,cache):
-                    cache.key.copy_(prepared[0])
-                    return prepared.sum(dim=1,keepdim=True)
-                engine.text_prefill=types.SimpleNamespace(
-                    route=lambda n:dict(execution='compiled',real_text_tokens=n,physical_text_tokens=128,
-                        padding_text_tokens=128-n,useful_token_fraction=n/128,bucket=128),
-                    prepare=lambda embeds,mask,pos,route:embeds,run_prepared=text_run)
-                prepared=current.CpuPreparedRecognition(
-                    request_id='any-crop',prompt='Table Recognition:',crop_size=(42,28),skip_special_tokens=False,
-                    pixel_values=torch.arange(16).reshape(4,4).to(torch.uint8),
-                    image_grid_thw=torch.tensor([[1,2,2]]),input_ids=torch.tensor([[2,5,5,8]]),
-                    attention_mask=torch.ones(1,4,dtype=torch.int64),position_ids=torch.zeros(3,1,4,dtype=torch.int64),
-                    rope_deltas=torch.zeros(1,1,dtype=torch.int64),image_token_count=2,
-                    timing_s=dict(cpu_image_and_prompt_preprocess=.01,cpu_mrope_index=.01,cpu_pin_memory=.01),
-                    request_started=0,preparation_finished=0)
-                with patch.dict(sys.modules,{'torch_npu':fake}), patch.dict(module.__dict__, {'IMAGE_TOKEN_ID': 5}), patch.object(module,'DeviceTimeline',DeviceTimeline):
-                    if module is old:
-                        crop=engine._prepared_group([(prepared,0.0)])
-                        staged=engine._stage_prefill_group(crop)
-                        inflight=engine._enqueue_staged_prefill_group(staged)
-                        result=engine._finalize_prefill_group(inflight)[0]
-                    else:
-                        crop=engine._prepared_crop(prepared,0.0)
-                        staged=engine._stage_crop(crop)
-                        inflight=engine._enqueue_crop(staged)
-                        result=engine._finalize_crop(inflight)
-                fields=('request_id','prompt','crop_size','skip_special_tokens','rope_deltas',
-                        'next_cache_position','next_token','first_token','input_tokens','projected_image_tokens',
-                        'device_stage_s','input_fingerprints')
-                reports.append((trace,signature(cache.key),signature({k:getattr(result,k) for k in fields})))
-            self.assertEqual(*reports)
+    def test_prefill_stage_order_and_first_token(self):
+        # Run staging, prefill and finalization on the CPU with fake streams and
+        # a tiny fake model; check the stage order, the stream handoffs, and
+        # that the result is the computation done by hand.
+        trace=[]
+        class Event:
+            def __init__(self,name): self.name=name
+            def synchronize(self): trace.append(('sync',self.name))
+        class Stream:
+            def __init__(self,name): self.name=name; self.serial=0
+            def wait_event(self,e): trace.append(('wait',self.name,e.name))
+            def record_event(self):
+                self.serial+=1; name=f'{self.name}:{self.serial}'
+                trace.append(('event',name)); return Event(name)
+        transfer,compute=Stream('transfer'),Stream('compute')
+        @contextmanager
+        def stream(s):
+            trace.append(('enter',s.name)); yield; trace.append(('exit',s.name))
+        fake=types.SimpleNamespace(npu=types.SimpleNamespace(stream=stream,current_stream=lambda:compute))
+        class DeviceTimeline:
+            def __init__(self,device): self.spans={}
+            def measure(self,key,fn):
+                trace.append(('stage',key)); out=fn()
+                self.spans[key]=dict(seconds=.001,start_ns=0,end_ns=1000000,clock='fake'); return out
+            def resolve_spans(self): trace.append(('resolve',)); return self.spans
+        engine=current.ContinuousRecognizer.__new__(current.ContinuousRecognizer)
+        engine.device=torch.device('cpu')
+        engine.prefill_transfer_stream=transfer
+        engine.prefill_host_tokens=torch.zeros(32,dtype=torch.int64)
+        engine._vision_prefill_stats=current._VisionPrefillStats()
+        engine._text_prefill_stats=current._TextPrefillStats()
+        torch.manual_seed(7)
+        embedding=torch.nn.Embedding(16,4)
+        head=torch.nn.Linear(4,16)
+        cache=types.SimpleNamespace(key=torch.zeros(4,4))
+        lease=types.SimpleNamespace(cache=cache,slot_index=2,generation=3,release=lambda:None)
+        engine.prefill_cache_pool=types.SimpleNamespace(acquire=lambda:lease)
+        engine.model=types.SimpleNamespace(
+            model=types.SimpleNamespace(embed_tokens=embedding),lm_head=head,
+            visual=types.SimpleNamespace(dtype=torch.float32,vision_model=types.SimpleNamespace(
+                embeddings=lambda pixels,image_grid_thw:pixels.squeeze(0))),
+            mlp_AR=lambda features,grid:features[:2])
+        engine.vision_prefill=types.SimpleNamespace(
+            route=lambda n:dict(execution='compiled',real_vision_tokens=n,physical_vision_tokens=8,
+                padding_vision_tokens=8-n,useful_token_fraction=n/8,bucket=8),
+            prepare=lambda hidden,grid,route:hidden,run_prepared=lambda hidden:hidden)
+        def text_run(prepared,cache):
+            cache.key.copy_(prepared[0]); return prepared.sum(dim=1,keepdim=True)
+        engine.text_prefill=types.SimpleNamespace(
+            route=lambda n:dict(execution='compiled',real_text_tokens=n,physical_text_tokens=128,
+                padding_text_tokens=128-n,useful_token_fraction=n/128,bucket=128),
+            prepare=lambda embeds,mask,pos,route:embeds,run_prepared=text_run)
+        prepared=current.PreparedCrop(
+            request_id='any-crop',prompt='Table Recognition:',crop_size=(42,28),skip_special_tokens=False,
+            pixel_values=torch.arange(16).reshape(4,4).to(torch.uint8),
+            image_grid_thw=torch.tensor([[1,2,2]]),input_ids=torch.tensor([[2,5,5,8]]),
+            attention_mask=torch.ones(1,4,dtype=torch.int64),position_ids=torch.zeros(3,1,4,dtype=torch.int64),
+            rope_deltas=torch.zeros(1,1,dtype=torch.int64),image_token_count=2,
+            cpu_timing=current.CpuTiming(cpu_image_decode=0,cpu_image_and_prompt_preprocess=.01,
+                cpu_mrope_index=.01,cpu_pin_memory=.01,cpu_preprocess_background_queue_wait=0,
+                cpu_preprocess_background_service=0),
+            request_started=0,preparation_finished=0)
+        with patch.dict(sys.modules,{'torch_npu':fake}), patch.dict(current.__dict__,{'IMAGE_TOKEN_ID':5}), \
+             patch.object(current,'DeviceTimeline',DeviceTimeline):
+            staged=engine._stage_crop(prepared,0.25)
+            inflight=engine._enqueue_crop(staged)
+            result=engine._finalize_crop(inflight)
+        # Every device stage runs once, in the order the device-timing record lists.
+        device_stages=[f.name for f in fields(current.PrefillDeviceTiming)]
+        self.assertEqual(device_stages[-1],'text_kv_redistribute')
+        self.assertEqual([t[1] for t in trace if t[0]=='stage'],
+                         ['recognition_inputs_h2d','vision_input_normalize',*device_stages[1:-1]])
+        # H2D on the transfer stream; compute waits for it; the first-token
+        # copy back waits for prefill; the host waits only on that last event.
+        self.assertEqual([t for t in trace if t[0]!='stage'],[
+            ('enter','transfer'),('event','transfer:1'),('exit','transfer'),
+            ('wait','compute','transfer:1'),('event','compute:1'),
+            ('resolve',),('enter','transfer'),('wait','transfer','compute:1'),
+            ('event','transfer:2'),('exit','transfer'),('sync','transfer:2')])
+        # The same computation by hand with the fake model.
+        pixels=(prepared.pixel_values.float()/255-0.5)/0.5
+        embeds=embedding(prepared.input_ids)
+        embeds=embeds.masked_scatter((prepared.input_ids==5).unsqueeze(-1).expand_as(embeds),pixels[:2])
+        self.assertTrue(torch.equal(cache.key,embeds[0]))
+        self.assertEqual(result.first_token,int(torch.argmax(head(embeds.sum(dim=1,keepdim=True))[:,-1,:])))
+        self.assertEqual((result.request_id,result.crop_size,result.input_tokens,result.projected_image_tokens),
+                         ('any-crop',(42,28),4,2))
+        self.assertEqual(result.text_prefill['private_cache_slot_index'],2)
+        self.assertEqual(result.device_timing.text_kv_redistribute,0.0)
+        self.assertEqual(result.prefill_timing.cpu_preprocess_background_consumer_wait,0.25)
+        self.assertEqual(result.prefill_timing.recognizer_h2d,result.device_timing.recognition_inputs_h2d)
+        # The three timing records together are exactly the RequestTiming schema.
+        self.assertEqual(
+            [f.name for f in fields(current.CpuTiming)]+[f.name for f in fields(current.PrefillTiming)]
+            +['decode_ready_queue_wait','decode_slot_residency','detokenize','request_total'],
+            [f.name for f in fields(current.RequestTiming)])
+        # The NPU prefix is handed over exactly once.
+        self.assertIs(result.take_device_state()[0],cache)
+        with self.assertRaises(RuntimeError): result.take_device_state()
 
 
 if __name__=='__main__': unittest.main()

@@ -2,39 +2,41 @@
 
 ## Reading the HTTP service
 
-`serve.py` starts with the manually reviewed `ServeConfig`, followed by `main()`.
-Argument parsing is at the bottom, immediately before the script entrypoint.
-The configuration declaration and its comments are unchanged by the structural passes.
+`ServeConfig` and its manually reviewed comments are preserved exactly.
+`main()` follows it; CLI parsing remains at the bottom of `serve.py`.
 
-- `main()` starts inference, runs HTTP serving, and coordinates shutdown.
-- Process A: `HttpServer` and `HttpRequestHandler` receive
-  images and send responses. `InferenceConnection` also lives in A: it owns the
-  queues and process handle for B, matches results to waiting requests, and
-  handles worker startup/shutdown messages. It is not another process.
-- Process B: the small `run_inference_process` entrypoint constructs an
-  `InferenceWorker` inside B. Its `run`, `pull`, `closed`, `emit_result` and
-  `emit_error` methods replace the nested request-source class and callbacks.
-  The existing recognizer still owns model execution and OCR scheduling.
+`main()` explicitly creates two services and owns their separate lifecycles:
 
-`HttpServer.run()` owns signal registration and the serving loop; its named
-shutdown callback replaces the nested function. `HttpServer.close()` stops
-inference before closing the HTTP server, including when saving the summary
-raises. `InferenceConnection.stop_inference_process()` now also writes the
-shutdown summary, keeping file serialization out of `main()`.
+- `InferenceServer(serve_config)`: `start()` launches one inference child
+  process and waits for model setup. `recognize()` sends a crop and waits for its
+  result. `close()` finishes inference and saves the shutdown summary.
+- `HttpServer(serve_config, inference_server)`: `run()` binds the listening
+  socket and accepts requests in the current process. `close()` waits for
+  accepted HTTP requests and closes HTTP sockets; it does not stop inference.
 
-The old `_State`/`submit`/`_dispatch` names are replaced with
-`InferenceConnection`/`recognize`/`_receive_results_and_status`. Each waiting HTTP
-request still has its own one-result queue; the shared dictionary lock is not
-held during inference waits. An HTTP timeout still does not cancel work in B.
-The nonfunctional HTTP `/v1/drain` endpoint is removed (now 404). Graceful
-shutdown is retained as `stop_inference_process()`: send the end-of-input marker,
-wait for the final summary, and join or terminate the worker using the existing
-timeouts. The summary is written after the worker has stopped.
+There are two OS processes total: HTTP in the current process, and inference
+in its child. There is no separate coordinator process. Queue creation, the
+process handle and result-reading thread are internal to `InferenceServer`.
+The small `run_inference_process` entrypoint constructs `InferenceWorker`
+inside the child. The recognizer still owns all model execution and scheduling.
 
-Validation includes CPU tests for out-of-order replies, startup failure, request
-timeouts, queue rejection, graceful/forced shutdown, HTTP responses and summary
-output. A fake OCR worker also exercises actual spawned-process communication.
-These are service-plumbing checks, not NPU inference or performance validation.
+Shutdown closes HTTP first, while inference remains available to complete
+accepted requests, then closes inference. Nested `finally` clauses in `main()`
+ensure inference cleanup is attempted even if HTTP cleanup fails.
+HTTP request threads are non-daemon so accepted responses finish before
+`HttpServer.close()` returns. No new socket-read timeout or admission policy is
+introduced in this structural pass. An HTTP timeout still does not cancel OCR;
+queue capacity still limits queued jobs, not all outstanding images.
+
+The required `log_folder/service_summary.json` is written when the inference
+worker returns a final summary. It remains a shutdown summary, not continuous
+logging. The removed no-op `/v1/drain` endpoint remains 404.
+
+CPU tests cover request/result matching, startup errors, timeouts, independent
+service cleanup and output formatting. A real localhost HTTP test with a
+spawned fake inference worker verifies that an in-progress response completes
+during shutdown and that closing HTTP leaves inference running until its own
+`close()`. These checks do not validate NPU inference or performance.
 
 ## Explicit server paths
 

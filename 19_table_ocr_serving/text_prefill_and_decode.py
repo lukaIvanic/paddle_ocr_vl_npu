@@ -136,12 +136,12 @@ class PaddleOCRAttention(nn.Module):
         self, hidden_states: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         batch, query_length, _hidden = hidden_states.shape
-        query_states = _prefill_linear_tokenwise(
+        query_states = _linear_tokenwise(
             self.q_proj, hidden_states
         ).view(
             batch, query_length, self.num_heads, self.head_dim
         ).transpose(1, 2)
-        key_states = _prefill_linear_tokenwise(
+        key_states = _linear_tokenwise(
             self.k_proj, hidden_states
         ).view(
             batch,
@@ -149,7 +149,7 @@ class PaddleOCRAttention(nn.Module):
             self.num_key_value_heads,
             self.head_dim,
         ).transpose(1, 2)
-        value_states = _prefill_linear_tokenwise(
+        value_states = _linear_tokenwise(
             self.v_proj, hidden_states
         ).view(
             batch,
@@ -194,9 +194,9 @@ class PaddleOCRMLP(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        gate = _prefill_linear_tokenwise(self.gate_proj, x)
-        up = _prefill_linear_tokenwise(self.up_proj, x)
-        return _prefill_linear_tokenwise(
+        gate = _linear_tokenwise(self.gate_proj, x)
+        up = _linear_tokenwise(self.up_proj, x)
+        return _linear_tokenwise(
             self.down_proj, F.silu(gate) * up
         )
 
@@ -385,7 +385,7 @@ class TextPrefillStage(torch.nn.Module):
             seq_length,
             num_heads * head_dim,
         )
-        return _prefill_linear_tokenwise(attention.o_proj, attention_output)
+        return _linear_tokenwise(attention.o_proj, attention_output)
 
     def __init__(self, model: LocalPaddleOCRVLForConditionalGeneration):
         super().__init__()
@@ -487,7 +487,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     )
 
 
-def _prefill_linear_tokenwise(linear: nn.Linear, x: torch.Tensor) -> torch.Tensor:
+def _linear_tokenwise(linear: nn.Linear, x: torch.Tensor) -> torch.Tensor:
     """Apply a Linear through a compiler-safe 2-D token matrix."""
     leading_shape = x.shape[:-1]
     output = linear(x.reshape(-1, x.shape[-1]))
@@ -765,14 +765,6 @@ def _decode_mlp(mlp: nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
     activated = torch_npu.npu_swiglu(gate_up, dim=-1)
     output = _linear_tokenwise(mlp.down_proj, activated)
     return output
-
-
-def _linear_tokenwise(linear: nn.Linear, x: torch.Tensor) -> torch.Tensor:
-    """Apply a Linear through a compiler-safe 2-D token matrix."""
-    leading_shape = x.shape[:-1]
-    token_matrix = x.reshape(-1, x.shape[-1])
-    output = linear(token_matrix)
-    return output.reshape(*leading_shape, output.shape[-1])
 
 
 # One-time decode preparation
@@ -1433,7 +1425,7 @@ def compile_text_decode_stage(
                 "torch": str(torch.__version__),
                 "torch_npu": torch_npu_version_label(device),
                 "torchair": torchair_version_label(device),
-                "decode_source_hash": decode_source_hash(),
+                "decode_source_hash": text_source_hash(),
                 "execution_mode": TORCHAIR_EXECUTION_MODE,
             },
         },
@@ -1455,11 +1447,7 @@ def torchair_cache_dir_for_shape(
             f"torch{cache_key_part(torch.__version__)}",
             f"torchnpu{torch_npu_version_label(device)}",
             f"torchair{torchair_version_label(device)}",
-            f"src{decode_source_hash()}",
+            f"src{text_source_hash()}",
         ]
     )
     return cache_root.expanduser().resolve() / shape_key
-
-
-def decode_source_hash() -> str:
-    return short_file_hash(Path(__file__).resolve())

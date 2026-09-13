@@ -27,16 +27,6 @@ def stream_synchronize(device: torch.device) -> None:
         torch.npu.current_stream(device).synchronize()
 
 
-def timed_wall(device: torch.device | None, fn: Callable[[], Any]) -> tuple[Any, float]:
-    if device is not None:
-        stream_synchronize(device)
-    started = time.perf_counter()
-    result = fn()
-    if device is not None:
-        stream_synchronize(device)
-    return result, time.perf_counter() - started
-
-
 class DeviceTimeline:
     """Record per-stage device time without synchronizing between stages.
 

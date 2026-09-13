@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Serve one PaddleOCR-VL crop per HTTP request.
+"""HTTP service that runs PaddleOCR-VL on one table crop per request.
 
-The HTTP process never imports Torch. One spawned NPU process owns the
-ContinuousRecognizer and its compiled-graph caches for the server lifetime.
-The implementation is the validated 910B2 table-serving path. This endpoint
-accepts table crops only, with the bundled 60,416-row decode vocabulary by
-default or the full checkpoint vocabulary with --full-decode-lm-head.
+Two processes: this one answers HTTP, and a child process owns the model and
+the NPU. They talk through two queues, described on InferenceServer below.
+The HTTP process never imports Torch.
+
+Endpoints: POST /v1/ocr?crop_type=table with the encoded image as the body,
+GET /health, and GET /ready.
+
+Table crops decode with the bundled 60,416-row vocabulary by default, or with
+the full checkpoint vocabulary when --full-decode-lm-head is given.
 """
 
 from __future__ import annotations
@@ -13,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import multiprocessing as mp
+import os
 import queue
 import signal
 import sys
@@ -27,7 +32,11 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import parse_qs, urlparse
 
+from _support.serving.types import RecognitionRequest
 
+
+# The prompt the model receives for each accepted crop_type. Supporting another
+# crop type (text, formula) starts with a new line here.
 PROMPTS = {"table": "Table Recognition:"}
 
 
@@ -46,7 +55,9 @@ class ServeConfig:
     host: str = "127.0.0.1"
     port: int = 8765
 
-    request_timeout_s: float = 900.0  # timeout for individual ocr image request
+    # Timeout for one OCR image request. The same value bounds the wait for the
+    # model to load at startup and for the summary at shutdown.
+    request_timeout_s: float = 900.0
     max_image_bytes: int = 64 * 1024 * 1024 # Largest encoded image accepted in one HTTP request (64 MiB).
     queue_capacity: int = 256 # Maximum jobs waiting in the HTTP-to-worker queue.
 
@@ -76,49 +87,55 @@ class ServeConfig:
 def main() -> None:
     serve_config: ServeConfig = parse_args()
 
-    # Two processes run the service:
-    # A is this HTTP process. It receives images and sends responses to clients.
-    # B is the inference process. It owns the model and runs OCR on the NPU,
-    # with a background CPU thread preparing images while NPU work progresses.
-    inference_connection = InferenceConnection(serve_config)
-    inference_connection.start_inference_process()
-
-    # Model setup has finished. Process A can now accept HTTP connections.
-    http_server = HttpServer(serve_config, inference_connection)
+    # main() owns both halves. HTTP runs here; inference runs in a child process.
+    inference_server = InferenceServer(serve_config)
+    http_server = HttpServer(serve_config, inference_server)
     try:
-        http_server.run()
+        inference_server.start()  # returns once the model is loaded, or raises
+        http_server.run()  # returns on Ctrl+C or SIGTERM
     finally:
-        # Finish pending inference, save its summary, and close the HTTP server.
-        http_server.close()
+        try:
+            http_server.close()  # finish the requests already accepted
+        finally:
+            inference_server.close()  # then stop the child and save its summary
 
 
-# Process A: receive HTTP requests and return OCR results.
+# HTTP service: receive images and return OCR results.
 
 
 class HttpServer(ThreadingHTTPServer):
-    """Process A: accept client connections and run the HTTP service."""
+    """Accept client connections; inference is a separate service supplied by main()."""
 
-    # Each connection gets its own thread, so waiting for one OCR result does
-    # not prevent other clients from submitting images.
-    daemon_threads = True
-    # Pending HTTP connections, separate from the queue of OCR jobs sent to B.
+    # Python's ThreadingHTTPServer gives each connection its own thread, so
+    # waiting for one OCR result does not block other clients.
+    # Non-daemon threads: close() waits for accepted requests to finish, and
+    # main() keeps inference running until they have.
+    daemon_threads = False
+    # TCP connections waiting to be accepted, not a limit on outstanding OCR images.
     request_queue_size = 256
 
     def __init__(
-        self, serve_config: ServeConfig, inference_connection: InferenceConnection
+        self, serve_config: ServeConfig, inference_server: InferenceServer
     ) -> None:
         self.serve_config = serve_config
-        self.inference_connection = inference_connection
+        self.inference_server = inference_server
         self.stop_requested = threading.Event()
-        super().__init__((serve_config.host, serve_config.port), HttpRequestHandler)
+        # Bind the port only in run(), after the model is loaded. A bound but
+        # idle port would make clients hang during the multi-minute startup.
+        super().__init__(
+            (serve_config.host, serve_config.port), HttpRequestHandler,
+            bind_and_activate=False,
+        )
 
     def run(self) -> None:
-        """Accept HTTP requests until Ctrl+C or a termination signal requests shutdown."""
+        """Listen and accept HTTP requests until Ctrl+C or a termination signal."""
+        self.server_bind()
+        self.server_activate()
         signal.signal(signal.SIGTERM, self._stop_accepting_connections)
         signal.signal(signal.SIGINT, self._stop_accepting_connections)
         print(
             f"READY http://{self.serve_config.host}:{self.serve_config.port} "
-            f"worker_pid={self.inference_connection.worker_pid}",
+            f"worker_pid={self.inference_server.worker_pid}",
             flush=True,
         )
         self.serve_forever(poll_interval=0.25)
@@ -132,23 +149,25 @@ class HttpServer(ThreadingHTTPServer):
             threading.Thread(target=self.shutdown, daemon=True).start()
 
     def close(self) -> None:
-        """Finish pending OCR work and close the server, even if saving the summary fails."""
-        try:
-            self.inference_connection.stop_inference_process()
-        finally:
-            self.server_close()
+        """Finish accepted HTTP requests and close sockets; do not stop inference."""
+        self.server_close()
 
 
 class HttpRequestHandler(BaseHTTPRequestHandler):
-    """Part of A: read one client's image, wait for OCR, and send the response."""
+    """Read one client's image, wait for OCR, and send the response."""
 
     server_version = "PaddleOCRCropAPI/1"
+
+    @property
+    def inference_server(self) -> InferenceServer:
+        return self.server.inference_server
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         if parsed.path != "/v1/ocr":
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return
+
         query = parse_qs(parsed.query)
         crop_type = query.get("crop_type", [""])[0].strip().lower()
         if crop_type not in PROMPTS:
@@ -157,11 +176,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                 {"error": f"crop_type must be one of {sorted(PROMPTS)}"},
             )
             return
-        public_request_id = query.get("request_id", [uuid.uuid4().hex])[0].strip()
-        source_request_id = query.get("source_request_id", [public_request_id])[
-            0
-        ].strip()
-        request_id = f"{public_request_id}:{uuid.uuid4().hex}"
+
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
@@ -173,23 +188,19 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             )
             return
         image_bytes = self.rfile.read(length)
+
+        # Clients may reuse a request_id; the internal id stays unique per request.
+        client_request_id = query.get("request_id", [uuid.uuid4().hex])[0].strip()
+        request_id = f"{client_request_id}:{uuid.uuid4().hex}"
         submitted = time.perf_counter()
         try:
-            message = self.inference_connection.recognize(
-                {
-                    "request_id": request_id,
-                    "source_request_id": source_request_id,
-                    "crop_type": crop_type,
-                    "prompt": PROMPTS[crop_type],
-                    "image_bytes": image_bytes,
-                }
-            )
-        except queue.Full:
+            reply = self.inference_server.recognize(request_id, crop_type, image_bytes)
+        except InferenceQueueFull:
             self._json(
                 HTTPStatus.SERVICE_UNAVAILABLE, {"error": "recognition queue is full"}
             )
             return
-        except queue.Empty:
+        except InferenceTimeout:
             self._json(HTTPStatus.GATEWAY_TIMEOUT, {"error": "recognition timed out"})
             return
         except Exception as exc:
@@ -198,12 +209,14 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                 {"error": f"{type(exc).__name__}: {exc}"},
             )
             return
-        if not message["ok"]:
-            self._json(HTTPStatus.INTERNAL_SERVER_ERROR, message)
+
+        if not reply["ok"]:
+            self._json(HTTPStatus.INTERNAL_SERVER_ERROR, reply)
             return
-        message["payload"]["request_id"] = public_request_id
-        message["payload"]["http_wall_s"] = time.perf_counter() - submitted
-        self._json(HTTPStatus.OK, message["payload"])
+        payload = reply["payload"]
+        payload["request_id"] = client_request_id
+        payload["http_wall_s"] = time.perf_counter() - submitted
+        self._json(HTTPStatus.OK, payload)
 
     def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
@@ -211,31 +224,23 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self._json(
                 HTTPStatus.OK,
                 {
-                    "ok": self.inference_connection.inference_process.is_alive(),
-                    "worker_pid": self.inference_connection.worker_pid,
+                    "ok": self.inference_server.is_alive,
+                    "worker_pid": self.inference_server.worker_pid,
                 },
             )
         elif path == "/ready":
-            ok = (
-                self.inference_connection.startup_finished.is_set()
-                and self.inference_connection.startup_error is None
-                and self.inference_connection.inference_process.is_alive()
-            )
+            ready = self.inference_server.is_ready
             self._json(
-                HTTPStatus.OK if ok else HTTPStatus.SERVICE_UNAVAILABLE,
+                HTTPStatus.OK if ready else HTTPStatus.SERVICE_UNAVAILABLE,
                 {
-                    "ready": ok,
-                    "worker_pid": self.inference_connection.worker_pid,
-                    "configuration": self.inference_connection.worker_runtime_info,
-                    "startup_error": self.inference_connection.startup_error,
+                    "ready": ready,
+                    "worker_pid": self.inference_server.worker_pid,
+                    "configuration": self.inference_server.worker_runtime_info,
+                    "startup_error": self.inference_server.startup_error,
                 },
             )
         else:
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
-
-    @property
-    def inference_connection(self) -> InferenceConnection:
-        return self.server.inference_connection
 
     def _json(self, status: int, payload: dict[str, Any]) -> None:
         data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode(
@@ -251,28 +256,48 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         print(f"HTTP {self.address_string()} {format % args}", flush=True)
 
 
-# Still process A: send images to B and deliver each returning result to its caller.
+# Inference service: own the child process and expose recognize() to HTTP callers.
 
 
-class InferenceConnection:
-    """Used by HTTP requests in A to send images to B and receive OCR results."""
+class InferenceQueueFull(Exception):
+    """The inference worker already has queue_capacity images waiting."""
+
+
+class InferenceTimeout(Exception):
+    """No result arrived within request_timeout_s."""
+
+
+class InferenceServer:
+    """The HTTP process's handle on the inference child process.
+
+    Messages to the child, one per image:
+        {"request_id", "crop_type", "image_bytes", "submitted_monotonic_s"}
+        None                         no more images; finish and send the summary
+
+    Messages from the child, each a dict with a "kind":
+        "ready"            {"configuration", "worker_pid"}    model is loaded
+        "startup_error"    {"error", "traceback"}             model failed to load
+        "result"           {"request_id", "ok": True, "payload"}
+                           {"request_id", "ok": False, "error", "traceback"}
+        "service_summary"  {"payload"}                        sent last, after None
+    """
 
     def __init__(self, serve_config: ServeConfig) -> None:
         self.serve_config = serve_config
 
-        # Create process B and its shared queues using the spawn startup method.
-        # B starts with a fresh Python interpreter when start_inference_process() runs.
+        # The model runs in a child process with a fresh Python interpreter.
+        # These queues carry images to it and results back to this service.
         inference_process_context = mp.get_context("spawn")
         self.jobs = inference_process_context.Queue(maxsize=serve_config.queue_capacity)
         self.results = inference_process_context.Queue()
         self.inference_process = inference_process_context.Process(
             target=run_inference_process,
             args=(self.jobs, self.results, serve_config),
-            name="crop-ocr-npu-worker",
+            name="paddleocr-inference-worker",
         )
 
-        # These fields are filled when B reports that setup succeeded or failed.
-        # worker_runtime_info is B's setup report, not the input ServeConfig.
+        # These fields are filled when the inference worker reports setup completion.
+        # worker_runtime_info is the worker's setup report, not the input ServeConfig.
         self.startup_finished = threading.Event()
         self.startup_error: dict[str, Any] | None = None
         self.worker_runtime_info: dict[str, Any] | None = None
@@ -283,7 +308,7 @@ class InferenceConnection:
         self.result_queues_by_request_id: dict[str, queue.Queue[dict[str, Any]]] = {}
         self.result_queues_lock = threading.Lock()
 
-        # B sends the final summary after receiving the end-of-input marker.
+        # The worker sends its final summary after the end-of-input marker.
         self.service_summary: dict[str, Any] | None = None
         self.service_summary_ready = threading.Event()
         self.stop_reading_results = threading.Event()
@@ -291,36 +316,98 @@ class InferenceConnection:
             target=self._receive_results_and_status, name="ocr-result-dispatch", daemon=True
         )
 
-    def start_inference_process(self) -> None:
+    def start(self) -> None:
+        """Start the child process and wait until its model is loaded."""
         self.inference_process.start()
         self.result_reader.start()
 
-        # Do not accept HTTP connections until B has finished model setup.
-        # This uses request_timeout_s from ServeConfig (900 seconds by default).
-        print(f"Waiting for NPU worker pid={self.inference_process.pid}", flush=True)
+        print(f"Waiting for inference worker pid={self.inference_process.pid}", flush=True)
         self.startup_finished.wait(timeout=self.serve_config.request_timeout_s)
         if self.startup_error is not None:
             print(self.startup_error["traceback"], file=sys.stderr)
             raise RuntimeError(self.startup_error["error"])
-        if not self.startup_finished.is_set() or not self.inference_process.is_alive():
-            raise RuntimeError("NPU worker did not become ready")
+        if not self.is_ready:
+            raise RuntimeError("inference worker did not become ready")
 
-    def recognize(self, job: dict[str, Any]) -> dict[str, Any]:
-        """Send one image to B and wait for its OCR result in the calling HTTP thread."""
-        request_result_queue: queue.Queue[dict[str, Any]] = queue.Queue(maxsize=1)
+    def recognize(self, request_id: str, crop_type: str, image_bytes: bytes) -> dict[str, Any]:
+        """Send one image to the inference worker and wait for its reply."""
+        reply_queue: queue.Queue[dict[str, Any]] = queue.Queue(maxsize=1)
         with self.result_queues_lock:
-            self.result_queues_by_request_id[job["request_id"]] = request_result_queue
+            self.result_queues_by_request_id[request_id] = reply_queue
         try:
-            job["submitted_monotonic_s"] = time.perf_counter()
-            self.jobs.put(job, timeout=1.0)
-            # The lock is not held while waiting; other requests can proceed.
-            return request_result_queue.get(timeout=self.serve_config.request_timeout_s)
+            job = {
+                "request_id": request_id,
+                "crop_type": crop_type,
+                "image_bytes": image_bytes,
+                "submitted_monotonic_s": time.perf_counter(),
+            }
+            try:
+                self.jobs.put(job, timeout=1.0)
+            except queue.Full:
+                raise InferenceQueueFull() from None
+            try:
+                # The lock is not held while waiting; other requests can proceed.
+                return reply_queue.get(timeout=self.serve_config.request_timeout_s)
+            except queue.Empty:
+                raise InferenceTimeout() from None
         finally:
             with self.result_queues_lock:
-                self.result_queues_by_request_id.pop(job["request_id"], None)
+                self.result_queues_by_request_id.pop(request_id, None)
+
+    @property
+    def is_alive(self) -> bool:
+        return self.inference_process.is_alive()
+
+    @property
+    def is_ready(self) -> bool:
+        """True once the model is loaded and the child process is still running."""
+        return (
+            self.startup_finished.is_set()
+            and self.startup_error is None
+            and self.is_alive
+        )
+
+    def close(self) -> dict[str, Any] | None:
+        """Stop the child process and save its final summary when there is one."""
+        if self.inference_process.pid is None:
+            return None  # start() never created the process.
+        summary = self._ask_worker_to_finish()
+        if summary is None:
+            self.inference_process.terminate()
+        self.inference_process.join(timeout=10.0)
+        if self.inference_process.is_alive():
+            self.inference_process.terminate()
+            self.inference_process.join(timeout=5.0)
+        self.stop_reading_results.set()
+        if self.result_reader.ident is not None:
+            self.result_reader.join(timeout=1.0)
+        if summary is not None:
+            summary_path = self.serve_config.log_folder / "service_summary.json"
+            _write_service_summary(
+                summary_path,
+                configuration=self.worker_runtime_info,
+                worker_pid=self.worker_pid,
+                summary=summary,
+            )
+            print(f"SERVICE_SUMMARY {summary_path}", flush=True)
+        return summary
+
+    def _ask_worker_to_finish(self) -> dict[str, Any] | None:
+        """Send the end-of-input marker and wait for the summary; None if the worker cannot answer."""
+        if self.startup_error is not None or not self.is_alive:
+            return None
+        try:
+            # None means no more images will follow. The worker finishes the
+            # requests already received, then sends its summary.
+            self.jobs.put(None, timeout=1.0)
+        except queue.Full:
+            return None
+        if not self.service_summary_ready.wait(timeout=self.serve_config.request_timeout_s):
+            return None
+        return self.service_summary
 
     def _receive_results_and_status(self) -> None:
-        """Read messages from B; deliver each OCR result to the request waiting for it."""
+        """Receive inference status and deliver each OCR result to its waiting request."""
         while not self.stop_reading_results.is_set():
             try:
                 message = self.results.get(timeout=0.25)
@@ -336,79 +423,43 @@ class InferenceConnection:
                 self.startup_finished.set()
             elif kind == "result":
                 with self.result_queues_lock:
-                    request_result_queue = self.result_queues_by_request_id.get(message["request_id"])
-                if request_result_queue is not None:
-                    request_result_queue.put(message)
+                    reply_queue = self.result_queues_by_request_id.get(message["request_id"])
+                if reply_queue is not None:
+                    reply_queue.put(message)
             elif kind == "service_summary":
                 self.service_summary = message["payload"]
                 self.service_summary_ready.set()
 
-    def stop_inference_process(self) -> dict[str, Any] | None:
-        """Finish pending OCR work, stop B, and return its summary if it arrives in time."""
-        summary = None
-        try:
-            # None means no more requests will follow. B finishes the requests
-            # already received before returning its final summary.
-            self.jobs.put(None, timeout=1.0)
-            if not self.service_summary_ready.wait(timeout=self.serve_config.request_timeout_s):
-                raise queue.Empty("timed out waiting for inference shutdown")
-            assert self.service_summary is not None
-            summary = self.service_summary
-        except (queue.Empty, queue.Full):
-            self.inference_process.terminate()
-        self.inference_process.join(timeout=10.0)
-        if self.inference_process.is_alive():
-            self.inference_process.terminate()
-            self.inference_process.join(timeout=5.0)
-        self.stop_reading_results.set()
-        if summary is not None:
-            summary_path = self.serve_config.log_folder / "service_summary.json"
-            _write_service_summary(
-                summary_path,
-                configuration=self.worker_runtime_info,
-                worker_pid=self.worker_pid,
-                summary=summary,
-            )
-            print(f"SERVICE_SUMMARY {summary_path}", flush=True)
-        return summary
 
-
-# Process B: own the model and execute OCR. No HTTP connections live here.
+# Inference child process: own the model and execute OCR.
 
 
 def run_inference_process(jobs: Any, results: Any, serve_config: ServeConfig) -> None:
-    """Process B's entrypoint: construct the worker here, never in the HTTP process."""
+    """Entrypoint of the child process: build the worker and run it until closed."""
     try:
         InferenceWorker(jobs, results, serve_config).run()
     except BaseException as exc:
-        results.put(
-            {
-                "kind": "startup_error",
-                "error": f"{type(exc).__name__}: {exc}",
-                "traceback": traceback.format_exc(),
-            }
-        )
+        results.put({"kind": "startup_error", **_describe_failure(exc)})
 
 
 class InferenceWorker:
-    """Lives in B: load the model, receive images, perform OCR and return results to A."""
+    """Load the model, then OCR every image the HTTP process sends until told to stop."""
 
     def __init__(self, jobs: Any, results: Any, serve_config: ServeConfig) -> None:
         self.jobs = jobs
         self.results = results
         self.serve_config = serve_config
-        self.request_jobs: dict[str, dict[str, Any]] = {}
+        self.jobs_in_progress: dict[str, dict[str, Any]] = {}
         self._closed = False
 
     def run(self) -> None:
-        # These imports stay in B; the HTTP process does not load Torch or the model.
-        from serving_runtime import ContinuousRecognizer
-        from _support.serving.types import RecognitionRequest
-        from crop_processing import convert_otsl_to_html
+        recognizer = self._load_model_and_report_ready()
+        self._serve_until_closed(recognizer)
 
-        # Used by the request/result methods below, without importing model code in A.
-        self.recognition_request_type = RecognitionRequest
-        self.convert_otsl_to_html = convert_otsl_to_html
+    def _load_model_and_report_ready(self) -> Any:
+        # Only the child process imports Torch and the model code.
+        from serving_runtime import ContinuousRecognizer
+
         config = self.serve_config
         recognizer = ContinuousRecognizer(
             model=str(config.model_path),
@@ -421,125 +472,93 @@ class InferenceWorker:
             text_torchair_cache_dir=config.graph_cache_directory / "text_prefill",
             device=config.device,
         )
-        setup_gc = _freeze_setup_gc()
-        if setup_gc["enabled"]:
-            print("EXP09_SETUP_GC " + json.dumps(setup_gc), flush=True)
         configuration = recognizer.configuration()
-        configuration["setup_gc"] = setup_gc
+        configuration["setup_gc"] = _freeze_setup_gc()
         configuration["request_scheduling_metrics"] = config.metrics_level != "basic"
         configuration["metrics_level"] = config.metrics_level
-        configuration["max_prefill_interruptions"] = None
-        configuration["open_prefill_admission"] = "free_decode_slots_only_cpu_lookahead"
         self.results.put(
-            {
-                "kind": "ready",
-                "configuration": configuration,
-                "worker_pid": __import__("os").getpid(),
-            }
+            {"kind": "ready", "configuration": configuration, "worker_pid": os.getpid()}
         )
+        return recognizer
 
+    def _serve_until_closed(self, recognizer: Any) -> None:
         try:
-            # The recognizer calls pull()/closed for inputs and emit_result() or
-            # emit_error() for completed requests. It still owns all OCR scheduling.
+            # The recognizer calls pull() and closed for input, and emit_result()
+            # or emit_error() for each finished request. It owns all OCR scheduling.
             run_summary = recognizer.serve(
                 self,
                 schedule_id="http:open",
                 emit_result=self.emit_result,
                 on_request_error=self.emit_error,
-                collect_scheduling_metrics=config.metrics_level != "basic",
-            )
-            self.results.put(
-                {
-                    "kind": "service_summary",
-                    "payload": asdict(run_summary),
-                }
+                collect_scheduling_metrics=self.serve_config.metrics_level != "basic",
             )
         except BaseException as exc:
-            for request_id in list(self.request_jobs):
+            # Every request still in progress gets an error instead of silence.
+            for request_id in list(self.jobs_in_progress):
                 self.results.put(
-                    {
-                        "kind": "result",
-                        "request_id": request_id,
-                        "ok": False,
-                        "error": f"{type(exc).__name__}: {exc}",
-                        "traceback": traceback.format_exc(),
-                    }
+                    {"kind": "result", "request_id": request_id, "ok": False, **_describe_failure(exc)}
                 )
             raise
+        self.results.put({"kind": "service_summary", "payload": asdict(run_summary)})
 
-    def pull(self, *, block: bool) -> Any | None:
-        """Give the recognizer the next image from A; an empty queue need not mean shutdown."""
-        while not self._closed:
-            try:
-                job = self.jobs.get() if block else self.jobs.get_nowait()
-            except queue.Empty:
-                return None
-            if job is None:
-                self._closed = True
-                return None
-            request_id = job["request_id"]
-            self.request_jobs[request_id] = job
-            return self.recognition_request_type(
-                request_id=request_id,
-                # Image decoding and preparation still run later on the CPU thread.
-                crop=job["image_bytes"],
-                prompt=job["prompt"],
-                submitted_at=job["submitted_monotonic_s"],
-            )
-        return None
+    def pull(self, *, block: bool) -> RecognitionRequest | None:
+        """Hand the recognizer the next image, or None when there is none right now."""
+        if self._closed:
+            return None
+        try:
+            job = self.jobs.get() if block else self.jobs.get_nowait()
+        except queue.Empty:
+            return None
+        if job is None:
+            self._closed = True
+            return None
+        self.jobs_in_progress[job["request_id"]] = job
+        return RecognitionRequest(
+            request_id=job["request_id"],
+            crop=job["image_bytes"],  # decoded later on the recognizer's CPU preparation thread
+            prompt=PROMPTS[job["crop_type"]],
+            submitted_at=job["submitted_monotonic_s"],
+        )
 
     @property
     def closed(self) -> bool:
-        """True only after A explicitly signals that no more images will arrive."""
+        """True only after the HTTP process signals that no more images will arrive."""
         return self._closed
 
     def emit_result(self, recognition: Any) -> None:
-        """Send a completed OCR result to A, retaining both raw text and formatted HTML."""
-        request_id = recognition.request_id
-        job = self.request_jobs.pop(request_id)
+        """Send one finished OCR result back, as raw model text and as HTML."""
+        from crop_processing import convert_otsl_to_html  # Torch-backed; child-only import
+
+        job = self.jobs_in_progress.pop(recognition.request_id)
         payload = asdict(recognition)
         payload["raw_text"] = payload["text"]
-        payload["text"] = self.convert_otsl_to_html(payload["raw_text"]) or payload["raw_text"]
-        payload.update(
-            {
-                "crop_type": job["crop_type"],
-                "worker_wall_s": (
-                    time.perf_counter() - job["submitted_monotonic_s"]
-                ),
-            }
-        )
+        payload["text"] = convert_otsl_to_html(payload["raw_text"]) or payload["raw_text"]
+        payload["crop_type"] = job["crop_type"]
+        payload["worker_wall_s"] = time.perf_counter() - job["submitted_monotonic_s"]
         self.results.put(
-            {
-                "kind": "result",
-                "request_id": request_id,
-                "ok": True,
-                "payload": payload,
-            }
+            {"kind": "result", "request_id": recognition.request_id, "ok": True, "payload": payload}
         )
 
     def emit_error(self, request_id: str, exc: BaseException) -> None:
-        """Tell A that this request failed, so its HTTP caller receives an error."""
-        self.request_jobs.pop(request_id, None)
+        """Report one failed request so its HTTP caller receives an error."""
+        self.jobs_in_progress.pop(request_id, None)
         self.results.put(
-            {
-                "kind": "result",
-                "request_id": request_id,
-                "ok": False,
-                "error": f"{type(exc).__name__}: {exc}",
-                "traceback": "".join(
-                    traceback.format_exception(type(exc), exc, exc.__traceback__)
-                ),
-            }
+            {"kind": "result", "request_id": request_id, "ok": False, **_describe_failure(exc)}
         )
 
 
-# Setup garbage collection and service summary
+def _describe_failure(exc: BaseException) -> dict[str, str]:
+    """The error fields of every failure message the child sends."""
+    return {
+        "error": f"{type(exc).__name__}: {exc}",
+        "traceback": "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+    }
 
 
 def _freeze_setup_gc() -> dict[str, Any]:
     """Exclude persistent setup objects from later cyclic-GC scans.
 
-    Called only in the dedicated model worker, before accepting any request.
+    Called only in the inference worker, before accepting any request.
     This does not disable collection of newly allocated request objects.
     Frozen setup objects intentionally share the worker's lifetime.
     """
@@ -555,6 +574,9 @@ def _freeze_setup_gc() -> dict[str, Any]:
         "gc_remains_enabled": gc.isenabled(),
         "setup_wall_s": time.perf_counter() - started,
     }
+
+
+# Service summary file and CLI parsing: ServeConfig above is the readable list of options.
 
 
 def _write_service_summary(
@@ -580,9 +602,6 @@ def _write_service_summary(
     temporary.replace(path)
 
 
-# CLI parsing: ServeConfig above is the readable list of options.
-
-
 def parse_args() -> ServeConfig:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -601,8 +620,7 @@ def parse_args() -> ServeConfig:
         help="Local directory containing the model weights and tokenizer.",
     )
     parser.add_argument(
-        "--device",
-        default=ServeConfig.device,
+        "--device", default=ServeConfig.device,
         help="Logical NPU within the process's visible-device set.",
     )
     parser.add_argument(
@@ -619,15 +637,11 @@ def parse_args() -> ServeConfig:
         help="Basic request metrics, additional scheduling details, or both plus NPU decode timings.",
     )
     parser.add_argument(
-        "--graph-cache-directory",
-        type=Path,
-        required=True,
+        "--graph-cache-directory", type=Path, required=True,
         help="Root directory for all compiled graphs, separated into stage subdirectories.",
     )
     parser.add_argument(
-        "--log-folder",
-        type=Path,
-        required=True,
+        "--log-folder", type=Path, required=True,
         help="Directory for service_summary.json at shutdown; continuous logging is not implemented yet.",
     )
     args = parser.parse_args()

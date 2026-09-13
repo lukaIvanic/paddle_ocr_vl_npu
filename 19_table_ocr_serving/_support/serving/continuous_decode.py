@@ -13,7 +13,6 @@ from text_prefill_and_decode import LocalPaddleOCRVLStaticCache
 from _support.serving.repetition import ExactCycleTracker, RepetitionEvidence
 from _support.serving.scheduling_metrics import RequestSchedulingMetrics
 from _support.utils.timing import stream_synchronize, synchronize
-from _support.utils.timeline import TimelineRecorder
 
 
 @dataclass
@@ -157,15 +156,7 @@ class _IterableReadyDecodeSource:
 class _DeviceSpanRecord:
     start_event: Any | None
     end_event: Any | None
-    enqueued_ns: int
     duration_s: float | None
-    row: str
-    name: str
-    lane: str
-    flow_id: str | None
-    flow_ids: tuple[str, ...]
-    event_type: str
-    args: dict[str, Any]
 
 
 class DecodeArena:
@@ -178,7 +169,6 @@ class DecodeArena:
         device: torch.device,
         batch_size: int,
         eos_token_id: int,
-        timeline: TimelineRecorder | None = None,
         decode_device_timing: bool = True,
     ) -> None:
         self.cache = cache
@@ -186,9 +176,6 @@ class DecodeArena:
         self.batch_size = int(batch_size)
         self.eos_token_id = int(eos_token_id)
         self.decode_device_timing = bool(decode_device_timing)
-        if timeline is not None and not self.decode_device_timing:
-            raise ValueError("decode timeline requires decode device timing")
-        self.timeline = timeline
         self.next_token = torch.full(
             (self.batch_size, 1),
             self.eos_token_id,
@@ -251,14 +238,6 @@ class DecodeArena:
         self,
         records: list[_DeviceSpanRecord],
         fn: Callable[[], Any],
-        *,
-        row: str,
-        name: str,
-        lane: str = "decode",
-        flow_id: str | None = None,
-        flow_ids: tuple[str, ...] = (),
-        event_type: str = "work",
-        args: dict[str, Any] | None = None,
     ) -> Any:
         if records is self._decode_event_spans and not self.decode_device_timing:
             # Profiling events only. Token-copy dependency/completion events
@@ -275,21 +254,7 @@ class DecodeArena:
             duration_s = None
         else:
             duration_s = (time.perf_counter_ns() - enqueued_ns) / 1_000_000_000
-        records.append(
-            _DeviceSpanRecord(
-                start_event=start_event,
-                end_event=end_event,
-                enqueued_ns=enqueued_ns,
-                duration_s=duration_s,
-                row=row,
-                name=name,
-                lane=lane,
-                flow_id=flow_id,
-                flow_ids=tuple(flow_ids),
-                event_type=event_type,
-                args=dict(args or {}),
-            )
-        )
+        records.append(_DeviceSpanRecord(start_event, end_event, duration_s))
         return result
 
     @staticmethod
@@ -307,49 +272,6 @@ class DecodeArena:
         return total
 
     def resolve_device_timing(self) -> tuple[float, float]:
-        all_records = self._admission_event_spans + self._decode_event_spans
-        event_records = [
-            record for record in all_records if record.start_event is not None
-        ]
-        anchor = (
-            min(event_records, key=lambda record: record.enqueued_ns)
-            if event_records
-            else None
-        )
-        if self.timeline is not None:
-            for record in all_records:
-                if record.duration_s is not None:
-                    start_ns = record.enqueued_ns
-                    duration_s = record.duration_s
-                    clock = "host_monotonic"
-                else:
-                    if anchor is None or anchor.start_event is None:
-                        raise RuntimeError("decode device timing lost its anchor event")
-                    assert record.start_event is not None
-                    assert record.end_event is not None
-                    offset_s = (
-                        float(anchor.start_event.elapsed_time(record.start_event))
-                        / 1000.0
-                    )
-                    duration_s = (
-                        float(record.start_event.elapsed_time(record.end_event))
-                        / 1000.0
-                    )
-                    start_ns = anchor.enqueued_ns + int(offset_s * 1_000_000_000)
-                    clock = "device_event_reconstructed"
-                self.timeline.record_span(
-                    record.row,
-                    record.name,
-                    start_ns,
-                    start_ns + int(duration_s * 1_000_000_000),
-                    flow_id=record.flow_id,
-                    flow_ids=list(record.flow_ids),
-                    event_type=record.event_type,
-                    clock=clock,
-                    track="device",
-                    lane=record.lane,
-                    args=record.args,
-                )
         return (
             self._resolve_spans(self._decode_event_spans),
             self._resolve_spans(self._admission_event_spans),
@@ -359,8 +281,6 @@ class DecodeArena:
         self,
         slot_index: int,
         ready: ReadyDecodeRequest,
-        *,
-        hot_swap: bool,
     ) -> tuple[DecodeSlotState, int]:
         if self.slots[slot_index] is not None:
             raise RuntimeError(f"decode slot {slot_index} is not free")
@@ -407,10 +327,6 @@ class DecodeArena:
             int(source[:, :, :prompt_length, :].numel()) * source.element_size()
             for source in source_tensors
         )
-        physical_copied_bytes = sum(
-            int(destination.numel()) * destination.element_size()
-            for destination in destination_tensors
-        )
 
         def copy_state() -> None:
             if cache_head_expansion == 1:
@@ -439,24 +355,7 @@ class DecodeArena:
             self.active_increment[slot_index].fill_(1)
 
         started = time.perf_counter()
-        self._measure_enqueue(
-            self._admission_event_spans,
-            copy_state,
-            row="Decode admission",
-            name="Copy full prefetched KV cache into decode slot",
-            flow_id=ready.request_id,
-            event_type="io",
-            args={
-                "slot": slot_index,
-                "prompt_tokens": prompt_length,
-                "useful_prefix_bytes": useful_prefix_bytes,
-                "physical_copied_bytes": physical_copied_bytes,
-                "source_kv_heads": source_heads,
-                "destination_kv_heads": destination_heads,
-                "cache_head_expansion": cache_head_expansion,
-                "hot_swap": hot_swap,
-            },
-        )
+        self._measure_enqueue(self._admission_event_spans, copy_state)
         self.admission_enqueue_wall_s += time.perf_counter() - started
         self.kv_prefix_bytes_copied += useful_prefix_bytes
         self._epochs[slot_index] += 1
@@ -490,8 +389,6 @@ class DecodeArena:
     def step(
         self,
         decode_fn: Callable[..., torch.Tensor],
-        *,
-        iteration: int,
     ) -> DecodeStep:
         active_slots = tuple(slot is not None for slot in self.slots)
         slot_epochs = tuple(
@@ -527,23 +424,7 @@ class DecodeArena:
             )
             return decode_output.reshape(-1, 1)
 
-        request_ids = tuple(
-            slot.ready.request_id for slot in self.slots if slot is not None
-        )
-        sampled = self._measure_enqueue(
-            self._decode_event_spans,
-            execute,
-            row="Text decode",
-            name="Compiled decode iteration",
-            flow_id=f"decode-iteration:{iteration}",
-            flow_ids=request_ids,
-            args={
-                "iteration": iteration,
-                "active_slots": sum(active_slots),
-                "batch_size": self.batch_size,
-                "request_ids": list(request_ids),
-            },
-        )
+        sampled = self._measure_enqueue(self._decode_event_spans, execute)
         self.next_token = torch.where(
             self.active_mask.view(-1, 1),
             sampled,
@@ -578,7 +459,6 @@ class ContinuousDecodeScheduler:
         arena: DecodeArena,
         decode_fn: Callable[..., torch.Tensor],
         max_new_tokens: int,
-        timeline: TimelineRecorder | None = None,
         completion_policy: (Callable[[DecodeSlotState, int], str | None] | None) = None,
         stop_repetitions: bool = False,
         progress: Callable[..., None] | None = None,
@@ -591,7 +471,6 @@ class ContinuousDecodeScheduler:
         self.device = arena.device
         self.batch_size = arena.batch_size
         self.eos_token_id = arena.eos_token_id
-        self.timeline = timeline
         self.completion_policy = completion_policy
         self.stop_repetitions = bool(stop_repetitions)
         self.progress = progress
@@ -828,7 +707,6 @@ class ContinuousDecodeScheduler:
         hot_swap_safety_sync_wall_s = 0.0
         ready_source_wall_s = 0.0
         completion_callback_wall_s = 0.0
-        ready_queued_ns: dict[str, int] = {}
         refill_sequence = 0
 
         def progress(event: str, **fields: Any) -> None:
@@ -863,49 +741,11 @@ class ContinuousDecodeScheduler:
                     completion.completed_at,
                 )
             completions.append(completion)
-            if self.timeline is not None:
-                if completion.admitted_at is not None:
-                    self.timeline.record_span_seconds(
-                        "Decode request residency",
-                        "Request resident in decode slot",
-                        completion.admitted_at,
-                        completion.completed_at,
-                        flow_id=completion.ready.request_id,
-                        track="slot",
-                        lane=completion.slot_index,
-                        args={
-                            "slot": completion.slot_index,
-                            "epoch": completion.slot_epoch,
-                            "decode_iterations": completion.iterations_launched,
-                            "stop_reason": completion.stop_reason,
-                        },
-                    )
-                self.timeline.instant(
-                    "Decode request residency",
-                    "Decode request completed",
-                    timestamp_ns=int(completion.completed_at * 1_000_000_000),
-                    flow_id=completion.ready.request_id,
-                    track="slot",
-                    lane=completion.slot_index,
-                    args={
-                        "slot": completion.slot_index,
-                        "generated_tokens": len(completion.token_ids),
-                        "stop_reason": completion.stop_reason,
-                    },
-                )
             if on_completion is not None:
                 started = time.perf_counter()
                 on_completion(completion)
                 finished = time.perf_counter()
                 completion_callback_wall_s += finished - started
-                if self.timeline is not None:
-                    self.timeline.record_span_seconds(
-                        "Result assembly",
-                        "Crop completion callback",
-                        started,
-                        finished,
-                        flow_id=completion.ready.request_id,
-                    )
 
         def refill_ready_queue(
             *,
@@ -977,18 +817,6 @@ class ContinuousDecodeScheduler:
                         pull_index=pulled,
                         wait_s=finished - started,
                     )
-                    if self.timeline is not None:
-                        self.timeline.record_span_seconds(
-                            "Decode control / wait",
-                            (
-                                "Drain ready-request source"
-                                if source_exhausted
-                                else "Wait for an arriving ready request"
-                            ),
-                            started,
-                            finished,
-                            event_type="wait" if should_block else "scope",
-                        )
                     break
                 progress(
                     "ready_source_next_end",
@@ -998,31 +826,13 @@ class ContinuousDecodeScheduler:
                     request_id=ready.request_id,
                     wait_s=finished - started,
                 )
-                if self.timeline is not None:
-                    self.timeline.record_span_seconds(
-                        "Decode control / wait",
-                        "Produce next prefilled crop",
-                        started,
-                        finished,
-                        flow_id=ready.request_id,
-                        event_type="scope",
-                    )
                 if ready.request_id in submitted_ids:
                     raise ValueError(f"duplicate decode request id: {ready.request_id}")
                 submitted_ids.add(ready.request_id)
                 submitted_order.append(ready.request_id)
                 ready_queue.append(ready)
-                ready_queued_ns[ready.request_id] = time.perf_counter_ns()
                 pulled += 1
                 max_ready_queue_depth = max(max_ready_queue_depth, len(ready_queue))
-                if self.timeline is not None:
-                    self.timeline.counter(
-                        "Decode ready wait",
-                        "Ready queue depth",
-                        len(ready_queue),
-                        lane="ready-queue",
-                        args={"request_id": ready.request_id},
-                    )
             if pulled:
                 ready_source_refill_count += 1
             progress(
@@ -1048,23 +858,6 @@ class ContinuousDecodeScheduler:
                         slot=slot_index,
                         request_id=ready.request_id,
                     )
-                    admitted_ns = time.perf_counter_ns()
-                    queued_ns = ready_queued_ns.pop(ready.request_id, admitted_ns)
-                    if self.timeline is not None:
-                        self.timeline.record_span(
-                            "Decode ready wait",
-                            "Prefilled crop waiting for a decode slot",
-                            queued_ns,
-                            admitted_ns,
-                            flow_id=ready.request_id,
-                            event_type="wait",
-                            track="queue",
-                            lane="ready-queue",
-                            args={
-                                "slot": slot_index,
-                                "ready_queue_after_pop": len(ready_queue),
-                            },
-                        )
                     prefill_stop_reason = None
                     if ready.first_token == self.eos_token_id:
                         prefill_stop_reason = "eos"
@@ -1089,11 +882,7 @@ class ContinuousDecodeScheduler:
                         )
                         prefill_only_completions += 1
                         continue
-                    _state, copied_bytes = self.arena.admit(
-                        slot_index,
-                        ready,
-                        hot_swap=hot_swap,
-                    )
+                    _state, copied_bytes = self.arena.admit(slot_index, ready)
                     progress(
                         "admission_end",
                         hot_swap=hot_swap,
@@ -1195,17 +984,6 @@ class ContinuousDecodeScheduler:
                 wait_s=wait_s,
             )
             d2h_wait_wall_s += wait_s
-            wait_finished = time.perf_counter()
-            if self.timeline is not None:
-                self.timeline.record_span_seconds(
-                    "Decode control / wait",
-                    "Wait for sampled-token D2H",
-                    wait_finished - wait_s,
-                    wait_finished,
-                    flow_id=f"decode-iteration:{pending_copy.iteration}",
-                    event_type="wait",
-                    args={"iteration": pending_copy.iteration},
-                )
             started = time.perf_counter()
             completed_before = len(completions)
             if scheduling_metrics is not None:
@@ -1290,19 +1068,6 @@ class ContinuousDecodeScheduler:
                 refill_ready_queue(reason=refill_reason)
             finished = time.perf_counter()
             retire_and_refill_wall_s += finished - started
-            if self.timeline is not None:
-                self.timeline.record_span_seconds(
-                    "Decode control / wait",
-                    "Retire completed slots and refill",
-                    started,
-                    finished,
-                    flow_id=f"decode-iteration:{pending_copy.iteration}",
-                    args={
-                        "iteration": pending_copy.iteration,
-                        "active_after_refill": self.arena.num_active,
-                        "ready_queue_depth": len(ready_queue),
-                    },
-                )
 
         progress("scheduler_device_sync_begin", phase="before_initial_fill")
         synchronize(self.device)
@@ -1382,7 +1147,7 @@ class ContinuousDecodeScheduler:
                     ),
                     time.perf_counter(),
                 )
-            step = self.arena.step(self.decode_fn, iteration=iteration)
+            step = self.arena.step(self.decode_fn)
             progress("decode_step_end", iteration=iteration)
             graph_calls += 1
             active_decode_slots += sum(step.active_slots)
@@ -1418,16 +1183,6 @@ class ContinuousDecodeScheduler:
                     wait_s=wait_s,
                 )
                 d2h_wait_wall_s += wait_s
-                wait_finished = time.perf_counter()
-                if self.timeline is not None:
-                    self.timeline.record_span_seconds(
-                        "Decode control / wait",
-                        "Final sampled-token D2H drain",
-                        wait_finished - wait_s,
-                        wait_finished,
-                        flow_id=f"decode-iteration:{pending.iteration}",
-                        event_type="wait",
-                    )
                 pending = None
                 continue
 
@@ -1435,15 +1190,6 @@ class ContinuousDecodeScheduler:
         synchronize(self.device)
         progress("scheduler_device_sync_end", phase="after_decode_loop")
         scheduler_wall_s = time.perf_counter() - scheduler_started
-        if self.timeline is not None:
-            self.timeline.record_span_seconds(
-                "Pipeline",
-                "Continuous decode scheduler",
-                scheduler_started,
-                scheduler_started + scheduler_wall_s,
-                event_type="scope",
-                args={"batch_size": self.batch_size},
-            )
         decode_host_exclusive_wall_s = max(
             0.0,
             scheduler_wall_s - ready_source_wall_s - completion_callback_wall_s,

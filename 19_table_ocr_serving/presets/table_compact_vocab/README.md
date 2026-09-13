@@ -29,3 +29,5 @@ comparison matched the full head exactly; wider validation is separate.
 The old 16,384-row mapping is removed from experiment 19. Its research copy and
 past benchmark evidence remain in experiment 09 and Git history, not in the
 product's supported vocabulary choices.
+
+

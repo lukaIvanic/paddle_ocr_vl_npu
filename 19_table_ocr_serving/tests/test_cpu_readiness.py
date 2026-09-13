@@ -36,6 +36,8 @@ class CPUReadinessTests(unittest.TestCase):
 
     def test_open_source_does_not_wait_or_count_while_slots_full(self):
         sys.modules.setdefault('torch_npu',types.ModuleType('torch_npu'))
+        kornia_image=types.ModuleType('kornia_rs.image'); kornia_image.Image=object
+        sys.modules.setdefault('kornia_rs.image',kornia_image)
         import serving_runtime as runtime
         now=[10.0]
         m=RequestSchedulingMetrics(2); m.register('r',0)
@@ -44,9 +46,7 @@ class CPUReadinessTests(unittest.TestCase):
         source.scheduling_metrics=m
         source._submit_available=lambda **kwargs:None
         source.on_request_error=lambda *args:self.fail(str(args))
-        source.recognizer=types.SimpleNamespace(
-            _prepared_crop=lambda p,w:p,_stage_crop=lambda p:p,_enqueue_crop=lambda p:p,
-            _finalize_crop=lambda p:p,_ready_from_prefilled=lambda p:p)
+        source.recognizer=types.SimpleNamespace(_prefill_for_decode=lambda prepared,wait_s:prepared)
         with patch('time.perf_counter',side_effect=lambda:now[0]):
             self.assertIsNone(source.pull_for_decode_slots(block=False,available_slots=0))
             self.assertIsNone(m.requests['r'].cpu_eligible_at)
@@ -54,7 +54,7 @@ class CPUReadinessTests(unittest.TestCase):
             self.assertEqual(m.requests['r'].cpu_eligible_at,10)
             self.assertEqual(len(source.pending),1)
             prepared=types.SimpleNamespace(request_started=1.0,preparation_finished=18.0,
-                timing_s={'cpu_preprocess_background_queue_wait':2.0})
+                cpu_timing=types.SimpleNamespace(cpu_preprocess_background_queue_wait=2.0))
             future.set_result(prepared); now[0]=20
             self.assertIs(source.pull_for_decode_slots(block=False,available_slots=1),prepared)
         self.assertEqual(m.requests['r'].cpu_readiness['prefill_blocked_s'],8)

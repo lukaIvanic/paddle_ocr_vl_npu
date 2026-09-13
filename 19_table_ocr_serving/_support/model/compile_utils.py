@@ -36,15 +36,6 @@ def import_torchair():
     return torchair, CompilerConfig
 
 
-def compile_backend(name: str):
-    if name == "default":
-        return None
-    if name == "torchair":
-        torchair, CompilerConfig = import_torchair()
-        return torchair.get_npu_backend(compiler_config=CompilerConfig())
-    return name
-
-
 def cache_key_part(value: object) -> str:
     text = str(value).replace("torch.", "")
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", text).strip("_") or "unknown"
