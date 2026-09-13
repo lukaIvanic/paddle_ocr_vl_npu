@@ -1,0 +1,73 @@
+{
+  "requests": 100,
+  "schedule_identical": true,
+  "reference_math_formatting_replayed": false,
+  "mismatches": {
+    "token_ids": [],
+    "raw_text": [],
+    "text": [],
+    "stop_reason": [],
+    "crop_size": [],
+    "input_tokens": [],
+    "projected_image_tokens": []
+  },
+  "performance": {
+    "reference": {
+      "latency_s": {
+        "count": 100,
+        "mean": 1.1821643182003754,
+        "p50": 0.8048060400178656,
+        "p90": 2.193852492008594,
+        "p95": 3.021262122507323,
+        "p99": 6.763981433996237,
+        "max": 7.701535589993
+      },
+      "scheduled_latency_s": {
+        "count": 100,
+        "mean": 1.182943593475793,
+        "p50": 0.805895610828884,
+        "p90": 2.1949301989370755,
+        "p95": 3.0218315129764957,
+        "p99": 6.764904734128509,
+        "max": 7.702685978088994
+      },
+      "completed_qps": 5.25935101591995,
+      "completed": 100,
+      "errors": 0,
+      "max_outstanding": 18
+    },
+    "integrated": {
+      "latency_s": {
+        "count": 100,
+        "mean": 1.1666076902011993,
+        "p50": 0.7975855450058589,
+        "p90": 2.115946234017614,
+        "p95": 2.967298223009857,
+        "p99": 6.605683698294166,
+        "max": 7.64582603998133
+      },
+      "scheduled_latency_s": {
+        "count": 100,
+        "mean": 1.167447884287394,
+        "p50": 0.7983423058321932,
+        "p90": 2.1166312299523304,
+        "p95": 2.9680062964864193,
+        "p99": 6.606141520846873,
+        "max": 7.646706218103645
+      },
+      "completed_qps": 5.2635769142380555,
+      "completed": 100,
+      "errors": 0,
+      "max_outstanding": 17
+    }
+  },
+  "stop_reasons": {
+    "eos": 100
+  },
+  "reference": "tmp/19_table_ocr_serving/integrated_runtime_20260913/poisson100/b8/measured/results",
+  "current": "tmp/19_table_ocr_serving/first_use_poisson100_20260913/run/b8/second/results",
+  "result_sha256": {
+    "reference": "b7d9ecd11158f2de9a91ebfb45f6e261da1595cfab63ae3332c92d19f8900787",
+    "integrated": "77a0da027def6a7d8efff0bca4943ee5e89a332944f24e5b86dacbd1a05d8932"
+  }
+}
