@@ -1,5 +1,19 @@
 # Experiment 19: table OCR serving
 
+## Runtime ownership integration (validation pending)
+
+`ContinuousRecognizer` now owns CPU preparation and the actual continuous
+decoding loop. The separate preparation/scheduler owners, iterable adapters
+and forwarding loop have been removed. `PreparedCrop` holds CPU inputs;
+`DecodeRequest` holds prefill state and metadata through decoding. There is no
+intermediate payload transfer. `ServingSummary` preserves the previous final
+summary fields; live logging remains a separate future change.
+
+The naming-only checkpoint is `a191a2a2`; its source-only test is frozen to that
+commit. Structural integration has separate tests and must pass the saved
+B8/6-QPS Poisson100 before being described as NPU-validated. Model files p04,
+p05 and p06, preprocessing/output formatting and HTTP behavior are unchanged.
+
 The six main scripts are numbered in their intended reading order: HTTP service,
 serving runtime, crop processing, model assembly, vision prefill, then text prefill
 and decode. README and requirements remain unnumbered. The `p` prefix permits

@@ -186,9 +186,7 @@ class CropPipelineTests(unittest.TestCase):
         with patch.dict(sys.modules,{'torch_npu':fake}), patch.dict(current.__dict__,{'IMAGE_TOKEN_ID':5}), \
              patch.object(current,'torch_npu',fake), \
              patch.object(current,'DeviceTimeline',DeviceTimeline):
-            staged=engine._copy_inputs_to_npu(prepared,0.25)
-            inflight=engine._submit_vision_and_text_prefill(staged)
-            result=engine._wait_for_prefill_result(inflight)
+            result=engine._prefill_for_decode(prepared,0.25)
         # Every device stage runs once, in the order the device-timing record lists.
         device_stages=[f.name for f in fields(current.PrefillDeviceTiming)]
         self.assertEqual(device_stages[-1],'text_kv_redistribute')
@@ -207,7 +205,7 @@ class CropPipelineTests(unittest.TestCase):
         embeds=embeds.masked_scatter((prepared.input_ids==5).unsqueeze(-1).expand_as(embeds),pixels[:2])
         self.assertTrue(torch.equal(cache.key,embeds[0]))
         self.assertEqual(result.first_token,int(torch.argmax(head(embeds.sum(dim=1,keepdim=True))[:,-1,:])))
-        self.assertEqual((result.request_id,result.crop_size,result.input_tokens,result.projected_image_tokens),
+        self.assertEqual((result.request_id,result.crop_size,result.prompt_length,result.projected_image_tokens),
                          ('any-crop',(42,28),4,2))
         self.assertEqual(result.text_prefill['private_cache_slot_index'],2)
         self.assertEqual(result.device_timing.text_kv_redistribute,0.0)
@@ -218,9 +216,15 @@ class CropPipelineTests(unittest.TestCase):
             [f.name for f in fields(current.CpuTiming)]+[f.name for f in fields(current.PrefillTiming)]
             +['decode_ready_queue_wait','decode_slot_residency','detokenize','request_total'],
             [f.name for f in fields(current.RequestTiming)])
-        # The NPU prefix is handed over exactly once.
-        self.assertIs(result.take_device_state()[0],cache)
-        with self.assertRaises(RuntimeError): result.take_device_state()
+        # There is one concrete cache owner, not a payload-to-ready handoff.
+        self.assertIs(result.cache,cache)
+        released=[]
+        lease.release=lambda:released.append(lease)
+        result.release_device_state()
+        result.release_device_state()
+        self.assertEqual(released,[lease])
+        for name in ('cache','cache_lease','rope_deltas','cache_position','first_token_tensor'):
+            self.assertIsNone(getattr(result,name))
 
 
 if __name__=='__main__': unittest.main()

@@ -25,6 +25,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--expected-commit', required=True)
     parser.add_argument('--npu', type=int, required=True, choices=range(8))
+    parser.add_argument('--output-dir', type=Path, default=BASE)
     args = parser.parse_args()
     commit = subprocess.check_output(['git', '-C', str(RUNTIME_REPO), 'rev-parse', 'HEAD'], text=True).strip()
     assert commit == args.expected_commit
@@ -72,7 +73,7 @@ def main():
         '--model-path', '/workspace/models/PaddleOCR-VL-1.6', '--device', 'npu:0',
         '--graph-cache-directory', CACHE, '--metrics-level', 'detailed',
     ]
-    sweep = ns['Sweep'](argparse.Namespace(npu=args.npu, count=100, output_dir=BASE))
+    sweep = ns['Sweep'](argparse.Namespace(npu=args.npu, count=100, output_dir=args.output_dir))
     sweep.write('plan.json', dict(runtime_commit=commit, client_sha256=CLIENT_SHA,
         lifecycle_harness_commit=LOCKED, physical_npu=args.npu, batch=8,
         target_qps=6, requests=100, arrival_schedule=str(REFERENCE / 'schedule.jsonl'),

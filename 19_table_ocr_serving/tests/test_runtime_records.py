@@ -34,7 +34,9 @@ class RuntimeRecordTests(unittest.TestCase):
         tree = ast.parse(Path(current.__file__).read_text())
         for old in self.old_tree.body:
             if isinstance(old,ast.ClassDef):
-                moved = next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name==old.name)
+                name = 'ServingSummary' if old.name == 'ContinuousDecodeResult' else old.name
+                moved = next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name==name)
+                moved.name = old.name
                 self.assertEqual(ast.dump(old),ast.dump(moved),old.name)
         self.assertFalse((EXPERIMENT/'_support/serving/types.py').exists())
 
@@ -55,7 +57,7 @@ class RuntimeRecordTests(unittest.TestCase):
 
     def test_result_and_summary_serialization_unchanged(self):
         def sample(module,name):
-            cls = getattr(module,name)
+            cls = getattr(module,'ServingSummary' if module is current and name=='ContinuousDecodeResult' else name)
             kwargs = {f.name:0 for f in fields(cls) if f.default is MISSING and f.default_factory is MISSING}
             if name=='RecognitionResult':
                 kwargs.update(request_id='crop',text='<fcel>汉字<nl>',token_ids=[10,2],stop_reason='eos',

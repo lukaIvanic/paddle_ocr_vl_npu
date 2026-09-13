@@ -43,22 +43,22 @@ class CPUReadinessTests(unittest.TestCase):
         import p02_serving_runtime as runtime
         now=[10.0]
         m=RequestSchedulingMetrics(2); m.register('r',0)
-        source=runtime._IncomingCropPreparation.__new__(runtime._IncomingCropPreparation)
+        source=runtime.ContinuousRecognizer.__new__(runtime.ContinuousRecognizer)
         future=Future(); source.crops_awaiting_prefill=deque([('r',future)])
         source.scheduling_metrics=m
-        source._submit_available=lambda **kwargs:None
+        source._submit_available_crops_for_cpu_preparation=lambda **kwargs:None
         source.on_request_error=lambda *args:self.fail(str(args))
-        source.recognizer=types.SimpleNamespace(_prefill_for_decode=lambda prepared,wait_s:prepared)
+        source._prefill_for_decode=lambda prepared,wait_s:prepared
         with patch('time.perf_counter',side_effect=lambda:now[0]):
-            self.assertIsNone(source.pull_for_decode_slots(block=False,available_slots=0))
+            self.assertIsNone(source._prepare_next_crop_for_decode(block=False,available_slots=0))
             self.assertIsNone(m.requests['r'].cpu_eligible_at)
-            self.assertIsNone(source.pull_for_decode_slots(block=False,available_slots=1))
+            self.assertIsNone(source._prepare_next_crop_for_decode(block=False,available_slots=1))
             self.assertEqual(m.requests['r'].cpu_eligible_at,10)
             self.assertEqual(len(source.crops_awaiting_prefill),1)
             prepared=types.SimpleNamespace(request_started=1.0,preparation_finished=18.0,
                 cpu_timing=types.SimpleNamespace(cpu_preprocess_background_queue_wait=2.0))
             future.set_result(prepared); now[0]=20
-            self.assertIs(source.pull_for_decode_slots(block=False,available_slots=1),prepared)
+            self.assertIs(source._prepare_next_crop_for_decode(block=False,available_slots=1),prepared)
         self.assertEqual(m.requests['r'].cpu_readiness['prefill_blocked_s'],8)
         self.assertEqual(m.requests['r'].cpu_readiness['ready_to_consumer_poll_s'],2)
         self.assertEqual(len(source.crops_awaiting_prefill),0)

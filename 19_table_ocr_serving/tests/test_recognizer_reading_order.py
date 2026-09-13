@@ -1,10 +1,11 @@
-"""Source-only checks for the scoped ContinuousRecognizer reading-order pass.
+"""Frozen source-only receipt for the scoped reading-order pass at a191a2a2.
 
 No torch, NPU execution or compilation. Compare with the accepted Poisson100
 baseline, permitting only the listed method/local renames, definition
 order, comments and recognizer docstrings. The incoming-crop preparation class
 also permits its agreed class/attribute renames and class description. The
-scheduler permits only the explicitly listed identifier renames.
+scheduler permits only the explicitly listed identifier renames. Later structural
+integration is deliberately not claimed to be a naming-only change.
 """
 import ast
 from pathlib import Path
@@ -55,7 +56,8 @@ class RecognizerReadingOrderTests(unittest.TestCase):
     def setUpClass(cls):
         cls.before = subprocess.check_output(
             ['git', '-C', str(ROOT), 'show', f'{BASELINE}:{PATH}'], text=True)
-        cls.after = (ROOT / PATH).read_text()
+        cls.after = subprocess.check_output(
+            ['git', '-C', str(ROOT), 'show', f'a191a2a2:{PATH}'], text=True)
 
     def test_method_bodies_signatures_and_decorators_are_unchanged(self):
         class AllowedEdits(ast.NodeTransformer):
@@ -185,6 +187,41 @@ class RecognizerReadingOrderTests(unittest.TestCase):
                 previous = subprocess.check_output(
                     ['git', '-C', str(ROOT), 'show', f'{BASELINE}:{path.relative_to(ROOT)}'])
                 self.assertEqual(previous, path.read_bytes())
+
+
+class RuntimeIntegrationStructureTests(unittest.TestCase):
+    def test_removed_owners_adapters_and_intermediate_records(self):
+        tree=ast.parse((ROOT/PATH).read_text())
+        names={n.name for n in tree.body if isinstance(n,ast.ClassDef)}
+        self.assertTrue({'ContinuousRecognizer','DecodeArena','PreparedCrop','DecodeRequest','ServingSummary'} <= names)
+        self.assertFalse(names & {'ContinuousDecodeScheduler','_IncomingCropPreparation',
+            'OpenReadyDecodeSource','_IterableReadyDecodeSource','StagedCrop','InFlightCrop',
+            'PrefilledCrop','ReadyDecodeRequest','ContinuousDecodeRun','ContinuousDecodeResult'})
+        methods={n.name for n in recognizer((ROOT/PATH).read_text()).body if isinstance(n,ast.FunctionDef)}
+        self.assertFalse(methods & {'run_stream','run','_copy_inputs_to_npu',
+            '_submit_vision_and_text_prefill','_wait_for_prefill_result'})
+        self.assertIn('_run_continuous_decoding_loop_until_pipeline_shutdown',methods)
+
+    def test_decode_arena_and_token_copy_operations_preserved(self):
+        before=subprocess.check_output(['git','-C',str(ROOT),'show',f'a191a2a2:{PATH}'],text=True)
+        after=(ROOT/PATH).read_text()
+        def classes(source):
+            return {n.name:n for n in ast.parse(source).body if isinstance(n,ast.ClassDef)}
+        class Rename(ast.NodeTransformer):
+            def visit_Name(self,node):
+                if node.id=='ReadyDecodeRequest': node.id='DecodeRequest'
+                return node
+            def visit_Attribute(self,node):
+                if node.attr=='arena': node.attr='decode_arena'
+                return self.generic_visit(node)
+        old,new=classes(before),classes(after)
+        self.assertEqual(ast.dump(Rename().visit(old['DecodeArena'])),ast.dump(new['DecodeArena']))
+        for method in old['ContinuousDecodeScheduler'].body:
+            if not isinstance(method,ast.FunctionDef) or method.name in ('__init__','run_stream','run'):
+                continue
+            moved=next(n for n in new['ContinuousRecognizer'].body
+                if isinstance(n,ast.FunctionDef) and n.name==method.name)
+            self.assertEqual(ast.dump(Rename().visit(method)),ast.dump(moved),method.name)
 
 
 if __name__ == '__main__':
