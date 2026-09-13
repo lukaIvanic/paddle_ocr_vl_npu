@@ -623,7 +623,7 @@ class InferenceServer:
                     record.update((key, value) for key, value in data.items() if key != 'kind')
                 if event == 'heartbeat':
                     observed = record.pop('observed_monotonic_s')
-                    tokens = record['output_tokens_including_eos']
+                    tokens = record['output_tokens']
                     elapsed = None if previous_observed is None else observed - previous_observed
                     record['interval_s'] = elapsed
                     record['output_tokens_per_s'] = (tokens - previous_tokens) / elapsed if elapsed else None
@@ -775,7 +775,7 @@ class InferenceWorker:
         runtime = self.recognizer
         self.results.put_nowait({
             "kind": "heartbeat", "observed_monotonic_s": now,
-            "output_tokens_including_eos": runtime.output_tokens,
+            "output_tokens": runtime.output_tokens,
             "active_decode_slots": runtime.decode_arena.num_active,
             "decode_batch_size": runtime.batch_size,
             "cpu_preparation_or_prefill_waiting": len(runtime.crops_awaiting_prefill),

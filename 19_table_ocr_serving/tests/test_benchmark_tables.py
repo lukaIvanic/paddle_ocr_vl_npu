@@ -27,18 +27,18 @@ class BenchmarkDataTests(unittest.TestCase):
             page = dict(page_info=dict(image_path='page.png', width=40, height=30),
                         layout_dets=[region, dict(region, ignore=True), dict(region, category_type='table_mask')])
             (root / 'OmniDocBench.json').write_text(json.dumps([page]))
-            tables = benchmark.read_tables(root)
+            tables = benchmark.read_table_annotations(root)
             self.assertEqual(len(tables), 1)
             self.assertEqual(tables[0]['bbox'], [1, 2, 21, 16])
-            payloads = benchmark.prepare_images(root, tables * 3)
+            payloads = benchmark.prepare_table_pngs(root, tables * 3)
             self.assertEqual(len(payloads), 1)
             with Image.open(io.BytesIO(next(iter(payloads.values())))) as crop:
                 self.assertEqual(crop.size, (20, 14))
 
     def test_balanced_global_shuffle_and_reproducibility(self):
         tables = [dict(table_id=str(i)) for i in range(5)]
-        schedule = benchmark.make_schedule(tables, 13, 6, 1)
-        self.assertEqual(schedule, benchmark.make_schedule(tables, 13, 6, 1))
+        schedule = benchmark.create_request_schedule(tables, 13, 6, 1)
+        self.assertEqual(schedule, benchmark.create_request_schedule(tables, 13, 6, 1))
         counts = Counter(r['table_id'] for r in schedule)
         self.assertEqual(sorted(counts.values()), [2, 2, 3, 3, 3])
         self.assertEqual([r['sequence'] for r in schedule], list(range(1, 14)))
@@ -71,10 +71,10 @@ class BenchmarkHttpTests(unittest.IsolatedAsyncioTestCase):
         async with server:
             port = server.sockets[0].getsockname()[1]
             args = SimpleNamespace(api_url=f'http://127.0.0.1:{port}/v1/ocr', timeout_s=1, qps=1000)
-            schedule = benchmark.make_schedule([{'table_id': 'one'}], 5, args.qps, 1)
+            schedule = benchmark.create_request_schedule([{'table_id': 'one'}], 5, args.qps, 1)
             output = io.StringIO()
             with contextlib.redirect_stdout(io.StringIO()):
-                summary = await benchmark.run_requests(args, schedule, {'one': b'image'}, output)
+                summary = await benchmark.run_benchmark(args, schedule, {'one': b'image'}, output)
         self.assertEqual(len(received), 6)  # One warmup plus five measured requests.
         self.assertEqual(summary['completed'], 5)
         self.assertEqual(summary['succeeded'], 4)

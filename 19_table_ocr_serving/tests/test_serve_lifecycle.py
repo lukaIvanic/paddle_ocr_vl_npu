@@ -672,7 +672,7 @@ class AsyncInferenceServerTests(unittest.IsolatedAsyncioTestCase):
         connection=self.make_connection(metrics_level='basic')
         for observed,tokens in ((100,0),(118,36)):
             connection._log('heartbeat',dict(kind='heartbeat',observed_monotonic_s=observed,
-                output_tokens_including_eos=tokens,unfinished_requests=0))
+                output_tokens=tokens,unfinished_requests=0))
         with patch('sys.stdout',new=io.StringIO()):
             connection.log_writer.start(); connection._close_logging()
         records=[json.loads(line) for line in (self.log_folder/'events.jsonl').read_text().splitlines()]
@@ -712,7 +712,7 @@ class AsyncInferenceServerTests(unittest.IsolatedAsyncioTestCase):
         timer.join()
         self.assertTrue(worker.closed)
         self.assertGreaterEqual(results.qsize(),2)
-        self.assertEqual(results.get()['output_tokens_including_eos'],0)
+        self.assertEqual(results.get()['output_tokens'],0)
 
     def test_shutdown_without_pending_requests_is_not_a_failure(self):
         connection=self.make_connection()

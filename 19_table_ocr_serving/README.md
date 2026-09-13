@@ -142,7 +142,7 @@ or terminal cannot prevent process exit. Log loss can make event-derived counts
 incomplete; runtime token counters do not depend on log delivery.
 
 
-## Python API, crop types and unfinished-request limit
+## Python API, crop types
 
 HTTP accepts `crop_type=table`, `text` or `formula`. Each request supplies one
 encoded image and its crop type; there is no crop classification or bulk API.
