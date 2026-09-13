@@ -11,6 +11,15 @@ Historical benchmark commands remain tied to their recorded commits and filename
 
 ## Current definition-order pass
 
+**NPU checkpoint, 2026-09-13:** the current product source (`e268dae4`, launched
+from `ce7a92b1`) compiled fresh and completed the saved B8/6-QPS 1,000-table run
+on one 910B2: mean 1.236842 s, P95 3.716353 s, 5.734273 completed tables/s,
+zero errors. Exact output parity with the historical 16k/Pillow anchor is not
+claimed: raw text differs on 21 unique tables and Page-TEDS decreases by
+0.089682 percentage points, mostly on postprocessing-only differences. All
+100 shared inputs from the prior 60k/Kornia run match native tokens exactly.
+See [the full validation and accuracy evidence](../tmp/19_table_ocr_serving/current_checkpoint_20260913/README.md).
+
 This pass introduces each operation before its supporting details. Short
 constructors establish the objects used by execution methods; long model and
 compilation setup remains a separate, labeled section.

@@ -1,0 +1,777 @@
+{
+  "source_sha256": {
+    "historical_results": "737ee9080bcdc09474286b189d08a26c4c6f954d440161bc41f20d0a7686f703",
+    "current_results": "6d2f94c32c55992f4d3fb6745bddad2f0220d94ed57a53e54325fdbfd5baed26"
+  },
+  "occurrence_counts": {
+    "native_changed": 39,
+    "raw_changed": 34,
+    "html_changed": 226,
+    "current_formatter_mismatch": 0,
+    "html_changed_with_identical_raw": 192,
+    "html_changed_after_common_formatter": 34
+  },
+  "unique_counts": {
+    "html_changed": 147,
+    "html_changed_with_identical_raw": 126,
+    "native_changed": 25,
+    "raw_changed": 21,
+    "html_changed_after_common_formatter": 21
+  },
+  "unique_tables": 665,
+  "repeated_input_token_variants": {},
+  "raw_text_changes_by_table": {
+    "page_001375_table_4": {
+      "sequence": 14,
+      "differences": [
+        {
+          "operation": "delete",
+          "old": "-",
+          "new": ""
+        },
+        {
+          "operation": "delete",
+          "old": "-",
+          "new": ""
+        }
+      ]
+    },
+    "page_000291_table_box_id_0": {
+      "sequence": 157,
+      "differences": [
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "4"
+        },
+        {
+          "operation": "delete",
+          "old": "1",
+          "new": ""
+        }
+      ]
+    },
+    "page_001035_table_28": {
+      "sequence": 162,
+      "differences": [
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "........"
+        }
+      ]
+    },
+    "page_000766_table_2": {
+      "sequence": 194,
+      "differences": [
+        {
+          "operation": "delete",
+          "old": " ",
+          "new": ""
+        }
+      ]
+    },
+    "page_000542_table_0": {
+      "sequence": 270,
+      "differences": [
+        {
+          "operation": "delete",
+          "old": "IN WIN",
+          "new": ""
+        },
+        {
+          "operation": "replace",
+          "old": "R<fcel>",
+          "new": "MP "
+        },
+        {
+          "operation": "replace",
+          "old": "HEX",
+          "new": "ORBIT"
+        },
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "EC<fcel>TEMP "
+        }
+      ]
+    },
+    "page_000276_table_box_id_5": {
+      "sequence": 285,
+      "differences": [
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "z"
+        },
+        {
+          "operation": "delete",
+          "old": "r",
+          "new": ""
+        },
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "t"
+        },
+        {
+          "operation": "delete",
+          "old": "er",
+          "new": ""
+        },
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "y"
+        }
+      ]
+    },
+    "page_000295_table_box_id_1": {
+      "sequence": 301,
+      "differences": [
+        {
+          "operation": "replace",
+          "old": "渡",
+          "new": "澳"
+        }
+      ]
+    },
+    "page_001367_table_60": {
+      "sequence": 346,
+      "differences": [
+        {
+          "operation": "replace",
+          "old": "I",
+          "new": "l"
+        },
+        {
+          "operation": "replace",
+          "old": "I",
+          "new": "l"
+        },
+        {
+          "operation": "delete",
+          "old": "I",
+          "new": ""
+        }
+      ]
+    },
+    "page_000280_table_box_id_1": {
+      "sequence": 376,
+      "differences": [
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "m"
+        }
+      ]
+    },
+    "page_000290_table_box_id_1": {
+      "sequence": 394,
+      "differences": [
+        {
+          "operation": "delete",
+          "old": ".3",
+          "new": ""
+        },
+        {
+          "operation": "replace",
+          "old": "p",
+          "new": "q"
+        },
+        {
+          "operation": "replace",
+          "old": "p",
+          "new": "q"
+        },
+        {
+          "operation": "replace",
+          "old": "pter",
+          "new": "q23"
+        },
+        {
+          "operation": "replace",
+          "old": "p",
+          "new": "q"
+        },
+        {
+          "operation": "replace",
+          "old": "p",
+          "new": "q"
+        },
+        {
+          "operation": "delete",
+          "old": "6p",
+          "new": ""
+        }
+      ]
+    },
+    "page_000521_table_2": {
+      "sequence": 448,
+      "differences": [
+        {
+          "operation": "replace",
+          "old": "\\n(",
+          "new": "（"
+        },
+        {
+          "operation": "replace",
+          "old": ")",
+          "new": "）"
+        },
+        {
+          "operation": "replace",
+          "old": "(",
+          "new": "（"
+        },
+        {
+          "operation": "replace",
+          "old": ")",
+          "new": "）"
+        },
+        {
+          "operation": "replace",
+          "old": "(",
+          "new": "（"
+        },
+        {
+          "operation": "replace",
+          "old": ")",
+          "new": "）"
+        },
+        {
+          "operation": "replace",
+          "old": "\\n(",
+          "new": "（"
+        },
+        {
+          "operation": "replace",
+          "old": ")",
+          "new": "）"
+        }
+      ]
+    },
+    "page_001367_table_69": {
+      "sequence": 460,
+      "differences": [
+        {
+          "operation": "replace",
+          "old": "./",
+          "new": ","
+        }
+      ]
+    },
+    "page_000229_table_box_id_3": {
+      "sequence": 585,
+      "differences": [
+        {
+          "operation": "delete",
+          "old": "历史原因",
+          "new": ""
+        },
+        {
+          "operation": "replace",
+          "old": "u",
+          "new": "f"
+        },
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "历史原因"
+        },
+        {
+          "operation": "replace",
+          "old": "u",
+          "new": "f"
+        },
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "历史原因"
+        }
+      ]
+    },
+    "page_000496_table_4": {
+      "sequence": 627,
+      "differences": [
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "o"
+        },
+        {
+          "operation": "delete",
+          "old": "ot",
+          "new": ""
+        }
+      ]
+    },
+    "page_001398_table_box-7mwax454": {
+      "sequence": 661,
+      "differences": [
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "insert",
+          "old": "",
+          "new": ".....<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "....<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        },
+        {
+          "operation": "replace",
+          "old": "...",
+          "new": "<fcel>"
+        }
+      ]
+    },
+    "page_000233_table_box_id_2": {
+      "sequence": 740,
+      "differences": [
+        {
+          "operation": "replace",
+          "old": "k",
+          "new": "K"
+        },
+        {
+          "operation": "replace",
+          "old": "I",
+          "new": "1"
+        }
+      ]
+    },
+    "page_000273_table_box_id_1": {
+      "sequence": 809,
+      "differences": [
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        },
+        {
+          "operation": "replace",
+          "old": "l",
+          "new": "e"
+        },
+        {
+          "operation": "replace",
+          "old": "x",
+          "new": "u"
+        }
+      ]
+    },
+    "page_000918_table_0": {
+      "sequence": 829,
+      "differences": [
+        {
+          "operation": "delete",
+          "old": "及",
+          "new": ""
+        }
+      ]
+    },
+    "page_000245_table_box_id_0": {
+      "sequence": 836,
+      "differences": [
+        {
+          "operation": "replace",
+          "old": "（",
+          "new": " ("
+        },
+        {
+          "operation": "replace",
+          "old": "）",
+          "new": ")"
+        },
+        {
+          "operation": "replace",
+          "old": "（",
+          "new": " ("
+        },
+        {
+          "operation": "replace",
+          "old": "）",
+          "new": ")"
+        }
+      ]
+    },
+    "page_001417_table_2": {
+      "sequence": 940,
+      "differences": [
+        {
+          "operation": "replace",
+          "old": "赛",
+          "new": "滑"
+        },
+        {
+          "operation": "replace",
+          "old": "票",
+          "new": "源"
+        }
+      ]
+    },
+    "page_001273_table_8": {
+      "sequence": 946,
+      "differences": [
+        {
+          "operation": "replace",
+          "old": "\\",
+          "new": "<lcel><lcel><lcel><lcel><lcel><lcel><lcel><lcel><lcel><lcel><lcel><"
+        },
+        {
+          "operation": "insert",
+          "old": "",
+          "new": "l><fcel>"
+        }
+      ]
+    }
+  },
+  "ownership": {
+    "compile": {
+      "checks": 112,
+      "foreign_process_checks": 0,
+      "final_device_pids": []
+    },
+    "cached": {
+      "checks": 97,
+      "foreign_process_checks": 0,
+      "final_device_pids": []
+    }
+  },
+  "previous_same_head_preprocessing_100": {
+    "count": 100,
+    "mismatches": {
+      "token_ids": [],
+      "raw_text": [],
+      "stop_reason": [],
+      "crop_size": [],
+      "input_tokens": [],
+      "projected_image_tokens": []
+    },
+    "qualification": "Shared-input output comparison only; different arrival workload and instrumentation, not performance parity."
+  },
+  "accuracy_change_groups": {
+    "page_teds_percentage_point_contributions": {
+      "postprocessing_only": -0.06149588079791325,
+      "raw_changed_may_also_include_postprocessing": -0.02818612989952972
+    },
+    "improved_table_scores": 31,
+    "worsened_table_scores": 64
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "runtime_commit": "ce7a92b1150d456b2c83a3f35e04a6b0b4471f44",
+  "client_commit": "be691de190ae099d1a9b0ba80865006b122ecc00",
+  "physical_npu": 6,
+  "batch": 8,
+  "target_qps": 6,
+  "requests": 1000,
+  "seed": 1,
+  "shuffle_all": true,
+  "cache_root": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_current_checkpoint_20260913",
+  "head_rows": 60416,
+  "metrics_level": "scheduling",
+  "phases": [
+    "compile_and_real_warmup_only",
+    "cached_restart_warmup_and_measure"
+  ],
+  "reference": "tmp/19_table_ocr_serving/step3_b8qps6_0976fa33_20260911_cached",
+  "comparison_note": "Historical reference uses 16k vocabulary and former preprocessing/postprocessing. Report differences; do not claim an isolated refactor speedup."
+}

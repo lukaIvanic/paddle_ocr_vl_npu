@@ -1,0 +1,6 @@
+Host: liteserver-c001-4
+Device: Ascend 910B2, physical NPU6 (logical npu:0 inside the server)
+Runtime/launcher commit: ce7a92b1150d456b2c83a3f35e04a6b0b4471f44
+Product source unchanged from: e268dae4
+Working directory: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu
+python3 -u tmp/19_table_ocr_serving/current_checkpoint_20260913/driver.py --expected-commit ce7a92b1150d456b2c83a3f35e04a6b0b4471f44 --npu 6

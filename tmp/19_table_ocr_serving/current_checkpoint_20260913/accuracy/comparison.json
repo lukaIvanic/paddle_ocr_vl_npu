@@ -1,0 +1,1642 @@
+{
+  "note": "665 unique tables; repeated benchmark occurrences are not extra accuracy samples. Both runs scored with the same existing evaluator and normalization. Historical head/preprocessing/postprocessing differ.",
+  "dataset_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "evaluator_script_sha256": "cf2db682c278598b615bf8482bbbd7bf1d0c3e76f91ba222147edd63e51121b2",
+  "historical": {
+    "sample_TEDS": 0.9497255775861384,
+    "sample_TEDS_structure_only": 0.9752160473130916,
+    "page_TEDS": 0.9545528083813786,
+    "page_TEDS_structure_only": 0.9781178168042242,
+    "table_count": 665,
+    "table_page_count": 458,
+    "teds_timeout_count": 0,
+    "teds_error_count": 0
+  },
+  "current": {
+    "sample_TEDS": 0.9493051866549586,
+    "sample_TEDS_structure_only": 0.9751066864297369,
+    "page_TEDS": 0.9536559882744038,
+    "page_TEDS_structure_only": 0.9778030710425223,
+    "table_count": 665,
+    "table_page_count": 458,
+    "teds_timeout_count": 0,
+    "teds_error_count": 0
+  },
+  "changed_tables": [
+    {
+      "request_id": "page_000011_table_box_id_1",
+      "before": {
+        "request_id": "page_000011_table_box_id_1",
+        "page_name": "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+        "TEDS": 0.9814907622117578,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000011_table_box_id_1",
+        "page_name": "page-573c437e-c309-4483-a038-ef2f440b104a.png",
+        "TEDS": 0.9692772562744473,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000106_table_box_id_2",
+      "before": {
+        "request_id": "page_000106_table_box_id_2",
+        "page_name": "page-0b20ed47-7c6c-4578-bbdf-057a89a083ec.png",
+        "TEDS": 0.7797709173637966,
+        "TEDS_structure_only": 0.9487179487179487,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000106_table_box_id_2",
+        "page_name": "page-0b20ed47-7c6c-4578-bbdf-057a89a083ec.png",
+        "TEDS": 0.777164079756959,
+        "TEDS_structure_only": 0.9487179487179487,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000206_table_box_id_1",
+      "before": {
+        "request_id": "page_000206_table_box_id_1",
+        "page_name": "page-83587fc3-fe55-4e51-a3c5-f0664edba743.png",
+        "TEDS": 0.9986914082948206,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000206_table_box_id_1",
+        "page_name": "page-83587fc3-fe55-4e51-a3c5-f0664edba743.png",
+        "TEDS": 0.9948011459386585,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000206_table_box_id_9",
+      "before": {
+        "request_id": "page_000206_table_box_id_9",
+        "page_name": "page-83587fc3-fe55-4e51-a3c5-f0664edba743.png",
+        "TEDS": 0.9964776152729709,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000206_table_box_id_9",
+        "page_name": "page-83587fc3-fe55-4e51-a3c5-f0664edba743.png",
+        "TEDS": 0.986566889542216,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000212_table_box_id_1",
+      "before": {
+        "request_id": "page_000212_table_box_id_1",
+        "page_name": "page-91b20bf2-3ad5-41f4-b739-4cc4b18ab1eb.png",
+        "TEDS": 0.9821296656361063,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000212_table_box_id_1",
+        "page_name": "page-91b20bf2-3ad5-41f4-b739-4cc4b18ab1eb.png",
+        "TEDS": 0.9818302883511044,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000229_table_box_id_3",
+      "before": {
+        "request_id": "page_000229_table_box_id_3",
+        "page_name": "page-3f872a77-3faf-47d6-8574-bd2e5806ff98.png",
+        "TEDS": 0.8928571428571429,
+        "TEDS_structure_only": 0.8928571428571429,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000229_table_box_id_3",
+        "page_name": "page-3f872a77-3faf-47d6-8574-bd2e5806ff98.png",
+        "TEDS": 0.9464285714285714,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000233_table_box_id_2",
+      "before": {
+        "request_id": "page_000233_table_box_id_2",
+        "page_name": "page-74961b9a-ef4c-42d8-a95f-406e6b84cf63.png",
+        "TEDS": 0.9054643517917111,
+        "TEDS_structure_only": 0.9166666666666666,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000233_table_box_id_2",
+        "page_name": "page-74961b9a-ef4c-42d8-a95f-406e6b84cf63.png",
+        "TEDS": 0.9051933490816841,
+        "TEDS_structure_only": 0.9166666666666666,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000239_table_box_id_7",
+      "before": {
+        "request_id": "page_000239_table_box_id_7",
+        "page_name": "page-fd7003ba-9af2-4b60-8c45-1e2ac1c7f474.png",
+        "TEDS": 0.6280844155844156,
+        "TEDS_structure_only": 0.75,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000239_table_box_id_7",
+        "page_name": "page-fd7003ba-9af2-4b60-8c45-1e2ac1c7f474.png",
+        "TEDS": 0.624025974025974,
+        "TEDS_structure_only": 0.75,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000245_table_box_id_0",
+      "before": {
+        "request_id": "page_000245_table_box_id_0",
+        "page_name": "page-a8d87718-ab19-4fc0-9ef5-3611ad10f88e.png",
+        "TEDS": 0.9251624381188119,
+        "TEDS_structure_only": 0.9375,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000245_table_box_id_0",
+        "page_name": "page-a8d87718-ab19-4fc0-9ef5-3611ad10f88e.png",
+        "TEDS": 0.92578125,
+        "TEDS_structure_only": 0.9375,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000255_table_box_id_2",
+      "before": {
+        "request_id": "page_000255_table_box_id_2",
+        "page_name": "page-2deb83b3-abe2-442c-a544-0b6a8db464f1.png",
+        "TEDS": 0.8880377184378504,
+        "TEDS_structure_only": 0.9333333333333333,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000255_table_box_id_2",
+        "page_name": "page-2deb83b3-abe2-442c-a544-0b6a8db464f1.png",
+        "TEDS": 0.8736929062625033,
+        "TEDS_structure_only": 0.9333333333333333,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000261_table_box_id_3",
+      "before": {
+        "request_id": "page_000261_table_box_id_3",
+        "page_name": "page-1955f827-fb35-4806-b3a4-463d9e0d6cc8.png",
+        "TEDS": 0.9376507702316946,
+        "TEDS_structure_only": 0.9386503067484663,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000261_table_box_id_3",
+        "page_name": "page-1955f827-fb35-4806-b3a4-463d9e0d6cc8.png",
+        "TEDS": 0.937178175040212,
+        "TEDS_structure_only": 0.9386503067484663,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000263_table_box_id_7",
+      "before": {
+        "request_id": "page_000263_table_box_id_7",
+        "page_name": "page-dbed9c07-e155-4ba1-92f9-a2962dc9a8f9.png",
+        "TEDS": 0.9195547387225338,
+        "TEDS_structure_only": 0.9359999999999999,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000263_table_box_id_7",
+        "page_name": "page-dbed9c07-e155-4ba1-92f9-a2962dc9a8f9.png",
+        "TEDS": 0.9126638084847025,
+        "TEDS_structure_only": 0.9359999999999999,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000265_table_box_id_3",
+      "before": {
+        "request_id": "page_000265_table_box_id_3",
+        "page_name": "page-d2cdac80-318c-4157-ac6e-bdab333f66bd.png",
+        "TEDS": 0.9838274499439605,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000265_table_box_id_3",
+        "page_name": "page-d2cdac80-318c-4157-ac6e-bdab333f66bd.png",
+        "TEDS": 0.9837957539358464,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000267_table_box_id_1",
+      "before": {
+        "request_id": "page_000267_table_box_id_1",
+        "page_name": "page-1cecd66d-3563-422a-a204-999bba0bb528.png",
+        "TEDS": 0.9724660655847374,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000267_table_box_id_1",
+        "page_name": "page-1cecd66d-3563-422a-a204-999bba0bb528.png",
+        "TEDS": 0.971794915529366,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000273_table_box_id_1",
+      "before": {
+        "request_id": "page_000273_table_box_id_1",
+        "page_name": "page-035cb436-c01e-41db-b40e-8977678777eb.png",
+        "TEDS": 0.9873015873015873,
+        "TEDS_structure_only": 0.9873015873015873,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000273_table_box_id_1",
+        "page_name": "page-035cb436-c01e-41db-b40e-8977678777eb.png",
+        "TEDS": 0.8294117647058823,
+        "TEDS_structure_only": 0.8294117647058823,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000276_table_box_id_5",
+      "before": {
+        "request_id": "page_000276_table_box_id_5",
+        "page_name": "page-5d58cdf7-6d00-4ea5-97b2-358cbc0cab21.png",
+        "TEDS": 0.9890770638696165,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000276_table_box_id_5",
+        "page_name": "page-5d58cdf7-6d00-4ea5-97b2-358cbc0cab21.png",
+        "TEDS": 0.9892571396782323,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000277_table_box_id_1",
+      "before": {
+        "request_id": "page_000277_table_box_id_1",
+        "page_name": "page-3ce15378-6ffd-4f3c-9473-8b897451c770.png",
+        "TEDS": 0.9301768113931213,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000277_table_box_id_1",
+        "page_name": "page-3ce15378-6ffd-4f3c-9473-8b897451c770.png",
+        "TEDS": 0.9301341485490454,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000278_table_box_id_1",
+      "before": {
+        "request_id": "page_000278_table_box_id_1",
+        "page_name": "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png",
+        "TEDS": 0.8299732524025385,
+        "TEDS_structure_only": 0.9090909090909091,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000278_table_box_id_1",
+        "page_name": "page-f222e5f3-8628-47cd-a0b6-40f62123228f.png",
+        "TEDS": 0.8293921668214529,
+        "TEDS_structure_only": 0.9090909090909091,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000280_table_box_id_1",
+      "before": {
+        "request_id": "page_000280_table_box_id_1",
+        "page_name": "page-5cb4b2fe-c14d-450e-9b97-4b6e7c99493b.png",
+        "TEDS": 0.9589220836162504,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000280_table_box_id_1",
+        "page_name": "page-5cb4b2fe-c14d-450e-9b97-4b6e7c99493b.png",
+        "TEDS": 0.9582993110157793,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000281_table_box_id_1",
+      "before": {
+        "request_id": "page_000281_table_box_id_1",
+        "page_name": "page-eff3dc3a-8d44-4c68-9c3a-55df4aaf1e36.png",
+        "TEDS": 0.9809012865071907,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000281_table_box_id_1",
+        "page_name": "page-eff3dc3a-8d44-4c68-9c3a-55df4aaf1e36.png",
+        "TEDS": 0.9807909688373291,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000289_table_box_id_4",
+      "before": {
+        "request_id": "page_000289_table_box_id_4",
+        "page_name": "page-f8c08102-a96d-4533-b3a1-dac6020513b5.png",
+        "TEDS": 0.9699347671639863,
+        "TEDS_structure_only": 0.9798488664987406,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000289_table_box_id_4",
+        "page_name": "page-f8c08102-a96d-4533-b3a1-dac6020513b5.png",
+        "TEDS": 0.9696948727175427,
+        "TEDS_structure_only": 0.9798488664987406,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000290_table_box_id_1",
+      "before": {
+        "request_id": "page_000290_table_box_id_1",
+        "page_name": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png",
+        "TEDS": 0.8396289097448972,
+        "TEDS_structure_only": 0.856655290102389,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000290_table_box_id_1",
+        "page_name": "page-38fc7c6b-80ed-46be-bb53-29986a63ad3e.png",
+        "TEDS": 0.8393136125685741,
+        "TEDS_structure_only": 0.856655290102389,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000291_table_box_id_0",
+      "before": {
+        "request_id": "page_000291_table_box_id_0",
+        "page_name": "page-f3e750d8-8201-4a22-9419-9776798b7a32.png",
+        "TEDS": 0.7202168683824721,
+        "TEDS_structure_only": 0.7563249001331558,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000291_table_box_id_0",
+        "page_name": "page-f3e750d8-8201-4a22-9419-9776798b7a32.png",
+        "TEDS": 0.7198658212937419,
+        "TEDS_structure_only": 0.7563249001331558,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000295_table_box_id_1",
+      "before": {
+        "request_id": "page_000295_table_box_id_1",
+        "page_name": "page-f5b824d0-be81-48a9-aae6-3060d11a6503.png",
+        "TEDS": 0.9418750115320036,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000295_table_box_id_1",
+        "page_name": "page-f5b824d0-be81-48a9-aae6-3060d11a6503.png",
+        "TEDS": 0.9415451962285736,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000433_table_13",
+      "before": {
+        "request_id": "page_000433_table_13",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-ceat.200600266.pdf_2.jpg",
+        "TEDS": 0.9815810276679842,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000433_table_13",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-ceat.200600266.pdf_2.jpg",
+        "TEDS": 0.9672204968944099,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000434_table_15",
+      "before": {
+        "request_id": "page_000434_table_15",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-ceat.200600410.pdf_5.jpg",
+        "TEDS": 0.9970760233918129,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000434_table_15",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-ceat.200600410.pdf_5.jpg",
+        "TEDS": 0.9967105263157895,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000446_table_3",
+      "before": {
+        "request_id": "page_000446_table_3",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+        "TEDS": 0.8392883340251761,
+        "TEDS_structure_only": 0.8528528528528528,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000446_table_3",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-hup.777.pdf_7.jpg",
+        "TEDS": 0.8403927351295772,
+        "TEDS_structure_only": 0.8528528528528528,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000468_table_1",
+      "before": {
+        "request_id": "page_000468_table_1",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.08.021.pdf_7.jpg",
+        "TEDS": 0.9731800766283525,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000468_table_1",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.08.021.pdf_7.jpg",
+        "TEDS": 0.9702380952380952,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000468_table_11",
+      "before": {
+        "request_id": "page_000468_table_11",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.08.021.pdf_7.jpg",
+        "TEDS": 0.9122474747474747,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000468_table_11",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-j.chroma.2005.08.021.pdf_7.jpg",
+        "TEDS": 0.9140625,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000494_table_7",
+      "before": {
+        "request_id": "page_000494_table_7",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-003-0589-2.pdf_6.jpg",
+        "TEDS": 0.971201588877855,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000494_table_7",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-003-0589-2.pdf_6.jpg",
+        "TEDS": 0.9699878627386075,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000495_table_9",
+      "before": {
+        "request_id": "page_000495_table_9",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-004-0768-9.pdf_2.jpg",
+        "TEDS": 0.7826642463065244,
+        "TEDS_structure_only": 0.7938144329896908,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000495_table_9",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-004-0768-9.pdf_2.jpg",
+        "TEDS": 0.7820637058200866,
+        "TEDS_structure_only": 0.7938144329896908,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000496_table_3",
+      "before": {
+        "request_id": "page_000496_table_3",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg",
+        "TEDS": 0.9794546850998463,
+        "TEDS_structure_only": 0.9838709677419355,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000496_table_3",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg",
+        "TEDS": 0.9799027137736815,
+        "TEDS_structure_only": 0.9838709677419355,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000496_table_4",
+      "before": {
+        "request_id": "page_000496_table_4",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg",
+        "TEDS": 0.9935119047619048,
+        "TEDS_structure_only": 0.995,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000496_table_4",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s00374-006-0103-8.pdf_11.jpg",
+        "TEDS": 0.9933566760037348,
+        "TEDS_structure_only": 0.995,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000500_table_5",
+      "before": {
+        "request_id": "page_000500_table_5",
+        "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-60403612.pdf_179.jpg",
+        "TEDS": 0.9097619438965593,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000500_table_5",
+        "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-60403612.pdf_179.jpg",
+        "TEDS": 0.9132757022180099,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000521_table_2",
+      "before": {
+        "request_id": "page_000521_table_2",
+        "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+        "TEDS": 0.9867440403171417,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000521_table_2",
+        "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61571259.pdf_239.jpg",
+        "TEDS": 0.9891249926980941,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000553_table_8",
+      "before": {
+        "request_id": "page_000553_table_8",
+        "page_name": "yanbaopptmerge_d4fc7cba428625974e93183edfccea73.pdf_89.jpg",
+        "TEDS": 0.8757445814294875,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000553_table_8",
+        "page_name": "yanbaopptmerge_d4fc7cba428625974e93183edfccea73.pdf_89.jpg",
+        "TEDS": 0.8773894651333417,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000612_table_6",
+      "before": {
+        "request_id": "page_000612_table_6",
+        "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61520814.pdf_185.jpg",
+        "TEDS": 0.9703998558487723,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000612_table_6",
+        "page_name": "docstructbench_dianzishu_zhongwenzaixian-o.O-61520814.pdf_185.jpg",
+        "TEDS": 0.9710126009468115,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000623_table_7",
+      "before": {
+        "request_id": "page_000623_table_7",
+        "page_name": "docstructbench_enbook-zlib-o.O-17761417.pdf_894.jpg",
+        "TEDS": 0.8583839210256522,
+        "TEDS_structure_only": 0.8877551020408163,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000623_table_7",
+        "page_name": "docstructbench_enbook-zlib-o.O-17761417.pdf_894.jpg",
+        "TEDS": 0.8585746033591917,
+        "TEDS_structure_only": 0.8877551020408163,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000627_table_14",
+      "before": {
+        "request_id": "page_000627_table_14",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-ceat.200407001.pdf_3.jpg",
+        "TEDS": 0.5984914667621435,
+        "TEDS_structure_only": 0.7714285714285715,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000627_table_14",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-ceat.200407001.pdf_3.jpg",
+        "TEDS": 0.5981513307077218,
+        "TEDS_structure_only": 0.7714285714285715,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000629_table_14",
+      "before": {
+        "request_id": "page_000629_table_14",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-chem.200700285.pdf_4.jpg",
+        "TEDS": 0.9751430715827001,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000629_table_14",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-chem.200700285.pdf_4.jpg",
+        "TEDS": 0.974111079838634,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000631_table_0",
+      "before": {
+        "request_id": "page_000631_table_0",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-j.1444-2906.2002.00466.x.pdf_4.jpg",
+        "TEDS": 0.9297107222870846,
+        "TEDS_structure_only": 0.9701492537313433,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000631_table_0",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-j.1444-2906.2002.00466.x.pdf_4.jpg",
+        "TEDS": 0.9303001190062974,
+        "TEDS_structure_only": 0.9701492537313433,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000641_table_5",
+      "before": {
+        "request_id": "page_000641_table_5",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s0362-546x%2897%2900070-9.pdf_7.jpg",
+        "TEDS": 0.9890625,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000641_table_5",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s0362-546x%2897%2900070-9.pdf_7.jpg",
+        "TEDS": 0.9868421052631579,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000641_table_8",
+      "before": {
+        "request_id": "page_000641_table_8",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s0362-546x%2897%2900070-9.pdf_7.jpg",
+        "TEDS": 0.9865384615384616,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000641_table_8",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s0362-546x%2897%2900070-9.pdf_7.jpg",
+        "TEDS": 0.9838056680161943,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000642_table_6",
+      "before": {
+        "request_id": "page_000642_table_6",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s10555-005-1578-8.pdf_5.jpg",
+        "TEDS": 0.9529834969994544,
+        "TEDS_structure_only": 0.9574468085106383,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000642_table_6",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s10555-005-1578-8.pdf_5.jpg",
+        "TEDS": 0.9521584952204749,
+        "TEDS_structure_only": 0.9574468085106383,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000652_table_2",
+      "before": {
+        "request_id": "page_000652_table_2",
+        "page_name": "docstructbench_llm-raw-the-eye-o.O-TFT-Traveller.pdf_6.jpg",
+        "TEDS": 0.9759872985223516,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000652_table_2",
+        "page_name": "docstructbench_llm-raw-the-eye-o.O-TFT-Traveller.pdf_6.jpg",
+        "TEDS": 0.9719495362897123,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000654_table_0",
+      "before": {
+        "request_id": "page_000654_table_0",
+        "page_name": "jiaocaineedrop_2005_QP.pdf_5.jpg",
+        "TEDS": 0.9102132435465768,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000654_table_0",
+        "page_name": "jiaocaineedrop_2005_QP.pdf_5.jpg",
+        "TEDS": 0.9093822843822844,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000676_table_2",
+      "before": {
+        "request_id": "page_000676_table_2",
+        "page_name": "jiaocaineedrop_ced6f3c05e1dfefa8455fa60aacdd2d76ffd79489b631c2dbde22a74e927544b.pdf_84.jpg",
+        "TEDS": 0.9746032278895825,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000676_table_2",
+        "page_name": "jiaocaineedrop_ced6f3c05e1dfefa8455fa60aacdd2d76ffd79489b631c2dbde22a74e927544b.pdf_84.jpg",
+        "TEDS": 0.9693443200007439,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000682_table_15",
+      "before": {
+        "request_id": "page_000682_table_15",
+        "page_name": "jiaocaineedrop_chem-323236.pdf_183.jpg",
+        "TEDS": 0.9732142857142857,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000682_table_15",
+        "page_name": "jiaocaineedrop_chem-323236.pdf_183.jpg",
+        "TEDS": 0.9746031746031746,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000702_table_5",
+      "before": {
+        "request_id": "page_000702_table_5",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_1271.jpg",
+        "TEDS": 0.9090738209159261,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000702_table_5",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_1271.jpg",
+        "TEDS": 0.8809670957697273,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000755_table_3",
+      "before": {
+        "request_id": "page_000755_table_3",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2183.jpg",
+        "TEDS": 0.9023538961038962,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000755_table_3",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2183.jpg",
+        "TEDS": 0.8802079864579865,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000766_table_2",
+      "before": {
+        "request_id": "page_000766_table_2",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2399.jpg",
+        "TEDS": 0.9587181422571264,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000766_table_2",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2399.jpg",
+        "TEDS": 0.9565628483151749,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000769_table_3",
+      "before": {
+        "request_id": "page_000769_table_3",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2449.jpg",
+        "TEDS": 0.9882352941176471,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000769_table_3",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2449.jpg",
+        "TEDS": 0.9875,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000785_table_7",
+      "before": {
+        "request_id": "page_000785_table_7",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2755.jpg",
+        "TEDS": 0.7520661157024794,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000785_table_7",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2755.jpg",
+        "TEDS": 0.7772727272727272,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000790_table_9",
+      "before": {
+        "request_id": "page_000790_table_9",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2884.jpg",
+        "TEDS": 0.9727946276259012,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000790_table_9",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2884.jpg",
+        "TEDS": 0.9685006782080484,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000792_table_25",
+      "before": {
+        "request_id": "page_000792_table_25",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2901.jpg",
+        "TEDS": 0.9108483483483484,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000792_table_25",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_2901.jpg",
+        "TEDS": 0.9018393393393394,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000821_table_box_id_14",
+      "before": {
+        "request_id": "page_000821_table_box_id_14",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_383.jpg",
+        "TEDS": 0.9772727272727273,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000821_table_box_id_14",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_383.jpg",
+        "TEDS": 0.9797979797979798,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000829_table_4",
+      "before": {
+        "request_id": "page_000829_table_4",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_439.jpg",
+        "TEDS": 0.9461659663865546,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000829_table_4",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_439.jpg",
+        "TEDS": 0.93125,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000844_table_6",
+      "before": {
+        "request_id": "page_000844_table_6",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_673.jpg",
+        "TEDS": 0.9379520697167756,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000844_table_6",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_673.jpg",
+        "TEDS": 0.9390337078651685,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000861_table_17",
+      "before": {
+        "request_id": "page_000861_table_17",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_952.jpg",
+        "TEDS": 0.9422966836287832,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000861_table_17",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_952.jpg",
+        "TEDS": 0.940462552847284,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000861_table_5",
+      "before": {
+        "request_id": "page_000861_table_5",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_952.jpg",
+        "TEDS": 0.9020199117382802,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000861_table_5",
+        "page_name": "jiaocaineedrop_jiaocai_needrop_en_952.jpg",
+        "TEDS": 0.9038012856380203,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_000984_table_3",
+      "before": {
+        "request_id": "page_000984_table_3",
+        "page_name": "notes_f7f010b78016aeebd76e56d9283eb67f_50.jpg",
+        "TEDS": 0.926893990715989,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_000984_table_3",
+        "page_name": "notes_f7f010b78016aeebd76e56d9283eb67f_50.jpg",
+        "TEDS": 0.853787981431978,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001035_table_28",
+      "before": {
+        "request_id": "page_001035_table_28",
+        "page_name": "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_18.jpg",
+        "TEDS": 0.9299790594693199,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001035_table_28",
+        "page_name": "newspaper_2a6b4fa088699701a6fa9ccecfb5c25d_18.jpg",
+        "TEDS": 0.9293335424505327,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001144_table_11",
+      "before": {
+        "request_id": "page_001144_table_11",
+        "page_name": "eastmoney_bdbfdb8a6ab56be3ab1b40009ee648b6d250013ce653c146f2d2023bd8d14772.pdf_26.jpg",
+        "TEDS": 0.8964285714285715,
+        "TEDS_structure_only": 0.9,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001144_table_11",
+        "page_name": "eastmoney_bdbfdb8a6ab56be3ab1b40009ee648b6d250013ce653c146f2d2023bd8d14772.pdf_26.jpg",
+        "TEDS": 0.895,
+        "TEDS_structure_only": 0.9,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001156_table_6",
+      "before": {
+        "request_id": "page_001156_table_6",
+        "page_name": "eastmoney_d64a9204564ad81332a4dc3767365740a00228323d2862604d15cb15b318f3af.pdf_3.jpg",
+        "TEDS": 0.9859661210345613,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001156_table_6",
+        "page_name": "eastmoney_d64a9204564ad81332a4dc3767365740a00228323d2862604d15cb15b318f3af.pdf_3.jpg",
+        "TEDS": 0.9829159961295977,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001161_table_3",
+      "before": {
+        "request_id": "page_001161_table_3",
+        "page_name": "eastmoney_e42b6e1cd2d48113ff4db8854e539d828d632bf9b1757e10cb8ddb2cfc7b1393.pdf_12.jpg",
+        "TEDS": 0.9793320105820106,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001161_table_3",
+        "page_name": "eastmoney_e42b6e1cd2d48113ff4db8854e539d828d632bf9b1757e10cb8ddb2cfc7b1393.pdf_12.jpg",
+        "TEDS": 0.9812925170068028,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001165_table_13",
+      "before": {
+        "request_id": "page_001165_table_13",
+        "page_name": "eastmoney_f4848e9d70d37f406f54c714024c5ef002832a1bf64290aa5c163665887a3e55.pdf_5.jpg",
+        "TEDS": 0.9641507669285447,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001165_table_13",
+        "page_name": "eastmoney_f4848e9d70d37f406f54c714024c5ef002832a1bf64290aa5c163665887a3e55.pdf_5.jpg",
+        "TEDS": 0.962467265245043,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001167_table_2",
+      "before": {
+        "request_id": "page_001167_table_2",
+        "page_name": "eastmoney_f72b162baf25f1a2060e4ce877071ec27e490ab16e9de1a2b18572b596d2bde8.pdf_2.jpg",
+        "TEDS": 0.9500094403078573,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001167_table_2",
+        "page_name": "eastmoney_f72b162baf25f1a2060e4ce877071ec27e490ab16e9de1a2b18572b596d2bde8.pdf_2.jpg",
+        "TEDS": 0.9521514309176929,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001200_table_2",
+      "before": {
+        "request_id": "page_001200_table_2",
+        "page_name": "scihub_AEM.01420-09.pdf_3.jpg",
+        "TEDS": 0.8817918267398327,
+        "TEDS_structure_only": 0.92,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001200_table_2",
+        "page_name": "scihub_AEM.01420-09.pdf_3.jpg",
+        "TEDS": 0.8776903025339113,
+        "TEDS_structure_only": 0.92,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001201_table_14",
+      "before": {
+        "request_id": "page_001201_table_14",
+        "page_name": "scihub_TNANO.2007.893575.pdf_0.jpg",
+        "TEDS": 0.899844181558018,
+        "TEDS_structure_only": 0.9333333333333333,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001201_table_14",
+        "page_name": "scihub_TNANO.2007.893575.pdf_0.jpg",
+        "TEDS": 0.8936447745207337,
+        "TEDS_structure_only": 0.9333333333333333,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001202_table_3",
+      "before": {
+        "request_id": "page_001202_table_3",
+        "page_name": "scihub_bloodadvances.2019030924.pdf_3.jpg",
+        "TEDS": 0.8210952380952381,
+        "TEDS_structure_only": 0.95,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001202_table_3",
+        "page_name": "scihub_bloodadvances.2019030924.pdf_3.jpg",
+        "TEDS": 0.8227956656346749,
+        "TEDS_structure_only": 0.95,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001204_table_4",
+      "before": {
+        "request_id": "page_001204_table_4",
+        "page_name": "scihub_carcin%2Fbgh032.pdf_2.jpg",
+        "TEDS": 0.9607804195370357,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001204_table_4",
+        "page_name": "scihub_carcin%2Fbgh032.pdf_2.jpg",
+        "TEDS": 0.959195314826931,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001216_table_2",
+      "before": {
+        "request_id": "page_001216_table_2",
+        "page_name": "scihub_j.jmb.2003.10.009.pdf_4.jpg",
+        "TEDS": 0.8456198907604229,
+        "TEDS_structure_only": 0.8717948717948718,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001216_table_2",
+        "page_name": "scihub_j.jmb.2003.10.009.pdf_4.jpg",
+        "TEDS": 0.847393599995365,
+        "TEDS_structure_only": 0.8717948717948718,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001219_table_box_id_4",
+      "before": {
+        "request_id": "page_001219_table_box_id_4",
+        "page_name": "scihub_jai.12343.pdf_3.jpg",
+        "TEDS": 0.9474920844406138,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001219_table_box_id_4",
+        "page_name": "scihub_jai.12343.pdf_3.jpg",
+        "TEDS": 0.9467284694943066,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001220_table_8",
+      "before": {
+        "request_id": "page_001220_table_8",
+        "page_name": "scihub_jb%2Fmvh022.pdf_1.jpg",
+        "TEDS": 0.9640171103406397,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001220_table_8",
+        "page_name": "scihub_jb%2Fmvh022.pdf_1.jpg",
+        "TEDS": 0.964751098574628,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001222_table_2",
+      "before": {
+        "request_id": "page_001222_table_2",
+        "page_name": "scihub_jgh.13044.pdf_2.jpg",
+        "TEDS": 0.9107275208451678,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001222_table_2",
+        "page_name": "scihub_jgh.13044.pdf_2.jpg",
+        "TEDS": 0.9112754596788211,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001223_table_9",
+      "before": {
+        "request_id": "page_001223_table_9",
+        "page_name": "scihub_jneurosci.16-15-04625.1996.pdf_2.jpg",
+        "TEDS": 0.9566133924554977,
+        "TEDS_structure_only": 0.984,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001223_table_9",
+        "page_name": "scihub_jneurosci.16-15-04625.1996.pdf_2.jpg",
+        "TEDS": 0.9568185206606259,
+        "TEDS_structure_only": 0.984,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001232_table_box_id_1",
+      "before": {
+        "request_id": "page_001232_table_box_id_1",
+        "page_name": "scihub_s00894-012-1568-z.pdf_2.jpg",
+        "TEDS": 0.5538548752834467,
+        "TEDS_structure_only": 0.5714285714285714,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001232_table_box_id_1",
+        "page_name": "scihub_s00894-012-1568-z.pdf_2.jpg",
+        "TEDS": 0.5507936507936508,
+        "TEDS_structure_only": 0.5714285714285714,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001233_table_6",
+      "before": {
+        "request_id": "page_001233_table_6",
+        "page_name": "scihub_s11661-013-1726-7.pdf_2.jpg",
+        "TEDS": 0.7816766566766566,
+        "TEDS_structure_only": 0.9090909090909091,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001233_table_6",
+        "page_name": "scihub_s11661-013-1726-7.pdf_2.jpg",
+        "TEDS": 0.7076985514485514,
+        "TEDS_structure_only": 0.9090909090909091,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001248_table_0",
+      "before": {
+        "request_id": "page_001248_table_0",
+        "page_name": "yanbaor2_89c3718f5a45179ef57a5063c6df36fc2c9b7e3ab4275f4905ed89f1c17232ea.pdf_14.jpg",
+        "TEDS": 0.9933155080213903,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001248_table_0",
+        "page_name": "yanbaor2_89c3718f5a45179ef57a5063c6df36fc2c9b7e3ab4275f4905ed89f1c17232ea.pdf_14.jpg",
+        "TEDS": 0.9936079545454546,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001270_table_box_id_1",
+      "before": {
+        "request_id": "page_001270_table_box_id_1",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s001280000131.pdf_5.jpg",
+        "TEDS": 0.8517598378382693,
+        "TEDS_structure_only": 0.9333333333333333,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001270_table_box_id_1",
+        "page_name": "docstructbench_llm-raw-scihub-o.O-s001280000131.pdf_5.jpg",
+        "TEDS": 0.8510157902192216,
+        "TEDS_structure_only": 0.9333333333333333,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001273_table_8",
+      "before": {
+        "request_id": "page_001273_table_8",
+        "page_name": "scihub_j.1528-1167.2008.01552.x.pdf_3.jpg",
+        "TEDS": 0.9696615548487354,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001273_table_8",
+        "page_name": "scihub_j.1528-1167.2008.01552.x.pdf_3.jpg",
+        "TEDS": 0.9465513009472137,
+        "TEDS_structure_only": 0.978021978021978,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001276_table_2",
+      "before": {
+        "request_id": "page_001276_table_2",
+        "page_name": "scihub_s12237-014-9873-7.pdf_4.jpg",
+        "TEDS": 0.8674510887204145,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001276_table_2",
+        "page_name": "scihub_s12237-014-9873-7.pdf_4.jpg",
+        "TEDS": 0.8203019085088389,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001342_table_2",
+      "before": {
+        "request_id": "page_001342_table_2",
+        "page_name": "PPT_Catalysis.ppt_page_016.png",
+        "TEDS": 0.9523409708682654,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001342_table_2",
+        "page_name": "PPT_Catalysis.ppt_page_016.png",
+        "TEDS": 0.9669890007042257,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001367_table_60",
+      "before": {
+        "request_id": "page_001367_table_60",
+        "page_name": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+        "TEDS": 0.9772370640302865,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001367_table_60",
+        "page_name": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+        "TEDS": 0.9770724199312162,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001367_table_69",
+      "before": {
+        "request_id": "page_001367_table_69",
+        "page_name": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+        "TEDS": 1.0,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001367_table_69",
+        "page_name": "newspaper_Chicago Tribune_0801@magazinesclubnew_page_019.png",
+        "TEDS": 0.9895833333333334,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001375_table_4",
+      "before": {
+        "request_id": "page_001375_table_4",
+        "page_name": "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+        "TEDS": 0.9670634920634921,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001375_table_4",
+        "page_name": "newspaper_The Globe and Mail - 2025-1-8@magazinesclubnew_page_014.png",
+        "TEDS": 0.9659882232462877,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001398_table_box-7mwax454",
+      "before": {
+        "request_id": "page_001398_table_box-7mwax454",
+        "page_name": "newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_018.png",
+        "TEDS": 0.3924402975617438,
+        "TEDS_structure_only": 0.7283950617283951,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001398_table_box-7mwax454",
+        "page_name": "newspaper_The Wall Street Journal - 2025-01-08@magazinesclubnew_page_018.png",
+        "TEDS": 0.5792616240676276,
+        "TEDS_structure_only": 0.7283950617283951,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001403_table_9",
+      "before": {
+        "request_id": "page_001403_table_9",
+        "page_name": "book_zh_DLT10902008_extracted_page_8.png",
+        "TEDS": 0.9416428514725729,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001403_table_9",
+        "page_name": "book_zh_DLT10902008_extracted_page_8.png",
+        "TEDS": 0.9393202433327902,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001406_table_8",
+      "before": {
+        "request_id": "page_001406_table_8",
+        "page_name": "book_zh_GB115041989_extracted_page_9.png",
+        "TEDS": 0.9708806818181818,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001406_table_8",
+        "page_name": "book_zh_GB115041989_extracted_page_9.png",
+        "TEDS": 0.9655145202020202,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001413_table_7",
+      "before": {
+        "request_id": "page_001413_table_7",
+        "page_name": "book_zh_CNASGL082006_extracted_page_50.png",
+        "TEDS": 0.9121461742591773,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001413_table_7",
+        "page_name": "book_zh_CNASGL082006_extracted_page_50.png",
+        "TEDS": 0.9079444935869084,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001417_table_2",
+      "before": {
+        "request_id": "page_001417_table_2",
+        "page_name": "book_zh_GB14536.11998_extracted_page_145.png",
+        "TEDS": 0.7545138888888889,
+        "TEDS_structure_only": 0.7916666666666666,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001417_table_2",
+        "page_name": "book_zh_GB14536.11998_extracted_page_145.png",
+        "TEDS": 0.7597222222222222,
+        "TEDS_structure_only": 0.7916666666666666,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001595_table_box_id_1",
+      "before": {
+        "request_id": "page_001595_table_box_id_1",
+        "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+        "TEDS": 0.6825180230907733,
+        "TEDS_structure_only": 0.8672316384180792,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001595_table_box_id_1",
+        "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+        "TEDS": 0.6824491166536304,
+        "TEDS_structure_only": 0.8672316384180792,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001595_table_box_id_14",
+      "before": {
+        "request_id": "page_001595_table_box_id_14",
+        "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+        "TEDS": 0.6782577614379085,
+        "TEDS_structure_only": 0.6875,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001595_table_box_id_14",
+        "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+        "TEDS": 0.6829427083333333,
+        "TEDS_structure_only": 0.6875,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001595_table_box_id_5",
+      "before": {
+        "request_id": "page_001595_table_box_id_5",
+        "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+        "TEDS": 0.9947478070175438,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001595_table_box_id_5",
+        "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+        "TEDS": 0.9958881578947368,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    },
+    {
+      "request_id": "page_001595_table_box_id_7",
+      "before": {
+        "request_id": "page_001595_table_box_id_7",
+        "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+        "TEDS": 0.9884818884818884,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      },
+      "after": {
+        "request_id": "page_001595_table_box_id_7",
+        "page_name": "magazine_TheEconomist.2024.02.24_page_076.png",
+        "TEDS": 0.9888867467814836,
+        "TEDS_structure_only": 1.0,
+        "error": null
+      }
+    }
+  ]
+}

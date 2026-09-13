@@ -1,0 +1,4 @@
+CPU scorer commit: 4fa62e73
+Evaluator commit: 2b161d010d2e3aff77a0edef359ea3a6411d23cd
+No NPU inference performed during scoring.
+docker exec -w /workspace/repos/paddle_ocr_vl_npu research_vllm_ascend_021_external_workspace /workspace/venvs/omnidocbench_py310/bin/python -u tmp/19_table_ocr_serving/current_checkpoint_20260913/score_saved_outputs.py
