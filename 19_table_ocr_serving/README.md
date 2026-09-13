@@ -1,6 +1,6 @@
 # Experiment 19: table OCR serving
 
-## Runtime ownership integration (validation pending)
+## Runtime ownership integration (validated on 910B2)
 
 `ContinuousRecognizer` now owns CPU preparation and the actual continuous
 decoding loop. The separate preparation/scheduler owners, iterable adapters
@@ -10,9 +10,18 @@ intermediate payload transfer. `ServingSummary` preserves the previous final
 summary fields; live logging remains a separate future change.
 
 The naming-only checkpoint is `a191a2a2`; its source-only test is frozen to that
-commit. Structural integration has separate tests and must pass the saved
-B8/6-QPS Poisson100 before being described as NPU-validated. Model files p04,
-p05 and p06, preprocessing/output formatting and HTTP behavior are unchanged.
+commit. Structural integration passed all 79 CPU tests, the saved B8/6-QPS
+Poisson100, and the saved 1,000-request confirmation on NPU6. Both runs match
+every native token stream and output against the accepted current configuration.
+For the 1,000-request reference, restored math formatting is applied before
+comparing HTML. Model files p04–p06, preprocessing/output formatting and HTTP
+behavior are unchanged; the existing compiled graph cache was reused.
+
+The 1,000-request mean/P95 were **1.239532 / 3.709361 s**, versus
+**1.236842 / 3.716353 s** before integration: effectively unchanged in this pair.
+See [commands, comparisons and saved outputs](../tmp/19_table_ocr_serving/integrated_runtime_20260913/README.md).
+Runtime source: `52cf35a0` (also byte-identical at the 1,000-request launcher
+commit `e9800b84`).
 
 The six main scripts are numbered in their intended reading order: HTTP service,
 serving runtime, crop processing, model assembly, vision prefill, then text prefill

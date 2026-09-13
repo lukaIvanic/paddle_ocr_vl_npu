@@ -1,0 +1,49 @@
+{
+  "note": "Screening only. Queue growth is recorded, not inferred away; 10k confirmation required.",
+  "completed_throughput_p95": [
+    {
+      "batch": 8,
+      "target_qps": 6,
+      "actual_arrival_qps": 5.763293819475205,
+      "completed_qps": 5.733571388939179,
+      "count": 1000,
+      "errors": 0,
+      "kv_caps": 10,
+      "mean_s": 1.2395315691506839,
+      "p50_s": 0.8300951149867615,
+      "p90_s": 2.65719746099785,
+      "p95_s": 3.7093609784802526,
+      "p99_s": 7.286553043201857,
+      "max_s": 8.493030309997266,
+      "scheduled_p95_s": 3.710144568084796,
+      "drain_s": 0.899473422608196,
+      "max_outstanding": 18,
+      "valid": true,
+      "sequence_sha256": "97a1f87dd18ace0833f6d66796ce6868845b04880292d0f632f3575c3693caa9",
+      "artifact": "tmp/19_table_ocr_serving/integrated_runtime_20260913/poisson1000/cached/b8/qps6/measured"
+    }
+  ],
+  "offered_qps_p95": [
+    {
+      "batch": 8,
+      "target_qps": 6,
+      "actual_arrival_qps": 5.763293819475205,
+      "completed_qps": 5.733571388939179,
+      "count": 1000,
+      "errors": 0,
+      "kv_caps": 10,
+      "mean_s": 1.2395315691506839,
+      "p50_s": 0.8300951149867615,
+      "p90_s": 2.65719746099785,
+      "p95_s": 3.7093609784802526,
+      "p99_s": 7.286553043201857,
+      "max_s": 8.493030309997266,
+      "scheduled_p95_s": 3.710144568084796,
+      "drain_s": 0.899473422608196,
+      "max_outstanding": 18,
+      "valid": true,
+      "sequence_sha256": "97a1f87dd18ace0833f6d66796ce6868845b04880292d0f632f3575c3693caa9",
+      "artifact": "tmp/19_table_ocr_serving/integrated_runtime_20260913/poisson1000/cached/b8/qps6/measured"
+    }
+  ]
+}

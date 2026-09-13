@@ -1,0 +1,74 @@
+{
+  "requests": 1000,
+  "schedule_identical": true,
+  "reference_math_formatting_replayed": true,
+  "mismatches": {
+    "token_ids": [],
+    "raw_text": [],
+    "text": [],
+    "stop_reason": [],
+    "crop_size": [],
+    "input_tokens": [],
+    "projected_image_tokens": []
+  },
+  "performance": {
+    "reference": {
+      "latency_s": {
+        "count": 1000,
+        "mean": 1.236841550040437,
+        "p50": 0.8178318800055422,
+        "p90": 2.6704803960077697,
+        "p95": 3.716352583499974,
+        "p99": 7.244142971710244,
+        "max": 8.439036459982162
+      },
+      "scheduled_latency_s": {
+        "count": 1000,
+        "mean": 1.2376714540145477,
+        "p50": 0.8184966443805024,
+        "p90": 2.671406160792685,
+        "p95": 3.7166085473712878,
+        "p99": 7.244659979447315,
+        "max": 8.439408358332003
+      },
+      "completed_qps": 5.734272863129252,
+      "completed": 1000,
+      "errors": 0,
+      "max_outstanding": 18
+    },
+    "integrated": {
+      "latency_s": {
+        "count": 1000,
+        "mean": 1.2395315691506839,
+        "p50": 0.8300951149867615,
+        "p90": 2.65719746099785,
+        "p95": 3.7093609784802526,
+        "p99": 7.286553043201857,
+        "max": 8.493030309997266
+      },
+      "scheduled_latency_s": {
+        "count": 1000,
+        "mean": 1.2403530376515701,
+        "p50": 0.830861832931987,
+        "p90": 2.657712752008229,
+        "p95": 3.710144568084796,
+        "p99": 7.287513929750712,
+        "max": 8.493216078350088
+      },
+      "completed_qps": 5.733571388939179,
+      "completed": 1000,
+      "errors": 0,
+      "max_outstanding": 18
+    }
+  },
+  "stop_reasons": {
+    "eos": 990,
+    "kv_cache_full": 10
+  },
+  "reference": "/data1/lukaiv/workspace/repos/table_step1_be691de1_20260910/tmp/19_table_ocr_serving/current_checkpoint_20260913/cached/b8/qps6/measured",
+  "current": "/data1/lukaiv/workspace/repos/table_step1_be691de1_20260910/tmp/19_table_ocr_serving/integrated_runtime_20260913/poisson1000/cached/b8/qps6/measured",
+  "result_sha256": {
+    "reference": "6d2f94c32c55992f4d3fb6745bddad2f0220d94ed57a53e54325fdbfd5baed26",
+    "integrated": "1840a2f25df0c88b08cb9ed8c381591a0b9c1e61d0dacc3bb24bcf0f112a6e81"
+  }
+}

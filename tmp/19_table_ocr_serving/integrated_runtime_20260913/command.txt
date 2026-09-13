@@ -1,0 +1,16 @@
+Host: liteserver-c001-4 (Ascend 910B2, physical NPU6)
+Container: research_vllm_ascend_021_external_workspace
+Runtime source: 52cf35a07b79778353b846ded22ccf151875eac7
+
+CPU tests (no NPU/model execution):
+docker exec research_vllm_ascend_021_external_workspace bash -lc 'cd /workspace/repos/paddle_ocr_vl_npu && TORCH_DEVICE_BACKEND_AUTOLOAD=0 /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -m unittest discover -s 19_table_ocr_serving/tests -v'
+
+Poisson100 (direct host; locked harness handles NPU environment, ownership and warmup):
+python3 -u /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/19_table_ocr_serving/refactor_poisson100_20260913/driver.py --expected-commit 52cf35a07b79778353b846ded22ccf151875eac7 --npu 6 --output-dir tmp/19_table_ocr_serving/integrated_runtime_20260913/poisson100
+
+Poisson1000 (comparison-script-only commit; product source identical):
+python3 -u /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/tmp/19_table_ocr_serving/current_checkpoint_20260913/driver.py --expected-commit e9800b84438ff2270c91982133526f76a3058065 --npu 6 --reuse-compiled-cache --output-dir tmp/19_table_ocr_serving/integrated_runtime_20260913/poisson1000
+
+Use a new output directory on a future rerun. The launchers refuse overwriting
+old evidence and check the requested checkout identity and unchanged model code.
+The per-run server and client commands are also saved beside their logs.

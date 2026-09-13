@@ -1,0 +1,73 @@
+{
+  "requests": 100,
+  "schedule_identical": true,
+  "reference_math_formatting_replayed": false,
+  "mismatches": {
+    "token_ids": [],
+    "raw_text": [],
+    "text": [],
+    "stop_reason": [],
+    "crop_size": [],
+    "input_tokens": [],
+    "projected_image_tokens": []
+  },
+  "performance": {
+    "reference": {
+      "latency_s": {
+        "count": 100,
+        "mean": 1.187888409999141,
+        "p50": 0.8483053149975603,
+        "p90": 2.170168295982879,
+        "p95": 2.9804552365239942,
+        "p99": 6.742144603015336,
+        "max": 7.770257919997675
+      },
+      "scheduled_latency_s": {
+        "count": 100,
+        "mean": 1.18871550387179,
+        "p50": 0.8489614321297267,
+        "p90": 2.170889026211811,
+        "p95": 2.981550493479881,
+        "p99": 6.742558079351735,
+        "max": 7.771303018089384
+      },
+      "completed_qps": 5.258505744525276,
+      "completed": 100,
+      "errors": 0,
+      "max_outstanding": 18
+    },
+    "integrated": {
+      "latency_s": {
+        "count": 100,
+        "mean": 1.1821643182003754,
+        "p50": 0.8048060400178656,
+        "p90": 2.193852492008594,
+        "p95": 3.021262122507323,
+        "p99": 6.763981433996237,
+        "max": 7.701535589993
+      },
+      "scheduled_latency_s": {
+        "count": 100,
+        "mean": 1.182943593475793,
+        "p50": 0.805895610828884,
+        "p90": 2.1949301989370755,
+        "p95": 3.0218315129764957,
+        "p99": 6.764904734128509,
+        "max": 7.702685978088994
+      },
+      "completed_qps": 5.25935101591995,
+      "completed": 100,
+      "errors": 0,
+      "max_outstanding": 18
+    }
+  },
+  "stop_reasons": {
+    "eos": 100
+  },
+  "reference": "tmp/19_table_ocr_serving/refactor_poisson100_20260913/b8/measured/results",
+  "current": "tmp/19_table_ocr_serving/integrated_runtime_20260913/poisson100/b8/measured/results",
+  "result_sha256": {
+    "reference": "0e9c057b243dc0b121b39df87a3e16c5d4dda38adcc9cc7c74bc69dc56347b5a",
+    "integrated": "b7d9ecd11158f2de9a91ebfb45f6e261da1595cfab63ae3332c92d19f8900787"
+  }
+}
