@@ -224,7 +224,36 @@ class RuntimeIntegrationStructureTests(unittest.TestCase):
             b=next(n for n in new['ContinuousRecognizer'].body if isinstance(n,ast.FunctionDef) and n.name==name)
             self.assertEqual([ast.dump(d) for d in a.decorator_list],
                              [ast.dump(d) for d in b.decorator_list],name)
-        self.assertEqual(ast.dump(Rename().visit(old['DecodeArena'])),ast.dump(new['DecodeArena']))
+        # The logging pass deliberately removes profiling, not decode/cache work.
+        # Strip only those exact wrappers from the reference before comparing.
+        class RemoveProfiling(ast.NodeTransformer):
+            def visit_FunctionDef(self,node):
+                if node.name in {'resolve_device_timing','_measure_enqueue','_event','_resolve_spans'}:
+                    return None
+                for i in reversed(range(len(node.args.kwonlyargs))):
+                    if node.args.kwonlyargs[i].arg=='decode_device_timing':
+                        del node.args.kwonlyargs[i]; del node.args.kw_defaults[i]
+                return self.generic_visit(node)
+            def visit_Assign(self,node):
+                if any(isinstance(t,ast.Attribute) and t.attr=='decode_device_timing' for t in node.targets):
+                    return None
+                return self.generic_visit(node)
+            def visit_AnnAssign(self,node):
+                if isinstance(node.target,ast.Attribute) and node.target.attr in {'_decode_event_spans','_admission_event_spans'}:
+                    return None
+                return self.generic_visit(node)
+            def visit_Expr(self,node):
+                call=node.value
+                if (isinstance(call,ast.Call) and isinstance(call.func,ast.Attribute) and
+                    isinstance(call.func.value,ast.Attribute) and call.func.value.attr in {'_decode_event_spans','_admission_event_spans'}):
+                    return None
+                return self.generic_visit(node)
+            def visit_Call(self,node):
+                if isinstance(node.func,ast.Attribute) and node.func.attr=='_measure_enqueue':
+                    return ast.Call(func=node.args[1],args=[],keywords=[])
+                return self.generic_visit(node)
+        reference=RemoveProfiling().visit(Rename().visit(old['DecodeArena']))
+        self.assertEqual(ast.dump(reference),ast.dump(new['DecodeArena']))
         for method in old['ContinuousDecodeScheduler'].body:
             if not isinstance(method,ast.FunctionDef) or method.name in ('__init__','run_stream','run'):
                 continue

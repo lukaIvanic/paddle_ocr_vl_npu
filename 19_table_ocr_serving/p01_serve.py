@@ -97,7 +97,6 @@ class ServeConfig:
     # basic: request latency/output tokens and live request/token rates and occupancy.
     # detailed: also CPU/wait/prefill/decode-residency/formatting wall times, crop
     # dimensions and input tokens; heartbeat includes recent mean/P95 latency.
-    # Neither level adds NPU timing events or per-token logs.
     metrics_level: Literal["basic", "detailed"] = "basic"
 
 
@@ -179,7 +178,6 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         return self.server.inference_server
 
     def do_POST(self) -> None:  # noqa: N802
-        self.ocr_request_id = None
         parsed = urlparse(self.path)
         if parsed.path != "/v1/ocr":
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
@@ -261,8 +259,6 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
     def _json(self, status: int, payload: dict[str, Any]) -> None:
-        if self.command == "POST" and status >= 400 and self.ocr_request_id is None:
-            self.inference_server._log("request_rejected", {"reason": payload.get("error"), "http_status": int(status)})
         data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode(
             "utf-8"
         )
@@ -368,9 +364,8 @@ class InferenceServer:
         self.log_writer.start()
         self._log("startup", self.serve_config)
         self.inference_process.start()
-        self.result_reader.start()
-
         self._log("waiting_for_model", {"worker_pid": self.inference_process.pid})
+        self.result_reader.start()
         self.startup_finished.wait()
         if self.startup_error is not None:
             raise RuntimeError(self.startup_error["error"])
@@ -520,13 +515,11 @@ class InferenceServer:
         """Release waiters when inference cannot produce any more results."""
         with self.requests_lock:
             self.accepting_requests = False
-            had_pending_requests = bool(self.pending_requests)
             for reply in self.pending_requests.values():
                 if not reply.cancelled():
                     reply.set_exception(RuntimeError(error))
             self.pending_requests.clear()
-        if had_pending_requests:
-            self._log("inference_failed", {"error": error})
+        self._log("inference_failed", {"error": error})
 
     def _receive_results_and_status(self) -> None:
         """Receive inference status and deliver each OCR result to its waiting request."""
@@ -545,8 +538,9 @@ class InferenceServer:
             if kind == "ready":
                 self.worker_runtime_info = message.get("configuration")
                 self.worker_pid = message.get("worker_pid")
-                self.startup_finished.set()
+                message["startup_wall_s"] = time.perf_counter() - self.started_at
                 self._log("inference_ready", message)
+                self.startup_finished.set()
             elif kind == "startup_error":
                 self._log("inference_failed", message)
                 self.startup_error = message
@@ -621,8 +615,6 @@ class InferenceServer:
                                 record[key] = result[key]
                 elif data is not None:
                     record.update((key, value) for key, value in data.items() if key != 'kind')
-                if event == 'inference_ready':
-                    record['startup_wall_s'] = time.perf_counter() - self.started_at
                 if event == 'heartbeat':
                     observed = record.pop('observed_monotonic_s')
                     tokens = record['output_tokens_including_eos']
