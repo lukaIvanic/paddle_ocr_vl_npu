@@ -20,9 +20,7 @@ import torch_npu
 import torch.nn.functional as F
 from torch import nn
 
-from _support.model.compile_utils import TORCHAIR_EXECUTION_MODE, cache_key_part, import_torchair, short_file_hash, torch_npu_version_label, torchair_version_label
 from text_prefill_and_decode import TEXT_HIDDEN_SIZE
-from _support.utils.timing import synchronize
 
 if TYPE_CHECKING:
     from paddle_ocr_vl_1_6_modeling import LocalPaddleOCRVLForConditionalGeneration
@@ -581,7 +579,7 @@ class VisionPrefillRuntime:
         self,
         model: LocalPaddleOCRVLForConditionalGeneration,
         *,
-        cache_root: Path,
+        graph_directories: dict[int, Path],
         device: torch.device,
         eager: bool = False,
     ):
@@ -590,7 +588,6 @@ class VisionPrefillRuntime:
         self.buckets = VISION_BUCKETS
         self.device = device
         self.dtype = torch.float16
-        self.cache_root = cache_root.expanduser().resolve()
         hidden_size = int(VISION_HIDDEN_SIZE)
         head_dim = hidden_size // int(VISION_HEADS)
         self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
@@ -609,19 +606,19 @@ class VisionPrefillRuntime:
         if eager:
             return
 
-        torchair, CompilerConfig = import_torchair()
+        # Eager mode does not import the compiler.
+        import torchair.inference
+        from torchair import CompilerConfig
         per_bucket: dict[str, Any] = {}
         wrapper_total_s = 0.0
         first_call_total_s = 0.0
         for bucket in self.buckets:
             module = VisionPrefillStage(model).eval()
-            cache_dir = vision_cache_dir_for_bucket(
-                self.cache_root, bucket=bucket, device=self.device,
-            )
+            cache_dir = graph_directories[bucket]
             cache_dir.mkdir(parents=True, exist_ok=True)
             config = CompilerConfig()
             entrypoint = unique_bucket_forward(module, bucket)
-            synchronize(self.device)
+            torch_npu.npu.synchronize(self.device)
             started = time.perf_counter()
             compiled = torchair.inference.cache_compile(
                 entrypoint,
@@ -630,7 +627,7 @@ class VisionPrefillRuntime:
                 cache_dir=str(cache_dir),
                 ge_cache=True,
             )
-            synchronize(self.device)
+            torch_npu.npu.synchronize(self.device)
             wrapper_s = time.perf_counter() - started
 
             warm_prefix = torch.zeros(
@@ -651,10 +648,10 @@ class VisionPrefillRuntime:
                 device=self.device,
                 dtype=torch.bool,
             )
-            synchronize(self.device)
+            torch_npu.npu.synchronize(self.device)
             started = time.perf_counter()
             warm_output = compiled(warm_prefix, warm_cos, warm_sin, warm_mask)
-            synchronize(self.device)
+            torch_npu.npu.synchronize(self.device)
             first_call_s = time.perf_counter() - started
             del warm_output, warm_prefix, warm_cos, warm_sin, warm_mask
 
@@ -680,14 +677,11 @@ class VisionPrefillRuntime:
                 "cache_key_fields": {
                     "dtype": str(self.dtype),
                     "torch": str(torch.__version__),
-                    "torch_npu": torch_npu_version_label(device),
-                    "torchair": torchair_version_label(device),
-                    "vision_source_hash": vision_source_hash(),
                     "attention": "prompt_flash_attention",
                     "prompt_flash_attention_layout": 'bnsd',
                     "prompt_flash_attention_mask_sparse_mode": 1,
                     "softmax_dtype": 'fp32',
-                    "execution_mode": TORCHAIR_EXECUTION_MODE,
+                    "execution_mode": "inference",
                 },
             }
         )
@@ -833,21 +827,3 @@ def unique_bucket_forward(
     function.__annotations__ = dict(original.__annotations__)
     function.__kwdefaults__ = original.__kwdefaults__
     return types.MethodType(function, module)
-
-
-def vision_cache_dir_for_bucket(
-    cache_root: Path, *, bucket: int, device: torch.device,
-) -> Path:
-    key = "_".join([
-        "vision", f"seq{bucket}",
-        f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
-        f"torch{cache_key_part(torch.__version__)}",
-        f"torchnpu{torch_npu_version_label(device)}",
-        f"torchair{torchair_version_label(device)}",
-        f"src{vision_source_hash()}",
-    ])
-    return cache_root.expanduser().resolve() / key
-
-
-def vision_source_hash() -> str:
-    return short_file_hash(Path(__file__).resolve())

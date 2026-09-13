@@ -29,10 +29,11 @@ from dataclasses import asdict, dataclass
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import parse_qs, urlparse
 
-from _support.serving.types import RecognitionRequest
+if TYPE_CHECKING:
+    from serving_runtime import RecognitionRequest
 
 
 # The prompt the model receives for each accepted crop_type. Supporting another
@@ -466,10 +467,8 @@ class InferenceWorker:
             batch_size=config.decode_batch_size,
             full_decode_lm_head=config.full_decode_lm_head,
             decode_device_timing=config.metrics_level == "detailed",
-            torchair_cache_dir=config.graph_cache_directory / "decode",
+            graph_cache_directory=config.graph_cache_directory,
             eager=config.run_eagerly,
-            vision_torchair_cache_dir=config.graph_cache_directory / "vision_prefill",
-            text_torchair_cache_dir=config.graph_cache_directory / "text_prefill",
             device=config.device,
         )
         configuration = recognizer.configuration()
@@ -503,6 +502,9 @@ class InferenceWorker:
 
     def pull(self, *, block: bool) -> RecognitionRequest | None:
         """Hand the recognizer the next image, or None when there is none right now."""
+        # This runs in the inference child; the HTTP process never imports the model.
+        from serving_runtime import RecognitionRequest
+
         if self._closed:
             return None
         try:

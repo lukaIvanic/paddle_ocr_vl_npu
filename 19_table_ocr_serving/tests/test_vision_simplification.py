@@ -31,6 +31,7 @@ REMOVED_DEFINITIONS = {'get_vision_attention_impl', 'get_vision_prompt_fa_layout
     'get_vision_prompt_fa_mask_sparse_mode', 'get_vision_softmax_dtype_mode', 'attention_softmax',
     'PreparedPackedVisionPrefill', 'prepare_packed_vision_prefill', 'rotate_half', 'apply_rotary_pos_emb_vision'}
 REMOVED_DEFINITIONS |= {'_activation', 'prompt_flash_attention_call_head_dim', 'parse_vision_buckets', 'align_vision_buckets'}
+REMOVED_DEFINITIONS |= {'vision_cache_dir_for_bucket', 'vision_source_hash'}
 CHANGED_DEFINITIONS = {'vision_prompt_flash_attention_bnsd', 'PaddleOCRVisionAttention',
     'VisionPrefillStage', 'vision_cache_dir_for_bucket', 'VisionPrefillRuntime', 'PaddleOCRVisionEmbeddings'}
 CHANGED_DEFINITIONS |= {'prepare_vision_mlp_intermediate', 'prepare_vision_linear_weight_format',
@@ -107,7 +108,13 @@ def load_vision(source, name):
     module = types.ModuleType(name)
     module.__file__ = str(ROOT / PATH)
     sys.modules[name] = module
-    exec(compile(ast.fix_missing_locations(tree), module.__file__, 'exec'), module.__dict__)
+    # Only the historical reference imports the deleted compatibility helpers.
+    helpers = types.ModuleType('_support.model.compile_utils')
+    historical = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+        '564da03f:19_table_ocr_serving/_support/model/compile_utils.py'], text=True)
+    exec(compile(historical, 'historical_compile_helpers', 'exec'), helpers.__dict__)
+    with patch.dict(sys.modules, {helpers.__name__: helpers}):
+        exec(compile(ast.fix_missing_locations(tree), module.__file__, 'exec'), module.__dict__)
     return module
 
 
@@ -283,8 +290,8 @@ class VisionSimplificationTests(unittest.TestCase):
         self.assertEqual(compiler_calls(old['VisionPrefillRuntime']),compiler_calls(new['VisionPrefillRuntime']))
 
     def test_vision_bucket_routes_and_fixed_cache_inputs(self):
-        for name in ('dtype','head_dim','mlp_intermediate_size','linear_weight_format','weight_padded_attention'):
-            self.assertNotIn(name, inspect.signature(self.new.vision_cache_dir_for_bucket).parameters)
+        self.assertFalse(hasattr(self.new, 'vision_cache_dir_for_bucket'))
+        self.assertIn('graph_directories', inspect.signature(self.new.VisionPrefillRuntime).parameters)
         for eager in (False, True):
             old = self.old.VisionPrefillRuntime.__new__(self.old.VisionPrefillRuntime)
             old.padding = 'bucket'

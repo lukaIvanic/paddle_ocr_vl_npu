@@ -2,22 +2,24 @@
 """PaddleOCR-VL checkpoint loading and persistent serving-stage composition.
 
 Vision prefill, text prefill, and text decode own their model math and runtime
-policy. This module only connects those stages into one conditional-generation
-model. HTTP and a future Python interface share these same stages.
+policy. This module connects those stages and chooses their graph-cache
+directories. HTTP and a future Python interface share these same stages.
 """
 
 from __future__ import annotations
 
+import hashlib
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
 import torch
+import torch_npu
 from torch import nn
 
-from text_prefill_and_decode import TEXT_HIDDEN_SIZE, TEXT_VOCAB_SIZE
-from vision_prefill import VISION_MERGE_SIZE
+from text_prefill_and_decode import TEXT_HIDDEN_SIZE, TEXT_VOCAB_SIZE, TEXT_PREFILL_BUCKETS
+from vision_prefill import VISION_MERGE_SIZE, VISION_BUCKETS
 from text_prefill_and_decode import LocalPaddleOCRVLStaticCache, TextDecodeRuntime
 from text_prefill_and_decode import PaddleOCRRotaryEmbedding, PaddleOCRTextModel, TextPrefillRuntime
 from vision_prefill import PaddleOCRProjector, PaddleOCRVisionModel, PaddleOCRVisionRotaryEmbedding, VisionPrefillRuntime
@@ -75,9 +77,8 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
     def make_inference_stages(
         self,
         *,
-        vision_cache_root: Path,
-        text_cache_root: Path,
-        decode_cache_root: Path,
+        graph_cache_directory: Path,
+        decode_head_cache_key: str,
         batch_size: int,
         cache_length: int,
         device: torch.device,
@@ -88,27 +89,41 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
 
         Stage modules own the model math and their eager/compiled execution
         policy. This connector only establishes the model-level ordering and
-        shared runtime configuration.
+        shared runtime configuration. Each stage receives its final cache paths
+        and passes them to TorchAir without adding another directory name.
         """
 
-        from _support.utils.timing import synchronize
 
+        # One source fingerprint covers stage computation and this setup code.
+        # Changing any of these files selects a fresh set of graph directories.
+        cache_root = graph_cache_directory.expanduser().resolve() / model_source_hash()
+        vision_graph_directories = {
+            bucket: cache_root / "vision_prefill" / f"seq{bucket}"
+            for bucket in VISION_BUCKETS
+        }
+        text_graph_directories = {
+            bucket: cache_root / "text_prefill" / f"seq{bucket}_kv{cache_length}"
+            for bucket in TEXT_PREFILL_BUCKETS
+        }
+        decode_graph_directory = (
+            cache_root / "decode" / decode_head_cache_key / f"b{batch_size}_kv{cache_length}"
+        )
         setup_timing_s: dict[str, float] = {}
 
         def progress(stage: str, status: str, elapsed_s: float | None = None) -> None:
             if setup_progress is not None:
                 setup_progress(stage, status, elapsed_s)
 
-        synchronize(device)
+        torch_npu.npu.synchronize(device)
         started = time.perf_counter()
         progress("vision_runtime", "start")
         vision_prefill = VisionPrefillRuntime(
             self,
-            cache_root=vision_cache_root,
+            graph_directories=vision_graph_directories,
             device=device,
             eager=eager,
         )
-        synchronize(device)
+        torch_npu.npu.synchronize(device)
         setup_timing_s["vision_runtime_setup"] = time.perf_counter() - started
         progress(
             "vision_runtime",
@@ -116,17 +131,17 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             setup_timing_s["vision_runtime_setup"],
         )
 
-        synchronize(device)
+        torch_npu.npu.synchronize(device)
         started = time.perf_counter()
         progress("text_prefill_runtime", "start")
         text_prefill = TextPrefillRuntime(
             self,
-            cache_root=text_cache_root,
+            graph_directories=text_graph_directories,
             cache_length=cache_length,
             device=device,
             eager=eager,
         )
-        synchronize(device)
+        torch_npu.npu.synchronize(device)
         setup_timing_s["text_runtime_setup"] = time.perf_counter() - started
         progress(
             "text_prefill_runtime",
@@ -139,7 +154,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         text_decode = TextDecodeRuntime(
             self,
             device=device,
-            cache_root=decode_cache_root,
+            graph_directory=decode_graph_directory,
             batch_size=batch_size,
             cache_length=cache_length,
             eager=eager,
@@ -232,6 +247,24 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
         for module in self.modules():
             if isinstance(module, (PaddleOCRRotaryEmbedding, PaddleOCRVisionRotaryEmbedding)):
                 module.reset_inv_freq(device=module.inv_freq.device)
+
+
+def model_source_hash() -> str:
+    """Identify the exact model and compilation source used by cached graphs.
+
+    Hash whole files, including comments, so edits cannot silently keep using
+    our previous cache directory. Software/environment changes require a fresh
+    user-supplied cache root; we do not try to detect those here.
+    """
+    digest = hashlib.sha256()
+    for filename in (
+        "paddle_ocr_vl_1_6_modeling.py",
+        "vision_prefill.py",
+        "text_prefill_and_decode.py",
+    ):
+        digest.update(filename.encode())
+        digest.update(Path(__file__).with_name(filename).read_bytes())
+    return digest.hexdigest()[:12]
 
 
 @dataclass(frozen=True)

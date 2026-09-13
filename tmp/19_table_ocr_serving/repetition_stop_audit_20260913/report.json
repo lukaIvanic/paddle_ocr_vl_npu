@@ -1,0 +1,482 @@
+{
+  "tracker_source_sha256": "b4f1ffe4d30d6d69f7e16120c6bcf8bb7e74ac289fbb33815f8e45a7ed7d91f6",
+  "measured_runs": [
+    {
+      "source": "tmp/19_table_ocr_serving/cpu_readiness_20260911/b2_expanded_measured/b2/measured/results/results.jsonl",
+      "sha256": "a8379ae1429ae2077b0cc5cff582b2b77dd6117aa20b590aae294a8231285476",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/cpu_readiness_20260911/b8_expanded_measured/b8/measured/results/results.jsonl",
+      "sha256": "60f63a515ba24964f59bed2dc87e88e216a86947dd04e39de2cb93260caedbb6",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/lm_head_60416_20260911/b2_expanded_measured/b2/measured/results/results.jsonl",
+      "sha256": "5df17bdb48d63bbd54a900c77be0fa7fcb6c86bf954d1f071bb94fee873ea690",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/lm_head_60416_20260911/b8_expanded_measured/b8/measured/results/results.jsonl",
+      "sha256": "e5690c6b111a062814306453b3804966a84d96b87a1d4f01b819698626dd6647",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/lm_head_ab_20260911/b2_full_measured/b2/measured/results/results.jsonl",
+      "sha256": "2320904e9df1c5011004127edb1783272c5e0e3fa00cf05f75445456e70e05c7",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/lm_head_ab_20260911/b2_trimmed_measured/b2/measured/results/results.jsonl",
+      "sha256": "ac2f3d2c1584a092ee8f3f48f32bf7debd4831c6114e717395cfe78558af1d57",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/lm_head_ab_20260911/b8_full_measured/b8/measured/results/results.jsonl",
+      "sha256": "48b4b8c9aa667acaaedf79ae87e764d66fe8f0f89538c26212fe55e582f33d29",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/lm_head_ab_20260911/b8_trimmed_measured/b8/measured/results/results.jsonl",
+      "sha256": "e45d008b0a1fbc0f9c69721fa58a71a89a0fb024e51d56ed03bea82505cf9cdf",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/preprocess_options_20260911/b2_both_measured/b2/measured/results/results.jsonl",
+      "sha256": "676ceb363047f3c17a4e6816afb44c352e54fee1976507a904903d89cad1fe1c",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/preprocess_options_20260911/b2_kornia_measured/b2/measured/results/results.jsonl",
+      "sha256": "179416dc7fdf7ea2e087e9ce3b35428f91ccd615196e8d868eabefa45dc7d0e2",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/preprocess_options_20260911/b2_pillow_measured/b2/measured/results/results.jsonl",
+      "sha256": "bf9beeee3e62c8126c9ddaf841833b54bf0f0d12072bba0a5f9297ed60d67a38",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/preprocess_options_20260911/b2_uint8_measured/b2/measured/results/results.jsonl",
+      "sha256": "38a66d78c606ca7d77d6826d47981cfeb1a9cb085742a6166a0ac1944b45f93c",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/preprocess_options_20260911/b8_both_measured/b8/measured/results/results.jsonl",
+      "sha256": "e4d014c67f5a8be6dc891c6b6592aa882e30831788ab2ebd15c457ce5a3015d4",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/preprocess_options_20260911/b8_kornia_measured/b8/measured/results/results.jsonl",
+      "sha256": "631d43e08ebf11b43b157039294cd76936765bf0a622b1325a0ebc6ce9cd2420",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/preprocess_options_20260911/b8_pillow_measured/b8/measured/results/results.jsonl",
+      "sha256": "2e170ef80001bc6d4e43ccb72b0cbb5eb04dba8579e629f40569070f37cd4fc4",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/preprocess_options_20260911/b8_uint8_measured/b8/measured/results/results.jsonl",
+      "sha256": "7e00d29615ea160b3d27a2fe011a7dca4ebb51a49cfe06dc62489ab769fb9afc",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/preprocess_poisson100_20260911/b8_both_measured/b8/measured/results/results.jsonl",
+      "sha256": "33231baa70f05690260ebdba3282b212a35b7f93d06b3b834c420ffeabe35c10",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/preprocess_poisson100_20260911/b8_pillow_measured/b8/measured/results/results.jsonl",
+      "sha256": "6879b9a127eee86ca1215b92d83008ef8b8b2a6d2c31db8a7757862bbd28a125",
+      "generations": 100,
+      "unique_input_ids": 100,
+      "stop_reasons": {
+        "eos": 100
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/step2_b8qps6_dc755584_20260910_cached/b8/qps6/measured/results.jsonl",
+      "sha256": "00f505909d8401031baa72100c156b43bdcdba88a67e430667809705722c43d3",
+      "generations": 1000,
+      "unique_input_ids": 665,
+      "stop_reasons": {
+        "eos": 990,
+        "kv_cache_full": 10
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/step2_b8qps6_dc755584_20260910_retry/b8/qps6/measured/results.jsonl",
+      "sha256": "69d0917325a14b98f46f8d9b03dadbc4d373a2c38f55ea69d871ada18a42096b",
+      "generations": 1000,
+      "unique_input_ids": 665,
+      "stop_reasons": {
+        "eos": 990,
+        "kv_cache_full": 10
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/19_table_ocr_serving/step3_b8qps6_0976fa33_20260911_cached/b8/qps6/measured/results.jsonl",
+      "sha256": "737ee9080bcdc09474286b189d08a26c4c6f954d440161bc41f20d0a7686f703",
+      "generations": 1000,
+      "unique_input_ids": 665,
+      "stop_reasons": {
+        "eos": 990,
+        "kv_cache_full": 10
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/09_persistent_page_engine/step1_b8qps6_20260910/b8/qps6/measured/results.jsonl",
+      "sha256": "c0082d9acc1ed59cb6971ec6ced9a304c3024f7019e9c373f84a6eddd6678f2f",
+      "generations": 1000,
+      "unique_input_ids": 665,
+      "stop_reasons": {
+        "eos": 990,
+        "kv_cache_full": 10
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    },
+    {
+      "source": "tmp/09_persistent_page_engine/table_poisson_frontier_screen1000_be691de1_20260907/b8/qps6/measured/results.jsonl",
+      "sha256": "79b6c929276d6449f9c6265332d34c8e5671b9cfc46db2684770b172737ebb89",
+      "generations": 1000,
+      "unique_input_ids": 665,
+      "stop_reasons": {
+        "eos": 990,
+        "kv_cache_full": 10
+      },
+      "missing_repetition_field": 0,
+      "hits": []
+    }
+  ],
+  "historical_replay": {
+    "source": "tmp/09_persistent_page_engine/910b_generation_difference_reference_ab00d1f/omnidocbench_v1_6_910b2_full_8634d3a.gdatlas.zip",
+    "trace_sha256": "a2a923e318df732c0ff40d979fd9201a0221efe5f6a73dfdbe0534a48b285c6a",
+    "generations": 30557,
+    "by_label": {
+      "text": 28125,
+      "formula": 1681,
+      "table": 751
+    },
+    "original_stops": {
+      "eos": 30534,
+      "kv_cache_full": 23
+    },
+    "hits_by_label": {
+      "formula": 2,
+      "text": 8,
+      "table": 1
+    },
+    "hits": [
+      {
+        "request_id": "page_000059_block_000020",
+        "label": "formula",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 4030,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 151,
+          "trim_length": 25,
+          "window_size": null,
+          "period": 2,
+          "repeated_positions": 126,
+          "repeated_span": 128,
+          "repeat_copies": 64
+        },
+        "later_tokens_not_generated": 3879,
+        "already_generated_tokens_trimmed": 126
+      },
+      {
+        "request_id": "page_000146_block_000000",
+        "label": "text",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 3538,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 128,
+          "trim_length": 2,
+          "window_size": null,
+          "period": 2,
+          "repeated_positions": 126,
+          "repeated_span": 128,
+          "repeat_copies": 64
+        },
+        "later_tokens_not_generated": 3410,
+        "already_generated_tokens_trimmed": 126
+      },
+      {
+        "request_id": "page_000196_block_000009",
+        "label": "text",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 3709,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 130,
+          "trim_length": 5,
+          "window_size": null,
+          "period": 3,
+          "repeated_positions": 125,
+          "repeated_span": 128,
+          "repeat_copies": 42
+        },
+        "later_tokens_not_generated": 3579,
+        "already_generated_tokens_trimmed": 125
+      },
+      {
+        "request_id": "page_000179_block_000002",
+        "label": "text",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 4004,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 166,
+          "trim_length": 39,
+          "window_size": null,
+          "period": 1,
+          "repeated_positions": 127,
+          "repeated_span": 128,
+          "repeat_copies": 128
+        },
+        "later_tokens_not_generated": 3838,
+        "already_generated_tokens_trimmed": 127
+      },
+      {
+        "request_id": "page_000684_block_000001",
+        "label": "formula",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 3268,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 278,
+          "trim_length": 152,
+          "window_size": null,
+          "period": 2,
+          "repeated_positions": 126,
+          "repeated_span": 128,
+          "repeat_copies": 64
+        },
+        "later_tokens_not_generated": 2990,
+        "already_generated_tokens_trimmed": 126
+      },
+      {
+        "request_id": "page_001193_block_000008",
+        "label": "table",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 3286,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 298,
+          "trim_length": 176,
+          "window_size": null,
+          "period": 6,
+          "repeated_positions": 122,
+          "repeated_span": 128,
+          "repeat_copies": 21
+        },
+        "later_tokens_not_generated": 2988,
+        "already_generated_tokens_trimmed": 122
+      },
+      {
+        "request_id": "page_001368_block_000243",
+        "label": "text",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 4036,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 142,
+          "trim_length": 21,
+          "window_size": null,
+          "period": 7,
+          "repeated_positions": 121,
+          "repeated_span": 128,
+          "repeat_copies": 18
+        },
+        "later_tokens_not_generated": 3894,
+        "already_generated_tokens_trimmed": 121
+      },
+      {
+        "request_id": "page_001385_block_000017",
+        "label": "text",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 3387,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 357,
+          "trim_length": 233,
+          "window_size": null,
+          "period": 4,
+          "repeated_positions": 124,
+          "repeated_span": 128,
+          "repeat_copies": 32
+        },
+        "later_tokens_not_generated": 3030,
+        "already_generated_tokens_trimmed": 124
+      },
+      {
+        "request_id": "page_001397_block_000052",
+        "label": "text",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 4016,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 128,
+          "trim_length": 3,
+          "window_size": null,
+          "period": 3,
+          "repeated_positions": 125,
+          "repeated_span": 128,
+          "repeat_copies": 42
+        },
+        "later_tokens_not_generated": 3888,
+        "already_generated_tokens_trimmed": 125
+      },
+      {
+        "request_id": "page_001518_block_000001",
+        "label": "text",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 3674,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 137,
+          "trim_length": 10,
+          "window_size": null,
+          "period": 1,
+          "repeated_positions": 127,
+          "repeated_span": 128,
+          "repeat_copies": 128
+        },
+        "later_tokens_not_generated": 3537,
+        "already_generated_tokens_trimmed": 127
+      },
+      {
+        "request_id": "page_001542_block_000012",
+        "label": "text",
+        "original_stop_reason": "kv_cache_full",
+        "original_tokens": 4040,
+        "evidence": {
+          "rule": "exact_cycle_6copies_128tokens_p32",
+          "trigger_length": 145,
+          "trim_length": 23,
+          "window_size": null,
+          "period": 6,
+          "repeated_positions": 122,
+          "repeated_span": 128,
+          "repeat_copies": 21
+        },
+        "later_tokens_not_generated": 3895,
+        "already_generated_tokens_trimmed": 122
+      }
+    ]
+  }
+}

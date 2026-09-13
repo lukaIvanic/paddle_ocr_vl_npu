@@ -15,15 +15,6 @@ import torch_npu
 import torch.nn.functional as F
 from torch import nn
 
-from _support.model.compile_utils import (
-    TORCHAIR_EXECUTION_MODE,
-    cache_key_part,
-    import_torchair,
-    short_file_hash,
-    torch_npu_version_label,
-    torchair_version_label,
-)
-from _support.utils.timing import synchronize
 
 if TYPE_CHECKING:
     from paddle_ocr_vl_1_6_modeling import LocalPaddleOCRVLForConditionalGeneration
@@ -1079,7 +1070,7 @@ class TextPrefillRuntime:
         self,
         model: LocalPaddleOCRVLForConditionalGeneration,
         *,
-        cache_root: Path,
+        graph_directories: dict[int, Path],
         cache_length: int,
         device: torch.device,
         eager: bool = False,
@@ -1087,7 +1078,6 @@ class TextPrefillRuntime:
         self.model = model
         self.eager = eager
         self.buckets = TEXT_PREFILL_BUCKETS
-        self.cache_root = cache_root.expanduser().resolve()
         self.cache_length = int(cache_length)
         self.device = device
         self.dtype = torch.float16
@@ -1106,23 +1096,20 @@ class TextPrefillRuntime:
         if eager:
             return
 
-        torchair, CompilerConfig = import_torchair()
+        # Eager mode does not import the compiler.
+        import torchair.inference
+        from torchair import CompilerConfig
         hidden_size = int(TEXT_HIDDEN_SIZE)
         per_bucket: dict[str, Any] = {}
         wrapper_total_s = 0.0
         first_call_total_s = 0.0
         for bucket in self.buckets:
             module = TextPrefillStage(model).eval()
-            cache_dir = text_cache_dir_for_bucket(
-                self.cache_root,
-                bucket=bucket,
-                cache_length=self.cache_length,
-                device=self.device,
-            )
+            cache_dir = graph_directories[bucket]
             cache_dir.mkdir(parents=True, exist_ok=True)
             config = CompilerConfig()
             entrypoint = unique_bucket_forward(module, bucket)
-            synchronize(self.device)
+            torch_npu.npu.synchronize(self.device)
             started = time.perf_counter()
             compiled = torchair.inference.cache_compile(
                 entrypoint,
@@ -1131,7 +1118,7 @@ class TextPrefillRuntime:
                 cache_dir=str(cache_dir),
                 ge_cache=True,
             )
-            synchronize(self.device)
+            torch_npu.npu.synchronize(self.device)
             wrapper_s = time.perf_counter() - started
 
             warm_inputs = torch.zeros(
@@ -1160,7 +1147,7 @@ class TextPrefillRuntime:
                 device=self.device,
                 dtype=self.dtype,
                 )
-            synchronize(self.device)
+            torch_npu.npu.synchronize(self.device)
             started = time.perf_counter()
             warm_output = compiled(
                 warm_inputs,
@@ -1169,7 +1156,7 @@ class TextPrefillRuntime:
                 warm_last_index,
                 *warm_cache.flat_tensors(),
             )
-            synchronize(self.device)
+            torch_npu.npu.synchronize(self.device)
             first_call_s = time.perf_counter() - started
             del warm_output, warm_inputs, warm_mask, warm_positions, warm_last_index, warm_cache
 
@@ -1195,12 +1182,9 @@ class TextPrefillRuntime:
                 "cache_key_fields": {
                     "cache_length": self.cache_length,
                     "torch": str(torch.__version__),
-                    "torch_npu": torch_npu_version_label(device),
-                    "torchair": torchair_version_label(device),
-                    "text_source_hash": text_source_hash(),
                     "attention": "manual_causal",
                     "softmax_dtype": 'fp32',
-                    "execution_mode": TORCHAIR_EXECUTION_MODE,
+                    "execution_mode": "inference",
                 },
             }
         )
@@ -1284,34 +1268,6 @@ def unique_bucket_forward(
     return types.MethodType(function, module)
 
 
-def text_cache_dir_for_bucket(
-    cache_root: Path,
-    *,
-    bucket: int,
-    cache_length: int,
-    device: torch.device,
-) -> Path:
-    key = "_".join(
-        [
-            "text_transformer_prefill",
-            f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
-            "softmaxfp32",
-            "bs1",
-            f"seq{int(bucket)}",
-            f"cache{int(cache_length)}",
-            f"torch{cache_key_part(torch.__version__)}",
-            f"torchnpu{torch_npu_version_label(device)}",
-            f"torchair{torchair_version_label(device)}",
-            f"src{text_source_hash()}",
-        ]
-    )
-    return cache_root.expanduser().resolve() / key
-
-
-def text_source_hash() -> str:
-    return short_file_hash(Path(__file__).resolve())
-
-
 # Decode execution and setup
 # The runtime exposes fn for repeated steps; setup creates its wrapper and warm cache arena.
 
@@ -1324,7 +1280,7 @@ class TextDecodeRuntime:
         model: LocalPaddleOCRVLForConditionalGeneration,
         *,
         device: torch.device,
-        cache_root: Path,
+        graph_directory: Path,
         batch_size: int,
         cache_length: int,
         eager: bool = False,
@@ -1336,17 +1292,16 @@ class TextDecodeRuntime:
         self.cache_num_key_value_heads = int(
             TEXT_KV_HEADS
         )
-        synchronize(device)
+        torch_npu.npu.synchronize(device)
         started = time.perf_counter()
         (self.fn, self.metadata) = compile_text_decode_stage(
             self.stage,
-            device=device,
-            cache_root=cache_root,
+            graph_directory=graph_directory,
             batch_size=batch_size,
             cache_length=cache_length,
             eager=eager,
         )
-        synchronize(device)
+        torch_npu.npu.synchronize(device)
         compile_wrapper_s = time.perf_counter() - started
         self.warm_cache: LocalPaddleOCRVLStaticCache = model.allocate_static_cache(
             batch_size=batch_size,
@@ -1364,10 +1319,10 @@ class TextDecodeRuntime:
         warm_input = torch.zeros((batch_size, 1), device=device, dtype=torch.int64)
         warm_position = torch.ones((batch_size,), device=device, dtype=torch.int64)
         warm_rope = torch.zeros((batch_size, 1), device=device, dtype=torch.int64)
-        synchronize(device)
+        torch_npu.npu.synchronize(device)
         started = time.perf_counter()
         self.fn(warm_input, warm_position, warm_rope, *self.warm_cache.flat_tensors())
-        synchronize(device)
+        torch_npu.npu.synchronize(device)
         compile_first_call_s = time.perf_counter() - started
         del warm_input, warm_position, warm_rope
         self.setup_timing_s = {
@@ -1379,8 +1334,7 @@ class TextDecodeRuntime:
 def compile_text_decode_stage(
     stage: TextDecodeStage,
     *,
-    device: torch.device,
-    cache_root: Path,
+    graph_directory: Path,
     batch_size: int,
     cache_length: int,
     eager: bool = False,
@@ -1393,12 +1347,10 @@ def compile_text_decode_stage(
     }
     if eager:
         return stage, {**common_metadata, "compile_api": "none"}
-    (torchair, CompilerConfig) = import_torchair()
-    shape_cache_dir = torchair_cache_dir_for_shape(
-        cache_root, batch_size=batch_size, cache_length=cache_length,
-        device=device,
-    )
-    shape_cache_dir.mkdir(parents=True, exist_ok=True)
+    import torchair.inference
+    from torchair import CompilerConfig
+
+    graph_directory.mkdir(parents=True, exist_ok=True)
     original = stage.forward.__func__
     name = f"text_decode_b{int(batch_size)}_kv{int(cache_length)}"
     function = types.FunctionType(
@@ -1410,44 +1362,20 @@ def compile_text_decode_stage(
     entrypoint = types.MethodType(function, stage)
     compiled_decode = torchair.inference.cache_compile(
         entrypoint, config=CompilerConfig(), dynamic=False,
-        cache_dir=str(shape_cache_dir), ge_cache=True,
+        cache_dir=str(graph_directory), ge_cache=True,
     )
     return (
         compiled_decode,
         {
             **common_metadata,
-            "torchair_cache_dir": str(shape_cache_dir),
+            "torchair_cache_dir": str(graph_directory),
             "torchair_ge_cache": True,
             "compile_api": "torchair.inference.cache_compile",
             "cache_key_fields": {
                 "batch_size": int(batch_size),
                 "cache_length": int(cache_length),
                 "torch": str(torch.__version__),
-                "torch_npu": torch_npu_version_label(device),
-                "torchair": torchair_version_label(device),
-                "decode_source_hash": text_source_hash(),
-                "execution_mode": TORCHAIR_EXECUTION_MODE,
+                "execution_mode": "inference",
             },
         },
     )
-
-
-def torchair_cache_dir_for_shape(
-    cache_root: Path,
-    *,
-    batch_size: int,
-    cache_length: int,
-    device: torch.device,
-) -> Path:
-    shape_key = "_".join(
-        [
-            f"mode{cache_key_part(TORCHAIR_EXECUTION_MODE)}",
-            f"bs{int(batch_size)}",
-            f"cache{int(cache_length)}",
-            f"torch{cache_key_part(torch.__version__)}",
-            f"torchnpu{torch_npu_version_label(device)}",
-            f"torchair{torchair_version_label(device)}",
-            f"src{text_source_hash()}",
-        ]
-    )
-    return cache_root.expanduser().resolve() / shape_key

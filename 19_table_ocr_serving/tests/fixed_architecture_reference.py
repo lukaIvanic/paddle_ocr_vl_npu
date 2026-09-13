@@ -27,6 +27,15 @@ PaddleOCRTextConfig = legacy.PaddleOCRTextConfig
 PaddleOCRVisionConfig = legacy.PaddleOCRVisionConfig
 PaddleOCRVLConfig = legacy.PaddleOCRVLConfig
 
+# Historical snapshots imported these files. Keep their implementations in the
+# test process only; the product now owns timing in serving_runtime directly.
+for name in ('timing', 'metrics'):
+    historical = types.ModuleType(f'_support.utils.{name}')
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+        f'564da03f:19_table_ocr_serving/_support/utils/{name}.py'], text=True)
+    exec(compile(source, f'<historical-{name}>', 'exec'), historical.__dict__)
+    sys.modules[historical.__name__] = historical
+
 
 def text_values(cfg):
     return dict(TEXT_HIDDEN_SIZE=cfg.hidden_size, TEXT_INTERMEDIATE_SIZE=cfg.intermediate_size,

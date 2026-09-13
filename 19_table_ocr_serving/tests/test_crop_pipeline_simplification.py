@@ -47,13 +47,12 @@ class CropPipelineTests(unittest.TestCase):
         model.config=cfg
         model.model=torch.nn.Module()
         model.visual=types.SimpleNamespace(vision_model=torch.nn.Module())
-        kwargs=dict(cache_root=Path('/unused'),device=torch.device('cpu'),eager=True)
-        with patch.object(text,'import_torchair',side_effect=AssertionError('compiler called')), \
-             patch.object(vision,'import_torchair',side_effect=AssertionError('compiler called')):
-            t=text.TextPrefillRuntime(model,cache_length=4096,**kwargs)
-            v=vision.VisionPrefillRuntime(model,**kwargs)
+        kwargs=dict(device=torch.device('cpu'),eager=True)
+        with patch.dict(sys.modules, {'torchair':None, 'torchair.inference':None}):
+            t=text.TextPrefillRuntime(model,graph_directories={},cache_length=4096,**kwargs)
+            v=vision.VisionPrefillRuntime(model,graph_directories={},**kwargs)
             stage=text.TextDecodeStage(model)
-            fn,metadata=text.compile_text_decode_stage(stage,batch_size=2,cache_length=4096,**kwargs)
+            fn,metadata=text.compile_text_decode_stage(stage,graph_directory=Path('/unused'),batch_size=2,cache_length=4096,eager=True)
         self.assertIs(fn,stage)
         self.assertFalse(metadata['enabled'])
         self.assertEqual(t.route(300)['physical_text_tokens'],512)
@@ -181,6 +180,7 @@ class CropPipelineTests(unittest.TestCase):
                 cpu_preprocess_background_service=0),
             request_started=0,preparation_finished=0)
         with patch.dict(sys.modules,{'torch_npu':fake}), patch.dict(current.__dict__,{'IMAGE_TOKEN_ID':5}), \
+             patch.object(current,'torch_npu',fake), \
              patch.object(current,'DeviceTimeline',DeviceTimeline):
             staged=engine._stage_crop(prepared,0.25)
             inflight=engine._enqueue_crop(staged)

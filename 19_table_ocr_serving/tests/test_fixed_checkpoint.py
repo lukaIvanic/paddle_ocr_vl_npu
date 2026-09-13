@@ -28,7 +28,12 @@ def historical(name):
     module = types.ModuleType('fixed_reference_' + name)
     module.__file__ = str(ROOT / path)
     sys.modules[module.__name__] = module
-    exec(compile(source, module.__file__, 'exec'), module.__dict__)
+    helpers = types.ModuleType('_support.model.compile_utils')
+    helper_source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+        '564da03f:19_table_ocr_serving/_support/model/compile_utils.py'], text=True)
+    exec(compile(helper_source, 'historical_compile_helpers', 'exec'), helpers.__dict__)
+    with patch.dict(sys.modules, {helpers.__name__: helpers}):
+        exec(compile(source, module.__file__, 'exec'), module.__dict__)
     return module
 
 

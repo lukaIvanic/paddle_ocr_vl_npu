@@ -415,9 +415,8 @@ class TextSimplificationTests(unittest.TestCase):
             self.assertTrue(seen[-1]['full_decode_lm_head'])
             self.assertEqual(seen[-1]['decode_device_timing'], level == 'detailed')
             self.assertEqual(seen[-1]['model'], '/unused')
-            self.assertEqual(seen[-1]['torchair_cache_dir'], Path('/unused/graphs/decode'))
-            self.assertEqual(seen[-1]['vision_torchair_cache_dir'], Path('/unused/graphs/vision_prefill'))
-            self.assertEqual(seen[-1]['text_torchair_cache_dir'], Path('/unused/graphs/text_prefill'))
+            self.assertEqual(seen[-1]['graph_cache_directory'], Path('/unused/graphs'))
+            self.assertNotIn('torchair_cache_dir', seen[-1])
             freeze.assert_called_once()
 
     def test_full_head_setup_and_cache_separation(self):
@@ -448,8 +447,10 @@ class TextSimplificationTests(unittest.TestCase):
         init = next(n for n in cls.body if isinstance(n,ast.FunctionDef) and n.name == '__init__')
         stages = next(n for n in ast.walk(init) if isinstance(n,ast.Call)
                       and ast.unparse(n.func) == 'self.model.make_inference_stages')
-        cache_root = next(k.value for k in stages.keywords if k.arg == 'decode_cache_root')
-        self.assertEqual(ast.unparse(cache_root),'torchair_cache_dir / decode_head_cache_key')
+        head = next(k.value for k in stages.keywords if k.arg == 'decode_head_cache_key')
+        self.assertEqual(ast.unparse(head), 'decode_head_cache_key')
+        cache_root = next(k.value for k in stages.keywords if k.arg == 'graph_cache_directory')
+        self.assertEqual(ast.unparse(cache_root), 'graph_cache_directory')
 
     @classmethod
     def setUpClass(cls):
@@ -528,9 +529,9 @@ class TextSimplificationTests(unittest.TestCase):
             return {n.name: ast.get_source_segment(src, n) for n in ast.parse(src).body
                     if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
         old, new = defs(expected), defs((ROOT / path).read_text())
-        self.assertEqual(old.keys() - {'LocalModelOutput', 'LocalStaticModelOutput', '_resolve_model_dir'}, new.keys())
+        self.assertEqual(old.keys() - {'LocalModelOutput', 'LocalStaticModelOutput', '_resolve_model_dir'}, new.keys() - {'model_source_hash'})
         self.assertNotIn('_resolve_model_dir', new)
-        for name in new.keys() - {'LocalPaddleOCRVLForConditionalGeneration'}:
+        for name in new.keys() - {'LocalPaddleOCRVLForConditionalGeneration', 'model_source_hash'}:
             self.assertEqual(old[name], new[name], name)
         def methods(src):
             cls = next(n for n in ast.parse(src).body if isinstance(n, ast.ClassDef) and n.name == 'LocalPaddleOCRVLForConditionalGeneration')
@@ -621,8 +622,12 @@ class TextSimplificationTests(unittest.TestCase):
         source = subprocess.check_output(['git', '-C', str(ROOT), 'show', f'0976fa33:{PATH}'], text=True)
         old = types.ModuleType('_prefill_setup_control')
         old.__dict__.update(current.__dict__)
+        # The old cache naming helpers are reference-only; production removed them.
+        helpers = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+            '564da03f:19_table_ocr_serving/_support/model/compile_utils.py'], text=True)
+        exec(compile(helpers, 'historical_compile_helpers', 'exec'), old.__dict__)
         old.PaddleOCRTextConfig = PaddleOCRTextConfig
-        names = {'parse_text_buckets', 'TextPrefillRuntime', 'text_cache_dir_for_bucket'}
+        names = {'parse_text_buckets', 'TextPrefillRuntime', 'text_cache_dir_for_bucket', 'text_source_hash'}
         nodes = [ChooseSimulatedNPU().visit(n) for n in ast.parse(source).body
                  if isinstance(n, (ast.FunctionDef, ast.ClassDef)) and n.name in names]
         old.TEXT_PADDING_CHOICES = ('auto', 'none', 'bucket')
@@ -645,12 +650,21 @@ class TextSimplificationTests(unittest.TestCase):
                     def run(*inputs):
                         events.append(('warm', signature(inputs)))
                     return run
-                compiler = types.SimpleNamespace(inference=types.SimpleNamespace(cache_compile=compile_graph))
+                compiler = types.ModuleType('torchair')
+                compiler.__path__ = []
+                compiler.CompilerConfig = dict
+                compiler.inference = types.ModuleType('torchair.inference')
+                compiler.inference.cache_compile = compile_graph
                 extra = dict(backend='torchair', buckets=(128,256,512,1024,1152), dtype=torch.float16,
-                             linear_weight_format='decode_nz', padding='bucket', model_dir=Path(tmp)) if module is old else {}
-                with patch.object(module, 'import_torchair', return_value=(compiler, dict)), \
-                     patch.object(module, 'synchronize', side_effect=lambda device: events.append(('sync', str(device)))):
-                    text_call(module, cfg, module.TextPrefillRuntime, model, cache_root=Path(tmp), cache_length=4096,
+                             linear_weight_format='decode_nz', padding='bucket', model_dir=Path(tmp),
+                             cache_root=Path(tmp)) if module is old else dict(
+                             graph_directories={b:Path(tmp)/str(b) for b in current.TEXT_PREFILL_BUCKETS})
+                with patch.object(module, 'import_torchair', return_value=(compiler, dict), create=True), \
+                     patch.dict(sys.modules, {'torchair':compiler, 'torchair.inference':compiler.inference}), \
+                     patch.object(module, 'synchronize', side_effect=lambda device: events.append(('sync', str(device))), create=True), \
+                     patch.object(module, 'torch_npu', types.SimpleNamespace(npu=types.SimpleNamespace(
+                         synchronize=lambda device:events.append(('sync',str(device)))))):
+                    text_call(module, cfg, module.TextPrefillRuntime, model, cache_length=4096,
                                              device=torch.device('cpu'), **extra)
                 traces.append(events)
         self.assertEqual(*traces)
@@ -661,10 +675,9 @@ class TextSimplificationTests(unittest.TestCase):
                    and any(a.name == 'torch_npu' for a in n.names)]
         self.assertEqual(len(imports), 1)
         self.assertIn(imports[0], tree.body)
-        self.assertEqual(current.text_source_hash(), current.short_file_hash(EXPERIMENT / 'text_prefill_and_decode.py'))
-        for function in (current.torchair_cache_dir_for_shape, current.text_cache_dir_for_bucket):
-            self.assertNotIn('dtype', inspect.signature(function).parameters)
-            self.assertNotIn('linear_weight_format', inspect.signature(function).parameters)
+        for name in ('text_source_hash', 'short_file_hash', 'torchair_cache_dir_for_shape',
+                     'text_cache_dir_for_bucket', 'import_torchair'):
+            self.assertFalse(hasattr(current, name))
         self.assertNotIn('huggingface_hub', (EXPERIMENT / 'paddle_ocr_vl_1_6_modeling.py').read_text())
 
 

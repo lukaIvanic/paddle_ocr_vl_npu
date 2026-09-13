@@ -8,7 +8,9 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from _support.serving.scheduling_metrics import RequestSchedulingMetrics
+sys.modules.setdefault('torch_npu',types.ModuleType('torch_npu'))
+import fixed_architecture_reference  # CPU-only stubs for runtime dependencies
+from serving_runtime import RequestSchedulingMetrics
 
 class CPUReadinessTests(unittest.TestCase):
     def test_queue_service_idle_and_poll_split(self):

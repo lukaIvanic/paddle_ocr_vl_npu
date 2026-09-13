@@ -45,10 +45,27 @@ defaults. The CLI requires `--model-path`, `--graph-cache-directory` and
 `--log-folder`. Paths are resolved from the launch working directory; none
 are derived from the repository or given machine-specific defaults.
 
-All compiled graphs live under the single supplied cache directory, in
-`decode/`, `vision_prefill/` and `text_prefill/`. Stage-specific cache keys and
-head separation are unchanged. Existing caches are not moved automatically:
-an empty new location will require compilation when the server next runs.
+Model setup in `paddle_ocr_vl_1_6_modeling.py` owns all graph-cache paths. The
+single supplied root is passed unchanged through HTTP and the serving runtime.
+Model setup adds one source fingerprint, then `vision_prefill/seq<bucket>`,
+`text_prefill/seq<bucket>_kv<capacity>` and
+`decode/<vocabulary-identity>/b<batch>_kv<capacity>`. Each stage receives its exact
+per-graph directories and passes them unchanged to TorchAir.
+
+The fingerprint hashes the complete modeling, vision and text source files;
+editing any of them selects a fresh namespace for all three stages. Decode
+vocabulary identity includes the selected token-ID digest (or full-head size).
+These simpler names replace the previous version-labelled paths; old caches
+are not deleted, moved or automatically reused. The next compiled startup will
+need to populate the new locations. After changing Torch, TorchAir, torch-npu,
+CANN, hardware or checkpoint weights, use a fresh cache root and revalidate.
+Environment changes are no longer automatically encoded in our directory names.
+
+`_support/model/compile_utils.py` and its package initializer are removed.
+Compiled setup imports the installed top-level `torchair.inference` and
+`torchair.CompilerConfig` directly; there is no alternate import-location
+fallback. Eager setup does not import TorchAir. Compiler arguments, per-bucket
+entrypoints, warmup tensors and synchronization ordering are unchanged.
 
 `--run-eagerly` runs the same NPU stages without TorchAir compilation.
 `--metrics-level` is `basic`, `scheduling` (default), or `detailed`: ordinary
@@ -65,13 +82,66 @@ The server no longer calculates `HERE`/`EXPERIMENT_ROOT`/`REPO_ROOT` or inserts 
 directory into `sys.path`. Launch it normally with Python: Python makes the
 script directory importable, and the spawned worker inherits that import path.
 
+## Scheduler ownership
+
+`serving_runtime.py` owns the complete request lifecycle, including the decode
+arena, continuous scheduler and their supporting records. The overall request
+flow comes first, followed by the decode loop and active-slot management,
+request/state records, prefill cache ownership and measurements. The scheduler
+and arena remain separate classes; only their file location changed.
+`_Request` and `RequestSchedulingMetrics` live in the measurements section.
+The temporary `decode_scheduler.py` and former support modules are removed
+without compatibility re-exports. Class and function definitions are unchanged,
+including scheduling, token-copy synchronization, metrics output and the
+existing unpruned prefill history.
+
+Prefill cache storage now lives in `serving_runtime.py`, beside the prefill
+records. `PrefillKVCachePool`, `PrefillKVCacheLease`, `_FreeSlot` and
+`_cache_nbytes()` are moved unchanged: allocation size, ownership checks,
+generation counters, reporting and release/reuse events are preserved. The
+remaining `_support/` package and its initializers are removed. Further cache
+pool simplification remains deferred.
+
+## Runtime timing ownership
+
+Request/result dataclasses also live in `serving_runtime.py` now:
+`RecognitionRequest`, `RecognitionResult`, `ContinuousDecodeResult`,
+`RequestTiming` and `PrefillDeviceTiming`. Their fields, defaults and image
+decoding method are unchanged by relocation; `_support/serving/types.py` is
+removed. The inference worker imports `RecognitionRequest` inside `pull()`.
+The HTTP process does not import serving runtime or Torch, and inter-process
+messages remain plain dictionaries. No compatibility re-export is retained.
+
+`serving_runtime.py` owns `per_second()` and `DeviceTimeline`, their only
+production consumer. `_support/utils/` is removed. Model setup, stage setup and
+the decode scheduler call the NPU device/stream synchronization APIs directly
+at the same wait points as before. There is no shared CUDA/NPU synchronization
+wrapper. CPU tests mock those NPU calls explicitly; this is not a CPU inference
+fallback or a redesign of stage timing.
+
 ## Output formatting
 
 Post-generation repetition truncation and math-delimiter rewriting are removed.
 The table-only HTTP endpoint calls `convert_otsl_to_html` directly, keeping the
 original text if conversion returns nothing. The obsolete normalization wrapper
 and label branch are removed. HTTP responses still retain `raw_text` and native
-token IDs. No decoder stopping rule changed.
+token IDs. That formatting cleanup did not change decoder stopping rules.
+
+Generation-time repetition detection and trimming were subsequently removed as
+well, including the tracker, scheduler option and response evidence field. The
+ordinary serving path now stops only at EOS, KV capacity or the output-token
+limit; it returns repeated tokens unchanged. This is an intentional stopping
+behavior change, not just structural cleanup. Model forward operations are
+unchanged, but repetitive requests can occupy decode slots longer.
+
+The saved-result audit in
+`tmp/19_table_ocr_serving/repetition_stop_audit_20260913/report.json` found no
+repetition stops in 6,800 measured table requests (repeated benchmark inputs,
+not 6,800 distinct tables). CPU replay of the prior detector on 30,557 historical
+full-document native token streams found 11 triggers. Those historical streams
+used a different pipeline; neither result proves repetition cannot occur on
+new inputs. Historical runs retain their original stopping behavior and are
+not new NPU validation of this removal.
 
 The HTML conversion behavior is unchanged: it resolves merged cells, pads
 short rows, escapes HTML-sensitive cell text, and trims cell-edge whitespace.
@@ -311,16 +381,16 @@ commits; they are not supported modes of the current product runtime.
 ## Structure
 
 - `serve.py`: HTTP API, operational CLI, process lifecycle and readiness.
-- `serving_runtime.py`: preparation, prefill and continuous-decode coordination.
+- `serving_runtime.py`: the full request lifecycle: preparation, prefill, active
+  decode slots, asynchronous token copies, completion and measurements.
 - `paddle_ocr_vl_1_6_modeling.py`: checkpoint loading and model composition.
 - `vision_prefill.py`: vision encoder/projector and its existing runtime.
 - `text_prefill_and_decode.py`: both original text implementations, joined without
   changing computation; the prefill-only `_linear_tokenwise` helper is renamed
   `_prefill_linear_tokenwise` to avoid changing either implementation.
 - `crop_processing.py`: image/prompt preprocessing and unchanged output formatting.
-- `_support/`: temporary original dependencies, including the decode scheduler,
-  checkpoint configuration and timing. Further
-  consolidation is deferred until the simplified model passes NPU validation.
+- Request/result records, timing and prefill cache ownership are consolidated
+  in `serving_runtime.py`; the temporary `_support/` folder is removed.
 - `presets/`: the single frozen 60,416-row native-token vocabulary mapping.
 
 No new scheduling, warmup or metrics design is introduced here. Synthetic constructor compilation, real
