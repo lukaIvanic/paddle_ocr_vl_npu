@@ -215,6 +215,11 @@ class RuntimeIntegrationStructureTests(unittest.TestCase):
                 if node.attr=='arena': node.attr='decode_arena'
                 return self.generic_visit(node)
         old,new=classes(before),classes(after)
+        for name in ('__init__','serve'):
+            a=next(n for n in old['ContinuousRecognizer'].body if isinstance(n,ast.FunctionDef) and n.name==name)
+            b=next(n for n in new['ContinuousRecognizer'].body if isinstance(n,ast.FunctionDef) and n.name==name)
+            self.assertEqual([ast.dump(d) for d in a.decorator_list],
+                             [ast.dump(d) for d in b.decorator_list],name)
         self.assertEqual(ast.dump(Rename().visit(old['DecodeArena'])),ast.dump(new['DecodeArena']))
         for method in old['ContinuousDecodeScheduler'].body:
             if not isinstance(method,ast.FunctionDef) or method.name in ('__init__','run_stream','run'):

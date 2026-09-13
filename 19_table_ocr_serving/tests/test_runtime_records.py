@@ -21,6 +21,8 @@ class RuntimeRecordTests(unittest.TestCase):
     def setUpClass(cls):
         source = subprocess.check_output(['git','-C',str(ROOT),'show',
             '564da03f:19_table_ocr_serving/_support/serving/types.py'],text=True)
+        source = source.replace('ContinuousRecognizer._result_from_completion',
+                                'ContinuousRecognizer._build_recognition_result')
         tree = ast.parse(source)
         # Repetition metadata was removed in the previous, separate cleanup.
         result = next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='RecognitionResult')

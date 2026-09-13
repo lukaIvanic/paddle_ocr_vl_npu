@@ -93,7 +93,6 @@ class ContinuousRecognizer:
     # One-time setup comes first; serving and per-request operations follow.
 
     @torch.inference_mode()
-    @torch.inference_mode()
     def __init__(
         self,
         *,

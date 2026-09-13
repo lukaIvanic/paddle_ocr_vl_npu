@@ -22,14 +22,25 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--expected-commit', required=True)
     parser.add_argument('--npu', type=int, required=True, choices=range(8))
+    parser.add_argument('--output-dir', type=Path, default=BASE)
+    parser.add_argument('--reuse-compiled-cache', action='store_true')
     args = parser.parse_args()
     commit = subprocess.check_output(['git', '-C', str(RUNTIME_REPO), 'rev-parse', 'HEAD'], text=True).strip()
     assert commit == args.expected_commit
     assert not subprocess.check_output(['git', '-C', str(RUNTIME_REPO), 'status', '--porcelain', '--', '19_table_ocr_serving'], text=True).strip()
     assert subprocess.check_output(['git', '-C', str(HISTORICAL), 'rev-parse', 'HEAD'], text=True).strip() == LOCKED
-    # A new root proves this first phase cannot silently reuse an older graph set.
-    assert not (RUNTIME_REPO / '.runtime_cache/19_current_checkpoint_20260913').exists()
-    root = HISTORICAL / BASE
+    if args.reuse_compiled_cache:
+        assert (RUNTIME_REPO / '.runtime_cache/19_current_checkpoint_20260913').is_dir()
+        for name in ('p04_paddle_ocr_vl_1_6_modeling.py','p05_vision_prefill.py','p06_text_prefill_and_decode.py'):
+            relative = '19_table_ocr_serving/' + name
+            assert (RUNTIME_REPO / relative).read_bytes() == subprocess.check_output(
+                ['git','-C',str(RUNTIME_REPO),'show','ce7a92b1:' + relative])
+        phases = ('cached',)
+    else:
+        # The original checkpoint protocol still requires a genuinely fresh root.
+        assert not (RUNTIME_REPO / '.runtime_cache/19_current_checkpoint_20260913').exists()
+        phases = ('compile','cached')
+    root = HISTORICAL / args.output_dir
     root.mkdir(parents=True, exist_ok=False)
     path = HISTORICAL / '09_persistent_page_engine/scripts/table_poisson_frontier.py'
     source = path.read_text()
@@ -68,14 +79,14 @@ def main():
         'runtime_commit': commit, 'client_commit': LOCKED, 'physical_npu': args.npu,
         'batch': 8, 'target_qps': 6, 'requests': 1000, 'seed': 1, 'shuffle_all': True,
         'cache_root': CACHE, 'head_rows': 60416, 'metrics_level': 'scheduling',
-        'phases': ['compile_and_real_warmup_only', 'cached_restart_warmup_and_measure'],
+        'phases': list(phases),
         'reference': str(REFERENCE),
         'comparison_note': 'Historical reference uses 16k vocabulary and former preprocessing/postprocessing. Report differences; do not claim an isolated refactor speedup.',
     }
     (root / 'plan.json').write_text(json.dumps(plan, indent=2) + '\n')
     try:
-        for phase in ('compile', 'cached'):
-            sweep = ns['Sweep'](argparse.Namespace(npu=args.npu, count=1000, output_dir=BASE / phase))
+        for phase in phases:
+            sweep = ns['Sweep'](argparse.Namespace(npu=args.npu, count=1000, output_dir=args.output_dir / phase))
             sweep.write('runtime_identity.json', plan)
             try:
                 sweep.log('CHECKPOINT phase=' + phase)
