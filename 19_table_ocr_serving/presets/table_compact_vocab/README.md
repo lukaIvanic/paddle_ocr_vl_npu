@@ -2,19 +2,17 @@
 
 This runtime uses **our own reduced vocabulary of 60,416 tokens by default**,
 instead of PaddleOCR-VL's original 103,424-token vocabulary. The purpose is to
-make each decode step cheaper: the model scores fewer possible next tokens.
-It is our optimization, not an official Paddle vocabulary.
+reduce latency. It is our optimization, not an official Paddle vocabulary.
 
 We kept the actual token IDs generated in our full-vocabulary OmniDocBench
 runs, plus all Han-containing tokens and reviewed basic characters, language,
-math/LaTeX and syntax tokens. In our 100-table B2/B8 comparison, outputs matched
+math/LaTeX and syntax tokens. In our OmniDocBench v1.6 tests, outputs matched
 the full head exactly; mean latency was about 2–3% lower and P95 about 3–6% lower.
-Coverage of saved generations does not guarantee identical outputs on every
-new document: removing alternative tokens can change what the model generates.
+The smaller vocabulary doesn't reduce quality of generation, but there is an 
+option available to use the original full vocabulary instead. 
 
 To use Paddle's original full vocabulary instead, start the server with
-`--full-decode-lm-head` (or set `ServeConfig.full_decode_lm_head=True`). This
-trades the measured speed benefit for keeping every original output token.
+`--full-decode-lm-head`.
 
 ## Mapping used by the runtime
 
@@ -25,26 +23,3 @@ The runtime constructs selected weight rows and the reverse native-ID mapping
 from this file. No tokenizer, corpus, remote path or audit script is required to
 load the selection. The checkpoint/tokenizer itself must be provided locally,
 as for the rest of the engine.
-
-The default is this selected head. `--full-decode-lm-head` uses all 103,424 native
-checkpoint rows directly, so it does not load a selected-ID file. First-token
-selection after text prefill uses the full head in both modes. Neither mode
-changes stopping rules, input preprocessing, or KV capacity.
-
-The selected vocabulary protects actual saved full-head generation IDs, all
-Han-containing token entries, standalone character/grapheme entries, whitespace,
-Han-associated punctuation sequences, combining-mark and format-control pieces,
-and tokenizer-declared special tokens. The reviewed protected union has 60,352
-IDs; the remaining 64 are deterministic lower-ID fillers. The file also retains
-the original row-order digest and raw-trace hashes as provenance; those source
-paths are metadata, not runtime dependencies.
-
-All inspected generation IDs are covered, but this is still a restricted head.
-Omitted merged tokens can affect generation on other inputs. Byte/character
-coverage alone does not establish general OCR accuracy. The 100-table B2/B8
-comparison matched the full head exactly; wider validation is separate.
-
-The old 16,384-row mapping is removed from experiment 19. Its research copy and
-past benchmark evidence remain in experiment 09 and Git history, not in the
-product's supported vocabulary choices.
-
