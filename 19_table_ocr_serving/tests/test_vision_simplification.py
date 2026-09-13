@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PATH = '19_table_ocr_serving/vision_prefill.py'
 PIN = 'dc755584'
 OLD = subprocess.check_output(['git', '-C', str(ROOT), 'show', f'{PIN}:{PATH}'], text=True)
-NEW = (ROOT / PATH).read_text()
+NEW = (ROOT / '19_table_ocr_serving/p05_vision_prefill.py').read_text()
 REMOVED_DEFINITIONS = {'get_vision_attention_impl', 'get_vision_prompt_fa_layout',
     'get_vision_prompt_fa_mask_sparse_mode', 'get_vision_softmax_dtype_mode', 'attention_softmax',
     'PreparedPackedVisionPrefill', 'prepare_packed_vision_prefill', 'rotate_half', 'apply_rotary_pos_emb_vision'}

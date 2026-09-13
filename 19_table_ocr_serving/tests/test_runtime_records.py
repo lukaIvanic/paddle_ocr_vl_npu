@@ -13,7 +13,7 @@ import unittest
 
 from PIL import Image
 from test_text_simplification import ROOT, EXPERIMENT
-import serving_runtime as current
+import p02_serving_runtime as current
 
 
 class RuntimeRecordTests(unittest.TestCase):
@@ -66,7 +66,7 @@ class RuntimeRecordTests(unittest.TestCase):
             self.assertEqual(sample(self.old,name),sample(current,name))
 
     def test_http_import_does_not_load_runtime_or_torch(self):
-        code = "import sys; sys.path.insert(0,sys.argv[1]); import serve; assert 'serving_runtime' not in sys.modules; assert 'torch' not in sys.modules; assert 'torch_npu' not in sys.modules"
+        code = "import sys; sys.path.insert(0,sys.argv[1]); import p01_serve as serve; assert 'p02_serving_runtime' not in sys.modules; assert 'torch' not in sys.modules; assert 'torch_npu' not in sys.modules"
         subprocess.run([sys.executable,'-c',code,str(EXPERIMENT)],check=True)
 
 

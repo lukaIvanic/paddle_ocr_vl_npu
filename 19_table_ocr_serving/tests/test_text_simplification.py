@@ -32,12 +32,12 @@ sys.path.insert(0, str(EXPERIMENT))
 # Production imports torch_npu once. CPU tests explicitly provide a test double;
 # this is not a CPU fallback in the runtime.
 sys.modules.setdefault('torch_npu', types.ModuleType('torch_npu'))
-import text_prefill_and_decode as current
+import p06_text_prefill_and_decode as current
 
 PIN = 'dc755584'
 PATH = '19_table_ocr_serving/text_prefill_and_decode.py'
 OLD = subprocess.check_output(['git', '-C', str(ROOT), 'show', f'{PIN}:{PATH}'], text=True)
-NEW = (ROOT / PATH).read_text()
+NEW = (EXPERIMENT / 'p06_text_prefill_and_decode.py').read_text()
 NAMES = ('combined_apply_complete_layer_prefetch1_rope_lut_packed_mlp',)
 FUNCTIONS = {
     'LocalPaddleOCRVLStaticCache', '_linear_tokenwise', '_packed_linear',
@@ -254,7 +254,7 @@ class TextSimplificationTests(unittest.TestCase):
         kwargs = {kw.arg: kw.value for kw in call.keywords}
         self.assertIsNone(ast.literal_eval(kwargs['pse_shift']))
         self.assertIsNone(ast.literal_eval(kwargs['actual_seq_lengths']))
-        runtime = ast.parse((EXPERIMENT / 'serving_runtime.py').read_text())
+        runtime = ast.parse((EXPERIMENT / 'p02_serving_runtime.py').read_text())
         configuration = next(n for n in ast.walk(runtime) if isinstance(n, ast.FunctionDef) and n.name == 'configuration')
         result = next(n.value for n in configuration.body if isinstance(n, ast.Return))
         metadata = {ast.literal_eval(k): v for k, v in zip(result.keys, result.values)}
@@ -269,8 +269,8 @@ class TextSimplificationTests(unittest.TestCase):
         self.assertEqual(ast.literal_eval(metadata['vision_prompt_fa_layout']), 'bnsd')
 
     def test_fixed_settings_against_saved_readiness(self):
-        import serving_runtime as runtime
-        import vision_prefill
+        import p02_serving_runtime as runtime
+        import p05_vision_prefill as vision_prefill
         recorded = json.loads((ROOT / 'tmp/19_table_ocr_serving/step2_b8qps6_dc755584_20260910_cached/b8/ready.json').read_text())['configuration']
         # The fixed serving settings are module constants; compare them with the
         # readiness record of the validated run. No checkpoint or device is opened.
@@ -298,7 +298,7 @@ class TextSimplificationTests(unittest.TestCase):
         # This is now the sole implementation, anchored by the combined run.
         preprocessing_record = json.loads((ROOT / 'tmp/19_table_ocr_serving/preprocess_options_20260911/b8_both_measured/b8/ready.json').read_text())['configuration']['preprocessing_benchmark']
         self.assertEqual(preprocessing_record, {'resize_backend': 'kornia_rs', 'compact_uint8': True})
-        from crop_processing import preprocess_pil_image
+        from p03_crop_processing import preprocess_pil_image
         parameters = inspect.signature(preprocess_pil_image).parameters
         self.assertEqual(set(parameters), {'image'})
         for name in ('compact_uint8_preprocess', 'image_resize_backend'):
@@ -306,15 +306,15 @@ class TextSimplificationTests(unittest.TestCase):
 
     def test_http_worker_cli_and_request_wiring(self):
         import pickle
-        import serve
-        import serving_runtime as runtime
+        import p01_serve as serve
+        import p02_serving_runtime as runtime
         explicit_paths = {
             '--model-path': '/chosen/model',
             '--graph-cache-directory': '/chosen/graphs',
             '--log-folder': '/chosen/logs',
         }
         path_args = [value for pair in explicit_paths.items() for value in pair]
-        with patch.object(sys, 'argv', ['serve.py', *path_args]):
+        with patch.object(sys, 'argv', ['p01_serve.py', *path_args]):
             args = serve.parse_args()
         self.assertIsInstance(args, serve.ServeConfig)
         self.assertEqual(pickle.loads(pickle.dumps(args)), args)
@@ -324,7 +324,7 @@ class TextSimplificationTests(unittest.TestCase):
         for flag, value in explicit_paths.items():
             self.assertEqual(getattr(args, flag[2:].replace('-', '_')), Path(value))
             remaining = [item for pair in explicit_paths.items() if pair[0] != flag for item in pair]
-            with patch.object(sys, 'argv', ['serve.py', *remaining]), \
+            with patch.object(sys, 'argv', ['p01_serve.py', *remaining]), \
                  patch('sys.stderr', new=io.StringIO()) as error, self.assertRaises(SystemExit) as exit:
                 serve.parse_args()
             self.assertEqual(exit.exception.code, 2)
@@ -339,20 +339,20 @@ class TextSimplificationTests(unittest.TestCase):
         self.assertEqual(serve.PROMPTS, {'table': 'Table Recognition:'})
         self.assertEqual(args.metrics_level, 'scheduling')
         self.assertFalse(args.full_decode_lm_head)
-        with patch.object(sys, 'argv', ['serve.py', *path_args, '--expanded-decode-lm-head']), \
+        with patch.object(sys, 'argv', ['p01_serve.py', *path_args, '--expanded-decode-lm-head']), \
              patch('sys.stderr',new=io.StringIO()), self.assertRaises(SystemExit):
             serve.parse_args()
-        with patch.object(sys, 'argv', ['serve.py', *path_args, '--full-decode-lm-head']):
+        with patch.object(sys, 'argv', ['p01_serve.py', *path_args, '--full-decode-lm-head']):
             self.assertTrue(serve.parse_args().full_decode_lm_head)
         for level in ('basic', 'scheduling', 'detailed'):
-            with patch.object(sys, 'argv', ['serve.py', *path_args, '--metrics-level', level]):
+            with patch.object(sys, 'argv', ['p01_serve.py', *path_args, '--metrics-level', level]):
                 self.assertEqual(serve.parse_args().metrics_level, level)
         for flags in (['--metrics-level', 'unknown'], ['--decode-device-timing'],
                       ['--request-scheduling-metrics'], ['--torchair-cache-dir', '/old/cache']):
-            with patch.object(sys, 'argv', ['serve.py', *path_args, *flags]), \
+            with patch.object(sys, 'argv', ['p01_serve.py', *path_args, *flags]), \
                  patch('sys.stderr', new=io.StringIO()), self.assertRaises(SystemExit):
                 serve.parse_args()
-        with patch.object(sys, 'argv', ['serve.py', *path_args,
+        with patch.object(sys, 'argv', ['p01_serve.py', *path_args,
                 '--host', '0.0.0.0', '--port', '9001', '--queue-capacity', '10',
                 '--request-timeout-s', '30', '--max-image-bytes', '1234',
                 '--device', 'npu:1', '--decode-batch-size', '8', '--run-eagerly',
@@ -420,7 +420,7 @@ class TextSimplificationTests(unittest.TestCase):
             freeze.assert_called_once()
 
     def test_full_head_setup_and_cache_separation(self):
-        import serving_runtime as runtime
+        import p02_serving_runtime as runtime
         cache_keys = []
         for full in (False,True):
             model = torch.nn.Module()
@@ -442,7 +442,7 @@ class TextSimplificationTests(unittest.TestCase):
                 self.assertEqual(model.decode_token_id_map.tolist(),[3,11,63])
         self.assertEqual(cache_keys,['selected_vocab_3_abc123456789','full_vocab_64'])
         # The decode graph cache is keyed by the selected head.
-        tree = ast.parse((EXPERIMENT / 'serving_runtime.py').read_text())
+        tree = ast.parse((EXPERIMENT / 'p02_serving_runtime.py').read_text())
         cls = next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name == 'ContinuousRecognizer')
         init = next(n for n in cls.body if isinstance(n,ast.FunctionDef) and n.name == '__init__')
         stages = next(n for n in ast.walk(init) if isinstance(n,ast.Call)
@@ -513,7 +513,7 @@ class TextSimplificationTests(unittest.TestCase):
             self.assertEqual(*results)
 
     def test_model_composition_and_serving_wiring(self):
-        import paddle_ocr_vl_1_6_modeling as modeling
+        import p04_paddle_ocr_vl_1_6_modeling as modeling
         path = '19_table_ocr_serving/paddle_ocr_vl_1_6_modeling.py'
         source = subprocess.check_output(['git', '-C', str(ROOT), 'show', f'{PIN}:{path}'], text=True)
         removed = {'get_image_features', 'build_inputs_embeds', 'forward_static_prefill',
@@ -528,7 +528,7 @@ class TextSimplificationTests(unittest.TestCase):
         def defs(src):
             return {n.name: ast.get_source_segment(src, n) for n in ast.parse(src).body
                     if isinstance(n, (ast.FunctionDef, ast.ClassDef))}
-        old, new = defs(expected), defs((ROOT / path).read_text())
+        old, new = defs(expected), defs((EXPERIMENT / 'p04_paddle_ocr_vl_1_6_modeling.py').read_text())
         self.assertEqual(old.keys() - {'LocalModelOutput', 'LocalStaticModelOutput', '_resolve_model_dir'}, new.keys() - {'model_source_hash'})
         self.assertNotIn('_resolve_model_dir', new)
         for name in new.keys() - {'LocalPaddleOCRVLForConditionalGeneration', 'model_source_hash'}:
@@ -536,7 +536,7 @@ class TextSimplificationTests(unittest.TestCase):
         def methods(src):
             cls = next(n for n in ast.parse(src).body if isinstance(n, ast.ClassDef) and n.name == 'LocalPaddleOCRVLForConditionalGeneration')
             return {n.name: ast.get_source_segment(src,n) for n in cls.body if isinstance(n,ast.FunctionDef)}
-        a,b = methods(expected),methods((ROOT/path).read_text())
+        a,b = methods(expected),methods((EXPERIMENT/'p04_paddle_ocr_vl_1_6_modeling.py').read_text())
         local_loader = a['from_pretrained'].replace(
             'model_id_or_path: str | Path = "PaddlePaddle/PaddleOCR-VL-1.6"',
             'model_dir: str | Path').replace(
@@ -678,7 +678,7 @@ class TextSimplificationTests(unittest.TestCase):
         for name in ('text_source_hash', 'short_file_hash', 'torchair_cache_dir_for_shape',
                      'text_cache_dir_for_bucket', 'import_torchair'):
             self.assertFalse(hasattr(current, name))
-        self.assertNotIn('huggingface_hub', (EXPERIMENT / 'paddle_ocr_vl_1_6_modeling.py').read_text())
+        self.assertNotIn('huggingface_hub', (EXPERIMENT / 'p04_paddle_ocr_vl_1_6_modeling.py').read_text())
 
 
 if __name__ == '__main__':

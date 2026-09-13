@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from test_text_simplification import ROOT
-import serving_runtime
+import p02_serving_runtime as serving_runtime
 
 
 class RuntimeTimingTests(unittest.TestCase):

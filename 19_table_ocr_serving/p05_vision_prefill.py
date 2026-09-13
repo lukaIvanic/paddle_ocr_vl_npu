@@ -20,10 +20,10 @@ import torch_npu
 import torch.nn.functional as F
 from torch import nn
 
-from text_prefill_and_decode import TEXT_HIDDEN_SIZE
+from p06_text_prefill_and_decode import TEXT_HIDDEN_SIZE
 
 if TYPE_CHECKING:
-    from paddle_ocr_vl_1_6_modeling import LocalPaddleOCRVLForConditionalGeneration
+    from p04_paddle_ocr_vl_1_6_modeling import LocalPaddleOCRVLForConditionalGeneration
 
 
 # Fixed PaddleOCR-VL-1.6 vision architecture.

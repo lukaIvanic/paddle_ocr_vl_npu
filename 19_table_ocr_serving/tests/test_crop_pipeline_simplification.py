@@ -15,8 +15,8 @@ from unittest.mock import patch
 
 import torch
 from test_text_simplification import ROOT, EXPERIMENT, signature
-import serving_runtime as current
-import crop_processing
+import p02_serving_runtime as current
+import p03_crop_processing as crop_processing
 
 
 class CropPipelineTests(unittest.TestCase):
@@ -39,8 +39,8 @@ class CropPipelineTests(unittest.TestCase):
             self.assertEqual(c.summary(),d.summary())
 
     def test_eager_opt_out_uses_same_stages_without_compiler(self):
-        import text_prefill_and_decode as text
-        import vision_prefill as vision
+        import p06_text_prefill_and_decode as text
+        import p05_vision_prefill as vision
         cfg = types.SimpleNamespace(text_config=types.SimpleNamespace(num_hidden_layers=2),
             vision_config=types.SimpleNamespace(hidden_size=144,num_attention_heads=2))
         model = torch.nn.Module()
@@ -66,7 +66,7 @@ class CropPipelineTests(unittest.TestCase):
         source = subprocess.check_output(['git','-C',str(ROOT),'show',
             '0976fa33:19_table_ocr_serving/_support/pipeline/layout_output.py'],text=True)
         section = source[source.index('def _shortest_repeating_substring('):source.index('def untokenize_table_figures(')]
-        now = (EXPERIMENT/'crop_processing.py').read_text()
+        now = (EXPERIMENT/'p03_crop_processing.py').read_text()
         # Parser stays verbatim; the renamed/consolidated converter is checked
         # against historical execution, including malformed marker sequences.
         def definitions(src):
@@ -93,7 +93,7 @@ class CropPipelineTests(unittest.TestCase):
                              crop_processing.convert_otsl_to_html(content), content)
         self.assertNotIn('normalize_recognition_text', actual)
         # Exercise the actual HTTP result callback, without starting a server.
-        serve_source = (EXPERIMENT/'serve.py').read_text()
+        serve_source = (EXPERIMENT/'p01_serve.py').read_text()
         emit = next(n for n in ast.walk(ast.parse(serve_source))
                     if isinstance(n,ast.FunctionDef) and n.name == 'emit_result')
         emitted = []

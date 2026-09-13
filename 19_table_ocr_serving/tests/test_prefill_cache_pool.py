@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import torch
 from test_text_simplification import ROOT, EXPERIMENT
-import serving_runtime as runtime
+import p02_serving_runtime as runtime
 
 
 class PrefillCachePoolTests(unittest.TestCase):
@@ -21,7 +21,8 @@ class PrefillCachePoolTests(unittest.TestCase):
             '564da03f:19_table_ocr_serving/_support/serving/prefill_cache_pool.py'],text=True)
         cls.old = types.ModuleType('historical_prefill_cache_pool')
         sys.modules[cls.old.__name__] = cls.old
-        exec(compile(cls.source,'historical_prefill_cache_pool','exec'),cls.old.__dict__)
+        source = cls.source.replace('from text_prefill_and_decode import', 'from p06_text_prefill_and_decode import')
+        exec(compile(source,'historical_prefill_cache_pool','exec'),cls.old.__dict__)
 
     def test_definitions_unchanged(self):
         def definitions(source):

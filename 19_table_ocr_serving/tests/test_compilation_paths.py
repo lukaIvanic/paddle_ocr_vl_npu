@@ -13,9 +13,9 @@ from unittest.mock import patch
 
 import torch
 from test_text_simplification import ROOT, EXPERIMENT, signature
-import paddle_ocr_vl_1_6_modeling as modeling
-import text_prefill_and_decode as text
-import vision_prefill as vision
+import p04_paddle_ocr_vl_1_6_modeling as modeling
+import p06_text_prefill_and_decode as text
+import p05_vision_prefill as vision
 
 
 class CompilationPathTests(unittest.TestCase):
@@ -46,7 +46,7 @@ class CompilationPathTests(unittest.TestCase):
                 self.assertEqual(calls[2][1]['graph_directory'], Path('/cache/source123/decode')/head/f'b{batch}_kv4096')
 
     def test_source_fingerprint_covers_all_three_files(self):
-        filenames = ('paddle_ocr_vl_1_6_modeling.py', 'vision_prefill.py', 'text_prefill_and_decode.py')
+        filenames = ('p04_paddle_ocr_vl_1_6_modeling.py', 'p05_vision_prefill.py', 'p06_text_prefill_and_decode.py')
         original = {name:(EXPERIMENT/name).read_bytes() for name in filenames}
         expected = hashlib.sha256()
         for name in filenames:
@@ -76,8 +76,9 @@ class CompilationPathTests(unittest.TestCase):
                 helpers = subprocess.check_output(['git','-C',str(ROOT),'show',
                     '564da03f:19_table_ocr_serving/_support/model/compile_utils.py'],text=True)
                 exec(compile(helpers, 'old_helpers', 'exec'), old.__dict__)
+                historical_filename = 'vision_prefill.py' if module is vision else 'text_prefill_and_decode.py'
                 source = subprocess.check_output(['git','-C',str(ROOT),'show',
-                    f'564da03f:19_table_ocr_serving/{Path(module.__file__).name}'],text=True)
+                    f'564da03f:19_table_ocr_serving/{historical_filename}'],text=True)
                 nodes = [n for n in ast.parse(source).body if isinstance(n,(ast.ClassDef,ast.FunctionDef)) and n.name in names]
                 exec(compile(ast.Module(body=nodes,type_ignores=[]),'old_setup','exec'),old.__dict__)
                 traces = []

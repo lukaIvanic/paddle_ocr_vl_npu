@@ -1,9 +1,18 @@
 # Experiment 19: table OCR serving
 
+The six main scripts are numbered in their intended reading order: HTTP service,
+serving runtime, crop processing, model assembly, vision prefill, then text prefill
+and decode. README and requirements remain unnumbered. The `p` prefix permits
+ordinary Python imports and editor navigation.
+
+Renaming the model source files changes the graph-cache fingerprint. Existing
+cache files are not deleted, but the next compiled startup selects new paths.
+Historical benchmark commands remain tied to their recorded commits and filenames.
+
 ## Reading the HTTP service
 
 `ServeConfig` and its manually reviewed comments are preserved exactly.
-`main()` follows it; CLI parsing remains at the bottom of `serve.py`.
+`main()` follows it; CLI parsing remains at the bottom of `p01_serve.py`.
 
 `main()` explicitly creates two services and owns their separate lifecycles:
 
@@ -40,12 +49,12 @@ during shutdown and that closing HTTP leaves inference running until its own
 
 ## Explicit server paths
 
-`ServeConfig`, above `main()` in `serve.py`, lists the public options and their
+`ServeConfig`, above `main()` in `p01_serve.py`, lists the public options and their
 defaults. The CLI requires `--model-path`, `--graph-cache-directory` and
 `--log-folder`. Paths are resolved from the launch working directory; none
 are derived from the repository or given machine-specific defaults.
 
-Model setup in `paddle_ocr_vl_1_6_modeling.py` owns all graph-cache paths. The
+Model setup in `p04_paddle_ocr_vl_1_6_modeling.py` owns all graph-cache paths. The
 single supplied root is passed unchanged through HTTP and the serving runtime.
 Model setup adds one source fingerprint, then `vision_prefill/seq<bucket>`,
 `text_prefill/seq<bucket>_kv<capacity>` and
@@ -84,7 +93,7 @@ script directory importable, and the spawned worker inherits that import path.
 
 ## Scheduler ownership
 
-`serving_runtime.py` owns the complete request lifecycle, including the decode
+`p02_serving_runtime.py` owns the complete request lifecycle, including the decode
 arena, continuous scheduler and their supporting records. The overall request
 flow comes first, followed by the decode loop and active-slot management,
 request/state records, prefill cache ownership and measurements. The scheduler
@@ -95,7 +104,7 @@ without compatibility re-exports. Class and function definitions are unchanged,
 including scheduling, token-copy synchronization, metrics output and the
 existing unpruned prefill history.
 
-Prefill cache storage now lives in `serving_runtime.py`, beside the prefill
+Prefill cache storage now lives in `p02_serving_runtime.py`, beside the prefill
 records. `PrefillKVCachePool`, `PrefillKVCacheLease`, `_FreeSlot` and
 `_cache_nbytes()` are moved unchanged: allocation size, ownership checks,
 generation counters, reporting and release/reuse events are preserved. The
@@ -104,7 +113,7 @@ pool simplification remains deferred.
 
 ## Runtime timing ownership
 
-Request/result dataclasses also live in `serving_runtime.py` now:
+Request/result dataclasses also live in `p02_serving_runtime.py` now:
 `RecognitionRequest`, `RecognitionResult`, `ContinuousDecodeResult`,
 `RequestTiming` and `PrefillDeviceTiming`. Their fields, defaults and image
 decoding method are unchanged by relocation; `_support/serving/types.py` is
@@ -112,7 +121,7 @@ removed. The inference worker imports `RecognitionRequest` inside `pull()`.
 The HTTP process does not import serving runtime or Torch, and inter-process
 messages remain plain dictionaries. No compatibility re-export is retained.
 
-`serving_runtime.py` owns `per_second()` and `DeviceTimeline`, their only
+`p02_serving_runtime.py` owns `per_second()` and `DeviceTimeline`, their only
 production consumer. `_support/utils/` is removed. Model setup, stage setup and
 the decode scheduler call the NPU device/stream synchronization APIs directly
 at the same wait points as before. There is no shared CUDA/NPU synchronization
@@ -289,7 +298,7 @@ constant compatibility fields until the separate metrics discussion. Internal
 timeline stage keys and grouping labels now describe a crop, not a pack.
 
 Output normalization, repetition handling and OTSL conversion were moved
-verbatim into `crop_processing.py`; unused page-output/postprocess modules were
+verbatim into `p03_crop_processing.py`; unused page-output/postprocess modules were
 deleted. They remain recoverable from Git history. The formatting algorithm
 and its text/formula label handling are unchanged.
 
@@ -302,7 +311,7 @@ through length 8192. These tests do not substitute for the deferred NPU run.
 
 ### Text-module reading order (CPU-tested only)
 
-`text_prefill_and_decode.py` now introduces the shared model and KV storage,
+`p06_text_prefill_and_decode.py` now introduces the shared model and KV storage,
 then prefill computation, one-token decode computation, one-time decode
 preparation, and finally runtime/bucket/compilation details. Stage `forward`
 methods precede their implementation details; the prefill runtime's request
@@ -321,16 +330,16 @@ reason to bypass the compilation-cache identity checks.
 
 The same declaration-only pass now covers all five other main scripts:
 
-- `vision_prefill.py`: shared model, embeddings, encoder computation, projector,
+- `p05_vision_prefill.py`: shared model, embeddings, encoder computation, projector,
   weight preparation, and execution/bucket setup.
-- `crop_processing.py`: crop preprocessing, prompt construction, output
+- `p03_crop_processing.py`: crop preprocessing, prompt construction, output
   normalization and its helpers, then preprocessor configuration.
-- `paddle_ocr_vl_1_6_modeling.py`: model composition, checkpoint loading, stage
+- `p04_paddle_ocr_vl_1_6_modeling.py`: model composition, checkpoint loading, stage
   assembly, then cache and position-construction details.
-- `serving_runtime.py`: request entrypoints, decode coordination, CPU preparation
+- `p02_serving_runtime.py`: request entrypoints, decode coordination, CPU preparation
   and prefill, completion, then persistent setup and diagnostics. The open-request
   admission helper and crop-state records follow the main recognizer.
-- `serve.py`: startup and CLI, HTTP handling, request/result coordination,
+- `p01_serve.py`: startup and CLI, HTTP handling, request/result coordination,
   the NPU worker, then setup-GC and summary helpers. The `__main__` invocation
   remains after every definition.
 
@@ -380,17 +389,17 @@ commits; they are not supported modes of the current product runtime.
 
 ## Structure
 
-- `serve.py`: HTTP API, operational CLI, process lifecycle and readiness.
-- `serving_runtime.py`: the full request lifecycle: preparation, prefill, active
+- `p01_serve.py`: HTTP API, operational CLI, process lifecycle and readiness.
+- `p02_serving_runtime.py`: the full request lifecycle: preparation, prefill, active
   decode slots, asynchronous token copies, completion and measurements.
-- `paddle_ocr_vl_1_6_modeling.py`: checkpoint loading and model composition.
-- `vision_prefill.py`: vision encoder/projector and its existing runtime.
-- `text_prefill_and_decode.py`: both original text implementations, joined without
+- `p03_crop_processing.py`: image/prompt preprocessing and unchanged output formatting.
+- `p04_paddle_ocr_vl_1_6_modeling.py`: checkpoint loading and model composition.
+- `p05_vision_prefill.py`: vision encoder/projector and its existing runtime.
+- `p06_text_prefill_and_decode.py`: both original text implementations, joined without
   changing computation; the prefill-only `_linear_tokenwise` helper is renamed
   `_prefill_linear_tokenwise` to avoid changing either implementation.
-- `crop_processing.py`: image/prompt preprocessing and unchanged output formatting.
 - Request/result records, timing and prefill cache ownership are consolidated
-  in `serving_runtime.py`; the temporary `_support/` folder is removed.
+  in `p02_serving_runtime.py`; the temporary `_support/` folder is removed.
 - `presets/`: the single frozen 60,416-row native-token vocabulary mapping.
 
 No new scheduling, warmup or metrics design is introduced here. Synthetic constructor compilation, real
@@ -483,7 +492,7 @@ CPU-only checks:
 
 ```sh
 python3 -m unittest discover -s 19_table_ocr_serving/tests -p 'test_*simplification.py' -v
-python3 19_table_ocr_serving/serve.py --help
+python3 19_table_ocr_serving/p01_serve.py --help
 ```
 
 The twenty-four tests use small CPU tensors and simulated NPU operations. For the
@@ -538,7 +547,7 @@ copy in memory and checks function/class bodies:
 
 ```sh
 python3 19_table_ocr_serving/tests/check_relocation.py
-python3 19_table_ocr_serving/serve.py --help
+python3 19_table_ocr_serving/p01_serve.py --help
 ```
 
 The historical relocation check intentionally no longer matches the simplified

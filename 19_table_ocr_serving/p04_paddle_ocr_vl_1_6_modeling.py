@@ -18,11 +18,11 @@ import torch
 import torch_npu
 from torch import nn
 
-from text_prefill_and_decode import TEXT_HIDDEN_SIZE, TEXT_VOCAB_SIZE, TEXT_PREFILL_BUCKETS
-from vision_prefill import VISION_MERGE_SIZE, VISION_BUCKETS
-from text_prefill_and_decode import LocalPaddleOCRVLStaticCache, TextDecodeRuntime
-from text_prefill_and_decode import PaddleOCRRotaryEmbedding, PaddleOCRTextModel, TextPrefillRuntime
-from vision_prefill import PaddleOCRProjector, PaddleOCRVisionModel, PaddleOCRVisionRotaryEmbedding, VisionPrefillRuntime
+from p06_text_prefill_and_decode import TEXT_HIDDEN_SIZE, TEXT_VOCAB_SIZE, TEXT_PREFILL_BUCKETS
+from p05_vision_prefill import VISION_MERGE_SIZE, VISION_BUCKETS
+from p06_text_prefill_and_decode import LocalPaddleOCRVLStaticCache, TextDecodeRuntime
+from p06_text_prefill_and_decode import PaddleOCRRotaryEmbedding, PaddleOCRTextModel, TextPrefillRuntime
+from p05_vision_prefill import PaddleOCRProjector, PaddleOCRVisionModel, PaddleOCRVisionRotaryEmbedding, VisionPrefillRuntime
 
 
 # Fixed recognition token IDs.
@@ -258,9 +258,9 @@ def model_source_hash() -> str:
     """
     digest = hashlib.sha256()
     for filename in (
-        "paddle_ocr_vl_1_6_modeling.py",
-        "vision_prefill.py",
-        "text_prefill_and_decode.py",
+        "p04_paddle_ocr_vl_1_6_modeling.py",
+        "p05_vision_prefill.py",
+        "p06_text_prefill_and_decode.py",
     ):
         digest.update(filename.encode())
         digest.update(Path(__file__).with_name(filename).read_bytes())

@@ -14,13 +14,13 @@ EXPERIMENT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(EXPERIMENT))
 sys.modules.setdefault('torch_npu', types.ModuleType('torch_npu'))
 
-from text_prefill_and_decode import LocalPaddleOCRVLStaticCache
-from serving_runtime import (
+from p06_text_prefill_and_decode import LocalPaddleOCRVLStaticCache
+from p02_serving_runtime import (
     ContinuousDecodeScheduler, DecodeArena, DecodeCompletion, DecodeSlotState,
     ReadyDecodeRequest,
 )
-from serving_runtime import RecognitionResult
-import serving_runtime as continuous_decode
+from p02_serving_runtime import RecognitionResult
+import p02_serving_runtime as continuous_decode
 
 
 class DecodeCompletionTests(unittest.TestCase):

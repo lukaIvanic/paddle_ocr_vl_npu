@@ -33,7 +33,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import parse_qs, urlparse
 
 if TYPE_CHECKING:
-    from serving_runtime import RecognitionRequest
+    from p02_serving_runtime import RecognitionRequest
 
 
 # The prompt the model receives for each accepted crop_type. Supporting another
@@ -459,7 +459,7 @@ class InferenceWorker:
 
     def _load_model_and_report_ready(self) -> Any:
         # Only the child process imports Torch and the model code.
-        from serving_runtime import ContinuousRecognizer
+        from p02_serving_runtime import ContinuousRecognizer
 
         config = self.serve_config
         recognizer = ContinuousRecognizer(
@@ -503,7 +503,7 @@ class InferenceWorker:
     def pull(self, *, block: bool) -> RecognitionRequest | None:
         """Hand the recognizer the next image, or None when there is none right now."""
         # This runs in the inference child; the HTTP process never imports the model.
-        from serving_runtime import RecognitionRequest
+        from p02_serving_runtime import RecognitionRequest
 
         if self._closed:
             return None
@@ -529,7 +529,7 @@ class InferenceWorker:
 
     def emit_result(self, recognition: Any) -> None:
         """Send one finished OCR result back, as raw model text and as HTML."""
-        from crop_processing import convert_otsl_to_html  # Torch-backed; child-only import
+        from p03_crop_processing import convert_otsl_to_html  # Torch-backed; child-only import
 
         job = self.jobs_in_progress.pop(recognition.request_id)
         payload = asdict(recognition)

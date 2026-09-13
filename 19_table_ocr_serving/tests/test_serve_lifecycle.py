@@ -13,7 +13,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import serve
+import p01_serve as serve
 
 
 def make_config(**overrides):

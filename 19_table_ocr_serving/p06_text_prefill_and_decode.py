@@ -17,7 +17,7 @@ from torch import nn
 
 
 if TYPE_CHECKING:
-    from paddle_ocr_vl_1_6_modeling import LocalPaddleOCRVLForConditionalGeneration
+    from p04_paddle_ocr_vl_1_6_modeling import LocalPaddleOCRVLForConditionalGeneration
 
 
 # Fixed PaddleOCR-VL-1.6 text architecture.

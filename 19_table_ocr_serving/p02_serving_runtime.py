@@ -1,7 +1,7 @@
 """Persistent PaddleOCR-VL recognizer: CPU preparation, NPU prefill, batched decode.
 
 One ContinuousRecognizer owns the model for the life of the inference process.
-serve() takes an open request source (serve.py's InferenceWorker) and returns
+serve() takes an open request source (p01_serve.py's InferenceWorker) and returns
 once the source is closed and every accepted request has produced a result.
 
 Each request travels through four stages:
@@ -38,16 +38,16 @@ import torch_npu
 from PIL import Image
 from tokenizers import Tokenizer
 
-from crop_processing import (
+from p03_crop_processing import (
     prepare_prompt_tokens,
     preprocess_pil_image,
     PATCH_SIZE, MERGE_SIZE, MIN_PIXELS, MAX_PIXELS,
 )
-from paddle_ocr_vl_1_6_modeling import (
+from p04_paddle_ocr_vl_1_6_modeling import (
     LocalPaddleOCRVLForConditionalGeneration,
     IMAGE_TOKEN_ID,
 )
-from text_prefill_and_decode import (
+from p06_text_prefill_and_decode import (
     LocalPaddleOCRVLStaticCache,
     TEXT_EOS_TOKEN_ID,
     cast_decode_linear_weights_to_nz,
@@ -55,7 +55,7 @@ from text_prefill_and_decode import (
     prepare_decode_compact_lm_head,
     prepare_decode_projections,
 )
-from vision_prefill import (
+from p05_vision_prefill import (
     VISION_SEQUENCE_ALIGNMENT,
     prepare_vision_linear_weight_format,
     prepare_vision_mlp_intermediate,
@@ -101,7 +101,7 @@ class ContinuousRecognizer:
     ) -> ContinuousDecodeResult:
         """Serve an open request source until it closes; results go to emit_result.
 
-        `requests` provides pull(block=...) and closed (serve.py's InferenceWorker).
+        `requests` provides pull(block=...) and closed (p01_serve.py's InferenceWorker).
         The source may be temporarily empty without ending the run. Preparation
         failures are reported through on_request_error instead of stopping decode.
         The request loop itself is _OpenPrefillSource.pull, after this class.

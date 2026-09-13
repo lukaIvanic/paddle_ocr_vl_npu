@@ -10,7 +10,7 @@ from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 sys.modules.setdefault('torch_npu',types.ModuleType('torch_npu'))
 import fixed_architecture_reference  # CPU-only stubs for runtime dependencies
-from serving_runtime import RequestSchedulingMetrics
+from p02_serving_runtime import RequestSchedulingMetrics
 
 class CPUReadinessTests(unittest.TestCase):
     def test_queue_service_idle_and_poll_split(self):
@@ -40,7 +40,7 @@ class CPUReadinessTests(unittest.TestCase):
         sys.modules.setdefault('torch_npu',types.ModuleType('torch_npu'))
         kornia_image=types.ModuleType('kornia_rs.image'); kornia_image.Image=object
         sys.modules.setdefault('kornia_rs.image',kornia_image)
-        import serving_runtime as runtime
+        import p02_serving_runtime as runtime
         now=[10.0]
         m=RequestSchedulingMetrics(2); m.register('r',0)
         source=runtime._OpenPrefillSource.__new__(runtime._OpenPrefillSource)

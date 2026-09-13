@@ -17,8 +17,8 @@ ROOT = Path(__file__).resolve().parents[2]
 PRODUCT = ROOT / '19_table_ocr_serving'
 sys.path.insert(0, str(PRODUCT))
 sys.modules.setdefault('torch_npu', types.ModuleType('torch_npu'))
-import crop_processing as crops
-import paddle_ocr_vl_1_6_modeling as modeling
+import p03_crop_processing as crops
+import p04_paddle_ocr_vl_1_6_modeling as modeling
 
 
 def historical(name):
@@ -138,8 +138,8 @@ class FixedCheckpointTests(unittest.TestCase):
         self.assertEqual(len(after.visual.vision_model.encoder.layers), 27)
         self.assertFalse(hasattr(after, 'config'))
         # Rotary buffers are non-persistent; check their real CPU values too.
-        import text_prefill_and_decode as text
-        import vision_prefill as vision
+        import p06_text_prefill_and_decode as text
+        import p05_vision_prefill as vision
         self.assertTrue(torch.equal(old_text.PaddleOCRRotaryEmbedding(cfg.text_config).inv_freq,
                                     text.PaddleOCRRotaryEmbedding().inv_freq))
         self.assertEqual(cfg.text_config.rope_parameters['mrope_section'], list(text.TEXT_MROPE_SECTION))
