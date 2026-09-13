@@ -1,0 +1,18 @@
+{
+  "runtime_commit": "3eb8fc281e74c06aa72870d45fd4b82490c06ce3",
+  "client_sha256": "4651fe03b51c3aa8d8f15f78c6077d823b63c7c8498848379655aa10533c8892",
+  "lifecycle_harness_commit": "be691de190ae099d1a9b0ba80865006b122ecc00",
+  "physical_npu": 6,
+  "batch": 8,
+  "target_qps": 6,
+  "requests": 100,
+  "arrival_schedule": "tmp/19_table_ocr_serving/preprocess_poisson100_20260911/schedule.jsonl",
+  "schedule_sha256": "9cc994e4c3de865327d31019d7ba45951620c15b34a51a704f1cd5dbbdd8c2a7",
+  "ordered_ids_sha256": "944d66f46da6db1aa55d59fe31f82d2e57f3f414911bdb2a7e7926f3f64efd0b",
+  "metrics_level": "basic",
+  "head_rows": 60416,
+  "logging_disabled_control": false,
+  "cache_root": "/workspace/repos/paddle_ocr_vl_npu/.runtime_cache/19_current_checkpoint_20260913",
+  "reference": "tmp/19_table_ocr_serving/preprocess_poisson100_20260911/b8_both_measured",
+  "note": "Cached startup, one full real warmup outside measurement; no client concurrency cap."
+}

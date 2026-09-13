@@ -80,7 +80,7 @@ DECODE_VOCAB_TOKEN_IDS_PATH = (
 
 
 # Each stage records its own part of the request timing; the result step
-# assembles the RequestTiming and PrefillDeviceTiming records defined below.
+# assembles the RequestTiming record defined below.
 
 
 class ContinuousRecognizer:
@@ -2108,7 +2108,7 @@ def _emit_setup_progress(stage: str, status: str, elapsed_s: float | None = None
     print("SETUP " + json.dumps(record, ensure_ascii=False, separators=(",", ":")), file=sys.stderr, flush=True)
 
 
-# Request rates and device-stage timing.
+# Request rates.
 
 
 def per_second(count: int | float, seconds: float | None) -> float | None:

@@ -54,14 +54,22 @@ last timing event. No model tensor computations or warmup inputs are changed.
 Graph-progress callbacks change the p04–p06 source fingerprint, so the first
 startup uses a new graph-cache namespace.
 
-These changes require the saved Poisson100 correctness/performance validation;
-historical results below describe their recorded commits, not untested edits.
+Validated on one Ascend 910B2 with the saved B8/6-QPS Poisson100 schedule:
+logging-disabled control mean/P95 **1.166635/2.955730 s**, basic
+**1.153371/2.939240 s**, detailed **1.163348/2.952097 s**. All three runs match
+the accepted reference's 100 native token streams, raw texts, HTML and stopping
+reasons exactly. Each logged run has 101 acceptance/completion/response events
+(one warmup plus 100 measured), matching console/file records, no logging
+warnings and exact live-token totals. All **99 CPU tests pass**.
+This short fixed-load comparison shows no observed logging slowdown, not proof
+of zero overhead or a new maximum-throughput result. See the
+[logging validation evidence](../tmp/19_table_ocr_serving/logging_20260913/README.md).
 
 ## Python API, crop types and unfinished-request limit
 
-The API changes in this section are not yet NPU-validated. The benchmarked
-runtime below is unchanged; validation of text/formula recognition and mixed
-crop traffic remains pending.
+The table HTTP path is NPU-validated above. Python lifecycle and text/formula
+routing/formatting have CPU coverage; NPU validation of text/formula recognition
+and mixed crop traffic remains pending.
 
 HTTP accepts `crop_type=table`, `text` or `formula`. Each request supplies one
 encoded image and its crop type; there is no crop classification or bulk API.
@@ -129,7 +137,8 @@ decoding loop. The separate preparation/scheduler owners, iterable adapters
 and forwarding loop have been removed. `PreparedCrop` holds CPU inputs;
 `DecodeRequest` holds prefill state and metadata through decoding. There is no
 intermediate payload transfer. `ServingSummary` preserves the previous final
-summary fields; live logging remains a separate future change.
+summary fields. Live logging was deferred at that checkpoint; the current
+implementation is described above.
 
 The naming-only checkpoint is `a191a2a2`; its source-only test is frozen to that
 commit. Structural integration passed all 79 CPU tests, the saved B8/6-QPS
