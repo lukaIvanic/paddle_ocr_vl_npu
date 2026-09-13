@@ -1,0 +1,10 @@
+Runtime/launcher commit: f4b672b50d170fd34f4b873c2efec4616d9bd2f8
+Host: liteserver-c001-4; one Ascend 910B2, physical NPU6
+Working directory: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu
+python3 -u tmp/19_table_ocr_serving/refactor_poisson100_20260913/driver.py --expected-commit f4b672b50d170fd34f4b873c2efec4616d9bd2f8 --npu 6
+Source deployed by checksum-verified bundle (SHA256 4be8f5453f8c97efc859e312f88bd3e900790107747143d86bc5f643ccc174c2), then git pull --ff-only bundle HEAD.
+
+Pre-inference focused tests, container working directory /workspace/repos/paddle_ocr_vl_npu:
+source npu-setup
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -m unittest discover -s 19_table_ocr_serving/tests -p test_crop_pipeline_simplification.py -v
+Result: 4 tests passed in 0.386s. These are CPU control-flow/formatting tests, not NPU performance evidence.

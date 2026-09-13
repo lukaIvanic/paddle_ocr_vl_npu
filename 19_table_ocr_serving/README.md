@@ -20,6 +20,16 @@ claimed: raw text differs on 21 unique tables and Page-TEDS decreases by
 100 shared inputs from the prior 60k/Kornia run match native tokens exactly.
 See [the full validation and accuracy evidence](../tmp/19_table_ocr_serving/current_checkpoint_20260913/README.md).
 
+**Follow-up Poisson100 check, 2026-09-13:** at `f4b672b5`, restore the historical
+math-delimiter formatting (not repetition handling), then replay the exact saved
+60k/Kornia B8/6-QPS 100-table schedule with detailed instrumentation. All 100
+native token streams, raw texts, formatted HTML outputs and completion reasons
+match the previous control. Mean/P95: 1.187888/2.980455 s versus
+1.221411/3.127210 s; zero errors, all EOS. Existing graphs were reused, and NPU6
+was released. This replaces the shared-input-only check with a matched-workload
+run; it does not resolve every difference against the older 16k/Pillow pipeline.
+See [the Poisson100 comparison and exact commands](../tmp/19_table_ocr_serving/refactor_poisson100_20260913/README.md).
+
 This pass introduces each operation before its supporting details. Short
 constructors establish the objects used by execution methods; long model and
 compilation setup remains a separate, labeled section.
