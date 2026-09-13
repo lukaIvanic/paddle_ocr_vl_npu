@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import multiprocessing as mp
 import os
 import queue
@@ -46,9 +47,6 @@ PROMPTS = {
     "text": "OCR:",
     "formula": "Formula Recognition:",
 }
-
-HEARTBEAT_SECONDS = 15.0
-
 
 # Application startup and operational arguments
 
@@ -93,11 +91,13 @@ class ServeConfig:
     # if pipeline works at initial installation on server. Normally leave it disabled.
     run_eagerly: bool = False
 
-    # Both levels log startup, each request, errors, and a heartbeat every 15 seconds.
+    # Both levels log startup, each request, errors, and periodic heartbeats.
     # basic: request latency/output tokens and live request/token rates and occupancy.
     # detailed: also CPU/wait/prefill/decode-residency/formatting wall times, crop
     # dimensions and input tokens; heartbeat includes recent mean/P95 latency.
     metrics_level: Literal["basic", "detailed"] = "basic"
+    # Seconds between live status reports, including while the server is idle.
+    heartbeat_interval_s: float = 15.0
 
 
 def main() -> None:
@@ -317,6 +317,8 @@ class InferenceServer:
     """
 
     def __init__(self, serve_config: ServeConfig) -> None:
+        if not math.isfinite(serve_config.heartbeat_interval_s) or serve_config.heartbeat_interval_s <= 0:
+            raise ValueError("heartbeat_interval_s must be finite and greater than zero")
         self.serve_config = serve_config
 
         # The model runs in a child process with a fresh Python interpreter.
@@ -662,7 +664,7 @@ class InferenceServer:
                     log_file.flush()
                 except (OSError, ValueError) as exc:
                     problems.append(f'file logging failed: {exc}')
-                if problems and time.monotonic() - warning_at >= HEARTBEAT_SECONDS:
+                if problems and time.monotonic() - warning_at >= self.serve_config.heartbeat_interval_s:
                     warning_at = time.monotonic()
                     warning = json.dumps({'timestamp': record['timestamp'], 'event': 'logging_warning', 'warning': '; '.join(problems)})
                     try:
@@ -733,6 +735,7 @@ class InferenceWorker:
         configuration["setup_gc"] = _freeze_setup_gc()
         configuration["request_scheduling_metrics"] = False
         configuration["metrics_level"] = config.metrics_level
+        configuration["heartbeat_interval_s"] = config.heartbeat_interval_s
         self.results.put(
             {"kind": "ready", "configuration": configuration, "worker_pid": os.getpid()}
         )
@@ -764,9 +767,9 @@ class InferenceWorker:
         self.results.put_nowait({"kind": "setup", "stage": stage, "status": status, "elapsed_s": elapsed_s})
 
     def report_status(self, *, force: bool = False) -> None:
-        """Publish CPU-side counters every 15 seconds; never read an NPU tensor."""
+        """Publish CPU-side counters at the configured heartbeat interval."""
         now = time.perf_counter()
-        if not force and now - self.last_status_at < HEARTBEAT_SECONDS:
+        if not force and now - self.last_status_at < self.serve_config.heartbeat_interval_s:
             return
         self.last_status_at = now
         runtime = self.recognizer
@@ -791,7 +794,7 @@ class InferenceWorker:
             try:
                 # Wake during idle periods to report that the service is still
                 # alive. No timeout or shutdown is applied to inference.
-                remaining = max(.001, HEARTBEAT_SECONDS - (time.perf_counter() - self.last_status_at))
+                remaining = max(.001, self.serve_config.heartbeat_interval_s - (time.perf_counter() - self.last_status_at))
                 job = self.jobs.get(timeout=remaining) if block else self.jobs.get_nowait()
                 break
             except queue.Empty:
@@ -931,6 +934,10 @@ def parse_args() -> ServeConfig:
         help="Basic lifecycle/rate logs, or detailed per-request wall timings; neither uses NPU profiling.",
     )
     parser.add_argument(
+        "--heartbeat-interval-s", type=float, default=ServeConfig.heartbeat_interval_s,
+        help="Seconds between live status reports (default: 15). Must be positive and finite.",
+    )
+    parser.add_argument(
         "--graph-cache-directory", type=Path, required=True,
         help="Root directory for all compiled graphs, separated into stage subdirectories.",
     )
@@ -939,6 +946,8 @@ def parse_args() -> ServeConfig:
         help="Directory for live events.jsonl and service_summary.json at shutdown.",
     )
     args = parser.parse_args()
+    if not math.isfinite(args.heartbeat_interval_s) or args.heartbeat_interval_s <= 0:
+        parser.error("--heartbeat-interval-s must be finite and greater than zero")
     # Resolve caller-supplied paths once, relative to the launch working directory.
     args.model_path = args.model_path.expanduser().resolve()
     args.graph_cache_directory = args.graph_cache_directory.expanduser().resolve()

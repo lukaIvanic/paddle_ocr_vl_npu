@@ -79,6 +79,30 @@ class FakeProcess:
 
 
 class ServeLifecycleTests(unittest.TestCase):
+    def test_heartbeat_interval_config_and_cli(self):
+        argv = ['serve', '--model-path', '/model', '--graph-cache-directory', '/cache',
+                '--log-folder', '/logs', '--heartbeat-interval-s', '2.5']
+        with patch.object(sys, 'argv', argv):
+            self.assertEqual(serve.parse_args().heartbeat_interval_s, 2.5)
+        for value in (0.0, -1.0, float('nan'), float('inf')):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(ValueError, 'heartbeat_interval_s'):
+                    serve.InferenceServer(make_config(heartbeat_interval_s=value))
+                with patch.object(sys, 'argv', argv[:-1] + [str(value)]), \
+                     patch('sys.stderr', new=io.StringIO()), self.assertRaises(SystemExit):
+                    serve.parse_args()
+
+    def test_worker_uses_configured_heartbeat_interval(self):
+        messages = queue.Queue()
+        worker = serve.InferenceWorker(queue.Queue(), messages, make_config(heartbeat_interval_s=2.0))
+        worker.recognizer = SimpleNamespace(output_tokens=0, batch_size=8,
+            decode_arena=SimpleNamespace(num_active=0), crops_awaiting_prefill=[], ready_queue=[])
+        with patch.object(serve.time, 'perf_counter', side_effect=[100.0, 101.0, 102.0]):
+            worker.report_status()
+            worker.report_status()
+            worker.report_status()
+        self.assertEqual(messages.qsize(), 2)
+
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
@@ -678,12 +702,11 @@ class AsyncInferenceServerTests(unittest.IsolatedAsyncioTestCase):
 
     def test_idle_worker_keeps_reporting_until_shutdown(self):
         jobs,results=queue.Queue(),queue.Queue()
-        worker=serve.InferenceWorker(jobs,results,make_config())
+        worker=serve.InferenceWorker(jobs,results,make_config(heartbeat_interval_s=.02))
         worker.recognizer=SimpleNamespace(output_tokens=0,batch_size=8,
             decode_arena=SimpleNamespace(num_active=0),crops_awaiting_prefill=[],ready_queue=[])
         timer=threading.Timer(.08,lambda:jobs.put(None))
-        with patch.object(serve,'HEARTBEAT_SECONDS',.02), \
-             patch.dict(sys.modules,{'p02_serving_runtime':SimpleNamespace(RecognitionRequest=SimpleNamespace)}):
+        with patch.dict(sys.modules,{'p02_serving_runtime':SimpleNamespace(RecognitionRequest=SimpleNamespace)}):
             timer.start()
             self.assertIsNone(worker.pull(block=True))
         timer.join()

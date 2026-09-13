@@ -1,5 +1,23 @@
 # Decode vocabulary
 
+This runtime uses **our own reduced vocabulary of 60,416 tokens by default**,
+instead of PaddleOCR-VL's original 103,424-token vocabulary. The purpose is to
+make each decode step cheaper: the model scores fewer possible next tokens.
+It is our optimization, not an official Paddle vocabulary.
+
+We kept the actual token IDs generated in our full-vocabulary OmniDocBench
+runs, plus all Han-containing tokens and reviewed basic characters, language,
+math/LaTeX and syntax tokens. In our 100-table B2/B8 comparison, outputs matched
+the full head exactly; mean latency was about 2–3% lower and P95 about 3–6% lower.
+Coverage of saved generations does not guarantee identical outputs on every
+new document: removing alternative tokens can change what the model generates.
+
+To use Paddle's original full vocabulary instead, start the server with
+`--full-decode-lm-head` (or set `ServeConfig.full_decode_lm_head=True`). This
+trades the measured speed benefit for keeping every original output token.
+
+## Mapping used by the runtime
+
 `native_han_core_60416.json` is the only selected vocabulary shipped with this
 runtime. It contains all 60,416 native token IDs in LM-head row order and their
 SHA256: `c730b5388f9871ead92e2cb484f8df81ba69518f1e8baeccc5a37f44c1514637`.
@@ -29,5 +47,4 @@ comparison matched the full head exactly; wider validation is separate.
 The old 16,384-row mapping is removed from experiment 19. Its research copy and
 past benchmark evidence remain in experiment 09 and Git history, not in the
 product's supported vocabulary choices.
-
 

@@ -1,11 +1,12 @@
-# Dependency declaration, not permission to upgrade the validated environment.
-# Ascend runtime supplied separately: torch 2.10.0+cpu, torch-npu 2.10.0,
-# installed TorchAir, CANN 9.0.0. Preserve the existing matching environment.
+# Versions installed in the validated Python 3.12 / Ascend 910B2 environment.
+# The CPU PyTorch wheel is intentional: torch-npu supplies NPU execution.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.10.0+cpu
+torch-npu==2.10.0
+# TorchAir is bundled with this torch-npu installation. CANN 9.0.0 and the
+# matching device driver are system prerequisites, not pip dependencies.
 numpy==1.26.4
 Pillow==12.2.0
-transformers==5.5.4
 kornia-rs==0.1.14
-tokenizers
-safetensors
-opencv-python
-PyYAML
+tokenizers==0.22.2
+safetensors==0.8.0
