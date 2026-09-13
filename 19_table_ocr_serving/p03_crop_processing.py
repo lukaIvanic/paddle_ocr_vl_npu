@@ -3,8 +3,8 @@
 Serving first calls preprocess_pil_image for uint8 patches and an image grid,
 then prepare_prompt_tokens for the prompt tokens. Their implementation details follow.
 NPU normalization and model execution live in the runtime, not this module.
-After inference, the table endpoint calls convert_otsl_to_html to render the
-decoded table structure; its parser follows.
+After inference, the table endpoint normalizes math delimiters, then calls
+convert_otsl_to_html to render the decoded table structure; its parser follows.
 """
 
 from __future__ import annotations
@@ -176,7 +176,28 @@ def build_paddleocr_vl_prompt(prompt: str, *, image_token_count: int) -> str:
     )
 
 
-# Output processing: render table structure as HTML.
+# Output processing: normalize math notation, then render table structure as HTML.
+
+
+def normalize_math_delimiters(text: str) -> str:
+    r"""Match Paddle's output formatting: \(math\) becomes $ math $, for example.
+
+    This runs after generation; raw_text and native token IDs remain unchanged.
+    Preserve the historical replacements, including their spaces and removal
+    of existing dollar signs when paired math delimiters are present.
+    This does not trim repetitive text.
+    """
+    if (r"\(" in text and r"\)" in text) or (r"\[" in text and r"\]" in text):
+        text = text.replace("$", "")
+        text = (
+            text.replace(r"\(", " $ ")
+            .replace(r"\)", " $")
+            .replace(r"\[\[", r"\[")
+            .replace(r"\]\]", r"\]")
+            .replace(r"\[", " $$ ")
+            .replace(r"\]", " $$ ")
+        )
+    return text
 
 
 def convert_otsl_to_html(content: str) -> str:

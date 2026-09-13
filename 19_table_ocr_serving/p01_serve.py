@@ -529,12 +529,13 @@ class InferenceWorker:
 
     def emit_result(self, recognition: Any) -> None:
         """Send one finished OCR result back, as raw model text and as HTML."""
-        from p03_crop_processing import convert_otsl_to_html  # Torch-backed; child-only import
+        from p03_crop_processing import convert_otsl_to_html, normalize_math_delimiters  # Torch-backed; child-only import
 
         job = self.jobs_in_progress.pop(recognition.request_id)
         payload = asdict(recognition)
         payload["raw_text"] = payload["text"]
-        payload["text"] = convert_otsl_to_html(payload["raw_text"]) or payload["raw_text"]
+        formatted_text = normalize_math_delimiters(payload["raw_text"])
+        payload["text"] = convert_otsl_to_html(formatted_text) or formatted_text
         payload["crop_type"] = job["crop_type"]
         payload["worker_wall_s"] = time.perf_counter() - job["submitted_monotonic_s"]
         self.results.put(

@@ -105,6 +105,8 @@ class CropPipelineTests(unittest.TestCase):
         exec(compile(ast.Module(body=[emit],type_ignores=[]), '<http-result>', 'exec'), scope)
         for text in ('','<fcel>A & B<lcel><nl><ucel><xcel><nl>',
                      '<ucel>orphan<nl><fcel>row<ecel>',r'\(x$y\)',
+                     r'\[x+y\]', r'\[\[x\]\]', r'unpaired \(x',
+                     '$ per oz', r'\(a\) and \[b\]',
                      ('repeat me\n'*600), 'abc12345'*1000,
                      '  text  with\tspaces\n\n\n next line \n',
                      r'<fcel>$ per oz<fcel>\(x\)<nl>'):
@@ -113,7 +115,9 @@ class CropPipelineTests(unittest.TestCase):
                 request_id = 'test'
             scope['emit_result'](worker, Result(request_id='test', text=text, token_ids=[10,2]))
             payload = emitted[-1]['payload']
-            self.assertEqual(payload['text'], ns['convert_otsl_to_html'](text) or text)
+            # Restore historical math formatting, but leave repetition intact.
+            ns['truncate_repetitive_content'] = lambda content, **kwargs: content
+            self.assertEqual(payload['text'], ns['normalize_recognition_text']('table', text))
             self.assertEqual(payload['raw_text'], text)
             self.assertEqual(payload['token_ids'], [10,2])
 
