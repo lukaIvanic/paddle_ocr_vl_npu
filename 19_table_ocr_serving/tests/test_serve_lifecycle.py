@@ -691,6 +691,20 @@ class AsyncInferenceServerTests(unittest.IsolatedAsyncioTestCase):
         self.assertGreaterEqual(results.qsize(),2)
         self.assertEqual(results.get()['output_tokens_including_eos'],0)
 
+    def test_shutdown_without_pending_requests_is_not_a_failure(self):
+        connection=self.make_connection()
+        connection._fail_pending_requests('service stopped')
+        self.assertTrue(connection.log_queue.empty())
+
+    def test_failed_pending_requests_are_logged_individually(self):
+        connection=self.make_connection()
+        connection.pending_requests={name:serve.Future() for name in ('one','two')}
+        replies=list(connection.pending_requests.values())
+        connection._fail_pending_requests('worker exited')
+        events=[connection.log_queue.get_nowait() for _ in range(2)]
+        self.assertEqual({data['request_id'] for _,event,data in events if event=='request_failed'}, {'one','two'})
+        self.assertTrue(all(isinstance(reply.exception(),RuntimeError) for reply in replies))
+
 
 if __name__ == '__main__':
     unittest.main()

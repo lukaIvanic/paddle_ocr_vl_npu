@@ -180,12 +180,14 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         if parsed.path != "/v1/ocr":
+            self.inference_server._log("request_rejected", {"reason": "unknown endpoint"})
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return
 
         query = parse_qs(parsed.query)
         crop_type = query.get("crop_type", [""])[0].strip().lower()
         if crop_type not in PROMPTS:
+            self.inference_server._log("request_rejected", {"reason": "invalid crop type"})
             self._json(
                 HTTPStatus.BAD_REQUEST,
                 {"error": f"crop_type must be one of {sorted(PROMPTS)}"},
@@ -197,6 +199,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         except ValueError:
             length = 0
         if length <= 0 or length > self.server.serve_config.max_image_bytes:
+            self.inference_server._log("request_rejected", {"reason": "invalid image body size"})
             self._json(
                 HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
                 {"error": "invalid image body size"},
@@ -515,11 +518,11 @@ class InferenceServer:
         """Release waiters when inference cannot produce any more results."""
         with self.requests_lock:
             self.accepting_requests = False
-            for reply in self.pending_requests.values():
+            for request_id, reply in self.pending_requests.items():
+                self._log("request_failed", {"request_id": request_id, "error": error})
                 if not reply.cancelled():
                     reply.set_exception(RuntimeError(error))
             self.pending_requests.clear()
-        self._log("inference_failed", {"error": error})
 
     def _receive_results_and_status(self) -> None:
         """Receive inference status and deliver each OCR result to its waiting request."""
@@ -530,6 +533,7 @@ class InferenceServer:
                 if not self.is_alive:
                     if not self.service_summary_ready.is_set():
                         self.startup_error = {"error": "inference worker exited", "traceback": ""}
+                        self._log("inference_failed", self.startup_error)
                         self.startup_finished.set()
                         self._fail_pending_requests("inference worker exited")
                     return
