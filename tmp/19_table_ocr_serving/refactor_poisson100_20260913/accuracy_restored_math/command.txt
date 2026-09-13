@@ -1,0 +1,5 @@
+CPU scoring commit: eb2dfcc6dfcd0f66d86cdbea3fa2cd67934b4386
+Evaluator commit: 2b161d010d2e3aff77a0edef359ea3a6411d23cd
+docker exec -w /workspace/repos/paddle_ocr_vl_npu research_vllm_ascend_021_external_workspace /workspace/venvs/omnidocbench_py310/bin/python -u tmp/19_table_ocr_serving/refactor_poisson100_20260913/score_restored_math.py
+No NPU inference, graph compilation, tokenization or regeneration. Existing 1000-request generations deduplicated to 665 unique tables across 458 pages.
+Downloaded evidence archive SHA256: bddff629216c6ede7ad1f55d7ca3d692f18ae30b64700c88ece993d9a285660a

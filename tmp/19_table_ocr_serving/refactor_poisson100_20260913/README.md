@@ -80,3 +80,29 @@ codes are zero. All raw artifacts are retained unchanged. `analyze.py`
 reproduces the paired output/performance checks in `comparison.json`.
 Downloaded evidence archive SHA256:
 `92232ae49a07091d7b0cc334f8c1f990b1d7f68188d85c20d83e89657884acfb`.
+
+## Full saved-generation accuracy after math restoration
+
+CPU-only replay applies the actual production math normalizer and HTML
+converter to the saved current 1,000-request run. Its 665 unique table
+generations are scored against the same ground truth/evaluator as before;
+this does not run inference again or rescore only the 100-table subset.
+
+| Metric (%) | Historical 16k/Pillow | Current before restoration | Current restored math |
+|---|---:|---:|---:|
+| Page-TEDS | 95.455281 | 95.365599 | 95.427620 |
+| Table-average TEDS | 94.972558 | 94.930519 | 94.980620 |
+| Page structure-only TEDS | 97.811782 | 97.780307 | 97.780307 |
+
+The remaining Page-TEDS difference is -0.027661 percentage points, not exact
+parity. There are 18 changed table TEDS scores (6 higher, 12 lower), all on
+tables with changed raw generation. No table with identical raw generation
+has a changed TEDS score after restoration. The older vocabulary and
+preprocessing differ, so the remaining changes are not isolated refactor
+effects. Page-TEDS weights pages equally, whereas table-average TEDS weights
+tables equally; their net changes can therefore have different signs.
+
+All 665 tables across 458 pages scored with zero errors/timeouts.
+`accuracy_restored_math/` retains predictions, per-table/page scores,
+comparison, input/source hashes and command. `score_restored_math.py` is the
+reproduction helper (commit `eb2dfcc6`). No repetition handling was restored.

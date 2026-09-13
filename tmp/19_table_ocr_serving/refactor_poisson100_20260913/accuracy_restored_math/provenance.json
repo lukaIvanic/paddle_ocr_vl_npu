@@ -1,0 +1,7 @@
+{
+  "runtime_commit": "eb2dfcc6dfcd0f66d86cdbea3fa2cd67934b4386",
+  "saved_input_sha256": "6d2f94c32c55992f4d3fb6745bddad2f0220d94ed57a53e54325fdbfd5baed26",
+  "formatting_source_sha256": "d7b5337f13d8da474e548ab7a2d72dd2b242c5a26524172d3a628bf40f8026e9",
+  "dataset_sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+  "note": "CPU-only formatting replay of the saved current 1000-request run, deduplicated to 665 tables. Not a new generation run."
+}
