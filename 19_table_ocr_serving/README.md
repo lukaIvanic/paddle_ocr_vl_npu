@@ -1,5 +1,7 @@
 # Experiment 19: table OCR serving
 
+Designed for Ascend 910B NPUs and tested on 910B2 with Python 3.12.13.
+
 ## Start the crop server
 
 From this directory, with the Ascend environment already initialized:
@@ -53,7 +55,7 @@ wait
 
 `benchmark_tables.py` reads the annotated table crops from OmniDocBench and
 sends them to your running server. Point it at the folder containing
-`OmniDocBench.json` and `images/`. The client needs Pillow, not an NPU.
+`OmniDocBench.json` and `images/`.
 
 ```sh
 python benchmark_tables.py \
@@ -85,9 +87,7 @@ the command exit unsuccessfully; check them before interpreting latency.
 
 OmniDocBench v1.6 supplies 665 tables. A 1,000-request run includes all 665 plus
 335 randomly selected tables, shuffled together. Other counts work the same
-way. `--seed` defaults to 1 for repeatable order and arrival times. This is a
-self-contained demo workload, not the historical chart's locked table order.
-It tests serving performance, not ground-truth recognition accuracy.
+way. `--seed` defaults to 1 for repeatable order and arrival times.
 
 The output folder contains `results.jsonl` (individual responses and timings),
 `schedule.jsonl` (the chosen tables and arrival times), and `summary.json`.
