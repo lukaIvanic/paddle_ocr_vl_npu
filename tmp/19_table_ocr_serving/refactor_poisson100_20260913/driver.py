@@ -26,6 +26,8 @@ def main():
     parser.add_argument('--expected-commit', required=True)
     parser.add_argument('--npu', type=int, required=True, choices=range(8))
     parser.add_argument('--output-dir', type=Path, default=BASE)
+    parser.add_argument('--compare-first-use', action='store_true',
+        help='Skip real-request warmup, then replay the same 100 arrivals twice on one server.')
     args = parser.parse_args()
     commit = subprocess.check_output(['git', '-C', str(RUNTIME_REPO), 'rev-parse', 'HEAD'], text=True).strip()
     assert commit == args.expected_commit
@@ -55,6 +57,17 @@ def main():
     for old, new in replacements.items():
         assert source.count(old) == 1, old
         source = source.replace(old, new)
+    if args.compare_first_use:
+        # Only remove the benchmark client's warmup invocation. Model setup and
+        # its synthetic graph calls remain exactly as they are in production.
+        warmup = '''        self.run_client(docker(PYTHON, "-u", SCRIPTS + "table_closed_loop_api_client.py",
+            "--api-url", API + "/v1/ocr", "--set", "warm", "--count", "1", "--max-in-flight", "1",
+            "--output-dir", str(relative / "warm/results")), folder / "warm", 1200)
+'''
+        assert source.count(warmup) == 1
+        source = source.replace(warmup, '')
+        source = source.replace('cached production setup, then one full request warmup',
+            'cached production setup; NO real-request warmup')
     ns = {'__file__': str(path), '__name__': 'locked_refactor_poisson100_harness'}
     exec(compile(source, str(path), 'exec'), ns)
     original_fingerprint = ns['fingerprint']
@@ -80,7 +93,8 @@ def main():
         schedule_sha256=hashlib.sha256(schedule.read_bytes()).hexdigest(),
         ordered_ids_sha256=ORDER_SHA, metrics_level='detailed', head_rows=60416,
         cache_root=CACHE, reference=str(REFERENCE / 'b8_both_measured'),
-        note='Cached startup, one full real warmup outside measurement; no client concurrency cap.'))
+        note=('Cached startup, synthetic graph warmups only; two identical 100-request passes on one server, each awaited in full.'
+            if args.compare_first_use else 'Cached startup, one full real warmup outside measurement; no client concurrency cap.')))
     try:
         sweep.log('REFACTOR CHECK B8, saved 100 arrivals at target 6 QPS')
         folder, relative = sweep.start(8)
@@ -90,22 +104,29 @@ def main():
         assert ready['decode_vocab']['token_ids_sha256'] == 'c730b5388f9871ead92e2cb484f8df81ba69518f1e8baeccc5a37f44c1514637'
         assert ready['decode_device_timing'] is True
         assert ready['request_scheduling_metrics'] is True
-        target = relative / 'measured/results'
-        sweep.run_client(ns['docker'](ns['PYTHON'], '-u', CONTAINER_RUNTIME + '/09_persistent_page_engine/scripts/table_request_load_simulator.py',
-            '--api-url', ns['API'] + '/v1/ocr', '--cohort', 'all', '--qps', '6',
-            '--max-requests', '100', '--seed', '1',
-            '--source-jsonl', ns['CONTAINER_REPO'] + '/tmp/09_persistent_page_engine/table_b1_latency_full_04fbc8e/client/tables.jsonl',
-            '--schedule-jsonl', CONTAINER_RUNTIME + '/' + str(REFERENCE / 'schedule.jsonl'),
-            '--output-dir', str(target)), folder / 'measured', 1200)
-        result_dir = HISTORICAL / target
-        measured_schedule = [json.loads(line) for line in (result_dir / 'schedule.jsonl').read_text().splitlines()]
-        assert measured_schedule == schedule_rows, 'Request IDs or arrival timestamps changed'
-        summary = json.loads((result_dir / 'summary.json').read_text())
-        assert summary['completed_request_count'] == 100 and summary['failed_request_count'] == 0
-        sweep.write('status.json', dict(status='complete', schedule_identical=True,
-            latency_s=summary['request_latency_s'], scheduled_latency_s=summary['scheduled_latency_s'],
-            completion_qps=100 / summary['run_wall_s'], max_outstanding=summary['max_active_requests']))
-        sweep.log('REFACTOR CHECK COMPLETE ' + json.dumps(summary['request_latency_s']))
+        passes = ('first', 'second') if args.compare_first_use else ('measured',)
+        pass_results = {}
+        for name in passes:
+            target = relative / name / 'results'
+            sweep.log(f'BEGIN {name}: same 100 tables, same saved arrival schedule')
+            # The client exits only after every response arrives. No shutdown or
+            # drain request is sent between passes; this server stays running.
+            sweep.run_client(ns['docker'](ns['PYTHON'], '-u', CONTAINER_RUNTIME + '/09_persistent_page_engine/scripts/table_request_load_simulator.py',
+                '--api-url', ns['API'] + '/v1/ocr', '--cohort', 'all', '--qps', '6',
+                '--max-requests', '100', '--seed', '1',
+                '--source-jsonl', ns['CONTAINER_REPO'] + '/tmp/09_persistent_page_engine/table_b1_latency_full_04fbc8e/client/tables.jsonl',
+                '--schedule-jsonl', CONTAINER_RUNTIME + '/' + str(REFERENCE / 'schedule.jsonl'),
+                '--output-dir', str(target)), folder / name, 1200)
+            result_dir = HISTORICAL / target
+            measured_schedule = [json.loads(line) for line in (result_dir / 'schedule.jsonl').read_text().splitlines()]
+            assert measured_schedule == schedule_rows, 'Request IDs or arrival timestamps changed'
+            summary = json.loads((result_dir / 'summary.json').read_text())
+            assert summary['completed_request_count'] == 100 and summary['failed_request_count'] == 0
+            pass_results[name] = dict(schedule_identical=True,
+                latency_s=summary['request_latency_s'], scheduled_latency_s=summary['scheduled_latency_s'],
+                completion_qps=100 / summary['run_wall_s'], max_outstanding=summary['max_active_requests'])
+            sweep.write('status.json', dict(status='complete' if name == passes[-1] else 'between_passes', passes=pass_results))
+            sweep.log(f'COMPLETE {name}: all 100 responses received ' + json.dumps(summary['request_latency_s']))
     except BaseException as exc:
         sweep.write('status.json', dict(status='failed', error=repr(exc)))
         raise
