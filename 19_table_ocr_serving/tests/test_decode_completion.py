@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import types
 import unittest
+import weakref
 from unittest.mock import patch
 
 import torch
@@ -27,7 +28,8 @@ import p02_serving_runtime as continuous_decode
 
 class DecodeCompletionTests(unittest.TestCase):
     def run_workload(self, sequences, *, capacity=512, limit=512, batch_size=1,
-                     request_source=None, fail_preparation=()):
+                     request_source=None, fail_preparation=(), completion_observer=None,
+                     retain_completions=True):
         """Use serve() and its real CPU queue/loop, with only model work faked."""
         def cache():
             shape = (1, 1, capacity, 1)
@@ -96,11 +98,23 @@ class DecodeCompletionTests(unittest.TestCase):
                 request_source.queue.put(RecognitionRequest(request_id,b'image','Table Recognition:'))
             request_source.queue.put(None)
         completed=[]; errors=[]
+        delivered_count = 0
+        delivered_tokens = 0
+        def receive_completion(completion):
+            nonlocal delivered_count, delivered_tokens
+            delivered_count += 1
+            delivered_tokens += len(completion.token_ids)
+            self.assertIsNone(completion.ready.cache)
+            self.assertIsNone(completion.ready.first_token_tensor)
+            if completion_observer is not None:
+                completion_observer(completion)
+            if retain_completions:
+                completed.append(completion)
         fake_npu = types.SimpleNamespace(npu=types.SimpleNamespace(synchronize=lambda device:None))
         with patch.object(continuous_decode, 'torch_npu', fake_npu), \
              patch.object(torch, 'npu', types.SimpleNamespace(current_stream=lambda device:
                  types.SimpleNamespace(synchronize=lambda:None)), create=True):
-            summary = engine.serve(request_source,schedule_id='cpu-test',emit_result=completed.append,
+            summary = engine.serve(request_source,schedule_id='cpu-test',emit_result=receive_completion,
                 on_request_error=lambda request_id,error:errors.append((request_id,error)))
         self.assertEqual(sorted(releases),sorted(prefills))
         self.assertEqual(len(releases),len(set(releases)))
@@ -108,8 +122,9 @@ class DecodeCompletionTests(unittest.TestCase):
         for completion in completed:
             self.assertIsNone(completion.ready.cache)
             self.assertIsNone(completion.ready.first_token_tensor)
-        self.assertEqual(engine.output_tokens,sum(len(c.token_ids) for c in completed))
-        self.assertEqual(summary.requests,len(completed))
+        self.assertEqual(engine.output_tokens,delivered_tokens)
+        self.assertEqual(summary.requests,delivered_count)
+        self.assertEqual(summary.effective_decode_tokens,delivered_tokens-delivered_count)
         self.assertEqual(summary.raw_decode_token_slots,summary.effective_decode_tokens+
                          summary.idle_decode_token_slots+summary.lookahead_decode_token_slots)
         return completed,summary,errors
@@ -136,6 +151,25 @@ class DecodeCompletionTests(unittest.TestCase):
         self.assertEqual(errors,[])
         self.assertGreater(summary.hot_swap_admissions,0)
         self.assertEqual({c.ready.request_id:c.token_ids for c in completed},sequences)
+
+    def test_completed_records_are_released_while_serving_continues(self):
+        for tokens in ([2], [10, 20, 30, 2]):
+            with self.subTest(tokens=tokens):
+                references = []
+                def observe(completion):
+                    references.append((weakref.ref(completion), weakref.ref(completion.ready)))
+                    # The current callback and loop locals may still own a few
+                    # records. Previously the lifetime history kept all 100.
+                    self.assertLessEqual(sum(c() is not None for c, _ in references), 6)
+                    self.assertLessEqual(sum(r() is not None for _, r in references), 6)
+                _, summary, errors = self.run_workload(
+                    {str(i): tokens for i in range(100)}, batch_size=3,
+                    completion_observer=observe, retain_completions=False,
+                )
+                self.assertEqual(errors, [])
+                self.assertEqual(summary.requests, 100)
+                self.assertEqual(summary.effective_decode_tokens, 100 * (len(tokens) - 1))
+                self.assertTrue(all(c() is None and r() is None for c, r in references))
 
     def test_preparation_failure_does_not_stop_other_requests(self):
         completed,_,errors=self.run_workload({'bad':[7,2],'good':[8,2]},fail_preparation=('bad',))

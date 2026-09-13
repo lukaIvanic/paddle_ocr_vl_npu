@@ -285,11 +285,12 @@ class ContinuousRecognizer:
         ready_queue: deque[DecodeRequest] = deque()
         self.ready_queue = ready_queue
         source_exhausted = (bool(self.requests.closed) and not self.crops_awaiting_prefill)
-        submitted_order: list[str] = []
-        submitted_ids: set[str] = set()
+        submitted_count = 0
+        unfinished_request_ids: set[str] = set()
         max_ready_queue_depth = 0
         ready_source_refill_count = 0
-        completions: list[DecodeCompletion] = []
+        completed_count = 0
+        effective_tokens = 0
         graph_calls = 0
         initial_admissions = 0
         hot_swap_admissions = 0
@@ -328,20 +329,24 @@ class ContinuousRecognizer:
                 active=active,
                 ready_depth=len(ready_queue),
                 source_exhausted=source_exhausted,
-                submitted=len(submitted_order),
-                completed=len(completions),
+                submitted=submitted_count,
+                completed=completed_count,
                 **fields,
             )
 
         # Send a finished request immediately; the final run summary comes later.
         def record_and_report_finished_crop(completion: DecodeCompletion) -> None:
-            nonlocal completion_callback_wall_s
+            nonlocal completion_callback_wall_s, completed_count, effective_tokens
             if scheduling_metrics is not None:
                 completion.scheduling_metrics = scheduling_metrics.finish(
                     completion.ready.request_id,
                     completion.completed_at,
                 )
-            completions.append(completion)
+            # The shutdown summary needs totals, not a history of token lists.
+            # Result delivery keeps its own data alive for as long as it needs it.
+            completed_count += 1
+            effective_tokens += max(0, len(completion.token_ids) - 1)
+            unfinished_request_ids.remove(completion.ready.request_id)
             started = time.perf_counter()
             emit_result(self._build_recognition_result(completion, schedule_id=schedule_id))
             finished = time.perf_counter()
@@ -355,7 +360,7 @@ class ContinuousRecognizer:
         ) -> None:
             nonlocal source_exhausted, ready_source_wall_s
             nonlocal max_ready_queue_depth, ready_source_refill_count
-            nonlocal refill_sequence
+            nonlocal refill_sequence, submitted_count
             refill_sequence += 1
             refill_id = refill_sequence
             pulled = 0
@@ -423,10 +428,10 @@ class ContinuousRecognizer:
                     request_id=ready.request_id,
                     wait_s=finished - started,
                 )
-                if ready.request_id in submitted_ids:
+                if ready.request_id in unfinished_request_ids:
                     raise ValueError(f"duplicate decode request id: {ready.request_id}")
-                submitted_ids.add(ready.request_id)
-                submitted_order.append(ready.request_id)
+                unfinished_request_ids.add(ready.request_id)
+                submitted_count += 1
                 ready_queue.append(ready)
                 pulled += 1
                 max_ready_queue_depth = max(max_ready_queue_depth, len(ready_queue))
@@ -585,7 +590,7 @@ class ContinuousRecognizer:
             )
             d2h_wait_wall_s += wait_s
             started = time.perf_counter()
-            completed_before = len(completions)
+            completed_before = completed_count
             if scheduling_metrics is not None:
                 scheduling_metrics.consume(
                     state.ready.request_id
@@ -624,9 +629,9 @@ class ContinuousRecognizer:
                 "retire_end",
                 iteration=iteration,
                 pending_iteration=pending_copy.iteration,
-                newly_completed=len(completions) - completed_before,
+                newly_completed=completed_count - completed_before,
             )
-            newly_completed = len(completions) - completed_before
+            newly_completed = completed_count - completed_before
             if newly_completed and (ready_queue or not source_exhausted):
                 # The next decode graph is submitted before the previous
                 # sampled tokens are retired so its D2H can overlap compute.
@@ -794,12 +799,11 @@ class ContinuousRecognizer:
             raise AssertionError(
                 f"continuous decode stopped with {len(ready_queue)} ready requests"
             )
-        if len(completions) != len(submitted_order):
+        if completed_count != submitted_count:
             raise AssertionError(
-                f"continuous decode completed {len(completions)} of {len(submitted_order)} requests"
+                f"continuous decode completed {completed_count} of {submitted_count} requests"
             )
 
-        effective_tokens = sum(max(0, len(item.token_ids) - 1) for item in completions)
         raw_slots = graph_calls * self.batch_size
         idle_slots = raw_slots - active_decode_slots
         lookahead_slots = active_decode_slots - effective_tokens
@@ -828,7 +832,7 @@ class ContinuousRecognizer:
         return ServingSummary(
             schedule_id=schedule_id,
             batch_size=self.batch_size,
-            requests=len(submitted_order),
+            requests=submitted_count,
             ready_buffer_capacity=buffer_capacity,
             ready_buffer_low_watermark=low_watermark,
             max_ready_queue_depth=max_ready_queue_depth,
