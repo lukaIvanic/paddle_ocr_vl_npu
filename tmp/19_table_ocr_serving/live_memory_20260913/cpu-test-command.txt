@@ -1,0 +1,8 @@
+Source: 695a94eed67a705547b3fade6304954c88eda152
+Environment: Python 3.12.13 / Torch 2.10.0, CPU test doubles for NPU operations.
+Run in the separate container worktree; no model loaded and no NPU inference.
+
+docker exec -e GIT_DIR=/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92 -e GIT_WORK_TREE=/workspace/repos/table_memory_fix_db0a3f92 -w /workspace/repos/table_memory_fix_db0a3f92 research_vllm_ascend_021_external_workspace bash -c 'source npu-setup >/dev/null; /workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -m unittest discover -s 19_table_ocr_serving/tests -v'
+
+Result: 106 tests, OK. The GIT_DIR/GIT_WORK_TREE overrides only resolve the
+historical fixture lookups through the container's different mount path.

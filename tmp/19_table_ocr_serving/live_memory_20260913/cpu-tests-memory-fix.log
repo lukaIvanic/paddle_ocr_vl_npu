@@ -1,0 +1,215 @@
+db0a3f925aeeb16fcbdf5ba82cc79bb53a48cd34
+test_model_setup_owns_final_paths_and_stage_order (test_compilation_paths.CompilationPathTests.test_model_setup_owns_final_paths_and_stage_order) ... ok
+test_source_fingerprint_covers_all_three_files (test_compilation_paths.CompilationPathTests.test_source_fingerprint_covers_all_three_files) ... ok
+test_vision_and_decode_setup_matches_previous_calls (test_compilation_paths.CompilationPathTests.test_vision_and_decode_setup_matches_previous_calls) ... ok
+test_cpu_already_ready_before_free_slot (test_cpu_readiness.CPUReadinessTests.test_cpu_already_ready_before_free_slot) ... ok
+test_open_source_does_not_wait_or_count_while_slots_full (test_cpu_readiness.CPUReadinessTests.test_open_source_does_not_wait_or_count_while_slots_full) ... ok
+test_queue_service_idle_and_poll_split (test_cpu_readiness.CPUReadinessTests.test_queue_service_idle_and_poll_split) ... ok
+test_eager_opt_out_uses_same_stages_without_compiler (test_crop_pipeline_simplification.CropPipelineTests.test_eager_opt_out_uses_same_stages_without_compiler) ... ok
+test_html_conversion_unchanged_and_cleanup_removed (test_crop_pipeline_simplification.CropPipelineTests.test_html_conversion_unchanged_and_cleanup_removed) ... ok
+test_legacy_metric_schema_without_packing_state (test_crop_pipeline_simplification.CropPipelineTests.test_legacy_metric_schema_without_packing_state) ... ok
+test_prefill_stage_order_and_first_token (test_crop_pipeline_simplification.CropPipelineTests.test_prefill_stage_order_and_first_token) ... ok
+test_completed_records_are_released_while_serving_continues (test_decode_completion.DecodeCompletionTests.test_completed_records_are_released_while_serving_continues) ... ok
+test_empty_shutdown (test_decode_completion.DecodeCompletionTests.test_empty_shutdown) ... ok
+test_first_token_eos (test_decode_completion.DecodeCompletionTests.test_first_token_eos) ... ok
+test_idle_does_not_mean_shutdown (test_decode_completion.DecodeCompletionTests.test_idle_does_not_mean_shutdown) ... ok
+test_preparation_failure_does_not_stop_other_requests (test_decode_completion.DecodeCompletionTests.test_preparation_failure_does_not_stop_other_requests) ... ok
+test_repeated_tokens_survive_until_eos (test_decode_completion.DecodeCompletionTests.test_repeated_tokens_survive_until_eos) ... ok
+test_repeated_tokens_survive_until_kv_cap (test_decode_completion.DecodeCompletionTests.test_repeated_tokens_survive_until_kv_cap) ... ok
+test_repeated_tokens_survive_until_output_limit (test_decode_completion.DecodeCompletionTests.test_repeated_tokens_survive_until_output_limit) ... ok
+test_repetition_option_state_and_result_fields_removed (test_decode_completion.DecodeCompletionTests.test_repetition_option_state_and_result_fields_removed) ... ok
+test_simultaneous_completions_and_slot_reuse (test_decode_completion.DecodeCompletionTests.test_simultaneous_completions_and_slot_reuse) ... ok
+test_frozen_mapping_and_original_order (test_decode_vocab.DecodeVocabulary.test_frozen_mapping_and_original_order) ... ok
+test_only_one_selected_mapping_is_bundled (test_decode_vocab.DecodeVocabulary.test_only_one_selected_mapping_is_bundled) ... ok
+test_full_architecture_shapes_and_buffers (test_fixed_checkpoint.FixedCheckpointTests.test_full_architecture_shapes_and_buffers) ... ok
+test_narrow_image_rounding_matches_reference (test_fixed_checkpoint.FixedCheckpointTests.test_narrow_image_rounding_matches_reference) ... ok
+test_prompt_tokens_use_fixed_merge_size (test_fixed_checkpoint.FixedCheckpointTests.test_prompt_tokens_use_fixed_merge_size) ... ok
+test_reading_order_pass_preserves_computation_and_definitions (test_fixed_checkpoint.FixedCheckpointTests.test_reading_order_pass_preserves_computation_and_definitions) ... ok
+test_resize_and_uint8_patch_parity (test_fixed_checkpoint.FixedCheckpointTests.test_resize_and_uint8_patch_parity) ... ok
+test_resize_dimensions_preserve_rounding_and_rejections (test_fixed_checkpoint.FixedCheckpointTests.test_resize_dimensions_preserve_rounding_and_rejections) ... ok
+test_weight_loader_needs_no_config_files (test_fixed_checkpoint.FixedCheckpointTests.test_weight_loader_needs_no_config_files) ... ok
+test_definitions_unchanged (test_prefill_cache_pool.PrefillCachePoolTests.test_definitions_unchanged) ... ok
+test_pool_ownership_reuse_and_events_unchanged (test_prefill_cache_pool.PrefillCachePoolTests.test_pool_ownership_reuse_and_events_unchanged) ... ok
+test_incoming_crop_preparation_only_renames (test_recognizer_reading_order.RecognizerReadingOrderTests.test_incoming_crop_preparation_only_renames) ... ok
+test_method_bodies_signatures_and_decorators_are_unchanged (test_recognizer_reading_order.RecognizerReadingOrderTests.test_method_bodies_signatures_and_decorators_are_unchanged) ... ok
+test_model_sources_and_serving_entrypoint_are_unchanged (test_recognizer_reading_order.RecognizerReadingOrderTests.test_model_sources_and_serving_entrypoint_are_unchanged) ... ok
+test_other_runtime_code_is_unchanged (test_recognizer_reading_order.RecognizerReadingOrderTests.test_other_runtime_code_is_unchanged) ... ok
+test_reading_order (test_recognizer_reading_order.RecognizerReadingOrderTests.test_reading_order) ... ok
+test_scheduler_only_approved_identifier_renames (test_recognizer_reading_order.RecognizerReadingOrderTests.test_scheduler_only_approved_identifier_renames) ... ok
+test_decode_arena_and_token_copy_operations_preserved (test_recognizer_reading_order.RuntimeIntegrationStructureTests.test_decode_arena_and_token_copy_operations_preserved) ... ok
+test_removed_owners_adapters_and_intermediate_records (test_recognizer_reading_order.RuntimeIntegrationStructureTests.test_removed_owners_adapters_and_intermediate_records) ... ok
+test_definitions_unchanged_by_relocation (test_runtime_records.RuntimeRecordTests.test_definitions_unchanged_by_relocation) ... ok
+test_http_import_does_not_load_runtime_or_torch (test_runtime_records.RuntimeRecordTests.test_http_import_does_not_load_runtime_or_torch) ... ok
+test_request_image_decode_unchanged (test_runtime_records.RuntimeRecordTests.test_request_image_decode_unchanged) ... ok
+test_result_and_summary_serialization_unchanged (test_runtime_records.RuntimeRecordTests.test_result_and_summary_serialization_unchanged) ... ok
+test_profiling_removed_but_dependency_events_retained (test_runtime_timing.RuntimeTimingTests.test_profiling_removed_but_dependency_events_retained) ... ok
+test_rate_semantics_and_removed_package (test_runtime_timing.RuntimeTimingTests.test_rate_semantics_and_removed_package) ... ok
+test_cancellation_also_retains_capacity (test_serve_lifecycle.AsyncInferenceServerTests.test_cancellation_also_retains_capacity) ... {"timestamp":"2026-09-13T18:30:14.168281+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:14.169315+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0013727699988521636}
+{"timestamp":"2026-09-13T18:30:14.171262+00:00","event":"request_accepted","request_id":"befad6173d4f4946a3499d588103415b:6d562bf6f584460fbcdd1364872ae499","crop_type":"formula","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:14.173002+00:00","event":"caller_cancelled","request_id":"befad6173d4f4946a3499d588103415b:6d562bf6f584460fbcdd1364872ae499"}
+{"timestamp":"2026-09-13T18:30:14.173373+00:00","event":"request_rejected","request_id":"http-request","reason":"capacity full"}
+{"timestamp":"2026-09-13T18:30:14.173589+00:00","event":"request_finished","request_id":"befad6173d4f4946a3499d588103415b:6d562bf6f584460fbcdd1364872ae499"}
+{"timestamp":"2026-09-13T18:30:14.173600+00:00","event":"result_not_returned","request_id":"befad6173d4f4946a3499d588103415b:6d562bf6f584460fbcdd1364872ae499","reason":"caller no longer waiting"}
+ok
+test_close_drains_requests_and_rejects_new_ones (test_serve_lifecycle.AsyncInferenceServerTests.test_close_drains_requests_and_rejects_new_ones) ... {"timestamp":"2026-09-13T18:30:14.427601+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:14.427740+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0003874200046993792}
+{"timestamp":"2026-09-13T18:30:14.428981+00:00","event":"request_accepted","request_id":"df6ba609e76f443d846d5f8c35382d42:de0d9fdfaa1a4a64bdcedae2f726cd8b","crop_type":"formula","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:14.432038+00:00","event":"shutdown_started","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:14.433106+00:00","event":"request_rejected","request_id":"81c118bf63f9453da765d23aa8f34d9e:d59f039750f54f81a3c883e91981080e","reason":"service unavailable"}
+{"timestamp":"2026-09-13T18:30:14.433242+00:00","event":"request_finished","request_id":"df6ba609e76f443d846d5f8c35382d42:de0d9fdfaa1a4a64bdcedae2f726cd8b"}
+{"timestamp":"2026-09-13T18:30:14.434005+00:00","event":"python_result_returned","request_id":"df6ba609e76f443d846d5f8c35382d42:de0d9fdfaa1a4a64bdcedae2f726cd8b"}
+{"timestamp":"2026-09-13T18:30:14.684384+00:00","event":"shutdown_finished","requests":1}
+ok
+test_concurrent_individual_calls_return_their_own_results (test_serve_lifecycle.AsyncInferenceServerTests.test_concurrent_individual_calls_return_their_own_results) ... {"timestamp":"2026-09-13T18:30:14.689766+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:14.690163+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0005763699882663786}
+{"timestamp":"2026-09-13T18:30:14.691463+00:00","event":"request_accepted","request_id":"same-public-id:7b7ba795ae8e44f79a4ac01c3db42e0e","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:14.692087+00:00","event":"request_accepted","request_id":"same-public-id:dc6dbb5c83ad4f86a7369cfd9fe3043e","crop_type":"text","unfinished_requests":2}
+{"timestamp":"2026-09-13T18:30:14.693057+00:00","event":"request_accepted","request_id":"same-public-id:9a5dcf2fddbc475c8940b5e99ce52ea7","crop_type":"formula","unfinished_requests":3}
+{"timestamp":"2026-09-13T18:30:14.693803+00:00","event":"request_finished","request_id":"same-public-id:9a5dcf2fddbc475c8940b5e99ce52ea7"}
+{"timestamp":"2026-09-13T18:30:14.694017+00:00","event":"request_finished","request_id":"same-public-id:dc6dbb5c83ad4f86a7369cfd9fe3043e"}
+{"timestamp":"2026-09-13T18:30:14.694207+00:00","event":"request_finished","request_id":"same-public-id:7b7ba795ae8e44f79a4ac01c3db42e0e"}
+{"timestamp":"2026-09-13T18:30:14.695528+00:00","event":"python_result_returned","request_id":"same-public-id:9a5dcf2fddbc475c8940b5e99ce52ea7"}
+{"timestamp":"2026-09-13T18:30:14.695761+00:00","event":"python_result_returned","request_id":"same-public-id:dc6dbb5c83ad4f86a7369cfd9fe3043e"}
+{"timestamp":"2026-09-13T18:30:14.695987+00:00","event":"python_result_returned","request_id":"same-public-id:7b7ba795ae8e44f79a4ac01c3db42e0e"}
+ok
+test_existing_result_logged_without_content_and_flushed (test_serve_lifecycle.AsyncInferenceServerTests.test_existing_result_logged_without_content_and_flushed) ... ok
+test_explicit_start_and_close_use_one_real_child_without_http (test_serve_lifecycle.AsyncInferenceServerTests.test_explicit_start_and_close_use_one_real_child_without_http) ... {"timestamp":"2026-09-13T18:30:14.959011+00:00","event":"startup","model_path":"/unused/model","graph_cache_directory":"/unused/graphs","log_folder":"/tmp/tmpj9i527ki/logs","host":"127.0.0.1","port":8765,"request_timeout_s":5,"shutdown_timeout_s":2.0,"max_image_bytes":67108864,"max_in_flight_requests":64,"device":"npu:0","decode_batch_size":2,"full_decode_lm_head":false,"run_eagerly":false,"metrics_level":"basic"}
+{"timestamp":"2026-09-13T18:30:14.960950+00:00","event":"waiting_for_model","worker_pid":131357}
+{"timestamp":"2026-09-13T18:30:15.151605+00:00","event":"inference_ready","worker_pid":131357,"configuration":{"model_path":"/unused/model","torch_imported":false},"startup_wall_s":0.19276029997854494}
+{"timestamp":"2026-09-13T18:30:15.152183+00:00","event":"request_accepted","request_id":"1a61c87d34b8480688404fd14049e407:e169e8db50c44e3caf1ea031a49e9b2d","crop_type":"text","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:15.152603+00:00","event":"request_finished","request_id":"1a61c87d34b8480688404fd14049e407:e169e8db50c44e3caf1ea031a49e9b2d"}
+Executing <Task pending name='Task-27' coro=<AsyncInferenceServerTests.test_explicit_start_and_close_use_one_real_child_without_http() running at /workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_serve_lifecycle.py:612> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at /usr/local/python3.12.13/lib/python3.12/asyncio/tasks.py:922, Task.task_wakeup()] created at /usr/local/python3.12.13/lib/python3.12/asyncio/base_events.py:448> cb=[_run_until_complete_cb() at /usr/local/python3.12.13/lib/python3.12/asyncio/base_events.py:181] created at /usr/local/python3.12.13/lib/python3.12/asyncio/runners.py:100> took 0.201 seconds
+{"timestamp":"2026-09-13T18:30:15.154089+00:00","event":"python_result_returned","request_id":"1a61c87d34b8480688404fd14049e407:e169e8db50c44e3caf1ea031a49e9b2d"}
+{"timestamp":"2026-09-13T18:30:15.154118+00:00","event":"shutdown_started","unfinished_requests":0}
+{"timestamp":"2026-09-13T18:30:15.405460+00:00","event":"shutdown_finished","requests":1}
+Executing <Task finished name='Task-27' coro=<AsyncInferenceServerTests.test_explicit_start_and_close_use_one_real_child_without_http() done, defined at /workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_serve_lifecycle.py:605> result=None created at /usr/local/python3.12.13/lib/python3.12/asyncio/runners.py:100> took 0.252 seconds
+ok
+test_failed_pending_requests_are_logged_individually (test_serve_lifecycle.AsyncInferenceServerTests.test_failed_pending_requests_are_logged_individually) ... ok
+test_file_failure_does_not_stop_console (test_serve_lifecycle.AsyncInferenceServerTests.test_file_failure_does_not_stop_console) ... ok
+test_full_logging_queue_warns_without_blocking (test_serve_lifecycle.AsyncInferenceServerTests.test_full_logging_queue_warns_without_blocking) ... ok
+test_heartbeat_uses_elapsed_time_and_counts_eos (test_serve_lifecycle.AsyncInferenceServerTests.test_heartbeat_uses_elapsed_time_and_counts_eos) ... ok
+test_idle_worker_keeps_reporting_until_shutdown (test_serve_lifecycle.AsyncInferenceServerTests.test_idle_worker_keeps_reporting_until_shutdown) ... ok
+test_invalid_inputs_do_not_consume_capacity (test_serve_lifecycle.AsyncInferenceServerTests.test_invalid_inputs_do_not_consume_capacity) ... {"timestamp":"2026-09-13T18:30:15.505486+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:15.505874+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0005589299835264683}
+{"timestamp":"2026-09-13T18:30:15.505998+00:00","event":"request_rejected","request_id":"8ea274fd0fc44f67966f49736099f315:59947fa9c4ff4ee0b1afa503f8239356","reason":"invalid crop type"}
+{"timestamp":"2026-09-13T18:30:15.506094+00:00","event":"request_rejected","request_id":"726634cce4d44d469cdf4f00e8db3f21:6636a4522563438785e48210d4ff33b0","reason":"invalid image body size"}
+{"timestamp":"2026-09-13T18:30:15.506163+00:00","event":"request_rejected","request_id":"bba58c07f9e644069dd68e6860f2d025:9a5198e0f2444bbbbb36dab54f296ab7","reason":"invalid image body size"}
+{"timestamp":"2026-09-13T18:30:15.506229+00:00","event":"request_rejected","request_id":"033bbb0c69014686b7d703824f157664:905c999ecc584023bdb5bf407f264a4b","reason":"expected encoded image bytes"}
+ok
+test_shutdown_without_pending_requests_is_not_a_failure (test_serve_lifecycle.AsyncInferenceServerTests.test_shutdown_without_pending_requests_is_not_a_failure) ... ok
+test_timeout_retains_capacity_until_late_result (test_serve_lifecycle.AsyncInferenceServerTests.test_timeout_retains_capacity_until_late_result) ... {"timestamp":"2026-09-13T18:30:15.762692+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:15.762803+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0003071200044360012}
+{"timestamp":"2026-09-13T18:30:15.763188+00:00","event":"request_accepted","request_id":"9eba4f31994e410ab874e9d9201b7a16:f56f213190b544c4908abdee12388fe6","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:15.784514+00:00","event":"request_timeout","request_id":"9eba4f31994e410ab874e9d9201b7a16:f56f213190b544c4908abdee12388fe6"}
+{"timestamp":"2026-09-13T18:30:15.784647+00:00","event":"request_rejected","request_id":"43d03877552d4856b7d2ff70616c1264:597b95e4d2eb4b84bd77e65ea5be5189","reason":"capacity full"}
+{"timestamp":"2026-09-13T18:30:15.784806+00:00","event":"request_finished","request_id":"9eba4f31994e410ab874e9d9201b7a16:f56f213190b544c4908abdee12388fe6"}
+{"timestamp":"2026-09-13T18:30:15.784815+00:00","event":"result_not_returned","request_id":"9eba4f31994e410ab874e9d9201b7a16:f56f213190b544c4908abdee12388fe6","reason":"caller no longer waiting"}
+{"timestamp":"2026-09-13T18:30:15.785637+00:00","event":"request_accepted","request_id":"f12a507cb629407ba70874eb255c9928:00989f398bc74102930faab5db7c759a","crop_type":"text","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:15.786244+00:00","event":"request_finished","request_id":"f12a507cb629407ba70874eb255c9928:00989f398bc74102930faab5db7c759a"}
+{"timestamp":"2026-09-13T18:30:15.786942+00:00","event":"python_result_returned","request_id":"f12a507cb629407ba70874eb255c9928:00989f398bc74102930faab5db7c759a"}
+ok
+test_worker_exit_without_error_message_unblocks_requests (test_serve_lifecycle.AsyncInferenceServerTests.test_worker_exit_without_error_message_unblocks_requests) ... {"timestamp":"2026-09-13T18:30:16.039835+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:16.040272+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0006338199891615659}
+{"timestamp":"2026-09-13T18:30:16.041116+00:00","event":"request_accepted","request_id":"753d7e83caea40da95d964344018fbae:6413707c4153497c904c57ebe3e1de9c","crop_type":"text","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:16.290361+00:00","event":"inference_failed","error":"inference worker exited","traceback":""}
+{"timestamp":"2026-09-13T18:30:16.290380+00:00","event":"request_failed","request_id":"753d7e83caea40da95d964344018fbae:6413707c4153497c904c57ebe3e1de9c","error":"inference worker exited"}
+ok
+test_worker_failure_unblocks_async_requests (test_serve_lifecycle.AsyncInferenceServerTests.test_worker_failure_unblocks_async_requests) ... {"timestamp":"2026-09-13T18:30:16.543412+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:16.543783+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0005601299926638603}
+{"timestamp":"2026-09-13T18:30:16.544558+00:00","event":"request_accepted","request_id":"0e58fb3d7e0b42e18f76055fc75106cd:1728dace05974c68ae9199318d7b4b4c","crop_type":"text","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:16.545265+00:00","event":"inference_failed","error":"worker failed","traceback":"details"}
+{"timestamp":"2026-09-13T18:30:16.545278+00:00","event":"request_failed","request_id":"0e58fb3d7e0b42e18f76055fc75106cd:1728dace05974c68ae9199318d7b4b4c","error":"worker failed"}
+{"timestamp":"2026-09-13T18:30:16.546144+00:00","event":"request_rejected","request_id":"c7d161a7a55f4d589fc9baefebf7fa29:4ef20d24b2f340d2b8aad7aa76602130","reason":"service unavailable"}
+ok
+test_capacity_counts_requests_removed_from_the_job_queue (test_serve_lifecycle.ServeLifecycleTests.test_capacity_counts_requests_removed_from_the_job_queue) ... {"timestamp":"2026-09-13T18:30:16.798315+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:16.798444+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0003017399867530912}
+{"timestamp":"2026-09-13T18:30:16.798946+00:00","event":"request_accepted","request_id":"first","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:16.799047+00:00","event":"request_rejected","request_id":"second","reason":"capacity full"}
+{"timestamp":"2026-09-13T18:30:16.799098+00:00","event":"request_finished","request_id":"first"}
+ok
+test_close_before_start_is_safe (test_serve_lifecycle.ServeLifecycleTests.test_close_before_start_is_safe) ... ok
+test_crop_types_prompts_and_formatting (test_serve_lifecycle.ServeLifecycleTests.test_crop_types_prompts_and_formatting) ... ok
+test_defaults_and_independent_timeouts (test_serve_lifecycle.ServeLifecycleTests.test_defaults_and_independent_timeouts) ... ok
+test_failed_queue_submission_releases_capacity (test_serve_lifecycle.ServeLifecycleTests.test_failed_queue_submission_releases_capacity) ... {"timestamp":"2026-09-13T18:30:17.067420+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:17.067547+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.00033382000401616096}
+ok
+test_health_and_ready_responses (test_serve_lifecycle.ServeLifecycleTests.test_health_and_ready_responses) ... {"timestamp":"2026-09-13T18:30:17.320191+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:17.320589+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0005972000071778893}
+ok
+test_http_close_does_not_stop_inference (test_serve_lifecycle.ServeLifecycleTests.test_http_close_does_not_stop_inference) ... ok
+test_http_result_errors_and_removed_drain_endpoint (test_serve_lifecycle.ServeLifecycleTests.test_http_result_errors_and_removed_drain_endpoint) ... ok
+test_http_run_and_signal_handler (test_serve_lifecycle.ServeLifecycleTests.test_http_run_and_signal_handler) ... ok
+test_inference_entrypoint_reports_worker_failure (test_serve_lifecycle.ServeLifecycleTests.test_inference_entrypoint_reports_worker_failure) ... ok
+test_main_closes_inference_even_when_http_close_fails (test_serve_lifecycle.ServeLifecycleTests.test_main_closes_inference_even_when_http_close_fails) ... ok
+test_main_lifecycle (test_serve_lifecycle.ServeLifecycleTests.test_main_lifecycle) ... ok
+test_real_http_with_independent_inference_service (test_serve_lifecycle.ServeLifecycleTests.test_real_http_with_independent_inference_service) ... ok
+test_real_spawned_process_communication (test_serve_lifecycle.ServeLifecycleTests.test_real_spawned_process_communication) ... {"timestamp":"2026-09-13T18:30:18.484012+00:00","event":"request_accepted","request_id":"real-ipc","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:18.484244+00:00","event":"request_finished","request_id":"real-ipc"}
+{"timestamp":"2026-09-13T18:30:18.484341+00:00","event":"shutdown_started","unfinished_requests":0}
+{"timestamp":"2026-09-13T18:30:18.735445+00:00","event":"shutdown_finished","requests":1}
+ok
+test_request_timeout_does_not_cancel_job_and_late_result_is_ignored (test_serve_lifecycle.ServeLifecycleTests.test_request_timeout_does_not_cancel_job_and_late_result_is_ignored) ... {"timestamp":"2026-09-13T18:30:18.737332+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:18.737461+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0003568099928088486}
+{"timestamp":"2026-09-13T18:30:18.738118+00:00","event":"request_accepted","request_id":"expired","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:18.788207+00:00","event":"request_timeout","request_id":"expired"}
+{"timestamp":"2026-09-13T18:30:18.788481+00:00","event":"request_finished","request_id":"expired"}
+{"timestamp":"2026-09-13T18:30:18.788489+00:00","event":"result_not_returned","request_id":"expired","reason":"caller no longer waiting"}
+{"timestamp":"2026-09-13T18:30:18.788586+00:00","event":"request_accepted","request_id":"next","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:18.788710+00:00","event":"request_finished","request_id":"next"}
+ok
+test_shutdown_finishes_pending_request_and_receives_summary (test_serve_lifecycle.ServeLifecycleTests.test_shutdown_finishes_pending_request_and_receives_summary) ... {"timestamp":"2026-09-13T18:30:19.040214+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:19.040335+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.00030494999373331666}
+{"timestamp":"2026-09-13T18:30:19.040859+00:00","event":"request_accepted","request_id":"last","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:19.041085+00:00","event":"shutdown_started","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:19.041273+00:00","event":"request_finished","request_id":"last"}
+{"timestamp":"2026-09-13T18:30:19.291872+00:00","event":"shutdown_finished","requests":1}
+ok
+test_shutdown_timeout_terminates_worker (test_serve_lifecycle.ServeLifecycleTests.test_shutdown_timeout_terminates_worker) ... {"timestamp":"2026-09-13T18:30:19.293471+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:19.293597+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.00032190000638365746}
+{"timestamp":"2026-09-13T18:30:19.293920+00:00","event":"shutdown_started","unfinished_requests":0}
+{"timestamp":"2026-09-13T18:30:19.543701+00:00","event":"inference_failed","error":"inference worker exited","traceback":""}
+ok
+test_startup_error (test_serve_lifecycle.ServeLifecycleTests.test_startup_error) ... {"timestamp":"2026-09-13T18:30:19.545128+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:19.545249+00:00","event":"inference_failed","error":"model failed","traceback":"failure details"}
+ok
+test_startup_success_and_out_of_order_request_results (test_serve_lifecycle.ServeLifecycleTests.test_startup_success_and_out_of_order_request_results) ... {"timestamp":"2026-09-13T18:30:19.797082+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:19.797460+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0005632899992633611}
+{"timestamp":"2026-09-13T18:30:19.797716+00:00","event":"request_accepted","request_id":"0","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:30:19.797955+00:00","event":"request_accepted","request_id":"1","crop_type":"table","unfinished_requests":2}
+{"timestamp":"2026-09-13T18:30:19.798174+00:00","event":"request_accepted","request_id":"2","crop_type":"table","unfinished_requests":3}
+{"timestamp":"2026-09-13T18:30:19.798707+00:00","event":"request_accepted","request_id":"3","crop_type":"table","unfinished_requests":4}
+{"timestamp":"2026-09-13T18:30:19.798879+00:00","event":"request_finished","request_id":"3"}
+{"timestamp":"2026-09-13T18:30:19.798902+00:00","event":"request_finished","request_id":"2"}
+{"timestamp":"2026-09-13T18:30:19.798922+00:00","event":"request_finished","request_id":"1"}
+{"timestamp":"2026-09-13T18:30:19.798940+00:00","event":"request_finished","request_id":"0"}
+ok
+test_startup_wait_has_no_deadline (test_serve_lifecycle.ServeLifecycleTests.test_startup_wait_has_no_deadline) ... {"timestamp":"2026-09-13T18:30:20.051163+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:30:20.051288+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0003069099911954254}
+ok
+test_worker_empty_queue_completion_and_request_error (test_serve_lifecycle.ServeLifecycleTests.test_worker_empty_queue_completion_and_request_error) ... ok
+test_worker_exit_during_startup_ends_the_wait (test_serve_lifecycle.ServeLifecycleTests.test_worker_exit_during_startup_ends_the_wait) ... ok
+test_dead_decode_plumbing_removed (test_text_simplification.TextSimplificationTests.test_dead_decode_plumbing_removed) ... ok
+test_fixed_settings_against_saved_readiness (test_text_simplification.TextSimplificationTests.test_fixed_settings_against_saved_readiness) ... ok
+test_fixed_text_buckets_and_preparation (test_text_simplification.TextSimplificationTests.test_fixed_text_buckets_and_preparation) ... ok
+test_full_head_setup_and_cache_separation (test_text_simplification.TextSimplificationTests.test_full_head_setup_and_cache_separation) ... ok
+test_http_worker_cli_and_request_wiring (test_text_simplification.TextSimplificationTests.test_http_worker_cli_and_request_wiring) ... ok
+test_model_composition_and_serving_wiring (test_text_simplification.TextSimplificationTests.test_model_composition_and_serving_wiring) ... ok
+test_nz_conversion_aborts_instead_of_falling_back (test_text_simplification.TextSimplificationTests.test_nz_conversion_aborts_instead_of_falling_back) ... ok
+test_outputs_kv_and_operation_trace (test_text_simplification.TextSimplificationTests.test_outputs_kv_and_operation_trace) ... ok
+test_prefill_softmax_contract (test_text_simplification.TextSimplificationTests.test_prefill_softmax_contract) ... ok
+test_retained_contracts_and_rejection (test_text_simplification.TextSimplificationTests.test_retained_contracts_and_rejection) ... ok
+test_single_import_and_cache_identity (test_text_simplification.TextSimplificationTests.test_single_import_and_cache_identity) ... ok
+test_text_prefill_constructor_call_order (test_text_simplification.TextSimplificationTests.test_text_prefill_constructor_call_order) ... ok
+test_zero_cache_matches_reference (test_text_simplification.TextSimplificationTests.test_zero_cache_matches_reference) ... ok
+test_all_other_source_unchanged (test_vision_simplification.VisionSimplificationTests.test_all_other_source_unchanged) ... ok
+test_legacy_forward_removed (test_vision_simplification.VisionSimplificationTests.test_legacy_forward_removed) ... ok
+test_required_mask_and_no_choice_plumbing (test_vision_simplification.VisionSimplificationTests.test_required_mask_and_no_choice_plumbing) ... ok
+test_stage_outputs_weights_and_call_order (test_vision_simplification.VisionSimplificationTests.test_stage_outputs_weights_and_call_order) ... ok
+test_vision_bucket_routes_and_fixed_cache_inputs (test_vision_simplification.VisionSimplificationTests.test_vision_bucket_routes_and_fixed_cache_inputs) ... ok
+
+----------------------------------------------------------------------
+Ran 100 tests in 18.900s
+
+OK
+

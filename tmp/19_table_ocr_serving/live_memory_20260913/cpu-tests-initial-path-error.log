@@ -1,0 +1,453 @@
+From /data1/lukaiv/workspace/paddle-memory-fix-20260913.bundle
+ * branch              HEAD       -> FETCH_HEAD
+Preparing worktree (detached HEAD db0a3f92)
+Updating files:  15% (1595/10607)Updating files:  16% (1698/10607)Updating files:  17% (1804/10607)Updating files:  18% (1910/10607)Updating files:  19% (2016/10607)Updating files:  20% (2122/10607)Updating files:  20% (2186/10607)Updating files:  21% (2228/10607)Updating files:  22% (2334/10607)Updating files:  23% (2440/10607)Updating files:  24% (2546/10607)Updating files:  25% (2652/10607)Updating files:  26% (2758/10607)Updating files:  27% (2864/10607)Updating files:  28% (2970/10607)Updating files:  29% (3077/10607)Updating files:  30% (3183/10607)Updating files:  30% (3235/10607)Updating files:  31% (3289/10607)Updating files:  32% (3395/10607)Updating files:  33% (3501/10607)Updating files:  34% (3607/10607)Updating files:  35% (3713/10607)Updating files:  36% (3819/10607)Updating files:  36% (3889/10607)Updating files:  37% (3925/10607)Updating files:  38% (4031/10607)Updating files:  39% (4137/10607)Updating files:  40% (4243/10607)Updating files:  41% (4349/10607)Updating files:  42% (4455/10607)Updating files:  43% (4562/10607)Updating files:  44% (4668/10607)Updating files:  45% (4774/10607)Updating files:  46% (4880/10607)Updating files:  46% (4906/10607)Updating files:  47% (4986/10607)Updating files:  48% (5092/10607)Updating files:  49% (5198/10607)Updating files:  50% (5304/10607)Updating files:  51% (5410/10607)Updating files:  52% (5516/10607)Updating files:  53% (5622/10607)Updating files:  54% (5728/10607)Updating files:  55% (5834/10607)Updating files:  56% (5940/10607)Updating files:  57% (6046/10607)Updating files:  58% (6153/10607)Updating files:  59% (6259/10607)Updating files:  60% (6365/10607)Updating files:  61% (6471/10607)Updating files:  62% (6577/10607)Updating files:  63% (6683/10607)Updating files:  64% (6789/10607)Updating files:  65% (6895/10607)Updating files:  66% (7001/10607)Updating files:  67% (7107/10607)Updating files:  68% (7213/10607)Updating files:  69% (7319/10607)Updating files:  70% (7425/10607)Updating files:  71% (7531/10607)Updating files:  72% (7638/10607)Updating files:  73% (7744/10607)Updating files:  74% (7850/10607)Updating files:  75% (7956/10607)Updating files:  76% (8062/10607)Updating files:  77% (8168/10607)Updating files:  78% (8274/10607)Updating files:  79% (8380/10607)Updating files:  80% (8486/10607)Updating files:  81% (8592/10607)Updating files:  82% (8698/10607)Updating files:  83% (8804/10607)Updating files:  84% (8910/10607)Updating files:  85% (9016/10607)Updating files:  86% (9123/10607)Updating files:  87% (9229/10607)Updating files:  88% (9335/10607)Updating files:  89% (9441/10607)Updating files:  90% (9547/10607)Updating files:  91% (9653/10607)Updating files:  92% (9759/10607)Updating files:  92% (9822/10607)Updating files:  93% (9865/10607)Updating files:  94% (9971/10607)Updating files:  95% (10077/10607)Updating files:  96% (10183/10607)Updating files:  97% (10289/10607)Updating files:  98% (10395/10607)Updating files:  99% (10501/10607)Updating files: 100% (10607/10607)Updating files: 100% (10607/10607), done.
+HEAD is now at db0a3f92 Release completed OCR records during continuous serving
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+test_compilation_paths (unittest.loader._FailedTest.test_compilation_paths) ... ERROR
+test_cpu_readiness (unittest.loader._FailedTest.test_cpu_readiness) ... ERROR
+test_crop_pipeline_simplification (unittest.loader._FailedTest.test_crop_pipeline_simplification) ... ERROR
+test_decode_completion (unittest.loader._FailedTest.test_decode_completion) ... ERROR
+test_frozen_mapping_and_original_order (test_decode_vocab.DecodeVocabulary.test_frozen_mapping_and_original_order) ... ok
+test_only_one_selected_mapping_is_bundled (test_decode_vocab.DecodeVocabulary.test_only_one_selected_mapping_is_bundled) ... ok
+test_fixed_checkpoint (unittest.loader._FailedTest.test_fixed_checkpoint) ... ERROR
+test_prefill_cache_pool (unittest.loader._FailedTest.test_prefill_cache_pool) ... ERROR
+fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+setUpClass (test_recognizer_reading_order.RecognizerReadingOrderTests) ... ERROR
+test_decode_arena_and_token_copy_operations_preserved (test_recognizer_reading_order.RuntimeIntegrationStructureTests.test_decode_arena_and_token_copy_operations_preserved) ... fatal: not a git repository: /data1/lukaiv/workspace/repos/paddle_ocr_vl_npu/.git/worktrees/table_memory_fix_db0a3f92
+ERROR
+test_removed_owners_adapters_and_intermediate_records (test_recognizer_reading_order.RuntimeIntegrationStructureTests.test_removed_owners_adapters_and_intermediate_records) ... ok
+test_runtime_records (unittest.loader._FailedTest.test_runtime_records) ... ERROR
+test_runtime_timing (unittest.loader._FailedTest.test_runtime_timing) ... ERROR
+test_cancellation_also_retains_capacity (test_serve_lifecycle.AsyncInferenceServerTests.test_cancellation_also_retains_capacity) ... {"timestamp":"2026-09-13T18:28:55.909390+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:28:55.910104+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0014074300124775618}
+{"timestamp":"2026-09-13T18:28:55.912031+00:00","event":"request_accepted","request_id":"980173b0f78e48309d428a0a0d4fb79d:d0ddbdebadc546b8a40a403c56ca31d1","crop_type":"formula","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:28:55.913711+00:00","event":"caller_cancelled","request_id":"980173b0f78e48309d428a0a0d4fb79d:d0ddbdebadc546b8a40a403c56ca31d1"}
+{"timestamp":"2026-09-13T18:28:55.914069+00:00","event":"request_rejected","request_id":"http-request","reason":"capacity full"}
+{"timestamp":"2026-09-13T18:28:55.914273+00:00","event":"request_finished","request_id":"980173b0f78e48309d428a0a0d4fb79d:d0ddbdebadc546b8a40a403c56ca31d1"}
+{"timestamp":"2026-09-13T18:28:55.914282+00:00","event":"result_not_returned","request_id":"980173b0f78e48309d428a0a0d4fb79d:d0ddbdebadc546b8a40a403c56ca31d1","reason":"caller no longer waiting"}
+ok
+test_close_drains_requests_and_rejects_new_ones (test_serve_lifecycle.AsyncInferenceServerTests.test_close_drains_requests_and_rejects_new_ones) ... {"timestamp":"2026-09-13T18:28:56.167691+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:28:56.168061+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0005396899941843003}
+{"timestamp":"2026-09-13T18:28:56.168853+00:00","event":"request_accepted","request_id":"588dd692b7a344bc9c4f199acb865b52:589ef8fdb1dc4031ade41e4425f96d3b","crop_type":"formula","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:28:56.172173+00:00","event":"shutdown_started","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:28:56.173156+00:00","event":"request_rejected","request_id":"e3d76f572ac84e679567019f0a8b25ca:1aedd30d6aad4e13a3a6e8858a053e5b","reason":"service unavailable"}
+{"timestamp":"2026-09-13T18:28:56.173280+00:00","event":"request_finished","request_id":"588dd692b7a344bc9c4f199acb865b52:589ef8fdb1dc4031ade41e4425f96d3b"}
+{"timestamp":"2026-09-13T18:28:56.173991+00:00","event":"python_result_returned","request_id":"588dd692b7a344bc9c4f199acb865b52:589ef8fdb1dc4031ade41e4425f96d3b"}
+ok
+test_concurrent_individual_calls_return_their_own_results (test_serve_lifecycle.AsyncInferenceServerTests.test_concurrent_individual_calls_return_their_own_results) ... {"timestamp":"2026-09-13T18:28:56.424085+00:00","event":"shutdown_finished","requests":1}
+{"timestamp":"2026-09-13T18:28:56.429012+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:28:56.429363+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0005041499971412122}
+{"timestamp":"2026-09-13T18:28:56.430625+00:00","event":"request_accepted","request_id":"same-public-id:24ffba5405884148b69a773c0a8d4432","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:28:56.431226+00:00","event":"request_accepted","request_id":"same-public-id:b90fec2c82484ab3a90ed0fb10cf26e9","crop_type":"text","unfinished_requests":2}
+{"timestamp":"2026-09-13T18:28:56.431810+00:00","event":"request_accepted","request_id":"same-public-id:1d06f933d8484345995b78eb831f1537","crop_type":"formula","unfinished_requests":3}
+{"timestamp":"2026-09-13T18:28:56.433082+00:00","event":"request_finished","request_id":"same-public-id:1d06f933d8484345995b78eb831f1537"}
+{"timestamp":"2026-09-13T18:28:56.433345+00:00","event":"request_finished","request_id":"same-public-id:b90fec2c82484ab3a90ed0fb10cf26e9"}
+{"timestamp":"2026-09-13T18:28:56.433562+00:00","event":"request_finished","request_id":"same-public-id:24ffba5405884148b69a773c0a8d4432"}
+{"timestamp":"2026-09-13T18:28:56.434999+00:00","event":"python_result_returned","request_id":"same-public-id:1d06f933d8484345995b78eb831f1537"}
+{"timestamp":"2026-09-13T18:28:56.435265+00:00","event":"python_result_returned","request_id":"same-public-id:b90fec2c82484ab3a90ed0fb10cf26e9"}
+{"timestamp":"2026-09-13T18:28:56.435487+00:00","event":"python_result_returned","request_id":"same-public-id:24ffba5405884148b69a773c0a8d4432"}
+ok
+test_existing_result_logged_without_content_and_flushed (test_serve_lifecycle.AsyncInferenceServerTests.test_existing_result_logged_without_content_and_flushed) ... ok
+test_explicit_start_and_close_use_one_real_child_without_http (test_serve_lifecycle.AsyncInferenceServerTests.test_explicit_start_and_close_use_one_real_child_without_http) ... {"timestamp":"2026-09-13T18:28:56.694875+00:00","event":"startup","model_path":"/unused/model","graph_cache_directory":"/unused/graphs","log_folder":"/tmp/tmp9ygdisay/logs","host":"127.0.0.1","port":8765,"request_timeout_s":5,"shutdown_timeout_s":2.0,"max_image_bytes":67108864,"max_in_flight_requests":64,"device":"npu:0","decode_batch_size":2,"full_decode_lm_head":false,"run_eagerly":false,"metrics_level":"basic"}
+{"timestamp":"2026-09-13T18:28:56.697206+00:00","event":"waiting_for_model","worker_pid":131016}
+{"timestamp":"2026-09-13T18:28:56.882271+00:00","event":"inference_ready","worker_pid":131016,"configuration":{"model_path":"/unused/model","torch_imported":false},"startup_wall_s":0.1876027099788189}
+{"timestamp":"2026-09-13T18:28:56.882962+00:00","event":"request_accepted","request_id":"d3782ceb68c84d63b00d88a64fe56066:1d3da35db9bc4b29a809c1f6761e009d","crop_type":"text","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:28:56.883522+00:00","event":"request_finished","request_id":"d3782ceb68c84d63b00d88a64fe56066:1d3da35db9bc4b29a809c1f6761e009d"}
+Executing <Task pending name='Task-27' coro=<AsyncInferenceServerTests.test_explicit_start_and_close_use_one_real_child_without_http() running at /workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_serve_lifecycle.py:612> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at /usr/local/python3.12.13/lib/python3.12/asyncio/tasks.py:922, Task.task_wakeup()] created at /usr/local/python3.12.13/lib/python3.12/asyncio/base_events.py:448> cb=[_run_until_complete_cb() at /usr/local/python3.12.13/lib/python3.12/asyncio/base_events.py:181] created at /usr/local/python3.12.13/lib/python3.12/asyncio/runners.py:100> took 0.193 seconds
+{"timestamp":"2026-09-13T18:28:56.885318+00:00","event":"python_result_returned","request_id":"d3782ceb68c84d63b00d88a64fe56066:1d3da35db9bc4b29a809c1f6761e009d"}
+{"timestamp":"2026-09-13T18:28:56.885356+00:00","event":"shutdown_started","unfinished_requests":0}
+Executing <Task finished name='Task-27' coro=<AsyncInferenceServerTests.test_explicit_start_and_close_use_one_real_child_without_http() done, defined at /workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_serve_lifecycle.py:605> result=None created at /usr/local/python3.12.13/lib/python3.12/asyncio/runners.py:100> took 0.253 seconds
+ok
+test_failed_pending_requests_are_logged_individually (test_serve_lifecycle.AsyncInferenceServerTests.test_failed_pending_requests_are_logged_individually) ... ok
+test_file_failure_does_not_stop_console (test_serve_lifecycle.AsyncInferenceServerTests.test_file_failure_does_not_stop_console) ... ok
+test_full_logging_queue_warns_without_blocking (test_serve_lifecycle.AsyncInferenceServerTests.test_full_logging_queue_warns_without_blocking) ... ok
+test_heartbeat_uses_elapsed_time_and_counts_eos (test_serve_lifecycle.AsyncInferenceServerTests.test_heartbeat_uses_elapsed_time_and_counts_eos) ... ok
+test_idle_worker_keeps_reporting_until_shutdown (test_serve_lifecycle.AsyncInferenceServerTests.test_idle_worker_keeps_reporting_until_shutdown) ... {"timestamp":"2026-09-13T18:28:57.136731+00:00","event":"shutdown_finished","requests":1}
+ok
+test_invalid_inputs_do_not_consume_capacity (test_serve_lifecycle.AsyncInferenceServerTests.test_invalid_inputs_do_not_consume_capacity) ... {"timestamp":"2026-09-13T18:28:57.236652+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:28:57.236786+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0003202299994882196}
+{"timestamp":"2026-09-13T18:28:57.237205+00:00","event":"request_rejected","request_id":"f5dc7fd28c3f48e1b20c6b035153f708:dd51d7ae86674f2cb632657c22fce706","reason":"invalid crop type"}
+{"timestamp":"2026-09-13T18:28:57.237307+00:00","event":"request_rejected","request_id":"4d6cac1c20fe4aba8fe9dfeeb01d9d6f:6d794ea0cc8b4269bdc9e6cadd33a7e4","reason":"invalid image body size"}
+{"timestamp":"2026-09-13T18:28:57.237377+00:00","event":"request_rejected","request_id":"2fc721640b5a456faae87a1d16711cae:ae20bdf9e56547a3966279d068361c48","reason":"invalid image body size"}
+{"timestamp":"2026-09-13T18:28:57.237442+00:00","event":"request_rejected","request_id":"31ab71d06299439ebf929e672aa1b698:f5e60ad9fad34de098fe36506d0f35a5","reason":"expected encoded image bytes"}
+ok
+test_shutdown_without_pending_requests_is_not_a_failure (test_serve_lifecycle.AsyncInferenceServerTests.test_shutdown_without_pending_requests_is_not_a_failure) ... ok
+test_timeout_retains_capacity_until_late_result (test_serve_lifecycle.AsyncInferenceServerTests.test_timeout_retains_capacity_until_late_result) ... {"timestamp":"2026-09-13T18:28:57.493801+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:28:57.494238+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.000625679997028783}
+{"timestamp":"2026-09-13T18:28:57.494349+00:00","event":"request_accepted","request_id":"108159e53f20427e95dcca1825f28c5d:b324ee7ecc9042d9a5b580c7bd0acc61","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:28:57.515732+00:00","event":"request_timeout","request_id":"108159e53f20427e95dcca1825f28c5d:b324ee7ecc9042d9a5b580c7bd0acc61"}
+{"timestamp":"2026-09-13T18:28:57.515823+00:00","event":"request_rejected","request_id":"668601bea6914c01baebd5628b340e3b:a4fd5e58f5d5420397c50ba5595caa6e","reason":"capacity full"}
+{"timestamp":"2026-09-13T18:28:57.516014+00:00","event":"request_finished","request_id":"108159e53f20427e95dcca1825f28c5d:b324ee7ecc9042d9a5b580c7bd0acc61"}
+{"timestamp":"2026-09-13T18:28:57.516025+00:00","event":"result_not_returned","request_id":"108159e53f20427e95dcca1825f28c5d:b324ee7ecc9042d9a5b580c7bd0acc61","reason":"caller no longer waiting"}
+{"timestamp":"2026-09-13T18:28:57.516918+00:00","event":"request_accepted","request_id":"af575c1746c1462d8420cbf73f372051:95a09074299546cd89644bd615715131","crop_type":"text","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:28:57.517533+00:00","event":"request_finished","request_id":"af575c1746c1462d8420cbf73f372051:95a09074299546cd89644bd615715131"}
+{"timestamp":"2026-09-13T18:28:57.518277+00:00","event":"python_result_returned","request_id":"af575c1746c1462d8420cbf73f372051:95a09074299546cd89644bd615715131"}
+ok
+test_worker_exit_without_error_message_unblocks_requests (test_serve_lifecycle.AsyncInferenceServerTests.test_worker_exit_without_error_message_unblocks_requests) ... {"timestamp":"2026-09-13T18:28:57.771214+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:28:57.771331+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0003033599932678044}
+{"timestamp":"2026-09-13T18:28:57.772327+00:00","event":"request_accepted","request_id":"9ca4719edd4c48f18ae0f728cab70543:3bb27cf024a44ad29e7e91a4ebce7365","crop_type":"text","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:28:58.021423+00:00","event":"inference_failed","error":"inference worker exited","traceback":""}
+{"timestamp":"2026-09-13T18:28:58.021443+00:00","event":"request_failed","request_id":"9ca4719edd4c48f18ae0f728cab70543:3bb27cf024a44ad29e7e91a4ebce7365","error":"inference worker exited"}
+ok
+test_worker_failure_unblocks_async_requests (test_serve_lifecycle.AsyncInferenceServerTests.test_worker_failure_unblocks_async_requests) ... {"timestamp":"2026-09-13T18:28:58.274536+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:28:58.274647+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0002922200073953718}
+{"timestamp":"2026-09-13T18:28:58.275634+00:00","event":"request_accepted","request_id":"6ee4f2adf03447f8ae9da53d7ce92cd1:54d2b62e29964cfaa67974157d06f34c","crop_type":"text","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:28:58.276319+00:00","event":"inference_failed","error":"worker failed","traceback":"details"}
+{"timestamp":"2026-09-13T18:28:58.276333+00:00","event":"request_failed","request_id":"6ee4f2adf03447f8ae9da53d7ce92cd1:54d2b62e29964cfaa67974157d06f34c","error":"worker failed"}
+{"timestamp":"2026-09-13T18:28:58.277221+00:00","event":"request_rejected","request_id":"5b7559b886624b0c90ba24f1bff80aaa:8a87d11614694b29ab37dbef1719c07b","reason":"service unavailable"}
+ok
+test_capacity_counts_requests_removed_from_the_job_queue (test_serve_lifecycle.ServeLifecycleTests.test_capacity_counts_requests_removed_from_the_job_queue) ... {"timestamp":"2026-09-13T18:28:58.529405+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:28:58.529786+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0005590399960055947}
+{"timestamp":"2026-09-13T18:28:58.530098+00:00","event":"request_accepted","request_id":"first","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:28:58.530154+00:00","event":"request_rejected","request_id":"second","reason":"capacity full"}
+{"timestamp":"2026-09-13T18:28:58.530254+00:00","event":"request_finished","request_id":"first"}
+ok
+test_close_before_start_is_safe (test_serve_lifecycle.ServeLifecycleTests.test_close_before_start_is_safe) ... ok
+test_crop_types_prompts_and_formatting (test_serve_lifecycle.ServeLifecycleTests.test_crop_types_prompts_and_formatting) ... ok
+test_defaults_and_independent_timeouts (test_serve_lifecycle.ServeLifecycleTests.test_defaults_and_independent_timeouts) ... ok
+test_failed_queue_submission_releases_capacity (test_serve_lifecycle.ServeLifecycleTests.test_failed_queue_submission_releases_capacity) ... {"timestamp":"2026-09-13T18:28:58.798986+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:28:58.799483+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0007256199896801263}
+ok
+test_health_and_ready_responses (test_serve_lifecycle.ServeLifecycleTests.test_health_and_ready_responses) ... {"timestamp":"2026-09-13T18:28:59.051838+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:28:59.051961+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0003275900089647621}
+ok
+test_http_close_does_not_stop_inference (test_serve_lifecycle.ServeLifecycleTests.test_http_close_does_not_stop_inference) ... ok
+test_http_result_errors_and_removed_drain_endpoint (test_serve_lifecycle.ServeLifecycleTests.test_http_result_errors_and_removed_drain_endpoint) ... ok
+test_http_run_and_signal_handler (test_serve_lifecycle.ServeLifecycleTests.test_http_run_and_signal_handler) ... ok
+test_inference_entrypoint_reports_worker_failure (test_serve_lifecycle.ServeLifecycleTests.test_inference_entrypoint_reports_worker_failure) ... ok
+test_main_closes_inference_even_when_http_close_fails (test_serve_lifecycle.ServeLifecycleTests.test_main_closes_inference_even_when_http_close_fails) ... ok
+test_main_lifecycle (test_serve_lifecycle.ServeLifecycleTests.test_main_lifecycle) ... ok
+test_real_http_with_independent_inference_service (test_serve_lifecycle.ServeLifecycleTests.test_real_http_with_independent_inference_service) ... ok
+test_real_spawned_process_communication (test_serve_lifecycle.ServeLifecycleTests.test_real_spawned_process_communication) ... {"timestamp":"2026-09-13T18:29:00.196571+00:00","event":"request_accepted","request_id":"real-ipc","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:29:00.196828+00:00","event":"request_finished","request_id":"real-ipc"}
+{"timestamp":"2026-09-13T18:29:00.196929+00:00","event":"shutdown_started","unfinished_requests":0}
+{"timestamp":"2026-09-13T18:29:00.448012+00:00","event":"shutdown_finished","requests":1}
+ok
+test_request_timeout_does_not_cancel_job_and_late_result_is_ignored (test_serve_lifecycle.ServeLifecycleTests.test_request_timeout_does_not_cancel_job_and_late_result_is_ignored) ... {"timestamp":"2026-09-13T18:29:00.450018+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:29:00.450130+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.00029739999445155263}
+{"timestamp":"2026-09-13T18:29:00.450498+00:00","event":"request_accepted","request_id":"expired","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:29:00.500593+00:00","event":"request_timeout","request_id":"expired"}
+{"timestamp":"2026-09-13T18:29:00.501178+00:00","event":"request_finished","request_id":"expired"}
+{"timestamp":"2026-09-13T18:29:00.501188+00:00","event":"result_not_returned","request_id":"expired","reason":"caller no longer waiting"}
+{"timestamp":"2026-09-13T18:29:00.501288+00:00","event":"request_accepted","request_id":"next","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:29:00.501412+00:00","event":"request_finished","request_id":"next"}
+ok
+test_shutdown_finishes_pending_request_and_receives_summary (test_serve_lifecycle.ServeLifecycleTests.test_shutdown_finishes_pending_request_and_receives_summary) ... {"timestamp":"2026-09-13T18:29:00.752934+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:29:00.753309+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0005304399819578975}
+{"timestamp":"2026-09-13T18:29:00.753555+00:00","event":"request_accepted","request_id":"last","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:29:00.753724+00:00","event":"shutdown_started","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:29:00.753855+00:00","event":"request_finished","request_id":"last"}
+ok
+test_shutdown_timeout_terminates_worker (test_serve_lifecycle.ServeLifecycleTests.test_shutdown_timeout_terminates_worker) ... {"timestamp":"2026-09-13T18:29:01.004462+00:00","event":"shutdown_finished","requests":1}
+{"timestamp":"2026-09-13T18:29:01.006035+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:29:01.006427+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0005660300084855407}
+{"timestamp":"2026-09-13T18:29:01.006468+00:00","event":"shutdown_started","unfinished_requests":0}
+ok
+test_startup_error (test_serve_lifecycle.ServeLifecycleTests.test_startup_error) ... {"timestamp":"2026-09-13T18:29:01.256521+00:00","event":"inference_failed","error":"inference worker exited","traceback":""}
+{"timestamp":"2026-09-13T18:29:01.257867+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:29:01.257977+00:00","event":"inference_failed","error":"model failed","traceback":"failure details"}
+ok
+test_startup_success_and_out_of_order_request_results (test_serve_lifecycle.ServeLifecycleTests.test_startup_success_and_out_of_order_request_results) ... {"timestamp":"2026-09-13T18:29:01.509883+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:29:01.509976+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0002691499830689281}
+{"timestamp":"2026-09-13T18:29:01.510511+00:00","event":"request_accepted","request_id":"0","crop_type":"table","unfinished_requests":1}
+{"timestamp":"2026-09-13T18:29:01.510782+00:00","event":"request_accepted","request_id":"1","crop_type":"table","unfinished_requests":2}
+{"timestamp":"2026-09-13T18:29:01.511209+00:00","event":"request_accepted","request_id":"2","crop_type":"table","unfinished_requests":3}
+{"timestamp":"2026-09-13T18:29:01.511781+00:00","event":"request_accepted","request_id":"3","crop_type":"table","unfinished_requests":4}
+{"timestamp":"2026-09-13T18:29:01.511942+00:00","event":"request_finished","request_id":"3"}
+{"timestamp":"2026-09-13T18:29:01.511966+00:00","event":"request_finished","request_id":"2"}
+{"timestamp":"2026-09-13T18:29:01.511985+00:00","event":"request_finished","request_id":"1"}
+{"timestamp":"2026-09-13T18:29:01.512003+00:00","event":"request_finished","request_id":"0"}
+ok
+test_startup_wait_has_no_deadline (test_serve_lifecycle.ServeLifecycleTests.test_startup_wait_has_no_deadline) ... {"timestamp":"2026-09-13T18:29:01.764539+00:00","event":"waiting_for_model","worker_pid":123}
+{"timestamp":"2026-09-13T18:29:01.764919+00:00","event":"inference_ready","configuration":{"loaded":true},"worker_pid":123,"startup_wall_s":0.0006107500230427831}
+ok
+test_worker_empty_queue_completion_and_request_error (test_serve_lifecycle.ServeLifecycleTests.test_worker_empty_queue_completion_and_request_error) ... ok
+test_worker_exit_during_startup_ends_the_wait (test_serve_lifecycle.ServeLifecycleTests.test_worker_exit_during_startup_ends_the_wait) ... ok
+test_text_simplification (unittest.loader._FailedTest.test_text_simplification) ... ERROR
+test_vision_simplification (unittest.loader._FailedTest.test_vision_simplification) ... ERROR
+
+======================================================================
+ERROR: test_compilation_paths (unittest.loader._FailedTest.test_compilation_paths)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_compilation_paths
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_compilation_paths.py", line 15, in <module>
+    from test_text_simplification import ROOT, EXPERIMENT, signature
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_text_simplification.py", line 27, in <module>
+    from fixed_architecture_reference import PaddleOCRTextConfig, PaddleOCRVLConfig, text_model, text_call, cache as allocate_cache, FreezeArchitecture
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/fixed_architecture_reference.py", line 37, in <module>
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '1c2b891d:19_table_ocr_serving/_support/model/config.py']' returned non-zero exit status 128.
+
+
+======================================================================
+ERROR: test_cpu_readiness (unittest.loader._FailedTest.test_cpu_readiness)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_cpu_readiness
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_cpu_readiness.py", line 12, in <module>
+    import fixed_architecture_reference  # CPU-only stubs for runtime dependencies
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/fixed_architecture_reference.py", line 37, in <module>
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '1c2b891d:19_table_ocr_serving/_support/model/config.py']' returned non-zero exit status 128.
+
+
+======================================================================
+ERROR: test_crop_pipeline_simplification (unittest.loader._FailedTest.test_crop_pipeline_simplification)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_crop_pipeline_simplification
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_crop_pipeline_simplification.py", line 17, in <module>
+    from test_text_simplification import ROOT, EXPERIMENT, signature
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_text_simplification.py", line 27, in <module>
+    from fixed_architecture_reference import PaddleOCRTextConfig, PaddleOCRVLConfig, text_model, text_call, cache as allocate_cache, FreezeArchitecture
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/fixed_architecture_reference.py", line 37, in <module>
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '1c2b891d:19_table_ocr_serving/_support/model/config.py']' returned non-zero exit status 128.
+
+
+======================================================================
+ERROR: test_decode_completion (unittest.loader._FailedTest.test_decode_completion)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_decode_completion
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_decode_completion.py", line 14, in <module>
+    import fixed_architecture_reference  # supplies CPU-only dependency stubs for runtime imports
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/fixed_architecture_reference.py", line 37, in <module>
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '1c2b891d:19_table_ocr_serving/_support/model/config.py']' returned non-zero exit status 128.
+
+
+======================================================================
+ERROR: test_fixed_checkpoint (unittest.loader._FailedTest.test_fixed_checkpoint)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_fixed_checkpoint
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_fixed_checkpoint.py", line 14, in <module>
+    from fixed_architecture_reference import PaddleOCRVLConfig, definition_order_signature
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/fixed_architecture_reference.py", line 37, in <module>
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '1c2b891d:19_table_ocr_serving/_support/model/config.py']' returned non-zero exit status 128.
+
+
+======================================================================
+ERROR: test_prefill_cache_pool (unittest.loader._FailedTest.test_prefill_cache_pool)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_prefill_cache_pool
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_prefill_cache_pool.py", line 13, in <module>
+    from test_text_simplification import ROOT, EXPERIMENT
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_text_simplification.py", line 27, in <module>
+    from fixed_architecture_reference import PaddleOCRTextConfig, PaddleOCRVLConfig, text_model, text_call, cache as allocate_cache, FreezeArchitecture
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/fixed_architecture_reference.py", line 37, in <module>
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '1c2b891d:19_table_ocr_serving/_support/model/config.py']' returned non-zero exit status 128.
+
+
+======================================================================
+ERROR: setUpClass (test_recognizer_reading_order.RecognizerReadingOrderTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_recognizer_reading_order.py", line 57, in setUpClass
+    cls.before = subprocess.check_output(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '364a0c2b:19_table_ocr_serving/p02_serving_runtime.py']' returned non-zero exit status 128.
+
+======================================================================
+ERROR: test_decode_arena_and_token_copy_operations_preserved (test_recognizer_reading_order.RuntimeIntegrationStructureTests.test_decode_arena_and_token_copy_operations_preserved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_recognizer_reading_order.py", line 210, in test_decode_arena_and_token_copy_operations_preserved
+    before=subprocess.check_output(['git','-C',str(ROOT),'show',f'a191a2a2:{PATH}'],text=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', 'a191a2a2:19_table_ocr_serving/p02_serving_runtime.py']' returned non-zero exit status 128.
+
+======================================================================
+ERROR: test_runtime_records (unittest.loader._FailedTest.test_runtime_records)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_runtime_records
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_runtime_records.py", line 15, in <module>
+    from test_text_simplification import ROOT, EXPERIMENT
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_text_simplification.py", line 27, in <module>
+    from fixed_architecture_reference import PaddleOCRTextConfig, PaddleOCRVLConfig, text_model, text_call, cache as allocate_cache, FreezeArchitecture
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/fixed_architecture_reference.py", line 37, in <module>
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '1c2b891d:19_table_ocr_serving/_support/model/config.py']' returned non-zero exit status 128.
+
+
+======================================================================
+ERROR: test_runtime_timing (unittest.loader._FailedTest.test_runtime_timing)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_runtime_timing
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_runtime_timing.py", line 9, in <module>
+    from test_text_simplification import ROOT
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_text_simplification.py", line 27, in <module>
+    from fixed_architecture_reference import PaddleOCRTextConfig, PaddleOCRVLConfig, text_model, text_call, cache as allocate_cache, FreezeArchitecture
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/fixed_architecture_reference.py", line 37, in <module>
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '1c2b891d:19_table_ocr_serving/_support/model/config.py']' returned non-zero exit status 128.
+
+
+======================================================================
+ERROR: test_text_simplification (unittest.loader._FailedTest.test_text_simplification)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_text_simplification
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_text_simplification.py", line 27, in <module>
+    from fixed_architecture_reference import PaddleOCRTextConfig, PaddleOCRVLConfig, text_model, text_call, cache as allocate_cache, FreezeArchitecture
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/fixed_architecture_reference.py", line 37, in <module>
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '1c2b891d:19_table_ocr_serving/_support/model/config.py']' returned non-zero exit status 128.
+
+
+======================================================================
+ERROR: test_vision_simplification (unittest.loader._FailedTest.test_vision_simplification)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_vision_simplification
+Traceback (most recent call last):
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/test_vision_simplification.py", line 21, in <module>
+    from fixed_architecture_reference import PaddleOCRVisionConfig, vision_model, FreezeArchitecture, definition_order_signature
+  File "/workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/tests/fixed_architecture_reference.py", line 37, in <module>
+    source = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 466, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.12.13/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['git', '-C', '/workspace/repos/table_memory_fix_db0a3f92', 'show', '1c2b891d:19_table_ocr_serving/_support/model/config.py']' returned non-zero exit status 128.
+
+
+----------------------------------------------------------------------
+Ran 51 tests in 6.476s
+
+FAILED (errors=12)
+

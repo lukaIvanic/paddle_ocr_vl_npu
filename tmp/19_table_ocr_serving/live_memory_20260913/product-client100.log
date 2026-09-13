@@ -1,0 +1,205 @@
+Found 665 tables. Preparing crops before the measured run...
+WARMUP: one table (not counted below)
+SENDING 100 requests at 6 QPS (Poisson arrivals)
+SEND #0001 active=1 lag=1.2ms
+RECV #0001 0.176s completed=1/100 active=0 OK
+SEND #0002 active=1 lag=0.8ms
+RECV #0002 0.177s completed=2/100 active=0 OK
+SEND #0003 active=1 lag=0.9ms
+SEND #0004 active=2 lag=0.6ms
+SEND #0005 active=3 lag=0.3ms
+SEND #0006 active=4 lag=0.6ms
+RECV #0004 0.340s completed=3/100 active=3 OK
+SEND #0007 active=4 lag=0.9ms
+SEND #0008 active=5 lag=0.6ms
+SEND #0009 active=6 lag=1.1ms
+SEND #0010 active=7 lag=1.1ms
+RECV #0005 0.575s completed=4/100 active=6 OK
+RECV #0007 0.527s completed=5/100 active=5 OK
+SEND #0011 active=6 lag=0.6ms
+SEND #0012 active=7 lag=1.0ms
+RECV #0006 0.914s completed=6/100 active=6 OK
+SEND #0013 active=7 lag=0.8ms
+SEND #0014 active=8 lag=0.7ms
+SEND #0015 active=9 lag=0.8ms
+RECV #0014 0.121s completed=7/100 active=8 OK
+RECV #0003 1.586s completed=8/100 active=7 OK
+SEND #0016 active=8 lag=0.9ms
+SEND #0017 active=9 lag=0.6ms
+RECV #0010 1.194s completed=9/100 active=8 OK
+RECV #0017 0.273s completed=10/100 active=7 OK
+RECV #0011 0.970s completed=11/100 active=6 OK
+RECV #0015 0.548s completed=12/100 active=5 OK
+RECV #0013 0.770s completed=13/100 active=4 OK
+SEND #0018 active=5 lag=1.0ms
+RECV #0018 0.133s completed=14/100 active=4 OK
+RECV #0016 0.762s completed=15/100 active=3 OK
+SEND #0019 active=4 lag=0.9ms
+SEND #0020 active=5 lag=0.5ms
+SEND #0021 active=6 lag=0.8ms
+SEND #0022 active=7 lag=0.6ms
+RECV #0020 0.243s completed=16/100 active=6 OK
+RECV #0012 1.722s completed=17/100 active=5 OK
+RECV #0021 0.260s completed=18/100 active=4 OK
+RECV #0008 2.387s completed=19/100 active=3 OK
+SEND #0023 active=4 lag=0.6ms
+SEND #0024 active=5 lag=0.3ms
+RECV #0022 0.557s completed=20/100 active=4 OK
+SEND #0025 active=5 lag=0.5ms
+RECV #0023 0.174s completed=21/100 active=4 OK
+SEND #0026 active=5 lag=0.2ms
+SEND #0027 active=6 lag=1.1ms
+SEND #0028 active=7 lag=0.3ms
+SEND #0029 active=8 lag=0.8ms
+SEND #0030 active=9 lag=0.5ms
+SEND #0031 active=10 lag=0.2ms
+SEND #0032 active=11 lag=1.1ms
+SEND #0033 active=12 lag=0.7ms
+RECV #0026 0.400s completed=22/100 active=11 OK
+SEND #0034 active=12 lag=0.7ms
+SEND #0035 active=13 lag=0.7ms
+SEND #0036 active=14 lag=1.1ms
+RECV #0030 0.318s completed=23/100 active=13 OK
+RECV #0027 0.627s completed=24/100 active=12 OK
+SEND #0037 active=13 lag=1.1ms
+RECV #0019 1.757s completed=25/100 active=12 OK
+SEND #0038 active=13 lag=0.5ms
+SEND #0039 active=14 lag=1.0ms
+RECV #0032 0.837s completed=26/100 active=13 OK
+SEND #0040 active=14 lag=0.7ms
+RECV #0031 0.969s completed=27/100 active=13 OK
+RECV #0009 4.062s completed=28/100 active=12 OK
+RECV #0033 1.083s completed=29/100 active=11 OK
+RECV #0037 0.737s completed=30/100 active=10 OK
+RECV #0028 1.604s completed=31/100 active=9 OK
+RECV #0034 1.263s completed=32/100 active=8 OK
+RECV #0036 1.357s completed=33/100 active=7 OK
+RECV #0038 0.956s completed=34/100 active=6 OK
+RECV #0029 1.812s completed=35/100 active=5 OK
+RECV #0024 2.089s completed=36/100 active=4 OK
+SEND #0041 active=5 lag=1.5ms
+RECV #0039 1.126s completed=37/100 active=4 OK
+RECV #0025 2.410s completed=38/100 active=3 OK
+SEND #0042 active=4 lag=1.4ms
+SEND #0043 active=5 lag=0.8ms
+RECV #0041 0.359s completed=39/100 active=4 OK
+SEND #0044 active=5 lag=1.0ms
+SEND #0045 active=6 lag=0.9ms
+RECV #0045 0.181s completed=40/100 active=5 OK
+SEND #0046 active=6 lag=0.4ms
+RECV #0035 2.328s completed=41/100 active=5 OK
+RECV #0042 0.605s completed=42/100 active=4 OK
+RECV #0044 0.600s completed=43/100 active=3 OK
+RECV #0040 1.956s completed=44/100 active=2 OK
+RECV #0043 0.818s completed=45/100 active=1 OK
+RECV #0046 0.434s completed=46/100 active=0 OK
+SEND #0047 active=1 lag=0.4ms
+SEND #0048 active=2 lag=0.9ms
+SEND #0049 active=3 lag=0.5ms
+SEND #0050 active=4 lag=0.4ms
+RECV #0049 0.207s completed=47/100 active=3 OK
+SEND #0051 active=4 lag=0.5ms
+SEND #0052 active=5 lag=0.8ms
+SEND #0053 active=6 lag=1.0ms
+RECV #0050 0.583s completed=48/100 active=5 OK
+SEND #0054 active=6 lag=1.1ms
+RECV #0048 1.473s completed=49/100 active=5 OK
+SEND #0055 active=6 lag=0.6ms
+RECV #0052 0.791s completed=50/100 active=5 OK
+SEND #0056 active=6 lag=1.7ms
+SEND #0057 active=7 lag=0.6ms
+RECV #0051 1.102s completed=51/100 active=6 OK
+SEND #0058 active=7 lag=0.6ms
+RECV #0055 0.397s completed=52/100 active=6 OK
+RECV #0058 0.228s completed=53/100 active=5 OK
+SEND #0059 active=6 lag=0.2ms
+RECV #0047 2.052s completed=54/100 active=5 OK
+RECV #0054 0.660s completed=55/100 active=4 OK
+SEND #0060 active=5 lag=0.6ms
+SEND #0061 active=6 lag=0.7ms
+SEND #0062 active=7 lag=0.9ms
+RECV #0060 0.323s completed=56/100 active=6 OK
+RECV #0062 0.181s completed=57/100 active=5 OK
+SEND #0063 active=6 lag=0.8ms
+RECV #0059 0.606s completed=58/100 active=5 OK
+RECV #0057 0.954s completed=59/100 active=4 OK
+SEND #0064 active=5 lag=0.5ms
+SEND #0065 active=6 lag=1.1ms
+SEND #0066 active=7 lag=0.6ms
+SEND #0067 active=8 lag=2.1ms
+RECV #0063 0.666s completed=60/100 active=7 OK
+SEND #0068 active=8 lag=0.3ms
+RECV #0061 1.090s completed=61/100 active=7 OK
+SEND #0069 active=8 lag=0.7ms
+RECV #0067 0.400s completed=62/100 active=7 OK
+SEND #0070 active=8 lag=0.5ms
+SEND #0071 active=9 lag=0.2ms
+SEND #0072 active=10 lag=1.0ms
+SEND #0073 active=11 lag=0.4ms
+RECV #0056 1.877s completed=63/100 active=10 OK
+SEND #0074 active=11 lag=1.2ms
+RECV #0070 0.480s completed=64/100 active=10 OK
+RECV #0053 2.915s completed=65/100 active=9 OK
+RECV #0073 0.537s completed=66/100 active=8 OK
+RECV #0068 1.011s completed=67/100 active=7 OK
+RECV #0064 1.643s completed=68/100 active=6 OK
+RECV #0071 0.850s completed=69/100 active=5 OK
+SEND #0075 active=6 lag=0.3ms
+RECV #0069 1.220s completed=70/100 active=5 OK
+SEND #0076 active=6 lag=0.4ms
+SEND #0077 active=7 lag=1.0ms
+SEND #0078 active=8 lag=0.6ms
+SEND #0079 active=9 lag=1.1ms
+RECV #0066 1.992s completed=71/100 active=8 OK
+RECV #0075 0.570s completed=72/100 active=7 OK
+RECV #0077 0.430s completed=73/100 active=6 OK
+RECV #0078 0.479s completed=74/100 active=5 OK
+RECV #0072 1.809s completed=75/100 active=4 OK
+SEND #0080 active=5 lag=0.7ms
+SEND #0081 active=6 lag=1.3ms
+RECV #0080 0.352s completed=76/100 active=5 OK
+SEND #0082 active=6 lag=1.0ms
+RECV #0081 0.288s completed=77/100 active=5 OK
+RECV #0074 2.302s completed=78/100 active=4 OK
+SEND #0083 active=5 lag=0.8ms
+SEND #0084 active=6 lag=0.5ms
+SEND #0085 active=7 lag=1.0ms
+RECV #0084 0.122s completed=79/100 active=6 OK
+RECV #0079 1.662s completed=80/100 active=5 OK
+RECV #0083 0.351s completed=81/100 active=4 OK
+RECV #0085 0.259s completed=82/100 active=3 OK
+SEND #0086 active=4 lag=0.5ms
+SEND #0087 active=5 lag=1.8ms
+SEND #0088 active=6 lag=1.0ms
+SEND #0089 active=7 lag=0.4ms
+SEND #0090 active=8 lag=0.9ms
+RECV #0087 0.461s completed=83/100 active=7 OK
+RECV #0089 0.437s completed=84/100 active=6 OK
+RECV #0088 0.686s completed=85/100 active=5 OK
+SEND #0091 active=6 lag=1.0ms
+SEND #0092 active=7 lag=0.3ms
+RECV #0076 3.473s completed=86/100 active=6 OK
+SEND #0093 active=7 lag=1.0ms
+RECV #0090 1.001s completed=87/100 active=6 OK
+SEND #0094 active=7 lag=0.9ms
+RECV #0094 0.087s completed=88/100 active=6 OK
+RECV #0082 2.857s completed=89/100 active=5 OK
+SEND #0095 active=6 lag=0.9ms
+RECV #0091 0.921s completed=90/100 active=5 OK
+RECV #0093 0.827s completed=91/100 active=4 OK
+RECV #0092 1.122s completed=92/100 active=3 OK
+SEND #0096 active=4 lag=0.1ms
+SEND #0097 active=5 lag=1.0ms
+SEND #0098 active=6 lag=0.9ms
+RECV #0086 2.588s completed=93/100 active=5 OK
+SEND #0099 active=6 lag=0.1ms
+SEND #0100 active=7 lag=1.0ms
+RECV #0098 0.297s completed=94/100 active=6 OK
+RECV #0097 0.432s completed=95/100 active=5 OK
+RECV #0065 6.913s completed=96/100 active=4 OK
+RECV #0100 0.358s completed=97/100 active=3 OK
+RECV #0099 0.589s completed=98/100 active=2 OK
+RECV #0096 3.194s completed=99/100 active=1 OK
+RECV #0095 5.004s completed=100/100 active=0 OK
+DONE completed=100 failed=0 max_active=14 mean_s=1.092s p50_s=0.750s p95_s=2.929s max_s=6.913s
+Summary: /workspace/repos/paddle_ocr_vl_npu/tmp/19_table_ocr_serving/live_memory_20260913/product_client100/summary.json

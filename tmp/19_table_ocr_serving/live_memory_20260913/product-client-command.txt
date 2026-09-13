@@ -1,0 +1,7 @@
+Client source: cbb31f1485f801f2b8adca7dfec15337b35698d1
+Running server source: 593923139db191189335179d576c7e12c1782fb6 (unchanged during this client check)
+Host: liteserver-c001-4; Ascend 910B2, physical NPU6
+Container: research_vllm_ascend_021_external_workspace
+Working directory: /workspace/repos/paddle_ocr_vl_npu
+
+/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python -u /workspace/repos/table_memory_fix_db0a3f92/19_table_ocr_serving/benchmark_tables.py --omnidocbench /workspace/datasets/OmniDocBench --api-url http://127.0.0.1:8767/v1/ocr --requests 100 --qps 6 --output-dir /workspace/repos/paddle_ocr_vl_npu/tmp/19_table_ocr_serving/live_memory_20260913/product_client100

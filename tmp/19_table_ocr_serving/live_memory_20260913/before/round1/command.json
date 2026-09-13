@@ -1,0 +1,22 @@
+[
+  "/workspace/venvs/vllm_paddle_ocr_pipeline_py312/bin/python",
+  "-u",
+  "/workspace/repos/paddle_ocr_vl_npu/09_persistent_page_engine/scripts/table_request_load_simulator.py",
+  "--api-url",
+  "http://127.0.0.1:8767/v1/ocr",
+  "--cohort",
+  "all",
+  "--qps",
+  "6",
+  "--max-requests",
+  "1000",
+  "--seed",
+  "1",
+  "--shuffle-all",
+  "--source-jsonl",
+  "/workspace/repos/table_step1_be691de1_20260910/tmp/09_persistent_page_engine/table_b1_latency_full_04fbc8e/client/tables.jsonl",
+  "--schedule-jsonl",
+  "/workspace/repos/paddle_ocr_vl_npu/tmp/19_table_ocr_serving/integrated_runtime_20260913/poisson1000/cached/b8/qps6/measured/schedule.jsonl",
+  "--output-dir",
+  "/workspace/repos/paddle_ocr_vl_npu/tmp/19_table_ocr_serving/live_memory_20260913/before/round1/results"
+]
