@@ -99,7 +99,7 @@ def main():
         measured = root / 'cached' / relative
         assert original.read_bytes() == measured.read_bytes(), 'Saved schedule changed'
         rows = [json.loads(line) for line in measured.read_text().splitlines()]
-        order_hash = hashlib.sha256('\n'.join(row['request_id'] for row in rows).encode()).hexdigest()
+        order_hash = hashlib.sha256(json.dumps([row['request_id'] for row in rows]).encode()).hexdigest()
         assert order_hash == '97a1f87dd18ace0833f6d66796ce6868845b04880292d0f632f3575c3693caa9'
         (root / 'status.json').write_text(json.dumps({'status': 'complete', 'schedule_byte_identical': True, 'ordered_ids_sha256': order_hash}) + '\n')
     except BaseException as exc:
