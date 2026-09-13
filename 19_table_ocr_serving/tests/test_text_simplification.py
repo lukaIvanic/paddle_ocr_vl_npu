@@ -334,7 +334,7 @@ class TextSimplificationTests(unittest.TestCase):
         expected_args = {'host', 'port', 'request_timeout_s', 'shutdown_timeout_s',
             'max_image_bytes', 'max_in_flight_requests', 'run_eagerly',
             'full_decode_lm_head',
-            'model_path', 'device', 'decode_batch_size', 'metrics_level',
+            'model_path', 'device', 'decode_batch_size', 'metrics_level', 'heartbeat_interval_s',
             'graph_cache_directory', 'log_folder'}
         self.assertEqual(set(vars(args)), expected_args)
         self.assertEqual(serve.PROMPTS, {'table': 'Table Recognition:', 'text': 'OCR:',
