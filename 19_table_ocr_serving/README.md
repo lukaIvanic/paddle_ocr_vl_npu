@@ -9,6 +9,30 @@ Renaming the model source files changes the graph-cache fingerprint. Existing
 cache files are not deleted, but the next compiled startup selects new paths.
 Historical benchmark commands remain tied to their recorded commits and filenames.
 
+## Current definition-order pass
+
+This pass introduces each operation before its supporting details. Short
+constructors establish the objects used by execution methods; long model and
+compilation setup remains a separate, labeled section.
+
+- `p01`: preserve the service structure; put HTTP run/close before signal handling.
+- `p02`: follow CPU preparation through prefill and result creation, then explain
+  decode coordination and its run summary. The scheduler's main loop precedes
+  private helpers; cache-slot admission, stepping and release precede timing helpers.
+- `p03` and `p04`: reviewed and unchanged.
+- `p05`: embeddings, encoder computation and projector precede execution/bucketing,
+  checkpoint parameter containers and weight preparation.
+- `p06`: retain shared model/cache, prefill and decode computation; place runtime
+  execution before one-time decode weight preparation. Execution methods precede
+  routing helpers, and long compilation constructors are clearly marked.
+
+Nested scheduler helpers stay local because they share run state. Comments
+introduce their purpose and identify where the repeated execution loop begins.
+No diagnostics, metrics, configuration choices or computation steps are removed.
+The source regression compares all six modules to `ab5bf21a`, permitting only
+module/class definition order and comments to change. This is local evidence,
+not NPU compilation/performance validation; model-source moves change cache hashes.
+
 ## Reading the HTTP service
 
 `ServeConfig` and its manually reviewed comments are preserved exactly.

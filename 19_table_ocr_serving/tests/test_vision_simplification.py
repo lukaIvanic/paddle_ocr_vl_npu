@@ -18,7 +18,7 @@ import unittest
 from unittest.mock import patch
 
 import torch
-from fixed_architecture_reference import PaddleOCRVisionConfig, vision_model, FreezeArchitecture
+from fixed_architecture_reference import PaddleOCRVisionConfig, vision_model, FreezeArchitecture, definition_order_signature
 
 from test_text_simplification import ChooseSimulatedNPU, signature, without_methods
 
@@ -224,7 +224,7 @@ class VisionSimplificationTests(unittest.TestCase):
         self.assertEqual(old.keys() - REMOVED_DEFINITIONS, new.keys())
         for name in old.keys() - CHANGED_DEFINITIONS - REMOVED_DEFINITIONS:
             if name == 'PaddleOCRProjector':
-                # forward now introduces the operation before its constructor.
+                # Reading-order passes may move methods, without changing them.
                 def method_sources(src):
                     return {m.name: ast.get_source_segment(src,m)
                             for m in ast.parse(src).body[0].body
@@ -233,7 +233,8 @@ class VisionSimplificationTests(unittest.TestCase):
                 b = ast.unparse(ast.parse(new[name]))
                 self.assertEqual(method_sources(a),method_sources(b))
                 continue
-            self.assertEqual(ast.dump(FreezeArchitecture('vision').visit(ast.parse(old[name]))), ast.dump(ast.parse(new[name])), name)
+            expected = ast.unparse(ast.fix_missing_locations(FreezeArchitecture('vision').visit(ast.parse(old[name]))))
+            self.assertEqual(definition_order_signature(expected), definition_order_signature(new[name]), name)
         # The selected padded-head computation and full layer loop stay literal.
         def methods(source):
             return {n.name: ast.get_source_segment(source, n) for n in ast.parse(source).body[0].body

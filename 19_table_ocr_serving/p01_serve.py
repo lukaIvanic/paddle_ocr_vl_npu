@@ -141,6 +141,10 @@ class HttpServer(ThreadingHTTPServer):
         )
         self.serve_forever(poll_interval=0.25)
 
+    def close(self) -> None:
+        """Finish accepted HTTP requests and close sockets; do not stop inference."""
+        self.server_close()
+
     def _stop_accepting_connections(self, signum: int, frame: Any) -> None:
         del signum, frame
         if not self.stop_requested.is_set():
@@ -148,10 +152,6 @@ class HttpServer(ThreadingHTTPServer):
             # Python requires shutdown() to run outside serve_forever()'s thread,
             # otherwise that thread would wait for itself and deadlock.
             threading.Thread(target=self.shutdown, daemon=True).start()
-
-    def close(self) -> None:
-        """Finish accepted HTTP requests and close sockets; do not stop inference."""
-        self.server_close()
 
 
 class HttpRequestHandler(BaseHTTPRequestHandler):

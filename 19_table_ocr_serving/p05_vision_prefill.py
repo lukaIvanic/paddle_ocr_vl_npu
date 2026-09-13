@@ -44,7 +44,520 @@ VISION_PROMPT_FA_FULL_ATTENTION_TOKENS = (1 << 31) - 1
 VISION_FRACTAL_NZ_FORMAT = 29
 
 
-# Shared vision model
+# Per-image computation comes first: embed patches, run the vision encoder,
+# then project its output into text-model embeddings. The serving runtime
+# calls these parts in that order. Execution/bucketing follows; checkpoint
+# parameter containers and one-time weight preparation are near the bottom.
+
+
+# Patch and position embeddings
+
+
+class PaddleOCRVisionEmbeddings(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.embed_dim = VISION_HIDDEN_SIZE
+        self.image_size = VISION_IMAGE_SIZE
+        self.patch_size = VISION_PATCH_SIZE
+        self.patch_embedding = nn.Conv2d(
+            in_channels=VISION_CHANNELS,
+            out_channels=self.embed_dim,
+            kernel_size=self.patch_size,
+            stride=self.patch_size,
+            padding=0,
+        )
+        self.num_patches = (self.image_size // self.patch_size) ** 2
+        self.position_embedding = nn.Embedding(self.num_patches, self.embed_dim)
+
+    def forward(
+        self,
+        pixel_values: torch.Tensor,
+        image_grid_thw: torch.Tensor,
+    ) -> torch.Tensor:
+        batch_size, sequence_len, channel, height, width = pixel_values.shape
+        pixel_values = pixel_values.reshape(
+            batch_size * sequence_len, channel, height, width
+        )
+        embeddings = self.project_patches(pixel_values)
+        embeddings = embeddings.reshape(batch_size, sequence_len, -1).squeeze(0)
+        start = 0
+        tmp_embeddings = []
+        for image_grid in image_grid_thw:
+            t, h, w = [int(v.item()) for v in image_grid]
+            end = start + t * h * w
+            image_embeddings = embeddings[start:end, :]
+            pos = (
+                self.interpolate_pos_encoding(image_embeddings, h, w)
+                .squeeze(0)
+                .repeat(t, 1)
+            )
+            tmp_embeddings.append(image_embeddings + pos)
+            start = end
+        return torch.cat(tmp_embeddings, dim=0)
+
+    def project_patches(self, pixel_values: torch.Tensor) -> torch.Tensor:
+        pixels = pixel_values.to(dtype=self.patch_embedding.weight.dtype)
+        conv = self.patch_embedding
+        # Preserve channel/row/column order, original parameter storage and bias.
+        # One patch covers the entire convolution kernel, so there is exactly
+        # one spatial output. No pixels or vision tokens are added or removed.
+        return F.linear(pixels.flatten(1), conv.weight.flatten(1), conv.bias)
+
+    def interpolate_pos_encoding(
+        self,
+        embeddings: torch.Tensor,
+        height: int,
+        width: int,
+    ) -> torch.Tensor:
+        num_positions = self.position_embedding.weight.shape[0]
+        dim = embeddings.shape[-1]
+        sqrt_num_positions = int(num_positions**0.5)
+        patch_pos_embed = self.position_embedding.weight.unsqueeze(0)
+        patch_pos_embed = patch_pos_embed.reshape(
+            1, sqrt_num_positions, sqrt_num_positions, dim
+        ).permute(0, 3, 1, 2)
+        patch_pos_embed = F.interpolate(
+            patch_pos_embed,
+            size=(height, width),
+            mode="bilinear",
+            align_corners=False,
+        )
+        return patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
+
+
+# Vision encoder computation
+
+
+class VisionPrefillStage(torch.nn.Module):
+    """Vision encoder plus post LayerNorm for eager or compiled use."""
+
+    def __init__(
+        self,
+        model: LocalPaddleOCRVLForConditionalGeneration,
+    ):
+        super().__init__()
+        self.transformer = model.visual.vision_model
+
+    def forward(
+        self,
+        prefix_hidden_states: torch.Tensor,
+        rope_cos: torch.Tensor,
+        rope_sin: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        hidden_states = prefix_hidden_states
+        rope_cos = pad_vision_rope_halves(rope_cos, 1.0)
+        rope_sin = pad_vision_rope_halves(rope_sin, 0.0)
+        for encoder_layer in self.transformer.encoder.layers:
+            attention_input = encoder_layer.layer_norm1(hidden_states)
+            hidden_states = hidden_states + self._attention(
+                encoder_layer.self_attn,
+                attention_input,
+                rope_cos,
+                rope_sin,
+                attention_mask,
+            )
+            mlp_input = encoder_layer.layer_norm2(hidden_states)
+            hidden_states = hidden_states + encoder_layer.mlp.fc2(
+                F.gelu(
+                    encoder_layer.mlp.fc1(mlp_input),
+                    approximate="tanh",
+                )
+            )
+        return self.transformer.post_layernorm(hidden_states)
+
+    def _attention(
+        self, attention, hidden_states, rope_cos, rope_sin, attention_mask,
+    ):
+        batch, seq, _ = hidden_states.shape
+        heads = int(attention.num_heads)
+        qk = torch.cat((attention.q_proj(hidden_states),
+                        attention.k_proj(hidden_states)), dim=-1).view(batch, seq, 2 * heads, 80)
+        value = attention.v_proj(hidden_states).view(batch, seq, heads, 80)
+        qk_fp32 = qk.float()
+        rotated = torch.cat((-qk_fp32[..., 40:], qk_fp32[..., :40]), dim=-1)
+        qk = (qk_fp32 * rope_cos.unsqueeze(-2).float()
+              + rotated * rope_sin.unsqueeze(-2).float()).to(qk.dtype)
+        query, key = (qk.view(batch, seq, 2, heads, 80)
+                      .permute(2, 0, 3, 1, 4).contiguous().unbind(0))
+        output = vision_prompt_flash_attention_bnsd(
+            query, key, value.transpose(1, 2).contiguous(),
+            num_heads=heads, scale=float(attention.scaling), atten_mask=attention_mask,
+        )
+        return attention.out_proj(output.transpose(1, 2).contiguous().view(batch, seq, heads * 80))
+
+
+def vision_prompt_flash_attention_bnsd(
+    q_bnsd: torch.Tensor,
+    k_bnsd: torch.Tensor,
+    v_bnsd: torch.Tensor,
+    *,
+    num_heads: int,
+    scale: float,
+    atten_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Full bidirectional vision attention with the prepared padding mask."""
+
+    attention_mask = atten_mask.to(torch.bool).contiguous()
+    return torch_npu.npu_prompt_flash_attention(
+        q_bnsd.contiguous(),
+        k_bnsd.contiguous(),
+        v_bnsd.contiguous(),
+        num_heads=int(num_heads),
+        input_layout="BNSD",
+        scale_value=float(scale),
+        # Preserve the window arguments of the validated serving call.
+        pre_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
+        next_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
+        sparse_mode=1,
+        atten_mask=attention_mask,
+    )
+
+
+def pad_vision_rope_halves(value: torch.Tensor, fill: float) -> torch.Tensor:
+    # Neutral coordinates in each half, not a new D80 frequency table.
+    first, second = value.chunk(2, dim=-1)
+    return torch.cat((F.pad(first, (0, 4), value=fill),
+                      F.pad(second, (0, 4), value=fill)), dim=-1)
+
+
+# Projection into text-model embeddings
+
+
+class PaddleOCRProjector(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        merge = VISION_MERGE_SIZE
+        hidden_size = VISION_HIDDEN_SIZE * merge * merge
+        self.merge_kernel_size = (merge, merge)
+        self.pre_norm = nn.LayerNorm(VISION_HIDDEN_SIZE, eps=1e-5)
+        self.linear_1 = nn.Linear(hidden_size, hidden_size, bias=True)
+        self.linear_2 = nn.Linear(
+            hidden_size, TEXT_HIDDEN_SIZE, bias=True
+        )
+
+    def forward(
+        self,
+        image_features: torch.Tensor,
+        image_grid_thw: torch.Tensor,
+    ) -> torch.Tensor:
+        chunks = image_features.split(image_grid_thw.prod(dim=1).tolist(), dim=0)
+        m1, m2 = self.merge_kernel_size
+        processed = []
+        for image_feature, image_grid in zip(chunks, image_grid_thw):
+            image_feature = self.pre_norm(image_feature)
+            t, h, w = [int(v.item()) for v in image_grid]
+            d = image_feature.shape[-1]
+            h_block = h // m1
+            w_block = w // m2
+            image_feature = image_feature.reshape(
+                t, h_block, m1, w_block, m2, d
+            )
+            image_feature = image_feature.transpose(2, 3)
+            image_feature = image_feature.reshape(
+                t * h_block * w_block, m1 * m2 * d
+            )
+            hidden_states = self.linear_1(image_feature)
+            hidden_states = F.gelu(hidden_states)
+            hidden_states = self.linear_2(hidden_states)
+            processed.append(hidden_states)
+        return torch.cat(processed, dim=0)
+
+
+# Request execution, input preparation, and bucket setup
+
+
+class VisionPrefillRuntime:
+    """Run one vision-prefill stage eagerly or through static bucket graphs."""
+
+    def run_prepared(self, prepared: PreparedVisionPrefill) -> torch.Tensor:
+        run = (
+            self.compiled[prepared.physical_seq_len]
+            if prepared.execution == "compiled"
+            else self.eager_stage
+        )
+        output = run(
+            prepared.prefix_hidden_states,
+            prepared.rope_cos,
+            prepared.rope_sin,
+            prepared.attention_mask,
+        )
+        return output[0, : prepared.real_seq_len].contiguous()
+
+    def route(self, real_seq_len: int) -> dict[str, Any]:
+        real_seq_len = int(real_seq_len)
+        bucket = select_vision_bucket(real_seq_len)
+        if bucket is None:
+            physical_seq_len = align_vision_seq_len(real_seq_len)
+            return {
+                "execution": "eager_overflow",
+                "real_vision_tokens": real_seq_len,
+                "physical_vision_tokens": physical_seq_len,
+                "padding_vision_tokens": physical_seq_len - real_seq_len,
+                "useful_token_fraction": (
+                    float(real_seq_len) / float(physical_seq_len)
+                ),
+                "bucket": None,
+            }
+        return {
+            "execution": (
+                "eager_padded" if self.eager else "compiled"
+            ),
+            "real_vision_tokens": real_seq_len,
+            "physical_vision_tokens": bucket,
+            "padding_vision_tokens": bucket - real_seq_len,
+            "useful_token_fraction": float(real_seq_len) / float(bucket),
+            "bucket": bucket,
+        }
+
+    def prepare(
+        self,
+        prefix_hidden_states: torch.Tensor,
+        image_grid_thw: torch.Tensor,
+        *,
+        route: dict[str, Any],
+    ) -> PreparedVisionPrefill:
+        return prepare_vision_prefill(
+            self.model,
+            prefix_hidden_states,
+            image_grid_thw,
+            physical_seq_len=int(route["physical_vision_tokens"]),
+            execution=str(route["execution"]),
+        )
+
+    # Startup only: construct and warm each bucket before serving requests.
+    # The request methods above reuse these stages and compiled entrypoints.
+
+    def __init__(
+        self,
+        model: LocalPaddleOCRVLForConditionalGeneration,
+        *,
+        graph_directories: dict[int, Path],
+        device: torch.device,
+        eager: bool = False,
+    ):
+        self.model = model
+        self.eager = eager
+        self.buckets = VISION_BUCKETS
+        self.device = device
+        self.dtype = torch.float16
+        hidden_size = int(VISION_HIDDEN_SIZE)
+        head_dim = hidden_size // int(VISION_HEADS)
+        self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
+        self.entrypoints: dict[int, Callable[..., torch.Tensor]] = {}
+        self.eager_stage = VisionPrefillStage(model).eval()
+        self.modules: dict[int, VisionPrefillStage] = {}
+        self.metadata = {
+            "backend": "raw_eager" if eager else "torchair",
+            "enabled": not eager,
+            "boundary": "vision_encoder_layers_plus_post_layernorm",
+            "buckets": list(self.buckets),
+            "sequence_alignment": VISION_SEQUENCE_ALIGNMENT,
+            "padding": "bucket",
+            "overflow": "eager_same_stage_unpadded",
+        }
+        if eager:
+            return
+
+        # Eager mode does not import the compiler.
+        import torchair.inference
+        from torchair import CompilerConfig
+        per_bucket: dict[str, Any] = {}
+        wrapper_total_s = 0.0
+        first_call_total_s = 0.0
+        for bucket in self.buckets:
+            module = VisionPrefillStage(model).eval()
+            cache_dir = graph_directories[bucket]
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            config = CompilerConfig()
+            entrypoint = unique_bucket_forward(module, bucket)
+            torch_npu.npu.synchronize(self.device)
+            started = time.perf_counter()
+            compiled = torchair.inference.cache_compile(
+                entrypoint,
+                config=config,
+                dynamic=False,
+                cache_dir=str(cache_dir),
+                ge_cache=True,
+            )
+            torch_npu.npu.synchronize(self.device)
+            wrapper_s = time.perf_counter() - started
+
+            warm_prefix = torch.zeros(
+                (1, bucket, hidden_size),
+                device=self.device,
+                dtype=self.dtype,
+            )
+            warm_cos = torch.ones(
+                (1, bucket, head_dim),
+                device=self.device,
+                # The stock rotary table is derived from an fp32 inv_freq, so
+                # real calls supply fp32 cos/sin even when hidden states are fp16.
+                dtype=torch.float32,
+            )
+            warm_sin = torch.zeros_like(warm_cos)
+            warm_mask = torch.zeros(
+                (1, 1, bucket, bucket),
+                device=self.device,
+                dtype=torch.bool,
+            )
+            torch_npu.npu.synchronize(self.device)
+            started = time.perf_counter()
+            warm_output = compiled(warm_prefix, warm_cos, warm_sin, warm_mask)
+            torch_npu.npu.synchronize(self.device)
+            first_call_s = time.perf_counter() - started
+            del warm_output, warm_prefix, warm_cos, warm_sin, warm_mask
+
+            self.modules[bucket] = module
+            self.entrypoints[bucket] = entrypoint
+            self.compiled[bucket] = compiled
+            wrapper_total_s += wrapper_s
+            first_call_total_s += first_call_s
+            per_bucket[str(bucket)] = {
+                "compile_wrapper_s": float(wrapper_s),
+                "compile_first_call_s": float(first_call_s),
+                "torchair_cache_dir": str(cache_dir),
+            }
+        self.metadata.update(
+            {
+                "compile_api": "torchair.inference.cache_compile",
+                "dynamic": False,
+                "fullgraph": True,
+                "torchair_ge_cache": True,
+                "compile_wrapper_total_s": float(wrapper_total_s),
+                "compile_first_call_total_s": float(first_call_total_s),
+                "per_bucket": per_bucket,
+                "cache_key_fields": {
+                    "dtype": str(self.dtype),
+                    "torch": str(torch.__version__),
+                    "attention": "prompt_flash_attention",
+                    "prompt_flash_attention_layout": 'bnsd',
+                    "prompt_flash_attention_mask_sparse_mode": 1,
+                    "softmax_dtype": 'fp32',
+                    "execution_mode": "inference",
+                },
+            }
+        )
+
+
+@dataclass(frozen=True)
+class PreparedVisionPrefill:
+    prefix_hidden_states: torch.Tensor
+    rope_cos: torch.Tensor
+    rope_sin: torch.Tensor
+    attention_mask: torch.Tensor
+    real_seq_len: int
+    physical_seq_len: int
+    execution: str
+
+
+def prepare_vision_prefill(
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    prefix_hidden_states: torch.Tensor,
+    image_grid_thw: torch.Tensor,
+    *,
+    physical_seq_len: int,
+    execution: str,
+) -> PreparedVisionPrefill:
+    if prefix_hidden_states.ndim != 2:
+        raise ValueError(
+            f"vision prefix must have shape [S, H], got {tuple(prefix_hidden_states.shape)}"
+        )
+    real_seq_len = int(prefix_hidden_states.shape[0])
+    physical_seq_len = int(physical_seq_len)
+    if real_seq_len > physical_seq_len:
+        raise ValueError(
+            f"real vision sequence {real_seq_len} exceeds bucket {physical_seq_len}"
+        )
+    rope_cos, rope_sin = build_vision_rope(
+        model,
+        image_grid_thw,
+        real_seq_len=real_seq_len,
+        device=prefix_hidden_states.device,
+    )
+    pad_tokens = physical_seq_len - real_seq_len
+    prefix = F.pad(prefix_hidden_states, (0, 0, 0, pad_tokens)).unsqueeze(0).contiguous()
+    if pad_tokens:
+        rope_cos = torch.cat(
+            [
+                rope_cos,
+                torch.ones(
+                    (pad_tokens, rope_cos.shape[-1]),
+                    device=rope_cos.device,
+                    dtype=rope_cos.dtype,
+                ),
+            ],
+            dim=0,
+        )
+        rope_sin = torch.cat(
+            [
+                rope_sin,
+                torch.zeros(
+                    (pad_tokens, rope_sin.shape[-1]),
+                    device=rope_sin.device,
+                    dtype=rope_sin.dtype,
+                ),
+            ],
+            dim=0,
+        )
+    indices = torch.arange(physical_seq_len, device=prefix_hidden_states.device)
+    is_real = indices < real_seq_len
+    attention_mask = (is_real[:, None] != is_real[None, :]).view(
+        1,
+        1,
+        physical_seq_len,
+        physical_seq_len,
+    )
+    return PreparedVisionPrefill(
+        prefix_hidden_states=prefix,
+        rope_cos=rope_cos.unsqueeze(0).contiguous(),
+        rope_sin=rope_sin.unsqueeze(0).contiguous(),
+        attention_mask=attention_mask.contiguous(),
+        real_seq_len=real_seq_len,
+        physical_seq_len=physical_seq_len,
+        execution=str(execution),
+    )
+
+
+def select_vision_bucket(real_seq_len: int) -> int | None:
+    for bucket in VISION_BUCKETS:
+        if real_seq_len <= bucket:
+            return bucket
+    return None
+
+
+def align_vision_seq_len(seq_len: int) -> int:
+    """Round a request's physical vision length to the fixed alignment."""
+    return ((seq_len + 127) // 128) * 128
+
+
+def build_vision_rope(
+    model: LocalPaddleOCRVLForConditionalGeneration,
+    image_grid_thw: torch.Tensor,
+    *,
+    real_seq_len: int,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    grid = image_grid_thw.detach().cpu().reshape(-1, 3)
+    if int(grid.shape[0]) != 1:
+        raise ValueError(f"compiled B=1 vision expects one grid row, got {tuple(grid.shape)}")
+    t, h, w = (int(value) for value in grid[0].tolist())
+    if t * h * w != int(real_seq_len):
+        raise ValueError(
+            f"image grid has {t * h * w} tokens but embeddings have {int(real_seq_len)} rows"
+        )
+    encoder = model.visual.vision_model.encoder
+    image_pids = torch.arange(int(real_seq_len), device=device, dtype=torch.int64) % int(h * w)
+    pids = torch.stack((image_pids // int(w), image_pids % int(w)), dim=-1)
+    rotary_max = encoder.rotary_pos_emb(max(h, w))
+    rotary_embeddings = rotary_max[pids].flatten(1).repeat(1, 2)
+    return rotary_embeddings.cos().contiguous(), rotary_embeddings.sin().contiguous()
+
+
+# Checkpoint structure: these containers own the layers used by the
+# computations above. Their nested names match the checkpoint weight names.
 
 
 class PaddleOCRVisionModel(nn.Module):
@@ -116,101 +629,13 @@ class PaddleOCRVisionMLP(nn.Module):
         return self.fc2(F.gelu(self.fc1(hidden_states), approximate="tanh"))
 
 
-# Patch and position embeddings
-
-
-class PaddleOCRVisionEmbeddings(nn.Module):
-
-    def forward(
-        self,
-        pixel_values: torch.Tensor,
-        image_grid_thw: torch.Tensor,
-    ) -> torch.Tensor:
-        batch_size, sequence_len, channel, height, width = pixel_values.shape
-        pixel_values = pixel_values.reshape(
-            batch_size * sequence_len, channel, height, width
-        )
-        embeddings = self.project_patches(pixel_values)
-        embeddings = embeddings.reshape(batch_size, sequence_len, -1).squeeze(0)
-        start = 0
-        tmp_embeddings = []
-        for image_grid in image_grid_thw:
-            t, h, w = [int(v.item()) for v in image_grid]
-            end = start + t * h * w
-            image_embeddings = embeddings[start:end, :]
-            pos = (
-                self.interpolate_pos_encoding(image_embeddings, h, w)
-                .squeeze(0)
-                .repeat(t, 1)
-            )
-            tmp_embeddings.append(image_embeddings + pos)
-            start = end
-        return torch.cat(tmp_embeddings, dim=0)
-
-    def project_patches(self, pixel_values: torch.Tensor) -> torch.Tensor:
-        pixels = pixel_values.to(dtype=self.patch_embedding.weight.dtype)
-        conv = self.patch_embedding
-        # Preserve channel/row/column order, original parameter storage and bias.
-        # One patch covers the entire convolution kernel, so there is exactly
-        # one spatial output. No pixels or vision tokens are added or removed.
-        return F.linear(pixels.flatten(1), conv.weight.flatten(1), conv.bias)
-
-    def interpolate_pos_encoding(
-        self,
-        embeddings: torch.Tensor,
-        height: int,
-        width: int,
-    ) -> torch.Tensor:
-        num_positions = self.position_embedding.weight.shape[0]
-        dim = embeddings.shape[-1]
-        sqrt_num_positions = int(num_positions**0.5)
-        patch_pos_embed = self.position_embedding.weight.unsqueeze(0)
-        patch_pos_embed = patch_pos_embed.reshape(
-            1, sqrt_num_positions, sqrt_num_positions, dim
-        ).permute(0, 3, 1, 2)
-        patch_pos_embed = F.interpolate(
-            patch_pos_embed,
-            size=(height, width),
-            mode="bilinear",
-            align_corners=False,
-        )
-        return patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
-
-    def __init__(self):
-        super().__init__()
-        self.embed_dim = VISION_HIDDEN_SIZE
-        self.image_size = VISION_IMAGE_SIZE
-        self.patch_size = VISION_PATCH_SIZE
-        self.patch_embedding = nn.Conv2d(
-            in_channels=VISION_CHANNELS,
-            out_channels=self.embed_dim,
-            kernel_size=self.patch_size,
-            stride=self.patch_size,
-            padding=0,
-        )
-        self.num_patches = (self.image_size // self.patch_size) ** 2
-        self.position_embedding = nn.Embedding(self.num_patches, self.embed_dim)
-
-
 class PaddleOCRVisionRotaryEmbedding(nn.Module):
+
     def __init__(self, dim: int, theta: float = 10000.0):
         super().__init__()
         self.dim = int(dim)
         self.theta = float(theta)
         self.register_buffer("inv_freq", self._compute_inv_freq(), persistent=False)
-
-    def _compute_inv_freq(self) -> torch.Tensor:
-        return 1.0 / (
-            self.theta
-            ** (torch.arange(0, self.dim, 2, dtype=torch.float32) / self.dim)
-        )
-
-    def reset_inv_freq(self, device: torch.device | None = None) -> None:
-        self.register_buffer(
-            "inv_freq",
-            self._compute_inv_freq().to(device=device),
-            persistent=False,
-        )
 
     def forward(self, seqlen: int | torch.Tensor) -> torch.Tensor:
         seq = torch.arange(
@@ -220,144 +645,17 @@ class PaddleOCRVisionRotaryEmbedding(nn.Module):
         )
         return torch.outer(seq, self.inv_freq)
 
-
-# Vision encoder computation
-
-
-class VisionPrefillStage(torch.nn.Module):
-    """Vision encoder plus post LayerNorm for eager or compiled use."""
-
-    def forward(
-        self,
-        prefix_hidden_states: torch.Tensor,
-        rope_cos: torch.Tensor,
-        rope_sin: torch.Tensor,
-        attention_mask: torch.Tensor,
-    ) -> torch.Tensor:
-        hidden_states = prefix_hidden_states
-        rope_cos = pad_vision_rope_halves(rope_cos, 1.0)
-        rope_sin = pad_vision_rope_halves(rope_sin, 0.0)
-        for encoder_layer in self.transformer.encoder.layers:
-            attention_input = encoder_layer.layer_norm1(hidden_states)
-            hidden_states = hidden_states + self._attention(
-                encoder_layer.self_attn,
-                attention_input,
-                rope_cos,
-                rope_sin,
-                attention_mask,
-            )
-            mlp_input = encoder_layer.layer_norm2(hidden_states)
-            hidden_states = hidden_states + encoder_layer.mlp.fc2(
-                F.gelu(
-                    encoder_layer.mlp.fc1(mlp_input),
-                    approximate="tanh",
-                )
-            )
-        return self.transformer.post_layernorm(hidden_states)
-
-    def _attention(
-        self, attention, hidden_states, rope_cos, rope_sin, attention_mask,
-    ):
-        batch, seq, _ = hidden_states.shape
-        heads = int(attention.num_heads)
-        qk = torch.cat((attention.q_proj(hidden_states),
-                        attention.k_proj(hidden_states)), dim=-1).view(batch, seq, 2 * heads, 80)
-        value = attention.v_proj(hidden_states).view(batch, seq, heads, 80)
-        qk_fp32 = qk.float()
-        rotated = torch.cat((-qk_fp32[..., 40:], qk_fp32[..., :40]), dim=-1)
-        qk = (qk_fp32 * rope_cos.unsqueeze(-2).float()
-              + rotated * rope_sin.unsqueeze(-2).float()).to(qk.dtype)
-        query, key = (qk.view(batch, seq, 2, heads, 80)
-                      .permute(2, 0, 3, 1, 4).contiguous().unbind(0))
-        output = vision_prompt_flash_attention_bnsd(
-            query, key, value.transpose(1, 2).contiguous(),
-            num_heads=heads, scale=float(attention.scaling), atten_mask=attention_mask,
+    def reset_inv_freq(self, device: torch.device | None = None) -> None:
+        self.register_buffer(
+            "inv_freq",
+            self._compute_inv_freq().to(device=device),
+            persistent=False,
         )
-        return attention.out_proj(output.transpose(1, 2).contiguous().view(batch, seq, heads * 80))
 
-    def __init__(
-        self,
-        model: LocalPaddleOCRVLForConditionalGeneration,
-    ):
-        super().__init__()
-        self.transformer = model.visual.vision_model
-
-
-def vision_prompt_flash_attention_bnsd(
-    q_bnsd: torch.Tensor,
-    k_bnsd: torch.Tensor,
-    v_bnsd: torch.Tensor,
-    *,
-    num_heads: int,
-    scale: float,
-    atten_mask: torch.Tensor,
-) -> torch.Tensor:
-    """Full bidirectional vision attention with the prepared padding mask."""
-
-    attention_mask = atten_mask.to(torch.bool).contiguous()
-    return torch_npu.npu_prompt_flash_attention(
-        q_bnsd.contiguous(),
-        k_bnsd.contiguous(),
-        v_bnsd.contiguous(),
-        num_heads=int(num_heads),
-        input_layout="BNSD",
-        scale_value=float(scale),
-        # Preserve the window arguments of the validated serving call.
-        pre_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
-        next_tokens=VISION_PROMPT_FA_FULL_ATTENTION_TOKENS,
-        sparse_mode=1,
-        atten_mask=attention_mask,
-    )
-
-
-def pad_vision_rope_halves(value: torch.Tensor, fill: float) -> torch.Tensor:
-    # Neutral coordinates in each half, not a new D80 frequency table.
-    first, second = value.chunk(2, dim=-1)
-    return torch.cat((F.pad(first, (0, 4), value=fill),
-                      F.pad(second, (0, 4), value=fill)), dim=-1)
-
-
-# Projection into text-model embeddings
-
-
-class PaddleOCRProjector(nn.Module):
-
-    def forward(
-        self,
-        image_features: torch.Tensor,
-        image_grid_thw: torch.Tensor,
-    ) -> torch.Tensor:
-        chunks = image_features.split(image_grid_thw.prod(dim=1).tolist(), dim=0)
-        m1, m2 = self.merge_kernel_size
-        processed = []
-        for image_feature, image_grid in zip(chunks, image_grid_thw):
-            image_feature = self.pre_norm(image_feature)
-            t, h, w = [int(v.item()) for v in image_grid]
-            d = image_feature.shape[-1]
-            h_block = h // m1
-            w_block = w // m2
-            image_feature = image_feature.reshape(
-                t, h_block, m1, w_block, m2, d
-            )
-            image_feature = image_feature.transpose(2, 3)
-            image_feature = image_feature.reshape(
-                t * h_block * w_block, m1 * m2 * d
-            )
-            hidden_states = self.linear_1(image_feature)
-            hidden_states = F.gelu(hidden_states)
-            hidden_states = self.linear_2(hidden_states)
-            processed.append(hidden_states)
-        return torch.cat(processed, dim=0)
-
-    def __init__(self):
-        super().__init__()
-        merge = VISION_MERGE_SIZE
-        hidden_size = VISION_HIDDEN_SIZE * merge * merge
-        self.merge_kernel_size = (merge, merge)
-        self.pre_norm = nn.LayerNorm(VISION_HIDDEN_SIZE, eps=1e-5)
-        self.linear_1 = nn.Linear(hidden_size, hidden_size, bias=True)
-        self.linear_2 = nn.Linear(
-            hidden_size, TEXT_HIDDEN_SIZE, bias=True
+    def _compute_inv_freq(self) -> torch.Tensor:
+        return 1.0 / (
+            self.theta
+            ** (torch.arange(0, self.dim, 2, dtype=torch.float32) / self.dim)
         )
 
 
@@ -514,292 +812,8 @@ def prepare_vision_linear_weight_format(
     }
 
 
-# Request execution, input preparation, and bucket setup
-
-
-class VisionPrefillRuntime:
-    """Run one vision-prefill stage eagerly or through static bucket graphs."""
-
-    def route(self, real_seq_len: int) -> dict[str, Any]:
-        real_seq_len = int(real_seq_len)
-        bucket = select_vision_bucket(real_seq_len)
-        if bucket is None:
-            physical_seq_len = align_vision_seq_len(real_seq_len)
-            return {
-                "execution": "eager_overflow",
-                "real_vision_tokens": real_seq_len,
-                "physical_vision_tokens": physical_seq_len,
-                "padding_vision_tokens": physical_seq_len - real_seq_len,
-                "useful_token_fraction": (
-                    float(real_seq_len) / float(physical_seq_len)
-                ),
-                "bucket": None,
-            }
-        return {
-            "execution": (
-                "eager_padded" if self.eager else "compiled"
-            ),
-            "real_vision_tokens": real_seq_len,
-            "physical_vision_tokens": bucket,
-            "padding_vision_tokens": bucket - real_seq_len,
-            "useful_token_fraction": float(real_seq_len) / float(bucket),
-            "bucket": bucket,
-        }
-
-    def prepare(
-        self,
-        prefix_hidden_states: torch.Tensor,
-        image_grid_thw: torch.Tensor,
-        *,
-        route: dict[str, Any],
-    ) -> PreparedVisionPrefill:
-        return prepare_vision_prefill(
-            self.model,
-            prefix_hidden_states,
-            image_grid_thw,
-            physical_seq_len=int(route["physical_vision_tokens"]),
-            execution=str(route["execution"]),
-        )
-
-    def run_prepared(self, prepared: PreparedVisionPrefill) -> torch.Tensor:
-        run = (
-            self.compiled[prepared.physical_seq_len]
-            if prepared.execution == "compiled"
-            else self.eager_stage
-        )
-        output = run(
-            prepared.prefix_hidden_states,
-            prepared.rope_cos,
-            prepared.rope_sin,
-            prepared.attention_mask,
-        )
-        return output[0, : prepared.real_seq_len].contiguous()
-
-    def __init__(
-        self,
-        model: LocalPaddleOCRVLForConditionalGeneration,
-        *,
-        graph_directories: dict[int, Path],
-        device: torch.device,
-        eager: bool = False,
-    ):
-        self.model = model
-        self.eager = eager
-        self.buckets = VISION_BUCKETS
-        self.device = device
-        self.dtype = torch.float16
-        hidden_size = int(VISION_HIDDEN_SIZE)
-        head_dim = hidden_size // int(VISION_HEADS)
-        self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
-        self.entrypoints: dict[int, Callable[..., torch.Tensor]] = {}
-        self.eager_stage = VisionPrefillStage(model).eval()
-        self.modules: dict[int, VisionPrefillStage] = {}
-        self.metadata = {
-            "backend": "raw_eager" if eager else "torchair",
-            "enabled": not eager,
-            "boundary": "vision_encoder_layers_plus_post_layernorm",
-            "buckets": list(self.buckets),
-            "sequence_alignment": VISION_SEQUENCE_ALIGNMENT,
-            "padding": "bucket",
-            "overflow": "eager_same_stage_unpadded",
-        }
-        if eager:
-            return
-
-        # Eager mode does not import the compiler.
-        import torchair.inference
-        from torchair import CompilerConfig
-        per_bucket: dict[str, Any] = {}
-        wrapper_total_s = 0.0
-        first_call_total_s = 0.0
-        for bucket in self.buckets:
-            module = VisionPrefillStage(model).eval()
-            cache_dir = graph_directories[bucket]
-            cache_dir.mkdir(parents=True, exist_ok=True)
-            config = CompilerConfig()
-            entrypoint = unique_bucket_forward(module, bucket)
-            torch_npu.npu.synchronize(self.device)
-            started = time.perf_counter()
-            compiled = torchair.inference.cache_compile(
-                entrypoint,
-                config=config,
-                dynamic=False,
-                cache_dir=str(cache_dir),
-                ge_cache=True,
-            )
-            torch_npu.npu.synchronize(self.device)
-            wrapper_s = time.perf_counter() - started
-
-            warm_prefix = torch.zeros(
-                (1, bucket, hidden_size),
-                device=self.device,
-                dtype=self.dtype,
-            )
-            warm_cos = torch.ones(
-                (1, bucket, head_dim),
-                device=self.device,
-                # The stock rotary table is derived from an fp32 inv_freq, so
-                # real calls supply fp32 cos/sin even when hidden states are fp16.
-                dtype=torch.float32,
-            )
-            warm_sin = torch.zeros_like(warm_cos)
-            warm_mask = torch.zeros(
-                (1, 1, bucket, bucket),
-                device=self.device,
-                dtype=torch.bool,
-            )
-            torch_npu.npu.synchronize(self.device)
-            started = time.perf_counter()
-            warm_output = compiled(warm_prefix, warm_cos, warm_sin, warm_mask)
-            torch_npu.npu.synchronize(self.device)
-            first_call_s = time.perf_counter() - started
-            del warm_output, warm_prefix, warm_cos, warm_sin, warm_mask
-
-            self.modules[bucket] = module
-            self.entrypoints[bucket] = entrypoint
-            self.compiled[bucket] = compiled
-            wrapper_total_s += wrapper_s
-            first_call_total_s += first_call_s
-            per_bucket[str(bucket)] = {
-                "compile_wrapper_s": float(wrapper_s),
-                "compile_first_call_s": float(first_call_s),
-                "torchair_cache_dir": str(cache_dir),
-            }
-        self.metadata.update(
-            {
-                "compile_api": "torchair.inference.cache_compile",
-                "dynamic": False,
-                "fullgraph": True,
-                "torchair_ge_cache": True,
-                "compile_wrapper_total_s": float(wrapper_total_s),
-                "compile_first_call_total_s": float(first_call_total_s),
-                "per_bucket": per_bucket,
-                "cache_key_fields": {
-                    "dtype": str(self.dtype),
-                    "torch": str(torch.__version__),
-                    "attention": "prompt_flash_attention",
-                    "prompt_flash_attention_layout": 'bnsd',
-                    "prompt_flash_attention_mask_sparse_mode": 1,
-                    "softmax_dtype": 'fp32',
-                    "execution_mode": "inference",
-                },
-            }
-        )
-
-
-def select_vision_bucket(real_seq_len: int) -> int | None:
-    for bucket in VISION_BUCKETS:
-        if real_seq_len <= bucket:
-            return bucket
-    return None
-
-
-def align_vision_seq_len(seq_len: int) -> int:
-    """Round a request's physical vision length to the fixed alignment."""
-    return ((seq_len + 127) // 128) * 128
-
-
-@dataclass(frozen=True)
-class PreparedVisionPrefill:
-    prefix_hidden_states: torch.Tensor
-    rope_cos: torch.Tensor
-    rope_sin: torch.Tensor
-    attention_mask: torch.Tensor
-    real_seq_len: int
-    physical_seq_len: int
-    execution: str
-
-
-def prepare_vision_prefill(
-    model: LocalPaddleOCRVLForConditionalGeneration,
-    prefix_hidden_states: torch.Tensor,
-    image_grid_thw: torch.Tensor,
-    *,
-    physical_seq_len: int,
-    execution: str,
-) -> PreparedVisionPrefill:
-    if prefix_hidden_states.ndim != 2:
-        raise ValueError(
-            f"vision prefix must have shape [S, H], got {tuple(prefix_hidden_states.shape)}"
-        )
-    real_seq_len = int(prefix_hidden_states.shape[0])
-    physical_seq_len = int(physical_seq_len)
-    if real_seq_len > physical_seq_len:
-        raise ValueError(
-            f"real vision sequence {real_seq_len} exceeds bucket {physical_seq_len}"
-        )
-    rope_cos, rope_sin = build_vision_rope(
-        model,
-        image_grid_thw,
-        real_seq_len=real_seq_len,
-        device=prefix_hidden_states.device,
-    )
-    pad_tokens = physical_seq_len - real_seq_len
-    prefix = F.pad(prefix_hidden_states, (0, 0, 0, pad_tokens)).unsqueeze(0).contiguous()
-    if pad_tokens:
-        rope_cos = torch.cat(
-            [
-                rope_cos,
-                torch.ones(
-                    (pad_tokens, rope_cos.shape[-1]),
-                    device=rope_cos.device,
-                    dtype=rope_cos.dtype,
-                ),
-            ],
-            dim=0,
-        )
-        rope_sin = torch.cat(
-            [
-                rope_sin,
-                torch.zeros(
-                    (pad_tokens, rope_sin.shape[-1]),
-                    device=rope_sin.device,
-                    dtype=rope_sin.dtype,
-                ),
-            ],
-            dim=0,
-        )
-    indices = torch.arange(physical_seq_len, device=prefix_hidden_states.device)
-    is_real = indices < real_seq_len
-    attention_mask = (is_real[:, None] != is_real[None, :]).view(
-        1,
-        1,
-        physical_seq_len,
-        physical_seq_len,
-    )
-    return PreparedVisionPrefill(
-        prefix_hidden_states=prefix,
-        rope_cos=rope_cos.unsqueeze(0).contiguous(),
-        rope_sin=rope_sin.unsqueeze(0).contiguous(),
-        attention_mask=attention_mask.contiguous(),
-        real_seq_len=real_seq_len,
-        physical_seq_len=physical_seq_len,
-        execution=str(execution),
-    )
-
-
-def build_vision_rope(
-    model: LocalPaddleOCRVLForConditionalGeneration,
-    image_grid_thw: torch.Tensor,
-    *,
-    real_seq_len: int,
-    device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    grid = image_grid_thw.detach().cpu().reshape(-1, 3)
-    if int(grid.shape[0]) != 1:
-        raise ValueError(f"compiled B=1 vision expects one grid row, got {tuple(grid.shape)}")
-    t, h, w = (int(value) for value in grid[0].tolist())
-    if t * h * w != int(real_seq_len):
-        raise ValueError(
-            f"image grid has {t * h * w} tokens but embeddings have {int(real_seq_len)} rows"
-        )
-    encoder = model.visual.vision_model.encoder
-    image_pids = torch.arange(int(real_seq_len), device=device, dtype=torch.int64) % int(h * w)
-    pids = torch.stack((image_pids // int(w), image_pids % int(w)), dim=-1)
-    rotary_max = encoder.rotary_pos_emb(max(h, w))
-    rotary_embeddings = rotary_max[pids].flatten(1).repeat(1, 2)
-    return rotary_embeddings.cos().contiguous(), rotary_embeddings.sin().contiguous()
-
+# Compilation helper: each bucket keeps its own Python entrypoint identity.
+# VisionPrefillRuntime uses this during its one-time setup above.
 
 def unique_bucket_forward(
     module: VisionPrefillStage,

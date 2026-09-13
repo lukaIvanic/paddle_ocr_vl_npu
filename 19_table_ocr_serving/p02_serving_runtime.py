@@ -87,7 +87,8 @@ class ContinuousRecognizer:
     """One persistent model: independent prefill per crop, continuous batched decode."""
 
     # Request flow: serve() is the entrypoint; the methods below it follow one
-    # request in order. Setup (__init__) and configuration() come after.
+    # request in order. Decode coordination and its summary follow the result;
+    # setup (__init__) and configuration() come after that.
 
     @torch.inference_mode()
     def serve(
@@ -126,81 +127,6 @@ class ContinuousRecognizer:
             )
         finally:
             ready_source.close()
-
-    def _run_decode(
-        self,
-        ready_source: Any,
-        *,
-        schedule_id: str,
-        emit_result: Callable[[RecognitionResult], None],
-        scheduling_metrics: RequestSchedulingMetrics | None = None,
-    ) -> ContinuousDecodeResult:
-        """Run the decode scheduler over prefilled requests and summarize the run."""
-
-        def handle_completion(completion: DecodeCompletion) -> None:
-            emit_result(self._result_from_completion(completion, schedule_id=schedule_id))
-
-        decoded = self.decode_scheduler.run_stream(
-            ready_source,
-            on_completion=handle_completion,
-            ready_buffer_capacity=self.ready_buffer_capacity,
-            ready_buffer_low_watermark=self.ready_buffer_low_watermark,
-            scheduling_metrics=scheduling_metrics,
-        )
-        decode_wall_s = decoded.timing_s["continuous_decode_wall"]
-        private_cache_pool_stats = self.prefill_cache_pool.stats()
-        if int(private_cache_pool_stats["active_slots"]) != 0:
-            raise RuntimeError(
-                "prefill KV cache arena still owns active request slots after decode: "
-                f"{private_cache_pool_stats}"
-            )
-
-        def fraction(numerator: int) -> float | None:
-            if decoded.raw_decode_token_slots <= 0:
-                return None
-            return float(numerator) / float(decoded.raw_decode_token_slots)
-
-        return ContinuousDecodeResult(
-            schedule_id=schedule_id,
-            batch_size=self.batch_size,
-            requests=decoded.submitted_requests,
-            ready_buffer_capacity=decoded.ready_buffer_capacity,
-            ready_buffer_low_watermark=decoded.ready_buffer_low_watermark,
-            max_ready_queue_depth=decoded.max_ready_queue_depth,
-            ready_source_refill_count=decoded.ready_source_refill_count,
-            graph_calls=decoded.graph_calls,
-            initial_admissions=decoded.initial_admissions,
-            hot_swap_admissions=decoded.hot_swap_admissions,
-            prefill_only_completions=decoded.prefill_only_completions,
-            raw_decode_token_slots=decoded.raw_decode_token_slots,
-            active_decode_token_slots=decoded.active_decode_token_slots,
-            effective_decode_tokens=decoded.effective_decode_tokens,
-            idle_decode_token_slots=decoded.idle_decode_token_slots,
-            lookahead_decode_token_slots=decoded.lookahead_decode_token_slots,
-            kv_prefix_bytes_copied=decoded.kv_prefix_bytes_copied,
-            initial_kv_prefix_bytes_copied=decoded.initial_kv_prefix_bytes_copied,
-            hot_swap_kv_prefix_bytes_copied=decoded.hot_swap_kv_prefix_bytes_copied,
-            timing_s=dict(decoded.timing_s),
-            vision_packing=self._vision_prefill_stats.summary(),
-            text_packing={
-                **self._text_prefill_stats.summary(),
-                "private_cache_pool": private_cache_pool_stats,
-            },
-            rates={
-                "raw_decode_tok_per_s": per_second(decoded.raw_decode_token_slots, decode_wall_s),
-                "effective_decode_tok_per_s": per_second(decoded.effective_decode_tokens, decode_wall_s),
-                "effective_fraction": fraction(decoded.effective_decode_tokens),
-                "active_slot_fraction": fraction(decoded.active_decode_token_slots),
-                "effective_device_tok_per_s": per_second(
-                    decoded.effective_decode_tokens,
-                    decoded.timing_s["decode_model_and_argmax_device"],
-                ),
-                "scheduler_effective_tok_per_s": per_second(
-                    decoded.effective_decode_tokens,
-                    decoded.timing_s["run_scoped_scheduler_wall"],
-                ),
-            },
-        )
 
     # Stage 1: CPU preparation. Runs on the request source's background thread.
 
@@ -546,6 +472,85 @@ class ContinuousRecognizer:
             scheduling_metrics=dict(completion.scheduling_metrics),
         )
 
+    # serve() uses this coordinator to run batched decoding. Each completion
+    # goes through _result_from_completion above; the final summary is separate
+    # from the individual results sent while the service is running.
+
+    def _run_decode(
+        self,
+        ready_source: Any,
+        *,
+        schedule_id: str,
+        emit_result: Callable[[RecognitionResult], None],
+        scheduling_metrics: RequestSchedulingMetrics | None = None,
+    ) -> ContinuousDecodeResult:
+        """Run the decode scheduler over prefilled requests and summarize the run."""
+
+        def handle_completion(completion: DecodeCompletion) -> None:
+            emit_result(self._result_from_completion(completion, schedule_id=schedule_id))
+
+        decoded = self.decode_scheduler.run_stream(
+            ready_source,
+            on_completion=handle_completion,
+            ready_buffer_capacity=self.ready_buffer_capacity,
+            ready_buffer_low_watermark=self.ready_buffer_low_watermark,
+            scheduling_metrics=scheduling_metrics,
+        )
+        decode_wall_s = decoded.timing_s["continuous_decode_wall"]
+        private_cache_pool_stats = self.prefill_cache_pool.stats()
+        if int(private_cache_pool_stats["active_slots"]) != 0:
+            raise RuntimeError(
+                "prefill KV cache arena still owns active request slots after decode: "
+                f"{private_cache_pool_stats}"
+            )
+
+        def fraction(numerator: int) -> float | None:
+            if decoded.raw_decode_token_slots <= 0:
+                return None
+            return float(numerator) / float(decoded.raw_decode_token_slots)
+
+        return ContinuousDecodeResult(
+            schedule_id=schedule_id,
+            batch_size=self.batch_size,
+            requests=decoded.submitted_requests,
+            ready_buffer_capacity=decoded.ready_buffer_capacity,
+            ready_buffer_low_watermark=decoded.ready_buffer_low_watermark,
+            max_ready_queue_depth=decoded.max_ready_queue_depth,
+            ready_source_refill_count=decoded.ready_source_refill_count,
+            graph_calls=decoded.graph_calls,
+            initial_admissions=decoded.initial_admissions,
+            hot_swap_admissions=decoded.hot_swap_admissions,
+            prefill_only_completions=decoded.prefill_only_completions,
+            raw_decode_token_slots=decoded.raw_decode_token_slots,
+            active_decode_token_slots=decoded.active_decode_token_slots,
+            effective_decode_tokens=decoded.effective_decode_tokens,
+            idle_decode_token_slots=decoded.idle_decode_token_slots,
+            lookahead_decode_token_slots=decoded.lookahead_decode_token_slots,
+            kv_prefix_bytes_copied=decoded.kv_prefix_bytes_copied,
+            initial_kv_prefix_bytes_copied=decoded.initial_kv_prefix_bytes_copied,
+            hot_swap_kv_prefix_bytes_copied=decoded.hot_swap_kv_prefix_bytes_copied,
+            timing_s=dict(decoded.timing_s),
+            vision_packing=self._vision_prefill_stats.summary(),
+            text_packing={
+                **self._text_prefill_stats.summary(),
+                "private_cache_pool": private_cache_pool_stats,
+            },
+            rates={
+                "raw_decode_tok_per_s": per_second(decoded.raw_decode_token_slots, decode_wall_s),
+                "effective_decode_tok_per_s": per_second(decoded.effective_decode_tokens, decode_wall_s),
+                "effective_fraction": fraction(decoded.effective_decode_tokens),
+                "active_slot_fraction": fraction(decoded.active_decode_token_slots),
+                "effective_device_tok_per_s": per_second(
+                    decoded.effective_decode_tokens,
+                    decoded.timing_s["decode_model_and_argmax_device"],
+                ),
+                "scheduler_effective_tok_per_s": per_second(
+                    decoded.effective_decode_tokens,
+                    decoded.timing_s["run_scoped_scheduler_wall"],
+                ),
+            },
+        )
+
     # Setup: load the model once and prepare every stage for the process lifetime.
 
     @torch.inference_mode()
@@ -836,6 +841,16 @@ class _OpenPrefillSource:
                 self.scheduling_metrics.record_prefill(request_id, pull_started, time.perf_counter())
             return ready
 
+    @property
+    def closed(self) -> bool:
+        return bool(self.requests.closed) and not self.pending
+
+    def close(self) -> None:
+        if self._executor_closed:
+            return
+        self._executor_closed = True
+        self.executor.shutdown(wait=True, cancel_futures=True)
+
     def _submit_available(self, *, block_for_first: bool) -> None:
         """Hand new requests to the CPU thread until the lookahead limit is reached."""
         while len(self.pending) < self.recognizer.cpu_preprocess_max_pending:
@@ -852,16 +867,6 @@ class _OpenPrefillSource:
             self.pending.append(
                 (request.request_id, self.executor.submit(self.recognizer._prepare_cpu, request, submitted_at))
             )
-
-    @property
-    def closed(self) -> bool:
-        return bool(self.requests.closed) and not self.pending
-
-    def close(self) -> None:
-        if self._executor_closed:
-            return
-        self._executor_closed = True
-        self.executor.shutdown(wait=True, cancel_futures=True)
 
 
 # Batched decoding: repeated graph submissions and active-slot ownership.
@@ -918,142 +923,6 @@ class ContinuousDecodeScheduler:
                 dtype=torch.int64,
                 pin_memory=True,
             )
-
-    def _progress(self, event: str, **fields: Any) -> None:
-        if self.progress is not None:
-            self.progress(event, **fields)
-
-    def _completion_reason(
-        self,
-        state: DecodeSlotState,
-        token_id: int,
-    ) -> str | None:
-        generated_tokens = len(state.token_ids)
-        cache_is_full = int(state.ready.prompt_length) + generated_tokens - 1 >= int(
-            self.arena.cache.cache_length
-        )
-        if self.completion_policy is not None:
-            if cache_is_full:
-                return "kv_cache_full"
-            reason = self.completion_policy(state, token_id)
-            if reason is not None and not reason:
-                raise ValueError("completion policy returned an empty stop reason")
-            return reason
-        if token_id == self.eos_token_id:
-            return "eos"
-        if cache_is_full:
-            return "kv_cache_full"
-        if generated_tokens >= self.max_new_tokens:
-            return "length"
-        return None
-
-    def _schedule_token_copy(
-        self,
-        step: DecodeStep,
-        iteration: int,
-    ) -> PendingTokenCopy:
-        if self.device.type == "npu":
-            import torch_npu
-
-            assert self.copy_stream is not None
-            assert self.host_token_ring is not None
-            ring_index = iteration % 2
-            diagnostic_compute_event = None
-            if self._diagnostic_slots(step):
-                # This is separate from the copy stream's dependency event.
-                # Retaining it does not change the lifetime of the production
-                # ready_event; it gives the diagnostic path a precise compute
-                # completion boundary to synchronize.
-                diagnostic_compute_event = torch_npu.npu.current_stream().record_event()
-            ready_event = torch_npu.npu.current_stream().record_event()
-            done_event = torch_npu.npu.Event()
-            with torch_npu.npu.stream(self.copy_stream):
-                self.copy_stream.wait_event(ready_event)
-                self.host_token_ring[ring_index].copy_(
-                    step.sampled.reshape(-1),
-                    non_blocking=True,
-                )
-                done_event.record(self.copy_stream)
-            return PendingTokenCopy(
-                iteration=iteration,
-                active_slots=step.active_slots,
-                slot_epochs=step.slot_epochs,
-                slot_request_ids=step.slot_request_ids,
-                cache_positions=step.cache_positions,
-                generated_token_counts=step.generated_token_counts,
-                ring_index=ring_index,
-                done_event=done_event,
-                diagnostic_compute_event=diagnostic_compute_event,
-                host_tokens=None,
-            )
-        return PendingTokenCopy(
-            iteration=iteration,
-            active_slots=step.active_slots,
-            slot_epochs=step.slot_epochs,
-            slot_request_ids=step.slot_request_ids,
-            cache_positions=step.cache_positions,
-            generated_token_counts=step.generated_token_counts,
-            ring_index=None,
-            done_event=None,
-            diagnostic_compute_event=None,
-            host_tokens=[
-                int(value) for value in step.sampled.detach().cpu().reshape(-1).tolist()
-            ],
-        )
-
-    def _diagnostic_slots(
-        self,
-        step: DecodeStep | PendingTokenCopy,
-    ) -> list[dict[str, int | str]]:
-        target_length = self.diagnostic_effective_length
-        if target_length is None:
-            return []
-        matches: list[dict[str, int | str]] = []
-        for slot, (request_id, cache_position, generated_tokens) in enumerate(
-            zip(
-                step.slot_request_ids,
-                step.cache_positions,
-                step.generated_token_counts,
-            )
-        ):
-            if request_id is None or cache_position is None:
-                continue
-            if (
-                self.diagnostic_request_id is not None
-                and request_id != self.diagnostic_request_id
-            ):
-                continue
-            effective_length = int(cache_position) + 1
-            if effective_length != target_length:
-                continue
-            matches.append(
-                {
-                    "slot": slot,
-                    "request_id": request_id,
-                    "cache_position": int(cache_position),
-                    "effective_length": effective_length,
-                    "generated_tokens": int(generated_tokens or 0),
-                }
-            )
-        return matches
-
-    def _wait_tokens(self, pending: PendingTokenCopy) -> tuple[list[int], float]:
-        started = time.perf_counter()
-        if pending.done_event is not None:
-            pending.done_event.synchronize()
-            assert self.host_token_ring is not None
-            assert pending.ring_index is not None
-            tokens = [
-                int(value)
-                for value in self.host_token_ring[pending.ring_index].tolist()
-            ]
-        else:
-            assert pending.host_tokens is not None
-            tokens = pending.host_tokens
-        return tokens, time.perf_counter() - started
-
-    def run(self, ready_requests: list[ReadyDecodeRequest]) -> ContinuousDecodeRun:
-        return self.run_stream(ready_requests)
 
     def run_stream(
         self,
@@ -1124,6 +993,11 @@ class ContinuousDecodeScheduler:
         completion_callback_wall_s = 0.0
         refill_sequence = 0
 
+        # The helpers below share this run's queue and counters. They report
+        # progress, deliver completions, obtain prefilled requests, fill free
+        # slots, and consume copied tokens. Their definitions do not run them;
+        # the initial fill and repeated decode loop follow these definitions.
+
         def progress(event: str, **fields: Any) -> None:
             if self.progress is None:
                 return
@@ -1148,6 +1022,7 @@ class ContinuousDecodeScheduler:
                 **fields,
             )
 
+        # Send a finished request immediately; the final run summary comes later.
         def record_completion(completion: DecodeCompletion) -> None:
             nonlocal completion_callback_wall_s
             if scheduling_metrics is not None:
@@ -1162,6 +1037,7 @@ class ContinuousDecodeScheduler:
                 finished = time.perf_counter()
                 completion_callback_wall_s += finished - started
 
+        # Ask the source for requests, respecting the available decode capacity.
         def refill_ready_queue(
             *,
             reason: str,
@@ -1257,6 +1133,7 @@ class ContinuousDecodeScheduler:
                 pulled=pulled,
             )
 
+        # Move ready requests into free cache slots so decoding can include them.
         def fill_free_slots(*, hot_swap: bool) -> None:
             nonlocal initial_admissions, hot_swap_admissions
             nonlocal prefill_only_completions, initial_kv_bytes, hot_swap_kv_bytes
@@ -1313,6 +1190,7 @@ class ContinuousDecodeScheduler:
                         initial_kv_bytes += copied_bytes
                     break
 
+        # Consume a completed token copy, finish requests, and reuse freed slots.
         def retire_pending(
             pending_copy: PendingTokenCopy,
             *,
@@ -1473,6 +1351,7 @@ class ContinuousDecodeScheduler:
             finished = time.perf_counter()
             retire_and_refill_wall_s += finished - started
 
+        # Begin execution: obtain the first requests and fill available slots.
         progress("scheduler_device_sync_begin", phase="before_initial_fill")
         torch_npu.npu.synchronize(self.device)
         progress("scheduler_device_sync_end", phase="before_initial_fill")
@@ -1494,6 +1373,8 @@ class ContinuousDecodeScheduler:
         pending: PendingTokenCopy | None = None
         iteration = 0
 
+        # Repeatedly decode active requests, consume the previous token copy,
+        # and admit new requests as slots become free.
         while True:
             if self.arena.num_active == 0:
                 if not ready_queue and not source_exhausted:
@@ -1671,6 +1552,146 @@ class ContinuousDecodeScheduler:
             },
         )
 
+    def run(self, ready_requests: list[ReadyDecodeRequest]) -> ContinuousDecodeRun:
+        return self.run_stream(ready_requests)
+
+    def _completion_reason(
+        self,
+        state: DecodeSlotState,
+        token_id: int,
+    ) -> str | None:
+        generated_tokens = len(state.token_ids)
+        cache_is_full = int(state.ready.prompt_length) + generated_tokens - 1 >= int(
+            self.arena.cache.cache_length
+        )
+        if self.completion_policy is not None:
+            if cache_is_full:
+                return "kv_cache_full"
+            reason = self.completion_policy(state, token_id)
+            if reason is not None and not reason:
+                raise ValueError("completion policy returned an empty stop reason")
+            return reason
+        if token_id == self.eos_token_id:
+            return "eos"
+        if cache_is_full:
+            return "kv_cache_full"
+        if generated_tokens >= self.max_new_tokens:
+            return "length"
+        return None
+
+    def _schedule_token_copy(
+        self,
+        step: DecodeStep,
+        iteration: int,
+    ) -> PendingTokenCopy:
+        if self.device.type == "npu":
+            import torch_npu
+
+            assert self.copy_stream is not None
+            assert self.host_token_ring is not None
+            ring_index = iteration % 2
+            diagnostic_compute_event = None
+            if self._diagnostic_slots(step):
+                # This is separate from the copy stream's dependency event.
+                # Retaining it does not change the lifetime of the production
+                # ready_event; it gives the diagnostic path a precise compute
+                # completion boundary to synchronize.
+                diagnostic_compute_event = torch_npu.npu.current_stream().record_event()
+            ready_event = torch_npu.npu.current_stream().record_event()
+            done_event = torch_npu.npu.Event()
+            with torch_npu.npu.stream(self.copy_stream):
+                self.copy_stream.wait_event(ready_event)
+                self.host_token_ring[ring_index].copy_(
+                    step.sampled.reshape(-1),
+                    non_blocking=True,
+                )
+                done_event.record(self.copy_stream)
+            return PendingTokenCopy(
+                iteration=iteration,
+                active_slots=step.active_slots,
+                slot_epochs=step.slot_epochs,
+                slot_request_ids=step.slot_request_ids,
+                cache_positions=step.cache_positions,
+                generated_token_counts=step.generated_token_counts,
+                ring_index=ring_index,
+                done_event=done_event,
+                diagnostic_compute_event=diagnostic_compute_event,
+                host_tokens=None,
+            )
+        return PendingTokenCopy(
+            iteration=iteration,
+            active_slots=step.active_slots,
+            slot_epochs=step.slot_epochs,
+            slot_request_ids=step.slot_request_ids,
+            cache_positions=step.cache_positions,
+            generated_token_counts=step.generated_token_counts,
+            ring_index=None,
+            done_event=None,
+            diagnostic_compute_event=None,
+            host_tokens=[
+                int(value) for value in step.sampled.detach().cpu().reshape(-1).tolist()
+            ],
+        )
+
+    def _wait_tokens(self, pending: PendingTokenCopy) -> tuple[list[int], float]:
+        started = time.perf_counter()
+        if pending.done_event is not None:
+            pending.done_event.synchronize()
+            assert self.host_token_ring is not None
+            assert pending.ring_index is not None
+            tokens = [
+                int(value)
+                for value in self.host_token_ring[pending.ring_index].tolist()
+            ]
+        else:
+            assert pending.host_tokens is not None
+            tokens = pending.host_tokens
+        return tokens, time.perf_counter() - started
+
+    def _diagnostic_slots(
+        self,
+        step: DecodeStep | PendingTokenCopy,
+    ) -> list[dict[str, int | str]]:
+        target_length = self.diagnostic_effective_length
+        if target_length is None:
+            return []
+        matches: list[dict[str, int | str]] = []
+        for slot, (request_id, cache_position, generated_tokens) in enumerate(
+            zip(
+                step.slot_request_ids,
+                step.cache_positions,
+                step.generated_token_counts,
+            )
+        ):
+            if request_id is None or cache_position is None:
+                continue
+            if (
+                self.diagnostic_request_id is not None
+                and request_id != self.diagnostic_request_id
+            ):
+                continue
+            effective_length = int(cache_position) + 1
+            if effective_length != target_length:
+                continue
+            matches.append(
+                {
+                    "slot": slot,
+                    "request_id": request_id,
+                    "cache_position": int(cache_position),
+                    "effective_length": effective_length,
+                    "generated_tokens": int(generated_tokens or 0),
+                }
+            )
+        return matches
+
+    def _progress(self, event: str, **fields: Any) -> None:
+        if self.progress is not None:
+            self.progress(event, **fields)
+
+
+# The scheduler above decides when to admit, step and release requests.
+# DecodeArena below performs those operations on the shared NPU cache slots.
+
 
 class DecodeArena:
     """Own the tensors whose shapes and identities remain stable across steps."""
@@ -1730,65 +1751,6 @@ class DecodeArena:
         self.rope_deltas.zero_()
         self.active_mask.zero_()
         self.active_increment.zero_()
-
-    @property
-    def num_active(self) -> int:
-        return sum(slot is not None for slot in self.slots)
-
-    def free_slot_indices(self) -> list[int]:
-        return [index for index, state in enumerate(self.slots) if state is None]
-
-    def _event(self) -> Any | None:
-        if self.device.type == "cuda":
-            return torch.cuda.Event(enable_timing=True)
-        if self.device.type == "npu":
-            import torch_npu
-
-            return torch_npu.npu.Event(enable_timing=True)
-        return None
-
-    def _measure_enqueue(
-        self,
-        records: list[_DeviceSpanRecord],
-        fn: Callable[[], Any],
-    ) -> Any:
-        if records is self._decode_event_spans and not self.decode_device_timing:
-            # Profiling events only. Token-copy dependency/completion events
-            # remain mandatory and are owned by the scheduler, not this helper.
-            return fn()
-        start_event = self._event()
-        end_event = self._event()
-        enqueued_ns = time.perf_counter_ns()
-        if start_event is not None:
-            start_event.record()
-        result = fn()
-        if end_event is not None:
-            end_event.record()
-            duration_s = None
-        else:
-            duration_s = (time.perf_counter_ns() - enqueued_ns) / 1_000_000_000
-        records.append(_DeviceSpanRecord(start_event, end_event, duration_s))
-        return result
-
-    @staticmethod
-    def _resolve_spans(records: list[_DeviceSpanRecord]) -> float:
-        total = 0.0
-        for record in records:
-            if record.duration_s is not None:
-                total += record.duration_s
-            else:
-                assert record.start_event is not None
-                assert record.end_event is not None
-                total += (
-                    float(record.start_event.elapsed_time(record.end_event)) / 1000.0
-                )
-        return total
-
-    def resolve_device_timing(self) -> tuple[float, float]:
-        return (
-            self._resolve_spans(self._decode_event_spans),
-            self._resolve_spans(self._admission_event_spans),
-        )
 
     def admit(
         self,
@@ -1887,18 +1849,6 @@ class DecodeArena:
         ready.release_device_state()
         return state, useful_prefix_bytes
 
-    def release(self, slot_index: int) -> DecodeSlotState:
-        state = self.slots[slot_index]
-        if state is None:
-            raise RuntimeError(f"decode slot {slot_index} is already free")
-        self.slots[slot_index] = None
-        self.active_mask[slot_index].fill_(False)
-        self.active_increment[slot_index].zero_()
-        self.next_token[slot_index].fill_(self.eos_token_id)
-        self.cache_position[slot_index].zero_()
-        self.rope_deltas[slot_index].zero_()
-        return state
-
     def step(
         self,
         decode_fn: Callable[..., torch.Tensor],
@@ -1956,6 +1906,77 @@ class DecodeArena:
             cache_positions=cache_positions,
             generated_token_counts=generated_token_counts,
         )
+
+    def release(self, slot_index: int) -> DecodeSlotState:
+        state = self.slots[slot_index]
+        if state is None:
+            raise RuntimeError(f"decode slot {slot_index} is already free")
+        self.slots[slot_index] = None
+        self.active_mask[slot_index].fill_(False)
+        self.active_increment[slot_index].zero_()
+        self.next_token[slot_index].fill_(self.eos_token_id)
+        self.cache_position[slot_index].zero_()
+        self.rope_deltas[slot_index].zero_()
+        return state
+
+    @property
+    def num_active(self) -> int:
+        return sum(slot is not None for slot in self.slots)
+
+    def free_slot_indices(self) -> list[int]:
+        return [index for index, state in enumerate(self.slots) if state is None]
+
+    def resolve_device_timing(self) -> tuple[float, float]:
+        return (
+            self._resolve_spans(self._decode_event_spans),
+            self._resolve_spans(self._admission_event_spans),
+        )
+
+    def _measure_enqueue(
+        self,
+        records: list[_DeviceSpanRecord],
+        fn: Callable[[], Any],
+    ) -> Any:
+        if records is self._decode_event_spans and not self.decode_device_timing:
+            # Profiling events only. Token-copy dependency/completion events
+            # remain mandatory and are owned by the scheduler, not this helper.
+            return fn()
+        start_event = self._event()
+        end_event = self._event()
+        enqueued_ns = time.perf_counter_ns()
+        if start_event is not None:
+            start_event.record()
+        result = fn()
+        if end_event is not None:
+            end_event.record()
+            duration_s = None
+        else:
+            duration_s = (time.perf_counter_ns() - enqueued_ns) / 1_000_000_000
+        records.append(_DeviceSpanRecord(start_event, end_event, duration_s))
+        return result
+
+    def _event(self) -> Any | None:
+        if self.device.type == "cuda":
+            return torch.cuda.Event(enable_timing=True)
+        if self.device.type == "npu":
+            import torch_npu
+
+            return torch_npu.npu.Event(enable_timing=True)
+        return None
+
+    @staticmethod
+    def _resolve_spans(records: list[_DeviceSpanRecord]) -> float:
+        total = 0.0
+        for record in records:
+            if record.duration_s is not None:
+                total += record.duration_s
+            else:
+                assert record.start_event is not None
+                assert record.end_event is not None
+                total += (
+                    float(record.start_event.elapsed_time(record.end_event)) / 1000.0
+                )
+        return total
 
 
 # Requests accepted by the runtime, individual OCR results, and run summaries.
@@ -2520,6 +2541,10 @@ def per_second(count: int | float, seconds: float | None) -> float | None:
     if seconds is None or seconds <= 0:
         return None
     return float(count) / float(seconds)
+
+
+# Prefill uses DeviceTimeline to record NPU stages without waiting between
+# them. RequestSchedulingMetrics below instead records host-side scheduling.
 
 
 class DeviceTimeline:

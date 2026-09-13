@@ -209,25 +209,13 @@ class PaddleOCRRMSNorm(nn.Module):
 
 
 class PaddleOCRRotaryEmbedding(nn.Module):
+
     def __init__(self):
         super().__init__()
         self.base = TEXT_ROPE_THETA
         self.dim = int(TEXT_HEAD_DIM)
         self.register_buffer("inv_freq", self._compute_inv_freq(), persistent=False)
         self.attention_scaling = 1.0
-
-    def _compute_inv_freq(self) -> torch.Tensor:
-        return 1.0 / (
-            self.base
-            ** (torch.arange(0, self.dim, 2, dtype=torch.float32) / self.dim)
-        )
-
-    def reset_inv_freq(self, device: torch.device | None = None) -> None:
-        self.register_buffer(
-            "inv_freq",
-            self._compute_inv_freq().to(device=device),
-            persistent=False,
-        )
 
     def forward(
         self,
@@ -243,6 +231,19 @@ class PaddleOCRRotaryEmbedding(nn.Module):
         cos = emb.cos() * self.attention_scaling
         sin = emb.sin() * self.attention_scaling
         return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
+
+    def reset_inv_freq(self, device: torch.device | None = None) -> None:
+        self.register_buffer(
+            "inv_freq",
+            self._compute_inv_freq().to(device=device),
+            persistent=False,
+        )
+
+    def _compute_inv_freq(self) -> torch.Tensor:
+        return 1.0 / (
+            self.base
+            ** (torch.arange(0, self.dim, 2, dtype=torch.float32) / self.dim)
+        )
 
 
 @dataclass
@@ -290,6 +291,11 @@ class LocalPaddleOCRVLStaticCache:
 
 class TextPrefillStage(torch.nn.Module):
     """Text prefill with flat mutable cache inputs for eager or compiled use."""
+
+    def __init__(self, model: LocalPaddleOCRVLForConditionalGeneration):
+        super().__init__()
+        self.text_model = model.model
+        self.num_layers = int(TEXT_LAYERS)
 
     def forward(
         self,
@@ -377,11 +383,6 @@ class TextPrefillStage(torch.nn.Module):
             num_heads * head_dim,
         )
         return _linear_tokenwise(attention.o_proj, attention_output)
-
-    def __init__(self, model: LocalPaddleOCRVLForConditionalGeneration):
-        super().__init__()
-        self.text_model = model.model
-        self.num_layers = int(TEXT_LAYERS)
 
 
 def build_causal_mask(
@@ -496,6 +497,14 @@ class TextDecodeStage(torch.nn.Module):
     graph can mutate the persistent decode arena in place.
     """
 
+    def __init__(
+        self,
+        model: LocalPaddleOCRVLForConditionalGeneration,
+    ):
+        super().__init__()
+        self.model = model
+        self.num_layers = int(TEXT_LAYERS)
+
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -536,14 +545,6 @@ class TextDecodeStage(torch.nn.Module):
             )
         # The serving boundary is native token IDs for either vocabulary.
         return torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
-
-    def __init__(
-        self,
-        model: LocalPaddleOCRVLForConditionalGeneration,
-    ):
-        super().__init__()
-        self.model = model
-        self.num_layers = int(TEXT_LAYERS)
 
 
 def run_text_decode_transformer(
@@ -756,6 +757,386 @@ def _decode_mlp(mlp: nn.Module, hidden_states: torch.Tensor) -> torch.Tensor:
     activated = torch_npu.npu_swiglu(gate_up, dim=-1)
     output = _linear_tokenwise(mlp.down_proj, activated)
     return output
+
+
+# Prefill execution and bucket setup
+# The request-facing methods select, pad, and execute; the constructor builds and warms the buckets.
+
+
+class TextPrefillRuntime:
+    """Compiled single-crop buckets, with the same stage for oversized inputs."""
+
+    def run_prepared(
+        self,
+        prepared: PreparedTextPrefill,
+        cache: LocalPaddleOCRVLStaticCache,
+    ) -> torch.Tensor:
+        run = (
+            self.compiled[prepared.physical_seq_len]
+            if prepared.execution == "compiled"
+            else self.eager_stage
+        )
+        return run(
+            prepared.inputs_embeds,
+            prepared.attention_mask,
+            prepared.position_ids,
+            prepared.last_token_index,
+            *cache.flat_tensors(),
+        )
+
+    def route(self, real_seq_len: int) -> dict[str, Any]:
+        real_seq_len = int(real_seq_len)
+        bucket = select_text_bucket(real_seq_len)
+        if bucket is None:
+            return {
+                "execution": "eager_overflow",
+                "real_text_tokens": real_seq_len,
+                "physical_text_tokens": real_seq_len,
+                "padding_text_tokens": 0,
+                "useful_token_fraction": 1.0,
+                "bucket": None,
+            }
+        return {
+            "execution": "eager_padded" if self.eager else "compiled",
+            "real_text_tokens": real_seq_len,
+            "physical_text_tokens": bucket,
+            "padding_text_tokens": bucket - real_seq_len,
+            "useful_token_fraction": float(real_seq_len) / float(bucket),
+            "bucket": bucket,
+        }
+
+    def prepare(
+        self,
+        inputs_embeds: torch.Tensor,
+        attention_mask: torch.Tensor,
+        position_ids: torch.Tensor,
+        *,
+        route: dict[str, Any],
+    ) -> PreparedTextPrefill:
+        return prepare_text_prefill(
+            inputs_embeds,
+            attention_mask,
+            position_ids,
+            physical_seq_len=int(route["physical_text_tokens"]),
+            execution=str(route["execution"]),
+        )
+
+    # Startup only: construct and warm each bucket before serving requests.
+    # The request methods above reuse these stages and compiled entrypoints.
+
+    def __init__(
+        self,
+        model: LocalPaddleOCRVLForConditionalGeneration,
+        *,
+        graph_directories: dict[int, Path],
+        cache_length: int,
+        device: torch.device,
+        eager: bool = False,
+    ):
+        self.model = model
+        self.eager = eager
+        self.buckets = TEXT_PREFILL_BUCKETS
+        self.cache_length = int(cache_length)
+        self.device = device
+        self.dtype = torch.float16
+        self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
+        self.entrypoints: dict[int, Callable[..., torch.Tensor]] = {}
+        self.eager_stage = TextPrefillStage(model).eval()
+        self.modules: dict[int, TextPrefillStage] = {}
+        self.metadata: dict[str, Any] = {
+            "backend": "raw_eager" if eager else "torchair",
+            "enabled": not eager,
+            "boundary": "text_transformer_plus_in_place_prefill_kv_writes",
+            "buckets": list(self.buckets),
+            "padding": "bucket",
+            "overflow": "eager_same_stage_unpadded",
+        }
+        if eager:
+            return
+
+        # Eager mode does not import the compiler.
+        import torchair.inference
+        from torchair import CompilerConfig
+        hidden_size = int(TEXT_HIDDEN_SIZE)
+        per_bucket: dict[str, Any] = {}
+        wrapper_total_s = 0.0
+        first_call_total_s = 0.0
+        for bucket in self.buckets:
+            module = TextPrefillStage(model).eval()
+            cache_dir = graph_directories[bucket]
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            config = CompilerConfig()
+            entrypoint = unique_bucket_forward(module, bucket)
+            torch_npu.npu.synchronize(self.device)
+            started = time.perf_counter()
+            compiled = torchair.inference.cache_compile(
+                entrypoint,
+                config=config,
+                dynamic=False,
+                cache_dir=str(cache_dir),
+                ge_cache=True,
+            )
+            torch_npu.npu.synchronize(self.device)
+            wrapper_s = time.perf_counter() - started
+
+            warm_inputs = torch.zeros(
+                (1, bucket, hidden_size),
+                device=self.device,
+                dtype=self.dtype,
+            )
+            warm_mask = torch.ones(
+                (1, bucket),
+                device=self.device,
+                dtype=torch.int64,
+            )
+            warm_positions = torch.zeros(
+                (3, 1, bucket),
+                device=self.device,
+                dtype=torch.int64,
+            )
+            warm_last_index = torch.tensor(
+                [bucket - 1],
+                device=self.device,
+                dtype=torch.int64,
+            )
+            warm_cache = model.allocate_static_cache(
+                batch_size=1,
+                cache_length=self.cache_length,
+                device=self.device,
+                dtype=self.dtype,
+                )
+            torch_npu.npu.synchronize(self.device)
+            started = time.perf_counter()
+            warm_output = compiled(
+                warm_inputs,
+                warm_mask,
+                warm_positions,
+                warm_last_index,
+                *warm_cache.flat_tensors(),
+            )
+            torch_npu.npu.synchronize(self.device)
+            first_call_s = time.perf_counter() - started
+            del warm_output, warm_inputs, warm_mask, warm_positions, warm_last_index, warm_cache
+
+            self.modules[bucket] = module
+            self.entrypoints[bucket] = entrypoint
+            self.compiled[bucket] = compiled
+            wrapper_total_s += wrapper_s
+            first_call_total_s += first_call_s
+            per_bucket[str(bucket)] = {
+                "compile_wrapper_s": float(wrapper_s),
+                "compile_first_call_s": float(first_call_s),
+                "torchair_cache_dir": str(cache_dir),
+            }
+        self.metadata.update(
+            {
+                "compile_api": "torchair.inference.cache_compile",
+                "dynamic": False,
+                "fullgraph": True,
+                "torchair_ge_cache": True,
+                "compile_wrapper_total_s": float(wrapper_total_s),
+                "compile_first_call_total_s": float(first_call_total_s),
+                "per_bucket": per_bucket,
+                "cache_key_fields": {
+                    "cache_length": self.cache_length,
+                    "torch": str(torch.__version__),
+                    "attention": "manual_causal",
+                    "softmax_dtype": 'fp32',
+                    "execution_mode": "inference",
+                },
+            }
+        )
+
+
+@dataclass(frozen=True)
+class PreparedTextPrefill:
+    inputs_embeds: torch.Tensor
+    attention_mask: torch.Tensor
+    position_ids: torch.Tensor
+    last_token_index: torch.Tensor
+    real_seq_len: int
+    physical_seq_len: int
+    execution: str
+
+
+def prepare_text_prefill(
+    inputs_embeds: torch.Tensor,
+    attention_mask: torch.Tensor,
+    position_ids: torch.Tensor,
+    *,
+    physical_seq_len: int,
+    execution: str,
+) -> PreparedTextPrefill:
+    real_seq_len = int(inputs_embeds.shape[1])
+    physical_seq_len = int(physical_seq_len)
+
+    pad_tokens = physical_seq_len - real_seq_len
+    padded_embeds = F.pad(inputs_embeds, (0, 0, 0, pad_tokens)).contiguous()
+    padded_mask = F.pad(attention_mask, (0, pad_tokens), value=0).contiguous()
+    # get_rope_index uses position 1 for masked/padded rows. The padded query
+    # results are discarded, but preserving that convention keeps the graph's
+    # unused rows well defined.
+    padded_positions = F.pad(position_ids, (0, pad_tokens), value=1).contiguous()
+    last_token_index = torch.tensor(
+        [real_seq_len - 1],
+        device=inputs_embeds.device,
+        dtype=torch.int64,
+    )
+    return PreparedTextPrefill(
+        inputs_embeds=padded_embeds,
+        attention_mask=padded_mask,
+        position_ids=padded_positions,
+        last_token_index=last_token_index,
+        real_seq_len=real_seq_len,
+        physical_seq_len=physical_seq_len,
+        execution=str(execution),
+    )
+
+
+def select_text_bucket(real_seq_len: int) -> int | None:
+    """Choose the smallest compiled length that fits; None means overflow.
+
+    For example, 300 real tokens use the 512-token graph. Padding is within a
+    single crop, not packing multiple requests together.
+    """
+    for bucket in TEXT_PREFILL_BUCKETS:
+        if real_seq_len <= bucket:
+            return bucket
+    return None
+
+
+def unique_bucket_forward(
+    module: TextPrefillStage,
+    bucket: int,
+) -> Callable[..., torch.Tensor]:
+    """Give each static bucket a distinct Dynamo code object."""
+
+    original = module.forward.__func__
+    name = f"text_prefill_bucket_{int(bucket)}"
+    code = original.__code__.replace(co_name=name)
+    function = types.FunctionType(
+        code,
+        original.__globals__,
+        name,
+        original.__defaults__,
+        original.__closure__,
+    )
+    function.__annotations__ = dict(original.__annotations__)
+    function.__kwdefaults__ = original.__kwdefaults__
+    return types.MethodType(function, module)
+
+
+# Decode execution and setup
+# The runtime exposes fn for repeated steps; setup creates its wrapper and warm cache arena.
+
+
+class TextDecodeRuntime:
+    """Own the shared decode stage, its execution wrapper, and warm arena."""
+
+    def __init__(
+        self,
+        model: LocalPaddleOCRVLForConditionalGeneration,
+        *,
+        device: torch.device,
+        graph_directory: Path,
+        batch_size: int,
+        cache_length: int,
+        eager: bool = False,
+    ):
+        dtype = torch.float16
+        prepare_decode_rope_factor_lut(model, cache_length=cache_length, dtype=dtype)
+        prepare_decode_weight_prefetch(model)
+        self.stage = TextDecodeStage(model).eval()
+        self.cache_num_key_value_heads = int(
+            TEXT_KV_HEADS
+        )
+        torch_npu.npu.synchronize(device)
+        started = time.perf_counter()
+        (self.fn, self.metadata) = compile_text_decode_stage(
+            self.stage,
+            graph_directory=graph_directory,
+            batch_size=batch_size,
+            cache_length=cache_length,
+            eager=eager,
+        )
+        torch_npu.npu.synchronize(device)
+        compile_wrapper_s = time.perf_counter() - started
+        self.warm_cache: LocalPaddleOCRVLStaticCache = model.allocate_static_cache(
+            batch_size=batch_size,
+            cache_length=cache_length,
+            device=device,
+            dtype=dtype,
+        )
+        self.metadata["cache_num_key_value_heads"] = self.cache_num_key_value_heads
+        self.metadata["cache_allocated_bytes"] = sum(
+            (
+                int(tensor.numel()) * int(tensor.element_size())
+                for tensor in self.warm_cache.flat_tensors()
+            )
+        )
+        warm_input = torch.zeros((batch_size, 1), device=device, dtype=torch.int64)
+        warm_position = torch.ones((batch_size,), device=device, dtype=torch.int64)
+        warm_rope = torch.zeros((batch_size, 1), device=device, dtype=torch.int64)
+        torch_npu.npu.synchronize(device)
+        started = time.perf_counter()
+        self.fn(warm_input, warm_position, warm_rope, *self.warm_cache.flat_tensors())
+        torch_npu.npu.synchronize(device)
+        compile_first_call_s = time.perf_counter() - started
+        del warm_input, warm_position, warm_rope
+        self.setup_timing_s = {
+            "compile_wrapper": float(compile_wrapper_s),
+            "compile_first_call": float(compile_first_call_s),
+        }
+
+
+def compile_text_decode_stage(
+    stage: TextDecodeStage,
+    *,
+    graph_directory: Path,
+    batch_size: int,
+    cache_length: int,
+    eager: bool = False,
+) -> tuple[Any, dict[str, Any]]:
+    common_metadata = {
+        "backend": "raw_eager" if eager else "torchair",
+        "enabled": not eager,
+        "boundary": "token_embedding_text_transformer_lm_head_static_step",
+        "linear_weight_format": "decode_nz",
+    }
+    if eager:
+        return stage, {**common_metadata, "compile_api": "none"}
+    import torchair.inference
+    from torchair import CompilerConfig
+
+    graph_directory.mkdir(parents=True, exist_ok=True)
+    original = stage.forward.__func__
+    name = f"text_decode_b{int(batch_size)}_kv{int(cache_length)}"
+    function = types.FunctionType(
+        original.__code__.replace(co_name=name),
+        original.__globals__, name, original.__defaults__, original.__closure__,
+    )
+    function.__annotations__ = dict(original.__annotations__)
+    function.__kwdefaults__ = original.__kwdefaults__
+    entrypoint = types.MethodType(function, stage)
+    compiled_decode = torchair.inference.cache_compile(
+        entrypoint, config=CompilerConfig(), dynamic=False,
+        cache_dir=str(graph_directory), ge_cache=True,
+    )
+    return (
+        compiled_decode,
+        {
+            **common_metadata,
+            "torchair_cache_dir": str(graph_directory),
+            "torchair_ge_cache": True,
+            "compile_api": "torchair.inference.cache_compile",
+            "cache_key_fields": {
+                "batch_size": int(batch_size),
+                "cache_length": int(cache_length),
+                "torch": str(torch.__version__),
+                "execution_mode": "inference",
+            },
+        },
+    )
 
 
 # One-time decode preparation
@@ -1002,380 +1383,3 @@ def prepare_decode_weight_prefetch(
         if index + 1 >= len(layers):
             future_weights.append(decode_lm_head.weight)
         layer._decode_prefetch_future_layers = tuple(future_weights)
-
-
-# Prefill execution and bucket setup
-# The request-facing methods select, pad, and execute; the constructor builds and warms the buckets.
-
-
-class TextPrefillRuntime:
-    """Compiled single-crop buckets, with the same stage for oversized inputs."""
-
-    def route(self, real_seq_len: int) -> dict[str, Any]:
-        real_seq_len = int(real_seq_len)
-        bucket = select_text_bucket(real_seq_len)
-        if bucket is None:
-            return {
-                "execution": "eager_overflow",
-                "real_text_tokens": real_seq_len,
-                "physical_text_tokens": real_seq_len,
-                "padding_text_tokens": 0,
-                "useful_token_fraction": 1.0,
-                "bucket": None,
-            }
-        return {
-            "execution": "eager_padded" if self.eager else "compiled",
-            "real_text_tokens": real_seq_len,
-            "physical_text_tokens": bucket,
-            "padding_text_tokens": bucket - real_seq_len,
-            "useful_token_fraction": float(real_seq_len) / float(bucket),
-            "bucket": bucket,
-        }
-
-    def prepare(
-        self,
-        inputs_embeds: torch.Tensor,
-        attention_mask: torch.Tensor,
-        position_ids: torch.Tensor,
-        *,
-        route: dict[str, Any],
-    ) -> PreparedTextPrefill:
-        return prepare_text_prefill(
-            inputs_embeds,
-            attention_mask,
-            position_ids,
-            physical_seq_len=int(route["physical_text_tokens"]),
-            execution=str(route["execution"]),
-        )
-
-    def run_prepared(
-        self,
-        prepared: PreparedTextPrefill,
-        cache: LocalPaddleOCRVLStaticCache,
-    ) -> torch.Tensor:
-        run = (
-            self.compiled[prepared.physical_seq_len]
-            if prepared.execution == "compiled"
-            else self.eager_stage
-        )
-        return run(
-            prepared.inputs_embeds,
-            prepared.attention_mask,
-            prepared.position_ids,
-            prepared.last_token_index,
-            *cache.flat_tensors(),
-        )
-
-    def __init__(
-        self,
-        model: LocalPaddleOCRVLForConditionalGeneration,
-        *,
-        graph_directories: dict[int, Path],
-        cache_length: int,
-        device: torch.device,
-        eager: bool = False,
-    ):
-        self.model = model
-        self.eager = eager
-        self.buckets = TEXT_PREFILL_BUCKETS
-        self.cache_length = int(cache_length)
-        self.device = device
-        self.dtype = torch.float16
-        self.compiled: dict[int, Callable[..., torch.Tensor]] = {}
-        self.entrypoints: dict[int, Callable[..., torch.Tensor]] = {}
-        self.eager_stage = TextPrefillStage(model).eval()
-        self.modules: dict[int, TextPrefillStage] = {}
-        self.metadata: dict[str, Any] = {
-            "backend": "raw_eager" if eager else "torchair",
-            "enabled": not eager,
-            "boundary": "text_transformer_plus_in_place_prefill_kv_writes",
-            "buckets": list(self.buckets),
-            "padding": "bucket",
-            "overflow": "eager_same_stage_unpadded",
-        }
-        if eager:
-            return
-
-        # Eager mode does not import the compiler.
-        import torchair.inference
-        from torchair import CompilerConfig
-        hidden_size = int(TEXT_HIDDEN_SIZE)
-        per_bucket: dict[str, Any] = {}
-        wrapper_total_s = 0.0
-        first_call_total_s = 0.0
-        for bucket in self.buckets:
-            module = TextPrefillStage(model).eval()
-            cache_dir = graph_directories[bucket]
-            cache_dir.mkdir(parents=True, exist_ok=True)
-            config = CompilerConfig()
-            entrypoint = unique_bucket_forward(module, bucket)
-            torch_npu.npu.synchronize(self.device)
-            started = time.perf_counter()
-            compiled = torchair.inference.cache_compile(
-                entrypoint,
-                config=config,
-                dynamic=False,
-                cache_dir=str(cache_dir),
-                ge_cache=True,
-            )
-            torch_npu.npu.synchronize(self.device)
-            wrapper_s = time.perf_counter() - started
-
-            warm_inputs = torch.zeros(
-                (1, bucket, hidden_size),
-                device=self.device,
-                dtype=self.dtype,
-            )
-            warm_mask = torch.ones(
-                (1, bucket),
-                device=self.device,
-                dtype=torch.int64,
-            )
-            warm_positions = torch.zeros(
-                (3, 1, bucket),
-                device=self.device,
-                dtype=torch.int64,
-            )
-            warm_last_index = torch.tensor(
-                [bucket - 1],
-                device=self.device,
-                dtype=torch.int64,
-            )
-            warm_cache = model.allocate_static_cache(
-                batch_size=1,
-                cache_length=self.cache_length,
-                device=self.device,
-                dtype=self.dtype,
-                )
-            torch_npu.npu.synchronize(self.device)
-            started = time.perf_counter()
-            warm_output = compiled(
-                warm_inputs,
-                warm_mask,
-                warm_positions,
-                warm_last_index,
-                *warm_cache.flat_tensors(),
-            )
-            torch_npu.npu.synchronize(self.device)
-            first_call_s = time.perf_counter() - started
-            del warm_output, warm_inputs, warm_mask, warm_positions, warm_last_index, warm_cache
-
-            self.modules[bucket] = module
-            self.entrypoints[bucket] = entrypoint
-            self.compiled[bucket] = compiled
-            wrapper_total_s += wrapper_s
-            first_call_total_s += first_call_s
-            per_bucket[str(bucket)] = {
-                "compile_wrapper_s": float(wrapper_s),
-                "compile_first_call_s": float(first_call_s),
-                "torchair_cache_dir": str(cache_dir),
-            }
-        self.metadata.update(
-            {
-                "compile_api": "torchair.inference.cache_compile",
-                "dynamic": False,
-                "fullgraph": True,
-                "torchair_ge_cache": True,
-                "compile_wrapper_total_s": float(wrapper_total_s),
-                "compile_first_call_total_s": float(first_call_total_s),
-                "per_bucket": per_bucket,
-                "cache_key_fields": {
-                    "cache_length": self.cache_length,
-                    "torch": str(torch.__version__),
-                    "attention": "manual_causal",
-                    "softmax_dtype": 'fp32',
-                    "execution_mode": "inference",
-                },
-            }
-        )
-
-
-def select_text_bucket(real_seq_len: int) -> int | None:
-    """Choose the smallest compiled length that fits; None means overflow.
-
-    For example, 300 real tokens use the 512-token graph. Padding is within a
-    single crop, not packing multiple requests together.
-    """
-    for bucket in TEXT_PREFILL_BUCKETS:
-        if real_seq_len <= bucket:
-            return bucket
-    return None
-
-
-@dataclass(frozen=True)
-class PreparedTextPrefill:
-    inputs_embeds: torch.Tensor
-    attention_mask: torch.Tensor
-    position_ids: torch.Tensor
-    last_token_index: torch.Tensor
-    real_seq_len: int
-    physical_seq_len: int
-    execution: str
-
-
-def prepare_text_prefill(
-    inputs_embeds: torch.Tensor,
-    attention_mask: torch.Tensor,
-    position_ids: torch.Tensor,
-    *,
-    physical_seq_len: int,
-    execution: str,
-) -> PreparedTextPrefill:
-    real_seq_len = int(inputs_embeds.shape[1])
-    physical_seq_len = int(physical_seq_len)
-
-    pad_tokens = physical_seq_len - real_seq_len
-    padded_embeds = F.pad(inputs_embeds, (0, 0, 0, pad_tokens)).contiguous()
-    padded_mask = F.pad(attention_mask, (0, pad_tokens), value=0).contiguous()
-    # get_rope_index uses position 1 for masked/padded rows. The padded query
-    # results are discarded, but preserving that convention keeps the graph's
-    # unused rows well defined.
-    padded_positions = F.pad(position_ids, (0, pad_tokens), value=1).contiguous()
-    last_token_index = torch.tensor(
-        [real_seq_len - 1],
-        device=inputs_embeds.device,
-        dtype=torch.int64,
-    )
-    return PreparedTextPrefill(
-        inputs_embeds=padded_embeds,
-        attention_mask=padded_mask,
-        position_ids=padded_positions,
-        last_token_index=last_token_index,
-        real_seq_len=real_seq_len,
-        physical_seq_len=physical_seq_len,
-        execution=str(execution),
-    )
-
-
-def unique_bucket_forward(
-    module: TextPrefillStage,
-    bucket: int,
-) -> Callable[..., torch.Tensor]:
-    """Give each static bucket a distinct Dynamo code object."""
-
-    original = module.forward.__func__
-    name = f"text_prefill_bucket_{int(bucket)}"
-    code = original.__code__.replace(co_name=name)
-    function = types.FunctionType(
-        code,
-        original.__globals__,
-        name,
-        original.__defaults__,
-        original.__closure__,
-    )
-    function.__annotations__ = dict(original.__annotations__)
-    function.__kwdefaults__ = original.__kwdefaults__
-    return types.MethodType(function, module)
-
-
-# Decode execution and setup
-# The runtime exposes fn for repeated steps; setup creates its wrapper and warm cache arena.
-
-
-class TextDecodeRuntime:
-    """Own the shared decode stage, its execution wrapper, and warm arena."""
-
-    def __init__(
-        self,
-        model: LocalPaddleOCRVLForConditionalGeneration,
-        *,
-        device: torch.device,
-        graph_directory: Path,
-        batch_size: int,
-        cache_length: int,
-        eager: bool = False,
-    ):
-        dtype = torch.float16
-        prepare_decode_rope_factor_lut(model, cache_length=cache_length, dtype=dtype)
-        prepare_decode_weight_prefetch(model)
-        self.stage = TextDecodeStage(model).eval()
-        self.cache_num_key_value_heads = int(
-            TEXT_KV_HEADS
-        )
-        torch_npu.npu.synchronize(device)
-        started = time.perf_counter()
-        (self.fn, self.metadata) = compile_text_decode_stage(
-            self.stage,
-            graph_directory=graph_directory,
-            batch_size=batch_size,
-            cache_length=cache_length,
-            eager=eager,
-        )
-        torch_npu.npu.synchronize(device)
-        compile_wrapper_s = time.perf_counter() - started
-        self.warm_cache: LocalPaddleOCRVLStaticCache = model.allocate_static_cache(
-            batch_size=batch_size,
-            cache_length=cache_length,
-            device=device,
-            dtype=dtype,
-        )
-        self.metadata["cache_num_key_value_heads"] = self.cache_num_key_value_heads
-        self.metadata["cache_allocated_bytes"] = sum(
-            (
-                int(tensor.numel()) * int(tensor.element_size())
-                for tensor in self.warm_cache.flat_tensors()
-            )
-        )
-        warm_input = torch.zeros((batch_size, 1), device=device, dtype=torch.int64)
-        warm_position = torch.ones((batch_size,), device=device, dtype=torch.int64)
-        warm_rope = torch.zeros((batch_size, 1), device=device, dtype=torch.int64)
-        torch_npu.npu.synchronize(device)
-        started = time.perf_counter()
-        self.fn(warm_input, warm_position, warm_rope, *self.warm_cache.flat_tensors())
-        torch_npu.npu.synchronize(device)
-        compile_first_call_s = time.perf_counter() - started
-        del warm_input, warm_position, warm_rope
-        self.setup_timing_s = {
-            "compile_wrapper": float(compile_wrapper_s),
-            "compile_first_call": float(compile_first_call_s),
-        }
-
-
-def compile_text_decode_stage(
-    stage: TextDecodeStage,
-    *,
-    graph_directory: Path,
-    batch_size: int,
-    cache_length: int,
-    eager: bool = False,
-) -> tuple[Any, dict[str, Any]]:
-    common_metadata = {
-        "backend": "raw_eager" if eager else "torchair",
-        "enabled": not eager,
-        "boundary": "token_embedding_text_transformer_lm_head_static_step",
-        "linear_weight_format": "decode_nz",
-    }
-    if eager:
-        return stage, {**common_metadata, "compile_api": "none"}
-    import torchair.inference
-    from torchair import CompilerConfig
-
-    graph_directory.mkdir(parents=True, exist_ok=True)
-    original = stage.forward.__func__
-    name = f"text_decode_b{int(batch_size)}_kv{int(cache_length)}"
-    function = types.FunctionType(
-        original.__code__.replace(co_name=name),
-        original.__globals__, name, original.__defaults__, original.__closure__,
-    )
-    function.__annotations__ = dict(original.__annotations__)
-    function.__kwdefaults__ = original.__kwdefaults__
-    entrypoint = types.MethodType(function, stage)
-    compiled_decode = torchair.inference.cache_compile(
-        entrypoint, config=CompilerConfig(), dynamic=False,
-        cache_dir=str(graph_directory), ge_cache=True,
-    )
-    return (
-        compiled_decode,
-        {
-            **common_metadata,
-            "torchair_cache_dir": str(graph_directory),
-            "torchair_ge_cache": True,
-            "compile_api": "torchair.inference.cache_compile",
-            "cache_key_fields": {
-                "batch_size": int(batch_size),
-                "cache_length": int(cache_length),
-                "torch": str(torch.__version__),
-                "execution_mode": "inference",
-            },
-        },
-    )

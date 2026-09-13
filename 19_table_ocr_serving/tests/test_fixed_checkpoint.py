@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image
 import torch
 
-from fixed_architecture_reference import PaddleOCRVLConfig
+from fixed_architecture_reference import PaddleOCRVLConfig, definition_order_signature
 
 ROOT = Path(__file__).resolve().parents[2]
 PRODUCT = ROOT / '19_table_ocr_serving'
@@ -38,6 +38,17 @@ def historical(name):
 
 
 class FixedCheckpointTests(unittest.TestCase):
+    def test_reading_order_pass_preserves_computation_and_definitions(self):
+        # The checkpoint immediately before this ordering-only pass. This is a
+        # source check, not a claim of NPU compilation or performance parity.
+        for path in sorted(PRODUCT.glob('p0*.py')):
+            with self.subTest(file=path.name):
+                previous = subprocess.check_output(
+                    ['git', '-C', str(ROOT), 'show',
+                     f'ab5bf21a:19_table_ocr_serving/{path.name}'], text=True)
+                self.assertEqual(definition_order_signature(previous),
+                                 definition_order_signature(path.read_text()))
+
     def test_resize_dimensions_preserve_rounding_and_rejections(self):
         old = historical('crop_processing')
         import random

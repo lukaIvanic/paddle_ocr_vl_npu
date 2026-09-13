@@ -11,6 +11,22 @@ import sys
 import types
 from unittest.mock import patch
 
+
+def definition_order_signature(source):
+    """Compare code while permitting definition moves, not computation changes."""
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.ClassDef)):
+            definitions = [child for child in node.body
+                           if isinstance(child, (ast.ClassDef, ast.FunctionDef))]
+            # Keep fields, decorators, defaults and function bodies in full.
+            # Only module/class definition order is irrelevant to this check.
+            node.body = [child for child in node.body
+                         if not isinstance(child, (ast.ClassDef, ast.FunctionDef))]
+            node.body += sorted(definitions, key=lambda child: child.name)
+    return ast.dump(tree)
+
+
 # CPU tests do not execute the Kornia kernel. The patch-layout test supplies
 # its deterministic resize double explicitly; other tests only import the module.
 kornia_image = types.ModuleType('kornia_rs.image')
