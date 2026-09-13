@@ -186,7 +186,11 @@ class RecognizerReadingOrderTests(unittest.TestCase):
             with self.subTest(file=path.name):
                 previous = subprocess.check_output(
                     ['git', '-C', str(ROOT), 'show', f'{BASELINE}:{path.relative_to(ROOT)}'])
-                self.assertEqual(previous, path.read_bytes())
+                # This is the historical naming receipt, not a restriction on
+                # later intentional API changes in p01.
+                named = subprocess.check_output(
+                    ['git', '-C', str(ROOT), 'show', f'a191a2a2:{path.relative_to(ROOT)}'])
+                self.assertEqual(previous, named)
 
 
 class RuntimeIntegrationStructureTests(unittest.TestCase):

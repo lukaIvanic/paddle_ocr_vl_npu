@@ -40,7 +40,7 @@ class DecodeCompletionTests(unittest.TestCase):
                 tuple(t.repeat(batch_size,1,1,1) for t in active_cache.key_caches),
                 tuple(t.repeat(batch_size,1,1,1) for t in active_cache.value_caches), capacity)
         arena = DecodeArena(cache=active_cache, device=torch.device('cpu'),
-                            batch_size=batch_size, eos_token_id=2, decode_device_timing=False)
+                            batch_size=batch_size, eos_token_id=2)
         engine.device=arena.device
         engine.batch_size=batch_size
         engine.decode_arena=arena
@@ -73,7 +73,7 @@ class DecodeCompletionTests(unittest.TestCase):
                 rope_deltas=torch.zeros((1,1),dtype=torch.long),cache_position=torch.tensor([1]),
                 first_token_tensor=torch.tensor([[token]]),first_token=token,prompt_length=1,
                 projected_image_tokens=1,vision={},text_prefill={},cpu_timing=None,
-                prefill_timing=None,device_timing=None,request_started=0,prefill_finished=0)
+                prefill_timing=None,request_started=0,prefill_finished=0)
         engine._prepare_cpu=prepare
         engine._prefill_for_decode=prefill
         # Capture the actual completion; detokenization is separately tested.
@@ -108,6 +108,7 @@ class DecodeCompletionTests(unittest.TestCase):
         for completion in completed:
             self.assertIsNone(completion.ready.cache)
             self.assertIsNone(completion.ready.first_token_tensor)
+        self.assertEqual(engine.output_tokens,sum(len(c.token_ids) for c in completed))
         self.assertEqual(summary.requests,len(completed))
         self.assertEqual(summary.raw_decode_token_slots,summary.effective_decode_tokens+
                          summary.idle_decode_token_slots+summary.lookahead_decode_token_slots)

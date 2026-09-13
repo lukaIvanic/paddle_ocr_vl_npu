@@ -331,37 +331,41 @@ class TextSimplificationTests(unittest.TestCase):
             self.assertIn(flag, error.getvalue())
         for name in ('HERE', 'EXPERIMENT_ROOT', 'REPO_ROOT'):
             self.assertFalse(hasattr(serve, name))
-        expected_args = {'host', 'port', 'request_timeout_s', 'max_image_bytes', 'queue_capacity', 'run_eagerly',
+        expected_args = {'host', 'port', 'request_timeout_s', 'shutdown_timeout_s',
+            'max_image_bytes', 'max_in_flight_requests', 'run_eagerly',
             'full_decode_lm_head',
             'model_path', 'device', 'decode_batch_size', 'metrics_level',
             'graph_cache_directory', 'log_folder'}
         self.assertEqual(set(vars(args)), expected_args)
-        self.assertEqual(serve.PROMPTS, {'table': 'Table Recognition:'})
-        self.assertEqual(args.metrics_level, 'scheduling')
+        self.assertEqual(serve.PROMPTS, {'table': 'Table Recognition:', 'text': 'OCR:',
+                                        'formula': 'Formula Recognition:'})
+        self.assertEqual(args.metrics_level, 'basic')
         self.assertFalse(args.full_decode_lm_head)
         with patch.object(sys, 'argv', ['p01_serve.py', *path_args, '--expanded-decode-lm-head']), \
              patch('sys.stderr',new=io.StringIO()), self.assertRaises(SystemExit):
             serve.parse_args()
         with patch.object(sys, 'argv', ['p01_serve.py', *path_args, '--full-decode-lm-head']):
             self.assertTrue(serve.parse_args().full_decode_lm_head)
-        for level in ('basic', 'scheduling', 'detailed'):
+        for level in ('basic', 'detailed'):
             with patch.object(sys, 'argv', ['p01_serve.py', *path_args, '--metrics-level', level]):
                 self.assertEqual(serve.parse_args().metrics_level, level)
-        for flags in (['--metrics-level', 'unknown'], ['--decode-device-timing'],
+        for flags in (['--metrics-level', 'scheduling'], ['--metrics-level', 'unknown'], ['--decode-device-timing'],
                       ['--request-scheduling-metrics'], ['--torchair-cache-dir', '/old/cache']):
             with patch.object(sys, 'argv', ['p01_serve.py', *path_args, *flags]), \
                  patch('sys.stderr', new=io.StringIO()), self.assertRaises(SystemExit):
                 serve.parse_args()
         with patch.object(sys, 'argv', ['p01_serve.py', *path_args,
-                '--host', '0.0.0.0', '--port', '9001', '--queue-capacity', '10',
-                '--request-timeout-s', '30', '--max-image-bytes', '1234',
+                '--host', '0.0.0.0', '--port', '9001', '--max-in-flight-requests', '10',
+                '--request-timeout-s', '30',
+                '--shutdown-timeout-s', '400', '--max-image-bytes', '1234',
                 '--device', 'npu:1', '--decode-batch-size', '8', '--run-eagerly',
                 '--metrics-level', 'basic']):
             overridden = serve.parse_args()
         self.assertEqual(overridden, serve.ServeConfig(
             model_path=args.model_path, graph_cache_directory=args.graph_cache_directory,
             log_folder=args.log_folder,
-            host='0.0.0.0', port=9001, queue_capacity=10, request_timeout_s=30,
+            host='0.0.0.0', port=9001, max_in_flight_requests=10, request_timeout_s=30,
+            shutdown_timeout_s=400,
             max_image_bytes=1234, device='npu:1', decode_batch_size=8, run_eagerly=True,
             metrics_level='basic'))
         seen = []
@@ -381,11 +385,17 @@ class TextSimplificationTests(unittest.TestCase):
             def __init__(self, **kwargs):
                 constructor_signature.bind(**kwargs)
                 seen.append(kwargs)
+                self.output_tokens=0
+                self.batch_size=8
+                self.decode_arena=__import__('types').SimpleNamespace(num_active=0)
+                self.crops_awaiting_prefill=[]
+                self.ready_queue=[]
             def configuration(self):
                 return {}
             def serve(self, source, **kwargs):
                 serve_signature.bind(self, source, **kwargs)
-                test.assertEqual(kwargs['collect_scheduling_metrics'], level != 'basic')
+                test.assertNotIn('collect_scheduling_metrics',kwargs)
+                test.assertTrue(callable(kwargs['report_status']))
                 request = source.pull(block=False)
                 test.assertFalse(hasattr(request, 'min_pixels'))
                 test.assertFalse(hasattr(request, 'max_pixels'))
@@ -394,7 +404,7 @@ class TextSimplificationTests(unittest.TestCase):
                 test.assertIsNone(source.pull(block=False))
                 test.assertTrue(source.closed)
                 return Summary(1)
-        for level in ('basic', 'scheduling', 'detailed'):
+        for level in ('basic', 'detailed'):
             jobs, results = queue.Queue(), queue.Queue()
             jobs.put(dict(request_id='test', image_bytes=b'not-decoded-in-this-test', prompt='Table Recognition:',
                           crop_type='table', submitted_monotonic_s=0.0))
@@ -407,13 +417,16 @@ class TextSimplificationTests(unittest.TestCase):
                  patch('sys.stdout', new=io.StringIO()):
                 serve.run_inference_process(jobs, results, cfg)
             messages = []
-            while not results.empty(): messages.append(results.get())
+            while not results.empty():
+                message=results.get()
+                if message['kind']!='heartbeat': messages.append(message)
             self.assertEqual([m['kind'] for m in messages], ['ready', 'result', 'service_summary'], messages)
             self.assertTrue(messages[1]['ok'])
             self.assertEqual(messages[0]['configuration']['metrics_level'], level)
             self.assertFalse(seen[-1]['eager'])
             self.assertTrue(seen[-1]['full_decode_lm_head'])
-            self.assertEqual(seen[-1]['decode_device_timing'], level == 'detailed')
+            self.assertNotIn('decode_device_timing',seen[-1])
+            self.assertTrue(callable(seen[-1]['setup_progress']))
             self.assertEqual(seen[-1]['model'], '/unused')
             self.assertEqual(seen[-1]['graph_cache_directory'], Path('/unused/graphs'))
             self.assertNotIn('torchair_cache_dir', seen[-1])

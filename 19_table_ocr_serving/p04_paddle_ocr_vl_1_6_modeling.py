@@ -122,6 +122,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             graph_directories=vision_graph_directories,
             device=device,
             eager=eager,
+            setup_progress=progress,
         )
         torch_npu.npu.synchronize(device)
         setup_timing_s["vision_runtime_setup"] = time.perf_counter() - started
@@ -140,6 +141,7 @@ class LocalPaddleOCRVLForConditionalGeneration(nn.Module):
             cache_length=cache_length,
             device=device,
             eager=eager,
+            setup_progress=progress,
         )
         torch_npu.npu.synchronize(device)
         setup_timing_s["text_runtime_setup"] = time.perf_counter() - started

@@ -28,7 +28,11 @@ def main():
     parser.add_argument('--output-dir', type=Path, default=BASE)
     parser.add_argument('--compare-first-use', action='store_true',
         help='Skip real-request warmup, then replay the same 100 arrivals twice on one server.')
+    parser.add_argument('--logging-validation', action='store_true')
+    parser.add_argument('--metrics-level', choices=('basic', 'detailed'), default='detailed')
+    parser.add_argument('--logging-disabled-control', action='store_true')
     args = parser.parse_args()
+    assert not args.logging_disabled_control or args.logging_validation
     commit = subprocess.check_output(['git', '-C', str(RUNTIME_REPO), 'rev-parse', 'HEAD'], text=True).strip()
     assert commit == args.expected_commit
     assert not subprocess.check_output(['git', '-C', str(RUNTIME_REPO), 'status', '--porcelain', '--', '19_table_ocr_serving'], text=True).strip()
@@ -43,17 +47,23 @@ def main():
     # Model source is unchanged from the already-compiled checkpoint.
     for name in ('p04_paddle_ocr_vl_1_6_modeling.py', 'p05_vision_prefill.py', 'p06_text_prefill_and_decode.py'):
         relative = '19_table_ocr_serving/' + name
-        assert (RUNTIME_REPO / relative).read_bytes() == subprocess.check_output(['git', '-C', str(RUNTIME_REPO), 'show', 'ce7a92b1:' + relative])
+        reference_commit = commit if args.logging_validation else 'ce7a92b1'
+        assert (RUNTIME_REPO / relative).read_bytes() == subprocess.check_output(['git', '-C', str(RUNTIME_REPO), 'show', reference_commit + ':' + relative])
 
     path = HISTORICAL / '09_persistent_page_engine/scripts/table_poisson_frontier.py'
     source = path.read_text()
+    server_script = CONTAINER_RUNTIME + '/19_table_ocr_serving/p01_serve.py'
+    if args.logging_disabled_control:
+        server_script = CONTAINER_RUNTIME + '/tmp/19_table_ocr_serving/logging_20260913/logging_control.py'
     replacements = {
-        '"serve_crop_ocr_api.py" in cmd': '"19_table_ocr_serving/p01_serve.py" in cmd',
-        'SCRIPTS + "serve_crop_ocr_api.py"': repr(CONTAINER_RUNTIME + '/19_table_ocr_serving/p01_serve.py'),
+        '"serve_crop_ocr_api.py" in cmd': repr(server_script) + ' in cmd',
+        'SCRIPTS + "serve_crop_ocr_api.py"': repr(server_script),
         'self.marker = str(relative / "service.json")': 'self.marker = str(relative / "service_logs")',
         ', "--min-pixels", "28224", "--max-pixels", "802816"': ', *SERVER_ARGS',
         '"--service-summary-output", self.marker': '"--log-folder", self.marker',
     }
+    if args.logging_validation:
+        replacements['"--queue-capacity", "64"'] = '"--max-in-flight-requests", "64"'
     for old, new in replacements.items():
         assert source.count(old) == 1, old
         source = source.replace(old, new)
@@ -84,14 +94,15 @@ def main():
     ns['CONTAINER_REPO'] = '/workspace/repos/table_step1_be691de1_20260910'
     ns['SERVER_ARGS'] = [
         '--model-path', '/workspace/models/PaddleOCR-VL-1.6', '--device', 'npu:0',
-        '--graph-cache-directory', CACHE, '--metrics-level', 'detailed',
+        '--graph-cache-directory', CACHE, '--metrics-level', args.metrics_level,
     ]
     sweep = ns['Sweep'](argparse.Namespace(npu=args.npu, count=100, output_dir=args.output_dir))
     sweep.write('plan.json', dict(runtime_commit=commit, client_sha256=CLIENT_SHA,
         lifecycle_harness_commit=LOCKED, physical_npu=args.npu, batch=8,
         target_qps=6, requests=100, arrival_schedule=str(REFERENCE / 'schedule.jsonl'),
         schedule_sha256=hashlib.sha256(schedule.read_bytes()).hexdigest(),
-        ordered_ids_sha256=ORDER_SHA, metrics_level='detailed', head_rows=60416,
+        ordered_ids_sha256=ORDER_SHA, metrics_level=args.metrics_level, head_rows=60416,
+        logging_disabled_control=args.logging_disabled_control,
         cache_root=CACHE, reference=str(REFERENCE / 'b8_both_measured'),
         note=('Cached startup, synthetic graph warmups only; two identical 100-request passes on one server, each awaited in full.'
             if args.compare_first_use else 'Cached startup, one full real warmup outside measurement; no client concurrency cap.')))
@@ -102,8 +113,8 @@ def main():
         assert ready['batch_size'] == 8 and ready['cache_length'] == 4096
         assert ready['decode_vocab']['selected_vocab_size'] == 60416
         assert ready['decode_vocab']['token_ids_sha256'] == 'c730b5388f9871ead92e2cb484f8df81ba69518f1e8baeccc5a37f44c1514637'
-        assert ready['decode_device_timing'] is True
-        assert ready['request_scheduling_metrics'] is True
+        assert ready['decode_device_timing'] is (not args.logging_validation)
+        assert ready['request_scheduling_metrics'] is (not args.logging_validation)
         passes = ('first', 'second') if args.compare_first_use else ('measured',)
         pass_results = {}
         for name in passes:

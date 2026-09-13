@@ -337,6 +337,7 @@ class VisionPrefillRuntime:
         graph_directories: dict[int, Path],
         device: torch.device,
         eager: bool = False,
+        setup_progress: Callable[[str, str, float | None], None] | None = None,
     ):
         self.model = model
         self.eager = eager
@@ -367,7 +368,10 @@ class VisionPrefillRuntime:
         per_bucket: dict[str, Any] = {}
         wrapper_total_s = 0.0
         first_call_total_s = 0.0
-        for bucket in self.buckets:
+        for index, bucket in enumerate(self.buckets, 1):
+            graph_label = f"vision graph {index}/{len(self.buckets)}, tokens={bucket}"
+            if setup_progress is not None:
+                setup_progress(graph_label, "start", None)
             module = VisionPrefillStage(model).eval()
             cache_dir = graph_directories[bucket]
             cache_dir.mkdir(parents=True, exist_ok=True)
@@ -415,6 +419,8 @@ class VisionPrefillRuntime:
             self.compiled[bucket] = compiled
             wrapper_total_s += wrapper_s
             first_call_total_s += first_call_s
+            if setup_progress is not None:
+                setup_progress(graph_label, "done", wrapper_s + first_call_s)
             per_bucket[str(bucket)] = {
                 "compile_wrapper_s": float(wrapper_s),
                 "compile_first_call_s": float(first_call_s),

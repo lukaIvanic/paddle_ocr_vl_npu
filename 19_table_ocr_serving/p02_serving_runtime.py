@@ -101,7 +101,7 @@ class ContinuousRecognizer:
         batch_size: int,
         graph_cache_directory: Path,
         full_decode_lm_head: bool = False,
-        decode_device_timing: bool = True,
+        setup_progress: Callable[[str, str, float | None], None] | None = None,
         eager: bool = False,
     ):
         """Load the model and create the streams, caches and scheduler once."""
@@ -120,7 +120,7 @@ class ContinuousRecognizer:
         self.eager = eager
         self.decode_backend = "raw_eager" if eager else "torchair"
         self.full_decode_lm_head = bool(full_decode_lm_head)
-        self.decode_device_timing = bool(decode_device_timing)
+        self.setup_progress = setup_progress or _emit_setup_progress
         torch.npu.config.allow_internal_format = True  # allow NZ weight layouts
         torch.npu.set_compile_mode(jit_compile=False)
         self.setup_timing_s: dict[str, float] = {}
@@ -155,7 +155,7 @@ class ContinuousRecognizer:
             cache_length=CACHE_LENGTH,
             device=self.device,
             eager=self.eager,
-            setup_progress=_emit_setup_progress,
+            setup_progress=self.setup_progress,
         )
         self.setup_timing_s.update(self.stages.setup_timing_s)
         self.vision_prefill = self.stages.vision_prefill
@@ -195,7 +195,6 @@ class ContinuousRecognizer:
                 device=self.device,
                 batch_size=self.batch_size,
                 eos_token_id=int(TEXT_EOS_TOKEN_ID),
-                decode_device_timing=self.decode_device_timing,
             )
             # Decode's asynchronous token-copy resources are created here,
             # after the active cache slots, just as in the original setup.
@@ -213,7 +212,7 @@ class ContinuousRecognizer:
                     (2, self.batch_size), dtype=torch.int64, pin_memory=True,
                 )
         self.setup_timing_s["recognizer_runtime_total"] = time.perf_counter() - runtime_started
-        _emit_setup_progress("recognizer_runtime", "done", self.setup_timing_s["recognizer_runtime_total"])
+        self.setup_progress("recognizer_runtime", "done", self.setup_timing_s["recognizer_runtime_total"])
 
 
     @torch.inference_mode()
@@ -225,6 +224,7 @@ class ContinuousRecognizer:
         emit_result: Callable[[RecognitionResult], None],
         on_request_error: Callable[[str, BaseException], None],
         collect_scheduling_metrics: bool = False,
+        report_status: Callable[[], None] | None = None,
     ) -> ServingSummary:
         """Keep serving crops until shutdown, finishing any crops already accepted.
 
@@ -249,6 +249,8 @@ class ContinuousRecognizer:
         self.requests = requests
         self.on_request_error = on_request_error
         self.scheduling_metrics = scheduling_metrics
+        self.report_status = report_status
+        self.output_tokens = 0
         # Prepared crops wait here in arrival order; only CPU work runs ahead.
         self.crops_awaiting_prefill: deque[tuple[str, Future[PreparedCrop]]] = deque()
         self.cpu_preparation_worker = ThreadPoolExecutor(
@@ -281,6 +283,7 @@ class ContinuousRecognizer:
         buffer_capacity = self.ready_buffer_capacity
         low_watermark = self.ready_buffer_low_watermark
         ready_queue: deque[DecodeRequest] = deque()
+        self.ready_queue = ready_queue
         source_exhausted = (bool(self.requests.closed) and not self.crops_awaiting_prefill)
         submitted_order: list[str] = []
         submitted_ids: set[str] = set()
@@ -447,6 +450,7 @@ class ContinuousRecognizer:
                     if not ready_queue:
                         break
                     ready = ready_queue.popleft()
+                    self.output_tokens += 1  # Prefill's first token, including EOS.
                     progress(
                         "admission_begin",
                         hot_swap=hot_swap,
@@ -599,6 +603,7 @@ class ContinuousRecognizer:
                     continue
                 token_id = int(host_tokens[slot_index])
                 state.token_ids.append(token_id)
+                self.output_tokens += 1  # Only retained tokens; stale copies were skipped above.
                 stop_reason = self._completion_reason(state, token_id)
                 if stop_reason is not None:
                     released = self.decode_arena.release(slot_index)
@@ -679,6 +684,8 @@ class ContinuousRecognizer:
         # Repeatedly decode active requests, consume the previous token copy,
         # and admit new requests as slots become free.
         while True:
+            if self.report_status is not None:
+                self.report_status()
             if self.decode_arena.num_active == 0:
                 if not ready_queue and not source_exhausted:
                     refill_ready_queue(
@@ -782,15 +789,6 @@ class ContinuousRecognizer:
             0.0,
             scheduler_wall_s - ready_source_wall_s - completion_callback_wall_s,
         )
-        decode_device_s, admission_device_s = self.decode_arena.resolve_device_timing()
-        continuous_decode_wall_s = (
-            max(
-                decode_host_exclusive_wall_s,
-                decode_device_s + admission_device_s,
-            )
-            if self.decode_arena.decode_device_timing
-            else None
-        )
 
         if ready_queue or not source_exhausted:
             raise AssertionError(
@@ -848,15 +846,10 @@ class ContinuousRecognizer:
             initial_kv_prefix_bytes_copied=initial_kv_bytes,
             hot_swap_kv_prefix_bytes_copied=hot_swap_kv_bytes,
             timing_s={
-                "continuous_decode_wall": continuous_decode_wall_s,
                 "decode_host_exclusive_wall": float(decode_host_exclusive_wall_s),
                 "run_scoped_scheduler_wall": float(scheduler_wall_s),
                 "ready_source_wall": float(ready_source_wall_s),
                 "completion_callback_wall": float(completion_callback_wall_s),
-                "decode_model_and_argmax_device": (
-                    float(decode_device_s) if self.decode_arena.decode_device_timing else None
-                ),
-                "slot_admission_device": float(admission_device_s),
                 "slot_admission_enqueue_wall": float(
                     self.decode_arena.admission_enqueue_wall_s
                 ),
@@ -870,13 +863,9 @@ class ContinuousRecognizer:
                 "private_cache_pool": private_cache_pool_stats,
             },
             rates={
-                "raw_decode_tok_per_s": per_second(raw_slots, continuous_decode_wall_s),
-                "effective_decode_tok_per_s": per_second(effective_tokens, continuous_decode_wall_s),
+                "output_tok_per_s": per_second(self.output_tokens, float(scheduler_wall_s)),
                 "effective_fraction": fraction_of_decode_token_slots(effective_tokens),
                 "active_slot_fraction": fraction_of_decode_token_slots(active_decode_slots),
-                "effective_device_tok_per_s": per_second(
-                    effective_tokens, float(decode_device_s) if self.decode_arena.decode_device_timing else None,
-                ),
                 "scheduler_effective_tok_per_s": per_second(effective_tokens, float(scheduler_wall_s)),
             },
         )
@@ -1022,7 +1011,6 @@ class ContinuousRecognizer:
         prompt KV cache and first token will enter a shared decode slot next.
         """
         # Copy inputs on the transfer stream; the compute stream waits on its event.
-        device_timeline = DeviceTimeline(self.device)
         submit_started = time.perf_counter()
         with torch_npu.npu.stream(self.prefill_transfer_stream):
             ready_wait_s = max(0.0, time.perf_counter() - prepared_crop.preparation_finished)
@@ -1037,13 +1025,12 @@ class ContinuousRecognizer:
                     prepared_crop.rope_deltas.to(self.device, non_blocking=True),
                 )
 
-            device_inputs = device_timeline.measure("recognition_inputs_h2d", copy_input_tensors)
+            device_inputs = copy_input_tensors()
             h2d_ready_event = self.prefill_transfer_stream.record_event()
         consumer_wait_s = float(consumer_wait_s)
         prefill_h2d_submit_host = time.perf_counter() - submit_started
 
         # Run normalization, vision, projector, text prefill and first-token selection.
-        measure = device_timeline.measure
         enqueue_started = time.perf_counter()
         torch_npu.npu.current_stream().wait_event(h2d_ready_event)
         prefill_started = time.perf_counter()
@@ -1056,37 +1043,37 @@ class ContinuousRecognizer:
             output.div_(0.5)
             return output.to(self.model.visual.dtype).contiguous()
 
-        pixels = measure("vision_input_normalize", normalize_uint8)
+        pixels = normalize_uint8()
         vision_model = self.model.visual.vision_model
-        hidden = measure("vision_embeddings", lambda: vision_model.embeddings(
+        hidden = vision_model.embeddings(
             pixels.unsqueeze(0), image_grid_thw=prepared_crop.image_grid_thw,
-        ))
+        )
         real_length = int(hidden.shape[0])
         vision_route = self.vision_prefill.route(real_length)
-        prepared_vision = measure("vision_prefill_input_prep", lambda: self.vision_prefill.prepare(
+        prepared_vision = self.vision_prefill.prepare(
             hidden, prepared_crop.image_grid_thw, route=vision_route,
-        ))
-        features = measure("vision_prefill", lambda: self.vision_prefill.run_prepared(prepared_vision))
+        )
+        features = self.vision_prefill.run_prepared(prepared_vision)
         self._vision_prefill_stats.record(vision_route)
         next_position = torch.full((1,), int(input_ids.shape[1]), device=self.device, dtype=torch.int64)
-        image_embeds = measure("adaptive_mlp_projector", lambda: self.model.mlp_AR(features, prepared_crop.image_grid_thw))
-        inputs_embeds = measure("text_token_embedding", lambda: self.model.model.embed_tokens(input_ids))
+        image_embeds = self.model.mlp_AR(features, prepared_crop.image_grid_thw)
+        inputs_embeds = self.model.model.embed_tokens(input_ids)
 
         def scatter_image_embeds() -> torch.Tensor:
             projected = image_embeds.to(device=inputs_embeds.device, dtype=inputs_embeds.dtype)
             image_mask = (input_ids == IMAGE_TOKEN_ID).unsqueeze(-1).expand_as(inputs_embeds)
             return inputs_embeds.masked_scatter(image_mask, projected)
 
-        inputs_embeds = measure("image_embed_scatter", scatter_image_embeds)
-        lease = measure("static_cache_alloc", self.prefill_cache_pool.acquire)
+        inputs_embeds = scatter_image_embeds()
+        lease = self.prefill_cache_pool.acquire()
         self._text_prefill_stats.record()
         text_route = self.text_prefill.route(int(inputs_embeds.shape[1]))
-        prepared_text = measure("text_prefill_input_prep", lambda: self.text_prefill.prepare(
+        prepared_text = self.text_prefill.prepare(
             inputs_embeds, attention_mask, position_ids, route=text_route,
-        ))
-        last_hidden = measure("text_prefill", lambda: self.text_prefill.run_prepared(prepared_text, lease.cache))
-        logits = measure("prefill_lm_head", lambda: self.model.lm_head(last_hidden))
-        next_token = measure("prefill_argmax", lambda: torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True))
+        )
+        last_hidden = self.text_prefill.run_prepared(prepared_text, lease.cache)
+        logits = self.model.lm_head(last_hidden)
+        next_token = torch.argmax(logits[:, -1, :].float(), dim=-1, keepdim=True)
         text_route = {
             **text_route,
             "private_cache_slot_index": int(lease.slot_index),
@@ -1108,7 +1095,9 @@ class ContinuousRecognizer:
 
         # Wait for the first token on CPU before admitting this crop to decode.
         resolve_started = time.perf_counter()
-        device_stage_spans = device_timeline.resolve_spans()
+        # Preserve the prefill completion wait before copying its first token.
+        # This existing dependency event is not a profiling event.
+        prefill_ready_event.synchronize()
         started = time.perf_counter()
         with torch_npu.npu.stream(self.prefill_transfer_stream):
             self.prefill_transfer_stream.wait_event(prefill_ready_event)
@@ -1121,39 +1110,19 @@ class ContinuousRecognizer:
 
         cpu_timing = prepared_crop.cpu_timing
 
-        def stage_seconds(stage: str) -> float:
-            return float(device_stage_spans[stage]["seconds"])
-
-        device_timing = PrefillDeviceTiming(
-            recognition_inputs_h2d=stage_seconds("recognition_inputs_h2d"),
-            vision_embeddings=stage_seconds("vision_embeddings"),
-            vision_prefill_input_prep=stage_seconds("vision_prefill_input_prep"),
-            vision_prefill=stage_seconds("vision_prefill"),
-            adaptive_mlp_projector=stage_seconds("adaptive_mlp_projector"),
-            text_token_embedding=stage_seconds("text_token_embedding"),
-            image_embed_scatter=stage_seconds("image_embed_scatter"),
-            static_cache_alloc=stage_seconds("static_cache_alloc"),
-            text_prefill_input_prep=stage_seconds("text_prefill_input_prep"),
-            text_prefill=stage_seconds("text_prefill"),
-            prefill_lm_head=stage_seconds("prefill_lm_head"),
-            prefill_argmax=stage_seconds("prefill_argmax"),
-            text_kv_redistribute=0.0,
-        )
-        # vision_input_normalize is measured too but has never been reported.
         prefill_wall_s = resolve_finished - prefill_started
         prefill_timing = PrefillTiming(
             cpu_preprocess_background_consumer_wait=consumer_wait_s,
             cpu_preprocess_background_ready_wait=ready_wait_s,
             prefill_h2d_submit_host=prefill_h2d_submit_host,
             prefill_enqueue_host=prefill_enqueue_host,
-            recognizer_h2d=device_timing.recognition_inputs_h2d,
             first_token_d2h=first_token_d2h_s,
             prefill_resolve_wait=resolve_finished - resolve_started,
             vision_and_text_prefill_wall=prefill_wall_s,
             time_to_first_token=resolve_finished - prepared_crop.request_started,
             prefill_request_total=(
                 cpu_timing.cpu_image_and_prompt_preprocess + cpu_timing.cpu_mrope_index + cpu_timing.cpu_pin_memory
-                + device_timing.recognition_inputs_h2d + prefill_wall_s + first_token_d2h_s
+                + prefill_h2d_submit_host + prefill_wall_s
             ),
         )
         return DecodeRequest(
@@ -1173,7 +1142,6 @@ class ContinuousRecognizer:
             text_prefill=text_route,
             cpu_timing=cpu_timing,
             prefill_timing=prefill_timing,
-            device_timing=device_timing,
             request_started=prepared_crop.request_started,
             prefill_finished=resolve_finished,
         )
@@ -1204,7 +1172,6 @@ class ContinuousRecognizer:
             cpu_preprocess_background_ready_wait=prefill_timing.cpu_preprocess_background_ready_wait,
             prefill_h2d_submit_host=prefill_timing.prefill_h2d_submit_host,
             prefill_enqueue_host=prefill_timing.prefill_enqueue_host,
-            recognizer_h2d=prefill_timing.recognizer_h2d,
             first_token_d2h=prefill_timing.first_token_d2h,
             prefill_resolve_wait=prefill_timing.prefill_resolve_wait,
             vision_and_text_prefill_wall=prefill_timing.vision_and_text_prefill_wall,
@@ -1235,7 +1202,6 @@ class ContinuousRecognizer:
             decode_tokens_after_prefill_including_eos=max(0, generated_tokens - 1),
             decode_calls_executed=completed_crop.iterations_launched,
             timing_s=request_timing,
-            device_stage_s=prefill_result.device_timing,
             rates={
                 "request_output_tok_per_s": per_second(generated_tokens, request_timing.request_total),
             },
@@ -1392,12 +1358,12 @@ class ContinuousRecognizer:
     @contextmanager
     def _setup_stage(self, name: str) -> Iterator[None]:
         """Log and time one setup stage; waits for the NPU so the time is real."""
-        _emit_setup_progress(name, "start")
+        self.setup_progress(name, "start")
         started = time.perf_counter()
         yield
         torch_npu.npu.synchronize(self.device)
         self.setup_timing_s[name] = time.perf_counter() - started
-        _emit_setup_progress(name, "done", self.setup_timing_s[name])
+        self.setup_progress(name, "done", self.setup_timing_s[name])
 
 
     def _prepare_decode_lm_head(self) -> str:
@@ -1441,7 +1407,7 @@ class ContinuousRecognizer:
             "vision_linear_weight_format": dict(self.vision_weight_format),
             "vision_backend": self.decode_backend,
             "vision_attention": VISION_ATTENTION,
-            "decode_device_timing": self.decode_device_timing,
+            "decode_device_timing": False,
             "compact_decode_control": False,
             "vision_sequence_alignment": VISION_SEQUENCE_ALIGNMENT,
             "vision_packing": {
@@ -1506,13 +1472,11 @@ class DecodeArena:
         device: torch.device,
         batch_size: int,
         eos_token_id: int,
-        decode_device_timing: bool = True,
     ) -> None:
         self.cache = cache
         self.device = device
         self.batch_size = int(batch_size)
         self.eos_token_id = int(eos_token_id)
-        self.decode_device_timing = bool(decode_device_timing)
         self.next_token = torch.full(
             (self.batch_size, 1),
             self.eos_token_id,
@@ -1537,16 +1501,12 @@ class DecodeArena:
         self.active_increment = torch.zeros_like(self.cache_position)
         self.slots: list[DecodeSlotState | None] = [None] * self.batch_size
         self._epochs = [0] * self.batch_size
-        self._decode_event_spans: list[_DeviceSpanRecord] = []
-        self._admission_event_spans: list[_DeviceSpanRecord] = []
         self.admission_enqueue_wall_s = 0.0
         self.kv_prefix_bytes_copied = 0
 
     def begin_run(self) -> None:
         if any(slot is not None for slot in self.slots):
             raise RuntimeError("decode arena still contains active slots")
-        self._decode_event_spans.clear()
-        self._admission_event_spans.clear()
         self.admission_enqueue_wall_s = 0.0
         self.kv_prefix_bytes_copied = 0
         self.next_token.fill_(self.eos_token_id)
@@ -1633,7 +1593,7 @@ class DecodeArena:
             self.active_increment[slot_index].fill_(1)
 
         started = time.perf_counter()
-        self._measure_enqueue(self._admission_event_spans, copy_state)
+        copy_state()
         self.admission_enqueue_wall_s += time.perf_counter() - started
         self.kv_prefix_bytes_copied += useful_prefix_bytes
         self._epochs[slot_index] += 1
@@ -1690,7 +1650,7 @@ class DecodeArena:
             )
             return decode_output.reshape(-1, 1)
 
-        sampled = self._measure_enqueue(self._decode_event_spans, execute)
+        sampled = execute()
         self.next_token = torch.where(
             self.active_mask.view(-1, 1),
             sampled,
@@ -1729,57 +1689,9 @@ class DecodeArena:
     def free_slot_indices(self) -> list[int]:
         return [index for index, state in enumerate(self.slots) if state is None]
 
-    def resolve_device_timing(self) -> tuple[float, float]:
-        return (
-            self._resolve_spans(self._decode_event_spans),
-            self._resolve_spans(self._admission_event_spans),
-        )
 
-    def _measure_enqueue(
-        self,
-        records: list[_DeviceSpanRecord],
-        fn: Callable[[], Any],
-    ) -> Any:
-        if records is self._decode_event_spans and not self.decode_device_timing:
-            # Profiling events only. Token-copy dependency/completion events
-            # remain mandatory and are owned by the scheduler, not this helper.
-            return fn()
-        start_event = self._event()
-        end_event = self._event()
-        enqueued_ns = time.perf_counter_ns()
-        if start_event is not None:
-            start_event.record()
-        result = fn()
-        if end_event is not None:
-            end_event.record()
-            duration_s = None
-        else:
-            duration_s = (time.perf_counter_ns() - enqueued_ns) / 1_000_000_000
-        records.append(_DeviceSpanRecord(start_event, end_event, duration_s))
-        return result
 
-    def _event(self) -> Any | None:
-        if self.device.type == "cuda":
-            return torch.cuda.Event(enable_timing=True)
-        if self.device.type == "npu":
-            import torch_npu
 
-            return torch_npu.npu.Event(enable_timing=True)
-        return None
-
-    @staticmethod
-    def _resolve_spans(records: list[_DeviceSpanRecord]) -> float:
-        total = 0.0
-        for record in records:
-            if record.duration_s is not None:
-                total += record.duration_s
-            else:
-                assert record.start_event is not None
-                assert record.end_event is not None
-                total += (
-                    float(record.start_event.elapsed_time(record.end_event)) / 1000.0
-                )
-        return total
 
 
 # Requests accepted by the runtime, individual OCR results, and run summaries.
@@ -1820,7 +1732,6 @@ class RecognitionResult:
     decode_tokens_after_prefill_including_eos: int
     decode_calls_executed: int
     timing_s: RequestTiming
-    device_stage_s: PrefillDeviceTiming
     rates: dict[str, float | None]
     vision: dict[str, Any] = field(default_factory=dict)
     text_prefill: dict[str, Any] = field(default_factory=dict)
@@ -1882,7 +1793,6 @@ class DecodeRequest:
     text_prefill: dict[str, Any]
     cpu_timing: CpuTiming
     prefill_timing: PrefillTiming
-    device_timing: PrefillDeviceTiming
     request_started: float
     prefill_finished: float
 
@@ -1948,11 +1858,6 @@ class DecodeStep:
     generated_token_counts: tuple[int | None, ...]
 
 
-@dataclass
-class _DeviceSpanRecord:
-    start_event: Any | None
-    end_event: Any | None
-    duration_s: float | None
 
 
 # One request's state as it moves through the stages.
@@ -1982,7 +1887,6 @@ class RequestTiming:
     prefill_h2d_submit_host: float  # host time to submit the H2D copies
     # Prefill.
     prefill_enqueue_host: float  # host time to enqueue the prefill chain
-    recognizer_h2d: float  # NPU time of the H2D copies
     first_token_d2h: float  # wait for the first token to copy back
     prefill_resolve_wait: float  # host time resolving device timing
     vision_and_text_prefill_wall: float  # enqueue start -> first token resolved
@@ -1995,23 +1899,6 @@ class RequestTiming:
     request_total: float  # request submitted -> text ready
 
 
-@dataclass
-class PrefillDeviceTiming:
-    """NPU seconds of each prefill stage, in execution order, as reported in device_stage_s."""
-
-    recognition_inputs_h2d: float
-    vision_embeddings: float
-    vision_prefill_input_prep: float
-    vision_prefill: float
-    adaptive_mlp_projector: float
-    text_token_embedding: float
-    image_embed_scatter: float
-    static_cache_alloc: float
-    text_prefill_input_prep: float
-    text_prefill: float
-    prefill_lm_head: float
-    prefill_argmax: float
-    text_kv_redistribute: float  # always 0; kept because the summary schema lists it
 
 
 @dataclass
@@ -2034,7 +1921,6 @@ class PrefillTiming:
     cpu_preprocess_background_ready_wait: float
     prefill_h2d_submit_host: float
     prefill_enqueue_host: float
-    recognizer_h2d: float
     first_token_d2h: float
     prefill_resolve_wait: float
     vision_and_text_prefill_wall: float
@@ -2229,99 +2115,6 @@ def per_second(count: int | float, seconds: float | None) -> float | None:
     if seconds is None or seconds <= 0:
         return None
     return float(count) / float(seconds)
-
-
-# Prefill uses DeviceTimeline to record NPU stages without waiting between
-# them. RequestSchedulingMetrics below instead records host-side scheduling.
-
-
-class DeviceTimeline:
-    """Record per-stage device time without synchronizing between stages.
-
-    The caller resolves the timeline at a natural phase boundary. The reported
-    values are accelerator execution time, while coarse phase and request
-    timings remain ordinary synchronized wall time.
-    """
-
-    def __init__(self, device: torch.device):
-        self.device = device
-        self._events: dict[str, tuple[Any, Any, int]] = {}
-        self._anchor_event: Any | None = None
-        self._anchor_host_ns: int | None = None
-
-    def _event(self):
-        if self.device.type == "npu":
-            return torch_npu.npu.Event(enable_timing=True)
-        return None
-
-    def measure(self, name: str, fn: Callable[[], Any]) -> Any:
-        start = self._event()
-        end = self._event()
-        enqueued_ns = time.perf_counter_ns()
-        if start is None or end is None:
-            began = time.perf_counter()
-            result = fn()
-            elapsed = time.perf_counter() - began
-            self._events[name] = (elapsed, None, enqueued_ns)
-            return result
-        if self._anchor_event is None:
-            self._anchor_event = start
-            self._anchor_host_ns = enqueued_ns
-        start.record()
-        result = fn()
-        end.record()
-        self._events[name] = (start, end, enqueued_ns)
-        return result
-
-    def resolve(self) -> dict[str, float]:
-        return {
-            name: float(span["seconds"])
-            for name, span in self.resolve_spans().items()
-        }
-
-    def resolve_spans(self) -> dict[str, dict[str, float | int | str]]:
-        """Resolve duration and relative device position at the existing boundary.
-
-        ``start_ns`` and ``end_ns`` share the host monotonic clock. Accelerator
-        spans use event-to-event offsets from the first recorded event, anchored
-        at the host timestamp immediately before that event was enqueued. No
-        synchronization is introduced beyond the one resolve() already used.
-        """
-
-        latest_end_event = next(
-            (
-                end
-                for _start, end, _enqueued_ns in reversed(self._events.values())
-                if end is not None
-            ),
-            None,
-        )
-        if latest_end_event is None:
-            torch_npu.npu.synchronize(self.device)
-        else:
-            latest_end_event.synchronize()
-        resolved: dict[str, dict[str, float | int | str]] = {}
-        for name, (start, end, enqueued_ns) in self._events.items():
-            if end is None:
-                seconds = float(start)
-                start_ns = int(enqueued_ns)
-                clock = "host_monotonic"
-            else:
-                seconds = float(start.elapsed_time(end)) / 1000.0
-                if self._anchor_event is None or self._anchor_host_ns is None:
-                    raise RuntimeError("device timeline lost its anchor event")
-                offset_seconds = (
-                    float(self._anchor_event.elapsed_time(start)) / 1000.0
-                )
-                start_ns = self._anchor_host_ns + int(offset_seconds * 1_000_000_000)
-                clock = "device_event_reconstructed"
-            resolved[name] = {
-                "seconds": seconds,
-                "start_ns": start_ns,
-                "end_ns": start_ns + int(seconds * 1_000_000_000),
-                "clock": clock,
-            }
-        return resolved
 
 
 # Scheduling measurements: observed CPU readiness, prefill intervals and slot occupancy.

@@ -140,12 +140,6 @@ class CropPipelineTests(unittest.TestCase):
         def stream(s):
             trace.append(('enter',s.name)); yield; trace.append(('exit',s.name))
         fake=types.SimpleNamespace(npu=types.SimpleNamespace(stream=stream,current_stream=lambda:compute))
-        class DeviceTimeline:
-            def __init__(self,device): self.spans={}
-            def measure(self,key,fn):
-                trace.append(('stage',key)); out=fn()
-                self.spans[key]=dict(seconds=.001,start_ns=0,end_ns=1000000,clock='fake'); return out
-            def resolve_spans(self): trace.append(('resolve',)); return self.spans
         engine=current.ContinuousRecognizer.__new__(current.ContinuousRecognizer)
         engine.device=torch.device('cpu')
         engine.prefill_transfer_stream=transfer
@@ -184,20 +178,24 @@ class CropPipelineTests(unittest.TestCase):
                 cpu_preprocess_background_service=0),
             request_started=0,preparation_finished=0)
         with patch.dict(sys.modules,{'torch_npu':fake}), patch.dict(current.__dict__,{'IMAGE_TOKEN_ID':5}), \
-             patch.object(current,'torch_npu',fake), \
-             patch.object(current,'DeviceTimeline',DeviceTimeline):
+             patch.object(current,'torch_npu',fake):
             result=engine._prefill_for_decode(prepared,0.25)
-        # Every device stage runs once, in the order the device-timing record lists.
-        device_stages=[f.name for f in fields(current.PrefillDeviceTiming)]
-        self.assertEqual(device_stages[-1],'text_kv_redistribute')
-        self.assertEqual([t[1] for t in trace if t[0]=='stage'],
-                         ['recognition_inputs_h2d','vision_input_normalize',*device_stages[1:-1]])
+        # Check the real computation order without inserting timing wrappers.
+        tree=ast.parse(Path(current.__file__).read_text())
+        method=next(n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef) and n.name=='_prefill_for_decode')
+        expected=['normalize_uint8','vision_model.embeddings','self.vision_prefill.prepare',
+                  'self.vision_prefill.run_prepared','self.model.mlp_AR','self.model.model.embed_tokens',
+                  'scatter_image_embeds','self.prefill_cache_pool.acquire','self.text_prefill.prepare',
+                  'self.text_prefill.run_prepared','self.model.lm_head','torch.argmax']
+        calls=[ast.unparse(n.func) for n in sorted(
+            (n for n in ast.walk(method) if isinstance(n,ast.Call)),key=lambda n:(n.lineno,n.col_offset))]
+        self.assertEqual([name for name in calls if name in expected],expected)
         # H2D on the transfer stream; compute waits for it; the first-token
         # copy back waits for prefill; the host waits only on that last event.
         self.assertEqual([t for t in trace if t[0]!='stage'],[
             ('enter','transfer'),('event','transfer:1'),('exit','transfer'),
             ('wait','compute','transfer:1'),('event','compute:1'),
-            ('resolve',),('enter','transfer'),('wait','transfer','compute:1'),
+            ('sync','compute:1'),('enter','transfer'),('wait','transfer','compute:1'),
             ('event','transfer:2'),('exit','transfer'),('sync','transfer:2')])
         # The same computation by hand with the fake model.
         pixels=(prepared.pixel_values.float()/255-0.5)/0.5
@@ -208,9 +206,7 @@ class CropPipelineTests(unittest.TestCase):
         self.assertEqual((result.request_id,result.crop_size,result.prompt_length,result.projected_image_tokens),
                          ('any-crop',(42,28),4,2))
         self.assertEqual(result.text_prefill['private_cache_slot_index'],2)
-        self.assertEqual(result.device_timing.text_kv_redistribute,0.0)
         self.assertEqual(result.prefill_timing.cpu_preprocess_background_consumer_wait,0.25)
-        self.assertEqual(result.prefill_timing.recognizer_h2d,result.device_timing.recognition_inputs_h2d)
         # The three timing records together are exactly the RequestTiming schema.
         self.assertEqual(
             [f.name for f in fields(current.CpuTiming)]+[f.name for f in fields(current.PrefillTiming)]

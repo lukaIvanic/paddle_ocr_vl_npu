@@ -24,9 +24,13 @@ class RuntimeRecordTests(unittest.TestCase):
         source = source.replace('ContinuousRecognizer._result_from_completion',
                                 'ContinuousRecognizer._build_recognition_result')
         tree = ast.parse(source)
-        # Repetition metadata was removed in the previous, separate cleanup.
+        # Account explicitly for approved removals: repetition metadata and NPU timings.
+        # Remaining result fields must retain the same serialization.
         result = next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='RecognitionResult')
-        result.body = [n for n in result.body if not (isinstance(n,ast.AnnAssign) and n.target.id=='repetition')]
+        result.body = [n for n in result.body if not (isinstance(n,ast.AnnAssign) and n.target.id in {'repetition','device_stage_s'})]
+        tree.body = [n for n in tree.body if not (isinstance(n,ast.ClassDef) and n.name=='PrefillDeviceTiming')]
+        timing = next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='RequestTiming')
+        timing.body = [n for n in timing.body if not (isinstance(n,ast.AnnAssign) and n.target.id=='recognizer_h2d')]
         cls.old = types.ModuleType('historical_serving_records')
         sys.modules[cls.old.__name__] = cls.old
         exec(compile(tree,'historical_serving_records','exec'),cls.old.__dict__)
@@ -63,8 +67,7 @@ class RuntimeRecordTests(unittest.TestCase):
             kwargs = {f.name:0 for f in fields(cls) if f.default is MISSING and f.default_factory is MISSING}
             if name=='RecognitionResult':
                 kwargs.update(request_id='crop',text='<fcel>汉字<nl>',token_ids=[10,2],stop_reason='eos',
-                    timing_s=module.RequestTiming(**{f.name:.25 for f in fields(module.RequestTiming)}),
-                    device_stage_s=module.PrefillDeviceTiming(**{f.name:.5 for f in fields(module.PrefillDeviceTiming)}))
+                    timing_s=module.RequestTiming(**{f.name:.25 for f in fields(module.RequestTiming)}))
             return json.dumps(asdict(cls(**kwargs)),sort_keys=True)
         for name in ('RecognitionResult','ContinuousDecodeResult'):
             self.assertEqual(sample(self.old,name),sample(current,name))

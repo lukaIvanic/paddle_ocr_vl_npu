@@ -1,5 +1,127 @@
 # Experiment 19: table OCR serving
 
+## Live logging
+
+`--log-folder` receives `events.jsonl` while serving and the existing
+`service_summary.json` at shutdown. Every event is also printed as the same
+JSON line to the terminal. One background writer formats, writes and flushes
+each event immediately; no batching timer or separate logging process exists.
+
+`--metrics-level basic` (default) logs startup/model/graph preparation, readiness,
+accepted and finished requests, response writes, timeouts/rejections/errors and
+shutdown. Finished requests include their ID, type, worker latency, output-token
+count and stopping reason. `detailed` additionally includes existing per-request
+CPU/wait/combined-prefill/decode-residency/detokenization wall timings, output
+formatting duration, dimensions and input-token counts. Neither level enables
+NPU profiling events or the research scheduling traces.
+
+The inference worker sends a heartbeat every 15 seconds, including when idle,
+plus initial/final snapshots. It reports retained output tokens (including EOS),
+occupied decode slots, CPU-preparation/prefill waiting crops and prefilled crops
+waiting for decode. The parent adds all unfinished requests and its admission
+limit. CPU-preparation counts cover the worker's lookahead, not incoming jobs
+it has not pulled yet. Snapshot values are observations, not an atomic view of
+both processes. No device tensor is read to collect them.
+
+Output tokens/s uses the change in the live retained-token count divided by
+the actual elapsed snapshot interval. It includes prefill's first token and EOS,
+excludes inactive slots and discarded lookahead, and includes all preparation,
+prefill, queueing and idle time in its wall-clock denominator. It is not isolated
+NPU decode throughput. Request event rates cover events received since the last
+heartbeat. Detailed heartbeats also give mean/P95 worker latency for completions
+in the last 60 seconds, bounded to the latest 2,048 completions, with sample count.
+No completions means null latency statistics, not zero.
+
+`worker_wall_s` ends after formatting and before returning the result through
+IPC. `http_wall_s` is measured before writing the HTTP response. Neither includes
+the client's network latency. `response_sent` records a successful server write,
+not acknowledgement by the client. A caller timeout/cancellation is logged
+separately from inference finishing; `result_not_returned` identifies late results.
+Operational logs exclude image bytes, recognized text and native token arrays.
+
+The writer queue is bounded to 1,024 events. A full queue drops logs instead of
+blocking inference; the writer warns when it can proceed. Console/file failures
+produce rate-limited warnings (at most once per 15 seconds); one failed output
+does not prevent trying the other. Flush does not mean fsync/crash-proof storage.
+Shutdown gives the writer two seconds to finish queued events, so a stuck disk
+or terminal cannot prevent process exit. Log loss can make event-derived counts
+incomplete; runtime token counters do not depend on log delivery.
+
+Timing-only NPU events are removed. H2D/prefill/token-copy dependency events,
+cache admission ordering and mandatory synchronization remain. The existing
+prefill-ready event now supplies the completion wait previously provided by the
+last timing event. No model tensor computations or warmup inputs are changed.
+Graph-progress callbacks change the p04–p06 source fingerprint, so the first
+startup uses a new graph-cache namespace.
+
+These changes require the saved Poisson100 correctness/performance validation;
+historical results below describe their recorded commits, not untested edits.
+
+## Python API, crop types and unfinished-request limit
+
+The API changes in this section are not yet NPU-validated. The benchmarked
+runtime below is unchanged; validation of text/formula recognition and mixed
+crop traffic remains pending.
+
+HTTP accepts `crop_type=table`, `text` or `formula`. Each request supplies one
+encoded image and its crop type; there is no crop classification or bulk API.
+The corresponding model prompts are `Table Recognition:`, `OCR:` and
+`Formula Recognition:`. All results retain `raw_text` and native `token_ids`.
+`text` applies math-delimiter normalization; only tables additionally convert
+OTSL to HTML. Repetition is not removed.
+
+Python uses the same inference service without opening an HTTP port. Import
+`p01_serve` with this experiment directory on the Python module search path:
+
+```python
+import asyncio
+from pathlib import Path
+from p01_serve import InferenceServer, ServeConfig
+
+async def main():
+    config = ServeConfig(
+        model_path=Path("/models/PaddleOCR-VL-1.6"),
+        graph_cache_directory=Path("/cache/paddle-graphs"),
+        log_folder=Path("/logs/paddle"),
+    )
+    server = InferenceServer(config)
+    try:
+        server.start()
+        result = await server.recognize_async(
+            Path("crop.png").read_bytes(), crop_type="text",
+        )
+        print(result["text"])
+    finally:
+        server.close()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Keep the server running across requests. Each async call waits for its own
+result; start calls concurrently with ordinary Python async tasks when overlap
+is wanted. Consecutive `await` calls are sequential. The Python response has
+the HTTP payload fields except `http_wall_s`; failures raise exceptions.
+`start()` and `close()` are blocking calls, not async lifecycle wrappers.
+`close()` finishes accepted work, subject to the shutdown timeout. The request
+method itself is asynchronous and does not block a thread per image.
+
+- `max_in_flight_requests=64` / `--max-in-flight-requests`: bounds all accepted
+  unfinished images, including CPU preparation and active inference. It replaces
+  `queue_capacity` / `--queue-capacity`. It is independent of decode batch size.
+  Admission is checked when image bytes are supplied, not at TCP connection or
+  upload start. Full capacity rejects immediately at admission (HTTP 503 or
+  Python `InferenceCapacityFull`).
+- `request_timeout_s=60` / `--request-timeout-s`: waiting for an OCR reply.
+  Timeout returns HTTP 504 or raises Python `InferenceTimeout`. It does not
+  cancel inference, and the request continues occupying capacity until the
+  worker returns its result. The late result is discarded. Cancelling the
+  Python await behaves the same way but raises `asyncio.CancelledError`.
+- Startup has no time limit: it waits for setup completion or a reported
+  failure/worker exit. There is no `--startup-timeout-s` option.
+- `shutdown_timeout_s=900` / `--shutdown-timeout-s` separately bounds finishing
+  accepted jobs during shutdown. A short request timeout does not affect it.
+
 ## Runtime ownership integration (validated on 910B2)
 
 `ContinuousRecognizer` now owns CPU preparation and the actual continuous
@@ -101,7 +223,8 @@ ensure inference cleanup is attempted even if HTTP cleanup fails.
 HTTP request threads are non-daemon so accepted responses finish before
 `HttpServer.close()` returns. No new socket-read timeout or admission policy is
 introduced in this structural pass. An HTTP timeout still does not cancel OCR;
-queue capacity still limits queued jobs, not all outstanding images.
+queue capacity at that checkpoint limited queued jobs, not all outstanding
+images. The API update above replaces that limit with unfinished-request admission.
 
 The required `log_folder/service_summary.json` is written when the inference
 worker returns a final summary. It remains a shutdown summary, not continuous
@@ -143,15 +266,13 @@ fallback. Eager setup does not import TorchAir. Compiler arguments, per-bucket
 entrypoints, warmup tensors and synchronization ordering are unchanged.
 
 `--run-eagerly` runs the same NPU stages without TorchAir compilation.
-`--metrics-level` is `basic`, `scheduling` (default), or `detailed`: ordinary
-request metrics, additional scheduling instrumentation, or both plus NPU decode
-event timings. The old independent timing flags and three cache-directory flags
+`--metrics-level` is `basic` (default) or `detailed`, as described above.
+The old `scheduling` level, independent timing flags and three cache-directory flags
 are replaced, not retained as aliases. Historical launch commands require their
 recorded source revision.
 
-The required `--log-folder` receives `service_summary.json` on shutdown, when
-the worker returns a summary. It is not a live log or a
-crash-safe record; continuous logging remains a separate planned discussion.
+The required `--log-folder` receives live `events.jsonl` and, when the worker
+returns its final summary, `service_summary.json`.
 
 The server no longer calculates `HERE`/`EXPERIMENT_ROOT`/`REPO_ROOT` or inserts a
 directory into `sys.path`. Launch it normally with Python: Python makes the

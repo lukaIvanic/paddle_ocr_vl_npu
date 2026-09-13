@@ -1,8 +1,12 @@
 """CPU-only checks of HTTP routing and HTTP/inference communication; no model is loaded."""
 
+import ast
+import asyncio
+import html
 import io
 import json
 import queue
+import re
 import sys
 import tempfile
 import threading
@@ -19,7 +23,8 @@ import p01_serve as serve
 def make_config(**overrides):
     values = dict(model_path=Path('/unused/model'),
                   graph_cache_directory=Path('/unused/graphs'),
-                  log_folder=Path('/unused/logs'), request_timeout_s=2.0)
+                  log_folder=Path('/unused/logs'), request_timeout_s=2.0,
+                  shutdown_timeout_s=2.0)
     values.update(overrides)
     return serve.ServeConfig(**values)
 
@@ -121,6 +126,7 @@ class ServeLifecycleTests(unittest.TestCase):
         connection.stop_reading_results.set()
         if connection.result_reader.ident is not None:
             connection.result_reader.join(timeout=1)
+        connection._close_logging()
 
     def start(self, connection):
         with patch('sys.stdout', new=io.StringIO()):
@@ -137,24 +143,38 @@ class ServeLifecycleTests(unittest.TestCase):
                 for i in range(4)
             }
             jobs = [connection.jobs.get(timeout=1) for _ in range(4)]
-            self.assertEqual(len(connection.result_queues_by_request_id), 4)
+            self.assertEqual(len(connection.pending_requests), 4)
             for job in reversed(jobs):
                 self.assertIn('submitted_monotonic_s', job)
                 connection.results.put(dict(kind='result', request_id=job['request_id'],
                                             ok=True, payload={'text': job['request_id']}))
             for request_id, future in futures.items():
                 self.assertEqual(future.result(timeout=1)['payload']['text'], request_id)
-        self.assertEqual(connection.result_queues_by_request_id, {})
+        self.assertEqual(connection.pending_requests, {})
 
-    def test_startup_error_and_timeout(self):
-        for message in (dict(kind='startup_error', error='model failed', traceback='failure details'), None):
-            with self.subTest(message=message):
-                connection = self.make_connection(request_timeout_s=0.02)
-                connection.inference_process.startup_message = message
-                with patch('sys.stderr', new=io.StringIO()), self.assertRaises(RuntimeError):
-                    self.start(connection)
-                if message is not None:
-                    self.assertEqual(connection.startup_error, message)
+    def test_startup_error(self):
+        connection = self.make_connection()
+        message = dict(kind='startup_error', error='model failed', traceback='failure details')
+        connection.inference_process.startup_message = message
+        with patch('sys.stderr', new=io.StringIO()), self.assertRaises(RuntimeError):
+            self.start(connection)
+        self.assertEqual(connection.startup_error, message)
+
+    def test_startup_wait_has_no_deadline(self):
+        connection = self.make_connection(request_timeout_s=.001)
+        with patch.object(connection.startup_finished, 'wait', wraps=connection.startup_finished.wait) as wait:
+            self.start(connection)
+        wait.assert_called_once_with()
+
+    def test_worker_exit_during_startup_ends_the_wait(self):
+        connection = self.make_connection()
+        connection.inference_process.startup_message = None
+        def exit_immediately():
+            connection.inference_process.pid = 123
+            connection.inference_process.alive = False
+        connection.inference_process.start = exit_immediately
+        with patch('sys.stderr', new=io.StringIO()), self.assertRaisesRegex(RuntimeError, 'worker exited'):
+            self.start(connection)
 
     def test_request_timeout_does_not_cancel_job_and_late_result_is_ignored(self):
         connection = self.make_connection(request_timeout_s=0.05)
@@ -162,7 +182,7 @@ class ServeLifecycleTests(unittest.TestCase):
         with self.assertRaises(serve.InferenceTimeout):
             connection.recognize('expired', 'table', b'image')
         self.assertEqual(connection.jobs.get_nowait()['request_id'], 'expired')
-        self.assertEqual(connection.result_queues_by_request_id, {})
+        self.assertTrue(connection.pending_requests['expired'].cancelled())
         connection.results.put(dict(kind='result', request_id='expired', ok=True, payload={}))
         # A later valid request still receives its own result, not the expired one.
         with ThreadPoolExecutor(max_workers=1) as caller:
@@ -171,11 +191,25 @@ class ServeLifecycleTests(unittest.TestCase):
             connection.results.put(dict(kind='result', request_id='next', ok=True, payload={'text': 'next'}))
             self.assertEqual(future.result(timeout=1)['payload']['text'], 'next')
 
-    def test_full_queue_removes_request_registration(self):
+    def test_failed_queue_submission_releases_capacity(self):
         connection = self.make_connection()
-        with patch.object(connection.jobs, 'put', side_effect=queue.Full), self.assertRaises(serve.InferenceQueueFull):
+        self.start(connection)
+        with patch.object(connection.jobs, 'put_nowait', side_effect=OSError('closed')), self.assertRaises(OSError):
             connection.recognize('full', 'table', b'image')
-        self.assertEqual(connection.result_queues_by_request_id, {})
+        self.assertEqual(connection.pending_requests, {})
+
+    def test_capacity_counts_requests_removed_from_the_job_queue(self):
+        connection = self.make_connection(max_in_flight_requests=1)
+        self.start(connection)
+        with ThreadPoolExecutor(max_workers=1) as callers:
+            first = callers.submit(connection.recognize, 'first', 'table', b'image')
+            connection.jobs.get(timeout=1)  # The worker has taken it, but OCR is not done.
+            self.assertTrue(connection.jobs.empty())
+            with self.assertRaises(serve.InferenceCapacityFull):
+                connection.recognize('second', 'text', b'image')
+            connection.results.put(dict(kind='result',request_id='first',ok=True,payload={}))
+            first.result(timeout=1)
+        self.assertEqual(connection.pending_requests,{})
 
     def test_shutdown_finishes_pending_request_and_receives_summary(self):
         connection = self.make_connection()
@@ -198,7 +232,7 @@ class ServeLifecycleTests(unittest.TestCase):
         self.assertFalse(summary_path.with_name('.service_summary.json.tmp').exists())
 
     def test_shutdown_timeout_terminates_worker(self):
-        connection = self.make_connection(request_timeout_s=0.02)
+        connection = self.make_connection(shutdown_timeout_s=0.02)
         self.start(connection)
         self.assertIsNone(connection.close())
         self.assertTrue(connection.inference_process.terminated)
@@ -223,13 +257,13 @@ class ServeLifecycleTests(unittest.TestCase):
         request_id, crop_type, image_bytes = handler.server.inference_server.recognize.call_args.args
         self.assertEqual((crop_type, image_bytes), ('table', b'image'))
         self.assertNotEqual(request_id, 'public')
-        for error, expected in ((serve.InferenceQueueFull(), 503), (serve.InferenceTimeout(), 504), (ValueError('bad'), 500)):
+        for error, expected in ((serve.InferenceCapacityFull(), 503), (serve.InferenceTimeout(), 504), (ValueError('bad'), 500)):
             handler = self.make_handler('/v1/ocr?crop_type=table')
             handler.server.inference_server.recognize.side_effect = error
             handler.do_POST()
             self.assertEqual(handler._json.call_args.args[0], expected)
         for path, body, expected in (('/v1/drain', b'', 404),
-                                     ('/v1/ocr?crop_type=text', b'image', 400),
+                                     ('/v1/ocr?crop_type=unknown', b'image', 400),
                                      ('/v1/ocr?crop_type=table', b'', 413)):
             handler = self.make_handler(path, body)
             handler.do_POST()
@@ -364,7 +398,7 @@ class ServeLifecycleTests(unittest.TestCase):
     def test_http_run_and_signal_handler(self):
         server = serve.HttpServer.__new__(serve.HttpServer)
         server.serve_config = make_config()
-        server.inference_server = SimpleNamespace(worker_pid=123)
+        server.inference_server = SimpleNamespace(worker_pid=123, _log=Mock())
         server.stop_requested = threading.Event()
         server.serve_forever = Mock()
         server.server_bind = Mock()
@@ -384,10 +418,14 @@ class ServeLifecycleTests(unittest.TestCase):
     def test_worker_empty_queue_completion_and_request_error(self):
         jobs, results = queue.Queue(), queue.Queue()
         worker = serve.InferenceWorker(jobs, results, make_config())
-        self.assertIsNone(worker.pull(block=False))
+        worker.report_status = Mock()  # This test exercises input, not the loaded model's heartbeat.
+        with patch.dict(sys.modules, {'p02_serving_runtime':SimpleNamespace(RecognitionRequest=SimpleNamespace)}):
+            self.assertIsNone(worker.pull(block=False))
         self.assertFalse(worker.closed)
         jobs.put(dict(request_id='one', crop_type='table', image_bytes=b'image', submitted_monotonic_s=12.0))
-        request = worker.pull(block=False)
+        # The worker only constructs this record; keep this test independent of Torch.
+        with patch.dict(sys.modules, {'p02_serving_runtime':SimpleNamespace(RecognitionRequest=SimpleNamespace)}):
+            request = worker.pull(block=False)
         self.assertEqual(request.crop, b'image')
         self.assertEqual(request.submitted_at, 12.0)
         self.assertEqual(request.prompt, 'Table Recognition:')
@@ -397,9 +435,10 @@ class ServeLifecycleTests(unittest.TestCase):
         self.assertEqual(message['error'], 'ValueError: bad image')
         self.assertEqual(worker.jobs_in_progress, {})
         jobs.put(None)
-        self.assertIsNone(worker.pull(block=True))
-        self.assertTrue(worker.closed)
-        self.assertIsNone(worker.pull(block=False))
+        with patch.dict(sys.modules, {'p02_serving_runtime':SimpleNamespace(RecognitionRequest=SimpleNamespace)}):
+            self.assertIsNone(worker.pull(block=True))
+            self.assertTrue(worker.closed)
+            self.assertIsNone(worker.pull(block=False))
 
     def test_inference_entrypoint_reports_worker_failure(self):
         jobs, results = queue.Queue(), queue.Queue()
@@ -411,6 +450,246 @@ class ServeLifecycleTests(unittest.TestCase):
         message = results.get_nowait()
         self.assertEqual(message['kind'], 'startup_error')
         self.assertEqual(message['error'], 'RuntimeError: load failed')
+
+    def test_defaults_and_independent_timeouts(self):
+        config = serve.ServeConfig(Path('/model'), Path('/cache'), Path('/logs'))
+        self.assertEqual(config.request_timeout_s,60)
+        self.assertEqual(config.max_in_flight_requests,64)
+        self.assertFalse(hasattr(config,'startup_timeout_s'))
+        self.assertEqual(config.shutdown_timeout_s,900)
+        self.assertNotIn('__post_init__', serve.ServeConfig.__dict__)
+        self.assertFalse(hasattr(serve, 'CropOCR'))
+
+
+    def test_crop_types_prompts_and_formatting(self):
+        # Load the actual string-only formatting functions without importing Torch.
+        path=Path(serve.__file__).with_name('p03_crop_processing.py')
+        tree=ast.parse(path.read_text())
+        names={'normalize_math_delimiters','convert_otsl_to_html','_parse_otsl_rows'}
+        nodes=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in names
+               or isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='_OTSL_TOKEN' for t in n.targets)]
+        ns={'html':html,'re':re}
+        exec('from __future__ import annotations\n'+ast.unparse(ast.Module(body=nodes,type_ignores=[])),ns)
+        formatting=SimpleNamespace(**{name:ns[name] for name in names})
+        for crop_type,prompt in {'table':'Table Recognition:','text':'OCR:',
+                                 'formula':'Formula Recognition:'}.items():
+            with self.subTest(crop_type=crop_type):
+                handler=self.make_handler(f'/v1/ocr?crop_type={crop_type}')
+                handler.server.inference_server.recognize.return_value=dict(ok=True,payload={})
+                handler.do_POST()
+                self.assertEqual(handler._json.call_args.args[0],200)
+                jobs,results=queue.Queue(),queue.Queue()
+                worker=serve.InferenceWorker(jobs,results,make_config())
+                worker.report_status=Mock()
+                jobs.put(dict(request_id='crop',crop_type=crop_type,image_bytes=b'image',submitted_monotonic_s=0))
+                with patch.dict(sys.modules,{'p02_serving_runtime':SimpleNamespace(RecognitionRequest=SimpleNamespace)}):
+                    self.assertEqual(worker.pull(block=False).prompt,prompt)
+                raw=r'<fcel>\(x\)<nl>'
+                recognition=SimpleNamespace(request_id='crop',text=raw,token_ids=[10,2])
+                with patch.dict(sys.modules,{'p03_crop_processing':formatting}), \
+                     patch.object(serve,'asdict',side_effect=vars):
+                    worker.emit_result(recognition)
+                payload=results.get_nowait()['payload']
+                normalized=ns['normalize_math_delimiters'](raw)
+                expected=ns['convert_otsl_to_html'](normalized) if crop_type=='table' else normalized
+                self.assertEqual(payload['text'],expected)
+                self.assertEqual(payload['raw_text'],raw)
+                self.assertEqual(payload['token_ids'],[10,2])
+                self.assertEqual(payload['crop_type'],crop_type)
+
+
+class AsyncInferenceServerTests(unittest.IsolatedAsyncioTestCase):
+    setUp = ServeLifecycleTests.setUp
+    make_connection = ServeLifecycleTests.make_connection
+    start = ServeLifecycleTests.start
+    stop_reader = staticmethod(ServeLifecycleTests.stop_reader)
+
+    def start_connection(self, **kwargs):
+        connection=self.make_connection(**kwargs)
+        self.start(connection)
+        return connection
+
+    async def wait_for_release(self, connection):
+        async def wait():
+            while connection.pending_requests:
+                await asyncio.sleep(.001)
+        await asyncio.wait_for(wait(),1)
+
+    async def test_concurrent_individual_calls_return_their_own_results(self):
+        connection=self.start_connection()
+        tasks=[asyncio.create_task(connection.recognize_async(b'image',crop_type=kind,request_id='same-public-id'))
+               for kind in ('table','text','formula')]
+        await asyncio.sleep(0)
+        jobs=[connection.jobs.get_nowait() for _ in tasks]
+        self.assertEqual(len({job['request_id'] for job in jobs}),3)
+        for job in reversed(jobs):
+            connection.results.put(dict(kind='result',request_id=job['request_id'],ok=True,
+                                        payload={'text':job['crop_type'],'raw_text':job['crop_type']}))
+        replies=await asyncio.gather(*tasks)
+        self.assertEqual([r['text'] for r in replies],['table','text','formula'])
+        self.assertTrue(all(r['request_id']=='same-public-id' for r in replies))
+        self.assertTrue(all('http_wall_s' not in r for r in replies))
+        self.assertEqual(connection.pending_requests,{})
+
+    async def test_timeout_retains_capacity_until_late_result(self):
+        connection=self.start_connection(request_timeout_s=.02,max_in_flight_requests=1)
+        with self.assertRaises(serve.InferenceTimeout):
+            await connection.recognize_async(b'image',crop_type='table')
+        job=connection.jobs.get_nowait()
+        self.assertTrue(connection.pending_requests[job['request_id']].cancelled())
+        with self.assertRaises(serve.InferenceCapacityFull):
+            await connection.recognize_async(b'next',crop_type='text')
+        connection.results.put(dict(kind='result',request_id=job['request_id'],ok=True,payload={'text':'late'}))
+        await self.wait_for_release(connection)
+        task=asyncio.create_task(connection.recognize_async(b'next',crop_type='text'))
+        await asyncio.sleep(0)
+        job=connection.jobs.get_nowait()
+        connection.results.put(dict(kind='result',request_id=job['request_id'],ok=True,payload={'text':'next'}))
+        self.assertEqual((await task)['text'],'next')
+
+    async def test_cancellation_also_retains_capacity(self):
+        connection=self.start_connection(max_in_flight_requests=1)
+        task=asyncio.create_task(connection.recognize_async(b'image',crop_type='formula'))
+        await asyncio.sleep(0)
+        job=connection.jobs.get_nowait()
+        task.cancel()
+        with self.assertRaises(asyncio.CancelledError): await task
+        with self.assertRaises(serve.InferenceCapacityFull):
+            connection.recognize('http-request','table',b'image')
+        connection.results.put(dict(kind='result',request_id=job['request_id'],ok=True,payload={}))
+        await self.wait_for_release(connection)
+
+    async def test_invalid_inputs_do_not_consume_capacity(self):
+        connection=self.start_connection(max_image_bytes=4)
+        for content,kind,error in ((b'a','unknown',ValueError),(b'','table',ValueError),
+                                  (b'12345','text',ValueError),('path.png','table',TypeError)):
+            with self.subTest(content=content,kind=kind), self.assertRaises(error):
+                await connection.recognize_async(content,crop_type=kind)
+        self.assertEqual(connection.pending_requests,{})
+
+    async def test_worker_failure_unblocks_async_requests(self):
+        connection=self.start_connection()
+        task=asyncio.create_task(connection.recognize_async(b'image',crop_type='text'))
+        await asyncio.sleep(0)
+        connection.results.put(dict(kind='startup_error',error='worker failed',traceback='details'))
+        with self.assertRaisesRegex(RuntimeError,'worker failed'): await task
+        self.assertEqual(connection.pending_requests,{})
+        with self.assertRaisesRegex(RuntimeError,'not accepting'):
+            await connection.recognize_async(b'image',crop_type='text')
+
+    async def test_worker_exit_without_error_message_unblocks_requests(self):
+        connection=self.start_connection()
+        task=asyncio.create_task(connection.recognize_async(b'image',crop_type='text'))
+        await asyncio.sleep(0)
+        connection.inference_process.alive=False
+        with self.assertRaisesRegex(RuntimeError,'worker exited'):
+            await asyncio.wait_for(task,1)
+        self.assertEqual(connection.pending_requests,{})
+
+    async def test_close_drains_requests_and_rejects_new_ones(self):
+        connection=self.start_connection()
+        result=asyncio.create_task(connection.recognize_async(b'image',crop_type='formula'))
+        await asyncio.sleep(0)
+        job=connection.jobs.get_nowait()
+        closing=asyncio.create_task(asyncio.to_thread(connection.close))
+        self.assertIsNone(await asyncio.to_thread(connection.jobs.get,True,1))
+        with self.assertRaisesRegex(RuntimeError,'not accepting'):
+            await connection.recognize_async(b'image',crop_type='table')
+        self.assertFalse(closing.done())
+        connection.results.put(dict(kind='result',request_id=job['request_id'],ok=True,payload={'text':'done'}))
+        connection.results.put(dict(kind='service_summary',payload={'requests':1}))
+        self.assertEqual((await result)['text'],'done')
+        await closing
+        self.assertEqual(connection.pending_requests,{})
+
+    async def test_explicit_start_and_close_use_one_real_child_without_http(self):
+        with patch.object(serve,'run_inference_process',fake_inference_process):
+            connection=serve.InferenceServer(make_config(log_folder=self.log_folder,request_timeout_s=5))
+        try:
+            with patch.object(serve,'HttpServer',side_effect=AssertionError('offline must not open HTTP')):
+                try:
+                    connection.start()
+                    result=await connection.recognize_async(b'text',crop_type='text')
+                    self.assertEqual(result['text'],'text')
+                finally:
+                    connection.close()
+            self.assertEqual(connection.service_summary,{'requests':1})
+            self.assertFalse(connection.is_alive)
+        finally:
+            if connection.is_alive:
+                connection.inference_process.terminate(); connection.inference_process.join(timeout=2)
+            self.stop_reader(connection)
+            for channel in (connection.jobs,connection.results):
+                channel.close(); channel.join_thread()
+
+
+    # Reuse the fake process/temporary-directory setup above; no NPU is loaded.
+    def test_existing_result_logged_without_content_and_flushed(self):
+        connection=self.make_connection(metrics_level='detailed')
+        payload=dict(request_id='client-can-change-this', crop_type='text', worker_wall_s=.5,
+                     generated_tokens_including_eos=4, stop_reason='eos', text='PRIVATE OCR',
+                     raw_text='PRIVATE OCR', token_ids=[8,9,10,2], timing_s={'detokenize':.001})
+        connection._log('request_accepted',('internal-id','text',1))
+        connection._log('request_finished',dict(request_id='internal-id',ok=True,payload=payload))
+        payload['request_id']='changed-by-caller'
+        with patch('sys.stdout',new=io.StringIO()) as console:
+            connection.log_writer.start()
+            connection._close_logging()
+        text=(self.log_folder/'events.jsonl').read_text()
+        self.assertEqual(text,console.getvalue())
+        self.assertNotIn('PRIVATE OCR',text)
+        self.assertNotIn('token_ids',text)
+        records=[json.loads(line) for line in text.splitlines()]
+        self.assertEqual(records[-1]['request_id'],'internal-id')
+        self.assertEqual(records[-1]['generated_tokens_including_eos'],4)
+        self.assertEqual(records[-1]['timing_s'],{'detokenize':.001})
+
+    def test_heartbeat_uses_elapsed_time_and_counts_eos(self):
+        connection=self.make_connection(metrics_level='basic')
+        for observed,tokens in ((100,0),(118,36)):
+            connection._log('heartbeat',dict(kind='heartbeat',observed_monotonic_s=observed,
+                output_tokens_including_eos=tokens,unfinished_requests=0))
+        with patch('sys.stdout',new=io.StringIO()):
+            connection.log_writer.start(); connection._close_logging()
+        records=[json.loads(line) for line in (self.log_folder/'events.jsonl').read_text().splitlines()]
+        self.assertIsNone(records[0]['output_tokens_per_s'])
+        self.assertEqual(records[1]['interval_s'],18)
+        self.assertEqual(records[1]['output_tokens_per_s'],2)
+        self.assertNotIn('p95_latency_s',records[1])
+
+    def test_full_logging_queue_warns_without_blocking(self):
+        connection=self.make_connection()
+        connection.log_queue=queue.Queue(maxsize=1)
+        connection._log('test',{'number':1})
+        connection._log('test',{'number':2})
+        self.assertTrue(connection.logs_dropped.is_set())
+        with patch('sys.stdout',new=io.StringIO()), patch('sys.stderr',new=io.StringIO()) as warning:
+            connection.log_writer.start(); connection._close_logging()
+        self.assertIn('records were dropped',warning.getvalue())
+
+    def test_file_failure_does_not_stop_console(self):
+        self.log_folder.write_text('not a directory')
+        connection=self.make_connection()
+        connection._log('test',{'number':1})
+        with patch('sys.stdout',new=io.StringIO()) as console, patch('sys.stderr',new=io.StringIO()) as warning:
+            connection.log_writer.start(); connection._close_logging()
+        self.assertIn('"event":"test"',console.getvalue())
+        self.assertIn('file logging failed',warning.getvalue())
+
+    def test_idle_worker_keeps_reporting_until_shutdown(self):
+        jobs,results=queue.Queue(),queue.Queue()
+        worker=serve.InferenceWorker(jobs,results,make_config())
+        worker.recognizer=SimpleNamespace(output_tokens=0,batch_size=8,
+            decode_arena=SimpleNamespace(num_active=0),crops_awaiting_prefill=[],ready_queue=[])
+        timer=threading.Timer(.08,lambda:jobs.put(None))
+        with patch.object(serve,'HEARTBEAT_SECONDS',.02), \
+             patch.dict(sys.modules,{'p02_serving_runtime':SimpleNamespace(RecognitionRequest=SimpleNamespace)}):
+            timer.start()
+            self.assertIsNone(worker.pull(block=True))
+        timer.join()
+        self.assertTrue(worker.closed)
+        self.assertGreaterEqual(results.qsize(),2)
+        self.assertEqual(results.get()['output_tokens_including_eos'],0)
 
 
 if __name__ == '__main__':
