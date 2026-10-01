@@ -96,6 +96,7 @@ class Journal:
         self.emit('section_start',kind=record['kind'],id=record['id'],section=name,
                   tokens=tokens,route=route)
         begin=time.perf_counter()
+        faulthandler.dump_traceback_later(120,repeat=True)
         if device:
             torch.npu.synchronize()
             a,b=torch.npu.Event(enable_timing=True),torch.npu.Event(enable_timing=True)
@@ -110,6 +111,7 @@ class Journal:
             stats['route']=route
         record['sections'][name]=stats
         self.emit('section_finish',kind=record['kind'],id=record['id'],section=name,**stats)
+        faulthandler.cancel_dump_traceback_later()
         self.active=None
 
     def close(self):
@@ -245,6 +247,8 @@ def run(args, result, journal):
             vt=int(batch['image_grid_thw'].prod()) if 'image_grid_thw' in batch else 0
             tt=int(batch['attention_mask'].sum())
             row.update(vision_tokens=vt,text_tokens=tt,image_grid_thw=batch.get('image_grid_thw',torch.empty(0)).tolist())
+            row['merged_image_tokens']=int((batch['input_ids']==model.config.image_token_id).sum())
+            row['prompt_or_query_tokens']=tt-row['merged_image_tokens']
             with journal.section(row,'input_transfer',device=True):
                 batch={k:v.to(args.device) for k,v in batch.items()}
             with journal.section(row,'vision_prepare',vt,device=True):
@@ -310,6 +314,8 @@ def run(args, result, journal):
             elapsed=time.perf_counter()-scoring_start
             journal.emit('scoring_progress',completed=index+1,total=len(corpus),elapsed_s=elapsed,
                          eta_s=(len(corpus)-index-1)*elapsed/(index+1))
+            (args.output_dir/'progress.json').write_text(json.dumps(dict(kind='scoring',completed=index+1,
+                total=len(corpus),elapsed_s=elapsed),indent=2)+'\n')
     result['scoring_s']=time.perf_counter()-scoring_start
     result['scoring_timings']=aggregate(score_records)
     if not np.isfinite(scores).all():
@@ -354,6 +360,8 @@ def main():
     faulthandler.enable()
     faulthandler.dump_traceback_later(120,repeat=True)
     result=dict(status='started',command=sys.argv,host=platform.node(),dataset=REPO,revision=REVISION,
+                model_config_sha256=sha256(Path(args.model)/'config.json'),
+                processor_sha256=sha256(Path(args.model)/'processing_ops_colqwen3.py'),
                 commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
                 scope='English HR full corpus unless explicit smoke limits; synchronized diagnostic timings',
                 scoring='FP32 NPU dot/max, CPU FP32 per-query sum; full 2560 dimensions; pytrec_eval metrics')
