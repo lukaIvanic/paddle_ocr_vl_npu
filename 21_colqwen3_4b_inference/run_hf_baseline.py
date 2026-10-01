@@ -60,8 +60,8 @@ def model_manifest(path, hash_weights):
     return records
 
 
-def phase(name, **kwargs):
-    print('HF_BASELINE ' + json.dumps({'phase': name, **kwargs}), flush=True)
+def phase(phase_name, **kwargs):
+    print('HF_BASELINE ' + json.dumps({'phase': phase_name, **kwargs}), flush=True)
 
 
 def verify_checkpoint_keys(model, path):

@@ -1,11 +1,19 @@
 import tempfile
 import unittest
+import contextlib
+import io
 from pathlib import Path
 
-from run_hf_baseline import model_manifest, parse_args, sha256
+from run_hf_baseline import model_manifest, parse_args, sha256, phase
 
 
 class Contracts(unittest.TestCase):
+    def test_phase_accepts_input_name(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            phase('encode_finish', name='queries')
+        self.assertIn('"name": "queries"', output.getvalue())
+
     def test_defaults(self):
         args = parse_args(['--model', '/model', '--output-dir', '/out'])
         self.assertEqual(args.dtype, 'fp16')
