@@ -30,7 +30,7 @@ def difference(actual, expected, *, atol=0.002, rtol=0.002):
     return {'shape': list(actual.shape), 'finite': finite, 'exact': torch.equal(actual, expected),
             'max_abs': float(delta.max()), 'mean_abs': float(delta.mean()),
             'rmse': float((a-b).square().mean().sqrt()),
-            'cosine': float(torch.nn.functional.cosine_similarity(a[None], b[None])),
+            'cosine': float(torch.nn.functional.cosine_similarity(a.double()[None], b.double()[None])),
             'atol': atol, 'rtol': rtol,
             'passed': finite and bool(torch.allclose(a, b, atol=atol, rtol=rtol))}
 
@@ -41,6 +41,8 @@ def trace_modules(model, hf):
     selected += [f'visual.blocks.{i}' for i in (0, 5, 11, 17, 23)]
     selected += [f'visual.deepstack_merger_list.{i}' for i in range(3)]
     selected += [f'language_model.layers.{i}' for i in (0, 1, 2, 17, 35)]
+    selected += ['visual.blocks.0.norm1', 'visual.blocks.0.attn', 'visual.blocks.0.mlp',
+                 'language_model.layers.0.self_attn', 'language_model.layers.0.mlp']
     modules = dict(model.named_modules())
     captured, handles = {}, []
     for name in selected:
@@ -92,6 +94,16 @@ def run(args, result):
     if any(result['hf_loading_info'][k] for k in ('missing_keys', 'unexpected_keys', 'mismatched_keys')):
         raise RuntimeError('HF weight loading mismatch')
     result['hf_buffer_dtypes'] = {k: str(v.dtype) for k, v in hf.named_buffers()}
+    result['rotary_initialization'] = {}
+    for label, dim, theta, expected in [
+        ('vision', 32, 10000.0, hf.qwen3vl.visual.rotary_pos_emb.inv_freq),
+        ('text', 128, 5000000.0, hf.qwen3vl.language_model.rotary_emb.inv_freq),
+    ]:
+        result['rotary_initialization'][label] = {}
+        for location in ('cpu', args.device):
+            actual = 1.0 / (theta ** (torch.arange(0, dim, 2, device=location, dtype=torch.float32) / dim))
+            result['rotary_initialization'][label][location] = difference(actual.cpu(), expected.cpu(), atol=0, rtol=0)
+    emit('rotary_initialization', comparisons=result['rotary_initialization'])
     processor = AutoProcessor.from_pretrained(args.model, trust_remote_code=True, local_files_only=True)
     cases = []
     result['anchor_files'] = []

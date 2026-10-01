@@ -158,7 +158,9 @@ class VisionModel(nn.Module):
                              .permute(0, 1, 3, 2, 4, 5).flatten(0, 4)
                              for a, (t, h, w) in zip(absolute, grids)])
         dim = (self.c.hidden_size // self.c.num_heads) // 2
-        inv = 1.0 / (10000.0 ** (torch.arange(0, dim, 2, device=device, dtype=torch.float32) / dim))
+        # HF initializes these non-persistent buffers on CPU in FP32. Computing
+        # the powers on the NPU instead changes rounding before every RoPE.
+        inv = (1.0 / (10000.0 ** (torch.arange(0, dim, 2, dtype=torch.float32) / dim))).to(device)
         freq = torch.outer(torch.arange(max(max(h, w) for _, h, w in grids), device=device, dtype=inv.dtype), inv)
         rotary = freq[torch.cat(coords).to(device)].flatten(1)
         emb = torch.cat((rotary, rotary), dim=-1)
@@ -236,7 +238,7 @@ class TextModel(nn.Module):
         seq = torch.arange(s, device=x.device)
         allowed = (seq[:, None] >= seq[None, :])[None, None] & padding_mask[:, None, None, :].bool()
         mask = torch.where(allowed, 0.0, torch.finfo(x.dtype).min).to(x.dtype)
-        inv = 1.0 / (self.c.rope_theta ** (torch.arange(0, self.c.head_dim, 2, device=x.device, dtype=torch.float32) / self.c.head_dim))
+        inv = (1.0 / (self.c.rope_theta ** (torch.arange(0, self.c.head_dim, 2, dtype=torch.float32) / self.c.head_dim))).to(x.device)
         inv = inv[None, None, :, None].expand(3, x.shape[0], -1, 1)
         freqs = (inv.float() @ positions[:, :, None, :].float()).transpose(2, 3)
         temporal = freqs[0].clone()
