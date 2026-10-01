@@ -184,7 +184,9 @@ def read_data(root):
     cids={r['id'] for r in corpus}; qids={r['id'] for r in queries}
     if len(cids)!=len(corpus) or len(qids)!=len(queries):
         raise ValueError('Duplicate IDs')
-    if set(qrels)!=qids or any(not set(v)<=cids for v in qrels.values()):
+    # The English MTEB qrels file deliberately contains all 1,908 translated
+    # query IDs; only the 318 IDs in English queries are evaluated.
+    if not qids<=set(qrels) or any(not set(v)<=cids for v in qrels.values()):
         raise ValueError('Invalid qrel references')
     return corpus,queries,dict(qrels)
 
@@ -213,6 +215,8 @@ def run(args, result, journal):
                   torch=torch.__version__,torch_npu=torch_npu.__version__,options=asdict(Options()))
     journal.emit('dataset_verify_start')
     corpus,queries,qrels=read_data(args.dataset_root)
+    result['qrels_inventory']={'query_ids_in_file':len(qrels),'english_query_ids':len(queries),
+                              'policy':'evaluate only IDs in the English query component'}
     corpus=corpus[:args.limit_pages] if args.limit_pages else corpus
     queries=queries[:args.limit_queries] if args.limit_queries else queries
     result.update(pages=len(corpus),queries=len(queries),full_domain=not(args.limit_pages or args.limit_queries))
