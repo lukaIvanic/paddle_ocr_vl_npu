@@ -78,7 +78,7 @@ class Journal:
 
     def emit(self, phase, **data):
         row = dict(phase=phase, utc=datetime.now(timezone.utc).isoformat(),
-                   elapsed_s=time.monotonic()-self.start, **data)
+                   run_elapsed_s=time.monotonic()-self.start, **data)
         with self.lock:
             line=json.dumps(row)
             self.events.write(line+'\n')
@@ -294,6 +294,8 @@ def run(args, result, journal):
     (args.output_dir/'encoding_summary.json').write_text(json.dumps(result,indent=2)+'\n')
     offsets=np.cumsum([0]+[len(q) for q in query_embeddings[:-1]]).tolist()
     query_flat=torch.cat(query_embeddings).to(args.device)
+    max_document_rows=max(r['embedding_rows'] for r in records if r['kind']=='page')
+    result['scoring_document_padding']='zero floor for documents shorter than corpus maximum, matching MTEB global padding'
     scores=np.empty((len(queries),len(corpus)),dtype=np.float32)
     scoring_start=time.perf_counter()
     score_records=[]
@@ -302,6 +304,10 @@ def run(args, result, journal):
         start=time.perf_counter()
         with journal.section(row,'embedding_load_transfer',device=True):
             document=torch.load(args.output_dir/'embeddings'/f'page_{index:04d}.pt',weights_only=True).to(args.device)
+            if len(document)<max_document_rows:
+                # One zero row has the same MaxSim effect as all MTEB padding
+                # rows, without performing a larger all-zero matmul.
+                document=torch.cat((document,document.new_zeros(1,document.shape[-1])))
         with journal.section(row,'maxsim',device=True):
             scores[:,index]=maxsim_column(query_flat,document,offsets)
         row['wall_s']=time.perf_counter()-start

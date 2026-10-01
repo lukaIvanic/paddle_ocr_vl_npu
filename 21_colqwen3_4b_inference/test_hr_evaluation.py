@@ -1,8 +1,13 @@
 """CPU-only scoring/metrics bookkeeping tests, not model inference."""
 import unittest
+import tempfile
+import json
+from pathlib import Path
+from contextlib import redirect_stdout
+import io
 import numpy as np
 import torch
-from run_hr_evaluation import aggregate, distribution, maxsim_column
+from run_hr_evaluation import aggregate, distribution, maxsim_column, Journal
 
 
 class HrTests(unittest.TestCase):
@@ -25,6 +30,15 @@ class HrTests(unittest.TestCase):
     def test_distribution(self):
         self.assertEqual(distribution([]),{'count':0})
         self.assertEqual(distribution([1,2,3])['p50'],2)
+
+    def test_journal_phase_and_run_elapsed_are_distinct(self):
+        with tempfile.TemporaryDirectory() as root, redirect_stdout(io.StringIO()):
+            journal=Journal(Path(root))
+            journal.emit('scoring_progress',elapsed_s=1.25)
+            journal.close()
+            row=json.loads((Path(root)/'events.jsonl').read_text())
+            self.assertEqual(row['elapsed_s'],1.25)
+            self.assertIn('run_elapsed_s',row)
 
 if __name__=='__main__':
     unittest.main()

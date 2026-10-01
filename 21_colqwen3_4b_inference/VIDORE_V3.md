@@ -88,3 +88,82 @@ These are transfer observations, not guaranteed endpoint bandwidth.
 image from each of HR and computer science, with IDs and hashes preserved.
 Those two pages passed the HF baseline; no full-domain ranking or nDCG score
 has been computed yet.
+
+## Instrumented English HR evaluation
+
+`run_hr_evaluation.py` evaluates the entire HR English retrieval task: 1,110
+candidate pages, 318 queries, all supplied relevance labels, 2560-dimensional
+embeddings, original image processing, and no resolution/token reduction.
+The score reference is **0.66088 nDCG@10** from MTEB 2.4.2 for checkpoint
+`4894b7d451ff33981650acc693bb482dbef302d3` (FP16/FlashAttention2).
+The [published result](references/hr_protocol/published_result.json) and
+[model metadata](references/hr_protocol/published_model_meta.json) are copied
+from `embeddings-benchmark/results`, under that model/revision directory.
+
+The published dataset SHA belongs to **a different repository**,
+`vidore/vidore_v3_hr_mteb_format`, not the original HR repository above.
+Use `download_hr_reference.py` to fetch just its pinned English components at
+`bc7d43d64815ed30f664168c8052106484aba7fd`; all three SHA256 values are enforced
+by both downloader and evaluator. The reference is thus not casually compared
+against a potentially different revision of the original-format data.
+Its English qrels component contains all 1,908 multilingual query IDs, while
+the English query component contains 318. The runner validates corpus references
+and English-query coverage, then evaluates exactly those 318 query IDs. It does
+not average in the 1,590 untranslated-query results that were never requested.
+
+```sh
+# From the 910B repo root, with the experiment venv and source npu-setup:
+PYTHON=/workspace/venvs/colqwen3_hf_py312/bin/python
+"$PYTHON" 21_colqwen3_4b_inference/download_hr_reference.py \
+  --root /workspace/datasets/ViDoRe_v3_hr_mteb_reference
+"$PYTHON" -u 21_colqwen3_4b_inference/run_hr_evaluation.py \
+  --model /workspace/models/Ops-Colqwen3-4B \
+  --dataset-root /workspace/datasets/ViDoRe_v3_hr_mteb_reference \
+  --output-dir tmp/21_colqwen3_4b_inference/hr_new/output
+```
+
+Requires `pytrec-eval-terrier==0.5.10` in the experiment venv. On the current
+server its build-time GitHub download is unreachable; the official
+`usnistgov/trec_eval` v9.0.8 archive was transferred from local and unpacked
+into the package's `trec_eval/` directory before installation, without source
+modifications. Do not replace this metric with an exponential-gain nDCG formula.
+
+Execution uses the existing optimized native-weight/PromptFA/Linear-patch path.
+Only matching on-disk transformer graphs are loaded; unseen exact shapes use
+explicitly labeled optimized raw eager. A compiled-call error is fatal, not an
+automatic fallback. No graphs are freshly compiled and no cache is cleared.
+This mixed-route evaluation is not an all-shapes-compiled performance claim.
+
+Observability and artifacts:
+
+- `events.jsonl` and flushed stdout: item/section starts and finishes, token
+  counts, route, elapsed time, completion count, throughput and ETA. A 10-second
+  heartbeat names the active section; a section taking 120 seconds triggers
+  repeating Python stack dumps. The stack dump is diagnostic, not a timeout.
+- `items.jsonl`: per-query, per-page and per-scoring-page wall latency, raw
+  section latencies, NPU event elapsed time, image size/grid/hash, vision tokens,
+  merged image tokens, text/prompt tokens, and embedding-row counts.
+- `encoding_summary.json`, final `result.json`: aggregate sum/mean/p50/p90/p99/max,
+  weighted wall/device tok/s by section and by exact length/route, setup/cache
+  loading separately identified, encoding pg/s and scoring duration.
+- `embeddings/*.pt`, `scores.npy`, `ids.json`, `rankings.jsonl`, and
+  `per_query_metrics.json`: reproducible embeddings, full score matrix and
+  rankings, plus pytrec_eval nDCG@10, Recall@10 and MAP@10.
+- `progress.json`: latest periodic encoding/scoring progress snapshot.
+
+Stage timings synchronize the NPU and include diagnostic overhead; event elapsed
+time is an instrumented stream interval, not a sum of individual kernel times.
+Page throughput includes image processing, transfer, preparation, both
+transformer stacks, retrieval projection, validation and embedding serialization.
+Query encoding, model load and retrieval scoring are separately reported.
+Scoring uses FP32 NPU dot products and maxima, with small per-query sums on CPU;
+the first scoring column is cross-checked against the checkpoint processor's
+official MaxSim implementation. Original zero-valued document rows are preserved.
+For documents shorter than the corpus-wide maximum embedding length, one
+additional zero row reproduces the MaxSim effect of the official adapter's
+global zero padding without computing every padded dot product.
+
+For a structural preflight, add `--limit-pages 8 --limit-queries 8`. Such a run
+is explicitly labeled `completed_partial_smoke`, and does **not** produce a
+published-score comparison. A full-domain run validates HR only, not the
+eight-domain mean or all six query languages.
