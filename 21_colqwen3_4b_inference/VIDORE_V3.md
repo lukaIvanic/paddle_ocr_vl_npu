@@ -86,8 +86,8 @@ These are transfer observations, not guaranteed endpoint bandwidth.
 
 `prepare_vidore_smoke.py` exports one linked English query and original corpus
 image from each of HR and computer science, with IDs and hashes preserved.
-Those two pages passed the HF baseline; no full-domain ranking or nDCG score
-has been computed yet.
+Those two pages passed the initial HF baseline. The subsequent full HR English
+evaluation is described below, with measured results in the README.
 
 ## Instrumented English HR evaluation
 
@@ -109,7 +109,7 @@ against a potentially different revision of the original-format data.
 Its English qrels component contains all 1,908 multilingual query IDs, while
 the English query component contains 318. The runner validates corpus references
 and English-query coverage, then evaluates exactly those 318 query IDs. It does
-not average in the 1,590 untranslated-query results that were never requested.
+not average in the 1,590 other-language query IDs that were never requested.
 
 ```sh
 # From the 910B repo root, with the experiment venv and source npu-setup:

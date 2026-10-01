@@ -484,5 +484,62 @@ non-mutation, mocked native/repeated GQA, causal-mask semantics, strict format
 report decoding and full tiny-model candidate algebra. Those tests do not
 validate NPU kernels. Real 910B runs above cover the default native-GQA/fused
 candidate and both weight formats; `--unfused`, `--gqa repeat` and module-norm
-ablations have not yet been benchmarked on NPU. No 310P run or ViDoRe v3
-accuracy evaluation has been performed for this new candidate.
+ablations have not yet been benchmarked on NPU. No 310P run has been performed.
+The subsequent HR-only retrieval evaluation is recorded below.
+
+### Full HR English retrieval — 910B2
+
+At `fbfaedc5`, the instrumented candidate evaluated **all 1,110 HR pages and
+318 English queries**, using the exact pinned MTEB-format dataset associated
+with the published score. FP16/B1, 2560 embedding dimensions, default image
+resolution, native weights, PromptFA, fused text projections, manual FP32
+vision LayerNorm statistics and Linear patch projection; no token reduction.
+
+| Metric, percent | Published model | This run | Difference, percentage points |
+|---|---:|---:|---:|
+| nDCG@10 | 66.088 | 66.472 | +0.384 |
+| Recall@10 | 70.720 | 70.847 | +0.127 |
+| MAP@10 | 51.613 | 52.086 | +0.473 |
+
+This closely matches the reference on HR, with no observed HR regression. It
+does not establish a statistically significant improvement, full eight-domain
+accuracy, or 310P behavior. Published numbers use CUDA FlashAttention2 rather
+than our Ascend implementation. The scorer's check against the checkpoint's
+FP32 MaxSim formula differed by only `9.54e-7` on the tested first column.
+
+The complete run exited 0 in **462.9 s (7m43s)**: 23.1 s setup, 33.9 s query
+encoding, 397.5 s page encoding, 7.18 s scoring, plus final metrics/output.
+Page encoding was **2.793 pg/s**, including preprocessing, transfers, validation
+and saving; dividing page count by the entire job gives **2.398 pg/s**.
+No new graphs were compiled. All 1,110 pages used optimized raw eager at
+**5040 vision / 1274 text tokens** (1260 image + 14 prompt tokens). Only the
+18-token query shape reused an existing compiled graph. This is **not** an
+all-compiled page throughput result.
+
+| Page section | Mean | p50 | p99 | Maximum | Wall tok/s |
+|---|---:|---:|---:|---:|---:|
+| Image preprocessing | 157.28 ms | 155.37 ms | 207.61 ms | 293.59 ms | — |
+| Vision preparation | 14.72 ms | 14.38 ms | 18.88 ms | 67.27 ms | 342,307 |
+| Vision transformer | 64.84 ms | 64.68 ms | 67.02 ms | 101.93 ms | 77,725 |
+| Text preparation / mergers | 6.82 ms | 6.72 ms | 7.65 ms | 70.19 ms | 186,688 |
+| Text transformer | 80.66 ms | 79.41 ms | 91.47 ms | 105.15 ms | 15,794 |
+| Validation and serialization | 23.83 ms | 23.20 ms | 33.85 ms | 46.63 ms | — |
+| Whole page | 357.85 ms | 353.99 ms | 419.88 ms | 655.21 ms | — |
+
+NPU-event interval throughput for vision/text transformers was 78,110 / 15,852
+tok/s; these intervals include eager launch gaps, not just kernel-active time.
+Totals were 5,594,400 vision tokens and 1,414,140 text tokens. Preprocessing
+accounted for about 44% of measured page time, so transformer-only speeds are
+not a proxy for end-to-end throughput. All 14,755 section starts had matching
+finishes; no stall was observed.
+
+Evidence: [result](references/hr_910b/result.json),
+[per-item timings](references/hr_910b/items.jsonl),
+[per-query metrics](references/hr_910b/per_query_metrics.json),
+[run log](references/hr_910b/run.log), and
+[command](references/hr_910b/command.txt).
+The 6.8 GB embeddings, full score matrix and rankings remain on the 910B under
+`/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/hr_validated_run/full/output/`;
+they are not committed to Git. See [the run protocol](VIDORE_V3.md) for replay.
+The corrected 8-page/8-query NPU preflight passed before this run. Local tests
+now total 29, including score reduction and progress-clock regression coverage.

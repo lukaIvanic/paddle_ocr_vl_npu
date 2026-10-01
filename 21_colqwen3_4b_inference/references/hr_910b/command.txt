@@ -1,0 +1,4 @@
+fbfaedc5c2ddad7f95ee1afd427e2f57e467a25d
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=7
+/workspace/venvs/colqwen3_hf_py312/bin/python -u 21_colqwen3_4b_inference/run_hr_evaluation.py --model /workspace/models/Ops-Colqwen3-4B --dataset-root /workspace/datasets/ViDoRe_v3_hr_mteb_reference --output-dir tmp/21_colqwen3_4b_inference/hr_validated_run/full/output 
