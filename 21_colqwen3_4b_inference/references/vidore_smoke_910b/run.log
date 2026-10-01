@@ -1,0 +1,23 @@
+HF_BASELINE {"phase": "model_load_start"}
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:14<00:14, 14.85s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:26<00:00, 12.91s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:26<00:00, 13.20s/it]
+HF_BASELINE {"phase": "model_load_finish", "seconds": 28.301696950104088}
+HF_BASELINE {"phase": "encode_start", "input": "queries"}
+HF_BASELINE {"phase": "encode_iteration", "input": "queries", "iteration": 0, "seconds": 0.4585116798989475}
+HF_BASELINE {"phase": "encode_iteration", "input": "queries", "iteration": 1, "seconds": 0.09531038999557495}
+HF_BASELINE {"phase": "encode_iteration", "input": "queries", "iteration": 2, "seconds": 0.09322183998301625}
+HF_BASELINE {"phase": "encode_iteration", "input": "queries", "iteration": 3, "seconds": 0.09300976013764739}
+HF_BASELINE {"phase": "encode_finish", "name": "queries", "input_shapes": {"input_ids": [2, 51], "attention_mask": [2, 51]}, "image_grid_thw": [], "embedding_shape": [2, 51, 2560], "dtype": "torch.float16", "active_rows_per_item": [51, 33], "finite": true, "max_unit_norm_error": 0.0003973841667175293, "repeat_max_abs": 0.0, "repeat_exact": true, "first_forward_s": 0.4585116798989475, "warm_forward_s": [0.09531038999557495, 0.09322183998301625, 0.09300976013764739], "warm_mean_s": 0.0938473300387462}
+HF_BASELINE {"phase": "encode_start", "input": "image_00"}
+HF_BASELINE {"phase": "encode_iteration", "input": "image_00", "iteration": 0, "seconds": 0.775327259907499}
+HF_BASELINE {"phase": "encode_iteration", "input": "image_00", "iteration": 1, "seconds": 0.47341280011460185}
+HF_BASELINE {"phase": "encode_iteration", "input": "image_00", "iteration": 2, "seconds": 0.47377051995135844}
+HF_BASELINE {"phase": "encode_iteration", "input": "image_00", "iteration": 3, "seconds": 0.4729683001060039}
+HF_BASELINE {"phase": "encode_finish", "name": "image_00", "input_shapes": {"input_ids": [1, 1274], "attention_mask": [1, 1274], "pixel_values": [1, 5040, 1536], "image_grid_thw": [1, 3]}, "image_grid_thw": [[1, 84, 60]], "embedding_shape": [1, 1274, 2560], "dtype": "torch.float16", "active_rows_per_item": [1274], "finite": true, "max_unit_norm_error": 0.0004401206970214844, "repeat_max_abs": 0.0, "repeat_exact": true, "first_forward_s": 0.775327259907499, "warm_forward_s": [0.47341280011460185, 0.47377051995135844, 0.4729683001060039], "warm_mean_s": 0.47338387339065474}
+HF_BASELINE {"phase": "encode_start", "input": "image_01"}
+HF_BASELINE {"phase": "encode_iteration", "input": "image_01", "iteration": 0, "seconds": 0.4657955600414425}
+HF_BASELINE {"phase": "encode_iteration", "input": "image_01", "iteration": 1, "seconds": 0.4572048799600452}
+HF_BASELINE {"phase": "encode_iteration", "input": "image_01", "iteration": 2, "seconds": 0.4586236800532788}
+HF_BASELINE {"phase": "encode_iteration", "input": "image_01", "iteration": 3, "seconds": 0.45843331003561616}
+HF_BASELINE {"phase": "encode_finish", "name": "image_01", "input_shapes": {"input_ids": [1, 1254], "attention_mask": [1, 1254], "pixel_values": [1, 4960, 1536], "image_grid_thw": [1, 3]}, "image_grid_thw": [[1, 80, 62]], "embedding_shape": [1, 1254, 2560], "dtype": "torch.float16", "active_rows_per_item": [1254], "finite": true, "max_unit_norm_error": 0.0004519224166870117, "repeat_max_abs": 0.0, "repeat_exact": true, "first_forward_s": 0.4657955600414425, "warm_forward_s": [0.4572048799600452, 0.4586236800532788, 0.45843331003561616], "warm_mean_s": 0.4580872900163134}
+HF_BASELINE {"phase": "score_start"}
+HF_BASELINE {"phase": "complete", "scores": [[33.3125, 13.6015625], [9.2578125, 26.40625]]}

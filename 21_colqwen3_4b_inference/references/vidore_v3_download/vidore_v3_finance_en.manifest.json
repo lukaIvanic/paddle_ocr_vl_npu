@@ -1,0 +1,154 @@
+{
+  "repo": "vidore/vidore_v3_finance_en",
+  "revision": "7f432c176d82e27546501ad8064a713ac3071809",
+  "endpoint": "https://hf-mirror.com",
+  "files": {
+    ".gitattributes": {
+      "bytes": 2843,
+      "sha256": "b2ad6fc48d1f26c7f831c2130aed79f881701c9b2230d9a2f4e03c4438453879"
+    },
+    "README.md": {
+      "bytes": 9487,
+      "sha256": "f0c6aa2c23eeda69889cfe6a79cfd45562009cb5701f96003fd159ed96fee662"
+    },
+    "corpus/test-00000-of-00003.parquet": {
+      "bytes": 449439390,
+      "sha256": "be17c9aa26e09d1e81fe6bf749ab220f129a99808d08315480a57c7f2b189e7f"
+    },
+    "corpus/test-00001-of-00003.parquet": {
+      "bytes": 367340393,
+      "sha256": "d7c0bc0dd3d8666476dc749d700b491c1b3e6335b4227b8563a75e4fec28b5f7"
+    },
+    "corpus/test-00002-of-00003.parquet": {
+      "bytes": 448564350,
+      "sha256": "4ee2a59bbc4d9c81726d6a231173a57022c79717e2690037083a8303ec43518d"
+    },
+    "documents_metadata/test-00000-of-00001.parquet": {
+      "bytes": 5710,
+      "sha256": "e665567ef967bdbd9cf2e1f4547ded950809c6346fa490f424722afe9a2d1c95"
+    },
+    "pdfs/bank_of_america_2024.pdf": {
+      "bytes": 3069167,
+      "sha256": "383c9e0653bf670f167e85ef1ee31b0d97d1187f1cb8d70fff1a051aee59cac8"
+    },
+    "pdfs/citigroup_2024.pdf": {
+      "bytes": 6551884,
+      "sha256": "4abb08e3fc603f4ce6aa090bade8ec2e0f31885507ff178d0ee84321c5f85213"
+    },
+    "pdfs/goldman_sachs_2024.pdf": {
+      "bytes": 5087574,
+      "sha256": "6a4bd9e19660a70fb002fe8ac6f34ed2ae56dc4c09d94af83f0e5b1716ef2c51"
+    },
+    "pdfs/jpmorgan_chase_2024.pdf": {
+      "bytes": 5836567,
+      "sha256": "7539ad1d5e56a65a5681d3ef35bf08bcc0b8d9545629c42d04500c5bf4329caf"
+    },
+    "pdfs/metadata.csv": {
+      "bytes": 265,
+      "sha256": "f13ab2023daaf82375dcf1ec06ff58b8248f56d60c02f8cf41a4c0f8be5cc5ee"
+    },
+    "pdfs/morgan_stanley_2024.pdf": {
+      "bytes": 3352054,
+      "sha256": "8dce0678cf23a42b0b761a079a2cd345e35d6132a54eeaf693d8ec128f200187"
+    },
+    "pdfs/wells_fargo_2024.pdf": {
+      "bytes": 3592614,
+      "sha256": "6b34a54af6f172aa73bcc3338d2108bbcdd858ddc4eb15b80ed5bd07782b70ab"
+    },
+    "qrels/test-00000-of-00001.parquet": {
+      "bytes": 145165,
+      "sha256": "fedeef5802d0bcea2661601345222d40c98b7a09b09f142e63339aa0d671342d"
+    },
+    "queries/test-00000-of-00001.parquet": {
+      "bytes": 505684,
+      "sha256": "3ab1f931bf8522750be06b300d5e8efe3b7cb68cb749705b19416b4032b7ad8b"
+    }
+  },
+  "inventory": {
+    "pages": 2942,
+    "queries": 1854,
+    "qrels": 8766,
+    "query_languages": {
+      "english": 309,
+      "french": 309,
+      "spanish": 309,
+      "italian": 309,
+      "german": 309,
+      "portuguese": 309
+    },
+    "parquet": {
+      "corpus/test-00000-of-00003.parquet": {
+        "rows": 981,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00001-of-00003.parquet": {
+        "rows": 981,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00002-of-00003.parquet": {
+        "rows": 980,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "documents_metadata/test-00000-of-00001.parquet": {
+        "rows": 6,
+        "columns": [
+          "file_name",
+          "doc_id",
+          "url",
+          "doc_type",
+          "doc_language",
+          "doc_year",
+          "visual_types",
+          "page_number",
+          "license"
+        ]
+      },
+      "qrels/test-00000-of-00001.parquet": {
+        "rows": 8766,
+        "columns": [
+          "query_id",
+          "corpus_id",
+          "score",
+          "content_type",
+          "bounding_boxes"
+        ]
+      },
+      "queries/test-00000-of-00001.parquet": {
+        "rows": 1854,
+        "columns": [
+          "query_id",
+          "query",
+          "language",
+          "query_types",
+          "query_format",
+          "content_type",
+          "raw_answers",
+          "query_generator",
+          "query_generation_pipeline",
+          "source_type",
+          "query_type_for_generation",
+          "answer"
+        ]
+      }
+    }
+  },
+  "status": "verified"
+}

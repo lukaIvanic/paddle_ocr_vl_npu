@@ -1,0 +1,294 @@
+{
+  "repo": "vidore/vidore_v3_energy",
+  "revision": "caec06d3c73434d635f710f93bcd898331c59f20",
+  "endpoint": "https://hf-mirror.com",
+  "files": {
+    ".gitattributes": {
+      "bytes": 7037,
+      "sha256": "8e08b91163524ae6b766825803481374dcb05755c683dc8322112cce5e6e2840"
+    },
+    "README.md": {
+      "bytes": 9164,
+      "sha256": "461d74dcfab59652c6c1e735721a01efd61ce59a75cb87f09561dbda702bb436"
+    },
+    "corpus/test-00000-of-00003.parquet": {
+      "bytes": 326432956,
+      "sha256": "f932aa73ac1f60e4f31870e256e0b09fdd7a9b5152869977dd77af527c334664"
+    },
+    "corpus/test-00001-of-00003.parquet": {
+      "bytes": 434752756,
+      "sha256": "156294b157e09f83e7383cf2e3e30e8a0ae6fd5a0c46e5a033fa4695a525a7fb"
+    },
+    "corpus/test-00002-of-00003.parquet": {
+      "bytes": 365967870,
+      "sha256": "4f01202b0972183c45f2feaef49b5315adc8e58b4544ecad7bb608fe75d36c9e"
+    },
+    "documents_metadata/test-00000-of-00001.parquet": {
+      "bytes": 12131,
+      "sha256": "e66649db50c8d9ea10a2461f4f1338a7a04f668f368ba2731d435d3afdcdc5cc"
+    },
+    "pdfs/actualisation_2022_du_potentiel_hydroelectrique_francais.pdf": {
+      "bytes": 3737500,
+      "sha256": "e69a4d836f29cd4c92f9e22ab32707f66688b3d2923d53c1a8c5cb270313c562"
+    },
+    "pdfs/auvergne_rhone_alpes_plus_de_26000_emplois_generes_par_lactivite_nucleaire_dedf.pdf": {
+      "bytes": 1948936,
+      "sha256": "80171433f8d1c37dd28692d81c600d35d810802ebb2ed4a8a5218e75d8be860a"
+    },
+    "pdfs/bilan_donnees_locales_energie_article_179_decembre2018.pdf": {
+      "bytes": 515724,
+      "sha256": "9e39eba24f9054165a7033e036520fd344d0cfc7c97727dde0491cfae41e2e1f"
+    },
+    "pdfs/consommation_energie_industrie_2023.pdf": {
+      "bytes": 1847054,
+      "sha256": "bfda9743f61a6dd5d512e39a42d3e6833dccd0145091d8f0d0f095c9d734881e"
+    },
+    "pdfs/consommation_et_facture_energetiques_dans_lindustrie.pdf": {
+      "bytes": 143597,
+      "sha256": "f1987a967af6a1799548ed6458bf9de1c46da268ead10da3be9d243472f77a61"
+    },
+    "pdfs/datalab_chiffres_cles_des_energies_renouvelables_2023.pdf": {
+      "bytes": 6574774,
+      "sha256": "868dc5e2e6f5f1f07ce1fd06d0d43906386ce4e72338c85433691df7806c06a8"
+    },
+    "pdfs/document_travail_61_reduction_ges_renovations_septembre2022_0.pdf": {
+      "bytes": 597559,
+      "sha256": "1a6f4b10e82780c5a8caa85e753499718d6f068cf8849f16f1d1a80ebf9972ac"
+    },
+    "pdfs/document_travail_72_titan_juillet2025.pdf": {
+      "bytes": 4030970,
+      "sha256": "567fa60a1bbd329d58efa2a9c6942b93c34ad5a45ba882cd9f290720b4aac794"
+    },
+    "pdfs/effets_de_lisolation_thermique_des_logements_sur_la_consommation_reele_denergie_residentielle.pdf": {
+      "bytes": 2687121,
+      "sha256": "bd99dc581508df8c7c6339d418b8f7d001eaade00aada6d1f503cc247246e87f"
+    },
+    "pdfs/en_2021_un_quart_des_montants_antipollution_investis_dans_lindustrie_visent_a_consommer_une_energie_plus_propre_ou_moins_denergie.pdf": {
+      "bytes": 259010,
+      "sha256": "d8c236b04cb5c329b9c0a6876459a7b3ce919ac12bae7d3f3faf634bcee46f27"
+    },
+    "pdfs/facture_energetique_augmente_de_46_pourcent_2021.pdf": {
+      "bytes": 1808012,
+      "sha256": "719242856c48d819f649b96e5ddcc652b0a318f66a07f979a3fcd5432a909ccc"
+    },
+    "pdfs/industrie_hauts_de_france_fortement_dependante_de_electricite_et_gaz.pdf": {
+      "bytes": 1454334,
+      "sha256": "f312f995e1da6103c7c23affed4e7d0bf9c3b40718ecf3a9bebde3a84447300b"
+    },
+    "pdfs/inrae_biomasse_energie_2050_20231020.pdf": {
+      "bytes": 6588081,
+      "sha256": "5083b5fb1e1794d582dae2b6dfde92fbcdc2caef2b9f35f7d0bd339ab84ceda9"
+    },
+    "pdfs/juin_2025_prix_du_petrole_rebondit_nettement.pdf": {
+      "bytes": 1722462,
+      "sha256": "b3bfb20a5e799b9d660dea9393299cb0867c8aa621fe7dd78b0079d08b64450f"
+    },
+    "pdfs/l_environnement_en_nord_pas_de_calais_tome_2_les_pressions.pdf": {
+      "bytes": 49313554,
+      "sha256": "b348d0048591ef777f8387426c7e9c9de140a58c270e2742f572d0ed3154a608"
+    },
+    "pdfs/la_production_des_industries_intensives_en_energie_demeure_en_net_retrait_par_rapport_a_2021.pdf": {
+      "bytes": 303860,
+      "sha256": "f73614111097bab86462e68ff22b796d7646366981ce5ba28040390e0e425ed1"
+    },
+    "pdfs/les_270_etablissements_de_la_filiere_nucleaire_emploient_23000_salaries.pdf": {
+      "bytes": 1949478,
+      "sha256": "48a4efc19111a972c92b0a10b52efa92021e03a60762be63e815d7bcc9d5d9fd"
+    },
+    "pdfs/les_prix_de_vente_de_lelectricite_et_du_gaz_aux_clients_professionnels_resteraient_en_2024_bien_superieurs_a_leur_niveau_de_2021.pdf": {
+      "bytes": 228852,
+      "sha256": "7df20c8a533bcf4588f34ccc34285f3006fbd0974b7c16056a2aaa23959bc354"
+    },
+    "pdfs/listefour_janvier_2016.pdf": {
+      "bytes": 64151,
+      "sha256": "da789bc24f8a15c9a3fbd1f836552bac094dd503302c74491b95890153d48bed"
+    },
+    "pdfs/metadata.csv": {
+      "bytes": 5693,
+      "sha256": "2867ac4dca2a91d451e49832809c0126ca0849f79e97a5b87a115d03c658d922"
+    },
+    "pdfs/note_methodologique_donnees_locales_energie_2023_09.pdf": {
+      "bytes": 666390,
+      "sha256": "56b42b1fceb563ac6c50eaa744f1dc75d2a6b53faa6c397883f0cacd5b07913a"
+    },
+    "pdfs/plan_ressources_photovoltaique_0.pdf": {
+      "bytes": 7888869,
+      "sha256": "37ad019f392ba1d7ddd0bcc4a7d706defeb27ef03ad030b7898e3dc2ac447bc9"
+    },
+    "pdfs/plan_ressources_reseaux_electriques_0.pdf": {
+      "bytes": 9636222,
+      "sha256": "e5954acd114b6596c3bc1a26d3c1372ab96418c3fcb12def52db5849dc3b7699"
+    },
+    "pdfs/plus_de_6000_emplois_activite_nucleaire_normande.pdf": {
+      "bytes": 1249282,
+      "sha256": "8b1485f22cfe38adadcf1554e086fc7b86b6714978b80815d8e4db63a94fe9af"
+    },
+    "pdfs/plus_de_70_pourcent_de_la_facture_energetique_industrielle_de_la_france_est_concentree_en_2022_dans_cinq_regions.pdf": {
+      "bytes": 624771,
+      "sha256": "aa3bee171541317a1adb69493684354571ab8e22d2eac1d4dda2630650fef4ee"
+    },
+    "pdfs/pres_de_5_millions_de_menages_en_situation_de_vulnerabilite_energetique_pour_leur_logement_en_2021.pdf": {
+      "bytes": 1127335,
+      "sha256": "b0921cb2b8bbeff03adf6400e8b8cc8da4c74aeb92c6a19a9b2a464011e440b2"
+    },
+    "pdfs/pres_dun_etablissement_industriel_sur_deux_a_engage_des_depenses__en_faveur_de_lenvironnement_en_auvergne_rhone_alpes_2021.pdf": {
+      "bytes": 1661145,
+      "sha256": "668e354a9d8eed0d45073377fc7624a3e2896aae5911457cfd6905d77e7c22c6"
+    },
+    "pdfs/prix_annuel_moyen_mwh_a_augmente_2022.pdf": {
+      "bytes": 737846,
+      "sha256": "c7da263b27d4d111613b162fd166f3eac5de779447728120c9fa92704fcd8343"
+    },
+    "pdfs/programmation_pluriannuelle_de_lenergie_20200422.pdf": {
+      "bytes": 12861469,
+      "sha256": "3bac0dc616c910762b2236695a61e056bdc6ac8963d6c758de37f0adf486a033"
+    },
+    "pdfs/rapport_activite_commision_regulation_de_lenergie.pdf": {
+      "bytes": 8764831,
+      "sha256": "f127c580b52a495c4e78e3519020ef401b823746df091d76167a719ed4fb25fd"
+    },
+    "pdfs/rapport_activite_mediateur_national_de_lenergie.pdf": {
+      "bytes": 4618385,
+      "sha256": "f7b647ede9bd13cb1540dc62427d78f6716b5643895b9a887bb7bd181880329a"
+    },
+    "pdfs/rapport_cgdd_02_eolien_moteurs_vehicules_electriques_juillet2022.pdf": {
+      "bytes": 4993996,
+      "sha256": "a2b849da18e71ab2822bdda5517948bc5adb56595adccf07ecd5d1971195ba4d"
+    },
+    "pdfs/rapport_devaluation_des_tarifs_reglementes.pdf": {
+      "bytes": 650396,
+      "sha256": "f2391afcfc9b8cc11dfa7bb6bef55ea6fe2ee8765a54997e336b71ed1310c8fd"
+    },
+    "pdfs/rapport_h2_naturel_synthese_scientifique.pdf": {
+      "bytes": 7484658,
+      "sha256": "ff4d4f53a8a1be0180179f607af849ff50834cce2669edd202c2ced727e68dc1"
+    },
+    "pdfs/rapport_onre_mars2022.pdf": {
+      "bytes": 2401800,
+      "sha256": "583006b8614d8cc200b08bed8a38332fbce22745e920fb1ef088f148e78a1d94"
+    },
+    "pdfs/statistiques_sdes_datalab_essentiel_377_prix_produits_petroliers_2024_juillet2025.pdf": {
+      "bytes": 383085,
+      "sha256": "42984c28fe90f2964551260598fc78fbf7507ebacfa8d04e0b826a2ff8ff0d49"
+    },
+    "pdfs/statistiques_sdes_datalab_essentiel_380_prix_electricite_2024_juillet2025.pdf": {
+      "bytes": 265390,
+      "sha256": "1bf83c5688dae87306dee0a9c8ba72f06919986a97f07bbf7b039f4e4d1e95d3"
+    },
+    "pdfs/statistiques_sdes_datalab_essentiel_381_prix_gaz_naturel_2024_juillet2025.pdf": {
+      "bytes": 278792,
+      "sha256": "5c380fef12bc511d5589d180412e1f11a2557980251d65ae4b0103341cc80169"
+    },
+    "pdfs/strategie_nationale_de_mobilisation_de_la_biomasse.pdf": {
+      "bytes": 4117335,
+      "sha256": "c8b2cf2ed92241b50036c2fac2d7e82e43e5b6e4b0b15076aa2fcfc7a58a07bc"
+    },
+    "pdfs/un_secteur_strategique_41000_emplois_dans_la_filiere_energie_normande.pdf": {
+      "bytes": 1797249,
+      "sha256": "60e647ff9151109a1db611e6b9f275218aab27dbfacad5a6cbea91803af7ae10"
+    },
+    "pdfs/une_annee_chaude_avec_une_production_denergie_qui_revient_a_la_normale_2023_auvergne_rhone_alpes.pdf": {
+      "bytes": 334202,
+      "sha256": "f69ea4d1fb0d500794d132b8351e8d1643802b63323a9e1bd580bb7f01118a8b"
+    },
+    "pdfs/une_estimation_du_taux_de_vulnerabilite_energetique_des_menages_pour_le_logement.pdf": {
+      "bytes": 2068823,
+      "sha256": "873abd6987593a3f074a35a74b22832f99fa4303dc7d3735497d952b206617dd"
+    },
+    "qrels/test-00000-of-00001.parquet": {
+      "bytes": 116222,
+      "sha256": "cbbd6c830bf4b34f6803fe4d104cf27bfa75fda7b6b32fff9ae0435139b9d155"
+    },
+    "queries/test-00000-of-00001.parquet": {
+      "bytes": 526641,
+      "sha256": "5d1ebfdd740aaf83c44e641f9f3ec169af1e7af195595d236951cf5d6a16df1d"
+    }
+  },
+  "inventory": {
+    "pages": 2225,
+    "queries": 1848,
+    "qrels": 6618,
+    "query_languages": {
+      "french": 308,
+      "english": 308,
+      "spanish": 308,
+      "italian": 308,
+      "german": 308,
+      "portuguese": 308
+    },
+    "parquet": {
+      "corpus/test-00000-of-00003.parquet": {
+        "rows": 742,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00001-of-00003.parquet": {
+        "rows": 742,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00002-of-00003.parquet": {
+        "rows": 741,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "documents_metadata/test-00000-of-00001.parquet": {
+        "rows": 41,
+        "columns": [
+          "file_name",
+          "doc_id",
+          "url",
+          "doc_type",
+          "doc_language",
+          "doc_year",
+          "visual_types",
+          "page_number",
+          "license"
+        ]
+      },
+      "qrels/test-00000-of-00001.parquet": {
+        "rows": 6618,
+        "columns": [
+          "query_id",
+          "corpus_id",
+          "score",
+          "content_type",
+          "bounding_boxes"
+        ]
+      },
+      "queries/test-00000-of-00001.parquet": {
+        "rows": 1848,
+        "columns": [
+          "query_id",
+          "query",
+          "language",
+          "query_types",
+          "query_format",
+          "content_type",
+          "raw_answers",
+          "query_generator",
+          "query_generation_pipeline",
+          "source_type",
+          "query_type_for_generation",
+          "answer"
+        ]
+      }
+    }
+  },
+  "status": "verified"
+}

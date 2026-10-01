@@ -1,0 +1,298 @@
+{
+  "repo": "vidore/vidore_v3_physics",
+  "revision": "a0de276f515acc044b72cae8de53a44bb5a8f1f5",
+  "endpoint": "https://hf-mirror.com",
+  "files": {
+    ".gitattributes": {
+      "bytes": 6179,
+      "sha256": "78d3ee9eef4a768439afc3c2cd64f6afaf8242728c8824dffa096d19cafc3862"
+    },
+    "README.md": {
+      "bytes": 9217,
+      "sha256": "87cd721673dc286c4c5119691e903f4ef8fe2e451767572324727cd203ffe950"
+    },
+    "corpus/test-00000-of-00003.parquet": {
+      "bytes": 399472594,
+      "sha256": "80728019dc7fef76950c6cd23d784109fd6407f784cea687cdb98a3c8826b382"
+    },
+    "corpus/test-00001-of-00003.parquet": {
+      "bytes": 410039919,
+      "sha256": "21cf6c4103a1241e65b5dd3b4d01c77337925281eb047ae36087954365b7258c"
+    },
+    "corpus/test-00002-of-00003.parquet": {
+      "bytes": 405757532,
+      "sha256": "c181bfd1514649e7eb8796f6a464772e189f382e5659dbad01f2493ac349ca35"
+    },
+    "documents_metadata/test-00000-of-00001.parquet": {
+      "bytes": 8815,
+      "sha256": "648cf8d65a8bd6450d4e7a3e735d0018abfdd7678b4ec83390b9a9f21384d229"
+    },
+    "pdfs/Autrement_Ch-0-Presentation_cours_autrement.pdf": {
+      "bytes": 698395,
+      "sha256": "4971178fef59abe00a76d2d6465d74b712f1f29ffce47bb61ab6fbe918505fc2"
+    },
+    "pdfs/Autrement_Ch-1a-La-quete-de-lunite-La-methode-scientifique.pdf": {
+      "bytes": 1728150,
+      "sha256": "cc9fa87193ef7ef3e49654e14adb83935f290839c192cfbd248c2b2e781990c9"
+    },
+    "pdfs/Autrement_Ch-1b-La-quete-de-lunite-Etat-en-2023.pdf": {
+      "bytes": 3830364,
+      "sha256": "ede67dcbbbf4de5f9422ae599aa76be46d1f6be105fd809d6bcd202adb3943ee"
+    },
+    "pdfs/Autrement_Ch-2-Des-particules-aux-systemes.pdf": {
+      "bytes": 2795263,
+      "sha256": "07c6afc1ef7f3511ac94ee25599e81c00464fd182467310070c680d7812ad12f"
+    },
+    "pdfs/Autrement_Ch-3a-La-complexite-les-sytemes-et-leurs-modeles.pdf": {
+      "bytes": 1897318,
+      "sha256": "2d544b0fe368d9847e3642e28a72808870414df4657571a4ee0fe3241e647cf5"
+    },
+    "pdfs/Autrement_Ch-3b-La-complexite-Science-des-systemes-complexes.pdf": {
+      "bytes": 1267969,
+      "sha256": "f400d3105adb4ba3bf09622e6d3e3739eb6cb84a6243bb7970b0c9f5a86cd793"
+    },
+    "pdfs/Autrement_Ch-4a-Les-systemes-dynamiques.pdf": {
+      "bytes": 2362457,
+      "sha256": "43bb9fac7701f8fab92cf5be80071a4ebe55fb789622415c5e117a5a5642f8be"
+    },
+    "pdfs/Autrement_Ch-4b-Le-Chaos-deterministe.pdf": {
+      "bytes": 3223157,
+      "sha256": "708976db5cffbf1f6a044c445c53d3e247cdd1be73203e278a0829b730d84318"
+    },
+    "pdfs/Autrement_Ch-5-Le-Hasard-24.pdf": {
+      "bytes": 3882028,
+      "sha256": "a0d4a6e7079c43a5ba6ae766e66503baa80fcb5f22f1b07514f0595abad5eb70"
+    },
+    "pdfs/Autrement_Ch-6a-Modeles-bioinspires.pdf": {
+      "bytes": 2224091,
+      "sha256": "4395a883db5546de86135c46dd53a9f09640a62a82e0ffc55e361eef3e415fa0"
+    },
+    "pdfs/Autrement_Ch-6b-Les-reseaux-dautomates.pdf": {
+      "bytes": 3601445,
+      "sha256": "da5d44330e2459499b1a9762e7999e205ee2d835b8779d89bfba9b43266b05a5"
+    },
+    "pdfs/Autrement_Ch-7-Ordre-entropie-et-morphogenese.pdf": {
+      "bytes": 4038722,
+      "sha256": "5fe6c2c3b3db5cb676ae7bb70238f80f85a5c0f94fec1df61be0715b68d4adb9"
+    },
+    "pdfs/Cours_avance_Ch-0-Presentation_Cours_Avance.pdf": {
+      "bytes": 888880,
+      "sha256": "8944e74ed9bbacbbda8d167674d2efe0c712d1501bce7573ab18d8d2babd46b6"
+    },
+    "pdfs/Cours_avance_Ch-3-Etats-Lies-Lasers.pdf": {
+      "bytes": 2053609,
+      "sha256": "9477d85cb5781bf323815afa37ca45cdf6d858f6fd2b97c97e3a61d421fa6ab4"
+    },
+    "pdfs/Cours_avance_Ch-4-Equations-d-onde-Supplement.pdf": {
+      "bytes": 1110145,
+      "sha256": "128cad59022e3277968b99186c2cb35d6da2c7f918622daa513613d15907c4b2"
+    },
+    "pdfs/Cours_avance_Ch-4-Equations-d-onde.pdf": {
+      "bytes": 4874088,
+      "sha256": "7503439c86ac1f405932ec91923cf0158e849150f2ed036ba4c2b21e5c8e1de0"
+    },
+    "pdfs/Cours_avance_Ch-5-Systemes-quantiques.pdf": {
+      "bytes": 4475666,
+      "sha256": "e35939df454ef72f24753ef12bc1bf483d609dbf70318e4a4e20bd3f4fe435cf"
+    },
+    "pdfs/Cours_avance_Ch-6-Au-dela-de-Schrodinger.pdf": {
+      "bytes": 1035267,
+      "sha256": "24d3124623a1251032e9d604cab4fe30595f9ad3229bf8121b6eeb02df827130"
+    },
+    "pdfs/Cours_avance_Ch-7-La-mesure-du-monde.pdf": {
+      "bytes": 1212522,
+      "sha256": "efbf6829d501883226adb02647eea109184bd45966d9c9ba1884154ca3ce0696"
+    },
+    "pdfs/Cours_avance_ch-1-prolegomenes.pdf": {
+      "bytes": 2464049,
+      "sha256": "b9dffcf1e60faa5c7e19577fa282220e46b9abea5d7f100354de3d559e73d7af"
+    },
+    "pdfs/Cours_avance_ch-2-a-les-objets-classiques.pdf": {
+      "bytes": 1504185,
+      "sha256": "07c4688647a970ae09184c3d34e29e1d8411c558ede6c0e6f312a25ea76a60a3"
+    },
+    "pdfs/Cours_avance_ch-2-b-les-objets-quantiques-1.pdf": {
+      "bytes": 1998439,
+      "sha256": "0530ab0e1dfede19b8e4dab75dd3de254ab82fa6de12ee3f5cc578cb96572af3"
+    },
+    "pdfs/L_energie_Ch-0-Mise-en-perspective.pdf": {
+      "bytes": 685121,
+      "sha256": "1bd4fd3b677204d2c5db8778c6b6788f06639acfe4bb16c54cacf1b16d67b3d9"
+    },
+    "pdfs/L_energie_Ch-1-aux-sources-microscopique-de-lenergie.pdf": {
+      "bytes": 9597279,
+      "sha256": "9efe1270943078dda5f93da824c217d22e26f7967631304f3733d0c4b4f88218"
+    },
+    "pdfs/L_energie_Ch-2-Les-formes-denergie-a-notre-echelle.pdf": {
+      "bytes": 4616676,
+      "sha256": "06a199adf45fa739bcfd9473cbbb1a97d5cca2b5668f1949ccbdca89d8081b54"
+    },
+    "pdfs/L_energie_Ch-3-Caracteriser-les-energies-1.pdf": {
+      "bytes": 5423184,
+      "sha256": "ad705585cb5b969dd62535ae6a8e3134c1cbb2c7161713695dc5c98e6bacc794"
+    },
+    "pdfs/L_energie_Ch-4-La-Planete-Terre-et-lUnivers.pdf": {
+      "bytes": 3395343,
+      "sha256": "a91dfce436c3cea36a90ef85179e887483dde931b3f564ef77593ebed897e94a"
+    },
+    "pdfs/L_energie_Ch-5-Lenergie-et-lavenir-de-lhumanite.pdf": {
+      "bytes": 2294163,
+      "sha256": "9f879679878a791a09e608eba101d64fc6b389b7d5bf28285cfef5b43f430fc1"
+    },
+    "pdfs/Les_2_Infinis_Ch-0-Introduction.pdf": {
+      "bytes": 835040,
+      "sha256": "32712121073dbfa75e8522aeaae5705000feb914d9d3af492001136993db0702"
+    },
+    "pdfs/Les_2_infinis_Ch-1-Prolegomenes.pdf": {
+      "bytes": 3286680,
+      "sha256": "43bcd0702279bdc269cbec251ec88565af5cbdce3ff8738a07f59a5d755042e9"
+    },
+    "pdfs/Les_2_infinis_Ch-2a-Quantique-les-objets.pdf": {
+      "bytes": 3019531,
+      "sha256": "8141d63457f19428173fd6e97e5a8abbb386717e073874c5b0c755d35bb4a93c"
+    },
+    "pdfs/Les_2_infinis_Ch-2b-Quantique-Etats-Lies-Lasers.pdf": {
+      "bytes": 1765232,
+      "sha256": "87c20dba80ac17a5661b571cb6ce2f435b9b107dc1fe19e7b697a6b7fb6a4bc8"
+    },
+    "pdfs/Les_2_infinis_Ch-2c-Quantique-les-systemes.pdf": {
+      "bytes": 2731940,
+      "sha256": "ac8d70e9dc1f1fe0dccf727d076b77f153401b76033815f318a34b9570798592"
+    },
+    "pdfs/Les_2_infinis_Ch-2d-Quantique-Au-dela-de-Schrodinger.pdf": {
+      "bytes": 1173926,
+      "sha256": "c1db6f53a94811be2636cb3eca87fc48ce4aa22cfb35b6c6a9aada99ba65a6c8"
+    },
+    "pdfs/Les_2_infinis_Ch-3a-Espace-Temps-les-3-relativites.pdf": {
+      "bytes": 3249185,
+      "sha256": "43295940e5352bf01003d53850b69e4b84a6ea86118e14024a98f8c8edf79eb0"
+    },
+    "pdfs/Les_2_infinis_Ch-3b-Espace-Temps-notre-univers.pdf": {
+      "bytes": 2997001,
+      "sha256": "2752b8dc5dd40d026c537841f940400963460bc67f6af45a3d37f496c9b8c3d3"
+    },
+    "pdfs/Les_ondes_Ch-0-Introduction-_1_.pdf": {
+      "bytes": 830264,
+      "sha256": "d74908e80c5523dcc46b8bec89df2ec5a49343dcfb8c40e44669e653dff90c32"
+    },
+    "pdfs/Les_ondes_Ch-1-Les-ondes-et-leurs-caracteristiques.pdf": {
+      "bytes": 1552471,
+      "sha256": "880d29cca06b785f922ef3ef794ec2e256815314af2e65d51699b27f4c0a5b9f"
+    },
+    "pdfs/Les_ondes_Ch-2-Electricite-et-Magnetisme-leurs-effets.pdf": {
+      "bytes": 5092413,
+      "sha256": "df6b12fec7dd57512bba05c61fd9ff740fedc787fee217823a72a4ae633fa983"
+    },
+    "pdfs/Les_ondes_Ch-3-Les-ondes-electromagnetiques-_1_.pdf": {
+      "bytes": 1927662,
+      "sha256": "6308c9efb3bfe8c55b4f6d2d080c105eed6d84c857f0a7f28715f5e04a4b6579"
+    },
+    "pdfs/Les_ondes_Ch-4-Les-effets-des-ondes-electromagnetiques.pdf": {
+      "bytes": 3105188,
+      "sha256": "cd7f529186412726e889de2361928d0691172cd0a738e377d6cb732b45a5fba1"
+    },
+    "pdfs/Les_ondes_Ch-5-Ondes-et-societe.pdf": {
+      "bytes": 1703819,
+      "sha256": "2e0ee01bff7d42c316b2b3b73e3af25195232f18f8b92e66e3a80464cc7b7084"
+    },
+    "pdfs/metadata.csv": {
+      "bytes": 3841,
+      "sha256": "413ffd660d6965bfefbb99e8b1d511d8d38ad820c711ac738e566e5c7513e542"
+    },
+    "qrels/test-00000-of-00001.parquet": {
+      "bytes": 162825,
+      "sha256": "195ddef918d1f9e2bbd2b6c84825714e998f61105786c532a20e898718799188"
+    },
+    "queries/test-00000-of-00001.parquet": {
+      "bytes": 886431,
+      "sha256": "96a3f7b031a160dccb504788acabafe17dca9d82b017d84f8ca1c556b7934562"
+    }
+  },
+  "inventory": {
+    "pages": 1674,
+    "queries": 1812,
+    "qrels": 13068,
+    "query_languages": {
+      "french": 302,
+      "english": 302,
+      "spanish": 302,
+      "italian": 302,
+      "german": 302,
+      "portuguese": 302
+    },
+    "parquet": {
+      "corpus/test-00000-of-00003.parquet": {
+        "rows": 558,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00001-of-00003.parquet": {
+        "rows": 558,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00002-of-00003.parquet": {
+        "rows": 558,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "documents_metadata/test-00000-of-00001.parquet": {
+        "rows": 42,
+        "columns": [
+          "file_name",
+          "doc_id",
+          "url",
+          "doc_type",
+          "doc_language",
+          "doc_year",
+          "visual_types",
+          "page_number",
+          "license"
+        ]
+      },
+      "qrels/test-00000-of-00001.parquet": {
+        "rows": 13068,
+        "columns": [
+          "query_id",
+          "corpus_id",
+          "score",
+          "content_type",
+          "bounding_boxes"
+        ]
+      },
+      "queries/test-00000-of-00001.parquet": {
+        "rows": 1812,
+        "columns": [
+          "query_id",
+          "query",
+          "language",
+          "query_types",
+          "query_format",
+          "content_type",
+          "raw_answers",
+          "query_generator",
+          "query_generation_pipeline",
+          "source_type",
+          "query_type_for_generation",
+          "answer"
+        ]
+      }
+    }
+  },
+  "status": "verified"
+}

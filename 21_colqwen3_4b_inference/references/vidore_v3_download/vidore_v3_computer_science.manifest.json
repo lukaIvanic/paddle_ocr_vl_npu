@@ -1,0 +1,124 @@
+{
+  "repo": "vidore/vidore_v3_computer_science",
+  "revision": "d5cc75883d92e294f0c0fc2662551c9708a06ebc",
+  "endpoint": "https://hf-mirror.com",
+  "files": {
+    ".gitattributes": {
+      "bytes": 2619,
+      "sha256": "c3bb39845ce734eb9f1b4737c552765075b0f9c85223ab662912715463f74eee"
+    },
+    "README.md": {
+      "bytes": 9313,
+      "sha256": "e197575cfa650eb56362f825d27ccb97004f82def9566517c44f1bf27c3e5d02"
+    },
+    "corpus/test-00000-of-00002.parquet": {
+      "bytes": 228901444,
+      "sha256": "0de0cecb23bf67ca40bb28df3d3677692f42f03cf538faa533ebe6435c1c3409"
+    },
+    "corpus/test-00001-of-00002.parquet": {
+      "bytes": 283984867,
+      "sha256": "00361cdf2aec14fcf35ec5a00ef63ae9b0c989e2d67417c926a44aeab220b135"
+    },
+    "documents_metadata/test-00000-of-00001.parquet": {
+      "bytes": 5646,
+      "sha256": "f86f8a0e2ecf6e1ba76965d684ec8798cbb7560b34c5308f16256c53c65b3377"
+    },
+    "pdfs/Introduction_to_Computer_Science.pdf": {
+      "bytes": 53398130,
+      "sha256": "1003e2a5484f0ef1604fa83cf8176066b156ae686560f72ee48376e341395272"
+    },
+    "pdfs/Introduction_to_Python_Programming.pdf": {
+      "bytes": 11572327,
+      "sha256": "ca60aa86a3066f8504eb6e177d16303fcb3e38ff9bd6b07326f4eced94c2f6fc"
+    },
+    "pdfs/metadata.csv": {
+      "bytes": 161,
+      "sha256": "5c8901dce08ef9564116e9f409e5f1cf57b996ad151fd983af20855f72cccad5"
+    },
+    "qrels/test-00000-of-00001.parquet": {
+      "bytes": 63107,
+      "sha256": "338306ef0bc1f3d40f1a4cdfe56aaefa04f512e8d003da88a28c423c7d0514ad"
+    },
+    "queries/test-00000-of-00001.parquet": {
+      "bytes": 419894,
+      "sha256": "86a800279c12f4a607378fc001e89e1d136d5568580c16cc0356eaa0092676f5"
+    }
+  },
+  "inventory": {
+    "pages": 1360,
+    "queries": 1290,
+    "qrels": 6294,
+    "query_languages": {
+      "english": 215,
+      "french": 215,
+      "spanish": 215,
+      "italian": 215,
+      "german": 215,
+      "portuguese": 215
+    },
+    "parquet": {
+      "corpus/test-00000-of-00002.parquet": {
+        "rows": 680,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00001-of-00002.parquet": {
+        "rows": 680,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "documents_metadata/test-00000-of-00001.parquet": {
+        "rows": 2,
+        "columns": [
+          "file_name",
+          "doc_id",
+          "url",
+          "doc_type",
+          "doc_language",
+          "doc_year",
+          "visual_types",
+          "page_number",
+          "license"
+        ]
+      },
+      "qrels/test-00000-of-00001.parquet": {
+        "rows": 6294,
+        "columns": [
+          "query_id",
+          "corpus_id",
+          "score",
+          "content_type",
+          "bounding_boxes"
+        ]
+      },
+      "queries/test-00000-of-00001.parquet": {
+        "rows": 1290,
+        "columns": [
+          "query_id",
+          "query",
+          "language",
+          "query_types",
+          "query_format",
+          "content_type",
+          "raw_answers",
+          "query_generator",
+          "query_generation_pipeline",
+          "source_type",
+          "query_type_for_generation",
+          "answer"
+        ]
+      }
+    }
+  },
+  "status": "verified"
+}

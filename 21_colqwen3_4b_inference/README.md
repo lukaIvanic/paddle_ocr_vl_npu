@@ -81,7 +81,20 @@ failures rather than silently patching checkpoint code or changing attention.
 
 ## Status
 
-Implementation prepared; NPU validation pending. Existing experiments and their
-environments are unchanged.
+Validated on one **910B2 (physical device 7), 2026-10-01**. Both the two-crop
+smoke and a two-full-page ViDoRe smoke passed with FP16, Transformers 4.57.1,
+checkpoint-supplied model/processor, and true uncompiled eager attention.
+All 715 checkpoint tensors matched the expected keys/shapes. Embeddings were
+finite, approximately unit-normalized, and bit-exact across three warm repeats.
+
+The two original ViDoRe pages took 0.4734 s and 0.4581 s per warm image forward
+(B1); preprocessing, transfers and scoring are excluded. This is **not** a
+full-corpus throughput measurement or retrieval accuracy evaluation.
+
+See [validated results and caveats](references/RESULTS.md),
+[full-page run JSON](references/vidore_smoke_910b/result.json), and
+[crop run JSON](references/hf4571_smoke_910b/result.json).
+Processor inputs and embeddings remain on the server for future parity tests.
+Existing experiments and their environments are unchanged.
 
 Target evaluation dataset and download procedure: [ViDoRe v3](VIDORE_V3.md).

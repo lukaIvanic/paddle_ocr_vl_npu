@@ -1,0 +1,266 @@
+{
+  "repo": "vidore/vidore_v3_industrial",
+  "revision": "e26c864724f5dd71a3d7d739272d95637764cee9",
+  "endpoint": "https://hf-mirror.com",
+  "files": {
+    ".gitattributes": {
+      "bytes": 3906,
+      "sha256": "d1367b36ce83a17459354bd95868f47143bd9bcccae8d2b74d97128b83554a82"
+    },
+    "README.md": {
+      "bytes": 9325,
+      "sha256": "4caa957ff491848d6a6565cb11c4886dc524af090f80933e5341da53586cc3d1"
+    },
+    "corpus/test-00000-of-00005.parquet": {
+      "bytes": 295549804,
+      "sha256": "e3919b54eebd5630f4be6b7b6941b7ed01c867880867c5c52bd7a06e6837e948"
+    },
+    "corpus/test-00001-of-00005.parquet": {
+      "bytes": 435808004,
+      "sha256": "970a313b8a734f1bdb5bbe0226717cd439b34ed55f74f57327512a8fb9fd9bdc"
+    },
+    "corpus/test-00002-of-00005.parquet": {
+      "bytes": 449097682,
+      "sha256": "d0686b7b33540fa183b7f2ea49a130f091919d34f36ae4c8ce5405901541689c"
+    },
+    "corpus/test-00003-of-00005.parquet": {
+      "bytes": 456098366,
+      "sha256": "f605c58988c752cc11db62d19703f45bcab206d8c10b828aeec00a4e4723ed28"
+    },
+    "corpus/test-00004-of-00005.parquet": {
+      "bytes": 414905362,
+      "sha256": "d7637e3a5c6c2240211bcfc862af95f75c909730fb2c162829d8de66f71dbdac"
+    },
+    "documents_metadata/test-00000-of-00001.parquet": {
+      "bytes": 9658,
+      "sha256": "8c1722e988fe54448f7c23d09f7a96f6e8b7bc40da825ab6c5c15011a5b2d117"
+    },
+    "pdfs/AFD-091005-056.pdf": {
+      "bytes": 502643,
+      "sha256": "496308680f89cd50afceb89279535ac70e4eca388c4377190aa625f930e8a3e2"
+    },
+    "pdfs/AFD-091005-062.pdf": {
+      "bytes": 16309,
+      "sha256": "808268dba577ddaf314615931074721324072bf10065ed43017246437263e3fb"
+    },
+    "pdfs/AFD-100607-009.pdf": {
+      "bytes": 4824844,
+      "sha256": "ab4b8981615a4e54e56cedd3b2c8eea76f7069f1d59f84971db1152462c6ca28"
+    },
+    "pdfs/TO_00-25-172.pdf": {
+      "bytes": 14624305,
+      "sha256": "9ccaceebb01eb660c7cc2198a162c415a40c6fe6a7f57a8fa4861e3d2cf63139"
+    },
+    "pdfs/TO_00-25-172CL-1.pdf": {
+      "bytes": 53021,
+      "sha256": "e0a62ae5e76597cad9aa4f76ced71d5e10e5400b2ebab8001fae25cbce8839aa"
+    },
+    "pdfs/TO_00-25-172CL-3.pdf": {
+      "bytes": 399089,
+      "sha256": "13d03fd55e9dffa11361933e86d313d19acd45a7096337a81c85bdec3ee5e1b3"
+    },
+    "pdfs/TO_00-25-172CL-4.pdf": {
+      "bytes": 725854,
+      "sha256": "ef467680f6395a4c44e0fd660ab0d014b8ce73ea62a9b0c61b8f61ea8997aa83"
+    },
+    "pdfs/TO_00-25-172CL-5.pdf": {
+      "bytes": 1052264,
+      "sha256": "9e43a548758c39d4690b1dd292c61e285d4eab626e714a716ec408f220ed842e"
+    },
+    "pdfs/TO_00-25-203.pdf": {
+      "bytes": 717129,
+      "sha256": "de4697494d6af4f64511e6d661aec9b34921b0a6da4684ce2bc5bc0012a9a8ca"
+    },
+    "pdfs/TO_00-25-223.pdf": {
+      "bytes": 4930110,
+      "sha256": "741204d4fe65d1cfdb41ed25f31d6caa880397b2c85e5f3b13a86c0eebd339f3"
+    },
+    "pdfs/TO_00-25-234.pdf": {
+      "bytes": 2234615,
+      "sha256": "f93a6b21abfb0b38bb8372551f9de11db92a9e7ef73b6554243e1a7e3acdbafc"
+    },
+    "pdfs/TO_00-25-245_1.pdf": {
+      "bytes": 740896,
+      "sha256": "3b0cfbb52a8dd16e281ff436e9ca9c9ea99dedb73746ad78a84f3f258655c014"
+    },
+    "pdfs/TO_00-25-259.pdf": {
+      "bytes": 23965854,
+      "sha256": "33e5d17c065194b886a57005173cc71cfe449d956164e00676d47713f384fddc"
+    },
+    "pdfs/TO_00-25-260.pdf": {
+      "bytes": 584954,
+      "sha256": "e63e9b61f5d624e71b5bb4a8ca025f4a5b7faab3710eadeead2aff3ac73175db"
+    },
+    "pdfs/TO_00-5-15.pdf": {
+      "bytes": 22753524,
+      "sha256": "cdded0d2cd38f76273cc50b18062d1100ca3f1521e27ddd136cf852256ce929c"
+    },
+    "pdfs/TO_1-1-3.pdf": {
+      "bytes": 4027180,
+      "sha256": "8acef664985f335404cc4f6ef784dc7a1fa0b24397636c9faf20edb340779f5d"
+    },
+    "pdfs/TO_1-1-686_1.pdf": {
+      "bytes": 2484265,
+      "sha256": "567610c427967b15d17d281658968b9a2c571853d3199bc57a2fd1b0ba96c1c7"
+    },
+    "pdfs/TO_1-1-691.pdf": {
+      "bytes": 5724038,
+      "sha256": "66125e2aabd01ffaad9395028ffb52f49913acd4866406cf9a35a0d0c575f607"
+    },
+    "pdfs/TO_1-1-700.pdf": {
+      "bytes": 13459189,
+      "sha256": "84dc5e2897568ab90587ac8c6f3f4be65de83270bfdbe4f8de552cf6dd952642"
+    },
+    "pdfs/TO_1-1-8.pdf": {
+      "bytes": 5270681,
+      "sha256": "c5c9119d2b7935e25d574a17f4d44a928d1de90adc1399ebab8661a50d2ed796"
+    },
+    "pdfs/TO_1-1A-9.pdf": {
+      "bytes": 2651307,
+      "sha256": "0c218d472c9a73f33ca883fd8bd33451b9950e5855c7c0a555978334079a19f9"
+    },
+    "pdfs/TO_32-1-101.pdf": {
+      "bytes": 12034342,
+      "sha256": "2bd9e89fa0a290f2b8d5cf4ade372d4a6f3e1d0f8f5ee22083874ae857f23f48"
+    },
+    "pdfs/TO_32B14-3-1-101.pdf": {
+      "bytes": 415305,
+      "sha256": "95824f4a5d77ebafdda5bb54b9a9fc77385aad5850ee101c83db05936a70eca5"
+    },
+    "pdfs/TO_34-1-3.pdf": {
+      "bytes": 291385,
+      "sha256": "0c68d09faf72d7f5a88c8548247c62a8b6e44983c862d5613f1f26b3cdd5c73b"
+    },
+    "pdfs/TO_35-1-18.pdf": {
+      "bytes": 106637750,
+      "sha256": "0dc38b49ccf9ab3b91f9aa5eb53cbc123f7015a3dd3114ebfe6b609a27625077"
+    },
+    "pdfs/TO_35-1-3.pdf": {
+      "bytes": 17659283,
+      "sha256": "9d4231d4fc0daa6458095c6a8833c014528f983070a4d3dde359a51987e953b0"
+    },
+    "pdfs/TO_36-1-191.pdf": {
+      "bytes": 379906329,
+      "sha256": "32310aa7ff8f96b2e97b14b38ad1e8b423a1ccbd43777f89b72527036255fff4"
+    },
+    "pdfs/metadata.csv": {
+      "bytes": 829,
+      "sha256": "9fcd562d65cdf89f1c1e474015bad1560a39ed97ea77da8e0e84d79d3898ac43"
+    },
+    "qrels/test-00000-of-00001.parquet": {
+      "bytes": 133751,
+      "sha256": "ff55eb5407d934dc63d33f98f12ee0976cc7a74509eeed88459aa9b5a66deddd"
+    },
+    "queries/test-00000-of-00001.parquet": {
+      "bytes": 553942,
+      "sha256": "145df0eef4d41bbd80cb9678c63dd2c771094342b01220a814a565e17cfe8f27"
+    }
+  },
+  "inventory": {
+    "pages": 5244,
+    "queries": 1698,
+    "qrels": 9684,
+    "query_languages": {
+      "english": 283,
+      "french": 283,
+      "spanish": 283,
+      "italian": 283,
+      "german": 283,
+      "portuguese": 283
+    },
+    "parquet": {
+      "corpus/test-00000-of-00005.parquet": {
+        "rows": 1049,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00001-of-00005.parquet": {
+        "rows": 1049,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00002-of-00005.parquet": {
+        "rows": 1049,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00003-of-00005.parquet": {
+        "rows": 1049,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00004-of-00005.parquet": {
+        "rows": 1048,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "documents_metadata/test-00000-of-00001.parquet": {
+        "rows": 27,
+        "columns": [
+          "file_name",
+          "doc_id",
+          "url",
+          "doc_type",
+          "doc_language",
+          "doc_year",
+          "visual_types",
+          "page_number",
+          "license"
+        ]
+      },
+      "qrels/test-00000-of-00001.parquet": {
+        "rows": 9684,
+        "columns": [
+          "query_id",
+          "corpus_id",
+          "score",
+          "content_type",
+          "bounding_boxes"
+        ]
+      },
+      "queries/test-00000-of-00001.parquet": {
+        "rows": 1698,
+        "columns": [
+          "query_id",
+          "query",
+          "language",
+          "query_types",
+          "query_format",
+          "content_type",
+          "raw_answers",
+          "query_generator",
+          "query_generation_pipeline",
+          "source_type",
+          "query_type_for_generation",
+          "answer"
+        ]
+      }
+    }
+  },
+  "status": "verified"
+}

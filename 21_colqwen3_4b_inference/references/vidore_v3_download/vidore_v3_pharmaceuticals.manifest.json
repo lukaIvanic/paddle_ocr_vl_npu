@@ -1,0 +1,324 @@
+{
+  "repo": "vidore/vidore_v3_pharmaceuticals",
+  "revision": "3abd4aa8a9445fb5538a78a19ba50bd57bd22b5c",
+  "endpoint": "https://hf-mirror.com",
+  "files": {
+    ".gitattributes": {
+      "bytes": 7112,
+      "sha256": "c1051f7cc3a96427ce8b2ae57fedbe4dda4ecd1e33dd2475998e776b02d3b50e"
+    },
+    "README.md": {
+      "bytes": 9209,
+      "sha256": "0909e1a32d93c9b32a8bcb776202b937ac4db21f06a026f9a4d6b81c038b9e59"
+    },
+    "corpus/test-00000-of-00002.parquet": {
+      "bytes": 385083648,
+      "sha256": "0f51d221a1def60c6d1436a31507e69be42a6a1da4a9ae45ff6e231751466ac5"
+    },
+    "corpus/test-00001-of-00002.parquet": {
+      "bytes": 366386229,
+      "sha256": "827305c58164c9e69581953560b1e76349dbc86a5a06df91d16c92023175e468"
+    },
+    "documents_metadata/test-00000-of-00001.parquet": {
+      "bytes": 11689,
+      "sha256": "9023805acea8dafe0efb02615107b4902cf4f111f7706b6844395c9338c15a8e"
+    },
+    "pdfs/2017_FDLI_Compliance_Central_Presentation.pdf": {
+      "bytes": 830282,
+      "sha256": "63181ffaa7732618204ea2367b860c871d320c260845917d9ed8a7163fa1c4ef"
+    },
+    "pdfs/AAMGRxBiosimsSept2018_UHL.pdf": {
+      "bytes": 868083,
+      "sha256": "13c2e3619de20d98078574e4c02dc182b60cddda0fb990a296ee5a4c13699969"
+    },
+    "pdfs/AAMkeynoteChoe2021.pdf": {
+      "bytes": 981790,
+      "sha256": "0b8304aea317c0600ceb865ad1a337ac5602a92a1720932cc84cf98bd5bd22f7"
+    },
+    "pdfs/Biosimilar_Regulatory_Policy_Understanding_the_Landscape_and_Relevance_to_Medical_Practice.pdf": {
+      "bytes": 598965,
+      "sha256": "cd40593f19eea03682dbb8833e2fe18fc654eb162ffb9ad35c541a8aedbd7181"
+    },
+    "pdfs/Biosimilar_and_Interchangeable_Products_The_US_FDA_Perspective.pdf": {
+      "bytes": 321000,
+      "sha256": "97e4348a2ecadf8d06c5118be29b0bfabd892563083df8250903ffee74bb7ed8"
+    },
+    "pdfs/CDER_New_Drugs_Program_2017_Update.pdf": {
+      "bytes": 556444,
+      "sha256": "7a3bc13ff7ecc72cc86142004dced1802700529aed442286d44a4bac1d66bcef"
+    },
+    "pdfs/CDER_New_Drugs_Program_2019_Update.pdf": {
+      "bytes": 1362654,
+      "sha256": "b4b772ce6b07346a52929d6ff10797bc9e6d04b48d92310cfec36aea5e0615a2"
+    },
+    "pdfs/CDER_Office_of_Surveillance_and_Epidemiology_2017_Update.pdf": {
+      "bytes": 3755928,
+      "sha256": "c3e56c62891c9b9690fa94aef65791bec1e7681807b8c7724bc05eaf0f2386a7"
+    },
+    "pdfs/CDER_Office_of_Surveillance_and_Epidemiology_2018_Update.pdf": {
+      "bytes": 2350326,
+      "sha256": "44091089bbe994fa22819f0a83c5b9144ca2603f1926159cc34586e19ae94059"
+    },
+    "pdfs/CDER_SEND_Webinar_June_2020.pdf": {
+      "bytes": 1630358,
+      "sha256": "df0f179bf8e6f4b21400202586b6e50b93be824352c6dd4f7276a7c5e338c03b"
+    },
+    "pdfs/CDER_Update_Presentation.pdf": {
+      "bytes": 90966,
+      "sha256": "7de30929e7219edf879e93dbefaf37e7c60472a91df3fb7e472f8f9b3e947799"
+    },
+    "pdfs/Cavazzoni_Presentation_FDLI2020.pdf": {
+      "bytes": 441415,
+      "sha256": "1b91b51c7997ba5ea9b802b9df7ecc5b676baa7b789a2355ec42dccb6967aee2"
+    },
+    "pdfs/DDI_Medication_Errors_CE_March_2020_DMEPA_and_ISMP_combined_slides_FINAL.pdf": {
+      "bytes": 8469062,
+      "sha256": "dab03498a8e5ec0ad2dbc39c1d84510947b50ae5a4adaba46cb67806b7cbc69d"
+    },
+    "pdfs/DSCSA_Webinar_October_2021.pdf": {
+      "bytes": 780608,
+      "sha256": "ea1cfe4b7c6bb389a7fc55476778976a4449ef69371f71b241b3822a2658ef3b"
+    },
+    "pdfs/DrThrockmorton1.pdf": {
+      "bytes": 339281,
+      "sha256": "6dfb6402c486faa2dcab5651d0b5ccc9e56a99f0fc2f55fb90f7bf0ceaceda06"
+    },
+    "pdfs/Drug_Shortage_Presentation_Throckmorton_24.pdf": {
+      "bytes": 648291,
+      "sha256": "b7627fc6eb299ccf9b6ef901164a1a8b1f828ecfdb53fd96cbc2a18230b9877e"
+    },
+    "pdfs/FDA_Office_of_Generic_Drugs_OGD_Keynote_Address_GDUFA_Past_Present_and_Future.pdf": {
+      "bytes": 522910,
+      "sha256": "8a149c328896d68ca2801a0285c4ddbe36afe2e7d359a6de83bc3f456c81e008"
+    },
+    "pdfs/FDA_Role_in_Marijuana_Regulation.pdf": {
+      "bytes": 872210,
+      "sha256": "67fa806f475eac0609d14c83599716c1ed373ef12e30737eb7a77f320598f16d"
+    },
+    "pdfs/FDA_Role_in_Regulation_of_Cannabis_Products_NJACCHOmeeting16SEP21_FINAL.pdf": {
+      "bytes": 1747863,
+      "sha256": "d2f741949f1238d722c3333385575dc4633dbedaf8e4cab69831ce823288869a"
+    },
+    "pdfs/FDA_Update_2018_May_21_2018.pdf": {
+      "bytes": 998464,
+      "sha256": "12d26ab7fc9158912d6f7723aa9553687098ba6597246e544a8f330470aee813"
+    },
+    "pdfs/FDLI_FDA_CDER_PCavazzoni.pdf": {
+      "bytes": 1107592,
+      "sha256": "bdbff02e1bfa81c3e53f0808c645d1dbbbdb41c600f096877bb8bd932251220d"
+    },
+    "pdfs/FINALCLEAN_2023PDAFDA_PCavazzoni.pdf": {
+      "bytes": 1443503,
+      "sha256": "a42dce620f774b7c0eff2e80aa8f2ec9be781c6066172c84af36323360679c38"
+    },
+    "pdfs/FinalFDACMSSummit1_10_18KSCorrected.pdf": {
+      "bytes": 1030315,
+      "sha256": "6db8712d0eaa8eee633c20be6b55b00681859f25410464d05a926cb0bbd2fa90"
+    },
+    "pdfs/Future_of_Drug_Development_with_Janet_Woodcock_Director_CDER_FDA.pdf": {
+      "bytes": 389497,
+      "sha256": "5231974644aebe421f8207d024185c20fb80ce10cd1d61ffe2a9b28c9520cc2c"
+    },
+    "pdfs/MeetingofNCICancerCenterDirectors_10042021.pdf": {
+      "bytes": 713139,
+      "sha256": "cedb3d539c9ec14eaba0832f0c403457b396ad4e314dd31b4ce615635eb2b9b3"
+    },
+    "pdfs/NASEUAworkshop21_PCavazzoni_forposting.pdf": {
+      "bytes": 671743,
+      "sha256": "d7d855661e116c630cec9bec92d72872ba91ff248eb8d41c8d22063d32cf4f09"
+    },
+    "pdfs/OngoingFDAWorkRelatedtoOpioidOverdosePrevention.pdf": {
+      "bytes": 1491261,
+      "sha256": "a2481a99534f9c28156f3f860ad936e79b86919ab4e8f29f32658af414028eaa"
+    },
+    "pdfs/PCCA_InternationalSeminarOn102518_JAD_100418_stats_update.pdf": {
+      "bytes": 1024168,
+      "sha256": "72fcdf65cfedcc2b5c22cf03abfcf32cb1fccdc62be8a94e6e1335665df5685e"
+    },
+    "pdfs/PDA_FDA_Slides2021_Cavazzoni.pdf": {
+      "bytes": 879926,
+      "sha256": "9f5c6e8c9895e0dcafb7221503b8babf994ae3c67b685de47e9bb1b7d5380f9d"
+    },
+    "pdfs/Presentation_Bridging_Justifications_Supporting_the_Safety_of_Excipients_in_Generic_Drug_Products.pdf": {
+      "bytes": 507396,
+      "sha256": "1a5fff9f8b766bc630c2b04ec835133e4d1e956327095bc64a942faa06b43949"
+    },
+    "pdfs/Presentation_CDER_2016_Update_for_Rare_Diseases.pdf": {
+      "bytes": 559606,
+      "sha256": "223b501cdf0f1ebd71a7d2a14443d4a1a4283556dd62c97613f67d126b6362c6"
+    },
+    "pdfs/Presentation_Douglas_Throckmorton_FDAs_Role_in_Confronting_the_Opioid_Epidemic.pdf": {
+      "bytes": 1402506,
+      "sha256": "f6af4efd9399f6bddeea2a8151ca090673eed03afc0d691c7c8da8d59390efa8"
+    },
+    "pdfs/Presentation_FDA_Perspective_on_Abuse_Deterrent_Opioid_Development.pdf": {
+      "bytes": 1207061,
+      "sha256": "18fc7d192678d116abd71437695a0d3fb1a78171aff1d2cc34ce6659d282a81f"
+    },
+    "pdfs/Presentation_FDAs_Actions_to_Address_the_Opioid_Epidemic.pdf": {
+      "bytes": 1100520,
+      "sha256": "68a69808323ace5c84a1d5ee92c88ef04174b8896071b3cda6752af75abe11d3"
+    },
+    "pdfs/Presentation_FDAs_Role_in_Confronting_the_Opioid_Epidemic.pdf": {
+      "bytes": 838377,
+      "sha256": "0449a5eec35db2973d314b8023fdee329de89fe32b7b05a312d2d53bd23bb7c2"
+    },
+    "pdfs/Presentation_The_Collaborative_for_Effective_Prescription_Opioids_quarterly_meeting_on_September_18_2017.pdf": {
+      "bytes": 345026,
+      "sha256": "a88b3e5cc7299dc1dd9587f0c9aa171893bbc667c363d0f338f1f54985caac62"
+    },
+    "pdfs/SallyCKeynote20192019_04_01SCfinal_1.pdf": {
+      "bytes": 1533775,
+      "sha256": "3929086f0f232c0db9495a2e782253b6e79c985dd333d26203815f7247714dc9"
+    },
+    "pdfs/SearchforBalanceFDAsApproachtotheOpioidsCrisis_79.pdf": {
+      "bytes": 2058896,
+      "sha256": "03fa7e128950c8da5fce5272e502509982ab12955c85cdcd7f743c3303830d0a"
+    },
+    "pdfs/State_of_CDER_FDLI2021_PCavazzoni_20210515.pdf": {
+      "bytes": 706429,
+      "sha256": "df7eda7e193dcc96ec171d69cec1cd6fd9d437372123f7f24a522354eee480f0"
+    },
+    "pdfs/State_of_OGD_Pivoting_to_GDUFA_II.pdf": {
+      "bytes": 1407548,
+      "sha256": "56eb4ebcac051dc319367faf499080b96b9e2943cb8247e304674182fed032b6"
+    },
+    "pdfs/The_Public_Health_Role_of_Drug_Regulation_in_the_US.pdf": {
+      "bytes": 1119277,
+      "sha256": "171d0c83940192e702b5e436edfadb0f0769bb72a75a2020e1f190d780e86bf4"
+    },
+    "pdfs/The_Role_of_Social_Science_in_Prescription_Drug_Promotion_at_FDA_and_Preview_of_Upcoming_Studies.pdf": {
+      "bytes": 288811,
+      "sha256": "ed50eda6c04b1596cef934c94544d77148125e1ba5307df2dfadb616d69e192b"
+    },
+    "pdfs/TmortonFDA_CMS1218update_50.pdf": {
+      "bytes": 1070227,
+      "sha256": "e91dbacfd298aa89bb0259f17241c23bbd8288e51006a0bdb3ab3f1311421e7a"
+    },
+    "pdfs/Tmorton_NASEM_SOW_4.pdf": {
+      "bytes": 586611,
+      "sha256": "2051b892fb51ae55e7da93940d9b100cd54b64a7c32b91a85f005a0b2b697983"
+    },
+    "pdfs/Update_Biosimilar_Program_in_the_US.pdf": {
+      "bytes": 242300,
+      "sha256": "0f41be320a89e57165b1f8c63bec20815be4858e77b515348c373ad0ca8feef4"
+    },
+    "pdfs/UseofBayesianHierarchicalModelsinthePresentationofSubgroupAnalyses.pdf": {
+      "bytes": 774520,
+      "sha256": "47ce82a9b196eb115d86736db975693bebb597e199e3e969700d31b9a2db722a"
+    },
+    "pdfs/ddi_figure_oct_2024.pdf": {
+      "bytes": 677517,
+      "sha256": "81e2f713fbe88198eab7b5a338aa4ce082a7eff9eea71a12b0bea5977523104b"
+    },
+    "pdfs/drug_resistance_book.pdf": {
+      "bytes": 9245030,
+      "sha256": "cdf35c5cb4687c1353d3e224646bc4c9fd0d40f3cdaa59ae9af8e3f088a25646"
+    },
+    "pdfs/final_ce_dental_caries.pdf": {
+      "bytes": 1316902,
+      "sha256": "ad60eb8edf5e3b2a0d2aa4bd405c4503d51a8027d7a5d31396a61db2eabcfde0"
+    },
+    "pdfs/global_pharmaceutical_quality_summit.pdf": {
+      "bytes": 998598,
+      "sha256": "8462f27627b051713a06922087bf132b83f26535a1f3140f5f356b25a6c44f4e"
+    },
+    "pdfs/medicine_vaccine_book.pdf": {
+      "bytes": 5837709,
+      "sha256": "36e7c6df24a5f9167d53db1bb9ddb87dc77fb3d87563a6162f09c7ceff864771"
+    },
+    "pdfs/metadata.csv": {
+      "bytes": 4987,
+      "sha256": "99f2fcf37eac35febf5165d753baaed48b671e3018ee18224fdd4d72c2fe9a6c"
+    },
+    "pdfs/olugbengaokubadejoAAM2021.pdf": {
+      "bytes": 586704,
+      "sha256": "272342a7bde865f099f3fcba1d2cda8a2b574d2873f047d1c03d96b2544aa885"
+    },
+    "qrels/test-00000-of-00001.parquet": {
+      "bytes": 77241,
+      "sha256": "d2812c5b425d520fb4f466d2c0aa0ce811e493bf85cf9a576c87cd48929882bf"
+    },
+    "queries/test-00000-of-00001.parquet": {
+      "bytes": 751079,
+      "sha256": "6088a4d297ccddb980bb8af1aaeef51e4d8243959add4cbdaa8a65c2ef42f6a0"
+    }
+  },
+  "inventory": {
+    "pages": 2313,
+    "queries": 2184,
+    "qrels": 10392,
+    "query_languages": {
+      "english": 364,
+      "french": 364,
+      "spanish": 364,
+      "italian": 364,
+      "german": 364,
+      "portuguese": 364
+    },
+    "parquet": {
+      "corpus/test-00000-of-00002.parquet": {
+        "rows": 1157,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00001-of-00002.parquet": {
+        "rows": 1156,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "documents_metadata/test-00000-of-00001.parquet": {
+        "rows": 52,
+        "columns": [
+          "file_name",
+          "doc_id",
+          "url",
+          "doc_type",
+          "doc_language",
+          "doc_year",
+          "visual_types",
+          "page_number",
+          "license"
+        ]
+      },
+      "qrels/test-00000-of-00001.parquet": {
+        "rows": 10392,
+        "columns": [
+          "query_id",
+          "corpus_id",
+          "score",
+          "content_type",
+          "bounding_boxes"
+        ]
+      },
+      "queries/test-00000-of-00001.parquet": {
+        "rows": 2184,
+        "columns": [
+          "query_id",
+          "query",
+          "language",
+          "query_types",
+          "query_format",
+          "content_type",
+          "raw_answers",
+          "query_generator",
+          "query_generation_pipeline",
+          "source_type",
+          "query_type_for_generation",
+          "answer"
+        ]
+      }
+    }
+  },
+  "status": "verified"
+}

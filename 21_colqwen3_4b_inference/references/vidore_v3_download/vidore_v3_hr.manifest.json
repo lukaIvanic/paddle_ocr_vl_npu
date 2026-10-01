@@ -1,0 +1,162 @@
+{
+  "repo": "vidore/vidore_v3_hr",
+  "revision": "0cdf0979f2c5a0fd3e335e6373b9da48a9fe3bc3",
+  "endpoint": "https://hf-mirror.com",
+  "files": {
+    ".gitattributes": {
+      "bytes": 3892,
+      "sha256": "8340d5d90e7ea48ee8aaf51635bc3cc6fdcb5a22dd60ce70454ab4685dea1468"
+    },
+    "README.md": {
+      "bytes": 9201,
+      "sha256": "9a5a23114e7d46ce5d1db95b013e1a3e7d0ab68a21ab52b3f6abb1bc3c1afd8f"
+    },
+    "corpus/test-00000-of-00001.parquet": {
+      "bytes": 442091664,
+      "sha256": "79ae6980099204c7bc670317ef0ef31a0c9929c3e73476db64868a32f0594834"
+    },
+    "documents_metadata/test-00000-of-00001.parquet": {
+      "bytes": 6949,
+      "sha256": "f002723055c1dc73cf998bc9b5bd5fb8be315624e2f977b0b7a86811d9565c6c"
+    },
+    "pdfs/a_demographic_perspective_on_the_future_of_european-KJ0125152ENN.pdf": {
+      "bytes": 2040150,
+      "sha256": "685ecfda8fa0c1ab537d8120a5dd1f04c703bde671de3c7104a992fd8edf26e0"
+    },
+    "pdfs/access_for_domestic_workers_to_labour_and_social_protection-KE0124002ENN.pdf": {
+      "bytes": 2904679,
+      "sha256": "139828daea6050681122a19927aa1edf63df92ccb1b6db8db23c07ba2c7a2aef"
+    },
+    "pdfs/annual_report_on_intra-eu_labour_mobility-KE0125029ENN.pdf": {
+      "bytes": 7756617,
+      "sha256": "0342cfe69b002600232528032684562d3fdbcab4a603daeb5629c4e7d1d6fdb3"
+    },
+    "pdfs/employment_and_social_developments_in_europe-KE0125067ENN.pdf": {
+      "bytes": 1809747,
+      "sha256": "1b347c2b832740be3abf136eeedc6f7bbacbf162c33c0227fa611cbfb9e31615"
+    },
+    "pdfs/employment_and_social_developments_in_europe_2024-KEBD24002ENN.pdf": {
+      "bytes": 9103960,
+      "sha256": "07151bec7bcdbedcf7b7efed07953cbd05e21f8a124d365d2edac195866c5b62"
+    },
+    "pdfs/estimating_labour_market_transitions_and_skills_investment-KE0125066ENN.pdf": {
+      "bytes": 3310414,
+      "sha256": "0ea898b80b584e64a0d1c19ec5dc49873281e500a53f27c6d603584ed1cb9106"
+    },
+    "pdfs/european_network_of_public_employment_services_annual-KE0124024ENN.pdf": {
+      "bytes": 5987734,
+      "sha256": "df8794d0bf1f00124e66a705f91915e824d4077ec0ac9edfb550608b1c08337f"
+    },
+    "pdfs/future-oriented_occupations_in_the_eu-KE0125043ENN.pdf": {
+      "bytes": 4693321,
+      "sha256": "5bf0319a97dbeb45b6941547912ceb19198841bd0f75d57a8a569ff4fe770965"
+    },
+    "pdfs/joint_employment_report_2025-KE0125018ENN.pdf": {
+      "bytes": 5076206,
+      "sha256": "e88b437140a6407e03bfcbd1c01f3fbb4d1f3540c953e678c0d8ed59ca39692e"
+    },
+    "pdfs/labour_market_and_wage_developments_in_europe-KEBN24001ENN.pdf": {
+      "bytes": 4944517,
+      "sha256": "078435e3a5d09510ea9cc9f057b2bb231107b79628dbbc754ee68af4b37459a5"
+    },
+    "pdfs/metadata.csv": {
+      "bytes": 1675,
+      "sha256": "7f6a841fa63be523396e7fcc9fef6eff4ee0ce18c3ec8a2de079b1626a412d8b"
+    },
+    "pdfs/metadata_european-reports.json": {
+      "bytes": 5801,
+      "sha256": "406292a0fe624c08c419b443b577fc8a64526b8bf93af30b4b2f93d7cc50538f"
+    },
+    "pdfs/posting_of_workers-KE0224850ENN.pdf": {
+      "bytes": 2771898,
+      "sha256": "b9e64a44d1c13a38e13c2c7cb836537073353c787a83026cf822d49746e4e899"
+    },
+    "pdfs/recruitment_working_conditions_career_development-KI0124000ENN.pdf": {
+      "bytes": 1071072,
+      "sha256": "412ea0cd6a31a0fa3cade6952249583a3c6549fffc936b0690670994c62ccff7"
+    },
+    "pdfs/research_perspectives_on_the_future_of_work-KI0124087ENN.pdf": {
+      "bytes": 762935,
+      "sha256": "1d2cfad34e3730be47abed627d0c97c706345a44324a5baee7ce350d9ed522d3"
+    },
+    "pdfs/undeclared_care_work_in_the_eu-TJ0125004ENN.pdf": {
+      "bytes": 544164,
+      "sha256": "77cd118bcda7694be496ced12a80c9f456f7131ecae5a4d0dbb94f3fe8c67f46"
+    },
+    "qrels/test-00000-of-00001.parquet": {
+      "bytes": 79602,
+      "sha256": "cebab8cba5e9c283de546a88ed1a99df2e4aa7fdfd6ea14e6332f94fda80040a"
+    },
+    "queries/test-00000-of-00001.parquet": {
+      "bytes": 556978,
+      "sha256": "bbf0bfa70498e036e93b4b4567e37ce23ad3a658f2b7dd3567bbd70285c03606"
+    }
+  },
+  "inventory": {
+    "pages": 1110,
+    "queries": 1908,
+    "qrels": 10386,
+    "query_languages": {
+      "english": 318,
+      "french": 318,
+      "spanish": 318,
+      "italian": 318,
+      "german": 318,
+      "portuguese": 318
+    },
+    "parquet": {
+      "corpus/test-00000-of-00001.parquet": {
+        "rows": 1110,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "documents_metadata/test-00000-of-00001.parquet": {
+        "rows": 14,
+        "columns": [
+          "file_name",
+          "doc_id",
+          "url",
+          "doc_type",
+          "doc_language",
+          "doc_year",
+          "visual_types",
+          "page_number",
+          "license"
+        ]
+      },
+      "qrels/test-00000-of-00001.parquet": {
+        "rows": 10386,
+        "columns": [
+          "query_id",
+          "corpus_id",
+          "score",
+          "content_type",
+          "bounding_boxes"
+        ]
+      },
+      "queries/test-00000-of-00001.parquet": {
+        "rows": 1908,
+        "columns": [
+          "query_id",
+          "query",
+          "language",
+          "query_types",
+          "query_format",
+          "content_type",
+          "raw_answers",
+          "query_generator",
+          "query_generation_pipeline",
+          "source_type",
+          "query_type_for_generation",
+          "answer"
+        ]
+      }
+    }
+  },
+  "status": "verified"
+}

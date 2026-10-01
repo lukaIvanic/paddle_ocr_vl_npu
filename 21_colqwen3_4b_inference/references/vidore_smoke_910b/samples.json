@@ -1,0 +1,33 @@
+{
+  "scope": "two-page input smoke, NOT a benchmark score",
+  "samples": [
+    {
+      "dataset": "vidore/vidore_v3_hr",
+      "revision": "0cdf0979f2c5a0fd3e335e6373b9da48a9fe3bc3",
+      "query_id": 0,
+      "query": "What impact did the shifts in temporary contract usage from 2018 to 2023 have on the difference in employment stability between mobile EU workers and citizens of the host countries?",
+      "corpus_id": 372,
+      "relevance": 1,
+      "image": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/inputs/page_00.png",
+      "size": [
+        1654,
+        2339
+      ],
+      "sha256": "288e46a74c0155967b0700976da155bdf462a30c8294507f0105e9d8e611e073"
+    },
+    {
+      "dataset": "vidore/vidore_v3_computer_science",
+      "revision": "d5cc75883d92e294f0c0fc2662551c9708a06ebc",
+      "query_id": 0,
+      "query": "Is a variable name starting with a digit allowed in Python according to the document's content on naming conventions?",
+      "corpus_id": 157,
+      "relevance": 2,
+      "image": "/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/inputs/page_01.png",
+      "size": [
+        1700,
+        2200
+      ],
+      "sha256": "a39b5f40f05f0310ef0faf4c987eef266c5ed74edf2df575e1388e4805aa4a9b"
+    }
+  ]
+}

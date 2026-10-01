@@ -1,0 +1,161 @@
+{
+  "repo": "vidore/vidore_v3_finance_fr",
+  "revision": "1d808daa08032ffecdf62da151a7f7a8fe2bd0c9",
+  "endpoint": "https://hf-mirror.com",
+  "files": {
+    ".gitattributes": {
+      "bytes": 2752,
+      "sha256": "226cf07256277bcc26d3b9dd85e906f5675851895ff7c8dfcdedcb1a8937ac39"
+    },
+    "README.md": {
+      "bytes": 9321,
+      "sha256": "9bf7c52afd2899aaa345f954976de814dbe033c3d78d511427809216795eac99"
+    },
+    "corpus/test-00000-of-00003.parquet": {
+      "bytes": 358878722,
+      "sha256": "6fdf60ed08e4b18ab75b87438f6cb1deff490bb4bdd8b9cf0708b8bf0c41517b"
+    },
+    "corpus/test-00001-of-00003.parquet": {
+      "bytes": 335141423,
+      "sha256": "bba475e69b9f545c5ec0c2dc5852c235b65118c5e2b16117d281ee49910fa101"
+    },
+    "corpus/test-00002-of-00003.parquet": {
+      "bytes": 296265042,
+      "sha256": "1760b2fd125f97a706ec7239aebe37d6ad4a713aa61e39afce2da4dfc656105d"
+    },
+    "documents_metadata/test-00000-of-00001.parquet": {
+      "bytes": 5318,
+      "sha256": "0468f6c762ce16f5b961e77fade30784d06dc0786222c4b129938b776b4a9542"
+    },
+    "pdfs/christian_dior_2023.pdf": {
+      "bytes": 12966947,
+      "sha256": "5da5a221d035dc326f9dc9a488c1d008de6edc43859e74f9b6d34874a4d02547"
+    },
+    "pdfs/hermes_2023.pdf": {
+      "bytes": 8121589,
+      "sha256": "873b1f7b6a82fe58418af6ad20716ab660dc033ab4c208f571ace691c8a02a7c"
+    },
+    "pdfs/kering_2023.pdf": {
+      "bytes": 17875996,
+      "sha256": "e272d049477f22b3c0e21195d279aab0ab101441e883698a95b7b94fed9b2707"
+    },
+    "pdfs/loreal_2023.pdf": {
+      "bytes": 5520032,
+      "sha256": "813213e97e846745f0b6f66208fdb8851b4de04051119225fb40158e4b6943d6"
+    },
+    "pdfs/lvmh_2023.pdf": {
+      "bytes": 6486608,
+      "sha256": "efa61b01833d5af4e40e39a17af6a4c5acff2c7f3fa5472627cb03b60977f3ab"
+    },
+    "pdfs/metadata.csv": {
+      "bytes": 169,
+      "sha256": "5c980b05586a55750ae7bb371669bddf757baa076e979858454440920e3ce36f"
+    },
+    "pdfs/metadata_french_annual_reports.json": {
+      "bytes": 2040,
+      "sha256": "6b943be6b43fd633c662a2679cc4ec07d9344a16ad1fd4c86f5a36dee7b98d37"
+    },
+    "qrels/test-00000-of-00001.parquet": {
+      "bytes": 128791,
+      "sha256": "ca6afea316ba09a4f33a9993da44c5358da7ad3eee69b0a341388dd40add32f4"
+    },
+    "queries/test-00000-of-00001.parquet": {
+      "bytes": 495839,
+      "sha256": "699e99f2b84f722f7623cbbf7a733cd329ab31882e7efe801512f2bdcf6ad0f7"
+    }
+  },
+  "excluded_files": [
+    {
+      "path": "pdfs/.DS_Store",
+      "bytes": 6148,
+      "reason": "macOS Finder metadata, not benchmark data"
+    }
+  ],
+  "inventory": {
+    "pages": 2384,
+    "queries": 1920,
+    "qrels": 8808,
+    "query_languages": {
+      "french": 320,
+      "english": 320,
+      "spanish": 320,
+      "italian": 320,
+      "german": 320,
+      "portuguese": 320
+    },
+    "parquet": {
+      "corpus/test-00000-of-00003.parquet": {
+        "rows": 795,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00001-of-00003.parquet": {
+        "rows": 795,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "corpus/test-00002-of-00003.parquet": {
+        "rows": 794,
+        "columns": [
+          "corpus_id",
+          "image",
+          "doc_id",
+          "markdown",
+          "page_number_in_doc"
+        ]
+      },
+      "documents_metadata/test-00000-of-00001.parquet": {
+        "rows": 5,
+        "columns": [
+          "file_name",
+          "doc_id",
+          "url",
+          "doc_type",
+          "doc_language",
+          "doc_year",
+          "visual_types",
+          "page_number",
+          "license"
+        ]
+      },
+      "qrels/test-00000-of-00001.parquet": {
+        "rows": 8808,
+        "columns": [
+          "query_id",
+          "corpus_id",
+          "score",
+          "content_type",
+          "bounding_boxes"
+        ]
+      },
+      "queries/test-00000-of-00001.parquet": {
+        "rows": 1920,
+        "columns": [
+          "query_id",
+          "query",
+          "language",
+          "query_types",
+          "query_format",
+          "content_type",
+          "raw_answers",
+          "query_generator",
+          "query_generation_pipeline",
+          "source_type",
+          "query_type_for_generation",
+          "answer"
+        ]
+      }
+    }
+  },
+  "status": "verified"
+}
