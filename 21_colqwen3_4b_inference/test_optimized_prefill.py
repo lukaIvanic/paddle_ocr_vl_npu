@@ -9,7 +9,7 @@ from config import ColQwenConfig,VisionConfig,TextConfig
 from local_modeling_colqwen3 import LocalColQwen3
 from prepared_prefill import prepare_inputs,prepare_text,finish_embeddings,bmm_attention
 from optimized_prefill import (Linear,Options,OptimizedVisionStage,OptimizedTextStage,
-    prompt_attention,text_args_for_promptfa)
+    prompt_attention,text_args_for_promptfa,format_code)
 from bench_optimized_prefill import score_smoke
 
 
@@ -27,6 +27,13 @@ def fake_promptfa(q,k,v,**kw):
 
 
 class OptimizedContracts(unittest.TestCase):
+    def test_strict_format_codes(self):
+        for value in (29,'29','FRACTAL_NZ'):
+            self.assertEqual(format_code(value),29)
+        self.assertEqual(format_code('ND'),2)
+        with self.assertRaises(ValueError):
+            format_code('UNKNOWN')
+
     def test_fused_linear_does_not_modify_reference(self):
         torch.manual_seed(21)
         layers=[nn.Linear(8,n) for n in (16,4,4)]

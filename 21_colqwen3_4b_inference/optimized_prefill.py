@@ -31,6 +31,18 @@ class Options:
             raise ValueError('Unsupported vision norm')
 
 
+def format_code(value):
+    """torch-npu versions expose integer, enum, or named format values."""
+    try:
+        return int(value)
+    except (TypeError,ValueError):
+        names={'ND':2,'FRACTAL_NZ':29}
+        name=str(value).split('.')[-1]
+        if name not in names:
+            raise ValueError(f'Unrecognized NPU format: {value!r}')
+        return names[name]
+
+
 class Linear(nn.Module):
     """Own fused/formatted parameters without modifying source Linear modules."""
     def __init__(self, sources, weight_format):
@@ -51,7 +63,7 @@ class Linear(nn.Module):
                 raise ValueError('NZ requires NPU; no format fallback')
             import torch_npu
             weight = torch_npu.npu_format_cast(weight, 29)
-            if torch_npu.get_npu_format(weight) != 29:
+            if format_code(torch_npu.get_npu_format(weight)) != 29:
                 raise RuntimeError('NZ cast failed; refusing native fallback')
         self.weight = nn.Parameter(weight, requires_grad=False)
         self.bias = None if bias is None else nn.Parameter(bias, requires_grad=False)
@@ -213,6 +225,6 @@ def weight_formats(*modules):
     for module in modules:
         for child in module.modules():
             if isinstance(child,Linear):
-                code=str(torch_npu.get_npu_format(child.weight))
+                code=str(format_code(torch_npu.get_npu_format(child.weight)))
                 counts[code]=counts.get(code,0)+1
     return counts
