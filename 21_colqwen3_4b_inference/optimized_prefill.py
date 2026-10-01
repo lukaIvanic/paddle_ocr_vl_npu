@@ -63,12 +63,14 @@ class Linear(nn.Module):
 def manual_layer_norm(module, hidden):
     x = hidden.float()
     centered = x - x.mean(-1, keepdim=True)
-    y = centered * torch.rsqrt(centered.square().mean(-1, keepdim=True) + module.eps)
+    # Match the established MinerU compile workaround: FP32 statistics, then
+    # model-dtype normalization output and separate model-dtype affine ops.
+    y = (centered * torch.rsqrt(centered.square().mean(-1, keepdim=True) + module.eps)).to(hidden.dtype)
     if module.weight is not None:
-        y = y * module.weight.float()
+        y = y * module.weight
     if module.bias is not None:
-        y = y + module.bias.float()
-    return y.to(hidden.dtype)
+        y = y + module.bias
+    return y
 
 
 def _promptfa(q, k, v, **kwargs):
