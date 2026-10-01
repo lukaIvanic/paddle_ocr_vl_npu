@@ -25,6 +25,15 @@ def linear(module, x):
     return module(x.reshape(-1, x.shape[-1])).reshape(*shape, -1)
 
 
+def gelu_tanh(x):
+    # Installed TorchAir aten.gelu converter drops its approximate argument and
+    # emits legacy Gelu. npu_gelu preserves it through GeluV2. Same explicit
+    # tanh contract in eager and compiled execution; no global converter patch.
+    if x.device.type == 'npu':
+        return torch.ops.npu.npu_gelu(x, approximate='tanh')
+    return F.gelu(x, approximate='tanh')
+
+
 def bmm_attention(q, k, v, scale, mask):
     batch, heads, length, dim = q.shape
     groups = heads // k.shape[1]
@@ -64,7 +73,7 @@ class PreparedVisionStage(nn.Module):
             out = bmm_attention(q, k, v, attn.scale, mask).reshape(length, -1)
             hidden = hidden + linear(attn.proj, out)
             mlp = block.mlp
-            hidden = hidden + linear(mlp.linear_fc2, F.gelu(linear(mlp.linear_fc1, block.norm2(hidden)), approximate='tanh'))
+            hidden = hidden + linear(mlp.linear_fc2, gelu_tanh(linear(mlp.linear_fc1, block.norm2(hidden))))
             if index in self.tap_indices:
                 taps.append(hidden)
         return hidden, taps[0], taps[1], taps[2]
@@ -205,7 +214,7 @@ class StageCompiler:
             'torch': torch.__version__, 'torch_npu': torch_npu.__version__,
             'torchair': getattr(torchair, '__version__', 'unknown'),
             'device': torch.npu.get_device_name(),
-            'contract': 'b1_exact_manual_bmm_fp32softmax_native_weights_v1',
+            'contract': 'b1_exact_manual_bmm_fp32softmax_native_weights_geluv2_tanh_v2',
         }
 
     def get(self, stage, module, args):
