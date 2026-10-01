@@ -1,0 +1,521 @@
+{
+  "status": "failed",
+  "command": [
+    "21_colqwen3_4b_inference/bench_prepared_prefill.py",
+    "--model",
+    "/workspace/models/Ops-Colqwen3-4B",
+    "--anchors",
+    "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/image_01.pt",
+    "tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/image_01.pt",
+    "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/queries.pt",
+    "--cache-root",
+    ".runtime_cache/21_colqwen3/prepared",
+    "--repeats",
+    "5",
+    "--output-dir",
+    "tmp/21_colqwen3_4b_inference/prepared_20d9f8b2/compiled"
+  ],
+  "scope": "exact B1 prepared transformer stages, not end-to-end throughput or retrieval accuracy",
+  "commit": "20d9f8b26237d359347a21367409b07c15408fda",
+  "host": "liteserver-c001-4",
+  "physical_npu": "7",
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0"
+  },
+  "eager_only": false,
+  "device_name": "Ascend910B2",
+  "cache_records": [
+    {
+      "stage": "vision",
+      "path": ".runtime_cache/21_colqwen3/prepared/vision_e6c91924599a1d77372a1276",
+      "om_present_before": false,
+      "signature": {
+        "stage": "vision",
+        "inputs": [
+          {
+            "shape": [
+              512,
+              1024
+            ],
+            "stride": [
+              1024,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              512,
+              64
+            ],
+            "stride": [
+              64,
+              1
+            ],
+            "dtype": "torch.float32"
+          },
+          {
+            "shape": [
+              512,
+              64
+            ],
+            "stride": [
+              64,
+              1
+            ],
+            "dtype": "torch.float32"
+          },
+          {
+            "shape": [
+              1,
+              1,
+              512,
+              512
+            ],
+            "stride": [
+              262144,
+              262144,
+              512,
+              1
+            ],
+            "dtype": "torch.float16"
+          }
+        ],
+        "model_dir": "/workspace/models/Ops-Colqwen3-4B",
+        "model_config": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+        "weight_files": {
+          "model-00001-of-00002.safetensors": [
+            4990494880,
+            1783252895994272661
+          ],
+          "model-00002-of-00002.safetensors": [
+            3898332680,
+            1783252504999640161
+          ]
+        },
+        "source": {
+          "prepared_prefill.py": "10db0d8c3d829c60201974d7e00e56d600edefe4826d161b67e7c7a07ecd01ed",
+          "local_modeling_colqwen3.py": "d4a4cfec360aa1801fc68c5acd2bed0f2ed443353dbd2ac24f7a9f91d928d79f",
+          "config.py": "a7e0cc96ec0dd0ea187c4cee098c4f71d7f3c76fb77f8f1b01dcaf131bff4a19"
+        },
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "device": "Ascend910B2",
+        "contract": "b1_exact_manual_bmm_fp32softmax_native_weights_geluv2_tanh_v2"
+      },
+      "wrapper_s": 0.0004821300972253084
+    },
+    {
+      "stage": "text",
+      "path": ".runtime_cache/21_colqwen3/prepared/text_38969fb2672b5d1f1fd3c394",
+      "om_present_before": false,
+      "signature": {
+        "stage": "text",
+        "inputs": [
+          {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "stride": [
+              363520,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              142,
+              128
+            ],
+            "stride": [
+              18176,
+              128,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              142,
+              128
+            ],
+            "stride": [
+              18176,
+              128,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              1,
+              142,
+              142
+            ],
+            "stride": [
+              20164,
+              20164,
+              142,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "stride": [
+              363520,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "stride": [
+              363520,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "stride": [
+              363520,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          }
+        ],
+        "model_dir": "/workspace/models/Ops-Colqwen3-4B",
+        "model_config": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+        "weight_files": {
+          "model-00001-of-00002.safetensors": [
+            4990494880,
+            1783252895994272661
+          ],
+          "model-00002-of-00002.safetensors": [
+            3898332680,
+            1783252504999640161
+          ]
+        },
+        "source": {
+          "prepared_prefill.py": "10db0d8c3d829c60201974d7e00e56d600edefe4826d161b67e7c7a07ecd01ed",
+          "local_modeling_colqwen3.py": "d4a4cfec360aa1801fc68c5acd2bed0f2ed443353dbd2ac24f7a9f91d928d79f",
+          "config.py": "a7e0cc96ec0dd0ea187c4cee098c4f71d7f3c76fb77f8f1b01dcaf131bff4a19"
+        },
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "device": "Ascend910B2",
+        "contract": "b1_exact_manual_bmm_fp32softmax_native_weights_geluv2_tanh_v2"
+      },
+      "wrapper_s": 0.0005671100225299597
+    }
+  ],
+  "cases": [
+    {
+      "name": "0_hf4571_smoke_b25734d4_image_01",
+      "anchor": "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/image_01.pt",
+      "anchor_sha256": "28acf728b484dd361eb6c41eda416fca56a9ccfccd5aa1920e365a6e8ac0f499",
+      "status": "failed",
+      "reference_eager_s": 0.5512189599685371,
+      "reference_vs_saved_hf": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000118,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "prepared_eager_vs_reference": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000118,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "stages": {
+        "vision": {
+          "input_shapes": [
+            [
+              512,
+              1024
+            ],
+            [
+              512,
+              64
+            ],
+            [
+              512,
+              64
+            ],
+            [
+              1,
+              1,
+              512,
+              512
+            ]
+          ],
+          "eager": {
+            "samples_s": [
+              0.03043368016369641,
+              0.03033440001308918,
+              0.03026772988960147,
+              0.030288150068372488,
+              0.030797919956967235
+            ],
+            "mean_ms": 30.424376018345356,
+            "p50_ms": 30.33440001308918,
+            "p90_ms": 30.652224039658904,
+            "max_ms": 30.797919956967235,
+            "repeats": 5,
+            "real_tokens_per_s": 16828.611363837772
+          },
+          "first_call_s": 28.86792551004328,
+          "compiled_vs_prepared_eager": {
+            "passed": false,
+            "parts": [
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 17.5,
+                "mean_abs": 0.008697000332176685,
+                "rmse": 0.06942054629325867,
+                "cosine": 0.9999982447808275,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 0.015625,
+                "mean_abs": 0.000487315293867141,
+                "rmse": 0.000665431609377265,
+                "cosine": 0.999999232293646,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 0.75,
+                "mean_abs": 0.0005280366167426109,
+                "rmse": 0.0019209005404263735,
+                "cosine": 0.9999978471331546,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 0.625,
+                "mean_abs": 0.00129535305313766,
+                "rmse": 0.0026094333734363317,
+                "cosine": 0.9999987942300197,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              }
+            ]
+          },
+          "compiled": {
+            "samples_s": [
+              0.008424369851127267,
+              0.008372730109840631,
+              0.008371399948373437,
+              0.008373549906536937,
+              0.008367269998416305
+            ],
+            "mean_ms": 8.381863962858915,
+            "p50_ms": 8.372730109840631,
+            "p90_ms": 8.404041873291135,
+            "max_ms": 8.424369851127267,
+            "repeats": 5,
+            "real_tokens_per_s": 61084.26505950656
+          },
+          "warm_speedup": 3.629786423778716
+        },
+        "text": {
+          "input_shapes": [
+            [
+              1,
+              142,
+              2560
+            ],
+            [
+              1,
+              142,
+              128
+            ],
+            [
+              1,
+              142,
+              128
+            ],
+            [
+              1,
+              1,
+              142,
+              142
+            ],
+            [
+              1,
+              142,
+              2560
+            ],
+            [
+              1,
+              142,
+              2560
+            ],
+            [
+              1,
+              142,
+              2560
+            ]
+          ],
+          "eager": {
+            "samples_s": [
+              0.07805302017368376,
+              0.07581878989003599,
+              0.07567128003574908,
+              0.07547124987468123,
+              0.07554096984677017
+            ],
+            "mean_ms": 76.11106196418405,
+            "p50_ms": 75.67128003574908,
+            "p90_ms": 77.15932806022465,
+            "max_ms": 78.05302017368376,
+            "repeats": 5,
+            "real_tokens_per_s": 1865.69463538456
+          },
+          "first_call_s": 47.986517270095646,
+          "compiled_vs_prepared_eager": {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "finite": true,
+            "exact": true,
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "rmse": 0.0,
+            "cosine": 1.000000000000004,
+            "atol": 0.002,
+            "rtol": 0.002,
+            "passed": true
+          },
+          "compiled": {
+            "samples_s": [
+              0.02168606990016997,
+              0.02164069004356861,
+              0.021624600049108267,
+              0.021633159834891558,
+              0.02161972993053496
+            ],
+            "mean_ms": 21.640849951654673,
+            "p50_ms": 21.633159834891558,
+            "p90_ms": 21.667917957529426,
+            "max_ms": 21.68606990016997,
+            "repeats": 5,
+            "real_tokens_per_s": 6561.664644282726
+          },
+          "warm_speedup": 3.517008903726748
+        }
+      },
+      "compiled_vs_reference": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 0.006744384765625,
+        "mean_abs": 9.508794028079137e-05,
+        "rmse": 0.00020856744959019125,
+        "cosine": 0.9999443217786541,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": false
+      },
+      "compiled_vs_saved_hf": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 0.006744384765625,
+        "mean_abs": 9.508794028079137e-05,
+        "rmse": 0.00020856744959019125,
+        "cosine": 0.9999443217786541,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": false
+      },
+      "max_unit_norm_error": 0.0004181861877441406
+    }
+  ],
+  "error": "Traceback (most recent call last):\n  File \"/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/bench_prepared_prefill.py\", line 195, in main\n    run(args, result)\n  File \"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py\", line 124, in decorate_context\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/bench_prepared_prefill.py\", line 157, in run\n    raise RuntimeError('Compiled embedding parity failed; do not accept speed results')\nRuntimeError: Compiled embedding parity failed; do not accept speed results\n"
+}

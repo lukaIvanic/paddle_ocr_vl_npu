@@ -1,0 +1,4 @@
+c439ce1d1afb7c8628ce9e4f1bf7b85a5804df87
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=7
+/workspace/venvs/colqwen3_hf_py312/bin/python -u 21_colqwen3_4b_inference/diagnose_compiled_vision.py --model /workspace/models/Ops-Colqwen3-4B --anchor tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/image_01.pt --output-dir tmp/21_colqwen3_4b_inference/vision_fullprob_diag_c439ce1d/output 

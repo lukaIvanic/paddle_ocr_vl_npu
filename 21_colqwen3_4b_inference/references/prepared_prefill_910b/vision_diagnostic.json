@@ -1,0 +1,398 @@
+{
+  "status": "completed_diagnostic",
+  "scope": "diagnostic full vision graph; output taps may change fusion",
+  "diagnostic_eager_vs_production": {
+    "passed": true,
+    "parts": [
+      {
+        "shape": [
+          512,
+          1024
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000597,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      {
+        "shape": [
+          512,
+          1024
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000002,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      {
+        "shape": [
+          512,
+          1024
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000002,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      {
+        "shape": [
+          512,
+          1024
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000009,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      }
+    ]
+  },
+  "first_call_s": 25.117416099878028,
+  "outputs": {
+    "final": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 17.5,
+      "mean_abs": 0.008697000332176685,
+      "rmse": 0.06942054629325867,
+      "cosine": 0.9999982447808275,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": false
+    },
+    "tap5": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.015625,
+      "mean_abs": 0.000487315293867141,
+      "rmse": 0.000665431609377265,
+      "cosine": 0.999999232293646,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": false
+    },
+    "tap11": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.75,
+      "mean_abs": 0.0005280366167426109,
+      "rmse": 0.0019209005404263735,
+      "cosine": 0.9999978471331546,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": false
+    },
+    "tap17": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.625,
+      "mean_abs": 0.00129535305313766,
+      "rmse": 0.0026094333734363317,
+      "cosine": 0.9999987942300197,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": false
+    },
+    "norm1": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000000777,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "qkv": {
+      "shape": [
+        512,
+        3072
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000002602,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "q_rotary": {
+      "shape": [
+        512,
+        16,
+        64
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000000124,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "k_rotary": {
+      "shape": [
+        512,
+        16,
+        64
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000000104,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "attention": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000000373,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "out_projection": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000000346,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "attention_residual": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0000000000000002,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "norm2": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.0078125,
+      "mean_abs": 0.0001429698895663023,
+      "rmse": 0.0003835490788333118,
+      "cosine": 0.9999998756415635,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": false
+    },
+    "mlp_fc1": {
+      "shape": [
+        512,
+        4096
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.0078125,
+      "mean_abs": 0.00022980508219916373,
+      "rmse": 0.0005689612007699907,
+      "cosine": 0.9999999737594717,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": false
+    },
+    "gelu": {
+      "shape": [
+        512,
+        4096
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.0078125,
+      "mean_abs": 5.0052178266923875e-05,
+      "rmse": 0.00015037445700727403,
+      "cosine": 0.9999999251021434,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "mlp_fc2": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.0078125,
+      "mean_abs": 0.00011713647108990699,
+      "rmse": 0.0002475112269166857,
+      "cosine": 0.9999999576978404,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": true
+    },
+    "block0": {
+      "shape": [
+        512,
+        1024
+      ],
+      "finite": true,
+      "exact": false,
+      "max_abs": 0.0078125,
+      "mean_abs": 0.00011705076030921191,
+      "rmse": 0.0002884145360440016,
+      "cosine": 0.9999999518226186,
+      "atol": 0.002,
+      "rtol": 0.002,
+      "passed": false
+    }
+  },
+  "cache_records": [
+    {
+      "stage": "vision_diagnostic",
+      "path": ".runtime_cache/21_colqwen3/prepared/vision_diagnostic_66ef2f6092186815ff5d833f",
+      "om_present_before": false,
+      "signature": {
+        "stage": "vision_diagnostic",
+        "inputs": [
+          {
+            "shape": [
+              512,
+              1024
+            ],
+            "stride": [
+              1024,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              512,
+              64
+            ],
+            "stride": [
+              64,
+              1
+            ],
+            "dtype": "torch.float32"
+          },
+          {
+            "shape": [
+              512,
+              64
+            ],
+            "stride": [
+              64,
+              1
+            ],
+            "dtype": "torch.float32"
+          },
+          {
+            "shape": [
+              1,
+              1,
+              512,
+              512
+            ],
+            "stride": [
+              262144,
+              262144,
+              512,
+              1
+            ],
+            "dtype": "torch.float16"
+          }
+        ],
+        "model_dir": "/workspace/models/Ops-Colqwen3-4B",
+        "model_config": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+        "weight_files": {
+          "model-00001-of-00002.safetensors": [
+            4990494880,
+            1783252895994272661
+          ],
+          "model-00002-of-00002.safetensors": [
+            3898332680,
+            1783252504999640161
+          ]
+        },
+        "source": {
+          "prepared_prefill.py": "10db0d8c3d829c60201974d7e00e56d600edefe4826d161b67e7c7a07ecd01ed",
+          "local_modeling_colqwen3.py": "d4a4cfec360aa1801fc68c5acd2bed0f2ed443353dbd2ac24f7a9f91d928d79f",
+          "config.py": "a7e0cc96ec0dd0ea187c4cee098c4f71d7f3c76fb77f8f1b01dcaf131bff4a19"
+        },
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "device": "Ascend910B2",
+        "contract": "b1_exact_manual_bmm_fp32softmax_native_weights_geluv2_tanh_v2",
+        "diagnostic_source": "5bea1e765ea81e94b0f62df162c0e63fdd57e934711953d2d3c3d1c4e0403834"
+      },
+      "wrapper_s": 0.0005734299775213003
+    }
+  ]
+}

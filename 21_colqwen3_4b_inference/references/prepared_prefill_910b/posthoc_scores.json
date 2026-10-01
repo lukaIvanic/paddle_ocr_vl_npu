@@ -1,0 +1,18 @@
+{
+  "scope": "CPU FP32 analysis of saved 910B outputs, no model inference; two queries against one page, not retrieval evaluation",
+  "source_candidate": "tmp/21_colqwen3_4b_inference/prepared_96e28251/compiled/1.pt",
+  "source_queries": "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/queries.pt",
+  "formula": "sum_over_valid_query_rows(max_over_document_rows(query.float() @ document.float().T))",
+  "scores": [
+    {"query_row": 0, "reference": 9.950784683227539, "compiled": 9.95289421081543, "delta": 0.002109527587890625, "relative_percent": 0.021199610433198512},
+    {"query_row": 1, "reference": 8.437005043029785, "compiled": 8.439071655273438, "delta": 0.0020666122436523438, "relative_percent": 0.024494619039722765}
+  ],
+  "embedding_elements": 3210240,
+  "elements_above_absolute_0_002": 51033,
+  "p99_absolute_error": 0.002838134765625,
+  "p999_absolute_error": 0.01279449462890625,
+  "row_cosine_min": 0.6645004153251648,
+  "row_cosine_p01": 0.9860976338386536,
+  "row_cosine_p50": 0.9999790787696838,
+  "max_unit_norm_error": 0.00046378374099731445
+}

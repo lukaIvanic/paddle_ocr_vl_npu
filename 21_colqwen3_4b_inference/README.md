@@ -166,3 +166,131 @@ adding later optimizations; do not infer bit parity merely from equivalent math.
 This is not a 310P result, a full ViDoRe retrieval score, or an optimized runtime.
 The next gate is broader retrieval evaluation; speed work must remain a separate
 lane from this eager correctness anchor.
+
+## Prepared transformer stages
+
+`prepared_prefill.py` adds a separate exact-shape B1 path, sharing the original
+weights without modifying `local_modeling_colqwen3.py`:
+
+- Eager vision preparation: validation, image grid, patch projection, absolute
+  position interpolation, CPU-initialized FP32 rotary constants, cos/sin and mask.
+- `PreparedVisionStage`: all 24 transformer blocks, returning a fixed tuple of
+  final raw hidden states and the three raw DeepStack taps.
+- Eager multimodal preparation: all four mergers, token embeddings, initial
+  image scatter, multimodal positions, causal mask and text rotary tensors.
+  DeepStack features become three `[1, S_text, 2560]` tensors, zero outside image
+  positions; no dynamic boolean indexing remains in the text graph.
+- `PreparedTextStage`: all 36 transformer layers, dense additions after layers
+  0/1/2, and final RMSNorm. It returns every token's hidden state; no KV writes.
+- Eager finish: retrieval projection, normalization and output masking.
+
+Both stages use 2D token-matrix Linear calls and explicit `[B*H,S,D]` attention
+BMMs with FP32 softmax. No fused attention, NZ weights, quantization, buckets,
+resolution overrides or silent eager fallback are enabled. Initially only one
+unpadded query/image sequence is accepted. Query rows can be trimmed from a
+saved padded anchor by the benchmark; this is recorded as a B1 comparison and
+also checked against its saved HF embeddings.
+
+Vision GELU explicitly uses `npu_gelu(approximate="tanh")` / GE `GeluV2` on NPU;
+the installed TorchAir `aten.gelu` converter drops the approximation argument.
+The compiler uses `compile_fusion_switch.json` to disable only
+`AddLayerNormFusionPass`. This is a GE process-global policy, applied consistently
+to vision and text, not a per-call toggle. All other default compiler settings
+remain unchanged. The switch file is included in cache identity.
+
+Why the fusion switch: the initial compiled crop failed the unchanged embedding
+gate (max absolute error 0.006744). A full-stack diagnostic with first-block taps
+found exact QKV, rotary, attention, output projection and residual-add output;
+the first discrepancy was `norm2` (max absolute error 0.0078125). The generated
+OM contained `AddLayerNorm` fusions. Explicit GELU alone did not change that
+failure. Disabling the add/LayerNorm fusion restored bit-exact crop embeddings.
+This isolates a numerical-fidelity issue at that fused boundary; it is not
+evidence that attention or model weights were wrong. Extra diagnostic outputs
+can affect optimization, so acceptance is measured again with the ordinary
+production-stage outputs, not just the diagnostic graph.
+
+`bench_prepared_prefill.py` checks reference eager -> prepared eager before
+compiling each case. Hidden-state differences are reported as diagnostics;
+compiled acceptance checks final embeddings against both the original local
+model and saved HF reference (`atol=rtol=0.002`), finite/unit-norm output, and
+MaxSim comparisons (`atol=0.02, rtol=0.001`). These checks are not a substitute
+for full retrieval evaluation. Use `--eager-only` to validate all chosen shapes
+before spending time compiling any of them.
+
+```sh
+source npu-setup
+cd /workspace/repos/paddle_ocr_vl_npu
+/workspace/venvs/colqwen3_hf_py312/bin/python -u \
+  21_colqwen3_4b_inference/bench_prepared_prefill.py \
+  --model /workspace/models/Ops-Colqwen3-4B \
+  --anchors \
+    tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/queries.pt \
+    tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/image_01.pt \
+    tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/image_01.pt \
+  --cache-root .runtime_cache/21_colqwen3/prepared \
+  --output-dir tmp/21_colqwen3_4b_inference/prepared_new \
+  --repeats 5
+```
+
+The persistent cache key includes stage, tensor shapes/strides/dtypes, model
+config/path and weight-file metadata, source hashes, chip and runtime versions.
+Every signature receives a distinct Dynamo entry code object. Reuse the same
+cache root on restarts; do not clear it. `om_present_before` reports artifact
+presence, not proof that the runtime successfully loaded it.
+
+`PREFILL` phase markers distinguish wrapper creation from first graph execution.
+First-call time is reported separately from a subsequent warmup and repeated
+warm stage calls. Warm timing excludes preparation, mergers, output projection,
+comparison and serialization; it is **not end-to-end pages/s**. Five repeats are
+an initial latency check, not a statistically robust tail-latency study.
+
+### 910B validation and remaining numerical question (2026-10-01)
+
+The prepared eager path is bit-exact on an 18-token query, a 512-vision-token
+crop / 142-token text sequence, and a 4960-vision-token page / 1254-token text
+sequence. Compiled text was exact at all three lengths across the initial runs.
+With `AddLayerNormFusionPass` disabled, the ordinary compiled crop path is also
+bit-exact. The large-page path still exceeds the provisional elementwise
+embedding tolerance; **this is not a demonstrated retrieval-quality failure**.
+The full compile matrix and warm-restart validation are not yet complete.
+
+The [ordinary-stage report](references/prepared_prefill_910b/add_layernorm_off/result.json)
+records final page embedding max/mean absolute error 0.0575285 / 0.000254219,
+RMSE 0.000921809 and global cosine 0.99891233. The CPU-FP32 post-hoc MaxSim
+comparison using the two saved crop-smoke queries changed scores by +0.002110
+(+0.0212%) and +0.002067 (+0.0245%). That is only two queries against one page,
+not a ViDoRe ranking/evaluation result. Some individual embedding rows have
+larger discrepancies; aggregate cosine alone is not an acceptance criterion.
+
+The [full-stack attention diagnostic](references/prepared_prefill_910b/full_probability_diagnostic/result.json)
+at `c439ce1d` establishes, on that real page:
+
+- First-block normalization, complete QKV and rotary outputs are exact.
+- All **393,625,600** FP16 probabilities consumed by P×V are exact, not merely
+  sampled rows. Sampled QK, scaled/masked scores and FP32 probabilities are exact
+  too. The complete V tensor is exact through the QKV check.
+- P×V is the first differing operation: `[16,4960,4960] @ [16,4960,64]`.
+  Output max/mean absolute error is 0.0009765625 / 4.18687e-9; cosine is
+  0.9999999999749. This is a very sparse initial difference that propagates
+  through the remaining vision blocks and text model.
+- Extra diagnostic outputs retain the same final vision max/mean error as the
+  ordinary production-stage graph. All compared outputs are finite.
+
+This isolates the first difference to compiled versus eager matrix-product
+execution. A different reduction/tiling order at long K is a hypothesis, not a
+proven kernel defect. An extra `ZZMatMulToMatmulV3FusionPass` was observed in the
+large graph, but that observation does not establish it as the cause: the
+first QKV projection is exact. Do not disable unrelated fusions on that basis.
+
+Historical analogues were checked: experiment 07's native-D72 compiled
+PromptFA drift/NaNs and D80 workaround (`5e698684`), MinerU's explicit 3D-BMM
+manual attention (`396a36de`), and Paddle's 4304→4352 MLP alignment. None is
+directly the current contract: ColQwen uses manual 3D BMM, D64, and a 4096-wide
+vision MLP. LayerNorm fusion was a separate first issue, fixed for the crop;
+the remaining full-page P×V discrepancy needs model-level ranking/score
+validation before either accepting it or paying to enforce stricter arithmetic.
+
+Evidence also preserves the [initial failure](references/prepared_prefill_910b/initial_compiled_failed.json),
+[GELU-only failed attempt](references/prepared_prefill_910b/geluv2_only_failed.json),
+and [initial LayerNorm diagnostic](references/prepared_prefill_910b/vision_diagnostic.json).
+No tolerance was silently widened and no reference weights/model code changed.

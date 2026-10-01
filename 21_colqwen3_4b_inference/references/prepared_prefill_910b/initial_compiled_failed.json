@@ -1,0 +1,809 @@
+{
+  "status": "failed",
+  "command": [
+    "21_colqwen3_4b_inference/bench_prepared_prefill.py",
+    "--model",
+    "/workspace/models/Ops-Colqwen3-4B",
+    "--anchors",
+    "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/queries.pt",
+    "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/image_01.pt",
+    "tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/image_01.pt",
+    "--cache-root",
+    ".runtime_cache/21_colqwen3/prepared",
+    "--repeats",
+    "5",
+    "--output-dir",
+    "tmp/21_colqwen3_4b_inference/prepared_7924d601/compiled"
+  ],
+  "scope": "exact B1 prepared transformer stages, not end-to-end throughput or retrieval accuracy",
+  "commit": "7924d601f336943d2e3d58bc1939a49246e2b611",
+  "host": "liteserver-c001-4",
+  "physical_npu": "7",
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0"
+  },
+  "eager_only": false,
+  "device_name": "Ascend910B2",
+  "cache_records": [
+    {
+      "stage": "text",
+      "path": ".runtime_cache/21_colqwen3/prepared/text_cf8a03cd88176784dfe771f9",
+      "om_present_before": false,
+      "signature": {
+        "stage": "text",
+        "inputs": [
+          {
+            "shape": [
+              1,
+              18,
+              2560
+            ],
+            "stride": [
+              46080,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              18,
+              128
+            ],
+            "stride": [
+              2304,
+              128,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              18,
+              128
+            ],
+            "stride": [
+              2304,
+              128,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              1,
+              18,
+              18
+            ],
+            "stride": [
+              324,
+              324,
+              18,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              18,
+              2560
+            ],
+            "stride": [
+              46080,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              18,
+              2560
+            ],
+            "stride": [
+              46080,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              18,
+              2560
+            ],
+            "stride": [
+              46080,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          }
+        ],
+        "model_dir": "/workspace/models/Ops-Colqwen3-4B",
+        "model_config": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+        "weight_files": {
+          "model-00001-of-00002.safetensors": [
+            4990494880,
+            1783252895994272661
+          ],
+          "model-00002-of-00002.safetensors": [
+            3898332680,
+            1783252504999640161
+          ]
+        },
+        "source": {
+          "prepared_prefill.py": "2396fbe7390c5ec517240b37283cf72ceb4478a02c5e12f13c554db468e5bf6d",
+          "local_modeling_colqwen3.py": "d4a4cfec360aa1801fc68c5acd2bed0f2ed443353dbd2ac24f7a9f91d928d79f",
+          "config.py": "a7e0cc96ec0dd0ea187c4cee098c4f71d7f3c76fb77f8f1b01dcaf131bff4a19"
+        },
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "device": "Ascend910B2",
+        "contract": "b1_exact_manual_bmm_fp32softmax_native_weights_v1"
+      },
+      "wrapper_s": 0.0004703500308096409
+    },
+    {
+      "stage": "vision",
+      "path": ".runtime_cache/21_colqwen3/prepared/vision_7ee74a8ca20c9401d323d7d4",
+      "om_present_before": false,
+      "signature": {
+        "stage": "vision",
+        "inputs": [
+          {
+            "shape": [
+              512,
+              1024
+            ],
+            "stride": [
+              1024,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              512,
+              64
+            ],
+            "stride": [
+              64,
+              1
+            ],
+            "dtype": "torch.float32"
+          },
+          {
+            "shape": [
+              512,
+              64
+            ],
+            "stride": [
+              64,
+              1
+            ],
+            "dtype": "torch.float32"
+          },
+          {
+            "shape": [
+              1,
+              1,
+              512,
+              512
+            ],
+            "stride": [
+              262144,
+              262144,
+              512,
+              1
+            ],
+            "dtype": "torch.float16"
+          }
+        ],
+        "model_dir": "/workspace/models/Ops-Colqwen3-4B",
+        "model_config": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+        "weight_files": {
+          "model-00001-of-00002.safetensors": [
+            4990494880,
+            1783252895994272661
+          ],
+          "model-00002-of-00002.safetensors": [
+            3898332680,
+            1783252504999640161
+          ]
+        },
+        "source": {
+          "prepared_prefill.py": "2396fbe7390c5ec517240b37283cf72ceb4478a02c5e12f13c554db468e5bf6d",
+          "local_modeling_colqwen3.py": "d4a4cfec360aa1801fc68c5acd2bed0f2ed443353dbd2ac24f7a9f91d928d79f",
+          "config.py": "a7e0cc96ec0dd0ea187c4cee098c4f71d7f3c76fb77f8f1b01dcaf131bff4a19"
+        },
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "device": "Ascend910B2",
+        "contract": "b1_exact_manual_bmm_fp32softmax_native_weights_v1"
+      },
+      "wrapper_s": 0.0006588301621377468
+    },
+    {
+      "stage": "text",
+      "path": ".runtime_cache/21_colqwen3/prepared/text_51d2c4a6c6867944bea352da",
+      "om_present_before": false,
+      "signature": {
+        "stage": "text",
+        "inputs": [
+          {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "stride": [
+              363520,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              142,
+              128
+            ],
+            "stride": [
+              18176,
+              128,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              142,
+              128
+            ],
+            "stride": [
+              18176,
+              128,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              1,
+              142,
+              142
+            ],
+            "stride": [
+              20164,
+              20164,
+              142,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "stride": [
+              363520,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "stride": [
+              363520,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          },
+          {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "stride": [
+              363520,
+              2560,
+              1
+            ],
+            "dtype": "torch.float16"
+          }
+        ],
+        "model_dir": "/workspace/models/Ops-Colqwen3-4B",
+        "model_config": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b",
+        "weight_files": {
+          "model-00001-of-00002.safetensors": [
+            4990494880,
+            1783252895994272661
+          ],
+          "model-00002-of-00002.safetensors": [
+            3898332680,
+            1783252504999640161
+          ]
+        },
+        "source": {
+          "prepared_prefill.py": "2396fbe7390c5ec517240b37283cf72ceb4478a02c5e12f13c554db468e5bf6d",
+          "local_modeling_colqwen3.py": "d4a4cfec360aa1801fc68c5acd2bed0f2ed443353dbd2ac24f7a9f91d928d79f",
+          "config.py": "a7e0cc96ec0dd0ea187c4cee098c4f71d7f3c76fb77f8f1b01dcaf131bff4a19"
+        },
+        "torch": "2.10.0+cpu",
+        "torch_npu": "2.10.0",
+        "torchair": "unknown",
+        "device": "Ascend910B2",
+        "contract": "b1_exact_manual_bmm_fp32softmax_native_weights_v1"
+      },
+      "wrapper_s": 0.0005049998871982098
+    }
+  ],
+  "cases": [
+    {
+      "name": "0_hf4571_smoke_b25734d4_queries",
+      "anchor": "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/queries.pt",
+      "anchor_sha256": "e536c8fb577c1bd9c715cc941fe2df03de33e4a00472b333aa9294621cd7d97b",
+      "status": "passed",
+      "reference_eager_s": 0.357689349912107,
+      "reference_vs_saved_hf": {
+        "shape": [
+          1,
+          18,
+          2560
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 0.000213623046875,
+        "mean_abs": 2.332197254872881e-05,
+        "rmse": 3.812816066783853e-05,
+        "cosine": 0.9999981448970552,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "prepared_eager_vs_reference": {
+        "shape": [
+          1,
+          18,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 0.9999999999999999,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "stages": {
+        "text": {
+          "input_shapes": [
+            [
+              1,
+              18,
+              2560
+            ],
+            [
+              1,
+              18,
+              128
+            ],
+            [
+              1,
+              18,
+              128
+            ],
+            [
+              1,
+              1,
+              18,
+              18
+            ],
+            [
+              1,
+              18,
+              2560
+            ],
+            [
+              1,
+              18,
+              2560
+            ],
+            [
+              1,
+              18,
+              2560
+            ]
+          ],
+          "eager": {
+            "samples_s": [
+              0.07418730016797781,
+              0.07520045014098287,
+              0.07390924007631838,
+              0.07338958000764251,
+              0.07341316994279623
+            ],
+            "mean_ms": 74.01994806714356,
+            "p50_ms": 73.90924007631838,
+            "p90_ms": 74.79519015178084,
+            "max_ms": 75.20045014098287,
+            "repeats": 5,
+            "real_tokens_per_s": 243.17769020416205
+          },
+          "first_call_s": 64.58170750015415,
+          "compiled_vs_prepared_eager": {
+            "shape": [
+              1,
+              18,
+              2560
+            ],
+            "finite": true,
+            "exact": true,
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "rmse": 0.0,
+            "cosine": 1.0000000000000004,
+            "atol": 0.002,
+            "rtol": 0.002,
+            "passed": true
+          },
+          "compiled": {
+            "samples_s": [
+              0.013761060079559684,
+              0.01369833992794156,
+              0.01367965992540121,
+              0.013702520169317722,
+              0.013677229871973395
+            ],
+            "mean_ms": 13.703761994838715,
+            "p50_ms": 13.69833992794156,
+            "p90_ms": 13.7376441154629,
+            "max_ms": 13.761060079559684,
+            "repeats": 5,
+            "real_tokens_per_s": 1313.5079262745069
+          },
+          "warm_speedup": 5.4014326938122466
+        }
+      },
+      "compiled_vs_reference": {
+        "shape": [
+          1,
+          18,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 0.9999999999999999,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "compiled_vs_saved_hf": {
+        "shape": [
+          1,
+          18,
+          2560
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 0.000213623046875,
+        "mean_abs": 2.332197254872881e-05,
+        "rmse": 3.812816066783853e-05,
+        "cosine": 0.9999981448970552,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "max_unit_norm_error": 0.0003663301467895508
+    },
+    {
+      "name": "1_hf4571_smoke_b25734d4_image_01",
+      "anchor": "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/image_01.pt",
+      "anchor_sha256": "28acf728b484dd361eb6c41eda416fca56a9ccfccd5aa1920e365a6e8ac0f499",
+      "status": "failed",
+      "reference_eager_s": 0.2805537001695484,
+      "reference_vs_saved_hf": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000118,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "prepared_eager_vs_reference": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000118,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "stages": {
+        "vision": {
+          "input_shapes": [
+            [
+              512,
+              1024
+            ],
+            [
+              512,
+              64
+            ],
+            [
+              512,
+              64
+            ],
+            [
+              1,
+              1,
+              512,
+              512
+            ]
+          ],
+          "eager": {
+            "samples_s": [
+              0.031086859991773963,
+              0.031073519960045815,
+              0.030913189984858036,
+              0.030903810169547796,
+              0.030772149795666337
+            ],
+            "mean_ms": 30.94990598037839,
+            "p50_ms": 30.913189984858036,
+            "p90_ms": 31.081523979082704,
+            "max_ms": 31.086859991773963,
+            "repeats": 5,
+            "real_tokens_per_s": 16542.861239210146
+          },
+          "first_call_s": 35.80492956005037,
+          "compiled_vs_prepared_eager": {
+            "passed": false,
+            "parts": [
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 17.5,
+                "mean_abs": 0.008697000332176685,
+                "rmse": 0.06942054629325867,
+                "cosine": 0.9999982447808275,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 0.015625,
+                "mean_abs": 0.000487315293867141,
+                "rmse": 0.000665431609377265,
+                "cosine": 0.999999232293646,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 0.75,
+                "mean_abs": 0.0005280366167426109,
+                "rmse": 0.0019209005404263735,
+                "cosine": 0.9999978471331546,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 0.625,
+                "mean_abs": 0.00129535305313766,
+                "rmse": 0.0026094333734363317,
+                "cosine": 0.9999987942300197,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              }
+            ]
+          },
+          "compiled": {
+            "samples_s": [
+              0.008901659864932299,
+              0.008832870051264763,
+              0.008829850004985929,
+              0.008837520144879818,
+              0.008827790152281523
+            ],
+            "mean_ms": 8.845938043668866,
+            "p50_ms": 8.832870051264763,
+            "p90_ms": 8.876003976911306,
+            "max_ms": 8.901659864932299,
+            "repeats": 5,
+            "real_tokens_per_s": 57879.67284786083
+          },
+          "warm_speedup": 3.4987703765944387
+        },
+        "text": {
+          "input_shapes": [
+            [
+              1,
+              142,
+              2560
+            ],
+            [
+              1,
+              142,
+              128
+            ],
+            [
+              1,
+              142,
+              128
+            ],
+            [
+              1,
+              1,
+              142,
+              142
+            ],
+            [
+              1,
+              142,
+              2560
+            ],
+            [
+              1,
+              142,
+              2560
+            ],
+            [
+              1,
+              142,
+              2560
+            ]
+          ],
+          "eager": {
+            "samples_s": [
+              0.07584024011157453,
+              0.07474963995628059,
+              0.07476027985103428,
+              0.0748026198707521,
+              0.0747112799435854
+            ],
+            "mean_ms": 74.97281194664538,
+            "p50_ms": 74.76027985103428,
+            "p90_ms": 75.42519201524556,
+            "max_ms": 75.84024011157453,
+            "repeats": 5,
+            "real_tokens_per_s": 1894.0199295319846
+          },
+          "first_call_s": 56.47917227004655,
+          "compiled_vs_prepared_eager": {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "finite": true,
+            "exact": true,
+            "max_abs": 0.0,
+            "mean_abs": 0.0,
+            "rmse": 0.0,
+            "cosine": 1.000000000000004,
+            "atol": 0.002,
+            "rtol": 0.002,
+            "passed": true
+          },
+          "compiled": {
+            "samples_s": [
+              0.021990469889715314,
+              0.021904220106080174,
+              0.021893370198085904,
+              0.021894250065088272,
+              0.021893810015171766
+            ],
+            "mean_ms": 21.915224054828286,
+            "p50_ms": 21.894250065088272,
+            "p90_ms": 21.955969976261258,
+            "max_ms": 21.990469889715314,
+            "repeats": 5,
+            "real_tokens_per_s": 6479.513950883613
+          },
+          "warm_speedup": 3.4210378939807202
+        }
+      },
+      "compiled_vs_reference": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 0.006744384765625,
+        "mean_abs": 9.508794028079137e-05,
+        "rmse": 0.00020856744959019125,
+        "cosine": 0.9999443217786541,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": false
+      },
+      "compiled_vs_saved_hf": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 0.006744384765625,
+        "mean_abs": 9.508794028079137e-05,
+        "rmse": 0.00020856744959019125,
+        "cosine": 0.9999443217786541,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": false
+      },
+      "max_unit_norm_error": 0.0004181861877441406
+    }
+  ],
+  "error": "Traceback (most recent call last):\n  File \"/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/bench_prepared_prefill.py\", line 195, in main\n    run(args, result)\n  File \"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py\", line 124, in decorate_context\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/bench_prepared_prefill.py\", line 157, in run\n    raise RuntimeError('Compiled embedding parity failed; do not accept speed results')\nRuntimeError: Compiled embedding parity failed; do not accept speed results\n"
+}
