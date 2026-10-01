@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import subprocess
 import sys
 import time
@@ -63,6 +64,30 @@ def phase(name, **kwargs):
     print('HF_BASELINE ' + json.dumps({'phase': name, **kwargs}), flush=True)
 
 
+def verify_checkpoint_keys(model, path):
+    # The checkpoint's from_pretrained override assumes a model return value,
+    # so output_loading_info=True breaks it. Inspect tensor headers instead;
+    # leave the supplied loader and model code unchanged.
+    from safetensors import safe_open
+    expected = {}
+    mapping = model._checkpoint_conversion_mapping
+    for shard in sorted(path.glob('*.safetensors')):
+        with safe_open(str(shard), framework='pt', device='cpu') as source:
+            for key in source.keys():
+                mapped = key
+                for pattern, replacement in mapping.items():
+                    mapped = re.sub(pattern, replacement, mapped)
+                if mapped in expected:
+                    raise RuntimeError(f'Duplicate mapped checkpoint key: {mapped}')
+                expected[mapped] = tuple(source.get_slice(key).get_shape())
+    actual = {k: tuple(v.shape) for k, v in model.state_dict().items()}
+    return {'missing_keys': sorted(actual.keys() - expected.keys()),
+            'unexpected_keys': sorted(expected.keys() - actual.keys()),
+            'mismatched_keys': [k for k in actual.keys() & expected.keys()
+                                if actual[k] != expected[k]],
+            'checkpoint_tensor_count': len(expected)}
+
+
 def run(args, result):
     import torch
     import torch_npu  # noqa: F401; explicitly registers the NPU backend
@@ -79,12 +104,11 @@ def run(args, result):
     started = time.perf_counter()
     processor = AutoProcessor.from_pretrained(
         str(args.model), trust_remote_code=True, local_files_only=True)
-    model, loading = AutoModel.from_pretrained(
+    model = AutoModel.from_pretrained(
         str(args.model), trust_remote_code=True, local_files_only=True,
-        dtype=dtype, attn_implementation='eager', output_loading_info=True)
-    result['loading_info'] = {k: [str(x) for x in loading.get(k, [])]
-                              for k in ('missing_keys', 'unexpected_keys', 'mismatched_keys', 'error_msgs')}
-    if any(result['loading_info'].values()):
+        dtype=dtype, attn_implementation='eager')
+    result['loading_info'] = verify_checkpoint_keys(model, args.model)
+    if any(result['loading_info'][k] for k in ('missing_keys', 'unexpected_keys', 'mismatched_keys')):
         raise RuntimeError('Checkpoint loading is not exact; inspect loading_info')
     model = model.to(args.device).eval()
     torch.npu.synchronize()
