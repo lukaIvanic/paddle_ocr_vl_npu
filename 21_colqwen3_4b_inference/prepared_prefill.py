@@ -210,7 +210,8 @@ class StageCompiler:
             'model_config': hashlib.sha256((directory/'config.json').read_bytes()).hexdigest(),
             'weight_files': {p.name: [p.stat().st_size, p.stat().st_mtime_ns] for p in sorted(directory.glob('*.safetensors'))},
             'source': {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                       for name in ('prepared_prefill.py', 'local_modeling_colqwen3.py', 'config.py')},
+                       for name in ('prepared_prefill.py', 'local_modeling_colqwen3.py', 'config.py',
+                                    'compile_fusion_switch.json')},
             'torch': torch.__version__, 'torch_npu': torch_npu.__version__,
             'torchair': getattr(torchair, '__version__', 'unknown'),
             'device': torch.npu.get_device_name(),
@@ -229,8 +230,13 @@ class StageCompiler:
         (path/'signature.json').write_text(json.dumps(signature, indent=2)+'\n')
         self.emit('cache_wrapper_start', stage=stage, path=str(path), om_present_before=warm)
         start = time.perf_counter()
+        config = self.torchair.CompilerConfig()
+        # GE's fusion switch is process-global: use the same policy for both
+        # stages. Preserve the eager FP16 residual-add/LayerNorm boundary.
+        config.fusion_config.fusion_switch_file = str(
+            Path(__file__).with_name('compile_fusion_switch.json').resolve())
         call = self.torchair.inference.cache_compile(unique_forward(module, f'colqwen_{stage}_{digest}'),
-                    config=self.torchair.CompilerConfig(), dynamic=False, fullgraph=True,
+                    config=config, dynamic=False, fullgraph=True,
                     cache_dir=str(path), ge_cache=True)
         record = {'stage': stage, 'path': str(path), 'om_present_before': warm,
                   'signature': signature, 'wrapper_s': time.perf_counter()-start}
