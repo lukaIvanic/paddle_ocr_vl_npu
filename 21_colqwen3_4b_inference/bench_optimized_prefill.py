@@ -33,6 +33,13 @@ def validity(value, reference):
             'passed':finite and error<.002 and zeros}
 
 
+def memory_stats():
+    return {'allocated_bytes':torch.npu.memory_allocated(),
+            'reserved_bytes':torch.npu.memory_reserved(),
+            'peak_allocated_bytes':torch.npu.max_memory_allocated(),
+            'scope':'PyTorch allocator only; not all CANN/driver memory'}
+
+
 def score_smoke(outputs):
     # Post-hoc FP32 CPU scoring of saved embeddings, not CPU model inference.
     queries=[r for r in outputs if not r['image']]
@@ -73,24 +80,28 @@ def run(args,result):
     torch.npu.set_device(args.device)
     torch.npu.set_compile_mode(jit_compile=False)
     # Set before model's first NPU allocation; explicit matching native control.
-    torch.npu.config.allow_internal_format=args.enable_internal_format or args.weight_format=='fractal_nz'
+    internal_formats=args.enable_internal_format or args.weight_format=='fractal_nz'
+    torch.npu.config.allow_internal_format=internal_formats
     options=Options(not args.unfused,args.weight_format,args.gqa,args.vision_norm)
     result.update(options=asdict(options),device_name=torch.npu.get_device_name(),
-                  internal_format=bool(torch.npu.config.allow_internal_format),
+                  internal_format_requested=internal_formats,
                   versions={'torch':torch.__version__,'torch_npu':torch_npu.__version__})
     emit('model_load_start')
     model=LocalColQwen3.from_pretrained(args.model,device=args.device)
     reference_vision,reference_text=PreparedVisionStage(model).eval(),PreparedTextStage(model).eval()
+    torch.npu.synchronize()
     start=time.perf_counter()
     vision,text=OptimizedVisionStage(model,options).eval(),OptimizedTextStage(model,options).eval()
+    torch.npu.synchronize()
     result['weight_setup_s']=time.perf_counter()-start
+    result['setup_memory']=memory_stats()
     result['weight_formats']=weight_formats(vision,text)
     if args.weight_format=='fractal_nz' and set(result['weight_formats'])!={'29'}:
         raise RuntimeError('Not all target Linear weights are NZ')
     compiler=None if args.eager_only else StageCompiler(args.model,args.cache_root,emit)
     if compiler:
         configure_compiler(compiler,options)
-        compiler.identity['internal_format']=result['internal_format']
+        compiler.identity['internal_format']=internal_formats
     result['cache_records']=compiler.records if compiler else []
     emit('model_load_finish',weight_formats=result['weight_formats'])
     result['cases']=[]
@@ -143,6 +154,7 @@ def run(args,result):
         actual=finish_embeddings(model,prepared,calls['text'](*actual_t))
         row['embeddings_vs_reference']=compare(actual,expected)
         row['validity']=validity(actual,expected)
+        row['memory']=memory_stats()
         outputs.append({'name':name,'image':va is not None,'reference':cpu(expected),'candidate':cpu(actual)})
         torch.save({'inputs':{k:v.cpu() for k,v in batch.items()},**outputs[-1]},args.output_dir/f'{index}.pt')
         emit('case_finish',name=name,comparison=row['embeddings_vs_reference'],validity=row['validity'])
