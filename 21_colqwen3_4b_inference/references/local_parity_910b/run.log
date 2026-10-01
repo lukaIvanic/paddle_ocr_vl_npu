@@ -1,0 +1,25 @@
+LOCAL_PARITY {"phase": "local_model_load_start"}
+LOCAL_PARITY {"phase": "hf_model_load_start"}
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:14<00:14, 14.65s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:26<00:00, 12.77s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:26<00:00, 13.05s/it]
+LOCAL_PARITY {"phase": "rotary_initialization", "comparisons": {"vision": {"cpu": {"shape": [16], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 0.9999999999999999, "atol": 0, "rtol": 0, "passed": true}, "npu:0": {"shape": [16], "finite": true, "exact": false, "max_abs": 3.725290298461914e-09, "mean_abs": 7.876224117353559e-10, "rmse": 1.465071508555127e-09, "cosine": 1.0, "atol": 0, "rtol": 0, "passed": false}}, "text": {"cpu": {"shape": [64], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.0, "atol": 0, "rtol": 0, "passed": true}, "npu:0": {"shape": [64], "finite": true, "exact": false, "max_abs": 7.450580596923828e-09, "mean_abs": 5.613891573830188e-10, "rmse": 1.5867914759937207e-09, "cosine": 1.0, "atol": 0, "rtol": 0, "passed": false}}}}
+LOCAL_PARITY {"phase": "case_start", "name": "anchor_0_image_00"}
+LOCAL_PARITY {"phase": "case_finish", "name": "anchor_0_image_00", "passed": true, "embeddings": {"shape": [1, 189, 2560], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.0000000000000147, "atol": 0.002, "rtol": 0.002, "passed": true}, "first_bad_layer": null}
+LOCAL_PARITY {"phase": "case_start", "name": "anchor_0_image_01"}
+LOCAL_PARITY {"phase": "case_finish", "name": "anchor_0_image_01", "passed": true, "embeddings": {"shape": [1, 142, 2560], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.0000000000000118, "atol": 0.002, "rtol": 0.002, "passed": true}, "first_bad_layer": null}
+LOCAL_PARITY {"phase": "case_start", "name": "anchor_0_queries"}
+LOCAL_PARITY {"phase": "case_finish", "name": "anchor_0_queries", "passed": true, "embeddings": {"shape": [2, 20, 2560], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.0, "atol": 0.002, "rtol": 0.002, "passed": true}, "first_bad_layer": null}
+LOCAL_PARITY {"phase": "case_start", "name": "anchor_1_image_00"}
+LOCAL_PARITY {"phase": "case_finish", "name": "anchor_1_image_00", "passed": true, "embeddings": {"shape": [1, 1274, 2560], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.000000000000165, "atol": 0.002, "rtol": 0.002, "passed": true}, "first_bad_layer": null}
+LOCAL_PARITY {"phase": "case_start", "name": "anchor_1_image_01"}
+LOCAL_PARITY {"phase": "case_finish", "name": "anchor_1_image_01", "passed": true, "embeddings": {"shape": [1, 1254, 2560], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.0000000000001599, "atol": 0.002, "rtol": 0.002, "passed": true}, "first_bad_layer": null}
+LOCAL_PARITY {"phase": "case_start", "name": "anchor_1_queries"}
+LOCAL_PARITY {"phase": "case_finish", "name": "anchor_1_queries", "passed": true, "embeddings": {"shape": [2, 51, 2560], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.0000000000000058, "atol": 0.002, "rtol": 0.002, "passed": true}, "first_bad_layer": null}
+LOCAL_PARITY {"phase": "case_start", "name": "queries_left_padding"}
+LOCAL_PARITY {"phase": "case_finish", "name": "queries_left_padding", "passed": true, "embeddings": {"shape": [2, 25, 2560], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.0, "atol": 0.002, "rtol": 0.002, "passed": true}, "first_bad_layer": null}
+LOCAL_PARITY {"phase": "case_start", "name": "images_left_padding"}
+LOCAL_PARITY {"phase": "case_finish", "name": "images_left_padding", "passed": true, "embeddings": {"shape": [2, 189, 2560], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.0000000000000346, "atol": 0.002, "rtol": 0.002, "passed": true}, "first_bad_layer": null}
+LOCAL_PARITY {"phase": "case_start", "name": "queries_right_padding"}
+LOCAL_PARITY {"phase": "case_finish", "name": "queries_right_padding", "passed": true, "embeddings": {"shape": [2, 25, 2560], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.0, "atol": 0.002, "rtol": 0.002, "passed": true}, "first_bad_layer": null}
+LOCAL_PARITY {"phase": "case_start", "name": "images_right_padding"}
+LOCAL_PARITY {"phase": "case_finish", "name": "images_right_padding", "passed": true, "embeddings": {"shape": [2, 189, 2560], "finite": true, "exact": true, "max_abs": 0.0, "mean_abs": 0.0, "rmse": 0.0, "cosine": 1.0000000000000366, "atol": 0.002, "rtol": 0.002, "passed": true}, "first_bad_layer": null}
+LOCAL_PARITY {"phase": "finished", "status": "passed"}

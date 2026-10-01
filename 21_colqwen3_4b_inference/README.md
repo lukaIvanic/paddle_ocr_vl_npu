@@ -1,7 +1,7 @@
-# 21 — Ops-ColQwen3-4B Hugging Face baseline
+# 21 — Ops-ColQwen3-4B HF reference and local eager model
 
-Direct checkpoint-supplied Hugging Face `AutoModel` and `AutoProcessor` on
-Ascend NPU. No vLLM, custom model implementation, TorchAir compilation, NZ
+The reference uses checkpoint-supplied Hugging Face `AutoModel` and `AutoProcessor`
+on Ascend NPU. That lane has no custom model implementation, vLLM, TorchAir compilation, NZ
 conversion, quantization, or processor-resolution overrides. FP16 and HF eager
 attention are explicit; this is a correctness anchor, not an optimized path.
 
@@ -98,3 +98,71 @@ Processor inputs and embeddings remain on the server for future parity tests.
 Existing experiments and their environments are unchanged.
 
 Target evaluation dataset and download procedure: [ViDoRe v3](VIDORE_V3.md).
+
+## Local modeling replacement
+
+`local_modeling_colqwen3.py` owns the complete still-image/text embedding forward
+in ordinary PyTorch, with no Transformers imports. `config.py` validates the
+specific checkpoint architecture instead of guessing missing model dimensions.
+The unchanged HF processor remains the preprocessing/tokenization boundary.
+
+The implementation preserves the 24-layer D64 vision tower, learned spatial
+position interpolation, 2×2 merger, DeepStack taps at blocks 5/11/17 and their
+injection after text layers 0/1/2, 36-layer causal GQA text backbone with Q/K
+RMSNorm, interleaved MRoPE, and the learned 2560-dimensional retrieval projection.
+Attention uses explicit matmul and FP32 softmax, as in the HF eager reference.
+No LM head, token generation, KV cache, TorchAir, quantization, or NZ conversion
+is involved. Video input, generation/cache arguments, and alternative model
+architectures are intentionally unsupported; they must not be silently accepted.
+
+`LocalColQwen3.from_pretrained` loads all safetensors weights strictly, including
+projection bias and DeepStack-specific normalization shapes. Its forward accepts
+the checkpoint processor's `input_ids`, `attention_mask`, padded `pixel_values`
+and `image_grid_thw`, returning `[batch, sequence, 2560]` normalized embeddings.
+
+### Parity validation
+
+The validation runner imports HF only for the independent reference and unchanged
+processor. It compares saved anchors, fresh left/right-padded text and image
+batches, exact position IDs, 22 selected intermediate module outputs (when used),
+final embeddings, repeat stability and MaxSim scores. It saves processor tensors
+and both outputs for each case. Instrumented wall times include CPU trace copies
+and are **not** performance measurements.
+
+```sh
+source npu-setup
+cd /workspace/repos/paddle_ocr_vl_npu
+/workspace/venvs/colqwen3_hf_py312/bin/python -u \
+  21_colqwen3_4b_inference/run_local_parity.py \
+  --model /workspace/models/Ops-Colqwen3-4B \
+  --reference-dirs \
+    tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output \
+    tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output \
+  --output-dir tmp/21_colqwen3_4b_inference/local_parity_new/output
+```
+
+Those anchor paths are specific to our 910B workspace. Elsewhere, regenerate
+anchors with `run_hf_baseline.py`; do not substitute synthetic image tensors.
+CPU unit/structural tests (`python3 -m unittest discover -s
+21_colqwen3_4b_inference -p 'test_*.py'`) are separate from NPU inference parity.
+
+**Local eager validation passed on 910B2, physical device 7, 2026-10-01,
+source `038ce189`.** All 10 cases had bit-exact embeddings, all 168 captured
+intermediate comparisons were exact, both MaxSim matrices were exact, and all
+position IDs matched. Both saved HF anchor groups were reproduced exactly.
+Maximum active embedding-row norm error was 0.000452, with zero padding rows.
+See the [successful report](references/local_parity_910b/result.json),
+[command](references/local_parity_910b/command.txt), and
+[log](references/local_parity_910b/run.log).
+
+The [initial failed report](references/local_parity_910b/initial_failed_result.json)
+is retained. It isolated a numerical-fidelity pitfall: computing rotary inverse
+frequencies on NPU differed from HF's CPU FP32 initialization by up to
+3.73e-9 (vision) / 7.45e-9 (text). Those small differences propagated through
+the network. Matching CPU initialization restored exact parity without relaxing
+any tolerance or changing the reference. Keep this initialization detail when
+adding later optimizations; do not infer bit parity merely from equivalent math.
+
+This is not a 310P result, a full ViDoRe retrieval score, or an optimized runtime.
+The next gate is broader retrieval evaluation; speed work must remain a separate
+lane from this eager correctness anchor.

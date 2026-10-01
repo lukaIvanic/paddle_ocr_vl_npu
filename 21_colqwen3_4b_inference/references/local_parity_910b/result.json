@@ -1,0 +1,3680 @@
+{
+  "status": "passed",
+  "scope": "eager modeling parity, not throughput or retrieval accuracy",
+  "commit": "038ce1890c24bd23fd5b7627409a58bf2bc02da8",
+  "host": "liteserver-c001-4",
+  "physical_npu": "7",
+  "command": [
+    "21_colqwen3_4b_inference/run_local_parity.py",
+    "--model",
+    "/workspace/models/Ops-Colqwen3-4B",
+    "--reference-dirs",
+    "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output",
+    "tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output",
+    "--output-dir",
+    "tmp/21_colqwen3_4b_inference/local_parity_038ce189/output"
+  ],
+  "model_files": {
+    "__init__.py": {
+      "bytes": 322,
+      "sha256": "c5ffae0a4011c30804050abdaf00592b9127d3504b3e31f346141753e8450511"
+    },
+    "added_tokens.json": {
+      "bytes": 707,
+      "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680"
+    },
+    "config.json": {
+      "bytes": 1838,
+      "sha256": "038d311590c71416b6834897cbdb6f7d86e18ce93d48725ee97c6c33bcf21b8b"
+    },
+    "configuration_ops_colqwen3.py": {
+      "bytes": 435,
+      "sha256": "af9724e4d3023157c2f55d47284cc9a63b8ae4edd9acc71ed9b9107cb28f6491"
+    },
+    "model-00001-of-00002.safetensors": {
+      "bytes": 4990494880,
+      "sha256": null
+    },
+    "model-00002-of-00002.safetensors": {
+      "bytes": 3898332680,
+      "sha256": null
+    },
+    "model.safetensors.index.json": {
+      "bytes": 60632,
+      "sha256": "62ccf663cce2482ee0d3cf01f6b62e1f76d2a678f5008ac4251a0af4e231fde4"
+    },
+    "modeling_ops_colqwen3.py": {
+      "bytes": 3829,
+      "sha256": "c32bc4d39a30aff74acb068da4d830af1cdff1a4acaa11af9cee333cf7783346"
+    },
+    "preprocessor_config.json": {
+      "bytes": 831,
+      "sha256": "e119dd9df9b914988b6b1e957b7101bb28520362291447a84bffc5387f391af6"
+    },
+    "processing_ops_colqwen3.py": {
+      "bytes": 5599,
+      "sha256": "e63d9b1fc6a56ddd9fa2c8e58536b8841a8900eee822ba92519384359f94ab2f"
+    },
+    "scripts/ops_colqwen3_embedder.py": {
+      "bytes": 4981,
+      "sha256": "cf56f40104c7485854b88752f4406dee71e73adfb6d47c07f82313912f69f9ba"
+    },
+    "special_tokens_map.json": {
+      "bytes": 613,
+      "sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd"
+    },
+    "tokenizer.json": {
+      "bytes": 11422654,
+      "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+    },
+    "tokenizer_config.json": {
+      "bytes": 5480,
+      "sha256": "b77468628b7845f81d6705b8c68fe3ea2aca320204b0dcc5a1f2a9c0b506058c"
+    },
+    "video_preprocessor_config.json": {
+      "bytes": 819,
+      "sha256": "877111c3cf35151a15a991643d89cfa96a7fc20e9efe12bd47f1fea746b26d4a"
+    },
+    "vocab.json": {
+      "bytes": 2776833,
+      "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  },
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0",
+    "transformers": "4.57.1"
+  },
+  "device_name": "Ascend910B2",
+  "local_tensor_count": 715,
+  "hf_loading_info": {
+    "missing_keys": [],
+    "unexpected_keys": [],
+    "mismatched_keys": [],
+    "checkpoint_tensor_count": 715
+  },
+  "hf_buffer_dtypes": {
+    "qwen3vl.visual.rotary_pos_emb.inv_freq": "torch.float32",
+    "qwen3vl.language_model.rotary_emb.inv_freq": "torch.float32"
+  },
+  "rotary_initialization": {
+    "vision": {
+      "cpu": {
+        "shape": [
+          16
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 0.9999999999999999,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "npu:0": {
+        "shape": [
+          16
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 3.725290298461914e-09,
+        "mean_abs": 7.876224117353559e-10,
+        "rmse": 1.465071508555127e-09,
+        "cosine": 1.0,
+        "atol": 0,
+        "rtol": 0,
+        "passed": false
+      }
+    },
+    "text": {
+      "cpu": {
+        "shape": [
+          64
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "npu:0": {
+        "shape": [
+          64
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 7.450580596923828e-09,
+        "mean_abs": 5.613891573830188e-10,
+        "rmse": 1.5867914759937207e-09,
+        "cosine": 1.0,
+        "atol": 0,
+        "rtol": 0,
+        "passed": false
+      }
+    }
+  },
+  "anchor_files": [
+    {
+      "path": "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/image_00.pt",
+      "sha256": "75ab5676f2b936c001473a1f8204b6e78c1563def2678ad8f71f90a66f2d91bb"
+    },
+    {
+      "path": "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/image_01.pt",
+      "sha256": "28acf728b484dd361eb6c41eda416fca56a9ccfccd5aa1920e365a6e8ac0f499"
+    },
+    {
+      "path": "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/queries.pt",
+      "sha256": "e536c8fb577c1bd9c715cc941fe2df03de33e4a00472b333aa9294621cd7d97b"
+    },
+    {
+      "path": "tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/image_00.pt",
+      "sha256": "7afbb9994cff37d8df170af7e5f00934b45a198794cd8f9eb4cc31d071b34e5f"
+    },
+    {
+      "path": "tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/image_01.pt",
+      "sha256": "f1026af1e78963ec95cd343b2e066113458a755abd62aa668e7ce1014e22a887"
+    },
+    {
+      "path": "tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/queries.pt",
+      "sha256": "6a25909c1f2dd7a81c570deebe3f18553ff1bd6864b8a625dcbfe0a040e0af8f"
+    }
+  ],
+  "cases": [
+    {
+      "name": "anchor_0_image_00",
+      "input_shapes": {
+        "input_ids": [
+          1,
+          189
+        ],
+        "attention_mask": [
+          1,
+          189
+        ],
+        "pixel_values": [
+          1,
+          700,
+          1536
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "embeddings": {
+        "shape": [
+          1,
+          189,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000147,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "repeat": {
+        "shape": [
+          1,
+          189,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000147,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "position_ids_exact": true,
+      "trace_keys_match": true,
+      "layers": {
+        "visual.patch_embed": {
+          "shape": [
+            700,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000187,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.norm1": {
+          "shape": [
+            700,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000135,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.attn": {
+          "shape": [
+            700,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000755,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.mlp": {
+          "shape": [
+            700,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000375,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0": {
+          "shape": [
+            700,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.5": {
+          "shape": [
+            700,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.0": {
+          "shape": [
+            175,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000175,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.11": {
+          "shape": [
+            700,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.1": {
+          "shape": [
+            175,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000073,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.17": {
+          "shape": [
+            700,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000016,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.2": {
+          "shape": [
+            175,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000073,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.23": {
+          "shape": [
+            700,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000628,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.merger": {
+          "shape": [
+            175,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000124,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.self_attn": {
+          "shape": [
+            1,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000019,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.mlp": {
+          "shape": [
+            1,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000058,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0": {
+          "shape": [
+            1,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.1": {
+          "shape": [
+            1,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000027,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.2": {
+          "shape": [
+            1,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000018,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.17": {
+          "shape": [
+            1,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000003655,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.35": {
+          "shape": [
+            1,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.norm": {
+          "shape": [
+            1,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000044,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "custom_text_proj": {
+          "shape": [
+            1,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000036,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        }
+      },
+      "instrumented_wall_s": {
+        "hf": 0.7543306099250913,
+        "local": 0.1851883598137647
+      },
+      "hf_vs_saved_anchor": {
+        "shape": [
+          1,
+          189,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000147,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "local_vs_saved_anchor": {
+        "shape": [
+          1,
+          189,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000147,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "max_unit_norm_error": 0.0004341602325439453,
+      "padding_zero": true,
+      "passed": true
+    },
+    {
+      "name": "anchor_0_image_01",
+      "input_shapes": {
+        "input_ids": [
+          1,
+          142
+        ],
+        "attention_mask": [
+          1,
+          142
+        ],
+        "pixel_values": [
+          1,
+          512,
+          1536
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "embeddings": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000118,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "repeat": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000118,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "position_ids_exact": true,
+      "trace_keys_match": true,
+      "layers": {
+        "visual.patch_embed": {
+          "shape": [
+            512,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000022,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.norm1": {
+          "shape": [
+            512,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000777,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.attn": {
+          "shape": [
+            512,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000346,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.mlp": {
+          "shape": [
+            512,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000209,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0": {
+          "shape": [
+            512,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.5": {
+          "shape": [
+            512,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.0": {
+          "shape": [
+            128,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000084,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.11": {
+          "shape": [
+            512,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.1": {
+          "shape": [
+            128,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000056,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.17": {
+          "shape": [
+            512,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000009,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.2": {
+          "shape": [
+            128,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000049,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.23": {
+          "shape": [
+            512,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000597,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.merger": {
+          "shape": [
+            128,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000036,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.self_attn": {
+          "shape": [
+            1,
+            142,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000115,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.mlp": {
+          "shape": [
+            1,
+            142,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000093,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0": {
+          "shape": [
+            1,
+            142,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000013,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.1": {
+          "shape": [
+            1,
+            142,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000001,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.2": {
+          "shape": [
+            1,
+            142,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.17": {
+          "shape": [
+            1,
+            142,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000002458,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.35": {
+          "shape": [
+            1,
+            142,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 0.9999999999999999,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.norm": {
+          "shape": [
+            1,
+            142,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "custom_text_proj": {
+          "shape": [
+            1,
+            142,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000038,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        }
+      },
+      "instrumented_wall_s": {
+        "hf": 0.16922822990454733,
+        "local": 0.1392464400269091
+      },
+      "hf_vs_saved_anchor": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000118,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "local_vs_saved_anchor": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000118,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "max_unit_norm_error": 0.00043278932571411133,
+      "padding_zero": true,
+      "passed": true
+    },
+    {
+      "name": "anchor_0_queries",
+      "input_shapes": {
+        "input_ids": [
+          2,
+          20
+        ],
+        "attention_mask": [
+          2,
+          20
+        ]
+      },
+      "embeddings": {
+        "shape": [
+          2,
+          20,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "repeat": {
+        "shape": [
+          2,
+          20,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "position_ids_exact": true,
+      "trace_keys_match": true,
+      "layers": {
+        "language_model.layers.0.self_attn": {
+          "shape": [
+            2,
+            20,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000027,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.mlp": {
+          "shape": [
+            2,
+            20,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0": {
+          "shape": [
+            2,
+            20,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 0.9999999999999999,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.1": {
+          "shape": [
+            2,
+            20,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.2": {
+          "shape": [
+            2,
+            20,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.17": {
+          "shape": [
+            2,
+            20,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000548,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.35": {
+          "shape": [
+            2,
+            20,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.norm": {
+          "shape": [
+            2,
+            20,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "custom_text_proj": {
+          "shape": [
+            2,
+            20,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        }
+      },
+      "instrumented_wall_s": {
+        "hf": 0.10803651018068194,
+        "local": 0.07817599014379084
+      },
+      "hf_vs_saved_anchor": {
+        "shape": [
+          2,
+          20,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "local_vs_saved_anchor": {
+        "shape": [
+          2,
+          20,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "max_unit_norm_error": 0.0003815293312072754,
+      "padding_zero": true,
+      "passed": true
+    },
+    {
+      "name": "anchor_1_image_00",
+      "input_shapes": {
+        "input_ids": [
+          1,
+          1274
+        ],
+        "attention_mask": [
+          1,
+          1274
+        ],
+        "pixel_values": [
+          1,
+          5040,
+          1536
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "embeddings": {
+        "shape": [
+          1,
+          1274,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.000000000000165,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "repeat": {
+        "shape": [
+          1,
+          1274,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.000000000000165,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "position_ids_exact": true,
+      "trace_keys_match": true,
+      "layers": {
+        "visual.patch_embed": {
+          "shape": [
+            5040,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000128,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.norm1": {
+          "shape": [
+            5040,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000001092,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.attn": {
+          "shape": [
+            5040,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000011342,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.mlp": {
+          "shape": [
+            5040,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000005445,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0": {
+          "shape": [
+            5040,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000189,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.5": {
+          "shape": [
+            5040,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000235,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.0": {
+          "shape": [
+            1260,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000003157,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.11": {
+          "shape": [
+            5040,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000024,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.1": {
+          "shape": [
+            1260,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000183,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.17": {
+          "shape": [
+            5040,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000373,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.2": {
+          "shape": [
+            1260,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000162,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.23": {
+          "shape": [
+            5040,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000022533,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.merger": {
+          "shape": [
+            1260,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000002045,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.self_attn": {
+          "shape": [
+            1,
+            1274,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000003182,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.mlp": {
+          "shape": [
+            1,
+            1274,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001492,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0": {
+          "shape": [
+            1,
+            1274,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000138,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.1": {
+          "shape": [
+            1,
+            1274,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000784,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.2": {
+          "shape": [
+            1,
+            1274,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000506,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.17": {
+          "shape": [
+            1,
+            1274,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000023073,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.35": {
+          "shape": [
+            1,
+            1274,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000084,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.norm": {
+          "shape": [
+            1,
+            1274,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001745,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "custom_text_proj": {
+          "shape": [
+            1,
+            1274,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001592,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        }
+      },
+      "instrumented_wall_s": {
+        "hf": 0.6463781199418008,
+        "local": 0.5230660501401871
+      },
+      "hf_vs_saved_anchor": {
+        "shape": [
+          1,
+          1274,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.000000000000165,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "local_vs_saved_anchor": {
+        "shape": [
+          1,
+          1274,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.000000000000165,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "max_unit_norm_error": 0.0004401206970214844,
+      "padding_zero": true,
+      "passed": true
+    },
+    {
+      "name": "anchor_1_image_01",
+      "input_shapes": {
+        "input_ids": [
+          1,
+          1254
+        ],
+        "attention_mask": [
+          1,
+          1254
+        ],
+        "pixel_values": [
+          1,
+          4960,
+          1536
+        ],
+        "image_grid_thw": [
+          1,
+          3
+        ]
+      },
+      "embeddings": {
+        "shape": [
+          1,
+          1254,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001599,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "repeat": {
+        "shape": [
+          1,
+          1254,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001599,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "position_ids_exact": true,
+      "trace_keys_match": true,
+      "layers": {
+        "visual.patch_embed": {
+          "shape": [
+            4960,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001343,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.norm1": {
+          "shape": [
+            4960,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000019436,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.attn": {
+          "shape": [
+            4960,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000012392,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.mlp": {
+          "shape": [
+            4960,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000633,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0": {
+          "shape": [
+            4960,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000104,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.5": {
+          "shape": [
+            4960,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000027,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.0": {
+          "shape": [
+            1240,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000004026,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.11": {
+          "shape": [
+            4960,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000209,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.1": {
+          "shape": [
+            1240,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000416,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.17": {
+          "shape": [
+            4960,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000037,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.2": {
+          "shape": [
+            1240,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000163,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.23": {
+          "shape": [
+            4960,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.00000000000154,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.merger": {
+          "shape": [
+            1240,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000002933,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.self_attn": {
+          "shape": [
+            1,
+            1254,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000308,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.mlp": {
+          "shape": [
+            1,
+            1254,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000188,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0": {
+          "shape": [
+            1,
+            1254,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000244,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.1": {
+          "shape": [
+            1,
+            1254,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000964,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.2": {
+          "shape": [
+            1,
+            1254,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000076,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.17": {
+          "shape": [
+            1,
+            1254,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000021254,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.35": {
+          "shape": [
+            1,
+            1254,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000008,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.norm": {
+          "shape": [
+            1,
+            1254,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001719,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "custom_text_proj": {
+          "shape": [
+            1,
+            1254,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001616,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        }
+      },
+      "instrumented_wall_s": {
+        "hf": 0.5605078199878335,
+        "local": 0.5010654500219971
+      },
+      "hf_vs_saved_anchor": {
+        "shape": [
+          1,
+          1254,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001599,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "local_vs_saved_anchor": {
+        "shape": [
+          1,
+          1254,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001599,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "max_unit_norm_error": 0.0004519224166870117,
+      "padding_zero": true,
+      "passed": true
+    },
+    {
+      "name": "anchor_1_queries",
+      "input_shapes": {
+        "input_ids": [
+          2,
+          51
+        ],
+        "attention_mask": [
+          2,
+          51
+        ]
+      },
+      "embeddings": {
+        "shape": [
+          2,
+          51,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000058,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "repeat": {
+        "shape": [
+          2,
+          51,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000058,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "position_ids_exact": true,
+      "trace_keys_match": true,
+      "layers": {
+        "language_model.layers.0.self_attn": {
+          "shape": [
+            2,
+            51,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000009,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.mlp": {
+          "shape": [
+            2,
+            51,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000044,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0": {
+          "shape": [
+            2,
+            51,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.1": {
+          "shape": [
+            2,
+            51,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.2": {
+          "shape": [
+            2,
+            51,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.17": {
+          "shape": [
+            2,
+            51,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001017,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.35": {
+          "shape": [
+            2,
+            51,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.norm": {
+          "shape": [
+            2,
+            51,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000038,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "custom_text_proj": {
+          "shape": [
+            2,
+            51,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000022,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        }
+      },
+      "instrumented_wall_s": {
+        "hf": 0.10470631020143628,
+        "local": 0.07798078982159495
+      },
+      "hf_vs_saved_anchor": {
+        "shape": [
+          2,
+          51,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000058,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "local_vs_saved_anchor": {
+        "shape": [
+          2,
+          51,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000058,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "max_unit_norm_error": 0.0003973841667175293,
+      "padding_zero": true,
+      "passed": true
+    },
+    {
+      "name": "queries_left_padding",
+      "input_shapes": {
+        "input_ids": [
+          2,
+          25
+        ],
+        "attention_mask": [
+          2,
+          25
+        ]
+      },
+      "embeddings": {
+        "shape": [
+          2,
+          25,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "repeat": {
+        "shape": [
+          2,
+          25,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "position_ids_exact": true,
+      "trace_keys_match": true,
+      "layers": {
+        "language_model.layers.0.self_attn": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000036,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.mlp": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000036,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.1": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.2": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.17": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000002631,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.35": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.norm": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000009,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "custom_text_proj": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        }
+      },
+      "instrumented_wall_s": {
+        "hf": 0.08881248999387026,
+        "local": 0.0683789299800992
+      },
+      "max_unit_norm_error": 0.0004241466522216797,
+      "padding_zero": true,
+      "passed": true
+    },
+    {
+      "name": "images_left_padding",
+      "input_shapes": {
+        "input_ids": [
+          2,
+          189
+        ],
+        "attention_mask": [
+          2,
+          189
+        ],
+        "pixel_values": [
+          2,
+          700,
+          1536
+        ],
+        "image_grid_thw": [
+          2,
+          3
+        ]
+      },
+      "embeddings": {
+        "shape": [
+          2,
+          189,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000346,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "repeat": {
+        "shape": [
+          2,
+          189,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000346,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "position_ids_exact": true,
+      "trace_keys_match": true,
+      "layers": {
+        "visual.patch_embed": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000315,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.norm1": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001834,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.attn": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001141,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.mlp": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000486,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000009,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.5": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000016,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.0": {
+          "shape": [
+            303,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000164,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.11": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000009,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.1": {
+          "shape": [
+            303,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000135,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.17": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.2": {
+          "shape": [
+            303,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000008,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.23": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001152,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.merger": {
+          "shape": [
+            303,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000102,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.self_attn": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000349,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.mlp": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000244,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000018,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.1": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000064,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.2": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000042,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.17": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000003155,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.35": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.norm": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000218,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "custom_text_proj": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000229,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        }
+      },
+      "instrumented_wall_s": {
+        "hf": 0.24310998991131783,
+        "local": 0.1374477199278772
+      },
+      "max_unit_norm_error": 0.0004271268844604492,
+      "padding_zero": true,
+      "passed": true
+    },
+    {
+      "name": "queries_right_padding",
+      "input_shapes": {
+        "input_ids": [
+          2,
+          25
+        ],
+        "attention_mask": [
+          2,
+          25
+        ]
+      },
+      "embeddings": {
+        "shape": [
+          2,
+          25,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "repeat": {
+        "shape": [
+          2,
+          25,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "position_ids_exact": true,
+      "trace_keys_match": true,
+      "layers": {
+        "language_model.layers.0.self_attn": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.mlp": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000004,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.1": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.2": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.17": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000746,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.35": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.norm": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000016,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "custom_text_proj": {
+          "shape": [
+            2,
+            25,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000007,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        }
+      },
+      "instrumented_wall_s": {
+        "hf": 0.08634049980901182,
+        "local": 0.068674550158903
+      },
+      "max_unit_norm_error": 0.0004241466522216797,
+      "padding_zero": true,
+      "passed": true
+    },
+    {
+      "name": "images_right_padding",
+      "input_shapes": {
+        "input_ids": [
+          2,
+          189
+        ],
+        "attention_mask": [
+          2,
+          189
+        ],
+        "pixel_values": [
+          2,
+          700,
+          1536
+        ],
+        "image_grid_thw": [
+          2,
+          3
+        ]
+      },
+      "embeddings": {
+        "shape": [
+          2,
+          189,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000366,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "repeat": {
+        "shape": [
+          2,
+          189,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000366,
+        "atol": 0,
+        "rtol": 0,
+        "passed": true
+      },
+      "position_ids_exact": true,
+      "trace_keys_match": true,
+      "layers": {
+        "visual.patch_embed": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000315,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.norm1": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001834,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.attn": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001141,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0.mlp": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000486,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.0": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000009,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.5": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000016,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.0": {
+          "shape": [
+            303,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000164,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.11": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000009,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.1": {
+          "shape": [
+            303,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000135,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.17": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000002,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.deepstack_merger_list.2": {
+          "shape": [
+            303,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000008,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.blocks.23": {
+          "shape": [
+            1212,
+            1024
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000001152,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "visual.merger": {
+          "shape": [
+            303,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000102,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.self_attn": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000409,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0.mlp": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000169,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.0": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000022,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.1": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000036,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.2": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000169,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.17": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000003375,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.layers.35": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000007,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "language_model.norm": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.000000000000031,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        },
+        "custom_text_proj": {
+          "shape": [
+            2,
+            189,
+            2560
+          ],
+          "finite": true,
+          "exact": true,
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000242,
+          "atol": 0.002,
+          "rtol": 0.002,
+          "passed": true
+        }
+      },
+      "instrumented_wall_s": {
+        "hf": 0.1713839799631387,
+        "local": 0.13501802016980946
+      },
+      "max_unit_norm_error": 0.0004368424415588379,
+      "padding_zero": true,
+      "passed": true
+    }
+  ],
+  "maxsim": [
+    {
+      "shape": [
+        2,
+        2
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0,
+      "atol": 0.02,
+      "rtol": 0.001,
+      "passed": true,
+      "group": 0,
+      "hf": [
+        [
+          11.453125,
+          9.65625
+        ],
+        [
+          10.984375,
+          13.609375
+        ]
+      ],
+      "local": [
+        [
+          11.453125,
+          9.65625
+        ],
+        [
+          10.984375,
+          13.609375
+        ]
+      ]
+    },
+    {
+      "shape": [
+        2,
+        2
+      ],
+      "finite": true,
+      "exact": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rmse": 0.0,
+      "cosine": 1.0,
+      "atol": 0.02,
+      "rtol": 0.001,
+      "passed": true,
+      "group": 1,
+      "hf": [
+        [
+          33.3125,
+          13.6015625
+        ],
+        [
+          9.2578125,
+          26.40625
+        ]
+      ],
+      "local": [
+        [
+          33.3125,
+          13.6015625
+        ],
+        [
+          9.2578125,
+          26.40625
+        ]
+      ]
+    }
+  ]
+}
