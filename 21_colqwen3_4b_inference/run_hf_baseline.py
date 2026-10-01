@@ -135,6 +135,8 @@ def run(args, result):
                 torch.npu.synchronize()
                 durations.append(time.perf_counter() - begin)
                 actual = output.detach().cpu()
+                if not bool(torch.isfinite(actual).all()):
+                    raise RuntimeError(f'Nonfinite embeddings: {name}, iteration {iteration}')
                 if reference is None:
                     reference = actual
                 else:
@@ -142,6 +144,8 @@ def run(args, result):
                 phase('encode_iteration', input=name, iteration=iteration, seconds=durations[-1])
         if reference.ndim != 3 or reference.shape[:2] != cpu_inputs['input_ids'].shape:
             raise RuntimeError(f'Unexpected embedding shape: {reference.shape}')
+        if reference.shape[-1] != model.dims:
+            raise RuntimeError(f'Wrong embedding dimension: {reference.shape[-1]}')
         if not bool(torch.isfinite(reference).all()):
             raise RuntimeError(f'Nonfinite embeddings: {name}')
         norms = reference.float().norm(dim=-1)

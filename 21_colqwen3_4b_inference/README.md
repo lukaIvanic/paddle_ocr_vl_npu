@@ -23,6 +23,23 @@ baseline or retrieval evaluation. The cached model remains at
 
 ## Run on 910B
 
+Prepare the experiment-owned environment once:
+
+```sh
+PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+  bash 21_colqwen3_4b_inference/setup_environment.sh
+```
+
+This inherits the container's torch/torch_npu binaries but locally pins
+Transformers 4.57.1 (the checkpoint's recorded version), tokenizers 0.22.2,
+HF Hub 0.36.2 and PyArrow 21.0.0. Existing environments are unchanged. Inherited
+vLLM packages require Transformers 5.5.4 and are deliberately not used here;
+this is an HF-only environment, not a vLLM environment.
+
+Transformers 5.5.4 was tested: text inference worked, but image inference failed
+because the checkpoint wrapper does not forward the newly required
+`mm_token_type_ids`. Pinning the reference version avoids patching the model.
+
 Use a healthy, free device selected by `npu-setup`; check health before running.
 The current container can be reached through host SSH plus `docker exec`;
 the historical port-22021 SSH shortcut may be unavailable. Source changes
@@ -37,7 +54,7 @@ export HF_HOME=/workspace/.cache/huggingface
 RUN_ROOT="tmp/21_colqwen3_4b_inference/hf_smoke_$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$RUN_ROOT"
 set -o pipefail
-/workspace/venvs/mineru_pro_vllm_py312/bin/python \
+/workspace/venvs/colqwen3_hf_py312/bin/python \
   21_colqwen3_4b_inference/run_hf_baseline.py \
   --model /workspace/models/Ops-Colqwen3-4B \
   --output-dir "$RUN_ROOT/output" --hash-weights \
@@ -45,9 +62,6 @@ set -o pipefail
 RUN_EXIT=${PIPESTATUS[0]}
 printf '%s\n' "$RUN_EXIT" > "$RUN_ROOT/exit_code.txt"
 ```
-
-This initially reuses the existing Python environment without modifying its
-packages. Any necessary dependency changes must use a separate environment.
 
 Default inputs are two text queries and two real committed document crops.
 Images run individually; queries form one batch. No synthetic image, crop
@@ -69,3 +83,5 @@ failures rather than silently patching checkpoint code or changing attention.
 
 Implementation prepared; NPU validation pending. Existing experiments and their
 environments are unchanged.
+
+Target evaluation dataset and download procedure: [ViDoRe v3](VIDORE_V3.md).

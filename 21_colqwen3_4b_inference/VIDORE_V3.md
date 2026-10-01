@@ -37,7 +37,7 @@ workspace volume, never the container overlay or Git.
 ```sh
 cd /workspace/repos/paddle_ocr_vl_npu
 HF_HOME=/workspace/.cache/huggingface \
-  /workspace/venvs/mineru_pro_vllm_py312/bin/python -u \
+  /workspace/venvs/colqwen3_hf_py312/bin/python -u \
   21_colqwen3_4b_inference/download_vidore_v3.py \
   --root /workspace/datasets/ViDoRe_v3 --endpoint https://hf-mirror.com
 ```
