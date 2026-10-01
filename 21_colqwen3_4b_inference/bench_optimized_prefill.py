@@ -22,6 +22,30 @@ from optimized_prefill import (Options, OptimizedVisionStage, OptimizedTextStage
     text_args_for_promptfa, configure_compiler, weight_formats)
 from bench_prepared_prefill import emit, timed, measure, compare, load_case, cpu
 from run_hf_baseline import sha256
+from patch_embedding import LinearPatchEmbed,prepare_linear_patch_inputs
+
+
+def patch_comparison(conv, linear, pixels, repeats):
+    reference,conv_first=timed(conv,(pixels,))
+    candidate,linear_first=timed(linear,(pixels,))
+    for _ in range(3):
+        timed(conv,(pixels,));timed(linear,(pixels,))
+    samples={'conv3d':[],'linear':[]}
+    calls={'conv3d':conv,'linear':linear}
+    for index in range(repeats):
+        for lane in (('conv3d','linear') if index%2==0 else ('linear','conv3d')):
+            samples[lane].append(timed(calls[lane],(pixels,))[1])
+    result={'input_shape':list(pixels.shape),'linear_weight_shape':list(linear.weight.shape),
+        'comparison':compare(candidate,reference),'repeats':repeats,
+        'timing_scope':'alternating synchronized warm wall time, patch projection only',
+        'first_call_s':{'conv3d':conv_first,'linear':linear_first}}
+    for lane,values in samples.items():
+        ms=torch.tensor(values,dtype=torch.float64)*1000
+        result[lane]={'samples_s':values,'mean_ms':float(ms.mean()),
+                      'p50_ms':float(ms.quantile(.5)),'p90_ms':float(ms.quantile(.9)),
+                      'max_ms':float(ms.max())}
+    result['speedup']=result['conv3d']['mean_ms']/result['linear']['mean_ms']
+    return result
 
 
 def validity(value, reference):
@@ -88,6 +112,8 @@ def run(args,result):
                   versions={'torch':torch.__version__,'torch_npu':torch_npu.__version__})
     emit('model_load_start')
     model=LocalColQwen3.from_pretrained(args.model,device=args.device)
+    patch_linear=LinearPatchEmbed(model.visual.patch_embed).eval()
+    result['patch_embedding']=args.patch_embedding
     reference_vision,reference_text=PreparedVisionStage(model).eval(),PreparedTextStage(model).eval()
     torch.npu.synchronize()
     start=time.perf_counter()
@@ -116,11 +142,18 @@ def run(args,result):
         row['reference_vs_hf']=compare(expected,anchor)
         if not row['reference_vs_hf']['passed']:
             raise RuntimeError('Independent reference differs from HF anchor')
-        prepared=prepare_inputs(model,batch)
-        va=prepared.vision_args
+        reference_prepared=prepare_inputs(model,batch)
+        prepared=(prepare_linear_patch_inputs(model,batch,patch_linear)
+                  if args.patch_embedding=='linear' else reference_prepared)
+        va=reference_prepared.vision_args
+        if va is not None:
+            length=va[0].shape[0]
+            pixels=batch['pixel_values'][0,:length].contiguous()
+            row['patch_projection']=patch_comparison(model.visual.patch_embed,patch_linear,pixels,args.patch_repeats)
+            emit('patch_projection_measured',name=name,stats=row['patch_projection'])
         rv=reference_vision(*va) if va is not None else None
-        ta=prepare_text(model,prepared,rv)
-        opt_va=va[:3] if va is not None else None
+        ta=prepare_text(model,reference_prepared,rv)
+        opt_va=prepared.vision_args[:3] if va is not None else None
         opt_ta=text_args_for_promptfa(ta)
         row['stages']={}
         calls={}
@@ -152,6 +185,11 @@ def run(args,result):
         actual_v=calls['vision'](*opt_va) if va is not None else None
         actual_t=text_args_for_promptfa(prepare_text(model,prepared,actual_v))
         actual=finish_embeddings(model,prepared,calls['text'](*actual_t))
+        if va is not None and args.patch_embedding=='linear':
+            conv_v=calls['vision'](*va[:3])
+            conv_t=text_args_for_promptfa(prepare_text(model,reference_prepared,conv_v))
+            conv_embeddings=finish_embeddings(model,reference_prepared,calls['text'](*conv_t))
+            row['linear_vs_conv3d_embeddings']=compare(actual,conv_embeddings)
         row['embeddings_vs_reference']=compare(actual,expected)
         row['validity']=validity(actual,expected)
         row['memory']=memory_stats()
@@ -182,8 +220,10 @@ def main():
     p.add_argument('--enable-internal-format',action='store_true')
     p.add_argument('--gqa',choices=('native','repeat'),default='native')
     p.add_argument('--vision-norm',choices=('module','manual_fp32'),default='manual_fp32')
+    p.add_argument('--patch-embedding',choices=('linear','conv3d'),default='linear')
+    p.add_argument('--patch-repeats',type=int,default=50)
     args=p.parse_args()
-    if not args.device.startswith('npu:') or args.repeats<2 or args.row<0:
+    if not args.device.startswith('npu:') or args.repeats<2 or args.patch_repeats<2 or args.row<0:
         p.error('NPU, >=2 repeats and nonnegative row required')
     args.output_dir.mkdir(parents=True,exist_ok=False)
     result={'status':'started','command':sys.argv,
