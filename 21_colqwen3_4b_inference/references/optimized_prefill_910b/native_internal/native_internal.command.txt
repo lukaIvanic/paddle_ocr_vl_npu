@@ -1,0 +1,4 @@
+fd4fad8f7a1dd202bedcd9a6e81767bf4db40fd5
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=7
+/workspace/venvs/colqwen3_hf_py312/bin/python -u 21_colqwen3_4b_inference/bench_optimized_prefill.py --model /workspace/models/Ops-Colqwen3-4B --repeats 10 --enable-internal-format --anchors tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/queries.pt tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/image_01.pt --output-dir tmp/21_colqwen3_4b_inference/optimized_formats_fd4fad8f/native_internal 

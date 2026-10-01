@@ -1,0 +1,772 @@
+{
+  "status": "failed",
+  "command": [
+    "21_colqwen3_4b_inference/bench_optimized_prefill.py",
+    "--model",
+    "/workspace/models/Ops-Colqwen3-4B",
+    "--anchors",
+    "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/queries.pt",
+    "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/image_01.pt",
+    "tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/image_01.pt",
+    "--repeats",
+    "10",
+    "--eager-only",
+    "--output-dir",
+    "tmp/21_colqwen3_4b_inference/optimized_e4fe022f/eager"
+  ],
+  "commit": "e4fe022f135bcd12aefb259454616d4ad686569b",
+  "host": "liteserver-c001-4",
+  "physical_npu": "7",
+  "eager_only": true,
+  "scope": "exact B1 stages, not end-to-end throughput or retrieval accuracy",
+  "options": {
+    "fused_projections": true,
+    "weight_format": "native",
+    "gqa": "native",
+    "vision_norm": "manual_fp32"
+  },
+  "device_name": "Ascend910B2",
+  "internal_format_requested": false,
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0"
+  },
+  "weight_setup_s": 0.17096461006440222,
+  "setup_memory": {
+    "allocated_bytes": 13721517056,
+    "reserved_bytes": 14097055744,
+    "peak_allocated_bytes": 13721517056,
+    "scope": "PyTorch allocator only; not all CANN/driver memory"
+  },
+  "weight_formats": {
+    "ND": 240
+  },
+  "cache_records": [],
+  "cases": [
+    {
+      "name": "0_hf4571_smoke_b25734d4_queries",
+      "anchor": "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/queries.pt",
+      "anchor_sha256": "e536c8fb577c1bd9c715cc941fe2df03de33e4a00472b333aa9294621cd7d97b",
+      "reference_vs_hf": {
+        "shape": [
+          1,
+          18,
+          2560
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 0.000213623046875,
+        "mean_abs": 2.332197254872881e-05,
+        "rmse": 3.812816066783853e-05,
+        "cosine": 0.9999981448970552,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "stages": {
+        "text": {
+          "input_shapes": [
+            [
+              1,
+              18,
+              2560
+            ],
+            [
+              1,
+              18,
+              128
+            ],
+            [
+              1,
+              18,
+              128
+            ],
+            [
+              1,
+              1,
+              18,
+              18
+            ],
+            [
+              1,
+              18,
+              2560
+            ],
+            [
+              1,
+              18,
+              2560
+            ],
+            [
+              1,
+              18,
+              2560
+            ]
+          ],
+          "optimized_eager_vs_manual": {
+            "shape": [
+              1,
+              18,
+              2560
+            ],
+            "finite": true,
+            "exact": false,
+            "max_abs": 0.40625,
+            "mean_abs": 0.00631328159943223,
+            "rmse": 0.009360450319945812,
+            "cosine": 0.9999956460548387,
+            "atol": 0.002,
+            "rtol": 0.002,
+            "passed": false
+          },
+          "manual_eager": {
+            "samples_s": [
+              0.07069457019679248,
+              0.070424510166049,
+              0.07033682009205222,
+              0.07043209997937083,
+              0.07021022005937994,
+              0.07037176005542278,
+              0.0705231400206685,
+              0.07032106001861393,
+              0.07033123984001577,
+              0.07022892008535564
+            ],
+            "mean_ms": 70.38743405137211,
+            "p50_ms": 70.3542900737375,
+            "p90_ms": 70.5402830382809,
+            "max_ms": 70.69457019679248,
+            "repeats": 10,
+            "real_tokens_per_s": 255.7274638945176
+          },
+          "optimized_eager": {
+            "samples_s": [
+              0.0722595399711281,
+              0.07328504999168217,
+              0.07329085003584623,
+              0.07327524991706014,
+              0.07328290003351867,
+              0.07322225999087095,
+              0.07323008007369936,
+              0.07307837018743157,
+              0.07311093993484974,
+              0.07311696000397205
+            ],
+            "mean_ms": 73.1152200140059,
+            "p50_ms": 73.22617003228515,
+            "p90_ms": 73.28562999609858,
+            "max_ms": 73.29085003584623,
+            "repeats": 10,
+            "real_tokens_per_s": 246.186772009329
+          }
+        }
+      },
+      "embeddings_vs_reference": {
+        "shape": [
+          1,
+          18,
+          2560
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 0.00031280517578125,
+        "mean_abs": 4.50198604085017e-05,
+        "rmse": 5.910209802095778e-05,
+        "cosine": 0.999995540706541,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "validity": {
+        "finite": true,
+        "max_unit_norm_error": 0.00030499696731567383,
+        "zero_rows_preserved": true,
+        "passed": true
+      },
+      "memory": {
+        "allocated_bytes": 13722560512,
+        "reserved_bytes": 14170456064,
+        "peak_allocated_bytes": 13756947968,
+        "scope": "PyTorch allocator only; not all CANN/driver memory"
+      }
+    },
+    {
+      "name": "1_hf4571_smoke_b25734d4_image_01",
+      "anchor": "tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/image_01.pt",
+      "anchor_sha256": "28acf728b484dd361eb6c41eda416fca56a9ccfccd5aa1920e365a6e8ac0f499",
+      "reference_vs_hf": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000000118,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "stages": {
+        "vision": {
+          "input_shapes": [
+            [
+              512,
+              1024
+            ],
+            [
+              512,
+              64
+            ],
+            [
+              512,
+              64
+            ]
+          ],
+          "optimized_eager_vs_manual": {
+            "passed": false,
+            "parts": [
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 58.5,
+                "mean_abs": 0.010118103586137295,
+                "rmse": 0.11655481904745102,
+                "cosine": 0.999995041940883,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 0.015625,
+                "mean_abs": 0.0005039672832936049,
+                "rmse": 0.0006908796494826674,
+                "cosine": 0.9999991723869041,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 1.0,
+                "mean_abs": 0.0005436507635749876,
+                "rmse": 0.002332265954464674,
+                "cosine": 0.999996603028383,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  512,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 1.03125,
+                "mean_abs": 0.0013518410269171,
+                "rmse": 0.003617427311837673,
+                "cosine": 0.9999976607217872,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              }
+            ]
+          },
+          "manual_eager": {
+            "samples_s": [
+              0.028793480014428496,
+              0.028683719923719764,
+              0.028690849896520376,
+              0.028601159807294607,
+              0.028592710150405765,
+              0.028552599949762225,
+              0.02852808008901775,
+              0.02855288004502654,
+              0.028476319974288344,
+              0.028530150186270475
+            ],
+            "mean_ms": 28.600195003673434,
+            "p50_ms": 28.572795097716153,
+            "p90_ms": 28.701112908311188,
+            "max_ms": 28.793480014428496,
+            "repeats": 10,
+            "real_tokens_per_s": 17901.975840872354
+          },
+          "optimized_eager": {
+            "samples_s": [
+              0.0442623901180923,
+              0.044217020040377975,
+              0.044266770128160715,
+              0.044342719949781895,
+              0.044235819950699806,
+              0.04426477989181876,
+              0.04441372002474964,
+              0.04434814001433551,
+              0.04434028989635408,
+              0.044231679989025
+            ],
+            "mean_ms": 44.29233300033957,
+            "p50_ms": 44.26577500998974,
+            "p90_ms": 44.354698015376925,
+            "max_ms": 44.41372002474964,
+            "repeats": 10,
+            "real_tokens_per_s": 11559.562689914635
+          }
+        },
+        "text": {
+          "input_shapes": [
+            [
+              1,
+              142,
+              2560
+            ],
+            [
+              1,
+              142,
+              128
+            ],
+            [
+              1,
+              142,
+              128
+            ],
+            [
+              1,
+              1,
+              142,
+              142
+            ],
+            [
+              1,
+              142,
+              2560
+            ],
+            [
+              1,
+              142,
+              2560
+            ],
+            [
+              1,
+              142,
+              2560
+            ]
+          ],
+          "optimized_eager_vs_manual": {
+            "shape": [
+              1,
+              142,
+              2560
+            ],
+            "finite": true,
+            "exact": false,
+            "max_abs": 1.59765625,
+            "mean_abs": 0.012954038567841053,
+            "rmse": 0.030977528542280197,
+            "cosine": 0.9999441975364698,
+            "atol": 0.002,
+            "rtol": 0.002,
+            "passed": false
+          },
+          "manual_eager": {
+            "samples_s": [
+              0.07271270989440382,
+              0.07263123011216521,
+              0.07261366001330316,
+              0.07254962995648384,
+              0.0726604899391532,
+              0.07262933999300003,
+              0.07243990991264582,
+              0.0725661099422723,
+              0.07252942002378404,
+              0.07264168001711369
+            ],
+            "mean_ms": 72.59741798043251,
+            "p50_ms": 72.6215000031516,
+            "p90_ms": 72.66571193467826,
+            "max_ms": 72.71270989440382,
+            "repeats": 10,
+            "real_tokens_per_s": 1955.9924298998328
+          },
+          "optimized_eager": {
+            "samples_s": [
+              0.07358239009045064,
+              0.07363375020213425,
+              0.07368421019054949,
+              0.07369039999321103,
+              0.07381016993895173,
+              0.07347109005786479,
+              0.07353145000524819,
+              0.0734666099306196,
+              0.07350663002580404,
+              0.07362942001782358
+            ],
+            "mean_ms": 73.60061204526573,
+            "p50_ms": 73.60590505413711,
+            "p90_ms": 73.7023769877851,
+            "max_ms": 73.81016993895173,
+            "repeats": 10,
+            "real_tokens_per_s": 1929.3317820871841
+          }
+        }
+      },
+      "embeddings_vs_reference": {
+        "shape": [
+          1,
+          142,
+          2560
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 0.008930206298828125,
+        "mean_abs": 9.634367597755045e-05,
+        "rmse": 0.00025190020096488297,
+        "cosine": 0.9999187814436044,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": false
+      },
+      "validity": {
+        "finite": true,
+        "max_unit_norm_error": 0.0004197359085083008,
+        "zero_rows_preserved": true,
+        "passed": true
+      },
+      "memory": {
+        "allocated_bytes": 13753597440,
+        "reserved_bytes": 14185136128,
+        "peak_allocated_bytes": 13810418688,
+        "scope": "PyTorch allocator only; not all CANN/driver memory"
+      }
+    },
+    {
+      "name": "2_vidore_smoke_247c121b_image_01",
+      "anchor": "tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/image_01.pt",
+      "anchor_sha256": "f1026af1e78963ec95cd343b2e066113458a755abd62aa668e7ce1014e22a887",
+      "reference_vs_hf": {
+        "shape": [
+          1,
+          1254,
+          2560
+        ],
+        "finite": true,
+        "exact": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rmse": 0.0,
+        "cosine": 1.0000000000001599,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": true
+      },
+      "stages": {
+        "vision": {
+          "input_shapes": [
+            [
+              4960,
+              1024
+            ],
+            [
+              4960,
+              64
+            ],
+            [
+              4960,
+              64
+            ]
+          ],
+          "optimized_eager_vs_manual": {
+            "passed": false,
+            "parts": [
+              {
+                "shape": [
+                  4960,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 686.0,
+                "mean_abs": 0.029560348019003868,
+                "rmse": 0.6571544408798218,
+                "cosine": 0.9998818447979896,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  4960,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 0.046875,
+                "mean_abs": 0.00046756642404943705,
+                "rmse": 0.0006470044609159231,
+                "cosine": 0.9999992008192908,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  4960,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 2.375,
+                "mean_abs": 0.0005603109020739794,
+                "rmse": 0.0029053452890366316,
+                "cosine": 0.9999952437749692,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              },
+              {
+                "shape": [
+                  4960,
+                  1024
+                ],
+                "finite": true,
+                "exact": false,
+                "max_abs": 2.578125,
+                "mean_abs": 0.002282366855069995,
+                "rmse": 0.0068422527983784676,
+                "cosine": 0.9999909673903684,
+                "atol": 0.002,
+                "rtol": 0.002,
+                "passed": false
+              }
+            ]
+          },
+          "manual_eager": {
+            "samples_s": [
+              0.30918907979503274,
+              0.30935049010440707,
+              0.30925678997300565,
+              0.3092917900066823,
+              0.30922933015972376,
+              0.3092469701077789,
+              0.309280940098688,
+              0.3093206600751728,
+              0.3092678200919181,
+              0.309386600041762
+            ],
+            "mean_ms": 309.28204704541713,
+            "p50_ms": 309.27438009530306,
+            "p90_ms": 309.35410109814256,
+            "max_ms": 309.386600041762,
+            "repeats": 10,
+            "real_tokens_per_s": 16037.141655595804
+          },
+          "optimized_eager": {
+            "samples_s": [
+              0.061365670058876276,
+              0.061384780099615455,
+              0.061355469981208444,
+              0.061446000123396516,
+              0.061385100008919835,
+              0.0613447199575603,
+              0.06134077999740839,
+              0.06135769002139568,
+              0.06136142020113766,
+              0.06121349008753896
+            ],
+            "mean_ms": 61.35551205370575,
+            "p50_ms": 61.35955511126667,
+            "p90_ms": 61.3911900203675,
+            "max_ms": 61.446000123396516,
+            "repeats": 10,
+            "real_tokens_per_s": 80840.33257938438
+          }
+        },
+        "text": {
+          "input_shapes": [
+            [
+              1,
+              1254,
+              2560
+            ],
+            [
+              1,
+              1254,
+              128
+            ],
+            [
+              1,
+              1254,
+              128
+            ],
+            [
+              1,
+              1,
+              1254,
+              1254
+            ],
+            [
+              1,
+              1254,
+              2560
+            ],
+            [
+              1,
+              1254,
+              2560
+            ],
+            [
+              1,
+              1254,
+              2560
+            ]
+          ],
+          "optimized_eager_vs_manual": {
+            "shape": [
+              1,
+              1254,
+              2560
+            ],
+            "finite": true,
+            "exact": false,
+            "max_abs": 2.296875,
+            "mean_abs": 0.009560421109199524,
+            "rmse": 0.019370269030332565,
+            "cosine": 0.9999776350872158,
+            "atol": 0.002,
+            "rtol": 0.002,
+            "passed": false
+          },
+          "manual_eager": {
+            "samples_s": [
+              0.12070881016552448,
+              0.1208929200656712,
+              0.12065229006111622,
+              0.12086540018208325,
+              0.12060925993137062,
+              0.12089619017206132,
+              0.12056907010264695,
+              0.1208500200882554,
+              0.12057817005552351,
+              0.12088550999760628
+            ],
+            "mean_ms": 120.75076408218592,
+            "p50_ms": 120.77941512688994,
+            "p90_ms": 120.89324707631022,
+            "max_ms": 120.89619017206132,
+            "repeats": 10,
+            "real_tokens_per_s": 10385.027453296254
+          },
+          "optimized_eager": {
+            "samples_s": [
+              0.07693855999968946,
+              0.07694546016864479,
+              0.07699950016103685,
+              0.07698543998412788,
+              0.07702700980007648,
+              0.07700827997177839,
+              0.07687792996875942,
+              0.07698353985324502,
+              0.07698231982067227,
+              0.07709941011853516
+            ],
+            "mean_ms": 76.98474498465657,
+            "p50_ms": 76.98448991868645,
+            "p90_ms": 77.03424983192235,
+            "max_ms": 77.09941011853516,
+            "repeats": 10,
+            "real_tokens_per_s": 16288.941403260194
+          }
+        }
+      },
+      "embeddings_vs_reference": {
+        "shape": [
+          1,
+          1254,
+          2560
+        ],
+        "finite": true,
+        "exact": false,
+        "max_abs": 0.0667877197265625,
+        "mean_abs": 0.00036004272988066077,
+        "rmse": 0.0013705966994166374,
+        "cosine": 0.9975954705812318,
+        "atol": 0.002,
+        "rtol": 0.002,
+        "passed": false
+      },
+      "validity": {
+        "finite": true,
+        "max_unit_norm_error": 0.000470578670501709,
+        "zero_rows_preserved": true,
+        "passed": true
+      },
+      "memory": {
+        "allocated_bytes": 13978886656,
+        "reserved_bytes": 20665335808,
+        "peak_allocated_bytes": 17978797056,
+        "scope": "PyTorch allocator only; not all CANN/driver memory"
+      }
+    }
+  ],
+  "score_smoke": {
+    "scope": "small saved-anchor MaxSim comparison, not retrieval accuracy",
+    "scoring": "CPU FP32",
+    "atol": 0.02,
+    "rtol": 0.001,
+    "scores": [
+      {
+        "query": "0_hf4571_smoke_b25734d4_queries",
+        "document": "1_hf4571_smoke_b25734d4_image_01",
+        "reference": 9.659714698791504,
+        "candidate": 9.658376693725586,
+        "delta": -0.0013380050659179688,
+        "relative_percent": -0.013851393210250426,
+        "passed": true
+      },
+      {
+        "query": "0_hf4571_smoke_b25734d4_queries",
+        "document": "2_vidore_smoke_247c121b_image_01",
+        "reference": 9.952752113342285,
+        "candidate": 9.920097351074219,
+        "delta": -0.032654762268066406,
+        "relative_percent": -0.32809781552070066,
+        "passed": false
+      }
+    ],
+    "rankings": [
+      {
+        "query": "0_hf4571_smoke_b25734d4_queries",
+        "reference_order": [
+          1,
+          0
+        ],
+        "candidate_order": [
+          1,
+          0
+        ],
+        "same": true
+      }
+    ],
+    "passed": false
+  },
+  "error": "Traceback (most recent call last):\n  File \"/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/bench_optimized_prefill.py\", line 195, in main\n    run(args,result)\n  File \"/usr/local/python3.12.13/lib/python3.12/site-packages/torch/utils/_contextlib.py\", line 124, in decorate_context\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/repos/paddle_ocr_vl_npu/21_colqwen3_4b_inference/bench_optimized_prefill.py\", line 167, in run\n    raise RuntimeError('MaxSim smoke tolerance exceeded; do not accept optimization')\nRuntimeError: MaxSim smoke tolerance exceeded; do not accept optimization\n"
+}

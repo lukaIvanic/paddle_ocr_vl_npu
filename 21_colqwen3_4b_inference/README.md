@@ -294,3 +294,155 @@ Evidence also preserves the [initial failure](references/prepared_prefill_910b/i
 [GELU-only failed attempt](references/prepared_prefill_910b/geluv2_only_failed.json),
 and [initial LayerNorm diagnostic](references/prepared_prefill_910b/vision_diagnostic.json).
 No tolerance was silently widened and no reference weights/model code changed.
+
+## Portable prefill optimization candidates
+
+`optimized_prefill.py` is a separate opt-in stage implementation. It does not
+modify `local_modeling_colqwen3.py` or the prepared manual-attention baseline.
+Its initial candidates are:
+
+- FP16 PromptFA with BNSD inputs, no host sequence-length lists, no paged cache,
+  and no 910B-only `npu_fusion_attention`. Vision is full bidirectional attention
+  at the exact unpadded image length, so it needs no mask. Text uses a prepared
+  square bool causal mask, full pre/next windows and `sparse_mode=0`.
+- Native compact GQA (32 query / 8 KV heads) following experiment 13's
+  directly 310P-tested contract (`73339436`). `--gqa repeat` is a separately
+  keyed, explicit compatibility experiment, never an automatic fallback.
+  Installed CANN/torch-npu support still needs checking on the target 310P.
+- Setup-fused text Q/K/V and gate/up weights: seven projections become four
+  per text layer. Splitting, per-head Q/K normalization, rotary, original scale
+  and activation order are preserved. Vision QKV was already fused.
+- Explicit FP32 vision LayerNorm statistics/normalization, cast back to FP16
+  before the separate FP16 affine operations (the MinerU recipe), to
+  avoid the fused LayerNorm/MatMul path that failed on 310P in MinerU. This is
+  still a numerical candidate, not assumed identical to `nn.LayerNorm`.
+  `--vision-norm module` provides an ablation.
+- Optional setup-only FRACTAL_NZ Linear weights. Every candidate weight must
+  report format 29; failure is fatal, not a hidden native-format fallback.
+  Embeddings, mergers, norms and retrieval projection stay unchanged. Native
+  is the default because NZ did not materially help the 910B reranker.
+
+No quantization, resolution reduction, token dropping, sequence truncation or
+model architecture change is involved. This remains exact-shape B1 prefill;
+reusable buckets, batching and an optimized end-to-end retrieval service are
+separate work. Candidate fusion/NZ copies coexist with the reference model in
+this comparison harness, so its memory footprint is not a minimal serving
+footprint. The benchmark records PyTorch allocator memory, not total device use.
+
+`bench_optimized_prefill.py` measures the same tensor-only stage boundaries as
+the prepared benchmark, including manual eager, candidate eager, and candidate
+compiled timings. All first calls/setup are separate from warm means. Cache
+identity includes source, options, formats, runtime/chip and exact input shape.
+Reuse the cache root; do not clear it when switching candidates.
+
+Validation deliberately distinguishes **numerical diagnostics** from
+**retrieval accuracy**: the untouched reference must match its HF anchor;
+candidate outputs must be finite and unit-normalized; all embedding/hidden
+differences remain in the report, but elementwise allclose is not the acceptance
+gate. Query/document MaxSim differences are compared with the original diagnostic
+limits (`atol=0.02`, `rtol=0.001`), but exceeding them does **not** fail the run
+or establish an accuracy regression. The score report's `passed` fields refer
+only to these numerical tolerances. Completed runs are labeled
+`completed_experimental`, with quality explicitly not yet evaluated on ViDoRe v3.
+This policy follows Luka's explicit approval on 2026-10-01; earlier reports
+that stopped at the score threshold are retained as historical diagnostics.
+Both reference and candidate scores are calculated
+post hoc in FP32 on CPU from their NPU-produced embeddings. Rankings are also
+reported. ViDoRe v3 evaluation, not these few anchors, is the quality test.
+
+```sh
+# After source npu-setup, from the repo root on the 910B workspace:
+PYTHON=/workspace/venvs/colqwen3_hf_py312/bin/python
+"$PYTHON" -u 21_colqwen3_4b_inference/bench_optimized_prefill.py \
+  --model /workspace/models/Ops-Colqwen3-4B \
+  --anchors \
+    tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/queries.pt \
+    tmp/21_colqwen3_4b_inference/hf4571_smoke_b25734d4/output/image_01.pt \
+    tmp/21_colqwen3_4b_inference/vidore_smoke_247c121b/output/image_01.pt \
+  --repeats 10 --cache-root .runtime_cache/21_colqwen3/prepared \
+  --output-dir tmp/21_colqwen3_4b_inference/optimized_new
+```
+
+First add `--eager-only` with a distinct output directory to test the candidate
+before compiling. For projection fusion ablation, add `--unfused`. For a fair
+native/NZ comparison, use `--enable-internal-format` in **both** separate
+processes and `--weight-format fractal_nz` only in the NZ process. Record every
+variant separately; do not transfer a 910B speed or validity result to 310P.
+
+### Initial optimized measurements on 910B2
+
+Source `c6cfc8f8`, physical NPU 7, FP16/B1, ten warm repetitions, native weights,
+native GQA, fused text projections and MinerU-style manual vision LayerNorm:
+
+| Stage | Tokens | Manual eager, same run | Candidate eager | Candidate compiled | Previous manual compiled* |
+|---|---:|---:|---:|---:|---:|
+| Query text | 18 | 68.67 ms | 70.72 ms | 14.50 ms | 13.70 ms |
+| Crop vision | 512 | 28.57 ms | 43.40 ms | 9.30 ms | 8.84 ms |
+| Crop text | 142 | 74.29 ms | 76.31 ms | 22.02 ms | 21.61 ms |
+| Page vision | 4960 | 309.59 ms | 60.89 ms | 51.93 ms | 271.49 ms |
+| Page text | 1254 | 120.08 ms | 76.67 ms | 62.70 ms | 101.73 ms |
+
+*The previous manual compiled column is from the earlier prepared-stage runs,
+not an alternating same-process ablation. The small-shape candidate is not an
+improvement in those observations; no automatic length-based routing is claimed.
+The large-page transformer sum is 114.62 ms versus the previous 373.22 ms
+(3.26x). Neither sum includes eager preparation, mergers or retrieval projection,
+and neither is end-to-end page throughput. Fusion's individual contribution is
+not isolated by this combined-candidate comparison.
+
+Every compiled stage output was bit-exact against its **own optimized eager**
+counterpart, including all four vision outputs. Compared with the unchanged
+reference, the two MaxSim changes were -0.0563% and -0.1066%; both document
+rankings agreed. The report predates the status-label change and says
+`passed_score_smoke`, which is not a retrieval-accuracy claim. Full ViDoRe v3
+evaluation remains pending. See the [report](references/optimized_prefill_910b/native/result.json)
+and [command](references/optimized_prefill_910b/native/command.txt).
+
+The [initial eager report](references/optimized_prefill_910b/initial_eager/result.json)
+used FP32 LayerNorm affine before changing to MinerU's FP16 affine boundary.
+It stopped at the old numerical score threshold (-0.328% on the page, unchanged
+ranking). That recorded `failed` status means only the historical threshold was
+exceeded, not that ViDoRe accuracy failed.
+
+This comparison process held both the reference and candidate weight sets:
+13.72 GB allocated after setup and 18.05 GB peak PyTorch allocation on the page
+(20.74 GB reserved). CANN/driver memory is additional. In particular, do not
+assume the dual-path full-page harness fits a 310P just because the production
+model would; start with small inputs there. No ColQwen optimized 310P inference
+has been validated from this machine.
+
+Fresh-process [cache reuse](references/optimized_prefill_910b/warm_native/result.json)
+was checked at `aac6216a`: all five graphs used the same existing cache paths.
+First-call times were 4.94 s for the initial query, then 0.585/0.895 s for crop
+vision/text and 0.642/0.939 s for page vision/text (versus 31–52 s cold calls).
+Warm page stage means remained 51.80/62.56 ms. No fresh cache root or cache
+deletion was used. Cache keys intentionally change for changed source/options;
+the later format-report compatibility adjustment is separately keyed.
+
+At `fd4fad8f`, separate native/NZ processes both enabled internal formats:
+
+| Stage | Tokens | Native | FRACTAL_NZ |
+|---|---:|---:|---:|
+| Query text | 18 | 14.42 ms | 15.39 ms |
+| Page vision | 4960 | 51.57 ms | 51.26 ms |
+| Page text | 1254 | 61.93 ms | 63.92 ms |
+
+All 240 candidate Linear weights reported code 2 in the native control and
+code 29 in the NZ run. The stage sum was 113.50 vs 115.18 ms, so this sequential
+single-device measurement does not support adopting NZ on 910B. It remains an
+explicit 310P candidate, not a claimed cross-chip speedup. The page MaxSim
+deltas versus reference were -0.1066% (native) and -0.2111% (NZ), with finite,
+normalized outputs. NZ introduced additional compiled-versus-own-eager drift;
+the earlier native bit-exact observation must not be generalized to NZ.
+These two-process format runs each had one query and one document, so their
+trivial one-document ranking is not informative. See the
+[native report](references/optimized_prefill_910b/native_internal/result.json) and
+[NZ report](references/optimized_prefill_910b/nz/result.json).
+
+Local checks: 22 CPU algebra/contract tests passed, including fused-weight
+non-mutation, mocked native/repeated GQA, causal-mask semantics, strict format
+report decoding and full tiny-model candidate algebra. Those tests do not
+validate NPU kernels. Real 910B runs above cover the default native-GQA/fused
+candidate and both weight formats; `--unfused`, `--gqa repeat` and module-norm
+ablations have not yet been benchmarked on NPU. No 310P run or ViDoRe v3
+accuracy evaluation has been performed for this new candidate.
