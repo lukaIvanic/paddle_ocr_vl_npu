@@ -18,12 +18,14 @@ from run_hf_baseline import sha256
 class DiagnosticVisionStage(PreparedVisionStage):
     labels = ('final', 'tap5', 'tap11', 'tap17', 'norm1', 'qkv', 'q_rotary',
               'k_rotary', 'attention', 'out_projection', 'attention_residual',
-              'norm2', 'mlp_fc1', 'gelu', 'mlp_fc2', 'block0')
+              'norm2', 'mlp_fc1', 'gelu', 'mlp_fc2', 'block0',
+              'qk_sample', 'scaled_qk_sample', 'masked_qk_sample',
+              'softmax_fp32_sample', 'softmax_fp16_sample')
 
     def forward(self, hidden, cos, sin, mask):
         length = hidden.shape[0]
         cos, sin = cos.unsqueeze(-2).float(), sin.unsqueeze(-2).float()
-        taps, diagnostics = [], []
+        taps, diagnostics, attention_samples = [], [], []
         for index, block in enumerate(self.blocks):
             attn = block.attn
             normalized = block.norm1(hidden)
@@ -32,7 +34,23 @@ class DiagnosticVisionStage(PreparedVisionStage):
             qr = (q.float()*cos + rotate_half(q.float())*sin).to(q.dtype)
             kr = (k.float()*cos + rotate_half(k.float())*sin).to(k.dtype)
             q, k, v = [a.transpose(0, 1).unsqueeze(0).contiguous() for a in (qr, kr, v)]
-            out = bmm_attention(q, k, v, attn.scale, mask).reshape(length, -1)
+            if index == 0:
+                # Same production math; expose every 64th query row across all
+                # heads/keys to bound diagnostic output memory on real pages.
+                # Extra outputs can inhibit fusion: compare ordinary graph too.
+                heads, dim = q.shape[1], q.shape[-1]
+                q3, k3, v3 = [a.reshape(heads, length, dim) for a in (q, k, v)]
+                qk = torch.bmm(q3, k3.transpose(1, 2)).reshape(1, heads, length, length)
+                scaled = qk * attn.scale
+                masked = scaled + mask
+                probabilities32 = torch.softmax(masked, dim=-1, dtype=torch.float32)
+                probabilities16 = probabilities32.to(q.dtype)
+                out = torch.bmm(probabilities16.reshape(heads, length, length), v3)
+                out = out.reshape(1, heads, length, dim).transpose(1, 2).contiguous().reshape(length, -1)
+                attention_samples = [a[:, :, ::64, :].contiguous() for a in
+                                     (qk, scaled, masked, probabilities32, probabilities16)]
+            else:
+                out = bmm_attention(q, k, v, attn.scale, mask).reshape(length, -1)
             projected = linear(attn.proj, out)
             residual = hidden + projected
             norm2 = block.norm2(residual)
@@ -44,7 +62,7 @@ class DiagnosticVisionStage(PreparedVisionStage):
                 diagnostics = [normalized, qkv, qr, kr, out, projected, residual, norm2, fc1, gelu, fc2, hidden]
             if index in self.tap_indices:
                 taps.append(hidden)
-        return (hidden, taps[0], taps[1], taps[2], *diagnostics)
+        return (hidden, taps[0], taps[1], taps[2], *diagnostics, *attention_samples)
 
 
 @torch.inference_mode()
