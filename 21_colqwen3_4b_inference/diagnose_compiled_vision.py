@@ -20,7 +20,7 @@ class DiagnosticVisionStage(PreparedVisionStage):
               'k_rotary', 'attention', 'out_projection', 'attention_residual',
               'norm2', 'mlp_fc1', 'gelu', 'mlp_fc2', 'block0',
               'qk_sample', 'scaled_qk_sample', 'masked_qk_sample',
-              'softmax_fp32_sample', 'softmax_fp16_sample')
+              'softmax_fp32_sample', 'softmax_fp16_sample', 'softmax_fp16_full')
 
     def forward(self, hidden, cos, sin, mask):
         length = hidden.shape[0]
@@ -49,6 +49,7 @@ class DiagnosticVisionStage(PreparedVisionStage):
                 out = out.reshape(1, heads, length, dim).transpose(1, 2).contiguous().reshape(length, -1)
                 attention_samples = [a[:, :, ::64, :].contiguous() for a in
                                      (qk, scaled, masked, probabilities32, probabilities16)]
+                attention_samples.append(probabilities16)
             else:
                 out = bmm_attention(q, k, v, attn.scale, mask).reshape(length, -1)
             projected = linear(attn.proj, out)
@@ -85,7 +86,17 @@ def run(args, result):
     emit('diagnostic_graph_start')
     candidate, elapsed = timed(call, prepared.vision_args)
     result['first_call_s'] = elapsed
-    result['outputs'] = {label: compare(a,b) for label,a,b in zip(stage.labels,candidate,reference)}
+    result['outputs'] = {}
+    for label,a,b in zip(stage.labels,candidate,reference):
+        if label == 'softmax_fp16_full':
+            # Hundreds of millions of elements at page resolution: compare on
+            # device, without copying multi-GB tensors to CPU for cosine math.
+            unequal = int(torch.count_nonzero(a != b))
+            result['outputs'][label] = {'shape': list(a.shape), 'exact': unequal == 0,
+                'unequal_elements': unequal, 'max_abs': float((a-b).abs().max()),
+                'finite': bool(torch.isfinite(a).all() & torch.isfinite(b).all())}
+        else:
+            result['outputs'][label] = compare(a,b)
     result['cache_records'] = compiler.records
     result['status'] = 'completed_diagnostic'
     emit('diagnostic_graph_finish', seconds=elapsed, outputs=result['outputs'])

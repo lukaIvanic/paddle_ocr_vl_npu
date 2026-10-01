@@ -61,6 +61,18 @@ class PreparedContracts(unittest.TestCase):
         a, b = unique_forward(stage, 'a'), unique_forward(stage, 'b')
         self.assertIsNot(a.__func__.__code__, b.__func__.__code__)
 
+    def test_diagnostic_outputs_preserve_production_vision(self):
+        from diagnose_compiled_vision import DiagnosticVisionStage
+        model = tiny_model()
+        args = (torch.randn(16,32), torch.randn(16,16), torch.randn(16,16),
+                torch.zeros(1,1,16,16))
+        with torch.inference_mode():
+            expected = PreparedVisionStage(model)(*args)
+            actual = DiagnosticVisionStage(model)(*args)
+        self.assertEqual(len(actual), len(DiagnosticVisionStage.labels))
+        for a,b in zip(actual[:4], expected):
+            self.assertTrue(torch.equal(a,b))
+
 
 if __name__ == '__main__':
     unittest.main()
