@@ -47,6 +47,9 @@ to it, while the mirror is reachable. No token is sent to the mirror. The script
 is resumable and verifies every downloaded file against the pinned repo's
 size and LFS SHA256 or Git blob ID. Per-domain manifests record SHA256 hashes,
 Parquet counts/schemas, language counts and qrels referential integrity.
+The irrelevant `pdfs/.DS_Store` Finder metadata file in finance FR is excluded
+and explicitly recorded: the mirror denies that file with HTTP 403. No corpus,
+query, qrels, document metadata, or PDF content is excluded.
 The mirror supplies metadata too; this is not independent official-origin
 attestation. Keep the endpoint recorded with the lock.
 

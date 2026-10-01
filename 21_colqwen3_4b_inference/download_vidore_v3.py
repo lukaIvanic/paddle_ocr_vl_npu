@@ -64,9 +64,15 @@ def main():
             raise ValueError(f'Revision mismatch: {repo}')
         snapshot_download(repo, repo_type='dataset', revision=revision,
                           local_dir=target, endpoint=args.endpoint,
-                          token=False, max_workers=args.workers)
-        manifest = {'repo': repo, 'revision': revision, 'endpoint': args.endpoint, 'files': {}}
+                          token=False, max_workers=args.workers,
+                          ignore_patterns=['.DS_Store', '**/.DS_Store'])
+        manifest = {'repo': repo, 'revision': revision, 'endpoint': args.endpoint,
+                    'files': {}, 'excluded_files': []}
         for entry in info.siblings:
+            if Path(entry.rfilename).name == '.DS_Store':
+                manifest['excluded_files'].append({'path': entry.rfilename,
+                    'bytes': entry.size, 'reason': 'macOS Finder metadata, not benchmark data'})
+                continue
             path = target / entry.rfilename
             if not path.is_file() or path.stat().st_size != entry.size:
                 raise ValueError(f'Missing or wrong size: {path}')
