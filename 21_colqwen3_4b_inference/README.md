@@ -438,6 +438,10 @@ These two-process format runs each had one query and one document, so their
 trivial one-document ranking is not informative. See the
 [native report](references/optimized_prefill_910b/native_internal/result.json) and
 [NZ report](references/optimized_prefill_910b/nz/result.json).
+The NZ comparison harness peaked at **21.17 GB allocated / 24.36 GB reserved**
+by PyTorch alone. Do not send that full dual-reference page run unchanged to a
+310P: first use small shapes, or add a staged-reference/candidate-only harness
+that releases the original projection weights before candidate execution.
 
 Local checks: 22 CPU algebra/contract tests passed, including fused-weight
 non-mutation, mocked native/repeated GQA, causal-mask semantics, strict format
