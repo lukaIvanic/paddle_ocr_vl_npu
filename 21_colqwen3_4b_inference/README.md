@@ -329,6 +329,42 @@ separate work. Candidate fusion/NZ copies coexist with the reference model in
 this comparison harness, so its memory footprint is not a minimal serving
 footprint. The benchmark records PyTorch allocator memory, not total device use.
 
+The optimized runner also defaults to `--patch-embedding linear`;
+`--patch-embedding conv3d` retains the original projector. ColQwen's patch
+Conv3D consumes one pre-extracted `[3,2,16,16]` patch per sample and produces
+one spatial output, so its weight can be flattened once from
+`[1024,3,2,16,16]` to `[1024,1536]` and applied with `F.linear`, preserving
+the bias and C/T/H/W flatten order. This is an algebraic replacement, not a
+literal 1x1 convolution or a change to patch resolution.
+`patch_embedding.py` leaves the reference model untouched. Projection remains
+outside the transformer graphs, so this change does not invalidate their caches.
+The runner compares both projectors with alternating synchronized warm calls
+(`--patch-repeats 50`), and records downstream Linear-versus-Conv3D embeddings
+through the same candidate transformer path as an isolated numerical check.
+
+Validated at `adbf0b6d` on **910B2 physical NPU 7**, FP16, native weights,
+internal formats enabled, with 50 alternating warm measurements per projector:
+
+| Input | Vision tokens | Conv3D mean | Linear mean | Projection speedup |
+|---|---:|---:|---:|---:|
+| Table crop | 512 | 0.1687 ms | 0.1280 ms | 1.32x |
+| ViDoRe full page | 4960 | 0.1900 ms | 0.1586 ms | 1.20x |
+
+Patch outputs and final embeddings through the same compiled candidate
+transformers were **bit-exact between Conv3D and Linear** for both images.
+The candidate's existing MaxSim differences versus the untouched reference
+remained -0.0563% and -0.1066%, with unchanged two-document ranking. The patch
+replacement itself added no observed drift. The absolute saving is only
+0.03–0.04 ms/image, not a meaningful end-to-end throughput gain by itself.
+These are synchronized wall timings, not isolated kernel-device timings.
+Query and full-page transformer graphs reused existing caches; missing crop
+variants compiled normally. No cache was deleted. The run exited 0;
+[raw report](references/patch_linear_910b/result.json),
+[command](references/patch_linear_910b/command.txt), and
+[log](references/patch_linear_910b/run.log) retain the measurements.
+All 25 CPU algebra/contract tests passed. 310P validation and full ViDoRe v3
+retrieval evaluation remain pending.
+
 `bench_optimized_prefill.py` measures the same tensor-only stage boundaries as
 the prepared benchmark, including manual eager, candidate eager, and candidate
 compiled timings. All first calls/setup are separate from warm means. Cache
