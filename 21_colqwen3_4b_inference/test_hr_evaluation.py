@@ -59,6 +59,11 @@ class HrTests(unittest.TestCase):
             # Completion is flushed immediately, without waiting for heartbeat.
             self.assertIn('item_finish',(Path(root)/'events.jsonl').read_text())
             self.assertIn('vision',(Path(root)/'items.jsonl').read_text())
+            another=dict(kind='page',id='y',sections={},wall_s=.1)
+            with journal.section(another,'vision',tokens=100,device=True):
+                pass
+            journal.resolve()
+            self.assertEqual(npu.Event.call_count,2)  # Resolved pair reused safely.
             journal.close()
             b.synchronize.assert_not_called()
 

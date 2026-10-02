@@ -18,13 +18,14 @@ class Journal:
         self.active = None
         self.progress = {}
         self.pending = []
+        self.event_pool = []
         self.write_s = 0.0
         self.done = threading.Event()
         self.worker = threading.Thread(target=self.heartbeat, daemon=True)
         self.worker.start()
 
     def emit(self, phase, **data):
-        row = dict(phase=phase, utc=datetime.now(timezone.utc).isoformat(),
+        row = dict(schema_version=2,phase=phase, utc=datetime.now(timezone.utc).isoformat(),
                    run_elapsed_s=time.monotonic()-self.start, **data)
         begin = time.perf_counter()
         with self.lock:
@@ -53,7 +54,8 @@ class Journal:
         begin = time.perf_counter()
         a = b = None
         if device:
-            a, b = torch.npu.Event(enable_timing=True), torch.npu.Event(enable_timing=True)
+            a,b = self.event_pool.pop() if self.event_pool else (
+                torch.npu.Event(enable_timing=True),torch.npu.Event(enable_timing=True))
             a.record()
         context = torch.profiler.record_function('colqwen.'+name) if self.profile else nullcontext()
         try:
@@ -81,6 +83,7 @@ class Journal:
                 stats.update(device_interval_ms=ms,device_status='complete',
                              device_tok_s=stats['tokens']*1000/ms if ms and stats['tokens'] else None)
                 self.emit('device_resolution',**identity,**stats)
+                self.event_pool.append((a,b))
             else:
                 pending.append((a,b,stats,identity))
         self.pending = pending

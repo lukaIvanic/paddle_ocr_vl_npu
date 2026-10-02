@@ -353,7 +353,7 @@ def main(observer_factory=Journal):
     args.output_dir.mkdir(parents=True,exist_ok=False)
     journal=observer_factory(args.output_dir,profile=args.profile)
     faulthandler.enable()
-    result=dict(status='started',command=sys.argv,host=platform.node(),dataset=REPO,revision=REVISION,
+    result=dict(schema_version=2,status='started',command=sys.argv,host=platform.node(),dataset=REPO,revision=REVISION,
                 python_import_and_cli_s=time.monotonic()-SCRIPT_STARTED,
                 model_config_sha256=sha256(Path(args.model)/'config.json'),
                 processor_sha256=sha256(Path(args.model)/'processing_ops_colqwen3.py'),

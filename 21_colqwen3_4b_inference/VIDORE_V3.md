@@ -89,7 +89,87 @@ image from each of HR and computer science, with IDs and hashes preserved.
 Those two pages passed the initial HF baseline. The subsequent full HR English
 evaluation is described below, with measured results in the README.
 
-## Instrumented English HR evaluation
+## Current performance-testing contract (experiment 21 only)
+
+`run_hr_evaluation.py` defaults to the fixed **HR development workload**:
+111 pages at corpus indices `5,15,...,1105`, plus 32 deterministically selected
+English queries with a positive qrel among those pages. The query selection
+uses SHA256 of `hr-dev-v1:<query_id>`, and preserves source order after selection.
+The exact IDs and selection hash are saved in `workload.json`. Development qrels
+are restricted to the selected corpus; these scores are internal anchors, not
+comparable with the published full-HR score. Full HR requires `--workload full`
+and is to be run **only when Luka explicitly requests it**.
+
+One B1/sequential pipeline and one default observer. `--profile` is the only
+observation toggle. No embedding files are saved: CPU embeddings remain in
+memory through scoring, then are released when the process exits. Compact
+scores, rankings, metrics and timing evidence are retained. No changes to
+batching, prefetch, backpressure, or other experiments are included.
+
+```sh
+# Default: complete pipeline on the development subset, NOT full HR.
+"$PYTHON" -u 21_colqwen3_4b_inference/run_hr_evaluation.py \
+  --model /workspace/models/Ops-Colqwen3-4B \
+  --dataset-root /workspace/datasets/ViDoRe_v3_hr_mteb_reference \
+  --output-dir tmp/21_colqwen3_4b_inference/hr_dev_new
+# Add --profile to capture actual runtime items, not subsection replays.
+```
+
+`pipeline_timing.py` records host spans for setup, dataset verification/read,
+selection, model/processor preparation, preprocessing, transfers/materialization,
+vision preparation/dispatch/transformer, text preparation/dispatch/transformer,
+retrieval projection, output validation, scoring, ranking, metrics and artifacts.
+The corpus is encoded first, then the query batch is encoded and ranked against
+the existing in-memory corpus. `query_to_ranked_batch_s` is the wall time of
+that **offline query-batch workflow**, not a single online-query latency.
+
+Device events are recorded around device-producing sections, with **no timing
+synchronization before/after each section**. Events are resolved nonblockingly
+after the natural CPU-output materialization required by the consumer. An
+incomplete event remains explicitly pending; later `device_resolution` records
+retain its identity and elapsed interval. No host/device absolute-clock
+alignment is inferred. `host_s` can include submission work and implicit waits;
+`device_interval_ms` is stream elapsed time, potentially including launch gaps
+and waits, not summed active kernel time. In particular, a blocking CPU copy may
+wait for previous work and is called `output_materialize_wait`, not pure D2H
+execution. Neither host nor device section sums should be added together.
+
+- Every completed page, query, or scoring item prints and flushes its full timing,
+  token and progress record **immediately**. It also flushes `items.jsonl` and
+  buffered section events. Completion does not wait for the heartbeat.
+- A **5-second heartbeat** reports progress and the active item/host section.
+  A host section taking 120 seconds triggers a diagnostic stack dump; no wait is
+  introduced into inference to detect it.
+- Fine section events are buffered, not printed individually. Raw section
+  starts/finishes and device resolutions remain in `events.jsonl`.
+- `result.json` reports mean/p50/p90/p99/max and weighted device-interval tok/s
+  by section, exact token length and execution route. Host timings are not
+  mislabeled as device tok/s. Whole-item latency and end-to-end pg/s use wall
+  time; item accounting residuals and `encoding_outside_item_spans_s` remain
+  explicitly separate rather than being assigned to a nearby section.
+- Existing compatible graphs may load on their **first real invocation**.
+  Its output is used, with `stage_first_use` tagging; there is no throwaway stage
+  call. Uncached shapes stay explicitly optimized eager. Caches are not cleared.
+
+With `--profile`, the entire same pipeline runs. The profiler observes one
+actual page, one actual query, and one actual scoring item, each preceded by a
+real warmup item in its workflow. Captured items are the second item of each
+phase. Trace export can distort timings and is labeled by `profiler=true`;
+use normal observer runs for throughput. Full pipelines, never isolated replay
+functions, are used to assess performance.
+
+`bench_observer_overhead.py` is a **development-only ABBA test**, not a production
+observation-level option. It runs the identical complete HR-dev pipeline in four
+fresh processes (control, observed, observed, control). The private control
+omits event/logging observation but retains workload metadata, validation,
+scoring and result output. It checks exact score/ID parity and reports observed
+versus control wall times for pages, queries, encoding, scoring and the whole
+job. Thus reported overhead concerns the observer, not every shared metadata
+operation. Run variance must be considered; no single difference proves a
+precise overhead percentage. Comparisons to the historical 2.79 pg/s anchor also
+need to account for removing embedding serialization and timing barriers.
+
+## Historical full English HR evaluation (`fbfaedc5`)
 
 `run_hr_evaluation.py` evaluates the entire HR English retrieval task: 1,110
 candidate pages, 318 queries, all supplied relevance labels, 2560-dimensional
@@ -119,6 +199,7 @@ PYTHON=/workspace/venvs/colqwen3_hf_py312/bin/python
 "$PYTHON" -u 21_colqwen3_4b_inference/run_hr_evaluation.py \
   --model /workspace/models/Ops-Colqwen3-4B \
   --dataset-root /workspace/datasets/ViDoRe_v3_hr_mteb_reference \
+  --workload full \
   --output-dir tmp/21_colqwen3_4b_inference/hr_new/output
 ```
 
@@ -163,7 +244,11 @@ For documents shorter than the corpus-wide maximum embedding length, one
 additional zero row reproduces the MaxSim effect of the official adapter's
 global zero padding without computing every padded dot product.
 
-For a structural preflight, add `--limit-pages 8 --limit-queries 8`. Such a run
+The historical structural preflight used `--limit-pages 8 --limit-queries 8`. Such a run
 is explicitly labeled `completed_partial_smoke`, and does **not** produce a
 published-score comparison. A full-domain run validates HR only, not the
 eight-domain mean or all six query languages.
+
+The historical runner's per-section synchronization, embedding serialization,
+10-second heartbeat and smoke-limit CLI described above have been superseded by
+the single-observer development contract. The archived result remains unchanged.

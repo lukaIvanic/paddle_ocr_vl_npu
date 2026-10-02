@@ -54,7 +54,7 @@ def main():
         print(json.dumps(dict(phase='comparison_run_start',index=index,observed=observed)),flush=True)
         start=time.perf_counter()
         with (a.output_dir/f'{index}.log').open('w') as out:
-            subprocess.run(command,stdout=out,stderr=subprocess.STDOUT,check=True)
+            subprocess.run(command,stdout=out,stderr=subprocess.STDOUT,check=True,timeout=300)
         r=json.loads((root/'result.json').read_text())
         score=np.load(root/'scores.npy')
         ids=json.loads((root/'ids.json').read_text())
