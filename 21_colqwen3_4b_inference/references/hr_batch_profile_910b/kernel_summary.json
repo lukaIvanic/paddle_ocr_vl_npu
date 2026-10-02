@@ -1,0 +1,1336 @@
+[
+  {
+    "batch_size": 1,
+    "pages": 2,
+    "kernel_count": 7544,
+    "kernel_sum_ms": 288.673689,
+    "top_kernels": [
+      {
+        "name": "InnerPromptFlashAttention_PromptFlashAttention_PromptFlashAttention",
+        "us": 84594.18699999996,
+        "count": 120,
+        "ms_per_page": 42.29709349999998
+      },
+      {
+        "name": "aclnnMatmul_MatMulV3Common_MatMulV3",
+        "us": 39247.21000000001,
+        "count": 216,
+        "ms_per_page": 19.623605000000005
+      },
+      {
+        "name": "aclnnMatmul_MatMulCommon_MatMulV2",
+        "us": 33785.44999999999,
+        "count": 72,
+        "ms_per_page": 16.892724999999995
+      },
+      {
+        "name": "aclnnMul_MulAiCore_Mul",
+        "us": 22843.590000000044,
+        "count": 1330,
+        "ms_per_page": 11.421795000000023
+      },
+      {
+        "name": "aclnnAddmm_MatMulV3Common_MatMulV3",
+        "us": 21206.937999999987,
+        "count": 160,
+        "ms_per_page": 10.603468999999993
+      },
+      {
+        "name": "aclnnInplaceCopy_CastAiCore_Cast",
+        "us": 12370.671999999975,
+        "count": 1072,
+        "ms_per_page": 6.185335999999987
+      },
+      {
+        "name": "aclnnMean_ReduceMeanAiCore_ReduceMean",
+        "us": 9944.181,
+        "count": 482,
+        "ms_per_page": 4.9720905
+      },
+      {
+        "name": "aclnnAdd_AddAiCore_Add",
+        "us": 7890.325000000002,
+        "count": 590,
+        "ms_per_page": 3.945162500000001
+      },
+      {
+        "name": "aclnnPowTensorScalar_PowsAiCore_Pows",
+        "us": 7820.031999999998,
+        "count": 386,
+        "ms_per_page": 3.9100159999999993
+      },
+      {
+        "name": "aclnnInplaceCopy_TransposeAiCore_Transpose",
+        "us": 5983.057999999998,
+        "count": 224,
+        "ms_per_page": 2.991528999999999
+      },
+      {
+        "name": "aclnnInplaceMaskedScatter_MaskedScatterAiCore_MaskedScatter",
+        "us": 4428.028,
+        "count": 2,
+        "ms_per_page": 2.214014
+      },
+      {
+        "name": "aclnnMul_TransposeAiCore_Transpose",
+        "us": 4098.542000000001,
+        "count": 144,
+        "ms_per_page": 2.0492710000000005
+      },
+      {
+        "name": "aclnnGeluV2_GeluV2_GeluV2",
+        "us": 3706.0099999999998,
+        "count": 48,
+        "ms_per_page": 1.8530049999999998
+      },
+      {
+        "name": "aclnnInplaceCopy_SliceAiCore_Slice",
+        "us": 3413.518999999998,
+        "count": 340,
+        "ms_per_page": 1.7067594999999989
+      },
+      {
+        "name": "aclnnCat_ConcatD_ConcatD",
+        "us": 2938.287999999999,
+        "count": 244,
+        "ms_per_page": 1.4691439999999996
+      },
+      {
+        "name": "aclnnSub_SubAiCore_Sub",
+        "us": 2548.9049999999993,
+        "count": 96,
+        "ms_per_page": 1.2744524999999995
+      },
+      {
+        "name": "aclnnSilu_SiluAiCore_Swish",
+        "us": 2427.0849999999996,
+        "count": 72,
+        "ms_per_page": 1.2135424999999997
+      },
+      {
+        "name": "aclnnAddmm_MatMulCommon_MatMulV2",
+        "us": 2403.173,
+        "count": 52,
+        "ms_per_page": 1.2015865
+      },
+      {
+        "name": "aclnnNeg_NegAiCore_Neg",
+        "us": 2175.9069999999992,
+        "count": 240,
+        "ms_per_page": 1.0879534999999996
+      },
+      {
+        "name": "aclnnNeg_SliceAiCore_Slice",
+        "us": 1688.9570000000003,
+        "count": 96,
+        "ms_per_page": 0.8444785000000001
+      },
+      {
+        "name": "aclnnNeg_AsStridedAiCore_AsStrided",
+        "us": 1664.0950000000003,
+        "count": 144,
+        "ms_per_page": 0.8320475000000002
+      },
+      {
+        "name": "aclnnCat_AsStridedAiCore_AsStrided",
+        "us": 1573.4050000000004,
+        "count": 144,
+        "ms_per_page": 0.7867025000000002
+      },
+      {
+        "name": "aclnnInplaceCopy_AsStridedAiCore_AsStrided",
+        "us": 1501.6719999999993,
+        "count": 120,
+        "ms_per_page": 0.7508359999999997
+      },
+      {
+        "name": "aclnnCat_SliceAiCore_Slice",
+        "us": 1302.1409999999994,
+        "count": 96,
+        "ms_per_page": 0.6510704999999997
+      },
+      {
+        "name": "aclnnSilu_SliceAiCore_Slice",
+        "us": 1263.1500000000003,
+        "count": 72,
+        "ms_per_page": 0.6315750000000001
+      },
+      {
+        "name": "aclnnRsqrt_RsqrtAiCore_Rsqrt",
+        "us": 1027.7060000000004,
+        "count": 386,
+        "ms_per_page": 0.5138530000000002
+      },
+      {
+        "name": "aclnnAdds_AddAiCore_Add",
+        "us": 974.0439999999999,
+        "count": 386,
+        "ms_per_page": 0.48702199999999995
+      },
+      {
+        "name": "aclnnMul_SliceAiCore_Slice",
+        "us": 945.1399999999999,
+        "count": 72,
+        "ms_per_page": 0.47256999999999993
+      },
+      {
+        "name": "aclnnInplaceCopy_ViewCopyAiCpu_ViewCopy",
+        "us": 802.915,
+        "count": 4,
+        "ms_per_page": 0.40145749999999997
+      },
+      {
+        "name": "aclnnLayerNormWithImplMode_LayerNormV3WithImplMode_LayerNormV3",
+        "us": 493.35,
+        "count": 8,
+        "ms_per_page": 0.246675
+      },
+      {
+        "name": "aclnnIndex_IndexAiCore_Index",
+        "us": 213.865,
+        "count": 2,
+        "ms_per_page": 0.1069325
+      },
+      {
+        "name": "aclnnGelu_Gelu_Gelu",
+        "us": 195.02599999999998,
+        "count": 8,
+        "ms_per_page": 0.09751299999999999
+      },
+      {
+        "name": "aclnnEmbedding_GatherV2AiCore_GatherV2",
+        "us": 168.763,
+        "count": 4,
+        "ms_per_page": 0.0843815
+      },
+      {
+        "name": "aclnnIndexPutImpl_IndexPutV2_IndexPutV2",
+        "us": 110.123,
+        "count": 6,
+        "ms_per_page": 0.0550615
+      },
+      {
+        "name": "aclnnGeTensor_GreaterEqual_GreaterEqual",
+        "us": 108.023,
+        "count": 2,
+        "ms_per_page": 0.0540115
+      },
+      {
+        "name": "aclnnInplaceZero_ZerosLikeAiCore_ZerosLike",
+        "us": 86.961,
+        "count": 8,
+        "ms_per_page": 0.0434805
+      },
+      {
+        "name": "aclnnDiv_RealDivAiCore_RealDiv",
+        "us": 60.541,
+        "count": 2,
+        "ms_per_page": 0.0302705
+      },
+      {
+        "name": "aclnnNonzeroV2_NonzeroAiCore_MemSet",
+        "us": 55.279999999999994,
+        "count": 6,
+        "ms_per_page": 0.027639999999999998
+      },
+      {
+        "name": "aclnnSWhere_SelectV2AiCore_SelectV2",
+        "us": 50.34,
+        "count": 2,
+        "ms_per_page": 0.02517
+      },
+      {
+        "name": "aclnnLinalgVectorNorm_LpNormV2_LpNormV2",
+        "us": 47.340999999999994,
+        "count": 2,
+        "ms_per_page": 0.023670499999999997
+      },
+      {
+        "name": "aclnnCos_CosAiCore_Cos",
+        "us": 44.38,
+        "count": 4,
+        "ms_per_page": 0.02219
+      },
+      {
+        "name": "aclnnAny_ReduceAny_ReduceAny",
+        "us": 43.81999999999999,
+        "count": 4,
+        "ms_per_page": 0.021909999999999995
+      },
+      {
+        "name": "aclnnSin_SinAiCore_Sin",
+        "us": 43.44,
+        "count": 4,
+        "ms_per_page": 0.02172
+      },
+      {
+        "name": "aclnnArange_ArangeAiCore_Range",
+        "us": 38.681,
+        "count": 4,
+        "ms_per_page": 0.0193405
+      },
+      {
+        "name": "aclnnBitwiseAndTensor_LogicalAndAiCore_LogicalAnd",
+        "us": 32.78,
+        "count": 2,
+        "ms_per_page": 0.016390000000000002
+      },
+      {
+        "name": "aclnnInplaceMaskedScatter_CastAiCore_Cast",
+        "us": 30.8,
+        "count": 4,
+        "ms_per_page": 0.0154
+      },
+      {
+        "name": "aclnnNonzeroV2_NonzeroAiCore_NonZero",
+        "us": 30.182000000000002,
+        "count": 6,
+        "ms_per_page": 0.015091
+      },
+      {
+        "name": "aclnnCat_TensorMoveAiCore_TensorMove",
+        "us": 27.501,
+        "count": 2,
+        "ms_per_page": 0.0137505
+      },
+      {
+        "name": "aclnnInplaceMaskedScatter_BroadcastToAiCore_BroadcastTo",
+        "us": 25.981,
+        "count": 2,
+        "ms_per_page": 0.0129905
+      },
+      {
+        "name": "aclnnMatmul_MulAiCore_Mul",
+        "us": 24.521,
+        "count": 2,
+        "ms_per_page": 0.0122605
+      },
+      {
+        "name": "aclnnLtScalar_LessAiCore_Less",
+        "us": 23.601,
+        "count": 2,
+        "ms_per_page": 0.0118005
+      },
+      {
+        "name": "aclnnEqScalar_EqualAiCore_Equal",
+        "us": 22.699999999999996,
+        "count": 8,
+        "ms_per_page": 0.011349999999999997
+      },
+      {
+        "name": "aclnnInplaceCopy_TensorMoveAiCore_TensorMove",
+        "us": 22.041,
+        "count": 2,
+        "ms_per_page": 0.0110205
+      },
+      {
+        "name": "aclnnLayerNormWithImplMode_CastAiCore_Cast",
+        "us": 20.720000000000002,
+        "count": 16,
+        "ms_per_page": 0.010360000000000001
+      },
+      {
+        "name": "aclnnRepeat_TileAiCore_Tile",
+        "us": 19.101,
+        "count": 2,
+        "ms_per_page": 0.0095505
+      },
+      {
+        "name": "aclnnBitwiseNot_LogicalNotAiCore_LogicalNot",
+        "us": 16.061,
+        "count": 2,
+        "ms_per_page": 0.0080305
+      },
+      {
+        "name": "aclnnReduceSum_ReduceSumOpAiCore_ReduceSum",
+        "us": 11.92,
+        "count": 2,
+        "ms_per_page": 0.00596
+      },
+      {
+        "name": "aclnnAll_ReduceAll_ReduceAll",
+        "us": 11.819999999999999,
+        "count": 4,
+        "ms_per_page": 0.0059099999999999995
+      },
+      {
+        "name": "aclnnMul_CastAiCore_Cast",
+        "us": 11.341,
+        "count": 2,
+        "ms_per_page": 0.005670499999999999
+      },
+      {
+        "name": "aclnnReduceSum_CastAiCore_Cast",
+        "us": 7.5,
+        "count": 4,
+        "ms_per_page": 0.00375
+      },
+      {
+        "name": "aclnnInplaceFillScalar_FillAiCore_Fill",
+        "us": 3.94,
+        "count": 4,
+        "ms_per_page": 0.00197
+      },
+      {
+        "name": "aclnnMatmul_BroadcastToAiCore_BroadcastTo",
+        "us": 2.92,
+        "count": 2,
+        "ms_per_page": 0.00146
+      }
+    ],
+    "stage_spans": {
+      "colqwen.preprocess": {
+        "host_us": 293691.49,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.input_transfer": {
+        "host_us": 4279.72,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.vision_prepare": {
+        "host_us": 31039.96,
+        "device_us": 916.3175,
+        "count": 2
+      },
+      "colqwen.vision_dispatch": {
+        "host_us": 514.05,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.vision_transformer": {
+        "host_us": 125716.79999999999,
+        "device_us": 127059.8565,
+        "count": 2
+      },
+      "colqwen.text_prepare": {
+        "host_us": 17692.65,
+        "device_us": 9239.14475,
+        "count": 2
+      },
+      "colqwen.text_dispatch": {
+        "host_us": 526.67,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.text_transformer": {
+        "host_us": 208404.47,
+        "device_us": 151119.441,
+        "count": 2
+      },
+      "colqwen.retrieval_projection": {
+        "host_us": 699.3,
+        "device_us": 338.94675,
+        "count": 2
+      },
+      "colqwen.output_materialize_wait": {
+        "host_us": 3406.8199999999997,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.validate_retain": {
+        "host_us": 25828.35,
+        "device_us": 0.0,
+        "count": 2
+      }
+    },
+    "step_trace": [
+      {
+        "Device_id": "7",
+        "Step": "",
+        "Computing": "288671.56500000024",
+        "Communication(Not Overlapped)": "0",
+        "Overlapped": "0",
+        "Communication": "0",
+        "Free": "272298.2029999984",
+        "Stage": "560969.75",
+        "Bubble": "0",
+        "Communication(Not Overlapped and Exclude Receive)": "0",
+        "Preparing": "148247.5"
+      }
+    ]
+  },
+  {
+    "batch_size": 8,
+    "pages": 16,
+    "kernel_count": 7574,
+    "kernel_sum_ms": 2021.228982,
+    "top_kernels": [
+      {
+        "name": "InnerPromptFlashAttention_PromptFlashAttention_PromptFlashAttention",
+        "us": 617686.6800000002,
+        "count": 120,
+        "ms_per_page": 38.60541750000001
+      },
+      {
+        "name": "aclnnMatmul_MatMulV3Common_MatMulV3",
+        "us": 504036.1529999999,
+        "count": 288,
+        "ms_per_page": 31.502259562499994
+      },
+      {
+        "name": "aclnnAddmm_MatMulV3Common_MatMulV3",
+        "us": 156320.68999999997,
+        "count": 164,
+        "ms_per_page": 9.770043124999999
+      },
+      {
+        "name": "aclnnMul_MulAiCore_Mul",
+        "us": 129271.47899999989,
+        "count": 1330,
+        "ms_per_page": 8.079467437499993
+      },
+      {
+        "name": "aclnnAdd_AddAiCore_Add",
+        "us": 90628.78699999995,
+        "count": 590,
+        "ms_per_page": 5.6642991874999975
+      },
+      {
+        "name": "aclnnInplaceCopy_CastAiCore_Cast",
+        "us": 75963.48599999992,
+        "count": 1072,
+        "ms_per_page": 4.747717874999995
+      },
+      {
+        "name": "aclnnMean_ReduceMeanAiCore_ReduceMean",
+        "us": 43122.15799999999,
+        "count": 482,
+        "ms_per_page": 2.6951348749999995
+      },
+      {
+        "name": "aclnnInplaceCopy_SliceAiCore_Slice",
+        "us": 40127.17899999999,
+        "count": 336,
+        "ms_per_page": 2.5079486874999994
+      },
+      {
+        "name": "aclnnPowTensorScalar_PowsAiCore_Pows",
+        "us": 38002.66099999999,
+        "count": 386,
+        "ms_per_page": 2.3751663124999998
+      },
+      {
+        "name": "aclnnInplaceMaskedScatter_MaskedScatterAiCore_MaskedScatter",
+        "us": 36300.386,
+        "count": 2,
+        "ms_per_page": 2.2687741249999998
+      },
+      {
+        "name": "aclnnInplaceCopy_TransposeAiCore_Transpose",
+        "us": 32935.733000000015,
+        "count": 238,
+        "ms_per_page": 2.058483312500001
+      },
+      {
+        "name": "aclnnCat_SliceAiCore_Slice",
+        "us": 28390.727,
+        "count": 96,
+        "ms_per_page": 1.7744204375
+      },
+      {
+        "name": "aclnnGeluV2_GeluV2_GeluV2",
+        "us": 28310.002000000004,
+        "count": 48,
+        "ms_per_page": 1.7693751250000003
+      },
+      {
+        "name": "aclnnCat_ConcatD_ConcatD",
+        "us": 26560.377999999997,
+        "count": 246,
+        "ms_per_page": 1.6600236249999998
+      },
+      {
+        "name": "aclnnSilu_SliceAiCore_Slice",
+        "us": 23593.170999999995,
+        "count": 72,
+        "ms_per_page": 1.4745731874999997
+      },
+      {
+        "name": "aclnnSilu_SiluAiCore_Swish",
+        "us": 23195.883,
+        "count": 72,
+        "ms_per_page": 1.4497426875000001
+      },
+      {
+        "name": "aclnnMul_SliceAiCore_Slice",
+        "us": 22121.539999999997,
+        "count": 72,
+        "ms_per_page": 1.3825962499999997
+      },
+      {
+        "name": "aclnnMul_TransposeAiCore_Transpose",
+        "us": 17554.507999999998,
+        "count": 144,
+        "ms_per_page": 1.09715675
+      },
+      {
+        "name": "aclnnSub_SubAiCore_Sub",
+        "us": 15610.785000000003,
+        "count": 96,
+        "ms_per_page": 0.9756740625000002
+      },
+      {
+        "name": "aclnnAddmm_MatMulCommon_MatMulV2",
+        "us": 12866.182999999997,
+        "count": 48,
+        "ms_per_page": 0.8041364374999999
+      },
+      {
+        "name": "aclnnInplaceCopy_AsStridedAiCore_AsStrided",
+        "us": 10625.549999999997,
+        "count": 120,
+        "ms_per_page": 0.6640968749999998
+      },
+      {
+        "name": "aclnnNeg_SliceAiCore_Slice",
+        "us": 8938.138000000004,
+        "count": 96,
+        "ms_per_page": 0.5586336250000002
+      },
+      {
+        "name": "aclnnNeg_AsStridedAiCore_AsStrided",
+        "us": 8909.094000000003,
+        "count": 144,
+        "ms_per_page": 0.5568183750000002
+      },
+      {
+        "name": "aclnnNeg_NegAiCore_Neg",
+        "us": 8412.328000000007,
+        "count": 240,
+        "ms_per_page": 0.5257705000000005
+      },
+      {
+        "name": "aclnnCat_AsStridedAiCore_AsStrided",
+        "us": 5281.571,
+        "count": 144,
+        "ms_per_page": 0.3300981875
+      },
+      {
+        "name": "aclnnLayerNormWithImplMode_LayerNormV3WithImplMode_LayerNormV3",
+        "us": 3005.08,
+        "count": 8,
+        "ms_per_page": 0.1878175
+      },
+      {
+        "name": "aclnnInplaceCopy_ViewCopyAiCpu_ViewCopy",
+        "us": 2811.495,
+        "count": 4,
+        "ms_per_page": 0.1757184375
+      },
+      {
+        "name": "aclnnRsqrt_RsqrtAiCore_Rsqrt",
+        "us": 2339.784,
+        "count": 386,
+        "ms_per_page": 0.14623650000000002
+      },
+      {
+        "name": "aclnnAdds_AddAiCore_Add",
+        "us": 1963.4089999999997,
+        "count": 386,
+        "ms_per_page": 0.12271306249999998
+      },
+      {
+        "name": "aclnnEmbedding_GatherV2AiCore_GatherV2",
+        "us": 1288.107,
+        "count": 4,
+        "ms_per_page": 0.0805066875
+      },
+      {
+        "name": "aclnnGelu_Gelu_Gelu",
+        "us": 1178.542,
+        "count": 8,
+        "ms_per_page": 0.073658875
+      },
+      {
+        "name": "aclnnIndex_IndexAiCore_Index",
+        "us": 1109.8220000000001,
+        "count": 2,
+        "ms_per_page": 0.069363875
+      },
+      {
+        "name": "aclnnIndexPutImpl_IndexPutV2_IndexPutV2",
+        "us": 462.149,
+        "count": 6,
+        "ms_per_page": 0.0288843125
+      },
+      {
+        "name": "aclnnSWhere_SelectV2AiCore_SelectV2",
+        "us": 232.744,
+        "count": 2,
+        "ms_per_page": 0.0145465
+      },
+      {
+        "name": "aclnnInplaceCopy_TensorMoveAiCore_TensorMove",
+        "us": 227.72500000000002,
+        "count": 2,
+        "ms_per_page": 0.0142328125
+      },
+      {
+        "name": "aclnnDiv_RealDivAiCore_RealDiv",
+        "us": 212.344,
+        "count": 2,
+        "ms_per_page": 0.0132715
+      },
+      {
+        "name": "aclnnRepeat_TileAiCore_Tile",
+        "us": 159.34300000000002,
+        "count": 16,
+        "ms_per_page": 0.0099589375
+      },
+      {
+        "name": "aclnnCos_CosAiCore_Cos",
+        "us": 139.082,
+        "count": 4,
+        "ms_per_page": 0.008692624999999999
+      },
+      {
+        "name": "aclnnSin_SinAiCore_Sin",
+        "us": 131.783,
+        "count": 4,
+        "ms_per_page": 0.008236437499999999
+      },
+      {
+        "name": "aclnnLinalgVectorNorm_LpNormV2_LpNormV2",
+        "us": 129.702,
+        "count": 2,
+        "ms_per_page": 0.008106375
+      },
+      {
+        "name": "aclnnInplaceMaskedScatter_BroadcastToAiCore_BroadcastTo",
+        "us": 111.922,
+        "count": 2,
+        "ms_per_page": 0.006995125
+      },
+      {
+        "name": "aclnnInplaceZero_ZerosLikeAiCore_ZerosLike",
+        "us": 109.202,
+        "count": 6,
+        "ms_per_page": 0.006825125
+      },
+      {
+        "name": "aclnnGeTensor_GreaterEqual_GreaterEqual",
+        "us": 107.28200000000001,
+        "count": 2,
+        "ms_per_page": 0.006705125000000001
+      },
+      {
+        "name": "aclnnBitwiseAndTensor_LogicalAndAiCore_LogicalAnd",
+        "us": 103.262,
+        "count": 2,
+        "ms_per_page": 0.006453875
+      },
+      {
+        "name": "aclnnNonzeroV2_NonzeroAiCore_NonZero",
+        "us": 90.143,
+        "count": 6,
+        "ms_per_page": 0.0056339375
+      },
+      {
+        "name": "aclnnInplaceMaskedScatter_CastAiCore_Cast",
+        "us": 71.821,
+        "count": 4,
+        "ms_per_page": 0.0044888125
+      },
+      {
+        "name": "aclnnAny_ReduceAny_ReduceAny",
+        "us": 67.881,
+        "count": 4,
+        "ms_per_page": 0.0042425625
+      },
+      {
+        "name": "aclnnNonzeroV2_NonzeroAiCore_MemSet",
+        "us": 57.041,
+        "count": 6,
+        "ms_per_page": 0.0035650624999999997
+      },
+      {
+        "name": "aclnnEqScalar_EqualAiCore_Equal",
+        "us": 48.621,
+        "count": 10,
+        "ms_per_page": 0.0030388125000000003
+      },
+      {
+        "name": "aclnnLayerNormWithImplMode_CastAiCore_Cast",
+        "us": 48.52,
+        "count": 16,
+        "ms_per_page": 0.0030325
+      },
+      {
+        "name": "aclnnInplaceCopy_StridedSliceAiCore_StridedSlice",
+        "us": 48.322,
+        "count": 4,
+        "ms_per_page": 0.0030201250000000002
+      },
+      {
+        "name": "aclnnArange_ArangeAiCore_Range",
+        "us": 37.981,
+        "count": 4,
+        "ms_per_page": 0.0023738125
+      },
+      {
+        "name": "aclnnLtScalar_LessAiCore_Less",
+        "us": 37.260000000000005,
+        "count": 2,
+        "ms_per_page": 0.0023287500000000005
+      },
+      {
+        "name": "aclnnBitwiseNot_LogicalNotAiCore_LogicalNot",
+        "us": 33.741,
+        "count": 2,
+        "ms_per_page": 0.0021088125
+      },
+      {
+        "name": "aclnnMatmul_MulAiCore_Mul",
+        "us": 33.281,
+        "count": 2,
+        "ms_per_page": 0.0020800625
+      },
+      {
+        "name": "aclnnMul_CastAiCore_Cast",
+        "us": 18.14,
+        "count": 2,
+        "ms_per_page": 0.00113375
+      },
+      {
+        "name": "aclnnAll_ReduceAll_ReduceAll",
+        "us": 16.54,
+        "count": 6,
+        "ms_per_page": 0.00103375
+      },
+      {
+        "name": "aclnnReduceSum_ReduceSumOpAiCore_ReduceSum",
+        "us": 16.141,
+        "count": 2,
+        "ms_per_page": 0.0010088125
+      },
+      {
+        "name": "aclnnReduceSum_CastAiCore_Cast",
+        "us": 8.280000000000001,
+        "count": 4,
+        "ms_per_page": 0.0005175000000000001
+      },
+      {
+        "name": "aclnnInplaceFillScalar_FillAiCore_Fill",
+        "us": 4.4,
+        "count": 4,
+        "ms_per_page": 0.000275
+      },
+      {
+        "name": "aclnnMatmul_BroadcastToAiCore_BroadcastTo",
+        "us": 2.84,
+        "count": 2,
+        "ms_per_page": 0.00017749999999999998
+      }
+    ],
+    "stage_spans": {
+      "colqwen.preprocess": {
+        "host_us": 2578358.49,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.batch_slot_padding": {
+        "host_us": 204.11,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.input_transfer": {
+        "host_us": 23684.68,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.vision_prepare": {
+        "host_us": 229094.71,
+        "device_us": 6391.528249999999,
+        "count": 2
+      },
+      "colqwen.vision_transformer": {
+        "host_us": 129434.91,
+        "device_us": 1001561.07225,
+        "count": 2
+      },
+      "colqwen.text_prepare": {
+        "host_us": 936076.2,
+        "device_us": 60263.88500000001,
+        "count": 2
+      },
+      "colqwen.text_transformer": {
+        "host_us": 213133.26,
+        "device_us": 951754.8545,
+        "count": 2
+      },
+      "colqwen.retrieval_projection": {
+        "host_us": 693.71,
+        "device_us": 1257.645,
+        "count": 2
+      },
+      "colqwen.output_materialize_wait": {
+        "host_us": 744419.64,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.validate_retain": {
+        "host_us": 340173.9,
+        "device_us": 0.0,
+        "count": 2
+      }
+    },
+    "step_trace": [
+      {
+        "Device_id": "7",
+        "Step": "",
+        "Computing": "2021226.6049999972",
+        "Communication(Not Overlapped)": "0",
+        "Overlapped": "0",
+        "Communication": "0",
+        "Free": "1717476.9339999985",
+        "Stage": "3738703.5",
+        "Bubble": "0",
+        "Communication(Not Overlapped and Exclude Receive)": "0",
+        "Preparing": "1306786.5"
+      }
+    ]
+  },
+  {
+    "batch_size": 32,
+    "pages": 64,
+    "kernel_count": 7670,
+    "kernel_sum_ms": 8831.175949999999,
+    "top_kernels": [
+      {
+        "name": "InnerPromptFlashAttention_PromptFlashAttention_PromptFlashAttention",
+        "us": 2435933.7260000003,
+        "count": 120,
+        "ms_per_page": 38.06146446875
+      },
+      {
+        "name": "aclnnMatmul_MatMulV3Common_MatMulV3",
+        "us": 1877450.5109999992,
+        "count": 288,
+        "ms_per_page": 29.33516423437499
+      },
+      {
+        "name": "aclnnMul_MulAiCore_Mul",
+        "us": 722841.2560000002,
+        "count": 1330,
+        "ms_per_page": 11.294394625000002
+      },
+      {
+        "name": "aclnnAddmm_MatMulV3Common_MatMulV3",
+        "us": 671465.4520000002,
+        "count": 212,
+        "ms_per_page": 10.491647687500002
+      },
+      {
+        "name": "aclnnInplaceCopy_CastAiCore_Cast",
+        "us": 636737.0900000011,
+        "count": 1072,
+        "ms_per_page": 9.949017031250017
+      },
+      {
+        "name": "aclnnAdd_AddAiCore_Add",
+        "us": 423599.66999999987,
+        "count": 590,
+        "ms_per_page": 6.618744843749998
+      },
+      {
+        "name": "aclnnPowTensorScalar_PowsAiCore_Pows",
+        "us": 274621.29800000024,
+        "count": 386,
+        "ms_per_page": 4.290957781250004
+      },
+      {
+        "name": "aclnnMean_ReduceMeanAiCore_ReduceMean",
+        "us": 228240.1850000002,
+        "count": 482,
+        "ms_per_page": 3.566252890625003
+      },
+      {
+        "name": "aclnnInplaceCopy_TransposeAiCore_Transpose",
+        "us": 185990.65499999977,
+        "count": 286,
+        "ms_per_page": 2.9061039843749965
+      },
+      {
+        "name": "aclnnInplaceMaskedScatter_MaskedScatterAiCore_MaskedScatter",
+        "us": 150024.598,
+        "count": 2,
+        "ms_per_page": 2.34413434375
+      },
+      {
+        "name": "aclnnInplaceCopy_SliceAiCore_Slice",
+        "us": 146726.3319999999,
+        "count": 336,
+        "ms_per_page": 2.2925989374999984
+      },
+      {
+        "name": "aclnnCat_ConcatD_ConcatD",
+        "us": 130411.10100000004,
+        "count": 246,
+        "ms_per_page": 2.0376734531250005
+      },
+      {
+        "name": "aclnnGeluV2_GeluV2_GeluV2",
+        "us": 110103.71999999999,
+        "count": 48,
+        "ms_per_page": 1.7203706249999997
+      },
+      {
+        "name": "aclnnSilu_SiluAiCore_Swish",
+        "us": 90299.82299999997,
+        "count": 72,
+        "ms_per_page": 1.4109347343749996
+      },
+      {
+        "name": "aclnnSub_SubAiCore_Sub",
+        "us": 87377.16999999998,
+        "count": 96,
+        "ms_per_page": 1.3652682812499997
+      },
+      {
+        "name": "aclnnSilu_SliceAiCore_Slice",
+        "us": 86314.68700000002,
+        "count": 72,
+        "ms_per_page": 1.3486669843750003
+      },
+      {
+        "name": "aclnnMul_SliceAiCore_Slice",
+        "us": 86072.29900000003,
+        "count": 72,
+        "ms_per_page": 1.3448796718750005
+      },
+      {
+        "name": "aclnnNeg_SliceAiCore_Slice",
+        "us": 85686.32999999994,
+        "count": 96,
+        "ms_per_page": 1.338848906249999
+      },
+      {
+        "name": "aclnnCat_SliceAiCore_Slice",
+        "us": 83184.20099999999,
+        "count": 96,
+        "ms_per_page": 1.2997531406249998
+      },
+      {
+        "name": "aclnnMul_TransposeAiCore_Transpose",
+        "us": 75465.651,
+        "count": 144,
+        "ms_per_page": 1.179150796875
+      },
+      {
+        "name": "aclnnNeg_NegAiCore_Neg",
+        "us": 62362.51600000003,
+        "count": 240,
+        "ms_per_page": 0.9744143125000005
+      },
+      {
+        "name": "aclnnInplaceCopy_AsStridedAiCore_AsStrided",
+        "us": 48790.995,
+        "count": 120,
+        "ms_per_page": 0.762359296875
+      },
+      {
+        "name": "aclnnNeg_AsStridedAiCore_AsStrided",
+        "us": 37583.07099999999,
+        "count": 144,
+        "ms_per_page": 0.5872354843749998
+      },
+      {
+        "name": "aclnnCat_AsStridedAiCore_AsStrided",
+        "us": 35366.521,
+        "count": 144,
+        "ms_per_page": 0.552601890625
+      },
+      {
+        "name": "aclnnInplaceCopy_ViewCopyAiCpu_ViewCopy",
+        "us": 12310.866,
+        "count": 4,
+        "ms_per_page": 0.19235728125
+      },
+      {
+        "name": "aclnnLayerNormWithImplMode_LayerNormV3WithImplMode_LayerNormV3",
+        "us": 11570.410000000002,
+        "count": 8,
+        "ms_per_page": 0.18078765625000004
+      },
+      {
+        "name": "aclnnEmbedding_GatherV2WithImplModeAiCore_GatherV2",
+        "us": 4783.015,
+        "count": 2,
+        "ms_per_page": 0.07473460937500001
+      },
+      {
+        "name": "aclnnGelu_Gelu_Gelu",
+        "us": 4605.614,
+        "count": 8,
+        "ms_per_page": 0.07196271874999999
+      },
+      {
+        "name": "aclnnIndex_IndexAiCore_Index",
+        "us": 3869.318,
+        "count": 2,
+        "ms_per_page": 0.060458093750000004
+      },
+      {
+        "name": "aclnnEmbedding_GatherV2AiCore_GatherV2",
+        "us": 3580.051,
+        "count": 2,
+        "ms_per_page": 0.055938296875
+      },
+      {
+        "name": "aclnnRsqrt_RsqrtAiCore_Rsqrt",
+        "us": 3220.0039999999967,
+        "count": 386,
+        "ms_per_page": 0.05031256249999995
+      },
+      {
+        "name": "aclnnAdds_AddAiCore_Add",
+        "us": 2902.578000000001,
+        "count": 386,
+        "ms_per_page": 0.045352781250000015
+      },
+      {
+        "name": "aclnnIndexPutImpl_IndexPutV2_IndexPutV2",
+        "us": 2880.859,
+        "count": 6,
+        "ms_per_page": 0.045013421875
+      },
+      {
+        "name": "aclnnInplaceMaskedScatter_CastAiCore_Cast",
+        "us": 1071.4209999999998,
+        "count": 4,
+        "ms_per_page": 0.016740953124999996
+      },
+      {
+        "name": "aclnnRepeat_TileAiCore_Tile",
+        "us": 1021.6810000000004,
+        "count": 64,
+        "ms_per_page": 0.015963765625000004
+      },
+      {
+        "name": "aclnnSWhere_SelectV2AiCore_SelectV2",
+        "us": 1019.84,
+        "count": 2,
+        "ms_per_page": 0.015935
+      },
+      {
+        "name": "aclnnDiv_RealDivAiCore_RealDiv",
+        "us": 876.9780000000001,
+        "count": 2,
+        "ms_per_page": 0.01370278125
+      },
+      {
+        "name": "aclnnInplaceZero_ZerosLikeAiCore_ZerosLike",
+        "us": 793.1750000000001,
+        "count": 6,
+        "ms_per_page": 0.012393359375000001
+      },
+      {
+        "name": "aclnnInplaceCopy_TensorMoveAiCore_TensorMove",
+        "us": 620.773,
+        "count": 2,
+        "ms_per_page": 0.009699578125
+      },
+      {
+        "name": "aclnnLinalgVectorNorm_LpNormV2_LpNormV2",
+        "us": 452.35,
+        "count": 2,
+        "ms_per_page": 0.0070679687500000005
+      },
+      {
+        "name": "aclnnCos_CosAiCore_Cos",
+        "us": 450.13,
+        "count": 4,
+        "ms_per_page": 0.00703328125
+      },
+      {
+        "name": "aclnnSin_SinAiCore_Sin",
+        "us": 426.74800000000005,
+        "count": 4,
+        "ms_per_page": 0.006667937500000001
+      },
+      {
+        "name": "aclnnInplaceMaskedScatter_BroadcastToAiCore_BroadcastTo",
+        "us": 419.048,
+        "count": 2,
+        "ms_per_page": 0.006547625
+      },
+      {
+        "name": "aclnnLtScalar_LessAiCore_Less",
+        "us": 318.307,
+        "count": 2,
+        "ms_per_page": 0.004973546875
+      },
+      {
+        "name": "aclnnNonzeroV2_NonzeroAiCore_NonZero",
+        "us": 258.226,
+        "count": 6,
+        "ms_per_page": 0.00403478125
+      },
+      {
+        "name": "aclnnBitwiseAndTensor_LogicalAndAiCore_LogicalAnd",
+        "us": 247.485,
+        "count": 2,
+        "ms_per_page": 0.003866953125
+      },
+      {
+        "name": "aclnnAny_ReduceAny_ReduceAny",
+        "us": 126.042,
+        "count": 4,
+        "ms_per_page": 0.0019694062500000002
+      },
+      {
+        "name": "aclnnGeTensor_GreaterEqual_GreaterEqual",
+        "us": 106.802,
+        "count": 2,
+        "ms_per_page": 0.0016687812500000001
+      },
+      {
+        "name": "aclnnBitwiseNot_LogicalNotAiCore_LogicalNot",
+        "us": 94.342,
+        "count": 2,
+        "ms_per_page": 0.00147409375
+      },
+      {
+        "name": "aclnnInplaceCopy_StridedSliceAiCore_StridedSlice",
+        "us": 82.641,
+        "count": 4,
+        "ms_per_page": 0.001291265625
+      },
+      {
+        "name": "aclnnEqScalar_EqualAiCore_Equal",
+        "us": 78.784,
+        "count": 10,
+        "ms_per_page": 0.001231
+      },
+      {
+        "name": "aclnnLayerNormWithImplMode_CastAiCore_Cast",
+        "us": 77.66100000000002,
+        "count": 16,
+        "ms_per_page": 0.0012134531250000003
+      },
+      {
+        "name": "aclnnMatmul_MulAiCore_Mul",
+        "us": 73.501,
+        "count": 2,
+        "ms_per_page": 0.0011484531250000002
+      },
+      {
+        "name": "aclnnNonzeroV2_NonzeroAiCore_MemSet",
+        "us": 57.120000000000005,
+        "count": 6,
+        "ms_per_page": 0.0008925000000000001
+      },
+      {
+        "name": "aclnnArange_ArangeAiCore_Range",
+        "us": 37.6,
+        "count": 4,
+        "ms_per_page": 0.0005875
+      },
+      {
+        "name": "aclnnMul_CastAiCore_Cast",
+        "us": 29.880000000000003,
+        "count": 2,
+        "ms_per_page": 0.00046687500000000006
+      },
+      {
+        "name": "aclnnReduceSum_ReduceSumOpAiCore_ReduceSum",
+        "us": 22.680999999999997,
+        "count": 2,
+        "ms_per_page": 0.00035439062499999994
+      },
+      {
+        "name": "aclnnReduceSum_CastAiCore_Cast",
+        "us": 18.461,
+        "count": 4,
+        "ms_per_page": 0.00028845312499999997
+      },
+      {
+        "name": "aclnnAll_ReduceAll_ReduceAll",
+        "us": 15.839999999999998,
+        "count": 6,
+        "ms_per_page": 0.00024749999999999994
+      },
+      {
+        "name": "aclnnInplaceFillScalar_FillAiCore_Fill",
+        "us": 4.04,
+        "count": 4,
+        "ms_per_page": 6.3125e-05
+      },
+      {
+        "name": "aclnnMatmul_BroadcastToAiCore_BroadcastTo",
+        "us": 2.82,
+        "count": 2,
+        "ms_per_page": 4.40625e-05
+      }
+    ],
+    "stage_spans": {
+      "colqwen.preprocess": {
+        "host_us": 10836852.81,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.batch_slot_padding": {
+        "host_us": 267.53,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.input_transfer": {
+        "host_us": 92147.51000000001,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.vision_prepare": {
+        "host_us": 955643.0900000001,
+        "device_us": 29338.347,
+        "count": 2
+      },
+      "colqwen.vision_transformer": {
+        "host_us": 145058.62,
+        "device_us": 4398838.646,
+        "count": 2
+      },
+      "colqwen.text_prepare": {
+        "host_us": 4504339.32,
+        "device_us": 246040.67575,
+        "count": 2
+      },
+      "colqwen.text_transformer": {
+        "host_us": 232600.86,
+        "device_us": 4151693.052,
+        "count": 2
+      },
+      "colqwen.retrieval_projection": {
+        "host_us": 709.01,
+        "device_us": 5265.225,
+        "count": 2
+      },
+      "colqwen.output_materialize_wait": {
+        "host_us": 3943777.7800000003,
+        "device_us": 0.0,
+        "count": 2
+      },
+      "colqwen.validate_retain": {
+        "host_us": 1579981.01,
+        "device_us": 0.0,
+        "count": 2
+      }
+    },
+    "step_trace": [
+      {
+        "Device_id": "7",
+        "Step": "",
+        "Computing": "8831173.491999963",
+        "Communication(Not Overlapped)": "0",
+        "Overlapped": "0",
+        "Communication": "0",
+        "Free": "7390874.803999098",
+        "Stage": "16222048.25",
+        "Bubble": "0",
+        "Communication(Not Overlapped and Exclude Receive)": "0",
+        "Preparing": "5333704.5"
+      }
+    ]
+  }
+]

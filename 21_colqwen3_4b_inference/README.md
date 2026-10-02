@@ -759,3 +759,35 @@ See [report](references/hr_batch_padded_910b/report.txt),
 [stage diagnostic](references/hr_batch_padded_910b/diagnostic.json).
 Exact commands, environment hashes, per-query metrics and rankings are retained
 alongside them; full observer artifacts remain in the documented run directory.
+
+### NPU profiler explanation of batch scaling
+
+At `7b490801`, captured two warmed real-page batches each at B1, B8 and B32.
+These use full resolution and no padded slots, allowing B32 kernel cost to be
+examined separately from the development sweep's final-batch padding cost.
+
+| Kernel duration, ms per real page | B1 | B8 | B32 |
+|---|---:|---:|---:|
+| Vision transformer | 63.53 | 62.60 | 68.73 |
+| Text transformer | 75.56 | 59.48 | 64.87 |
+| All kernels | 144.34 | 126.33 | 137.99 |
+
+B8 reduces summed kernel duration/page by 12.5%. Launches/page fall from 3772
+to 473, but vision work barely improves; most savings come from text. At B8,
+attention and matrix multiplications account for about 64% of kernel duration.
+B32 incurs higher per-page cast and pointwise operator costs even without
+padding. This does not establish memory-bandwidth saturation or peak utilization.
+
+The unprofiled sweep spent 15.96 of 33.90 seconds in CPU preprocessing at B8,
+with no overlap of next-batch preprocessing and current NPU work. Together,
+limited kernel scaling and preprocessing explain the modest 9.4% end-to-end
+gain. CPU/NPU overlap and the costly vision/cast/pointwise operators are the
+next measurement-driven targets. Host spans containing asynchronous waits must
+not be treated as kernel execution or added to device durations.
+
+All three traces exported successfully and observer events closed. Profiled
+wall times are diagnostic, not throughput claims. See the
+[report](references/hr_batch_profile_910b/report.txt),
+[kernel summary](references/hr_batch_profile_910b/kernel_summary.json), and
+[exact invocation](references/hr_batch_profile_910b/command.txt). Full trace
+artifacts and operator-detail CSVs are retained at the paths listed in the report.

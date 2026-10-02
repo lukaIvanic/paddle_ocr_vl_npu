@@ -1,0 +1,6 @@
+7b49080112e085a3c81e9f9e9d7be3b385d441c5
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=7
+source npu-setup
+cd /workspace/repos/colqwen_hr_multilingual_20261002
+/workspace/venvs/colqwen3_hf_py312/bin/python -u 21_colqwen3_4b_inference/profile_hr_batches.py --model /workspace/models/Ops-Colqwen3-4B --dataset-root /workspace/datasets/ViDoRe_v3_hr_mteb_reference --cache-root /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/21_colqwen3/prepared --output-dir /workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/hr_batch_profile_7b490801_20261002

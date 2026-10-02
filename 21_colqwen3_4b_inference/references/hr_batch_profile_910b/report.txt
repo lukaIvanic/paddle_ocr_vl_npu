@@ -1,0 +1,45 @@
+ColQwen3 page-batch NPU profiler analysis — Ascend 910B2
+Source: 7b49080112e085a3c81e9f9e9d7be3b385d441c5
+Two warmup batches and two captured batches at each of B1, B8 and B32.
+Full resolution, FP16, real HR dev prefixes, no padded slots in these traces.
+B1 uses the established single-page path; B8/B32 use the established batched path.
+Trace wall times are diagnostic, not replacements for the unprofiled throughput sweep.
+
+Profiler kernel durations normalized per real page (ms):
+Batch   Vision transformer   Text transformer   All kernels   Kernel launches/page   Attention   Matmul (all variants)
+    1               63.530             75.560       144.337               3772.000      42.297                  48.321
+    8               62.598             59.485       126.327                473.375      38.605                  42.076
+   32               68.732             64.870       137.987                119.844      38.061                  39.827
+
+B1 to B8: summed kernel duration/page decreases 12.48%; vision decreases 1.47%, text 21.27%.
+Kernel launches/page decrease from 3772 to 473.4, but kernel work/page falls much less.
+Attention and matmul together account for about 64% of B8 summed kernel duration.
+B32 is worse than B8 even with no padding: 137.99 vs 126.33 ms of kernels/page.
+One cast kernel family increases from 4.75 to 9.95 ms/page; elementwise multiply from
+8.08 to 11.29, addition from 5.66 to 6.62. This is measured operator cost, not a
+proof of bandwidth saturation; this capture does not measure memory-bandwidth counters.
+
+Unprofiled 111-real-page sweep (source d8aedf0f):
+B1: preprocessing 16.373 s / total page encoding 37.103 s.
+B8: preprocessing 15.960 s / total page encoding 33.901 s (47.1% preprocessing).
+B32: preprocessing 19.040 s / total page encoding 41.546 s, including 17 padded slots.
+The pipeline processes CPU input and NPU work sequentially; no next-batch prefetch/overlap.
+B8 end-to-end page throughput improved 9.45%, while B32 was slower than B1.
+
+Interpretation: batch size amortizes launches, but each page already presents 5040 vision
+patches and 1274 text positions. Actual attention/matrix work scales with pages, and
+CPU preprocessing remains substantial. The measurements explain modest scaling without
+establishing peak compute utilization or a hardware bandwidth bottleneck.
+Next experiments suggested by these data: overlap unchanged CPU preprocessing with NPU
+execution; inspect vision attention, casts, normalization and other pointwise kernels.
+Any such optimization still requires correctness checks; the preceding batch sweep
+preserved dev recall while failing strict numerical embedding equivalence.
+
+Validation: all three profiler exports completed; real outputs passed finite/norm checks;
+zero pending observer device events. Two captured batches per size, not a full-domain study.
+Kernel sums and profiler stage totals are not end-to-end wall time or device utilization;
+host section spans can include waits for earlier asynchronous device work.
+
+Raw server: /workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/hr_batch_profile_7b490801_20261002
+Local profiler CSVs, trace JSON and raw capture: /home/luka/Documents/Codex/2026-10-01/can-you-connect-to-my-mac/outputs/colqwen-batch-profile/evidence
+Archive: /home/luka/Documents/Codex/2026-10-01/can-you-connect-to-my-mac/outputs/colqwen-batch-profile/evidence.tar.gz
