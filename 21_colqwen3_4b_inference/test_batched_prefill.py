@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import torch
 
-from batched_prefill import BatchedVisionStage, prepare_batched_images
+from batched_prefill import BatchedVisionStage, prepare_batched_images, pad_page_batch
 from config import ColQwenConfig, VisionConfig, TextConfig
 from local_modeling_colqwen3 import LocalColQwen3
 from optimized_prefill import Options, OptimizedVisionStage, OptimizedTextStage, text_args_for_promptfa
@@ -39,6 +39,9 @@ class BatchContracts(unittest.TestCase):
                 vo=vision(*p.vision_args)
                 return finish_embeddings(self.model,p,text(*text_args_for_promptfa(prepare_text(self.model,p,vo))))
             actual=batched(self.inputs)
+            padded=batched(pad_page_batch(self.inputs,4))
+            torch.testing.assert_close(padded[:3],actual,atol=.003,rtol=.003)
+            self.assertTrue(torch.equal(padded[2],padded[3]))
             for i in range(3):
                 one={k:v[i:i+1] for k,v in self.inputs.items()}
                 p=prepare_linear_patch_inputs(self.model,one,self.patch)
@@ -51,6 +54,17 @@ class BatchContracts(unittest.TestCase):
             self.assertTrue(torch.equal(actual[0],changed[0]))
             self.assertTrue(torch.equal(actual[2],changed[2]))
             self.assertFalse(torch.equal(actual[1],changed[1]))
+
+    def test_slot_padding_preserves_valid_inputs_and_valid_attention(self):
+        padded=pad_page_batch(self.inputs,4)
+        for key,value in self.inputs.items():
+            self.assertEqual(padded[key].shape[0],4)
+            self.assertTrue(torch.equal(padded[key][:3],value))
+            self.assertTrue(torch.equal(padded[key][3],value[-1]))
+        self.assertTrue(bool((padded['attention_mask']==1).all()))
+        self.assertIs(pad_page_batch(self.inputs,3),self.inputs)
+        with self.assertRaises(ValueError):
+            pad_page_batch(self.inputs,2)
 
     def test_padding_and_unequal_grids_are_rejected(self):
         inputs={k:v.clone() for k,v in self.inputs.items()}

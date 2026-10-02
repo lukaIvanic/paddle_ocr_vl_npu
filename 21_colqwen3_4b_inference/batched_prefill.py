@@ -1,6 +1,6 @@
 """Equal-length image batches using existing FP16 PromptFA and text stages.
 
-Separate from the B1/cache contract. No padding, bucketing, graph compilation,
+Separate from the B1/cache contract. No token padding, bucketing, graph compilation,
 resolution changes or cross-page attention. Mixed orientations are allowed.
 """
 import torch
@@ -69,3 +69,21 @@ def prepare_batched_images(model, inputs, patch_embed):
     hidden = hidden + absolute
     vision_args = tuple(a.reshape(batch, length, -1).contiguous() for a in (hidden, cos, sin))
     return PreparedInputs(inputs, grids, image_positions(ids, valid, grids, model.config), vision_args)
+
+
+def pad_page_batch(inputs, batch_size):
+    """Fill unused batch slots with the last valid page; never mask out its tokens.
+
+    Fully masked dummy sequences can violate PromptFA's row contract. Repeated
+    valid inputs keep attention well defined; the caller discards their outputs.
+    Tensor slots are padded after real-page preprocessing, before NPU transfer.
+    """
+    real = inputs['input_ids'].shape[0]
+    if not 0 < real <= batch_size:
+        raise ValueError('Expected 1..batch_size real pages')
+    if any(v.ndim == 0 or v.shape[0] != real for v in inputs.values()):
+        raise ValueError('Every processor tensor must have one leading row per page')
+    if real == batch_size:
+        return inputs
+    return {k:torch.cat((v, v[-1:].expand(batch_size-real, *v.shape[1:])), dim=0)
+            for k,v in inputs.items()}

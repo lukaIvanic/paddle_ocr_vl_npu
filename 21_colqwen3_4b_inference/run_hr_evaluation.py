@@ -249,6 +249,8 @@ def run(args, result, journal):
     result['image_resize_override']=resize_kwargs
     result['max_image_tokens']=args.max_image_tokens
     result['page_batch_size']=args.page_batch_size
+    result['page_batch_padding']='repeat last valid input row to fixed batch size; discard padded outputs'
+    result['throughput_page_count']='real pages only, including final-batch padding compute cost'
     torch.npu.reset_peak_memory_stats()
     journal.emit('model_load_finish')
     setup['wall_s']=time.perf_counter()-setup_start

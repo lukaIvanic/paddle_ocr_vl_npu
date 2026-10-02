@@ -691,7 +691,11 @@ selection is 111 pages spread across the corpus and 32 English queries.
 The separate `batched_prefill.py` path uses the existing FP16 PromptFA kernels
 with a true batch dimension for both vision and text. It requires equal patch
 and unpadded text lengths; different orientations with equal lengths are valid.
-Pages retain corpus order, and the final partial batch runs at its real size.
+Pages retain corpus order. The final batch is padded to the requested size by
+repeating the last valid page's processor tensors before NPU transfer. These
+slots run through the model normally and their outputs are discarded; throughput
+counts only real pages while including the padding compute cost. For B32, the
+111-page dev set runs 128 slots (17 padded). No token padding is used.
 No resolution reduction, prefetch, new graph compilation or cross-page attention
 is introduced. B1 keeps its existing path and compatible cache policy. Timed
 page encoding includes processing, transfers, model inference, CPU output
@@ -699,7 +703,7 @@ materialization, validation and observation. Peak allocated/reserved NPU memory
 is recorded. Batches have one timing record with all member page IDs.
 
 Before throughput runs, execute `check_hr_batch_parity.py` against the same
-model/data. It compares full-resolution portrait/landscape pages at B1/B2/B3
+model/data. It compares full-resolution portrait/landscape pages at B1/B2/B3 and a padded B4 batch
 with independent optimized B1 embeddings and checks processor inputs exactly.
 Then run the fixed dev evaluation at B1, B2, B4, B8, B16 and B32, comparing
 scores/rankings/metrics with the fresh B1 result. These are development results;

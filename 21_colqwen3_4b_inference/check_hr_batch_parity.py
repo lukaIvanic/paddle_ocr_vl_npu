@@ -1,13 +1,12 @@
-"""Real mixed-orientation development-page B1/B2/B3 NPU parity gate."""
+"""Real mixed-orientation development-page B1/B2/B3 and padded B4 NPU parity gate."""
 import argparse
 import io
 import json
 from pathlib import Path
-from types import SimpleNamespace
 
 import torch
 
-from batched_prefill import BatchedVisionStage, prepare_batched_images
+from batched_prefill import BatchedVisionStage, prepare_batched_images, pad_page_batch
 from local_modeling_colqwen3 import LocalColQwen3
 from optimized_prefill import Options, OptimizedVisionStage, OptimizedTextStage, text_args_for_promptfa
 from patch_embedding import LinearPatchEmbed, prepare_linear_patch_inputs
@@ -59,19 +58,22 @@ def main():
         output=finish_embeddings(model,prepared,text(*text_args_for_promptfa(prepare_text(model,prepared,vo))))
         refs.append(output[0].cpu())
     results=[]
-    for size in [1,2,3]:
-        batch=processor.process_images(images[:size])
-        input_exact=all(torch.equal(v[i:i+1],singles[i][k]) for k,v in batch.items() for i in range(size))
+    for size in [1,2,3,4]:
+        real=min(size,len(images))
+        batch=processor.process_images(images[:real])
+        input_exact=all(torch.equal(v[i:i+1],singles[i][k]) for k,v in batch.items() for i in range(real))
         if not input_exact:raise AssertionError('Batched processor inputs differ from independent pages')
+        batch=pad_page_batch(batch,size)
         batch={k:v.to('npu:0') for k,v in batch.items()}
         prepared=prepare_batched_images(model,batch,patch)
         vo=vision(*prepared.vision_args)
         output=finish_embeddings(model,prepared,text(*text_args_for_promptfa(prepare_text(model,prepared,vo)))).cpu()
-        expected=torch.stack(refs[:size])
+        output=output[:real]
+        expected=torch.stack(refs[:real])
         active=expected.float().norm(dim=-1)>0
         cos=torch.nn.functional.cosine_similarity(output.float()[active],expected.float()[active],dim=-1)
         delta=(output.float()-expected.float()).abs()
-        row=dict(batch_size=size,ids=ids[:size],inputs_bit_exact=input_exact,
+        row=dict(batch_size=size,real_batch_size=real,padded_slots=size-real,ids=ids[:real],inputs_bit_exact=input_exact,
                  max_abs=float(delta.max()),mean_abs=float(delta.mean()),
                  cosine_min=float(cos.min()),cosine_mean=float(cos.mean()),
                  shape=list(output.shape),finite=bool(torch.isfinite(output).all()))

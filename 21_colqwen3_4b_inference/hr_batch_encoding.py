@@ -6,7 +6,7 @@ import time
 import torch
 from PIL import Image
 
-from batched_prefill import prepare_batched_images
+from batched_prefill import prepare_batched_images, pad_page_batch
 from optimized_prefill import text_args_for_promptfa
 from prepared_prefill import prepare_text, finish_embeddings
 
@@ -18,7 +18,8 @@ def encode_page_batches(model, processor, execution, corpus, args, journal, prof
     for start in range(0, len(corpus), args.page_batch_size):
         items = corpus[start:start+args.page_batch_size]
         row = dict(kind='page_batch', id=items[0]['id'], index=start, sections={},
-                   ids=[x['id'] for x in items], batch_size=len(items))
+                   ids=[x['id'] for x in items], batch_size=args.page_batch_size,
+                   real_batch_size=len(items), padded_slots=args.page_batch_size-len(items))
         begin = time.perf_counter()
         journal.emit('item_start', kind=row['kind'], id=row['id'], index=start, total=len(corpus))
         with journal.section(row, 'preprocess'):
@@ -33,6 +34,8 @@ def encode_page_batches(model, processor, execution, corpus, args, journal, prof
             finally:
                 for image in images:
                     image.close()
+        with journal.section(row, 'batch_slot_padding'):
+            batch = pad_page_batch(batch, args.page_batch_size)
         grids = batch['image_grid_thw']
         vt = int(grids.prod(-1).sum())
         tt = int(batch['attention_mask'].sum())
@@ -56,7 +59,7 @@ def encode_page_batches(model, processor, execution, corpus, args, journal, prof
         with journal.section(row, 'retrieval_projection', tt, device=True):
             output = finish_embeddings(model, prepared, hidden)
         with journal.section(row, 'output_materialize_wait', tt):
-            output = output.cpu()
+            output = output[:len(items)].cpu()
         with journal.section(row, 'validate_retain'):
             if not bool(torch.isfinite(output).all()):
                 raise ValueError('Nonfinite embeddings')
