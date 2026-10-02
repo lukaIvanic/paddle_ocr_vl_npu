@@ -83,6 +83,9 @@ class Execution:
         self.compiler.identity['internal_format']=True
         self.ready=set()
         self.journal=journal
+        if getattr(args,'page_batch_size',1)>1:
+            from batched_prefill import BatchedVisionStage
+            self.batch_vision=BatchedVisionStage(model,options).eval()
 
     def stage(self, name, tensors, record):
         module=getattr(self,name)
@@ -245,6 +248,8 @@ def run(args, result, journal):
     result['processor_image_config']=processor.image_processor.to_dict()
     result['image_resize_override']=resize_kwargs
     result['max_image_tokens']=args.max_image_tokens
+    result['page_batch_size']=args.page_batch_size
+    torch.npu.reset_peak_memory_stats()
     journal.emit('model_load_finish')
     setup['wall_s']=time.perf_counter()-setup_start
     journal.complete(setup,1,1,setup_start); records.append(setup)
@@ -257,6 +262,15 @@ def run(args, result, journal):
     query_workflow_start=None
     encoding_start=time.perf_counter()
     for kind,items in [('page',corpus),('query',queries)]:
+        if kind=='page' and args.page_batch_size>1:
+            from hr_batch_encoding import encode_page_batches
+            page_embeddings,batch_records,elapsed=encode_page_batches(
+                model,processor,execution,corpus,args,journal,profiler)
+            records.extend(batch_records)
+            result['page_encoding_s']=elapsed
+            result['page_peak_memory_allocated_bytes']=torch.npu.max_memory_allocated()
+            result['page_peak_memory_reserved_bytes']=torch.npu.max_memory_reserved()
+            continue
         window=time.perf_counter()
         if kind=='query':
             query_workflow_start=window
@@ -321,12 +335,15 @@ def run(args, result, journal):
             journal.complete(row,index+1,len(items),window)
             profiler.step()
         result[kind+'_encoding_s']=time.perf_counter()-window
+        if kind=='page':
+            result['page_peak_memory_allocated_bytes']=torch.npu.max_memory_allocated()
+            result['page_peak_memory_reserved_bytes']=torch.npu.max_memory_reserved()
     result['encoding_s']=time.perf_counter()-encoding_start
     result['encoding_outside_item_spans_s']=result['encoding_s']-sum(
-        r['wall_s'] for r in records if r['kind'] in ('page','query'))
+        r['wall_s'] for r in records if r['kind'] in ('page','page_batch','query'))
     result['page_per_s']=len(corpus)/result['page_encoding_s']
     result['cache_records']=execution.compiler.records
-    max_document_rows=max(r['embedding_rows'] for r in records if r['kind']=='page')
+    max_document_rows=max(len(x) for x in page_embeddings)
     result['scoring_document_padding']='zero floor for documents shorter than corpus maximum, matching MTEB global padding'
     result['scoring_query_groups']='one language at a time; original query order and FP32 MaxSim'
     scores=np.empty((len(queries),len(corpus)),dtype=np.float32)
@@ -425,8 +442,13 @@ def main(observer_factory=Journal):
     p.add_argument('--languages',nargs='+',choices=(*LANGUAGES,'all'),default=['english'])
     p.add_argument('--max-image-tokens',type=int,
                    help='Merged image-token area budget; omitted preserves checkpoint resolution')
+    p.add_argument('--page-batch-size',type=int,default=1,help='Explicit equal-length page batching probe; queries stay B1')
     p.add_argument('--profile',action='store_true',help='Profile selected real items in the complete pipeline')
     args=p.parse_args()
+    if args.page_batch_size<1:
+        p.error('--page-batch-size must be positive')
+    if args.page_batch_size>1 and args.profile:
+        p.error('Profiler sampling is currently defined for the B1 workflow only')
     if args.max_image_tokens is not None and args.max_image_tokens<=0:
         p.error('--max-image-tokens must be positive')
     args.languages=list(LANGUAGES) if args.languages==['all'] else args.languages
@@ -445,7 +467,7 @@ def main(observer_factory=Journal):
                 processor_sha256=sha256(Path(args.model)/'processing_ops_colqwen3.py'),
                 commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
                 workload=args.workload,languages=args.languages,profiler=args.profile,
-                scope='B1 sequential real pipeline; deferred event intervals, host spans, no embedding serialization',
+                scope=f'Page batch {args.page_batch_size}, B1 queries; deferred events, no embedding serialization',
                 scoring='FP32 NPU dot/max, CPU FP32 per-query sum; full 2560 dimensions; pytrec_eval metrics')
     try:
         run(args,result,journal)
