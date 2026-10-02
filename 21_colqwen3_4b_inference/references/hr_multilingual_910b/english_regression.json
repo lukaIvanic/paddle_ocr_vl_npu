@@ -1,0 +1,9 @@
+{
+  "score_matrix_bit_exact": true,
+  "max_abs_score_difference": 0.0,
+  "ids.json": true,
+  "workload.json": true,
+  "rankings.jsonl": true,
+  "per_query_metrics.json": true,
+  "metrics_equal": true
+}

@@ -1,0 +1,25 @@
+{
+  "repo": "vidore/vidore_v3_hr_mteb_format",
+  "revision": "bc7d43d64815ed30f664168c8052106484aba7fd",
+  "files": {
+    "english-corpus/test-00000-of-00001.parquet": "93b89ac0665e8e1dc3a298bf8f5b4ec7809dec01e2564f40335a8ca1d9e098ad",
+    "english-qrels/test-00000-of-00001.parquet": "0d164f3769db821b044ec13a2ed6d321016107f77af7c4f5bdcf5471c46e2c81",
+    "english-queries/test-00000-of-00001.parquet": "385874527338ca229f2a5634c45513378c8460d123ea2db4758e63c24a3b95be",
+    "french-queries/test-00000-of-00001.parquet": "275b1c427d44b0695850e1824bbc6eee3c47d1e715dbf531ea8ee079a96e5b3a",
+    "german-queries/test-00000-of-00001.parquet": "ac5d9dd96f27500c10403236d3c180abe5cb0c1106a46974941298653872974e",
+    "italian-queries/test-00000-of-00001.parquet": "aaa9112fd18f3deb856ac6d9cf3836e82067ac5951970fc9a7c81ad476e527db",
+    "portuguese-queries/test-00000-of-00001.parquet": "4ee02ddce3a5c4269c4b15e4fc174197cfe8ec03a80e35811cad5793c24818d5",
+    "spanish-queries/test-00000-of-00001.parquet": "d09dc9171911a02e8d2c761b538fe63ae2d36a4ebf23392a3976d283e00a2b72"
+  },
+  "languages": [
+    "english",
+    "french",
+    "german",
+    "italian",
+    "portuguese",
+    "spanish"
+  ],
+  "status": "verified",
+  "elapsed_s": 6.61555211013183,
+  "endpoint": "https://hf-mirror.com"
+}

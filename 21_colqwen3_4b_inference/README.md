@@ -580,3 +580,48 @@ matching per-language published references, and timings by language. With 318
 queries in each language, the language macro mean equals the query mean.
 `query_languages.json` identifies every row in the combined score matrix.
 A full HR multilingual score is still only one domain of ViDoRe v3.
+
+### Full HR, all six languages — 910B2
+
+At `f5d58289`, the multilingual evaluator processed the same **1,110 pages
+and all 1,908 queries** (318 per language). This uses the same FP16/B1 model,
+2560 dimensions, default resolution, optimized attention and warm-cache policy
+as the English baseline. Every page had 5040 vision tokens, 1260 merged image
+tokens and 1274 text-transformer tokens. The page corpus was encoded once.
+
+| Language | Recall@10, % | Published | nDCG@10, % | Published | MAP@10, % | Published |
+|---|---:|---:|---:|---:|---:|---:|
+| English | 70.8470 | 70.7200 | 66.4722 | 66.0880 | 52.0862 | 51.6130 |
+| French | 66.3101 | 66.3850 | 61.2989 | 61.4660 | 46.8801 | 47.0150 |
+| German | 65.3382 | 65.2500 | 60.7893 | 60.8730 | 46.7263 | 46.8110 |
+| Italian | 65.0865 | 65.0270 | 60.5123 | 60.4790 | 46.2067 | 46.1830 |
+| Portuguese | 65.5788 | 65.5750 | 61.8161 | 61.7550 | 47.7917 | 47.6820 |
+| Spanish | 65.1043 | 65.2500 | 60.5392 | 60.2190 | 46.5528 | 46.1550 |
+| Average | 66.3775 | 66.3678 | 61.9047 | 61.8133 | 47.7073 | 47.5765 |
+
+Mean deltas versus the published six-language reference were **+0.0097 percentage
+points Recall@10, +0.0913 nDCG@10 and +0.1308 MAP@10**. Some individual metrics
+were lower (including French), so this supports close agreement across HR
+languages, not a universal or statistically established improvement.
+
+Evaluation time was **582.0 s (9m42s)**; script import/CLI included was 584.2 s,
+and the complete child-process wall time including shutdown was 592.4 s (9m52s).
+Setup took 24.4 s, page encoding 363.8 s (3.051 pages/s), query encoding 165.6 s,
+and scoring 22.4 s. The job was 25.7% longer than the historical 462.9 s English
+run, but that older run also used the earlier observer and embedding
+serialization; this is not an isolated measurement of language overhead.
+No new graphs were compiled: all pages were optimized eager, and only one
+18-token query reused a compiled graph.
+
+All **34 tests passed**. The English development check retained bit-exact
+scores, IDs, selection, rankings and per-query metrics. More strongly, the
+full 318-query English submatrix matched the historical full-English matrix
+**bit for bit**, with all per-query metrics unchanged. The observer closed
+with 56,036 matched section start/finish pairs and zero pending device events.
+
+See [summary](references/hr_multilingual_910b/report.txt),
+[full result](references/hr_multilingual_910b/result.json),
+[artifact audit](references/hr_multilingual_910b/artifact_audit.json), and
+[exact commands](references/hr_multilingual_910b/command.txt).
+This validates HR across six languages on 910B2; it is not an eight-domain
+ViDoRe average or a 310P result.

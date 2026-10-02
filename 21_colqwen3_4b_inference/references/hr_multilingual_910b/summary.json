@@ -1,0 +1,284 @@
+{
+  "status": "completed",
+  "scope": "ViDoRe v3 HR, all six query languages, Ascend 910B2",
+  "commit": "f5d58289c91e194f86007ae58a040a870515df02",
+  "pages": 1110,
+  "queries": 1908,
+  "languages": [
+    "english",
+    "french",
+    "german",
+    "italian",
+    "portuguese",
+    "spanish"
+  ],
+  "metrics_by_language": {
+    "english": {
+      "recall_10": 0.7084703897612006,
+      "ndcg_cut_10": 0.6647215756417603,
+      "map_cut_10": 0.5208616827446801
+    },
+    "french": {
+      "recall_10": 0.6631012523074198,
+      "ndcg_cut_10": 0.6129888847028754,
+      "map_cut_10": 0.46880093104544074
+    },
+    "german": {
+      "recall_10": 0.6533821648024625,
+      "ndcg_cut_10": 0.6078933172602446,
+      "map_cut_10": 0.46726257881104577
+    },
+    "italian": {
+      "recall_10": 0.6508645664450807,
+      "ndcg_cut_10": 0.6051232595989507,
+      "map_cut_10": 0.4620674709467167
+    },
+    "portuguese": {
+      "recall_10": 0.6557883815535338,
+      "ndcg_cut_10": 0.6181614764412894,
+      "map_cut_10": 0.4779166678876756
+    },
+    "spanish": {
+      "recall_10": 0.6510430202493528,
+      "ndcg_cut_10": 0.6053924385909129,
+      "map_cut_10": 0.4655278203646208
+    }
+  },
+  "macro_metrics": {
+    "recall_10": 0.6637749625198417,
+    "ndcg_cut_10": 0.6190468253726721,
+    "map_cut_10": 0.4770728586333633
+  },
+  "reference_metrics_by_language": {
+    "french": {
+      "recall_10": 0.66385,
+      "ndcg_cut_10": 0.61466,
+      "map_cut_10": 0.47015
+    },
+    "spanish": {
+      "recall_10": 0.6525,
+      "ndcg_cut_10": 0.60219,
+      "map_cut_10": 0.46155
+    },
+    "english": {
+      "recall_10": 0.7072,
+      "ndcg_cut_10": 0.66088,
+      "map_cut_10": 0.51613
+    },
+    "german": {
+      "recall_10": 0.6525,
+      "ndcg_cut_10": 0.60873,
+      "map_cut_10": 0.46811
+    },
+    "italian": {
+      "recall_10": 0.65027,
+      "ndcg_cut_10": 0.60479,
+      "map_cut_10": 0.46183
+    },
+    "portuguese": {
+      "recall_10": 0.65575,
+      "ndcg_cut_10": 0.61755,
+      "map_cut_10": 0.47682
+    }
+  },
+  "reference_macro_metrics": {
+    "recall_10": 0.6636783333333334,
+    "ndcg_cut_10": 0.6181333333333333,
+    "map_cut_10": 0.475765
+  },
+  "deltas_by_language": {
+    "english": {
+      "recall_10": 0.00127038976120053,
+      "ndcg_cut_10": 0.003841575641760242,
+      "map_cut_10": 0.004731682744680166
+    },
+    "french": {
+      "recall_10": -0.000748747692580265,
+      "ndcg_cut_10": -0.0016711152971246035,
+      "map_cut_10": -0.0013490689545592738
+    },
+    "german": {
+      "recall_10": 0.000882164802462504,
+      "ndcg_cut_10": -0.0008366827397553456,
+      "map_cut_10": -0.000847421188954256
+    },
+    "italian": {
+      "recall_10": 0.0005945664450807131,
+      "ndcg_cut_10": 0.000333259598950697,
+      "map_cut_10": 0.0002374709467166669
+    },
+    "portuguese": {
+      "recall_10": 3.838155353375061e-05,
+      "ndcg_cut_10": 0.0006114764412893381,
+      "map_cut_10": 0.0010966678876755953
+    },
+    "spanish": {
+      "recall_10": -0.0014569797506471804,
+      "ndcg_cut_10": 0.0032024385909128483,
+      "map_cut_10": 0.003977820364620799
+    }
+  },
+  "macro_deltas": {
+    "recall_10": 9.662918650832353e-05,
+    "ndcg_cut_10": 0.0009134920393387702,
+    "map_cut_10": 0.0013078586333633013
+  },
+  "timing": {
+    "setup_s": 24.38653906993568,
+    "page_encoding_s": 363.80682236980647,
+    "query_encoding_s": 165.55562549014576,
+    "scoring_s": 22.424668189836666,
+    "total_s": 582.0134429000318,
+    "script_wall_s": 584.1931763000321,
+    "page_per_s": 3.051069775903473,
+    "query_encoding_item_s_by_language": {
+      "english": 31.517757644411176,
+      "french": 26.28614621888846,
+      "german": 26.231067838845775,
+      "italian": 26.74572616769001,
+      "portuguese": 26.687754361890256,
+      "spanish": 26.47789421142079
+    },
+    "scoring_s_by_language": {
+      "english": 3.512792499968782,
+      "french": 3.8506484900135547,
+      "german": 3.742878139950335,
+      "italian": 3.7305212498176843,
+      "portuguese": 3.8023089598864317,
+      "spanish": 3.7817207099869847
+    }
+  },
+  "historical_english_total_s": 462.917976050172,
+  "historical_time_ratio": 1.2572712078844654,
+  "stages": [
+    {
+      "name": "tests",
+      "wall_s": 6.464011020027101,
+      "exit_code": 0
+    },
+    {
+      "name": "download",
+      "wall_s": 7.162876809947193,
+      "exit_code": 0
+    },
+    {
+      "name": "english_dev",
+      "wall_s": 123.26348228985444,
+      "exit_code": 0
+    },
+    {
+      "name": "all_languages",
+      "wall_s": 592.4048954201862,
+      "exit_code": 0
+    }
+  ],
+  "english_dev_regression": {
+    "score_matrix_bit_exact": true,
+    "max_abs_score_difference": 0.0,
+    "ids.json": true,
+    "workload.json": true,
+    "rankings.jsonl": true,
+    "per_query_metrics.json": true,
+    "metrics_equal": true
+  },
+  "quality_check": {
+    "pages": 1110,
+    "queries": 1908,
+    "english_metrics": {
+      "recall_10": 0.7084703897612006,
+      "ndcg_cut_10": 0.6647215756417603,
+      "map_cut_10": 0.5208616827446801
+    },
+    "original_english_metrics": {
+      "recall_10": 0.7084703897612006,
+      "ndcg_cut_10": 0.6647215756417603,
+      "map_cut_10": 0.5208616827446801
+    },
+    "english_full_metrics_equal": true,
+    "english_delta": {
+      "recall_10": 0.0,
+      "ndcg_cut_10": 0.0,
+      "map_cut_10": 0.0
+    },
+    "overall_metrics": {
+      "recall_10": 0.6637749625198417,
+      "ndcg_cut_10": 0.6190468253726722,
+      "map_cut_10": 0.4770728586333633
+    },
+    "macro_metrics": {
+      "recall_10": 0.6637749625198417,
+      "ndcg_cut_10": 0.6190468253726721,
+      "map_cut_10": 0.4770728586333633
+    },
+    "all_scores_finite": true
+  },
+  "artifact_audit": {
+    "status": "passed",
+    "score_shape": [
+      1908,
+      1110
+    ],
+    "language_counts": {
+      "english": 318,
+      "french": 318,
+      "german": 318,
+      "italian": 318,
+      "portuguese": 318,
+      "spanish": 318
+    },
+    "item_counts": {
+      "setup": 7,
+      "page": 1110,
+      "query": 1908,
+      "score": 6660,
+      "finalize": 1
+    },
+    "english_full_per_query_metrics_equal": true,
+    "image_token_shapes": [
+      {
+        "vision": 5040,
+        "image": 1260,
+        "text": 1274,
+        "pages": 1110
+      }
+    ],
+    "routes": [
+      {
+        "kind": "page",
+        "section": "vision_transformer",
+        "route": "optimized_eager_uncached",
+        "count": 1110
+      },
+      {
+        "kind": "page",
+        "section": "text_transformer",
+        "route": "optimized_eager_uncached",
+        "count": 1110
+      },
+      {
+        "kind": "query",
+        "section": "text_transformer",
+        "route": "optimized_eager_uncached",
+        "count": 1907
+      },
+      {
+        "kind": "query",
+        "section": "text_transformer",
+        "route": "compiled_cache",
+        "count": 1
+      }
+    ],
+    "observer": {
+      "section_starts": 56036,
+      "section_finishes": 56036,
+      "device_resolutions": 29520,
+      "heartbeats": 116,
+      "pending_device_events": 0
+    },
+    "english_full_score_comparison": {
+      "bit_exact": true,
+      "max_abs_difference": 0.0
+    }
+  },
+  "comparability": "The earlier full English run used the historical observer with embedding serialization. This comparison changes evaluation scope and includes observer evolution; it is not an isolated language-overhead measurement."
+}

@@ -1,0 +1,5 @@
+f5d58289c91e194f86007ae58a040a870515df02
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=7
+/workspace/venvs/colqwen3_hf_py312/bin/python -u /workspace/repos/colqwen_hr_multilingual_20261002/21_colqwen3_4b_inference/run_hr_evaluation.py --model /workspace/models/Ops-Colqwen3-4B --dataset-root /workspace/datasets/ViDoRe_v3_hr_mteb_reference --cache-root /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/21_colqwen3/prepared --output-dir /workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/hr_multilingual_f5d58289_20261002/english_dev
+/workspace/venvs/colqwen3_hf_py312/bin/python -u /workspace/repos/colqwen_hr_multilingual_20261002/21_colqwen3_4b_inference/run_hr_evaluation.py --model /workspace/models/Ops-Colqwen3-4B --dataset-root /workspace/datasets/ViDoRe_v3_hr_mteb_reference --cache-root /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/21_colqwen3/prepared --output-dir /workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/hr_multilingual_f5d58289_20261002/all_languages --workload full --languages all

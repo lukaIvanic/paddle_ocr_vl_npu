@@ -1,0 +1,29 @@
+ColQwen3-4B multilingual HR evaluation — Ascend 910B2
+Source commit: f5d58289c91e194f86007ae58a040a870515df02
+1,110 shared pages; six languages with 318 queries each; 1,908 queries total.
+FP16, B1 sequential inference, 2,560 dimensions, default image resolution.
+Page embeddings encoded once and reused; FP32 MaxSim scored separately per language.
+
+Language       Recall@10     Published     nDCG@10      Published     MAP@10       Published
+english            70.8470%     70.7200%     66.4722%     66.0880%     52.0862%     51.6130%
+french             66.3101%     66.3850%     61.2989%     61.4660%     46.8801%     47.0150%
+german             65.3382%     65.2500%     60.7893%     60.8730%     46.7263%     46.8110%
+italian            65.0865%     65.0270%     60.5123%     60.4790%     46.2067%     46.1830%
+portuguese         65.5788%     65.5750%     61.8161%     61.7550%     47.7917%     47.6820%
+spanish            65.1043%     65.2500%     60.5392%     60.2190%     46.5528%     46.1550%
+average            66.3775%     66.3678%     61.9047%     61.8133%     47.7073%     47.5765%
+
+Evaluation job: 9m 42.0s; script including import/CLI: 9m 44.2s.
+Setup 24.4s; pages 363.8s; queries 165.6s; scoring 22.4s.
+Page encoding: 3.051 pages/s.
+Historical English full run: 7m 42.9s; observed total ratio 1.257x.
+The earlier full English run used the historical observer with embedding serialization. This comparison changes evaluation scope and includes observer evolution; it is not an isolated language-overhead measurement.
+
+Validation:
+English development score matrix, IDs, workload, rankings and per-query metrics matched exactly.
+Full English per-query metrics equal to historical full run: True.
+Full English score comparison: {'bit_exact': True, 'max_abs_difference': 0.0}.
+Artifact audit: {"section_starts": 56036, "section_finishes": 56036, "device_resolutions": 29520, "heartbeats": 116, "pending_device_events": 0}.
+
+Scope: HR only. These are not whole-ViDoRe or 310P results.
+Raw evidence is in evidence/; exact commands, source/dependency hashes and dataset manifest are retained.

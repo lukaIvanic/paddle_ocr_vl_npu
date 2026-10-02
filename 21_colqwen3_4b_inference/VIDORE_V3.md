@@ -169,6 +169,33 @@ operation. Run variance must be considered; no single difference proves a
 precise overhead percentage. Comparisons to the historical 2.79 pg/s anchor also
 need to account for removing embedding serialization and timing barriers.
 
+## Full multilingual HR evaluation
+
+Add `--workload full --languages all` to evaluate all six HR query languages.
+The default and fixed development workload remain English-only. This is a
+full-domain quality check and still requires an explicit full-run request.
+
+Run `download_hr_reference.py --root <dataset-root> --languages all` first.
+The pinned MTEB revision has byte-identical corpus and qrels components across
+languages; [upstream file metadata](references/hr_protocol/multilingual_file_hashes.json)
+records their SHA256 hashes and the mirror used to retrieve that metadata.
+The downloader fetches one shared corpus/qrels pair and six distinct query
+components. Each file is hash-checked again when loaded for evaluation.
+
+Encode the 1,110 pages once and retain their embeddings in memory. Encode each
+of the 1,908 queries sequentially (318 per language), then score one language
+at a time against the same pages. Keeping each language's original query order
+also preserves the English scoring matrix shape. Model precision, image
+processing, inference kernels, cache policy and observer remain unchanged.
+
+`metrics_by_language` reports per-language nDCG@10, Recall@10 and MAP@10;
+`macro_metrics` is their equal-weight mean. Each language is compared with its
+own entry in the pinned published result. The aggregate describes HR across
+six languages, not the multi-domain ViDoRe benchmark. `query_languages.json`
+maps score-matrix query IDs to languages. Scoring wall time includes each
+language's scoring preparation; per-language encoding item sums exclude
+outer-loop logging overhead, which remains in `query_encoding_s`.
+
 ## Historical full English HR evaluation (`fbfaedc5`)
 
 `run_hr_evaluation.py` evaluates the entire HR English retrieval task: 1,110

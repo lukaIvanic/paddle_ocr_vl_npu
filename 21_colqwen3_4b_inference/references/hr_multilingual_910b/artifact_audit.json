@@ -1,0 +1,68 @@
+{
+  "status": "passed",
+  "score_shape": [
+    1908,
+    1110
+  ],
+  "language_counts": {
+    "english": 318,
+    "french": 318,
+    "german": 318,
+    "italian": 318,
+    "portuguese": 318,
+    "spanish": 318
+  },
+  "item_counts": {
+    "setup": 7,
+    "page": 1110,
+    "query": 1908,
+    "score": 6660,
+    "finalize": 1
+  },
+  "english_full_per_query_metrics_equal": true,
+  "image_token_shapes": [
+    {
+      "vision": 5040,
+      "image": 1260,
+      "text": 1274,
+      "pages": 1110
+    }
+  ],
+  "routes": [
+    {
+      "kind": "page",
+      "section": "vision_transformer",
+      "route": "optimized_eager_uncached",
+      "count": 1110
+    },
+    {
+      "kind": "page",
+      "section": "text_transformer",
+      "route": "optimized_eager_uncached",
+      "count": 1110
+    },
+    {
+      "kind": "query",
+      "section": "text_transformer",
+      "route": "optimized_eager_uncached",
+      "count": 1907
+    },
+    {
+      "kind": "query",
+      "section": "text_transformer",
+      "route": "compiled_cache",
+      "count": 1
+    }
+  ],
+  "observer": {
+    "section_starts": 56036,
+    "section_finishes": 56036,
+    "device_resolutions": 29520,
+    "heartbeats": 116,
+    "pending_device_events": 0
+  },
+  "english_full_score_comparison": {
+    "bit_exact": true,
+    "max_abs_difference": 0.0
+  }
+}

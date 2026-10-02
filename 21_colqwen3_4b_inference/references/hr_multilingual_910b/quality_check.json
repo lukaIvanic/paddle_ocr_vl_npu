@@ -1,0 +1,31 @@
+{
+  "pages": 1110,
+  "queries": 1908,
+  "english_metrics": {
+    "recall_10": 0.7084703897612006,
+    "ndcg_cut_10": 0.6647215756417603,
+    "map_cut_10": 0.5208616827446801
+  },
+  "original_english_metrics": {
+    "recall_10": 0.7084703897612006,
+    "ndcg_cut_10": 0.6647215756417603,
+    "map_cut_10": 0.5208616827446801
+  },
+  "english_full_metrics_equal": true,
+  "english_delta": {
+    "recall_10": 0.0,
+    "ndcg_cut_10": 0.0,
+    "map_cut_10": 0.0
+  },
+  "overall_metrics": {
+    "recall_10": 0.6637749625198417,
+    "ndcg_cut_10": 0.6190468253726722,
+    "map_cut_10": 0.4770728586333633
+  },
+  "macro_metrics": {
+    "recall_10": 0.6637749625198417,
+    "ndcg_cut_10": 0.6190468253726721,
+    "map_cut_10": 0.4770728586333633
+  },
+  "all_scores_finite": true
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "tests",
+    "wall_s": 6.464011020027101,
+    "exit_code": 0
+  },
+  {
+    "name": "download",
+    "wall_s": 7.162876809947193,
+    "exit_code": 0
+  },
+  {
+    "name": "english_dev",
+    "wall_s": 123.26348228985444,
+    "exit_code": 0
+  },
+  {
+    "name": "all_languages",
+    "wall_s": 592.4048954201862,
+    "exit_code": 0
+  }
+]
