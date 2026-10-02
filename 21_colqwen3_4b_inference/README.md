@@ -1,5 +1,20 @@
 # 21 — Ops-ColQwen3-4B HF reference and local eager model
 
+**Current performance entrypoint:** `run_hr_evaluation.py`, defaulting to the
+fixed 111-page/32-query HR development workload. See the
+[single-observer contract](VIDORE_V3.md#current-performance-testing-contract-experiment-21-only).
+Timing/logging is always enabled; only profiler capture is optional. Full HR
+requires an explicit user request. Historical isolated-stage scripts below are
+retained as evidence, not used for new performance conclusions: all new timing
+and profiling goes through complete real-image/query pipeline executions.
+
+Validated on one 910B2 at `2b1cafc3`: 111 pages + 32 queries, 31 CPU contract
+tests, exact observed/control score parity, and three real-item profiler traces.
+Final ABBA means showed +0.72% page time and +2.04% total job time; the prior
+repeat showed no consistent whole-job difference. These are noisy measured
+overheads, not a guarantee of zero cost. See [validation evidence](references/pipeline_observer_910b/README.md).
+No full-HR rerun or 310P validation was performed for this instrumentation.
+
 The reference uses checkpoint-supplied Hugging Face `AutoModel` and `AutoProcessor`
 on Ascend NPU. That lane has no custom model implementation, vLLM, TorchAir compilation, NZ
 conversion, quantization, or processor-resolution overrides. FP16 and HF eager

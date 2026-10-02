@@ -55,9 +55,9 @@ attestation. Keep the endpoint recorded with the lock.
 
 Offline consumers can load local Parquet directly, e.g.
 `load_dataset('parquet', data_files={'test': sorted(path.glob('corpus/*.parquet'))}, split='test')`.
-Keep query/corpus IDs and supplied relevance grades unchanged. A future scoring
-runner should persist corpus/query embeddings and rankings, compute MaxSim in
-bounded chunks, and report each domain plus the specified macro aggregation.
+Keep query/corpus IDs and supplied relevance grades unchanged. Scoring should
+retain corpus/query embeddings in memory, persist compact rankings and metrics,
+compute MaxSim in bounded chunks, and report the specified domain aggregation.
 Downloading the dataset does not run or validate the retrieval evaluation.
 
 ## Verified local inventory — 2026-10-01

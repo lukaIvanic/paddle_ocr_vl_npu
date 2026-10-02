@@ -1,0 +1,78 @@
+{
+  "runs": [
+    {
+      "index": 0,
+      "observed": false,
+      "subprocess_s": 80.1701647201553,
+      "page_s": 38.59419537009671,
+      "query_s": 7.643113889964297,
+      "scoring_s": 0.4353050100617111,
+      "encoding_s": 46.237365069799125,
+      "total_s": 69.94707227009349,
+      "page_per_s": 2.8760801704912407,
+      "scores_exact": true
+    },
+    {
+      "index": 1,
+      "observed": true,
+      "subprocess_s": 81.36596701992676,
+      "page_s": 39.01077554002404,
+      "query_s": 7.596123020164669,
+      "scoring_s": 0.2952949800528586,
+      "encoding_s": 46.60694612003863,
+      "total_s": 71.27326374012046,
+      "page_per_s": 2.845367682734656,
+      "scores_exact": true
+    },
+    {
+      "index": 2,
+      "observed": true,
+      "subprocess_s": 85.4442680098582,
+      "page_s": 40.453819550108165,
+      "query_s": 7.839639380108565,
+      "scoring_s": 0.5984329399652779,
+      "encoding_s": 48.29350857017562,
+      "total_s": 73.74645700980909,
+      "page_per_s": 2.7438694599037734,
+      "scores_exact": true
+    },
+    {
+      "index": 3,
+      "observed": false,
+      "subprocess_s": 83.35658989008516,
+      "page_s": 40.30315516004339,
+      "query_s": 8.121647709980607,
+      "scoring_s": 0.17008886998519301,
+      "encoding_s": 48.42485674005002,
+      "total_s": 72.16949913999997,
+      "page_per_s": 2.7541268061823003,
+      "scores_exact": true
+    }
+  ],
+  "status": "completed",
+  "page_s": {
+    "observed_mean_s": 39.7322975450661,
+    "control_mean_s": 39.44867526507005,
+    "overhead_percent": 0.718965283600248
+  },
+  "query_s": {
+    "observed_mean_s": 7.717881200136617,
+    "control_mean_s": 7.882380799972452,
+    "overhead_percent": -2.0869278459169416
+  },
+  "encoding_s": {
+    "observed_mean_s": 47.45022734510712,
+    "control_mean_s": 47.33111090492457,
+    "overhead_percent": 0.25166626750390275
+  },
+  "scoring_s": {
+    "observed_mean_s": 0.44686396000906825,
+    "control_mean_s": 0.30269694002345204,
+    "overhead_percent": 47.62751152173741
+  },
+  "total_s": {
+    "observed_mean_s": 72.50986037496477,
+    "control_mean_s": 71.05828570504673,
+    "overhead_percent": 2.0427943842373786
+  }
+}
