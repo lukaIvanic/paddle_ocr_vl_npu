@@ -625,3 +625,23 @@ See [summary](references/hr_multilingual_910b/report.txt),
 [exact commands](references/hr_multilingual_910b/command.txt).
 This validates HR across six languages on 910B2; it is not an eight-domain
 ViDoRe average or a 310P result.
+
+### Image-token budget sweep
+
+`--max-image-tokens` caps merged image tokens through the checkpoint processor's
+existing resize path, before patch extraction. It sets maximum pixel area to
+`budget * (patch_size * merge_size)**2`, retaining the original minimum area,
+RGB conversion, interpolation, normalization, full-page content and prompt.
+For this checkpoint, budgets 1280/640/320/160 correspond to pixel-area caps
+1310720/655360/327680/163840. Fractions refer to area/token budget, not each
+side's length. Aspect-ratio/grid rounding can produce fewer tokens than the cap.
+Omitting the option preserves checkpoint defaults. Query processing, FP16 model
+weights and 2560-dimensional outputs are unchanged.
+
+The full multilingual eighth-budget run uses `--workload full --languages all
+--max-image-tokens 160`. Run the same command at 320 and 640 for the remaining
+sweep points, comparing with the existing 1280-budget baseline. Record actual
+resized dimensions, vision/image/text token counts, page pg/s and query-level
+metrics. The requested override is saved separately from the checkpoint's
+original `processor_image_config`. Existing matching caches may be reused;
+unseen shapes use optimized eager, with no new graph compilation.

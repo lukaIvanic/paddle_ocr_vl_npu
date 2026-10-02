@@ -10,11 +10,25 @@ from unittest.mock import Mock, patch
 import numpy as np
 import torch
 from run_hr_evaluation import (aggregate, distribution, maxsim_column, Journal, select_workload,
-                               metrics_by_language, published_metrics, read_data)
+                               metrics_by_language, published_metrics, read_data, image_resize_kwargs)
 from download_hr_reference import LANGUAGES, FILES, files_for_languages
 
 
 class HrTests(unittest.TestCase):
+    def test_image_budget_keeps_defaults_and_enforces_pixel_area(self):
+        processor=Mock()
+        processor.image_processor.patch_size=16
+        processor.image_processor.merge_size=2
+        processor.image_processor.size={'shortest_edge':4096,'longest_edge':1310720}
+        self.assertEqual(image_resize_kwargs(processor,None),{})
+        for budget in [160,320,640,1280]:
+            self.assertEqual(image_resize_kwargs(processor,budget),
+                {'images_kwargs':{'min_pixels':4096,'max_pixels':budget*1024}})
+        self.assertEqual(processor.image_processor.size['longest_edge'],1310720)
+        for budget in [0,-1,3]:
+            with self.assertRaises(ValueError):
+                image_resize_kwargs(processor,budget)
+
     def test_language_macro_is_not_query_weighted(self):
         queries=[dict(id='e1',language='english'),dict(id='e2',language='english'),
                  dict(id='f1',language='french')]

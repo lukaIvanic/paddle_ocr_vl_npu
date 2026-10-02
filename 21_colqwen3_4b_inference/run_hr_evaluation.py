@@ -108,6 +108,19 @@ def field(row, *names):
     raise ValueError(f'Missing {names}: {list(row)}')
 
 
+def image_resize_kwargs(processor, max_image_tokens):
+    """Cap image area before patch extraction; preserve the processor defaults otherwise."""
+    if max_image_tokens is None:
+        return {}
+    image=processor.image_processor
+    factor=image.patch_size*image.merge_size
+    max_pixels=max_image_tokens*factor**2
+    min_pixels=image.size['shortest_edge']
+    if max_image_tokens<=0 or max_pixels<min_pixels:
+        raise ValueError('Image token budget must be positive and cover the minimum image area')
+    return {'images_kwargs':{'min_pixels':min_pixels,'max_pixels':max_pixels}}
+
+
 def read_data(root, languages=('english',)):
     import pyarrow.parquet as pq
     for name,digest in files_for_languages(languages).items():
@@ -226,9 +239,12 @@ def run(args, result, journal):
         model=LocalColQwen3.from_pretrained(args.model,device=args.device)
     with journal.section(setup,'processor_and_execution_setup'):
         processor=AutoProcessor.from_pretrained(args.model,trust_remote_code=True,local_files_only=True)
+        resize_kwargs=image_resize_kwargs(processor,args.max_image_tokens)
         execution=Execution(model,args,journal)
         torch.npu.synchronize()  # Existing setup-completion boundary, not subsection timing.
     result['processor_image_config']=processor.image_processor.to_dict()
+    result['image_resize_override']=resize_kwargs
+    result['max_image_tokens']=args.max_image_tokens
     journal.emit('model_load_finish')
     setup['wall_s']=time.perf_counter()-setup_start
     journal.complete(setup,1,1,setup_start); records.append(setup)
@@ -256,7 +272,7 @@ def run(args, result, journal):
                     with Image.open(io.BytesIO(payload)) as image:
                         image=image.convert('RGB')
                         row['image_size']=list(image.size)
-                        batch=processor.process_images([image])
+                        batch=processor.process_images([image],**resize_kwargs)
                     row['image_sha256']=hashlib.sha256(payload).hexdigest()
                 else:
                     batch=processor.process_queries([item['text']])
@@ -264,6 +280,12 @@ def run(args, result, journal):
             tt=int(batch['attention_mask'].sum())
             row.update(vision_tokens=vt,text_tokens=tt,image_grid_thw=batch.get('image_grid_thw',torch.empty(0)).tolist())
             row['merged_image_tokens']=int((batch['input_ids']==model.config.image_token_id).sum())
+            if vt:
+                grid=batch['image_grid_thw'][0].tolist()
+                patch=processor.image_processor.patch_size
+                row['resized_image_wh']=[grid[2]*patch,grid[1]*patch]
+                if args.max_image_tokens is not None and row['merged_image_tokens']>args.max_image_tokens:
+                    raise ValueError('Processor exceeded the requested image token budget')
             row['prompt_or_query_tokens']=tt-row['merged_image_tokens']
             with journal.section(row,'input_transfer',device=True):
                 batch={k:v.to(args.device) for k,v in batch.items()}
@@ -399,8 +421,12 @@ def main(observer_factory=Journal):
     p.add_argument('--cache-root',type=Path,default=Path('.runtime_cache/21_colqwen3/prepared'))
     p.add_argument('--workload',choices=('dev','full'),default='dev',help='Full HR only by explicit request')
     p.add_argument('--languages',nargs='+',choices=(*LANGUAGES,'all'),default=['english'])
+    p.add_argument('--max-image-tokens',type=int,
+                   help='Merged image-token area budget; omitted preserves checkpoint resolution')
     p.add_argument('--profile',action='store_true',help='Profile selected real items in the complete pipeline')
     args=p.parse_args()
+    if args.max_image_tokens is not None and args.max_image_tokens<=0:
+        p.error('--max-image-tokens must be positive')
     args.languages=list(LANGUAGES) if args.languages==['all'] else args.languages
     if 'all' in args.languages or len(set(args.languages))!=len(args.languages):
         p.error('Use all alone, or distinct language names')
