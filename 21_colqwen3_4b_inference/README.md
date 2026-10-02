@@ -708,3 +708,10 @@ with independent optimized B1 embeddings and checks processor inputs exactly.
 Then run the fixed dev evaluation at B1, B2, B4, B8, B16 and B32, comparing
 scores/rankings/metrics with the fresh B1 result. These are development results;
 they do not replace full-corpus multilingual quality evaluation.
+
+The initial real-page NPU parity gate found batch-dependent embedding drift,
+despite exact processor inputs, rotary encodings and attention masks. Use
+`--record-drift` on the parity probe only for an explicitly exploratory quality
+and performance measurement: it records the unchanged strict equivalence verdict,
+still requires finite embeddings/exact inputs, and strictly checks same-shape
+cross-page isolation. A completed drift probe is not a passed equivalence gate.

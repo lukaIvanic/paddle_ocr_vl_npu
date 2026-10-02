@@ -20,6 +20,7 @@ def main():
     p.add_argument('--model',required=True)
     p.add_argument('--dataset-root',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--record-drift',action='store_true',help='Record failed numerical equivalence without treating it as passed; still reject nonfinite or changed inputs')
     args=p.parse_args()
     import torch_npu
     from transformers import AutoProcessor
@@ -81,7 +82,21 @@ def main():
         results.append(row)
         args.output.write_text(json.dumps(results,indent=2)+'\n')
         print(json.dumps(row),flush=True)
-        if not row['passed']:raise AssertionError('Real-page batching parity failed')
+        if not row['finite']:raise AssertionError('Nonfinite batch embeddings')
+        if not row['passed'] and not args.record_drift:
+            raise AssertionError('Real-page batching parity failed')
+    def encode_two(pair):
+        batch={k:v.to('npu:0') for k,v in processor.process_images(pair).items()}
+        prepared=prepare_batched_images(model,batch,patch)
+        vo=vision(*prepared.vision_args)
+        return finish_embeddings(model,prepared,text(*text_args_for_promptfa(prepare_text(model,prepared,vo)))).cpu()
+    mixed=encode_two(images[:2])
+    repeated=encode_two([images[0],images[0]])
+    isolation=dict(check='same_shape_neighbor_replacement',first_page_bit_exact=bool(torch.equal(mixed[0],repeated[0])))
+    results.append(isolation)
+    args.output.write_text(json.dumps(results,indent=2)+'\n')
+    print(json.dumps(isolation),flush=True)
+    if not isolation['first_page_bit_exact']:raise AssertionError('Cross-page isolation check failed')
     for image in images:image.close()
 
 if __name__=='__main__':main()
