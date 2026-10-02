@@ -4,10 +4,8 @@ Only existing compatible transformer caches are used. Uncached shapes explicitly
 use optimized raw eager; no per-shape compilation or silent failure fallback.
 """
 import argparse
-from collections import Counter, defaultdict
-from contextlib import contextmanager
+from collections import defaultdict
 from dataclasses import asdict
-from datetime import datetime, timezone
 import faulthandler
 import hashlib
 import io
@@ -266,6 +264,8 @@ def run(args, result, journal):
             profiler.step()
         result[kind+'_encoding_s']=time.perf_counter()-window
     result['encoding_s']=time.perf_counter()-encoding_start
+    result['encoding_outside_item_spans_s']=result['encoding_s']-sum(
+        r['wall_s'] for r in records if r['kind'] in ('page','query'))
     result['page_per_s']=len(corpus)/result['page_encoding_s']
     result['cache_records']=execution.compiler.records
     score_setup=dict(kind='setup',id='scoring_setup',sections={})

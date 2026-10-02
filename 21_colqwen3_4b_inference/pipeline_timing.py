@@ -29,7 +29,7 @@ class Journal:
         begin = time.perf_counter()
         with self.lock:
             self.events.write(json.dumps(row)+'\n')
-            if phase not in ('section_start','section_finish'):
+            if phase not in ('section_start','section_finish','device_resolution'):
                 print('HR_EVAL '+json.dumps(row), flush=True)
                 self.events.flush()
         self.write_s += time.perf_counter()-begin
@@ -67,7 +67,7 @@ class Journal:
                 stats['route'] = route
             if a is not None:
                 stats['device_status'] = 'pending'
-                self.pending.append((a,b,stats))
+                self.pending.append((a,b,stats,dict(kind=record['kind'],id=record['id'],section=name)))
             record['sections'][name] = stats
             self.emit('section_finish',kind=record['kind'],id=record['id'],section=name,**stats)
             self.active = None
@@ -75,13 +75,14 @@ class Journal:
     def resolve(self):
         """Called after natural materialization; never waits for incomplete events."""
         pending = []
-        for a,b,stats in self.pending:
+        for a,b,stats,identity in self.pending:
             if b.query():
                 ms = float(a.elapsed_time(b))
                 stats.update(device_interval_ms=ms,device_status='complete',
                              device_tok_s=stats['tokens']*1000/ms if ms and stats['tokens'] else None)
+                self.emit('device_resolution',**identity,**stats)
             else:
-                pending.append((a,b,stats))
+                pending.append((a,b,stats,identity))
         self.pending = pending
 
     def complete(self, row, completed, total, window):
