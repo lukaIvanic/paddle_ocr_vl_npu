@@ -9,10 +9,50 @@ import time
 from unittest.mock import Mock, patch
 import numpy as np
 import torch
-from run_hr_evaluation import aggregate, distribution, maxsim_column, Journal, select_workload
+from run_hr_evaluation import (aggregate, distribution, maxsim_column, Journal, select_workload,
+                               metrics_by_language, published_metrics, read_data)
+from download_hr_reference import LANGUAGES, FILES, files_for_languages
 
 
 class HrTests(unittest.TestCase):
+    def test_language_macro_is_not_query_weighted(self):
+        queries=[dict(id='e1',language='english'),dict(id='e2',language='english'),
+                 dict(id='f1',language='french')]
+        per_query={'e1':{'recall_10':1.},'e2':{'recall_10':0.},'f1':{'recall_10':0.}}
+        by_language,macro=metrics_by_language(queries,per_query)
+        self.assertEqual(by_language['english']['recall_10'],.5)
+        self.assertEqual(macro['recall_10'],.25)
+        with self.assertRaisesRegex(ValueError,'IDs mismatch'):
+            metrics_by_language(queries,{'e1':{'recall_10':1.}})
+
+    def test_published_reference_uses_selected_language(self):
+        by_language,macro=published_metrics(['english','french'])
+        self.assertEqual(by_language['english']['recall_10'],.7072)
+        self.assertEqual(by_language['french']['recall_10'],.66385)
+        self.assertAlmostEqual(macro['recall_10'],(.7072+.66385)/2)
+        self.assertEqual(files_for_languages(['english']),FILES)
+        self.assertEqual(len(files_for_languages(LANGUAGES)),8)
+
+    def test_multilingual_loader_shared_qrels_and_duplicate_guard(self):
+        # Model the pinned layout: one shared corpus/qrels and separate queries.
+        corpus=[{'_id':str(i),'image':None} for i in range(1110)]
+        rows={f'{lang}-queries':[{'_id':f'{lang}-{i}','text':'query'} for i in range(318)]
+              for lang in ['english','french']}
+        rows['english-corpus']=corpus
+        rows['english-qrels']=[{'query-id':q['_id'],'corpus-id':'0','score':1}
+                              for lang in ['english','french'] for q in rows[lang+'-queries']]
+        def read(path):
+            return Mock(to_pylist=lambda:rows[path.parent.name])
+        files=files_for_languages(['english','french'])
+        with patch('run_hr_evaluation.sha256',side_effect=lambda p:files[str(p.relative_to('/data'))]), \
+                patch('pyarrow.parquet.read_table',side_effect=read):
+            c,q,r=read_data(Path('/data'),['english','french'])
+            self.assertEqual((len(c),len(q),len(r)),(1110,636,636))
+            self.assertEqual(q[318]['language'],'french')
+            rows['french-queries'][0]['_id']=rows['english-queries'][0]['_id']
+            with self.assertRaisesRegex(ValueError,'Duplicate IDs'):
+                read_data(Path('/data'),['english','french'])
+
     def test_maxsim_ragged_queries_and_zero_document_rows(self):
         q=[torch.tensor([[-1.,0.],[0.,1.]]),torch.tensor([[1.,1.]])]
         d=torch.tensor([[1.,0.],[0.,0.]])

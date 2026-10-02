@@ -1,4 +1,4 @@
-"""Instrumented, exact-corpus English HR retrieval; NPU encoding and FP32 MaxSim.
+"""Instrumented, exact-corpus HR retrieval; NPU encoding and FP32 MaxSim.
 
 Only existing compatible transformer caches are used. Uncached shapes explicitly
 use optimized raw eager; no per-shape compilation or silent failure fallback.
@@ -22,7 +22,7 @@ import traceback
 import numpy as np
 import torch
 
-from download_hr_reference import FILES, REPO, REVISION
+from download_hr_reference import LANGUAGES, REPO, REVISION, files_for_languages
 from local_modeling_colqwen3 import LocalColQwen3
 from optimized_prefill import (Options, OptimizedVisionStage, OptimizedTextStage,
                                configure_compiler, text_args_for_promptfa)
@@ -108,31 +108,60 @@ def field(row, *names):
     raise ValueError(f'Missing {names}: {list(row)}')
 
 
-def read_data(root):
+def read_data(root, languages=('english',)):
     import pyarrow.parquet as pq
-    for name,digest in FILES.items():
+    for name,digest in files_for_languages(languages).items():
         if sha256(root/name)!=digest:
             raise ValueError(f'Dataset hash mismatch: {name}')
-    def read(component):
-        return pq.read_table(root/f'english-{component}/test-00000-of-00001.parquet').to_pylist()
+    def read(component, language='english'):
+        return pq.read_table(root/f'{language}-{component}/test-00000-of-00001.parquet').to_pylist()
     corpus=[dict(id=str(field(r,'_id','corpus_id','id')),image=r['image']) for r in read('corpus')]
-    queries=[dict(id=str(field(r,'_id','query_id','id')),text=field(r,'text','query')) for r in read('queries')]
+    queries=[]
+    for language in languages:
+        rows=read('queries',language)
+        if len(rows)!=318:
+            raise ValueError(f'Unexpected HR query count: {language}')
+        queries.extend(dict(id=str(field(r,'_id','query_id','id')),text=field(r,'text','query'),
+                            language=language) for r in rows)
     qrels=defaultdict(dict)
     for r in read('qrels'):
         qid=str(field(r,'query-id','query_id')); cid=str(field(r,'corpus-id','corpus_id'))
         if cid in qrels[qid]:
             raise ValueError('Duplicate qrel')
         qrels[qid][cid]=int(r['score'])
-    if len(corpus)!=1110 or len(queries)!=318:
-        raise ValueError('Unexpected HR English counts')
+    if len(corpus)!=1110 or len(queries)!=318*len(languages):
+        raise ValueError('Unexpected HR counts')
     cids={r['id'] for r in corpus}; qids={r['id'] for r in queries}
     if len(cids)!=len(corpus) or len(qids)!=len(queries):
         raise ValueError('Duplicate IDs')
-    # The English MTEB qrels file deliberately contains all 1,908 translated
-    # query IDs; only the 318 IDs in English queries are evaluated.
+    # All language components share the same qrels containing all 1,908 IDs.
     if not qids<=set(qrels) or any(not set(v)<=cids for v in qrels.values()):
         raise ValueError('Invalid qrel references')
     return corpus,queries,dict(qrels)
+
+
+def metrics_by_language(queries, per_query):
+    groups=defaultdict(list)
+    if set(per_query)!={q['id'] for q in queries}:
+        raise ValueError('Metric query IDs mismatch')
+    for q in queries:
+        groups[q['language']].append(per_query[q['id']])
+    metrics={lang:{k:float(np.mean([v[k] for v in rows])) for k in rows[0]}
+             for lang,rows in groups.items()}
+    macro={k:float(np.mean([v[k] for v in metrics.values()])) for k in next(iter(metrics.values()))}
+    return metrics,macro
+
+
+def published_metrics(languages):
+    rows=json.loads(Path(__file__).with_name('references').joinpath(
+        'hr_protocol/published_result.json').read_text())['scores']['test']
+    names={'recall_10':'recall_at_10','ndcg_cut_10':'ndcg_at_10','map_cut_10':'map_at_10'}
+    by_language={r['hf_subset']:{k:r[v] for k,v in names.items()}
+                 for r in rows if r['hf_subset'] in languages}
+    if set(by_language)!=set(languages):
+        raise ValueError('Published reference language mismatch')
+    macro={k:float(np.mean([v[k] for v in by_language.values()])) for k in names}
+    return by_language,macro
 
 
 def maxsim_column(query_flat, document, offsets):
@@ -177,9 +206,12 @@ def run(args, result, journal):
     result.update(device=torch.npu.get_device_name(),physical_npu=os.getenv('ASCEND_RT_VISIBLE_DEVICES'),
                   torch=torch.__version__,torch_npu=torch_npu.__version__,options=asdict(Options()))
     with journal.section(setup,'dataset_read_verify'):
-        corpus,queries,qrels=read_data(args.dataset_root)
-    result['qrels_inventory']={'query_ids_in_file':len(qrels),'english_query_ids':len(queries),
-                              'policy':'evaluate only IDs in the English query component'}
+        corpus,queries,qrels=read_data(args.dataset_root,args.languages)
+    result['qrels_inventory']={'query_ids_in_file':len(qrels),
+                              'query_ids_by_language':{lang:sum(q['language']==lang for q in queries)
+                                                       for lang in args.languages},
+                              'policy':'evaluate only IDs in the selected language query components'}
+    result['dataset_files']=files_for_languages(args.languages)
     with journal.section(setup,'workload_select'):
         corpus,queries,qrels=select_workload(corpus,queries,qrels,args.workload)
         manifest=dict(selection='hr-dev-v1' if args.workload=='dev' else 'full',
@@ -215,6 +247,8 @@ def run(args, result, journal):
         for index,item in enumerate(items):
             begin=time.perf_counter()
             row=dict(kind=kind,id=item['id'],index=index,sections={})
+            if kind=='query':
+                row['language']=item['language']
             journal.emit('item_start',kind=kind,id=item['id'],index=index,total=len(items))
             with journal.section(row,'preprocess'):
                 if kind=='page':
@@ -268,39 +302,50 @@ def run(args, result, journal):
         r['wall_s'] for r in records if r['kind'] in ('page','query'))
     result['page_per_s']=len(corpus)/result['page_encoding_s']
     result['cache_records']=execution.compiler.records
-    score_setup=dict(kind='setup',id='scoring_setup',sections={})
-    score_setup_start=time.perf_counter()
-    with journal.section(score_setup,'scoring_prepare'):
-        offsets=np.cumsum([0]+[len(q) for q in query_embeddings[:-1]]).tolist()
-        query_flat=torch.cat(query_embeddings).to(args.device)
-    score_setup['wall_s']=time.perf_counter()-score_setup_start
-    journal.complete(score_setup,1,1,score_setup_start); records.append(score_setup)
     max_document_rows=max(r['embedding_rows'] for r in records if r['kind']=='page')
     result['scoring_document_padding']='zero floor for documents shorter than corpus maximum, matching MTEB global padding'
+    result['scoring_query_groups']='one language at a time; original query order and FP32 MaxSim'
     scores=np.empty((len(queries),len(corpus)),dtype=np.float32)
     scoring_start=time.perf_counter()
     score_records=[]
-    for index,item in enumerate(corpus):
-        row=dict(kind='score',id=item['id'],index=index,sections={})
-        start=time.perf_counter()
-        row.update(query_tokens=len(query_flat),document_tokens=len(page_embeddings[index]),queries=len(queries))
-        with journal.section(row,'embedding_transfer',device=True):
-            document=page_embeddings[index].to(args.device)
-            if len(document)<max_document_rows:
-                # One zero row has the same MaxSim effect as all MTEB padding
-                # rows, without performing a larger all-zero matmul.
-                document=torch.cat((document,document.new_zeros(1,document.shape[-1])))
-        with journal.section(row,'maxsim',device=True):
-            maxima=(query_flat @ document.float().T).amax(-1)
-        with journal.section(row,'score_materialize_wait'):
-            values=maxima.cpu().numpy()
-        with journal.section(row,'query_score_reduction'):
-            scores[:,index]=np.add.reduceat(values,np.asarray(offsets,dtype=np.int64))
-        row['wall_s']=time.perf_counter()-start
-        score_records.append(row)
-        journal.complete(row,index+1,len(corpus),scoring_start)
-        profiler.step()
+    result['scoring_s_by_language']={}
+    for language_index,language in enumerate(args.languages):
+        indices=[i for i,q in enumerate(queries) if q['language']==language]
+        language_start=time.perf_counter()
+        score_setup=dict(kind='setup',id='scoring_setup_'+language,sections={})
+        score_setup_start=time.perf_counter()
+        with journal.section(score_setup,'scoring_prepare'):
+            selected=[query_embeddings[i] for i in indices]
+            offsets=np.cumsum([0]+[len(q) for q in selected[:-1]]).tolist()
+            query_flat=torch.cat(selected).to(args.device)
+        score_setup['wall_s']=time.perf_counter()-score_setup_start
+        journal.complete(score_setup,1,1,score_setup_start); records.append(score_setup)
+        journal.emit('language_scoring_start',language=language,queries=len(indices))
+        for index,item in enumerate(corpus):
+            row=dict(kind='score',id=item['id'],language=language,index=index,sections={})
+            start=time.perf_counter()
+            row.update(query_tokens=len(query_flat),document_tokens=len(page_embeddings[index]),queries=len(indices))
+            with journal.section(row,'embedding_transfer',device=True):
+                document=page_embeddings[index].to(args.device)
+                if len(document)<max_document_rows:
+                    # Preserve the official padded scorer's zero floor.
+                    document=torch.cat((document,document.new_zeros(1,document.shape[-1])))
+            with journal.section(row,'maxsim',device=True):
+                maxima=(query_flat @ document.float().T).amax(-1)
+            with journal.section(row,'score_materialize_wait'):
+                values=maxima.cpu().numpy()
+            with journal.section(row,'query_score_reduction'):
+                scores[indices,index]=np.add.reduceat(values,np.asarray(offsets,dtype=np.int64))
+            row['wall_s']=time.perf_counter()-start
+            score_records.append(row)
+            journal.complete(row,language_index*len(corpus)+index+1,len(args.languages)*len(corpus),scoring_start)
+            profiler.step()
+        result['scoring_s_by_language'][language]=time.perf_counter()-language_start
+        journal.emit('language_scoring_finish',language=language,elapsed_s=result['scoring_s_by_language'][language])
+        del query_flat
     result['scoring_s']=time.perf_counter()-scoring_start
+    result['query_encoding_item_s_by_language']={lang:sum(r['wall_s'] for r in records
+        if r['kind']=='query' and r['language']==lang) for lang in args.languages}
     profiler.close()
     journal.resolve()
     if not np.isfinite(scores).all():
@@ -331,9 +376,16 @@ def run(args, result, journal):
     journal.complete(final,1,1,final_start); records.append(final)
     result['timings']=aggregate(records)
     result['scoring_timings']=aggregate(score_records)
-    result.update(metrics=metrics,status='completed' if result['full_domain'] else 'completed_development',
-                  reference_ndcg_at_10=.66088,
-                  reference_delta=metrics['ndcg_cut_10']-.66088 if result['full_domain'] else None)
+    by_language,macro=metrics_by_language(queries,per_query)
+    references,reference_macro=published_metrics(args.languages)
+    result.update(metrics=metrics,metrics_by_language=by_language,macro_metrics=macro,
+                  aggregation='metrics: mean over queries; macro_metrics: equal mean over languages',
+                  reference_metrics_by_language=references,reference_macro_metrics=reference_macro,
+                  status='completed' if result['full_domain'] else 'completed_development',
+                  reference_ndcg_at_10=reference_macro['ndcg_cut_10'],
+                  reference_delta=macro['ndcg_cut_10']-reference_macro['ndcg_cut_10'] if result['full_domain'] else None)
+    (args.output_dir/'query_languages.json').write_text(json.dumps(
+        {q['id']:q['language'] for q in queries},indent=2)+'\n')
     journal.emit('evaluation_finish',metrics=metrics,full_domain=result['full_domain'],
                  reference_delta=result['reference_delta'],page_per_s=result['page_per_s'])
 
@@ -346,8 +398,14 @@ def main(observer_factory=Journal):
     p.add_argument('--device',default='npu:0')
     p.add_argument('--cache-root',type=Path,default=Path('.runtime_cache/21_colqwen3/prepared'))
     p.add_argument('--workload',choices=('dev','full'),default='dev',help='Full HR only by explicit request')
+    p.add_argument('--languages',nargs='+',choices=(*LANGUAGES,'all'),default=['english'])
     p.add_argument('--profile',action='store_true',help='Profile selected real items in the complete pipeline')
     args=p.parse_args()
+    args.languages=list(LANGUAGES) if args.languages==['all'] else args.languages
+    if 'all' in args.languages or len(set(args.languages))!=len(args.languages):
+        p.error('Use all alone, or distinct language names')
+    if args.workload=='dev' and args.languages!=['english']:
+        p.error('The fixed development workload is English-only; select --workload full')
     if not args.device.startswith('npu:'):
         p.error('NPU required')
     args.output_dir.mkdir(parents=True,exist_ok=False)
@@ -358,7 +416,7 @@ def main(observer_factory=Journal):
                 model_config_sha256=sha256(Path(args.model)/'config.json'),
                 processor_sha256=sha256(Path(args.model)/'processing_ops_colqwen3.py'),
                 commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
-                workload=args.workload,profiler=args.profile,
+                workload=args.workload,languages=args.languages,profiler=args.profile,
                 scope='B1 sequential real pipeline; deferred event intervals, host spans, no embedding serialization',
                 scoring='FP32 NPU dot/max, CPU FP32 per-query sum; full 2560 dimensions; pytrec_eval metrics')
     try:

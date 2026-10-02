@@ -558,3 +558,25 @@ The 6.8 GB embeddings, full score matrix and rankings remain on the 910B under
 they are not committed to Git. See [the run protocol](VIDORE_V3.md) for replay.
 The corrected 8-page/8-query NPU preflight passed before this run. Local tests
 now total 29, including score reduction and progress-clock regression coverage.
+
+### Multilingual HR evaluation
+
+`run_hr_evaluation.py --workload full --languages all` evaluates English,
+French, German, Italian, Portuguese and Spanish (318 queries each, 1,908 total)
+against the same 1,110 pages. English remains the default; the fixed development
+workload remains English-only. FP16/B1 encoding and the observer are unchanged.
+Page embeddings stay in CPU memory and are reused across all languages. Scoring
+runs one language at a time, retaining the original 318-query FP32 MaxSim shape
+for English and bounding temporary NPU memory.
+
+First run `download_hr_reference.py --root <dataset-root> --languages all`.
+The revision and SHA256 hashes are pinned. All six upstream corpus and qrels
+files have identical content hashes, so the downloader retains one English-named
+copy of those shared components and downloads only the additional query files.
+The loader verifies query counts, unique IDs and relevance references.
+
+Results include `metrics_by_language`, equally weighted `macro_metrics`, the
+matching per-language published references, and timings by language. With 318
+queries in each language, the language macro mean equals the query mean.
+`query_languages.json` identifies every row in the combined score matrix.
+A full HR multilingual score is still only one domain of ViDoRe v3.
