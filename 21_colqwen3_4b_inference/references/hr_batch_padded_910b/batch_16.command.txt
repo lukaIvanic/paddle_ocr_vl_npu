@@ -1,0 +1,4 @@
+d8aedf0fb5c2f9b0749bb587b0897c0502b4c18f
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=7
+/workspace/venvs/colqwen3_hf_py312/bin/python -u /workspace/repos/colqwen_hr_multilingual_20261002/21_colqwen3_4b_inference/run_hr_evaluation.py --model /workspace/models/Ops-Colqwen3-4B --dataset-root /workspace/datasets/ViDoRe_v3_hr_mteb_reference --cache-root /workspace/repos/paddle_ocr_vl_npu/.runtime_cache/21_colqwen3/prepared --output-dir /workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/hr_batch_padded_d8aedf0f_20261002/batch_16 --workload dev --page-batch-size 16

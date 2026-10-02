@@ -1,0 +1,6 @@
+d8aedf0fb5c2f9b0749bb587b0897c0502b4c18f
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=7
+source npu-setup
+cd /workspace/repos/colqwen_hr_multilingual_20261002
+/workspace/venvs/colqwen3_hf_py312/bin/python -m unittest discover -s 21_colqwen3_4b_inference -p 'test_*.py'

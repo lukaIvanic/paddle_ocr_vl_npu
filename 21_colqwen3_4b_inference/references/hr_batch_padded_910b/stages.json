@@ -1,0 +1,37 @@
+[
+  {
+    "name": "parity",
+    "wall_s": 40.56427191011608,
+    "exit_code": 0
+  },
+  {
+    "name": "batch_1",
+    "wall_s": 78.6827874199953,
+    "exit_code": 0
+  },
+  {
+    "name": "batch_2",
+    "wall_s": 77.83705249009654,
+    "exit_code": 0
+  },
+  {
+    "name": "batch_4",
+    "wall_s": 77.79842435987666,
+    "exit_code": 0
+  },
+  {
+    "name": "batch_8",
+    "wall_s": 76.34138632006943,
+    "exit_code": 0
+  },
+  {
+    "name": "batch_16",
+    "wall_s": 76.61806676001288,
+    "exit_code": 0
+  },
+  {
+    "name": "batch_32",
+    "wall_s": 83.11798796011135,
+    "exit_code": 0
+  }
+]

@@ -1,0 +1,162 @@
+{
+  "query-test-1": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.3562071871080222,
+    "map_cut_10": 0.16666666666666666
+  },
+  "query-test-12": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.6309297535714575,
+    "map_cut_10": 0.5
+  },
+  "query-test-16": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.6309297535714575,
+    "map_cut_10": 0.5
+  },
+  "query-test-25": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-35": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-44": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.9197207891481876,
+    "map_cut_10": 0.8333333333333333
+  },
+  "query-test-45": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.6309297535714575,
+    "map_cut_10": 0.5
+  },
+  "query-test-56": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-62": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.6309297535714575,
+    "map_cut_10": 0.5
+  },
+  "query-test-65": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-82": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-85": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.9197207891481876,
+    "map_cut_10": 0.8333333333333333
+  },
+  "query-test-89": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.5912352048230277,
+    "map_cut_10": 0.39285714285714285
+  },
+  "query-test-91": {
+    "recall_10": 0.3333333333333333,
+    "ndcg_cut_10": 0.2960819109658652,
+    "map_cut_10": 0.16666666666666666
+  },
+  "query-test-96": {
+    "recall_10": 0.75,
+    "ndcg_cut_10": 0.7757386182436072,
+    "map_cut_10": 0.625
+  },
+  "query-test-97": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.48381288316677695,
+    "map_cut_10": 0.26666666666666666
+  },
+  "query-test-103": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.9469024295259745,
+    "map_cut_10": 0.8666666666666667
+  },
+  "query-test-116": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-124": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-133": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-157": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-184": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-191": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.2890648263178879,
+    "map_cut_10": 0.1
+  },
+  "query-test-200": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.31546487678572877,
+    "map_cut_10": 0.125
+  },
+  "query-test-205": {
+    "recall_10": 0.0,
+    "ndcg_cut_10": 0.0,
+    "map_cut_10": 0.0
+  },
+  "query-test-220": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.6309297535714575,
+    "map_cut_10": 0.5
+  },
+  "query-test-226": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-228": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 1.0,
+    "map_cut_10": 1.0
+  },
+  "query-test-241": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.3333333333333333,
+    "map_cut_10": 0.14285714285714285
+  },
+  "query-test-248": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.9197207891481876,
+    "map_cut_10": 0.8333333333333333
+  },
+  "query-test-288": {
+    "recall_10": 0.0,
+    "ndcg_cut_10": 0.0,
+    "map_cut_10": 0.0
+  },
+  "query-test-1815": {
+    "recall_10": 1.0,
+    "ndcg_cut_10": 0.6309297535714575,
+    "map_cut_10": 0.5
+  }
+}

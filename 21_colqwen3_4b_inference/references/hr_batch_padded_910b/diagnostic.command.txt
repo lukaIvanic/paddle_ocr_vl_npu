@@ -1,0 +1,6 @@
+77200327166163232fe55dc98bc4ad2911cf1c3d
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=7
+source npu-setup
+cd /workspace/repos/colqwen_hr_multilingual_20261002
+/workspace/venvs/colqwen3_hf_py312/bin/python -u 21_colqwen3_4b_inference/diagnose_hr_batch.py --model /workspace/models/Ops-Colqwen3-4B --dataset-root /workspace/datasets/ViDoRe_v3_hr_mteb_reference --output /workspace/recovery/20261002_colqwen_batch/diagnostic.json

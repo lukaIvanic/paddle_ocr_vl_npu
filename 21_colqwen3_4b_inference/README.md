@@ -715,3 +715,47 @@ despite exact processor inputs, rotary encodings and attention masks. Use
 and performance measurement: it records the unchanged strict equivalence verdict,
 still requires finite embeddings/exact inputs, and strictly checks same-shape
 cross-page isolation. A completed drift probe is not a passed equivalence gate.
+
+### Fixed padded batch sweep — 910B2 development results
+
+At `d8aedf0f`, tested the fixed 111-page / 32-English-query HR development set
+at full checkpoint resolution (1260 actual image tokens per page). Each batch
+size ran in a separate process; page throughput includes real-page preprocessing,
+model inference, padding compute, CPU materialization and validation. B1 is a
+fresh same-subset reference. Every final batch is padded to the requested size.
+
+| Batch | Padded slots | Pages/s | Speedup | Page encoding, s | Evaluation, s | Peak allocated NPU, GiB |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 | 0 | 2.992 | 1.000x | 37.103 | 69.721 | 13.126 |
+| 2 | 1 | 3.113 | 1.041x | 35.656 | 66.573 | 13.334 |
+| 4 | 1 | 3.134 | 1.048x | 35.414 | 66.607 | 13.886 |
+| 8 | 1 | 3.274 | 1.094x | 33.901 | 65.335 | 14.987 |
+| 16 | 1 | 3.062 | 1.023x | 36.256 | 68.015 | 17.196 |
+| 32 | 17 | 2.672 | 0.893x | 41.546 | 73.122 | 21.609 |
+
+Recall@10 was **90.8854% at every batch size**. B1/B2/B8/B16/B32 also shared
+nDCG@10 71.5552% and MAP@10 63.4189%; B4 measured 71.6643% and 63.6012%.
+These are small development-set scores against 111 candidate pages, not the
+full-corpus multilingual scores. B8 was fastest in this single sweep (+9.4%);
+B32 was slower than B1, including its 17 filler slots. No repeated-run confidence
+estimate or general batch-size optimum is established.
+
+**Strict embedding equivalence did not pass.** The mixed-orientation NPU
+probe found exact processor inputs, rotary encodings and attention masks, with
+numerical differences inside the forward pass. Same-shape replacement of a
+batch neighbor left the first page's embeddings bit-exact, confirming isolation
+for that check. Batched scores and some top-10 sets/orders changed. The dev
+metrics above measure the consequence; they do not turn the failed numerical
+equivalence verdict into a pass. The original strict thresholds are preserved.
+
+All 38 unit/contract tests passed. Completed runs retained the exact workload
+and IDs, finite scores, full-resolution tokens, and zero pending observer events.
+No new transformer graphs were compiled. Setup/query/scoring time is included
+in evaluation time; process startup/shutdown is recorded separately.
+
+See [report](references/hr_batch_padded_910b/report.txt),
+[comparisons](references/hr_batch_padded_910b/comparisons.json),
+[numerical probe](references/hr_batch_padded_910b/parity.json), and
+[stage diagnostic](references/hr_batch_padded_910b/diagnostic.json).
+Exact commands, environment hashes, per-query metrics and rankings are retained
+alongside them; full observer artifacts remain in the documented run directory.

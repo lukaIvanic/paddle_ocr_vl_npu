@@ -1,0 +1,75 @@
+{
+  "1": {
+    "input_transfer": 0.2624846803955734,
+    "output_materialize_wait": 0.1350710701663047,
+    "preprocess": 16.372822877485305,
+    "retrieval_projection": 0.05392035865224898,
+    "text_dispatch": 0.022533789509907365,
+    "text_prepare": 2.7405145780649036,
+    "text_transformer": 8.689687359379604,
+    "validate_retain": 1.3830450989771634,
+    "vision_dispatch": 0.024729890283197165,
+    "vision_prepare": 1.7464591595344245,
+    "vision_transformer": 5.340774670243263
+  },
+  "2": {
+    "batch_slot_padding": 0.008764190133661032,
+    "input_transfer": 0.20856886031106114,
+    "output_materialize_wait": 2.9220722301397473,
+    "preprocess": 17.63839249801822,
+    "retrieval_projection": 0.035531201865524054,
+    "text_prepare": 4.652109009679407,
+    "text_transformer": 4.189112810883671,
+    "validate_retain": 1.5629599001258612,
+    "vision_prepare": 1.604365830309689,
+    "vision_transformer": 2.6607475101482123
+  },
+  "4": {
+    "batch_slot_padding": 0.015084909973666072,
+    "input_transfer": 0.1778358300216496,
+    "output_materialize_wait": 4.545849570073187,
+    "preprocess": 17.691777730360627,
+    "retrieval_projection": 0.025995081290602684,
+    "text_prepare": 5.907805818831548,
+    "text_transformer": 2.1271528399083763,
+    "validate_retain": 1.8194618492852896,
+    "vision_prepare": 1.6096280205529183,
+    "vision_transformer": 1.4002490104176104
+  },
+  "8": {
+    "batch_slot_padding": 0.057695469819009304,
+    "input_transfer": 0.17586613981984556,
+    "output_materialize_wait": 5.525734919589013,
+    "preprocess": 15.960347349522635,
+    "retrieval_projection": 0.022964989999309182,
+    "text_prepare": 6.822753910440952,
+    "text_transformer": 1.1316367404069752,
+    "validate_retain": 1.669246589532122,
+    "vision_prepare": 1.6298870998434722,
+    "vision_transformer": 0.8437945304904133
+  },
+  "16": {
+    "batch_slot_padding": 0.060113449580967426,
+    "input_transfer": 0.15770927001722157,
+    "output_materialize_wait": 6.8757677401881665,
+    "preprocess": 16.78343208017759,
+    "retrieval_projection": 0.021176889771595597,
+    "text_prepare": 7.903639569878578,
+    "text_transformer": 0.5458698098082095,
+    "validate_retain": 1.7867662901990116,
+    "vision_prepare": 1.6615095902234316,
+    "vision_transformer": 0.4318232899531722
+  },
+  "32": {
+    "batch_slot_padding": 0.21414026012644172,
+    "input_transfer": 0.2064501999411732,
+    "output_materialize_wait": 7.991351480130106,
+    "preprocess": 19.04017446981743,
+    "retrieval_projection": 0.017971259774640203,
+    "text_prepare": 9.137989000184461,
+    "text_transformer": 0.32994848024100065,
+    "validate_retain": 2.401420579990372,
+    "vision_prepare": 1.8671517900656909,
+    "vision_transformer": 0.3155387002043426
+  }
+}

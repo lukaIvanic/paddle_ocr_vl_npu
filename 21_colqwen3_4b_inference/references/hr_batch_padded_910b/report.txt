@@ -1,0 +1,42 @@
+ColQwen3 full-resolution padded page-batch sweep — Ascend 910B2
+Fixed HR dev subset: 111 pages, 32 English queries. FP16, 2560 dimensions.
+Full checkpoint image budget (1280 cap; 1260 actual image tokens, 5040 vision tokens/page).
+B1 fresh reference, followed by B2/B4/B8/B16/B32; one independent process per batch size.
+No new graph compilation or prefetch. Batched pages use optimized eager PromptFA.
+Final batch slots repeat the last real input; padded outputs are discarded.
+Pages/s counts only 111 real pages and includes padding work.
+
+Batch  Padded slots  Pages/s   Speedup   Page seconds  Eval seconds  Peak allocated GiB  Recall@10 %  nDCG@10 %  MAP@10 %
+    1             0    2.992    1.000x        37.103        69.721              13.126      90.8854     71.5552    63.4189
+    2             1    3.113    1.041x        35.656        66.573              13.334      90.8854     71.5552    63.4189
+    4             1    3.134    1.048x        35.414        66.607              13.886      90.8854     71.6643    63.6012
+    8             1    3.274    1.094x        33.901        65.335              14.987      90.8854     71.5552    63.4189
+   16             1    3.062    1.023x        36.256        68.015              17.196      90.8854     71.5552    63.4189
+   32            17    2.672    0.893x        41.546        73.122              21.609      90.8854     71.5552    63.4189
+
+Rankings and numerical score differences vs fresh B1:
+Batch  Max score abs  Mean score abs  Exact top10 order /32  Same top10 set /32
+    1       0.000000        0.000000                     32                  32
+    2       0.357601        0.017739                     16                  27
+    4       0.330543        0.017852                     16                  28
+    8       0.357601        0.017841                     22                  27
+   16       0.357601        0.017739                     16                  27
+   32       0.357601        0.017739                     16                  27
+
+Numerical validation:
+Processor inputs, rotary encodings and attention masks matched independent processing.
+Strict embedding equivalence failed for B>1; the verdict is retained in parity.json.
+The NPU same-shape neighbor replacement check verifies cross-page isolation independently.
+Batch-dependent forward drift is measured, not represented as exact equivalence.
+38 unit/contract tests passed; all completed score matrices were finite, workload/IDs matched,
+all 111 pages retained 1260 image tokens, and all observed device events closed.
+
+Timing: page encoding includes preprocessing, input transfer, forward, real-output CPU materialization,
+validation and observation. Evaluation includes setup, page/query encoding and scoring.
+Child-process startup/shutdown is separate in comparisons.json. These are single-run observations;
+no steady-state warmup exclusion was applied. Small dev quality results do not establish full-HR
+multilingual quality or 310P performance.
+
+Raw server run: /workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/hr_batch_padded_d8aedf0f_20261002
+Local full evidence archive: /home/luka/Documents/Codex/2026-10-01/can-you-connect-to-my-mac/outputs/colqwen-batching/evidence.tar.gz
+Source commit: d8aedf0f (full hash in preflight.json).
