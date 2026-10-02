@@ -25,6 +25,9 @@ class HrTests(unittest.TestCase):
             self.assertEqual(image_resize_kwargs(processor,budget),
                 {'images_kwargs':{'min_pixels':4096,'max_pixels':budget*1024}})
         self.assertEqual(processor.image_processor.size['longest_edge'],1310720)
+        consumed=image_resize_kwargs(processor,160)
+        consumed['images_kwargs'].clear()  # HF ProcessorMixin consumes these options.
+        self.assertEqual(image_resize_kwargs(processor,160)['images_kwargs']['max_pixels'],163840)
         for budget in [0,-1,3]:
             with self.assertRaises(ValueError):
                 image_resize_kwargs(processor,budget)

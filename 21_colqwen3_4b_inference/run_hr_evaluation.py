@@ -272,7 +272,9 @@ def run(args, result, journal):
                     with Image.open(io.BytesIO(payload)) as image:
                         image=image.convert('RGB')
                         row['image_size']=list(image.size)
-                        batch=processor.process_images([image],**resize_kwargs)
+                        # ProcessorMixin consumes nested images_kwargs via pop().
+                        # Build fresh options for every page, preserving result metadata.
+                        batch=processor.process_images([image],**image_resize_kwargs(processor,args.max_image_tokens))
                     row['image_sha256']=hashlib.sha256(payload).hexdigest()
                 else:
                     batch=processor.process_queries([item['text']])
