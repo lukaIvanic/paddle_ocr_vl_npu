@@ -1,0 +1,38 @@
+ColQwen3-4B image-token budget sweep — Ascend 910B2
+1,110 HR pages, 1,908 queries across six languages. FP16/B1, 2,560 embedding dimensions.
+Only the image preprocessing area limit changes. Query processing, model weights and scoring are unchanged.
+Budgets are maximum merged image-token counts; actual counts reflect aspect-ratio/grid rounding.
+
+Budget   Actual image tokens   Pages/s   Page speedup   Job seconds   Recall@10   Delta pp   nDCG@10   MAP@10
+1280     1260                  3.051     1.000x         582.0         66.3775      0.0000   61.9047    47.7073
+160      [150]                 4.302     1.410x         448.8         45.2612    -21.1163   39.8980    27.0178
+320      [315]                 4.083     1.338x         471.1         60.8235    -5.5540   55.5243    41.3619
+640      [630]                 3.799     1.245x         494.4         64.8780    -1.4995   60.4669    46.3644
+
+Per-language Recall@10 (%):
+Language       Baseline    160 tokens    320 tokens    640 tokens
+english             70.8470     45.9881     63.5081     69.2973
+french              66.3101     44.4160     60.6238     63.6347
+german              65.3382     44.0580     60.7289     63.8841
+italian             65.0865     44.4353     59.3223     64.2229
+portuguese          65.5788     45.6773     61.1599     64.0304
+spanish             65.1043     46.9925     59.5978     64.1986
+
+Stage times in seconds:
+Budget   Page encoding   Query encoding   Scoring   Process wall
+160             258.04           151.36     12.39         458.64
+320             271.84           157.28     13.88         480.94
+640             292.20           157.53     17.14         505.08
+
+Validation: same workload manifests and query/page IDs; all score matrices finite; zero pending device events.
+Explicit 1280-budget preprocessing is tensor-identical to the default processor on the checked page.
+All 35 unit/contract tests passed. Every page was checked against its requested token cap.
+The initial attempt stopped on page two because HF consumed a reused resize-options dictionary.
+Source cb9eef32 fixes this by constructing fresh options for every page; failed-attempt measurements are excluded.
+Baseline is the prior f5d58289 full-resolution run. Sweep runs use cb9eef32; timing ratios are single-run observations.
+No graphs were deliberately compiled for the sweep; matching caches are reused and other shapes execute optimized eager.
+These are HR-only quality results on 910B2, not general ViDoRe or 310P claims.
+
+Raw run artifacts on the validation container:
+/workspace/repos/paddle_ocr_vl_npu/tmp/21_colqwen3_4b_inference/hr_resolution_cb9eef32_20261002
+Linux archive: /home/luka/Documents/Codex/2026-10-01/can-you-connect-to-my-mac/outputs/colqwen-resolution-sweep/evidence.tar.gz

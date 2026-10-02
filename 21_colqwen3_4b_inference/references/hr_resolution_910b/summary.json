@@ -1,0 +1,251 @@
+{
+  "baseline": {
+    "budget": 1280,
+    "page_per_s": 3.051069775903473,
+    "total_s": 582.0134429000318,
+    "macro_metrics": {
+      "recall_10": 0.6637749625198417,
+      "ndcg_cut_10": 0.6190468253726721,
+      "map_cut_10": 0.4770728586333633
+    }
+  },
+  "runs": [
+    {
+      "budget": 160,
+      "metrics": {
+        "recall_10": 0.45261195343652566,
+        "ndcg_cut_10": 0.3989804447951051,
+        "map_cut_10": 0.27017816669123845
+      },
+      "metrics_by_language": {
+        "english": {
+          "recall_10": 0.4598811604961174,
+          "ndcg_cut_10": 0.4003880554712255,
+          "map_cut_10": 0.268164775127636
+        },
+        "french": {
+          "recall_10": 0.44415951579602386,
+          "ndcg_cut_10": 0.3936323821040108,
+          "map_cut_10": 0.2702323011425146
+        },
+        "german": {
+          "recall_10": 0.4405804059947086,
+          "ndcg_cut_10": 0.39575900599534264,
+          "map_cut_10": 0.26799754315422436
+        },
+        "italian": {
+          "recall_10": 0.4443534499971759,
+          "ndcg_cut_10": 0.39214534131571777,
+          "map_cut_10": 0.2624278216172137
+        },
+        "portuguese": {
+          "recall_10": 0.45677265663657274,
+          "ndcg_cut_10": 0.40627774825049956,
+          "map_cut_10": 0.2783873049725182
+        },
+        "spanish": {
+          "recall_10": 0.4699245316985554,
+          "ndcg_cut_10": 0.40568013563383415,
+          "map_cut_10": 0.273859254133324
+        }
+      },
+      "delta_pp": {
+        "recall_10": -21.116300908331603,
+        "ndcg_cut_10": -22.0066380577567,
+        "map_cut_10": -20.689469194212485
+      },
+      "page_per_s": 4.301690851741222,
+      "page_speedup": 1.4098959275578742,
+      "page_encoding_s": 258.03806880977936,
+      "query_encoding_s": 151.3646664400585,
+      "scoring_s": 12.385334530146793,
+      "total_s": 448.81638278998435,
+      "script_wall_s": 450.91386103001423,
+      "process_wall_s": 458.63902174006216,
+      "overall_speedup": 1.2967740599887474,
+      "shape_counts": [
+        {
+          "vision_tokens": 600,
+          "image_tokens": 150,
+          "text_tokens": 164,
+          "resized_wh": [
+            320,
+            480
+          ],
+          "pages": 1056
+        },
+        {
+          "vision_tokens": 600,
+          "image_tokens": 150,
+          "text_tokens": 164,
+          "resized_wh": [
+            480,
+            320
+          ],
+          "pages": 54
+        }
+      ],
+      "matched_workload": true,
+      "finite_scores": true,
+      "pending_device_events": 0
+    },
+    {
+      "budget": 320,
+      "metrics": {
+        "recall_10": 0.6082345845975846,
+        "ndcg_cut_10": 0.5552425554745797,
+        "map_cut_10": 0.4136193230155858
+      },
+      "metrics_by_language": {
+        "english": {
+          "recall_10": 0.6350813571896585,
+          "ndcg_cut_10": 0.5861317040578524,
+          "map_cut_10": 0.43993652227891933
+        },
+        "french": {
+          "recall_10": 0.6062375390356218,
+          "ndcg_cut_10": 0.5544843525186405,
+          "map_cut_10": 0.4131273084377954
+        },
+        "german": {
+          "recall_10": 0.6072888042031944,
+          "ndcg_cut_10": 0.5515665635625675,
+          "map_cut_10": 0.40871116404356844
+        },
+        "italian": {
+          "recall_10": 0.5932228930482047,
+          "ndcg_cut_10": 0.5418826545120653,
+          "map_cut_10": 0.40128204030661985
+        },
+        "portuguese": {
+          "recall_10": 0.6115992901375815,
+          "ndcg_cut_10": 0.5550607711804436,
+          "map_cut_10": 0.4120234246126963
+        },
+        "spanish": {
+          "recall_10": 0.5959776239712467,
+          "ndcg_cut_10": 0.5423292870159089,
+          "map_cut_10": 0.4066354784139155
+        }
+      },
+      "delta_pp": {
+        "recall_10": -5.554037792225708,
+        "ndcg_cut_10": -6.380426989809241,
+        "map_cut_10": -6.34535356177775
+      },
+      "page_per_s": 4.083209930618166,
+      "page_speedup": 1.3382879548892186,
+      "page_encoding_s": 271.8449501399882,
+      "query_encoding_s": 157.28435657010414,
+      "scoring_s": 13.881978380028158,
+      "total_s": 471.1169688201044,
+      "script_wall_s": 473.21633191988803,
+      "process_wall_s": 480.94278869987465,
+      "overall_speedup": 1.2353905323292933,
+      "shape_counts": [
+        {
+          "vision_tokens": 1260,
+          "image_tokens": 315,
+          "text_tokens": 329,
+          "resized_wh": [
+            480,
+            672
+          ],
+          "pages": 1056
+        },
+        {
+          "vision_tokens": 1260,
+          "image_tokens": 315,
+          "text_tokens": 329,
+          "resized_wh": [
+            672,
+            480
+          ],
+          "pages": 54
+        }
+      ],
+      "matched_workload": true,
+      "finite_scores": true,
+      "pending_device_events": 0
+    },
+    {
+      "budget": 640,
+      "metrics": {
+        "recall_10": 0.6487801624438173,
+        "ndcg_cut_10": 0.604668526654361,
+        "map_cut_10": 0.46364432663214333
+      },
+      "metrics_by_language": {
+        "english": {
+          "recall_10": 0.6929729336837858,
+          "ndcg_cut_10": 0.6397822263024703,
+          "map_cut_10": 0.49878126060977424
+        },
+        "french": {
+          "recall_10": 0.6363467734317597,
+          "ndcg_cut_10": 0.596170886050213,
+          "map_cut_10": 0.4554103432415545
+        },
+        "german": {
+          "recall_10": 0.6388414919651347,
+          "ndcg_cut_10": 0.5938019825334725,
+          "map_cut_10": 0.45365874175418053
+        },
+        "italian": {
+          "recall_10": 0.6422292452955688,
+          "ndcg_cut_10": 0.5916700586496535,
+          "map_cut_10": 0.44700324159320787
+        },
+        "portuguese": {
+          "recall_10": 0.640304164420151,
+          "ndcg_cut_10": 0.6051549793430845,
+          "map_cut_10": 0.4661723869076275
+        },
+        "spanish": {
+          "recall_10": 0.6419863658665035,
+          "ndcg_cut_10": 0.6014310270472724,
+          "map_cut_10": 0.4608399856865156
+        }
+      },
+      "delta_pp": {
+        "recall_10": -1.4994800076024384,
+        "ndcg_cut_10": -1.4378298718311089,
+        "map_cut_10": -1.3428532001219962
+      },
+      "page_per_s": 3.7988131649610852,
+      "page_speedup": 1.2450758074964683,
+      "page_encoding_s": 292.19652344007045,
+      "query_encoding_s": 157.52635940001346,
+      "scoring_s": 17.14349384000525,
+      "total_s": 494.42366834986024,
+      "script_wall_s": 496.53150543011725,
+      "process_wall_s": 505.08447096007876,
+      "overall_speedup": 1.177155302541447,
+      "shape_counts": [
+        {
+          "vision_tokens": 2520,
+          "image_tokens": 630,
+          "text_tokens": 644,
+          "resized_wh": [
+            672,
+            960
+          ],
+          "pages": 1056
+        },
+        {
+          "vision_tokens": 2520,
+          "image_tokens": 630,
+          "text_tokens": 644,
+          "resized_wh": [
+            960,
+            672
+          ],
+          "pages": 54
+        }
+      ],
+      "matched_workload": true,
+      "finite_scores": true,
+      "pending_device_events": 0
+    }
+  ]
+}

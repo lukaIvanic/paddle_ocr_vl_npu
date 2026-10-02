@@ -1,0 +1,10 @@
+[
+  "/workspace/venvs/colqwen3_hf_py312/bin/python",
+  "-m",
+  "unittest",
+  "discover",
+  "-s",
+  "/workspace/repos/colqwen_hr_multilingual_20261002/21_colqwen3_4b_inference",
+  "-p",
+  "test_*.py"
+]

@@ -645,3 +645,38 @@ resized dimensions, vision/image/text token counts, page pg/s and query-level
 metrics. The requested override is saved separately from the checkpoint's
 original `processor_image_config`. Existing matching caches may be reused;
 unseen shapes use optimized eager, with no new graph compilation.
+
+### Resolution sweep results — 910B2, six-language HR
+
+Ran budgets **160 first, then 320 and 640** at `cb9eef32`, comparing the
+prior full-resolution run at `f5d58289`. Each run encoded the same 1,110 pages
+and evaluated all 1,908 queries, with FP16/B1 and 2560 dimensions unchanged.
+
+| Budget | Actual image tokens | Pages/s | Page speedup | Recall@10, % | Recall delta, pp | Evaluation time |
+|---|---:|---:|---:|---:|---:|---:|
+| Full (1280) | 1260 | 3.051 | 1.000x | 66.3775 | 0.0000 | 9m42s |
+| Eighth (160) | 150 | 4.302 | 1.410x | 45.2612 | -21.1163 | 7m29s |
+| Quarter (320) | 315 | 4.083 | 1.338x | 60.8235 | -5.5540 | 7m51s |
+| Half (640) | 630 | 3.799 | 1.245x | 64.8780 | -1.4995 | 8m14s |
+
+Half budget retained the most accuracy among the reduced settings: 24.5% more
+pages/s with a 1.50 percentage-point Recall@10 loss. Eighth budget lost 21.12
+points for 41.0% more pages/s. None preserved baseline recall. This evaluates
+standalone retrieval; candidate Recall@K for a coarse-to-fine system has not
+been measured. Timings are single-run observations on 910B2, and quality covers
+HR only. Query time also varied, so total evaluation speedup cannot all be
+attributed to page resolution. Evaluation time excludes process startup/shutdown.
+
+All 35 unit/contract tests passed. The explicit 1280 override produced
+bit-identical default-processor inputs on the checked page. Workload manifests
+and IDs matched the baseline; scores were finite and observer events closed.
+Every page's actual token count was checked against the requested cap. The
+initial attempt stopped on page two when the processor consumed a reused
+options dictionary; the successful source constructs fresh options per page.
+No failed-attempt measurements enter this table, and no new graphs were compiled.
+
+See [full report](references/hr_resolution_910b/report.txt),
+[comparison data](references/hr_resolution_910b/summary.json),
+[environment and source](references/hr_resolution_910b/preflight.json), and
+[exact first-run command](references/hr_resolution_910b/budget_160.command.txt).
+Each budget's full result and command are retained alongside these files.

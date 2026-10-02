@@ -1,0 +1,17 @@
+..usage: python -m unittest [-h] --model MODEL --output-dir OUTPUT_DIR
+                          [--images IMAGES [IMAGES ...]]
+                          [--queries QUERIES [QUERIES ...]]
+                          [--dtype {fp16,bf16}] [--device DEVICE]
+                          [--repeats REPEATS] [--hash-weights]
+python -m unittest: error: This baseline requires an NPU; no CPU/CUDA fallback.
+..usage: python -m unittest [-h] --model MODEL --output-dir OUTPUT_DIR
+                          [--images IMAGES [IMAGES ...]]
+                          [--queries QUERIES [QUERIES ...]]
+                          [--dtype {fp16,bf16}] [--device DEVICE]
+                          [--repeats REPEATS] [--hash-weights]
+python -m unittest: error: --repeats must be positive
+...............................
+----------------------------------------------------------------------
+Ran 35 tests in 3.251s
+
+OK

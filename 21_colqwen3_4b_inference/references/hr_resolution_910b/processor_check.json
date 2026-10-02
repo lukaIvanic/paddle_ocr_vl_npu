@@ -1,0 +1,43 @@
+[
+  {
+    "budget": 1280,
+    "grid": [
+      1,
+      84,
+      60
+    ],
+    "merged_image_tokens": 1260,
+    "text_tokens": 1274,
+    "default_inputs_bit_exact": true
+  },
+  {
+    "budget": 160,
+    "grid": [
+      1,
+      30,
+      20
+    ],
+    "merged_image_tokens": 150,
+    "text_tokens": 164
+  },
+  {
+    "budget": 320,
+    "grid": [
+      1,
+      42,
+      30
+    ],
+    "merged_image_tokens": 315,
+    "text_tokens": 329
+  },
+  {
+    "budget": 640,
+    "grid": [
+      1,
+      60,
+      42
+    ],
+    "merged_image_tokens": 630,
+    "text_tokens": 644
+  }
+]

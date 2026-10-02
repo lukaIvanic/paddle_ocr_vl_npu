@@ -1,0 +1,22 @@
+[
+  {
+    "name": "tests",
+    "wall_s": 6.208216869970784,
+    "exit_code": 0
+  },
+  {
+    "name": "budget_160",
+    "wall_s": 458.63902174006216,
+    "exit_code": 0
+  },
+  {
+    "name": "budget_320",
+    "wall_s": 480.94278869987465,
+    "exit_code": 0
+  },
+  {
+    "name": "budget_640",
+    "wall_s": 505.08447096007876,
+    "exit_code": 0
+  }
+]
