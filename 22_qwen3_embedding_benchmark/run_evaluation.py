@@ -49,7 +49,7 @@ class EndpointEncoder:
             release_date=None, languages=None, n_parameters=None, memory_usage_mb=None,
             max_tokens=MAX_LENGTH, embed_dim=DIMENSIONS, license="apache-2.0",
             open_weights=True, public_training_code=False, public_training_data=False,
-            framework=["vLLM"], similarity_fn_name="cosine", use_instructions=True,
+            framework=["PyTorch"], similarity_fn_name="cosine", use_instructions=True,
             training_datasets=None,
         )
         self.totals = {"texts": 0, "tokens": 0, "truncated_texts": 0, "request_wall_s": 0.0}
@@ -190,4 +190,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
