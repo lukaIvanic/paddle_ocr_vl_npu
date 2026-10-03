@@ -1,0 +1,23 @@
+{
+  "scope": "full_CMTEB-R",
+  "tasks": [
+    "VideoRetrieval",
+    "MedicalRetrieval",
+    "MMarcoRetrieval",
+    "CmedqaRetrieval",
+    "DuRetrieval",
+    "CovidRetrieval",
+    "EcomRetrieval",
+    "T2Retrieval"
+  ],
+  "queries": 39740,
+  "pairs": 3974000,
+  "tokens": 1933388333,
+  "macro_ndcg_at_10_percent": {
+    "reranker": 75.97906278867693,
+    "embedding": 70.81797732434603
+  },
+  "published_reranker_macro_percent": 75.94,
+  "delta_vs_published_pp": 0.03906278867692947,
+  "aggregation": "unweighted mean of task nDCG@10, not query-weighted; no adjustment for first-stage discrepancy"
+}

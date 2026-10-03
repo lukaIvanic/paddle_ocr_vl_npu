@@ -1,0 +1,21 @@
+{
+  "chip": "Ascend 910B2",
+  "physical_device": 7,
+  "model": "vllm-sr/Decision-2.0-Nox-4B",
+  "revision": "25e8f67d1b486c647222df3aac640d2d5d736bbe",
+  "manifest_sha256": "49771ea33a451274687ad2a246ce5fb78f8f42ec904fc91a467477179975bb16",
+  "native_and_serving_parity": "passed, including eight deterministic real Covid query-document pairs",
+  "max_reference_probability_delta": 0.006738377986294175,
+  "concurrency_max_logit_delta": 0.031443893909454346,
+  "metadata_correction": "The original smoke scripts hardcoded concurrent_workload=T2. T2 actually completed before these Nox smoke executions. The dedicated physical NPU7 was not shared. Original JSON files are retained unchanged; scripts were corrected for subsequent runs.",
+  "evaluation_scope": "Full CovidRetrieval dev: 949 queries, 94900 unchanged saved Qwen3-Embedding-0.6B top100 candidate pairs. Fixed native Noul prompt, temperature 1, no truncation, no prompt tuning.",
+  "precision": "BF16 vLLM-Ascend backbone; original FP32 decision head",
+  "configuration": "eager, max_num_seqs 32, max_num_batched_tokens 16384, max_model_len 8192, client concurrency 64",
+  "reference": {
+    "qwen3_reranker_4b_ndcg_at_10": 0.9169525831068317,
+    "embedding_ndcg_at_10": 0.8470080437465962,
+    "candidate_recall_at_100": 0.9926238145416227
+  },
+  "head_optimization": "Not applied; same per-request original-head path as Eos investigation. Profiler disabled.",
+  "download": "First large-range attempt was interrupted after repeated traffic. Revised smaller-range downloader verified all 38 files in 717.24 seconds, transferring 9.872 GB."
+}

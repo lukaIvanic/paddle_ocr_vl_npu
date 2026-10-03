@@ -1,0 +1,14 @@
+{
+  "task": "CovidRetrieval",
+  "queries": 949,
+  "pairs": 94900,
+  "dataset_revision": "1271c7809071a13532e05f25fb53511ffce77117",
+  "qrels_revision": "a9f41b7cdf24785531d12417ce0d1157ed4b39ca",
+  "task_instruction": "Given a question on COVID-19, retrieve news articles that answer the question",
+  "ignore_identical_ids": false,
+  "candidate_sha256": "23cbe514fa88c1a0772134de2e87d246813de6f3e9eebb182b62cac31928a324",
+  "reranker_source": "tmp/22_qwen3_embedding_benchmark/reranker_cmteb_6npu_fc41475e/evaluation/CovidRetrieval",
+  "reranker_predictions_sha256": "81ae08edeae02e816cde187bd0eef142e6f4549d3b2db7c42d6e647d251eaa3f",
+  "pairs_sha256": "fb0268688baf1b8c997f6992b37cad523144a6a9d48ebf0e96964ab4688aa9af",
+  "commit": "8f3e52d384a9dd485835e17b4bc4b0f954e4f511"
+}

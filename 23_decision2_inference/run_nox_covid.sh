@@ -33,7 +33,7 @@ if curl -sf --max-time 2 http://127.0.0.1:18423/health; then
 fi
 printf 'Phase: native BF16 Nox with original FP32 head\n'
 timeout 900 /workspace/venvs/decision2_eval_py312/bin/python -u 23_decision2_inference/run_npu_smoke.py \
-    --model "$bundle" --dtype bf16 --cases "$prepared/smoke_cases.json" --output "$run/native.json" \
+    --model "$bundle" --dtype bf16 --cases "$prepared/smoke_cases.json" --output "$run/native.json" --concurrent-workload none \
     >"$run/native.log" 2>&1
 printf 'Phase: verified serving view\n'
 /workspace/venvs/decision2_vllm_py312/bin/python 23_decision2_inference/prepare_serving_model.py \
@@ -54,7 +54,7 @@ printf 'Phase: real native-versus-HTTP serving parity\n'
 /workspace/venvs/decision2_vllm_py312/bin/python -u 23_decision2_inference/test_serving.py \
     --bundle "$bundle" --reference "$run/native.json" --output "$run/serving_parity.json" \
     --served-model nox-4b --cases "$prepared/smoke_cases.json" --max-length 8192 \
-    --max-reference-probability-delta 0.03 >"$run/serving_parity.log" 2>&1
+    --max-reference-probability-delta 0.03 --concurrent-workload none >"$run/serving_parity.log" 2>&1
 printf 'Phase: full CovidRetrieval, identical saved embedding top100\n'
 /workspace/venvs/decision2_vllm_py312/bin/python -u 23_decision2_inference/evaluate_retrieval.py run \
     --bundle "$bundle" --prepared "$prepared" --output "$run/evaluation" \

@@ -1,0 +1,507 @@
+{
+  "status": "completed",
+  "chip": "910B2",
+  "concurrent_workload": "T2 reranker",
+  "command": [
+    "23_decision2_inference/run_npu_smoke.py",
+    "--model",
+    "/workspace/models/Decision-2.0-Nox-4B",
+    "--dtype",
+    "bf16",
+    "--cases",
+    "tmp/23_decision2_inference/nox_covid_dc7e53e9/prepared_v2/smoke_cases.json",
+    "--output",
+    "tmp/23_decision2_inference/nox_covid_dc7e53e9/native.json"
+  ],
+  "hostname": "liteserver-c001-4",
+  "physical_device": "7",
+  "git_commit": "2a243169862cb6885723181d0c81a030f21c7732",
+  "rows": [
+    {
+      "id": "english_returns",
+      "warmup": true,
+      "wall_s": 1.533739190082997,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "route": {
+            "type": "choice",
+            "choice": "returns",
+            "probabilities": {
+              "returns": 0.9947333915427721,
+              "technical": 0.002408452256881615,
+              "billing": 0.00285815620034633
+            },
+            "confidence": 0.9667629815389083
+          },
+          "receipt": {
+            "type": "noul",
+            "noul": 0.991152193311974
+          },
+          "urgency": {
+            "type": "score",
+            "score": 0.036899995683996115,
+            "probabilities": {
+              "0": 0.9674662464699225,
+              "1": 0.028167511376158732,
+              "2": 0.00436624215391869
+            },
+            "confidence": 0.857756398898286,
+            "legend": {
+              "0": "Routine, no urgent deadline",
+              "1": "Needs attention soon",
+              "2": "Immediate emergency"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 352,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "english_returns",
+      "warmup": false,
+      "wall_s": 1.043912440072745,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "route": {
+            "type": "choice",
+            "choice": "returns",
+            "probabilities": {
+              "returns": 0.9947333915427721,
+              "technical": 0.002408452256881615,
+              "billing": 0.00285815620034633
+            },
+            "confidence": 0.9667629815389083
+          },
+          "receipt": {
+            "type": "noul",
+            "noul": 0.991152193311974
+          },
+          "urgency": {
+            "type": "score",
+            "score": 0.036899995683996115,
+            "probabilities": {
+              "0": 0.9674662464699225,
+              "1": 0.028167511376158732,
+              "2": 0.00436624215391869
+            },
+            "confidence": 0.857756398898286,
+            "legend": {
+              "0": "Routine, no urgent deadline",
+              "1": "Needs attention soon",
+              "2": "Immediate emergency"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 352,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "chinese_returns",
+      "warmup": false,
+      "wall_s": 1.044043550034985,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "route": {
+            "type": "choice",
+            "choice": "returns",
+            "probabilities": {
+              "returns": 0.9932988435234364,
+              "technical": 0.002455045448309463,
+              "billing": 0.004246111028254176
+            },
+            "confidence": 0.9593817364253706
+          },
+          "receipt": {
+            "type": "noul",
+            "noul": 0.9874059802287136
+          },
+          "urgency": {
+            "type": "score",
+            "score": 0.03253001054600054,
+            "probabilities": {
+              "0": 0.9747670108897414,
+              "1": 0.01793596767451677,
+              "2": 0.007297021435741885
+            },
+            "confidence": 0.8789973856197575,
+            "legend": {
+              "0": "常规，没有紧急截止时间",
+              "1": "需要尽快处理",
+              "2": "必须立即处理的紧急情况"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 326,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "relevance_positive",
+      "warmup": false,
+      "wall_s": 0.5655226898379624,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "relevance": {
+            "type": "score",
+            "score": 2.9617247259103365,
+            "probabilities": {
+              "0": 0.002723098250717501,
+              "1": 0.0056946948363684295,
+              "2": 0.01871658966477369,
+              "3": 0.9728656172481402
+            },
+            "confidence": 0.8941509542088323,
+            "legend": {
+              "0": "Irrelevant",
+              "1": "Related topic but does not answer",
+              "2": "Partially answers",
+              "3": "Directly and completely answers"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 144,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "relevance_negative",
+      "warmup": false,
+      "wall_s": 0.5601855500135571,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "relevance": {
+            "type": "score",
+            "score": 0.01282523995217267,
+            "probabilities": {
+              "0": 0.990617352475628,
+              "1": 0.006956331397772959,
+              "2": 0.0014100398253973196,
+              "3": 0.0010162763012016905
+            },
+            "confidence": 0.9566053646129903,
+            "legend": {
+              "0": "Irrelevant",
+              "1": "Related topic but does not answer",
+              "2": "Partially answers",
+              "3": "Directly and completely answers"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 145,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval_0",
+      "warmup": false,
+      "wall_s": 4.887386069865897,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "relevance": {
+            "type": "noul",
+            "noul": 0.9686134716479907
+          }
+        },
+        "usage": {
+          "input_tokens": 1886,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval_11862",
+      "warmup": false,
+      "wall_s": 2.572443830082193,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "relevance": {
+            "type": "noul",
+            "noul": 0.004739560859098204
+          }
+        },
+        "usage": {
+          "input_tokens": 920,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval_23724",
+      "warmup": false,
+      "wall_s": 13.802813849877566,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "relevance": {
+            "type": "noul",
+            "noul": 0.2762573506661707
+          }
+        },
+        "usage": {
+          "input_tokens": 5742,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval_35586",
+      "warmup": false,
+      "wall_s": 0.9026060497853905,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "relevance": {
+            "type": "noul",
+            "noul": 0.0026748956744953403
+          }
+        },
+        "usage": {
+          "input_tokens": 276,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval_47448",
+      "warmup": false,
+      "wall_s": 0.728254450019449,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "relevance": {
+            "type": "noul",
+            "noul": 0.006366161156237793
+          }
+        },
+        "usage": {
+          "input_tokens": 220,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval_59310",
+      "warmup": false,
+      "wall_s": 2.0739516799803823,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "relevance": {
+            "type": "noul",
+            "noul": 0.15159221062703016
+          }
+        },
+        "usage": {
+          "input_tokens": 737,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval_71172",
+      "warmup": false,
+      "wall_s": 1.7323538500349969,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "relevance": {
+            "type": "noul",
+            "noul": 0.013927686770951134
+          }
+        },
+        "usage": {
+          "input_tokens": 610,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "retrieval_83034",
+      "warmup": false,
+      "wall_s": 2.070087640080601,
+      "response": {
+        "model": "Decision-2.0-Nox-4B",
+        "answers": {
+          "relevance": {
+            "type": "noul",
+            "noul": 0.2018721332298707
+          }
+        },
+        "usage": {
+          "input_tokens": 725,
+          "output_tokens": 0
+        }
+      }
+    }
+  ],
+  "activation_samples": {
+    "backbone.layers.0.linear_attn.in_proj_qkv": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        8192
+      ]
+    },
+    "backbone.layers.0.linear_attn.in_proj_z": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        4096
+      ]
+    },
+    "backbone.layers.0.linear_attn.in_proj_b": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        32
+      ]
+    },
+    "backbone.layers.0.linear_attn.in_proj_a": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        32
+      ]
+    },
+    "backbone.layers.0.linear_attn.out_proj": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        2560
+      ]
+    },
+    "backbone.layers.0.mlp.gate_proj": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        9216
+      ]
+    },
+    "backbone.layers.0.mlp.up_proj": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        9216
+      ]
+    },
+    "backbone.layers.0.mlp.down_proj": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        2560
+      ]
+    },
+    "head.key": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        3,
+        256
+      ]
+    },
+    "head.query": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        256
+      ]
+    },
+    "head.candidate_mlp": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        3,
+        256
+      ]
+    },
+    "head.query_mlp": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        256
+      ]
+    },
+    "head.scalar": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        3,
+        1
+      ]
+    },
+    "decision_logits": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        3
+      ]
+    }
+  },
+  "initial_memory": {
+    "free_bytes": 65073336320,
+    "total_bytes": 65452113920
+  },
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0",
+    "transformers": "5.17.0"
+  },
+  "bf16_residency": {
+    "linear_bf16": 248,
+    "linear_fp32": 0
+  },
+  "load_s": 61.729003760032356,
+  "parameter_count": 4208383488,
+  "parameter_dtypes": {
+    "backbone:torch.float32": 636660736,
+    "backbone:torch.bfloat16": 3569090560,
+    "head:torch.float32": 2632192
+  },
+  "sanity_observations": {
+    "english_returns_selected": true,
+    "chinese_returns_selected": true,
+    "relevant_scores_above_irrelevant": true
+  },
+  "peak_allocated_bytes": 16939674624
+}

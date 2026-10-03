@@ -1,0 +1,265 @@
+[
+  {
+    "task": "VideoRetrieval",
+    "queries": 1000,
+    "pairs": 100000,
+    "tokens": 11416074,
+    "truncated_pairs": 0,
+    "max_input_length": 2953,
+    "scoring_wall_s": 72.76401344989426,
+    "task_wall_s": 77.84171154000796,
+    "input_tok_s": 156891.75814719425,
+    "pairs_s": 1374.3057214520004,
+    "query_s": 13.743057214520004,
+    "npu_count": 6,
+    "metrics": {
+      "reranker": {
+        "recall_10": 0.919,
+        "recall_100": 0.975,
+        "ndcg_cut_10": 0.7746133562883216
+      },
+      "embedding": {
+        "recall_10": 0.881,
+        "recall_100": 0.975,
+        "ndcg_cut_10": 0.7373355857836522
+      }
+    },
+    "ndcg_change_pp": 3.7277770504669405,
+    "request_latency_s": {
+      "p50": 1.062982459901832,
+      "p99": 1.3951980546466065,
+      "max": 1.642153289867565
+    }
+  },
+  {
+    "task": "MedicalRetrieval",
+    "queries": 1000,
+    "pairs": 100000,
+    "tokens": 15273891,
+    "truncated_pairs": 0,
+    "max_input_length": 575,
+    "scoring_wall_s": 95.74593631993048,
+    "task_wall_s": 100.9506423000712,
+    "input_tok_s": 159525.21419773911,
+    "pairs_s": 1044.430749163649,
+    "query_s": 10.444307491636488,
+    "npu_count": 6,
+    "metrics": {
+      "reranker": {
+        "recall_10": 0.722,
+        "recall_100": 0.796,
+        "ndcg_cut_10": 0.6293759379931565
+      },
+      "embedding": {
+        "recall_10": 0.639,
+        "recall_100": 0.796,
+        "ndcg_cut_10": 0.5567210702393773
+      }
+    },
+    "ndcg_change_pp": 7.265486775377916,
+    "request_latency_s": {
+      "p50": 1.4054424399510026,
+      "p99": 1.6190417437651194,
+      "max": 1.7478558199945837
+    }
+  },
+  {
+    "task": "MMarcoRetrieval",
+    "queries": 6980,
+    "pairs": 698000,
+    "tokens": 108332562,
+    "truncated_pairs": 0,
+    "max_input_length": 1630,
+    "scoring_wall_s": 679.2010734300129,
+    "task_wall_s": 689.0252695700619,
+    "input_tok_s": 159499.98643687795,
+    "pairs_s": 1027.6779989098827,
+    "query_s": 10.276779989098827,
+    "npu_count": 6,
+    "metrics": {
+      "reranker": {
+        "recall_10": 0.9489971346704871,
+        "recall_100": 0.9756566380133715,
+        "ndcg_cut_10": 0.8548745947654136
+      },
+      "embedding": {
+        "recall_10": 0.9108404966571156,
+        "recall_100": 0.9756566380133715,
+        "ndcg_cut_10": 0.7988814999156476
+      }
+    },
+    "ndcg_change_pp": 5.5993094849766,
+    "request_latency_s": {
+      "p50": 1.4415027850773185,
+      "p99": 1.63300149661256,
+      "max": 2.309936590027064
+    }
+  },
+  {
+    "task": "CmedqaRetrieval",
+    "queries": 3999,
+    "pairs": 399900,
+    "tokens": 75964011,
+    "truncated_pairs": 0,
+    "max_input_length": 5548,
+    "scoring_wall_s": 468.9128267101478,
+    "task_wall_s": 476.616115659941,
+    "input_tok_s": 162000.28379039446,
+    "pairs_s": 852.8237600273469,
+    "query_s": 8.528237600273469,
+    "npu_count": 6,
+    "metrics": {
+      "reranker": {
+        "recall_10": 0.5521862571922495,
+        "recall_100": 0.8122449938385733,
+        "ndcg_cut_10": 0.45191935440503733
+      },
+      "embedding": {
+        "recall_10": 0.5126088574310537,
+        "recall_100": 0.8122449938385733,
+        "ndcg_cut_10": 0.4093743346124948
+      }
+    },
+    "ndcg_change_pp": 4.254501979254255,
+    "request_latency_s": {
+      "p50": 1.7231789699289948,
+      "p99": 2.1751630260236547,
+      "max": 2.672538759885356
+    }
+  },
+  {
+    "task": "DuRetrieval",
+    "queries": 2000,
+    "pairs": 200000,
+    "tokens": 60851657,
+    "truncated_pairs": 7,
+    "max_input_length": 8192,
+    "scoring_wall_s": 376.1617337500211,
+    "task_wall_s": 382.8067172698211,
+    "input_tok_s": 161769.92910299342,
+    "pairs_s": 531.6861925485231,
+    "query_s": 5.316861925485231,
+    "npu_count": 6,
+    "metrics": {
+      "reranker": {
+        "recall_10": 0.9112985401822629,
+        "recall_100": 0.9664733222228344,
+        "ndcg_cut_10": 0.9065665443676597
+      },
+      "embedding": {
+        "recall_10": 0.8600675414608351,
+        "recall_100": 0.9664733222228344,
+        "ndcg_cut_10": 0.8388529129991551
+      }
+    },
+    "ndcg_change_pp": 6.771363136850461,
+    "request_latency_s": {
+      "p50": 2.72485752007924,
+      "p99": 3.7134378014272076,
+      "max": 4.272274159826338
+    }
+  },
+  {
+    "task": "CovidRetrieval",
+    "queries": 949,
+    "pairs": 94900,
+    "tokens": 77874497,
+    "truncated_pairs": 0,
+    "max_input_length": 7343,
+    "scoring_wall_s": 503.9096423899755,
+    "task_wall_s": 509.3181017800234,
+    "input_tok_s": 154540.59706151238,
+    "pairs_s": 188.32741431559455,
+    "query_s": 1.8832741431559454,
+    "npu_count": 6,
+    "metrics": {
+      "reranker": {
+        "recall_10": 0.9852476290832455,
+        "recall_100": 0.9926238145416227,
+        "ndcg_cut_10": 0.9169525831068317
+      },
+      "embedding": {
+        "recall_10": 0.9478398314014752,
+        "recall_100": 0.9926238145416227,
+        "ndcg_cut_10": 0.8470080437465962
+      }
+    },
+    "ndcg_change_pp": 6.9944539360235485,
+    "request_latency_s": {
+      "p50": 7.6888933250447735,
+      "p99": 11.146624993849546,
+      "max": 12.232832089997828
+    }
+  },
+  {
+    "task": "EcomRetrieval",
+    "queries": 1000,
+    "pairs": 100000,
+    "tokens": 10864903,
+    "truncated_pairs": 0,
+    "max_input_length": 174,
+    "scoring_wall_s": 408.0759810002055,
+    "task_wall_s": 413.24162017018534,
+    "input_tok_s": 26624.705951499087,
+    "pairs_s": 245.05240361095804,
+    "query_s": 2.4505240361095804,
+    "npu_count": 1,
+    "metrics": {
+      "reranker": {
+        "recall_10": 0.87,
+        "recall_100": 0.945,
+        "ndcg_cut_10": 0.6964006612216495
+      },
+      "embedding": {
+        "recall_10": 0.813,
+        "recall_100": 0.945,
+        "ndcg_cut_10": 0.6391446758926318
+      }
+    },
+    "ndcg_change_pp": 5.725598532901765,
+    "request_latency_s": {
+      "p50": 1.018585534999147,
+      "p99": 1.0975912663922645,
+      "max": 1.128339339978993
+    }
+  },
+  {
+    "task": "T2Retrieval",
+    "queries": 22812,
+    "pairs": 2281200,
+    "tokens": 1572810738,
+    "truncated_pairs": 234,
+    "max_input_length": 8192,
+    "scoring_wall_s": 10714.057337980019,
+    "task_wall_s": 3619.9663856700063,
+    "input_tok_s": 146798.79791426717,
+    "pairs_s": 212.91653834196183,
+    "query_s": 2.1291653834196183,
+    "npu_count": null,
+    "metrics": {
+      "reranker": {
+        "recall_10": 0.8520189971708761,
+        "recall_100": 0.9417430343109259,
+        "ndcg_cut_10": 0.8476219909460835
+      },
+      "embedding": {
+        "recall_10": 0.823771267195916,
+        "recall_100": 0.9417430343109259,
+        "ndcg_cut_10": 0.8381200627581279
+      }
+    },
+    "resumed_phase": {
+      "npu_count": 5,
+      "restored_pairs": 1606656,
+      "scoring_wall_s": 3586.8168208799325,
+      "pairs": 674544,
+      "input_tok_s": 129426.69787249221
+    },
+    "ndcg_change_pp": 0.9501928187955588,
+    "request_latency_s": {
+      "p50": 6.316967659862712,
+      "p99": 10.974376986846334,
+      "max": 14.73968661017716
+    }
+  }
+]

@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--dtype", choices=["bf16"], required=True)
+    parser.add_argument("--concurrent-workload", default="T2 reranker")
     parser.add_argument("--cases", type=Path, default=Path(__file__).with_name("smoke_cases.json"))
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -39,7 +40,7 @@ def main():
             emit("heartbeat", phase=phase["name"])
     thread = threading.Thread(target=heartbeat, daemon=True)
     thread.start()
-    result = {"status": "running", "chip": "910B2", "concurrent_workload": "T2 reranker",
+    result = {"status": "running", "chip": "910B2", "concurrent_workload": args.concurrent_workload,
               "command": sys.argv, "hostname": platform.node(),
               "physical_device": os.environ.get("ASCEND_RT_VISIBLE_DEVICES"),
               "git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),

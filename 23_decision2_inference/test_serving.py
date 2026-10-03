@@ -20,6 +20,7 @@ def main():
     p.add_argument("--cases", type=Path, default=Path(__file__).with_name('smoke_cases.json'))
     p.add_argument("--max-length", type=int, default=2048)
     p.add_argument("--max-reference-probability-delta", type=float)
+    p.add_argument("--concurrent-workload", default="T2")
     a = p.parse_args()
     if a.output.exists():
         raise FileExistsError(a.output)
@@ -95,7 +96,7 @@ def main():
     with urllib.request.urlopen(a.url + "/health", timeout=10) as response:
         observations["healthy_after_invalid_requests"] = response.status == 200
     observations["invalid_requests_rejected_before_worker"] = all(r["status"] == 400 for r in invalid_responses)
-    result = {"chip": "910B2", "mode": "vllm-ascend-http", "concurrent_workload": "T2",
+    result = {"chip": "910B2", "mode": "vllm-ascend-http", "concurrent_workload": a.concurrent_workload,
               "sequential": sequential, "concurrent": concurrent,
               "sanity_observations": observations,
               "invalid_responses": invalid_responses,
