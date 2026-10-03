@@ -1,0 +1,10 @@
+{
+  "candidate_file": "tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/EcomRetrieval_default_predictions.json",
+  "sha256": "ece78f3c9437e47a4450c9eb9d06c37cddf1be7f27a1de8fac9a5071257d1399",
+  "dataset_revision": "687de13dc7294d6fd9be10c6945f9e8fec8166b9",
+  "qrels_revision": "39c90699b034ec22ac45b3abf5b0bbb5ffd421f9",
+  "instruction": "Given a user query from an e-commerce website, retrieve description sentences of relevant products",
+  "queries": 1000,
+  "pairs": 100000,
+  "ignore_identical_ids": true
+}

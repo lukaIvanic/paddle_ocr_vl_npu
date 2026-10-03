@@ -1,0 +1,21 @@
+{
+  "commit": "e70e847353c9e4799ad019459d2fbfe0e42e253a",
+  "model": "/workspace/models/Qwen3-Reranker-4B",
+  "chip": "910B2",
+  "dtype": "float16",
+  "devices": [
+    7
+  ],
+  "tasks": [
+    "EcomRetrieval"
+  ],
+  "max_length": 8192,
+  "prefix": "<|im_start|>system\nJudge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be \"yes\" or \"no\".<|im_end|>\n<|im_start|>user\n",
+  "suffix": "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "client_batch": 128,
+  "concurrency_per_server": 2,
+  "eager": true,
+  "prompt_source": "HF Transformers example with pinned task instructions; single newline between fields",
+  "scope": "full dev queries, fixed saved embedding top100; no gold injection",
+  "timing": "scoring wall includes streaming corpus-to-text, tokenization, HTTP, checkpoint logging; setup separately"
+}

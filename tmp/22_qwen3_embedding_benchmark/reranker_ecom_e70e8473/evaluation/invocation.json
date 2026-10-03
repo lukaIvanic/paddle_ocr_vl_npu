@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "/workspace/venvs/qwen3_embedding_eval_py312/bin/python",
+    "22_qwen3_embedding_benchmark/run_reranker_evaluation.py",
+    "--tasks",
+    "EcomRetrieval",
+    "--devices",
+    "7",
+    "--output",
+    "tmp/22_qwen3_embedding_benchmark/reranker_ecom_e70e8473/evaluation",
+    "--prepared",
+    "tmp/22_qwen3_embedding_benchmark/reranker_serving_cc6c6841/prepared",
+    "--candidates",
+    "tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb"
+  ],
+  "cwd": "/workspace/repos/paddle_ocr_vl_npu",
+  "started_at": 1791024806.7291024
+}

@@ -1,0 +1,17 @@
+Reconstructed from the saved invocation.json, manifest.json and executed launch command.
+commit=e70e847353c9e4799ad019459d2fbfe0e42e253a
+hostname=liteserver-c001-4
+container=research_vllm_ascend_021_external_workspace
+cwd=/workspace/repos/paddle_ocr_vl_npu
+ASCEND_RT_VISIBLE_DEVICES=7
+physical_devices=7
+
+source npu-setup
+export ASCEND_RT_VISIBLE_DEVICES=7 TORCH_DEVICE_BACKEND_AUTOLOAD=0 VLLM_WORKER_MULTIPROC_METHOD=spawn
+export HF_HOME=/workspace/.cache/huggingface HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1
+export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 TOKENIZERS_PARALLELISM=false PYTHONDONTWRITEBYTECODE=1
+/workspace/venvs/qwen3_embedding_eval_py312/bin/python 22_qwen3_embedding_benchmark/run_reranker_evaluation.py --tasks EcomRetrieval --devices 7 --output tmp/22_qwen3_embedding_benchmark/reranker_ecom_e70e8473/evaluation --prepared tmp/22_qwen3_embedding_benchmark/reranker_serving_cc6c6841/prepared --candidates tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb
+
+Server invocation: evaluation/npu_7/command.json
+Exit code: evaluation/exit_code.txt
+Runtime log: run.log
