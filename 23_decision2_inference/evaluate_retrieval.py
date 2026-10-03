@@ -55,10 +55,18 @@ def prepare(a):
     for name, obj in [('embedding.json', baseline), ('reranker.json', reranker), ('qrels.json', qrels)]:
         save(a.output / name, obj)
     count = 0
+    smoke_cases=json.loads(Path(__file__).with_name('smoke_cases.json').read_text())
+    smoke_stride=max(1,len(qrels)*100//8)
     with (a.output / 'pairs.jsonl').open('w') as f:
         for pair in candidate_rows(baseline, task.queries['dev'], task.corpus['dev'], corpus_to_str):
             f.write(json.dumps(pair, ensure_ascii=False) + '\n')
+            if count % smoke_stride == 0 and count // smoke_stride < 8:
+                smoke_cases.append({'id':'retrieval_'+str(count),
+                    'state':{'query':pair['query'], 'document':pair['document']},
+                    'questions':{'relevance':{'type':'noul','instructions':
+                        'Does the document satisfy this retrieval instruction for the query? '+TASKS[a.task][2]}}})
             count += 1
+    save(a.output/'smoke_cases.json',smoke_cases)
     manifest = {'task': a.task, 'queries': len(qrels), 'pairs': count,
                 'dataset_revision': TASKS[a.task][0], 'qrels_revision': TASKS[a.task][1],
                 'task_instruction': TASKS[a.task][2], 'ignore_identical_ids': task.ignore_identical_ids,

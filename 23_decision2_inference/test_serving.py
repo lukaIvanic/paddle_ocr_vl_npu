@@ -17,6 +17,8 @@ def main():
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--url", default="http://127.0.0.1:18423")
     p.add_argument("--served-model", default="eos-0.8b")
+    p.add_argument("--cases", type=Path, default=Path(__file__).with_name('smoke_cases.json'))
+    p.add_argument("--max-length", type=int, default=2048)
     a = p.parse_args()
     if a.output.exists():
         raise FileExistsError(a.output)
@@ -25,13 +27,13 @@ def main():
     from decision2._vendor.dev2model.decision_model import encode
     from decision2._vendor.dev2model.infer import question_to_row, product_answer
     tokenizer = AutoTokenizer.from_pretrained(str(a.bundle), local_files_only=True)
-    cases = json.loads(Path(__file__).with_name("smoke_cases.json").read_text())
+    cases = json.loads(a.cases.read_text())
     reference = {r["id"]: r["response"]["answers"] for r in json.loads(a.reference.read_text())["rows"] if not r["warmup"]}
     requests = []
     for case in cases:
         for key, question in case["questions"].items():
             row = question_to_row(case, key, question)
-            encoded = encode(row, tokenizer, 2048)
+            encoded = encode(row, tokenizer, a.max_length)
             requests.append((case["id"], key, row, encoded))
 
     def run(item):
