@@ -11,7 +11,7 @@ import torch
 from torch import nn
 from safetensors.torch import load_file
 from vllm.model_executor.layers.pooler.abstract import Pooler
-from vllm.model_executor.models.interfaces import IsHybrid, HasInnerState
+from vllm.model_executor.models.interfaces import IsHybrid, HasInnerState, SupportsMRoPE
 from vllm.model_executor.models.interfaces_base import default_pooling_type
 from vllm.model_executor.models.qwen3_5 import Qwen3_5Model, Qwen3_5ForConditionalGeneration
 
@@ -52,7 +52,7 @@ class DecisionPooler(Pooler):
 
 
 @default_pooling_type(seq_pooling_type="LAST", tok_pooling_type="ALL")
-class Decision2EosForPooling(nn.Module, IsHybrid, HasInnerState):
+class Decision2EosForPooling(nn.Module, IsHybrid, HasInnerState, SupportsMRoPE):
     is_pooling_model = True
     get_mamba_state_dtype_from_config = Qwen3_5ForConditionalGeneration.get_mamba_state_dtype_from_config
     get_mamba_state_shape_from_config = Qwen3_5ForConditionalGeneration.get_mamba_state_shape_from_config
@@ -74,6 +74,13 @@ class Decision2EosForPooling(nn.Module, IsHybrid, HasInnerState):
 
     def embed_input_ids(self, input_ids):
         return self.model.embed_input_ids(input_ids)
+
+    def get_mrope_input_positions(self, input_tokens, mm_features):
+        if mm_features:
+            raise ValueError("Eos accepts text only")
+        # Text occupies identical positions on the three M-RoPE axes, matching
+        # Qwen3.5's native text-only position_ids expansion. No vision config.
+        return torch.arange(len(input_tokens), dtype=torch.long).expand(3, -1).clone(), 0
 
     def forward(self, input_ids, positions, intermediate_tensors=None, inputs_embeds=None, **kwargs):
         return self.model(input_ids, positions, intermediate_tensors, inputs_embeds)
