@@ -22,7 +22,9 @@ cleanup() {
 }
 trap cleanup EXIT
 { git rev-parse HEAD; hostname; printf 'physical_device=%s\nbaseline=%s\n' "$ASCEND_RT_VISIBLE_DEVICES" "$BASELINE"; } > "$RUN_ROOT/command.txt"
-"$BASE_PYTHON" -c 'import torch; from vllm_ascend.attention.attention_v1 import AscendAttentionBackend as B; print({"supported_dtypes": [str(x) for x in B.supported_dtypes], "fp32_supported": B.supports_dtype(torch.float32), "bf16_supported": B.supports_dtype(torch.bfloat16)})' > "$RUN_ROOT/vllm_dtype_support.log" 2>&1
+# Read the declared backend constraint without importing Ascend internals out of
+# order (those imports depend on normal engine initialization).
+grep -n -A1 'supported_dtypes: ClassVar' /vllm-workspace/vllm/vllm/v1/attention/backend.py > "$RUN_ROOT/vllm_dtype_support.log"
 "$BASE_PYTHON" -m vllm.entrypoints.openai.api_server \
   --model /workspace/models/Qwen3-Embedding-0.6B \
   --served-model-name qwen3-embedding-bf16-diagnostic --host 127.0.0.1 --port 18223 \
