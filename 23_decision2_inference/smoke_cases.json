@@ -1,0 +1,30 @@
+[
+  {
+    "id": "english_returns",
+    "state": "The customer bought a jacket yesterday and wants to return it because it is too small. They have the original receipt. There is no urgent deadline.",
+    "questions": {
+      "route": {"type": "choice", "instructions": "Which team should handle this request?", "criteria": {"returns": "Returns and refunds", "technical": "Technical support", "billing": "Billing disputes"}},
+      "receipt": {"type": "noul", "instructions": "Does the customer have the original receipt?"},
+      "urgency": {"type": "score", "instructions": "Rate the urgency using only the stated facts.", "criteria": ["Routine, no urgent deadline", "Needs attention soon", "Immediate emergency"]}
+    }
+  },
+  {
+    "id": "chinese_returns",
+    "state": "顾客昨天买了一件夹克，因为尺码太小想退货。他保留了原始收据，没有紧急截止时间。",
+    "questions": {
+      "route": {"type": "choice", "instructions": "哪个团队应该处理这个请求？", "criteria": {"returns": "退货和退款", "technical": "技术支持", "billing": "账单争议"}},
+      "receipt": {"type": "noul", "instructions": "顾客是否有原始收据？"},
+      "urgency": {"type": "score", "instructions": "仅根据已陈述的事实评估紧急程度。", "criteria": ["常规，没有紧急截止时间", "需要尽快处理", "必须立即处理的紧急情况"]}
+    }
+  },
+  {
+    "id": "relevance_positive",
+    "state": {"query": "What is the capital of France?", "document": "Paris is the capital and largest city of France."},
+    "questions": {"relevance": {"type": "score", "instructions": "How relevant is the document to answering the query?", "criteria": ["Irrelevant", "Related topic but does not answer", "Partially answers", "Directly and completely answers"]}}
+  },
+  {
+    "id": "relevance_negative",
+    "state": {"query": "What is the capital of France?", "document": "Bananas are yellow fruits commonly grown in tropical climates."},
+    "questions": {"relevance": {"type": "score", "instructions": "How relevant is the document to answering the query?", "criteria": ["Irrelevant", "Related topic but does not answer", "Partially answers", "Directly and completely answers"]}}
+  }
+]
