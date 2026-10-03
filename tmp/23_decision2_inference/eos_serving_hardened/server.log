@@ -1,0 +1,370 @@
+Selected physical NPU 4 as logical npu:0
+Python: /usr/local/python3.12.13/bin/python3
+Authorized sharing override: physical NPU 7 as logical npu:0
+{'free': 34789384192, 'total': 65452113920}
+INFO 10-03 13:31:51 [__init__.py:44] Available plugins for group vllm.platform_plugins:
+INFO 10-03 13:31:51 [__init__.py:46] - ascend -> vllm_ascend:register
+INFO 10-03 13:31:51 [__init__.py:49] All plugins in this group will be loaded. Set `VLLM_PLUGINS` to control which plugins to load.
+INFO 10-03 13:31:51 [__init__.py:238] Platform plugin ascend is activated
+INFO 10-03 13:31:54 [platform.py:61] [vllm-ascend] - Breakable cudagraph is force disabled on Ascend because DeepSeek V4 PIECEWISE cudagraph is not supported yet.
+2026-10-03 13:32:02,736 - 134125 - ServiceProfiler - INFO - VLLM_USE_V1 not set, auto-detected via vLLM 0.21.0+empty: default 1
+{"event": "decision2_plugin_registered", "pid": 134125, "vllm": "0.21.0", "adapter": "/workspace/repos/paddle_ocr_vl_npu/23_decision2_inference/decision2_ascend/__init__.py"}
+WARNING 10-03 13:32:03 [registry.py:960] Model architecture DeepseekV4ForCausalLM is already registered, and will be overwritten by the new model class vllm_ascend.models.deepseek_v4:AscendDeepseekV4ForCausalLM.
+WARNING 10-03 13:32:03 [registry.py:960] Model architecture DeepSeekV4MTPModel is already registered, and will be overwritten by the new model class vllm_ascend.models.deepseek_v4_mtp:DeepSeekV4MTP.
+INFO 10-03 13:32:04 [__init__.py:110] Registered model loader `<class 'vllm_ascend.model_loader.netloader.netloader.ModelNetLoaderElastic'>` with load format `netloader`
+INFO 10-03 13:32:04 [__init__.py:110] Registered model loader `<class 'vllm_ascend.model_loader.rfork.rfork_loader.RForkModelLoader'>` with load format `rfork`
+(APIServer pid=134125) INFO 10-03 13:32:04 [utils.py:306] 
+(APIServer pid=134125) INFO 10-03 13:32:04 [utils.py:306]        █     █     █▄   ▄█
+(APIServer pid=134125) INFO 10-03 13:32:04 [utils.py:306]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.21.0
+(APIServer pid=134125) INFO 10-03 13:32:04 [utils.py:306]   █▄█▀ █     █     █     █  model   /workspace/models/Decision-2.0-Eos-0.8B-vllm-view
+(APIServer pid=134125) INFO 10-03 13:32:04 [utils.py:306]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=134125) INFO 10-03 13:32:04 [utils.py:306] 
+(APIServer pid=134125) INFO 10-03 13:32:04 [utils.py:240] non-default args: {'host': '127.0.0.1', 'port': 18423, 'model': '/workspace/models/Decision-2.0-Eos-0.8B-vllm-view', 'runner': 'pooling', 'dtype': 'bfloat16', 'max_model_len': 2048, 'enforce_eager': True, 'served_model_name': ['eos-0.8b'], 'gpu_memory_utilization': 0.12, 'enable_prefix_caching': False, 'mamba_ssm_cache_dtype': 'float32', 'max_num_batched_tokens': 2048, 'max_num_seqs': 4, 'enable_chunked_prefill': False}
+(APIServer pid=134125) INFO 10-03 13:32:26 [model.py:568] Resolved architecture: Decision2EosForPooling
+(APIServer pid=134125) INFO 10-03 13:32:26 [model.py:2032] Downcasting torch.float32 to torch.bfloat16.
+(APIServer pid=134125) INFO 10-03 13:32:26 [model.py:1697] Using max model len 2048
+(APIServer pid=134125) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(APIServer pid=134125) INFO 10-03 13:32:27 [patch_mamba_config.py:85] [vllm-ascend] [patch] - Setting attention block size to 1024 tokens to ensure that attention page size is >= mamba page size.
+(APIServer pid=134125) INFO 10-03 13:32:27 [patch_mamba_config.py:100] [vllm-ascend] [patch] - Padding mamba page size by 1.73% to ensure that mamba page size and attention page size are exactly equal.
+(APIServer pid=134125) INFO 10-03 13:32:27 [vllm.py:886] Asynchronous scheduling is disabled.
+(APIServer pid=134125) WARNING 10-03 13:32:27 [vllm.py:942] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(APIServer pid=134125) WARNING 10-03 13:32:27 [vllm.py:960] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(APIServer pid=134125) INFO 10-03 13:32:27 [kernel.py:212] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(APIServer pid=134125) INFO 10-03 13:32:27 [vllm.py:1135] Cudagraph is disabled under eager mode
+(APIServer pid=134125) INFO 10-03 13:32:27 [utils.py:174] [vllm-ascend] [quantization] - No quantization signature detected from model files for "/workspace/models/Decision-2.0-Eos-0.8B-vllm-view". The model will be loaded as float. To force a quantization method, pass "--quantization <method>" explicitly.
+(APIServer pid=134125) WARNING 10-03 13:32:27 [platform.py:991] [vllm-ascend] - GPU-specific parameter is not supported on Ascend. parameter=disable_cascade_attn, value=True, action: resetting to False.
+(APIServer pid=134125) INFO 10-03 13:32:27 [ascend_config.py:768] [vllm-ascend] - Dynamic EPLB is False
+(APIServer pid=134125) INFO 10-03 13:32:27 [ascend_config.py:769] [vllm-ascend] - The number of redundant experts is 0
+(APIServer pid=134125) INFO 10-03 13:32:27 [platform.py:484] [vllm-ascend] - Compilation disabled, using eager mode by default
+(APIServer pid=134125) INFO 10-03 13:32:27 [platform.py:714] [vllm-ascend] - Set PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+(APIServer pid=134125) INFO 10-03 13:32:27 [compilation.py:303] Enabled custom fusions: norm_quant, act_quant
+INFO 10-03 13:32:42 [__init__.py:44] Available plugins for group vllm.platform_plugins:
+INFO 10-03 13:32:42 [__init__.py:46] - ascend -> vllm_ascend:register
+INFO 10-03 13:32:42 [__init__.py:49] All plugins in this group will be loaded. Set `VLLM_PLUGINS` to control which plugins to load.
+INFO 10-03 13:32:42 [__init__.py:238] Platform plugin ascend is activated
+INFO 10-03 13:32:46 [platform.py:61] [vllm-ascend] - Breakable cudagraph is force disabled on Ascend because DeepSeek V4 PIECEWISE cudagraph is not supported yet.
+(EngineCore pid=134258) 2026-10-03 13:32:55,243 - 134258 - ServiceProfiler - INFO - VLLM_USE_V1 not set, auto-detected via vLLM 0.21.0+empty: default 1
+(EngineCore pid=134258) {"event": "decision2_plugin_registered", "pid": 134258, "vllm": "0.21.0", "adapter": "/workspace/repos/paddle_ocr_vl_npu/23_decision2_inference/decision2_ascend/__init__.py"}
+(EngineCore pid=134258) WARNING 10-03 13:32:55 [registry.py:960] Model architecture DeepseekV4ForCausalLM is already registered, and will be overwritten by the new model class vllm_ascend.models.deepseek_v4:AscendDeepseekV4ForCausalLM.
+(EngineCore pid=134258) WARNING 10-03 13:32:55 [registry.py:960] Model architecture DeepSeekV4MTPModel is already registered, and will be overwritten by the new model class vllm_ascend.models.deepseek_v4_mtp:DeepSeekV4MTP.
+(EngineCore pid=134258) INFO 10-03 13:32:55 [__init__.py:110] Registered model loader `<class 'vllm_ascend.model_loader.netloader.netloader.ModelNetLoaderElastic'>` with load format `netloader`
+(EngineCore pid=134258) INFO 10-03 13:32:55 [__init__.py:110] Registered model loader `<class 'vllm_ascend.model_loader.rfork.rfork_loader.RForkModelLoader'>` with load format `rfork`
+(EngineCore pid=134258) INFO 10-03 13:32:55 [core.py:109] Initializing a V1 LLM engine (v0.21.0) with config: model='/workspace/models/Decision-2.0-Eos-0.8B-vllm-view', speculative_config=None, tokenizer='/workspace/models/Decision-2.0-Eos-0.8B-vllm-view', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=2048, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=True, quantization=None, quantization_config=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=npu, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=eos-0.8b, enable_prefix_caching=False, enable_chunked_prefill=False, pooler_config=PoolerConfig(task=None, pooling_type=None, seq_pooling_type='LAST', tok_pooling_type='ALL', use_activation=None, dimensions=None, enable_chunked_processing=False, max_embed_len=None, logit_mean=None, logit_sigma=None, logit_bias=None, logit_scale=None, step_tag_id=None, returned_token_ids=None), compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'vllm_ascend.compilation.compiler_interface.AscendCompiler', 'custom_ops': ['all'], 'ir_enable_torch_wrap': False, 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [2048], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'fuse_act_padding': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=False, moe_backend='auto')
+(EngineCore pid=134258) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=134258) INFO 10-03 13:32:57 [ascend_config.py:768] [vllm-ascend] - Dynamic EPLB is False
+(EngineCore pid=134258) INFO 10-03 13:32:57 [ascend_config.py:769] [vllm-ascend] - The number of redundant experts is 0
+(EngineCore pid=134258) INFO 10-03 13:32:58 [parallel_state.py:1410] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://192.168.0.177:37777 backend=hccl
+[rank0]:[W1003 13:32:59.320094030 ProcessGroupGloo.cpp:511] Warning: Unable to resolve hostname to a (local) address. Using the loopback address as fallback. Manually set the network interface to bind to with GLOO_SOCKET_IFNAME. (function operator())
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+(EngineCore pid=134258) INFO 10-03 13:33:02 [parallel_state.py:1723] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+(EngineCore pid=134258) INFO 10-03 13:33:02 [model_runner_v1.py:3619] [vllm-ascend] [worker] - Starting to load model /workspace/models/Decision-2.0-Eos-0.8B-vllm-view...
+(EngineCore pid=134258) INFO 10-03 13:33:03 [gdn_linear_attn.py:169] Using Triton/FLA GDN prefill kernel
+(EngineCore pid=134258) INFO 10-03 13:33:03 [weight_utils.py:938] Filesystem type for checkpoints: XFS. Checkpoint size: 1.88 GiB. Available RAM: 1415.46 GiB.
+(EngineCore pid=134258) INFO 10-03 13:33:03 [weight_utils.py:961] Auto-prefetch is disabled because the filesystem (XFS) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.
+(EngineCore pid=134258) Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+(EngineCore pid=134258) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.54it/s]
+(EngineCore pid=134258) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.54it/s]
+(EngineCore pid=134258) 
+(EngineCore pid=134258) {"event": "decision2_weights_loaded", "parameters": 258, "head_dtype": "torch.float32", "core": "Qwen3_5Model"}
+(EngineCore pid=134258) INFO 10-03 13:33:04 [default_loader.py:397] Loading weights took 0.82 seconds
+(EngineCore pid=134258) INFO 10-03 13:33:05 [model_runner_v1.py:3666] [vllm-ascend] [worker] - Loading model weights took 1.5305 GB
+(EngineCore pid=134258) INFO 10-03 13:33:07 [worker.py:423] [vllm-ascend] - Available KV cache memory: 5.68 GiB
+(EngineCore pid=134258) INFO 10-03 13:33:07 [kv_cache_utils.py:1710] GPU KV cache size: 194,969 tokens
+(EngineCore pid=134258) INFO 10-03 13:33:07 [kv_cache_utils.py:1711] Maximum concurrency for 2,048 tokens per request: 95.20x
+(EngineCore pid=134258) INFO 10-03 13:33:07 [worker.py:634] [vllm-ascend] - Free memory on device (32.4/60.96 GiB) on startup. Desired GPU memory utilization is (0.12, 7.31 GiB). Actual usage: 1.53 GiB for weights, 0.08 GiB for peak activation, 0.03 GiB for non-torch memory, 0.0 GiB for NPU graph memory. Replace gpu_memory_utilization with `--kv-cache-memory=5941135462` (5.53 GiB) to fit into requested memory, or `--kv-cache-memory=32871166464` (30.61 GiB) to fully utilize NPU free memory. Current KV cache memory: 5.68 GiB.
+(EngineCore pid=134258) INFO 10-03 13:33:10 [cpu_binding.py:331] [vllm-ascend] - [cpu_bind_mode] mode=topo_affinity rank=0 visible_npus=[7]
+(EngineCore pid=134258) INFO 10-03 13:33:10 [cpu_binding.py:391] [vllm-ascend] - The CPU allocation plan is as follows:
+(EngineCore pid=134258) INFO 10-03 13:33:10 [cpu_binding.py:396] [vllm-ascend] - NPU7: main=[74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93]  acl=[94]  release=[[95]]
+(EngineCore pid=134258) INFO 10-03 13:33:10 [cpu_binding.py:422] [vllm-ascend] - [migrate] NPU:7 -> NUMA [3]
+(EngineCore pid=134258) INFO 10-03 13:33:14 [cpu_binding.py:517] [vllm-ascend] - NPU7(PCI 0000:42:00.0): sq_send_trigger_irq IRQ_ID=1794 -> CPU72, cq_update_irq IRQ_ID=1795 -> CPU73
+(EngineCore pid=134258) INFO 10-03 13:33:14 [core.py:306] init engine (profile, create kv cache, warmup model) took 8.73 s
+(EngineCore pid=134258) INFO 10-03 13:33:17 [vllm.py:886] Asynchronous scheduling is disabled.
+(EngineCore pid=134258) WARNING 10-03 13:33:17 [vllm.py:942] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(EngineCore pid=134258) WARNING 10-03 13:33:17 [vllm.py:960] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(EngineCore pid=134258) INFO 10-03 13:33:17 [kernel.py:212] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=134258) INFO 10-03 13:33:17 [vllm.py:1135] Cudagraph is disabled under eager mode
+(EngineCore pid=134258) INFO 10-03 13:33:17 [utils.py:174] [vllm-ascend] [quantization] - No quantization signature detected from model files for "/workspace/models/Decision-2.0-Eos-0.8B-vllm-view". The model will be loaded as float. To force a quantization method, pass "--quantization <method>" explicitly.
+(EngineCore pid=134258) INFO 10-03 13:33:17 [platform.py:484] [vllm-ascend] - Compilation disabled, using eager mode by default
+(EngineCore pid=134258) INFO 10-03 13:33:17 [platform.py:714] [vllm-ascend] - Set PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+(EngineCore pid=134258) INFO 10-03 13:33:17 [compilation.py:303] Enabled custom fusions: norm_quant, act_quant
+(APIServer pid=134125) INFO 10-03 13:33:17 [api_server.py:613] Supported tasks: ['classify']
+(APIServer pid=134125) WARNING 10-03 13:33:18 [utils.py:145] To make v1/embeddings API fast, please install orjson by `pip install orjson`
+(APIServer pid=134125) INFO 10-03 13:33:18 [api_server.py:617] Starting vLLM server on http://127.0.0.1:18423
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:37] Available routes are:
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /openapi.json, Methods: GET, HEAD
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /docs, Methods: GET, HEAD
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /docs/oauth2-redirect, Methods: GET, HEAD
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /redoc, Methods: GET, HEAD
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /tokenize, Methods: POST
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /detokenize, Methods: POST
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /load, Methods: GET
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /version, Methods: GET
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /health, Methods: GET
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /metrics, Methods: GET
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /v1/models, Methods: GET
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /ping, Methods: GET
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /ping, Methods: POST
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /invocations, Methods: POST
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /pooling, Methods: POST
+(APIServer pid=134125) INFO 10-03 13:33:18 [launcher.py:46] Route: /classify, Methods: POST
+(APIServer pid=134125) INFO:     Started server process [134125]
+(APIServer pid=134125) INFO:     Waiting for application startup.
+(APIServer pid=134125) INFO:     Application startup complete.
+(APIServer pid=134125) INFO:     127.0.0.1:48284 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55612 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55626 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55630 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55638 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55644 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55648 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55652 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55654 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55672 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55670 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55686 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55696 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55700 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55702 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55716 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55728 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55736 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55748 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55750 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55764 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO 10-03 13:33:48 [loggers.py:271] Engine 000: Avg prompt throughput: 243.6 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=134125) INFO:     127.0.0.1:55780 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55782 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55798 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55804 - "POST /pooling HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO:     127.0.0.1:55812 - "POST /pooling HTTP/1.1" 400 Bad Request
+(APIServer pid=134125) ERROR:    Exception in ASGI application
+(APIServer pid=134125) Traceback (most recent call last):
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py", line 421, in run_asgi
+(APIServer pid=134125)     result = await app(  # type: ignore[func-returns-value]
+(APIServer pid=134125)              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 62, in __call__
+(APIServer pid=134125)     return await self.app(scope, receive, send)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/applications.py", line 1139, in __call__
+(APIServer pid=134125)     await super().__call__(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/applications.py", line 107, in __call__
+(APIServer pid=134125)     await self.middleware_stack(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, _send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/prometheus_fastapi_instrumentator/middleware.py", line 176, in __call__
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/prometheus_fastapi_instrumentator/middleware.py", line 174, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, send_wrapper)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+(APIServer pid=134125)     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+(APIServer pid=134125)     await app(scope, receive, sender)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+(APIServer pid=134125)     await self.middleware_stack(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+(APIServer pid=134125)     await route.handle(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+(APIServer pid=134125)     await self.app(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 119, in app
+(APIServer pid=134125)     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+(APIServer pid=134125)     await app(scope, receive, sender)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 105, in app
+(APIServer pid=134125)     response = await f(request)
+(APIServer pid=134125)                ^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 385, in app
+(APIServer pid=134125)     raw_response = await run_endpoint_function(
+(APIServer pid=134125)                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 284, in run_endpoint_function
+(APIServer pid=134125)     return await dependant.call(**values)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/utils.py", line 95, in wrapper
+(APIServer pid=134125)     return handler_task.result()
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/utils.py", line 116, in wrapper
+(APIServer pid=134125)     return await func(*args, **kwargs)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/pooling/api_router.py", line 36, in create_pooling
+(APIServer pid=134125)     return await handler(request, raw_request)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/base/serving.py", line 78, in __call__
+(APIServer pid=134125)     ctx = await self._init_ctx(io_processor, request, raw_request)
+(APIServer pid=134125)           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/base/serving.py", line 111, in _init_ctx
+(APIServer pid=134125)     pooling_params = io_processor.create_pooling_params(request)
+(APIServer pid=134125)                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/base/io_processor.py", line 63, in create_pooling_params
+(APIServer pid=134125)     return request.to_pooling_params()
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/workspace/repos/paddle_ocr_vl_npu/23_decision2_inference/decision2_ascend/__init__.py", line 26, in to_pooling_params
+(APIServer pid=134125)     validate_metadata(self.input, metadata)
+(APIServer pid=134125)   File "/workspace/repos/paddle_ocr_vl_npu/23_decision2_inference/decision2_ascend/protocol.py", line 8, in validate_metadata
+(APIServer pid=134125)     raise ValueError("Invalid Decision2 metadata keys")
+(APIServer pid=134125) ValueError: Invalid Decision2 metadata keys
+(APIServer pid=134125) INFO:     127.0.0.1:55818 - "POST /pooling HTTP/1.1" 400 Bad Request
+(APIServer pid=134125) ERROR:    Exception in ASGI application
+(APIServer pid=134125) Traceback (most recent call last):
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py", line 421, in run_asgi
+(APIServer pid=134125)     result = await app(  # type: ignore[func-returns-value]
+(APIServer pid=134125)              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 62, in __call__
+(APIServer pid=134125)     return await self.app(scope, receive, send)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/applications.py", line 1139, in __call__
+(APIServer pid=134125)     await super().__call__(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/applications.py", line 107, in __call__
+(APIServer pid=134125)     await self.middleware_stack(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, _send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/prometheus_fastapi_instrumentator/middleware.py", line 176, in __call__
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/prometheus_fastapi_instrumentator/middleware.py", line 174, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, send_wrapper)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+(APIServer pid=134125)     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+(APIServer pid=134125)     await app(scope, receive, sender)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+(APIServer pid=134125)     await self.middleware_stack(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+(APIServer pid=134125)     await route.handle(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+(APIServer pid=134125)     await self.app(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 119, in app
+(APIServer pid=134125)     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+(APIServer pid=134125)     await app(scope, receive, sender)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 105, in app
+(APIServer pid=134125)     response = await f(request)
+(APIServer pid=134125)                ^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 385, in app
+(APIServer pid=134125)     raw_response = await run_endpoint_function(
+(APIServer pid=134125)                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 284, in run_endpoint_function
+(APIServer pid=134125)     return await dependant.call(**values)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/utils.py", line 95, in wrapper
+(APIServer pid=134125)     return handler_task.result()
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/utils.py", line 116, in wrapper
+(APIServer pid=134125)     return await func(*args, **kwargs)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/pooling/api_router.py", line 36, in create_pooling
+(APIServer pid=134125)     return await handler(request, raw_request)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/base/serving.py", line 78, in __call__
+(APIServer pid=134125)     ctx = await self._init_ctx(io_processor, request, raw_request)
+(APIServer pid=134125)           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/base/serving.py", line 111, in _init_ctx
+(APIServer pid=134125)     pooling_params = io_processor.create_pooling_params(request)
+(APIServer pid=134125)                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/base/io_processor.py", line 63, in create_pooling_params
+(APIServer pid=134125)     return request.to_pooling_params()
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/workspace/repos/paddle_ocr_vl_npu/23_decision2_inference/decision2_ascend/__init__.py", line 26, in to_pooling_params
+(APIServer pid=134125)     validate_metadata(self.input, metadata)
+(APIServer pid=134125)   File "/workspace/repos/paddle_ocr_vl_npu/23_decision2_inference/decision2_ascend/protocol.py", line 13, in validate_metadata
+(APIServer pid=134125)     raise ValueError("Candidate position out of range")
+(APIServer pid=134125) ValueError: Candidate position out of range
+(APIServer pid=134125) INFO:     127.0.0.1:55832 - "POST /classify HTTP/1.1" 400 Bad Request
+(APIServer pid=134125) ERROR:    Exception in ASGI application
+(APIServer pid=134125) Traceback (most recent call last):
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py", line 421, in run_asgi
+(APIServer pid=134125)     result = await app(  # type: ignore[func-returns-value]
+(APIServer pid=134125)              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 62, in __call__
+(APIServer pid=134125)     return await self.app(scope, receive, send)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/applications.py", line 1139, in __call__
+(APIServer pid=134125)     await super().__call__(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/applications.py", line 107, in __call__
+(APIServer pid=134125)     await self.middleware_stack(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, _send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/prometheus_fastapi_instrumentator/middleware.py", line 176, in __call__
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/prometheus_fastapi_instrumentator/middleware.py", line 174, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, send_wrapper)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+(APIServer pid=134125)     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+(APIServer pid=134125)     await app(scope, receive, sender)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+(APIServer pid=134125)     await self.app(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+(APIServer pid=134125)     await self.middleware_stack(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+(APIServer pid=134125)     await route.handle(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+(APIServer pid=134125)     await self.app(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 119, in app
+(APIServer pid=134125)     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+(APIServer pid=134125)     raise exc
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+(APIServer pid=134125)     await app(scope, receive, sender)
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 105, in app
+(APIServer pid=134125)     response = await f(request)
+(APIServer pid=134125)                ^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 385, in app
+(APIServer pid=134125)     raw_response = await run_endpoint_function(
+(APIServer pid=134125)                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/usr/local/python3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 284, in run_endpoint_function
+(APIServer pid=134125)     return await dependant.call(**values)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/utils.py", line 95, in wrapper
+(APIServer pid=134125)     return handler_task.result()
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/utils.py", line 116, in wrapper
+(APIServer pid=134125)     return await func(*args, **kwargs)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/classify/api_router.py", line 33, in create_classify
+(APIServer pid=134125)     return await handler(request, raw_request)
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/base/serving.py", line 78, in __call__
+(APIServer pid=134125)     ctx = await self._init_ctx(io_processor, request, raw_request)
+(APIServer pid=134125)           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/base/serving.py", line 111, in _init_ctx
+(APIServer pid=134125)     pooling_params = io_processor.create_pooling_params(request)
+(APIServer pid=134125)                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/vllm-workspace/vllm/vllm/entrypoints/pooling/base/io_processor.py", line 63, in create_pooling_params
+(APIServer pid=134125)     return request.to_pooling_params()
+(APIServer pid=134125)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=134125)   File "/workspace/repos/paddle_ocr_vl_npu/23_decision2_inference/decision2_ascend/__init__.py", line 35, in unsupported_request
+(APIServer pid=134125)     raise ValueError("Eos requires /pooling with pretokenized input and Decision2 metadata; use the experiment client")
+(APIServer pid=134125) ValueError: Eos requires /pooling with pretokenized input and Decision2 metadata; use the experiment client
+(APIServer pid=134125) INFO:     127.0.0.1:55844 - "GET /health HTTP/1.1" 200 OK
+(APIServer pid=134125) INFO 10-03 13:33:58 [loggers.py:271] Engine 000: Avg prompt throughput: 46.5 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+(APIServer pid=134125) INFO 10-03 13:34:08 [loggers.py:271] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%

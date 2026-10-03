@@ -1,0 +1,4 @@
+59b4a37dfcaaa9fda021d0a6efba99a49894746e
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=7
+/workspace/venvs/decision2_vllm_py312/bin/python -m vllm.entrypoints.openai.api_server --model /workspace/models/Decision-2.0-Eos-0.8B-vllm-view --served-model-name eos-0.8b --runner pooling --dtype bfloat16 --mamba-ssm-cache-dtype float32 --enforce-eager --no-enable-prefix-caching --no-enable-chunked-prefill --max-model-len 2048 --max-num-batched-tokens 2048 --max-num-seqs 4 --gpu-memory-utilization 0.12 --host 127.0.0.1 --port 18423 

@@ -1,0 +1,900 @@
+{
+  "chip": "910B2",
+  "mode": "vllm-ascend-http",
+  "concurrent_workload": "T2",
+  "sequential": [
+    {
+      "id": "english_returns",
+      "question": "route",
+      "tokens": 122,
+      "token_ids_sha256": "4328d9e31487434039b05b3f79a5151d62cbd1ce7eabfb594fbfa301c26bfc00",
+      "wall_s": 0.495128900045529,
+      "logits": [
+        3.072669506072998,
+        -3.3087992668151855,
+        -2.6644246578216553
+      ],
+      "answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9951072977510151,
+          "technical": 0.001684353474291439,
+          "billing": 0.003208348774693538
+        },
+        "confidence": 0.9689972894142148
+      },
+      "reference_answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9949681943432926,
+          "technical": 0.0016988105035613424,
+          "billing": 0.003332995153145944
+        },
+        "confidence": 0.9682646351595979
+      },
+      "max_probability_delta": 0.00013910340772249619
+    },
+    {
+      "id": "english_returns",
+      "question": "receipt",
+      "tokens": 103,
+      "token_ids_sha256": "942bbf0f74e9238388b2985cf4d1080c456504f0aa3a0aa318da224870a5f886",
+      "wall_s": 0.20851952000521123,
+      "logits": [
+        -4.161179542541504,
+        4.39060115814209
+      ],
+      "answer": {
+        "type": "noul",
+        "noul": 0.9998068365589832
+      },
+      "reference_answer": {
+        "type": "noul",
+        "noul": 0.9998085052515986
+      },
+      "max_probability_delta": 1.6686926154196868e-06
+    },
+    {
+      "id": "english_returns",
+      "question": "urgency",
+      "tokens": 127,
+      "token_ids_sha256": "e896a0015c09a9dae77a2369ad97c430940c5f5ebbb60734b04540db52b51de4",
+      "wall_s": 0.20594941009767354,
+      "logits": [
+        3.2244091033935547,
+        -3.2042977809906006,
+        -5.286993503570557
+      ],
+      "answer": {
+        "type": "score",
+        "score": 0.0020132048479516588,
+        "probabilities": {
+          "0": 0.9981875920418462,
+          "1": 0.0016116110683557826,
+          "2": 0.00020079688979793815
+        },
+        "confidence": 0.9873625201163051,
+        "legend": {
+          "0": "Routine, no urgent deadline",
+          "1": "Needs attention soon",
+          "2": "Immediate emergency"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 0.001973410879599084,
+        "probabilities": {
+          "0": 0.9982235581753168,
+          "1": 0.0015794727697674377,
+          "2": 0.00019696905491582326
+        },
+        "confidence": 0.9875805660212902,
+        "legend": {
+          "0": "Routine, no urgent deadline",
+          "1": "Needs attention soon",
+          "2": "Immediate emergency"
+        }
+      },
+      "max_probability_delta": 3.596613347067734e-05
+    },
+    {
+      "id": "chinese_returns",
+      "question": "route",
+      "tokens": 113,
+      "token_ids_sha256": "769c99d2a8e29c27110c5cb1d7d156109849e3d0e153ec30aeb114336403b385",
+      "wall_s": 0.20923050004057586,
+      "logits": [
+        2.8484880924224854,
+        -3.6610968112945557,
+        -3.0405056476593018
+      ],
+      "answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9957592008605812,
+          "technical": 0.0014827827494108415,
+          "billing": 0.0027580163900078683
+        },
+        "confidence": 0.9725616956958167
+      },
+      "reference_answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9959396364189114,
+          "technical": 0.001465554263205391,
+          "billing": 0.0025948093178833464
+        },
+        "confidence": 0.97354322454177
+      },
+      "max_probability_delta": 0.0001804355583301387
+    },
+    {
+      "id": "chinese_returns",
+      "question": "receipt",
+      "tokens": 92,
+      "token_ids_sha256": "28219857b4e2c51a174b5d57fca31a705b467473de80b5a8a3c721f40b5b21c8",
+      "wall_s": 0.18671271996572614,
+      "logits": [
+        -4.2689900398254395,
+        3.007025957107544
+      ],
+      "answer": {
+        "type": "noul",
+        "noul": 0.9993085416875866
+      },
+      "reference_answer": {
+        "type": "noul",
+        "noul": 0.9993136070102763
+      },
+      "max_probability_delta": 5.065322689623564e-06
+    },
+    {
+      "id": "chinese_returns",
+      "question": "urgency",
+      "tokens": 121,
+      "token_ids_sha256": "116949cf5ec9cdeb35e4c8f24c63e128a58759330705281628ca542635b2c683",
+      "wall_s": 0.1900396898854524,
+      "logits": [
+        3.80958890914917,
+        -1.4607517719268799,
+        -3.30484938621521
+      ],
+      "answer": {
+        "type": "score",
+        "score": 0.006728345140201616,
+        "probabilities": {
+          "0": 0.9940801177580798,
+          "1": 0.005111419343639071,
+          "2": 0.0008084628982812725
+        },
+        "confidence": 0.9648391381431158,
+        "legend": {
+          "0": "常规，没有紧急截止时间",
+          "1": "需要尽快处理",
+          "2": "必须立即处理的紧急情况"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 0.007120658064677594,
+        "probabilities": {
+          "0": 0.9937243307774988,
+          "1": 0.005430680380324794,
+          "2": 0.0008449888421764004
+        },
+        "confidence": 0.963080710580794,
+        "legend": {
+          "0": "常规，没有紧急截止时间",
+          "1": "需要尽快处理",
+          "2": "必须立即处理的紧急情况"
+        }
+      },
+      "max_probability_delta": 0.00035578698058102987
+    },
+    {
+      "id": "relevance_positive",
+      "question": "relevance",
+      "tokens": 144,
+      "token_ids_sha256": "0cf469ae8a5a00b1c360ea445af9d21916eee1034c0207fe705f35e4eb6ae73a",
+      "wall_s": 0.20643844990991056,
+      "logits": [
+        -3.1878583431243896,
+        -0.4684899151325226,
+        1.7047691345214844,
+        4.554009914398193
+      ],
+      "answer": {
+        "type": "score",
+        "score": 2.932043957241294,
+        "probabilities": {
+          "0": 0.00040778965691877023,
+          "1": 0.006186469964827917,
+          "2": 0.05435973385829395,
+          "3": 0.9390460065199594
+        },
+        "confidence": 0.8182179907460001,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 2.930596320128414,
+        "probabilities": {
+          "0": 0.00042005875672213315,
+          "1": 0.006248475967637794,
+          "2": 0.05564655166614395,
+          "3": 0.9376849136094961
+        },
+        "confidence": 0.8152920081566029,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "max_probability_delta": 0.0013610929104632685
+    },
+    {
+      "id": "relevance_negative",
+      "question": "relevance",
+      "tokens": 145,
+      "token_ids_sha256": "3b569c72ab100afa97c903e2c63a64222daa6dba115ec01e14c3dee7deaf2032",
+      "wall_s": 0.21192476991564035,
+      "logits": [
+        0.9727232456207275,
+        -2.7090673446655273,
+        -5.689751148223877,
+        -6.797140121459961
+      ],
+      "answer": {
+        "type": "score",
+        "score": 0.028241545416143557,
+        "probabilities": {
+          "0": 0.9738254206058302,
+          "1": 0.024518831566435948,
+          "2": 0.0012445296334940938,
+          "3": 0.00041121819423980754
+        },
+        "confidence": 0.9074632387087905,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 0.028796894726674144,
+        "probabilities": {
+          "0": 0.9733557354113062,
+          "1": 0.024930383014558574,
+          "2": 0.00127513301029038,
+          "3": 0.00043874856384493687
+        },
+        "confidence": 0.9060723185992153,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "max_probability_delta": 0.000469685194524061
+    }
+  ],
+  "concurrent": [
+    {
+      "id": "relevance_negative",
+      "question": "relevance",
+      "tokens": 145,
+      "token_ids_sha256": "3b569c72ab100afa97c903e2c63a64222daa6dba115ec01e14c3dee7deaf2032",
+      "wall_s": 0.42474221996963024,
+      "logits": [
+        0.9611380100250244,
+        -2.710794687271118,
+        -5.689849853515625,
+        -6.746501445770264
+      ],
+      "answer": {
+        "type": "score",
+        "score": 0.02858429284307364,
+        "probabilities": {
+          "0": 0.973549246599619,
+          "1": 0.024754708501258025,
+          "2": 0.0012585503555534224,
+          "3": 0.0004374945435695899
+        },
+        "confidence": 0.906623622785702,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 0.028796894726674144,
+        "probabilities": {
+          "0": 0.9733557354113062,
+          "1": 0.024930383014558574,
+          "2": 0.00127513301029038,
+          "3": 0.00043874856384493687
+        },
+        "confidence": 0.9060723185992153,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "max_probability_delta": 0.00019351118831278935
+    },
+    {
+      "id": "relevance_positive",
+      "question": "relevance",
+      "tokens": 144,
+      "token_ids_sha256": "0cf469ae8a5a00b1c360ea445af9d21916eee1034c0207fe705f35e4eb6ae73a",
+      "wall_s": 0.19573689997196198,
+      "logits": [
+        -3.1878583431243896,
+        -0.4684899151325226,
+        1.7047691345214844,
+        4.554009914398193
+      ],
+      "answer": {
+        "type": "score",
+        "score": 2.932043957241294,
+        "probabilities": {
+          "0": 0.00040778965691877023,
+          "1": 0.006186469964827917,
+          "2": 0.05435973385829395,
+          "3": 0.9390460065199594
+        },
+        "confidence": 0.8182179907460001,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 2.930596320128414,
+        "probabilities": {
+          "0": 0.00042005875672213315,
+          "1": 0.006248475967637794,
+          "2": 0.05564655166614395,
+          "3": 0.9376849136094961
+        },
+        "confidence": 0.8152920081566029,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "max_probability_delta": 0.0013610929104632685
+    },
+    {
+      "id": "chinese_returns",
+      "question": "urgency",
+      "tokens": 121,
+      "token_ids_sha256": "116949cf5ec9cdeb35e4c8f24c63e128a58759330705281628ca542635b2c683",
+      "wall_s": 0.4240626501850784,
+      "logits": [
+        3.786846160888672,
+        -1.4342553615570068,
+        -3.2551956176757812
+      ],
+      "answer": {
+        "type": "score",
+        "score": 0.00710546330572796,
+        "probabilities": {
+          "0": 0.9937634233395668,
+          "1": 0.005367690015138684,
+          "2": 0.000868886645294638
+        },
+        "confidence": 0.9632262479443267,
+        "legend": {
+          "0": "常规，没有紧急截止时间",
+          "1": "需要尽快处理",
+          "2": "必须立即处理的紧急情况"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 0.007120658064677594,
+        "probabilities": {
+          "0": 0.9937243307774988,
+          "1": 0.005430680380324794,
+          "2": 0.0008449888421764004
+        },
+        "confidence": 0.963080710580794,
+        "legend": {
+          "0": "常规，没有紧急截止时间",
+          "1": "需要尽快处理",
+          "2": "必须立即处理的紧急情况"
+        }
+      },
+      "max_probability_delta": 6.29903651861094e-05
+    },
+    {
+      "id": "chinese_returns",
+      "question": "receipt",
+      "tokens": 92,
+      "token_ids_sha256": "28219857b4e2c51a174b5d57fca31a705b467473de80b5a8a3c721f40b5b21c8",
+      "wall_s": 0.42348382994532585,
+      "logits": [
+        -4.262824535369873,
+        3.025991201400757
+      ],
+      "answer": {
+        "type": "noul",
+        "noul": 0.9993173297695676
+      },
+      "reference_answer": {
+        "type": "noul",
+        "noul": 0.9993136070102763
+      },
+      "max_probability_delta": 3.7227592912802976e-06
+    },
+    {
+      "id": "chinese_returns",
+      "question": "route",
+      "tokens": 113,
+      "token_ids_sha256": "769c99d2a8e29c27110c5cb1d7d156109849e3d0e153ec30aeb114336403b385",
+      "wall_s": 0.44338748999871314,
+      "logits": [
+        2.8484880924224854,
+        -3.6610968112945557,
+        -3.0405056476593018
+      ],
+      "answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9957592008605812,
+          "technical": 0.0014827827494108415,
+          "billing": 0.0027580163900078683
+        },
+        "confidence": 0.9725616956958167
+      },
+      "reference_answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9959396364189114,
+          "technical": 0.001465554263205391,
+          "billing": 0.0025948093178833464
+        },
+        "confidence": 0.97354322454177
+      },
+      "max_probability_delta": 0.0001804355583301387
+    },
+    {
+      "id": "english_returns",
+      "question": "urgency",
+      "tokens": 127,
+      "token_ids_sha256": "e896a0015c09a9dae77a2369ad97c430940c5f5ebbb60734b04540db52b51de4",
+      "wall_s": 0.4794615001883358,
+      "logits": [
+        3.2499959468841553,
+        -3.185218334197998,
+        -5.27286434173584
+      ],
+      "answer": {
+        "type": "score",
+        "score": 0.0019982018894120447,
+        "probabilities": {
+          "0": 0.9982003099927214,
+          "1": 0.0016011781251454504,
+          "2": 0.00019851188213329703
+        },
+        "confidence": 0.9874413158201296,
+        "legend": {
+          "0": "Routine, no urgent deadline",
+          "1": "Needs attention soon",
+          "2": "Immediate emergency"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 0.001973410879599084,
+        "probabilities": {
+          "0": 0.9982235581753168,
+          "1": 0.0015794727697674377,
+          "2": 0.00019696905491582326
+        },
+        "confidence": 0.9875805660212902,
+        "legend": {
+          "0": "Routine, no urgent deadline",
+          "1": "Needs attention soon",
+          "2": "Immediate emergency"
+        }
+      },
+      "max_probability_delta": 2.3248182595470013e-05
+    },
+    {
+      "id": "english_returns",
+      "question": "receipt",
+      "tokens": 103,
+      "token_ids_sha256": "942bbf0f74e9238388b2985cf4d1080c456504f0aa3a0aa318da224870a5f886",
+      "wall_s": 0.4793450301513076,
+      "logits": [
+        -4.162078380584717,
+        4.404345512390137
+      ],
+      "answer": {
+        "type": "noul",
+        "noul": 0.9998096439452535
+      },
+      "reference_answer": {
+        "type": "noul",
+        "noul": 0.9998085052515986
+      },
+      "max_probability_delta": 1.1386936549229176e-06
+    },
+    {
+      "id": "english_returns",
+      "question": "route",
+      "tokens": 122,
+      "token_ids_sha256": "4328d9e31487434039b05b3f79a5151d62cbd1ce7eabfb594fbfa301c26bfc00",
+      "wall_s": 0.4789808299392462,
+      "logits": [
+        3.100959300994873,
+        -3.2837839126586914,
+        -2.619661331176758
+      ],
+      "answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9950597495409134,
+          "technical": 0.0016787669598869698,
+          "billing": 0.003261483499199677
+        },
+        "confidence": 0.9687526710358673
+      },
+      "reference_answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9949681943432926,
+          "technical": 0.0016988105035613424,
+          "billing": 0.003332995153145944
+        },
+        "confidence": 0.9682646351595979
+      },
+      "max_probability_delta": 9.155519762071851e-05
+    },
+    {
+      "id": "relevance_negative",
+      "question": "relevance",
+      "tokens": 145,
+      "token_ids_sha256": "3b569c72ab100afa97c903e2c63a64222daa6dba115ec01e14c3dee7deaf2032",
+      "wall_s": 0.4709736700169742,
+      "logits": [
+        0.9727232456207275,
+        -2.7090673446655273,
+        -5.689751148223877,
+        -6.797140121459961
+      ],
+      "answer": {
+        "type": "score",
+        "score": 0.028241545416143557,
+        "probabilities": {
+          "0": 0.9738254206058302,
+          "1": 0.024518831566435948,
+          "2": 0.0012445296334940938,
+          "3": 0.00041121819423980754
+        },
+        "confidence": 0.9074632387087905,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 0.028796894726674144,
+        "probabilities": {
+          "0": 0.9733557354113062,
+          "1": 0.024930383014558574,
+          "2": 0.00127513301029038,
+          "3": 0.00043874856384493687
+        },
+        "confidence": 0.9060723185992153,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "max_probability_delta": 0.000469685194524061
+    },
+    {
+      "id": "relevance_positive",
+      "question": "relevance",
+      "tokens": 144,
+      "token_ids_sha256": "0cf469ae8a5a00b1c360ea445af9d21916eee1034c0207fe705f35e4eb6ae73a",
+      "wall_s": 0.44003914995118976,
+      "logits": [
+        -3.1748952865600586,
+        -0.47114089131355286,
+        1.698625922203064,
+        4.509436130523682
+      ],
+      "answer": {
+        "type": "score",
+        "score": 2.929482596617469,
+        "probabilities": {
+          "0": 0.00043089847268358946,
+          "1": 0.006435770800549617,
+          "2": 0.05635316636338061,
+          "3": 0.9367801643633861
+        },
+        "confidence": 0.813120703557278,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 2.930596320128414,
+        "probabilities": {
+          "0": 0.00042005875672213315,
+          "1": 0.006248475967637794,
+          "2": 0.05564655166614395,
+          "3": 0.9376849136094961
+        },
+        "confidence": 0.8152920081566029,
+        "legend": {
+          "0": "Irrelevant",
+          "1": "Related topic but does not answer",
+          "2": "Partially answers",
+          "3": "Directly and completely answers"
+        }
+      },
+      "max_probability_delta": 0.0009047492461100592
+    },
+    {
+      "id": "chinese_returns",
+      "question": "urgency",
+      "tokens": 121,
+      "token_ids_sha256": "116949cf5ec9cdeb35e4c8f24c63e128a58759330705281628ca542635b2c683",
+      "wall_s": 0.439919610042125,
+      "logits": [
+        3.786846160888672,
+        -1.4342553615570068,
+        -3.2551956176757812
+      ],
+      "answer": {
+        "type": "score",
+        "score": 0.00710546330572796,
+        "probabilities": {
+          "0": 0.9937634233395668,
+          "1": 0.005367690015138684,
+          "2": 0.000868886645294638
+        },
+        "confidence": 0.9632262479443267,
+        "legend": {
+          "0": "常规，没有紧急截止时间",
+          "1": "需要尽快处理",
+          "2": "必须立即处理的紧急情况"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 0.007120658064677594,
+        "probabilities": {
+          "0": 0.9937243307774988,
+          "1": 0.005430680380324794,
+          "2": 0.0008449888421764004
+        },
+        "confidence": 0.963080710580794,
+        "legend": {
+          "0": "常规，没有紧急截止时间",
+          "1": "需要尽快处理",
+          "2": "必须立即处理的紧急情况"
+        }
+      },
+      "max_probability_delta": 6.29903651861094e-05
+    },
+    {
+      "id": "chinese_returns",
+      "question": "receipt",
+      "tokens": 92,
+      "token_ids_sha256": "28219857b4e2c51a174b5d57fca31a705b467473de80b5a8a3c721f40b5b21c8",
+      "wall_s": 0.4395258401054889,
+      "logits": [
+        -4.262824535369873,
+        3.025991201400757
+      ],
+      "answer": {
+        "type": "noul",
+        "noul": 0.9993173297695676
+      },
+      "reference_answer": {
+        "type": "noul",
+        "noul": 0.9993136070102763
+      },
+      "max_probability_delta": 3.7227592912802976e-06
+    },
+    {
+      "id": "chinese_returns",
+      "question": "route",
+      "tokens": 113,
+      "token_ids_sha256": "769c99d2a8e29c27110c5cb1d7d156109849e3d0e153ec30aeb114336403b385",
+      "wall_s": 0.4385559798683971,
+      "logits": [
+        2.8484880924224854,
+        -3.6610968112945557,
+        -3.0405056476593018
+      ],
+      "answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9957592008605812,
+          "technical": 0.0014827827494108415,
+          "billing": 0.0027580163900078683
+        },
+        "confidence": 0.9725616956958167
+      },
+      "reference_answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9959396364189114,
+          "technical": 0.001465554263205391,
+          "billing": 0.0025948093178833464
+        },
+        "confidence": 0.97354322454177
+      },
+      "max_probability_delta": 0.0001804355583301387
+    },
+    {
+      "id": "english_returns",
+      "question": "urgency",
+      "tokens": 127,
+      "token_ids_sha256": "e896a0015c09a9dae77a2369ad97c430940c5f5ebbb60734b04540db52b51de4",
+      "wall_s": 0.41364961001090705,
+      "logits": [
+        3.2499959468841553,
+        -3.185218334197998,
+        -5.27286434173584
+      ],
+      "answer": {
+        "type": "score",
+        "score": 0.0019982018894120447,
+        "probabilities": {
+          "0": 0.9982003099927214,
+          "1": 0.0016011781251454504,
+          "2": 0.00019851188213329703
+        },
+        "confidence": 0.9874413158201296,
+        "legend": {
+          "0": "Routine, no urgent deadline",
+          "1": "Needs attention soon",
+          "2": "Immediate emergency"
+        }
+      },
+      "reference_answer": {
+        "type": "score",
+        "score": 0.001973410879599084,
+        "probabilities": {
+          "0": 0.9982235581753168,
+          "1": 0.0015794727697674377,
+          "2": 0.00019696905491582326
+        },
+        "confidence": 0.9875805660212902,
+        "legend": {
+          "0": "Routine, no urgent deadline",
+          "1": "Needs attention soon",
+          "2": "Immediate emergency"
+        }
+      },
+      "max_probability_delta": 2.3248182595470013e-05
+    },
+    {
+      "id": "english_returns",
+      "question": "receipt",
+      "tokens": 103,
+      "token_ids_sha256": "942bbf0f74e9238388b2985cf4d1080c456504f0aa3a0aa318da224870a5f886",
+      "wall_s": 0.4134717599954456,
+      "logits": [
+        -4.162078380584717,
+        4.404345512390137
+      ],
+      "answer": {
+        "type": "noul",
+        "noul": 0.9998096439452535
+      },
+      "reference_answer": {
+        "type": "noul",
+        "noul": 0.9998085052515986
+      },
+      "max_probability_delta": 1.1386936549229176e-06
+    },
+    {
+      "id": "english_returns",
+      "question": "route",
+      "tokens": 122,
+      "token_ids_sha256": "4328d9e31487434039b05b3f79a5151d62cbd1ce7eabfb594fbfa301c26bfc00",
+      "wall_s": 0.4133721401449293,
+      "logits": [
+        3.100959300994873,
+        -3.2837839126586914,
+        -2.619661331176758
+      ],
+      "answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9950597495409134,
+          "technical": 0.0016787669598869698,
+          "billing": 0.003261483499199677
+        },
+        "confidence": 0.9687526710358673
+      },
+      "reference_answer": {
+        "type": "choice",
+        "choice": "returns",
+        "probabilities": {
+          "returns": 0.9949681943432926,
+          "technical": 0.0016988105035613424,
+          "billing": 0.003332995153145944
+        },
+        "confidence": 0.9682646351595979
+      },
+      "max_probability_delta": 9.155519762071851e-05
+    }
+  ],
+  "sanity_observations": {
+    "english_returns": true,
+    "chinese_returns": true,
+    "relevance_order": true,
+    "concurrent_choices_stable": true,
+    "healthy_after_invalid_requests": true,
+    "invalid_requests_rejected_before_worker": true
+  },
+  "invalid_responses": [
+    {
+      "endpoint": "/pooling",
+      "status": 400,
+      "body": "{\"error\":{\"message\":\"Invalid Decision2 metadata keys\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}}"
+    },
+    {
+      "endpoint": "/pooling",
+      "status": 400,
+      "body": "{\"error\":{\"message\":\"Candidate position out of range\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}}"
+    },
+    {
+      "endpoint": "/classify",
+      "status": 400,
+      "body": "{\"error\":{\"message\":\"Eos requires /pooling with pretokenized input and Decision2 metadata; use the experiment client\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}}"
+    }
+  ],
+  "concurrency_max_logit_delta": 0.050638675689697266,
+  "max_reference_probability_delta": 0.0013610929104632685
+}
