@@ -207,7 +207,11 @@ def main():
             else:
                 command += ['--enforce-eager']
             if args.experiment == 'graph':
-                command += ['--cudagraph-metrics']
+                # Installed graph-memory estimator allocates capture_size KV
+                # blocks (not tokens), overflowing HBM for prefill-sized graphs.
+                # The supported explicit budget skips that estimator. Apply the
+                # identical budget to eager controls; do not shorten sequences.
+                command += ['--cudagraph-metrics', '--kv-cache-memory-bytes', str(8 * 1024**3)]
             if args.experiment == 'async':
                 command += ['--async-scheduling' if case == 'async_eager' else '--no-async-scheduling']
             (case_dir / 'command.json').write_text(json.dumps(command, indent=2) + '\n')
