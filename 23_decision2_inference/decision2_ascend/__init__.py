@@ -21,12 +21,11 @@ def register():
         def to_pooling_params(self):
             params = original(self)
             metadata = (self.model_extra or {}).get("decision2")
-            if metadata is not None:
-                from .protocol import validate_metadata
-                validate_metadata(self.input, metadata)
-                if self.task != "classify" or self.truncate_prompt_tokens is not None:
-                    raise ValueError("Decision2 requires classify, without prompt truncation")
-                params.extra_kwargs = {"decision2": metadata}
+            from .protocol import validate_metadata
+            validate_metadata(self.input, metadata)
+            if self.task != "classify" or self.truncate_prompt_tokens is not None:
+                raise ValueError("Decision2 requires classify, without prompt truncation")
+            params.extra_kwargs = {"decision2": metadata}
             return params
 
         PoolingCompletionRequest.to_pooling_params = to_pooling_params

@@ -32,7 +32,15 @@ class DecisionPooler(Pooler):
         for i, params in enumerate(pooling_metadata.pooling_params):
             meta = (params.extra_kwargs or {}).get("decision2")
             if meta is None:
-                raise ValueError("Missing Decision2 option positions")
+                # vLLM 0.21 _dummy_pooler_run_task supplies CPU zero tokens and
+                # no extra_kwargs. Real execution does not request CPU tokens;
+                # the HTTP boundary rejects missing metadata before scheduling.
+                dummy = pooling_metadata.prompt_token_ids_cpu
+                if dummy is None or bool(torch.any(dummy != 0)):
+                    raise ValueError("Missing Decision2 option positions")
+                length = int(cursor.prompt_lens_cpu[i])
+                meta = {"candidate_positions": [0] * 255, "query_position": length - 1,
+                        "token_count": length}
             if meta["token_count"] != int(cursor.prompt_lens_cpu[i]):
                 raise ValueError("Server changed the token sequence length")
             positions = torch.tensor([*meta["candidate_positions"], meta["query_position"]],
