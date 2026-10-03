@@ -12,6 +12,12 @@ REPO = "vllm-sr/Decision-2.0-Eos-0.8B"
 REVISION = "3594047d69f476f1d01cf84c593e213fc3a4dfe0"
 
 
+def open_url(url, timeout):
+    # The mirror rejects urllib's default User-Agent on its resolve-cache route.
+    request = urllib.request.Request(url, headers={"User-Agent": "curl/8.0"})
+    return urllib.request.urlopen(request, timeout=timeout)
+
+
 def digest(path):
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -28,7 +34,7 @@ def main():
     root = args.output.resolve()
     root.mkdir(parents=True, exist_ok=True)
     base = f"{args.endpoint.rstrip('/')}/{REPO}/resolve/{REVISION}/"
-    manifest_bytes = urllib.request.urlopen(base + "MODEL_MANIFEST.json?download=true", timeout=60).read()
+    manifest_bytes = open_url(base + "MODEL_MANIFEST.json?download=true", timeout=60).read()
     manifest = json.loads(manifest_bytes)
     (root / "MODEL_MANIFEST.json").write_bytes(manifest_bytes)
     state = {"bytes": 0, "files_done": 0}
@@ -56,7 +62,7 @@ def main():
         partial = dest.with_name(dest.name + ".partial")
         for attempt in range(3):
             try:
-                with urllib.request.urlopen(base + name + "?download=true", timeout=120) as src, partial.open("wb") as out:
+                with open_url(base + name + "?download=true", timeout=120) as src, partial.open("wb") as out:
                     while block := src.read(8 << 20):
                         out.write(block)
                         with lock:
