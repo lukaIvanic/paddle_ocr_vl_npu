@@ -6,7 +6,7 @@ cd "$(git rev-parse --show-toplevel)"
 export TORCH_DEVICE_BACKEND_AUTOLOAD=0
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export PYTHONDONTWRITEBYTECODE=1
-export HF_HOME=/workspace/hf_cache
+export HF_HOME=/workspace/.cache/huggingface
 export HF_ENDPOINT=https://hf-mirror.com
 export HF_HUB_DISABLE_XET=1
 export HF_HUB_DOWNLOAD_TIMEOUT=120
