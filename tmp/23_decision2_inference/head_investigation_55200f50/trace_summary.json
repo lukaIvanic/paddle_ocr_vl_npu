@@ -1,0 +1,412 @@
+{
+  "source": "tmp/23_decision2_inference/head_investigation_55200f50/diagnostics/traces/rank0_142756_20261003141433464_ascend_pt/ASCEND_PROFILER_OUTPUT",
+  "warning": "Nested total durations overlap; do not add parent and child scopes. Kernel durations are not end-to-end time.",
+  "annotated_ranges": {
+    "decision2/execute": {
+      "calls": 34.0,
+      "Host Self Duration(us)": 259434.61000000007,
+      "Host Total Duration(us)": 4145527.4499999997,
+      "Device Total Duration(us)": 1046728.6792500002
+    },
+    "decision2/backbone": {
+      "calls": 24.0,
+      "Host Self Duration(us)": 430148.7100000001,
+      "Host Total Duration(us)": 3242239.0300000003,
+      "Device Total Duration(us)": 998049.99325
+    },
+    "decision2/pool_and_output": {
+      "calls": 24.0,
+      "Host Self Duration(us)": 13964.2,
+      "Host Total Duration(us)": 369233.0900000001,
+      "Device Total Duration(us)": 11777.2995
+    },
+    "decision2/pooler": {
+      "calls": 24.0,
+      "Host Self Duration(us)": 31760.669999999995,
+      "Host Total Duration(us)": 340314.51,
+      "Device Total Duration(us)": 11221.26775
+    },
+    "decision2/positions_h2d": {
+      "calls": 264.0,
+      "Host Self Duration(us)": 22621.890000000018,
+      "Host Total Duration(us)": 47994.31999999997,
+      "Device Total Duration(us)": 0.0
+    },
+    "decision2/gather": {
+      "calls": 264.0,
+      "Host Self Duration(us)": 18915.98,
+      "Host Total Duration(us)": 38866.929999999986,
+      "Device Total Duration(us)": 1358.1437500000002
+    },
+    "decision2/head_fp32": {
+      "calls": 264.0,
+      "Host Self Duration(us)": 97820.86000000002,
+      "Host Total Duration(us)": 219008.95999999988,
+      "Device Total Duration(us)": 9863.123999999998
+    }
+  },
+  "sync_and_memcpy_by_source_scope": {
+    "unattributed_other_thread": {
+      "AscendCL@aclrtMemcpyAsync": {
+        "calls": 1776,
+        "host_duration_us": 22975.639999999992
+      },
+      "AscendCL@aclrtMemcpyAsyncWithCondition": {
+        "calls": 408,
+        "host_duration_us": 1873.240000000001
+      },
+      "AscendCL@aclrtSynchronizeStream": {
+        "calls": 216,
+        "host_duration_us": 10456.889999999994
+      },
+      "AscendCL@aclrtMemcpy": {
+        "calls": 216,
+        "host_duration_us": 5776.489999999999
+      },
+      "AscendCL@aclrtSynchronizeEvent": {
+        "calls": 96,
+        "host_duration_us": 104.03000000000003
+      },
+      "AscendCL@aclrtSynchronizeDeviceWithTimeout": {
+        "calls": 1,
+        "host_duration_us": 20.97
+      }
+    },
+    "execute": {
+      "AscendCL@aclrtSynchronizeStreamWithTimeout": {
+        "calls": 528,
+        "host_duration_us": 2205.400000000002
+      }
+    },
+    "backbone": {
+      "AscendCL@aclrtSynchronizeStream": {
+        "calls": 1728,
+        "host_duration_us": 170043.16
+      },
+      "AscendCL@aclrtMemcpy": {
+        "calls": 1728,
+        "host_duration_us": 52348.5400000001
+      }
+    },
+    "positions_h2d": {
+      "AscendCL@aclrtSynchronizeStream": {
+        "calls": 264,
+        "host_duration_us": 6504.800000000005
+      },
+      "AscendCL@aclrtMemcpy": {
+        "calls": 264,
+        "host_duration_us": 9664.570000000002
+      }
+    },
+    "pool_and_output": {
+      "AscendCL@aclrtSynchronizeDeviceWithTimeout": {
+        "calls": 24,
+        "host_duration_us": 1150.0300000000002
+      }
+    }
+  },
+  "top_host_self_ops": [
+    {
+      "name": "ChunkGatedDeltaRuleFunction",
+      "calls": 432.0,
+      "Host Self Duration(us)": 844189.3000000005,
+      "Host Total Duration(us)": 1537069.01,
+      "Device Total Duration(us)": 502405.32474999956
+    },
+    {
+      "name": "aten::copy_",
+      "calls": 19976.0,
+      "Host Self Duration(us)": 474222.4699999999,
+      "Host Total Duration(us)": 569501.8600000018,
+      "Device Total Duration(us)": 163794.65225
+    },
+    {
+      "name": "decision2/backbone",
+      "calls": 24.0,
+      "Host Self Duration(us)": 430148.7100000001,
+      "Host Total Duration(us)": 3242239.0300000003,
+      "Device Total Duration(us)": 998049.99325
+    },
+    {
+      "name": "vllm::gdn_attention_core",
+      "calls": 432.0,
+      "Host Self Duration(us)": 279200.7399999999,
+      "Host Total Duration(us)": 2110934.000000001,
+      "Device Total Duration(us)": 739036.26
+    },
+    {
+      "name": "decision2/execute",
+      "calls": 34.0,
+      "Host Self Duration(us)": 259434.61000000007,
+      "Host Total Duration(us)": 4145527.4499999997,
+      "Device Total Duration(us)": 1046728.6792500002
+    },
+    {
+      "name": "empty_tensor",
+      "calls": 44520.0,
+      "Host Self Duration(us)": 242418.71999999767,
+      "Host Total Duration(us)": 242418.71999999767,
+      "Device Total Duration(us)": 0.0
+    },
+    {
+      "name": "LayerNormFn",
+      "calls": 432.0,
+      "Host Self Duration(us)": 139598.81,
+      "Host Total Duration(us)": 159544.13999999987,
+      "Device Total Duration(us)": 14557.832750000001
+    },
+    {
+      "name": "decision2/head_fp32",
+      "calls": 264.0,
+      "Host Self Duration(us)": 97820.86000000002,
+      "Host Total Duration(us)": 219008.95999999988,
+      "Device Total Duration(us)": 9863.123999999998
+    },
+    {
+      "name": "aclnnInplaceCopy",
+      "calls": 13224.0,
+      "Host Self Duration(us)": 86866.04999999992,
+      "Host Total Duration(us)": 86866.04999999992,
+      "Device Total Duration(us)": 161830.99125000014
+    },
+    {
+      "name": "aten::as_strided",
+      "calls": 28422.0,
+      "Host Self Duration(us)": 67667.28000000029,
+      "Host Total Duration(us)": 67667.28000000029,
+      "Device Total Duration(us)": 0.1
+    },
+    {
+      "name": "aten::matmul",
+      "calls": 3792.0,
+      "Host Self Duration(us)": 53250.69,
+      "Host Total Duration(us)": 109092.14000000029,
+      "Device Total Duration(us)": 148356.2544999999
+    },
+    {
+      "name": "_C_ascend::npu_causal_conv1d_custom",
+      "calls": 432.0,
+      "Host Self Duration(us)": 46037.29000000002,
+      "Host Total Duration(us)": 56631.59999999997,
+      "Device Total Duration(us)": 52679.27224999999
+    },
+    {
+      "name": "aten::add",
+      "calls": 3168.0,
+      "Host Self Duration(us)": 42174.82999999983,
+      "Host Total Duration(us)": 84945.29999999989,
+      "Device Total Duration(us)": 4009.8735000000142
+    },
+    {
+      "name": "vllm::triton_split_qkv_rmsnorm_mrope",
+      "calls": 144.0,
+      "Host Self Duration(us)": 41245.09999999998,
+      "Host Total Duration(us)": 46299.58000000002,
+      "Device Total Duration(us)": 10431.608249999997
+    },
+    {
+      "name": "vllm::unquantized_gemm",
+      "calls": 2736.0,
+      "Host Self Duration(us)": 39875.62999999993,
+      "Host Total Duration(us)": 165240.12000000008,
+      "Device Total Duration(us)": 144736.85750000007
+    },
+    {
+      "name": "aten::unique_consecutive",
+      "calls": 216.0,
+      "Host Self Duration(us)": 39263.50999999999,
+      "Host Total Duration(us)": 43171.86999999998,
+      "Device Total Duration(us)": 6713.838499999996
+    },
+    {
+      "name": "aten::empty",
+      "calls": 18984.0,
+      "Host Self Duration(us)": 37706.14000000013,
+      "Host Total Duration(us)": 123547.22000000028,
+      "Device Total Duration(us)": 0.02
+    },
+    {
+      "name": "_C_ascend::npu_add_rms_norm_bias",
+      "calls": 1152.0,
+      "Host Self Duration(us)": 37489.51999999998,
+      "Host Total Duration(us)": 73616.91000000009,
+      "Device Total Duration(us)": 25601.80999999999
+    },
+    {
+      "name": "aten::view",
+      "calls": 10088.0,
+      "Host Self Duration(us)": 37340.12999999998,
+      "Host Total Duration(us)": 37340.12999999998,
+      "Device Total Duration(us)": 0.0
+    },
+    {
+      "name": "aten::_index_put_impl_",
+      "calls": 432.0,
+      "Host Self Duration(us)": 36069.32999999997,
+      "Host Total Duration(us)": 52769.40999999996,
+      "Device Total Duration(us)": 39085.10174999997
+    },
+    {
+      "name": "_C_ascend::chunk_gated_delta_rule_fwd_h",
+      "calls": 432.0,
+      "Host Self Duration(us)": 35516.990000000005,
+      "Host Total Duration(us)": 68354.51000000001,
+      "Device Total Duration(us)": 116536.38550000009
+    },
+    {
+      "name": "aclnnMatmul",
+      "calls": 3792.0,
+      "Host Self Duration(us)": 33365.880000000056,
+      "Host Total Duration(us)": 33365.880000000056,
+      "Device Total Duration(us)": 148356.2544999999
+    },
+    {
+      "name": "decision2/pooler",
+      "calls": 24.0,
+      "Host Self Duration(us)": 31760.669999999995,
+      "Host Total Duration(us)": 340314.51,
+      "Device Total Duration(us)": 11221.26775
+    },
+    {
+      "name": "_C_ascend::chunk_fwd_o",
+      "calls": 432.0,
+      "Host Self Duration(us)": 30647.600000000006,
+      "Host Total Duration(us)": 53544.73000000004,
+      "Device Total Duration(us)": 41472.00949999999
+    },
+    {
+      "name": "aten::clone",
+      "calls": 8928.0,
+      "Host Self Duration(us)": 24843.850000000057,
+      "Host Total Duration(us)": 230427.8899999996,
+      "Device Total Duration(us)": 147208.69374999992
+    }
+  ],
+  "top_kernels": [
+    {
+      "name": "aclnnInplaceCopy_TransposeAiCore_Transpose",
+      "calls": 6048,
+      "duration_us": 129223.46499999978
+    },
+    {
+      "name": "aclnnChunkGatedDeltaRuleFwdH_ChunkGatedDeltaRuleFwdH_ChunkGatedDeltaRuleFwdH",
+      "calls": 432,
+      "duration_us": 107979.70000000004
+    },
+    {
+      "name": "aclnnMatmul_MatMulV3Common_MatMulV3",
+      "calls": 576,
+      "duration_us": 100552.532
+    },
+    {
+      "name": "aclnnIndex_IndexAiCore_Index",
+      "calls": 600,
+      "duration_us": 88502.90299999996
+    },
+    {
+      "name": "solve_tril_16x16_kernel",
+      "calls": 432,
+      "duration_us": 81741.10699999999
+    },
+    {
+      "name": "recompute_w_u_fwd_kernel",
+      "calls": 432,
+      "duration_us": 73599.40599999997
+    },
+    {
+      "name": "merge_16x16_to_64x64_inverse_kernel",
+      "calls": 432,
+      "duration_us": 48061.99800000001
+    },
+    {
+      "name": "aclnnMatmul_MatMulCommon_MatMulV2",
+      "calls": 3216,
+      "duration_us": 47803.76300000019
+    },
+    {
+      "name": "CausalConv1d",
+      "calls": 432,
+      "duration_us": 37891.01299999998
+    },
+    {
+      "name": "aclnnChunkFwdO_ChunkFwdO_ChunkFwdO",
+      "calls": 432,
+      "duration_us": 37485.215000000004
+    },
+    {
+      "name": "aclnnIndexPutImpl_IndexPutV2_IndexPutV2",
+      "calls": 432,
+      "duration_us": 36313.467999999986
+    },
+    {
+      "name": "AddRmsNormBias",
+      "calls": 1152,
+      "duration_us": 25601.81900000003
+    },
+    {
+      "name": "aclnnInplaceCopy_SliceAiCore_Slice",
+      "calls": 2592,
+      "duration_us": 17984.586000000018
+    },
+    {
+      "name": "chunk_scaled_dot_kkt_fwd_kernel",
+      "calls": 432,
+      "duration_us": 16742.436999999998
+    },
+    {
+      "name": "aclnnInplaceZero_ZerosLikeAiCore_ZerosLike",
+      "calls": 1728,
+      "duration_us": 16625.11600000001
+    },
+    {
+      "name": "SwiGlu",
+      "calls": 576,
+      "duration_us": 16486.708999999995
+    },
+    {
+      "name": "_layer_norm_fwd_1pass_kernel_npu",
+      "calls": 432,
+      "duration_us": 14557.828
+    },
+    {
+      "name": "_clear_ssm_states_kernel",
+      "calls": 432,
+      "duration_us": 14267.370000000017
+    },
+    {
+      "name": "l2norm_fwd_kernel2_loop",
+      "calls": 864,
+      "duration_us": 11708.367000000006
+    },
+    {
+      "name": "_compute_slot_mapping_kernel",
+      "calls": 96,
+      "duration_us": 11638.526000000003
+    },
+    {
+      "name": "aclnnCat_ConcatD_ConcatD",
+      "calls": 432,
+      "duration_us": 11136.177
+    },
+    {
+      "name": "FusedInferAttentionScore",
+      "calls": 144,
+      "duration_us": 10629.834000000003
+    },
+    {
+      "name": "split_qkv_rmsnorm_mrope_kernel",
+      "calls": 144,
+      "duration_us": 10431.599999999997
+    },
+    {
+      "name": "aclnnContiguous_TransposeAiCore_Transpose",
+      "calls": 432,
+      "duration_us": 9486.950999999995
+    },
+    {
+      "name": "aclnnInplaceCopy_TensorMoveAiCore_TensorMove",
+      "calls": 912,
+      "duration_us": 9384.041999999998
+    }
+  ]
+}

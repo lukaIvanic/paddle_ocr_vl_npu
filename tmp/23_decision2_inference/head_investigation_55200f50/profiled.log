@@ -1,0 +1,13 @@
+The repository /workspace/models/Decision-2.0-Eos-0.8B contains custom code which must be executed to correctly load the model. You can inspect the repository content at /workspace/models/Decision-2.0-Eos-0.8B .
+ You can inspect the repository content at https://hf.co//workspace/models/Decision-2.0-Eos-0.8B.
+You can avoid this prompt in future by passing the argument `trust_remote_code=True`.
+
+Do you wish to run the custom code? [y/N] You are using a model of type `decision2` to instantiate a model of type ``. This may be expected if you are loading a checkpoint that shares a subset of the architecture (e.g., loading a `sam2_video` checkpoint into `Sam2Model`), but is otherwise not supported and can yield errors. Please verify that the checkpoint is compatible with the model you are instantiating.
+The tokenizer you are loading from '/workspace/models/Decision-2.0-Eos-0.8B' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+{"label": "warmup_b1", "concurrency": 1, "wall_s": 1.0404869001358747, "started_at": 1791036871.31896}
+{"label": "warmup_c32_0", "concurrency": 32, "wall_s": 0.3619259500410408, "started_at": 1791036872.3599975}
+{"label": "warmup_c32_1", "concurrency": 32, "wall_s": 0.3624392100609839, "started_at": 1791036872.7235506}
+{"label": "warmup_c32_2", "concurrency": 32, "wall_s": 0.36804756009951234, "started_at": 1791036873.0882998}
+{"label": "measured_c1", "concurrency": 1, "wall_s": 1.2487987098284066, "started_at": 1791036873.5652165}
+{"label": "measured_c32_0", "concurrency": 32, "wall_s": 1.5429989399854094, "started_at": 1791036874.8172498}
+{"label": "measured_c32_1", "concurrency": 32, "wall_s": 1.535252369940281, "started_at": 1791036876.3674538}

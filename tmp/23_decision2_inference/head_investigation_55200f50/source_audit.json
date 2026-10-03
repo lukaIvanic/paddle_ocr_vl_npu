@@ -1,0 +1,21 @@
+{
+  "chip": "Ascend 910B2",
+  "physical_device": 7,
+  "installed_source": "/vllm-workspace/vllm-ascend/vllm_ascend/ops/triton/fla/chunk.py",
+  "source_observations": {
+    "gdn_layers": 18,
+    "list_conversions_per_layer": 4,
+    "lines": [106, 107, 172, 173],
+    "converted_metadata": ["cu_seqlens.tolist()", "chunk_indices.flatten().tolist()"],
+    "repeated_before_ops": ["chunk_gated_delta_rule_fwd_h", "chunk_fwd_o"]
+  },
+  "trace_observations": {
+    "backbone_forwards": 24,
+    "backbone_aclrtSynchronizeStream_calls": 1728,
+    "backbone_aclrtMemcpy_calls": 1728,
+    "each_per_forward": 72
+  },
+  "interpretation": "The observed 72 synchronization/copy pairs per forward exactly match four metadata list conversions in each of 18 GDN layers. This is strong source/trace agreement, not a measured speedup from removing them. No framework source or head math was changed.",
+  "restoration": "Diagnostic server stopped after captures. Replacement with EOS_DIAGNOSTICS_DIR unset, max_num_seqs=32 and max_num_batched_tokens=16384 returned HTTP 200 from /health. T2 continued on five other NPUs.",
+  "measurement_caveat": "Use unprofiled diagnostic timings for host stage attribution and profiled kernel sums for device busy work. Do not add overlapping host and device durations; event intervals include host launch gaps."
+}
