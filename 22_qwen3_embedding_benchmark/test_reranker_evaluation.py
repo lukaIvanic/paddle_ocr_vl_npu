@@ -1,5 +1,6 @@
 import unittest
-from run_reranker_evaluation import candidate_rows, batches, command
+import importlib.util
+from run_reranker_evaluation import candidate_rows, batches, command, metric_summary
 
 
 class EvaluationTests(unittest.TestCase):
@@ -26,6 +27,20 @@ class EvaluationTests(unittest.TestCase):
         for flag, value in [('--dtype', 'float16'), ('--max-num-seqs','32'),
                             ('--max-num-batched-tokens','16384'), ('--max-model-len','8192')]:
             self.assertEqual(cmd[cmd.index(flag)+1], value)
+
+    @unittest.skipUnless(importlib.util.find_spec('pytrec_eval'), 'Pinned evaluator dependency is remote')
+    def test_metric_coverage_and_recall_invariance(self):
+        before = {'q': {'relevant': .1, 'other': .9}}
+        after = {'q': {'relevant': .9, 'other': .1}}
+        metrics, per_query = metric_summary(after, before, {'q': {'relevant': 1}}, False)
+        self.assertEqual(metrics['reranker']['ndcg_cut_10'], 1.)
+        self.assertLess(metrics['embedding']['ndcg_cut_10'], 1.)
+        self.assertEqual(metrics['reranker']['recall_100'], metrics['embedding']['recall_100'])
+        self.assertEqual(set(per_query['reranker']), {'q'})
+        with self.assertRaises(ValueError):
+            metric_summary({'q': {'relevant': 1.}}, before, {'q': {'relevant': 1}}, False)
+        with self.assertRaises(ValueError):
+            metric_summary(after, before, {'missing': {'relevant': 1}}, False)
 
 
 if __name__ == '__main__':

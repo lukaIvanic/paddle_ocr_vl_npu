@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import shlex
 import socket
 import subprocess
 import sys
@@ -283,6 +284,12 @@ def main():
     args.output.mkdir(parents=True)
     save(args.output / 'invocation.json', {'argv': [sys.executable, *sys.argv],
          'cwd': os.getcwd(), 'started_at': time.time()})
+    (args.output / 'command.txt').write_text(
+        'commit=' + subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() + '\n'
+        + 'hostname=' + socket.gethostname() + '\n'
+        + 'physical_devices=' + ','.join(map(str, args.devices)) + '\n'
+        + 'ASCEND_RT_VISIBLE_DEVICES=' + os.environ.get('ASCEND_RT_VISIBLE_DEVICES', '') + '\n'
+        + shlex.join([sys.executable, *sys.argv]) + '\n')
     signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(KeyboardInterrupt()))
     observer = Observer()
     observer.thread.start()
