@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# This run is explicitly authorized to share physical 7 with T2. No process
+# is stopped, and no global framework/package files are changed.
+run_dir=${1:?usage: serve_eos.sh RUN_DIRECTORY}
+mkdir -p "$run_dir"
+exec >"$run_dir/server.log" 2>&1
+source npu-setup
+export ASCEND_RT_VISIBLE_DEVICES=7
+export TORCH_DEVICE_BACKEND_AUTOLOAD=0 VLLM_WORKER_MULTIPROC_METHOD=spawn
+export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false PYTHONDONTWRITEBYTECODE=1
+export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 DECISION2_ASCEND_ENABLE=1
+unset VLLM_PLUGINS
+python=/workspace/venvs/decision2_vllm_py312/bin/python
+model=/workspace/models/Decision-2.0-Eos-0.8B-vllm-view
+"$python" -c 'import torch, torch_npu; torch.npu.set_device(0); free,total=torch.npu.mem_get_info(); print({"free":free,"total":total},flush=True); assert free>12*1024**3, "Not enough free NPU memory to share safely"'
+args=("$python" -m vllm.entrypoints.openai.api_server
+    --model "$model" --served-model-name eos-0.8b
+    --runner pooling --dtype bfloat16 --mamba-ssm-cache-dtype float32
+    --enforce-eager --no-enable-prefix-caching --no-enable-chunked-prefill
+    --max-model-len 2048 --max-num-batched-tokens 2048 --max-num-seqs 4
+    --gpu-memory-utilization 0.12 --host 127.0.0.1 --port 18423)
+{ git rev-parse HEAD; hostname; printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"; printf '%q ' "${args[@]}"; printf '\n'; } >"$run_dir/command.txt"
+set +e
+"${args[@]}"
+status=$?
+printf '%s\n' "$status" >"$run_dir/exit_code.txt"
+exit "$status"

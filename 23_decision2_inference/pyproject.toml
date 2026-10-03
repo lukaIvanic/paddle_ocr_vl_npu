@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "decision2-ascend-experiment"
+version = "0.1.0"
+description = "Experiment 23: pinned Eos pooling adapter for vLLM-Ascend 0.21"
+requires-python = ">=3.12"
+
+[project.entry-points."vllm.general_plugins"]
+decision2_ascend = "decision2_ascend:register"
+
+[tool.setuptools.packages.find]
+include = ["decision2_ascend*"]
