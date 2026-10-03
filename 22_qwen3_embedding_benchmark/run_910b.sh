@@ -41,7 +41,7 @@ trap cleanup EXIT
   --served-model-name qwen3-embedding-0.6b --host 127.0.0.1 --port 18222 \
   --runner pooling --convert embed --dtype float16 --max-model-len 8192 \
   --pooler-config '{"pooling_type":"LAST","use_activation":true}' \
-  --enforce-eager --gpu-memory-utilization 0.35 --max-num-seqs 32 \
+  --enforce-eager --gpu-memory-utilization 0.35 --max-num-seqs 32 --block-size 128 \
   --max-num-batched-tokens 16384 --no-enable-prefix-caching --no-enable-chunked-prefill \
   > "$RUN_ROOT/server.log" 2>&1 &
 SERVER_PID=$!
