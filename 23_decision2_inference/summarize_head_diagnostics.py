@@ -31,7 +31,7 @@ def main():
     a=p.parse_args()
     stages=[json.loads(line) for file in (a.root/'diagnostics').glob('stages_*.jsonl') for line in file.open()]
     report={'units':'milliseconds unless specified','warning':'Stream intervals include host dispatch gaps, not just device kernel busy time. Host and stream measurements overlap; do not add them.','runs':{}}
-    for name in ('uninstrumented','instrumented','profiled','after_profile'):
+    for name in ('uninstrumented','instrumented','profiled','after_profile','concurrency64'):
         path=a.root/(name+'.json')
         if not path.exists():
             continue
@@ -47,6 +47,7 @@ def main():
                  'items':len(group['results']),'worker':summarize(matching) if matching else None}
             if matching and sum(r['batch_size'] for r in matching)!=len(group['results']):
                 raise ValueError(f'Client/worker count mismatch in {name}/{group["label"]}')
+            row['by_batch_size']={str(b):summarize([r for r in matching if r['batch_size']==b]) for b in sorted({r['batch_size'] for r in matching})}
             output.append(row)
         report['runs'][name]=output
     (a.root/'stage_summary.json').write_text(json.dumps(report,indent=2)+'\n')

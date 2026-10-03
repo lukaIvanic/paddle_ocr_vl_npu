@@ -13,6 +13,7 @@ def main():
     p.add_argument('--profile', action='store_true')
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--url', default='http://127.0.0.1:18423')
+    p.add_argument('--concurrency', type=int, default=32)
     a = p.parse_args()
     if a.output.exists():
         raise FileExistsError(a.output)
@@ -51,13 +52,13 @@ def main():
         a.output.write_text(json.dumps({'profile':a.profile,'groups':groups},indent=2)+'\n')
     run('warmup_b1',1,w['pairs'][:8])
     for i in range(3):
-        run('warmup_c32_'+str(i),32,w['pairs'][:32])
+        run('warmup_c'+str(a.concurrency)+'_'+str(i),a.concurrency,w['pairs'][:a.concurrency])
     if a.profile:
         call('/start_profile')
     try:
         run('measured_c1',1,w['pairs'][:8])
         for i in range(2):
-            run('measured_c32_'+str(i),32,w['pairs'][:128])
+            run('measured_c'+str(a.concurrency)+'_'+str(i),a.concurrency,w['pairs'][:128])
     finally:
         if a.profile:
             call('/stop_profile')
