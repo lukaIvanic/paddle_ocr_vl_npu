@@ -13,6 +13,7 @@ import math
 import os
 from pathlib import Path
 import random
+import shlex
 import statistics
 import subprocess
 import sys
@@ -47,6 +48,7 @@ def main():
     p.add_argument("--concurrencies", nargs='+', type=int, default=[1,4])
     p.add_argument("--dataset-workloads", nargs='+', choices=["EcomRetrieval", "CmedqaRetrieval"],
                    help="Use all saved pairs to compare with historical 4B timings, instead of length-band samples")
+    p.add_argument("--eos-server-run", type=Path, default=Path('tmp/23_decision2_inference/eos_serving_hardened'))
     args = p.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     def save(name, value):
@@ -59,6 +61,13 @@ def main():
                 "config": {"eos": {"dtype":"bf16", "max_num_seqs":4, "max_num_batched_tokens":2048},
                            "reranker": {"dtype":"fp16", "max_num_seqs":32, "max_num_batched_tokens":16384}}}
     save("manifest.json", manifest)
+    command_text = (args.eos_server_run/'command.txt').read_text()
+    command = shlex.split(command_text.splitlines()[-1])
+    manifest['config']['eos'].update({key:int(command[command.index('--'+key.replace('_','-'))+1])
+                                    for key in ('max_num_seqs','max_num_batched_tokens')})
+    manifest['eos_server_command'] = command_text
+    manifest['measured_models'] = args.models
+    save('manifest.json', manifest)
     state = {"phase": "imports"}
     stop = threading.Event()
     def emit(event, **values):

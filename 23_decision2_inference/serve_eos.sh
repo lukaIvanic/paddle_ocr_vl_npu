@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# This run is explicitly authorized to share physical 7 with T2. No process
-# is stopped, and no global framework/package files are changed.
+# Physical 7 is reserved for Decision2 (T2 resumed on 0,1,2,3,6).
+# No other process is stopped or framework/package files changed by this script.
 run_dir=${1:?usage: serve_eos.sh RUN_DIRECTORY}
 mkdir -p "$run_dir"
 exec >"$run_dir/server.log" 2>&1
@@ -14,7 +14,7 @@ if [[ "$setup_status" != 0 ]]; then
     exit "$setup_status"
 fi
 export ASCEND_RT_VISIBLE_DEVICES=7
-printf 'Authorized sharing override: physical NPU %s as logical npu:0\n' "$ASCEND_RT_VISIBLE_DEVICES"
+printf 'Authorized Decision2 device: physical NPU %s as logical npu:0\n' "$ASCEND_RT_VISIBLE_DEVICES"
 export TORCH_DEVICE_BACKEND_AUTOLOAD=0 VLLM_WORKER_MULTIPROC_METHOD=spawn
 export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false PYTHONDONTWRITEBYTECODE=1
 export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 DECISION2_ASCEND_ENABLE=1
@@ -26,7 +26,7 @@ args=("$python" -m vllm.entrypoints.openai.api_server
     --model "$model" --served-model-name eos-0.8b
     --runner pooling --dtype bfloat16 --mamba-ssm-cache-dtype float32
     --enforce-eager --no-enable-prefix-caching --no-enable-chunked-prefill
-    --max-model-len 2048 --max-num-batched-tokens 2048 --max-num-seqs 4
+    --max-model-len 2048 --max-num-batched-tokens "${EOS_BATCH_TOKENS:-2048}" --max-num-seqs "${EOS_MAX_SEQS:-4}"
     --gpu-memory-utilization 0.12 --host 127.0.0.1 --port 18423)
 { git rev-parse HEAD; hostname; printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"; printf '%q ' "${args[@]}"; printf '\n'; } >"$run_dir/command.txt"
 set +e
