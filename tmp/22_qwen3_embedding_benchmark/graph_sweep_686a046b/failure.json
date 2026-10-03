@@ -1,0 +1,7 @@
+{
+  "error": "RuntimeError('Server failed: piecewise; see server.log')",
+  "state": {
+    "case": "piecewise",
+    "section": "server_start"
+  }
+}

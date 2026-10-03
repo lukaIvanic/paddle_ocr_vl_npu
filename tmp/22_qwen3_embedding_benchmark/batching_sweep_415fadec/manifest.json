@@ -1,0 +1,11 @@
+{
+  "commit": "415fadecf9efb3426a365a433615d93f3a4f5d98",
+  "device": "6",
+  "chip": "910B2",
+  "dtype": "float16",
+  "eager": true,
+  "max_model_len": 8192,
+  "workloads_sha256": "c47a6b697585d737975f98d63062baf7b38fb1feca138fc1763a214d676a426e",
+  "timing_scope": "prepared real text -> tokenization -> HTTP embeddings -> exact retrieval metrics; excludes model/data setup",
+  "quality_scope": "fixed reduced corpora; not published full-corpus benchmark scores"
+}

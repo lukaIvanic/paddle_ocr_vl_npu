@@ -1,0 +1,1264 @@
+{
+  "complete": true,
+  "manifest": {
+    "commit": "415fadecf9efb3426a365a433615d93f3a4f5d98",
+    "device": "6",
+    "chip": "910B2",
+    "dtype": "float16",
+    "eager": true,
+    "max_model_len": 8192,
+    "workloads_sha256": "c47a6b697585d737975f98d63062baf7b38fb1feca138fc1763a214d676a426e",
+    "timing_scope": "prepared real text -> tokenization -> HTTP embeddings -> exact retrieval metrics; excludes model/data setup",
+    "quality_scope": "fixed reduced corpora; not published full-corpus benchmark scores"
+  },
+  "results": [
+    {
+      "case": "s32_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 176844850,
+      "encoding_wall_s": 41.17617444996722,
+      "pipeline_wall_s": 41.45966406981461,
+      "encoding_tok_s": 5196.524515894418,
+      "pipeline_tok_s": 5160.9921305606185,
+      "texts_s": 197.58999248184108,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 1.0,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 47959422,
+      "encoding_wall_s": 12.606011199997738,
+      "pipeline_wall_s": 12.749461780069396,
+      "encoding_tok_s": 33561.13153382538,
+      "pipeline_tok_s": 33183.51843380303,
+      "texts_s": 174.99587815695386,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 1.0,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 52478281,
+      "encoding_wall_s": 23.61895055999048,
+      "pipeline_wall_s": 23.76058872998692,
+      "encoding_tok_s": 55794.85831315153,
+      "pipeline_tok_s": 55462.262108718605,
+      "texts_s": 102.20606516231993,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 1.0,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 176844838,
+      "encoding_wall_s": 40.66944119986147,
+      "pipeline_wall_s": 40.944088919786736,
+      "encoding_tok_s": 5261.272190794912,
+      "pipeline_tok_s": 5225.980248802041,
+      "texts_s": 200.05192498262588,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999973773956299,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 47959422,
+      "encoding_wall_s": 12.456547329900786,
+      "pipeline_wall_s": 12.597524449927732,
+      "encoding_tok_s": 33963.825512423886,
+      "pipeline_tok_s": 33583.741129585746,
+      "texts_s": 177.09562221183887,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 1.0,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 52478281,
+      "encoding_wall_s": 23.5000055199489,
+      "pipeline_wall_s": 23.64003542996943,
+      "encoding_tok_s": 56077.26342367538,
+      "pipeline_tok_s": 55745.09411814804,
+      "texts_s": 102.72338012647621,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 1.0,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s64_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 176844058,
+      "encoding_wall_s": 33.900404809974134,
+      "pipeline_wall_s": 34.17797106993385,
+      "encoding_tok_s": 6311.812534375552,
+      "pipeline_tok_s": 6260.553020019107,
+      "texts_s": 239.99713412290097,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5850980233986762
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999756217002869,
+      "metric_changed_queries_vs_baseline": 1
+    },
+    {
+      "case": "s64_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 47957745,
+      "encoding_wall_s": 11.800243809819221,
+      "pipeline_wall_s": 11.93869488989003,
+      "encoding_tok_s": 35852.81853650797,
+      "pipeline_tok_s": 35437.03929968655,
+      "texts_s": 186.9452899070054,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999946355819702,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s64_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 52479742,
+      "encoding_wall_s": 23.518574320012704,
+      "pipeline_wall_s": 23.65931575000286,
+      "encoding_tok_s": 56032.988312502785,
+      "pipeline_tok_s": 55699.6666313074,
+      "texts_s": 102.64227614961553,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999938607215881,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s64_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 176844058,
+      "encoding_wall_s": 33.650956379948184,
+      "pipeline_wall_s": 33.93022008985281,
+      "encoding_tok_s": 6358.600854729391,
+      "pipeline_tok_s": 6306.266196722693,
+      "texts_s": 241.7761893046241,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5850980233986762
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999756217002869,
+      "metric_changed_queries_vs_baseline": 1
+    },
+    {
+      "case": "s64_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 47957745,
+      "encoding_wall_s": 11.73187503986992,
+      "pipeline_wall_s": 11.869357569841668,
+      "encoding_tok_s": 36061.75471203203,
+      "pipeline_tok_s": 35644.052132607845,
+      "texts_s": 188.03473379174858,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999946355819702,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s64_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 52479742,
+      "encoding_wall_s": 23.43237555003725,
+      "pipeline_wall_s": 23.585555189987645,
+      "encoding_tok_s": 56239.112299388915,
+      "pipeline_tok_s": 55873.8596308061,
+      "texts_s": 103.01985792456978,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999938607215881,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 176844814,
+      "encoding_wall_s": 30.808593509951606,
+      "pipeline_wall_s": 31.089744040044025,
+      "encoding_tok_s": 6945.237533511023,
+      "pipeline_tok_s": 6882.4304157795505,
+      "texts_s": 264.08216257493086,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.999991774559021,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 47957919,
+      "encoding_wall_s": 11.896078390069306,
+      "pipeline_wall_s": 12.036602889886126,
+      "encoding_tok_s": 35563.98891530297,
+      "pipeline_tok_s": 35148.78773274895,
+      "texts_s": 185.43926222288016,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999925494194031,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 52479742,
+      "encoding_wall_s": 23.613138519925997,
+      "pipeline_wall_s": 23.754036860074848,
+      "encoding_tok_s": 55808.591428367654,
+      "pipeline_tok_s": 55477.55978332045,
+      "texts_s": 102.23122173966587,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999938607215881,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 176844814,
+      "encoding_wall_s": 30.44976162002422,
+      "pipeline_wall_s": 30.727515150094405,
+      "encoding_tok_s": 7027.082926629158,
+      "pipeline_tok_s": 6963.563404160997,
+      "texts_s": 267.19420997534655,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.999991774559021,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 47957919,
+      "encoding_wall_s": 11.83992114989087,
+      "pipeline_wall_s": 11.99859790992923,
+      "encoding_tok_s": 35732.67039906761,
+      "pipeline_tok_s": 35260.11982199138,
+      "texts_s": 186.3188083833086,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999925494194031,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t16k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 52479742,
+      "encoding_wall_s": 23.5703270600643,
+      "pipeline_wall_s": 23.714376559946686,
+      "encoding_tok_s": 55909.95817078853,
+      "pipeline_tok_s": 55570.341335718535,
+      "texts_s": 102.41690723460901,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999938607215881,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 176844814,
+      "encoding_wall_s": 30.5407197100576,
+      "pipeline_wall_s": 30.831778550054878,
+      "encoding_tok_s": 7006.154472827793,
+      "pipeline_tok_s": 6940.014817913226,
+      "texts_s": 266.3984371435972,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.999991774559021,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 47960184,
+      "encoding_wall_s": 11.855836849892512,
+      "pipeline_wall_s": 12.0017790698912,
+      "encoding_tok_s": 35684.70158256569,
+      "pipeline_tok_s": 35250.773867464246,
+      "texts_s": 186.06868734196524,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999943971633911,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 52481376,
+      "encoding_wall_s": 23.8352452700492,
+      "pipeline_wall_s": 23.98358651995659,
+      "encoding_tok_s": 55288.543712027,
+      "pipeline_tok_s": 54946.577689848586,
+      "texts_s": 101.27858860480764,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999932050704956,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 176844814,
+      "encoding_wall_s": 30.39383157994598,
+      "pipeline_wall_s": 30.67001249990426,
+      "encoding_tok_s": 7040.014005380637,
+      "pipeline_tok_s": 6976.619262892962,
+      "texts_s": 267.6858947052986,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.999991774559021,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 47960184,
+      "encoding_wall_s": 11.846857809927315,
+      "pipeline_wall_s": 11.996508019976318,
+      "encoding_tok_s": 35711.747940916306,
+      "pipeline_tok_s": 35266.262423657776,
+      "texts_s": 186.20971361295798,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999943971633911,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 52481376,
+      "encoding_wall_s": 23.75962150003761,
+      "pipeline_wall_s": 23.908119949977845,
+      "encoding_tok_s": 55464.51992082087,
+      "pipeline_tok_s": 55120.017916809105,
+      "texts_s": 101.60094511590509,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999932050704956,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c1",
+      "repeat": 0,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "base64"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 44869052,
+      "encoding_wall_s": 12.748257969971746,
+      "pipeline_wall_s": 13.029412809992209,
+      "encoding_tok_s": 16784.48933995601,
+      "pipeline_tok_s": 16422.30568026096,
+      "texts_s": 638.2048448630533,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.999991774559021,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c1",
+      "repeat": 0,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "base64"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 12165904,
+      "encoding_wall_s": 7.0205247001722455,
+      "pipeline_wall_s": 7.156313110142946,
+      "encoding_tok_s": 60262.162454840465,
+      "pipeline_tok_s": 59118.71007996591,
+      "texts_s": 314.2215281923126,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999943971633911,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c1",
+      "repeat": 0,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "base64"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 13313084,
+      "encoding_wall_s": 18.528415909968317,
+      "pipeline_wall_s": 18.672645760001615,
+      "encoding_tok_s": 71124.05110093697,
+      "pipeline_tok_s": 70574.68003933718,
+      "texts_s": 130.2863672604232,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999932050704956,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c1",
+      "repeat": 1,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "base64"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 44869052,
+      "encoding_wall_s": 12.65237496001646,
+      "pipeline_wall_s": 12.931687369942665,
+      "encoding_tok_s": 16911.686594508075,
+      "pipeline_tok_s": 16546.409906053017,
+      "texts_s": 643.0413282653311,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.999991774559021,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c1",
+      "repeat": 1,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "base64"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 12165904,
+      "encoding_wall_s": 7.011014869902283,
+      "pipeline_wall_s": 7.154246889986098,
+      "encoding_tok_s": 60343.90282300123,
+      "pipeline_tok_s": 59135.784172081054,
+      "texts_s": 314.6477422933702,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999943971633911,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c1",
+      "repeat": 1,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "base64"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 13313084,
+      "encoding_wall_s": 18.485331040108576,
+      "pipeline_wall_s": 18.628156600054353,
+      "encoding_tok_s": 71289.82419306782,
+      "pipeline_tok_s": 70743.23178044117,
+      "texts_s": 130.59003351155678,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999932050704956,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c2",
+      "repeat": 0,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 44869052,
+      "encoding_wall_s": 7.148403679952025,
+      "pipeline_wall_s": 7.422884949948639,
+      "encoding_tok_s": 29932.97658889852,
+      "pipeline_tok_s": 28826.123729895684,
+      "texts_s": 1138.1562044149418,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.999991774559021,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c2",
+      "repeat": 0,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 12165904,
+      "encoding_wall_s": 4.1629427201114595,
+      "pipeline_wall_s": 4.300080150132999,
+      "encoding_tok_s": 101628.10983588854,
+      "pipeline_tok_s": 98387.00331827876,
+      "texts_s": 529.9136087899226,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999943971633911,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c2",
+      "repeat": 0,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 13313084,
+      "encoding_wall_s": 12.884770049946383,
+      "pipeline_wall_s": 13.028829640010372,
+      "encoding_tok_s": 102277.02899559964,
+      "pipeline_tok_s": 101146.15329324016,
+      "texts_s": 187.35297491863625,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.999994158744812,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c2",
+      "repeat": 1,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 44869052,
+      "encoding_wall_s": 6.4691800801083446,
+      "pipeline_wall_s": 6.76147084007971,
+      "encoding_tok_s": 33075.75262248944,
+      "pipeline_tok_s": 31645.925133868877,
+      "texts_s": 1257.6555141843787,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.999991774559021,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c2",
+      "repeat": 1,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 12165904,
+      "encoding_wall_s": 4.134040750097483,
+      "pipeline_wall_s": 4.2784581000451,
+      "encoding_tok_s": 102338.61385861368,
+      "pipeline_tok_s": 98884.2218638393,
+      "texts_s": 533.6183490566659,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999943971633911,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b128_c2",
+      "repeat": 1,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 13313084,
+      "encoding_wall_s": 12.826728699961677,
+      "pipeline_wall_s": 12.976057579973713,
+      "encoding_tok_s": 102739.83576217195,
+      "pipeline_tok_s": 101557.50249088134,
+      "texts_s": 188.20075301095378,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.999994158744812,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b512_c2",
+      "repeat": 0,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 512,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 44863808,
+      "encoding_wall_s": 6.47558146994561,
+      "pipeline_wall_s": 6.749500559875742,
+      "encoding_tok_s": 33043.055823340175,
+      "pipeline_tok_s": 31702.049374144986,
+      "texts_s": 1256.4122678033941,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.999991774559021,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b512_c2",
+      "repeat": 0,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 512,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 12164588,
+      "encoding_wall_s": 4.491238759830594,
+      "pipeline_wall_s": 4.633703870000318,
+      "encoding_tok_s": 94199.40079426058,
+      "pipeline_tok_s": 91303.20190270834,
+      "texts_s": 491.17851843690636,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999951124191284,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b512_c2",
+      "repeat": 0,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 512,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 13311500,
+      "encoding_wall_s": 13.60895038000308,
+      "pipeline_wall_s": 13.749710889998823,
+      "encoding_tok_s": 96834.50693863885,
+      "pipeline_tok_s": 95843.17885247643,
+      "texts_s": 177.38326120632485,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.999994158744812,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b512_c2",
+      "repeat": 1,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 512,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 44863808,
+      "encoding_wall_s": 6.5141939599998295,
+      "pipeline_wall_s": 6.807075180113316,
+      "encoding_tok_s": 32847.19511176569,
+      "pipeline_tok_s": 31433.911678413115,
+      "texts_s": 1248.9649602021082,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.999991774559021,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b512_c2",
+      "repeat": 1,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 512,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 12164588,
+      "encoding_wall_s": 4.459871209925041,
+      "pipeline_wall_s": 4.605179260019213,
+      "encoding_tok_s": 94861.93212451774,
+      "pipeline_tok_s": 91868.73650565231,
+      "texts_s": 494.6331174520794,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999951124191284,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s128_t32k",
+      "client_name": "base64_b512_c2",
+      "repeat": 1,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 512,
+        "concurrency": 2,
+        "format": "base64"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 13311500,
+      "encoding_wall_s": 13.61338857980445,
+      "pipeline_wall_s": 13.758048409828916,
+      "encoding_tok_s": 96802.93721689458,
+      "pipeline_tok_s": 95785.09689343267,
+      "texts_s": 177.3254311994873,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 0.999994158744812,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k_recheck",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 176844838,
+      "encoding_wall_s": 41.228955229977146,
+      "pipeline_wall_s": 41.515579130034894,
+      "encoding_tok_s": 5189.871991818567,
+      "pipeline_tok_s": 5154.041072865558,
+      "texts_s": 197.3370403061875,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999973773956299,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k_recheck",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 47959422,
+      "encoding_wall_s": 12.649179270025343,
+      "pipeline_wall_s": 12.794097709935158,
+      "encoding_tok_s": 33446.5968873214,
+      "pipeline_tok_s": 33067.74808132555,
+      "texts_s": 174.3986667362317,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 1.0,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k_recheck",
+      "client_name": "float_b128_c1",
+      "repeat": 0,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 52478281,
+      "encoding_wall_s": 23.64645795011893,
+      "pipeline_wall_s": 23.78419764013961,
+      "encoding_tok_s": 55729.953415427786,
+      "pipeline_tok_s": 55407.20859870321,
+      "texts_s": 102.08717115655196,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 1.0,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k_recheck",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "EcomRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 213973,
+      "texts": 8136,
+      "response_bytes": 176844838,
+      "encoding_wall_s": 41.06281161005609,
+      "pipeline_wall_s": 41.34193605999462,
+      "encoding_tok_s": 5210.8706542539585,
+      "pipeline_tok_s": 5175.6889103956455,
+      "texts_s": 198.1354827151566,
+      "metrics": {
+        "recall_10": 0.75,
+        "recall_100": 0.890625,
+        "ndcg_cut_10": 0.5848188287651199
+      },
+      "corpus_cosine_min_vs_baseline": 0.9999973773956299,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k_recheck",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "CmedqaRetrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 423072,
+      "texts": 2206,
+      "response_bytes": 47959422,
+      "encoding_wall_s": 12.508436280069873,
+      "pipeline_wall_s": 13.151552109979093,
+      "encoding_tok_s": 33822.93282127482,
+      "pipeline_tok_s": 32168.978722973905,
+      "texts_s": 176.36097355469576,
+      "metrics": {
+        "recall_10": 0.9140625,
+        "recall_100": 1.0,
+        "ndcg_cut_10": 0.789398097822177
+      },
+      "corpus_cosine_min_vs_baseline": 1.0,
+      "metric_changed_queries_vs_baseline": 0
+    },
+    {
+      "case": "s32_t16k_recheck",
+      "client_name": "float_b128_c1",
+      "repeat": 1,
+      "task": "T2Retrieval",
+      "client": {
+        "batch": 128,
+        "concurrency": 1,
+        "format": "float"
+      },
+      "tokens": 1317816,
+      "texts": 2414,
+      "response_bytes": 52478281,
+      "encoding_wall_s": 23.467408830067143,
+      "pipeline_wall_s": 23.613000510027632,
+      "encoding_tok_s": 56155.155839428466,
+      "pipeline_tok_s": 55808.917610464996,
+      "texts_s": 102.86606491071615,
+      "metrics": {
+        "recall_10": 0.9390479312354313,
+        "recall_100": 0.9947916666666666,
+        "ndcg_cut_10": 0.9668846823912959
+      },
+      "corpus_cosine_min_vs_baseline": 1.0,
+      "metric_changed_queries_vs_baseline": 0
+    }
+  ]
+}
