@@ -19,6 +19,7 @@ def main():
     p.add_argument("--served-model", default="eos-0.8b")
     p.add_argument("--cases", type=Path, default=Path(__file__).with_name('smoke_cases.json'))
     p.add_argument("--max-length", type=int, default=2048)
+    p.add_argument("--max-reference-probability-delta", type=float)
     a = p.parse_args()
     if a.output.exists():
         raise FileExistsError(a.output)
@@ -103,6 +104,8 @@ def main():
     a.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps({k:v for k,v in result.items() if k not in ("sequential", "concurrent")}), flush=True)
     assert all(observations.values()), "Inspect unexpected decisions; numerical deltas alone are not an accuracy benchmark"
+    if a.max_reference_probability_delta is not None:
+        assert result['max_reference_probability_delta'] <= a.max_reference_probability_delta, 'Inspect native-versus-serving disagreement before evaluation'
 
 
 if __name__ == "__main__":
