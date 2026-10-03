@@ -26,7 +26,7 @@ args=("$python" -m vllm.entrypoints.openai.api_server
     --model "$model" --served-model-name "${DECISION_SERVED_NAME:-eos-0.8b}"
     --runner pooling --dtype bfloat16 --mamba-ssm-cache-dtype float32
     --enforce-eager --no-enable-prefix-caching --no-enable-chunked-prefill
-    --max-model-len 2048 --max-num-batched-tokens "${EOS_BATCH_TOKENS:-2048}" --max-num-seqs "${EOS_MAX_SEQS:-4}"
+    --max-model-len "${DECISION_MAX_LENGTH:-2048}" --max-num-batched-tokens "${EOS_BATCH_TOKENS:-2048}" --max-num-seqs "${EOS_MAX_SEQS:-4}"
     --gpu-memory-utilization "${DECISION_MEMORY_FRACTION:-0.12}" --host 127.0.0.1 --port 18423)
 if [[ -n "${EOS_DIAGNOSTICS_DIR:-}" ]]; then
     args+=(--profiler-config.profiler torch

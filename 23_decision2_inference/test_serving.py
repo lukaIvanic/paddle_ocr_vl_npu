@@ -81,6 +81,7 @@ def main():
                       "decision2": {"candidate_positions": [0,99], "query_position": 2, "token_count": 3}}),
         ("/classify", {"model": "eos-0.8b", "input": "This endpoint does not carry Eos option positions."}),
     ]:
+        payload['model'] = a.served_model
         request = urllib.request.Request(a.url + endpoint, data=json.dumps(payload).encode(),
                                          headers={"Content-Type": "application/json"})
         try:
