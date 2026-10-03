@@ -14,6 +14,7 @@ from vllm.model_executor.layers.pooler.abstract import Pooler
 from vllm.model_executor.models.interfaces import IsHybrid, HasInnerState, SupportsMRoPE
 from vllm.model_executor.models.interfaces_base import default_pooling_type
 from vllm.model_executor.models.qwen3_5 import Qwen3_5Model, Qwen3_5ForConditionalGeneration
+from .diagnostics import stage, metadata, install, ROOT as DIAGNOSTICS_ROOT
 
 
 class DecisionPooler(Pooler):
@@ -25,10 +26,18 @@ class DecisionPooler(Pooler):
         return {"classify"}
 
     def forward(self, hidden_states, pooling_metadata):
+        with stage('pooler', stream=True):
+            return self._forward(hidden_states, pooling_metadata)
+
+    def _forward(self, hidden_states, pooling_metadata):
         cursor = pooling_metadata.get_pooling_cursor()
         if cursor.is_partial_prefill():
             raise RuntimeError("Decision2 initial adapter requires unchunked full prefill")
         outputs = []
+        if DIAGNOSTICS_ROOT:
+            metadata(cursor.prompt_lens_cpu.tolist(),
+                     [len((p.extra_kwargs or {}).get('decision2', {}).get('candidate_positions', []))
+                      for p in pooling_metadata.pooling_params])
         for i, params in enumerate(pooling_metadata.pooling_params):
             meta = (params.extra_kwargs or {}).get("decision2")
             if meta is None:
@@ -43,10 +52,13 @@ class DecisionPooler(Pooler):
                         "token_count": length}
             if meta["token_count"] != int(cursor.prompt_lens_cpu[i]):
                 raise ValueError("Server changed the token sequence length")
-            positions = torch.tensor([*meta["candidate_positions"], meta["query_position"]],
-                                     dtype=torch.long, device=hidden_states.device)
-            selected = hidden_states.index_select(0, positions + cursor.first_token_indices_gpu[i])
-            logits = self.head(selected[:-1].unsqueeze(0), selected[-1].unsqueeze(0))[0]
+            with stage('positions_h2d'):
+                positions = torch.tensor([*meta["candidate_positions"], meta["query_position"]],
+                                         dtype=torch.long, device=hidden_states.device)
+            with stage('gather'):
+                selected = hidden_states.index_select(0, positions + cursor.first_token_indices_gpu[i])
+            with stage('head_fp32'):
+                logits = self.head(selected[:-1].unsqueeze(0), selected[-1].unsqueeze(0))[0]
             outputs.append(logits)
         return outputs
 
@@ -71,6 +83,7 @@ class Decision2EosForPooling(nn.Module, IsHybrid, HasInnerState, SupportsMRoPE):
         self.model = Qwen3_5Model(vllm_config=vllm_config, prefix="model")
         self.pooler = DecisionPooler(CandidateHead(config.hidden_size).float())
         self.make_empty_intermediate_tensors = self.model.make_empty_intermediate_tensors
+        install()
 
     def embed_input_ids(self, input_ids):
         return self.model.embed_input_ids(input_ids)
@@ -83,7 +96,8 @@ class Decision2EosForPooling(nn.Module, IsHybrid, HasInnerState, SupportsMRoPE):
         return torch.arange(len(input_tokens), dtype=torch.long).expand(3, -1).clone(), 0
 
     def forward(self, input_ids, positions, intermediate_tensors=None, inputs_embeds=None, **kwargs):
-        return self.model(input_ids, positions, intermediate_tensors, inputs_embeds)
+        with stage('backbone', stream=True):
+            return self.model(input_ids, positions, intermediate_tensors, inputs_embeds)
 
     def load_weights(self, weights):
         loaded = {"model." + n for n in self.model.load_weights(weights)}

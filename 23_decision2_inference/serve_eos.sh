@@ -28,6 +28,12 @@ args=("$python" -m vllm.entrypoints.openai.api_server
     --enforce-eager --no-enable-prefix-caching --no-enable-chunked-prefill
     --max-model-len 2048 --max-num-batched-tokens "${EOS_BATCH_TOKENS:-2048}" --max-num-seqs "${EOS_MAX_SEQS:-4}"
     --gpu-memory-utilization 0.12 --host 127.0.0.1 --port 18423)
+if [[ -n "${EOS_DIAGNOSTICS_DIR:-}" ]]; then
+    args+=(--profiler-config.profiler torch
+        --profiler-config.torch_profiler_dir "$EOS_DIAGNOSTICS_DIR/traces"
+        --profiler-config.torch_profiler_with_stack false
+        --profiler-config.ignore_frontend true)
+fi
 { git rev-parse HEAD; hostname; printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"; printf '%q ' "${args[@]}"; printf '\n'; } >"$run_dir/command.txt"
 set +e
 "${args[@]}" &
