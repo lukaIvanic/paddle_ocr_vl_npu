@@ -1,0 +1,23 @@
+{"event": "download_progress", "bytes": 25165824, "files_done": 31, "elapsed_s": 5.000435430090874, "average_MB_s": 5.03272651988682}
+{"event": "download_progress", "bytes": 150994944, "files_done": 31, "elapsed_s": 10.00069719995372, "average_MB_s": 15.098441736711992}
+{"event": "download_progress", "bytes": 295698432, "files_done": 31, "elapsed_s": 15.000923309940845, "average_MB_s": 19.712015446678933}
+{"event": "download_progress", "bytes": 454033408, "files_done": 31, "elapsed_s": 20.001134949969128, "average_MB_s": 22.700382210095572}
+{"event": "download_progress", "bytes": 596639744, "files_done": 31, "elapsed_s": 25.001347420038655, "average_MB_s": 23.864303550367506}
+{"event": "download_progress", "bytes": 730857472, "files_done": 31, "elapsed_s": 30.001568869920447, "average_MB_s": 24.360641777395756}
+{"event": "download_progress", "bytes": 876609536, "files_done": 31, "elapsed_s": 35.001795740099624, "average_MB_s": 25.044701777849557}
+{"event": "download_progress", "bytes": 1027604480, "files_done": 31, "elapsed_s": 40.00201399996877, "average_MB_s": 25.688818568005157}
+{"event": "download_progress", "bytes": 1186988032, "files_done": 31, "elapsed_s": 45.002234450075775, "average_MB_s": 26.37620212651466}
+{"event": "download_progress", "bytes": 1344274432, "files_done": 31, "elapsed_s": 50.00245221005753, "average_MB_s": 26.884170127352508}
+{"event": "download_progress", "bytes": 1441792000, "files_done": 31, "elapsed_s": 55.00266328989528, "average_MB_s": 26.21313066970843}
+{"event": "download_progress", "bytes": 1529872384, "files_done": 31, "elapsed_s": 60.002893009921536, "average_MB_s": 25.496643699280202}
+{"event": "download_progress", "bytes": 1600189904, "files_done": 31, "elapsed_s": 65.00314595992677, "average_MB_s": 24.617114762206853}
+{"event": "download_progress", "bytes": 1679881680, "files_done": 31, "elapsed_s": 70.00336635997519, "average_MB_s": 23.997155670509034}
+{"event": "download_progress", "bytes": 1757476304, "files_done": 31, "elapsed_s": 75.00362854008563, "average_MB_s": 23.43188373960759}
+{"event": "download_progress", "bytes": 1836119504, "files_done": 31, "elapsed_s": 80.00386845995672, "average_MB_s": 22.950384016980486}
+{"event": "download_progress", "bytes": 1897985488, "files_done": 31, "elapsed_s": 85.00411217007786, "average_MB_s": 22.328160833001515}
+{"event": "download_progress", "bytes": 1936782800, "files_done": 31, "elapsed_s": 90.00437335995957, "average_MB_s": 21.51876323002789}
+{"event": "download_progress", "bytes": 1973482960, "files_done": 31, "elapsed_s": 95.00462823989801, "average_MB_s": 20.772492841261588}
+{"event": "download_progress", "bytes": 1997600208, "files_done": 31, "elapsed_s": 100.0049004999455, "average_MB_s": 19.975023203998774}
+{"event": "download_progress", "bytes": 2014377424, "files_done": 31, "elapsed_s": 105.00516678998247, "average_MB_s": 19.183602917643977}
+{"event": "file_verified", "file": "backbone/model.safetensors", "bytes": 2014377424}
+{"event": "download_complete", "repo": "vllm-sr/Decision-2.0-Eos-0.8B", "revision": "3594047d69f476f1d01cf84c593e213fc3a4dfe0", "manifest_sha256": "e8b1081be4a76deca5247792a4031c8e19e2b52b95d91775c13d9e257c407101", "elapsed_s": 108.4233812300954, "bytes": 2014377424, "files_done": 32}

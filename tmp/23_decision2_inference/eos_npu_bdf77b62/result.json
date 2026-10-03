@@ -1,0 +1,361 @@
+{
+  "status": "completed",
+  "chip": "910B2",
+  "concurrent_workload": "T2 reranker",
+  "command": [
+    "23_decision2_inference/run_npu_smoke.py",
+    "--model",
+    "/workspace/models/Decision-2.0-Eos-0.8B",
+    "--dtype",
+    "bf16",
+    "--output",
+    "tmp/23_decision2_inference/eos_npu_bdf77b62/result.json"
+  ],
+  "hostname": "liteserver-c001-4",
+  "physical_device": "7",
+  "git_commit": "bdf77b62bcfadfe0372b715fc57197a76f550871",
+  "rows": [
+    {
+      "id": "english_returns",
+      "warmup": true,
+      "wall_s": 1.0604815799742937,
+      "response": {
+        "model": "Decision-2.0-Eos-0.8B",
+        "answers": {
+          "route": {
+            "type": "choice",
+            "choice": "returns",
+            "probabilities": {
+              "returns": 0.9949681943432926,
+              "technical": 0.0016988105035613424,
+              "billing": 0.003332995153145944
+            },
+            "confidence": 0.9682646351595979
+          },
+          "receipt": {
+            "type": "noul",
+            "noul": 0.9998085052515986
+          },
+          "urgency": {
+            "type": "score",
+            "score": 0.001973410879599084,
+            "probabilities": {
+              "0": 0.9982235581753168,
+              "1": 0.0015794727697674377,
+              "2": 0.00019696905491582326
+            },
+            "confidence": 0.9875805660212902,
+            "legend": {
+              "0": "Routine, no urgent deadline",
+              "1": "Needs attention soon",
+              "2": "Immediate emergency"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 352,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "english_returns",
+      "warmup": false,
+      "wall_s": 0.5897261900827289,
+      "response": {
+        "model": "Decision-2.0-Eos-0.8B",
+        "answers": {
+          "route": {
+            "type": "choice",
+            "choice": "returns",
+            "probabilities": {
+              "returns": 0.9949681943432926,
+              "technical": 0.0016988105035613424,
+              "billing": 0.003332995153145944
+            },
+            "confidence": 0.9682646351595979
+          },
+          "receipt": {
+            "type": "noul",
+            "noul": 0.9998085052515986
+          },
+          "urgency": {
+            "type": "score",
+            "score": 0.001973410879599084,
+            "probabilities": {
+              "0": 0.9982235581753168,
+              "1": 0.0015794727697674377,
+              "2": 0.00019696905491582326
+            },
+            "confidence": 0.9875805660212902,
+            "legend": {
+              "0": "Routine, no urgent deadline",
+              "1": "Needs attention soon",
+              "2": "Immediate emergency"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 352,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "chinese_returns",
+      "warmup": false,
+      "wall_s": 0.6354120599571615,
+      "response": {
+        "model": "Decision-2.0-Eos-0.8B",
+        "answers": {
+          "route": {
+            "type": "choice",
+            "choice": "returns",
+            "probabilities": {
+              "returns": 0.9959396364189114,
+              "technical": 0.001465554263205391,
+              "billing": 0.0025948093178833464
+            },
+            "confidence": 0.97354322454177
+          },
+          "receipt": {
+            "type": "noul",
+            "noul": 0.9993136070102763
+          },
+          "urgency": {
+            "type": "score",
+            "score": 0.007120658064677594,
+            "probabilities": {
+              "0": 0.9937243307774988,
+              "1": 0.005430680380324794,
+              "2": 0.0008449888421764004
+            },
+            "confidence": 0.963080710580794,
+            "legend": {
+              "0": "常规，没有紧急截止时间",
+              "1": "需要尽快处理",
+              "2": "必须立即处理的紧急情况"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 326,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "relevance_positive",
+      "warmup": false,
+      "wall_s": 0.3525578200351447,
+      "response": {
+        "model": "Decision-2.0-Eos-0.8B",
+        "answers": {
+          "relevance": {
+            "type": "score",
+            "score": 2.930596320128414,
+            "probabilities": {
+              "0": 0.00042005875672213315,
+              "1": 0.006248475967637794,
+              "2": 0.05564655166614395,
+              "3": 0.9376849136094961
+            },
+            "confidence": 0.8152920081566029,
+            "legend": {
+              "0": "Irrelevant",
+              "1": "Related topic but does not answer",
+              "2": "Partially answers",
+              "3": "Directly and completely answers"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 144,
+          "output_tokens": 0
+        }
+      }
+    },
+    {
+      "id": "relevance_negative",
+      "warmup": false,
+      "wall_s": 0.37311070994473994,
+      "response": {
+        "model": "Decision-2.0-Eos-0.8B",
+        "answers": {
+          "relevance": {
+            "type": "score",
+            "score": 0.028796894726674144,
+            "probabilities": {
+              "0": 0.9733557354113062,
+              "1": 0.024930383014558574,
+              "2": 0.00127513301029038,
+              "3": 0.00043874856384493687
+            },
+            "confidence": 0.9060723185992153,
+            "legend": {
+              "0": "Irrelevant",
+              "1": "Related topic but does not answer",
+              "2": "Partially answers",
+              "3": "Directly and completely answers"
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 145,
+          "output_tokens": 0
+        }
+      }
+    }
+  ],
+  "activation_samples": {
+    "backbone.layers.0.linear_attn.in_proj_qkv": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        6144
+      ]
+    },
+    "backbone.layers.0.linear_attn.in_proj_z": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        2048
+      ]
+    },
+    "backbone.layers.0.linear_attn.in_proj_b": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        16
+      ]
+    },
+    "backbone.layers.0.linear_attn.in_proj_a": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        16
+      ]
+    },
+    "backbone.layers.0.linear_attn.out_proj": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        1024
+      ]
+    },
+    "backbone.layers.0.mlp.gate_proj": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        3584
+      ]
+    },
+    "backbone.layers.0.mlp.up_proj": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        3584
+      ]
+    },
+    "backbone.layers.0.mlp.down_proj": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        3,
+        128,
+        1024
+      ]
+    },
+    "head.key": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        3,
+        256
+      ]
+    },
+    "head.query": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        256
+      ]
+    },
+    "head.candidate_mlp": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        3,
+        256
+      ]
+    },
+    "head.query_mlp": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        256
+      ]
+    },
+    "head.scalar": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        3,
+        1
+      ]
+    },
+    "decision_logits": {
+      "dtype": "torch.float32",
+      "device": "npu:0",
+      "shape": [
+        3,
+        3
+      ]
+    }
+  },
+  "initial_memory": {
+    "free_bytes": 34789330944,
+    "total_bytes": 65452113920
+  },
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0",
+    "transformers": "5.17.0"
+  },
+  "bf16_residency": {
+    "linear_bf16": 186,
+    "linear_fp32": 0
+  },
+  "load_s": 17.577297140145674,
+  "parameter_count": 753446208,
+  "parameter_dtypes": {
+    "backbone:torch.float32": 254778176,
+    "backbone:torch.bfloat16": 497614848,
+    "head:torch.float32": 1053184
+  },
+  "sanity_observations": {
+    "english_returns_selected": true,
+    "chinese_returns_selected": true,
+    "relevant_scores_above_irrelevant": true
+  },
+  "peak_allocated_bytes": 3051709952
+}

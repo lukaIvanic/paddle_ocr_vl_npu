@@ -1,0 +1,32 @@
+Source commit: bdf77b62bcfadfe0372b715fc57197a76f550871
+Host: liteserver-c001-4
+Container: research_vllm_ascend_021_external_workspace
+Chip: Ascend 910B2, physical device 7, logical npu:0
+Model: vllm-sr/Decision-2.0-Eos-0.8B
+Model revision: 3594047d69f476f1d01cf84c593e213fc3a4dfe0
+Model manifest SHA256: e8b1081be4a76deca5247792a4031c8e19e2b52b95d91775c13d9e257c407101
+
+The user explicitly authorized sharing one healthy NPU with T2.
+All six T2 servers remained running. These are not isolated speed measurements.
+npu-setup's automatic selection in setup.log was overridden BEFORE importing
+torch or running inference: physical device 4 is unhealthy and was NOT used.
+
+cd /workspace/repos/paddle_ocr_vl_npu
+source npu-setup
+export ASCEND_RT_VISIBLE_DEVICES=7
+export TORCH_DEVICE_BACKEND_AUTOLOAD=0 HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1
+export TOKENIZERS_PARALLELISM=false PYTHONDONTWRITEBYTECODE=1
+export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8
+timeout 600 /workspace/venvs/decision2_eval_py312/bin/python -u \
+  23_decision2_inference/run_npu_smoke.py \
+  --model /workspace/models/Decision-2.0-Eos-0.8B \
+  --dtype bf16 \
+  --output tmp/23_decision2_inference/eos_npu_bdf77b62/result.json
+
+Native Decision2 API, no vLLM adapter; no shared-context optimization, CUDA/ROCm
+graphs, custom GPU kernels, or CPU inference fallback. Transformers' reference
+PyTorch causal convolution and gated-delta attention executed on NPU tensors.
+Checks: complete package inventory and SHA256, parameter count, NPU residency,
+BF16 projection activation samples, FP32 head/logits, finite normalized answers.
+Four synthetic requests (eight questions), plus one repeated warmup request.
+This is a functional smoke, not retrieval benchmark or GPU/NPU numerical parity.
