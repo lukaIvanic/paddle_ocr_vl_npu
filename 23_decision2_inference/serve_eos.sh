@@ -20,14 +20,14 @@ export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false PYTHONDONTWRITEBYTECODE=1
 export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 DECISION2_ASCEND_ENABLE=1
 unset VLLM_PLUGINS
 python=/workspace/venvs/decision2_vllm_py312/bin/python
-model=/workspace/models/Decision-2.0-Eos-0.8B-vllm-view
+model=${DECISION_MODEL:-/workspace/models/Decision-2.0-Eos-0.8B-vllm-view}
 "$python" -c 'import torch, torch_npu; torch.npu.set_device(0); free,total=torch.npu.mem_get_info(); print({"free":free,"total":total},flush=True); assert free>12*1024**3, "Not enough free NPU memory to share safely"'
 args=("$python" -m vllm.entrypoints.openai.api_server
-    --model "$model" --served-model-name eos-0.8b
+    --model "$model" --served-model-name "${DECISION_SERVED_NAME:-eos-0.8b}"
     --runner pooling --dtype bfloat16 --mamba-ssm-cache-dtype float32
     --enforce-eager --no-enable-prefix-caching --no-enable-chunked-prefill
     --max-model-len 2048 --max-num-batched-tokens "${EOS_BATCH_TOKENS:-2048}" --max-num-seqs "${EOS_MAX_SEQS:-4}"
-    --gpu-memory-utilization 0.12 --host 127.0.0.1 --port 18423)
+    --gpu-memory-utilization "${DECISION_MEMORY_FRACTION:-0.12}" --host 127.0.0.1 --port 18423)
 if [[ -n "${EOS_DIAGNOSTICS_DIR:-}" ]]; then
     args+=(--profiler-config.profiler torch
         --profiler-config.torch_profiler_dir "$EOS_DIAGNOSTICS_DIR/traces"

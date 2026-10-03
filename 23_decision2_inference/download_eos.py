@@ -11,6 +11,11 @@ import urllib.request
 
 REPO = "vllm-sr/Decision-2.0-Eos-0.8B"
 REVISION = "3594047d69f476f1d01cf84c593e213fc3a4dfe0"
+RELEASES = {
+    "eos": (REPO, REVISION, "e8b1081be4a76deca5247792a4031c8e19e2b52b95d91775c13d9e257c407101"),
+    "nox": ("vllm-sr/Decision-2.0-Nox-4B", "25e8f67d1b486c647222df3aac640d2d5d736bbe",
+            "49771ea33a451274687ad2a246ce5fb78f8f42ec904fc91a467477179975bb16"),
+}
 
 
 def open_url(url, timeout, headers=None):
@@ -31,11 +36,15 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--endpoint", default="https://hf-mirror.com")
+    p.add_argument("--release", choices=list(RELEASES), default="eos")
     args = p.parse_args()
     root = args.output.resolve()
     root.mkdir(parents=True, exist_ok=True)
-    base = f"{args.endpoint.rstrip('/')}/{REPO}/resolve/{REVISION}/"
+    repo, revision, manifest_sha = RELEASES[args.release]
+    base = f"{args.endpoint.rstrip('/')}/{repo}/resolve/{revision}/"
     manifest_bytes = open_url(base + "MODEL_MANIFEST.json?download=true", timeout=60).read()
+    if hashlib.sha256(manifest_bytes).hexdigest() != manifest_sha:
+        raise ValueError("Unexpected release manifest")
     manifest = json.loads(manifest_bytes)
     (root / "MODEL_MANIFEST.json").write_bytes(manifest_bytes)
     state = {"bytes": 0, "files_done": 0}
@@ -64,10 +73,14 @@ def main():
         for attempt in range(3):
             try:
                 url = base + name + "?download=true"
-                if name == "backbone/model.safetensors":
+                if name.startswith("backbone/model") and name.endswith(".safetensors"):
                     # Pin both the known release size and final SHA; validate each
                     # range so a proxy returning the full file cannot corrupt it.
-                    total = 2014377424
+                    with open_url(url, 120, {"Range": "bytes=0-0"}) as probe:
+                        content_range = probe.headers.get("Content-Range", "")
+                        if probe.status != 206 or not content_range.startswith("bytes 0-0/"):
+                            raise ValueError("Missing valid range length")
+                        total = int(content_range.split("/")[-1])
                     chunk = 128 << 20
                     with partial.open("wb") as out:
                         out.truncate(total)
@@ -118,8 +131,8 @@ def main():
     finally:
         stop.set()
         t.join()
-    print(json.dumps({"event": "download_complete", "repo": REPO,
-                      "revision": REVISION, "manifest_sha256": digest(root / "MODEL_MANIFEST.json"),
+    print(json.dumps({"event": "download_complete", "repo": repo,
+                      "revision": revision, "manifest_sha256": digest(root / "MODEL_MANIFEST.json"),
                       "elapsed_s": time.monotonic() - start, **state}), flush=True)
 
 

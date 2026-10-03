@@ -16,6 +16,7 @@ def main():
     p.add_argument("--reference", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--url", default="http://127.0.0.1:18423")
+    p.add_argument("--served-model", default="eos-0.8b")
     a = p.parse_args()
     if a.output.exists():
         raise FileExistsError(a.output)
@@ -35,7 +36,7 @@ def main():
 
     def run(item):
         cid, key, row, encoded = item
-        payload = {"model": "eos-0.8b", "task": "classify", "input": encoded["ids"],
+        payload = {"model": a.served_model, "task": "classify", "input": encoded["ids"],
                    "add_special_tokens": False, "use_activation": False,
                    "encoding_format": "float", "decision2": {
                        "candidate_positions": encoded["candidate_positions"],
