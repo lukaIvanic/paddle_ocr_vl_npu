@@ -1,6 +1,6 @@
 """Real-text -> embeddings -> retrieval sweep on one separate NPU.
 
-All cases remain FP16/eager with the same model, prompts, 8192-token limit and
+All cases remain FP16 with the same model, prompts, 8192-token limit and
 scoring. Setup/data loading and tiny full-pipeline warmup are reported separately.
 This does not change the active accuracy server on port 18222.
 """
@@ -26,6 +26,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--subset', type=Path, required=True)
+    parser.add_argument('--experiment', choices=['batching', 'graph'], default='batching')
     args = parser.parse_args()
     if args.output.exists():
         parser.error('Output must be fresh')
@@ -69,7 +70,7 @@ def main():
         (args.output / 'workloads.json').write_text(json.dumps(workloads, ensure_ascii=False) + '\n')
         manifest = {'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
                     'device': os.environ.get('ASCEND_RT_VISIBLE_DEVICES'), 'chip': '910B2',
-                    'dtype': 'float16', 'eager': True, 'max_model_len': 8192,
+                    'dtype': 'float16', 'experiment': args.experiment, 'max_model_len': 8192,
                     'workloads_sha256': hashlib.sha256((args.output / 'workloads.json').read_bytes()).hexdigest(),
                     'timing_scope': 'prepared real text -> tokenization -> HTTP embeddings -> exact retrieval metrics; excludes model/data setup',
                     'quality_scope': 'fixed reduced corpora; not published full-corpus benchmark scores'}
@@ -174,9 +175,16 @@ def main():
                 server_log = None
 
         default = {'batch': 128, 'concurrency': 1, 'format': 'float'}
-        cases = [('s32_t16k', 32, 16384), ('s64_t16k', 64, 16384), ('s128_t16k', 128, 16384),
-                 ('s128_t32k', 128, 32768), ('s32_t16k_recheck', 32, 16384)]
-        for case, seqs, budget in cases:
+        default_name = 'float_b128_c1'
+        cases = [('s32_t16k', 32, 16384, False), ('s64_t16k', 64, 16384, False),
+                 ('s128_t16k', 128, 16384, False), ('s128_t32k', 128, 32768, False),
+                 ('s32_t16k_recheck', 32, 16384, False)]
+        if args.experiment == 'graph':
+            default = {'batch': 128, 'concurrency': 2, 'format': 'base64'}
+            default_name = 'base64_b128_c2'
+            cases = [('eager_before', 128, 32768, False),
+                     ('piecewise', 128, 32768, True), ('eager_after', 128, 32768, False)]
+        for case, seqs, budget, graph in cases:
             observer.state = {'case': case, 'section': 'server_start'}
             case_dir = args.output / case
             case_dir.mkdir()
@@ -184,9 +192,19 @@ def main():
                        '--model', model_path, '--served-model-name', 'embedding-batching-diagnostic',
                        '--host', '127.0.0.1', '--port', '18224', '--runner', 'pooling', '--convert', 'embed',
                        '--dtype', 'float16', '--max-model-len', '8192', '--pooler-config',
-                       '{"pooling_type":"LAST","use_activation":true}', '--enforce-eager',
+                       '{"pooling_type":"LAST","use_activation":true}',
                        '--gpu-memory-utilization', '0.35', '--max-num-seqs', str(seqs), '--block-size', '128',
                        '--max-num-batched-tokens', str(budget), '--no-enable-prefix-caching', '--no-enable-chunked-prefill']
+            if graph:
+                command += ['--compilation-config', json.dumps({
+                    'mode': 3, 'cudagraph_mode': 'PIECEWISE',
+                    'cudagraph_capture_sizes': [1024, 4096, 8192, 16384, 32768],
+                    'max_cudagraph_capture_size': 32768,
+                })]
+            else:
+                command += ['--enforce-eager']
+            if args.experiment == 'graph':
+                command += ['--cudagraph-metrics']
             (case_dir / 'command.json').write_text(json.dumps(command, indent=2) + '\n')
             server_log = (case_dir / 'server.log').open('w')
             server = subprocess.Popen(command, stdout=server_log, stderr=subprocess.STDOUT, start_new_session=True)
@@ -207,9 +225,9 @@ def main():
                 warm.update(qids=warm['qids'][:8], queries=warm['queries'][:8],
                             dids=warm['dids'][:128], documents=warm['documents'][:128],
                             qrels={q: warm['qrels'][q] for q in warm['qids'][:8]})
-                pipeline(warm, default, {'case': case, 'client_name': 'float_b128_c1', 'repeat': -1}, warmup=True)
-                clients = [('float_b128_c1', default)]
-                if case == 's128_t32k':
+                pipeline(warm, default, {'case': case, 'client_name': default_name, 'repeat': -1}, warmup=True)
+                clients = [(default_name, default)]
+                if args.experiment == 'batching' and case == 's128_t32k':
                     clients += [('base64_b128_c1', {'batch': 128, 'concurrency': 1, 'format': 'base64'}),
                                 ('base64_b128_c2', {'batch': 128, 'concurrency': 2, 'format': 'base64'}),
                                 ('base64_b512_c2', {'batch': 512, 'concurrency': 2, 'format': 'base64'})]
@@ -217,6 +235,8 @@ def main():
                     for repeat in range(2):
                         for w in workloads:
                             pipeline(w, client, {'case': case, 'client_name': client_name, 'repeat': repeat})
+                with urllib.request.urlopen('http://127.0.0.1:18224/metrics', timeout=10) as response:
+                    (case_dir / 'metrics.txt').write_bytes(response.read())
             finally:
                 stop_server()
         (args.output / 'summary.json').write_text(json.dumps({'complete': True, 'manifest': manifest, 'results': results}, indent=2) + '\n')
