@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
+# Vendor environment scripts are not nounset/errexit-safe.
+source npu-setup || exit 1
 set -euo pipefail
-source npu-setup
+: "${ASCEND_RT_VISIBLE_DEVICES:?NPU selection did not succeed}"
 cd "$(git rev-parse --show-toplevel)"
 export TORCH_DEVICE_BACKEND_AUTOLOAD=0
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
