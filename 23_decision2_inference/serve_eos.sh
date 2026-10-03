@@ -14,6 +14,7 @@ if [[ "$setup_status" != 0 ]]; then
     exit "$setup_status"
 fi
 export ASCEND_RT_VISIBLE_DEVICES=7
+printf 'Authorized sharing override: physical NPU %s as logical npu:0\n' "$ASCEND_RT_VISIBLE_DEVICES"
 export TORCH_DEVICE_BACKEND_AUTOLOAD=0 VLLM_WORKER_MULTIPROC_METHOD=spawn
 export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false PYTHONDONTWRITEBYTECODE=1
 export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 DECISION2_ASCEND_ENABLE=1
@@ -29,7 +30,10 @@ args=("$python" -m vllm.entrypoints.openai.api_server
     --gpu-memory-utilization 0.12 --host 127.0.0.1 --port 18423)
 { git rev-parse HEAD; hostname; printf 'ASCEND_RT_VISIBLE_DEVICES=%s\n' "$ASCEND_RT_VISIBLE_DEVICES"; printf '%q ' "${args[@]}"; printf '\n'; } >"$run_dir/command.txt"
 set +e
-"${args[@]}"
+"${args[@]}" &
+server_pid=$!
+printf '%s\n' "$server_pid" >"$run_dir/server_pid.txt"
+wait "$server_pid"
 status=$?
 printf '%s\n' "$status" >"$run_dir/exit_code.txt"
 exit "$status"

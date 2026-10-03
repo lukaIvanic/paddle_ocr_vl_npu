@@ -14,7 +14,8 @@ def register():
     ModelRegistry.register_model("Decision2EosForPooling", "decision2_ascend.model:Decision2EosForPooling")
     # The installed HTTP schema permits extras but does not forward them to the
     # pooler. A request-local field avoids mutable IO-processor/global state.
-    from vllm.entrypoints.pooling.pooling.protocol import PoolingCompletionRequest
+    from vllm.entrypoints.pooling.pooling.protocol import PoolingCompletionRequest, PoolingChatRequest
+    from vllm.entrypoints.pooling.classify.protocol import ClassificationCompletionRequest, ClassificationChatRequest
     if not getattr(PoolingCompletionRequest, "_decision2_patched", False):
         original = PoolingCompletionRequest.to_pooling_params
 
@@ -23,12 +24,16 @@ def register():
             metadata = (self.model_extra or {}).get("decision2")
             from .protocol import validate_metadata
             validate_metadata(self.input, metadata)
-            if self.task != "classify" or self.truncate_prompt_tokens is not None:
-                raise ValueError("Decision2 requires classify, without prompt truncation")
+            if self.task != "classify" or self.truncate_prompt_tokens is not None or self.use_activation is not False:
+                raise ValueError("Decision2 requires classify, use_activation=false, without prompt truncation")
             params.extra_kwargs = {"decision2": metadata}
             return params
 
         PoolingCompletionRequest.to_pooling_params = to_pooling_params
         PoolingCompletionRequest._decision2_patched = True
+        def unsupported_request(self):
+            raise ValueError("Eos requires /pooling with pretokenized input and Decision2 metadata; use the experiment client")
+        for cls in (PoolingChatRequest, ClassificationCompletionRequest, ClassificationChatRequest):
+            cls.to_pooling_params = unsupported_request
     print(json.dumps({"event": "decision2_plugin_registered", "pid": os.getpid(),
                       "vllm": __version__, "adapter": __file__}), flush=True)
