@@ -28,7 +28,7 @@ def main():
     root = args.output.resolve()
     root.mkdir(parents=True, exist_ok=True)
     base = f"{args.endpoint.rstrip('/')}/{REPO}/resolve/{REVISION}/"
-    manifest_bytes = urllib.request.urlopen(base + "MODEL_MANIFEST.json", timeout=60).read()
+    manifest_bytes = urllib.request.urlopen(base + "MODEL_MANIFEST.json?download=true", timeout=60).read()
     manifest = json.loads(manifest_bytes)
     (root / "MODEL_MANIFEST.json").write_bytes(manifest_bytes)
     state = {"bytes": 0, "files_done": 0}
@@ -56,7 +56,7 @@ def main():
         partial = dest.with_name(dest.name + ".partial")
         for attempt in range(3):
             try:
-                with urllib.request.urlopen(base + name, timeout=120) as src, partial.open("wb") as out:
+                with urllib.request.urlopen(base + name + "?download=true", timeout=120) as src, partial.open("wb") as out:
                     while block := src.read(8 << 20):
                         out.write(block)
                         with lock:
