@@ -1,0 +1,34 @@
+{
+  "command": [
+    "23_decision2_inference/bench_serving_comparison.py",
+    "--workloads",
+    "tmp/22_qwen3_embedding_benchmark/reranker_serving_cc6c6841/prepared/workloads.json",
+    "--bundle",
+    "/workspace/models/Decision-2.0-Eos-0.8B",
+    "--output",
+    "tmp/23_decision2_inference/eos_speed_dac72408",
+    "--contention",
+    "dedicated_NPU7",
+    "--models",
+    "eos"
+  ],
+  "commit": "dac7240878cc54bd46a85c1f0a022ac5b8b0b01d",
+  "chip": "910B2",
+  "physical_device": 7,
+  "contention": "dedicated_NPU7",
+  "workload_sha256": "8ef354118c5331ef6ef06fd6115d3af5f97728d2001139a03404199f1ee14463",
+  "scope": "Native relevance prompts on paired intact documents, not an accuracy evaluation",
+  "timing": "client tokenization + HTTP queue/inference + response readout, wall clock; warmup excluded",
+  "config": {
+    "eos": {
+      "dtype": "bf16",
+      "max_num_seqs": 4,
+      "max_num_batched_tokens": 2048
+    },
+    "reranker": {
+      "dtype": "fp16",
+      "max_num_seqs": 32,
+      "max_num_batched_tokens": 16384
+    }
+  }
+}

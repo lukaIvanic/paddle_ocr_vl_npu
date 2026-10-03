@@ -1,0 +1,21 @@
+{
+  "source": "tmp/22_qwen3_embedding_benchmark/reranker_cmteb_6npu_fc41475e/evaluation/T2Retrieval/requests.jsonl",
+  "sha256": "d0a75cb959b4c2a9122c09f6cc0c5b3fd63f9994c1aa4641fad3530f629d55a4",
+  "restored_pairs": 1606656,
+  "historical_scoring_wall_s": 7127.240517100086,
+  "old_devices": [
+    0,
+    1,
+    2,
+    3,
+    6,
+    7
+  ],
+  "new_devices": [
+    0,
+    1,
+    2,
+    3,
+    6
+  ]
+}

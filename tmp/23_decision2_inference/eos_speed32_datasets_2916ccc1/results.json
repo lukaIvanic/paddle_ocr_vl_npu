@@ -1,0 +1,178 @@
+[
+  {
+    "phase": "warmup",
+    "model": "eos",
+    "band": "EcomRetrieval",
+    "concurrency": 32,
+    "repeat": -1,
+    "completed": 0,
+    "pairs": 32,
+    "tokens": 4023,
+    "mean_tokens": 125.71875,
+    "wall_s": 4.203494460089132,
+    "pairs_s": 7.612713732307729,
+    "input_tok_s": 957.0608545335623,
+    "item_latency_s": {
+      "mean": 4.05237770628446,
+      "p50": 4.178659415105358,
+      "p95": 4.195238915109075,
+      "p99": 4.1980320008913985,
+      "max": 4.198678229935467
+    },
+    "tokenize_s": 0.1009692104998976
+  },
+  {
+    "phase": "measured",
+    "model": "eos",
+    "band": "EcomRetrieval",
+    "concurrency": 32,
+    "repeat": 0,
+    "completed": 0,
+    "pairs": 800,
+    "tokens": 101636,
+    "mean_tokens": 127.045,
+    "wall_s": 46.40228181006387,
+    "pairs_s": 17.24053147374519,
+    "input_tok_s": 2190.3233210819576,
+    "item_latency_s": {
+      "mean": 1.8549809165374609,
+      "p50": 0.3318186900578439,
+      "p95": 4.183103903639131,
+      "p99": 4.235776524278335,
+      "max": 4.239499340066686
+    },
+    "tokenize_s": 12.039720678236336
+  },
+  {
+    "phase": "measured",
+    "model": "eos",
+    "band": "EcomRetrieval",
+    "concurrency": 32,
+    "repeat": 1,
+    "completed": 0,
+    "pairs": 800,
+    "tokens": 101636,
+    "mean_tokens": 127.045,
+    "wall_s": 7.99947419995442,
+    "pairs_s": 100.00657293257578,
+    "input_tok_s": 12705.335058219089,
+    "item_latency_s": {
+      "mean": 0.31878718018182556,
+      "p50": 0.31888159504160285,
+      "p95": 0.32873798650689423,
+      "p99": 0.3436110319243744,
+      "max": 0.3502448401413858
+    },
+    "tokenize_s": 11.194234673399478
+  },
+  {
+    "phase": "measured",
+    "model": "eos",
+    "band": "EcomRetrieval",
+    "concurrency": 32,
+    "repeat": 2,
+    "completed": 0,
+    "pairs": 800,
+    "tokens": 101636,
+    "mean_tokens": 127.045,
+    "wall_s": 8.028270950075239,
+    "pairs_s": 99.64785754926503,
+    "input_tok_s": 12659.762062346375,
+    "item_latency_s": {
+      "mean": 0.3199390560077154,
+      "p50": 0.3193370149238035,
+      "p95": 0.3296920266235247,
+      "p99": 0.34622666399693114,
+      "max": 0.35961832012981176
+    },
+    "tokenize_s": 11.045716676395386
+  },
+  {
+    "phase": "warmup",
+    "model": "eos",
+    "band": "CmedqaRetrieval",
+    "concurrency": 32,
+    "repeat": -1,
+    "completed": 0,
+    "pairs": 32,
+    "tokens": 6653,
+    "mean_tokens": 207.90625,
+    "wall_s": 4.288390489993617,
+    "pairs_s": 7.462007033796875,
+    "input_tok_s": 1551.3978998703317,
+    "item_latency_s": {
+      "mean": 4.134634059984819,
+      "p50": 4.262630695011467,
+      "p95": 4.278671954513993,
+      "p99": 4.280244490602054,
+      "max": 4.28081884002313
+    },
+    "tokenize_s": 0.12934624939225614
+  },
+  {
+    "phase": "measured",
+    "model": "eos",
+    "band": "CmedqaRetrieval",
+    "concurrency": 32,
+    "repeat": 0,
+    "completed": 0,
+    "pairs": 800,
+    "tokens": 156560,
+    "mean_tokens": 195.7,
+    "wall_s": 66.46404210990295,
+    "pairs_s": 12.0365836112878,
+    "input_tok_s": 2355.5594127290224,
+    "item_latency_s": {
+      "mean": 2.65734076531342,
+      "p50": 4.166684839990921,
+      "p95": 4.3097757555427965,
+      "p99": 4.316120371141006,
+      "max": 4.326303419889882
+    },
+    "tokenize_s": 13.234151930781081
+  },
+  {
+    "phase": "measured",
+    "model": "eos",
+    "band": "CmedqaRetrieval",
+    "concurrency": 32,
+    "repeat": 1,
+    "completed": 0,
+    "pairs": 800,
+    "tokens": 156560,
+    "mean_tokens": 195.7,
+    "wall_s": 8.255860519828275,
+    "pairs_s": 96.90086188818513,
+    "input_tok_s": 18963.49867151783,
+    "item_latency_s": {
+      "mean": 0.3288992605824024,
+      "p50": 0.3280119498958811,
+      "p95": 0.3438697691191919,
+      "p99": 0.36268583689816297,
+      "max": 0.372135000070557
+    },
+    "tokenize_s": 12.599381611915305
+  },
+  {
+    "phase": "measured",
+    "model": "eos",
+    "band": "CmedqaRetrieval",
+    "concurrency": 32,
+    "repeat": 2,
+    "completed": 0,
+    "pairs": 800,
+    "tokens": 156560,
+    "mean_tokens": 195.7,
+    "wall_s": 8.267889010021463,
+    "pairs_s": 96.75988623339336,
+    "input_tok_s": 18935.90973587508,
+    "item_latency_s": {
+      "mean": 0.32946333371190123,
+      "p50": 0.3287449248600751,
+      "p95": 0.3431602688855491,
+      "p99": 0.3594051646627486,
+      "max": 0.37274386011995375
+    },
+    "tokenize_s": 11.916525640757754
+  }
+]

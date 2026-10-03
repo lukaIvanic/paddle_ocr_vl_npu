@@ -1,0 +1,34 @@
+{
+  "commit": "7011d948101d9be8ad97d4004dcdfcca216c8966",
+  "model": "/workspace/models/Qwen3-Reranker-4B",
+  "chip": "910B2",
+  "dtype": "float16",
+  "devices": [
+    0,
+    1,
+    2,
+    3,
+    6
+  ],
+  "tasks": [
+    "T2Retrieval"
+  ],
+  "max_length": 8192,
+  "prefix": "<|im_start|>system\nJudge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be \"yes\" or \"no\".<|im_end|>\n<|im_start|>user\n",
+  "suffix": "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "client_batch": 128,
+  "concurrency_per_server": 2,
+  "eager": true,
+  "prompt_source": "HF Transformers example with pinned task instructions; single newline between fields",
+  "scope": "full dev queries, fixed saved embedding top100; no gold injection",
+  "timing": "scoring wall includes streaming corpus-to-text, tokenization, HTTP, checkpoint logging; setup separately",
+  "completed_runs": [
+    "tmp/22_qwen3_embedding_benchmark/reranker_ecom_e70e8473/evaluation"
+  ],
+  "model_files": {
+    "config.json": "38bff5eac700032a185745e4076eccad7aa453473cafc2a27de412cdb7b79e19",
+    "tokenizer_config.json": "253153d0738ceb4c668d2eff957714dd2bea0b56de772a9fdccd96cbf517e6a0",
+    "model.safetensors.index.json": "18a783f197360068da36d2ff9ecffce0121542a87598fd1fef3079ead1c3cc08"
+  },
+  "resume_partial_run": "tmp/22_qwen3_embedding_benchmark/reranker_cmteb_6npu_fc41475e/evaluation"
+}

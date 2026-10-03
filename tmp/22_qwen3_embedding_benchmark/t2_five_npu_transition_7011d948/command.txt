@@ -1,0 +1,5 @@
+commit=7011d948101d9be8ad97d4004dcdfcca216c8966
+hostname=liteserver-c001-4
+physical_devices=0,1,2,3,6
+ASCEND_RT_VISIBLE_DEVICES=0
+/workspace/venvs/qwen3_embedding_eval_py312/bin/python 22_qwen3_embedding_benchmark/run_reranker_evaluation.py --tasks T2Retrieval --devices 0 1 2 3 6 --output tmp/22_qwen3_embedding_benchmark/reranker_cmteb_5npu_resume/evaluation --resume-partial-run tmp/22_qwen3_embedding_benchmark/reranker_cmteb_6npu_fc41475e/evaluation --completed-run tmp/22_qwen3_embedding_benchmark/reranker_ecom_e70e8473/evaluation --prepared tmp/22_qwen3_embedding_benchmark/reranker_serving_cc6c6841/prepared --candidates tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb
