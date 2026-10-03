@@ -48,7 +48,7 @@ class EndpointEncoder:
             name="local/Qwen3-Embedding-0.6B-vllm-ascend-fp16", revision=MODEL_REVISION,
             release_date=None, languages=None, n_parameters=None, memory_usage_mb=None,
             max_tokens=MAX_LENGTH, embed_dim=DIMENSIONS, license="apache-2.0",
-            open_weights=True, public_training_code=False, public_training_data=False,
+            open_weights=True, public_training_code=None, public_training_data=None,
             framework=["PyTorch"], similarity_fn_name="cosine", use_instructions=True,
             training_datasets=None,
         )
