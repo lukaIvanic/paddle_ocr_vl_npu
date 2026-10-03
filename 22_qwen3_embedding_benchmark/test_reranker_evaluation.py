@@ -1,9 +1,20 @@
 import unittest
 import importlib.util
-from run_reranker_evaluation import candidate_rows, batches, command, metric_summary
+from run_reranker_evaluation import candidate_rows, batches, command, metric_summary, suite_summary
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_macro_summary_is_task_weighted_and_partial_is_labeled(self):
+        rows = [{'task': name, 'queries': n, 'pairs': n*100, 'tokens': n*1000,
+                 'metrics': {'reranker': {'ndcg_cut_10': score}, 'embedding': {'ndcg_cut_10': .5}}}
+                for name,n,score in [('EcomRetrieval',1000,1.), ('T2Retrieval',22812,0.)]]
+        result = suite_summary(rows)
+        self.assertEqual(result['macro_ndcg_at_10_percent']['reranker'], 50.)
+        self.assertEqual(result['scope'], 'partial_CMTEB-R')
+        self.assertIsNone(result['delta_vs_published_pp'])
+        with self.assertRaises(ValueError):
+            suite_summary(rows + rows)
+
     def test_stream_preserves_candidates_and_tail(self):
         candidates = {'q2': {str(i): float(i) for i in range(100)},
                       'q1': {str(i): float(i) for i in range(100)}}

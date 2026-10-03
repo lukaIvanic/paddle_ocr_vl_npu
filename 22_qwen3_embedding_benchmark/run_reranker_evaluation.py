@@ -82,6 +82,21 @@ def command(port):
             '--no-enable-chunked-prefill', '--no-async-scheduling']
 
 
+def suite_summary(rows):
+    names = [r['task'] for r in rows]
+    if len(names) != len(set(names)) or not set(names).issubset(TASKS):
+        raise ValueError('Duplicate or unknown task in aggregate')
+    full = set(names) == set(TASKS)
+    means = {kind: 100*sum(r['metrics'][kind]['ndcg_cut_10'] for r in rows)/len(rows)
+             for kind in ['reranker', 'embedding']}
+    return {'scope': 'full_CMTEB-R' if full else 'partial_CMTEB-R', 'tasks': names,
+            'queries': sum(r['queries'] for r in rows), 'pairs': sum(r['pairs'] for r in rows),
+            'tokens': sum(r['tokens'] for r in rows), 'macro_ndcg_at_10_percent': means,
+            'published_reranker_macro_percent': 75.94 if full else None,
+            'delta_vs_published_pp': means['reranker']-75.94 if full else None,
+            'aggregation': 'unweighted mean of task nDCG@10, not query-weighted; no adjustment for first-stage discrepancy'}
+
+
 @contextmanager
 def servers(args, observer):
     owned, handles, endpoints = [], [], []
@@ -275,6 +290,8 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--candidates', type=Path, required=True)
     p.add_argument('--prepared', type=Path, required=True)
+    p.add_argument('--completed-run', type=Path, action='append', default=[],
+                   help='Include previously completed disjoint tasks in the final suite summary')
     p.add_argument('--port', type=int, default=18325)
     args = p.parse_args()
     if len(set(args.devices)) != len(args.devices) or len(set(args.tasks)) != len(args.tasks):
@@ -297,13 +314,26 @@ def main():
     try:
         from transformers import AutoTokenizer
         assert importlib.metadata.version('mteb') == '1.38.9'
-        save(args.output / 'manifest.json', {'commit': subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+        manifest = {'commit': subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
              'model': MODEL, 'chip': '910B2', 'dtype': 'float16', 'devices': args.devices,
              'tasks': args.tasks, 'max_length': MAX_LENGTH, 'prefix': PREFIX, 'suffix': SUFFIX,
              'client_batch': 128, 'concurrency_per_server': 2, 'eager': True,
              'prompt_source': 'HF Transformers example with pinned task instructions; single newline between fields',
              'scope': 'full dev queries, fixed saved embedding top100; no gold injection',
-             'timing': 'scoring wall includes streaming corpus-to-text, tokenization, HTTP, checkpoint logging; setup separately'})
+             'timing': 'scoring wall includes streaming corpus-to-text, tokenization, HTTP, checkpoint logging; setup separately',
+             'completed_runs': [str(path) for path in args.completed_run],
+             'model_files': {n: digest(Path(MODEL)/n) for n in
+                             ['config.json', 'tokenizer_config.json', 'model.safetensors.index.json']}}
+        save(args.output / 'manifest.json', manifest)
+        prior = []
+        for path in args.completed_run:
+            assert json.loads((path/'completion.json').read_text())['status'] == 'complete'
+            previous_manifest = json.loads((path/'manifest.json').read_text())
+            for key in ['model', 'chip', 'dtype', 'max_length', 'prefix', 'suffix', 'eager', 'prompt_source', 'scope']:
+                assert previous_manifest[key] == manifest[key], f'Previous run contract differs: {key}'
+            prior.extend(json.loads((path/'results.json').read_text()))
+        if len({r['task'] for r in prior}) != len(prior) or {r['task'] for r in prior}.intersection(args.tasks):
+            raise ValueError('Previous runs contain duplicated or newly requested tasks')
         tok = AutoTokenizer.from_pretrained(MODEL, local_files_only=True)
         results = []
         with servers(args, observer) as endpoints:
@@ -311,6 +341,10 @@ def main():
             for name in args.tasks:
                 results.append(evaluate(args, tok, endpoints, observer, name))
                 save(args.output / 'results.json', results)
+                save(args.output / 'combined_results.json', prior + results)
+                summary = suite_summary(prior + results)
+                save(args.output / 'suite_summary.json', summary)
+                emit('suite_summary', **summary)
         save(args.output / 'completion.json', {'status': 'complete', 'wall_s': time.monotonic()-started})
         (args.output / 'exit_code.txt').write_text('0\n')
     except BaseException as exc:
