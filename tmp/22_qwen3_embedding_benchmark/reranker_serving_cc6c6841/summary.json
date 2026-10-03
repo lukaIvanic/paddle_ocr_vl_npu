@@ -1,0 +1,64 @@
+{
+  "status": "complete",
+  "source_commit": "cc6c6841ba65421133ed4bcac54f53a6e439c81f",
+  "chip": "one Ascend 910B2",
+  "physical_device": 7,
+  "model": "Qwen3-Reranker-4B",
+  "dtype": "FP16",
+  "timed_trials": 72,
+  "unique_real_pairs": 2400,
+  "timed_pair_executions": 57600,
+  "timed_input_tokens": 18530976,
+  "workload": "8 deterministic dev queries per task, each with all 100 saved full-corpus Qwen3-Embedding-0.6B candidates; Ecom, Cmedqa, T2",
+  "timing": "wall time from prepared real text through client tokenization, HTTP classification scoring and response parsing; model/data setup excluded; ranking-inclusive times also in sweep/results.json",
+  "recommended_tested_configuration": {
+    "runner": "pooling",
+    "hf_overrides": {
+      "architectures": ["Qwen3ForSequenceClassification"],
+      "classifier_from_token": ["no", "yes"],
+      "is_original_qwen3_reranker": true
+    },
+    "endpoint": "/pooling",
+    "task": "classify",
+    "input": "explicit token IDs with task-specific instruction and HF model-card prefix/suffix",
+    "use_activation": true,
+    "enforce_eager": true,
+    "max_model_len": 8192,
+    "max_num_seqs": 32,
+    "max_num_batched_tokens": 16384,
+    "block_size": 128,
+    "gpu_memory_utilization": 0.45,
+    "async_scheduling": false,
+    "enable_prefix_caching": false,
+    "enable_chunked_prefill": false,
+    "client_pairs_per_request": 128,
+    "client_concurrency": 2
+  },
+  "comparison": {
+    "aggregation": "arithmetic mean of four trials per task/client: two before and two after the other server configurations",
+    "only_changed_setting": "client concurrency 1 -> 2; same server32/token16384 and request batch128",
+    "tasks": [
+      {"task": "EcomRetrieval", "mean_pair_tokens": 109.31375, "baseline_tok_s": 21270.3, "selected_tok_s": 25625.0, "gain_percent": 20.47, "selected_pairs_s": 234.4},
+      {"task": "CmedqaRetrieval", "mean_pair_tokens": 186.1675, "baseline_tok_s": 23143.7, "selected_tok_s": 26382.1, "gain_percent": 13.99, "selected_pairs_s": 141.7},
+      {"task": "T2Retrieval", "mean_pair_tokens": 669.67375, "baseline_tok_s": 23819.0, "selected_tok_s": 25816.5, "gain_percent": 8.39, "selected_pairs_s": 38.6}
+    ]
+  },
+  "quality_checks": {
+    "hf_reference": "48 real pairs, full original HF causal LM, eager FP16 on the same NPU; recomputed vLLM scores for each server configuration",
+    "max_abs_probability_difference_vs_hf": 0.008362114429473877,
+    "max_abs_probability_difference_vs_first_serving_baseline_across_all_trials": 0.0035827159881591797,
+    "ndcg_and_recall_identical_across_all_serving_configurations_on_test_queries": true,
+    "server_prompt_token_counts_match_explicit_input_ids": true,
+    "truncated_inputs": 0,
+    "max_observed_input_tokens": 8100,
+    "limitation": "This checks serving behavior and configuration stability, not full CMTEB-R accuracy or reproduction of the published 75.94. Eight queries per task are not a reliable estimate of task-wide accuracy."
+  },
+  "other_findings": [
+    "128 sequences / 32768 tokens with client128/concurrency2 gave 26482, 26610, 25515 tok/s for Ecom, Cmedqa, T2: small tradeoffs rather than an overall improvement.",
+    "256 max sequences regressed short-input throughput to about 22926 tok/s at client128/concurrency2.",
+    "Client256/concurrency4 did not beat client128/concurrency2 and increased request latency.",
+    "Explicit async scheduling was enabled successfully but added no meaningful throughput improvement.",
+    "Graph compilation, quantization, prefix caching and input-length reductions were not used.",
+    "Temporary benchmark server was stopped and port18225 was verified closed after completion."
+  ]
+}

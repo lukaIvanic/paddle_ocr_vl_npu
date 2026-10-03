@@ -1,0 +1,36 @@
+{
+  "checked_on": "2026-10-03",
+  "model": "Qwen/Qwen3-Reranker-4B",
+  "official_cmteb_r": {
+    "ndcg_at_10_percent": 75.94,
+    "first_stage": "Qwen3-Embedding-0.6B",
+    "candidates_per_query": 100,
+    "source": "https://huggingface.co/Qwen/Qwen3-Reranker-4B",
+    "per_task_reference_search_result": "No matching published per-task scores located for the eight CMTEB-R retrieval tasks. This is a search result, not proof that none exist."
+  },
+  "additional_independent_chinese_reference": {
+    "task": "MIRACL Chinese (ZH), not CMTEB-R",
+    "reranker_ndcg_at_10_percent": 61.86,
+    "first_stage_ndcg_at_10_percent": 58.03,
+    "first_stage": "Qwen3-Embedding-0.6B",
+    "candidates_per_query": 100,
+    "source": "https://arxiv.org/html/2606.19037v1#S5.T3",
+    "paper": "Querit-Reranker: Training Compact Multilingual Rerankers via Efficient Label-Free Distribution Adaptation",
+    "protocol_source": "Section 5.1, Evaluation Procedure",
+    "status": "Authors' independent measurement; exact checkpoint revisions, input formatting and preprocessing have not been reconstructed for reproduction."
+  },
+  "other_sources_checked": [
+    "https://qwenlm.github.io/zh/blog/qwen3-embedding/",
+    "https://arxiv.org/html/2506.05176v3",
+    "https://github.com/QwenLM/Qwen3-Embedding/tree/main/evaluation",
+    "https://github.com/embeddings-benchmark/results/tree/main/results",
+    "https://huggingface.co/Qwen/Qwen3-Reranker-4B/discussions/12",
+    "https://github.com/embeddings-benchmark/mteb/pull/3958",
+    "https://arxiv.org/html/2605.06132v1"
+  ],
+  "excluded_comparisons": [
+    "Embedding-model scores on tasks whose names contain reranking are not Qwen3-Reranker-4B reference scores.",
+    "MemReranker medical table contains Qwen3-Reranker-8B, not the requested Qwen3-Reranker-4B.",
+    "Repeated copies of the official 75.94 aggregate are not independent per-task results."
+  ]
+}

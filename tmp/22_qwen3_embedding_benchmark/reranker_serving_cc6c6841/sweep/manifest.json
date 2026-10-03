@@ -1,0 +1,12 @@
+{
+  "commit": "cc6c6841ba65421133ed4bcac54f53a6e439c81f",
+  "prepared": "tmp/22_qwen3_embedding_benchmark/reranker_serving_cc6c6841/prepared",
+  "workloads_sha256": "8ef354118c5331ef6ef06fd6115d3af5f97728d2001139a03404199f1ee14463",
+  "device": "7",
+  "chip": "910B2",
+  "dtype": "float16",
+  "eager": true,
+  "max_length": 8192,
+  "timing": "real text -> client tokenization -> HTTP pooling/classify -> rankings; setup and warmup separate",
+  "prefix_cache": false
+}

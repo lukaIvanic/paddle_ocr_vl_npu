@@ -1,0 +1,32 @@
+{
+  "chip": "910B2",
+  "device": "7",
+  "model": "/workspace/models/Qwen3-Reranker-4B",
+  "dtype": "float16",
+  "max_length": 8192,
+  "commit": "cc6c6841ba65421133ed4bcac54f53a6e439c81f",
+  "prompt_source": "Qwen3-Reranker-4B HF Transformers example; task instructions from pinned Qwen evaluation",
+  "prefix": "<|im_start|>system\nJudge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be \"yes\" or \"no\".<|im_end|>\n<|im_start|>user\n",
+  "suffix": "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "candidate_files": {
+    "EcomRetrieval": {
+      "path": "tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/EcomRetrieval_default_predictions.json",
+      "sha256": "ece78f3c9437e47a4450c9eb9d06c37cddf1be7f27a1de8fac9a5071257d1399"
+    },
+    "CmedqaRetrieval": {
+      "path": "tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/CmedqaRetrieval_default_predictions.json",
+      "sha256": "a8efdccc8f9414dd7ef21bb6e6dde0fbcf034453abaf9fb7446af2b9ff0af273"
+    },
+    "T2Retrieval": {
+      "path": "tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb/T2Retrieval_default_predictions.json",
+      "sha256": "ddf05b4c474c3b1d2c0d56d5008d4924f1295d9729f6f8b6ac81895256a924d7"
+    }
+  },
+  "model_files": {
+    "config.json": "38bff5eac700032a185745e4076eccad7aa453473cafc2a27de412cdb7b79e19",
+    "tokenizer_config.json": "253153d0738ceb4c668d2eff957714dd2bea0b56de772a9fdccd96cbf517e6a0",
+    "model.safetensors.index.json": "18a783f197360068da36d2ff9ecffce0121542a87598fd1fef3079ead1c3cc08"
+  },
+  "quality_scope": "8 deterministic dev queries per task, complete saved top100 from full corpus; not published aggregate",
+  "workloads_sha256": "8ef354118c5331ef6ef06fd6115d3af5f97728d2001139a03404199f1ee14463"
+}

@@ -1,0 +1,2306 @@
+[
+  {
+    "case": "s32_t16k",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 4.104395079892129,
+    "pipeline_wall_s": 4.1139640000183135,
+    "pairs_s": 194.91301018249575,
+    "input_tok_s": 21306.672066836796,
+    "pipeline_tok_s": 21257.113576980915,
+    "request_latency_s": {
+      "p50": 0.6285851600114256,
+      "p99": 0.6473447851510719,
+      "max": 0.6483780301641673
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 6.46178707992658,
+    "pipeline_wall_s": 6.464008959941566,
+    "pairs_s": 123.80476021643996,
+    "input_tok_s": 23048.422697594087,
+    "pipeline_tok_s": 23040.50024109904,
+    "request_latency_s": {
+      "p50": 0.96962237986736,
+      "p99": 1.1219667054573075,
+      "max": 1.124582190066576
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 22.520762729924172,
+    "pipeline_wall_s": 22.523066859925166,
+    "pairs_s": 35.522775564657515,
+    "input_tok_s": 23788.670322792565,
+    "pipeline_tok_s": 23786.236720418812,
+    "request_latency_s": {
+      "p50": 3.4852651900146157,
+      "p99": 4.7452070535393425,
+      "max": 4.803896019933745
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.414330380037427,
+    "pipeline_wall_s": 3.4165001399815083,
+    "pairs_s": 234.30655822803845,
+    "input_tok_s": 25612.928529500237,
+    "pipeline_tok_s": 25596.66220311448,
+    "request_latency_s": {
+      "p50": 1.0328572699800134,
+      "p99": 1.1315097752446308,
+      "max": 1.1364402200561017
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0003418959677219391
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.652528019854799,
+    "pipeline_wall_s": 5.6545809200033545,
+    "pairs_s": 141.5295947565334,
+    "input_tok_s": 26348.210831836936,
+    "pipeline_tok_s": 26338.645092713898,
+    "request_latency_s": {
+      "p50": 1.7702124698553234,
+      "p99": 1.9388547266786917,
+      "max": 1.9425041498616338
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010485649108886719
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 20.753795249853283,
+    "pipeline_wall_s": 20.755952070001513,
+    "pairs_s": 38.547166451671316,
+    "input_tok_s": 25814.025509564923,
+    "pipeline_tok_s": 25811.3430881497,
+    "request_latency_s": {
+      "p50": 6.519095710013062,
+      "p99": 8.446888524391689,
+      "max": 8.516910189995542
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.4081229199655354,
+    "pipeline_wall_s": 3.4102669798303396,
+    "pairs_s": 234.73331766099855,
+    "input_tok_s": 25659.579203464982,
+    "pipeline_tok_s": 25643.44683780467,
+    "request_latency_s": {
+      "p50": 1.0351257200818509,
+      "p99": 1.1301262879325076,
+      "max": 1.1349901999346912
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0003418959677219391
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.639417990110815,
+    "pipeline_wall_s": 5.641473170137033,
+    "pairs_s": 141.85861048123513,
+    "input_tok_s": 26409.46286676534,
+    "pipeline_tok_s": 26399.8419399347,
+    "request_latency_s": {
+      "p50": 1.772078590001911,
+      "p99": 1.9333960110507906,
+      "max": 1.9369269900489599
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010485649108886719
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 20.749262780183926,
+    "pipeline_wall_s": 20.751377900131047,
+    "pairs_s": 38.55558669602567,
+    "input_tok_s": 25819.664326177623,
+    "pipeline_tok_s": 25817.032612403862,
+    "request_latency_s": {
+      "p50": 6.513775059953332,
+      "p99": 8.444175575529224,
+      "max": 8.514105079928413
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 4.083449889905751,
+    "pipeline_wall_s": 4.085543480003253,
+    "pairs_s": 195.91277512125038,
+    "input_tok_s": 21415.960121410586,
+    "pipeline_tok_s": 21404.985757226692,
+    "request_latency_s": {
+      "p50": 0.6264201099984348,
+      "p99": 0.6457161944173276,
+      "max": 0.6468302102293819
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 6.412926140008494,
+    "pipeline_wall_s": 6.414948940044269,
+    "pairs_s": 124.74804520342416,
+    "input_tok_s": 23224.031705408466,
+    "pipeline_tok_s": 23216.708564943343,
+    "request_latency_s": {
+      "p50": 0.9718525300268084,
+      "p99": 1.1094899398228153,
+      "max": 1.111259909812361
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s32_t16k",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 22.456849160138518,
+    "pipeline_wall_s": 22.45897315000184,
+    "pairs_s": 35.62387556220578,
+    "input_tok_s": 23856.374337275705,
+    "pipeline_tok_s": 23854.11819239635,
+    "request_latency_s": {
+      "p50": 3.4827404299285263,
+      "p99": 4.733483661506325,
+      "max": 4.791257459903136
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 4.028381640091538,
+    "pipeline_wall_s": 4.0304972601588815,
+    "pairs_s": 198.59091602398954,
+    "input_tok_s": 21708.717746517388,
+    "pipeline_tok_s": 21697.32277564002,
+    "request_latency_s": {
+      "p50": 0.6071837800554931,
+      "p99": 0.6440586046269163,
+      "max": 0.6452072698157281
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 6.522484610090032,
+    "pipeline_wall_s": 6.52458505006507,
+    "pairs_s": 122.65264662524935,
+    "input_tok_s": 22833.936590606107,
+    "pipeline_tok_s": 22826.585730308576,
+    "request_latency_s": {
+      "p50": 0.9964992399327457,
+      "p99": 1.1336487578088417,
+      "max": 1.1363752100151032
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 4.172325134277344e-07
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 22.564242460066453,
+    "pipeline_wall_s": 22.566434710053727,
+    "pairs_s": 35.454325640039414,
+    "input_tok_s": 23742.831205086342,
+    "pipeline_tok_s": 23740.524672305422,
+    "request_latency_s": {
+      "p50": 3.5089913900010288,
+      "p99": 4.791730184103362,
+      "max": 4.852615719893947
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584230422973633
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.308602609904483,
+    "pipeline_wall_s": 3.310765029862523,
+    "pairs_s": 241.79392158041472,
+    "input_tok_s": 26431.40029516106,
+    "pipeline_tok_s": 26414.136675725167,
+    "request_latency_s": {
+      "p50": 0.9891280201263726,
+      "p99": 1.1232120647327974,
+      "max": 1.1306291099172086
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.59709572000429,
+    "pipeline_wall_s": 5.5992436199449,
+    "pairs_s": 142.93127007650796,
+    "input_tok_s": 26609.157221968297,
+    "pipeline_tok_s": 26598.94980627144,
+    "request_latency_s": {
+      "p50": 1.7603196899872273,
+      "p99": 1.9216564026335254,
+      "max": 1.922889000037685
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010488629341125488
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 20.982341289985925,
+    "pipeline_wall_s": 20.98447251995094,
+    "pairs_s": 38.12729899602813,
+    "input_tok_s": 25532.851296041394,
+    "pipeline_tok_s": 25530.258122554536,
+    "request_latency_s": {
+      "p50": 7.2069082299713045,
+      "p99": 8.344295944184996,
+      "max": 8.398688830202445
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b32_c1",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 32,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 5.719097200082615,
+    "pipeline_wall_s": 5.72122245002538,
+    "pairs_s": 139.8822177717916,
+    "input_tok_s": 15291.049782951184,
+    "pipeline_tok_s": 15285.369650259283,
+    "request_latency_s": {
+      "p50": 0.2234245198778808,
+      "p99": 0.23438191204331815,
+      "max": 0.23439552006311715
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035827159881591797
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b32_c1",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 32,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 7.9165250200312585,
+    "pipeline_wall_s": 7.918552609859034,
+    "pairs_s": 101.05443966585749,
+    "input_tok_s": 18813.052396493524,
+    "pipeline_tok_s": 18808.235208864935,
+    "request_latency_s": {
+      "p50": 0.3003539501223713,
+      "p99": 0.3719622135162353,
+      "max": 0.3767611598595977
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0020357370376586914
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b32_c1",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 32,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 23.672811760101467,
+    "pipeline_wall_s": 23.675017629982904,
+    "pairs_s": 33.79404221632568,
+    "input_tok_s": 22630.982978665128,
+    "pipeline_tok_s": 22628.874384512415,
+    "request_latency_s": {
+      "p50": 0.7431363200303167,
+      "p99": 1.5322280724439767,
+      "max": 1.5601490100380033
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b256_c4",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 256,
+    "concurrency": 4,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.3767674299888313,
+    "pipeline_wall_s": 3.37896602996625,
+    "pairs_s": 236.91296975185705,
+    "input_tok_s": 25897.84514721206,
+    "pipeline_tok_s": 25880.99413383966,
+    "request_latency_s": {
+      "p50": 2.4075228000292554,
+      "p99": 3.2433085982105694,
+      "max": 3.2623913600109518
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b256_c4",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 256,
+    "concurrency": 4,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.686880639987066,
+    "pipeline_wall_s": 5.68898420012556,
+    "pairs_s": 140.6746599137026,
+    "input_tok_s": 26189.04974948423,
+    "pipeline_tok_s": 26179.3660802772,
+    "request_latency_s": {
+      "p50": 4.211145670036785,
+      "p99": 5.442421219937969,
+      "max": 5.469761039828882
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010488629341125488
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b256_c4",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 256,
+    "concurrency": 4,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 21.28708099015057,
+    "pipeline_wall_s": 21.289251829963177,
+    "pairs_s": 37.58147960117952,
+    "input_tok_s": 25167.330375070393,
+    "pipeline_tok_s": 25164.764092178368,
+    "request_latency_s": {
+      "p50": 17.956805579946376,
+      "p99": 20.043446014323273,
+      "max": 20.04564775992185
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b256_c4",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 256,
+    "concurrency": 4,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.361557299969718,
+    "pipeline_wall_s": 3.3637314499355853,
+    "pairs_s": 237.9849363291254,
+    "input_tok_s": 26015.02583364793,
+    "pipeline_tok_s": 25998.21100512488,
+    "request_latency_s": {
+      "p50": 2.395864160032943,
+      "p99": 3.2292626796360127,
+      "max": 3.248272839933634
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b256_c4",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 256,
+    "concurrency": 4,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.648712459951639,
+    "pipeline_wall_s": 5.650826890021563,
+    "pairs_s": 141.6251943556796,
+    "input_tok_s": 26366.008370210984,
+    "pipeline_tok_s": 26356.142720102278,
+    "request_latency_s": {
+      "p50": 4.561016179970466,
+      "p99": 5.411754252028186,
+      "max": 5.415963999927044
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010488629341125488
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b256_c4",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 256,
+    "concurrency": 4,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 21.289889730047435,
+    "pipeline_wall_s": 21.29209043015726,
+    "pairs_s": 37.57652153880919,
+    "input_tok_s": 25164.010090850123,
+    "pipeline_tok_s": 25161.409198281483,
+    "request_latency_s": {
+      "p50": 17.96115615987219,
+      "p99": 20.04929222949082,
+      "max": 20.051479499787092
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b32_c1",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 32,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 5.681826759828255,
+    "pipeline_wall_s": 5.683931659907103,
+    "pairs_s": 140.79978743036892,
+    "input_tok_s": 15391.35276321649,
+    "pipeline_tok_s": 15385.652965684898,
+    "request_latency_s": {
+      "p50": 0.2226735500153154,
+      "p99": 0.2312096655368805,
+      "max": 0.231245799921453
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035827159881591797
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b32_c1",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 32,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 7.702058819821104,
+    "pipeline_wall_s": 7.704095199937001,
+    "pairs_s": 103.86833166493288,
+    "input_tok_s": 19336.907635231393,
+    "pipeline_tok_s": 19331.796419288523,
+    "request_latency_s": {
+      "p50": 0.29104398004710674,
+      "p99": 0.36351323435083027,
+      "max": 0.36814479995518923
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0020357370376586914
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b32_c1",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 32,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 23.620478480122983,
+    "pipeline_wall_s": 23.622590120183304,
+    "pairs_s": 33.86891593551812,
+    "input_tok_s": 22681.123942973172,
+    "pipeline_tok_s": 22679.096461241177,
+    "request_latency_s": {
+      "p50": 0.7370679199229926,
+      "p99": 1.5294031501654533,
+      "max": 1.5556370702106506
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.2959801601246,
+    "pipeline_wall_s": 3.2980686801020056,
+    "pairs_s": 242.71990762521978,
+    "input_tok_s": 26532.62330216637,
+    "pipeline_tok_s": 26515.821373766914,
+    "request_latency_s": {
+      "p50": 0.9916123400907964,
+      "p99": 1.1142517004534602,
+      "max": 1.1213626400567591
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.596813059877604,
+    "pipeline_wall_s": 5.598883499857038,
+    "pairs_s": 142.93848864365947,
+    "input_tok_s": 26610.501084568477,
+    "pipeline_tok_s": 26600.660650253372,
+    "request_latency_s": {
+      "p50": 1.7645171699114144,
+      "p99": 1.9222548579471186,
+      "max": 1.9239066699519753
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010488629341125488
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 21.01191383996047,
+    "pipeline_wall_s": 21.01405035983771,
+    "pairs_s": 38.073637941469165,
+    "input_tok_s": 25496.915896405935,
+    "pipeline_tok_s": 25494.323599029267,
+    "request_latency_s": {
+      "p50": 7.012367209885269,
+      "p99": 8.348429499678314,
+      "max": 8.401300069876015
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 4.040860659908503,
+    "pipeline_wall_s": 4.042976649943739,
+    "pairs_s": 197.97762588975644,
+    "input_tok_s": 21641.676702106364,
+    "pipeline_tok_s": 21630.350004919503,
+    "request_latency_s": {
+      "p50": 0.6117480199318379,
+      "p99": 0.6435257088905201,
+      "max": 0.6444985698908567
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 6.486777059966698,
+    "pipeline_wall_s": 6.488828900037333,
+    "pairs_s": 123.3278086489544,
+    "input_tok_s": 22959.62981665422,
+    "pipeline_tok_s": 22952.369725628472,
+    "request_latency_s": {
+      "p50": 1.0033516499679536,
+      "p99": 1.1203860585438088,
+      "max": 1.1224730799440295
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 4.172325134277344e-07
+  },
+  {
+    "case": "s128_t32k",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 22.584786240011454,
+    "pipeline_wall_s": 22.587035140022635,
+    "pairs_s": 35.422075351889376,
+    "input_tok_s": 23721.234033682325,
+    "pipeline_tok_s": 23718.872206060732,
+    "request_latency_s": {
+      "p50": 3.5095940900500864,
+      "p99": 4.802854844615794,
+      "max": 4.863445400027558
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584230422973633
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 4.0355041599832475,
+    "pipeline_wall_s": 4.037689290009439,
+    "pairs_s": 198.24041019036417,
+    "input_tok_s": 21670.402639446922,
+    "pipeline_tok_s": 21658.674979370582,
+    "request_latency_s": {
+      "p50": 0.6071623200550675,
+      "p99": 0.6367383114388212,
+      "max": 0.6371356698218733
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 6.498468830017373,
+    "pipeline_wall_s": 6.500521540176123,
+    "pairs_s": 123.10592247587364,
+    "input_tok_s": 22918.321822527207,
+    "pipeline_tok_s": 22911.084761356673,
+    "request_latency_s": {
+      "p50": 0.9954590301495045,
+      "p99": 1.12405836799182,
+      "max": 1.1262285499833524
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 4.172325134277344e-07
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 22.62969852006063,
+    "pipeline_wall_s": 22.63192917010747,
+    "pairs_s": 35.3517745404704,
+    "input_tok_s": 23674.15542567134,
+    "pipeline_tok_s": 23671.82205163538,
+    "request_latency_s": {
+      "p50": 3.51683198986575,
+      "p99": 4.822830146439373,
+      "max": 4.884138289839029
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584230422973633
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.8212365398649126,
+    "pipeline_wall_s": 3.82338924985379,
+    "pairs_s": 209.3563148091014,
+    "input_tok_s": 22885.52385796341,
+    "pipeline_tok_s": 22872.638459017537,
+    "request_latency_s": {
+      "p50": 1.1723154599312693,
+      "p99": 1.1962422312423586,
+      "max": 1.1973873600363731
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.00031238794326782227
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.657035969896242,
+    "pipeline_wall_s": 5.659183909883723,
+    "pairs_s": 141.41681337314762,
+    "input_tok_s": 26327.21460364546,
+    "pipeline_tok_s": 26317.222124534223,
+    "request_latency_s": {
+      "p50": 1.5088057201355696,
+      "p99": 1.9604649288346991,
+      "max": 1.963679209817201
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010488033294677734
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 21.031767569947988,
+    "pipeline_wall_s": 21.033963199937716,
+    "pairs_s": 38.03769689539121,
+    "input_tok_s": 25472.847121299987,
+    "pipeline_tok_s": 25470.18813846676,
+    "request_latency_s": {
+      "p50": 7.217278809985146,
+      "p99": 8.351425240137614,
+      "max": 8.404080910142511
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.807662080042064,
+    "pipeline_wall_s": 3.809782630065456,
+    "pairs_s": 210.10267801683761,
+    "input_tok_s": 22967.111619063082,
+    "pipeline_tok_s": 22954.32797395517,
+    "request_latency_s": {
+      "p50": 1.167198599781841,
+      "p99": 1.193387537212111,
+      "max": 1.1945159200113267
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.00031238794326782227
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.660560350166634,
+    "pipeline_wall_s": 5.662668750155717,
+    "pairs_s": 141.32876438221348,
+    "input_tok_s": 26310.82274312573,
+    "pipeline_tok_s": 26301.026348381136,
+    "request_latency_s": {
+      "p50": 1.5121018199715763,
+      "p99": 1.9617669933103026,
+      "max": 1.9650254799053073
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010488033294677734
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 21.031267270212993,
+    "pipeline_wall_s": 21.033473870018497,
+    "pairs_s": 38.03860175050203,
+    "input_tok_s": 25473.45307901526,
+    "pipeline_tok_s": 25470.780685621896,
+    "request_latency_s": {
+      "p50": 7.2234619301743805,
+      "p99": 8.357047644420527,
+      "max": 8.410149310017005
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 4.039430000120774,
+    "pipeline_wall_s": 4.041570220142603,
+    "pairs_s": 198.0477443540502,
+    "input_tok_s": 21649.341614382556,
+    "pipeline_tok_s": 21637.877170649375,
+    "request_latency_s": {
+      "p50": 0.6152449999935925,
+      "p99": 0.6423402239801362,
+      "max": 0.6434039801824838
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 6.51086194999516,
+    "pipeline_wall_s": 6.512951819924638,
+    "pairs_s": 122.87159613338058,
+    "input_tok_s": 22874.697873161127,
+    "pipeline_tok_s": 22867.35786135807,
+    "request_latency_s": {
+      "p50": 1.0052837999537587,
+      "p99": 1.1231381740095094,
+      "max": 1.125246010022238
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 4.172325134277344e-07
+  },
+  {
+    "case": "s256_t32k",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 22.61849438981153,
+    "pipeline_wall_s": 22.620674759848043,
+    "pairs_s": 35.36928613428659,
+    "input_tok_s": 23685.882480370703,
+    "pipeline_tok_s": 23683.59943669509,
+    "request_latency_s": {
+      "p50": 3.50647218991071,
+      "p99": 4.81285619912669,
+      "max": 4.873812099918723
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584230422973633
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 4.029301600065082,
+    "pipeline_wall_s": 4.031451269984245,
+    "pairs_s": 198.54557424717927,
+    "input_tok_s": 21703.76126686259,
+    "pipeline_tok_s": 21692.188282444935,
+    "request_latency_s": {
+      "p50": 0.6089122300036252,
+      "p99": 0.6368731471709907,
+      "max": 0.63725719996728
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 6.518397959880531,
+    "pipeline_wall_s": 6.520491249859333,
+    "pairs_s": 122.7295425845191,
+    "input_tok_s": 22848.252119103458,
+    "pipeline_tok_s": 22840.91708630281,
+    "request_latency_s": {
+      "p50": 0.9980518999509513,
+      "p99": 1.1233575274981558,
+      "max": 1.1252951500937343
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 4.172325134277344e-07
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 22.59507681010291,
+    "pipeline_wall_s": 22.5973614200484,
+    "pairs_s": 35.40594292834167,
+    "input_tok_s": 23710.430573108548,
+    "pipeline_tok_s": 23708.033431048807,
+    "request_latency_s": {
+      "p50": 3.5041452299337834,
+      "p99": 4.814047473366371,
+      "max": 4.875874449964613
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584230422973633
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.3027282701805234,
+    "pipeline_wall_s": 3.304952290141955,
+    "pairs_s": 242.22398409914385,
+    "input_tok_s": 26478.412041817788,
+    "pipeline_tok_s": 26460.593776451697,
+    "request_latency_s": {
+      "p50": 0.9889145297929645,
+      "p99": 1.1179944950854406,
+      "max": 1.1250159800983965
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.6257051101420075,
+    "pipeline_wall_s": 5.627847160212696,
+    "pairs_s": 142.20439648671984,
+    "input_tok_s": 26473.83698294142,
+    "pipeline_tok_s": 26463.76061043763,
+    "request_latency_s": {
+      "p50": 1.7718304798472673,
+      "p99": 1.9273864220455288,
+      "max": 1.9280512400437146
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010488629341125488
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 21.040026400005445,
+    "pipeline_wall_s": 21.042230520164594,
+    "pairs_s": 38.022765979029046,
+    "input_tok_s": 25462.8482785488,
+    "pipeline_tok_s": 25460.181109916357,
+    "request_latency_s": {
+      "p50": 7.225765759823844,
+      "p99": 8.351893063969909,
+      "max": 8.404718389967456
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.3088844798039645,
+    "pipeline_wall_s": 3.31101978989318,
+    "pairs_s": 241.77332417703389,
+    "input_tok_s": 26429.148715757237,
+    "pipeline_tok_s": 26412.104290932475,
+    "request_latency_s": {
+      "p50": 0.99352450016886,
+      "p99": 1.1214281535474584,
+      "max": 1.1284346799366176
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.620725439861417,
+    "pipeline_wall_s": 5.622851290041581,
+    "pairs_s": 142.33038218278895,
+    "input_tok_s": 26497.291425014362,
+    "pipeline_tok_s": 26487.273505484907,
+    "request_latency_s": {
+      "p50": 1.7737115500494838,
+      "p99": 1.9274572211690246,
+      "max": 1.9286037599667907
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010488629341125488
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 21.04998703999445,
+    "pipeline_wall_s": 21.05213687987998,
+    "pairs_s": 38.00477399249795,
+    "input_tok_s": 25450.799517458578,
+    "pipeline_tok_s": 25448.200487049762,
+    "request_latency_s": {
+      "p50": 7.233043950051069,
+      "p99": 8.369705477696844,
+      "max": 8.423629029886797
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.989145889878273,
+    "pipeline_wall_s": 3.991234020097181,
+    "pairs_s": 200.54418215935735,
+    "input_tok_s": 21922.236592522448,
+    "pipeline_tok_s": 21910.767336531844,
+    "request_latency_s": {
+      "p50": 0.6027338898275048,
+      "p99": 0.6348957767523825,
+      "max": 0.6355227299500257
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0035293102264404297
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 6.504058860009536,
+    "pipeline_wall_s": 6.5060994799714535,
+    "pairs_s": 123.00011688375574,
+    "input_tok_s": 22898.624259956596,
+    "pipeline_tok_s": 22891.442170302238,
+    "request_latency_s": {
+      "p50": 1.0029630998615175,
+      "p99": 1.1230212640995159,
+      "max": 1.1249591500964016
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 4.172325134277344e-07
+  },
+  {
+    "case": "s128_t32k_async",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 22.67851346009411,
+    "pipeline_wall_s": 22.68062624009326,
+    "pairs_s": 35.275680719007774,
+    "input_tok_s": 23623.19739090063,
+    "pipeline_tok_s": 23620.996807088035,
+    "request_latency_s": {
+      "p50": 3.519556390121579,
+      "p99": 4.820029935259371,
+      "max": 4.881432770052925
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584230422973633
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 4.179115840001032,
+    "pipeline_wall_s": 4.1812549298629165,
+    "pairs_s": 191.42805096300046,
+    "input_tok_s": 20925.718105956694,
+    "pipeline_tok_s": 20915.0127095616,
+    "request_latency_s": {
+      "p50": 0.6407831700053066,
+      "p99": 0.6617426749877632,
+      "max": 0.6628031299915165
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 6.460593149997294,
+    "pipeline_wall_s": 6.462676810100675,
+    "pairs_s": 123.82763957212428,
+    "input_tok_s": 23052.682090043447,
+    "pipeline_tok_s": 23045.249573246096,
+    "request_latency_s": {
+      "p50": 0.9797134201508015,
+      "p99": 1.1166444107703863,
+      "max": 1.1182791299652308
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c1",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 22.50347317988053,
+    "pipeline_wall_s": 22.50573762995191,
+    "pairs_s": 35.55006792085982,
+    "input_tok_s": 23806.947297316896,
+    "pipeline_tok_s": 23804.55192399507,
+    "request_latency_s": {
+      "p50": 3.481264719972387,
+      "p99": 4.735558901438489,
+      "max": 4.793046870036051
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.4122735001146793,
+    "pipeline_wall_s": 3.4144531302154064,
+    "pairs_s": 234.44779557474325,
+    "input_tok_s": 25628.36771350859,
+    "pipeline_tok_s": 25612.00774030921,
+    "request_latency_s": {
+      "p50": 1.0310620998498052,
+      "p99": 1.136388731971383,
+      "max": 1.141930420184508
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0003418959677219391
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.642611589981243,
+    "pipeline_wall_s": 5.644814319908619,
+    "pairs_s": 141.77832148157114,
+    "input_tok_s": 26394.515664420396,
+    "pipeline_tok_s": 26384.215947498342,
+    "request_latency_s": {
+      "p50": 1.7690832298249006,
+      "p99": 1.93585411967244,
+      "max": 1.9395085498690605
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010485649108886719
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c2",
+    "repeat": 0,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 20.758782369783148,
+    "pipeline_wall_s": 20.760939539875835,
+    "pairs_s": 38.53790582459664,
+    "input_tok_s": 25807.823910704472,
+    "pipeline_tok_s": 25805.14234295603,
+    "request_latency_s": {
+      "p50": 6.508926099864766,
+      "p99": 8.442758061219937,
+      "max": 8.511836600024253
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 3.416159660089761,
+    "pipeline_wall_s": 3.418327260063961,
+    "pairs_s": 234.18109210357565,
+    "input_tok_s": 25599.21335693724,
+    "pipeline_tok_s": 25582.980606240635,
+    "request_latency_s": {
+      "p50": 1.0374326000455767,
+      "p99": 1.137478018067777,
+      "max": 1.142950469860807
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0003418959677219391
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 5.646537960041314,
+    "pipeline_wall_s": 5.6486402801238,
+    "pairs_s": 141.67973467305737,
+    "input_tok_s": 26376.162004746406,
+    "pipeline_tok_s": 26366.34528207837,
+    "request_latency_s": {
+      "p50": 1.771598279941827,
+      "p99": 1.9417194339446724,
+      "max": 1.9459339899476618
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0010485649108886719
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c2",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 2,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 20.74525198014453,
+    "pipeline_wall_s": 20.747418459970504,
+    "pairs_s": 38.56304087150579,
+    "input_tok_s": 25824.656191824553,
+    "pipeline_tok_s": 25821.95953841872,
+    "request_latency_s": {
+      "p50": 6.515517649939284,
+      "p99": 8.436323770619929,
+      "max": 8.5064532100223
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0015584826469421387
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "EcomRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 87451,
+    "mean_tokens": 109.31375,
+    "score_wall_s": 4.080233480082825,
+    "pipeline_wall_s": 4.082382230088115,
+    "pairs_s": 196.06721132628928,
+    "input_tok_s": 21432.842122119157,
+    "pipeline_tok_s": 21421.56100804712,
+    "request_latency_s": {
+      "p50": 0.624443510081619,
+      "p99": 0.6472800257848575,
+      "max": 0.6484929299913347
+    },
+    "metrics": {
+      "recall_10": 0.625,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.4560890392971821
+    },
+    "embedding_metrics": {
+      "recall_10": 0.75,
+      "recall_100": 0.875,
+      "ndcg_cut_10": 0.5772583367813671
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "CmedqaRetrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 148934,
+    "mean_tokens": 186.1675,
+    "score_wall_s": 6.405833099968731,
+    "pipeline_wall_s": 6.407920509809628,
+    "pairs_s": 124.88617600791144,
+    "input_tok_s": 23249.747171952855,
+    "pipeline_tok_s": 23242.173458925234,
+    "request_latency_s": {
+      "p50": 0.9716013099532574,
+      "p99": 1.1106473138555883,
+      "max": 1.1121149300597608
+    },
+    "metrics": {
+      "recall_10": 0.25,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.25
+    },
+    "embedding_metrics": {
+      "recall_10": 0.375,
+      "recall_100": 0.625,
+      "ndcg_cut_10": 0.20704716474964407
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  },
+  {
+    "case": "s32_t16k_recheck",
+    "client": "b128_c1",
+    "repeat": 1,
+    "task": "T2Retrieval",
+    "client_batch": 128,
+    "concurrency": 1,
+    "pairs": 800,
+    "tokens": 535739,
+    "mean_tokens": 669.67375,
+    "score_wall_s": 22.48753432999365,
+    "pipeline_wall_s": 22.489706789841875,
+    "pairs_s": 35.575265311900736,
+    "input_tok_s": 23823.821328665483,
+    "pipeline_tok_s": 23821.519996071358,
+    "request_latency_s": {
+      "p50": 3.480535839917138,
+      "p99": 4.731288616447709,
+      "max": 4.788713649846613
+    },
+    "metrics": {
+      "recall_10": 0.9791666666666667,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9729058648542374
+    },
+    "embedding_metrics": {
+      "recall_10": 0.8916666666666666,
+      "recall_100": 1.0,
+      "ndcg_cut_10": 0.9210599994560024
+    },
+    "max_abs_score_diff_vs_baseline": 0.0
+  }
+]

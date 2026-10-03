@@ -1,0 +1,29 @@
+Invocation record for the executed run (assembled from the orchestration commands).
+Source commit: cc6c6841ba65421133ed4bcac54f53a6e439c81f
+Host: liteserver-c001-4
+Container: research_vllm_ascend_021_external_workspace
+Working directory: /workspace/repos/paddle_ocr_vl_npu
+Chip: one Ascend 910B2, physical NPU 7 (logical npu:0), selected by source npu-setup.
+
+Environment after source npu-setup:
+TORCH_DEVICE_BACKEND_AUTOLOAD=0
+VLLM_WORKER_MULTIPROC_METHOD=spawn
+HF_HOME=/workspace/.cache/huggingface
+HF_HUB_OFFLINE=1
+HF_DATASETS_OFFLINE=1
+OMP_NUM_THREADS=8
+OPENBLAS_NUM_THREADS=8
+TOKENIZERS_PARALLELISM=false
+PYTHONDONTWRITEBYTECODE=1
+
+Preparation and Transformers FP16 reference:
+/workspace/venvs/qwen3_embedding_eval_py312/bin/python -u 22_qwen3_embedding_benchmark/reranker_serving_sweep.py prepare --output tmp/22_qwen3_embedding_benchmark/reranker_serving_cc6c6841/prepared --candidates tmp/22_qwen3_embedding_benchmark/cmteb_910b_8ee60dc7/evaluation/mteb
+
+Serving sweep:
+/workspace/venvs/qwen3_embedding_eval_py312/bin/python -u 22_qwen3_embedding_benchmark/reranker_serving_sweep.py sweep --prepared tmp/22_qwen3_embedding_benchmark/reranker_serving_cc6c6841/prepared --output tmp/22_qwen3_embedding_benchmark/reranker_serving_cc6c6841/sweep
+
+Exact per-server argv are recorded by the harness in sweep/<case>/command.json.
+Inference server interpreter: /usr/local/python3.12.13/bin/python3
+Client/reference interpreter: /workspace/venvs/qwen3_embedding_eval_py312/bin/python
+Model checkpoint files are unchanged; classification conversion is requested at load time.
+The server binds only 127.0.0.1:18225, disables graphs and prefix caching, and its owned process group is stopped after each case.
