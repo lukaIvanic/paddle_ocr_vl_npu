@@ -44,6 +44,9 @@ def main():
     p.add_argument("--contention", choices=["T2_active", "dedicated_NPU7"], required=True)
     p.add_argument("--models", nargs='+', choices=["eos","reranker"], default=["eos"],
                    help="Eos-only by default; reuse saved reranker speed measurements")
+    p.add_argument("--concurrencies", nargs='+', type=int, default=[1,4])
+    p.add_argument("--dataset-workloads", nargs='+', choices=["EcomRetrieval", "CmedqaRetrieval"],
+                   help="Use all saved pairs to compare with historical 4B timings, instead of length-band samples")
     args = p.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     def save(name, value):
@@ -81,7 +84,7 @@ def main():
             assert not truncated
             return {"model":"reranker-diagnostic", "input": ids[0], "task":"classify",
                     "use_activation":True, "encoding_format":"float", "add_special_tokens":False}, None
-        item = {"state":{"query":pair["query"], "document":pair["document"]}}
+        item = {"id":pair["qid"]+"/"+pair["did"], "state":{"query":pair["query"], "document":pair["document"]}}
         question = {"type":"noul", "instructions": "Does the document satisfy this retrieval instruction for the query? " + TASKS[pair["task"]][2]}
         row = question_to_row(item, "relevance", question)
         encoded = encode(row, eos_tok, 2048)
@@ -108,12 +111,15 @@ def main():
         if all(len(rows)==args.pairs_per_band for rows in selected.values()):
             break
     assert all(len(rows)==args.pairs_per_band for rows in selected.values()), {k:len(v) for k,v in selected.items()}
+    if args.dataset_workloads:
+        selected = {w['task']:[{**pair,'task':w['task']} for pair in w['pairs']]
+                    for w in json.loads(args.workloads.read_text()) if w['task'] in args.dataset_workloads}
     save("selected_pairs.json", selected)
     emit("workload_ready", counts={k:len(v) for k,v in selected.items()})
     log = (args.output/"requests.jsonl").open("w")
     trials = []
     try:
-        for concurrency in (1,4):
+        for concurrency in args.concurrencies:
             for band, pairs in selected.items():
                 # Full matched group warmup at the tested concurrency; record
                 # separately so first-use kernel compilation cannot inflate speed.
@@ -149,7 +155,8 @@ def main():
                         started = time.perf_counter()
                         records=[]
                         with ThreadPoolExecutor(max_workers=concurrency) as executor:
-                            for future in as_completed([executor.submit(one,pair) for pair in pairs]):
+                            trial_pairs = pairs[:max(16,concurrency)] if repeat<0 else pairs
+                            for future in as_completed([executor.submit(one,pair) for pair in trial_pairs]):
                                 record=future.result()
                                 records.append(record)
                                 log.write(json.dumps(record)+"\n")
