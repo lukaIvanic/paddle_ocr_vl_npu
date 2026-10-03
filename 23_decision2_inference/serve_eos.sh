@@ -5,7 +5,14 @@ set -euo pipefail
 run_dir=${1:?usage: serve_eos.sh RUN_DIRECTORY}
 mkdir -p "$run_dir"
 exec >"$run_dir/server.log" 2>&1
+set +eu
 source npu-setup
+setup_status=$?
+set -eu
+if [[ "$setup_status" != 0 ]]; then
+    printf 'npu-setup failed with status %s\n' "$setup_status"
+    exit "$setup_status"
+fi
 export ASCEND_RT_VISIBLE_DEVICES=7
 export TORCH_DEVICE_BACKEND_AUTOLOAD=0 VLLM_WORKER_MULTIPROC_METHOD=spawn
 export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false PYTHONDONTWRITEBYTECODE=1
