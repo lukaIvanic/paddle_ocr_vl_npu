@@ -3,6 +3,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import os
 from pathlib import Path
 import threading
 import time
@@ -12,9 +13,9 @@ REPO = "vllm-sr/Decision-2.0-Eos-0.8B"
 REVISION = "3594047d69f476f1d01cf84c593e213fc3a4dfe0"
 
 
-def open_url(url, timeout):
+def open_url(url, timeout, headers=None):
     # The mirror rejects urllib's default User-Agent on its resolve-cache route.
-    request = urllib.request.Request(url, headers={"User-Agent": "curl/8.0"})
+    request = urllib.request.Request(url, headers={"User-Agent": "curl/8.0", **(headers or {})})
     return urllib.request.urlopen(request, timeout=timeout)
 
 
@@ -62,11 +63,41 @@ def main():
         partial = dest.with_name(dest.name + ".partial")
         for attempt in range(3):
             try:
-                with open_url(base + name + "?download=true", timeout=120) as src, partial.open("wb") as out:
-                    while block := src.read(8 << 20):
-                        out.write(block)
-                        with lock:
-                            state["bytes"] += len(block)
+                url = base + name + "?download=true"
+                if name == "backbone/model.safetensors":
+                    # Pin both the known release size and final SHA; validate each
+                    # range so a proxy returning the full file cannot corrupt it.
+                    total = 2014377424
+                    chunk = 128 << 20
+                    with partial.open("wb") as out:
+                        out.truncate(total)
+                        def fetch_range(start):
+                            end = min(start + chunk, total) - 1
+                            with open_url(url, 120, {"Range": f"bytes={start}-{end}"}) as src:
+                                expected_range = f"bytes {start}-{end}/{total}"
+                                if src.status != 206 or src.headers.get("Content-Range") != expected_range:
+                                    raise ValueError(f"Invalid range response: {src.headers.get('Content-Range')}")
+                                offset = start
+                                while block := src.read(1 << 20):
+                                    if offset + len(block) > end + 1:
+                                        raise ValueError("Range response too long")
+                                    view = memoryview(block)
+                                    while view:
+                                        count = os.pwrite(out.fileno(), view, offset)
+                                        offset += count
+                                        view = view[count:]
+                                    with lock:
+                                        state["bytes"] += len(block)
+                                if offset != end + 1:
+                                    raise ValueError("Incomplete range response")
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ranges:
+                            list(ranges.map(fetch_range, range(0, total, chunk)))
+                else:
+                    with open_url(url, timeout=120) as src, partial.open("wb") as out:
+                        while block := src.read(8 << 20):
+                            out.write(block)
+                            with lock:
+                                state["bytes"] += len(block)
                 if digest(partial) != expected:
                     raise ValueError(f"SHA256 mismatch: {name}")
                 partial.replace(dest)
