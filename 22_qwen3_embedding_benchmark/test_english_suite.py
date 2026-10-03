@@ -4,10 +4,17 @@ from types import SimpleNamespace
 import tempfile
 import unittest
 from suite_protocol import ENGLISH, aggregate, format_embedding, validate_tasks
-from run_english_suite import dispatch, embedding_command, tokenize_rerank, save
+from run_english_suite import dispatch, embedding_command, tokenize_rerank, save, validate_device_snapshot
 
 
 class EnglishTests(unittest.TestCase):
+    def test_device_guard(self):
+        snapshot='| 0     910B2 | OK | 111 |\n| No running processes found in NPU 0 |'
+        validate_device_snapshot(snapshot,[0])
+        for value in (snapshot.replace('OK','Alarm'),snapshot.replace('NPU 0','NPU 7')):
+            with self.assertRaises(RuntimeError):
+                validate_device_snapshot(value,[0])
+
     def test_symmetric_prompts(self):
         for task, (_, _, instruction, symmetric) in ENGLISH.items():
             self.assertEqual(format_embedding('text',task,'query'),f'Instruct: {instruction}\nQuery:text')

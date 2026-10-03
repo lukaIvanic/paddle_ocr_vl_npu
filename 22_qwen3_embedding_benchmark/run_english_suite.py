@@ -14,10 +14,12 @@ import importlib.metadata
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 
 from protocol import MODEL_REVISION
@@ -74,10 +76,15 @@ def load_task(name, observer):
     if len(calls) != 3:
         raise ValueError(f'{name}: expected three pinned dataset reads, got {calls}')
     corpus, queries, qrels = task.corpus['test'], task.queries['test'], task.relevant_docs['test']
-    if set(queries) != set(qrels) or any(d not in corpus for ds in qrels.values() for d in ds):
-        raise ValueError('Dataset IDs/qrels coverage mismatch')
+    if set(queries) != set(qrels):
+        raise ValueError('Dataset query/qrels coverage mismatch')
+    # ArguAna's pinned corpus lacks five positively judged documents. Preserve
+    # those queries and judgments (as upstream does); NEVER inject documents or
+    # drop difficult queries to increase the score.
+    missing = [(q,d,s) for q,ds in qrels.items() for d,s in ds.items() if d not in corpus]
     return task, {'task': name, 'documents': len(corpus), 'queries': len(queries),
                   'rerank_pairs': len(queries)*100, 'dataset_reads': calls,
+                  'judgments_missing_from_corpus':len(missing), 'missing_judgment_examples':missing[:10],
                   'split': 'test', 'subset': 'default',
                   'query_instruction': ENGLISH[name][2],
                   'document_instruction': ENGLISH[name][2] if ENGLISH[name][3] else ''}
@@ -94,6 +101,14 @@ def embedding_command(port):
             '--no-enable-chunked-prefill', '--async-scheduling']
 
 
+def validate_device_snapshot(snapshot, devices):
+    for device in devices:
+        healthy = re.search(r'^\|\s*'+str(device)+r'\s+910B2\s*\|\s*OK\s*\|', snapshot, re.M)
+        free = f'No running processes found in NPU {device}' in snapshot
+        if not healthy or not free:
+            raise RuntimeError(f'NPU {device} is not confirmed healthy and idle; refusing to start')
+
+
 @contextmanager
 def servers(args, stage, observer):
     processes, logs, endpoints = [], [], []
@@ -101,6 +116,9 @@ def servers(args, stage, observer):
     root.mkdir(parents=True)
     observer.state = {'stage': stage, 'section': 'server_start', 'devices': args.devices}
     try:
+        snapshot = subprocess.check_output(['npu-smi','info'],text=True,timeout=120)
+        (root/'device_preflight.txt').write_text(snapshot)
+        validate_device_snapshot(snapshot,args.devices)
         for i, device in enumerate(args.devices):
             port = args.port + i
             with socket.socket() as probe:
@@ -227,7 +245,7 @@ class Encoder:
             if float(np.abs(np.linalg.norm(values, axis=1)-1).max()) > .005:
                 raise ValueError('Embeddings not unit normalized')
             if not hit:
-                partial = cache_path.with_suffix('.partial')
+                partial = cache_path.with_suffix(f'.partial.{threading.get_ident()}')
                 with partial.open('wb') as stream:
                     np.save(stream, values, allow_pickle=False)
                 partial.replace(cache_path)
