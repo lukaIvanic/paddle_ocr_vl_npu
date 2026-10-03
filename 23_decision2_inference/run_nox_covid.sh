@@ -11,12 +11,12 @@ trap 'status=$?; echo "$status" > "$run/exit_code.txt"' EXIT
 { git rev-parse HEAD; hostname; printf 'Physical device 7; %s\n' "$0"; } >"$run/command.txt"
 printf 'Phase: await verified model download and pinned dataset preparation\n'
 for attempt in {1..180}; do
-    if [[ -f tmp/23_decision2_inference/nox_download_243ac689/exit_code.txt && -f "$prepared/manifest.json" ]]; then
+    if [[ -f tmp/23_decision2_inference/nox_download_ranges/exit_code.txt && -f "$prepared/manifest.json" ]]; then
         break
     fi
     sleep 5
 done
-[[ $(cat tmp/23_decision2_inference/nox_download_243ac689/exit_code.txt) == 0 ]]
+[[ $(cat tmp/23_decision2_inference/nox_download_ranges/exit_code.txt) == 0 ]]
 [[ -f "$prepared/smoke_cases.json" ]]
 set +eu
 source npu-setup

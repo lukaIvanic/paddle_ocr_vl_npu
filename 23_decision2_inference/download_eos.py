@@ -81,28 +81,38 @@ def main():
                         if probe.status != 206 or not content_range.startswith("bytes 0-0/"):
                             raise ValueError("Missing valid range length")
                         total = int(content_range.split("/")[-1])
-                    chunk = 128 << 20
+                    chunk = 32 << 20
                     with partial.open("wb") as out:
                         out.truncate(total)
                         def fetch_range(start):
                             end = min(start + chunk, total) - 1
-                            with open_url(url, 120, {"Range": f"bytes={start}-{end}"}) as src:
-                                expected_range = f"bytes {start}-{end}/{total}"
-                                if src.status != 206 or src.headers.get("Content-Range") != expected_range:
-                                    raise ValueError(f"Invalid range response: {src.headers.get('Content-Range')}")
-                                offset = start
-                                while block := src.read(1 << 20):
-                                    if offset + len(block) > end + 1:
-                                        raise ValueError("Range response too long")
-                                    view = memoryview(block)
-                                    while view:
-                                        count = os.pwrite(out.fileno(), view, offset)
-                                        offset += count
-                                        view = view[count:]
-                                    with lock:
-                                        state["bytes"] += len(block)
-                                if offset != end + 1:
-                                    raise ValueError("Incomplete range response")
+                            for retry in range(5):
+                                try:
+                                    # Range in URL prevents intermediaries from
+                                    # confusing responses for different ranges.
+                                    with open_url(url + f'&range_start={start}', 45, {"Range": f"bytes={start}-{end}"}) as src:
+                                        expected_range = f"bytes {start}-{end}/{total}"
+                                        if src.status != 206 or src.headers.get("Content-Range") != expected_range:
+                                            raise ValueError(f"Invalid range response: {src.headers.get('Content-Range')}")
+                                        offset = start
+                                        while block := src.read(1 << 20):
+                                            if offset + len(block) > end + 1:
+                                                raise ValueError("Range response too long")
+                                            view = memoryview(block)
+                                            while view:
+                                                count = os.pwrite(out.fileno(), view, offset)
+                                                offset += count
+                                                view = view[count:]
+                                            with lock:
+                                                state["bytes"] += len(block)
+                                        if offset != end + 1:
+                                            raise ValueError("Incomplete range response")
+                                    return
+                                except Exception as exc:
+                                    print(json.dumps({'event':'range_retry', 'file':name, 'start':start,
+                                                      'attempt':retry+1, 'error':repr(exc)}), flush=True)
+                                    if retry == 4:
+                                        raise
                         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ranges:
                             list(ranges.map(fetch_range, range(0, total, chunk)))
                 else:
@@ -119,7 +129,8 @@ def main():
                 print(json.dumps({"event": "file_verified", "file": name,
                                   "bytes": dest.stat().st_size}), flush=True)
                 return
-            except Exception:
+            except Exception as exc:
+                print(json.dumps({'event':'file_retry', 'file':name, 'attempt':attempt+1, 'error':repr(exc)}), flush=True)
                 if attempt == 2:
                     raise
 
