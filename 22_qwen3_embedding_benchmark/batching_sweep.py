@@ -26,7 +26,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--subset', type=Path, required=True)
-    parser.add_argument('--experiment', choices=['batching', 'graph'], default='batching')
+    parser.add_argument('--experiment', choices=['batching', 'graph', 'async'], default='batching')
     args = parser.parse_args()
     if args.output.exists():
         parser.error('Output must be fresh')
@@ -179,11 +179,14 @@ def main():
         cases = [('s32_t16k', 32, 16384, False), ('s64_t16k', 64, 16384, False),
                  ('s128_t16k', 128, 16384, False), ('s128_t32k', 128, 32768, False),
                  ('s32_t16k_recheck', 32, 16384, False)]
-        if args.experiment == 'graph':
+        if args.experiment in ('graph', 'async'):
             default = {'batch': 128, 'concurrency': 2, 'format': 'base64'}
             default_name = 'base64_b128_c2'
             cases = [('eager_before', 128, 32768, False),
                      ('piecewise', 128, 32768, True), ('eager_after', 128, 32768, False)]
+            if args.experiment == 'async':
+                cases = [('sync_before', 128, 32768, False),
+                         ('async_eager', 128, 32768, False), ('sync_after', 128, 32768, False)]
         for case, seqs, budget, graph in cases:
             observer.state = {'case': case, 'section': 'server_start'}
             case_dir = args.output / case
@@ -205,6 +208,8 @@ def main():
                 command += ['--enforce-eager']
             if args.experiment == 'graph':
                 command += ['--cudagraph-metrics']
+            if args.experiment == 'async':
+                command += ['--async-scheduling' if case == 'async_eager' else '--no-async-scheduling']
             (case_dir / 'command.json').write_text(json.dumps(command, indent=2) + '\n')
             server_log = (case_dir / 'server.log').open('w')
             server = subprocess.Popen(command, stdout=server_log, stderr=subprocess.STDOUT, start_new_session=True)
