@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import signal
 import shlex
+import shutil
 import socket
 import subprocess
 import sys
@@ -46,6 +47,30 @@ def batches(rows, size):
             batch = []
     if batch:
         yield batch
+
+
+def restore_journal(path):
+    """Read flushed per-pair results; fail closed on corruption or duplicates."""
+    predictions, records = {}, []
+    with path.open() as stream:
+        for line in stream:
+            row = json.loads(line)
+            pairs = row.pop('pairs_scored')
+            if len(pairs) != row['pairs'] or len(row['lengths']) != row['pairs']:
+                raise ValueError('Incomplete journal record')
+            if sum(row['lengths']) != row['tokens']:
+                raise ValueError('Journal token count mismatch')
+            for qid, did, score_value in pairs:
+                by_doc = predictions.setdefault(qid, {})
+                if did in by_doc or not 0 <= score_value <= 1:
+                    raise ValueError('Duplicate/invalid journal score')
+                by_doc[did] = score_value
+            records.append(row)
+    return predictions, records
+
+
+def unscored_rows(rows, predictions):
+    return (row for row in rows if row['did'] not in predictions.get(row['qid'], {}))
 
 
 def metric_summary(predictions, baseline, qrels, ignore_identical_ids):
@@ -204,9 +229,43 @@ def evaluate(args, tok, endpoints, observer, name):
          'dataset_revision': TASKS[name][0], 'qrels_revision': TASKS[name][1],
          'instruction': TASKS[name][2], 'queries': len(qrels), 'pairs': len(qrels)*100,
          'ignore_identical_ids': task.ignore_identical_ids})
-    iterator = iter(batches(candidate_rows(baseline, task.queries['dev'], task.corpus['dev'], corpus_to_str), 128))
     predictions, records = {}, []
+    resume_folder = args.resume_partial_run / name if args.resume_partial_run else None
+    historical_wall = None
+    if resume_folder:
+        old_manifest = json.loads((resume_folder/'manifest.json').read_text())
+        if old_manifest != json.loads((folder/'manifest.json').read_text()):
+            raise ValueError('Resumed task manifest differs from original')
+        source = resume_folder/'requests.jsonl'
+        predictions, records = restore_journal(source)
+        for qid, docs in predictions.items():
+            if qid not in baseline or not set(docs).issubset(baseline[qid]):
+                raise ValueError('Resumed scores contain unknown candidate pairs')
+        restored_pairs = sum(r['pairs'] for r in records)
+        # The original observer timestamps contain the scoring window, including
+        # any earlier contention. Do not pass off a 6->5 NPU run as pure 5-NPU speed.
+        old_log = args.resume_partial_run.parent/'run.log'
+        if old_log.is_file():
+            for line in old_log.open():
+                try:
+                    event = json.loads(line)
+                except ValueError:
+                    continue
+                if event.get('event') == 'batch_finished' and event.get('task') == name and event.get('completed_pairs') == restored_pairs:
+                    historical_wall = event.get('total_scoring_elapsed_s', event.get('elapsed_s'))
+        shutil.copyfile(source, folder/'requests.jsonl')
+        save(folder/'resume.json', {'source': str(source), 'sha256': digest(source),
+             'restored_pairs': restored_pairs, 'historical_scoring_wall_s': historical_wall,
+             'old_devices': json.loads((args.resume_partial_run/'manifest.json').read_text())['devices'],
+             'new_devices': args.devices})
+        emit('journal_restored', task=name, pairs=restored_pairs, remaining=len(qrels)*100-restored_pairs)
+    iterator = iter(batches(unscored_rows(candidate_rows(baseline, task.queries['dev'], task.corpus['dev'], corpus_to_str), predictions), 128))
     completed, tokens, truncated, finished_queries = 0, 0, 0, 0
+    completed = sum(r['pairs'] for r in records)
+    tokens = sum(r['tokens'] for r in records)
+    truncated = sum(r['truncated'] for r in records)
+    finished_queries = sum(len(v)==100 for v in predictions.values())
+    initial_completed, initial_tokens = completed, tokens
     scoring_start = time.monotonic()
     state = {'section': 'scoring', 'task': name, 'total_pairs': len(qrels)*100,
              'completed_pairs': 0, 'completed_queries': 0, 'npu_count': len(endpoints)}
@@ -228,7 +287,7 @@ def evaluate(args, tok, endpoints, observer, name):
                 'http_s': time.monotonic()-start}
         return pool.submit(one)
 
-    with (folder / 'requests.jsonl').open('w') as log, ThreadPoolExecutor(max_workers=2*len(endpoints)) as pool:
+    with (folder / 'requests.jsonl').open('a') as log, ThreadPoolExecutor(max_workers=2*len(endpoints)) as pool:
         pending = {}
         for endpoint in endpoints:
             for _ in range(2):
@@ -257,8 +316,10 @@ def evaluate(args, tok, endpoints, observer, name):
                 truncated += record['truncated']
                 elapsed = time.monotonic()-scoring_start
                 state.update(completed_pairs=completed, completed_queries=finished_queries,
-                             elapsed_s=elapsed, input_tok_s=tokens/elapsed,
-                             eta_s=(state['total_pairs']-completed)*elapsed/completed)
+                             elapsed_s=elapsed, restored_pairs=initial_completed,
+                             total_scoring_elapsed_s=(historical_wall or 0)+elapsed if not initial_completed or historical_wall is not None else None,
+                             input_tok_s=(tokens-initial_tokens)/elapsed,
+                             eta_s=(state['total_pairs']-completed)*elapsed/(completed-initial_completed))
                 emit('batch_finished', **state, batch_http_s=record['http_s'])
                 replacement = submit(pool, endpoint)
                 if replacement is not None:
@@ -269,11 +330,17 @@ def evaluate(args, tok, endpoints, observer, name):
     save(folder / 'predictions.json', predictions)
     save(folder / 'per_query_metrics.json', per_query)
     lengths = [x for r in records for x in r['lengths']]
+    combined_wall = scoring_wall if not resume_folder else (historical_wall+scoring_wall if historical_wall is not None else None)
     row = {'task': name, 'queries': len(qrels), 'pairs': completed, 'tokens': tokens,
         'truncated_pairs': truncated, 'max_input_length': max(lengths),
-        'scoring_wall_s': scoring_wall, 'task_wall_s': time.monotonic()-task_start,
-        'input_tok_s': tokens/scoring_wall, 'pairs_s': completed/scoring_wall,
-        'query_s': len(qrels)/scoring_wall, 'npu_count': len(endpoints), 'metrics': metrics,
+        'scoring_wall_s': combined_wall, 'task_wall_s': time.monotonic()-task_start,
+        'input_tok_s': tokens/combined_wall if combined_wall else None,
+        'pairs_s': completed/combined_wall if combined_wall else None,
+        'query_s': len(qrels)/combined_wall if combined_wall else None,
+        'npu_count': None if resume_folder else len(endpoints), 'metrics': metrics,
+        'resumed_phase': {'npu_count': len(endpoints), 'restored_pairs': initial_completed,
+                          'scoring_wall_s': scoring_wall, 'pairs': completed-initial_completed,
+                          'input_tok_s': (tokens-initial_tokens)/scoring_wall} if resume_folder else None,
         'ndcg_change_pp': 100*(metrics['reranker']['ndcg_cut_10']-metrics['embedding']['ndcg_cut_10']),
         'request_latency_s': {k: float(np.percentile([r['http_s'] for r in records], p))
                               for k,p in [('p50',50),('p99',99),('max',100)]}}
@@ -292,6 +359,8 @@ def main():
     p.add_argument('--prepared', type=Path, required=True)
     p.add_argument('--completed-run', type=Path, action='append', default=[],
                    help='Include previously completed disjoint tasks in the final suite summary')
+    p.add_argument('--resume-partial-run', type=Path,
+                   help='Stopped evaluation directory: recover requested task journals and retain its completed tasks')
     p.add_argument('--port', type=int, default=18325)
     args = p.parse_args()
     if len(set(args.devices)) != len(args.devices) or len(set(args.tasks)) != len(args.tasks):
@@ -326,6 +395,13 @@ def main():
                              ['config.json', 'tokenizer_config.json', 'model.safetensors.index.json']}}
         save(args.output / 'manifest.json', manifest)
         prior = []
+        if args.resume_partial_run:
+            previous_manifest = json.loads((args.resume_partial_run/'manifest.json').read_text())
+            for key in ['model', 'chip', 'dtype', 'max_length', 'prefix', 'suffix', 'eager', 'prompt_source', 'scope', 'model_files']:
+                assert previous_manifest[key] == manifest[key], f'Resume contract differs: {key}'
+            prior.extend(json.loads((args.resume_partial_run/'results.json').read_text()))
+            manifest['resume_partial_run'] = str(args.resume_partial_run)
+            save(args.output/'manifest.json', manifest)
         for path in args.completed_run:
             assert json.loads((path/'completion.json').read_text())['status'] == 'complete'
             previous_manifest = json.loads((path/'manifest.json').read_text())

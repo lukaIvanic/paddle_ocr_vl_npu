@@ -41,7 +41,9 @@ def main():
     p.add_argument("--reranker-url", default="http://127.0.0.1:18330")
     p.add_argument("--pairs-per-band", type=int, default=16)
     p.add_argument("--repeats", type=int, default=2)
-    p.add_argument("--contention", choices=["T2_active", "T2_paused"], required=True)
+    p.add_argument("--contention", choices=["T2_active", "dedicated_NPU7"], required=True)
+    p.add_argument("--models", nargs='+', choices=["eos","reranker"], default=["eos"],
+                   help="Eos-only by default; reuse saved reranker speed measurements")
     args = p.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     def save(name, value):
@@ -116,7 +118,7 @@ def main():
                 # Full matched group warmup at the tested concurrency; record
                 # separately so first-use kernel compilation cannot inflate speed.
                 for repeat in range(-1,args.repeats):
-                    order = ("eos","reranker") if repeat % 2 else ("reranker","eos")
+                    order = args.models if repeat % 2 else list(reversed(args.models))
                     for model in order:
                         state.update(phase="warmup" if repeat<0 else "measured",model=model,band=band,concurrency=concurrency,repeat=repeat,completed=0)
                         context = dict(state)

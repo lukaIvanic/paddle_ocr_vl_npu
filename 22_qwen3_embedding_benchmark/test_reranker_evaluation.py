@@ -1,9 +1,30 @@
 import unittest
 import importlib.util
-from run_reranker_evaluation import candidate_rows, batches, command, metric_summary, suite_summary
+import json
+from pathlib import Path
+import tempfile
+from run_reranker_evaluation import candidate_rows, batches, command, metric_summary, suite_summary, restore_journal, unscored_rows
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_resume_preserves_scores_and_partial_queries(self):
+        rows = [{'qid':'q1','did':'d1'}, {'qid':'q1','did':'d2'}, {'qid':'q2','did':'d1'}]
+        entry = {'pairs':2, 'tokens':30, 'lengths':[10,20], 'truncated':0,
+                 'pairs_scored':[['q2','d1',.25], ['q1','d2',.75]]}
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder)/'journal.jsonl'
+            path.write_text(json.dumps(entry)+'\n')
+            scores, records = restore_journal(path)
+            self.assertEqual(scores, {'q1':{'d2':.75}, 'q2':{'d1':.25}})
+            self.assertEqual(list(unscored_rows(iter(rows), scores)), [rows[0]])
+            self.assertEqual(sum(r['tokens'] for r in records), 30)
+            path.write_text((json.dumps(entry)+'\n')*2)
+            with self.assertRaises(ValueError):
+                restore_journal(path)
+            path.write_text(json.dumps({**entry,'tokens':31})+'\n')
+            with self.assertRaises(ValueError):
+                restore_journal(path)
+
     def test_macro_summary_is_task_weighted_and_partial_is_labeled(self):
         rows = [{'task': name, 'queries': n, 'pairs': n*100, 'tokens': n*1000,
                  'metrics': {'reranker': {'ndcg_cut_10': score}, 'embedding': {'ndcg_cut_10': .5}}}
