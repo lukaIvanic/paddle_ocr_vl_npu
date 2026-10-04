@@ -1,0 +1,227 @@
+{
+  "status": "passed",
+  "repository": "KaLM-Embedding/KaLM-Reranker-V1-Nano-R2",
+  "revision": "32b242bb7fd7ad6fd404154c09560d249ffe017f",
+  "hostname": "liteserver-c001-4",
+  "command": [
+    "24_kalm_reranker/run_smoke.py",
+    "--model",
+    "/workspace/models/KaLM-Reranker-V1-Nano-R2",
+    "--dtype",
+    "bf16",
+    "--output",
+    "tmp/24_kalm_reranker/nano_r2_bf16_22a2ec50/result.json"
+  ],
+  "physical_device": "6",
+  "git_commit": "22a2ec50d9feb26a8962594a6d5233d0bfa84093",
+  "rows": [
+    {
+      "document": 0,
+      "query": 0,
+      "document_text": "The capital of China is Beijing. Beijing is in northern China.",
+      "query_text": "What is the capital of China?",
+      "document_tokens": 16,
+      "query_prompt_tokens": 65,
+      "cached_shape": [
+        1,
+        4,
+        640
+      ],
+      "encoder_s": 0.4909694299567491,
+      "full_s": 0.15030227997340262,
+      "cached_scoring_s": 0.06540646008215845,
+      "full_score": 0.982557475566864,
+      "cached_score": 0.982557475566864,
+      "max_logit_delta": 0,
+      "cache_parity": true
+    },
+    {
+      "document": 0,
+      "query": 1,
+      "document_text": "The capital of China is Beijing. Beijing is in northern China.",
+      "query_text": "Where is Beijing located?",
+      "document_tokens": 16,
+      "query_prompt_tokens": 63,
+      "cached_shape": [
+        1,
+        4,
+        640
+      ],
+      "encoder_s": 0.4909694299567491,
+      "full_s": 0.13076134002767503,
+      "cached_scoring_s": 0.0648075498174876,
+      "full_score": 0.8740772008895874,
+      "cached_score": 0.8740772008895874,
+      "max_logit_delta": 0,
+      "cache_parity": true
+    },
+    {
+      "document": 0,
+      "query": 2,
+      "document_text": "The capital of China is Beijing. Beijing is in northern China.",
+      "query_text": "植物通过什么过程利用阳光制造糖？",
+      "document_tokens": 16,
+      "query_prompt_tokens": 67,
+      "cached_shape": [
+        1,
+        4,
+        640
+      ],
+      "encoder_s": 0.4909694299567491,
+      "full_s": 0.13011354999616742,
+      "cached_scoring_s": 0.06546172988601029,
+      "full_score": 0.00017952796770259738,
+      "cached_score": 0.00017952796770259738,
+      "max_logit_delta": 0,
+      "cache_parity": true
+    },
+    {
+      "document": 0,
+      "query": 3,
+      "document_text": "The capital of China is Beijing. Beijing is in northern China.",
+      "query_text": "What process lets plants use sunlight to make sugar?",
+      "document_tokens": 16,
+      "query_prompt_tokens": 68,
+      "cached_shape": [
+        1,
+        4,
+        640
+      ],
+      "encoder_s": 0.4909694299567491,
+      "full_s": 0.12960206996649504,
+      "cached_scoring_s": 0.0641652699559927,
+      "full_score": 0.0002780309587251395,
+      "cached_score": 0.0002780309587251395,
+      "max_logit_delta": 0,
+      "cache_parity": true
+    },
+    {
+      "document": 1,
+      "query": 0,
+      "document_text": "植物通过光合作用利用阳光，将水和二氧化碳转化为糖，并释放氧气。",
+      "query_text": "What is the capital of China?",
+      "document_tokens": 24,
+      "query_prompt_tokens": 65,
+      "cached_shape": [
+        1,
+        6,
+        640
+      ],
+      "encoder_s": 0.0673429099842906,
+      "full_s": 0.12561463005840778,
+      "cached_scoring_s": 0.06388230016455054,
+      "full_score": 0.00006605214002775028,
+      "cached_score": 0.00006605214002775028,
+      "max_logit_delta": 0,
+      "cache_parity": true
+    },
+    {
+      "document": 1,
+      "query": 1,
+      "document_text": "植物通过光合作用利用阳光，将水和二氧化碳转化为糖，并释放氧气。",
+      "query_text": "Where is Beijing located?",
+      "document_tokens": 24,
+      "query_prompt_tokens": 63,
+      "cached_shape": [
+        1,
+        6,
+        640
+      ],
+      "encoder_s": 0.0673429099842906,
+      "full_s": 0.12421182007528841,
+      "cached_scoring_s": 0.06512834993191063,
+      "full_score": 0.00003535625000949949,
+      "cached_score": 0.00003535625000949949,
+      "max_logit_delta": 0,
+      "cache_parity": true
+    },
+    {
+      "document": 1,
+      "query": 2,
+      "document_text": "植物通过光合作用利用阳光，将水和二氧化碳转化为糖，并释放氧气。",
+      "query_text": "植物通过什么过程利用阳光制造糖？",
+      "document_tokens": 24,
+      "query_prompt_tokens": 67,
+      "cached_shape": [
+        1,
+        6,
+        640
+      ],
+      "encoder_s": 0.0673429099842906,
+      "full_s": 0.12444441998377442,
+      "cached_scoring_s": 0.06389920995570719,
+      "full_score": 0.9973477721214294,
+      "cached_score": 0.9973477721214294,
+      "max_logit_delta": 0,
+      "cache_parity": true
+    },
+    {
+      "document": 1,
+      "query": 3,
+      "document_text": "植物通过光合作用利用阳光，将水和二氧化碳转化为糖，并释放氧气。",
+      "query_text": "What process lets plants use sunlight to make sugar?",
+      "document_tokens": 24,
+      "query_prompt_tokens": 68,
+      "cached_shape": [
+        1,
+        6,
+        640
+      ],
+      "encoder_s": 0.0673429099842906,
+      "full_s": 0.12417439999990165,
+      "cached_scoring_s": 0.06432487000711262,
+      "full_score": 0.8519527912139893,
+      "cached_score": 0.8519527912139893,
+      "max_logit_delta": 0,
+      "cache_parity": true
+    }
+  ],
+  "timing_scope": "synchronized smoke, includes cold calls; not throughput benchmark",
+  "versions": {
+    "torch": "2.10.0+cpu",
+    "torch-npu": "2.10.0",
+    "transformers": "5.17.0"
+  },
+  "device_name": "Ascend910B2",
+  "initial_memory": {
+    "free": 65070460928,
+    "total": 65452113920
+  },
+  "weights_sha256": "c1d8ed4eee064e9c594e8332896c7ebe3104f892b6ff3f321b443b8868ed01b9",
+  "load_s": 6.369451930047944,
+  "parameters": 786029296,
+  "parameter_dtypes": [
+    "torch.bfloat16"
+  ],
+  "answer_token_ids": [
+    [
+      4443
+    ],
+    [
+      1904
+    ]
+  ],
+  "expected_ranking": true,
+  "activation_samples": {
+    "model.encoder.text_model.layers.0.self_attn.q_proj": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        1,
+        16,
+        1024
+      ]
+    },
+    "model.decoder.layers.0.self_attn.q_proj": {
+      "dtype": "torch.bfloat16",
+      "device": "npu:0",
+      "shape": [
+        1,
+        65,
+        1024
+      ]
+    }
+  },
+  "cache_parity": true,
+  "peak_allocated_bytes": 1618985984
+}

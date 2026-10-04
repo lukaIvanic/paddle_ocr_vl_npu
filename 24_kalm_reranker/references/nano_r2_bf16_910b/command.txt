@@ -1,0 +1,85 @@
+22a2ec50d9feb26a8962594a6d5233d0bfa84093
+liteserver-c001-4
+Physical NPU: 6
+Command: RUN_ROOT=tmp/24_kalm_reranker/nano_r2_bf16_22a2ec50 bash 24_kalm_reranker/run_910b.sh
+Name: torch
+Version: 2.10.0+cpu
+Summary: Tensors and Dynamic neural networks in Python with strong GPU acceleration
+Home-page: https://pytorch.org
+Author: 
+Author-email: PyTorch Team <packages@pytorch.org>
+License: BSD-3-Clause
+Location: /usr/local/python3.12.13/lib/python3.12/site-packages
+Requires: filelock, fsspec, jinja2, networkx, setuptools, sympy, typing-extensions
+Required-by: compressed-tensors, torch_npu, torchaudio, torchvision, vllm_ascend, xgrammar
+---
+Name: torch_npu
+Version: 2.10.0
+Summary: NPU bridge for PyTorch
+Home-page: https://gitcode.com/ascend/pytorch
+Author: 
+Author-email: 
+License: BSD License
+Location: /usr/local/python3.12.13/lib/python3.12/site-packages
+Requires: torch
+Required-by: vllm_ascend
+---
+Name: transformers
+Version: 5.17.0
+Summary: Transformers: the model-definition framework for state-of-the-art machine learning models in text, vision, audio, and multimodal models, for both inference and training.
+Home-page: https://github.com/huggingface/transformers
+Author: The Hugging Face team (past and future) with the help of all our contributors (https://github.com/huggingface/transformers/graphs/contributors)
+Author-email: transformers@huggingface.co
+License: Apache 2.0 License
+Location: /workspace/venvs/decision2_eval_py312/lib/python3.12/site-packages
+Requires: huggingface-hub, numpy, packaging, pyyaml, regex, safetensors, tokenizers, tqdm, typer
+Required-by: compressed-tensors, vllm, vllm_ascend, xgrammar
++------------------------------------------------------------------------------------------------+
+| npu-smi 25.0.rc1.1               Version: 25.0.rc1.1                                           |
++---------------------------+---------------+----------------------------------------------------+
+| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|
+| Chip                      | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |
++===========================+===============+====================================================+
+| 0     910B2               | OK            | 115.9       47                0    / 0             |
+| 0                         | 0000:C1:00.0  | 0           0    / 0          3428 / 65536         |
++===========================+===============+====================================================+
+| 1     910B2               | OK            | 110.9       48                0    / 0             |
+| 0                         | 0000:01:00.0  | 0           0    / 0          3426 / 65536         |
++===========================+===============+====================================================+
+| 2     910B2               | OK            | 112.1       48                0    / 0             |
+| 0                         | 0000:C2:00.0  | 0           0    / 0          3427 / 65536         |
++===========================+===============+====================================================+
+| 3     910B2               | OK            | 110.1       48                0    / 0             |
+| 0                         | 0000:02:00.0  | 0           0    / 0          3427 / 65536         |
++===========================+===============+====================================================+
+| 4     910B2               | Alarm         | 110.6       48                0    / 0             |
+| 0                         | 0000:81:00.0  | 0           0    / 0          3433 / 65536         |
++===========================+===============+====================================================+
+| 5     910B2               | Alarm         | 109.5       46                0    / 0             |
+| 0                         | 0000:41:00.0  | 0           0    / 0          3432 / 65536         |
++===========================+===============+====================================================+
+| 6     910B2               | OK            | 110.7       48                0    / 0             |
+| 0                         | 0000:82:00.0  | 0           0    / 0          3427 / 65536         |
++===========================+===============+====================================================+
+| 7     910B2               | OK            | 111.2       49                0    / 0             |
+| 0                         | 0000:42:00.0  | 0           0    / 0          27717/ 65536         |
++===========================+===============+====================================================+
++---------------------------+---------------+----------------------------------------------------+
+| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |
++===========================+===============+====================================================+
+| No running processes found in NPU 0                                                            |
++===========================+===============+====================================================+
+| No running processes found in NPU 1                                                            |
++===========================+===============+====================================================+
+| No running processes found in NPU 2                                                            |
++===========================+===============+====================================================+
+| No running processes found in NPU 3                                                            |
++===========================+===============+====================================================+
+| No running processes found in NPU 4                                                            |
++===========================+===============+====================================================+
+| No running processes found in NPU 5                                                            |
++===========================+===============+====================================================+
+| No running processes found in NPU 6                                                            |
++===========================+===============+====================================================+
+| 7       0                 | 2116273       |                          | 24345                   |
++===========================+===============+====================================================+
