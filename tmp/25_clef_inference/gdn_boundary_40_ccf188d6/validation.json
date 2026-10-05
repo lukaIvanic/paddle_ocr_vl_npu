@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "meaning": "evidence consistency checks passed; observed one ranking swap, not an assertion of negligible score drift",
+  "pairs": 40,
+  "model_passes": 160,
+  "aligned_exact_pairs": 40,
+  "nonzero_aligned_cuts": 35,
+  "repeat_exact_pairs": 40,
+  "unchanged_rankings": 9,
+  "changed_rankings": [
+    "MedicalRetrieval/90"
+  ],
+  "fixture_sha256": "c45e3da7cf069c6407a948494d3b1e18a20f9445c751023845eba83240c2e9cf",
+  "result_sha256": "dede634ad7923a4f469c4975a45941ae42be5d2afe937b165cbdec4189234306",
+  "complete_document_cache_reuse_tested": false
+}

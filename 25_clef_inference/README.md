@@ -413,3 +413,51 @@ The fixture SHA-256 is
 `c45e3da7cf069c6407a948494d3b1e18a20f9445c751023845eba83240c2e9cf`.
 `prepare-lengths` on `run_reranking_smoke.py` exposes the preparation command;
 its full saved command names all four original benchmark run directories.
+
+### Forty-pair Gated DeltaNet boundary test (910B2)
+
+Tested the frozen fixture at `ccf188d6` on physical NPU 3 in the CANN 9.0.1
+runtime, with BF16 model weights and FP32 recurrent state. All 40 pairs completed
+without truncation, including the 3,203-token input. Transformers imports were
+blocked. The existing HTTP service remained ready on its separate NPU.
+
+The probe derives the owned recurrent scan with only initial/final state exposed.
+Every pair runs four times: original full execution; all 24 recurrent layers
+split at the document boundary with unchanged FP32 state carried into the
+question; a split at the preceding 64-token boundary; and original execution
+again. Projection, convolution, full-attention and joint-head calculations keep
+their original full-sequence shapes. This isolates recurrent block regrouping;
+**it does not test complete KV/conv/hidden-state cache reuse**.
+
+| Comparison against original execution | Mean absolute probability change | Median | P90 | P95 | Maximum | Exact final logits |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Document-boundary split | 0.00251057 | 0.00047146 | 0.00525039 | 0.01069033 | 0.03512251 | 3/40 |
+| Aligned split | 0 | 0 | 0 | 0 | 0 | 40/40 |
+| Original execution repeated | 0 | 0 | 0 | 0 | 0 | 40/40 |
+
+Probability changes above are on the 0–1 scale; the maximum is **3.512 percentage
+points**. Maximum absolute final-logit change was 0.0859375. Aligned controls
+include 35 nonzero splits and five short prefixes whose aligned cut is zero.
+
+Nine of ten four-document rankings were unchanged. The first-ranked document
+was unchanged in all ten. MedicalRetrieval query `90` swapped second and third:
+
+| Document | Original P(true) | Document-boundary P(true) | Original → split rank |
+| --- | ---: | ---: | --- |
+| `48284` | 0.52926338 | 0.53995371 | 1 → 1 |
+| `9814` | 0.47609246 | 0.47025004 | 2 → 3 |
+| `80953` | 0.47073662 | 0.50585914 | 3 → 2 |
+| `26402` | 0.16079244 | 0.15765491 | 4 → 4 |
+
+Both swapped candidates have relevance label zero, so this swap leaves the
+sample's NDCG unchanged. This small length-selected sample is not an accuracy
+estimate. It demonstrates that boundary rounding can change close rankings;
+the score drift is not uniformly negligible. The largest change came from the
+43-token document `80953` (79-token prefix, 217-token complete input), rather
+than the longest document. The 3,203-token input changed by 0.00135126.
+
+The probe is `tmp/25_clef_inference/gdn_boundary_40/probe.py`. Exact command,
+exit code, all 160 measured passes, raw logits/probabilities, ranking comparisons
+and evidence checks are in `tmp/25_clef_inference/gdn_boundary_40_ccf188d6/`.
+Model source was unchanged. No numerical tolerance was selected after the run
+to turn these observations into an accuracy pass/fail result.
