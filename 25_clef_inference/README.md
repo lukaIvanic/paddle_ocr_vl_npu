@@ -216,3 +216,50 @@ baseline. The local runtime never imports either upstream Python file. Weights
 and tokenizer remain in the separately downloaded release. Historical baseline
 verification is recorded in the preserved references; current runners do not
 repeat those file-hash checks.
+
+## GPQA Diamond / Decision Index 0.2.1
+
+`run_benchmark.py` runs labeled text-choice JSONL rows using the existing local
+model and encoder. `--backend transformers` selects the official implementation
+as an oracle; `--reference` requires exact input hashes, logits, probabilities and
+choices for every request in that reference result. `--limit` explicitly labels
+partial runs. Gold labels never enter either model. One warmup is excluded from
+scores and timing summaries; failures abort rather than silently dropping cases.
+Results contain IDs, input hashes and decisions, not question text or tokens.
+
+Prepare data outside Git using the public
+[Decision Index kit](https://github.com/apolinario/decision-index) at commit
+`87d4650b42b377c0291a89c1f1a879f9b31082bf`:
+
+- Download its pinned `data/sources/gpqa/dataset.zip` (SHA256
+  `461ae7329f15a3e35f8184d2dac24b990f34fdf12f366ca4062d8e6638cd08dc`).
+- Call `decision_index.suite.build.normalize_text.gpqa(Layout(work_directory))`.
+  It preserves the question verbatim in `instructions`, uses an empty state,
+  and shuffles the four options with `20260918:GPQA:<source-index>`.
+- Apply `hub/excluded-questions.json`: exclude IDs `GPQA-Diamond:test:89` and
+  `GPQA-Diamond:test:126` (duplicate options), leaving 196 of 198 source cases.
+  Keep source order. Write each retained row with
+  `json.dumps(row, ensure_ascii=True, separators=(",", ":")) + "\n"`.
+  Our resulting rows file SHA256 is
+  `c314db0fc1129239233eecbd453c50e3be296d462ba9948ca3ffd22909c86eb9`.
+
+After the usual 910B environment setup, run the official sample and then the
+complete local evaluation (choose fresh output paths):
+
+```bash
+/workspace/venvs/clef_transformers_py312/bin/python -u \
+  25_clef_inference/run_benchmark.py --model /workspace/models/clef-flash \
+  --rows /workspace/datasets/clef_gpqa_20261005/GPQA-Diamond-0.2.1.jsonl \
+  --backend transformers --limit 8 \
+  --output tmp/25_clef_inference/gpqa_reference/result.json
+/workspace/venvs/clef_transformers_py312/bin/python -u \
+  25_clef_inference/run_benchmark.py --model /workspace/models/clef-flash \
+  --rows /workspace/datasets/clef_gpqa_20261005/GPQA-Diamond-0.2.1.jsonl \
+  --reference tmp/25_clef_inference/gpqa_reference/result.json \
+  --output tmp/25_clef_inference/gpqa_local/result.json
+```
+
+The comparison target is **51.0% raw accuracy**, reported in the
+[Clef-flash model card](https://huggingface.co/Cloudflare/clef-flash#decision-index).
+This is the public Decision Index adapter; Cloudflare's exact internal run
+manifest and per-case predictions have not been independently verified.
