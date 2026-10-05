@@ -1,8 +1,8 @@
 # Clef inference: Transformers baseline first
 
 Scope: Cloudflare/clef-flash (9B), text-only, BF16, one Ascend 910B. This
-experiment does not target 310P. The local Transformers-free replacement and
-optimizations are later stages, not implemented here.
+experiment does not target 310P. The local Transformers-free baseline is described below. Optimization remains
+out of scope.
 
 The official backbone and joint decision head are loaded unchanged using the
 release's `load_release_model`; all parameters remain BF16 on NPU. Explicit
@@ -102,6 +102,48 @@ The container SSH listener was unavailable, so this run used the existing
 over a multiplexed gateway SSH connection. The existing `/workspace` mount,
 source-through-Git lane, and NPU setup were preserved; no services were restarted.
 
-Next stage: a simple local Transformers-free implementation, using these saved
-inputs, logits and answers as the reference. No local replacement or optimization
-has been validated by this smoke.
+## Local Transformers-free baseline
+
+The local runtime owns the complete text forward and loads the same pinned
+release weights directly. It uses PyTorch, safetensors and tokenizers; it never
+loads release Python or imports Transformers. Vision weights are omitted. The
+untied `lm_head.weight` is retained because the decision head uses its lexical
+option embeddings, but no full vocabulary logits are computed.
+
+Review the files in this order:
+
+1. `text_inputs.py`: release-compatible text/schema encoding and answer formatting.
+2. `modeling_backbone.py`: Qwen3.5 embeddings, 24 Gated DeltaNet layers, eight
+   full-attention layers, MLPs and final norm. Ordinary eager PyTorch with the
+   reference FP32 norm/recurrent arithmetic and 64-token chunk scan.
+3. `modeling_head.py`: the released PyTorch head, with unchanged computation.
+4. `local_model.py`: explicit checkpoint mapping, shape/dtype checks and B1 forward.
+5. `run_local_smoke.py`: input and output comparison with the saved baseline.
+
+Scope is **B1, unpadded text, BF16, complete requests**. No generation, KV/recurrent
+cache reuse, batching, compilation, quantization or custom NPU kernels. Requests
+longer than 16,384 tokens and media inputs are rejected, not silently truncated.
+The pinned release config is the supported architecture, not a generic Qwen loader.
+See `THIRD_PARTY.md` for exact source provenance and modifications.
+
+After pulling this branch in an isolated server checkout and checking the device:
+
+```bash
+source npu-setup
+export TORCH_DEVICE_BACKEND_AUTOLOAD=0
+/workspace/venvs/clef_transformers_py312/bin/python -m unittest discover \
+  -s 25_clef_inference -p 'test_local_backbone.py' -v
+RUN_ROOT=tmp/25_clef_inference/local_bf16_$(git rev-parse --short HEAD) \
+  bash 25_clef_inference/run_910b.sh local
+```
+
+The default `run_910b.sh` still runs the original Transformers baseline. Both use
+the existing environment; the local smoke actively blocks Transformers imports.
+The small NPU tests use Transformers only as an independent oracle, and also
+compare the chunk scan against a token-at-a-time recurrence across chunk boundaries.
+The real-checkpoint smoke requires exact token IDs, question/option spans, BF16
+logits and formatted answers on all six saved cases (plus a labeled warmup).
+It saves differences and exits nonzero on a mismatch. No tolerance is relaxed to
+make a run pass. These are correctness checks, not retrieval-quality benchmarks.
+
+Validation status: implementation prepared; NPU checks pending.
