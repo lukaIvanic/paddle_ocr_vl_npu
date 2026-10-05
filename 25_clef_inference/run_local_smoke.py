@@ -72,6 +72,11 @@ def _tokens(tokenizer: Any, text: str) -> list[int]:
     return tokenizer.encode(text, add_special_tokens=False).ids
 
 
+def encode_document_prefix(tokenizer: Any, state: Any) -> tuple[int, ...]:
+    prefix = _tokens(tokenizer, f"<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>\n<|im_start|>user\nSTATE:\n")
+    return tuple(prefix + _tokens(tokenizer, render(state)))
+
+
 def encode_record(
     tokenizer: Any,
     record: dict[str, Any],
@@ -130,19 +135,15 @@ def encode_record(
             )
         )
 
-    prefix_ids = _tokens(
-        tokenizer,
-        f"<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>\n<|im_start|>user\nSTATE:\n",
-    )
+    prefix_ids = list(encode_document_prefix(tokenizer, record["state"]))
     suffix_ids = _tokens(
         tokenizer,
         "\n<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\nJOINT SCHEMA DECISIONS:",
     )
-    state_ids = _tokens(tokenizer, render(record["state"]))
-    length = len(prefix_ids) + len(state_ids) + len(schema_ids) + len(suffix_ids)
+    length = len(prefix_ids) + len(schema_ids) + len(suffix_ids)
     if length > max_length:
         raise ValueError(f"Request has {length} tokens, maximum is {max_length}; truncation is disabled")
-    schema_offset = len(prefix_ids) + len(state_ids)
+    schema_offset = len(prefix_ids)
     shifted_questions = tuple(
         EncodedQuestion(
             question_id=question.question_id,
@@ -159,7 +160,7 @@ def encode_record(
         )
         for question in questions
     )
-    input_ids = tuple(prefix_ids + state_ids + schema_ids + suffix_ids)
+    input_ids = tuple(prefix_ids + schema_ids + suffix_ids)
     if not input_ids or not shifted_questions:
         raise ValueError("record produced no model input or questions")
     return EncodedRecord(

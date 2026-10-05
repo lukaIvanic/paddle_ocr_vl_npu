@@ -2,7 +2,7 @@
 
 The six-pair fixture checks protocol; the forty-pair fixture covers input
 lengths. Neither estimates benchmark accuracy. Document is STATE; the query
-and task instruction are in the schema. No cache implementation lives here.
+and task instruction are in the schema. The cache command measures actual document reuse and storage transfers.
 """
 import argparse
 import bisect
@@ -468,6 +468,209 @@ def run(args):
         save(args.output, result)
 
 
+def run_cache(args):
+    """Prepare once, persist, eagerly preload RAM, then measure real reuse."""
+    import statistics
+    from dataclasses import replace
+    from run_local_smoke import encode_document_prefix
+    if args.output.exists():
+        raise FileExistsError(args.output)
+    if args.repeats < 1:
+        raise ValueError('At least one timing repeat is required')
+    fixture = json.loads(args.fixture.read_text())
+    if len(fixture['pairs']) != fixture.get('expected_pairs', 6):
+        raise ValueError('Fixture pair count changed')
+    sys.meta_path.insert(0, NoTransformers())
+    import torch
+    import torch_npu
+    from torch_npu.npu.npu_config import _CubeMathType
+    from tokenizers import Tokenizer
+    from local_modeling_clef import DocumentCache, load_model
+    torch.npu.set_option({'ACL_PRECISION_MODE': 'must_keep_origin_dtype'})
+    torch.npu.matmul.allow_hf32 = False
+    torch.npu.conv.allow_hf32 = False
+    torch.npu.matmul.cube_math_type = _CubeMathType.KEEP_DTYPE
+    torch.set_float32_matmul_precision('highest')
+    if not torch.npu.is_available() or '910B' not in torch.npu.get_device_name(0):
+        raise RuntimeError('910B NPU required; no CPU fallback')
+    torch.npu.set_device(0)
+    torch.set_num_threads(8)
+    target_dtype = getattr(torch, args.dtype)
+    required_gib = 50 if target_dtype == torch.float32 else 28
+    if torch.npu.mem_get_info()[0] < required_gib * 1024**3:
+        raise RuntimeError('Insufficient free NPU memory')
+    tokenizer = Tokenizer.from_file(str(args.model / 'tokenizer.json'))
+    tokenizer.no_padding()
+    tokenizer.no_truncation()
+    if fixture.get('tokenizer_sha256') and digest(args.model / 'tokenizer.json') != fixture['tokenizer_sha256']:
+        raise ValueError('Tokenizer changed')
+    requests = [request_for(p) for p in fixture['pairs']]
+    records = [encode_record(tokenizer, r, args.max_length) for r in requests]
+    prefixes = [encode_document_prefix(tokenizer, r['state']) for r in requests]
+    for pair, record, prefix in zip(fixture['pairs'], records, prefixes):
+        if record.input_ids[:len(prefix)] != prefix:
+            raise ValueError('Prefix encoding mismatch')
+        if pair.get('input_sha256') and hashlib.sha256(json.dumps(record.input_ids).encode()).hexdigest() != pair['input_sha256']:
+            raise ValueError('Frozen input changed')
+    previous = {}
+    if args.reference:
+        reference = json.loads(args.reference.read_text())
+        if reference['status'] != 'completed' or reference['fixture_sha256'] != digest(args.fixture):
+            raise ValueError('Invalid prior baseline')
+        previous = {(r['task'], r['qid'], r['did']): r for r in reference['rows']}
+    result = {'status': 'running', 'scope': 'actual_document_cache_reuse', 'cache_reuse': True,
+        'dtype': args.dtype, 'fixture_sha256': digest(args.fixture),
+        'git_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+        'hostname': platform.node(), 'physical_device': os.environ.get('ASCEND_RT_VISIBLE_DEVICES'),
+        'torch': torch.__version__, 'torch_npu': torch_npu.__version__, 'max_length': args.max_length,
+        'timing_repeats': args.repeats, 'timing_scope': 'synchronized eager forward; pre-encoded IDs; no dtype audit; median repeats',
+        'disk_read_scope': 'eager CPU preload after writes; filesystem cache may be warm, not cold-SSD latency',
+        'prepared': [], 'rows': []}
+    save(args.output, result)
+
+    def timed(fn):
+        torch.npu.synchronize()
+        start = time.perf_counter()
+        value = fn()
+        torch.npu.synchronize()
+        return value, time.perf_counter() - start
+
+    def measure(fn):
+        times, first = [], None
+        for _ in range(args.repeats):
+            value, seconds = timed(fn)
+            if value.dtype != target_dtype or value.shape != (2,) or not torch.isfinite(value).all():
+                raise ValueError('Invalid model logits')
+            if first is None:
+                first = value.clone()
+            elif not torch.equal(first, value):
+                raise AssertionError('Repeated forward changed logits')
+            times.append(seconds)
+        return first, {'median_s': statistics.median(times), 'samples_s': times}
+
+    def values(logits, record):
+        probs = dict(zip(record.questions[0].option_ids, logits.float().softmax(-1).cpu().tolist()))
+        return {'logits': logits.float().cpu().tolist(), 'score': probs['true']}
+
+    try:
+        model = load_model(args.model, 'npu:0', progress=lambda step: print(step, flush=True))
+        if target_dtype == torch.float32:
+            model.float()
+            torch.npu.empty_cache()
+        assert all(p.dtype == target_dtype for p in model.parameters())
+        result['model_cache_identity'] = model.cache_identity
+        files = []
+        with torch.inference_mode():
+            ids = torch.tensor([records[0].input_ids], dtype=torch.long, device='npu:0')
+            model(ids, records[0])
+            warm_cache = model.prepare_document(prefixes[0])
+            model(ids, records[0], warm_cache)
+            del ids, warm_cache
+            for index, prefix in enumerate(prefixes):
+                cache, prepare_s = timed(lambda: model.prepare_document(prefix))
+                cpu_cache, npu_to_ram_s = timed(lambda: cache.to('cpu'))
+                path = args.cache_dir / (cache.key + '.safetensors')
+                start = time.perf_counter()
+                cpu_cache.save(path)
+                save_s = time.perf_counter() - start
+                files.append(path)
+                result['prepared'].append({'pair': index, 'prefix_tokens': len(prefix), 'cache_bytes': cache.nbytes,
+                    'file_bytes': path.stat().st_size, 'prepare_s': prepare_s, 'npu_to_ram_s': npu_to_ram_s,
+                    'disk_save_s': save_s, 'path': str(path), 'key': cache.key})
+                print(json.dumps({'prepared': index+1, 'of': len(prefixes), **result['prepared'][-1]}), flush=True)
+                save(args.output, result)
+                del cache, cpu_cache
+            # This is the startup preload stage: every selected file becomes
+            # an owned CPU allocation before the query loop begins.
+            start = time.perf_counter()
+            ram = [DocumentCache.load(path) for path in files]
+            result['ram_preload_s'] = time.perf_counter() - start
+            result['ram_cache_bytes'] = sum(c.nbytes for c in ram)
+            for index, (pair, record, cpu_cache) in enumerate(zip(fixture['pairs'], records, ram)):
+                ids = torch.tensor([record.input_ids], dtype=torch.long, device='npu:0')
+                full, full_time = measure(lambda: model(ids, record)[0])
+                transfers = []
+                for _ in range(args.repeats):
+                    cache, seconds = timed(lambda: cpu_cache.to('npu:0'))
+                    transfers.append(seconds)
+                    del cache
+                cache = cpu_cache.to('npu:0')
+                cached, cached_time = measure(lambda: model(ids, record, cache)[0])
+                returned = cache.to('cpu')
+                if not all(torch.equal(t, returned.tensors()[k]) for k, t in cpu_cache.tensors().items()):
+                    raise AssertionError('Query modified document cache')
+                row = {k: pair[k] for k in ('task', 'qid', 'did')}
+                row.update(input_tokens=len(record.input_ids), prefix_tokens=len(cache.prefix_ids),
+                    suffix_tokens=len(record.input_ids)-len(cache.prefix_ids), cache_bytes=cache.nbytes,
+                    uncached=values(full, record), cached=values(cached, record),
+                    uncached_timing=full_time, cached_timing=cached_time,
+                    ram_to_npu_timing={'median_s': statistics.median(transfers), 'samples_s': transfers},
+                    cache_unchanged=True)
+                row['score_abs_diff'] = abs(row['cached']['score']-row['uncached']['score'])
+                row['logit_abs_diff'] = float((cached.float()-full.float()).abs().max())
+                row['resident_speedup'] = full_time['median_s']/cached_time['median_s']
+                row['ram_speedup'] = full_time['median_s']/(statistics.median(transfers)+cached_time['median_s'])
+                prior = previous.get((pair['task'], pair['qid'], pair['did']))
+                if prior and target_dtype == torch.bfloat16:
+                    row['uncached_matches_prior'] = row['uncached']['logits'] == prior['modes']['whole']['logits']
+                    if not row['uncached_matches_prior']:
+                        raise AssertionError('Default uncached arithmetic changed')
+                result['rows'].append(row)
+                print(json.dumps({'completed': index+1, 'of': len(records), **row}), flush=True)
+                save(args.output, result)
+                del ids, cache, returned, full, cached
+            # A/B/A reuse against one unchanged cache, plus incompatible-prefix
+            # and model-identity rejection, followed by another valid request.
+            cache = ram[0].to('npu:0')
+            record_a = records[0]
+            request_b = request_for({**fixture['pairs'][-1], 'document': fixture['pairs'][0]['document']})
+            record_b = encode_record(tokenizer, request_b, args.max_length)
+            ids_a = torch.tensor([record_a.input_ids], dtype=torch.long, device='npu:0')
+            ids_b = torch.tensor([record_b.input_ids], dtype=torch.long, device='npu:0')
+            before = model(ids_a, record_a, cache)[0]
+            b_cached = model(ids_b, record_b, cache)[0]
+            b_full = model(ids_b, record_b)[0]
+            after = model(ids_a, record_a, cache)[0]
+            assert torch.equal(before, after)
+            rejected = []
+            for label, bad_cache in [('prefix', replace(cache, prefix_ids=(cache.prefix_ids[0]+1, *cache.prefix_ids[1:]))),
+                                     ('model_identity', replace(cache, model_identity='incompatible'))]:
+                try:
+                    model(ids_a, record_a, bad_cache)
+                except ValueError:
+                    rejected.append(label)
+                else:
+                    raise AssertionError('Invalid cache accepted')
+            assert torch.equal(after, model(ids_a, record_a, cache)[0])
+            after_cpu = cache.to('cpu')
+            assert all(torch.equal(t, after_cpu.tensors()[k]) for k,t in ram[0].tensors().items())
+            result['reuse_check'] = {'a_repeat_exact': True, 'cache_unchanged': True, 'rejected': rejected,
+                'b_uncached': values(b_full, record_b), 'b_cached': values(b_cached, record_b)}
+        rankings = {}
+        for name, group in fixture['groups'].items():
+            task = group.get('task', name)
+            rows = [r for r in result['rows'] if (r['task'],r['qid']) == (task,group['qid'])]
+            orders = {mode: [r['did'] for r in sorted(rows,key=lambda r:(-r[mode]['score'],r['did']))]
+                      for mode in ('uncached','cached')}
+            rankings[name] = {'orders': orders, 'unchanged': orders['uncached']==orders['cached']}
+        result['rankings'] = rankings
+        result['summary'] = {'score_abs_diff_max': max(r['score_abs_diff'] for r in result['rows']),
+            'logit_abs_diff_max': max(r['logit_abs_diff'] for r in result['rows']),
+            'rankings_unchanged': sum(v['unchanged'] for v in rankings.values()), 'queries': len(rankings),
+            'uncached_mean_s': statistics.mean(r['uncached_timing']['median_s'] for r in result['rows']),
+            'resident_cached_mean_s': statistics.mean(r['cached_timing']['median_s'] for r in result['rows']),
+            'ram_to_npu_mean_s': statistics.mean(r['ram_to_npu_timing']['median_s'] for r in result['rows'])}
+        result['transformers_imported'] = any(n=='transformers' or n.startswith('transformers.') for n in sys.modules)
+        assert not result['transformers_imported']
+        result['status'] = 'completed'
+        print(json.dumps(result['summary']), flush=True)
+    except BaseException as exc:
+        result.update(status='failed', error=str(exc))
+        raise
+    finally:
+        save(args.output, result)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
@@ -484,8 +687,15 @@ if __name__ == '__main__':
     infer.add_argument('--model', type=Path, required=True)
     infer.add_argument('--output', type=Path, required=True)
     infer.add_argument('--max-length', type=int, default=3072)
+    cached = commands.add_parser('cache')
+    for flag in ('fixture', 'model', 'output', 'cache-dir'):
+        cached.add_argument('--' + flag, type=Path, required=True)
+    cached.add_argument('--reference', type=Path)
+    cached.add_argument('--dtype', choices=('bfloat16', 'float32'), default='bfloat16')
+    cached.add_argument('--max-length', type=int, default=3072)
+    cached.add_argument('--repeats', type=int, default=3)
     metrics = commands.add_parser('evaluate')
     metrics.add_argument('--fixture', type=Path, required=True)
     metrics.add_argument('--result', type=Path, required=True)
     args = parser.parse_args()
-    {'prepare': prepare, 'prepare-lengths': prepare_lengths, 'run': run, 'evaluate': evaluate}[args.command](args)
+    {'prepare': prepare, 'prepare-lengths': prepare_lengths, 'run': run, 'cache': run_cache, 'evaluate': evaluate}[args.command](args)

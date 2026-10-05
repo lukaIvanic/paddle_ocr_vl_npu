@@ -4,18 +4,20 @@
 """Faithful eager Clef-flash text model, without Transformers.
 
 Backbone, joint decision head and checkpoint loading live in this file.
-B1 unpadded text, BF16 parameters, no generation or cache reuse. The backbone
+B1 unpadded text, BF16 checkpoint parameters, optional document-prefix reuse. The backbone
 preserves Transformers 5.17.0 arithmetic; the head preserves the pinned
 Cloudflare release's computation. Source provenance is recorded in README.md.
 """
 from collections import defaultdict
+from dataclasses import dataclass
+import hashlib
 import json
 import math
 from pathlib import Path
 from types import SimpleNamespace
 
 from safetensors import safe_open
-from safetensors.torch import load_file
+from safetensors.torch import load_file, save_file
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -47,8 +49,9 @@ class GatedRMSNorm(nn.Module):
         return (y * F.silu(gate.float())).to(x.dtype)
 
 
-def chunk_gated_delta_rule(query, key, value, g, beta, chunk_size=64):
-    """Reference FP32 chunk scan, starting from an empty recurrent state."""
+def chunk_gated_delta_rule(query, key, value, g, beta, chunk_size=64,
+                           initial_state=None, return_state=False):
+    """Reference FP32 scan; optional state handoff never mutates its input."""
     dtype = query.dtype
     batch, length, heads, key_dim = key.shape
     value_dim = value.shape[-1]
@@ -75,7 +78,10 @@ def chunk_gated_delta_rule(query, key, value, g, beta, chunk_size=64):
     decayed_keys = k_beta * decay.exp().unsqueeze(-1)
     values = torch.linalg.solve_triangular(system, v_beta, upper=False, unitriangular=True)
     keys = torch.linalg.solve_triangular(system, decayed_keys, upper=False, unitriangular=True)
-    state = torch.zeros(batch, heads, key_dim, value_dim, dtype=values.dtype, device=values.device)
+    state = (torch.zeros(batch, heads, key_dim, value_dim, dtype=values.dtype, device=values.device)
+             if initial_state is None else initial_state)
+    if state.dtype != torch.float32 or state.shape != (batch, heads, key_dim, value_dim):
+        raise ValueError("Invalid FP32 recurrent state")
     output = torch.zeros_like(values)
     query = query * decay.exp().unsqueeze(-1)
     key = key * (decay[..., -1:] - decay).exp().unsqueeze(-1)
@@ -85,7 +91,8 @@ def chunk_gated_delta_rule(query, key, value, g, beta, chunk_size=64):
         output[:, :, i] = query[:, :, i] @ state + attention[:, :, i] @ delta
         state = state * chunk_decay[:, :, i] + key[:, :, i].transpose(-1, -2) @ delta
     output = output.reshape(batch, heads, -1, value_dim)[:, :, :length]
-    return output.transpose(1, 2).to(dtype, memory_format=torch.contiguous_format)
+    output = output.transpose(1, 2).to(dtype, memory_format=torch.contiguous_format)
+    return (output, state) if return_state else output
 
 
 class GatedDeltaNet(nn.Module):
@@ -109,12 +116,15 @@ class GatedDeltaNet(nn.Module):
         self.norm = GatedRMSNorm(self.value_dim, c.rms_norm_eps)
         self.out_proj = nn.Linear(self.values, c.hidden_size, bias=False)
 
-    def forward(self, x):
+    def forward(self, x, cache=None, return_cache=False):
         batch, length, _ = x.shape
         qkv = self.in_proj_qkv(x).transpose(1, 2)
         z = self.in_proj_z(x).reshape(batch, length, -1, self.value_dim)
         b, a = self.in_proj_b(x), self.in_proj_a(x)
-        qkv = F.silu(self.conv1d(qkv)[:, :, :length]).transpose(1, 2)
+        history = self.conv1d.kernel_size[0] - 1
+        conv_input = qkv if cache is None else torch.cat((cache["conv"], qkv), dim=-1)
+        offset = 0 if cache is None else history
+        qkv = F.silu(self.conv1d(conv_input)[:, :, offset:offset + length]).transpose(1, 2)
         q, k, v = torch.split(qkv, [self.keys, self.keys, self.values], dim=-1)
         q, k = (t.reshape(batch, length, -1, self.key_dim) for t in (q, k))
         v = v.reshape(batch, length, -1, self.value_dim)
@@ -122,9 +132,16 @@ class GatedDeltaNet(nn.Module):
         g = -self.A_log.float().exp() * F.softplus(a.float() + self.dt_bias)
         repeats = self.value_heads // self.key_heads
         q, k = (t.repeat_interleave(repeats, dim=2) for t in (q, k))
-        y = chunk_gated_delta_rule(q, k, v, g, beta)
+        y = chunk_gated_delta_rule(q, k, v, g, beta,
+                                  initial_state=None if cache is None else cache["state"],
+                                  return_state=return_cache)
+        if return_cache:
+            y, state = y
         y = self.norm(y.reshape(-1, self.value_dim), z.reshape(-1, self.value_dim))
-        return self.out_proj(y.reshape(batch, length, -1))
+        output = self.out_proj(y.reshape(batch, length, -1))
+        if return_cache:
+            return output, {"state": state, "conv": conv_input[:, :, -history:].contiguous().clone()}
+        return output
 
 
 def apply_rope(x, cos, sin):
@@ -147,7 +164,7 @@ class FullAttention(nn.Module):
         self.q_norm = RMSNorm(c.head_dim, c.rms_norm_eps)
         self.k_norm = RMSNorm(c.head_dim, c.rms_norm_eps)
 
-    def forward(self, x, positions, mask):
+    def forward(self, x, positions, mask, cache=None, return_cache=False):
         batch, length, _ = x.shape
         shape = (batch, length, -1, self.head_dim)
         q, gate = self.q_proj(x).view(batch, length, -1, self.head_dim * 2).chunk(2, -1)
@@ -155,12 +172,17 @@ class FullAttention(nn.Module):
         k = self.k_norm(self.k_proj(x).view(shape)).transpose(1, 2)
         v = self.v_proj(x).view(shape).transpose(1, 2)
         q, k = (apply_rope(t, *positions) for t in (q, k))
-        k, v = (t[:, :, None].expand(batch, t.shape[1], self.groups, length, self.head_dim)
-                .reshape(batch, -1, length, self.head_dim) for t in (k, v))
+        if cache is not None:
+            k, v = torch.cat((cache["k"], k), dim=2), torch.cat((cache["v"], v), dim=2)
+        saved = {"k": k.contiguous(), "v": v.contiguous()} if return_cache else None
+        key_length = k.shape[2]
+        k, v = (t[:, :, None].expand(batch, t.shape[1], self.groups, key_length, self.head_dim)
+                .reshape(batch, -1, key_length, self.head_dim) for t in (k, v))
         weights = (q @ k.transpose(2, 3)) * self.head_dim**-0.5 + mask
         weights = F.softmax(weights, dim=-1, dtype=torch.float32).to(q.dtype)
         y = (weights @ v).transpose(1, 2).contiguous().reshape(batch, length, -1)
-        return self.o_proj(y * gate.reshape(batch, length, -1).sigmoid())
+        output = self.o_proj(y * gate.reshape(batch, length, -1).sigmoid())
+        return (output, saved) if return_cache else output
 
 
 class MLP(nn.Module):
@@ -186,11 +208,15 @@ class DecoderLayer(nn.Module):
         self.post_attention_layernorm = RMSNorm(c.hidden_size, c.rms_norm_eps)
         self.mlp = MLP(c)
 
-    def forward(self, x, positions, mask):
+    def forward(self, x, positions, mask, cache=None, return_cache=False):
         y = self.input_layernorm(x)
-        y = self.linear_attn(y) if self.kind == "linear_attention" else self.self_attn(y, positions, mask)
+        y = (self.linear_attn(y, cache, return_cache) if self.kind == "linear_attention"
+             else self.self_attn(y, positions, mask, cache, return_cache))
+        if return_cache:
+            y, saved = y
         x = x + y
-        return x + self.mlp(self.post_attention_layernorm(x))
+        output = x + self.mlp(self.post_attention_layernorm(x))
+        return (output, saved) if return_cache else output
 
 
 class TextBackbone(nn.Module):
@@ -204,20 +230,27 @@ class TextBackbone(nn.Module):
         inv = 1.0 / (c.rope_parameters["rope_theta"] ** (torch.arange(0, dim, 2, device="cpu").float() / dim))
         self.register_buffer("inv_freq", inv, persistent=False)
 
-    def forward(self, input_ids):
+    def forward(self, input_ids, caches=None, prefix_length=0, return_cache=False):
         if input_ids.ndim != 2 or input_ids.shape[0] != 1 or input_ids.shape[1] == 0:
             raise ValueError("Only one nonempty, unpadded text sequence is supported")
         x = self.embed_tokens(input_ids)
         length = input_ids.shape[1]
         # All three MRoPE axes are identical for text. Preserve the FP32 matmul.
-        positions = torch.arange(length, device=x.device).view(1, 1, -1).expand(3, 1, -1)
+        positions = torch.arange(prefix_length, prefix_length + length, device=x.device).view(1, 1, -1).expand(3, 1, -1)
         inv = self.inv_freq[None, None, :, None].float().expand(3, 1, -1, 1)
         freqs = (inv @ positions[:, :, None, :].float()).transpose(2, 3)
         cos, sin = (torch.cat((f[0], f[0]), -1).to(x.dtype) for f in (freqs.cos(), freqs.sin()))
-        mask = torch.full((length, length), torch.finfo(x.dtype).min, dtype=x.dtype, device=x.device).triu(1)
-        for layer in self.layers:
-            x = layer(x, (cos, sin), mask[None, None])
-        return self.norm(x)
+        mask = torch.full((length, prefix_length + length), torch.finfo(x.dtype).min,
+                          dtype=x.dtype, device=x.device).triu(prefix_length + 1)
+        saved = []
+        for index, layer in enumerate(self.layers):
+            x = layer(x, (cos, sin), mask[None, None],
+                      None if caches is None else caches[index], return_cache)
+            if return_cache:
+                x, entry = x
+                saved.append(entry)
+        output = self.norm(x)
+        return (output, tuple(saved)) if return_cache else output
 
 
 class EvidenceRoutingLayer(torch.nn.Module):
@@ -440,17 +473,96 @@ class JointSchemaHead(torch.nn.Module):
         return results
 
 
+@dataclass(frozen=True)
+class DocumentCache:
+    """Immutable by convention; scoring never writes into these tensors."""
+    prefix_ids: tuple
+    model_identity: str
+    layers: tuple
+    hidden: torch.Tensor
+
+    @property
+    def key(self):
+        data = [self.model_identity, str(self.hidden.dtype), self.prefix_ids]
+        return hashlib.sha256(json.dumps(data).encode()).hexdigest()
+
+    def tensors(self):
+        return {"hidden": self.hidden, **{
+            f"layer.{i}.{name}": tensor
+            for i, layer in enumerate(self.layers) for name, tensor in layer.items()}}
+
+    @property
+    def nbytes(self):
+        return sum(t.numel() * t.element_size() for t in self.tensors().values())
+
+    def to(self, device):
+        return DocumentCache(self.prefix_ids, self.model_identity,
+                             tuple({k: v.to(device) for k, v in layer.items()} for layer in self.layers),
+                             self.hidden.to(device))
+
+    def save(self, path):
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        metadata = {"version": 1, "prefix_ids": self.prefix_ids, "model_identity": self.model_identity,
+                    "layer_keys": [sorted(layer) for layer in self.layers], "key": self.key}
+        temporary = path.with_suffix(".partial")
+        save_file({k: v.detach().cpu().contiguous() for k, v in self.tensors().items()},
+                  temporary, metadata={"document_cache": json.dumps(metadata)})
+        temporary.replace(path)
+
+    @classmethod
+    def load(cls, path):
+        with safe_open(path, framework="pt", device="cpu") as file:
+            metadata = json.loads(file.metadata()["document_cache"])
+            if metadata["version"] != 1:
+                raise ValueError("Unsupported document cache version")
+            layers = tuple({name: file.get_tensor(f"layer.{i}.{name}") for name in names}
+                           for i, names in enumerate(metadata["layer_keys"]))
+            expected = {"hidden"} | {f"layer.{i}.{name}" for i, names in enumerate(metadata["layer_keys"]) for name in names}
+            if set(file.keys()) != expected:
+                raise ValueError("Unexpected document cache tensors")
+            # Clone to eagerly preload owned CPU memory rather than retaining
+            # lazily faulted file mappings in the serving path.
+            cache = cls(tuple(metadata["prefix_ids"]), metadata["model_identity"],
+                        tuple({k: v.clone() for k, v in layer.items()} for layer in layers),
+                        file.get_tensor("hidden").clone())
+        if cache.key != metadata["key"]:
+            raise ValueError("Document cache identity mismatch")
+        return cache
+
+
 class ClefTextModel(nn.Module):
     def __init__(self, config, head_config):
         super().__init__()
         self.backbone = TextBackbone(config)
         self.lm_head = nn.Embedding(config.vocab_size, config.hidden_size)
         self.head = JointSchemaHead(**head_config)
+        self.cache_identity = None
 
-    def forward(self, input_ids, record):
+    def prepare_document(self, prefix_ids):
+        if not self.cache_identity or not prefix_ids:
+            raise ValueError("A loaded model and nonempty encoded document prefix are required")
+        ids = torch.tensor([prefix_ids], device=self.backbone.embed_tokens.weight.device, dtype=torch.long)
+        hidden, layers = self.backbone(ids, return_cache=True)
+        return DocumentCache(tuple(prefix_ids), self.cache_identity, layers, hidden)
+
+    def forward(self, input_ids, record, cache=None):
         if input_ids.shape != (1, len(record.input_ids)):
             raise ValueError("Expected one unpadded sequence matching the encoded record")
-        hidden = self.backbone(input_ids)
+        if cache is None:
+            hidden = self.backbone(input_ids)
+        else:
+            length = len(cache.prefix_ids)
+            weight = self.backbone.embed_tokens.weight
+            if (cache.model_identity != self.cache_identity or cache.hidden.dtype != weight.dtype
+                or cache.hidden.device != weight.device or len(cache.layers) != len(self.backbone.layers)):
+                raise ValueError("Cache model, dtype, device or layer count mismatch")
+            if length >= len(record.input_ids) or record.input_ids[:length] != cache.prefix_ids:
+                raise ValueError("Request does not continue this document prefix")
+            if cache.hidden.shape != (1, length, weight.shape[1]):
+                raise ValueError("Invalid cached document hidden states")
+            suffix = self.backbone(input_ids[:, length:], cache.layers, prefix_length=length)
+            hidden = torch.cat((cache.hidden, suffix), dim=1)
         return self.head(hidden, input_ids, torch.ones_like(input_ids), [record], self.lm_head.weight)[0]
 
 
@@ -495,4 +607,13 @@ def load_model(directory, device, progress=lambda name: None):
     if any(p.is_meta or p.dtype != torch.bfloat16 or p.device != torch.device(device)
            for p in model.parameters()):
         raise RuntimeError("Incomplete BF16 checkpoint load")
+    # Conservative local cache identity. Checkpoint replacement/touch or a model
+    # implementation change invalidates caches; this is not a portable release ID.
+    identity = hashlib.sha256(Path(__file__).read_bytes())
+    for name in ("config.json", "joint_head_config.json", index_name):
+        identity.update((directory / name).read_bytes())
+    for name in sorted(set(weight_map.values()) | {"joint_head.safetensors"}):
+        stat = (directory / name).stat()
+        identity.update(json.dumps([name, stat.st_size, stat.st_mtime_ns]).encode())
+    model.cache_identity = identity.hexdigest()
     return model.eval()
