@@ -581,3 +581,125 @@ Probe: `tmp/25_clef_inference/gdn_isolation/probe.py`. Commands, complete local
 error and activation traces, intervention scores, exit code and checks:
 `tmp/25_clef_inference/gdn_isolation_db465f9f/`. Production model code and the
 live serving process were not changed.
+
+## Actual document-cache reuse and storage
+
+Implementation added at `ec5e1de1`. `local_modeling_clef.py` now supports
+preparing the fixed system prompt plus document once, then running only the
+schema/question and assistant suffix through the backbone. It resumes all
+24 recurrent states and convolution histories, concatenates cached K/V in the
+eight full-attention layers, preserves absolute positions and causal masks,
+and supplies cached prefix hidden states plus new suffix hidden states to the
+unchanged decision head. The head still reads the document memory per query.
+
+The normal uncached forward remains available. `encode_document_prefix()` in
+`run_local_smoke.py` shares the original encoding boundaries with `encode_record()`.
+One document cache can answer different questions; scoring does not append
+questions to it or mutate its tensors.
+
+The model and storage API, used under `torch.inference_mode()`, is:
+
+```python
+prefix_ids = encode_document_prefix(tokenizer, document)
+cache = model.prepare_document(prefix_ids)       # One-time NPU computation.
+cache.save(path)                                # Safetensors, original dtypes.
+
+# Startup: eager copies into owned CPU RAM, not merely open mmap handles.
+ram_cache = DocumentCache.load(path)
+
+# Request: move this document to NPU memory, then compute its question.
+npu_cache = ram_cache.to("npu:0")
+logits = model(full_input_ids, encoded_record, cache=npu_cache)
+```
+
+`DocumentCache` stores recurrent states, three pre-convolution history tokens
+per recurrent layer, unexpanded attention K/V, normalized document hidden
+states, prefix token IDs and a model identity. Files retain FP32 recurrent
+states and the selected model dtype for the other tensors. Keys include the
+prefix IDs, dtype and model identity. The identity is deliberately local and
+conservative: model source/configuration and checkpoint file sizes/mtimes;
+it is not a portable content-addressed checkpoint release identifier.
+Incompatible model identities, dtypes, devices or document prefixes are rejected.
+
+The `cache` command in `run_reranking_smoke.py` prepares and saves the fixture's
+documents, drops the preparation caches, eagerly reloads every file into RAM,
+and scores each document with one NPU cache at a time. It measures preparation,
+NPU-to-RAM copies, buffered file saves, RAM preload, RAM-to-NPU copies and
+uncached/cached inference separately. Query timing uses synchronized medians
+of three repeats, excludes model loading/encoding, and has no activation-dtype
+audit overhead. File reads follow recent writes and may hit the filesystem
+cache; they are not cold-SSD latency measurements. No eviction policy or
+asynchronous transfer pipeline is included.
+
+```bash
+source npu-setup
+/usr/local/python3.12.13/bin/python3 -u \
+  25_clef_inference/run_reranking_smoke.py cache \
+  --fixture tmp/25_clef_inference/reranking_lengths_44ca1ad4/fixture.json \
+  --reference tmp/25_clef_inference/gdn_boundary_40_ccf188d6/result.json \
+  --model /workspace/models/clef-flash --max-length 3203 \
+  --dtype float32 --repeats 3 \
+  --cache-dir /workspace/results/<CACHE_DIRECTORY> \
+  --output <NEW_RESULT_JSON>
+```
+
+Cache tensors are kept outside Git under `/workspace/results/`. This is the
+standalone experiment-25 path; it has not been wired into the running
+vLLM-Ascend HTTP service.
+
+### 910B2 cache measurements (40 pairs)
+
+Both BF16 and FP32 completed the frozen ten-query/four-document fixture at
+`ec5e1de1`, on physical NPU 3, CANN 9.0.1, torch 2.10.0 and torch-npu
+2.10.0.post2. These are sequential eager inference measurements, not HTTP
+latencies or full-suite quality results.
+
+| Mean over 40 pairs | BF16 | FP32 |
+|---|---:|---:|
+| Uncached forward | 1.569 s | 1.618 s |
+| Cached forward, cache already on NPU | 0.559 s | 0.576 s |
+| First RAM-to-NPU copy per document | 27.6 ms | 10.1 ms |
+| Cached forward plus that first copy | 0.587 s | 0.586 s |
+| Repeated RAM-to-NPU copy, median per document | 7.47 ms | 7.53 ms |
+| Total cache RAM for 40 documents | 2.514 GiB | 3.153 GiB |
+| One-time document preparation, all 40 | 45.57 s | 46.91 s |
+
+First-copy numbers include allocator/runtime effects; the BF16/FP32 difference
+is not evidence that larger FP32 caches intrinsically transfer faster. The
+resident path is about 2.8 times faster by the ratio of mean forward times.
+Including the first transfers gives about 2.7 times faster overall in this
+length sample. Precomputation is excluded from query latency.
+
+Selected FP32 examples (tokens include the full encoded input):
+
+| Input tokens | Uncached | Cached on NPU | Cached + first RAM upload | Speedup including upload |
+|---:|---:|---:|---:|---:|
+| 222 | 0.754 s | 0.575 s | 0.604 s | 1.25x |
+| 607 | 1.809 s | 0.575 s | 0.585 s | 3.10x |
+| 1,587 | 4.467 s | 0.584 s | 0.599 s | 7.46x |
+| 3,203 | 8.599 s | 0.581 s | 0.604 s | 14.24x |
+
+FP32 cached versus uncached maximum relevance-probability difference was
+`2.74181366e-6`; maximum logit difference was `3.13520432e-5`. All ten document
+rankings matched. BF16 retained nine of ten rankings: MedicalRetrieval/90
+swapped its second and third documents, as in the earlier boundary probe.
+Its maximum probability difference was `0.02340427`. All 40 uncached BF16
+logits exactly matched the earlier frozen baseline.
+
+Both modes passed tensor-by-tensor cache immutability and A/B/A reuse checks:
+score question A, a different question B, then A again with identical A logits.
+Mismatched document prefixes and model identities were rejected without
+changing the cache. No Transformers modules were imported.
+
+A separate fresh process at `1fb57148` preloaded all 40 saved FP32 files into
+owned RAM in 1.723 s (filesystem cache may be warm). Document preparation was
+disabled in that process. Three examples, including the worst prior numerical
+case and longest input, reproduced the previous cached logits exactly. An
+embedding hook observed only 144, 138 and 151 suffix tokens for full inputs of
+222, 217 and 3,203 tokens, respectively. This verifies disk-to-RAM-to-NPU
+reuse across process restarts without rebuilding documents.
+
+Evidence: `tmp/25_clef_inference/document_cache_ec5e1de1/` contains commands,
+exit codes, logs and per-pair results for both dtypes;
+`tmp/25_clef_inference/document_cache_restart_1fb57148/` contains the restart
+verification. Bulk Safetensors remain on the server outside Git.

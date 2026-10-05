@@ -1,0 +1,5 @@
+1fb5714830dd0231cb45ee49228fe2630484d8dc
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=3
+source npu-setup
+/usr/local/python3.12.13/bin/python3 -u tmp/25_clef_inference/document_cache_restart/check.py --model /workspace/models/clef-flash --result tmp/25_clef_inference/document_cache_ec5e1de1/float32.json --output tmp/25_clef_inference/document_cache_restart_1fb57148/result.json

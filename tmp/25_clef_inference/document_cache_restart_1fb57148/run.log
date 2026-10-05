@@ -1,0 +1,7 @@
+loaded:model-00001-of-00004.safetensors
+loaded:model-00002-of-00004.safetensors
+loaded:model-00003-of-00004.safetensors
+loaded:model-00004-of-00004.safetensors
+/workspace/repos/clef-reranking-smoke/25_clef_inference/local_modeling_clef.py:79: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  values = torch.linalg.solve_triangular(system, v_beta, upper=False, unitriangular=True)
+{"status": "completed", "source_result_sha256": "c93958cd8acf67c0dc1cdee37cf4b4b615d2901daddecf59520af82a7ce18d14", "physical_npu": "3", "dtype": "float32", "preloaded_documents": 40, "ram_bytes": 3385671680, "preload_s": 1.7229412200395018, "disk_read_scope": "filesystem cache may be warm", "rows": [{"index": 0, "cached_logits_exact": true, "backbone_tokens_executed": 144, "input_tokens": 222}, {"index": 25, "cached_logits_exact": true, "backbone_tokens_executed": 138, "input_tokens": 217}, {"index": 39, "cached_logits_exact": true, "backbone_tokens_executed": 151, "input_tokens": 3203}]}

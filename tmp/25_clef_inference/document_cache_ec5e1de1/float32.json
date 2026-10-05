@@ -1,0 +1,2747 @@
+{
+  "status": "completed",
+  "scope": "actual_document_cache_reuse",
+  "cache_reuse": true,
+  "dtype": "float32",
+  "fixture_sha256": "c45e3da7cf069c6407a948494d3b1e18a20f9445c751023845eba83240c2e9cf",
+  "git_commit": "ec5e1de1eae5558cc893fe9b61dfd388347e889e",
+  "hostname": "liteserver-c001-4",
+  "physical_device": "3",
+  "torch": "2.10.0+cpu",
+  "torch_npu": "2.10.0.post2",
+  "max_length": 3203,
+  "timing_repeats": 3,
+  "timing_scope": "synchronized eager forward; pre-encoded IDs; no dtype audit; median repeats",
+  "disk_read_scope": "eager CPU preload after writes; filesystem cache may be warm, not cold-SSD latency",
+  "prepared": [
+    {
+      "pair": 0,
+      "prefix_tokens": 78,
+      "cache_bytes": 59080704,
+      "file_bytes": 59087728,
+      "prepare_s": 0.37901775003410876,
+      "npu_to_ram_s": 0.01506673009134829,
+      "disk_save_s": 0.044778320007026196,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/b2cc9297891cfc6682f25b940b591c5147c296a860c586faf7cbf7f750e1aa10.safetensors",
+      "key": "b2cc9297891cfc6682f25b940b591c5147c296a860c586faf7cbf7f750e1aa10"
+    },
+    {
+      "pair": 1,
+      "prefix_tokens": 120,
+      "cache_bytes": 62521344,
+      "file_bytes": 62528624,
+      "prepare_s": 0.3881049701012671,
+      "npu_to_ram_s": 0.006806849967688322,
+      "disk_save_s": 0.0709436999168247,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/fdcf4db9ab1dc9e0beb8b3fa21fdd1162b68054f12636658a0c611465c803a6c.safetensors",
+      "key": "fdcf4db9ab1dc9e0beb8b3fa21fdd1162b68054f12636658a0c611465c803a6c"
+    },
+    {
+      "pair": 2,
+      "prefix_tokens": 185,
+      "cache_bytes": 67846144,
+      "file_bytes": 67853784,
+      "prepare_s": 0.5781248300336301,
+      "npu_to_ram_s": 0.0077112901490181684,
+      "disk_save_s": 0.07720777997747064,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/de5ed3654102637da0bc6fb2a5b3bcd288883ccaf30016021be43f97add5af1d.safetensors",
+      "key": "de5ed3654102637da0bc6fb2a5b3bcd288883ccaf30016021be43f97add5af1d"
+    },
+    {
+      "pair": 3,
+      "prefix_tokens": 253,
+      "cache_bytes": 73416704,
+      "file_bytes": 73424696,
+      "prepare_s": 0.7521304900292307,
+      "npu_to_ram_s": 0.00857210997492075,
+      "disk_save_s": 0.08589575020596385,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/eaddc488d7f62175c92c9e48f6f263daa247c8bdf7155803d8a2f83b944be0d3.safetensors",
+      "key": "eaddc488d7f62175c92c9e48f6f263daa247c8bdf7155803d8a2f83b944be0d3"
+    },
+    {
+      "pair": 4,
+      "prefix_tokens": 101,
+      "cache_bytes": 60964864,
+      "file_bytes": 60972032,
+      "prepare_s": 0.38398577994666994,
+      "npu_to_ram_s": 0.0063967599999159575,
+      "disk_save_s": 0.0707626799121499,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/864e29bd67de49927713001538d2d588d66a8c94ec471459cf85cd86595f849b.safetensors",
+      "key": "864e29bd67de49927713001538d2d588d66a8c94ec471459cf85cd86595f849b"
+    },
+    {
+      "pair": 5,
+      "prefix_tokens": 166,
+      "cache_bytes": 66289664,
+      "file_bytes": 66297144,
+      "prepare_s": 0.573346909834072,
+      "npu_to_ram_s": 0.0076502300798892975,
+      "disk_save_s": 0.07654391997493804,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/610808d8a0c3fbcbe29bf71a1f30c79f0a01d90ea58b4489ba2ad520237330a5.safetensors",
+      "key": "610808d8a0c3fbcbe29bf71a1f30c79f0a01d90ea58b4489ba2ad520237330a5"
+    },
+    {
+      "pair": 6,
+      "prefix_tokens": 460,
+      "cache_bytes": 90374144,
+      "file_bytes": 90383184,
+      "prepare_s": 1.443345359992236,
+      "npu_to_ram_s": 0.010384160093963146,
+      "disk_save_s": 0.10046251979656518,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/84d0f1ef9891b716c5a650e49e7570945fc6fac904c2347e5887435e5550b9d3.safetensors",
+      "key": "84d0f1ef9891b716c5a650e49e7570945fc6fac904c2347e5887435e5550b9d3"
+    },
+    {
+      "pair": 7,
+      "prefix_tokens": 1989,
+      "cache_bytes": 215629824,
+      "file_bytes": 215645224,
+      "prepare_s": 5.437322990037501,
+      "npu_to_ram_s": 0.045552740106359124,
+      "disk_save_s": 0.1621988599654287,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/0904176524bb8649d290ee69b74b000fcdfd6be11ba44d0b466a8cfcfa85c6dc.safetensors",
+      "key": "0904176524bb8649d290ee69b74b000fcdfd6be11ba44d0b466a8cfcfa85c6dc"
+    },
+    {
+      "pair": 8,
+      "prefix_tokens": 120,
+      "cache_bytes": 62521344,
+      "file_bytes": 62528656,
+      "prepare_s": 0.38268259004689753,
+      "npu_to_ram_s": 0.007263640174642205,
+      "disk_save_s": 0.07285124994814396,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/f45849431d560460df4d6fa344c2fa379ef038e23c4890e15bc57436e749c2af.safetensors",
+      "key": "f45849431d560460df4d6fa344c2fa379ef038e23c4890e15bc57436e749c2af"
+    },
+    {
+      "pair": 9,
+      "prefix_tokens": 203,
+      "cache_bytes": 69320704,
+      "file_bytes": 69328488,
+      "prepare_s": 0.7422365699894726,
+      "npu_to_ram_s": 0.013549849856644869,
+      "disk_save_s": 0.07656065002083778,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/024b891a9eaf69cfe8370ad7608accfbdd8ddc034484d8389b776bcc52446828.safetensors",
+      "key": "024b891a9eaf69cfe8370ad7608accfbdd8ddc034484d8389b776bcc52446828"
+    },
+    {
+      "pair": 10,
+      "prefix_tokens": 317,
+      "cache_bytes": 78659584,
+      "file_bytes": 78667944,
+      "prepare_s": 0.924194100080058,
+      "npu_to_ram_s": 0.008849369827657938,
+      "disk_save_s": 0.07962075993418694,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/6aabcb279449dc4c42430c15862e70a3474f1cf4ad9af1c908d8a032f3f9c857.safetensors",
+      "key": "6aabcb279449dc4c42430c15862e70a3474f1cf4ad9af1c908d8a032f3f9c857"
+    },
+    {
+      "pair": 11,
+      "prefix_tokens": 542,
+      "cache_bytes": 97091584,
+      "file_bytes": 97101072,
+      "prepare_s": 1.6281514600850642,
+      "npu_to_ram_s": 0.011020299978554249,
+      "disk_save_s": 0.09200379997491837,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/b92d2f990b0c0a7c165f3df0b69f61e6c8e4f5a3958eac2f3efaecb179a54238.safetensors",
+      "key": "b92d2f990b0c0a7c165f3df0b69f61e6c8e4f5a3958eac2f3efaecb179a54238"
+    },
+    {
+      "pair": 12,
+      "prefix_tokens": 110,
+      "cache_bytes": 61702144,
+      "file_bytes": 61709384,
+      "prepare_s": 0.38300650008022785,
+      "npu_to_ram_s": 0.01057320018298924,
+      "disk_save_s": 0.06459068995900452,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/0219442e6b33a4787e7a4c154991ff495773b9d5b213fbb65ad6227823115175.safetensors",
+      "key": "0219442e6b33a4787e7a4c154991ff495773b9d5b213fbb65ad6227823115175"
+    },
+    {
+      "pair": 13,
+      "prefix_tokens": 237,
+      "cache_bytes": 72105984,
+      "file_bytes": 72113944,
+      "prepare_s": 0.7409416700247675,
+      "npu_to_ram_s": 0.009412969928234816,
+      "disk_save_s": 0.08326336997561157,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/019196ad88ca07c105bad0625c5dfde4c42c17fed1f60d6a6a7feae03a27fcc3.safetensors",
+      "key": "019196ad88ca07c105bad0625c5dfde4c42c17fed1f60d6a6a7feae03a27fcc3"
+    },
+    {
+      "pair": 14,
+      "prefix_tokens": 536,
+      "cache_bytes": 96600064,
+      "file_bytes": 96609664,
+      "prepare_s": 1.6281836200505495,
+      "npu_to_ram_s": 0.01464996999129653,
+      "disk_save_s": 0.06634969008155167,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/c2f62e8dc619f3476b31a963388057cbc8606fc674a5a22eb41217bfc6f37f44.safetensors",
+      "key": "c2f62e8dc619f3476b31a963388057cbc8606fc674a5a22eb41217bfc6f37f44"
+    },
+    {
+      "pair": 15,
+      "prefix_tokens": 750,
+      "cache_bytes": 114130944,
+      "file_bytes": 114141504,
+      "prepare_s": 2.1551920999772847,
+      "npu_to_ram_s": 0.017805909970775247,
+      "disk_save_s": 0.07848951010964811,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/4d56bb7c90f04ab41aa04fffe6597b0c39c9c3a29a8426af19e11e5f62a0595a.safetensors",
+      "key": "4d56bb7c90f04ab41aa04fffe6597b0c39c9c3a29a8426af19e11e5f62a0595a"
+    },
+    {
+      "pair": 16,
+      "prefix_tokens": 154,
+      "cache_bytes": 65306624,
+      "file_bytes": 65314152,
+      "prepare_s": 0.5752262601163238,
+      "npu_to_ram_s": 0.008600830100476742,
+      "disk_save_s": 0.05133573990315199,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/04c052b457e162f956426ebf7af224751a13759662f7a3692233608fabc0dd51.safetensors",
+      "key": "04c052b457e162f956426ebf7af224751a13759662f7a3692233608fabc0dd51"
+    },
+    {
+      "pair": 17,
+      "prefix_tokens": 344,
+      "cache_bytes": 80871424,
+      "file_bytes": 80879960,
+      "prepare_s": 1.0923371999524534,
+      "npu_to_ram_s": 0.013549929950386286,
+      "disk_save_s": 0.060235700104385614,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/e57a67b284c9890f276ef5126dea2265519ee812700493ec7b1d64159863ba53.safetensors",
+      "key": "e57a67b284c9890f276ef5126dea2265519ee812700493ec7b1d64159863ba53"
+    },
+    {
+      "pair": 18,
+      "prefix_tokens": 571,
+      "cache_bytes": 99467264,
+      "file_bytes": 99477152,
+      "prepare_s": 1.6358096299227327,
+      "npu_to_ram_s": 0.013539340114220977,
+      "disk_save_s": 0.0721911599393934,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/6d9399bcbe2ce3ec44eb381de83f1856e29f74634823f4d6efd975c1cb3595e8.safetensors",
+      "key": "6d9399bcbe2ce3ec44eb381de83f1856e29f74634823f4d6efd975c1cb3595e8"
+    },
+    {
+      "pair": 19,
+      "prefix_tokens": 766,
+      "cache_bytes": 115441664,
+      "file_bytes": 115452568,
+      "prepare_s": 2.1632449398748577,
+      "npu_to_ram_s": 0.012476950185373425,
+      "disk_save_s": 0.08275313000194728,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/7d41deaf61d4def59364b0f55b48e87f7207fc9b0e4c9b7a415669677a97b360.safetensors",
+      "key": "7d41deaf61d4def59364b0f55b48e87f7207fc9b0e4c9b7a415669677a97b360"
+    },
+    {
+      "pair": 20,
+      "prefix_tokens": 52,
+      "cache_bytes": 56950784,
+      "file_bytes": 56957704,
+      "prepare_s": 0.22275591013021767,
+      "npu_to_ram_s": 0.008609139826148748,
+      "disk_save_s": 0.045021780068054795,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/273d401d7da26e02db22e46ac3cfa2055a609c8a0cc37395c80b42b020ba74f1.safetensors",
+      "key": "273d401d7da26e02db22e46ac3cfa2055a609c8a0cc37395c80b42b020ba74f1"
+    },
+    {
+      "pair": 21,
+      "prefix_tokens": 54,
+      "cache_bytes": 57114624,
+      "file_bytes": 57121552,
+      "prepare_s": 0.2177603798918426,
+      "npu_to_ram_s": 0.0066625801846385,
+      "disk_save_s": 0.04648899985477328,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/a5e3ee4c062cd69491ae2e19eeeca9a24c2d8abf6a9f368e01eaa7d52086bc6e.safetensors",
+      "key": "a5e3ee4c062cd69491ae2e19eeeca9a24c2d8abf6a9f368e01eaa7d52086bc6e"
+    },
+    {
+      "pair": 22,
+      "prefix_tokens": 59,
+      "cache_bytes": 57524224,
+      "file_bytes": 57531176,
+      "prepare_s": 0.2186896000057459,
+      "npu_to_ram_s": 0.0067063900642097,
+      "disk_save_s": 0.04588975012302399,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/12d6f4777a6156be6121c6749f03e630ab9895abfa359bb2d75b088677cafef8.safetensors",
+      "key": "12d6f4777a6156be6121c6749f03e630ab9895abfa359bb2d75b088677cafef8"
+    },
+    {
+      "pair": 23,
+      "prefix_tokens": 62,
+      "cache_bytes": 57769984,
+      "file_bytes": 57776952,
+      "prepare_s": 0.21815678011626005,
+      "npu_to_ram_s": 0.006635260069742799,
+      "disk_save_s": 0.045519160106778145,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/952f3c0982d501cf85fdb712f52d646c64d4b28117a7d97570e60fdf56a0ef2c.safetensors",
+      "key": "952f3c0982d501cf85fdb712f52d646c64d4b28117a7d97570e60fdf56a0ef2c"
+    },
+    {
+      "pair": 24,
+      "prefix_tokens": 56,
+      "cache_bytes": 57278464,
+      "file_bytes": 57285384,
+      "prepare_s": 0.21812760015018284,
+      "npu_to_ram_s": 0.006640929961577058,
+      "disk_save_s": 0.04612268996424973,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/97ddbbb5f9f2a8ac732bf8d6032a97562fc0466896bf262d771ac1a2eabd54e9.safetensors",
+      "key": "97ddbbb5f9f2a8ac732bf8d6032a97562fc0466896bf262d771ac1a2eabd54e9"
+    },
+    {
+      "pair": 25,
+      "prefix_tokens": 79,
+      "cache_bytes": 59162624,
+      "file_bytes": 59169720,
+      "prepare_s": 0.3849386600777507,
+      "npu_to_ram_s": 0.010072469944134355,
+      "disk_save_s": 0.04624638007953763,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/8ad72d170f6b3b2778f3e7b824ac6e8fe775a398dda6ffeb8af89cd1b22317bf.safetensors",
+      "key": "8ad72d170f6b3b2778f3e7b824ac6e8fe775a398dda6ffeb8af89cd1b22317bf"
+    },
+    {
+      "pair": 26,
+      "prefix_tokens": 151,
+      "cache_bytes": 65060864,
+      "file_bytes": 65068496,
+      "prepare_s": 0.5749246599152684,
+      "npu_to_ram_s": 0.006965130101889372,
+      "disk_save_s": 0.05115528008900583,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/4bc8a36fb190feea46ca3806b7fea16abeb39a21757c7319892fbb65457b0c99.safetensors",
+      "key": "4bc8a36fb190feea46ca3806b7fea16abeb39a21757c7319892fbb65457b0c99"
+    },
+    {
+      "pair": 27,
+      "prefix_tokens": 205,
+      "cache_bytes": 69484544,
+      "file_bytes": 69492472,
+      "prepare_s": 0.742696929955855,
+      "npu_to_ram_s": 0.013051910093054175,
+      "disk_save_s": 0.05492480983957648,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/95d673ab750af9c2d6649059db14abab24cc184d78dd6db327f6b3be8efb0d83.safetensors",
+      "key": "95d673ab750af9c2d6649059db14abab24cc184d78dd6db327f6b3be8efb0d83"
+    },
+    {
+      "pair": 28,
+      "prefix_tokens": 67,
+      "cache_bytes": 58179584,
+      "file_bytes": 58186576,
+      "prepare_s": 0.3809035101439804,
+      "npu_to_ram_s": 0.0074708000756800175,
+      "disk_save_s": 0.04873302020132542,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/ebabaac82473cbc9b2892d54a06652da529edd4e9f75631d30a474cc2ed5f990.safetensors",
+      "key": "ebabaac82473cbc9b2892d54a06652da529edd4e9f75631d30a474cc2ed5f990"
+    },
+    {
+      "pair": 29,
+      "prefix_tokens": 94,
+      "cache_bytes": 60391424,
+      "file_bytes": 60398624,
+      "prepare_s": 0.38459281995892525,
+      "npu_to_ram_s": 0.006896130042150617,
+      "disk_save_s": 0.05014550010673702,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/08680ea165de41e7f4d10bf0aa1768774b859936ecfa9c798d6e1e1974527ef0.safetensors",
+      "key": "08680ea165de41e7f4d10bf0aa1768774b859936ecfa9c798d6e1e1974527ef0"
+    },
+    {
+      "pair": 30,
+      "prefix_tokens": 133,
+      "cache_bytes": 63586304,
+      "file_bytes": 63593640,
+      "prepare_s": 0.5742445399519056,
+      "npu_to_ram_s": 0.006601700093597174,
+      "disk_save_s": 0.05214826995506883,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/e6c01b14895a6798116a7544a183fabf995a3856c87e0161aa29ef12645ddaa2.safetensors",
+      "key": "e6c01b14895a6798116a7544a183fabf995a3856c87e0161aa29ef12645ddaa2"
+    },
+    {
+      "pair": 31,
+      "prefix_tokens": 207,
+      "cache_bytes": 69648384,
+      "file_bytes": 69656152,
+      "prepare_s": 0.743193730013445,
+      "npu_to_ram_s": 0.007882770150899887,
+      "disk_save_s": 0.05550106009468436,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/794bf7fe8dade5e6098219b1b4c46e4996a1752cf85b35eb1375efbae00acfb2.safetensors",
+      "key": "794bf7fe8dade5e6098219b1b4c46e4996a1752cf85b35eb1375efbae00acfb2"
+    },
+    {
+      "pair": 32,
+      "prefix_tokens": 82,
+      "cache_bytes": 59408384,
+      "file_bytes": 59415480,
+      "prepare_s": 0.38228794978931546,
+      "npu_to_ram_s": 0.006583020091056824,
+      "disk_save_s": 0.048792339861392975,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/d927e7ce4fb9389283be227f7dfa4cc077ddd7baedb87263c0ed324d35b9121d.safetensors",
+      "key": "d927e7ce4fb9389283be227f7dfa4cc077ddd7baedb87263c0ed324d35b9121d"
+    },
+    {
+      "pair": 33,
+      "prefix_tokens": 184,
+      "cache_bytes": 67764224,
+      "file_bytes": 67772080,
+      "prepare_s": 0.5779713098891079,
+      "npu_to_ram_s": 0.006777920061722398,
+      "disk_save_s": 0.05284743010997772,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/97f443eba0497fc9ff60a021fc2c2b3c256e71876151780d5e368b10eb6cec86.safetensors",
+      "key": "97f443eba0497fc9ff60a021fc2c2b3c256e71876151780d5e368b10eb6cec86"
+    },
+    {
+      "pair": 34,
+      "prefix_tokens": 244,
+      "cache_bytes": 72679424,
+      "file_bytes": 72687440,
+      "prepare_s": 0.7464642699342221,
+      "npu_to_ram_s": 0.04134501004591584,
+      "disk_save_s": 0.0767969898879528,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/66a5dedb41da7ee41d4c0cd2f92ff84c2b150d2a54c71666d8151961d37cc21b.safetensors",
+      "key": "66a5dedb41da7ee41d4c0cd2f92ff84c2b150d2a54c71666d8151961d37cc21b"
+    },
+    {
+      "pair": 35,
+      "prefix_tokens": 761,
+      "cache_bytes": 115032064,
+      "file_bytes": 115043456,
+      "prepare_s": 2.1628215298987925,
+      "npu_to_ram_s": 0.013316510012373328,
+      "disk_save_s": 0.09891684004105628,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/35f319a963961c43a8ac840f5c288a3b4bccd48f929b3e3b329b7dbac56a0e30.safetensors",
+      "key": "35f319a963961c43a8ac840f5c288a3b4bccd48f929b3e3b329b7dbac56a0e30"
+    },
+    {
+      "pair": 36,
+      "prefix_tokens": 159,
+      "cache_bytes": 65716224,
+      "file_bytes": 65723896,
+      "prepare_s": 0.5777073299977928,
+      "npu_to_ram_s": 0.007475330028682947,
+      "disk_save_s": 0.06725318008102477,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/1cc70b15cb350d90db0f49cec86d905669e62cd229a930540789b639510572c4.safetensors",
+      "key": "1cc70b15cb350d90db0f49cec86d905669e62cd229a930540789b639510572c4"
+    },
+    {
+      "pair": 37,
+      "prefix_tokens": 462,
+      "cache_bytes": 90537984,
+      "file_bytes": 90547840,
+      "prepare_s": 1.4444108898751438,
+      "npu_to_ram_s": 0.014007480116561055,
+      "disk_save_s": 0.08335560001432896,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/ae16c1fbae1abac5923f9c1e6037814c2635c479f3f4c5504b9a47c708cccf01.safetensors",
+      "key": "ae16c1fbae1abac5923f9c1e6037814c2635c479f3f4c5504b9a47c708cccf01"
+    },
+    {
+      "pair": 38,
+      "prefix_tokens": 1436,
+      "cache_bytes": 170328064,
+      "file_bytes": 170344984,
+      "prepare_s": 4.105151090072468,
+      "npu_to_ram_s": 0.018237610114738345,
+      "disk_save_s": 0.13535997015424073,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/e1e2afe8fa7a820af0070e81c296b6c7612b99e3daeea32a2525e56e9e986099.safetensors",
+      "key": "e1e2afe8fa7a820af0070e81c296b6c7612b99e3daeea32a2525e56e9e986099"
+    },
+    {
+      "pair": 39,
+      "prefix_tokens": 3052,
+      "cache_bytes": 302710784,
+      "file_bytes": 302739416,
+      "prepare_s": 8.046970610041171,
+      "npu_to_ram_s": 0.028124320087954402,
+      "disk_save_s": 0.19330154010094702,
+      "path": "/workspace/results/clef_document_cache_ec5e1de1/float32/d954ee7f74b4e4c3a08ce15ab89689b872621e2921743c86368f957bb85719eb.safetensors",
+      "key": "d954ee7f74b4e4c3a08ce15ab89689b872621e2921743c86368f957bb85719eb"
+    }
+  ],
+  "rows": [
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "qid": "77471",
+      "did": "25786",
+      "input_tokens": 222,
+      "prefix_tokens": 78,
+      "suffix_tokens": 144,
+      "cache_bytes": 59080704,
+      "uncached": {
+        "logits": [
+          -4.280323505401611,
+          -0.7596954107284546
+        ],
+        "score": 0.0287309680134058
+      },
+      "cached": {
+        "logits": [
+          -4.280333995819092,
+          -0.7597054243087769
+        ],
+        "score": 0.028730953112244606
+      },
+      "uncached_timing": {
+        "median_s": 0.7538736800197512,
+        "samples_s": [
+          0.7544112801551819,
+          0.7534960401244462,
+          0.7538736800197512
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5748901800252497,
+        "samples_s": [
+          0.5774983498267829,
+          0.5748901800252497,
+          0.5739835798740387
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.0066382798831909895,
+        "samples_s": [
+          0.029365380061790347,
+          0.0066382798831909895,
+          0.0064631199929863214
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 1.4901161193847656e-08,
+      "logit_abs_diff": 1.049041748046875e-05,
+      "resident_speedup": 1.311335114450277,
+      "ram_speedup": 1.2963659253038888
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "qid": "77471",
+      "did": "155409",
+      "input_tokens": 264,
+      "prefix_tokens": 120,
+      "suffix_tokens": 144,
+      "cache_bytes": 62521344,
+      "uncached": {
+        "logits": [
+          -3.2486400604248047,
+          1.094529390335083
+        ],
+        "score": 0.012828567996621132
+      },
+      "cached": {
+        "logits": [
+          -3.248638153076172,
+          1.0945333242416382
+        ],
+        "score": 0.012828536331653595
+      },
+      "uncached_timing": {
+        "median_s": 0.9200459499843419,
+        "samples_s": [
+          0.9251543099526316,
+          0.9200459499843419,
+          0.9196203099563718
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5783467299770564,
+        "samples_s": [
+          0.5796403801068664,
+          0.5783467299770564,
+          0.5783375599421561
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006368899950757623,
+        "samples_s": [
+          0.007646279875189066,
+          0.006368899950757623,
+          0.00633115996606648
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 3.166496753692627e-08,
+      "logit_abs_diff": 3.933906555175781e-06,
+      "resident_speedup": 1.590820700275838,
+      "ram_speedup": 1.573492998806832
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "qid": "77471",
+      "did": "147736",
+      "input_tokens": 329,
+      "prefix_tokens": 185,
+      "suffix_tokens": 144,
+      "cache_bytes": 67846144,
+      "uncached": {
+        "logits": [
+          -3.6727817058563232,
+          -0.07740235328674316
+        ],
+        "score": 0.02671688050031662
+      },
+      "cached": {
+        "logits": [
+          -3.6727511882781982,
+          -0.07737100124359131
+        ],
+        "score": 0.02671685814857483
+      },
+      "uncached_timing": {
+        "median_s": 1.0957570502068847,
+        "samples_s": [
+          1.1011319200042635,
+          1.09461542009376,
+          1.0957570502068847
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.588698570150882,
+        "samples_s": [
+          0.588698570150882,
+          0.5893654599785805,
+          0.5872208399232477
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006625530077144504,
+        "samples_s": [
+          0.007955130189657211,
+          0.006625530077144504,
+          0.006510040024295449
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 2.2351741790771484e-08,
+      "logit_abs_diff": 3.135204315185547e-05,
+      "resident_speedup": 1.8613210661035662,
+      "ram_speedup": 1.840605898177443
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "qid": "77471",
+      "did": "61174",
+      "input_tokens": 397,
+      "prefix_tokens": 253,
+      "suffix_tokens": 144,
+      "cache_bytes": 73416704,
+      "uncached": {
+        "logits": [
+          -3.7178728580474854,
+          0.040877580642700195
+        ],
+        "score": 0.022781746461987495
+      },
+      "cached": {
+        "logits": [
+          -3.7178633213043213,
+          0.0408862829208374
+        ],
+        "score": 0.022781765088438988
+      },
+      "uncached_timing": {
+        "median_s": 1.2667917001526803,
+        "samples_s": [
+          1.2715251098852605,
+          1.2667917001526803,
+          1.2654305999167264
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5894865200389177,
+        "samples_s": [
+          0.5897051498759538,
+          0.5894865200389177,
+          0.5892478399910033
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.0069336798042058945,
+        "samples_s": [
+          0.00856274995021522,
+          0.0069336798042058945,
+          0.006927829934284091
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 1.862645149230957e-08,
+      "logit_abs_diff": 9.5367431640625e-06,
+      "resident_speedup": 2.1489748401185613,
+      "ram_speedup": 2.123991944749498
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "qid": "10158",
+      "did": "126194",
+      "input_tokens": 248,
+      "prefix_tokens": 101,
+      "suffix_tokens": 147,
+      "cache_bytes": 60964864,
+      "uncached": {
+        "logits": [
+          -1.6349133253097534,
+          1.6705238819122314
+        ],
+        "score": 0.0353851355612278
+      },
+      "cached": {
+        "logits": [
+          -1.6349146366119385,
+          1.6705241203308105
+        ],
+        "score": 0.03538507968187332
+      },
+      "uncached_timing": {
+        "median_s": 0.7568070299457759,
+        "samples_s": [
+          0.7614854199346155,
+          0.7567333299666643,
+          0.7568070299457759
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5732442701701075,
+        "samples_s": [
+          0.57509456994012,
+          0.572032859781757,
+          0.5732442701701075
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006250610109418631,
+        "samples_s": [
+          0.007737640058621764,
+          0.006250610109418631,
+          0.006186079932376742
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 5.587935447692871e-08,
+      "logit_abs_diff": 1.3113021850585938e-06,
+      "resident_speedup": 1.3202173476957686,
+      "ram_speedup": 1.3059770771067403
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "qid": "10158",
+      "did": "32626",
+      "input_tokens": 313,
+      "prefix_tokens": 166,
+      "suffix_tokens": 147,
+      "cache_bytes": 66289664,
+      "uncached": {
+        "logits": [
+          -1.9914820194244385,
+          1.7553116083145142
+        ],
+        "score": 0.023049458861351013
+      },
+      "cached": {
+        "logits": [
+          -1.9914807081222534,
+          1.7553132772445679
+        ],
+        "score": 0.023049453273415565
+      },
+      "uncached_timing": {
+        "median_s": 0.9226576799992472,
+        "samples_s": [
+          0.9289914800319821,
+          0.9226094600744545,
+          0.9226576799992472
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5777760501950979,
+        "samples_s": [
+          0.5779552599415183,
+          0.5769875899422914,
+          0.5777760501950979
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006460109958425164,
+        "samples_s": [
+          0.007861200021579862,
+          0.006460109958425164,
+          0.006431190064176917
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 5.587935447692871e-09,
+      "logit_abs_diff": 1.6689300537109375e-06,
+      "resident_speedup": 1.5969122979183594,
+      "ram_speedup": 1.5792546626295694
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "qid": "10158",
+      "did": "36634",
+      "input_tokens": 607,
+      "prefix_tokens": 460,
+      "suffix_tokens": 147,
+      "cache_bytes": 90374144,
+      "uncached": {
+        "logits": [
+          -0.38576388359069824,
+          0.4809309244155884
+        ],
+        "score": 0.2959425151348114
+      },
+      "cached": {
+        "logits": [
+          -0.3857625126838684,
+          0.4809284210205078
+        ],
+        "score": 0.29594331979751587
+      },
+      "uncached_timing": {
+        "median_s": 1.8094339098315686,
+        "samples_s": [
+          1.8146139199379832,
+          1.8094339098315686,
+          1.808210700051859
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5745200500823557,
+        "samples_s": [
+          0.574570010183379,
+          0.5745200500823557,
+          0.5741100898012519
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.008034590166062117,
+        "samples_s": [
+          0.01007906999439001,
+          0.008034590166062117,
+          0.008004549890756607
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 8.046627044677734e-07,
+      "logit_abs_diff": 2.5033950805664062e-06,
+      "resident_speedup": 3.149470431140204,
+      "ram_speedup": 3.1060329535096907
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "qid": "10158",
+      "did": "46325",
+      "input_tokens": 2136,
+      "prefix_tokens": 1989,
+      "suffix_tokens": 147,
+      "cache_bytes": 215629824,
+      "uncached": {
+        "logits": [
+          -2.12945556640625,
+          1.812375545501709
+        ],
+        "score": 0.019042961299419403
+      },
+      "cached": {
+        "logits": [
+          -2.129455089569092,
+          1.812376856803894
+        ],
+        "score": 0.01904294267296791
+      },
+      "uncached_timing": {
+        "median_s": 5.814490400021896,
+        "samples_s": [
+          5.825934799853712,
+          5.814490400021896,
+          5.81343385996297
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5825081700459123,
+        "samples_s": [
+          0.5829112199135125,
+          0.58194192009978,
+          0.5825081700459123
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.014293680200353265,
+        "samples_s": [
+          0.01703883009031415,
+          0.014293680200353265,
+          0.014205449959263206
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 1.862645149230957e-08,
+      "logit_abs_diff": 1.3113021850585938e-06,
+      "resident_speedup": 9.981817764999946,
+      "ram_speedup": 9.742748615177035
+    },
+    {
+      "task": "SCIDOCS",
+      "qid": "fa3894d83f83d7d05f54b2c87158dc7a2288dc1c",
+      "did": "05f0c711c4788e14d1be3ca0e6d3c5ae8ad05cc1",
+      "input_tokens": 270,
+      "prefix_tokens": 120,
+      "suffix_tokens": 150,
+      "cache_bytes": 62521344,
+      "uncached": {
+        "logits": [
+          -1.5752149820327759,
+          0.8598637580871582
+        ],
+        "score": 0.08053659647703171
+      },
+      "cached": {
+        "logits": [
+          -1.5752146244049072,
+          0.8598614931106567
+        ],
+        "score": 0.08053676784038544
+      },
+      "uncached_timing": {
+        "median_s": 0.9206202100031078,
+        "samples_s": [
+          0.927029870217666,
+          0.9206202100031078,
+          0.9205508700106293
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5685465699061751,
+        "samples_s": [
+          0.5708597199991345,
+          0.5685397400520742,
+          0.5685465699061751
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.0063422201201319695,
+        "samples_s": [
+          0.00776929990388453,
+          0.006273879902437329,
+          0.0063422201201319695
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 1.7136335372924805e-07,
+      "logit_abs_diff": 2.2649765014648438e-06,
+      "resident_speedup": 1.6192520696326316,
+      "ram_speedup": 1.601388348450802
+    },
+    {
+      "task": "SCIDOCS",
+      "qid": "fa3894d83f83d7d05f54b2c87158dc7a2288dc1c",
+      "did": "e4a6673ef658221fef360e6051631d65e9547b62",
+      "input_tokens": 353,
+      "prefix_tokens": 203,
+      "suffix_tokens": 150,
+      "cache_bytes": 69320704,
+      "uncached": {
+        "logits": [
+          -2.556044101715088,
+          1.6276674270629883
+        ],
+        "score": 0.015013005584478378
+      },
+      "cached": {
+        "logits": [
+          -2.556044340133667,
+          1.627666711807251
+        ],
+        "score": 0.015013013035058975
+      },
+      "uncached_timing": {
+        "median_s": 1.1025539699476212,
+        "samples_s": [
+          1.1080988000612706,
+          1.1020887000486255,
+          1.1025539699476212
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5797397901769727,
+        "samples_s": [
+          0.5800919099710882,
+          0.5797397901769727,
+          0.5793500600848347
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006895279977470636,
+        "samples_s": [
+          0.00858735991641879,
+          0.006895279977470636,
+          0.006844660034403205
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 7.450580596923828e-09,
+      "logit_abs_diff": 7.152557373046875e-07,
+      "resident_speedup": 1.9018083433794548,
+      "ram_speedup": 1.8794545809498773
+    },
+    {
+      "task": "SCIDOCS",
+      "qid": "fa3894d83f83d7d05f54b2c87158dc7a2288dc1c",
+      "did": "2ab93b912b5dd28467e59e11fce7d409859dae47",
+      "input_tokens": 467,
+      "prefix_tokens": 317,
+      "suffix_tokens": 150,
+      "cache_bytes": 78659584,
+      "uncached": {
+        "logits": [
+          -2.437912702560425,
+          1.5659840106964111
+        ],
+        "score": 0.017917511984705925
+      },
+      "cached": {
+        "logits": [
+          -2.4379141330718994,
+          1.565983533859253
+        ],
+        "score": 0.017917495220899582
+      },
+      "uncached_timing": {
+        "median_s": 1.4480122700333595,
+        "samples_s": [
+          1.4532860699109733,
+          1.4480122700333595,
+          1.446656750049442
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5794686099980026,
+        "samples_s": [
+          0.5794778000563383,
+          0.5787929601501673,
+          0.5794686099980026
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.007144549861550331,
+        "samples_s": [
+          0.008759279968217015,
+          0.007099820068106055,
+          0.007144549861550331
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 1.6763806343078613e-08,
+      "logit_abs_diff": 1.430511474609375e-06,
+      "resident_speedup": 2.498862311175666,
+      "ram_speedup": 2.4684278654438008
+    },
+    {
+      "task": "SCIDOCS",
+      "qid": "fa3894d83f83d7d05f54b2c87158dc7a2288dc1c",
+      "did": "24b3785a3ffae660a60e9ac4eb104b8adfc5871b",
+      "input_tokens": 692,
+      "prefix_tokens": 542,
+      "suffix_tokens": 150,
+      "cache_bytes": 97091584,
+      "uncached": {
+        "logits": [
+          -2.392728567123413,
+          1.4179717302322388
+        ],
+        "score": 0.021653423085808754
+      },
+      "cached": {
+        "logits": [
+          -2.3927273750305176,
+          1.417973518371582
+        ],
+        "score": 0.021653413772583008
+      },
+      "uncached_timing": {
+        "median_s": 1.9608783600851893,
+        "samples_s": [
+          1.969468540046364,
+          1.9593384400941432,
+          1.9608783600851893
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5737983100116253,
+        "samples_s": [
+          0.5742235800717026,
+          0.5737983100116253,
+          0.5733165701385587
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.00821573007851839,
+        "samples_s": [
+          0.010299460031092167,
+          0.00821573007851839,
+          0.00817658007144928
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 9.313225746154785e-09,
+      "logit_abs_diff": 1.7881393432617188e-06,
+      "resident_speedup": 3.417365171475429,
+      "ram_speedup": 3.3691255279365495
+    },
+    {
+      "task": "FiQA2018",
+      "qid": "3179",
+      "did": "64598",
+      "input_tokens": 258,
+      "prefix_tokens": 110,
+      "suffix_tokens": 148,
+      "cache_bytes": 61702144,
+      "uncached": {
+        "logits": [
+          -1.838057518005371,
+          -4.142349720001221
+        ],
+        "score": 0.9092319011688232
+      },
+      "cached": {
+        "logits": [
+          -1.838057041168213,
+          -4.142350196838379
+        ],
+        "score": 0.909231960773468
+      },
+      "uncached_timing": {
+        "median_s": 0.9201512399595231,
+        "samples_s": [
+          0.9267545801121742,
+          0.919658079976216,
+          0.9201512399595231
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5686277800705284,
+        "samples_s": [
+          0.5715576300863177,
+          0.5682035700883716,
+          0.5686277800705284
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006366739980876446,
+        "samples_s": [
+          0.007828280096873641,
+          0.006327080074697733,
+          0.006366739980876446
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 5.960464477539063e-08,
+      "logit_abs_diff": 4.76837158203125e-07,
+      "resident_speedup": 1.6181960716822423,
+      "ram_speedup": 1.6002782772212525
+    },
+    {
+      "task": "FiQA2018",
+      "qid": "3179",
+      "did": "328341",
+      "input_tokens": 385,
+      "prefix_tokens": 237,
+      "suffix_tokens": 148,
+      "cache_bytes": 72105984,
+      "uncached": {
+        "logits": [
+          -2.221301555633545,
+          0.3589895963668823
+        ],
+        "score": 0.07041766494512558
+      },
+      "cached": {
+        "logits": [
+          -2.221301555633545,
+          0.3589901924133301
+        ],
+        "score": 0.0704176276922226
+      },
+      "uncached_timing": {
+        "median_s": 1.265579410130158,
+        "samples_s": [
+          1.2720575900748372,
+          1.265579410130158,
+          1.2649391200393438
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5783449800219387,
+        "samples_s": [
+          0.5813454301096499,
+          0.5781748699955642,
+          0.5783449800219387
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.007323519792407751,
+        "samples_s": [
+          0.02320185978896916,
+          0.007323519792407751,
+          0.006509419996291399
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 3.725290298461914e-08,
+      "logit_abs_diff": 5.960464477539062e-07,
+      "resident_speedup": 2.18827767828494,
+      "ram_speedup": 2.160914255302
+    },
+    {
+      "task": "FiQA2018",
+      "qid": "3179",
+      "did": "65040",
+      "input_tokens": 684,
+      "prefix_tokens": 536,
+      "suffix_tokens": 148,
+      "cache_bytes": 96600064,
+      "uncached": {
+        "logits": [
+          -2.1219680309295654,
+          -4.040022850036621
+        ],
+        "score": 0.8719213604927063
+      },
+      "cached": {
+        "logits": [
+          -2.1219677925109863,
+          -4.04002046585083
+        ],
+        "score": 0.8719210624694824
+      },
+      "uncached_timing": {
+        "median_s": 1.97170596010983,
+        "samples_s": [
+          1.9803620798047632,
+          1.97170596010983,
+          1.9715853398665786
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5728013599291444,
+        "samples_s": [
+          0.5739226799923927,
+          0.5728013599291444,
+          0.5722735698800534
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.008034969912841916,
+        "samples_s": [
+          0.010169659974053502,
+          0.00803346000611782,
+          0.008034969912841916
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 2.980232238769531e-07,
+      "logit_abs_diff": 2.384185791015625e-06,
+      "resident_speedup": 3.442215919937289,
+      "ram_speedup": 3.3945982005743733
+    },
+    {
+      "task": "FiQA2018",
+      "qid": "3179",
+      "did": "520584",
+      "input_tokens": 898,
+      "prefix_tokens": 750,
+      "suffix_tokens": 148,
+      "cache_bytes": 114130944,
+      "uncached": {
+        "logits": [
+          -0.561576247215271,
+          0.38163262605667114
+        ],
+        "score": 0.280252605676651
+      },
+      "cached": {
+        "logits": [
+          -0.561576247215271,
+          0.3816341757774353
+        ],
+        "score": 0.2802523076534271
+      },
+      "uncached_timing": {
+        "median_s": 2.677072679856792,
+        "samples_s": [
+          2.678226310061291,
+          2.677072679856792,
+          2.6750851899851114
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5709126000292599,
+        "samples_s": [
+          0.5723352998029441,
+          0.5702117099426687,
+          0.5709126000292599
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.00922826980240643,
+        "samples_s": [
+          0.011227990034967661,
+          0.00922826980240643,
+          0.009165480034425855
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 2.980232238769531e-07,
+      "logit_abs_diff": 1.5497207641601562e-06,
+      "resident_speedup": 4.689111222487626,
+      "ram_speedup": 4.614521780948774
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "qid": "2983",
+      "did": "Keeling_(disambiguation)",
+      "input_tokens": 328,
+      "prefix_tokens": 154,
+      "suffix_tokens": 174,
+      "cache_bytes": 65306624,
+      "uncached": {
+        "logits": [
+          -1.4381849765777588,
+          1.1322124004364014
+        ],
+        "score": 0.07106806337833405
+      },
+      "cached": {
+        "logits": [
+          -1.4381859302520752,
+          1.1322107315063477
+        ],
+        "score": 0.07106811553239822
+      },
+      "uncached_timing": {
+        "median_s": 1.0956094600260258,
+        "samples_s": [
+          1.1000765701755881,
+          1.0945668299682438,
+          1.0956094600260258
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.570530439959839,
+        "samples_s": [
+          0.5735645999666303,
+          0.570530439959839,
+          0.5702059301547706
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.00642564008012414,
+        "samples_s": [
+          0.007915769936516881,
+          0.00642564008012414,
+          0.006372520001605153
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 5.21540641784668e-08,
+      "logit_abs_diff": 1.6689300537109375e-06,
+      "resident_speedup": 1.9203348030004295,
+      "ram_speedup": 1.8989477673068942
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "qid": "2983",
+      "did": "Sea_level_rise",
+      "input_tokens": 518,
+      "prefix_tokens": 344,
+      "suffix_tokens": 174,
+      "cache_bytes": 80871424,
+      "uncached": {
+        "logits": [
+          -1.6734943389892578,
+          0.9257966876029968
+        ],
+        "score": 0.06918405741453171
+      },
+      "cached": {
+        "logits": [
+          -1.6734951734542847,
+          0.9257955551147461
+        ],
+        "score": 0.0691840723156929
+      },
+      "uncached_timing": {
+        "median_s": 1.64385392004624,
+        "samples_s": [
+          1.6485450400505215,
+          1.6430230201222003,
+          1.64385392004624
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5773481801152229,
+        "samples_s": [
+          0.5781105998903513,
+          0.5773481801152229,
+          0.5761057399213314
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.007701100083068013,
+        "samples_s": [
+          0.009714929852634668,
+          0.007701100083068013,
+          0.007669559912756085
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 1.4901161193847656e-08,
+      "logit_abs_diff": 1.1324882507324219e-06,
+      "resident_speedup": 2.847248812178072,
+      "ram_speedup": 2.8097700068771783
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "qid": "2983",
+      "did": "Paleocene–Eocene_Thermal_Maximum",
+      "input_tokens": 745,
+      "prefix_tokens": 571,
+      "suffix_tokens": 174,
+      "cache_bytes": 99467264,
+      "uncached": {
+        "logits": [
+          -1.670191764831543,
+          1.176876187324524
+        ],
+        "score": 0.05483308434486389
+      },
+      "cached": {
+        "logits": [
+          -1.6701915264129639,
+          1.1768784523010254
+        ],
+        "score": 0.05483297258615494
+      },
+      "uncached_timing": {
+        "median_s": 2.175773570081219,
+        "samples_s": [
+          2.1801064398605376,
+          2.1740975899156183,
+          2.175773570081219
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5755668799392879,
+        "samples_s": [
+          0.5757791299838573,
+          0.5753547898493707,
+          0.5755668799392879
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.008229129947721958,
+        "samples_s": [
+          0.010283630108460784,
+          0.008229129947721958,
+          0.008188800187781453
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 1.1175870895385742e-07,
+      "logit_abs_diff": 2.2649765014648438e-06,
+      "resident_speedup": 3.7802271915137378,
+      "ram_speedup": 3.726941488521524
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "qid": "2983",
+      "did": "Global_warming_hiatus",
+      "input_tokens": 940,
+      "prefix_tokens": 766,
+      "suffix_tokens": 174,
+      "cache_bytes": 115441664,
+      "uncached": {
+        "logits": [
+          -2.4666857719421387,
+          0.44304001331329346
+        ],
+        "score": 0.05167488008737564
+      },
+      "cached": {
+        "logits": [
+          -2.4666857719421387,
+          0.44304168224334717
+        ],
+        "score": 0.05167478695511818
+      },
+      "uncached_timing": {
+        "median_s": 2.6979990599211305,
+        "samples_s": [
+          2.70021252008155,
+          2.6979990599211305,
+          2.6974925799295306
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.571094139944762,
+        "samples_s": [
+          0.5720510699320585,
+          0.570944809820503,
+          0.571094139944762
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.009303800063207746,
+        "samples_s": [
+          0.011233380064368248,
+          0.009291479829698801,
+          0.009303800063207746
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 9.313225746154785e-08,
+      "logit_abs_diff": 1.6689300537109375e-06,
+      "resident_speedup": 4.724263254009382,
+      "ram_speedup": 4.648533142423081
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200293",
+      "did": "49463",
+      "input_tokens": 191,
+      "prefix_tokens": 52,
+      "suffix_tokens": 139,
+      "cache_bytes": 56950784,
+      "uncached": {
+        "logits": [
+          -1.8886927366256714,
+          1.531063437461853
+        ],
+        "score": 0.03168370947241783
+      },
+      "cached": {
+        "logits": [
+          -1.8886922597885132,
+          1.5310618877410889
+        ],
+        "score": 0.031683772802352905
+      },
+      "uncached_timing": {
+        "median_s": 0.5853705999907106,
+        "samples_s": [
+          0.5915831800084561,
+          0.5853705999907106,
+          0.5853210100904107
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.57243947009556,
+        "samples_s": [
+          0.5759199699386954,
+          0.5720748398452997,
+          0.57243947009556
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.005857349839061499,
+        "samples_s": [
+          0.007140900008380413,
+          0.005857349839061499,
+          0.0058527300134301186
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 6.332993507385254e-08,
+      "logit_abs_diff": 1.5497207641601562e-06,
+      "resident_speedup": 1.0225895148232738,
+      "ram_speedup": 1.012232092261702
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200293",
+      "did": "93148",
+      "input_tokens": 193,
+      "prefix_tokens": 54,
+      "suffix_tokens": 139,
+      "cache_bytes": 57114624,
+      "uncached": {
+        "logits": [
+          -1.620299220085144,
+          0.7695028185844421
+        ],
+        "score": 0.08395365625619888
+      },
+      "cached": {
+        "logits": [
+          -1.6202996969223022,
+          0.7695032358169556
+        ],
+        "score": 0.08395358920097351
+      },
+      "uncached_timing": {
+        "median_s": 0.7502597200218588,
+        "samples_s": [
+          0.754671290051192,
+          0.7502597200218588,
+          0.7500184499658644
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5728953001089394,
+        "samples_s": [
+          0.5733388098888099,
+          0.5722758900374174,
+          0.5728953001089394
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.005938570015132427,
+        "samples_s": [
+          0.007256160024553537,
+          0.005938570015132427,
+          0.005877430085092783
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 6.705522537231445e-08,
+      "logit_abs_diff": 4.76837158203125e-07,
+      "resident_speedup": 1.3095930790132029,
+      "ram_speedup": 1.2961572546904385
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200293",
+      "did": "44958",
+      "input_tokens": 198,
+      "prefix_tokens": 59,
+      "suffix_tokens": 139,
+      "cache_bytes": 57524224,
+      "uncached": {
+        "logits": [
+          -1.232927680015564,
+          0.7121827602386475
+        ],
+        "score": 0.12508749961853027
+      },
+      "cached": {
+        "logits": [
+          -1.2329304218292236,
+          0.7121830582618713
+        ],
+        "score": 0.125087171792984
+      },
+      "uncached_timing": {
+        "median_s": 0.7509002501610667,
+        "samples_s": [
+          0.7564900501165539,
+          0.7509002501610667,
+          0.750533530022949
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5722125601023436,
+        "samples_s": [
+          0.5743612498044968,
+          0.5722125601023436,
+          0.5721160599496216
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.00587959005497396,
+        "samples_s": [
+          0.007208690047264099,
+          0.00587959005497396,
+          0.005858680000528693
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 3.2782554626464844e-07,
+      "logit_abs_diff": 2.7418136596679688e-06,
+      "resident_speedup": 1.3122750224615198,
+      "ram_speedup": 1.298928293623642
+    },
+    {
+      "task": "EcomRetrieval",
+      "qid": "200293",
+      "did": "93605",
+      "input_tokens": 201,
+      "prefix_tokens": 62,
+      "suffix_tokens": 139,
+      "cache_bytes": 57769984,
+      "uncached": {
+        "logits": [
+          -1.7404828071594238,
+          1.2199631929397583
+        ],
+        "score": 0.04924512654542923
+      },
+      "cached": {
+        "logits": [
+          -1.7404811382293701,
+          1.2199617624282837
+        ],
+        "score": 0.049245260655879974
+      },
+      "uncached_timing": {
+        "median_s": 0.7507346800994128,
+        "samples_s": [
+          0.7554041598923504,
+          0.7507346800994128,
+          0.7500085500068963
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5726788500323892,
+        "samples_s": [
+          0.5728081699926406,
+          0.5722439500968903,
+          0.5726788500323892
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.005797000136226416,
+        "samples_s": [
+          0.007015429902821779,
+          0.005770039977505803,
+          0.005797000136226416
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 1.341104507446289e-07,
+      "logit_abs_diff": 1.6689300537109375e-06,
+      "resident_speedup": 1.3109174191729855,
+      "ram_speedup": 1.297780503508637
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "26402",
+      "input_tokens": 194,
+      "prefix_tokens": 56,
+      "suffix_tokens": 138,
+      "cache_bytes": 57278464,
+      "uncached": {
+        "logits": [
+          -1.5063424110412598,
+          0.16144824028015137
+        ],
+        "score": 0.15871895849704742
+      },
+      "cached": {
+        "logits": [
+          -1.5063362121582031,
+          0.16145139932632446
+        ],
+        "score": 0.15871939063072205
+      },
+      "uncached_timing": {
+        "median_s": 0.7501350999809802,
+        "samples_s": [
+          0.7551481199916452,
+          0.7492974400520325,
+          0.7501350999809802
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5725926600862294,
+        "samples_s": [
+          0.5748294899240136,
+          0.5722935399971902,
+          0.5725926600862294
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.005834620213136077,
+        "samples_s": [
+          0.006993889808654785,
+          0.005834620213136077,
+          0.0057951100170612335
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 4.3213367462158203e-07,
+      "logit_abs_diff": 6.198883056640625e-06,
+      "resident_speedup": 1.310067613978869,
+      "ram_speedup": 1.2968529070633514
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "80953",
+      "input_tokens": 217,
+      "prefix_tokens": 79,
+      "suffix_tokens": 138,
+      "cache_bytes": 59162624,
+      "uncached": {
+        "logits": [
+          -0.6812765598297119,
+          -0.6357635259628296
+        ],
+        "score": 0.488623708486557
+      },
+      "cached": {
+        "logits": [
+          -0.6812833547592163,
+          -0.6357593536376953
+        ],
+        "score": 0.48862096667289734
+      },
+      "uncached_timing": {
+        "median_s": 0.7539574899710715,
+        "samples_s": [
+          0.7589162499643862,
+          0.7539574899710715,
+          0.753543539904058
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5712776300497353,
+        "samples_s": [
+          0.5723560899496078,
+          0.5712776300497353,
+          0.5709317098371685
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006248189834877849,
+        "samples_s": [
+          0.0075055500492453575,
+          0.006248189834877849,
+          0.006217429880052805
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 2.7418136596679688e-06,
+      "logit_abs_diff": 6.794929504394531e-06,
+      "resident_speedup": 1.3197742223959166,
+      "ram_speedup": 1.305495726791416
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "9814",
+      "input_tokens": 289,
+      "prefix_tokens": 151,
+      "suffix_tokens": 138,
+      "cache_bytes": 65060864,
+      "uncached": {
+        "logits": [
+          -0.4791760742664337,
+          -0.349465012550354
+        ],
+        "score": 0.46761763095855713
+      },
+      "cached": {
+        "logits": [
+          -0.479176789522171,
+          -0.3494633436203003
+        ],
+        "score": 0.467617005109787
+      },
+      "uncached_timing": {
+        "median_s": 0.926323370076716,
+        "samples_s": [
+          0.9313953600358218,
+          0.926323370076716,
+          0.9254631199873984
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5790549400262535,
+        "samples_s": [
+          0.5799558698199689,
+          0.5789972199127078,
+          0.5790549400262535
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.00633216998539865,
+        "samples_s": [
+          0.00772840017452836,
+          0.00633216998539865,
+          0.006332129938527942
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 6.258487701416016e-07,
+      "logit_abs_diff": 1.6689300537109375e-06,
+      "resident_speedup": 1.5997158577642354,
+      "ram_speedup": 1.5824116285346248
+    },
+    {
+      "task": "MedicalRetrieval",
+      "qid": "90",
+      "did": "48284",
+      "input_tokens": 343,
+      "prefix_tokens": 205,
+      "suffix_tokens": 138,
+      "cache_bytes": 69484544,
+      "uncached": {
+        "logits": [
+          -0.4559047520160675,
+          -0.5452808737754822
+        ],
+        "score": 0.5223291516304016
+      },
+      "cached": {
+        "logits": [
+          -0.45590853691101074,
+          -0.545275092124939
+        ],
+        "score": 0.5223267674446106
+      },
+      "uncached_timing": {
+        "median_s": 1.102101010037586,
+        "samples_s": [
+          1.107604649849236,
+          1.102101010037586,
+          1.101721219951287
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5799921301659197,
+        "samples_s": [
+          0.5798832098953426,
+          0.5803136001341045,
+          0.5799921301659197
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006799039896577597,
+        "samples_s": [
+          0.008433529874309897,
+          0.006799039896577597,
+          0.0067819999530911446
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 2.384185791015625e-06,
+      "logit_abs_diff": 5.781650543212891e-06,
+      "resident_speedup": 1.9001999384410708,
+      "ram_speedup": 1.8781826759939226
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "qid": "646623",
+      "did": "7938248",
+      "input_tokens": 204,
+      "prefix_tokens": 67,
+      "suffix_tokens": 137,
+      "cache_bytes": 58179584,
+      "uncached": {
+        "logits": [
+          -3.2559425830841064,
+          0.883082389831543
+        ],
+        "score": 0.015688341110944748
+      },
+      "cached": {
+        "logits": [
+          -3.255941867828369,
+          0.8830807209014893
+        ],
+        "score": 0.015688370913267136
+      },
+      "uncached_timing": {
+        "median_s": 0.7509973300620914,
+        "samples_s": [
+          0.7552827799227089,
+          0.7509973300620914,
+          0.7504661201965064
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5715018699411303,
+        "samples_s": [
+          0.5742186298593879,
+          0.5713394698686898,
+          0.5715018699411303
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006287609925493598,
+        "samples_s": [
+          0.007617749972268939,
+          0.006287609925493598,
+          0.00625628000125289
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 2.9802322387695312e-08,
+      "logit_abs_diff": 1.6689300537109375e-06,
+      "resident_speedup": 1.314076767831837,
+      "ram_speedup": 1.2997767460831071
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "qid": "646623",
+      "did": "7904559",
+      "input_tokens": 231,
+      "prefix_tokens": 94,
+      "suffix_tokens": 137,
+      "cache_bytes": 60391424,
+      "uncached": {
+        "logits": [
+          -0.34974902868270874,
+          0.19691991806030273
+        ],
+        "score": 0.36663761734962463
+      },
+      "cached": {
+        "logits": [
+          -0.34974902868270874,
+          0.1969214677810669
+        ],
+        "score": 0.3666372299194336
+      },
+      "uncached_timing": {
+        "median_s": 0.7555430601350963,
+        "samples_s": [
+          0.7597276498563588,
+          0.7555430601350963,
+          0.7548291098792106
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.572679519886151,
+        "samples_s": [
+          0.572740140138194,
+          0.5722879997920245,
+          0.572679519886151
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006416260031983256,
+        "samples_s": [
+          0.007974569918587804,
+          0.006416260031983256,
+          0.0063325699884444475
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 3.8743019104003906e-07,
+      "logit_abs_diff": 1.5497207641601562e-06,
+      "resident_speedup": 1.3193121700690444,
+      "ram_speedup": 1.3046944673675678
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "qid": "646623",
+      "did": "7939291",
+      "input_tokens": 270,
+      "prefix_tokens": 133,
+      "suffix_tokens": 137,
+      "cache_bytes": 63586304,
+      "uncached": {
+        "logits": [
+          -2.6569724082946777,
+          1.4686609506607056
+        ],
+        "score": 0.01589648425579071
+      },
+      "cached": {
+        "logits": [
+          -2.6569743156433105,
+          1.4686576128005981
+        ],
+        "score": 0.015896502882242203
+      },
+      "uncached_timing": {
+        "median_s": 0.9207667899318039,
+        "samples_s": [
+          0.9221560701262206,
+          0.9207667899318039,
+          0.9206849399488419
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5800091801211238,
+        "samples_s": [
+          0.5798170098569244,
+          0.5812557199969888,
+          0.5800091801211238
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006343690212816,
+        "samples_s": [
+          0.007732680067420006,
+          0.006343690212816,
+          0.006298909895122051
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 1.862645149230957e-08,
+      "logit_abs_diff": 3.337860107421875e-06,
+      "resident_speedup": 1.5875038214731696,
+      "ram_speedup": 1.5703287841115345
+    },
+    {
+      "task": "MMarcoRetrieval",
+      "qid": "646623",
+      "did": "7955906",
+      "input_tokens": 344,
+      "prefix_tokens": 207,
+      "suffix_tokens": 137,
+      "cache_bytes": 69648384,
+      "uncached": {
+        "logits": [
+          -3.1829640865325928,
+          0.6493718028068542
+        ],
+        "score": 0.021199796348810196
+      },
+      "cached": {
+        "logits": [
+          -3.1829633712768555,
+          0.6493727564811707
+        ],
+        "score": 0.021199792623519897
+      },
+      "uncached_timing": {
+        "median_s": 1.1024939501658082,
+        "samples_s": [
+          1.1046052800957114,
+          1.1022207499481738,
+          1.1024939501658082
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5806213899049908,
+        "samples_s": [
+          0.5812985999509692,
+          0.5804134600330144,
+          0.5806213899049908
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.00705356989055872,
+        "samples_s": [
+          0.008681710110977292,
+          0.00705356989055872,
+          0.007034739945083857
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 3.725290298461914e-09,
+      "logit_abs_diff": 9.5367431640625e-07,
+      "resident_speedup": 1.898817317677899,
+      "ram_speedup": 1.876026758991676
+    },
+    {
+      "task": "DuRetrieval",
+      "qid": "78b5ea5f4b35ec5bdbde24b1609a36bd",
+      "did": "dfa7635a7780421059d901f6df6eecd2",
+      "input_tokens": 225,
+      "prefix_tokens": 82,
+      "suffix_tokens": 143,
+      "cache_bytes": 59408384,
+      "uncached": {
+        "logits": [
+          -3.3789002895355225,
+          0.335834801197052
+        ],
+        "score": 0.023782510310411453
+      },
+      "cached": {
+        "logits": [
+          -3.3789010047912598,
+          0.33583709597587585
+        ],
+        "score": 0.023782437667250633
+      },
+      "uncached_timing": {
+        "median_s": 0.754434600006789,
+        "samples_s": [
+          0.7609647698700428,
+          0.754434600006789,
+          0.7542824698612094
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5730938699562103,
+        "samples_s": [
+          0.5765305100940168,
+          0.5730938699562103,
+          0.571565629914403
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.0063033499754965305,
+        "samples_s": [
+          0.007529200054705143,
+          0.0063033499754965305,
+          0.006272200029343367
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 7.264316082000732e-08,
+      "logit_abs_diff": 2.294778823852539e-06,
+      "resident_speedup": 1.3164241314680871,
+      "ram_speedup": 1.3021025542644367
+    },
+    {
+      "task": "DuRetrieval",
+      "qid": "78b5ea5f4b35ec5bdbde24b1609a36bd",
+      "did": "c4728536c4924e6286877783f546b6ac",
+      "input_tokens": 327,
+      "prefix_tokens": 184,
+      "suffix_tokens": 143,
+      "cache_bytes": 67764224,
+      "uncached": {
+        "logits": [
+          -2.7547929286956787,
+          0.27131378650665283
+        ],
+        "score": 0.0462602935731411
+      },
+      "cached": {
+        "logits": [
+          -2.7547943592071533,
+          0.27131205797195435
+        ],
+        "score": 0.04626031219959259
+      },
+      "uncached_timing": {
+        "median_s": 1.0949011298362166,
+        "samples_s": [
+          1.1004155098926276,
+          1.0943524898029864,
+          1.0949011298362166
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5792002899106592,
+        "samples_s": [
+          0.5793746300041676,
+          0.5786702600307763,
+          0.5792002899106592
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006605949951335788,
+        "samples_s": [
+          0.007886589970439672,
+          0.006605949951335788,
+          0.006554760038852692
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 1.862645149230957e-08,
+      "logit_abs_diff": 1.7285346984863281e-06,
+      "resident_speedup": 1.8903670265860941,
+      "ram_speedup": 1.8690499611171005
+    },
+    {
+      "task": "DuRetrieval",
+      "qid": "78b5ea5f4b35ec5bdbde24b1609a36bd",
+      "did": "2888f6dc8d27ba6fe033ca513be58634",
+      "input_tokens": 387,
+      "prefix_tokens": 244,
+      "suffix_tokens": 143,
+      "cache_bytes": 72679424,
+      "uncached": {
+        "logits": [
+          -3.20762038230896,
+          0.3557743430137634
+        ],
+        "score": 0.027561288326978683
+      },
+      "cached": {
+        "logits": [
+          -3.2076196670532227,
+          0.3557744026184082
+        ],
+        "score": 0.027561308816075325
+      },
+      "uncached_timing": {
+        "median_s": 1.2658939498942345,
+        "samples_s": [
+          1.2708843699656427,
+          1.2656126199290156,
+          1.2658939498942345
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5781692899763584,
+        "samples_s": [
+          0.5794399199075997,
+          0.5781692899763584,
+          0.5780974300578237
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.00696162017993629,
+        "samples_s": [
+          0.008542559808120131,
+          0.006923060165718198,
+          0.00696162017993629
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 2.0489096641540527e-08,
+      "logit_abs_diff": 7.152557373046875e-07,
+      "resident_speedup": 2.18948666392502,
+      "ram_speedup": 2.1634371521342133
+    },
+    {
+      "task": "DuRetrieval",
+      "qid": "78b5ea5f4b35ec5bdbde24b1609a36bd",
+      "did": "9b484d6ceb28689c96f4c42bba73bc3f",
+      "input_tokens": 904,
+      "prefix_tokens": 761,
+      "suffix_tokens": 143,
+      "cache_bytes": 115032064,
+      "uncached": {
+        "logits": [
+          -3.132673501968384,
+          0.21440362930297852
+        ],
+        "score": 0.0339910089969635
+      },
+      "cached": {
+        "logits": [
+          -3.132673740386963,
+          0.21440404653549194
+        ],
+        "score": 0.03399098291993141
+      },
+      "uncached_timing": {
+        "median_s": 2.675877169938758,
+        "samples_s": [
+          2.6808042998891324,
+          2.6728148700203747,
+          2.675877169938758
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5734028900042176,
+        "samples_s": [
+          0.5734797099139541,
+          0.5725461400579661,
+          0.5734028900042176
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.009246849920600653,
+        "samples_s": [
+          0.011107879923656583,
+          0.009246849920600653,
+          0.009187689982354641
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 2.60770320892334e-08,
+      "logit_abs_diff": 4.172325134277344e-07,
+      "resident_speedup": 4.666661463668374,
+      "ram_speedup": 4.59259995599421
+    },
+    {
+      "task": "CovidRetrieval",
+      "qid": "8df6de16294220931f8552ba4f0bdce7",
+      "did": "7c92ae55d2b335079dfc3e62a339fe8a",
+      "input_tokens": 310,
+      "prefix_tokens": 159,
+      "suffix_tokens": 151,
+      "cache_bytes": 65716224,
+      "uncached": {
+        "logits": [
+          -2.7664036750793457,
+          0.9692672491073608
+        ],
+        "score": 0.023301254957914352
+      },
+      "cached": {
+        "logits": [
+          -2.7664031982421875,
+          0.9692670106887817
+        ],
+        "score": 0.023301275447010994
+      },
+      "uncached_timing": {
+        "median_s": 0.925080310087651,
+        "samples_s": [
+          0.9316949199419469,
+          0.9250379300210625,
+          0.925080310087651
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5787655799649656,
+        "samples_s": [
+          0.5787655799649656,
+          0.5773561999667436,
+          0.578900079941377
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.006307019852101803,
+        "samples_s": [
+          0.007858709897845984,
+          0.006307019852101803,
+          0.006297889864072204
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 2.0489096641540527e-08,
+      "logit_abs_diff": 4.76837158203125e-07,
+      "resident_speedup": 1.5983678748547019,
+      "ram_speedup": 1.5811376406567197
+    },
+    {
+      "task": "CovidRetrieval",
+      "qid": "8df6de16294220931f8552ba4f0bdce7",
+      "did": "98199931f0127df39ba9d8abfbb759cd",
+      "input_tokens": 613,
+      "prefix_tokens": 462,
+      "suffix_tokens": 151,
+      "cache_bytes": 90537984,
+      "uncached": {
+        "logits": [
+          -3.88519549369812,
+          -0.8114930391311646
+        ],
+        "score": 0.044205132871866226
+      },
+      "cached": {
+        "logits": [
+          -3.885193347930908,
+          -0.8114916086196899
+        ],
+        "score": 0.04420515522360802
+      },
+      "uncached_timing": {
+        "median_s": 1.8068792198318988,
+        "samples_s": [
+          1.8092396499123424,
+          1.8068792198318988,
+          1.803885370027274
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5747385499998927,
+        "samples_s": [
+          0.5754289401229471,
+          0.5747385499998927,
+          0.5742782598827034
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.007853450020775199,
+        "samples_s": [
+          0.010016720043495297,
+          0.007853450020775199,
+          0.00776507006958127
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 2.2351741790771484e-08,
+      "logit_abs_diff": 2.1457672119140625e-06,
+      "resident_speedup": 3.1438281281675575,
+      "ram_speedup": 3.101448732162128
+    },
+    {
+      "task": "CovidRetrieval",
+      "qid": "8df6de16294220931f8552ba4f0bdce7",
+      "did": "93523d1fff5c21fcd33cd5fe9cccc4c1",
+      "input_tokens": 1587,
+      "prefix_tokens": 1436,
+      "suffix_tokens": 151,
+      "cache_bytes": 170328064,
+      "uncached": {
+        "logits": [
+          -3.062026023864746,
+          0.4760770797729492
+        ],
+        "score": 0.028247307986021042
+      },
+      "cached": {
+        "logits": [
+          -3.0620274543762207,
+          0.4760754406452179
+        ],
+        "score": 0.02824731543660164
+      },
+      "uncached_timing": {
+        "median_s": 4.46705139009282,
+        "samples_s": [
+          4.467216299846768,
+          4.46705139009282,
+          4.466076709795743
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5838310900144279,
+        "samples_s": [
+          0.5841739601455629,
+          0.5825827100779861,
+          0.5838310900144279
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.012129560112953186,
+        "samples_s": [
+          0.015089829917997122,
+          0.012129560112953186,
+          0.012100630206987262
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 7.450580596923828e-09,
+      "logit_abs_diff": 1.6391277313232422e-06,
+      "resident_speedup": 7.651273572948004,
+      "ram_speedup": 7.495547548547088
+    },
+    {
+      "task": "CovidRetrieval",
+      "qid": "8df6de16294220931f8552ba4f0bdce7",
+      "did": "968b6ca9e8b33dffa7ad82b4296f5199",
+      "input_tokens": 3203,
+      "prefix_tokens": 3052,
+      "suffix_tokens": 151,
+      "cache_bytes": 302710784,
+      "uncached": {
+        "logits": [
+          -2.432717800140381,
+          0.45707371830940247
+        ],
+        "score": 0.05266052111983299
+      },
+      "cached": {
+        "logits": [
+          -2.4327170848846436,
+          0.4570736587047577
+        ],
+        "score": 0.05266055464744568
+      },
+      "uncached_timing": {
+        "median_s": 8.59898586012423,
+        "samples_s": [
+          8.606762960087508,
+          8.598734650062397,
+          8.59898586012423
+        ]
+      },
+      "cached_timing": {
+        "median_s": 0.5814226800575852,
+        "samples_s": [
+          0.5816720600705594,
+          0.5798722801264375,
+          0.5814226800575852
+        ]
+      },
+      "ram_to_npu_timing": {
+        "median_s": 0.01815154985524714,
+        "samples_s": [
+          0.02258386998437345,
+          0.01814884995110333,
+          0.01815154985524714
+        ]
+      },
+      "cache_unchanged": true,
+      "score_abs_diff": 3.3527612686157227e-08,
+      "logit_abs_diff": 7.152557373046875e-07,
+      "resident_speedup": 14.789560426628988,
+      "ram_speedup": 14.341820297003713
+    }
+  ],
+  "model_cache_identity": "1cfbb67f50ff43661355a9f56c5f5b98b7c107e25f9912735b1cec9f9a73fc08",
+  "ram_preload_s": 1.0802515598479658,
+  "ram_cache_bytes": 3385671680,
+  "reuse_check": {
+    "a_repeat_exact": true,
+    "cache_unchanged": true,
+    "rejected": [
+      "prefix",
+      "model_identity"
+    ],
+    "b_uncached": {
+      "logits": [
+        -3.9155116081237793,
+        -0.35556209087371826
+      ],
+      "score": 0.027653783559799194
+    },
+    "b_cached": {
+      "logits": [
+        -3.9154787063598633,
+        -0.3555218577384949
+      ],
+      "score": 0.027653584256768227
+    }
+  },
+  "rankings": {
+    "CQADupstackGamingRetrieval/77471": {
+      "orders": {
+        "uncached": [
+          "25786",
+          "147736",
+          "61174",
+          "155409"
+        ],
+        "cached": [
+          "25786",
+          "147736",
+          "61174",
+          "155409"
+        ]
+      },
+      "unchanged": true
+    },
+    "CQADupstackUnixRetrieval/10158": {
+      "orders": {
+        "uncached": [
+          "36634",
+          "126194",
+          "32626",
+          "46325"
+        ],
+        "cached": [
+          "36634",
+          "126194",
+          "32626",
+          "46325"
+        ]
+      },
+      "unchanged": true
+    },
+    "SCIDOCS/fa3894d83f83d7d05f54b2c87158dc7a2288dc1c": {
+      "orders": {
+        "uncached": [
+          "05f0c711c4788e14d1be3ca0e6d3c5ae8ad05cc1",
+          "24b3785a3ffae660a60e9ac4eb104b8adfc5871b",
+          "2ab93b912b5dd28467e59e11fce7d409859dae47",
+          "e4a6673ef658221fef360e6051631d65e9547b62"
+        ],
+        "cached": [
+          "05f0c711c4788e14d1be3ca0e6d3c5ae8ad05cc1",
+          "24b3785a3ffae660a60e9ac4eb104b8adfc5871b",
+          "2ab93b912b5dd28467e59e11fce7d409859dae47",
+          "e4a6673ef658221fef360e6051631d65e9547b62"
+        ]
+      },
+      "unchanged": true
+    },
+    "FiQA2018/3179": {
+      "orders": {
+        "uncached": [
+          "64598",
+          "65040",
+          "520584",
+          "328341"
+        ],
+        "cached": [
+          "64598",
+          "65040",
+          "520584",
+          "328341"
+        ]
+      },
+      "unchanged": true
+    },
+    "ClimateFEVERHardNegatives/2983": {
+      "orders": {
+        "uncached": [
+          "Keeling_(disambiguation)",
+          "Sea_level_rise",
+          "Paleocene–Eocene_Thermal_Maximum",
+          "Global_warming_hiatus"
+        ],
+        "cached": [
+          "Keeling_(disambiguation)",
+          "Sea_level_rise",
+          "Paleocene–Eocene_Thermal_Maximum",
+          "Global_warming_hiatus"
+        ]
+      },
+      "unchanged": true
+    },
+    "EcomRetrieval/200293": {
+      "orders": {
+        "uncached": [
+          "44958",
+          "93148",
+          "93605",
+          "49463"
+        ],
+        "cached": [
+          "44958",
+          "93148",
+          "93605",
+          "49463"
+        ]
+      },
+      "unchanged": true
+    },
+    "MedicalRetrieval/90": {
+      "orders": {
+        "uncached": [
+          "48284",
+          "80953",
+          "9814",
+          "26402"
+        ],
+        "cached": [
+          "48284",
+          "80953",
+          "9814",
+          "26402"
+        ]
+      },
+      "unchanged": true
+    },
+    "MMarcoRetrieval/646623": {
+      "orders": {
+        "uncached": [
+          "7904559",
+          "7955906",
+          "7939291",
+          "7938248"
+        ],
+        "cached": [
+          "7904559",
+          "7955906",
+          "7939291",
+          "7938248"
+        ]
+      },
+      "unchanged": true
+    },
+    "DuRetrieval/78b5ea5f4b35ec5bdbde24b1609a36bd": {
+      "orders": {
+        "uncached": [
+          "c4728536c4924e6286877783f546b6ac",
+          "9b484d6ceb28689c96f4c42bba73bc3f",
+          "2888f6dc8d27ba6fe033ca513be58634",
+          "dfa7635a7780421059d901f6df6eecd2"
+        ],
+        "cached": [
+          "c4728536c4924e6286877783f546b6ac",
+          "9b484d6ceb28689c96f4c42bba73bc3f",
+          "2888f6dc8d27ba6fe033ca513be58634",
+          "dfa7635a7780421059d901f6df6eecd2"
+        ]
+      },
+      "unchanged": true
+    },
+    "CovidRetrieval/8df6de16294220931f8552ba4f0bdce7": {
+      "orders": {
+        "uncached": [
+          "968b6ca9e8b33dffa7ad82b4296f5199",
+          "98199931f0127df39ba9d8abfbb759cd",
+          "93523d1fff5c21fcd33cd5fe9cccc4c1",
+          "7c92ae55d2b335079dfc3e62a339fe8a"
+        ],
+        "cached": [
+          "968b6ca9e8b33dffa7ad82b4296f5199",
+          "98199931f0127df39ba9d8abfbb759cd",
+          "93523d1fff5c21fcd33cd5fe9cccc4c1",
+          "7c92ae55d2b335079dfc3e62a339fe8a"
+        ]
+      },
+      "unchanged": true
+    }
+  },
+  "summary": {
+    "score_abs_diff_max": 2.7418136596679688e-06,
+    "logit_abs_diff_max": 3.135204315185547e-05,
+    "rankings_unchanged": 10,
+    "queries": 10,
+    "uncached_mean_s": 1.6177088622702285,
+    "resident_cached_mean_s": 0.5761707480298355,
+    "ram_to_npu_mean_s": 0.007529083493864164
+  },
+  "transformers_imported": false
+}
