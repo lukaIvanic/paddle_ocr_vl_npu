@@ -55,6 +55,33 @@ def choose_pairs(candidates, qrels, ignore_identical_ids):
     raise ValueError('No query with a positive and two negative candidates')
 
 
+def load_english_task(name, load_task):
+    """Resolve MTEB's implicit default qrels config in the offline cache."""
+    import importlib
+    from types import SimpleNamespace
+    module = importlib.import_module('mteb.abstasks.AbsTaskRetrieval')
+    original = module.load_dataset
+
+    def explicit_default(repo, *args, **kwargs):
+        if not args and 'name' not in kwargs:
+            kwargs['name'] = 'default'
+        data = original(repo, *args, **kwargs)
+        # datasets' offline cache loader can ignore revision and choose latest.
+        # Verify every returned Arrow cache belongs to the requested revision.
+        parts = list(data.values()) if hasattr(data, 'values') else [data]
+        files = [f['filename'] for part in parts for f in part.cache_files]
+        revision = kwargs['revision']
+        if not files or any(revision not in Path(f).parts for f in files):
+            raise ValueError('Offline English dataset cache revision mismatch')
+        return data
+
+    module.load_dataset = explicit_default
+    try:
+        return load_task(name, SimpleNamespace(state={}))
+    finally:
+        module.load_dataset = original
+
+
 def prepare(args):
     sys.path.insert(0, str(BENCHMARK_DIR))
     import mteb
@@ -62,7 +89,6 @@ def prepare(args):
     from protocol import TASKS, validate_task
     from run_english_suite import load_task
     from suite_protocol import ENGLISH
-    from types import SimpleNamespace
 
     if importlib.metadata.version('mteb') != '1.38.9':
         raise ValueError('Use the original MTEB 1.38.9 evaluator')
@@ -74,7 +100,7 @@ def prepare(args):
     for name, folder, split in sources:
         source = json.loads((folder / 'manifest.json').read_text())
         if split == 'test':
-            task, _ = load_task(name, SimpleNamespace(state={}))
+            task, _ = load_english_task(name, load_task)
             candidate_path = args.english / 'embedding' / name / 'mteb' / (name + '_default_predictions.json')
             candidate_hash = source['candidates_sha256']
             instruction = ENGLISH[name][2]
