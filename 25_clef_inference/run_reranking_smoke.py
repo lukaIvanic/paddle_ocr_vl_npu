@@ -1,9 +1,12 @@
-"""Six real MTEB-R/CMTEB-R pairs: prepare with the pinned evaluator, run uncached.
+"""Small pinned MTEB-R/CMTEB-R fixtures: prepare, run uncached, evaluate.
 
-One fixed label-balanced query per language is a protocol smoke, not a quality
-estimate. The document is STATE; query and task instruction are in the schema.
+The six-pair fixture checks protocol; the forty-pair fixture covers input
+lengths. Neither estimates benchmark accuracy. Document is STATE; the query
+and task instruction are in the schema. No cache implementation lives here.
 """
 import argparse
+import bisect
+import gc
 import hashlib
 import importlib.metadata
 import json
@@ -15,7 +18,7 @@ import subprocess
 import sys
 import time
 
-from run_local_smoke import NoTransformers, encode_record, systemone_answer
+from run_local_smoke import NoTransformers, SYSTEM_PROMPT, encode_record, systemone_answer
 
 BENCHMARK_DIR = Path(__file__).resolve().parents[1] / '22_qwen3_embedding_benchmark'
 
@@ -149,6 +152,213 @@ def prepare(args):
     print(json.dumps({'prepared': str(args.output), 'pairs': len(pairs), 'tasks': list(groups)}))
 
 
+def length_summary(parts):
+    """Equal task weight; input parts are a list of per-task length lists."""
+    ordered = sorted((n, 1 / len(part)) for part in parts for n in part)
+    total = sum(w for _, w in ordered)
+    result = {'count': len(ordered), 'min': ordered[0][0], 'max': ordered[-1][0]}
+    for percentile in (10, 25, 50, 75, 90, 95, 99):
+        target, cumulative = total * percentile / 100, 0.
+        for n, weight in ordered:
+            cumulative += weight
+            if cumulative >= target:
+                result['p' + str(percentile)] = n
+                break
+    result['above_3072'] = sum(n > 3072 for n, _ in ordered)
+    return result
+
+
+def length_cdf(pool, key):
+    ordered = sorted(row[key] for row in pool)
+    return lambda value: (bisect.bisect_left(ordered, value) +
+                          bisect.bisect_right(ordered, value)) / (2 * len(ordered))
+
+
+def load_chinese_task(name, mteb, validate_task, expected):
+    """Pin both corpus/query and qrels revisions, including offline Arrow files."""
+    import importlib
+    module = importlib.import_module('mteb.abstasks.AbsTaskRetrieval')
+    task = mteb.get_tasks(tasks=[name])[0]
+    validate_task(task)
+    path = task.metadata.dataset['path']
+    original = module.load_dataset
+
+    def pinned(repo, *args, **kwargs):
+        if repo == path:
+            revision = expected[0]
+        elif repo == path + '-qrels':
+            revision = expected[1]
+        else:
+            raise ValueError('Unexpected Chinese dataset: ' + repo)
+        kwargs['revision'] = revision
+        data = original(repo, *args, **kwargs)
+        parts = list(data.values()) if hasattr(data, 'values') else [data]
+        files = [f['filename'] for part in parts for f in part.cache_files]
+        if not files or any(revision not in Path(f).parts for f in files):
+            raise ValueError('Offline Chinese dataset cache revision mismatch: ' + repo)
+        return data
+
+    module.load_dataset = pinned
+    try:
+        task.load_data()
+    finally:
+        module.load_dataset = original
+    return task
+
+
+def prepare_lengths(args):
+    """Build a length-coverage fixture, with no model-score-based selection."""
+    sys.path.insert(0, str(BENCHMARK_DIR))
+    import mteb
+    from mteb.evaluation.evaluators.RetrievalEvaluator import corpus_to_str
+    from tokenizers import Tokenizer
+    from protocol import TASKS, validate_task
+    from run_english_suite import load_task
+    from suite_protocol import ENGLISH
+
+    if importlib.metadata.version('mteb') != '1.38.9':
+        raise ValueError('Use the original MTEB 1.38.9 evaluator')
+    if args.output.exists():
+        raise FileExistsError(args.output)
+    tokenizer = Tokenizer.from_file(str(args.model / 'tokenizer.json'))
+    tokenizer.no_padding()
+    tokenizer.no_truncation()
+    tokenizer_hash = digest(args.model / 'tokenizer.json')
+    prefix = tokenizer.encode(f'<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>\n<|im_start|>user\nSTATE:\n', add_special_tokens=False).ids
+    profiles, pool = [], []
+    for language, contracts in (('en', ENGLISH), ('zh', TASKS)):
+        for name, contract in contracts.items():
+            folder = args.english / 'reranker' / name if language == 'en' else (
+                args.ecom / name if name == 'EcomRetrieval' else
+                args.t2 / name if name == 'T2Retrieval' else args.chinese / name)
+            source = json.loads((folder / 'manifest.json').read_text())
+            if language == 'en':
+                candidate = args.english / 'embedding' / name / 'mteb' / (name + '_default_predictions.json')
+                expected_hash = source['candidates_sha256']
+                revision, qrevision, instruction, split = contract[1], contract[1], contract[2], 'test'
+                if source['query_instruction'] != instruction:
+                    raise ValueError('English instruction changed')
+            else:
+                candidate = Path(source['candidate_file'])
+                if not candidate.is_absolute():
+                    candidate = args.source_repo / candidate
+                expected_hash = source['sha256']
+                revision, qrevision, instruction, split = contract[0], contract[1], contract[2], 'dev'
+                if (source['dataset_revision'], source['qrels_revision'], source['instruction']) != (revision, qrevision, instruction):
+                    raise ValueError('Chinese task contract changed')
+            if digest(candidate) != expected_hash:
+                raise ValueError('Candidate hash changed: ' + name)
+            contract_record = {'task': name, 'language': language, 'split': split,
+                'dataset_revision': revision, 'qrels_revision': qrevision,
+                'candidate_file': str(candidate), 'candidate_sha256': expected_hash,
+                'source_manifest_sha256': digest(folder / 'manifest.json'),
+                'tokenizer_sha256': tokenizer_hash, 'profile_queries_per_task': 64,
+                'selection_seed': 'clef-cache-lengths-v1', 'source_code_sha256': digest(Path(__file__))}
+            cached = args.profile_dir / (name + '.json')
+            if cached.exists():
+                profile = json.loads(cached.read_text())
+                if profile['contract'] != contract_record:
+                    raise ValueError('Length-profile resume contract changed: ' + name)
+            else:
+                print(json.dumps({'profiling': name, 'language': language}), flush=True)
+                candidates = json.loads(candidate.read_text())
+                task = load_english_task(name, load_task)[0] if language == 'en' else load_chinese_task(name, mteb, validate_task, contract)
+                qrels = task.relevant_docs[split]
+                if set(candidates) != set(qrels):
+                    raise ValueError('Query coverage changed: ' + name)
+                qids = sorted(candidates, key=lambda q: hashlib.sha256(('clef-cache-lengths-v1/' + name + '/' + q).encode()).hexdigest())[:64]
+                lengths = {key: [] for key in ('document_tokens', 'prefix_tokens', 'question_side_tokens', 'input_tokens', 'query_tokens')}
+                query_rows = []
+                for qid in qids:
+                    if len(candidates[qid]) != 100:
+                        raise ValueError('Expected original top100 candidates')
+                    dids = sorted(d for d in candidates[qid] if not (task.ignore_identical_ids and d == qid))
+                    docs = corpus_to_str([task.corpus[split][did] for did in dids])
+                    encodings = tokenizer.encode_batch(docs, add_special_tokens=False)
+                    doc_lengths = [len(e.ids) for e in encodings]
+                    query = task.queries[split][qid]
+                    base = {'task': name, 'qid': qid, 'did': '', 'query': query, 'document': '', 'instruction': instruction}
+                    # An empty STATE has zero tokens; the remainder is exactly the original schema and suffix.
+                    empty = encode_record(tokenizer, request_for(base), max_length=2**31-1)
+                    question_side = len(empty.input_ids) - len(prefix)
+                    query_length = len(tokenizer.encode(query, add_special_tokens=False).ids)
+                    for size in doc_lengths:
+                        lengths['document_tokens'].append(size)
+                        lengths['prefix_tokens'].append(len(prefix) + size)
+                        lengths['question_side_tokens'].append(question_side)
+                        lengths['input_tokens'].append(len(prefix) + size + question_side)
+                        lengths['query_tokens'].append(query_length)
+                    ordered = sorted(range(len(dids)), key=lambda i: (doc_lengths[i], dids[i]))
+                    selected = [ordered[round(p*(len(ordered)-1))] for p in (.1, .5, .9, .99)]
+                    if len(set(selected)) != 4:
+                        raise ValueError('Insufficient distinct documents')
+                    pair_rows = []
+                    for percentile, i in zip((10, 50, 90, 99), selected):
+                        pair = {**base, 'did': dids[i], 'document': docs[i], 'language': language,
+                            'relevance': qrels[qid].get(dids[i], 0), 'embedding_score': candidates[qid][dids[i]],
+                            'document_length_percentile': percentile, 'document_tokens': doc_lengths[i],
+                            'prefix_tokens': len(prefix) + doc_lengths[i], 'question_side_tokens': question_side,
+                            'query_tokens': query_length, 'input_tokens': len(prefix) + doc_lengths[i] + question_side}
+                        record = encode_record(tokenizer, request_for(pair), max_length=pair['input_tokens'])
+                        if len(record.input_ids) != pair['input_tokens'] or record.input_ids[:len(prefix)] != tuple(prefix):
+                            raise ValueError('Counted lengths differ from original encoding')
+                        pair['input_sha256'] = hashlib.sha256(json.dumps(record.input_ids).encode()).hexdigest()
+                        pair_rows.append(pair)
+                    query_rows.append({'task': name, 'language': language, 'qid': qid,
+                        'query_tokens': query_length, 'median_document_tokens': doc_lengths[ordered[len(ordered)//2]],
+                        'question_side_tokens': question_side, 'qrels': qrels[qid],
+                        'ignore_identical_ids': task.ignore_identical_ids, 'pairs': pair_rows})
+                profile = {'contract': contract_record, 'lengths': lengths, 'queries': query_rows}
+                save(cached, profile)
+                del task, candidates
+                gc.collect()
+            profiles.append(profile)
+            pool.extend(profile['queries'])
+            print(json.dumps({'profiled': name, 'queries': len(profile['queries']), 'pairs': len(profile['lengths']['input_tokens'])}), flush=True)
+
+    selected_queries = []
+    for language in ('en', 'zh'):
+        available = [q for q in pool if q['language'] == language]
+        query_cdf = length_cdf(available, 'query_tokens')
+        doc_cdf = length_cdf(available, 'median_document_tokens')
+        used = set()
+        for target in (.1, .3, .5, .7, .9):
+            row = min((q for q in available if q['task'] not in used),
+                      key=lambda q: (abs(query_cdf(q['query_tokens'])-target) + abs(doc_cdf(q['median_document_tokens'])-target), q['task'], q['qid']))
+            selected_queries.append({**row, 'target_length_percentile': int(target*100)})
+            used.add(row['task'])
+    groups, pairs = {}, []
+    # Qwen scores are read only after every selection is fixed.
+    for query in selected_queries:
+        name = query['task']
+        folder = args.english / 'reranker' / name if query['language'] == 'en' else (
+            args.ecom / name if name == 'EcomRetrieval' else args.t2 / name if name == 'T2Retrieval' else args.chinese / name)
+        predictions = json.loads((folder / 'predictions.json').read_text())
+        qid = query['qid']
+        provenance = next(p['contract'] for p in profiles if p['contract']['task'] == name)
+        for pair in query['pairs']:
+            pairs.append({**pair, 'qwen_score': predictions[qid][pair['did']]})
+        groups[name + '/' + qid] = {**provenance, 'qid': qid, 'qrels': query['qrels'],
+            'ignore_identical_ids': query['ignore_identical_ids'], 'selected_document_ids': [p['did'] for p in query['pairs']],
+            'query_tokens': query['query_tokens'], 'question_side_tokens': query['question_side_tokens'],
+            'target_length_percentile': query['target_length_percentile'], 'qwen_predictions_sha256': digest(folder / 'predictions.json')}
+    reference = {language: {key: length_summary([p['lengths'][key] for p in profiles if p['contract']['language'] == language])
+                            for key in ('document_tokens', 'prefix_tokens', 'query_tokens', 'question_side_tokens', 'input_tokens')}
+                 for language in ('en', 'zh')}
+    sample = {language: {key: length_summary([[p[key] for p in pairs if p['language'] == language]])
+                         for key in ('document_tokens', 'prefix_tokens', 'query_tokens', 'question_side_tokens', 'input_tokens')}
+              for language in ('en', 'zh')}
+    save(args.output, {'scope': 'length_stratified_cache_check', 'mteb_version': '1.38.9', 'expected_pairs': 40,
+        'selection': '64 hash-sampled queries per task across all 18 pinned tasks; five distinct tasks per language nearest joint query/median-document length percentiles 10/30/50/70/90; four original candidates at document-length percentiles 10/50/90/99',
+        'quality_scope': 'length coverage and cached/uncached correctness; tail-enriched, not frequency-representative benchmark accuracy',
+        'selection_uses_model_scores': False, 'selection_uses_relevance_labels': False,
+        'truncation': 'none', 'score': 'unrounded P(true) from noul logits', 'tokenizer_sha256': tokenizer_hash,
+        'reference_weighting': 'equal task weight for length summaries; up to 64 deterministic sampled queries/task, all original top100 except protocol self-matches',
+        'reference_lengths': reference, 'sample_lengths': sample, 'profiled_tasks': [p['contract'] for p in profiles],
+        'groups': groups, 'pairs': pairs})
+    print(json.dumps({'prepared': str(args.output), 'pairs': len(pairs), 'queries': len(groups), 'sample_lengths': sample}), flush=True)
+
+
 def evaluate(args):
     sys.path.insert(0, str(BENCHMARK_DIR))
     from run_reranker_evaluation import metric_summary
@@ -162,8 +372,9 @@ def evaluate(args):
         raise ValueError('Run does not cover exactly the frozen fixture')
     metrics, ordering = {}, {}
     for name, group in fixture['groups'].items():
-        pairs = [p for p in fixture['pairs'] if p['task'] == name]
+        task_name = group.get('task', name)
         qid = group['qid']
+        pairs = [p for p in fixture['pairs'] if p['task'] == task_name and p['qid'] == qid]
         baseline = {qid: {p['did']: p['embedding_score'] for p in pairs}}
         qwen = {qid: {p['did']: p['qwen_score'] for p in pairs}}
         clef = {qid: {p['did']: scores[(name, qid, p['did'])] for p in pairs}}
@@ -181,7 +392,7 @@ def evaluate(args):
     if not math.isclose(toy['reranker']['ndcg_cut_10'], 1 / math.log2(3), abs_tol=1e-12):
         raise AssertionError('Unexpected NDCG semantics')
     result.update(metrics=metrics, ordering=ordering,
-                  quality_scope='one label-balanced query and three selected top100 candidates per task; not benchmark accuracy',
+                  quality_scope=fixture.get('quality_scope', 'one label-balanced query and three selected top100 candidates per task; not benchmark accuracy'),
                   metric_check='existing pytrec_eval NDCG@10; independent two-document analytic check passed')
     save(args.result, result)
     print(json.dumps({'metrics': metrics, 'ordering': ordering}, ensure_ascii=False))
@@ -191,8 +402,8 @@ def run(args):
     if args.output.exists():
         raise FileExistsError(args.output)
     fixture = json.loads(args.fixture.read_text())
-    if len(fixture['pairs']) != 6 or len(fixture['groups']) != 2:
-        raise ValueError('Expected the fixed six-pair, two-task sample')
+    if len(fixture['pairs']) != fixture.get('expected_pairs', 6):
+        raise ValueError('Fixture pair count differs from its declared scope')
     sys.meta_path.insert(0, NoTransformers())
     import torch
     import torch_npu  # noqa: F401
@@ -220,7 +431,7 @@ def run(args):
     try:
         model = load_model(args.model, 'npu:0', progress=lambda step: print(step, flush=True))
         with torch.inference_mode():
-            for index in [-1, *range(6)]:
+            for index in [-1, *range(len(fixture['pairs']))]:
                 item = max(index, 0)
                 record = encoded[item]
                 ids = torch.tensor([record.input_ids], device='npu:0', dtype=torch.long)
@@ -265,6 +476,9 @@ if __name__ == '__main__':
     prep.add_argument('--chinese', type=Path, required=True)
     prep.add_argument('--source-repo', type=Path, required=True)
     prep.add_argument('--output', type=Path, required=True)
+    lengths = commands.add_parser('prepare-lengths')
+    for flag in ('english', 'chinese', 'ecom', 't2', 'source-repo', 'model', 'profile-dir', 'output'):
+        lengths.add_argument('--' + flag, type=Path, required=True)
     infer = commands.add_parser('run')
     infer.add_argument('--fixture', type=Path, required=True)
     infer.add_argument('--model', type=Path, required=True)
@@ -274,4 +488,4 @@ if __name__ == '__main__':
     metrics.add_argument('--fixture', type=Path, required=True)
     metrics.add_argument('--result', type=Path, required=True)
     args = parser.parse_args()
-    {'prepare': prepare, 'run': run, 'evaluate': evaluate}[args.command](args)
+    {'prepare': prepare, 'prepare-lengths': prepare_lengths, 'run': run, 'evaluate': evaluate}[args.command](args)
