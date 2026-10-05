@@ -1,0 +1,12 @@
+test_chunk_scan_against_token_recurrence (test_local_backbone.BackboneTests.test_chunk_scan_against_token_recurrence) ... /workspace/repos/clef_transformers_free_20261005/25_clef_inference/modeling_backbone.py:66: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  values = torch.linalg.solve_triangular(system, v_beta, upper=False, unitriangular=True)
+ok
+test_hybrid_backbone_against_transformers (test_local_backbone.BackboneTests.test_hybrid_backbone_against_transformers) ... [transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 1.624s
+
+OK
+sys:1: DeprecationWarning: builtin type swigvarlink has no __module__ attribute

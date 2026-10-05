@@ -1,4 +1,4 @@
-# Clef inference: Transformers baseline first
+# Clef inference: Transformers and plain PyTorch baselines
 
 Scope: Cloudflare/clef-flash (9B), text-only, BF16, one Ascend 910B. This
 experiment does not target 310P. The local Transformers-free baseline is described below. Optimization remains
@@ -146,4 +146,27 @@ logits and formatted answers on all six saved cases (plus a labeled warmup).
 It saves differences and exits nonzero on a mismatch. No tolerance is relaxed to
 make a run pass. These are correctness checks, not retrieval-quality benchmarks.
 
-Validation status: implementation prepared; NPU checks pending.
+Validated on **2026-10-05**, Ascend **910B2**, physical NPU **6**, source
+`55d138dd`. [Saved local-run evidence](references/local_bf16_910b_55d138dd/).
+
+- All six real requests (plus warmup) matched the reference token IDs, question
+  and option spans, BF16 logits, and formatted answers exactly. Maximum logit
+  difference was zero across all 32 measured option logits.
+- The runtime import guard was enabled and `transformers_imported` was false.
+- The NPU chunk-scan test passed at lengths 1, 63, 64, 65 and 129 against an
+  independent token recurrence. A tiny two-layer hybrid backbone matched
+  Transformers exactly in BF16 at lengths 1, 65 and 129.
+- All six host fixture/input tests passed. The two head classes were also checked
+  structurally against the pinned release: their computation is unchanged.
+
+The small tests use Transformers 5.17.0 as an oracle; the real local runtime uses
+only torch 2.10.0, torch-npu 2.10.0, tokenizers 0.23.2 and safetensors 0.8.0.
+The `+cpu` torch version suffix in the environment does not mean CPU inference.
+Every model parameter and all decision logits are BF16 on NPU; FP32 recurrent
+and normalization arithmetic follows the original implementation.
+
+Recorded timing is diagnostic only: `e2e` includes output validation/comparison,
+`verify_and_load_s` includes release hashing, and device events include stream
+idle/enqueue gaps. No speedup or broad retrieval-quality claim is made by these
+checks. Main remains the Transformers baseline; this implementation is on the
+review branch `codex/clef-transformers-free`.
