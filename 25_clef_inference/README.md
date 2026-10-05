@@ -790,3 +790,67 @@ counts in `manifest-0.json` through `manifest-3.json`; inspect `status.json`
 for coordinator status and worker logs for failures. The original manifest
 retains the seed snapshot until the final validated merge. All workers retain
 FP32 computation, BF16 storage and per-document disk flushing.
+
+## Local performance and profiling skeleton
+
+`benchmark_local.py` and `profiling.py` follow experiment 21's real-item
+observer. The default workload is the frozen 40-pair length sample. It is a
+development workload, not a frequency-weighted benchmark accuracy estimate.
+The default run executes document preparation, uncached requests and cached
+requests, using FP32 computation and all-BF16 document storage in RAM. The
+preparation measurement ends at a usable CPU cache; disk writes are excluded.
+Cached requests include BF16 RAM-to-NPU transfer and expansion to FP32 on NPU.
+
+```bash
+source npu-setup
+/usr/local/python3.12.13/bin/python3 -u \
+  25_clef_inference/benchmark_local.py \
+  --model /workspace/models/clef-flash --output-dir <NEW_RUN_DIRECTORY>
+# Same complete execution with optional CPU/NPU traces:
+# add --profile (captures actual second item in each phase), or
+# --profile --profile-index 39 (captures the longest fixture pair).
+```
+
+`--mode prepare`, `--mode uncached` and `--mode cached` select one complete
+workflow. Cached-only requires `--cache-dir` pointing to compatible existing
+all-BF16 Safetensors; every file is eagerly preloaded into RAM during setup.
+Normal `all` runs retain their prepared caches in RAM without writing them.
+Each input is checked against the frozen token lengths/hashes. No truncation,
+model arithmetic change, compilation, new batching or scheduling is introduced.
+
+Host spans, whole-item wall time and NPU stream-event intervals remain separate.
+Device events are resolved after normal CPU output materialization; there is
+no device synchronization between measured inference stages. Nested backbone
+and head scopes overlap their parent forward scope and are not added to it.
+Stream intervals can include dispatch gaps; they are not active kernel sums.
+First use is tagged separately, and subsequent real items retain their actual
+shapes; this is not a fixed-shape warm microbenchmark. Peak allocated/reserved
+NPU memory is recorded per phase, rather than sampled on every layer.
+
+Every run saves command/workload metadata, source/checkpoint cache identities,
+`events.jsonl`, `items.jsonl`, score vectors and `result.json` with distributions
+and unresolved-event accounting. A five-second heartbeat reports the active
+item/section. `--profile` adds fine source ranges for every GDN/full-attention/
+MLP module, evidence-routing layers and the GDN scan. Trace export happens
+outside item timing but contributes to phase/job time. Profiler runs are
+explicitly labeled and must not be used as clean latency results.
+
+All instrumentation is installed externally and restored on exit. In
+particular, `local_modeling_clef.py` is byte-for-byte unchanged, preserving
+existing document-cache identities. There is no model implementation copied
+into the benchmark.
+
+Validation at `7fe36427`: four CPU bookkeeping tests pass (pending-event reuse,
+nested accounting, wrapper restoration, real-item profiler scheduling). These
+use fake events and do not run the model on CPU. NPU validation is queued in
+the separate server checkout `/workspace/repos/clef-profiling-7fe36427`, after
+Touché precomputation completes. Its three-case complete-workflow ABBA check
+(control/observed/observed/control) requires exact score equality, then runs
+one profiled complete workload and checks three traces and Clef source ranges.
+This is a small instrumentation validation, not a full 40-pair timing result.
+Until that finishes, no NPU validation or observer-overhead claim is made.
+
+Validation script: `tmp/25_clef_inference/profiling_skeleton/validate.py`.
+Queued NPU results: `tmp/25_clef_inference/profiling_7fe36427/validation/` in
+that isolated checkout; launcher log:
+`/workspace/results/clef_touche_full/validate-profiling-when-free.log`.
