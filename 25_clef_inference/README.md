@@ -703,3 +703,66 @@ Evidence: `tmp/25_clef_inference/document_cache_ec5e1de1/` contains commands,
 exit codes, logs and per-pair results for both dtypes;
 `tmp/25_clef_inference/document_cache_restart_1fb57148/` contains the restart
 verification. Bulk Safetensors remain on the server outside Git.
+
+### Full Touché candidate precomputation with BF16 storage
+
+In our pinned English suite, `Touche2020Retrieval.v3` has the fewest reranking
+pairs: 49 queries times 100 candidates = 4,900 pairs, using 4,863 distinct
+candidate document IDs. TREC-COVID has 5,000 pairs and 4,619 distinct candidate
+documents; it is smaller by that latter count. We selected Touché by workload,
+not by the size of its full 303,732-document corpus.
+
+`prepare-task` freezes all saved candidate memberships, queries, Qwen scores,
+judgments, original corpus formatting and dataset/tokenizer hashes. It checks
+MTEB 1.38.9 and the pinned Arrow-cache revision. The complete Touché fixture
+contains 2,520,398 prefix tokens: mean 518.28, median 304, maximum 4,131. There
+is no truncation. Bulk fixture text stays on the server outside Git.
+
+`precache-task --dtype float32 --storage-dtype bfloat16` computes each complete
+document in FP32, rounds **all** cache tensors to BF16, and saves them. This
+includes the recurrent states that normally remain FP32. Expected tensor size
+is 215.465 GiB (versus 430.930 GiB with FP32 storage), plus file metadata. The
+initial runtime estimate is 2–3 hours on one 910B2, extrapolated from the prior
+sample, not a measured full-task runtime.
+
+The serving-side conversion is explicit:
+
+```python
+# Every tensor loaded from disk and retained in RAM is BF16.
+ram_cache = DocumentCache.load(path)
+# Transfer BF16 first; expand once on the NPU for FP32 computation.
+npu_cache = cache_cast(ram_cache.to("npu:0"), torch.float32)
+logits = model(full_input_ids, encoded_record, cache=npu_cache)
+```
+
+`cache_cast` lives in `run_reranking_smoke.py`. Expansion cannot recover the
+precision discarded by BF16 storage. The 40-pair disk/RAM/NPU roundtrip check
+at `07d2de04` preserved all ten rankings versus FP32 storage. Maximum relevance
+probability change was `0.00169566274` (0.170 percentage points); maximum logit
+change was `0.02713406`. Every stored tensor was BF16, file roundtrips were
+bitwise exact, and every restored NPU tensor was FP32. This is a storage
+precision check, not a full Touché accuracy result.
+
+The full precompute command is resumable. Each document is written through an
+atomic Safetensors replacement, then the file and directory are fsynced before
+its manifest entry is saved and fsynced. Resume checks fixture, model, compute
+and storage dtypes, file identity and size, and skips completed documents.
+The longest document runs first and gets a tensor-by-tensor disk roundtrip
+check. Only one document cache is retained at a time during precomputation.
+The serving process on NPU 6 is separate.
+
+```bash
+source npu-setup
+/usr/local/python3.12.13/bin/python3 -u \
+  25_clef_inference/run_reranking_smoke.py precache-task \
+  --fixture /workspace/results/clef_touche_full/fixture.json \
+  --model /workspace/models/clef-flash \
+  --dtype float32 --storage-dtype bfloat16 --max-prefix-length 4131 \
+  --cache-dir /workspace/results/clef_touche_full/bf16_storage \
+  --output /workspace/results/clef_touche_full/bf16_storage-manifest.json
+```
+
+Preparation evidence: `tmp/25_clef_inference/touche_prepare_72613d97/`.
+Storage accuracy evidence: `tmp/25_clef_inference/bf16_cache_storage_07d2de04/`.
+The full-task job's live manifest and bulk caches are on the server at the
+paths above; starting precomputation does not establish a completed benchmark.

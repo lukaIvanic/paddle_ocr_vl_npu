@@ -1,0 +1,107 @@
+Using the latest cached version of the dataset since mteb/webis-touche2020-v3 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'corpus' at /workspace/.cache/huggingface/datasets/mteb___webis-touche2020-v3/corpus/0.0.0/431886eaecc48f067a3975b70d0949ea2862463c (last modified on Sat Oct  3 16:10:56 2026).
+Using the latest cached version of the dataset since mteb/webis-touche2020-v3 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'queries' at /workspace/.cache/huggingface/datasets/mteb___webis-touche2020-v3/queries/0.0.0/431886eaecc48f067a3975b70d0949ea2862463c (last modified on Mon Oct  5 13:48:28 2026).
+Using the latest cached version of the dataset since mteb/webis-touche2020-v3 couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /workspace/.cache/huggingface/datasets/mteb___webis-touche2020-v3/default/0.0.0/431886eaecc48f067a3975b70d0949ea2862463c (last modified on Sat Oct  3 16:11:05 2026).
+Map:   0%|          | 0/2849 [00:00<?, ? examples/s]Map:  39%|███▉      | 1115/2849 [00:00<00:00, 11057.21 examples/s]Map:  79%|███████▉  | 2261/2849 [00:00<00:00, 11292.20 examples/s]Map: 100%|██████████| 2849/2849 [00:00<00:00, 11297.10 examples/s]
+{
+  "scope": "complete_task_candidate_documents",
+  "task": "Touche2020Retrieval.v3",
+  "split": "test",
+  "mteb_version": "1.38.9",
+  "instruction": "Given a question, retrieve detailed and persuasive arguments that answer the question",
+  "dataset_revision": "431886eaecc48f067a3975b70d0949ea2862463c",
+  "ignore_identical_ids": false,
+  "truncation": "none",
+  "candidate_sha256": "61851d3797c6aa9f31e87156824ee056ef15e22527834300686fc054bd847437",
+  "source_manifest_sha256": "02103082e5661186ffe4eb63eab72169248e260a3408fe68b606291ad9190bba",
+  "qwen_predictions_sha256": "5437f9ec3edccda69295fa526139552c5a414bc635b3116e4b382682101ff10c",
+  "tokenizer_sha256": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523",
+  "suite_sizes": [
+    {
+      "task": "Touche2020Retrieval.v3",
+      "queries": 49,
+      "pairs": 4900,
+      "unique_candidate_documents": 4863,
+      "corpus_documents": 303732
+    },
+    {
+      "task": "TRECCOVID",
+      "queries": 50,
+      "pairs": 5000,
+      "unique_candidate_documents": 4619,
+      "corpus_documents": 171332
+    },
+    {
+      "task": "FiQA2018",
+      "queries": 648,
+      "pairs": 64800,
+      "unique_candidate_documents": 25591,
+      "corpus_documents": 57638
+    },
+    {
+      "task": "ClimateFEVERHardNegatives",
+      "queries": 1000,
+      "pairs": 100000,
+      "unique_candidate_documents": 17084,
+      "corpus_documents": 47416
+    },
+    {
+      "task": "FEVERHardNegatives",
+      "queries": 1000,
+      "pairs": 100000,
+      "unique_candidate_documents": 55178,
+      "corpus_documents": 163698
+    },
+    {
+      "task": "HotpotQAHardNegatives",
+      "queries": 1000,
+      "pairs": 100000,
+      "unique_candidate_documents": 81549,
+      "corpus_documents": 225621
+    },
+    {
+      "task": "SCIDOCS",
+      "queries": 1000,
+      "pairs": 100000,
+      "unique_candidate_documents": 21805,
+      "corpus_documents": 25657
+    },
+    {
+      "task": "CQADupstackUnixRetrieval",
+      "queries": 1072,
+      "pairs": 107200,
+      "unique_candidate_documents": 34765,
+      "corpus_documents": 47382
+    },
+    {
+      "task": "ArguAna",
+      "queries": 1406,
+      "pairs": 140600,
+      "unique_candidate_documents": 8538,
+      "corpus_documents": 8674
+    },
+    {
+      "task": "CQADupstackGamingRetrieval",
+      "queries": 1595,
+      "pairs": 159500,
+      "unique_candidate_documents": 39308,
+      "corpus_documents": 45301
+    }
+  ],
+  "prefix_lengths": {
+    "count": 4863,
+    "min": 56,
+    "max": 4131,
+    "p10": 99,
+    "p25": 152,
+    "p50": 304,
+    "p75": 736,
+    "p90": 1365,
+    "p95": 1636,
+    "p99": 2048,
+    "above_3072": 1
+  },
+  "estimated_fp32_cache_bytes": 462707064832.0
+}

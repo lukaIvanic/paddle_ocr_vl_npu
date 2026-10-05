@@ -1,0 +1,5 @@
+72613d9731352782348c0e3ff2b2f8f5626c22c0
+liteserver-c001-4
+CPU-only preparation; no inference
+source npu-setup; HF_HOME=/workspace/.cache/huggingface HF_ENDPOINT=https://hf-mirror.com HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1 RAYON_NUM_THREADS=8
+/workspace/venvs/qwen3_embedding_eval_py312/bin/python -u 25_clef_inference/run_reranking_smoke.py prepare-task --task Touche2020Retrieval.v3 --english /workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation --model /workspace/models/clef-flash --output /workspace/results/clef_touche_full/fixture.json

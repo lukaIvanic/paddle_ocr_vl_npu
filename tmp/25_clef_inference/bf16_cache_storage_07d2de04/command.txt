@@ -1,0 +1,5 @@
+07d2de04883be467b409fc08662f3f84dde42ae2
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=3
+source npu-setup
+/usr/local/python3.12.13/bin/python3 -u tmp/25_clef_inference/bf16_cache_storage/check.py --model /workspace/models/clef-flash --reference tmp/25_clef_inference/document_cache_ec5e1de1/float32.json --fixture tmp/25_clef_inference/reranking_lengths_44ca1ad4/fixture.json --cache-dir /workspace/results/clef_bf16_storage_sample --output tmp/25_clef_inference/bf16_cache_storage_07d2de04/result.json
