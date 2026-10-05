@@ -1,5 +1,6 @@
 # Copyright 2025 The Qwen Team and The HuggingFace Inc. team. All rights reserved.
-# Licensed under Apache-2.0; see LICENSE.apache-2.0 and README.md.
+# Licensed under Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
+# Source attribution and modifications are recorded in README.md.
 """Faithful eager Clef-flash text model, without Transformers.
 
 Backbone, joint decision head and checkpoint loading live in this file.
@@ -18,8 +19,6 @@ from safetensors.torch import load_file
 import torch
 from torch import nn
 from torch.nn import functional as F
-
-from download_model import verify
 
 
 class RMSNorm(nn.Module):
@@ -456,19 +455,12 @@ class ClefTextModel(nn.Module):
 
 
 def load_model(directory, device, progress=lambda name: None):
-    """Load only the pinned BF16 text checkpoint; verify before using its contents."""
+    """Load the local BF16 checkpoint with strict key, shape and dtype checks."""
     directory = Path(directory)
-    release = json.loads(Path(__file__).with_name("release.json").read_text())
     index_name = "model.safetensors.index.json"
-    needed = ["config.json", "joint_head_config.json", index_name, "joint_head.safetensors", "tokenizer.json"]
-    needed += [name for name in release["files"] if name.startswith("model-")]
-    for name in needed:
-        if not verify(directory / name, release["files"][name]):
-            raise ValueError(f"Pinned release verification failed: {name}")
-        progress("verified:" + name)
     config = SimpleNamespace(**json.loads((directory / "config.json").read_text())["text_config"])
     head_config = json.loads((directory / "joint_head_config.json").read_text())
-    # The verified config fixes the architecture; there is no general-model API.
+    # This implementation targets the Clef-flash text architecture.
     with torch.device("meta"):
         model = ClefTextModel(config, head_config)
     weight_map = json.loads((directory / index_name).read_text())["weight_map"]

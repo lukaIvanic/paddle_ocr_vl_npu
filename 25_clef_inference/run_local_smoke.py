@@ -252,13 +252,14 @@ def main():
         reference_path = root / "references/transformers_bf16_910b_f9bb6837/result.json"
         reference = json.loads(reference_path.read_text())
         result["reference_commit"] = reference["git_commit"]
-        result["revision"] = reference["revision"]
+        result["reference_revision"] = reference["revision"]
+        result["model_path"] = str(args.model.resolve())
         references = {r["id"]: r for r in reference["rows"] if not r["warmup"]}
-        phase = "verify_and_load"
+        phase = "load_model"
         start = time.perf_counter()
         model = load_model(args.model, "npu:0", progress=lambda name: emit("load", step=name))
         torch.npu.synchronize()
-        result["verify_and_load_s"] = time.perf_counter() - start
+        result["load_s"] = time.perf_counter() - start
         result["parameter_count"] = sum(p.numel() for p in model.parameters())
         tokenizer = Tokenizer.from_file(str(args.model / "tokenizer.json"))
         tokenizer.no_padding()

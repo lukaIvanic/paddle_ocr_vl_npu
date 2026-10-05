@@ -1,4 +1,4 @@
-"""Official Clef BF16 text-only NPU smoke; no local model replacement or optimization.
+"""Official Clef BF16 text-only NPU smoke and local-backbone correctness checks.
 
 All timings come from complete real requests, not isolated stage replay. Event
 spans include stream/host-enqueue gaps and are not summed kernel durations.
@@ -19,25 +19,107 @@ import threading
 import time
 import traceback
 
-from download_model import verify
+REFERENCE_REPOSITORY = "Cloudflare/clef-flash"
+REFERENCE_REVISION = "17f0b0ad64efb65d273590632833508766b2aae6"
 
 
 def emit(event, **fields):
     print(json.dumps(dict(event=event, unix_time=time.time(), **fields), ensure_ascii=False), flush=True)
 
 
+def check_local_backbone():
+    """Small NPU correctness checks; no checkpoint or full-model load required."""
+    import unittest
+    from types import SimpleNamespace
+
+    import torch
+    import torch_npu  # noqa: F401
+    from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5TextConfig
+    from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5TextModel
+
+    from local_modeling_clef import TextBackbone, chunk_gated_delta_rule
+
+    class BackboneTests(unittest.TestCase):
+        @classmethod
+        def setUpClass(cls):
+            if not torch.npu.is_available():
+                raise RuntimeError("NPU required; do not report skipped checks as validation")
+            torch.npu.set_device(0)
+            torch.set_num_threads(8)
+
+        @torch.inference_mode()
+        def test_chunk_scan_against_token_recurrence(self):
+            # Independent scalar-token recurrence tests causal masking and chunk carry.
+            for length in (1, 63, 64, 65, 129):
+                with self.subTest(length=length):
+                    torch.manual_seed(length)
+                    q, k, v = [torch.randn(1, length, 2, 8, device="npu:0") for _ in range(3)]
+                    g = -torch.rand(1, length, 2, device="npu:0")
+                    beta = torch.rand(1, length, 2, device="npu:0")
+                    actual = chunk_gated_delta_rule(q, k, v, g, beta)
+                    q = q * torch.rsqrt(q.square().sum(-1, keepdim=True) + 1e-6) * 8**-0.5
+                    k = k * torch.rsqrt(k.square().sum(-1, keepdim=True) + 1e-6)
+                    state = torch.zeros(1, 2, 8, 8, device="npu:0")
+                    expected = []
+                    for t in range(length):
+                        state = state * g[:, t].exp()[..., None, None]
+                        residual = v[:, t] - (k[:, t, :, :, None] * state).sum(-2)
+                        state = state + k[:, t, :, :, None] * (beta[:, t, :, None] * residual)[..., None, :]
+                        expected.append((q[:, t, :, :, None] * state).sum(-2))
+                    torch.testing.assert_close(actual, torch.stack(expected, dim=1), atol=2e-6, rtol=2e-5)
+
+        @torch.inference_mode()
+        def test_hybrid_backbone_against_transformers(self):
+            config = Qwen3_5TextConfig(
+                vocab_size=128, hidden_size=32, intermediate_size=64, num_hidden_layers=2,
+                layer_types=["linear_attention", "full_attention"], num_attention_heads=4,
+                num_key_value_heads=2, head_dim=16, linear_num_key_heads=2,
+                linear_num_value_heads=4, linear_key_head_dim=8, linear_value_head_dim=8,
+                linear_conv_kernel_dim=4, rms_norm_eps=1e-6,
+                rope_parameters=dict(rope_type="default", rope_theta=10000000,
+                                     partial_rotary_factor=0.5, mrope_section=[1, 1, 2]))
+            config._attn_implementation = "eager"
+            torch.manual_seed(7)
+            reference = Qwen3_5TextModel(config).to(device="npu:0", dtype=torch.bfloat16).eval()
+            local = TextBackbone(SimpleNamespace(**config.to_dict())).to(device="npu:0", dtype=torch.bfloat16).eval()
+            local.load_state_dict(reference.state_dict(), strict=True)
+            # .to(bfloat16) casts buffers too; the release loader initializes RoPE in FP32.
+            inv, _ = reference.rotary_emb.compute_default_rope_parameters(config)
+            reference.rotary_emb.inv_freq = inv.to("npu:0")
+            local.inv_freq = inv.to("npu:0")
+            for length in (1, 65, 129):
+                with self.subTest(length=length):
+                    ids = torch.randint(0, config.vocab_size, (1, length), device="npu:0")
+                    expected = reference(input_ids=ids, attention_mask=torch.ones_like(ids), use_cache=False).last_hidden_state
+                    torch.testing.assert_close(local(ids), expected, atol=0, rtol=0)
+            with self.assertRaisesRegex(ValueError, "one nonempty"):
+                local(torch.zeros(2, 4, dtype=torch.long, device="npu:0"))
+
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(BackboneTests)
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    if not result.wasSuccessful():
+        raise SystemExit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--dtype", choices=["bf16"], required=True)
+    parser.add_argument("--model", type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--dtype", choices=["bf16"], default="bf16")
+    parser.add_argument("--check-backbone", action="store_true",
+                        help="Run small local-backbone checks against recurrence and Transformers")
     args = parser.parse_args()
+    if args.check_backbone:
+        check_local_backbone()
+        return
+    if args.model is None or args.output is None:
+        parser.error("--model and --output are required for the full Transformers smoke")
     if args.output.exists():
         raise FileExistsError(args.output)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    release = json.loads(Path(__file__).with_name("release.json").read_text())
     phase, stop = {"name": "imports"}, threading.Event()
-    result = dict(status="running", repository=release["repository"], revision=release["revision"],
+    result = dict(status="running", repository=REFERENCE_REPOSITORY, reference_revision=REFERENCE_REVISION,
+                  model_path=str(args.model.resolve()),
                   hostname=platform.node(), command=sys.argv,
                   physical_device=os.environ.get("ASCEND_RT_VISIBLE_DEVICES"),
                   git_commit=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
@@ -74,12 +156,6 @@ def main():
         result["initial_memory"] = dict(free_bytes=free, total_bytes=total)
         if free < 26 * 1024**3:
             raise RuntimeError("Less than 26 GiB free; refusing Clef-flash model load")
-        phase["name"] = "verify_release"
-        # Check every file, including executable upstream code, before import.
-        for name, entry in release["files"].items():
-            if not verify(args.model / name, entry):
-                raise ValueError(f"Pinned release verification failed: {name}")
-            emit("file_verified", name=name)
         spec = importlib.util.spec_from_file_location("clef_official_joint_schema", args.model / "joint_schema_model.py")
         upstream = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = upstream  # dataclasses requires module registration

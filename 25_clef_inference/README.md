@@ -16,10 +16,13 @@ text-only requests bypass vision execution.
 
 Official release: <https://huggingface.co/Cloudflare/clef-flash>
 
-Pinned revision: `17f0b0ad64efb65d273590632833508766b2aae6`.
-`release.json` contains the Hugging Face API's file sizes, LFS SHA256 digests,
-and Git blob IDs. Both download and smoke verify all files before importing
-the release's Python code. No weights are stored in this Git repository.
+Reference revision: `17f0b0ad64efb65d273590632833508766b2aae6`.
+The saved results below used this revision. Supply its downloaded model directory
+to either runner; neither runner downloads files or hashes the entire release.
+The local loader checks tensor keys, shapes and dtypes. The Transformers runner
+imports the official `joint_schema_model.py` from the supplied directory.
+The recorded reference revision identifies the baseline, not a digest check of
+arbitrary files supplied with `--model`. No weights are stored in this repository.
 
 ## Run in the existing 910B container
 
@@ -30,17 +33,34 @@ checking actual free HBM and process ownership.
 ```bash
 cd /workspace/repos/paddle_ocr_vl_npu
 git pull --ff-only
-bash 25_clef_inference/setup_environment.sh
+source npu-setup
+export TORCH_DEVICE_BACKEND_AUTOLOAD=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+export TOKENIZERS_PARALLELISM=false OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8
 /workspace/venvs/clef_transformers_py312/bin/python -u \
-  25_clef_inference/download_model.py --output /workspace/models/clef-flash
-RUN_ROOT=tmp/25_clef_inference/transformers_bf16_smoke_$(git rev-parse --short HEAD) \
-  bash 25_clef_inference/run_910b.sh
+  25_clef_inference/run_transformers_smoke.py \
+  --model /workspace/models/clef-flash --dtype bf16 \
+  --output tmp/25_clef_inference/transformers_$(git rev-parse --short HEAD)/result.json
 ```
 
-The downloader defaults to hf-mirror.com, pins the upstream commit, validates
-byte ranges, and verifies digests. It prints a five-second speed heartbeat and
-per-file completion. The isolated venv inherits the existing matching torch and
-torch-npu packages; only Transformers/Accelerate overrides are installed.
+The existing model directory and environment are already prepared. If recreating
+the environment, inherit the matching torch/torch-npu installation and install
+the original Transformers baseline's overrides:
+
+```bash
+/usr/local/python3.12.13/bin/python3 -m venv --system-site-packages \
+  /workspace/venvs/clef_transformers_py312
+/workspace/venvs/clef_transformers_py312/bin/python -m pip install \
+  'transformers==5.17.0' 'accelerate==1.15.0'
+```
+
+The local runtime needs torch, torch-npu, safetensors and tokenizers. Transformers
+and Accelerate are needed only for the official reference runner. Obtain the
+reference model revision separately using standard Hugging Face tooling; custom
+download and environment-setup scripts are no longer part of this experiment.
+
+Choose a new output path for each run. Both runners refuse to overwrite an
+existing result file. Capture console output and the device/command alongside
+the result when recording a new experiment.
 
 ## Evidence and interpretation
 
@@ -117,9 +137,10 @@ Like experiment 02, there are two main files:
 - `run_local_smoke.py`: text/schema encoding, answer formatting and the parity
   run against the saved Transformers outputs.
 
-`run_transformers_smoke.py` retains the original reference runner. Download/setup
-scripts, the pinned release manifest, fixtures, tests and saved results support
-reproduction; they are not separate pieces of the model implementation.
+`run_transformers_smoke.py` is the one reference/check script: it runs the
+original model, or the small backbone checks with `--check-backbone`.
+`smoke_cases.json` contains the editable examples, and `references/` preserves
+the original run evidence. There are no separate test or setup scripts.
 
 Scope is **B1, unpadded text, BF16, complete requests**. No generation, KV/recurrent
 cache reuse, batching, compilation, quantization or custom NPU kernels. Requests
@@ -132,14 +153,15 @@ After pulling this branch in an isolated server checkout and checking the device
 ```bash
 source npu-setup
 export TORCH_DEVICE_BACKEND_AUTOLOAD=0
-/workspace/venvs/clef_transformers_py312/bin/python -m unittest discover \
-  -s 25_clef_inference -p 'test_local_backbone.py' -v
-RUN_ROOT=tmp/25_clef_inference/local_bf16_$(git rev-parse --short HEAD) \
-  bash 25_clef_inference/run_910b.sh local
+/workspace/venvs/clef_transformers_py312/bin/python \
+  25_clef_inference/run_transformers_smoke.py --check-backbone
+/workspace/venvs/clef_transformers_py312/bin/python -u \
+  25_clef_inference/run_local_smoke.py --model /workspace/models/clef-flash \
+  --output tmp/25_clef_inference/local_bf16_$(git rev-parse --short HEAD)/result.json
 ```
 
-The default `run_910b.sh` still runs the original Transformers baseline. Both use
-the existing environment; the local smoke actively blocks Transformers imports.
+Both runners use the existing environment; the local smoke actively blocks
+Transformers imports.
 The small NPU tests use Transformers only as an independent oracle, and also
 compare the chunk scan against a token-at-a-time recurrence across chunk boundaries.
 The real-checkpoint smoke requires exact token IDs, question/option spans, BF16
@@ -167,15 +189,15 @@ Every model parameter and all decision logits are BF16 on NPU; FP32 recurrent
 and normalization arithmetic follows the original implementation.
 
 Recorded timing is diagnostic only: `e2e` includes output validation/comparison,
-`verify_and_load_s` includes release hashing, and device events include stream
-idle/enqueue gaps. No speedup or broad retrieval-quality claim is made by these
-checks. Main remains the Transformers baseline; this implementation is on the
+the historical `verify_and_load_s` includes release hashing, and device events
+include stream idle/enqueue gaps. Current runs report `load_s` without hashing.
+No speedup or broad retrieval-quality claim is made by these checks. Main remains the Transformers baseline; this implementation is on the
 review branch `codex/clef-transformers-free`.
 
 ## Source provenance
 
-The local implementation adapts these Apache-2.0 sources. The license is included
-as `LICENSE.apache-2.0`.
+The local implementation adapts these [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0)
+sources. Attribution and the changes to each source are recorded here.
 
 - The backbone in `local_modeling_clef.py`: Transformers **5.17.0**, `models/qwen3_5/modeling_qwen3_5.py`.
   Copyright 2025 The Qwen Team and The HuggingFace Inc. team. All rights reserved.
@@ -191,4 +213,6 @@ as `LICENSE.apache-2.0`.
 
 Sources were read from the exact environment/release used for the saved 910B
 baseline. The local runtime never imports either upstream Python file. Weights
-and tokenizer remain in the separately downloaded, digest-verified release.
+and tokenizer remain in the separately downloaded release. Historical baseline
+verification is recorded in the preserved references; current runners do not
+repeat those file-hash checks.
