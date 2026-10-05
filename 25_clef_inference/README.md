@@ -511,3 +511,73 @@ separate implementation and validation task.
 The existing probe accepts `--dtype float32`, `--strict-precision`, and
 `--worst-from <40_PAIR_RESULT_JSON>`. Commands, logs, both result files and
 validation hashes are saved in `tmp/25_clef_inference/gdn_fp32_ff98eeb8/`.
+
+### Isolating where the boundary difference enters and grows (910B2)
+
+At `db465f9f`, traced the worst pair, MedicalRetrieval query `90` / document
+`80953` (217 total tokens, 79-token prefix), on physical NPU 3. The BF16 model
+and original normal/split logits were reproduced exactly. The same strict
+precision settings as the FP32 diagnostic were used. Internal scan arithmetic
+already runs in FP32 in this BF16 model; its return converts back to BF16.
+
+At the first GDN layer, QKV projections, gating projections and convolution
+outputs were exactly equal. All five scan inputs (Q/K/V/g/beta) were exactly
+equal too. Q/K normalization and scaling were equal between the full scan and
+concatenated prefix/suffix scans. The difference therefore first appears in
+the remaining FP32 chunk arithmetic, after Q/K normalization.
+
+For every GDN layer, the probe separately compared whole and split scans on
+**identical inputs to that layer**. This distinguishes newly introduced local
+rounding from errors propagated from earlier layers. All 24 such comparisons
+had identical normalized Q/K and identical BF16 document-prefix outputs.
+
+For the first layer:
+
+| Stage | Measured difference |
+| --- | --- |
+| Input projections, convolution, Q/K normalization | Exactly zero |
+| Raw FP32 scan output | Max absolute 1.04308e-6; relative RMS 1.27261e-7 |
+| Scan output cast to BF16, question suffix | 111 / 565,248 values changed (0.01964%); max absolute 3.05176e-5 |
+| GDN output projection | 2,600 changed values |
+| First decoder block output, after residual and MLP | 15,998 changed values; relative RMS 0.00011333 |
+| Final normalized backbone output, all layers split | Relative RMS 0.0246373 |
+
+One first-layer activation (token 79, head 12, component 111) demonstrates the
+rounding threshold directly:
+
+| | Whole scan | Split scan |
+| --- | ---: | ---: |
+| Before BF16 cast | 1.5310940852941712e-6 | 1.531094994788873e-6 |
+| After BF16 cast | 1.5273690223693848e-6 | 1.5348196029663086e-6 |
+
+The FP32 gap is 9.09495e-13. These values fall on opposite sides of a BF16
+rounding threshold, producing a BF16 gap of 7.45058e-9 (8,192 times larger).
+This is one concrete example, not a claim that every cast amplifies error.
+
+Causal interventions on the same full model:
+
+| Intervention | Final P(true) |
+| --- | ---: |
+| All scans normal | 0.47073662281 |
+| Only the first GDN scan split; all later scans normal | 0.50878816843 |
+| All 24 GDN scans split | 0.50585913658 |
+| Compute every split scan, but pass its same-input normal output onward | 0.47073662281 |
+
+Replacing scan outputs restored **every captured activation and the final
+logits exactly**. Repeated normal execution also matched every captured
+activation exactly. Thus the changed scan outputs account for the downstream
+discrepancy in this example. Later projections, norms, attention, MLPs and the
+head run unchanged code on different inputs and propagate/amplify those changes.
+Splitting only the first GDN is sufficient for a 3.805-point probability change.
+
+The probe also ran each of the 24 single-layer splits and all 24 cumulative
+prefixes of split layers. Effects are non-additive: additional splits can
+increase or decrease the score. This isolates the source to the scan's FP32
+chunk calculation and its BF16 output boundary; it does not yet attribute the
+initial FP32 discrepancy to a single primitive among cumulative decay,
+exponentials, matrix multiplications and triangular solves.
+
+Probe: `tmp/25_clef_inference/gdn_isolation/probe.py`. Commands, complete local
+error and activation traces, intervention scores, exit code and checks:
+`tmp/25_clef_inference/gdn_isolation_db465f9f/`. Production model code and the
+live serving process were not changed.

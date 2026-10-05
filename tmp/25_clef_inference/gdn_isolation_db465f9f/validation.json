@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "meaning": "isolation and evidence-consistency checks passed",
+  "first_scan_inputs_exact": true,
+  "qk_normalization_exact_on_same_inputs_all_layers": true,
+  "local_document_prefix_bf16_exact_all_layers": true,
+  "restoring_normal_scan_outputs_restores_all_captured_activations": true,
+  "baseline_repeat_all_captured_activations_exact": true,
+  "first_scan_raw_fp32": {
+    "max_abs": 1.043081283569336e-06,
+    "relative_rms": 1.27261245097543e-07,
+    "changed_count": 459808,
+    "elements": 888832
+  },
+  "first_scan_bf16_suffix": {
+    "max_abs": 3.0517578125e-05,
+    "relative_rms": 7.233157930386369e-07,
+    "changed_count": 111,
+    "elements": 565248
+  },
+  "rounding_example": {
+    "index": [
+      0,
+      79,
+      12,
+      111
+    ],
+    "whole_fp32": 1.5310940852941712e-06,
+    "split_fp32": 1.531094994788873e-06,
+    "whole_bf16": 1.5273690223693848e-06,
+    "split_bf16": 1.5348196029663086e-06
+  },
+  "rounding_example_gap_amplification": 8192.0,
+  "scores": {
+    "baseline": 0.47073662281036377,
+    "first_gdn_split_only": 0.5087881684303284,
+    "all_gdn_split": 0.5058591365814209,
+    "restore_normal_scan_outputs": 0.47073662281036377
+  },
+  "complete_document_cache_reuse_tested": false,
+  "result_sha256": "1761d138056a237ad4f10af89246ebce5b090718b1c3c32727d1d8f6f6a8d411"
+}

@@ -1,0 +1,58 @@
+loaded:model-00001-of-00004.safetensors
+loaded:model-00002-of-00004.safetensors
+loaded:model-00003-of-00004.safetensors
+loaded:model-00004-of-00004.safetensors
+/workspace/repos/clef-reranking-smoke/25_clef_inference/local_modeling_clef.py:76: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  values = torch.linalg.solve_triangular(system, v_beta, upper=False, unitriangular=True)
+{"mode": "baseline", "logits": [-0.7265625, -0.609375], "score": 0.47073662281036377}
+{"mode": "all_split", "logits": [-0.640625, -0.6640625], "score": 0.5058591365814209}
+{"mode": "restore_scan_outputs", "logits": [-0.7265625, -0.609375], "score": 0.47073662281036377}
+{"mode": "single_0", "logits": [-0.625, -0.66015625], "score": 0.5087881684303284}
+{"mode": "single_1", "logits": [-0.6640625, -0.6328125], "score": 0.49218812584877014}
+{"mode": "single_2", "logits": [-0.6953125, -0.6328125], "score": 0.4843800961971283}
+{"mode": "single_3", "logits": [-0.68359375, -0.640625], "score": 0.4892594814300537}
+{"mode": "single_4", "logits": [-0.69921875, -0.625], "score": 0.4814538359642029}
+{"mode": "single_5", "logits": [-0.703125, -0.625], "score": 0.4804786741733551}
+{"mode": "single_6", "logits": [-0.7109375, -0.62109375], "score": 0.47755417227745056}
+{"mode": "single_7", "logits": [-0.7109375, -0.6171875], "score": 0.4765796661376953}
+{"mode": "single_8", "logits": [-0.7265625, -0.609375], "score": 0.47073662281036377}
+{"mode": "single_9", "logits": [-0.734375, -0.59375], "score": 0.46490156650543213}
+{"mode": "single_10", "logits": [-0.7265625, -0.6015625], "score": 0.4687906503677368}
+{"mode": "single_11", "logits": [-0.734375, -0.609375], "score": 0.4687906503677368}
+{"mode": "single_12", "logits": [-0.734375, -0.609375], "score": 0.4687906503677368}
+{"mode": "single_13", "logits": [-0.734375, -0.609375], "score": 0.4687906503677368}
+{"mode": "single_14", "logits": [-0.734375, -0.609375], "score": 0.4687906503677368}
+{"mode": "single_15", "logits": [-0.7265625, -0.609375], "score": 0.47073662281036377}
+{"mode": "single_16", "logits": [-0.7265625, -0.609375], "score": 0.47073662281036377}
+{"mode": "single_17", "logits": [-0.734375, -0.609375], "score": 0.4687906503677368}
+{"mode": "single_18", "logits": [-0.734375, -0.609375], "score": 0.4687906503677368}
+{"mode": "single_19", "logits": [-0.734375, -0.609375], "score": 0.4687906503677368}
+{"mode": "single_20", "logits": [-0.734375, -0.609375], "score": 0.4687906503677368}
+{"mode": "single_21", "logits": [-0.7265625, -0.609375], "score": 0.47073662281036377}
+{"mode": "single_22", "logits": [-0.734375, -0.609375], "score": 0.4687906503677368}
+{"mode": "single_23", "logits": [-0.7265625, -0.609375], "score": 0.47073662281036377}
+{"mode": "first_1", "logits": [-0.625, -0.66015625], "score": 0.5087881684303284}
+{"mode": "first_2", "logits": [-0.6796875, -0.6484375], "score": 0.49218812584877014}
+{"mode": "first_3", "logits": [-0.671875, -0.6328125], "score": 0.4902355968952179}
+{"mode": "first_4", "logits": [-0.6328125, -0.6640625], "score": 0.5078118443489075}
+{"mode": "first_5", "logits": [-0.6640625, -0.640625], "score": 0.4941408932209015}
+{"mode": "first_6", "logits": [-0.640625, -0.640625], "score": 0.5}
+{"mode": "first_7", "logits": [-0.640625, -0.65625], "score": 0.5039061903953552}
+{"mode": "first_8", "logits": [-0.63671875, -0.63671875], "score": 0.5}
+{"mode": "first_9", "logits": [-0.640625, -0.65625], "score": 0.5039061903953552}
+{"mode": "first_10", "logits": [-0.640625, -0.66015625], "score": 0.5048826336860657}
+{"mode": "first_11", "logits": [-0.640625, -0.65625], "score": 0.5039061903953552}
+{"mode": "first_12", "logits": [-0.640625, -0.66015625], "score": 0.5048826336860657}
+{"mode": "first_13", "logits": [-0.640625, -0.65625], "score": 0.5039061903953552}
+{"mode": "first_14", "logits": [-0.640625, -0.6640625], "score": 0.5058591365814209}
+{"mode": "first_15", "logits": [-0.640625, -0.65625], "score": 0.5039061903953552}
+{"mode": "first_16", "logits": [-0.640625, -0.66015625], "score": 0.5048826336860657}
+{"mode": "first_17", "logits": [-0.6328125, -0.6484375], "score": 0.5039061903953552}
+{"mode": "first_18", "logits": [-0.640625, -0.66015625], "score": 0.5048826336860657}
+{"mode": "first_19", "logits": [-0.640625, -0.65625], "score": 0.5039061903953552}
+{"mode": "first_20", "logits": [-0.640625, -0.6640625], "score": 0.5058591365814209}
+{"mode": "first_21", "logits": [-0.640625, -0.6640625], "score": 0.5058591365814209}
+{"mode": "first_22", "logits": [-0.640625, -0.6640625], "score": 0.5058591365814209}
+{"mode": "first_23", "logits": [-0.640625, -0.6640625], "score": 0.5058591365814209}
+{"mode": "first_24", "logits": [-0.640625, -0.6640625], "score": 0.5058591365814209}
+{"mode": "baseline_repeat", "logits": [-0.7265625, -0.609375], "score": 0.47073662281036377}

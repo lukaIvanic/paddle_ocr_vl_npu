@@ -1,0 +1,5 @@
+db465f9f66d210b6428bb1f65d3db6127e09fcd5
+liteserver-c001-4
+ASCEND_RT_VISIBLE_DEVICES=3
+source npu-setup
+/usr/local/python3.12.13/bin/python3 -u tmp/25_clef_inference/gdn_isolation/probe.py --model /workspace/models/clef-flash --output tmp/25_clef_inference/gdn_isolation_db465f9f/result.json
