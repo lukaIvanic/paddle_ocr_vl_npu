@@ -263,3 +263,57 @@ The comparison target is **51.0% raw accuracy**, reported in the
 [Clef-flash model card](https://huggingface.co/Cloudflare/clef-flash#decision-index).
 This is the public Decision Index adapter; Cloudflare's exact internal run
 manifest and per-case predictions have not been independently verified.
+
+## Tiny uncached reranking protocol check
+
+`run_reranking_smoke.py` reuses experiment 22's pinned MTEB 1.38.9 evaluator,
+corpus formatting, task instructions, saved embedding top100 candidates and
+Qwen3-Reranker-4B pair scores. It prepares one FiQA2018 test query and one
+EcomRetrieval dev query, each with three selected candidates: first positive,
+first negative and last negative in embedding-score order. The first sorted
+query supporting that selection is used. This deliberately label-balanced
+sample checks plumbing; it is not an unbiased quality estimate or a full
+MTEB-R/CMTEB-R result.
+
+The document alone is `state`. The original task instruction and query go in
+one `noul` relevance question. Rank by unrounded `P(true)` from the decision
+logits; retain the official rounded answer separately. No labels or Qwen scores
+enter model inference. No input is truncated. Model arithmetic is unchanged.
+
+Prepare in the existing pinned evaluator environment, using the original saved
+run directories and offline dataset cache:
+
+```bash
+source npu-setup
+export HF_HOME=/workspace/.cache/huggingface
+export HF_ENDPOINT=https://hf-mirror.com
+export HF_HUB_OFFLINE=1 HF_DATASETS_OFFLINE=1
+/workspace/venvs/qwen3_embedding_eval_py312/bin/python \
+  25_clef_inference/run_reranking_smoke.py prepare \
+  --source-repo /workspace/repos/paddle_ocr_vl_npu \
+  --english /workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/english_5npu_894706ef/evaluation \
+  --chinese /workspace/repos/paddle_ocr_vl_npu/tmp/22_qwen3_embedding_benchmark/reranker_ecom_e70e8473/evaluation \
+  --output <NEW_FIXTURE_JSON>
+```
+
+Run the six uncached pairs on a free 910B2 in the model environment, then evaluate
+in the pinned CPU evaluator. These are separate processes so local model
+inference can keep its Transformers import guard:
+
+```bash
+source npu-setup
+/usr/local/python3.12.13/bin/python3 \
+  25_clef_inference/run_reranking_smoke.py run \
+  --fixture <FIXTURE_JSON> --model /workspace/models/clef-flash \
+  --output <NEW_RESULT_JSON>
+/workspace/venvs/qwen3_embedding_eval_py312/bin/python \
+  25_clef_inference/run_reranking_smoke.py evaluate \
+  --fixture <FIXTURE_JSON> --result <RESULT_JSON>
+```
+
+The fixture saves exact documents, queries, task instructions, selected IDs,
+judgments and source-file hashes. Evaluation preserves full query judgments but
+ranks only the three selected candidates, using the existing NDCG@10 and
+self-match rules. An independent two-document example checks the evaluator's
+NDCG discount. Keep the fixture unchanged for the future cached/uncached check;
+these commands do not implement document caching.
