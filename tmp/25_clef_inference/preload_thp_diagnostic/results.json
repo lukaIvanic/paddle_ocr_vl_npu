@@ -1,0 +1,68 @@
+{
+  "scope": "Small CPU cache-copy diagnostic, not inference or full-corpus preload validation",
+  "runtime": "research_vllm_ascend_023_external_workspace; existing npu-setup allocator environment",
+  "allocator": "LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libjemalloc.so.2",
+  "threads": 8,
+  "cache_bytes": 61366272,
+  "retained_copies_per_process": 4,
+  "sequence": [
+    {
+      "thp_disabled": false,
+      "seconds": [
+        3.594894450157881,
+        5.939286550041288,
+        2.4833066002465785,
+        3.739815059583634
+      ]
+    },
+    {
+      "thp_disabled": true,
+      "seconds": [
+        0.021269899792969227,
+        0.010261479765176773,
+        0.01073409989476204,
+        0.010747699998319149
+      ]
+    },
+    {
+      "thp_disabled": true,
+      "seconds": [
+        0.025392990093678236,
+        0.014226439874619246,
+        0.014217830263078213,
+        0.01417904021218419
+      ]
+    },
+    {
+      "thp_disabled": false,
+      "seconds": [
+        5.720090619754046,
+        4.771436150185764,
+        3.4706281796097755,
+        3.3137515000998974
+      ]
+    }
+  ],
+  "normal_median_s": 3.6673547548707575,
+  "disabled_median_s": 0.014198435237631202,
+  "median_ratio": 258.29288182058866,
+  "all_tensors_bitwise_equal": true,
+  "all_major_fault_deltas_zero": true,
+  "storage": {
+    "filesystem": "XFS",
+    "volume": "vg_data1/lv_data1",
+    "layout": "linear across nvme1n1 and nvme2n1, not striped",
+    "model": "HWE62P447T6L00BN",
+    "link": "16.0 GT/s, 4 lanes, PCIe 4.0",
+    "link_ceiling_gb_per_s": 7.876923076923077
+  },
+  "direct_read_probe": {
+    "bytes": 134217728,
+    "dd_transfer_s": 0.0385852,
+    "whole_process_s": 0.042554110288619995,
+    "gb_per_s_from_dd": 3.4784769289779502,
+    "flags": "bs=4M count=32 iflag=direct; existing cache file; no cache dropping; queue depth 1"
+  },
+  "running_benchmark": "Not stopped, restarted, or reconfigured. Probes ran in separate processes.",
+  "kernel_docs": "https://docs.kernel.org/admin-guide/mm/transhuge.html"
+}

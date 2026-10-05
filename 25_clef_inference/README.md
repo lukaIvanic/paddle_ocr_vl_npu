@@ -923,3 +923,28 @@ Preflight metric self-comparison using frozen Qwen predictions reproduces
 Qwen3-Reranker-4B NDCG@10 **72.9999** and embedding NDCG@10 **69.4927** (0–100
 scale). This is an evaluator check, not a Clef result. Small launch/check evidence
 and the coordinator source are in `tmp/25_clef_inference/touche_full_f268a541/`.
+
+### Full-corpus preload stall diagnosis
+
+The first full run hit unexpectedly slow CPU cache copying near 3,700–4,100
+loaded documents. This was not the raw SSD bandwidth: a bounded 128 MiB direct
+read measured 3.48 GB/s, whereas cached tensor clones spent seconds in kernel
+work with zero major faults. The data volume is XFS on a linear LVM volume over
+two Huawei NVMe drives, each negotiated at PCIe 4.0 x4 (7.88 GB/s link ceiling;
+not a guaranteed drive/filesystem rate or a striped aggregate).
+
+A fresh-process ABBA probe used the same jemalloc environment, eight CPU threads,
+one 58.5 MiB cache and four retained copies per process. Default transparent
+huge pages took a median 3.67 seconds per copy; disabling THP only in the probe
+process took a median 14.2 milliseconds, with bitwise-equal tensors and zero
+major faults in all runs. Concurrent kernel counters showed direct reclaim and
+compaction activity. This identifies huge-page allocation stalls as a major
+preload bottleneck; the tiny probe is not a complete corpus timing result.
+
+Future `run_reranking_task.py` starts use `ordinary_preload_pages()` around RAM
+cache construction. It sets the process-only `PR_SET_THP_DISABLE` flag and
+restores the original state before scoring, including on exceptions. There is
+no global sysctl change, and the modeling file/cache identities remain intact.
+The already-running `f268a541` benchmark was left untouched. The full-corpus
+speedup from this fix is not yet measured. Diagnostic results and scope checks
+are in `tmp/25_clef_inference/preload_thp_diagnostic/`.

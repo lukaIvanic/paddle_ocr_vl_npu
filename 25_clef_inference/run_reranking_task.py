@@ -1,5 +1,6 @@
 """Score a frozen complete reranking task from existing BF16 document caches."""
 import argparse
+from contextlib import contextmanager
 import hashlib
 import importlib.metadata
 import json
@@ -13,6 +14,26 @@ import time
 
 from run_local_smoke import NoTransformers, encode_document_prefix, encode_record
 from run_reranking_smoke import BENCHMARK_DIR, cache_cast, digest, request_for, save, sync_saved
+
+
+@contextmanager
+def ordinary_preload_pages():
+    """Avoid huge-page allocation stalls for owned CPU caches; restore on exit."""
+    import ctypes
+    libc = ctypes.CDLL(None, use_errno=True)
+    prctl = libc.prctl
+    prctl.argtypes = [ctypes.c_int] + [ctypes.c_ulong] * 4
+    prctl.restype = ctypes.c_int
+    previous = prctl(42, 0, 0, 0, 0)  # PR_GET_THP_DISABLE, supported by server kernel.
+    if previous < 0 or prctl(41, 1, 0, 0, 0) != 0:  # PR_SET_THP_DISABLE
+        code = ctypes.get_errno()
+        raise OSError(code, os.strerror(code))
+    try:
+        yield
+    finally:
+        if prctl(41, previous, 0, 0, 0) != 0:
+            code = ctypes.get_errno()
+            raise OSError(code, os.strerror(code))
 
 
 def validate_predictions(fixture, predictions, complete):
@@ -123,25 +144,26 @@ def score(args):
             raise ValueError('Model identity or dtype differs from precomputation')
         ram, by_document = {}, {}
         preload_start = time.perf_counter()
-        for index, (did, doc) in enumerate(fixture['documents'].items()):
-            prefix = encode_document_prefix(tokenizer, doc['text'])
-            key = hashlib.sha256(json.dumps([model.cache_identity, 'torch.bfloat16', prefix]).encode()).hexdigest()
-            row = manifest['documents'][did]
-            path = args.cache_dir / (key + '.safetensors')
-            if row['key'] != key or row['prefix_tokens'] != len(prefix) or path.stat().st_size != row['file_bytes']:
-                raise ValueError('Cache identity, prefix length or size changed: ' + did)
-            if key not in ram:
-                cache = DocumentCache.load(path)
-                if (cache.prefix_ids != prefix or cache.model_identity != model.cache_identity or
-                    cache.nbytes != row['cache_bytes'] or any(t.dtype != torch.bfloat16 for t in cache.tensors().values())):
-                    raise ValueError('Incompatible cache contents: ' + did)
-                ram[key] = cache
-            by_document[did] = key
-            if (index + 1) % 100 == 0:
-                print(json.dumps({'stage': 'preload', 'documents': index + 1, 'of': len(documents),
-                                  'seconds': time.perf_counter() - preload_start}), flush=True)
+        with ordinary_preload_pages():
+            for index, (did, doc) in enumerate(fixture['documents'].items()):
+                prefix = encode_document_prefix(tokenizer, doc['text'])
+                key = hashlib.sha256(json.dumps([model.cache_identity, 'torch.bfloat16', prefix]).encode()).hexdigest()
+                row = manifest['documents'][did]
+                path = args.cache_dir / (key + '.safetensors')
+                if row['key'] != key or row['prefix_tokens'] != len(prefix) or path.stat().st_size != row['file_bytes']:
+                    raise ValueError('Cache identity, prefix length or size changed: ' + did)
+                if key not in ram:
+                    cache = DocumentCache.load(path)
+                    if (cache.prefix_ids != prefix or cache.model_identity != model.cache_identity or
+                        cache.nbytes != row['cache_bytes'] or any(t.dtype != torch.bfloat16 for t in cache.tensors().values())):
+                        raise ValueError('Incompatible cache contents: ' + did)
+                    ram[key] = cache
+                by_document[did] = key
+                if (index + 1) % 100 == 0:
+                    print(json.dumps({'stage': 'preload', 'documents': index + 1, 'of': len(documents),
+                                      'seconds': time.perf_counter() - preload_start}), flush=True)
         result.update(ram_cache_bytes=sum(c.nbytes for c in ram.values()), ram_preload_s=time.perf_counter() - preload_start,
-                      model_identity=model.cache_identity)
+                      model_identity=model.cache_identity, preload_thp_disabled=True)
         save(args.output, result)
         print(json.dumps({'stage': 'scoring', 'ram_cache_bytes': result['ram_cache_bytes']}), flush=True)
         with torch.inference_mode():
