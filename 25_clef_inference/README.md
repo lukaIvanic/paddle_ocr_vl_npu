@@ -110,21 +110,22 @@ loads release Python or imports Transformers. Vision weights are omitted. The
 untied `lm_head.weight` is retained because the decision head uses its lexical
 option embeddings, but no full vocabulary logits are computed.
 
-Review the files in this order:
+Like experiment 02, there are two main files:
 
-1. `text_inputs.py`: release-compatible text/schema encoding and answer formatting.
-2. `modeling_backbone.py`: Qwen3.5 embeddings, 24 Gated DeltaNet layers, eight
-   full-attention layers, MLPs and final norm. Ordinary eager PyTorch with the
-   reference FP32 norm/recurrent arithmetic and 64-token chunk scan.
-3. `modeling_head.py`: the released PyTorch head, with unchanged computation.
-4. `local_model.py`: explicit checkpoint mapping, shape/dtype checks and B1 forward.
-5. `run_local_smoke.py`: input and output comparison with the saved baseline.
+- `local_modeling_clef.py`: the complete Qwen3.5 text backbone, released joint
+  decision head, checkpoint loading and B1 forward.
+- `run_local_smoke.py`: text/schema encoding, answer formatting and the parity
+  run against the saved Transformers outputs.
+
+`run_transformers_smoke.py` retains the original reference runner. Download/setup
+scripts, the pinned release manifest, fixtures, tests and saved results support
+reproduction; they are not separate pieces of the model implementation.
 
 Scope is **B1, unpadded text, BF16, complete requests**. No generation, KV/recurrent
 cache reuse, batching, compilation, quantization or custom NPU kernels. Requests
 longer than 16,384 tokens and media inputs are rejected, not silently truncated.
 The pinned release config is the supported architecture, not a generic Qwen loader.
-See `THIRD_PARTY.md` for exact source provenance and modifications.
+Source provenance and modifications are recorded below.
 
 After pulling this branch in an isolated server checkout and checking the device:
 
@@ -170,3 +171,24 @@ Recorded timing is diagnostic only: `e2e` includes output validation/comparison,
 idle/enqueue gaps. No speedup or broad retrieval-quality claim is made by these
 checks. Main remains the Transformers baseline; this implementation is on the
 review branch `codex/clef-transformers-free`.
+
+## Source provenance
+
+The local implementation adapts these Apache-2.0 sources. The license is included
+as `LICENSE.apache-2.0`.
+
+- The backbone in `local_modeling_clef.py`: Transformers **5.17.0**, `models/qwen3_5/modeling_qwen3_5.py`.
+  Copyright 2025 The Qwen Team and The HuggingFace Inc. team. All rights reserved.
+  Inspected file SHA256: `762feb6c7426a7f15b5bf830df54c07438bf9e7c27b8cdb23179045920412c3b`.
+  Changed to a text-only, B1, no-cache eager forward; removed the Transformers
+  framework, optional kernel dispatch, export path and generation/vision code.
+  The chunk scan, normalization and attention retain reference arithmetic.
+- The head in `local_modeling_clef.py` and text encoding in `run_local_smoke.py`: Cloudflare **clef-flash**,
+  `joint_schema_model.py`, revision `17f0b0ad64efb65d273590632833508766b2aae6`.
+  Inspected file SHA256: `0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3`.
+  The head computation is unchanged (imports and the record type annotation are adapted). Text encoding uses `tokenizers` directly,
+  rejects media and overlength inputs, and omits padding and the serving wrapper.
+
+Sources were read from the exact environment/release used for the saved 910B
+baseline. The local runtime never imports either upstream Python file. Weights
+and tokenizer remain in the separately downloaded, digest-verified release.

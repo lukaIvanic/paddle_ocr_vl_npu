@@ -12,7 +12,7 @@ import torch_npu  # noqa: F401
 from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5TextConfig
 from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5TextModel
 
-from modeling_backbone import TextBackbone, chunk_gated_delta_rule
+from local_modeling_clef import TextBackbone, chunk_gated_delta_rule
 
 
 class BackboneTests(unittest.TestCase):
