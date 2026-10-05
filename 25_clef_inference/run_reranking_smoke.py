@@ -152,6 +152,74 @@ def prepare(args):
     print(json.dumps({'prepared': str(args.output), 'pairs': len(pairs), 'tasks': list(groups)}))
 
 
+def prepare_task(args):
+    """Freeze every original top-100 candidate, storing each document once."""
+    from run_local_smoke import encode_document_prefix
+    sys.path.insert(0, str(BENCHMARK_DIR))
+    from suite_protocol import ENGLISH
+    from run_english_suite import load_task
+    from mteb.evaluation.evaluators.RetrievalEvaluator import corpus_to_str
+    from tokenizers import Tokenizer
+    if importlib.metadata.version('mteb') != '1.38.9':
+        raise ValueError('Use the original MTEB 1.38.9 evaluator')
+    if args.output.exists():
+        raise FileExistsError(args.output)
+    sizes = []
+    for name in ENGLISH:
+        folder = args.english / 'reranker' / name
+        source = json.loads((folder / 'manifest.json').read_text())
+        path = args.english / 'embedding' / name / 'mteb' / (name + '_default_predictions.json')
+        if digest(path) != source['candidates_sha256']:
+            raise ValueError('Candidate hash changed: ' + name)
+        candidates = json.loads(path.read_text())
+        if any(len(docs) != 100 for docs in candidates.values()):
+            raise ValueError('Expected original top100 candidates')
+        sizes.append({'task': name, 'queries': len(candidates),
+                      'pairs': sum(map(len, candidates.values())),
+                      'unique_candidate_documents': len({d for docs in candidates.values() for d in docs}),
+                      'corpus_documents': source['documents']})
+    name = args.task
+    if name not in ENGLISH:
+        raise ValueError('Not in our pinned MTEB-R suite')
+    source_folder = args.english / 'reranker' / name
+    source = json.loads((source_folder / 'manifest.json').read_text())
+    path = args.english / 'embedding' / name / 'mteb' / (name + '_default_predictions.json')
+    candidates = json.loads(path.read_text())
+    task, _ = load_english_task(name, load_task)
+    qrels = task.relevant_docs['test']
+    predictions = json.loads((source_folder / 'predictions.json').read_text())
+    if set(candidates) != set(qrels) or set(predictions) != set(qrels):
+        raise ValueError('Query coverage changed')
+    if source['query_instruction'] != ENGLISH[name][2]:
+        raise ValueError('Instruction changed')
+    if any(set(candidates[q]) != set(predictions[q]) for q in candidates):
+        raise ValueError('Qwen candidate membership changed')
+    tokenizer = Tokenizer.from_file(str(args.model / 'tokenizer.json'))
+    tokenizer.no_padding()
+    tokenizer.no_truncation()
+    # Keep original candidate membership in queries; ignore-identical applies at scoring.
+    dids = sorted({d for q, docs in candidates.items() for d in docs
+                   if not (task.ignore_identical_ids and d == q)})
+    texts = corpus_to_str([task.corpus['test'][d] for d in dids])
+    documents = {d: {'text': text, 'prefix_tokens': len(encode_document_prefix(tokenizer, text))}
+                 for d, text in zip(dids, texts)}
+    queries = {q: {'text': task.queries['test'][q], 'candidates': candidates[q],
+                   'qrels': qrels[q], 'qwen_scores': predictions[q]} for q in sorted(candidates)}
+    lengths = [v['prefix_tokens'] for v in documents.values()]
+    result = {'scope': 'complete_task_candidate_documents', 'task': name, 'split': 'test',
+        'mteb_version': '1.38.9', 'instruction': ENGLISH[name][2], 'dataset_revision': ENGLISH[name][1],
+        'ignore_identical_ids': task.ignore_identical_ids, 'truncation': 'none',
+        'candidate_sha256': digest(path), 'source_manifest_sha256': digest(source_folder / 'manifest.json'),
+        'qwen_predictions_sha256': digest(source_folder / 'predictions.json'),
+        'tokenizer_sha256': digest(args.model / 'tokenizer.json'),
+        'suite_sizes': sorted(sizes, key=lambda r: r['pairs']),
+        'prefix_lengths': length_summary([lengths]),
+        'estimated_fp32_cache_bytes': sum(50.25 * 1024**2 + n * 80 * 1024 for n in lengths),
+        'queries': queries, 'documents': documents}
+    save(args.output, result)
+    print(json.dumps({k: v for k, v in result.items() if k not in ('queries', 'documents')}, indent=2), flush=True)
+
+
 def length_summary(parts):
     """Equal task weight; input parts are a list of per-task length lists."""
     ordered = sorted((n, 1 / len(part)) for part in parts for n in part)
@@ -682,6 +750,10 @@ if __name__ == '__main__':
     lengths = commands.add_parser('prepare-lengths')
     for flag in ('english', 'chinese', 'ecom', 't2', 'source-repo', 'model', 'profile-dir', 'output'):
         lengths.add_argument('--' + flag, type=Path, required=True)
+    task = commands.add_parser('prepare-task')
+    task.add_argument('--task', required=True)
+    for flag in ('english', 'model', 'output'):
+        task.add_argument('--' + flag, type=Path, required=True)
     infer = commands.add_parser('run')
     infer.add_argument('--fixture', type=Path, required=True)
     infer.add_argument('--model', type=Path, required=True)
@@ -698,4 +770,4 @@ if __name__ == '__main__':
     metrics.add_argument('--fixture', type=Path, required=True)
     metrics.add_argument('--result', type=Path, required=True)
     args = parser.parse_args()
-    {'prepare': prepare, 'prepare-lengths': prepare_lengths, 'run': run, 'cache': run_cache, 'evaluate': evaluate}[args.command](args)
+    {'prepare': prepare, 'prepare-lengths': prepare_lengths, 'prepare-task': prepare_task, 'run': run, 'cache': run_cache, 'evaluate': evaluate}[args.command](args)
