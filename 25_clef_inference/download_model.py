@@ -104,7 +104,7 @@ def main():
                             if attempt == 3:
                                 raise
 
-                with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
                     list(pool.map(get_range, range(0, entry["size"], chunk_size)))
         else:
             with open_url(url) as source, partial.open("wb") as target:
@@ -123,7 +123,7 @@ def main():
     thread = threading.Thread(target=heartbeat, daemon=True)
     thread.start()
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             list(pool.map(fetch, release["files"].items()))
         (root / "verified_release.json").write_text(json.dumps(release, indent=2) + "\n")
         emit("download_complete", repository=release["repository"], revision=release["revision"],
