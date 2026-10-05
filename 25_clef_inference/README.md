@@ -913,11 +913,13 @@ the frozen Qwen3-Reranker-4B and embedding scores, and retains per-query metrics
 No Qwen scores or relevance labels enter Clef inference. This measures the
 complete Touché task, not the entire MTEB-R suite.
 
-The full run was launched at `f268a541` on physical NPU 3 after the cache job
-completed. Scoring uses the 0.23 container; a host-side coordinator automatically
+The first full run was launched at `f268a541` on physical NPU 3 after the cache
+job completed; it was superseded by the fixed-loader run at `b5fe06b0`.
+Scoring uses the 0.23 container; a host-side coordinator automatically
 runs evaluation in the existing 0.21 container's MTEB 1.38.9 environment, then
 copies the evaluated result back. Live logs/status/results are under
-`/workspace/results/clef_touche_full/benchmark_f268a541/` in the 0.23 container.
+`/workspace/results/clef_touche_full/benchmark_b5fe06b0/` in the 0.23 container.
+Original run evidence remains under `benchmark_f268a541/`.
 
 Preflight metric self-comparison using frozen Qwen predictions reproduces
 Qwen3-Reranker-4B NDCG@10 **72.9999** and embedding NDCG@10 **69.4927** (0–100
@@ -945,6 +947,17 @@ Future `run_reranking_task.py` starts use `ordinary_preload_pages()` around RAM
 cache construction. It sets the process-only `PR_SET_THP_DISABLE` flag and
 restores the original state before scoring, including on exceptions. There is
 no global sysctl change, and the modeling file/cache identities remain intact.
-The already-running `f268a541` benchmark was left untouched. The full-corpus
-speedup from this fix is not yet measured. Diagnostic results and scope checks
-are in `tmp/25_clef_inference/preload_thp_diagnostic/`.
+At the user's request, `f268a541` was interrupted cleanly and restarted at
+`b5fe06b0` on NPU 3. No queries had been scored, and all precomputed files were
+retained. The replacement preloaded all 4,863 document IDs (4,816 distinct
+caches, 229,300,723,712 tensor bytes) in **174.65 seconds**, then entered scoring.
+At the same 4,500-document milestone, preload improved from 2,507.6 seconds to
+158.8 seconds (15.8x); the old run never completed preload. Model, fixture and
+cache-manifest identities stayed unchanged.
+
+Diagnostic results and scope checks are in
+`tmp/25_clef_inference/preload_thp_diagnostic/`. The restarted coordinator,
+preload log and status snapshot are in
+`tmp/25_clef_inference/touche_full_b5fe06b0/`. Scoring and the automatic
+Qwen/embedding comparison continue in the background; the preload evidence
+does not constitute an accuracy result.

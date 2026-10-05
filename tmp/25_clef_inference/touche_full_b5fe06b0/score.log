@@ -1,0 +1,58 @@
+Selected physical NPU 3 as logical npu:0 (health/idle check; not a reservation)
+Python: /usr/local/python3.12.13/bin/python3
+loaded:model-00001-of-00004.safetensors
+loaded:model-00002-of-00004.safetensors
+loaded:model-00003-of-00004.safetensors
+loaded:model-00004-of-00004.safetensors
+{"stage": "preload", "documents": 100, "of": 4863, "seconds": 2.917116470169276}
+{"stage": "preload", "documents": 200, "of": 4863, "seconds": 6.461362440139055}
+{"stage": "preload", "documents": 300, "of": 4863, "seconds": 9.34504747018218}
+{"stage": "preload", "documents": 400, "of": 4863, "seconds": 11.977071660105139}
+{"stage": "preload", "documents": 500, "of": 4863, "seconds": 14.942743190098554}
+{"stage": "preload", "documents": 600, "of": 4863, "seconds": 17.775283719878644}
+{"stage": "preload", "documents": 700, "of": 4863, "seconds": 21.071965950075537}
+{"stage": "preload", "documents": 800, "of": 4863, "seconds": 24.17065167007968}
+{"stage": "preload", "documents": 900, "of": 4863, "seconds": 27.01777032017708}
+{"stage": "preload", "documents": 1000, "of": 4863, "seconds": 29.603519009891897}
+{"stage": "preload", "documents": 1100, "of": 4863, "seconds": 32.844343670178205}
+{"stage": "preload", "documents": 1200, "of": 4863, "seconds": 35.96545231016353}
+{"stage": "preload", "documents": 1300, "of": 4863, "seconds": 39.55135831981897}
+{"stage": "preload", "documents": 1400, "of": 4863, "seconds": 43.09923030016944}
+{"stage": "preload", "documents": 1500, "of": 4863, "seconds": 46.450342250056565}
+{"stage": "preload", "documents": 1600, "of": 4863, "seconds": 50.263404429890215}
+{"stage": "preload", "documents": 1700, "of": 4863, "seconds": 53.36061075003818}
+{"stage": "preload", "documents": 1800, "of": 4863, "seconds": 56.668488460127264}
+{"stage": "preload", "documents": 1900, "of": 4863, "seconds": 60.03716633981094}
+{"stage": "preload", "documents": 2000, "of": 4863, "seconds": 64.04796746978536}
+{"stage": "preload", "documents": 2100, "of": 4863, "seconds": 67.49717502994463}
+{"stage": "preload", "documents": 2200, "of": 4863, "seconds": 70.84822038980201}
+{"stage": "preload", "documents": 2300, "of": 4863, "seconds": 75.21816967986524}
+{"stage": "preload", "documents": 2400, "of": 4863, "seconds": 79.05832093022764}
+{"stage": "preload", "documents": 2500, "of": 4863, "seconds": 82.48611324978992}
+{"stage": "preload", "documents": 2600, "of": 4863, "seconds": 86.17494270019233}
+{"stage": "preload", "documents": 2700, "of": 4863, "seconds": 90.14758013002574}
+{"stage": "preload", "documents": 2800, "of": 4863, "seconds": 94.00521312002093}
+{"stage": "preload", "documents": 2900, "of": 4863, "seconds": 97.98845040984452}
+{"stage": "preload", "documents": 3000, "of": 4863, "seconds": 102.34032793017104}
+{"stage": "preload", "documents": 3100, "of": 4863, "seconds": 106.27037867996842}
+{"stage": "preload", "documents": 3200, "of": 4863, "seconds": 110.10169281018898}
+{"stage": "preload", "documents": 3300, "of": 4863, "seconds": 113.53826896008104}
+{"stage": "preload", "documents": 3400, "of": 4863, "seconds": 117.27298346022144}
+{"stage": "preload", "documents": 3500, "of": 4863, "seconds": 121.3659345600754}
+{"stage": "preload", "documents": 3600, "of": 4863, "seconds": 125.12867267988622}
+{"stage": "preload", "documents": 3700, "of": 4863, "seconds": 129.07517825998366}
+{"stage": "preload", "documents": 3800, "of": 4863, "seconds": 132.75141385989264}
+{"stage": "preload", "documents": 3900, "of": 4863, "seconds": 136.68092714995146}
+{"stage": "preload", "documents": 4000, "of": 4863, "seconds": 140.70043479977176}
+{"stage": "preload", "documents": 4100, "of": 4863, "seconds": 144.65428068023175}
+{"stage": "preload", "documents": 4200, "of": 4863, "seconds": 148.5977418301627}
+{"stage": "preload", "documents": 4300, "of": 4863, "seconds": 152.1457916898653}
+{"stage": "preload", "documents": 4400, "of": 4863, "seconds": 155.62266850005835}
+{"stage": "preload", "documents": 4500, "of": 4863, "seconds": 158.83718666015193}
+{"stage": "preload", "documents": 4600, "of": 4863, "seconds": 162.832695719786}
+{"stage": "preload", "documents": 4700, "of": 4863, "seconds": 167.9747733399272}
+{"stage": "preload", "documents": 4800, "of": 4863, "seconds": 171.19485775986686}
+{"stage": "scoring", "ram_cache_bytes": 229300723712}
+/workspace/repos/clef-touche-b5fe06b0/25_clef_inference/local_modeling_clef.py:79: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)
+  values = torch.linalg.solve_triangular(system, v_beta, upper=False, unitriangular=True)
+{"stage": "query_saved", "qid": "1", "completed_queries": 1, "of": 49, "completed_pairs": 100, "query_s": 60.99840620998293}

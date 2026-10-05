@@ -1,0 +1,66 @@
+{
+  "checked_unix": 1791225063.5554101,
+  "status": {
+    "status": "scoring",
+    "commit": "b5fe06b02898561a691f324839185065ffa486d9",
+    "started_unix": 1791224791.0978465,
+    "score_command": [
+      "docker",
+      "exec",
+      "research_vllm_ascend_023_external_workspace",
+      "bash",
+      "-c",
+      "source npu-setup || exit $?; cd /workspace/repos/clef-touche-b5fe06b0 && exec /usr/local/python3.12.13/bin/python3 -u 25_clef_inference/run_reranking_task.py score --fixture /workspace/results/clef_touche_full/fixture.json --model /workspace/models/clef-flash --cache-dir /workspace/results/clef_touche_full/bf16_storage --cache-manifest /workspace/results/clef_touche_full/bf16_storage-manifest.json --output /workspace/results/clef_touche_full/benchmark_b5fe06b0/result.json"
+    ],
+    "score_pid": 3190045
+  },
+  "result_summary": {
+    "status": "running",
+    "task": "Touche2020Retrieval.v3",
+    "contract": {
+      "fixture_sha256": "8f0e908ce694b0e3d4d90d1977e02b195b94020458638361c5ee813dbecd2ef2",
+      "cache_manifest_sha256": "9a90839a77ec972f8a4a55b8b98940110d560cd40aa93db00d6b200bab7907f5",
+      "model_source_sha256": "09140ac9f4194efde2d5a97431dd252a38844aef56d5d805717939959b1376d0",
+      "compute_dtype": "float32",
+      "storage_dtype": "bfloat16",
+      "ranking_score": "unrounded P(true)",
+      "request_template": "existing request_for"
+    },
+    "git_commit": "b5fe06b02898561a691f324839185065ffa486d9",
+    "hostname": "liteserver-c001-4",
+    "physical_device": "3",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0.post2",
+    "total_queries": 49,
+    "total_pairs": 4900,
+    "ram_cache_bytes": 229300723712,
+    "ram_preload_s": 174.64513790979981,
+    "model_identity": "1cfbb67f50ff43661355a9f56c5f5b98b7c107e25f9912735b1cec9f9a73fc08",
+    "preload_thp_disabled": true,
+    "completed_queries": 1,
+    "completed_pairs": 100,
+    "saved_query_count": 1,
+    "saved_query_times_s": {
+      "1": 60.99840620998293
+    }
+  },
+  "score_log": "Selected physical NPU 3 as logical npu:0 (health/idle check; not a reservation)\nPython: /usr/local/python3.12.13/bin/python3\nloaded:model-00001-of-00004.safetensors\nloaded:model-00002-of-00004.safetensors\nloaded:model-00003-of-00004.safetensors\nloaded:model-00004-of-00004.safetensors\n{\"stage\": \"preload\", \"documents\": 100, \"of\": 4863, \"seconds\": 2.917116470169276}\n{\"stage\": \"preload\", \"documents\": 200, \"of\": 4863, \"seconds\": 6.461362440139055}\n{\"stage\": \"preload\", \"documents\": 300, \"of\": 4863, \"seconds\": 9.34504747018218}\n{\"stage\": \"preload\", \"documents\": 400, \"of\": 4863, \"seconds\": 11.977071660105139}\n{\"stage\": \"preload\", \"documents\": 500, \"of\": 4863, \"seconds\": 14.942743190098554}\n{\"stage\": \"preload\", \"documents\": 600, \"of\": 4863, \"seconds\": 17.775283719878644}\n{\"stage\": \"preload\", \"documents\": 700, \"of\": 4863, \"seconds\": 21.071965950075537}\n{\"stage\": \"preload\", \"documents\": 800, \"of\": 4863, \"seconds\": 24.17065167007968}\n{\"stage\": \"preload\", \"documents\": 900, \"of\": 4863, \"seconds\": 27.01777032017708}\n{\"stage\": \"preload\", \"documents\": 1000, \"of\": 4863, \"seconds\": 29.603519009891897}\n{\"stage\": \"preload\", \"documents\": 1100, \"of\": 4863, \"seconds\": 32.844343670178205}\n{\"stage\": \"preload\", \"documents\": 1200, \"of\": 4863, \"seconds\": 35.96545231016353}\n{\"stage\": \"preload\", \"documents\": 1300, \"of\": 4863, \"seconds\": 39.55135831981897}\n{\"stage\": \"preload\", \"documents\": 1400, \"of\": 4863, \"seconds\": 43.09923030016944}\n{\"stage\": \"preload\", \"documents\": 1500, \"of\": 4863, \"seconds\": 46.450342250056565}\n{\"stage\": \"preload\", \"documents\": 1600, \"of\": 4863, \"seconds\": 50.263404429890215}\n{\"stage\": \"preload\", \"documents\": 1700, \"of\": 4863, \"seconds\": 53.36061075003818}\n{\"stage\": \"preload\", \"documents\": 1800, \"of\": 4863, \"seconds\": 56.668488460127264}\n{\"stage\": \"preload\", \"documents\": 1900, \"of\": 4863, \"seconds\": 60.03716633981094}\n{\"stage\": \"preload\", \"documents\": 2000, \"of\": 4863, \"seconds\": 64.04796746978536}\n{\"stage\": \"preload\", \"documents\": 2100, \"of\": 4863, \"seconds\": 67.49717502994463}\n{\"stage\": \"preload\", \"documents\": 2200, \"of\": 4863, \"seconds\": 70.84822038980201}\n{\"stage\": \"preload\", \"documents\": 2300, \"of\": 4863, \"seconds\": 75.21816967986524}\n{\"stage\": \"preload\", \"documents\": 2400, \"of\": 4863, \"seconds\": 79.05832093022764}\n{\"stage\": \"preload\", \"documents\": 2500, \"of\": 4863, \"seconds\": 82.48611324978992}\n{\"stage\": \"preload\", \"documents\": 2600, \"of\": 4863, \"seconds\": 86.17494270019233}\n{\"stage\": \"preload\", \"documents\": 2700, \"of\": 4863, \"seconds\": 90.14758013002574}\n{\"stage\": \"preload\", \"documents\": 2800, \"of\": 4863, \"seconds\": 94.00521312002093}\n{\"stage\": \"preload\", \"documents\": 2900, \"of\": 4863, \"seconds\": 97.98845040984452}\n{\"stage\": \"preload\", \"documents\": 3000, \"of\": 4863, \"seconds\": 102.34032793017104}\n{\"stage\": \"preload\", \"documents\": 3100, \"of\": 4863, \"seconds\": 106.27037867996842}\n{\"stage\": \"preload\", \"documents\": 3200, \"of\": 4863, \"seconds\": 110.10169281018898}\n{\"stage\": \"preload\", \"documents\": 3300, \"of\": 4863, \"seconds\": 113.53826896008104}\n{\"stage\": \"preload\", \"documents\": 3400, \"of\": 4863, \"seconds\": 117.27298346022144}\n{\"stage\": \"preload\", \"documents\": 3500, \"of\": 4863, \"seconds\": 121.3659345600754}\n{\"stage\": \"preload\", \"documents\": 3600, \"of\": 4863, \"seconds\": 125.12867267988622}\n{\"stage\": \"preload\", \"documents\": 3700, \"of\": 4863, \"seconds\": 129.07517825998366}\n{\"stage\": \"preload\", \"documents\": 3800, \"of\": 4863, \"seconds\": 132.75141385989264}\n{\"stage\": \"preload\", \"documents\": 3900, \"of\": 4863, \"seconds\": 136.68092714995146}\n{\"stage\": \"preload\", \"documents\": 4000, \"of\": 4863, \"seconds\": 140.70043479977176}\n{\"stage\": \"preload\", \"documents\": 4100, \"of\": 4863, \"seconds\": 144.65428068023175}\n{\"stage\": \"preload\", \"documents\": 4200, \"of\": 4863, \"seconds\": 148.5977418301627}\n{\"stage\": \"preload\", \"documents\": 4300, \"of\": 4863, \"seconds\": 152.1457916898653}\n{\"stage\": \"preload\", \"documents\": 4400, \"of\": 4863, \"seconds\": 155.62266850005835}\n{\"stage\": \"preload\", \"documents\": 4500, \"of\": 4863, \"seconds\": 158.83718666015193}\n{\"stage\": \"preload\", \"documents\": 4600, \"of\": 4863, \"seconds\": 162.832695719786}\n{\"stage\": \"preload\", \"documents\": 4700, \"of\": 4863, \"seconds\": 167.9747733399272}\n{\"stage\": \"preload\", \"documents\": 4800, \"of\": 4863, \"seconds\": 171.19485775986686}\n{\"stage\": \"scoring\", \"ram_cache_bytes\": 229300723712}\n/workspace/repos/clef-touche-b5fe06b0/25_clef_inference/local_modeling_clef.py:79: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)\n  values = torch.linalg.solve_triangular(system, v_beta, upper=False, unitriangular=True)\n{\"stage\": \"query_saved\", \"qid\": \"1\", \"completed_queries\": 1, \"of\": 49, \"completed_pairs\": 100, \"query_s\": 60.99840620998293}\n",
+  "original_status": {
+    "status": "superseded",
+    "commit": "f268a541970072f845e284c4dcb3a99ea2618ae7",
+    "started_unix": 1791222022.551317,
+    "score_command": [
+      "docker",
+      "exec",
+      "research_vllm_ascend_023_external_workspace",
+      "bash",
+      "-c",
+      "source npu-setup || exit $?; cd /workspace/repos/clef-touche-f268a541 && exec /usr/local/python3.12.13/bin/python3 -u 25_clef_inference/run_reranking_task.py score --fixture /workspace/results/clef_touche_full/fixture.json --model /workspace/models/clef-flash --cache-dir /workspace/results/clef_touche_full/bf16_storage --cache-manifest /workspace/results/clef_touche_full/bf16_storage-manifest.json --output /workspace/results/clef_touche_full/benchmark_f268a541/result.json"
+    ],
+    "score_pid": 3167796,
+    "error": "RuntimeError('score exited 130')",
+    "finished_unix": 1791224755.2959554,
+    "superseded_by": "benchmark_b5fe06b0",
+    "interruption_reason": "User requested restart with scoped THP preload fix; zero query predictions existed"
+  }
+}
